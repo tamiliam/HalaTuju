@@ -68,6 +68,24 @@ TEXTS = {
         "filter_label": "Filter by Category:",
         "filter_count": "Showing {shown} of {total} courses.",
         "contact_counselor": "Contact our counselors for application help."
+
+        # About / Trust Section
+        "about_title": "ℹ️ About & Methodology",
+        "about_desc": """
+        **How does this work?**
+        We use the official entry requirements published by the Ministry of Higher Education (UPU) and TVET agencies. 
+        We match your grades against the specific minimum requirements for over 1,000 courses.
+        
+        **Disclaimer:**
+        This tool is a guidance calculator, not an official application. Meeting the minimum requirements does not guarantee admission, as competition for seats varies every year.
+        """,
+        "footer_credits": "Built with ❤️ for Malaysian Students.",
+        
+        # Admin Section
+        "admin_login": "Admin Access",
+        "admin_success": "Welcome back, Commander.",
+        "admin_view_leads": "View Student Leads",
+        "admin_download": "Download CSV"
     },
     
     "bm": {
@@ -131,6 +149,24 @@ TEXTS = {
         "filter_label": "Tapis Kategori:",
         "filter_count": "Menunjukkan {shown} daripada {total} kursus.",
         "contact_counselor": "Hubungi kaunselor kami untuk bantuan."
+
+        # About / Trust Section
+        "about_title": "ℹ️ Mengenai & Metodologi",
+        "about_desc": """
+        **Bagaimana alat ini berfungsi?**
+        Kami menggunakan syarat kemasukan rasmi yang diterbitkan oleh Kementerian Pengajian Tinggi (UPU) dan agensi TVET.
+        Kami memadankan gred anda dengan syarat minimum khusus untuk lebih 1,000 kursus.
+        
+        **Penafian:**
+        Alat ini adalah panduan semata-mata, bukan permohonan rasmi. Memenuhi syarat minimum tidak menjamin tempat, kerana persaingan berbeza setiap tahun.
+        """,
+        "footer_credits": "Dibina dengan ❤️ untuk Pelajar Malaysia.",
+        
+        # Admin Section
+        "admin_login": "Akses Admin",
+        "admin_success": "Selamat kembali, Tuan.",
+        "admin_view_leads": "Lihat Senarai Pelajar",
+        "admin_download": "Muat Turun CSV"
     },
 
     "ta": {
@@ -194,6 +230,24 @@ TEXTS = {
         "filter_label": "வகை வாரியாக வடிகட்டவும்:",
         "filter_count": "{total} இல் {shown} படிப்புகள் காட்டப்படுகின்றன.",
         "contact_counselor": "விண்ணப்ப உதவிக்கு எங்கள் ஆலோசகர்களைத் தொடர்பு கொள்ளவும்."
+
+        # About / Trust Section
+        "about_title": "ℹ️ எங்களை பற்றி & செயல்முறை",
+        "about_desc": """
+        **இது எப்படி வேலை செய்கிறது?**
+        உயர் கல்வி அமைச்சு (UPU) மற்றும் TVET முகமைகளால் வெளியிடப்பட்ட அதிகாரப்பூர்வ தகுதித் தேவைகளை நாங்கள் பயன்படுத்துகிறோம்.
+        1,000 க்கும் மேற்பட்ட படிப்புகளுக்கான குறைந்தபட்ச தேவைகளுடன் உங்கள் தரங்களை நாங்கள் ஒப்பிடுகிறோம்.
+        
+        **பொறுப்புத் துறப்பு (Disclaimer):**
+        இது ஒரு வழிகாட்டி கருவி மட்டுமே, அதிகாரப்பூர்வ விண்ணப்பம் அல்ல. குறைந்தபட்ச தேவைகளைப் பூர்த்தி செய்வது சேர்க்கையை உறுதிப்படுத்தாது, ஏனெனில் ஒவ்வொரு ஆண்டும் இடங்களுக்கான போட்டி மாறுபடும்.
+        """,
+        "footer_credits": "மலேசிய மாணவர்களுக்காக ❤️ உடன் உருவாக்கப்பட்டது.",
+        
+        # Admin Section
+        "admin_login": "நிர்வாக அணுகல்",
+        "admin_success": "மீண்டும் வருக.",
+        "admin_view_leads": "மாணவர் பட்டியலைப் பாருங்கள்",
+        "admin_download": "CSV தரவிறக்கம்"
     }
 }
 
