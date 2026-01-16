@@ -1,0 +1,7 @@
+git pull origin main
+git add .
+git commit -m "Tell a story"
+git push origin main
+VSc-kBCN+j@L5JT
+https://pbrrlyoyyiftckqvzvvo.supabase.co
+sb_publishable_ADKtlHpjwGRqWGpYd1JuCg_riPMtc3l

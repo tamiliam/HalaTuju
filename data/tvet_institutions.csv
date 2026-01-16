@@ -1,0 +1,56 @@
+institution_id,institution_name,acronym,type,category,subcategory,State,address,phone,url
+IKBN-001,IKTBN Dusun Tua,IKBNDT,IPTA,ILKBS,IKTBN,Selangor,"Km 25, Dusun Tua, 43100 Hulu Langat, Selangor",03-90217100,https://kemahiran.kbs.gov.my/iktbndusuntua.html
+IKBN-002,IKTBN Sepang,IKBNS,IPTA,ILKBS,IKTBN,Selangor,"Bandar Baru Salak Tinggi, 43900 Sepang, Selangor",03-87061720,https://kemahiran.kbs.gov.my/iktbnsepang.html
+IKBN-003,IKTBN Chembong,IKBNC,IPTA,ILKBS,IKTBN,Negeri Sembilan,"71300 Rembau, Negeri Sembilan",06-6857900,https://kemahiran.kbs.gov.my/iktbnchembong.html
+IKBN-004,IKTBN Bukit Mertajam,IKBNBM,IPTA,ILKBS,IKTBN,Pinang,"Jalan Berapit,14000 Bukit Mertajam, Pulau Pinang",04-5225288   ,https://kemahiran.kbs.gov.my/iktbnbukitmertajam.html
+IKBN-005,IKTBN Alor Gajah,IKBNAG,IPTA,ILKBS,IKTBN,Melaka,"Km 34, Jalan Masjid Tanah, 78300 Masjid Tanah, Melaka",06-3851255,https://kemahiran.kbs.gov.my/iktbnalorgajah.html
+IKBN-006,IKTBN Negara Pagoh,IKBNNP,IPTA,ILKBS,IKTBN,Johor,"Km 21, Jalan Panchor, 84500 Pagoh, Johor",06-9737836,https://kemahiran.kbs.gov.my/iktbnpagoh.html
+IKBN-007,IKTBN Temerloh,IKBNT,IPTA,ILKBS,IKTBN,Pahang,"Kampung Bongsu, 28500 Lanchang, Temerloh, Pahang",09-2805550,https://kemahiran.kbs.gov.my/iktbntemerloh.html
+IKBN-008,IKTBN Bachok,IKBNB,IPTA,ILKBS,IKTBN,Kelantan,"Kampong Tangok, 16300 Bachok, Kelantan",09-7787700,https://kemahiran.kbs.gov.my/iktbnbachok.html
+IKBN-009,IKSN Kuala Langat,IKBNKL,IPTA,ILKBS,IKSN,Selangor,"Jalan Sultan Abdul Samad, Kampung Sungai Raba, 42700 Banting, Selangor",03-31802128,https://kemahiran.kbs.gov.my/iksnkualalangat.html
+IKBN-010,IKBN Peretak,IKBNP,IPTA,ILKBS,IKBN,Selangor,"Jalan Ampang Pecah, 44000 Kuala Kubu Bharu, Selangor",03-60996000,https://kemahiran.kbs.gov.my/ikbnperetak.html
+IKBN-011,IKBN Seri Iskandar,IKBNSI,IPTA,ILKBS,IKBN,Perak,"32600 Bota, Perak",05-3711101,https://kemahiran.kbs.gov.my/ikbnseriiskandar.html
+IKBN-012,IKBN Naka,IKBNN,IPTA,ILKBS,IKBN,Kedah,"Mukim Tekai, Pekan Naka, Kedah",04-7993000,https://kemahiran.kbs.gov.my/ikbnnaka.html
+IKBN-013,IKBN Jitra,IKBNJ,IPTA,ILKBS,IKBN,Kedah,"Km 23, Jalan Changloon, 06000 Jitra, Kedah",04-9174676,https://kemahiran.kbs.gov.my/ikbnjitra.html
+IKBN-014,IKBN Kuala Perlis,IKBNKP,IPTA,ILKBS,IKBN,Perlis,"Jalan Bukit Kubu, 02000 Kuala Perlis, Perlis",04-9855985,https://kemahiran.kbs.gov.my/ikbnkualaperlis.html
+IKBN-015,IKBN Tanah Merah,IKBNTM,IPTA,ILKBS,IKBN,Kelantan,"Jalan Bukit Panau, Tanah Merah, Kelantan",09-9509900,https://kemahiran.kbs.gov.my/ikbntanahmerah.html
+IKBN-016,IKBN Wakaf Tapai,IKBNWT,IPTA,ILKBS,IKBN,Terengganu,"Km 24, Jalan Kuala Terengganu-Kuala Berang, 21040, Marang, Terengganu",09-6806000,https://kemahiran.kbs.gov.my/ikbnwakaftapai.html
+IKBN-017,IKBN Kemasik,IKBNK,IPTA,ILKBS,IKBN,Terengganu,"Km 19, Jalan Kemaman-Dungun, 24200 Kemasik Kemaman, Terengganu",09-8664500,https://kemahiran.kbs.gov.my/ikbnkemasik.html
+IKBN-018,IKBN Pekan,IKBNPE,IPTA,ILKBS,IKBN,Pahang,"Km 55, Jalan Kuantan-Segamat, 26650 Pekan, Pahang",09-4514888,https://kemahiran.kbs.gov.my/ikbnpekan.html
+IKBN-019,IKBN Bandar Penawar,IKBNBP,IPTA,ILKBS,IKBN,Johor,"Jalan Kejora Utama, 81930 Bandar Penawar, Johor",07-8221567,https://kemahiran.kbs.gov.my/ikbnbandarpenawar.html
+IKBN-020,IKBN Kinarut,IKBNKE,IPTA,ILKBS,IKBN,Sabah,"Jalan Limau Limauan, Kinarut, Sabah",088-755929,https://kemahiran.kbs.gov.my/ikbnkinarut.html
+IKBN-021,IKBN Miri,IKBNM,IPTA,ILKBS,IKBN,Sarawak,"Jalan Permyjaya Utama, Bandar Baru Permyjaya, 98000 Miri, Sarawak",085-660714,https://kemahiran.kbs.gov.my/ikbnmiri.html
+IJTM-001,Institut Teknikal Jepun Malaysia,JMTI,IPTA,ILJTM,JMTI,Pulau Pinang,"59, Lorong Perindustrian Bukit Minyak 15, Kawasan Perindustrian Bukit Minyak, 14100 Simpang Ampat, Pulau Pinang",604-5087800,https://www.jmti.gov.my 
+IJTM-002,ADTEC JTM Kampus Kuala Lumpur,ILPKL,IPTA,ILJTM,ADTEC,WP Kuala Lumpur,"Jalan Kuchai Lama, 58200 Kuala Lumpur, WP Kuala Lumpur",03-79817495 / 7496,https://www.ilpkl.gov.my 
+IJTM-003,ADTEC JTM Kampus Ipoh,ILPIPOH,IPTA,ILJTM,ADTEC,Perak,"Kawasan Perindustrian Taman Meru, 30020 Ipoh, Perak",05-5277777 / 5597,https://www.ilpipoh.gov.my
+IJTM-004,ADTEC JTM Kampus Taiping,ILPTAIPING,IPTA,ILJTM,ADTEC,Perak,"PT 15643, Kamunting Raya, Mukim Asam Kumbang, 34600 Kamunting, Taiping, Perak",05-8012601,https://www.adtectaiping.gov.my
+IJTM-005,ADTEC JTM Kampus Serian,ILPSERIAN,IPTA,ILJTM,ADTEC,Sarawak,"Lot 2262, Off Jalan Rahun Debak, 94700 Serian, Sarawak",082-874000, https://adtecserian.gov.my/ 
+IJTM-006,ADTEC JTM Kampus Jerantut,ILPJERANTUT,IPTA,ILJTM,ADTEC,Pahang,"Km 9, Jalan Jerantut Temerloh, 27000 Jerantut, Pahang",09-2663391,https://www.adtecjerantut.gov.my/v5/
+IJTM-007,ADTEC JTM Kampus Kuala Langat,ILPLANGAT,IPTA,ILJTM,ADTEC,Selangor,"Jalan Sultan Abdul Samad, 42700 Banting, Selangor",03-31204600,https://www.ilpkls.gov.my
+IJTM-008,ADTEC JTM Kampus Perai,ILPPERAI,IPTA,ILJTM,ADTEC,Pulau Pinang,"Lorong Perusahaan Satu, Kawasan Perusahaan Perai, 13600 Perai, Pulau Pinang ",04-3907269 / 7335,https://www.ilpperai.gov.my 
+IJTM-009,ADTEC JTM Kampus Kepala Batas,ILPKB,IPTA,ILJTM,ADTEC,Pulau Pinang,"Lot 2022, Jalan Tun Hamdan Sheikh Tahir, 13200 Kepala Batas, Pulau Pinang",04-5776100,https://www.ilpkbpp.gov.my
+IJTM-010,ADTEC JTM Kampus Selandar,ILPSELANDAR,IPTA,ILJTM,ADTEC,Melaka,"Lot 1468, Jalan Batang Melaka, 77500 Selandar, Melaka",06-5303000,https://www.ilpselandar.gov.my
+IJTM-011,ADTEC JTM Kampus Mersing,ILPMERSING,IPTA,ILJTM,ADTEC,Johor,"Km 16, Jalan Jemaluang, 86800 Mersing, Johor",07-7921700 / 1701,https://www.ilpmsg.gov.my
+IJTM-012,ADTEC JTM Kampus Kota Samarahan,ILPSAMARAHAN,IPTA,ILJTM,ADTEC,Sarawak,"Lot 249,  Blok 14,  Sarawak Natural Resource Park, 94300 Kota Samarahan, Sarawak",082-465100,https://www.ilpks.gov.my
+IJTM-013,ADTEC JTM Kampus Kota Kinabalu,ILPKINABALU,IPTA,ILJTM,ADTEC,Sabah,"Jalan 3, KKIP Selatan, 88460 Kota Kinabalu, Sabah",088-499825,https://www.ilpkk.gov.my
+IJTM-014,ADTEC JTM Kampus Sandakan,ILPSANDAKAN,IPTA,ILJTM,ADTEC,Sabah,"Batu 5, Jalan Sibuga, 90000 Sandakan, Sabah",089-240500,https://www.ilpsdk.gov.my
+IJTM-015,ADTEC JTM Kampus Marang,ILPMARANG,IPTA,ILJTM,ADTEC,Terengganu,"Kampung Bukit Parit, 21600 Marang, Terengganu",09-6189000,https://www.ilpmrg.gov.my 
+IJTM-016,ADTEC JTM Kampus Nibong Tebal,ILPTEBAL,IPTA,ILJTM,ADTEC,Pinang,"Jalan Bukit Panchor, 14300 Nibong Tebal, Pulau Pinang",04-5956000,https://www.ilpapnt.gov.my  
+IJTM-017,ADTEC JTM Kampus Kangar,ILPKANGAR,IPTA,ILJTM,ADTEC,Perlis,"Padang Behor Mukim Sena, 01000 Kangar, Perlis",04-9777400,https://www.ilpkangar.gov.my
+IJTM-018,ADTEC JTM Kampus Bukit Katil,ADTECJTMKBK,IPTA,ILJTM,ADTEC,Melaka,"Lot 4345, Jalan Tun Telani, Mukim Bukit Katil, Hang Tuah Jaya, 75450 Ayer Keroh, Melaka",06-2320600,https://www.ilpmelaka.gov.my
+IJTM-019,ADTEC JTM Kampus Pedas,ILPPEDAS,IPTA,ILJTM,ADTEC,Negeri Sembilan,"Jalan Pedas Linggi, 71400 Pedas, Negeri Sembilan",06-6853854 / 57 / 58,https://www.ilppedas.gov.my
+IJTM-020,ADTEC JTM Kampus Tangkak,ILPTANGKAK,IPTA,ILJTM,ADTEC,Johor,"Km 43, Jalan Segamat, Sagil, 84900 Tangkak, Johor",06-9773800,https://www.ilptangkak.gov.my
+IJTM-021,ADTEC JTM Kampus Pasir Gudang,ILPGUDANG,IPTA,ILJTM,ADTEC,Johor,"Jalan Gangsa, Kawasan Perindustrian Pasir Gudang, 81700 Pasir Gudang, Johor",07-2544170,https://www.ilppg.gov.my
+IJTM-022,ADTEC JTM Kampus Senai,ILPSENAI,IPTA,ILJTM,ADTEC,Johor,"10, Jalan Persiaran Teknologi, Taman Teknologi Johor, 81400 Senai, Johor",07-2544170,https://www.ilppg.gov.my  
+IJTM-023,ADTEC JTM Kampus Miri,ILPMIRI,IPTA,ILJTM,ADTEC,Sarawak,"Lot 3226, Blok 6, Mukim Bandar Baru Permy Jaya, 98100 Miri,  Sarawak",085-644384,https://www.ilpmiri.gov.my
+IJTM-024,ADTEC JTM Kampus Labuan,ILPLABUAN,IPTA,ILJTM,ADTEC,WP Labuan,"Jalan Mohd Salleh, P.O. Box 80849, 87018 Labuan, WP Labuan",087-414911 / 7745,https://www.ilplabuan.gov.my
+IJTM-025,ADTEC JTM Kampus Bintulu,ILPBINTULU,IPTA,ILJTM,ADTEC,Sarawak,"Lot 903, PL957, Blok 37, Jln Bintulu-Sibu 97000, Bintulu, Sarawak",086-310111,https://www.adtecbintulu.my
+IJTM-026,ADTEC JTM Kampus Shah Alam,ILPALAM,IPTA,ILJTM,ADTEC,Selangor,"No. 5934-1, Jalan Bukit Kemuning, Seksyen 32, 40460 Shah Alam, Selangor",03-51675888,https://www.adtecsa.gov.my
+IJTM-027,ADTEC JTM Kampus Kulim,ILPKULIM,IPTA,ILJTM,ADTEC,Kedah,"Lot 635, Jalan Mahang, 09700 Karangan, Kulim, Kedah",04-4042975,https://www.adteckulim.gov.my
+IJTM-028,ADTEC JTM Kampus Jitra,ILPJITRA,IPTA,ILJTM,ADTEC,Kedah,"Bandar Darulaman, 06000 Jitra, Kedah",04-9161926,https://www.ilpjitra.gov.my
+IJTM-029,ADTEC Melaka,ILPMELAKA,IPTA,ILJTM,ADTEC,Melaka,"Bandar Vendor Taboh Naning, 78000 Alor Gajah, Melaka",06-5527227,https://www.adtecmlk.gov.my
+IJTM-030,ADTEC JTM Kampus Batu Pahat,ILPPAHAT,IPTA,ILJTM,ADTEC,Johor,"Km 8, Jalan Tanjung Laboh, 83000 Batu Pahat, Johor",07-4287722 / 7733,https://www.adtecbp.gov.my
+IJTM-031,ADTEC JTM Kampus Kemaman,ILPKEMAMAN,IPTA,ILJTM,ADTEC,Terengganu,"Payoh, 24210 Kemasik,Terengganu",09-8664000,https://www.adteckmn.gov.my
+IJTM-032,ADTEC JTM Kampus Kuantan,ILPKUANTAN,IPTA,ILJTM,ADTEC,Pahang,"Lot 10, Kawasan Perindustrian Gebeng, 26080 Kuantan, Pahang",09-5861660,https://www.ilpkuantan.gov.my
+IJTM-033,ADTEC JTM Kampus Kuala Terengganu,ILPTERENGGANU,IPTA,ILJTM,ADTEC,Terengganu,"Kawasan Perindustrian Gong Badak, 21300 Kuala Terengganu, Terengganu",09-6652100,https://www.ilpkt.gov.my
+IJTM-034,ADTEC JTM Kampus Kota Bharu,ILPBHARU,IPTA,ILJTM,ADTEC,Kelantan,"Pengkalan Chepa, 16100 Kota Bharu, Kelantan",09-7742448,https://www.ilpkb.gov.my

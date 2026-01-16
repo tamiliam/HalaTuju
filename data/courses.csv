@@ -1,0 +1,140 @@
+course_id,course,wbl,level,department,field,semesters,hyperlink
+POLY-DIP-001,Diploma Agroteknologi,0,Diploma,Agroteknologi Dan Bio-Industri,Agroteknologi,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DG002
+POLY-DIP-002,Diploma Bioteknologi,0,Diploma,Agroteknologi Dan Bio-Industri,Bioteknologi,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DG001
+POLY-DIP-003,Diploma Geomatik,0,Diploma,Kejuruteraan Awam,Geomatik,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA010
+POLY-DIP-004,Diploma in Retail Operations Management,1,Diploma,Perdagangan,Retail Operations Management,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP016
+POLY-DIP-005,Diploma Insurans,0,Diploma,Perdagangan,Insurans,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP002
+POLY-DIP-006,Diploma Kejuruteraan Alam Sekitar,0,Diploma,Kejuruteraan Awam,Kejuruteraan Alam Sekitar,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA008
+POLY-DIP-007,Diploma Kejuruteraan Awam,0,Diploma,Kejuruteraan Awam,Kejuruteraan Awam,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA001
+POLY-DIP-008,Diploma Kejuruteraan Elektrik,0,Diploma,Kejuruteraan Elektrik,Kejuruteraan Elektrik,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE001
+POLY-DIP-009,Diploma Kejuruteraan Elektrik & Elektronik,0,Diploma,Kejuruteraan Elektrik,Kejuruteraan Elektrik & Elektronik,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE007
+POLY-DIP-010,Diploma Kejuruteraan Elektrik & Instrumentasi,0,Diploma,Kejuruteraan Petrokimia,Kejuruteraan Elektrik & Instrumentasi,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DR003
+POLY-DIP-011,Diploma Kejuruteraan Elektrik (Kecekapan Tenaga),0,Diploma,Kejuruteraan Elektrik,Kejuruteraan Elektrik (Kecekapan Tenaga),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE011
+POLY-DIP-012,Diploma Kejuruteraan Elektrik (Tenaga Hijau),0,Diploma,Kejuruteraan Elektrik,Kejuruteraan Elektrik (Tenaga Hijau),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE009
+POLY-DIP-013,Diploma Kejuruteraan Elektronik,0,Diploma,Kejuruteraan Elektrik,Kejuruteraan Elektronik,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE020
+POLY-DIP-014,Diploma Kejuruteraan Elektronik (Kawalan),0,Diploma,Kejuruteraan Elektrik,Kejuruteraan Elektronik (Kawalan),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE002
+POLY-DIP-015,Diploma Kejuruteraan Elektronik (Komputer),0,Diploma,Kejuruteraan Elektrik,Kejuruteraan Elektronik (Komputer),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE003
+POLY-DIP-016,Diploma Kejuruteraan Elektronik (Komunikasi),0,Diploma,Kejuruteraan Elektrik,Kejuruteraan Elektronik (Komunikasi),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE004
+POLY-DIP-017,Diploma Kejuruteraan Elektronik (Perubatan),0,Diploma,Kejuruteraan Elektrik,Kejuruteraan Elektronik (Perubatan),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE005
+POLY-DIP-018,Diploma Kejuruteraan Kimia,0,Diploma,Kejuruteraan Petrokimia,Kejuruteraan Kimia,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DR004
+POLY-DIP-019,Diploma Kejuruteraan Mekanikal,0,Diploma,Kejuruteraan Mekanikal,Kejuruteraan Mekanikal,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM001
+POLY-DIP-020,Diploma Kejuruteraan Mekanikal (Automasi),0,Diploma,Kejuruteraan Mekanikal,Kejuruteraan Mekanikal (Automasi),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM014
+POLY-DIP-021,Diploma Kejuruteraan Mekanikal (Automotif),0,Diploma,Kejuruteraan Mekanikal,Kejuruteraan Mekanikal (Automotif),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM002
+POLY-DIP-022,Diploma Kejuruteraan Mekanikal (Bahan),0,Diploma,Kejuruteraan Mekanikal,Kejuruteraan Mekanikal (Bahan),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM010
+POLY-DIP-023,Diploma Kejuruteraan Mekanikal (Loji Kuasa),0,Diploma,Kejuruteraan Mekanikal,Kejuruteraan Mekanikal (Loji Kuasa),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM020
+POLY-DIP-024,Diploma Kejuruteraan Mekanikal (Pembuatan),0,Diploma,Kejuruteraan Mekanikal,Kejuruteraan Mekanikal (Pembuatan),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM004
+POLY-DIP-025,Diploma Kejuruteraan Mekanikal (Pembungkusan Perindustrian),0,Diploma,Kejuruteraan Mekanikal,Kejuruteraan Mekanikal (Pembungkusan Perindustrian),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM021
+POLY-DIP-026,Diploma Kejuruteraan Mekanikal (Penyamanan Udara dan Penyejukbekuan),0,Diploma,Kejuruteraan Mekanikal,Kejuruteraan Mekanikal (Penyamanan Udara dan Penyejukbekuan),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM005
+POLY-DIP-027,Diploma Kejuruteraan Mekanikal (Pertanian),0,Diploma,Kejuruteraan Mekanikal,Kejuruteraan Mekanikal (Pertanian),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM006
+POLY-DIP-028,Diploma Kejuruteraan Mekanikal (Petrokimia),0,Diploma,Kejuruteraan Petrokimia,Kejuruteraan Mekanikal (Petrokimia),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DR002
+POLY-DIP-029,Diploma Kejuruteraan Mekanikal (Plastik Perindustrian),0,Diploma,Kejuruteraan Mekanikal,Kejuruteraan Mekanikal (Plastik Perindustrian),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM018
+POLY-DIP-030,Diploma Kejuruteraan Mekanikal (Rekabentuk Pembuatan Automotif),0,Diploma,Kejuruteraan Mekanikal,Kejuruteraan Mekanikal (Rekabentuk Pembuatan Automotif),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM012
+POLY-DIP-031,Diploma Kejuruteraan Mekanikal (Rekabentuk Produk),0,Diploma,Kejuruteraan Mekanikal,Kejuruteraan Mekanikal (Rekabentuk Produk),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM013
+POLY-DIP-032,Diploma Kejuruteraan Mekatronik,0,Diploma,Kejuruteraan Mekanikal,Kejuruteraan Mekatronik,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM011
+POLY-DIP-033,Diploma Kejuruteraan Penyenggaraan Pesawat,0,Diploma,Penyenggaraan Pesawat,Kejuruteraan Penyenggaraan Pesawat,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DB001
+POLY-DIP-034,Diploma Kejuruteraan Perkapalan,0,Diploma,Kejuruteraan Perkapalan,Kejuruteraan Perkapalan,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DK001
+POLY-DIP-035,Diploma Kejuruteraan Perkhidmatan Bangunan,0,Diploma,Kejuruteraan Awam,Kejuruteraan Perkhidmatan Bangunan,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA002
+POLY-DIP-036,Diploma Kejuruteraan Proses (Petrokimia),0,Diploma,Kejuruteraan Petrokimia,Kejuruteraan Proses (Petrokimia),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DR001
+POLY-DIP-037,Diploma Keusahawanan,1,Diploma,Perdagangan,Keusahawanan,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP012
+POLY-DIP-038,Diploma Kewangan,0,Diploma,Perdagangan,Kewangan,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP017
+POLY-DIP-039,Diploma Kewangan Islam,0,Diploma,Perdagangan,Kewangan Islam,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP015
+POLY-DIP-040,Diploma Pelancongan Rekreasi,0,Diploma,Pelancongan Dan Hospitaliti,Pelancongan Rekreasi,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DH009
+POLY-DIP-041,Diploma Pemasaran,0,Diploma,Perdagangan,Pemasaran,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP004
+POLY-DIP-042,Diploma Pengajian Perniagaan,0,Diploma,Perdagangan,Pengajian Perniagaan,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP005
+POLY-DIP-043,Diploma Pengurusan Acara,0,Diploma,Pelancongan Dan Hospitaliti,Pengurusan Acara,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DH001
+POLY-DIP-044,Diploma Pengurusan Hotel,1,Diploma,Pelancongan Dan Hospitaliti,Pengurusan Hotel,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DH007
+POLY-DIP-045,Diploma Pengurusan Logistik dan Rantaian Bekalan,0,Diploma,Perdagangan,Pengurusan Logistik dan Rantaian Bekalan,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP014
+POLY-DIP-046,Diploma Pengurusan Pelancongan,0,Diploma,Pelancongan Dan Hospitaliti,Pengurusan Pelancongan,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DH004
+POLY-DIP-047,Diploma Pengurusan Peruncitan,0,Diploma,Perdagangan,Pengurusan Peruncitan,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP008
+POLY-DIP-048,Diploma Pengurusan Resort,0,Diploma,Pelancongan Dan Hospitaliti,Pengurusan Resort,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DH008
+POLY-DIP-049,Diploma Perakaunan,0,Diploma,Perdagangan,Perakaunan,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP018
+POLY-DIP-050,Diploma Perancangan Bandar dan Wilayah,0,Diploma,Kejuruteraan Awam,Perancangan Bandar dan Wilayah,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA004
+POLY-DIP-051,Diploma Perkhidmatan Makanan Amalan Halal,0,Diploma,Pelancongan Dan Hospitaliti,Perkhidmatan Makanan Amalan Halal,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DH010
+POLY-DIP-052,Diploma Perniagaan Antarabangsa,0,Diploma,Perdagangan,Perniagaan Antarabangsa,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP006
+POLY-DIP-053,Diploma Reka Bentuk Fesyen,0,Diploma,Reka Bentuk Dan Komunikasi Visual,Reka Bentuk Fesyen,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DV015
+POLY-DIP-054,Diploma Rekabentuk Grafik,0,Diploma,Reka Bentuk Dan Komunikasi Visual,Rekabentuk Grafik,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DV002
+POLY-DIP-055,Diploma Rekabentuk Industri,0,Diploma,Reka Bentuk Dan Komunikasi Visual,Rekabentuk Industri,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DV003
+POLY-DIP-056,Diploma Sains Kesetiausahaan,0,Diploma,Perdagangan,Sains Kesetiausahaan,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP007
+POLY-DIP-057,Diploma Seni Bina,0,Diploma,Kejuruteraan Awam,Seni Bina,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA005
+POLY-DIP-058,Diploma Seni Kulinari,1,Diploma,Pelancongan Dan Hospitaliti,Seni Kulinari,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DH019
+POLY-DIP-059,Diploma Senibina Kapal,0,Diploma,Kejuruteraan Perkapalan,Senibina Kapal,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DK002
+POLY-DIP-060,Diploma Sistem Maklumat Perniagaan,0,Diploma,Perdagangan,Sistem Maklumat Perniagaan,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP013
+POLY-DIP-061,Diploma Teknologi Akuakultur,0,Diploma,Agroteknologi Dan Bio-Industri,Teknologi Akuakultur,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DG005
+POLY-DIP-062,Diploma Teknologi Berasaskan Kayu,0,Diploma,Kejuruteraan Awam,Teknologi Berasaskan Kayu,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA003
+POLY-DIP-063,Diploma Teknologi Hortikultur Landskap,0,Diploma,Agroteknologi Dan Bio-Industri,Teknologi Hortikultur Landskap,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DG006
+POLY-DIP-064,Diploma Teknologi Kejuruteraan Elektrik Marin,0,Diploma,Teknologi Kejuruteraan Maritim,Teknologi Kejuruteraan Elektrik Marin,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DD002
+POLY-DIP-065,Diploma Teknologi Kejuruteraan Pembinaan Marin,0,Diploma,Teknologi Kejuruteraan Maritim,Teknologi Kejuruteraan Pembinaan Marin,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DD003
+POLY-DIP-066,Diploma Teknologi Kimia (Lemak dan Minyak),0,Diploma,Teknologi Makanan,Teknologi Kimia (Lemak dan Minyak),6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DT003
+POLY-DIP-067,Diploma Teknologi Kreatif Digital Animasi,1,Diploma,Reka Bentuk Dan Komunikasi Visual,Teknologi Kreatif Digital Animasi,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DV014
+POLY-DIP-068,Diploma Teknologi Kreatif Digital Produksi Video,1,Diploma,Reka Bentuk Dan Komunikasi Visual,Teknologi Kreatif Digital Produksi Video,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DV013
+POLY-DIP-069,Diploma Teknologi Kreatif Digital Seni,1,Diploma,Reka Bentuk Dan Komunikasi Visual,Teknologi Kreatif Digital Seni,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DV012
+POLY-DIP-070,Diploma Teknologi Makanan,0,Diploma,Teknologi Makanan,Teknologi Makanan,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DT001
+POLY-DIP-071,Diploma Teknologi Makanan Pengurusan Halal,0,Diploma,Teknologi Makanan,Teknologi Makanan Pengurusan Halal,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DT002
+POLY-DIP-072,Diploma Teknologi Maklumat (Software & App Development),0,Diploma,Teknologi Maklumat Dan Komunikasi,Teknologi Maklumat,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DF008
+POLY-DIP-073,Diploma Teknologi Maklumat (Networking System),0,Diploma,Teknologi Maklumat Dan Komunikasi,Teknologi Maklumat,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DF008
+POLY-DIP-074,Diploma Teknologi Maklumat (Information Security),0,Diploma,Teknologi Maklumat Dan Komunikasi,Teknologi Maklumat,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DF008
+POLY-DIP-075,Diploma Teknologi Maklumat (Digital Game Programming),0,Diploma,Teknologi Maklumat Dan Komunikasi,Teknologi Maklumat,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DF008
+POLY-DIP-076,Diploma Teknologi Maklumat (Web Development),0,Diploma,Teknologi Maklumat Dan Komunikasi,Teknologi Maklumat,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DF008
+POLY-DIP-077,Diploma Teknologi Maklumat (Data Management & Visualization),0,Diploma,Teknologi Maklumat Dan Komunikasi,Teknologi Maklumat,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DF008
+POLY-DIP-078,Diploma Teknologi Media Cetak,1,Diploma,Reka Bentuk Dan Komunikasi Visual,Teknologi Media Cetak,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DV006
+POLY-DIP-079,Diploma Ukur Bahan,0,Diploma,Kejuruteraan Awam,Ukur Bahan,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA006
+POLY-DIP-080,Diploma Reka Bentuk Fesyen Batik,0,Diploma,Reka Bentuk Dan Komunikasi Visual,Reka Bentuk Fesyen Batik,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DV011
+POLY-DIP-081,Diploma Reka Bentuk Kraf,0,Diploma,Reka Bentuk Dan Komunikasi Visual,Reka Bentuk Kraf,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DV010
+POLY-DIP-082,Diploma Pengurusan Logistik dan Rantaian Bekalan,1,Diploma,Perdagangan,Pengurusan Logistik dan Rantaian Bekalan,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP014
+POLY-CET-001,Sijil Kejuruteraan Awam,0,Sijil,Kejuruteraan Awam,Kejuruteraan Awam,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=S&id=SJ001
+POLY-CET-002,Sijil Kejuruteraan Elektrik,0,Sijil,Kejuruteraan Elektrik,Kejuruteraan Elektrik,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=S&id=SJ003
+POLY-CET-003,Sijil Kejuruteraan Mekanikal,0,Sijil,Kejuruteraan Mekanikal,Kejuruteraan Mekanikal,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=S&id=SJ002
+KKOM-DIP-001,Diploma Dandanan Rambut,1,Diploma,Pelancongan Dan Hospitaliti,Dandanan Rambut,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DH015
+KKOM-DIP-002,Diploma in 3D Animation Technology,1,Diploma,Reka Bentuk Dan Komunikasi Visual,3D Animation Technology,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DV017
+KKOM-DIP-003,Diploma in Architectural Technology,1,Diploma,Kejuruteraan Awam,Architectural Technology,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DA011
+KKOM-DIP-004,Diploma in Culinary Arts,1,Diploma,Pelancongan Dan Hospitaliti,Culinary Arts,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DH013
+KKOM-DIP-005,Diploma in Electronics Instrumentation Technology,1,Diploma,Kejuruteraan Elektrik,Electronics Instrumentation Technology,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DE015
+KKOM-DIP-006,Diploma in Games Art Technology,1,Diploma,Reka Bentuk Dan Komunikasi Visual,Games Art Technology,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DV016
+KKOM-DIP-007,Diploma in Hotel Management,1,Diploma,Pelancongan Dan Hospitaliti,Hotel Management,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DH011
+KKOM-DIP-008,Diploma in Mechanical Design Technology,1,Diploma,Kejuruteraan Mekanikal,Mechanical Design Technology,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DM015
+KKOM-DIP-009,Diploma in Mobile Technology,1,Diploma,Kejuruteraan Elektrik,Mobile Technology,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DE012
+KKOM-DIP-010,Diploma In Patisserie,1,Diploma,Pelancongan Dan Hospitaliti,Patisserie,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DH012
+KKOM-DIP-011,Diploma in Rail Signalling And Communication Technology,1,Diploma,Kejuruteraan Elektrik,Rail Signalling And Communication Technology,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DE017
+KKOM-DIP-012,Diploma in Sound & Lighting Technology,1,Diploma,Kejuruteraan Elektrik,Sound & Lighting Technology,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DE016
+KKOM-DIP-013,Diploma in Telecommunication Technology,1,Diploma,Kejuruteraan Elektrik,Telecommunication Technology,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DE013
+KKOM-DIP-014,Diploma Teknologi Kenderaan Perdagangan,1,Diploma,Kejuruteraan Mekanikal,Teknologi Kenderaan Perdagangan,5,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DM016
+KKOM-DIP-015,Diploma Teknologi Solar Fotovoltan,1,Diploma,Kejuruteraan Elektrik,Teknologi Solar Fotovoltan,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DE014
+KKOM-DIP-016,Diploma Terapi Kecantikan,1,Diploma,Pelancongan Dan Hospitaliti,Terapi Kecantikan,6,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DH014
+KKOM-CET-001,Certificate in Culinary Arts,0,Sijil,Pelancongan Dan Hospitaliti,Certificate In Culinary Arts,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH009
+KKOM-CET-002,Certificate in Food & Beverage Service,0,Sijil,Pelancongan Dan Hospitaliti,Certificate In Food & Beverage Service,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH017
+KKOM-CET-003,Certificate In Recreational Tourism,0,Sijil,Pelancongan Dan Hospitaliti,Certificate In Recreational Tourism,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH016
+KKOM-CET-004,Sijil Agroteknologi,0,Sijil,Teknologi Pertanian,Agroteknologi,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SG003
+KKOM-CET-005,Sijil Animasi 2D,0,Sijil,Rekabentuk Dan Kreatif,Animasi 2D,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SV008
+KKOM-CET-006,Sijil Animasi 3D,0,Sijil,Rekabentuk Dan Kreatif,Animasi 3D,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SV007
+KKOM-CET-007,Sijil Dandanan Rambut,0,Sijil,Perkhidmatan,Dandanan Rambut,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH015
+KKOM-CET-008,Sijil Fesyen dan Pakaian,0,Sijil,Rekabentuk Dan Kreatif,Fesyen Dan Pakaian,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SV009
+KKOM-CET-009,Sijil Kulinari,0,Sijil,Perkhidmatan,Kulinari,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH011
+KKOM-CET-010,Sijil Landskap,0,Sijil,Teknologi Awam Dan Alam Bina,Landskap,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SA016
+KKOM-CET-011,Sijil Multimedia Kreatif Pengiklanan,0,Sijil,Rekabentuk Dan Kreatif,Multimedia Kreatif Pengiklanan,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SV006
+KKOM-CET-012,Sijil Operasi Perhotelan,0,Sijil,Perkhidmatan,Operasi Perhotelan,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH010
+KKOM-CET-013,Sijil Pastri,0,Sijil,Perkhidmatan,Pastri,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH013
+KKOM-CET-014,Sijil Pengembaraan Pelancongan,0,Sijil,Perkhidmatan,Pengembaraan Pelancongan,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH004
+KKOM-CET-015,Sijil Pengendalian Acara,0,Sijil,Pelancongan Dan Hospitaliti,Pengendalian Acara,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH006
+KKOM-CET-016,Sijil Pengoperasian Perniagaan,0,Sijil,Pengurusan Dan Perdagangan,Pengoperasian Perniagaan,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SP007
+KKOM-CET-017,Sijil Penyelenggaraan Bangunan,0,Sijil,Teknologi Awam Dan Alam Bina,Penyelenggaraan Bangunan,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SA014
+KKOM-CET-018,Sijil Penyeliaan Tapak Bina,0,Sijil,Teknologi Awam Dan Alam Bina,Penyeliaan Tapak Bina,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SA015
+KKOM-CET-019,Sijil Perkhidmatan Logistik,0,Sijil,Pengurusan Dan Perdagangan,Perkhidmatan Logistik,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SP009
+KKOM-CET-020,Sijil Rekabentuk Dalaman,0,Sijil,Teknologi Awam Dan Alam Bina,Rekabentuk Dalaman,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SA025
+KKOM-CET-021,Sijil Rekabentuk dan Pembuatan Perabot,0,Sijil,Teknologi Awam Dan Alam Bina,Rekabentuk Dan Pembuatan Perabot,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SA013
+KKOM-CET-022,Sijil Seni Visual Kreatif,0,Sijil,Rekabentuk Dan Kreatif,Seni Visual Kreatif,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SV005
+KKOM-CET-023,Sijil Teknologi Akuakultur,0,Sijil,Teknologi Pertanian,Teknologi Akuakultur,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SG004
+KKOM-CET-024,Sijil Teknologi Automotif,0,Sijil,Teknologi Mekanikal,Teknologi Automotif,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SM031
+KKOM-CET-025,Sijil Teknologi Elektrik,0,Sijil,Teknologi Elektrik,Teknologi Elektrik,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SE010
+KKOM-CET-026,Sijil Teknologi Elektrik Pemasangan dan Perkhidmatan,0,Sijil,Teknologi Elektrik,Teknologi Elektrik Pemasangan Dan Perkhidmatan,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SE015
+KKOM-CET-027,Sijil Teknologi Maklumat,0,Sijil,Perkomputeran,Teknologi Maklumat,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SF003
+KKOM-CET-028,Sijil Teknologi Pembinaan Bangunan,0,Sijil,Teknologi Awam Dan Alam Bina,Teknologi Pembinaan Bangunan,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SA011
+KKOM-CET-029,Sijil Teknologi Pembuatan,0,Sijil,Teknologi Mekanikal,Teknologi Pembuatan,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SM012
+KKOM-CET-030,Sijil Teknologi Pemprosesan Makanan,0,Sijil,Teknologi Pertanian,Teknologi Pemprosesan Makanan,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SG008
+KKOM-CET-031,Sijil Teknologi Penyejukan dan Penyamanan Udara,0,Sijil,Teknologi Mekanikal,Teknologi Penyejukan Dan Penyamanan Udara,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SM018
+KKOM-CET-032,Sijil Teknologi Penyelenggaraan Kenderaan Pacuan Empat Roda,0,Sijil,Teknologi Mekanikal,Teknologi Penyelenggaraan Kenderaan Pacuan Empat Roda,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SM029
+KKOM-CET-033,Sijil Teknologi Penyenggaraan Industri,0,Sijil,Teknologi Mekanikal,Teknologi Penyenggaraan Industri,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SM027
+KKOM-CET-034,Sijil Teknologi Penyenggaraan Motosikal Berkuasa Tinggi,0,Sijil,Teknologi Mekanikal,Teknologi Penyenggaraan Motosikal Berkuasa Tinggi,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SM028
+KKOM-CET-035,Sijil Teknologi Peranti Mudah Alih,0,Sijil,Teknologi Elektrik,Teknologi Peranti Mudah Alih,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SE012
+KKOM-CET-036,Sijil Teknologi Senibina,0,Sijil,Teknologi Awam Dan Alam Bina,Teknologi Senibina,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SA012
+KKOM-CET-037,Sijil Teknologi Telekomunikasi,0,Sijil,Teknologi Elektrik,Teknologi Telekomunikasi,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SE011
+KKOM-CET-038,Sijil Terapi Kecantikan dan Spa,0,Sijil,Perkhidmatan,Terapi Kecantikan Dan Spa,4,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH014

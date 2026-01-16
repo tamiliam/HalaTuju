@@ -6,6 +6,8 @@ from supabase import create_client, Client
 from src.engine import StudentProfile, load_and_clean_data
 from src.dashboard import generate_dashboard_data
 from src.translations import get_text, LANGUAGES
+from src.data_manager import load_master_data
+
 
 # --- 1. CONFIGURATION & SECRETS ---
 st.set_page_config(page_title="Hala Tuju SPM", page_icon="🎓", layout="centered")
@@ -30,16 +32,8 @@ except Exception:
 # --- 2. DATA LOADER ---
 @st.cache_data
 def get_data():
-    project_root = os.path.dirname(os.path.abspath(__file__))
-    data_folder = os.path.join(project_root, 'data')
-    dfs = []
-    for f in ['requirements.csv', 'tvet_requirements.csv']:
-        path = os.path.join(data_folder, f)
-        if os.path.exists(path):
-            try:
-                dfs.append(load_and_clean_data(path))
-            except: pass
-    return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+    # Use our new Data Manager to get the enriched dataset
+    return load_master_data()
 
 df_courses = get_data()
 
@@ -176,10 +170,43 @@ if 'dash' in st.session_state:
                     "type": t['table_col_cat'],
                     "quality": t['table_col_status']
                 })
+                # 3. Interactive Filters
+                c_filter1, c_filter2 = st.columns(2)
+                
+                # Filter A: Category
                 cat_col = t['table_col_cat']
-                cat_filter = st.multiselect(t['filter_label'], options=df_display[cat_col].unique(), default=df_display[cat_col].unique())
-                df_filtered = df_display[df_display[cat_col].isin(cat_filter)]
-                st.dataframe(df_filtered[[t['table_col_course'], t['table_col_inst'], t['table_col_cat'], t['table_col_status']]], use_container_width=True, hide_index=True, height=400)
+                cat_filter = c_filter1.multiselect(
+                    t['filter_label'],
+                    options=df_display[cat_col].unique(),
+                    default=df_display[cat_col].unique()
+                )
+                
+                # Filter B: State (NEW!)
+                state_opts = sorted([str(x) for x in df_display["state"].unique() if x])
+                state_filter = c_filter2.multiselect(
+                    "📍 Filter Location:", # Add to translation file later
+                    options=state_opts,
+                    default=state_opts
+                )
+                
+                # Apply Filters
+                mask = (df_display[cat_col].isin(cat_filter)) & (df_display["state"].isin(state_filter))
+                df_filtered = df_display[mask]
+                
+                # Show Enriched Table
+                st.dataframe(
+                    df_filtered[[
+                        t['table_col_course'], 
+                        t['table_col_inst'], 
+                        "state",   # New Column
+                        "fees",    # New Column
+                        t['table_col_cat'], 
+                        t['table_col_status']
+                    ]],
+                    use_container_width=True,
+                    hide_index=True,
+                    height=500
+                )
                 st.caption(t['filter_count'].format(shown=len(df_filtered), total=len(df_display)))
                 st.write(t['contact_counselor'])
         else:
