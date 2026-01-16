@@ -1,0 +1,102 @@
+/* assets/style.css */
+
+/* 1. GLOBAL RESET & FONTS */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+html,
+body,
+[class*="css"] {
+    font-family: 'Inter', sans-serif;
+    color: #2D3436;
+    /* Softer than black */
+    background-color: #F4F7F6;
+    /* The Soft Background */
+}
+
+/* 2. HEADERS (The "Vibe" Setters) */
+h1,
+h2,
+h3 {
+    color: #2D3436 !important;
+    font-weight: 700 !important;
+}
+
+h1 {
+    background: linear-gradient(120deg, #6C5CE7, #a29bfe);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* 3. CARDS (The Containers) */
+.streamlit-expanderHeader {
+    background-color: #FFFFFF !important;
+    border-radius: 10px !important;
+    border: 1px solid #E0E0E0 !important;
+    color: #2D3436 !important;
+    font-weight: 600 !important;
+}
+
+div[data-testid="stExpander"] {
+    background-color: #FFFFFF;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    /* Soft Lift */
+    border: none;
+    margin-bottom: 10px;
+}
+
+/* 4. BADGES (The Stats Grid) */
+.badge-time {
+    background-color: #E3F2FD;
+    color: #0984E3;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 0.9em;
+}
+
+.badge-mode {
+    background-color: #F3E5F5;
+    color: #8E44AD;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 0.9em;
+}
+
+.badge-money {
+    background-color: #E8F5E9;
+    color: #00B894;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 0.9em;
+}
+
+.badge-hostel {
+    background-color: #FFF3E0;
+    color: #E17055;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 0.9em;
+}
+
+/* 5. BUTTONS (The Call to Action) */
+div.stButton>button {
+    background-color: #6C5CE7 !important;
+    color: white !important;
+    border-radius: 8px !important;
+    border: none !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease;
+}
+
+div.stButton>button:hover {
+    background-color: #5649c0 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+}
+
+/* 6. INPUTS (Friendly Forms) */
+input {
+    border-radius: 8px !important;
+    border: 1px solid #DFE6E9 !important;
+}

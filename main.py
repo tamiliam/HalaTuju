@@ -12,13 +12,14 @@ from src.data_manager import load_master_data
 # --- 1. CONFIGURATION & SECRETS ---
 st.set_page_config(page_title="Hala Tuju SPM", page_icon="🎓", layout="centered")
 
-# Custom CSS
-st.markdown("""
-<style>
-    .locked-blur { filter: blur(5px); opacity: 0.6; pointer-events: none; user-select: none; }
-    .stButton button { width: 100%; }
-</style>
-""", unsafe_allow_html=True)
+def local_css(file_name):
+    with open(file_name) as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+local_css("assets/style.css") # <--- Inject the styles
+
+
+
 
 # Supabase Setup
 try:
@@ -226,10 +227,24 @@ if 'dash' in st.session_state:
                     # 3. Show Real Data (Location, Fees, Inst)
                     st.markdown(f"**🏫 {pick['institution']}**")
                     
-                    # New: Location & Fees Badge
-                    c_loc, c_fee = st.columns(2)
-                    c_loc.caption(f"📍 {pick.get('state', 'Malaysia')}")
-                    c_fee.caption(f"💰 {pick.get('fees', '-')}")
+                    # 4. THE 2x2 STATS GRID (Clean CSS Classes)
+                    stats_html = f"""
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <div class="badge-time">
+                            ⏱️ <b>Duration:</b><br>{pick.get('duration', '-')}
+                        </div>
+                        <div class="badge-mode">
+                            🛠️ <b>Mode:</b><br>{pick.get('type', 'Full-time')}
+                        </div>
+                        <div class="badge-money">
+                            💰 <b>Fees:</b><br>{pick.get('fees', '-')}
+                        </div>
+                        <div class="badge-hostel">
+                            🏠 <b>Hostel:</b><br>Available
+                        </div>
+                    </div>
+                    """
+                    st.markdown(stats_html, unsafe_allow_html=True)
                     
                     if st.button(t['btn_save_course'], key=f"save_{i}"):
                          st.toast(t['btn_saved_toast'].format(course=pick['course_name']))
