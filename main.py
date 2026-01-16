@@ -210,13 +210,30 @@ if 'dash' in st.session_state:
                 st.caption(t['filter_count'].format(shown=len(df_filtered), total=len(df_display)))
                 st.write(t['contact_counselor'])
         else:
+            # LOCKED VIEW (Teaser)
             st.subheader(t['teaser_title'])
             st.write(t['teaser_subtitle'])
+            
             for i, pick in enumerate(dash['featured_matches']):
-                with st.expander(f"#{i+1}: {pick['course_name']} ({pick['quality']})", expanded=True):
-                    st.write(f"🏫 **{pick['institution']}**")
-                    st.caption(f"{pick['type']}")
-                    if st.button(t['btn_save_course'], key=f"save_{i}"): st.toast(t['btn_saved_toast'].format(course=pick['course_name']))
+                # 1. Use the catchy Headline if available, otherwise standard name
+                display_title = pick.get('headline') if pick.get('headline') else pick['course_name']
+                
+                with st.expander(f"#{i+1}: {display_title}", expanded=True):
+                    # 2. Show the human-friendly synopsis
+                    if pick.get('synopsis'):
+                        st.info(pick['synopsis'])
+                    
+                    # 3. Show Real Data (Location, Fees, Inst)
+                    st.markdown(f"**🏫 {pick['institution']}**")
+                    
+                    # New: Location & Fees Badge
+                    c_loc, c_fee = st.columns(2)
+                    c_loc.caption(f"📍 {pick.get('state', 'Malaysia')}")
+                    c_fee.caption(f"💰 {pick.get('fees', '-')}")
+                    
+                    if st.button(t['btn_save_course'], key=f"save_{i}"):
+                         st.toast(t['btn_saved_toast'].format(course=pick['course_name']))
+
             st.markdown("---")
             st.write(t['locked_count'].format(remaining=dash['total_matches'] - 3))
             st.warning(f"🔒 **{t['locked_cta_title']}**")
