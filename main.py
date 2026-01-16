@@ -58,34 +58,48 @@ def save_profile(name, email, phone, student, eligible_count):
         return False
 
 # --- 4. SIDEBAR (With Language Selector) ---
-# Language Switcher
 lang_code = st.sidebar.selectbox(
     "🌐 Language / Bahasa / மொழி", 
     options=list(LANGUAGES.keys()), 
     format_func=lambda x: LANGUAGES[x]
 )
-t = get_text(lang_code)  # Load the correct dictionary
+t = get_text(lang_code)
 
 st.sidebar.title(f"📝 {t['sb_title']}")
 st.sidebar.caption(t['sb_caption'])
 
-grade_opts = ["A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G", "Tidak Ambil"]
+# Dynamic Options based on Language
+opt_not_taken = t['opt_not_taken']
+grade_opts = ["A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G"]
+optional_opts = [opt_not_taken] + grade_opts
+core_grade_opts = grade_opts + [opt_not_taken] # For core subjects if they want to say 'Not Taken' (rare but safe)
+
+# Gender Mapping (Display -> Internal Value)
+gender_map = {
+    t['gender_male']: "Lelaki",
+    t['gender_female']: "Perempuan"
+}
 
 with st.sidebar.form("grades_form"):
-    bm = st.selectbox("Bahasa Melayu", grade_opts, index=5)
-    eng = st.selectbox("Bahasa Inggeris", grade_opts, index=5)
-    hist = st.selectbox("Sejarah", grade_opts, index=6)
-    math = st.selectbox("Matematik", grade_opts, index=5)
-    sci = st.selectbox("Sains", grade_opts, index=5)
+    # Core Subjects
+    bm = st.selectbox(t['subj_bm'], core_grade_opts, index=5)
+    eng = st.selectbox(t['subj_eng'], core_grade_opts, index=5)
+    hist = st.selectbox(t['subj_hist'], core_grade_opts, index=6)
+    math = st.selectbox(t['subj_math'], core_grade_opts, index=5)
+    sci = st.selectbox(t['subj_sci'], core_grade_opts, index=5)
     
     st.markdown("---")
     st.caption(t['sb_opt_subject'])
-    addmath = st.selectbox("Matematik Tambahan", ["Tidak Ambil"] + grade_opts, index=0)
-    phy = st.selectbox("Fizik", ["Tidak Ambil"] + grade_opts, index=0)
-    chem = st.selectbox("Kimia", ["Tidak Ambil"] + grade_opts, index=0)
-    bio = st.selectbox("Biologi", ["Tidak Ambil"] + grade_opts, index=0)
     
-    gender = st.radio(t['sb_gender'], ["Lelaki", "Perempuan"], horizontal=True)
+    # Optional Subjects
+    addmath = st.selectbox(t['subj_addmath'], optional_opts, index=0)
+    phy = st.selectbox(t['subj_phy'], optional_opts, index=0)
+    chem = st.selectbox(t['subj_chem'], optional_opts, index=0)
+    bio = st.selectbox(t['subj_bio'], optional_opts, index=0)
+    
+    # Gender (Translated Label)
+    selected_gender_label = st.radio(t['sb_gender'], list(gender_map.keys()), horizontal=True)
+    internal_gender = gender_map[selected_gender_label]
     
     submitted = st.form_submit_button(f"🚀 {t['sb_btn_submit']}")
 
@@ -93,7 +107,6 @@ with st.sidebar.form("grades_form"):
 st.title(t['header_title'])
 st.write(t['header_subtitle'])
 
-# Initialize Session State
 if 'unlocked' not in st.session_state:
     st.session_state['unlocked'] = False
 
@@ -101,9 +114,12 @@ if submitted:
     st.session_state['unlocked'] = False
     grades = {'bm': bm, 'eng': eng, 'hist': hist, 'math': math, 'sci': sci,
               'addmath': addmath, 'phy': phy, 'chem': chem, 'bio': bio}
-    grades = {k: v for k, v in grades.items() if v != "Tidak Ambil"}
     
-    student = StudentProfile(grades, gender, 'Warganegara', 'Tidak', 'Tidak')
+    # Filter using the current language's 'Not Taken' string
+    grades = {k: v for k, v in grades.items() if v != opt_not_taken}
+    
+    # Pass internal gender ('Lelaki'/'Perempuan') to Engine
+    student = StudentProfile(grades, internal_gender, 'Warganegara', 'Tidak', 'Tidak')
     st.session_state['current_student'] = student
     
     with st.spinner(t['spinner_msg']):
@@ -115,10 +131,8 @@ if 'dash' in st.session_state:
     dash = st.session_state['dash']
     
     if dash['total_matches'] > 0:
-        # Hero
         st.success(t['hero_success'].format(count=dash['total_matches']))
         
-        # Stats
         c1, c2, c3 = st.columns(3)
         c1.metric(t['stat_poly'], dash['summary_stats'].get('Politeknik', 0))
         c2.metric(t['stat_ikbn'], dash['summary_stats'].get('IKBN / ILP (Skills)', 0))
@@ -126,7 +140,6 @@ if 'dash' in st.session_state:
         
         st.markdown("---")
         
-        # IF UNLOCKED: Show Everything
         if st.session_state['unlocked']:
             st.info(t['unlocked_alert'])
             st.subheader(t['table_title'])
@@ -134,8 +147,6 @@ if 'dash' in st.session_state:
             all_courses = dash.get('full_list', [])
             if all_courses:
                 df_display = pd.DataFrame(all_courses)
-                
-                # Dynamic Column Rename based on Language
                 df_display = df_display.rename(columns={
                     "course_name": t['table_col_course'],
                     "institution": t['table_col_inst'],
@@ -160,9 +171,7 @@ if 'dash' in st.session_state:
                 )
                 st.caption(t['filter_count'].format(shown=len(df_filtered), total=len(df_display)))
                 st.write(t['contact_counselor'])
-                
         else:
-            # LOCKED VIEW (Teaser)
             st.subheader(t['teaser_title'])
             st.write(t['teaser_subtitle'])
             
@@ -177,7 +186,6 @@ if 'dash' in st.session_state:
             remaining = dash['total_matches'] - 3
             st.write(t['locked_count'].format(remaining=remaining))
             
-            # The Gatekeeper Form
             st.warning(f"🔒 **{t['locked_cta_title']}**")
             st.write(t['locked_cta_desc'])
             
@@ -198,10 +206,8 @@ if 'dash' in st.session_state:
                             st.rerun()
                     else:
                         st.error(t['err_missing_info'])
-
     else:
         st.error(t['hero_fail'])
         st.info(t['hero_tip'])
-
 else:
     st.info(t['landing_msg'])
