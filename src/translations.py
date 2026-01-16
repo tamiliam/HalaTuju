@@ -15,12 +15,12 @@ TEXTS = {
         "sb_opt_subject": "Optional Subjects",
         "sb_gender": "Gender",
         
-        # Options & Inputs (New)
+        # Options & Inputs
         "opt_not_taken": "Not Taken",
         "gender_male": "Male",
         "gender_female": "Female",
         
-        # Subject Names (New)
+        # Subject Names
         "subj_bm": "Malay Language",
         "subj_eng": "English",
         "subj_hist": "History",
@@ -67,9 +67,9 @@ TEXTS = {
         "table_col_status": "Status",
         "filter_label": "Filter by Category:",
         "filter_count": "Showing {shown} of {total} courses.",
-        "contact_counselor": "Contact our counselors for application help."
-
-        # About / Trust Section
+        "contact_counselor": "Contact our counselors for application help.",
+        
+        # About / Trust Section (NEW)
         "about_title": "ℹ️ About & Methodology",
         "about_desc": """
         **How does this work?**
@@ -81,7 +81,7 @@ TEXTS = {
         """,
         "footer_credits": "Built with ❤️ for Malaysian Students.",
         
-        # Admin Section
+        # Admin Section (NEW)
         "admin_login": "Admin Access",
         "admin_success": "Welcome back, Commander.",
         "admin_view_leads": "View Student Leads",
@@ -148,9 +148,9 @@ TEXTS = {
         "table_col_status": "Status",
         "filter_label": "Tapis Kategori:",
         "filter_count": "Menunjukkan {shown} daripada {total} kursus.",
-        "contact_counselor": "Hubungi kaunselor kami untuk bantuan."
-
-        # About / Trust Section
+        "contact_counselor": "Hubungi kaunselor kami untuk bantuan.",
+        
+        # About / Trust Section (NEW)
         "about_title": "ℹ️ Mengenai & Metodologi",
         "about_desc": """
         **Bagaimana alat ini berfungsi?**
@@ -162,7 +162,7 @@ TEXTS = {
         """,
         "footer_credits": "Dibina dengan ❤️ untuk Pelajar Malaysia.",
         
-        # Admin Section
+        # Admin Section (NEW)
         "admin_login": "Akses Admin",
         "admin_success": "Selamat kembali, Tuan.",
         "admin_view_leads": "Lihat Senarai Pelajar",
@@ -229,9 +229,9 @@ TEXTS = {
         "table_col_status": "நிலை",
         "filter_label": "வகை வாரியாக வடிகட்டவும்:",
         "filter_count": "{total} இல் {shown} படிப்புகள் காட்டப்படுகின்றன.",
-        "contact_counselor": "விண்ணப்ப உதவிக்கு எங்கள் ஆலோசகர்களைத் தொடர்பு கொள்ளவும்."
-
-        # About / Trust Section
+        "contact_counselor": "விண்ணப்ப உதவிக்கு எங்கள் ஆலோசகர்களைத் தொடர்பு கொள்ளவும்.",
+        
+        # About / Trust Section (NEW)
         "about_title": "ℹ️ எங்களை பற்றி & செயல்முறை",
         "about_desc": """
         **இது எப்படி வேலை செய்கிறது?**
@@ -243,7 +243,7 @@ TEXTS = {
         """,
         "footer_credits": "மலேசிய மாணவர்களுக்காக ❤️ உடன் உருவாக்கப்பட்டது.",
         
-        # Admin Section
+        # Admin Section (NEW)
         "admin_login": "நிர்வாக அணுகல்",
         "admin_success": "மீண்டும் வருக.",
         "admin_view_leads": "மாணவர் பட்டியலைப் பாருங்கள்",

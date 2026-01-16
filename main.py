@@ -107,10 +107,13 @@ with st.sidebar.form("grades_form"):
 
 # --- SECRET ADMIN SECTION ---
 st.sidebar.markdown("---")
-with st.sidebar.expander("🔒 Admin"):
-    # Simple hardcoded password for now (change this!)
+with st.sidebar.expander(f"🔒 {t['admin_login']}"):
     admin_pwd = st.text_input("Password", type="password")
-    if admin_pwd == "suresh123": # <--- REPLACE WITH YOUR SECRET
+    
+    # Verify against Streamlit Secrets
+    secret_pwd = st.secrets.get("ADMIN_PASSWORD", "admin123") # Fallback if secret not set
+    
+    if admin_pwd == secret_pwd:
         st.success(t['admin_success'])
         if st.button(t['admin_view_leads']):
             st.session_state['show_admin'] = True
@@ -135,7 +138,7 @@ if st.session_state.get('show_admin'):
         st.rerun()
     st.stop() # Stop rendering the rest of the page if in Admin mode
 
-# ... [REST OF THE APP LOGIC REMAINS THE SAME] ...
+# ... [REST OF THE APP LOGIC] ...
 if 'unlocked' not in st.session_state:
     st.session_state['unlocked'] = False
 
