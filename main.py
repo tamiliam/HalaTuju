@@ -227,19 +227,19 @@ if 'dash' in st.session_state:
                     # 3. Show Real Data (Location, Fees, Inst)
                     st.markdown(f"**🏫 {pick['institution']}**")
                     
-                    # 4. THE 2x2 STATS GRID (Clean CSS Classes)
+                    # 4. THE 2x2 STATS GRID (Using CSS Classes)
                     stats_html = f"""
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                        <div class="badge-time">
+                    <div class="badge-container">
+                        <div class="badge-base badge-time">
                             ⏱️ <b>Duration:</b><br>{pick.get('duration', '-')}
                         </div>
-                        <div class="badge-mode">
+                        <div class="badge-base badge-mode">
                             🛠️ <b>Mode:</b><br>{pick.get('type', 'Full-time')}
                         </div>
-                        <div class="badge-money">
+                        <div class="badge-base badge-money">
                             💰 <b>Fees:</b><br>{pick.get('fees', '-')}
                         </div>
-                        <div class="badge-hostel">
+                        <div class="badge-base badge-hostel">
                             🏠 <b>Hostel:</b><br>Available
                         </div>
                     </div>
