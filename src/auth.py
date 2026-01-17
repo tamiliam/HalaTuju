@@ -58,7 +58,7 @@ class AuthManager:
             
             # Better strategy:
             # 1. Check if user exists
-            # 1. Check if user exists
+            existing = self.supabase.table("student_profiles").select("id").eq("phone", phone).execute()
             if existing.data:
                  # Update PIN, Name, AND Grades (Since user explicitly submitted them)
                  res = self.supabase.table("student_profiles").update({
