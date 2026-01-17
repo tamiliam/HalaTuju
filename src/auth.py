@@ -23,6 +23,7 @@ class AuthManager:
 
     def verify_pin(self, pin: str, hashed_pin: str) -> bool:
         """Verifies input PIN against stored hash."""
+        if not hashed_pin: return False # Handle None/Empty legacy records
         return bcrypt.checkpw(pin.encode(), hashed_pin.encode())
     
     def validate_phone(self, phone: str) -> bool:
@@ -45,12 +46,38 @@ class AuthManager:
             "phone": phone,
             "pin_hash": hashed,
             "email": email,
-            "grades": {}, # Start empty
+            # "grades": {}, # Don't overwrite grades on re-register/upsert!
             "updated_at": "now()"
         }
         
         try:
-            res = self.supabase.table("student_profiles").insert(data).execute()
+            # Use Upsert to allow existing users to set their PIN
+            # We explicitly exclude 'grades' from data so we don't wipe them if they existed
+            # But Supabase update will only update provided columns.
+            
+            # Check if user exists to decide on grades? 
+            # Upsert will overwrite. If we want to preserve grades, we need to be careful.
+            # Simple approach: Login first. If no PIN, they can't login.
+            # So they must Register. If they Register, does it wipe grades?
+            # Yes if we include "grades": {}. 
+            # Let's REMOVE "grades" from the upsert payload so we don't accidentally clear it.
+            # If it's a NEW user, default is NULL? or we should set it?
+            
+            # Better strategy:
+            # 1. Check if user exists
+            existing = self.supabase.table("student_profiles").select("id").eq("phone", phone).execute()
+            if existing.data:
+                 # Update ONLY pin and name
+                 res = self.supabase.table("student_profiles").update({
+                     "full_name": name,
+                     "pin_hash": hashed,
+                     "updated_at": "now()"
+                 }).eq("phone", phone).execute()
+            else:
+                 # Insert New
+                 data["grades"] = {} # Initialize empty for new
+                 res = self.supabase.table("student_profiles").insert(data).execute()
+
             if res.data:
                 user = res.data[0]
                 self.set_session(user)
