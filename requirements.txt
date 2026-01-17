@@ -3,3 +3,5 @@ streamlit
 numpy
 openpyxl
 supabase
+bcrypt
+extra-streamlit-components
