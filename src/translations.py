@@ -50,9 +50,9 @@ TEXTS = {
         "hero_tip": "Tip: Ensure you entered a pass for Malay/History if required.",
         
         # Stats & Tables
-        "stat_poly": "Politeknik",
-        "stat_kk": "Kolej Komuniti",
-        "stat_ikbn": "IKBN / ILP (Skills)",
+        "stat_poly": "Politechnic",
+        "stat_kk": "Community College",
+        "stat_ikbn": "IKBN / ADTEC",
         "teaser_title": "🌟 Your Top 3 Strategic Options",
         "teaser_subtitle": "Based on your results, these are solid pathways for you:",
         "btn_save_course": "Shortlist ❤️",
@@ -154,7 +154,7 @@ TEXTS = {
         
         # Stats & Tables
         "stat_poly": "Politeknik",
-        "stat_ikbn": "IKBN / ILP (Kemahiran)",
+        "stat_ikbn": "IKBN / ADTEC",
         "stat_kk": "Kolej Komuniti",
         "teaser_title": "🌟 3 Pilihan Strategik Anda",
         "teaser_subtitle": "Berdasarkan keputusan anda, laluan ini mungkin sesuai:",
@@ -257,8 +257,8 @@ TEXTS = {
         
         # Stats & Tables
         "stat_poly": "பாலிடெக்னிக்",
-        "stat_ikbn": "IKBN / ILP (திறன்)",
-        "stat_kk": "சமூகக் கல்லூரி",
+        "stat_ikbn": "ஐகேபிஎன் / எட்டெக்",
+        "stat_kk": "கமூனிடி காலேஜ்",
         "teaser_title": "🌟 உங்களுக்கான சிறந்த 3 வாய்ப்புகள்",
         "teaser_subtitle": "உங்கள் முடிவுகளின் அடிப்படையில், இவை சிறந்த தேர்வுகள்:",
         "btn_save_course": "விருப்பப் பட்டியலில் சேர் ❤️",
