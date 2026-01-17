@@ -68,6 +68,14 @@ TEXTS = {
         "btn_unlock": "Save & View Full List",
         "toast_success": "Success! Profile saved.",
         "err_missing_info": "Please fill in your Name and Phone number.",
+        
+        # VALIDATION ERRORS
+        "err_name_short": "❌ Name is too short.",
+        "err_name_invalid": "❌ Invalid characters in Name.",
+        "err_email_invalid": "❌ Invalid Email Address format.",
+        "err_phone_short": "❌ Phone number is too short.",
+        "err_phone_invalid": "❌ Invalid Malaysia Phone Number (e.g. 012-3456789).",
+
         "unlocked_alert": "🔓 Full Report Unlocked! Explore your options below.",
         "table_title": "📋 Your Complete Course List",
         "table_col_course": "Course Name",

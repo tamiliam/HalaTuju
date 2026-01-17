@@ -75,7 +75,7 @@ def validate_submission(name, email, phone, t):
     elif not re.match(phone_pattern, phone.strip().replace(" ", "")): # Strip spaces before regex if needed, or regex handles it?
         # User regex was: ^(?:\+?60|0)1[0-9]{1}-?[0-9]{7,8}$
         # It handles optional hyphen. We should probably strip spaces to be safe given user input habits.
-        errors.append(t.get('err_phone_invalid', "Invalid Malaysia Date/Phone format"))
+        errors.append(t.get('err_phone_invalid', "Invalid Malaysia Phone Number"))
 
     if errors:
         return False, errors
@@ -326,9 +326,20 @@ if 'dash' in st.session_state:
             st.write("Or enter details manually:")
             with st.form("lead_capture"):
                 c_name, c_phone = st.columns(2)
-                name = c_name.text_input(t['form_name'])
-                phone = c_phone.text_input(t['form_phone'])
-                email = st.text_input(t['form_email'])
+                name = c_name.text_input(
+                    t['form_name'], 
+                    placeholder="e.g. Ali Bin Abu",
+                    help="Nama Penuh seperti dalam KP / Full Name as per IC"
+                )
+                phone = c_phone.text_input(
+                    t['form_phone'], 
+                    placeholder="e.g. 012-3456789",
+                    help="Format: 01x-xxxxxxx"
+                )
+                email = st.text_input(
+                    t['form_email'], 
+                    placeholder="e.g. ali@gmail.com"
+                )
                 if st.form_submit_button(f"🔓 {t['btn_unlock']}"):
                     # Validate Inputs
                     is_valid, err_list = validate_submission(name, email, phone, t)
