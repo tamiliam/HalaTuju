@@ -181,8 +181,9 @@ if submitted or 'dash' not in st.session_state:
 
     # Run Engine
     student_obj = StudentProfile(clean_grades, gender, 'Warganegara', 'Tidak', 'Tidak')
-    with st.spinner("Analyzing..."):
-        st.session_state['dash'] = generate_dashboard_data(student_obj, df_courses, lang_code=lang_code)
+    print(f"DEBUG: Running Analysis for {gender}")
+    # with st.spinner("Analyzing..."): # Removed to prevent freeze
+    st.session_state['dash'] = generate_dashboard_data(student_obj, df_courses, lang_code=lang_code)
 
 dash = st.session_state.get('dash')
 

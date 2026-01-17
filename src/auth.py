@@ -126,11 +126,14 @@ class AuthManager:
 
     def check_session(self):
         """Checks for existing cookie on app load"""
+        # CRITICAL: Always read cookie to keep component active/synced
+        cookie_val = self.cookie_manager.get(self.COOKIE_NAME)
+        
+        # 1. If already in session, trust it
         if st.session_state.get('logged_in'):
             return True
             
-        # Check Cookie
-        cookie_val = self.cookie_manager.get(self.COOKIE_NAME)
+        # 2. If not in session but cookie exists, verify
         if cookie_val:
             # Token found (Phone), verify against DB
             try:
