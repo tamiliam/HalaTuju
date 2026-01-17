@@ -93,7 +93,7 @@ with st.sidebar.form("grades_form"):
     chem = st.selectbox(t['subj_chem'], grade_opts, index=10)
     bio = st.selectbox(t['subj_bio'], grade_opts, index=10)
 
-with st.sidebar.expander(t['sb_sci'], expanded=False):
+with st.sidebar.expander(t['subj_sci'], expanded=False):
     # Arts Stream
     sci = st.selectbox(t['subj_sci'], grade_opts, index=10)
 
