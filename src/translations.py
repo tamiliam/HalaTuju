@@ -36,6 +36,11 @@ TEXTS = {
         "subj_bio": "Biology",
 
         "subj_sci": "Science",
+        "subj_ekonomi": "Economics",
+        "subj_business": "Business",
+        "subj_poa": "Accounting (POA)",
+        "subj_geo": "Geography",
+        "subj_psv": "Visual Arts (Seni)",
 
         # Landing & Processing
         "header_title": "Hala Tuju SPM",
@@ -136,6 +141,11 @@ TEXTS = {
         "subj_bio": "Biologi",
 
         "subj_sci": "Sains",
+        "subj_ekonomi": "Ekonomi",
+        "subj_business": "Perniagaan",
+        "subj_poa": "Prinsip Perakaunan",
+        "subj_geo": "Geografi",
+        "subj_psv": "Pendidikan Seni Visual",
         
         # Landing & Processing
         "header_title": "Hala Tuju SPM",
@@ -236,6 +246,11 @@ TEXTS = {
         "subj_bio": "உயிரியல்",
 
         "subj_sci": "அறிவியல்",
+        "subj_ekonomi": "பொருளாதாரம்",
+        "subj_business": "வணிகம்",
+        "subj_poa": "கணக்கியல் (POA)",
+        "subj_geo": "புவியியல்",
+        "subj_psv": "காட்சி கலைகள் (Seni)",
         
         # Landing & Processing
         "header_title": "Hala Tuju SPM (மேற்படிப்பு வழிகாட்டி)",

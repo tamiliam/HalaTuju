@@ -93,6 +93,11 @@ with st.sidebar.form("grades_form"):
     # Arts Stream
     with st.expander(t['sb_arts_stream'], expanded=False):
         sci = st.selectbox(t['subj_sci'], grade_opts, index=0)
+        ekonomi = st.selectbox(t['subj_ekonomi'], grade_opts, index=0)
+        business = st.selectbox(t['subj_business'], grade_opts, index=0)
+        poa = st.selectbox(t['subj_poa'], grade_opts, index=0)
+        geo = st.selectbox(t['subj_geo'], grade_opts, index=0)
+        psv = st.selectbox(t['subj_psv'], grade_opts, index=0)
 
     #selected_gender_label = st.radio(t['sb_gender'], list(gender_map.keys()), horizontal=True)
     #internal_gender = gender_map[selected_gender_label]
@@ -139,10 +144,13 @@ if 'unlocked' not in st.session_state:
 
 if submitted:
     st.session_state['unlocked'] = False
-    grades = {'bm': bm, 'eng': eng, 'hist': hist, 'math': math, 'sci': sci,
-              'addmath': addmath, 'phy': phy, 'chem': chem, 'bio': bio}
+    grades = {
+        'bm': bm, 'eng': eng, 'hist': hist, 'math': math, 'moral': moral,
+        'addmath': addmath, 'phy': phy, 'chem': chem, 'bio': bio,
+        'sci': sci, 'ekonomi': ekonomi, 'business': business, 
+        'poa': poa, 'geo': geo, 'psv': psv
+    }
     grades = {k: v for k, v in grades.items() if v != t['opt_not_taken']}
-    # student = StudentProfile(grades, internal_gender, 'Warganegara', 'Tidak', 'Tidak')
     student = StudentProfile(grades, gender, 'Warganegara', 'Tidak', 'Tidak')
     st.session_state['current_student'] = student
     
