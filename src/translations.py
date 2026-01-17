@@ -25,11 +25,13 @@ TEXTS = {
         "subj_eng": "English",
         "subj_hist": "History",
         "subj_math": "Mathematics",
-        "subj_sci": "Science",
+        
         "subj_addmath": "Add Maths",
         "subj_phy": "Physics",
         "subj_chem": "Chemistry",
         "subj_bio": "Biology",
+
+        "subj_sci": "Science",
 
         # Landing & Processing
         "header_title": "Hala Tuju SPM",
@@ -106,11 +108,13 @@ TEXTS = {
         "subj_eng": "Bahasa Inggeris",
         "subj_hist": "Sejarah",
         "subj_math": "Matematik",
-        "subj_sci": "Sains",
+        
         "subj_addmath": "Matematik Tambahan",
         "subj_phy": "Fizik",
         "subj_chem": "Kimia",
         "subj_bio": "Biologi",
+
+        "subj_sci": "Sains",
         
         # Landing & Processing
         "header_title": "Hala Tuju SPM",
@@ -187,11 +191,13 @@ TEXTS = {
         "subj_eng": "ஆங்கிலம்",
         "subj_hist": "வரலாறு",
         "subj_math": "கணிதம்",
-        "subj_sci": "அறிவியல்",
+        
         "subj_addmath": "கூடுதல் கணிதம்",
         "subj_phy": "இயற்பியல்",
         "subj_chem": "வேதியியல்",
         "subj_bio": "உயிரியல்",
+
+        "subj_sci": "அறிவியல்",
         
         # Landing & Processing
         "header_title": "Hala Tuju SPM (மேற்படிப்பு வழிகாட்டி)",
