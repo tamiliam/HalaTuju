@@ -55,73 +55,7 @@ def get_grade_index(key, opts, user_grades):
     # Default to 0 (Not Taken) to avoid assuming "C" grades which skews results
     return 0
 
-# --- 4. SIDEBAR (UNIVERSAL) ---
-def render_sidebar(t, user):
-    st.sidebar.title(f"📝 {t['sb_title']}")
-    
-    # User Badge
-    if user:
-        st.sidebar.success(f"👤 {user.get('full_name', 'Student')}")
-        # DEBUG: Show what grades the app sees
-        with st.sidebar.expander("Debug: My Saved Grades"):
-             st.write(user.get('grades'))
-             
-        if st.sidebar.button("Log Out"):
-            auth.logout()
-    else:
-        st.sidebar.info("👋 Guest Mode")
-        with st.sidebar.expander("🔐 **Returning Users**"):
-             l_phone = st.text_input("Phone", key="sb_phone")
-             l_pin = st.text_input("PIN", type="password", key="sb_pin")
-             if st.button("Login", key="sb_login"):
-                 success, val = auth.login_user(l_phone, l_pin)
-                 if success:
-                     st.toast(f"Welcome back!")
-                     time.sleep(0.5)
-                     st.rerun()
-                 else:
-                     st.error(val)
 
-    st.sidebar.markdown("---")
-    
-    # Language (Persistent)
-    lang_code = st.session_state.get('lang_code', 'en')
-    
-    # Grades Logic
-    grade_opts = [t["opt_not_taken"], "A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G"]
-    user_grades = user.get('grades', {}) if user else {}
-    
-    with st.sidebar.form("grades_form"):
-        st.subheader(t['sb_core_subjects'])
-        bm = st.selectbox(t['subj_bm'], grade_opts, index=get_grade_index('bm', grade_opts, user_grades))
-        eng = st.selectbox(t['subj_eng'], grade_opts, index=get_grade_index('eng', grade_opts, user_grades))
-        hist = st.selectbox(t['subj_hist'], grade_opts, index=get_grade_index('hist', grade_opts, user_grades))
-        math = st.selectbox(t['subj_math'], grade_opts, index=get_grade_index('math', grade_opts, user_grades))
-        moral = st.selectbox(t['subj_moral'], grade_opts, index=get_grade_index('moral', grade_opts, user_grades))
-        
-        with st.expander(t['sb_science_stream'], expanded=False):
-            addmath = st.selectbox(t['subj_addmath'], grade_opts, index=get_grade_index('addmath', grade_opts, user_grades))
-            phy = st.selectbox(t['subj_phy'], grade_opts, index=get_grade_index('phy', grade_opts, user_grades))
-            chem = st.selectbox(t['subj_chem'], grade_opts, index=get_grade_index('chem', grade_opts, user_grades))
-            bio = st.selectbox(t['subj_bio'], grade_opts, index=get_grade_index('bio', grade_opts, user_grades))
-        
-        with st.expander(t['sb_arts_stream'], expanded=False):
-            sci = st.selectbox(t['subj_sci'], grade_opts, index=get_grade_index('sci', grade_opts, user_grades))
-            ekonomi = st.selectbox(t['subj_ekonomi'], grade_opts, index=get_grade_index('ekonomi', grade_opts, user_grades))
-            business = st.selectbox(t['subj_business'], grade_opts, index=get_grade_index('business', grade_opts, user_grades))
-            poa = st.selectbox(t['subj_poa'], grade_opts, index=get_grade_index('poa', grade_opts, user_grades))
-            geo = st.selectbox(t['subj_geo'], grade_opts, index=get_grade_index('geo', grade_opts, user_grades))
-            psv = st.selectbox(t['subj_psv'], grade_opts, index=get_grade_index('psv', grade_opts, user_grades))
-
-        gender = st.radio(t["sb_gender"], [t["gender_male"], t["gender_female"]])
-        submitted = st.form_submit_button(f"🚀 {t['sb_btn_submit']}")
-        
-        return submitted, {
-            'bm': bm, 'eng': eng, 'hist': hist, 'math': math, 'moral': moral,
-            'addmath': addmath, 'phy': phy, 'chem': chem, 'bio': bio,
-            'sci': sci, 'ekonomi': ekonomi, 'business': business, 
-            'poa': poa, 'geo': geo, 'psv': psv
-        }, gender
 
 # --- 5. AUTH BLOCK (THE GATE) ---
 def render_auth_gate(t, current_grades):
@@ -167,6 +101,44 @@ def render_auth_gate(t, current_grades):
                 else:
                     st.error(val)
 
+# --- 5b. PROFILE PAGE ---
+def render_profile_page(user):
+    st.title(f"👤 My Profile")
+    
+    with st.container():
+        # Read-Only Section
+        c1, c2 = st.columns([1, 2])
+        with c1:
+            st.markdown(f"**Name:**\n\n{user.get('full_name', '-')}")
+        with c2:
+            st.markdown(f"**Phone:**\n\n{user.get('phone', '-')}")
+            
+        st.markdown("---")
+        
+        # Edit Form
+        with st.expander("✏️ Edit Details"):
+            with st.form("edit_profile"):
+                new_name = st.text_input("Full Name", value=user.get('full_name', ''))
+                # Phone isn't usually editable effectively without re-verify, but allowing for now on request
+                # new_phone = st.text_input("Phone", value=user.get('phone', '')) 
+                
+                if st.form_submit_button("Save Changes"):
+                    success, msg = auth.update_profile(user['id'], {"full_name": new_name})
+                    if success:
+                        st.success(msg)
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        st.error(msg)
+    
+    st.markdown("### 📚 Saved Grades")
+    st.json(user.get('grades', {}), expanded=False)
+    
+    st.markdown("---")
+    if st.button("⬅️ Back to Dashboard"):
+        st.session_state['view_mode'] = 'dashboard'
+        st.rerun()
+
 # --- 6. MAIN ROUTER ---
 
 # Init Session
@@ -175,13 +147,86 @@ t = get_text(lang_code)
 
 auth_status = auth.check_session()
 user = st.session_state['user'] if auth_status else None
-if user:
-    print(f"DEBUG: Loaded User Grades: {user.get('grades')}")
 
 # Render Sidebar
-submitted, raw_grades, gender = render_sidebar(t, user)
+st.sidebar.title(f"📝 {t['sb_title']}")
 
-# Calculation Logic
+# User Badge & Profile Nav
+if user:
+    st.sidebar.success(f"👤 {user.get('full_name', 'Student')}")
+    
+    # Profile Navigation
+    if st.sidebar.button("👤 My Profile", use_container_width=True):
+        st.session_state['view_mode'] = 'profile'
+        st.rerun()
+        
+    if st.sidebar.button("Log Out", use_container_width=True):
+        auth.logout()
+else:
+    st.sidebar.info("👋 Guest Mode")
+    with st.sidebar.expander("🔐 **Returning Users**"):
+            l_phone = st.text_input("Phone", key="sb_phone")
+            l_pin = st.text_input("PIN", type="password", key="sb_pin")
+            if st.button("Login", key="sb_login"):
+                success, val = auth.login_user(l_phone, l_pin)
+                if success:
+                    st.toast(f"Welcome back!")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error(val)
+
+st.sidebar.markdown("---")
+
+# Rest of Sidebar Logic (Grades)
+# Grades Logic
+grade_opts = [t["opt_not_taken"], "A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G"]
+user_grades = user.get('grades', {}) if user else {}
+
+with st.sidebar.form("grades_form"):
+    st.subheader(t['sb_core_subjects'])
+    bm = st.selectbox(t['subj_bm'], grade_opts, index=get_grade_index('bm', grade_opts, user_grades))
+    eng = st.selectbox(t['subj_eng'], grade_opts, index=get_grade_index('eng', grade_opts, user_grades))
+    hist = st.selectbox(t['subj_hist'], grade_opts, index=get_grade_index('hist', grade_opts, user_grades))
+    math = st.selectbox(t['subj_math'], grade_opts, index=get_grade_index('math', grade_opts, user_grades))
+    moral = st.selectbox(t['subj_moral'], grade_opts, index=get_grade_index('moral', grade_opts, user_grades))
+    
+    with st.expander(t['sb_science_stream'], expanded=False):
+        addmath = st.selectbox(t['subj_addmath'], grade_opts, index=get_grade_index('addmath', grade_opts, user_grades))
+        phy = st.selectbox(t['subj_phy'], grade_opts, index=get_grade_index('phy', grade_opts, user_grades))
+        chem = st.selectbox(t['subj_chem'], grade_opts, index=get_grade_index('chem', grade_opts, user_grades))
+        bio = st.selectbox(t['subj_bio'], grade_opts, index=get_grade_index('bio', grade_opts, user_grades))
+    
+    with st.expander(t['sb_arts_stream'], expanded=False):
+        sci = st.selectbox(t['subj_sci'], grade_opts, index=get_grade_index('sci', grade_opts, user_grades))
+        ekonomi = st.selectbox(t['subj_ekonomi'], grade_opts, index=get_grade_index('ekonomi', grade_opts, user_grades))
+        business = st.selectbox(t['subj_business'], grade_opts, index=get_grade_index('business', grade_opts, user_grades))
+        poa = st.selectbox(t['subj_poa'], grade_opts, index=get_grade_index('poa', grade_opts, user_grades))
+        geo = st.selectbox(t['subj_geo'], grade_opts, index=get_grade_index('geo', grade_opts, user_grades))
+        psv = st.selectbox(t['subj_psv'], grade_opts, index=get_grade_index('psv', grade_opts, user_grades))
+
+    gender = st.radio(t["sb_gender"], [t["gender_male"], t["gender_female"]])
+    submitted = st.form_submit_button(f"🚀 {t['sb_btn_submit']}")
+    
+    # Return collected inputs
+    sidebar_outputs = (submitted, {
+        'bm': bm, 'eng': eng, 'hist': hist, 'math': math, 'moral': moral,
+        'addmath': addmath, 'phy': phy, 'chem': chem, 'bio': bio,
+        'sci': sci, 'ekonomi': ekonomi, 'business': business, 
+        'poa': poa, 'geo': geo, 'psv': psv
+    }, gender)
+
+submitted, raw_grades, gender = sidebar_outputs
+
+# --- ROUTER LOGIC ---
+view_mode = st.session_state.get('view_mode', 'dashboard')
+
+if view_mode == 'profile' and user:
+    render_profile_page(user)
+    st.stop() # Stop here, don't render dashboard below
+
+# --- DASHBOARD LOGIC (Below) ---
+# Calculation Logic...
 # Run if: 
 # 1. Submitted (User clicked button)
 # 2. Dash missing (First load)

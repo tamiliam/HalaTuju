@@ -171,3 +171,16 @@ class AuthManager:
         # Give frontend time to process
         time.sleep(2)  # Increased to 2s to be safe
         st.rerun()
+
+    def update_profile(self, user_id, updates):
+        """Updates specific profile fields"""
+        try:
+            updates['updated_at'] = "now()"
+            res = self.supabase.table("student_profiles").update(updates).eq("id", user_id).execute()
+            if res.data:
+                # Update session
+                st.session_state['user'].update(updates)
+                return True, "Profile Updated!"
+            return False, "Update failed"
+        except Exception as e:
+            return False, str(e)
