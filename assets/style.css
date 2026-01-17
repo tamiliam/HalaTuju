@@ -1,104 +1,120 @@
 /* assets/style.css */
 
-/* 1. GLOBAL CONTAINER (Force Light Mode) */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+/* 1. GLOBAL TYPOGRAPHY & THEME */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
 
 .stApp {
-    background-color: #F4F7F6 !important;
-    /* Soft Porcelain */
-    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    font-family: 'Outfit', sans-serif !important;
 }
 
-/* 2. TEXT COLORS (Override White Text) */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-label,
-.stMarkdown {
-    color: #2D3436 !important;
-    /* Soft Black */
-}
-
-/* 3. HEADERS (The "Vibe") */
-h1 {
-    background: linear-gradient(120deg, #6C5CE7, #a29bfe);
+/* 2. HEADERS (Vibrant Gradient Text) */
+h1, h2, h3 {
+    background: linear-gradient(90deg, #6C5CE7 0%, #FF7675 100%);
     -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent !important;
+    -webkit-text-fill-color: transparent;
     font-weight: 800 !important;
+    letter-spacing: -0.5px;
 }
 
-/* 4. CARDS (The White Containers) */
-div[data-testid="stExpander"] {
-    background-color: #FFFFFF !important;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    /* Soft Shadow */
+h1 { font-size: 3rem !important; }
+h2 { font-size: 2rem !important; margin-top: 1rem !important; }
+
+/* 3. BUTTONS (The "Simpan" Fix & Pop) */
+/* Primary Buttons (Streamlit default buttons) */
+div.stButton > button {
+    background: linear-gradient(90deg, #6C5CE7 0%, #a29bfe 100%) !important;
+    color: #FFFFFF !important; /* High Contrast White Code */
+    font-weight: 700 !important;
     border: none !important;
-    margin-bottom: 12px;
-}
-
-/* The Clickable Header Part of the Card */
-.streamlit-expanderHeader {
-    background-color: #FFFFFF !important;
-    color: #2D3436 !important;
-    font-weight: 600 !important;
     border-radius: 12px !important;
+    padding: 0.6rem 1.5rem !important;
+    transition: all 0.2s ease-in-out !important;
+    box-shadow: 0 4px 6px rgba(108, 92, 231, 0.2) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* 5. BADGES (The 2x2 Grid Stats) */
+div.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(108, 92, 231, 0.3) !important;
+}
+
+div.stButton > button:active {
+    transform: translateY(0px);
+}
+
+/* Secondary/Ghost Buttons if needed (uncomment if you add .secondary class) */
+
+/* 4. CARDS & CONTAINERS (Soft & Clean) */
+div[data-testid="stExpander"] {
+    background: #FFFFFF !important;
+    border: 1px solid #dfe6e9 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02) !important;
+    transition: transform 0.2s;
+}
+
+div[data-testid="stExpander"]:hover {
+    box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important;
+}
+
+.streamlit-expanderHeader {
+    font-family: 'Outfit', sans-serif !important;
+    font-weight: 600 !important;
+    color: #2D3436 !important;
+}
+
+/* 5. METRICS (Big & Bold) */
+div[data-testid="stMetricValue"] {
+    font-family: 'Outfit', sans-serif !important;
+    font-weight: 800 !important;
+    color: #6C5CE7 !important; /* Brand Color */
+}
+
+div[data-testid="stMetricLabel"] {
+    font-size: 0.9rem !important;
+    color: #636e72 !important;
+    font-weight: 500 !important;
+}
+
+/* 6. BADGES (Course Cards) - Keeping your grid logic but making it pop */
 .badge-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: 8px;
+    margin-bottom: 12px;
 }
 
 .badge-base {
-    padding: 10px;
-    border-radius: 8px;
-    font-size: 0.85em;
-    line-height: 1.4;
-    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    border: 1px solid transparent;
 }
 
-.badge-time {
-    background-color: #E3F2FD;
-    color: #0984E3 !important;
+/* Pop Colors */
+.badge-time { background: #e3f2fd; color: #0984e3; border-color: #bbdefb; }
+.badge-mode { background: #f3e5f5; color: #8e44ad; border-color: #e1bee7; }
+.badge-money { background: #e8f5e9; color: #00b894; border-color: #c8e6c9; }
+.badge-hostel { background: #fff3e0; color: #e17055; border-color: #ffe0b2; }
+
+/* 7. FORM ELEMENTS */
+input, select {
+    border-radius: 10px !important;
+    border: 1px solid #dfe6e9 !important;
 }
 
-.badge-mode {
-    background-color: #F3E5F5;
-    color: #8E44AD !important;
+input:focus, select:focus {
+    border-color: #6C5CE7 !important;
+    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.1) !important;
 }
 
-.badge-money {
-    background-color: #E8F5E9;
-    color: #00B894 !important;
-}
-
-.badge-hostel {
-    background-color: #FFF3E0;
-    color: #E17055 !important;
-}
-
-/* 6. BUTTONS & INPUTS */
-div.stButton>button {
-    background-color: #6C5CE7 !important;
+/* 8. TOASTS */
+div[data-testid="stToast"] {
+    background-color: #00b894 !important;
     color: white !important;
-    border-radius: 8px !important;
-    border: none !important;
-    font-weight: 600 !important;
-    padding: 0.5rem 1rem !important;
-}
-
-input {
-    border: 1px solid #DFE6E9 !important;
-    border-radius: 8px !important;
-    background-color: #FFFFFF !important;
-    color: #2D3436 !important;
+    border-radius: 12px;
 }
