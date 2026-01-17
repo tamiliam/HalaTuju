@@ -5,6 +5,20 @@ PASS_GRADES = {"A+", "A", "A-", "B+", "B", "C+", "C", "D", "E"}
 CREDIT_GRADES = {"A+", "A", "A-", "B+", "B", "C+", "C"}
 ATTEMPTED_GRADES = PASS_GRADES | {"G"}
 
+# Define all columns used for requirement checking
+# This acts as the Single Source of Truth for other modules (like dashboard.py)
+REQ_FLAG_COLUMNS = [
+    'req_malaysian', 'req_male', 'req_female', 'no_colorblind', 'no_disability',
+    '3m_only', 'pass_bm', 'credit_bm', 'pass_history', 
+    'pass_eng', 'credit_english', 'pass_math', 'credit_math',
+    'pass_math_sci', 'pass_science_tech', 'credit_math_sci',
+    'credit_math_sci_tech', 'pass_stv'
+]
+
+REQ_COUNT_COLUMNS = ['min_credits', 'min_pass']
+
+ALL_REQ_COLUMNS = REQ_FLAG_COLUMNS + REQ_COUNT_COLUMNS
+
 # --- 1. DATA SANITIZER (The Bouncer) ---
 def load_and_clean_data(filepath):
     """
@@ -15,21 +29,15 @@ def load_and_clean_data(filepath):
     df = pd.read_csv(filepath)
     
     # List of columns that MUST be integers (0 or 1)
-    flag_columns = [
-        'req_malaysian', 'req_male', 'req_female', 'no_colorblind', 'no_disability',
-        '3m_only', 'pass_bm', 'credit_bm', 'pass_history', 
-        'pass_eng', 'credit_english', 'pass_math', 'credit_math',
-        'pass_math_sci', 'pass_science_tech', 'credit_math_sci',
-        'credit_math_sci_tech', 'pass_stv'
-    ]
+    # flag_columns = [ ... ] (Moved to module constant REQ_FLAG_COLUMNS)
     
-    for col in flag_columns:
+    for col in REQ_FLAG_COLUMNS:
         if col in df.columns:
             # Force numeric, turning errors (like 'Yes') into NaN
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
     
     # Handle 'min_credits' and 'min_pass' separately (they are counts, not flags)
-    for col in ['min_credits', 'min_pass']:
+    for col in REQ_COUNT_COLUMNS:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
             

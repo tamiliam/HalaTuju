@@ -1,6 +1,6 @@
 import pandas as pd
 import streamlit as st
-from src.engine import check_eligibility
+from src.engine import check_eligibility, ALL_REQ_COLUMNS
 from src.translations import get_text
 
 try:
@@ -46,18 +46,35 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
     stats_keys = ["inst_poly", "inst_ikbn", "inst_kk", "inst_other"]
     stats = {k: 0 for k in stats_keys}
     
-    # 1. OPTIMIZATION: Check eligibility on UNIQUE courses first
-    unique_courses = df_master.drop_duplicates(subset=['course_id'])
-    eligible_course_ids = set()
+    # 1. OPTIMIZATION: Check eligibility by Requirement Signature (not just Course ID)
+    # Different locations for the same course might have slightly different requirements (rare but possible).
+    # We create a "signature" of the requirements columns to verify unique sets.
     
-    for _, course_row in unique_courses.iterrows():
-        is_eligible, _ = check_eligibility(student, course_row)
+    # We import the list of columns from engine.py to avoid duplication.
+    # checking logic resides in engine.py, so the list of relevant columns should too.
+    
+    # Only use columns that actually exist in the dataframe
+    valid_req_cols = [c for c in ALL_REQ_COLUMNS if c in df_master.columns]
+    
+    # Create a temporary signature for deduplication
+    # We toggle 'copy' to avoid SettingWithCopy warnings if df_master is a slice
+    df_work = df_master.copy()
+    
+    # Fill NAs with -1 just for the signature creation to ensure consistency
+    df_work['req_signature'] = df_work[valid_req_cols].fillna(-1).apply(tuple, axis=1)
+    
+    # Find unique requirement sets
+    unique_req_sets = df_work.drop_duplicates(subset=['req_signature'])
+    eligible_signatures = set()
+    
+    for _, row in unique_req_sets.iterrows():
+        is_eligible, _ = check_eligibility(student, row)
         if is_eligible:
-            eligible_course_ids.add(course_row['course_id'])
+            eligible_signatures.add(row['req_signature'])
             
-    # 2. FILTER: Grab all offerings for eligible courses
-    mask = df_master['course_id'].isin(eligible_course_ids)
-    eligible_df = df_master[mask].copy()
+    # 2. FILTER: Keep all offerings that match an eligible signature
+    mask = df_work['req_signature'].isin(eligible_signatures)
+    eligible_df = df_work[mask].copy()
     
     # 3. BUILD OUTPUT LIST
     offerings_list = eligible_df.to_dict('records')
