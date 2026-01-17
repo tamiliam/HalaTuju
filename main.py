@@ -157,29 +157,35 @@ t = get_text(lang_code)
 
 auth_status = auth.check_session()
 user = st.session_state['user'] if auth_status else None
+if user:
+    print(f"DEBUG: Loaded User Grades: {user.get('grades')}")
 
 # Render Sidebar
 submitted, raw_grades, gender = render_sidebar(t, user)
 
 # Calculation Logic
 if submitted or 'dash' not in st.session_state:
-    clean_grades = {k: v for k, v in raw_grades.items() if v != t['opt_not_taken']}
+    cleaned_grades = raw_grades # Debugging alias
     
     # Store in Session for Guest persistence (in case they reload or submit again)
+    clean_grades = {k: v for k, v in raw_grades.items() if v != t['opt_not_taken']}  
     st.session_state['guest_grades'] = clean_grades 
     
     # If Logged In, AUTO-SAVE to DB
     if user and submitted:
+        print(f"DEBUG: Auto-saving Grades: {clean_grades}")
         try:
-            supabase.table("student_profiles").update({
+            res = supabase.table("student_profiles").update({
                 "grades": clean_grades,
                 "gender": gender,
                 # "updated_at": "now()"
             }).eq("id", user['id']).execute()
             user['grades'] = clean_grades # Update Local
             st.toast("Profile Saved!")
+            print("DEBUG: Auto-save OK")
         except Exception as e:
-            pass
+            print(f"DEBUG: Auto-save ERROR: {e}")
+            st.error(f"Save Failed: {e}") # Show to user temporarily
 
     # Run Engine
     student_obj = StudentProfile(clean_grades, gender, 'Warganegara', 'Tidak', 'Tidak')
