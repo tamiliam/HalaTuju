@@ -18,9 +18,6 @@ def local_css(file_name):
 
 local_css("assets/style.css") # <--- Inject the styles
 
-
-
-
 # Supabase Setup
 try:
     SUPABASE_URL = st.secrets["SUPABASE_URL"]
