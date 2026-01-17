@@ -160,6 +160,14 @@ class AuthManager:
             
         st.session_state['logged_in'] = False
         st.session_state['user'] = None
+        
+        # CRITICAL: Clear persistence artifacts to prevent "Ghost Grades"
+        # where User B inherits User A's fallback inputs
+        keys_to_clear = ['guest_grades', 'dash', 'last_calc_user']
+        for k in keys_to_clear:
+            if k in st.session_state:
+                del st.session_state[k]
+                
         # Give frontend time to process
         time.sleep(2)  # Increased to 2s to be safe
         st.rerun()

@@ -203,19 +203,24 @@ if submitted or 'dash' not in st.session_state or force_calc:
     
     # If Logged In, AUTO-SAVE to DB
     if user and submitted:
-        print(f"DEBUG: Auto-saving Grades: {clean_grades}")
         try:
-            res = supabase.table("student_profiles").update({
+            # Update DB
+            data_payload = {
                 "grades": clean_grades,
                 "gender": gender,
-                # "updated_at": "now()"
-            }).eq("id", user['id']).execute()
-            user['grades'] = clean_grades # Update Local
-            st.toast("Profile Saved!")
-            print("DEBUG: Auto-save OK")
+                "last_login": "now()" # Update activity
+            }
+            
+            # Execute Update
+            res = supabase.table("student_profiles").update(data_payload).eq("id", user['id']).execute()
+            
+            # Update Local Session User
+            user['grades'] = clean_grades
+            user['gender'] = gender
+            
+            st.toast("Profile Saved Successfully!")
         except Exception as e:
-            print(f"DEBUG: Auto-save ERROR: {e}")
-            st.error(f"Save Failed: {e}") # Show to user temporarily
+            st.error(f"Save Failed: {str(e)}")
 
     # Run Engine
     student_obj = StudentProfile(clean_grades, gender, 'Warganegara', 'Tidak', 'Tidak')
