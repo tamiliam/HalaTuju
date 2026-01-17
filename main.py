@@ -37,18 +37,51 @@ def get_data():
 df_courses = get_data()
 
 # --- 3. HELPER: DATABASE OPS ---
+# --- 3. HELPER: DATABASE OPS ---
 def save_profile(name, email, phone, student, eligible_count):
     if not DB_CONNECTED: return False
+    
+    # 1. Prepare Data
     data = {
-        "name": name, "email": email, "phone": phone, "gender": student.gender,
-        "grades": student.grades, "eligible_count": eligible_count
+        "name": name, 
+        "email": email, 
+        "phone": phone, 
+        "gender": student.gender,
+        "grades": student.grades, 
+        "eligible_count": eligible_count,
+        "updated_at": "now()" # Ensure we track latest update
     }
+    
     try:
-        supabase.table("student_profiles").insert(data).execute()
+        # 2. Upsert (Insert or Update based on 'phone' if it's unique, otherwise we might need logic)
+        # Assuming 'phone' is a unique key or we use it to query first. 
+        # For robustness, let's try to find existing user by phone first.
+        existing = supabase.table("student_profiles").select("id").eq("phone", phone).execute()
+        
+        if existing.data:
+            # Update
+            uid = existing.data[0]['id']
+            supabase.table("student_profiles").update(data).eq("id", uid).execute()
+        else:
+            # Insert
+            supabase.table("student_profiles").insert(data).execute()
+            
         return True
     except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"Save Error: {e}")
         return False
+
+def login_user(phone):
+    """Retrieve user profile by phone number."""
+    if not DB_CONNECTED: return None
+    try:
+        # Normalize phone? For now exact match
+        res = supabase.table("student_profiles").select("*").eq("phone", phone).execute()
+        if res.data:
+            return res.data[0] # Return latest/first match
+    except Exception as e:
+        st.error(f"Login Error: {e}")
+    return None
 
 def validate_submission(name, email, phone, t):
     """Validates user input with robust Malaysian context regex."""
@@ -105,31 +138,63 @@ st.sidebar.caption(t['sb_caption'])
 grade_opts = [t["opt_not_taken"], "A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G"]
 
 #gender_map = {t['gender_male']: "Lelaki", t['gender_female']: "Perempuan"}
+# --- LOGIN / RESUME SESSION ---
+if not st.session_state.get('unlocked'):
+    with st.sidebar.expander("👤 Existing User? Login"):
+        login_phone = st.text_input("Phone Number", key="login_phone")
+        if st.button("Resume Session"):
+            user_data = login_user(login_phone)
+            if user_data:
+                st.session_state['restored_user'] = user_data
+                st.session_state['unlocked'] = False # Let them see inputs first
+                st.toast(f"Welcome back, {user_data['name']}!")
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error("User not found.")
+
+# Helper to restore grades
+def get_restored_index(subject_key, opts, default_idx=0):
+    """
+    Determines the selectbox index.
+    If 'restored_user' exists: use DB value (or 0 if missing).
+    Else: use default_idx.
+    """
+    user = st.session_state.get('restored_user')
+    if user:
+        grades = user.get('grades', {})
+        val = grades.get(subject_key)
+        # If val is found in current opts (e.g. 'A+'), return its index
+        # Note: opts[0] is localized "Not Taken". DB stores VALID grades only.
+        if val in opts:
+            return opts.index(val)
+        return 0 # Not found/Not Taken
+    return default_idx
 
 with st.sidebar.form("grades_form"):
 
     # Core Subjects
     st.subheader(t['sb_core_subjects'])
-    bm = st.selectbox(t['subj_bm'], grade_opts, index=7)
-    eng = st.selectbox(t['subj_eng'], grade_opts, index=7)
-    hist = st.selectbox(t['subj_hist'], grade_opts, index=7)
-    math = st.selectbox(t['subj_math'], grade_opts, index=7)
-    moral = st.selectbox(t['subj_moral'], grade_opts, index=7)
+    bm = st.selectbox(t['subj_bm'], grade_opts, index=get_restored_index('bm', grade_opts, 7))
+    eng = st.selectbox(t['subj_eng'], grade_opts, index=get_restored_index('eng', grade_opts, 7))
+    hist = st.selectbox(t['subj_hist'], grade_opts, index=get_restored_index('hist', grade_opts, 7))
+    math = st.selectbox(t['subj_math'], grade_opts, index=get_restored_index('math', grade_opts, 7))
+    moral = st.selectbox(t['subj_moral'], grade_opts, index=get_restored_index('moral', grade_opts, 7))
     
     # Science Stream
     with st.expander(t['sb_science_stream'], expanded=False):
-        addmath = st.selectbox(t['subj_addmath'], grade_opts, index=0)
-        phy = st.selectbox(t['subj_phy'], grade_opts, index=0)
-        chem = st.selectbox(t['subj_chem'], grade_opts, index=0)
-        bio = st.selectbox(t['subj_bio'], grade_opts, index=0)
+        addmath = st.selectbox(t['subj_addmath'], grade_opts, index=get_restored_index('addmath', grade_opts, 0))
+        phy = st.selectbox(t['subj_phy'], grade_opts, index=get_restored_index('phy', grade_opts, 0))
+        chem = st.selectbox(t['subj_chem'], grade_opts, index=get_restored_index('chem', grade_opts, 0))
+        bio = st.selectbox(t['subj_bio'], grade_opts, index=get_restored_index('bio', grade_opts, 0))
     # Arts Stream
     with st.expander(t['sb_arts_stream'], expanded=False):
-        sci = st.selectbox(t['subj_sci'], grade_opts, index=0)
-        ekonomi = st.selectbox(t['subj_ekonomi'], grade_opts, index=0)
-        business = st.selectbox(t['subj_business'], grade_opts, index=0)
-        poa = st.selectbox(t['subj_poa'], grade_opts, index=0)
-        geo = st.selectbox(t['subj_geo'], grade_opts, index=0)
-        psv = st.selectbox(t['subj_psv'], grade_opts, index=0)
+        sci = st.selectbox(t['subj_sci'], grade_opts, index=get_restored_index('sci', grade_opts, 0))
+        ekonomi = st.selectbox(t['subj_ekonomi'], grade_opts, index=get_restored_index('ekonomi', grade_opts, 0))
+        business = st.selectbox(t['subj_business'], grade_opts, index=get_restored_index('business', grade_opts, 0))
+        poa = st.selectbox(t['subj_poa'], grade_opts, index=get_restored_index('poa', grade_opts, 0))
+        geo = st.selectbox(t['subj_geo'], grade_opts, index=get_restored_index('geo', grade_opts, 0))
+        psv = st.selectbox(t['subj_psv'], grade_opts, index=get_restored_index('psv', grade_opts, 0))
 
     #selected_gender_label = st.radio(t['sb_gender'], list(gender_map.keys()), horizontal=True)
     #internal_gender = gender_map[selected_gender_label]
