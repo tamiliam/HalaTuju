@@ -1,6 +1,10 @@
 import pandas as pd
 import numpy as np
 
+PASS_GRADES = {"A+", "A", "A-", "B+", "B", "C+", "C", "D", "E"}
+CREDIT_GRADES = {"A+", "A", "A-", "B+", "B", "C+", "C"}
+ATTEMPTED_GRADES = PASS_GRADES | {"G"}
+
 # --- 1. DATA SANITIZER (The Bouncer) ---
 def load_and_clean_data(filepath):
     """
@@ -33,6 +37,16 @@ def load_and_clean_data(filepath):
 
 # --- 2. HELPER FUNCTIONS ---
 def is_pass(grade):
+    return grade in PASS_GRADES
+
+def is_credit(grade):
+    return grade in CREDIT_GRADES
+
+def is_attempted(grade):
+    return grade in ATTEMPTED_GRADES
+
+'''
+def is_pass(grade):
     """Returns True if grade is A+ through E (Pass)."""
     if grade in ["Tidak Ambil", None, "", "nan"]: return False
     return grade in ["A+", "A", "A-", "B+", "B", "C+", "C", "D", "E"]
@@ -45,7 +59,7 @@ def is_credit(grade):
 def is_attempted(grade):
     """Returns True if grade is A+ through G (Attempted)."""
     if grade in ["Tidak Ambil", None, "", "nan"]: return False
-    return grade in ["A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G"]
+    return grade in ["A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G"]'''
 
 class StudentProfile:
     def __init__(self, grades, gender, nationality, colorblind, disability, other_tech=False, other_voc=False):
