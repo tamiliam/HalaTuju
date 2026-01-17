@@ -99,6 +99,11 @@ def check_eligibility(student, req):
 
     if req.get('3m_only') == 1:
         cond = is_attempted(g.get('bm')) and is_attempted(g.get('math'))
+        audit.append({
+        "label": "Syarat 3M",
+        "passed": cond,
+        "reason": None if cond else "Perlu sekurang-kurangnya Gred G dalam BM dan Matematik"
+        })
         return cond, audit
 
     '''# TVET SPECIAL (3M)
