@@ -52,7 +52,8 @@ def get_grade_index(key, opts, user_grades):
         if guest_grades[key] in opts: return opts.index(guest_grades[key])
         
     # 3. Defaults
-    return 7 if key in ['bm', 'eng', 'hist', 'math', 'moral'] else 0
+    # Default to 0 (Not Taken) to avoid assuming "C" grades which skews results
+    return 0
 
 # --- 4. SIDEBAR (UNIVERSAL) ---
 def render_sidebar(t, user):
