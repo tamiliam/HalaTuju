@@ -85,15 +85,14 @@ with st.sidebar.form("grades_form"):
     eng = st.selectbox(t['subj_eng'], grade_opts, index=7)
     hist = st.selectbox(t['subj_hist'], grade_opts, index=7)
     math = st.selectbox(t['subj_math'], grade_opts, index=7)
-        
-      
+    moral = st.selectbox(t['subj_moral'], grade_opts, index=7)
+    
     # Science Stream
-    st.subheader(t['sb_science_stream'])
-    addmath = st.selectbox(t['subj_addmath'], grade_opts, index=0)
-    phy = st.selectbox(t['subj_phy'], grade_opts, index=0)
-    chem = st.selectbox(t['subj_chem'], grade_opts, index=0)
-    bio = st.selectbox(t['subj_bio'], grade_opts, index=0)
-
+    with st.expander(t['sb_science_stream'], expanded=False):
+        addmath = st.selectbox(t['subj_addmath'], grade_opts, index=0)
+        phy = st.selectbox(t['subj_phy'], grade_opts, index=0)
+        chem = st.selectbox(t['subj_chem'], grade_opts, index=0)
+        bio = st.selectbox(t['subj_bio'], grade_opts, index=0)
     # Arts Stream
     with st.expander(t['sb_arts_stream'], expanded=False):
         sci = st.selectbox(t['subj_sci'], grade_opts, index=0)

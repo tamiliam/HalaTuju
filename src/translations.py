@@ -28,6 +28,7 @@ TEXTS = {
         "subj_eng": "English",
         "subj_hist": "History",
         "subj_math": "Mathematics",
+        "subj_moral": "Islam/Moral",
         
         "subj_addmath": "Add Maths",
         "subj_phy": "Physics",
@@ -114,6 +115,7 @@ TEXTS = {
         "subj_eng": "Bahasa Inggeris",
         "subj_hist": "Sejarah",
         "subj_math": "Matematik",
+        "subj_moral": "P. Islam/Moral",
         
         "subj_addmath": "Matematik Tambahan",
         "subj_phy": "Fizik",
@@ -200,6 +202,7 @@ TEXTS = {
         "subj_eng": "ஆங்கிலம்",
         "subj_hist": "வரலாறு",
         "subj_math": "கணிதம்",
+        "subj_moral": "இஸ்லாம்/நெறிமுறை",
         
         "subj_addmath": "கூடுதல் கணிதம்",
         "subj_phy": "இயற்பியல்",
