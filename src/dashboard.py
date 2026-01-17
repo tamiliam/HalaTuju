@@ -111,8 +111,14 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
         quality_name = txt.get(quality_key, "Unknown")
         
         # Inject "Human" Description from description.py
-        cid = row.get('course_id')
+        cid = str(row.get('course_id', '')).strip().upper() # Normalize ID
         desc_data = course_info.get(cid, {})
+        
+        # DEBUG LOGGING (Check Streamlit Cloud Logs)
+        # if not desc_data:
+        #    print(f"MISSING DESC for Course ID: {cid}")
+        # else:
+        #    print(f"FOUND DESC for {cid}: {desc_data.get('headline')}")
         
         eligible_offerings.append({
             "course_name": row.get('course_name', txt["unknown_course"]),
@@ -126,7 +132,7 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             "code": cid,
             # Rich Content
             "headline": desc_data.get('headline', ''),
-            "synopsis": desc_data.get('synopsis', ''),
+            "synopsis": desc_data.get('synopsis', f"DEBUG: Model has no data for ID: {cid}"),
             "jobs": desc_data.get('jobs', [])
         })
 
