@@ -45,22 +45,6 @@ def is_credit(grade):
 def is_attempted(grade):
     return grade in ATTEMPTED_GRADES
 
-'''
-def is_pass(grade):
-    """Returns True if grade is A+ through E (Pass)."""
-    if grade in ["Tidak Ambil", None, "", "nan"]: return False
-    return grade in ["A+", "A", "A-", "B+", "B", "C+", "C", "D", "E"]
-
-def is_credit(grade):
-    """Returns True if grade is A+ through C (Credit)."""
-    if grade in ["Tidak Ambil", None, "", "nan"]: return False
-    return grade in ["A+", "A", "A-", "B+", "B", "C+", "C"]
-
-def is_attempted(grade):
-    """Returns True if grade is A+ through G (Attempted)."""
-    if grade in ["Tidak Ambil", None, "", "nan"]: return False
-    return grade in ["A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G"]'''
-
 class StudentProfile:
     def __init__(self, grades, gender, nationality, colorblind, disability, other_tech=False, other_voc=False):
         self.grades = grades
@@ -109,15 +93,22 @@ def check_eligibility(student, req):
 
     g = student.grades
 
-    # TVET SPECIAL (3M)
-    # Notice: Clean and Simple again!
+    # --- TVET SPECIAL: 3M ONLY ---
+    # Definition: Course only requires BM and Math to be ATTEMPTED (any grade incl. G).
+    # This overrides all other academic requirements.
+
+    if req.get('3m_only') == 1:
+        cond = is_attempted(g.get('bm')) and is_attempted(g.get('math'))
+        return cond, audit
+
+    '''# TVET SPECIAL (3M)
     if req.get('3m_only') == 1:
         has_bm = is_attempted(g.get('bm'))
         has_math = is_attempted(g.get('math'))
         if check("Syarat 3M (BM & Math)", has_bm and has_math, "Perlu sekurang-kurangnya Gred G dalam BM dan Matematik"):
             return True, audit
         else:
-            return False, audit
+            return False, audit'''
 
     # ACADEMIC CHECKS
     passed_academics = True
