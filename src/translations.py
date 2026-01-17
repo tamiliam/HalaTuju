@@ -92,7 +92,22 @@ TEXTS = {
         "admin_login": "Admin Access",
         "admin_success": "Welcome back, Commander.",
         "admin_view_leads": "View Student Leads",
-        "admin_download": "Download CSV"
+        "admin_download": "Download CSV",
+        
+        # Dashboard Specific (New)
+        "quality_safe": "Safe Bet 🟢",
+        "quality_good": "Good Match 🔵",
+        "quality_reach": "Reach 🟡",
+        "inst_poly": "Politeknik",
+        "inst_ikbn": "IKBN / ILP (Skills)",
+        "inst_kk": "Kolej Komuniti",
+        "inst_other": "TVET / Other",
+        "unknown_course": "Unknown Course",
+        "unknown_inst": "Unknown Inst",
+        "unknown_state": "Malaysia",
+        "status_eligible": "Eligible",
+        "status_not_eligible": "Not Eligible",
+        "filter_state": "Filter Location:"
     },
     
     "bm": {
@@ -180,7 +195,22 @@ TEXTS = {
         "admin_login": "Akses Admin",
         "admin_success": "Selamat kembali, Tuan.",
         "admin_view_leads": "Lihat Senarai Pelajar",
-        "admin_download": "Muat Turun CSV"
+        "admin_download": "Muat Turun CSV",
+
+        # Dashboard Specific (New)
+        "quality_safe": "Pilihan Selamat 🟢",
+        "quality_good": "Padanan Baik 🔵",
+        "quality_reach": "Cabaran 🟡",
+        "inst_poly": "Politeknik",
+        "inst_ikbn": "IKBN / ILP (Kemahiran)",
+        "inst_kk": "Kolej Komuniti",
+        "inst_other": "TVET / Lain-lain",
+        "unknown_course": "Kursus Tidak Diketahui",
+        "unknown_inst": "Institusi Tidak Diketahui",
+        "unknown_state": "Malaysia",
+        "status_eligible": "Layak",
+        "status_not_eligible": "Tidak Layak",
+        "filter_state": "Tapis Lokasi:"
     },
 
     "ta": {
@@ -268,7 +298,22 @@ TEXTS = {
         "admin_login": "நிர்வாக அணுகல்",
         "admin_success": "மீண்டும் வருக.",
         "admin_view_leads": "மாணவர் பட்டியலைப் பாருங்கள்",
-        "admin_download": "CSV தரவிறக்கம்"
+        "admin_download": "CSV தரவிறக்கம்",
+
+        # Dashboard Specific (New)
+        "quality_safe": "பாதுகாப்பான தேர்வு 🟢",
+        "quality_good": "நல்ல பொருத்தம் 🔵",
+        "quality_reach": "முயற்சி செய்யலாம் 🟡",
+        "inst_poly": "பாலிடெக்னிக்",
+        "inst_ikbn": "IKBN / ILP (திறன்)",
+        "inst_kk": "சமூகக் கல்லூரி",
+        "inst_other": "டிவெட் / பிற",
+        "unknown_course": "தெரியாத படிப்பு",
+        "unknown_inst": "தெரியாத நிறுவனம்",
+        "unknown_state": "மலேசியா",
+        "status_eligible": "தகுதியுடையவர்",
+        "status_not_eligible": "தகுதியற்றவர்",
+        "filter_state": "இடத்தை வடிகட்டவும்:"
     }
 }
 

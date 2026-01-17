@@ -148,16 +148,16 @@ if submitted:
     
     with st.spinner(t['spinner_msg']):
         time.sleep(0.5)
-        st.session_state['dash'] = generate_dashboard_data(student, df_courses)
+        st.session_state['dash'] = generate_dashboard_data(student, df_courses, lang_code=lang_code)
 
 if 'dash' in st.session_state:
     dash = st.session_state['dash']
     if dash['total_matches'] > 0:
         st.success(t['hero_success'].format(count=dash['total_matches']))
         c1, c2, c3 = st.columns(3)
-        c1.metric(t['stat_poly'], dash['summary_stats'].get('Politeknik', 0))
-        c2.metric(t['stat_ikbn'], dash['summary_stats'].get('IKBN / ILP (Skills)', 0))
-        c3.metric(t['stat_kk'], dash['summary_stats'].get('Kolej Komuniti', 0))
+        c1.metric(t['stat_poly'], dash['summary_stats'].get(t['inst_poly'], 0))
+        c2.metric(t['stat_ikbn'], dash['summary_stats'].get(t['inst_ikbn'], 0))
+        c3.metric(t['stat_kk'], dash['summary_stats'].get(t['inst_kk'], 0))
         st.markdown("---")
         
         if st.session_state['unlocked']:
@@ -186,7 +186,7 @@ if 'dash' in st.session_state:
                 # Filter B: State (NEW!)
                 state_opts = sorted([str(x) for x in df_display["state"].unique() if x])
                 state_filter = c_filter2.multiselect(
-                    "📍 Filter Location:", # Add to translation file later
+                    f"📍 {t.get('filter_state', 'Filter Location:')}", 
                     options=state_opts,
                     default=state_opts
                 )
