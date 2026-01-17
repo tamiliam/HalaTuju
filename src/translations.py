@@ -173,6 +173,11 @@ TEXTS = {
         "btn_unlock": "Simpan & Lihat Semua",
         "toast_success": "Berjaya! Profil disimpan.",
         "err_missing_info": "Sila isi Nama dan No. Telefon.",
+        # VALIDATION ERRORS
+        "err_name_short": "❌ Nama terlalu pendek.",
+        "err_email_invalid": "❌ Format emel tidak sah.",
+        "err_phone_short": "❌ Nombor telefon terlalu pendek.",
+        
         "unlocked_alert": "🔓 Laporan Penuh Dibuka! Lihat senarai di bawah.",
         "table_title": "📋 Senarai Lengkap Kursus Anda",
         "table_col_course": "Nama Kursus",
@@ -278,6 +283,11 @@ TEXTS = {
         "btn_unlock": "சேமி & பட்டியலை பார்",
         "toast_success": "வெற்றி! சுயவிவரம் சேமிக்கப்பட்டது.",
         "err_missing_info": "பெயர் மற்றும் தொலைபேசி எண்ணை நிரப்பவும்.",
+        # VALIDATION ERRORS
+        "err_name_short": "❌ பெயர் மிகவும் குறுகியது.",
+        "err_email_invalid": "❌ மின்னஞ்சல் வடிவம் செல்லுபடியாகாது.",
+        "err_phone_short": "❌ தொலைபேசி எண் மிகவும் குறுகியது.",
+        
         "unlocked_alert": "🔓 முழு அறிக்கை திறக்கப்பட்டது! கீழே உள்ள பட்டியலை ஆராயுங்கள்.",
         "table_title": "📋 உங்கள் முழு படிப்புகளின் பட்டியல்",
         "table_col_course": "படிப்பு",

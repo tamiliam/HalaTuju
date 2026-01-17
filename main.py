@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import re # VALIDATION FIX
 import os
 import time
 from supabase import create_client, Client
@@ -49,19 +50,19 @@ def save_profile(name, email, phone, student, eligible_count):
         st.error(f"Error: {e}")
         return False
 
-def validate_submission(name, email, phone):
+def validate_submission(name, email, phone, t):
     """Validates user input for the unlock form."""
     if not name or len(name.strip()) < 2:
-        return False, "❌ Name is too short."
+        return False, t.get('err_name_short', "Invalid Name")
     
     # Email Regex
     email_pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
     if not email or not re.match(email_pattern, email):
-        return False, "❌ Invalid Email Address format."
+        return False, t.get('err_email_invalid', "Invalid Email")
         
     # Phone Regex (Relaxed: allow digits, spaces, -, +)
     if not phone or len(re.sub(r'\D', '', phone)) < 9:
-        return False, "❌ Phone number is too short."
+        return False, t.get('err_phone_short', "Invalid Phone")
         
     return True, ""
 
@@ -315,7 +316,7 @@ if 'dash' in st.session_state:
                 email = st.text_input(t['form_email'])
                 if st.form_submit_button(f"🔓 {t['btn_unlock']}"):
                     # Validate Inputs
-                    is_valid, err_msg = validate_submission(name, email, phone)
+                    is_valid, err_msg = validate_submission(name, email, phone, t)
                     
                     if is_valid:
                         if save_profile(name, email, phone, st.session_state['current_student'], dash['total_matches']):
