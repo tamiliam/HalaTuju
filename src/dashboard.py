@@ -9,17 +9,31 @@ except ImportError:
     course_info = {}
 
 def get_institution_type(row):
-    # Returns a translation KEY instead of a hardcoded string
+    # Returns a translation KEY based on the category
+    # Categories: Politeknik, Kolej Komuniti, ILKBS, ILJTM
     t = str(row.get('type', '')).upper()
     code = str(row.get('course_id', '')).upper()
+    name = str(row.get('institution_name', '')).upper()
+    cat = str(row.get('category', '')).upper() # Some files might have this
     
-    if "POLITEKNIK" in t or "POLY" in code:
+    # 1. Politeknik
+    if "POLITEKNIK" in t or "POLY" in code or "POLITEKNIK" in name:
         return "inst_poly"
-    elif "IKBN" in code or "ILP" in code or "ILKBS" in t:
-        return "inst_ikbn"
-    elif "KOLEJ" in t or "KK" in code:
+        
+    # 2. Kolej Komuniti
+    elif "KOLEJ" in t or "KK" in code or "KOMUNITI" in name:
         return "inst_kk"
+        
+    # 3. TVET Agencies (ILKBS & ILJTM) -> Map to IKBN/Skills bucket
+    # ILKBS = Institut Latihan KBS (IKBN, IKTBN)
+    # ILJTM = Institut Latihan Jabatan Tenaga Manusia (ILP, ADTEC, JMTI)
+    elif (any(x in t for x in ["ILKBS", "ILJTM", "TVET"]) or 
+          any(x in name for x in ["IKBN", "IKTBN", "ILP", "ADTEC", "JMTI"])):
+        return "inst_ikbn"
+        
     else:
+        # Fallback: If it's none of the above, but we need to classify it.
+        # Given the 3-bucket display, we treat residuals as 'Other' (which maps to Skills in stats).
         return "inst_other"
 
 def calculate_match_quality(student, row):
@@ -84,10 +98,14 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
         inst_type_name = txt.get(inst_key, txt.get("inst_other", "TVET"))
         
         # Consistent key usage
+        # Consistent key usage
         if inst_key in stats:
             stats[inst_key] += 1
         else:
-            stats["inst_other"] += 1
+            # Fallback: If it's undefined (Other), we group it under Skills (IKBN/TVET) for display simplicity
+            # unless it explicitly looks like something else. 
+            # For now, let's assume 'Other' -> 'inst_ikbn' (General TVET/Skills)
+            stats["inst_ikbn"] += 1
         
         quality_key = calculate_match_quality(student, row)
         quality_name = txt.get(quality_key, "Unknown")
