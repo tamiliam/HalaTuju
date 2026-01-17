@@ -5,6 +5,7 @@
 
 course_info = {
     # --- AGROTECHNOLOGY ---
+    # Forced Update v2.2
     "POLY-DIP-001": {
         "headline": "🌱 Agroteknologi: Pertanian Moden & Pintar",
         "synopsis": "Lupakan imej petani tradisional dengan cangkul. Kursus ini melatih anda menjadi 'Agropreneur Moden'. Anda akan belajar teknologi Fertigasi (tanam gantung), Pertanian Pintar (IoT/Sensor), dan cara mengurus ladang komersial dari benih hingga pemasaran. Sesuai untuk anda yang suka aktiviti luar (outdoor) tetapi mahukan kerjaya berteknologi tinggi.",

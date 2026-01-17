@@ -4,8 +4,10 @@ from src.engine import check_eligibility, ALL_REQ_COLUMNS
 from src.translations import get_text
 
 try:
-    from description import course_info # Your uploaded file
+    from src.description import course_info
 except ImportError:
+    # Fallback/Debug
+    print("WARNING: Could not import src.description. Using empty dict.")
     course_info = {}
 
 def get_institution_type(row):
@@ -131,8 +133,9 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             "quality_key": quality_key, # Keep key for logic if needed
             "code": cid,
             # Rich Content
+            # DEEP DEBUG
             "headline": desc_data.get('headline', ''),
-            "synopsis": desc_data.get('synopsis', f"DEBUG: Model has no data for ID: {cid}"),
+            "synopsis": desc_data.get('synopsis', f"DEBUG: ID={cid} | Type={type(cid)} | InKeys={'POLY-DIP-001' in course_info} | KeysStart={list(course_info.keys())[:1]}"),
             "jobs": desc_data.get('jobs', [])
         })
 
