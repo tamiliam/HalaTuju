@@ -42,9 +42,9 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
     txt = get_text(lang_code)
     eligible_offerings = []
     
-    # Initialize stats using translation keys
-    stats_keys = ["inst_poly", "inst_ikbn", "inst_kk", "inst_other"]
-    stats = {txt[k]: 0 for k in stats_keys}
+    # Initialize stats using stable internal keys
+    stats_keys = ["stat_poly", "stat_ikbn", "stat_kk", "stat_other"]
+    stats = {k: 0 for k in stats_keys}
     
     # 1. OPTIMIZATION: Check eligibility on UNIQUE courses first
     unique_courses = df_master.drop_duplicates(subset=['course_id'])
@@ -66,10 +66,10 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
         inst_key = get_institution_type(row)
         inst_type_name = txt.get(inst_key, txt["inst_other"])
         
-        if inst_type_name in stats: 
-            stats[inst_type_name] += 1
-        else: 
-            stats[txt["inst_other"]] += 1
+        # Determine internal stat key for counting
+        # Mapping inst_poly -> stat_poly, etc.
+        stat_key = inst_key if inst_key in stats else "stat_other"
+        stats[stat_key] += 1
         
         quality_key = calculate_match_quality(student, row)
         quality_name = txt.get(quality_key, "Unknown")

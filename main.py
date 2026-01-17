@@ -155,9 +155,9 @@ if 'dash' in st.session_state:
     if dash['total_matches'] > 0:
         st.success(t['hero_success'].format(count=dash['total_matches']))
         c1, c2, c3 = st.columns(3)
-        c1.metric(t['stat_poly'], dash['summary_stats'].get(t['inst_poly'], 0))
-        c2.metric(t['stat_ikbn'], dash['summary_stats'].get(t['inst_ikbn'], 0))
-        c3.metric(t['stat_kk'], dash['summary_stats'].get(t['inst_kk'], 0))
+        c1.metric(t['stat_poly'], dash['summary_stats'].get('stat_poly', 0))
+        c2.metric(t['stat_ikbn'], dash['summary_stats'].get('stat_ikbn', 0))
+        c3.metric(t['stat_kk'], dash['summary_stats'].get('stat_kk', 0))
         st.markdown("---")
         
         if st.session_state['unlocked']:
