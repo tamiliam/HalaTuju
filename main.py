@@ -152,16 +152,24 @@ def render_auth_gate(t, current_grades):
 # --- 6. MAIN ROUTER ---
 
 # Init Session
+print("DEBUG: ------------------ Script Start ------------------")
 lang_code = st.sidebar.selectbox("🌐 Language", list(LANGUAGES.keys()), format_func=lambda x: LANGUAGES[x], key="lang_code")
 t = get_text(lang_code)
+
+print("DEBUG: Checking Session...")
 auth_status = auth.check_session()
+print(f"DEBUG: Session Status: {auth_status}")
+
 user = st.session_state['user'] if auth_status else None
 
 # Render Sidebar
+print("DEBUG: Rendering Sidebar...")
 submitted, raw_grades, gender = render_sidebar(t, user)
+print(f"DEBUG: Sidebar Rendered. Submitted: {submitted}")
 
 # Calculation Logic
 if submitted or 'dash' not in st.session_state:
+    print("DEBUG: Calculating Dashboard...")
     clean_grades = {k: v for k, v in raw_grades.items() if v != t['opt_not_taken']}
     
     # Store in Session for Guest persistence (in case they reload or submit again)
@@ -169,6 +177,7 @@ if submitted or 'dash' not in st.session_state:
     
     # If Logged In, AUTO-SAVE to DB
     if user and submitted:
+        print("DEBUG: Auto-saving to DB...")
         try:
             supabase.table("student_profiles").update({
                 "grades": clean_grades,
@@ -177,17 +186,20 @@ if submitted or 'dash' not in st.session_state:
             }).eq("id", user['id']).execute()
             user['grades'] = clean_grades # Update Local
             st.toast("Profile Saved!")
-        except: pass
+        except Exception as e:
+            print(f"DEBUG: Auto-save FAIL: {e}")
 
     # Run Engine
     student_obj = StudentProfile(clean_grades, gender, 'Warganegara', 'Tidak', 'Tidak')
     print(f"DEBUG: Running Analysis for {gender}")
     # with st.spinner("Analyzing..."): # Removed to prevent freeze
     st.session_state['dash'] = generate_dashboard_data(student_obj, df_courses, lang_code=lang_code)
+    print("DEBUG: Analysis Complete.")
 
 dash = st.session_state.get('dash')
 
 # --- RENDER MAIN CONTENT ---
+print("DEBUG: Rendering Main Content...")
 st.title(t['header_title'])
 
 if not dash or dash['total_matches'] == 0:
@@ -195,6 +207,7 @@ if not dash or dash['total_matches'] == 0:
     st.stop()
 
 # 1. Summary Metrics (Always Valid)
+print("DEBUG: Rendering Metrics...")
 if 'hero_eligible_dynamic' in t:
     msg = t['hero_eligible_dynamic'].format(courses=dash.get('total_unique_courses', 0), locs=dash['total_matches'])
 else:
@@ -226,6 +239,7 @@ for i, pick in enumerate(dash['featured_matches'][:3]): # Limit to 3
 
 # 3. GATED CONTENT
 if auth_status:
+    print("DEBUG: Rendering UNLOCKED Table...")
     # --- UNLOCKED VIEW ---
     st.markdown("---")
     st.subheader(t['table_title'])
@@ -255,6 +269,7 @@ if auth_status:
             use_container_width=True, hide_index=True, height=500
         )
 else:
+    print("DEBUG: Rendering GATED View...")
     # --- LOCKED VIEW ---
     render_auth_gate(t, raw_grades)
 
@@ -262,3 +277,5 @@ else:
 st.markdown("---")
 with st.expander(t['about_title']):
     st.markdown(t['about_desc'])
+
+print("DEBUG: ------------------ Script END ------------------")
