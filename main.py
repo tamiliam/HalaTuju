@@ -70,6 +70,17 @@ def render_sidebar(t, user):
             auth.logout()
     else:
         st.sidebar.info("👋 Guest Mode")
+        with st.sidebar.expander("🔐 **Returning Users**"):
+             l_phone = st.text_input("Phone", key="sb_phone")
+             l_pin = st.text_input("PIN", type="password", key="sb_pin")
+             if st.button("Login", key="sb_login"):
+                 success, val = auth.login_user(l_phone, l_pin)
+                 if success:
+                     st.toast(f"Welcome back!")
+                     time.sleep(0.5)
+                     st.rerun()
+                 else:
+                     st.error(val)
 
     st.sidebar.markdown("---")
     
@@ -120,6 +131,8 @@ def render_auth_gate(t, current_grades):
     
     st.write("Ready to see everything? Unlock your full report now.")
     
+    # Only need Register tab now since Login is in sidebar? 
+    # But good to keep both for flexibility
     tab1, tab2 = st.tabs(["Unlock & Save", "Returning User Login"])
     
     with tab1:
@@ -142,7 +155,7 @@ def render_auth_gate(t, current_grades):
                     st.error(val)
 
     with tab2:
-        with st.form("login_form"):
+        with st.form("login_form_gate"):
             l_phone = st.text_input("Phone Number", placeholder="e.g. 012-3456789")
             l_pin = st.text_input("6-Digit PIN", type="password", max_chars=6)
             if st.form_submit_button("Login"):
@@ -169,7 +182,19 @@ if user:
 submitted, raw_grades, gender = render_sidebar(t, user)
 
 # Calculation Logic
-if submitted or 'dash' not in st.session_state:
+# Run if: 
+# 1. Submitted (User clicked button)
+# 2. Dash missing (First load)
+# 3. User logged in BUT calculation hash/check hasn't happened for this user yet
+force_calc = False
+if user and 'last_calc_user' not in st.session_state:
+    force_calc = True
+    st.session_state['last_calc_user'] = user['id']
+elif user and st.session_state.get('last_calc_user') != user['id']:
+    force_calc = True
+    st.session_state['last_calc_user'] = user['id']
+
+if submitted or 'dash' not in st.session_state or force_calc:
     cleaned_grades = raw_grades # Debugging alias
     
     # Store in Session for Guest persistence (in case they reload or submit again)
