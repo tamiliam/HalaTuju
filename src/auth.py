@@ -57,23 +57,36 @@ class AuthManager:
             
             # Better strategy:
             # 1. Check if user exists
-            existing = self.supabase.table("student_profiles").select("id").eq("phone", phone).execute()
             if existing.data:
                  # Update ONLY pin and name
                  res = self.supabase.table("student_profiles").update({
                      "full_name": name,
                      "pin_hash": hashed,
-                     # "updated_at": "now()" <--- REMOVED
+                     # "updated_at": "now()" 
                  }).eq("phone", phone).execute()
             else:
                  # Insert New
                  data["grades"] = {} # Initialize empty for new
                  res = self.supabase.table("student_profiles").insert(data).execute()
 
+            # Handle Response
             if res.data:
                 user = res.data[0]
                 self.set_session(user)
                 return True, user
+            
+            # FALLBACK: Sometimes update/insert doesn't return rows depending on headers/RLS
+            # Verify if user exists manually
+            verify = self.supabase.table("student_profiles").select("*").eq("phone", phone).execute()
+            if verify.data:
+                 user = verify.data[0]
+                 self.set_session(user)
+                 return True, user
+                 
+            return False, f"Debug: Op Success but No Data returned. Res: {res}"
+            
+        except Exception as e:
+            return False, f"Error: {e}"
         except Exception as e:
             return False, f"Error: {e}"
         return False, "Unknown Error"
