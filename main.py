@@ -66,7 +66,7 @@ lang_code = st.sidebar.selectbox(
 )
 t = get_text(lang_code)
 
-st.sidebar.title(f"📝 {t['sb_title']} (v2.2)")
+st.sidebar.title(f"📝 {t['sb_title']}")
 st.sidebar.caption(t['sb_caption'])
 
 # Options

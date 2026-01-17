@@ -133,9 +133,8 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             "quality_key": quality_key, # Keep key for logic if needed
             "code": cid,
             # Rich Content
-            # DEEP DEBUG
             "headline": desc_data.get('headline', ''),
-            "synopsis": desc_data.get('synopsis', f"DEBUG: ID={cid} | Type={type(cid)} | InKeys={'POLY-DIP-001' in course_info} | KeysStart={list(course_info.keys())[:1]}"),
+            "synopsis": desc_data.get('synopsis', ''),
             "jobs": desc_data.get('jobs', [])
         })
 
