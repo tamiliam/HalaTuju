@@ -12,6 +12,9 @@ TEXTS = {
         "sb_title": "SPM Results",
         "sb_caption": "Enter your actual or trial results.",
         "sb_btn_submit": "Check Eligibility",
+        "sb_core_subjects": "Core Subjects",
+        "sb_science_stream": "Science Stream",
+        "sb_arts_stream": "Arts Stream",
         "sb_opt_subject": "Optional Subjects",
         "sb_gender": "Gender",
         
@@ -95,6 +98,9 @@ TEXTS = {
         "sb_title": "Keputusan SPM",
         "sb_caption": "Masukkan gred percubaan atau sebenar.",
         "sb_btn_submit": "Semak Kelayakan",
+        "sb_core_subjects": "Subject Teras",
+        "sb_science_stream": "Aliran Sains",
+        "sb_arts_stream": "Aliran Seni",
         "sb_opt_subject": "Subjek Elektif",
         "sb_gender": "Jantina",
         
@@ -178,6 +184,9 @@ TEXTS = {
         "sb_title": "SPM முடிவுகள்",
         "sb_caption": "உங்கள் தேர்வு முடிவுகளை உள்ளிடவும்.",
         "sb_btn_submit": "தகுதியை சரிபார்க்கவும்",
+        "sb_core_subjects": "முதன்மை பாடங்கள்",
+        "sb_science_stream": "அறிவியல் பிரிவு",
+        "sb_arts_stream": "கலைப் பிரிவு",
         "sb_opt_subject": "கூடுதல் பாடங்கள்",
         "sb_gender": "பாலினம்",
         
