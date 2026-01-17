@@ -32,22 +32,23 @@ class AuthManager:
         pattern = r"^(?:\+?60|0)1[0-9]{1}-?[0-9]{7,8}$"
         return bool(re.match(pattern, phone.strip().replace(" ", "")))
 
-    def register_user(self, name, phone, pin, email=None):
-        """Creates a new user with Hashed PIN."""
+    def register_user(self, name, phone, pin, grades=None, email=None):
+        """Creates a new user with Hashed PIN and optional Initial Grades."""
         if not self.validate_phone(phone):
             return False, "❌ Invalid Phone Format"
         if not pin.isdigit() or len(pin) != 6:
             return False, "❌ PIN must be 6 digits"
             
         hashed = self.hash_pin(pin)
+        grades = grades or {}
         
         data = {
             "full_name": name,
             "phone": phone,
             "pin_hash": hashed,
             "email": email,
-            # "grades": {}, # Don't overwrite grades on re-register/upsert!
-            # "updated_at": "now()" <--- REMOVED
+            "grades": grades, # User confirmed we MUST save the current grades
+            # "updated_at": "now()" 
         }
         
         try:
@@ -57,16 +58,17 @@ class AuthManager:
             
             # Better strategy:
             # 1. Check if user exists
+            # 1. Check if user exists
             if existing.data:
-                 # Update ONLY pin and name
+                 # Update PIN, Name, AND Grades (Since user explicitly submitted them)
                  res = self.supabase.table("student_profiles").update({
                      "full_name": name,
                      "pin_hash": hashed,
+                     "grades": grades
                      # "updated_at": "now()" 
                  }).eq("phone", phone).execute()
             else:
                  # Insert New
-                 data["grades"] = {} # Initialize empty for new
                  res = self.supabase.table("student_profiles").insert(data).execute()
 
             # Handle Response
