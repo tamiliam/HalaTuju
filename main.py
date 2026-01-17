@@ -49,6 +49,22 @@ def save_profile(name, email, phone, student, eligible_count):
         st.error(f"Error: {e}")
         return False
 
+def validate_submission(name, email, phone):
+    """Validates user input for the unlock form."""
+    if not name or len(name.strip()) < 2:
+        return False, "❌ Name is too short."
+    
+    # Email Regex
+    email_pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+    if not email or not re.match(email_pattern, email):
+        return False, "❌ Invalid Email Address format."
+        
+    # Phone Regex (Relaxed: allow digits, spaces, -, +)
+    if not phone or len(re.sub(r'\D', '', phone)) < 9:
+        return False, "❌ Phone number is too short."
+        
+    return True, ""
+
 def get_leads():
     """Fetch all leads for the Admin Panel"""
     if not DB_CONNECTED: return pd.DataFrame()
@@ -275,18 +291,39 @@ if 'dash' in st.session_state:
             st.write(t['locked_count'].format(remaining=dash['total_matches'] - 3))
             st.warning(f"🔒 **{t['locked_cta_title']}**")
             st.write(t['locked_cta_desc'])
+            
+            # --- GOOGLE LOGIN (NEW) ---
+            from src.auth import render_google_login
+            g_user, g_err = render_google_login()
+            
+            if g_user:
+                # Loophole: If logged in via Google, auto-unlock!
+                # In real flow, we might still want to ask for Phone number if missing
+                st.success(f"✅ Welcome, {g_user['name']}!")
+                if st.button("🔓 Continue to Results"):
+                     # Auto-save google profile
+                     save_profile(g_user['name'], g_user['email'], "Google-Auth", st.session_state['current_student'], dash['total_matches'])
+                     st.session_state['unlocked'] = True
+                     st.rerun()
+
+            # --- MANUAL FORM ---
+            st.write("Or enter details manually:")
             with st.form("lead_capture"):
                 c_name, c_phone = st.columns(2)
                 name = c_name.text_input(t['form_name'])
                 phone = c_phone.text_input(t['form_phone'])
                 email = st.text_input(t['form_email'])
                 if st.form_submit_button(f"🔓 {t['btn_unlock']}"):
-                    if name and phone:
+                    # Validate Inputs
+                    is_valid, err_msg = validate_submission(name, email, phone)
+                    
+                    if is_valid:
                         if save_profile(name, email, phone, st.session_state['current_student'], dash['total_matches']):
                             st.session_state['unlocked'] = True
                             st.toast(t['toast_success'])
                             st.rerun()
-                    else: st.error(t['err_missing_info'])
+                    else:
+                        st.error(err_msg)
     else:
         st.error(t['hero_fail'])
         st.info(t['hero_tip'])
