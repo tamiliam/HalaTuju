@@ -129,9 +129,13 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
     if len(unique_sorted) > 1: top_picks.append(unique_sorted[1])
     if len(unique_sorted) > 2: top_picks.append(unique_sorted[2])
 
+    # Calculate Unique Courses Count
+    unique_course_count = len(set(o['code'] for o in eligible_offerings))
+
     return {
         "user_status": txt["status_eligible"] if top_picks else txt["status_not_eligible"],
         "total_matches": len(eligible_offerings),
+        "total_unique_courses": unique_course_count,
         "summary_stats": stats,
         "featured_matches": top_picks,
         "full_list": sorted_offerings, 

@@ -153,7 +153,16 @@ if submitted:
 if 'dash' in st.session_state:
     dash = st.session_state['dash']
     if dash['total_matches'] > 0:
-        st.success(t['hero_success'].format(count=dash['total_matches']))
+        # Use dynamic message if available, otherwise fallback
+        if 'hero_eligible_dynamic' in t:
+            msg = t['hero_eligible_dynamic'].format(
+                courses=dash.get('total_unique_courses', 0), 
+                locs=dash['total_matches']
+            )
+        else:
+            msg = t['hero_success'].format(count=dash['total_matches'])
+            
+        st.success(msg)
         c1, c2, c3 = st.columns(3)
         c1.metric(t['inst_poly'], dash['summary_stats'].get('inst_poly', 0))
         c2.metric(t['inst_ikbn'], dash['summary_stats'].get('inst_ikbn', 0))
