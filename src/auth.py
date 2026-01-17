@@ -175,7 +175,7 @@ class AuthManager:
     def update_profile(self, user_id, updates):
         """Updates specific profile fields"""
         try:
-            updates['updated_at'] = "now()"
+            # updates['updated_at'] = "now()" # Column missing in DB
             res = self.supabase.table("student_profiles").update(updates).eq("id", user_id).execute()
             if res.data:
                 # Update session
