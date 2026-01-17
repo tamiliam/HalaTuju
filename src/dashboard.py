@@ -126,7 +126,8 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             "code": cid,
             # Rich Content
             "headline": desc_data.get('headline', ''),
-            "synopsis": desc_data.get('synopsis', '')
+            "synopsis": desc_data.get('synopsis', ''),
+            "jobs": desc_data.get('jobs', [])
         })
 
     # Logic for Top 3 (Teaser) - Prefer varied Types

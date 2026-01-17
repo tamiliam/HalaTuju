@@ -241,6 +241,10 @@ if 'dash' in st.session_state:
                     # 2. Show the human-friendly synopsis
                     if pick.get('synopsis'):
                         st.info(pick['synopsis'])
+                        
+                    # 2b. Show Jobs (If available)
+                    if pick.get('jobs'):
+                        st.markdown(f"**💼 Career:** {', '.join(pick['jobs'])}")
                     
                     # 3. Show Real Data (Location, Fees, Inst)
                     st.markdown(f"**🏫 {pick['institution']}**")
