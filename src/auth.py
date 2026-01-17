@@ -47,21 +47,13 @@ class AuthManager:
             "pin_hash": hashed,
             "email": email,
             # "grades": {}, # Don't overwrite grades on re-register/upsert!
-            "updated_at": "now()"
+            # "updated_at": "now()" <--- REMOVED
         }
         
         try:
             # Use Upsert to allow existing users to set their PIN
             # We explicitly exclude 'grades' from data so we don't wipe them if they existed
             # But Supabase update will only update provided columns.
-            
-            # Check if user exists to decide on grades? 
-            # Upsert will overwrite. If we want to preserve grades, we need to be careful.
-            # Simple approach: Login first. If no PIN, they can't login.
-            # So they must Register. If they Register, does it wipe grades?
-            # Yes if we include "grades": {}. 
-            # Let's REMOVE "grades" from the upsert payload so we don't accidentally clear it.
-            # If it's a NEW user, default is NULL? or we should set it?
             
             # Better strategy:
             # 1. Check if user exists
@@ -71,7 +63,7 @@ class AuthManager:
                  res = self.supabase.table("student_profiles").update({
                      "full_name": name,
                      "pin_hash": hashed,
-                     "updated_at": "now()"
+                     # "updated_at": "now()" <--- REMOVED
                  }).eq("phone", phone).execute()
             else:
                  # Insert New

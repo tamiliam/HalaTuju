@@ -146,7 +146,7 @@ def render_dashboard(user, t):
                 supabase.table("student_profiles").update({
                     "grades": clean_grades,
                     "gender": gender, # Note: DB schema might need gender text col or store in JSON
-                    "updated_at": "now()"
+                    # "updated_at": "now()" <--- REMOVED
                 }).eq("id", user['id']).execute()
                 st.session_state['user'] = user # Update Local State
                 st.toast("Profile Updated!")
