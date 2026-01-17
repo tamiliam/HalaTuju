@@ -145,8 +145,9 @@ if submitted:
     st.session_state['unlocked'] = False
     grades = {'bm': bm, 'eng': eng, 'hist': hist, 'math': math, 'sci': sci,
               'addmath': addmath, 'phy': phy, 'chem': chem, 'bio': bio}
-    grades = {k: v for k, v in grades.items() if v != opt_not_taken}
-    student = StudentProfile(grades, internal_gender, 'Warganegara', 'Tidak', 'Tidak')
+    grades = {k: v for k, v in grades.items() if v != t['opt_not_taken']}
+    # student = StudentProfile(grades, internal_gender, 'Warganegara', 'Tidak', 'Tidak')
+    student = StudentProfile(grades, gender, 'Warganegara', 'Tidak', 'Tidak')
     st.session_state['current_student'] = student
     
     with st.spinner(t['spinner_msg']):
