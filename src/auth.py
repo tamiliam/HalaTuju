@@ -152,4 +152,6 @@ class AuthManager:
         self.cookie_manager.delete(self.COOKIE_NAME)
         st.session_state['logged_in'] = False
         st.session_state['user'] = None
+        # Give frontend time to process cookie deletion
+        time.sleep(1) 
         st.rerun()
