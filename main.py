@@ -51,20 +51,35 @@ def save_profile(name, email, phone, student, eligible_count):
         return False
 
 def validate_submission(name, email, phone, t):
-    """Validates user input for the unlock form."""
-    if not name or len(name.strip()) < 2:
-        return False, t.get('err_name_short', "Invalid Name")
+    """Validates user input with robust Malaysian context regex."""
+    errors = []
     
-    # Email Regex
-    email_pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+    # 1. Validate Name (Malaysian Context: A/L, A/P, @, spaces, etc)
+    # Regex: Starts with letter, allows spaces, ', /, ., @, -
+    name_pattern = r"^[A-Za-z\s'\/\.\@\-]+$"
+    if not name or len(name.strip()) < 2:
+        errors.append(t.get('err_name_short', "Name is too short"))
+    elif not re.match(name_pattern, name):
+        errors.append(t.get('err_name_invalid', "Invalid characters in Name"))
+
+    # 2. Validate Email (Standard Robust)
+    email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     if not email or not re.match(email_pattern, email):
-        return False, t.get('err_email_invalid', "Invalid Email")
-        
-    # Phone Regex (Relaxed: allow digits, spaces, -, +)
-    if not phone or len(re.sub(r'\D', '', phone)) < 9:
-        return False, t.get('err_phone_short', "Invalid Phone")
-        
-    return True, ""
+        errors.append(t.get('err_email_invalid', "Invalid Email Address"))
+
+    # 3. Validate Phone (Malaysia Mobile: 01x-xxxxxxx or +601x)
+    # Prefix: +601 or 01, digit after 1, 7-8 digits following
+    phone_pattern = r"^(?:\+?60|0)1[0-9]{1}-?[0-9]{7,8}$"
+    if not phone:
+        errors.append(t.get('err_phone_short', "Phone number required"))
+    elif not re.match(phone_pattern, phone.strip().replace(" ", "")): # Strip spaces before regex if needed, or regex handles it?
+        # User regex was: ^(?:\+?60|0)1[0-9]{1}-?[0-9]{7,8}$
+        # It handles optional hyphen. We should probably strip spaces to be safe given user input habits.
+        errors.append(t.get('err_phone_invalid', "Invalid Malaysia Date/Phone format"))
+
+    if errors:
+        return False, errors
+    return True, []
 
 def get_leads():
     """Fetch all leads for the Admin Panel"""
@@ -316,7 +331,7 @@ if 'dash' in st.session_state:
                 email = st.text_input(t['form_email'])
                 if st.form_submit_button(f"🔓 {t['btn_unlock']}"):
                     # Validate Inputs
-                    is_valid, err_msg = validate_submission(name, email, phone, t)
+                    is_valid, err_list = validate_submission(name, email, phone, t)
                     
                     if is_valid:
                         if save_profile(name, email, phone, st.session_state['current_student'], dash['total_matches']):
@@ -324,7 +339,8 @@ if 'dash' in st.session_state:
                             st.toast(t['toast_success'])
                             st.rerun()
                     else:
-                        st.error(err_msg)
+                        for err in err_list:
+                             st.error(err)
     else:
         st.error(t['hero_fail'])
         st.info(t['hero_tip'])
