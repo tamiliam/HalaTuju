@@ -48,8 +48,8 @@ def save_profile(name, email, phone, student, eligible_count):
         "phone": phone, 
         "gender": student.gender,
         "grades": student.grades, 
-        "eligible_count": eligible_count,
-        "updated_at": "now()" # Ensure we track latest update
+        "eligible_count": eligible_count
+        # "updated_at": "now()" <--- REMOVED due to Schema Error
     }
     
     try:
