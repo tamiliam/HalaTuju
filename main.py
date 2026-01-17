@@ -73,33 +73,34 @@ st.sidebar.title(f"📝 {t['sb_title']}")
 st.sidebar.caption(t['sb_caption'])
 
 # Options
-grade_opts = ["A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G", 'opt_not_taken']
+grade_opts = [t["opt_not_taken"], "A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G"]
 
-gender_map = {t['gender_male']: "Lelaki", t['gender_female']: "Perempuan"}
+#gender_map = {t['gender_male']: "Lelaki", t['gender_female']: "Perempuan"}
 
 with st.sidebar.form("grades_form"):
+
     # Core Subjects
-    bm = st.selectbox(t['subj_bm'], grade_opts, index=6)
-    eng = st.selectbox(t['subj_eng'], grade_opts, index=6)
-    hist = st.selectbox(t['subj_hist'], grade_opts, index=6)
-    math = st.selectbox(t['subj_math'], grade_opts, index=6)
+    st.subheader(t['sb_core_subjects'])
+    bm = st.selectbox(t['subj_bm'], grade_opts, index=7)
+    eng = st.selectbox(t['subj_eng'], grade_opts, index=7)
+    hist = st.selectbox(t['subj_hist'], grade_opts, index=7)
+    math = st.selectbox(t['subj_math'], grade_opts, index=7)
         
-    st.markdown("---")
-    st.caption(t['sb_opt_subject'])
-    
+      
     # Science Stream
-    addmath = st.selectbox(t['subj_addmath'], grade_opts, index=10)
+    st.subheader(t['sb_science_stream'])
+    addmath = st.selectbox(t['subj_addmath'], grade_opts, index=0)
     phy = st.selectbox(t['subj_phy'], grade_opts, index=0)
-    chem = st.selectbox(t['subj_chem'], grade_opts, index=10)
-    bio = st.selectbox(t['subj_bio'], grade_opts, index=10)
+    chem = st.selectbox(t['subj_chem'], grade_opts, index=0)
+    bio = st.selectbox(t['subj_bio'], grade_opts, index=0)
 
-with st.sidebar.expander(t['subj_sci'], expanded=False):
     # Arts Stream
-    sci = st.selectbox(t['subj_sci'], grade_opts, index=10)
+    with st.expander(t['sb_arts_stream'], expanded=False):
+        sci = st.selectbox(t['subj_sci'], grade_opts, index=0)
 
-with st.sidebar.form("grades_form"):
-    selected_gender_label = st.radio(t['sb_gender'], list(gender_map.keys()), horizontal=True)
-    internal_gender = gender_map[selected_gender_label]
+    #selected_gender_label = st.radio(t['sb_gender'], list(gender_map.keys()), horizontal=True)
+    #internal_gender = gender_map[selected_gender_label]
+    gender = st.radio(t["sb_gender"], [t["gender_male"], t["gender_female"]])
     
     submitted = st.form_submit_button(f"🚀 {t['sb_btn_submit']}")
 
