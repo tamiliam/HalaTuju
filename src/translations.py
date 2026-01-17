@@ -45,13 +45,14 @@ TEXTS = {
         
         # Results
         "hero_success": "🎉 Good news! You meet the entry requirements for **{count} Courses**.",
+        'hero_eligible_dynamic': '🎉 Good news! You qualify for **{courses} Courses** across **{locs} Locations**.',
         "hero_fail": "No direct matches found yet.",
         "hero_tip": "Tip: Ensure you entered a pass for Malay/History if required.",
         
         # Stats & Tables
-        "stat_poly": "Politeknik",
-        "stat_ikbn": "IKBN / Skills",
-        "stat_kk": "Comm. College",
+        "stat_poly": "Politechnic",
+        "stat_kk": "Community College",
+        "stat_ikbn": "IKBN / ADTEC",
         "teaser_title": "🌟 Your Top 3 Strategic Options",
         "teaser_subtitle": "Based on your results, these are solid pathways for you:",
         "btn_save_course": "Shortlist ❤️",
@@ -132,12 +133,13 @@ TEXTS = {
         
         # Results
         "hero_success": "🎉 Berita baik! Anda memenuhi syarat untuk **{count} Kursus**.",
+        'hero_eligible_dynamic': '🎉 Berita baik! Anda layak untuk **{courses} Kursus** di **{locs} Lokasi**.',
         "hero_fail": "Tiada padanan ditemui buat masa ini.",
         "hero_tip": "Tip: Pastikan anda lulus Bahasa Melayu/Sejarah jika perlu.",
         
         # Stats & Tables
         "stat_poly": "Politeknik",
-        "stat_ikbn": "IKBN / Kemahiran",
+        "stat_ikbn": "IKBN / ADTEC",
         "stat_kk": "Kolej Komuniti",
         "teaser_title": "🌟 3 Pilihan Strategik Anda",
         "teaser_subtitle": "Berdasarkan keputusan anda, laluan ini mungkin sesuai:",
@@ -219,13 +221,14 @@ TEXTS = {
         
         # Results
         "hero_success": "🎉 மகிழ்ச்சியான செய்தி! நீங்கள் **{count} படிப்புகளுக்கு** தகுதி பெற்றுள்ளீர்கள்.",
+        "hero_eligible_dynamic": "🎉 நற்செய்தி! நீங்கள் **{locs} இடங்களிலுள்ள** **{courses} படிப்புகளுக்குத்** தகுதி பெற்றுள்ளீர்கள்.",
         "hero_fail": "தற்போதைக்கு பொருத்தமான படிப்புகள் இல்லை.",
         "hero_tip": "குறிப்பு: மலாய் மொழி/வரலாற்றில் தேர்ச்சி பெற்றுள்ளீர்களா என்பதை உறுதிப்படுத்தவும்.",
         
         # Stats & Tables
         "stat_poly": "பாலிடெக்னிக்",
-        "stat_ikbn": "IKBN / திறன் பயிற்சி",
-        "stat_kk": "சமூகக் கல்லூரி",
+        "stat_ikbn": "ஐகேபிஎன் / எட்டெக்",
+        "stat_kk": "கமூனிடி காலேஜ்",
         "teaser_title": "🌟 உங்களுக்கான சிறந்த 3 வாய்ப்புகள்",
         "teaser_subtitle": "உங்கள் முடிவுகளின் அடிப்படையில், இவை சிறந்த தேர்வுகள்:",
         "btn_save_course": "விருப்பப் பட்டியலில் சேர் ❤️",
