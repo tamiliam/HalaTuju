@@ -1,0 +1,10 @@
+id,created_at,name,email,phone,gender,grades,eligible_count,source,pin_hash,full_name,last_login
+64fbea6a-f099-4781-ab6f-26d675202b6d,2026-01-17 13:00:10.614456+00,,,0123456777,,"{""bm"": ""E"", ""hist"": ""E"", ""math"": ""D""}",,HalaTuju_v1,$2b$12$nI6PRQElguWpoe.SJ3R/ve4dqA/elgZ.I5ZelW3hpaVu1JOX0OM62,Ali bin Muthu,
+b929ffd4-5483-491a-85e4-d87b3abdd927,2026-01-17 12:31:09.597836+00,,,0123456788,,"{""bm"": ""C"", ""eng"": ""C"", ""hist"": ""C"", ""math"": ""C"", ""moral"": ""C""}",,HalaTuju_v1,$2b$12$11ywLDjy7VICpUar8jmJCe7b1xhMo3.MEflBnpkc4.Ekvfh15Moq.,ArunagiriM,
+20d7d26d-df9a-4387-8406-6dbea8b998bf,2026-01-17 11:43:35.060163+00,,,0123456789,,"{""bm"": ""C"", ""eng"": ""G"", ""hist"": ""C"", ""math"": ""C"", ""moral"": ""C""}",,HalaTuju_v1,$2b$12$STOgTBr4EYRANqjsNBIq/OxGq15t97fB6CbMQPscQ7XCaz0W9FqIm,Arunagiri,
+871c7f9e-9258-4001-aeef-37dc804984e7,2026-01-17 09:20:32.299342+00,ELANJELIAN VENUGOPAL,tamiliam@gmail.com,0123375709,Male,"{""bm"": ""C"", ""eng"": ""C"", ""hist"": ""C"", ""math"": ""C"", ""moral"": ""C""}",701,HalaTuju_v1,,,
+8d5eee87-60bf-4080-8f85-1d42dcbc1789,2026-01-17 09:11:37.140783+00,Vanitha Mohan,athiragh@gmail.com,0123434567,Male,"{""bm"": ""C"", ""eng"": ""C"", ""hist"": ""C"", ""math"": ""C"", ""moral"": ""C""}",701,HalaTuju_v1,,,
+9bc3f6ab-c2f1-487b-a406-a553f0ca2ab2,2026-01-17 09:06:25.657116+00,fdfd ere,fdf@g.com,0123434567,Male,"{""bm"": ""C"", ""eng"": ""C"", ""hist"": ""C"", ""math"": ""C"", ""moral"": ""C""}",701,HalaTuju_v1,,,
+f77c07b7-34a3-4add-9f16-726aff2d4a83,2026-01-17 08:50:35.998241+00,dfd,tamiliam@gmail.c,11232333333,Male,"{""bm"": ""C"", ""eng"": ""C"", ""hist"": ""C"", ""math"": ""C"", ""moral"": ""C""}",701,HalaTuju_v1,,,
+9b84059c-7f90-4c61-86e6-a6d9a2b4a144,2026-01-17 08:41:35.068695+00,Test User,test@example.com,Google-Auth,Male,"{""bm"": ""C"", ""eng"": ""C"", ""hist"": ""C"", ""math"": ""C"", ""moral"": ""C""}",701,HalaTuju_v1,,,
+9cd4a964-ce6d-48a3-9d28-43dfb7bbe026,2026-01-17 08:16:25.850861+00,Karnapiran,erere,34343,Male,"{""bm"": ""C"", ""eng"": ""C"", ""hist"": ""C"", ""math"": ""C"", ""moral"": ""C""}",701,HalaTuju_v1,,,

@@ -61,6 +61,10 @@ def render_sidebar(t, user):
     # User Badge
     if user:
         st.sidebar.success(f"👤 {user.get('full_name', 'Student')}")
+        # DEBUG: Show what grades the app sees
+        with st.sidebar.expander("Debug: My Saved Grades"):
+             st.write(user.get('grades'))
+             
         if st.sidebar.button("Log Out"):
             auth.logout()
     else:

@@ -151,12 +151,15 @@ class AuthManager:
     def logout(self):
         """Clears session and cookies"""
         try:
+            # Force expire the cookie by setting it to empty with past date
+            self.cookie_manager.set(self.COOKIE_NAME, "", expires_at=datetime.now() - timedelta(days=1))
+            # Also try delete for good measure
             self.cookie_manager.delete(self.COOKIE_NAME)
         except KeyError:
             pass # Cookie already gone
             
         st.session_state['logged_in'] = False
         st.session_state['user'] = None
-        # Give frontend time to process cookie deletion
-        time.sleep(1) 
+        # Give frontend time to process
+        time.sleep(2)  # Increased to 2s to be safe
         st.rerun()
