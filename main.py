@@ -23,8 +23,12 @@ try:
     quiz_manager = QuizManager()
     DB_CONNECTED = True
 except Exception as e:
-    st.error(f"Database Connection Failed: {e}")
+    st.error(f"🚨 CRITICAL DB CONNECTION ERROR: {e}")
     DB_CONNECTED = False
+    
+if not DB_CONNECTED:
+    st.warning("Please check your internet connection or database configuration.")
+    st.stop()
 
 # ... (Helper Functions) ...
 
