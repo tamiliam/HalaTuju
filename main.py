@@ -525,10 +525,7 @@ if auth_status:
     # --- UNLOCKED VIEW ---
     st.markdown("---")
     # ...
-else:
-    # --- LOCKED VIEW ---
-    if dash and dash.get('total_matches', 0) > 0:
-        render_auth_gate(t, raw_grades, gender, cb, disability)
+
 
 # --- RENDER MAIN CONTENT ---
 st.title(t['header_title'])
