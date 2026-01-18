@@ -276,7 +276,9 @@ def render_quiz_page(lang_code, user):
 lang_code = st.sidebar.selectbox("🌐 Language", list(LANGUAGES.keys()), format_func=lambda x: LANGUAGES[x], key="lang_code")
 t = get_text(lang_code)
 
-auth_status = auth.check_session()
+auth_status = False
+if DB_CONNECTED and auth:
+    auth_status = auth.check_session()
 user = st.session_state['user'] if auth_status else None
 
 # Render Sidebar
