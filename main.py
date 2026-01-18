@@ -83,15 +83,7 @@ def render_quiz_page(lang_code):
         st.rerun()
 
 # ... (Main Router) ...
-view_mode = st.session_state.get('view_mode', 'dashboard')
 
-if view_mode == 'profile' and user:
-    # ...
-elif view_mode == 'quiz':
-    render_quiz_page(lang_code)
-    st.stop()
-    
-# ... (Dashboard) ...
 st.set_page_config(page_title="Hala Tuju SPM", page_icon="🎓", layout="centered")
 
 def local_css(file_name):
