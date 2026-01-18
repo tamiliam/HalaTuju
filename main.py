@@ -5,10 +5,91 @@ from supabase import create_client, Client
 from src.engine import StudentProfile
 from src.dashboard import generate_dashboard_data
 from src.translations import get_text, LANGUAGES
-from src.data_manager import load_master_data
-from src.auth import AuthManager
+from src.quiz_manager import QuizManager
 
-# --- 1. CONFIGURATION ---
+# --- CONFIG & SETUP ---
+# ... (existing setup)
+try:
+    # ... (existing supabase init)
+    auth = AuthManager(supabase)
+    quiz_manager = QuizManager() # Init Quiz Manager
+    DB_CONNECTED = True
+except Exception:
+    # ...
+
+# ... (Helper Functions) ...
+
+# --- NEW: QUIZ PAGE RENDERER ---
+def render_quiz_page(lang_code):
+    st.title("🧭 Discovery Quiz")
+    
+    # Get Current Question
+    q = quiz_manager.get_current_question(lang_code)
+    total = quiz_manager.get_total_questions(lang_code)
+    step = st.session_state['quiz_step']
+    
+    # Progress Bar
+    progress = (step / total)
+    st.progress(progress)
+    
+    if q:
+        # Render Question Card
+        with st.container():
+            st.markdown(f"### {step + 1}. {q['prompt']}")
+            st.markdown("") # Spacer
+            
+            # Render Options as large buttons
+            for i, opt in enumerate(q['options']):
+                # Use a unique key for every option/step combo
+                if st.button(opt['text'], key=f"q{step}_opt{i}", use_container_width=True):
+                    quiz_manager.handle_answer(opt)
+                    st.rerun()
+                    
+            st.markdown("---")
+            if step > 0:
+                if st.button("⬅️ Back"):
+                    quiz_manager.go_back()
+                    st.rerun()
+                    
+    elif quiz_manager.is_complete(lang_code):
+        # Quiz Complete Transition
+        with st.spinner("Generating your fit..."):
+            time.sleep(1.5)
+            
+        # Get Results
+        results = quiz_manager.get_final_results()
+        
+        # Display Results (Temporary View)
+        st.success("Analysis Complete!")
+        st.json(results)
+        
+        # Save to Session?
+        st.session_state['student_signals'] = results['student_signals']
+        
+        if st.button("Return to Dashboard"):
+            st.session_state['view_mode'] = 'dashboard'
+            st.rerun()
+
+# --- SIDEBAR LOGIC ---
+# ...
+# Inside render_sidebar or main logic:
+
+# ... (After Profile Button) ...
+    if st.sidebar.button("🧭 Start Discovery Quiz", use_container_width=True):
+        quiz_manager.reset_quiz()
+        st.session_state['view_mode'] = 'quiz'
+        st.rerun()
+
+# ... (Main Router) ...
+view_mode = st.session_state.get('view_mode', 'dashboard')
+
+if view_mode == 'profile' and user:
+    # ...
+elif view_mode == 'quiz':
+    render_quiz_page(lang_code)
+    st.stop()
+    
+# ... (Dashboard) ...
 st.set_page_config(page_title="Hala Tuju SPM", page_icon="🎓", layout="centered")
 
 def local_css(file_name):
@@ -139,6 +220,62 @@ def render_profile_page(user):
         st.session_state['view_mode'] = 'dashboard'
         st.rerun()
 
+# --- 5c. QUIZ PAGE ---
+def render_quiz_page(lang_code, user):
+    st.title("🧭 Discovery Quiz")
+    
+    # Get Current Question
+    q = quiz_manager.get_current_question(lang_code)
+    total = quiz_manager.get_total_questions(lang_code)
+    step = st.session_state['quiz_step']
+    
+    # Progress Bar
+    progress = min(max(step / total, 0.0), 1.0) if total > 0 else 0
+    st.progress(progress)
+    
+    if q:
+        # Render Question Card
+        with st.container():
+            st.markdown(f"**Question {step + 1} of {total}**")
+            st.markdown(f"### {q['prompt']}")
+            st.markdown("") # Spacer
+            
+            # Render Options as large buttons
+            for i, opt in enumerate(q['options']):
+                if st.button(opt['text'], key=f"q{step}_opt{i}", use_container_width=True):
+                    quiz_manager.handle_answer(opt)
+                    st.rerun()
+                    
+            st.markdown("---")
+            if step > 0:
+                if st.button("⬅️ Back"):
+                    quiz_manager.go_back()
+                    st.rerun()
+                    
+    elif quiz_manager.is_complete(lang_code):
+        # Quiz Complete Transition
+        with st.spinner("Generating your fit..."):
+            time.sleep(1.5)
+            
+        # Get Results
+        results = quiz_manager.get_final_results()
+        
+        # Save to DB if User
+        if user:
+            try:
+                auth.save_quiz_results(user['id'], results['student_signals'])
+                st.toast("Results Saved!")
+            except Exception as e:
+                st.error(f"Could not save results: {e}")
+        
+        # Display Results
+        st.success("Analysis Complete!")
+        st.json(results)
+        
+        if st.button("Return to Dashboard", use_container_width=True):
+            st.session_state['view_mode'] = 'dashboard'
+            st.rerun()
+
 # --- 6. MAIN ROUTER ---
 
 # Init Session
@@ -162,7 +299,15 @@ if user:
         
     if st.sidebar.button("Log Out", use_container_width=True):
         auth.logout()
-else:
+
+# New: Quiz Button (Visible to everyone)
+st.sidebar.markdown("---")
+if st.sidebar.button("🧭 Start Discovery Quiz", use_container_width=True):
+    quiz_manager.reset_quiz()
+    st.session_state['view_mode'] = 'quiz'
+    st.rerun()
+
+if not user:
     st.sidebar.info("👋 Guest Mode")
     with st.sidebar.expander("🔐 **Returning Users**"):
             l_phone = st.text_input("Phone", key="sb_phone")
@@ -224,6 +369,10 @@ view_mode = st.session_state.get('view_mode', 'dashboard')
 if view_mode == 'profile' and user:
     render_profile_page(user)
     st.stop() # Stop here, don't render dashboard below
+    
+if view_mode == 'quiz':
+    render_quiz_page(lang_code, user)
+    st.stop()
 
 # --- DASHBOARD LOGIC (Below) ---
 # Calculation Logic...

@@ -192,3 +192,7 @@ class AuthManager:
             return False, "Update returned no data and verification failed"
         except Exception as e:
             return False, str(e)
+
+    def save_quiz_results(self, user_id, signals):
+        """Saves values from the Discovery Quiz"""
+        return self.update_profile(user_id, {"student_signals": signals})
