@@ -102,17 +102,6 @@ def local_css(file_name):
 
 local_css("assets/style.css")
 
-# --- 2. SETUP ---
-try:
-    SUPABASE_URL = st.secrets["SUPABASE_URL"]
-    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    auth = AuthManager(supabase)
-    DB_CONNECTED = True
-except Exception:
-    st.error("Database Connection Failed")
-    DB_CONNECTED = False
-
 @st.cache_data
 def get_data():
     return load_master_data()
