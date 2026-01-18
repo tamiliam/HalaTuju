@@ -216,67 +216,7 @@ def render_auth_gate(t, current_grades, gender, cb, disability):
 
 # ... (skip to main logic)
 
-# update saving logic
-    if user and submitted:
-        try:
-            # Update DB
-            data_payload = {
-                "grades": clean_grades,
-                "gender": gender,
-                "colorblind": cb,
-                "disability": disability,
-                "last_login": "now()" # Update activity
-            }
-            
-            # Execute Update
-            res = supabase.table("student_profiles").update(data_payload).eq("id", user['id']).execute()
-            
-            # Update Local Session User
-            user['grades'] = clean_grades
-            user['gender'] = gender
-            user['colorblind'] = cb
-            user['disability'] = disability
-            
-            st.toast("Profile Saved Successfully!")
-        except Exception as e:
-            st.error(f"Save Failed: {str(e)}")
 
-    # Determine other_tech/voc flags
-    # ...
-    from src.engine import is_pass
-    PASS_SET = {"A+", "A", "A-", "B+", "B", "C+", "C", "D", "E"}
-    
-    is_tech = clean_grades.get('tech') in PASS_SET
-    is_voc = clean_grades.get('voc') in PASS_SET
-
-    # Run Engine
-    # Map Health Strings to Logic (if needed)
-    # The Engine expects "Tidak" for 'healthy'.
-    # Our translation gives 'opt_no' which is "Tidak" / "No".
-    # Engine checks: if req.get('no_colorblind') == 1: if not check(..., student.colorblind == 'Tidak', ...)
-    # So we must ensure we pass the localized string that matches?
-    # Actually, Engine logic at line 98 checks `student.colorblind == 'Tidak'`.
-    # If using English ("No"), this fails.
-    # We should normalize health flags to "Tidak" or "Ya" internally?
-    # OR, update Engine to handle localized inputs?
-    # Easier: Normalize before passing to StudentProfile.
-    
-    def normalize_no(val):
-        # Return 'Tidak' if val is one of the "No" variants
-        if val in ['Tidak', 'No', 'இல்லை', 'False', 0]: return 'Tidak'
-        return 'Ya'
-
-    norm_cb = normalize_no(cb)
-    norm_dis = normalize_no(disability)
-
-    student_obj = StudentProfile(clean_grades, gender, 'Warganegara', norm_cb, norm_dis, other_tech=is_tech, other_voc=is_voc)
-    # ...
-
-# ...
-
-if not auth_status:
-    # --- LOCKED VIEW ---
-    render_auth_gate(t, raw_grades, gender, cb, disability)
 
 # --- 5b. PROFILE PAGE ---
 def render_profile_page(user, t):
