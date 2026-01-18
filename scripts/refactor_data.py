@@ -4,9 +4,9 @@ import os
 
 REQ_PATH = "data/requirements.csv"
 TVET_PATH = "data/tvet_requirements.csv"
-DETAILS_PATH = "data/details.csv"
 NEW_REQ_PATH = "data/requirements_clean.csv"
 NEW_TVET_PATH = "data/tvet_requirements_clean.csv"
+DETAILS_CLEAN_PATH = "data/details_clean.csv"
 
 # 1. Define Logic Columns (TO KEEP in Logic Files)
 # Keys + Logic Flags/Counts
@@ -21,8 +21,8 @@ LOGIC_COLS_WHITELIST = [
     "req_malaysian", "req_male", "req_female", "no_colorblind", "no_disability","req_academic", "medical_restrictions",
     
     # Specific Subjects
-    "pass_bm", "pass_history", "pass_eng", "pass_math", "pass_science_tech", "pass_math_sci",
-    "credit_bm", "credit_english", "credit_math", 
+    "pass_bm", "pass_history", "pass_eng", "pass_math", "pass_math_or_addmath", "pass_science_tech", "pass_math_sci",
+    "credit_bm", "credit_english", "credit_eng", "credit_math", 
     "credit_math_sci", "credit_math_sci_tech",
     "pass_stv", "credit_stv", "credit_sf", "credit_sfmt", "credit_bmbi"
     
@@ -31,12 +31,16 @@ LOGIC_COLS_WHITELIST = [
 ]
 
 # 2. Logic to process a file
-def process_file(path, source_type):
+def process_file(path, source_type, rename_map=None):
     if not os.path.exists(path):
         print(f"Skipping {path}, not found.")
         return None, None
         
     df = pd.read_csv(path)
+    
+    # Rename Columns (Normalization)
+    if rename_map:
+        df = df.rename(columns=rename_map)
     
     # Separate Logic vs Details
     
@@ -63,10 +67,12 @@ def process_file(path, source_type):
 
 # 3. Main Execution
 print("Processing Requirements...")
-df_req_logic, df_req_details = process_file(REQ_PATH, "poly")
+# Poly Renames: Normalize credit_eng -> credit_english
+df_req_logic, df_req_details = process_file(REQ_PATH, "poly", rename_map={"credit_eng": "credit_english"})
 
 print("Processing TVET Requirements...")
-df_tvet_logic, df_tvet_details = process_file(TVET_PATH, "tvet")
+# TVET Renames: Distinguish loose math rule
+df_tvet_logic, df_tvet_details = process_file(TVET_PATH, "tvet", rename_map={"pass_math": "pass_math_or_addmath"})
 
 # 4. Save Logic Files (Clean)
 if df_req_logic is not None:
@@ -81,11 +87,11 @@ if df_tvet_logic is not None:
 # We concat them. Columns that don't exist in one will be NaN (as expected).
 if df_req_details is not None and df_tvet_details is not None:
     df_details_merged = pd.concat([df_req_details, df_tvet_details], ignore_index=True)
-    df_details_merged.to_csv(DETAILS_PATH, index=False)
-    print(f"Saved merged details to {DETAILS_PATH}")
+    df_details_merged.to_csv(DETAILS_CLEAN_PATH, index=False)
+    print(f"Saved merged details to {DETAILS_CLEAN_PATH}")
 elif df_req_details is not None:
-    df_req_details.to_csv(DETAILS_PATH, index=False)
+    df_req_details.to_csv(DETAILS_CLEAN_PATH, index=False)
 elif df_tvet_details is not None:
-    df_tvet_details.to_csv(DETAILS_PATH, index=False)
+    df_tvet_details.to_csv(DETAILS_CLEAN_PATH, index=False)
 
 print("Refactoring Complete.")

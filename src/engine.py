@@ -130,7 +130,7 @@ ATTEMPTED_GRADES = PASS_GRADES | {"G"}
 REQ_FLAG_COLUMNS = [
     'req_malaysian', 'req_male', 'req_female', 'no_colorblind', 'no_disability',
     '3m_only', 'pass_bm', 'credit_bm', 'pass_history', 
-    'pass_eng', 'credit_english', 'pass_math', 'credit_math',
+    'pass_eng', 'credit_english', 'pass_math', 'credit_math', 'pass_math_or_addmath',
     'pass_math_sci', 'pass_science_tech', 'credit_math_sci',
     'credit_math_sci_tech', 'pass_stv', 'credit_sf', 'credit_sfmt'
 ]
@@ -234,15 +234,6 @@ def check_eligibility(student, req):
         })
         return cond, audit
 
-    '''# TVET SPECIAL (3M)
-    if req.get('3m_only') == 1:
-        has_bm = is_attempted(g.get('bm'))
-        has_math = is_attempted(g.get('math'))
-        if check("Syarat 3M (BM & Math)", has_bm and has_math, "Perlu sekurang-kurangnya Gred G dalam BM dan Matematik"):
-            return True, audit
-        else:
-            return False, audit'''
-
     # ACADEMIC CHECKS
     passed_academics = True
 
@@ -259,9 +250,14 @@ def check_eligibility(student, req):
 
     # Logic: Passing Add Math satisfies the "Math" requirement.
     if req.get('pass_math') == 1:
-        # Check Modern Math OR Add Math
+        # Check Modern Math ONLY (Poly Policy)
+        if not check("Lulus Matematik", is_pass(g.get('math')), "Gagal Matematik"): passed_academics = False
+
+    if req.get('pass_math_or_addmath') == 1:
+        # Check Modern Math OR Add Math (TVET Policy)
         cond = is_pass(g.get('math')) or is_pass(g.get('addmath'))
-        if not check("Lulus Matematik", cond, "Gagal Matematik & Add Math"): passed_academics = False
+        if not check("Lulus Matematik/AddMath", cond, "Gagal Matematik & Add Math"): passed_academics = False
+
     if req.get('credit_math') == 1:
         # Check Credit in Modern Math OR Add Math
         cond = is_credit(g.get('math')) or is_credit(g.get('addmath'))

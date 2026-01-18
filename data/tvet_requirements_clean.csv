@@ -1,4 +1,4 @@
-institution_id,course_id,min_credits,min_pass,pass_bm,pass_history,pass_math,pass_science_tech,pass_math_sci,credit_math_sci_tech,credit_math_sci,credit_english,3m_only,no_colorblind,no_disability,req_academic
+institution_id,course_id,min_credits,min_pass,pass_bm,pass_history,pass_math_or_addmath,pass_science_tech,pass_math_sci,credit_math_sci_tech,credit_math_sci,credit_english,3m_only,no_colorblind,no_disability,req_academic
 IKBN-004,IKBN-DIP-001,1,2,1,1,0,0,0,1,0,0,0,1,1,Credit Math/Science/Tech
 IKBN-005,IKBN-DIP-001,1,2,1,1,0,0,0,1,0,0,0,1,1,Credit Math/Science/Tech
 IKBN-020,IKBN-DIP-001,1,2,1,1,0,0,0,1,0,0,0,1,1,Credit Math/Science/Tech
