@@ -2,6 +2,36 @@ import pandas as pd
 import os
 from src.engine import load_and_clean_data
 
+def load_master_data():
+    """
+    Loads and merges all data files into a single master dataframe.
+    """
+    # 1. SETUP PATHS
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(current_dir)
+    data_dir = os.path.join(project_root, 'data')
+
+    def load(filename, clean=False):
+        p = os.path.join(data_dir, filename)
+        if os.path.exists(p):
+            if clean:
+                return load_and_clean_data(p)
+            else:
+                return pd.read_csv(p)
+        return pd.DataFrame()
+
+    # Load Base Logic Files (Sanitized)
+    df_req = load('requirements.csv', clean=True)
+    df_tvet_req = load('tvet_requirements.csv', clean=True)
+
+    # Load Metadata Files (Raw)
+    df_links = load('links.csv')
+    df_inst = load('institutions.csv')
+    df_courses = load('courses.csv')
+    
+    df_tvet_inst = load('tvet_institutions.csv')
+    df_tvet_courses = load('tvet_courses.csv')
+    
     # NEW: Load Details
     df_details = load('details.csv')
     
@@ -84,19 +114,24 @@ from src.engine import load_and_clean_data
         tvet_final = pd.DataFrame()
 
     # --- 4. COMBINE & CLEAN ---
-    cols_to_keep = [
+    # Define explicitly all cols we need. Add more if engine needs them.
+    from src.engine import ALL_REQ_COLUMNS
+    
+    # Base metadata columns
+    base_cols = [
         'course_id', 'course', 'institution_name', 'State', 
-        'type', 'category', 'fees', 'duration', 'hyperlink',
-        'min_credits', 'req_malaysian', 'pass_bm', 'pass_history', 'pass_eng', 
-        'pass_math', 'pass_science_tech', 'credit_math', 'credit_bm', 'credit_eng'
+        'type', 'category', 'fees', 'duration', 'hyperlink'
     ]
+    
+    # Combine lists
+    cols_to_keep = base_cols + ALL_REQ_COLUMNS
     
     master_df = pd.concat([poly_final, tvet_final], ignore_index=True)
     
     # Ensure all crucial columns exist
     for col in cols_to_keep:
         if col not in master_df.columns:
-            master_df[col] = None
+            master_df[col] = 0 if col in ALL_REQ_COLUMNS else None
             
     # Rename for consistency
     master_df = master_df.rename(columns={

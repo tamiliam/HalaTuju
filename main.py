@@ -7,6 +7,7 @@ from src.dashboard import generate_dashboard_data
 from src.translations import get_text, LANGUAGES
 from src.quiz_manager import QuizManager
 from src.auth import AuthManager
+from src.data_manager import load_master_data
 
 # --- 1. CONFIGURATION ---
 st.set_page_config(page_title="Hala Tuju SPM", page_icon="🎓", layout="centered")
