@@ -33,7 +33,7 @@ class AuthManager:
         pattern = r"^(?:\+?60|0)1[0-9]{1}-?[0-9]{7,8}$"
         return bool(re.match(pattern, phone.strip().replace(" ", "")))
 
-    def register_user(self, name, phone, pin, grades=None, email=None):
+    def register_user(self, name, phone, pin, grades=None, gender=None, email=None):
         """Creates a new user with Hashed PIN and optional Initial Grades."""
         if not self.validate_phone(phone):
             return False, "❌ Invalid Phone Format"
@@ -48,25 +48,21 @@ class AuthManager:
             "phone": phone,
             "pin_hash": hashed,
             "email": email,
-            "grades": grades, # User confirmed we MUST save the current grades
+            "grades": grades,
+            "gender": gender,
             # "updated_at": "now()" 
         }
         
         try:
-            # Use Upsert to allow existing users to set their PIN
-            # We explicitly exclude 'grades' from data so we don't wipe them if they existed
-            # But Supabase update will only update provided columns.
-            
-            # Better strategy:
-            # 1. Check if user exists
+            # Upsert Logic
             existing = self.supabase.table("student_profiles").select("id").eq("phone", phone).execute()
             if existing.data:
-                 # Update PIN, Name, AND Grades (Since user explicitly submitted them)
+                 # Update PIN, Name, Grades, Gender
                  res = self.supabase.table("student_profiles").update({
                      "full_name": name,
                      "pin_hash": hashed,
-                     "grades": grades
-                     # "updated_at": "now()" 
+                     "grades": grades,
+                     "gender": gender
                  }).eq("phone", phone).execute()
             else:
                  # Insert New

@@ -175,7 +175,7 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
     }
 
 # --- 5. AUTH BLOCK (THE GATE) ---
-def render_auth_gate(t, current_grades):
+def render_auth_gate(t, current_grades, gender):
     st.markdown("---")
     st.warning(f"🔒 **{t['locked_cta_title']}**")
     st.write(t['locked_cta_desc'])
@@ -192,7 +192,7 @@ def render_auth_gate(t, current_grades):
             # Clean Grades first
             grade_map = {k: v for k, v in current_grades.items() if v != t['opt_not_taken']} if current_grades else {}
             
-            success, val = auth.register_user(r_name, r_phone, r_pin, grades=grade_map)
+            success, val = auth.register_user(r_name, r_phone, r_pin, grades=grade_map, gender=gender)
             if success:
                 st.success("Account Created! Unlocking...")
                 time.sleep(1)
@@ -218,11 +218,14 @@ def render_profile_page(user, t):
         with st.expander("✏️ Edit Details"):
             with st.form("edit_profile"):
                 new_name = st.text_input("Full Name", value=user.get('full_name', ''))
+                new_gender = st.radio("Gender", ["Male", "Female"], index=0 if user.get('gender') == "Male" else 1)
                 
                 if st.form_submit_button("Save Changes"):
-                    success, msg = auth.update_profile(user['id'], {"full_name": new_name})
+                    success, msg = auth.update_profile(user['id'], {"full_name": new_name, "gender": new_gender})
                     if success:
                         st.success(msg)
+                        # Invalid Cache to force refresh
+                        if 'dash' in st.session_state: del st.session_state['dash']
                         time.sleep(1)
                         st.rerun()
                     else:
@@ -238,6 +241,8 @@ def render_profile_page(user, t):
                      success, msg = auth.update_profile(user['id'], {"grades": clean_grades})
                      if success:
                          st.success(msg)
+                         # Invalid Cache to force refresh
+                         if 'dash' in st.session_state: del st.session_state['dash']
                          time.sleep(1)
                          st.rerun()
                      else:
@@ -505,7 +510,7 @@ if auth_status:
         )
 else:
     # --- LOCKED VIEW ---
-    render_auth_gate(t, raw_grades)
+    render_auth_gate(t, raw_grades, gender)
 
 # Footer
 st.markdown("---")
