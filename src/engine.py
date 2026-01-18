@@ -55,7 +55,7 @@ Core pass requirements:
 Credit-level requirements:
 - credit_math      : credit in Mathematics
 - credit_bm        : credit in Bahasa Malaysia
-- credit_eng       : credit in English
+- credit_english   : credit in English
 
 Composite subject groups (OR conditions):
 - pass_stv         : pass at least one Science, Technical, OR Vocational subject
@@ -85,9 +85,9 @@ Minimum academic requirements:
 Core pass requirements:
 - pass_bm          : pass Bahasa Malaysia
 - pass_history     : pass History
-- pass_math        : pass Mathematics OR Additional Mathematics
+- pass_math_addmath: pass Mathematics OR Additional Mathematics
 - pass_science_tech: pass Science (Chemistry/Physics/General) OR Technical subject
-- pass_math_sci    : pass Mathematics OR Science (Chemistry/Physics/General)
+- pass_math_science: pass Mathematics OR Science (Chemistry/Physics/General)
 
 Credit requirements (OR conditions):
 - credit_math_sci_tech : credit in Math, any Science, OR Technical subject
@@ -130,8 +130,8 @@ ATTEMPTED_GRADES = PASS_GRADES | {"G"}
 REQ_FLAG_COLUMNS = [
     'req_malaysian', 'req_male', 'req_female', 'no_colorblind', 'no_disability',
     '3m_only', 'pass_bm', 'credit_bm', 'pass_history', 
-    'pass_eng', 'credit_english', 'pass_math', 'credit_math', 'pass_math_or_addmath',
-    'pass_math_sci', 'pass_science_tech', 'credit_math_sci',
+    'pass_eng', 'credit_english', 'pass_math', 'credit_math', 'pass_math_addmath',
+    'pass_math_science', 'pass_science_tech', 'credit_math_sci',
     'credit_math_sci_tech', 'pass_stv', 'credit_sf', 'credit_sfmt'
 ]
 
@@ -253,7 +253,7 @@ def check_eligibility(student, req):
         # Check Modern Math ONLY (Poly Policy)
         if not check("Lulus Matematik", is_pass(g.get('math')), "Gagal Matematik"): passed_academics = False
 
-    if req.get('pass_math_or_addmath') == 1:
+    if req.get('pass_math_addmath') == 1:
         # Check Modern Math OR Add Math (TVET Policy)
         cond = is_pass(g.get('math')) or is_pass(g.get('addmath'))
         if not check("Lulus Matematik/AddMath", cond, "Gagal Matematik & Add Math"): passed_academics = False
@@ -272,7 +272,7 @@ def check_eligibility(student, req):
     def has_pass(grade_list): return any(is_pass(x) for x in grade_list)
     def has_credit(grade_list): return any(is_credit(x) for x in grade_list)
 
-    if req.get('pass_math_sci') == 1:
+    if req.get('pass_math_science') == 1:
         cond = is_pass(g.get('math')) or has_pass(pure_sci)
         if not check("Lulus Matemaik ATAU Sains Tulen", cond, "Perlu Lulus Math/Sains Tulen"): passed_academics = False
     if req.get('pass_science_tech') == 1:
