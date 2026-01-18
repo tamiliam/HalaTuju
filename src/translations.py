@@ -152,7 +152,6 @@ TEXTS = {
         "status_eligible": "Eligible",
         "status_not_eligible": "Not Eligible",
         "status_eligible": "Eligible",
-        "status_not_eligible": "Not Eligible",
         "status_eligible": "Eligible",
         "status_not_eligible": "Not Eligible",
         "filter_state": "Filter Location:",
@@ -194,7 +193,7 @@ TEXTS = {
         "feat_career": "💼 Career",
         "badge_dur": "Duration",
         "badge_mode": "Mode",
-        "badge_fees": "Fees",,
+        "badge_fees": "Fees",
 
         # Engine Audit Messages (Labels & Reasons)
         "chk_malaysian": "Citizen",
@@ -397,8 +396,6 @@ TEXTS = {
         "status_not_eligible": "Tidak Layak",
         "status_eligible": "Layak",
         "status_not_eligible": "Tidak Layak",
-        "status_eligible": "Layak",
-        "status_not_eligible": "Tidak Layak",
         "filter_state": "Tapis Lokasi:",
         
         # Quiz
@@ -438,7 +435,7 @@ TEXTS = {
         "feat_career": "💼 Kerjaya",
         "badge_dur": "Tempoh",
         "badge_mode": "Mod",
-        "badge_fees": "Yuran",,
+        "badge_fees": "Yuran",
 
         # Engine Audit Messages (Labels & Reasons)
         "chk_malaysian": "Warganegara",
@@ -640,8 +637,6 @@ TEXTS = {
         "unknown_course": "தெரியாத படிப்பு",
         "unknown_inst": "தெரியாத நிறுவனம்",
         "unknown_state": "மலேசியா",
-        "status_eligible": "தகுதியுடையவர்",
-        "status_not_eligible": "தகுதியற்றவர்",
         "status_eligible": "தகுதியுடையவர்",
         "status_not_eligible": "தகுதியற்றவர்",
         "filter_state": "இடத்தை வடிகட்டவும்:",
