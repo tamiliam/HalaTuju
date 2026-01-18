@@ -7,7 +7,14 @@ from src.dashboard import generate_dashboard_data
 from src.translations import get_text, LANGUAGES
 from src.quiz_manager import QuizManager
 
+# --- 1. CONFIGURATION ---
+st.set_page_config(page_title="Hala Tuju SPM", page_icon="🎓", layout="centered")
+
 # --- 2. CONFIGURATION & SETUP ---
+auth = None
+quiz_manager = None
+DB_CONNECTED = False
+
 try:
     SUPABASE_URL = st.secrets["SUPABASE_URL"]
     SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
@@ -15,8 +22,8 @@ try:
     auth = AuthManager(supabase)
     quiz_manager = QuizManager()
     DB_CONNECTED = True
-except Exception:
-    st.error("Database Connection Failed")
+except Exception as e:
+    st.error(f"Database Connection Failed: {e}")
     DB_CONNECTED = False
 
 # ... (Helper Functions) ...
@@ -83,8 +90,6 @@ def render_quiz_page(lang_code):
         st.rerun()
 
 # ... (Main Router) ...
-
-st.set_page_config(page_title="Hala Tuju SPM", page_icon="🎓", layout="centered")
 
 def local_css(file_name):
     with open(file_name) as f:
@@ -309,13 +314,16 @@ if not user:
             l_phone = st.text_input("Phone", key="sb_phone")
             l_pin = st.text_input("PIN", type="password", key="sb_pin")
             if st.button("Login", key="sb_login"):
-                success, val = auth.login_user(l_phone, l_pin)
-                if success:
-                    st.toast(f"Welcome back!")
-                    time.sleep(0.5)
-                    st.rerun()
+                if auth:
+                    success, val = auth.login_user(l_phone, l_pin)
+                    if success:
+                        st.toast(f"Welcome back!")
+                        time.sleep(0.5)
+                        st.rerun()
+                    else:
+                        st.error(val)
                 else:
-                    st.error(val)
+                    st.error("Database unavailable. Cannot login.")
 
 st.sidebar.markdown("---")
 
