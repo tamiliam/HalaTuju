@@ -100,6 +100,12 @@ TEXTS = {
         "err_email_invalid": "❌ Invalid Email Address format.",
         "err_phone_short": "❌ Phone number is too short.",
         "err_phone_invalid": "❌ Invalid Malaysia Phone Number (e.g. 012-3456789).",
+        
+        "header_top_matches": "🏆 Top 5 Recommendations",
+        "header_other_matches": "📋 Other Eligible Courses",
+        "lbl_duration": "Duration",
+        "lbl_fees": "Fees",
+        "lbl_mode": "Mode",
 
         "unlocked_alert": "🔓 Full Report Unlocked! Explore your options below.",
         "table_title": "📋 Your Complete Course List",
@@ -234,7 +240,11 @@ TEXTS = {
         # VALIDATION ERRORS
         "err_name_short": "❌ Nama terlalu pendek.",
         "err_email_invalid": "❌ Format emel tidak sah.",
-        "err_phone_short": "❌ Nombor telefon terlalu pendek.",
+        "header_top_matches": "🏆 5 Pilihan Utama",
+        "header_other_matches": "📋 Kursus Lain Yang Layak",
+        "lbl_duration": "Tempoh",
+        "lbl_fees": "Yuran",
+        "lbl_mode": "Mod",
         
         "unlocked_alert": "🔓 Laporan Penuh Dibuka! Lihat senarai di bawah.",
         "table_title": "📋 Senarai Lengkap Kursus Anda",
@@ -392,6 +402,13 @@ TEXTS = {
         இது ஒரு வழிகாட்டி கருவி மட்டுமே, அதிகாரப்பூர்வ விண்ணப்பம் அல்ல. குறைந்தபட்ச தேவைகளைப் பூர்த்தி செய்வது சேர்க்கையை உறுதிப்படுத்தாது, ஏனெனில் ஒவ்வொரு ஆண்டும் இடங்களுக்கான போட்டி மாறுபடும்.
         """,
         "footer_credits": "மலேசிய மாணவர்களுக்காக ❤️ உடன் உருவாக்கப்பட்டது.",
+        
+        
+        "header_top_matches": "🏆 5 சிறந்த தேர்வுகள்",
+        "header_other_matches": "📋 தகுதியுள்ள பிற படிப்புகள்",
+        "lbl_duration": "கால அளவு",
+        "lbl_fees": "கட்டணம்",
+        "lbl_mode": "முறை",
         
         # Admin Section (NEW)
         "admin_login": "நிர்வாக அணுகல்",

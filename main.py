@@ -591,13 +591,78 @@ if auth_status:
         state_opts = sorted([str(x) for x in df_display["state"].unique() if x])
         state_filter = c_filter2.multiselect(f"📍 {t.get('filter_state', 'Filter Location:')}", options=state_opts, default=state_opts)
         
+        # Apply Filter
         mask = (df_display[cat_col].isin(cat_filter)) & (df_display["state"].isin(state_filter))
         df_filtered = df_display[mask]
         
-        st.dataframe(
-            df_filtered[[t['table_col_course'], t['table_col_inst'], "state", "fees", t['table_col_cat'], t['table_col_status']]],
-            use_container_width=True, hide_index=True, height=500
-        )
+        # Convert to list for rendering
+        results = df_filtered.to_dict('records')
+        
+        if not results:
+            st.warning(t['hero_fail'])
+        else:
+            # Custom CSS for cards
+            st.markdown("""
+            <style>
+            .course-card {
+                background-color: #262730;
+                padding: 1.5rem;
+                border-radius: 10px;
+                margin-bottom: 1rem;
+                border: 1px solid #464b5d;
+            }
+            .course-title { font-size: 1.2rem; font-weight: bold; color: #ffffff; }
+            .course-inst { font-size: 1rem; color: #cccccc; margin-bottom: 0.5rem; }
+            </style>
+            """, unsafe_allow_html=True)
+
+            # 1. TOP 5 MATCHES (Expanded Cards)
+            st.subheader(f"{t['header_top_matches']}")
+            
+            top_matches = results[:5]
+            other_matches = results[5:]
+            
+            for i, item in enumerate(top_matches):
+                c_name = item[t['table_col_course']]
+                c_inst = item[t['table_col_inst']]
+                c_dur = item.get('duration', '-')
+                c_fees = item.get('fees', '-')
+                c_type = item[t['table_col_cat']] # Category/Type
+                
+                # Render Card
+                with st.container():
+                     st.markdown(f"### {c_name}")
+                     st.markdown(f"**🏫 {c_inst}**")
+                     
+                     # Badges
+                     st.markdown(f"""
+                     <div class="badge-container">
+                        <div class="badge-base badge-time">⏱️ <b>{t['lbl_duration']}:</b> {c_dur}</div>
+                        <div class="badge-base badge-money">💰 <b>{t['lbl_fees']}:</b> {c_fees}</div>
+                        <div class="badge-base badge-mode">🛠️ <b>{t['lbl_mode']}:</b> {c_type}</div>
+                     </div>
+                     """, unsafe_allow_html=True)
+                     
+                     # Careers (if available from original list - wait, df_display might not have 'jobs' if I didn't include it in the dataframe construction?
+                     # 'all_courses' is a list of dicts. pd.DataFrame(all_courses) preserves all columns unless I drop them.
+                     # 'jobs' should be there under 'jobs' key if it wasn't renamed.
+                     if isinstance(item.get('jobs'), list) and item['jobs']:
+                         st.info(f"💼 **Career:** {', '.join(item['jobs'][:3])}")
+                     
+                     st.markdown("---")
+
+            # 2. REMAINING MATCHES (Compact List)
+            if other_matches:
+                st.subheader(f"{t['header_other_matches']} ({len(other_matches)})")
+                
+                for item in other_matches:
+                    c_name = item[t['table_col_course']]
+                    c_inst = item[t['table_col_inst']]
+                    
+                    with st.expander(f"{c_name} - {c_inst}"):
+                        st.write(f"**{t['lbl_duration']}:** {item.get('duration', '-')}")
+                        st.write(f"**{t['lbl_fees']}:** {item.get('fees', '-')}")
+                        st.write(f"**{t['table_col_cat']}:** {item[t['table_col_cat']]}")
 else:
     # --- LOCKED VIEW ---
     if dash and dash.get('total_matches', 0) > 0:
