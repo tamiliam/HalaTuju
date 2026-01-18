@@ -148,7 +148,68 @@ TEXTS = {
         "unknown_state": "Malaysia",
         "status_eligible": "Eligible",
         "status_not_eligible": "Not Eligible",
-        "filter_state": "Filter Location:"
+        "status_eligible": "Eligible",
+        "status_not_eligible": "Not Eligible",
+        "filter_state": "Filter Location:",
+
+        # Engine Audit Messages (Labels & Reasons)
+        "chk_malaysian": "Citizen",
+        "fail_malaysian": "Malaysian Citizens Only",
+        "chk_male": "Gender (Male)",
+        "fail_male": "Males Only",
+        "chk_female": "Gender (Female)",
+        "fail_female": "Females Only",
+        "chk_colorblind": "Free from Colorblindness",
+        "fail_colorblind": "Cannot be Colorblind",
+        "chk_disability": "Physical Health",
+        "fail_disability": "Physical Requirements Not Met",
+        
+        "chk_3m": "3M Condition",
+        "fail_3m": "Must Attempt BM and Math (Min Grade G)",
+        
+        "chk_pass_bm": "Pass BM",
+        "fail_pass_bm": "Failed Bahasa Melayu",
+        "chk_credit_bm": "Credit BM",
+        "fail_credit_bm": "No Credit in Bahasa Melayu",
+        "chk_pass_hist": "Pass History",
+        "fail_pass_hist": "Failed History",
+        "chk_pass_eng": "Pass English",
+        "fail_pass_eng": "Failed English",
+        "chk_credit_eng": "Credit English",
+        "fail_credit_eng": "No Credit in English",
+        
+        "chk_pass_math": "Pass Math",
+        "fail_pass_math": "Failed Mathematics",
+        "chk_pass_math_addmath": "Pass Math/AddMath",
+        "fail_pass_math_addmath": "Failed Math & Add Math",
+        "chk_credit_math": "Credit Math",
+        "fail_credit_math": "No Credit in Math or Add Math",
+        
+        "chk_pass_math_sci_nb": "Pass Math OR Science (No Bio)",
+        "fail_pass_math_sci_nb": "Need Pass in Math/Science (No Bio)",
+        "chk_pass_sci_tech": "Pass Science (No Bio) OR Technical",
+        "fail_pass_sci_tech": "Need Pass in Science (No Bio)/Technical",
+        "chk_credit_math_sci": "Credit Math OR Science",
+        "fail_credit_math_sci": "Need Credit in Math/Science",
+        "chk_credit_math_sci_tech": "Credit Math/Sci/Tech",
+        "fail_credit_math_sci_tech": "Need Credit in Math/Sci/Tech",
+        
+        "chk_credit_bmbi": "Credit BM OR English",
+        "fail_credit_bmbi": "Need Credit in BM or English",
+        "chk_credit_stv": "Credit Science/Vocational",
+        "fail_credit_stv": "Need Credit in Science/Vocational",
+        "chk_pass_stv": "Science/Vocational Stream",
+        "fail_pass_stv": "Need Pass in Science/Vocational",
+        
+        "chk_credit_sf": "Credit Science/Physics",
+        "fail_credit_sf": "Need Credit in Science or Physics",
+        "chk_credit_sfmt": "Credit Science/Physics/AddMath",
+        "fail_credit_sfmt": "Need Credit in Science/Physics/AddMath",
+        
+        "chk_min_credit": "Minimum {min_c} Credits",
+        "fail_min_credit": "Only {credits} Credits (Need {min_c})",
+        "chk_min_pass": "Minimum {min_p} Passes",
+        "fail_min_pass": "Only {passes} Passes"
     },
     
     "bm": {
@@ -287,7 +348,68 @@ TEXTS = {
         "unknown_state": "Malaysia",
         "status_eligible": "Layak",
         "status_not_eligible": "Tidak Layak",
-        "filter_state": "Tapis Lokasi:"
+        "status_eligible": "Layak",
+        "status_not_eligible": "Tidak Layak",
+        "filter_state": "Tapis Lokasi:",
+
+        # Engine Audit Messages (Labels & Reasons)
+        "chk_malaysian": "Warganegara",
+        "fail_malaysian": "Hanya untuk Warganegara",
+        "chk_male": "Jantina (Lelaki)",
+        "fail_male": "Lelaki Sahaja",
+        "chk_female": "Jantina (Wanita)",
+        "fail_female": "Wanita Sahaja",
+        "chk_colorblind": "Bebas Buta Warna",
+        "fail_colorblind": "Tidak boleh rabun warna",
+        "chk_disability": "Sihat Tubuh Badan",
+        "fail_disability": "Syarat fizikal tidak dipenuhi",
+        
+        "chk_3m": "Syarat 3M",
+        "fail_3m": "Perlu sekurang-kurangnya Gred G dalam BM dan Matematik",
+        
+        "chk_pass_bm": "Lulus BM",
+        "fail_pass_bm": "Gagal Bahasa Melayu",
+        "chk_credit_bm": "Kredit BM",
+        "fail_credit_bm": "Tiada Kredit Bahasa Melayu",
+        "chk_pass_hist": "Lulus Sejarah",
+        "fail_pass_hist": "Gagal Sejarah",
+        "chk_pass_eng": "Lulus BI",
+        "fail_pass_eng": "Gagal Bahasa Inggeris",
+        "chk_credit_eng": "Kredit BI",
+        "fail_credit_eng": "Tiada Kredit Bahasa Inggeris",
+        
+        "chk_pass_math": "Lulus Matematik",
+        "fail_pass_math": "Gagal Matematik",
+        "chk_pass_math_addmath": "Lulus Matematik/AddMath",
+        "fail_pass_math_addmath": "Gagal Matematik & Add Math",
+        "chk_credit_math": "Kredit Matematik",
+        "fail_credit_math": "Tiada Kredit Matematik atau Add Math",
+        
+        "chk_pass_math_sci_nb": "Lulus Matemaik ATAU Sains (No Bio)",
+        "fail_pass_math_sci_nb": "Perlu Lulus Math/Sains (Tiada Bio)",
+        "chk_pass_sci_tech": "Lulus Sains (No Bio) ATAU Teknikal",
+        "fail_pass_sci_tech": "Perlu Lulus Sains (Tiada Bio)/Teknikal",
+        "chk_credit_math_sci": "Kredit Matematik ATAU Sains",
+        "fail_credit_math_sci": "Perlu Kredit Math/Sains",
+        "chk_credit_math_sci_tech": "Kredit Math/Sains/Teknikal",
+        "fail_credit_math_sci_tech": "Perlu Kredit Math/Sains/Teknikal",
+        
+        "chk_credit_bmbi": "Kredit BM ATAU BI",
+        "fail_credit_bmbi": "Perlu Kredit BM atau BI",
+        "chk_credit_stv": "Kredit Sains/Vokasional",
+        "fail_credit_stv": "Perlu Kredit Sains/Vokasional",
+        "chk_pass_stv": "Aliran Sains/Vokasional",
+        "fail_pass_stv": "Perlu Lulus Sains/Vokasional",
+        
+        "chk_credit_sf": "Kredit Sains/Fizik",
+        "fail_credit_sf": "Perlu Kredit Sains atau Fizik",
+        "chk_credit_sfmt": "Kredit Sains/Fizik/Add Math",
+        "fail_credit_sfmt": "Perlu Kredit Sains/Fizik/Add Math",
+        
+        "chk_min_credit": "Minimum {min_c} Kredit",
+        "fail_min_credit": "Hanya {credits} Kredit (Perlu {min_c})",
+        "chk_min_pass": "Minimum {min_p} Lulus",
+        "fail_min_pass": "Hanya {passes} Lulus"
     },
 
     "ta": {
