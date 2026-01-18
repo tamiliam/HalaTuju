@@ -139,6 +139,9 @@ TEXTS = {
         "quality_safe": "Safe Bet 🟢",
         "quality_good": "Good Match 🔵",
         "quality_reach": "Reach 🟡",
+        "help_pin": "Remember this PIN!",
+        "toast_profile_saved": "Profile Saved Successfully!",
+        "err_save_failed": "Save Failed: {error}",
         "inst_poly": "Polytechnic",
         "inst_ikbn": "IKBN / ADTEC",
         "inst_kk": "Community College",
@@ -150,7 +153,48 @@ TEXTS = {
         "status_not_eligible": "Not Eligible",
         "status_eligible": "Eligible",
         "status_not_eligible": "Not Eligible",
+        "status_eligible": "Eligible",
+        "status_not_eligible": "Not Eligible",
         "filter_state": "Filter Location:",
+        
+        # Quiz
+        "quiz_title": "🧭 Discovery Quiz",
+        "quiz_question_count": "Question {step} of {total}",
+        "quiz_generating": "Generating your fit...",
+        "quiz_saved": "Results Saved!",
+        "quiz_complete": "Analysis Complete!",
+        "quiz_return": "Return to Dashboard",
+        "btn_back": "⬅️ Back",
+
+        # Auth/Gate
+        "gate_subtitle": "Ready to see everything? Unlock your full report now.",
+        "gate_pin_instr": "Create a secure PIN to save your results.",
+        "lbl_create_pin": "Create 6-Digit PIN",
+        "btn_unlock_save": "Unlock & Save Results",
+        "msg_account_created": "Account Created! Unlocking...",
+
+        # Profile
+        "profile_title": "👤 My Profile",
+        "profile_name": "Name",
+        "profile_phone": "Phone",
+        "btn_back_dash": "⬅️ Back to Dashboard",
+
+        # Sidebar
+        "sb_lang": "🌐 Language",
+        "sb_logout": "Log Out",
+        "sb_retake_quiz": "🔄 Retake Discovery Quiz",
+        "sb_start_quiz": "🧭 Start Discovery Quiz",
+        "sb_guest_mode": "👋 Guest Mode",
+        "sb_returning_user": "🔐 **Returning Users**",
+        "sb_login": "Login",
+        "sb_welcome": "Welcome back!",
+
+        # Featured Matches
+        "feat_title": "🌟 Featured Matches",
+        "feat_career": "💼 Career",
+        "badge_dur": "Duration",
+        "badge_mode": "Mode",
+        "badge_fees": "Fees",,
 
         # Engine Audit Messages (Labels & Reasons)
         "chk_malaysian": "Citizen",
@@ -339,6 +383,9 @@ TEXTS = {
         "quality_safe": "Pilihan Selamat 🟢",
         "quality_good": "Padanan Baik 🔵",
         "quality_reach": "Cabaran 🟡",
+        "help_pin": "Ingat PIN ini!",
+        "toast_profile_saved": "Profil Berjaya Disimpan!",
+        "err_save_failed": "Gagal Simpan: {error}",
         "inst_poly": "Politeknik",
         "inst_ikbn": "IKBN / ADTEC",
         "inst_kk": "Kolej Komuniti",
@@ -350,7 +397,48 @@ TEXTS = {
         "status_not_eligible": "Tidak Layak",
         "status_eligible": "Layak",
         "status_not_eligible": "Tidak Layak",
+        "status_eligible": "Layak",
+        "status_not_eligible": "Tidak Layak",
         "filter_state": "Tapis Lokasi:",
+        
+        # Quiz
+        "quiz_title": "🧭 Kuiz Penemuan",
+        "quiz_question_count": "Soalan {step} dari {total}",
+        "quiz_generating": "Sedang menganalisis...",
+        "quiz_saved": "Keputusan Disimpan!",
+        "quiz_complete": "Analisis Selesai!",
+        "quiz_return": "Kembali ke Dashboard",
+        "btn_back": "⬅️ Kembali",
+
+        # Auth/Gate
+        "gate_subtitle": "Sedia untuk lihat semua? Buka laporan penuh anda sekarang.",
+        "gate_pin_instr": "Cipda PIN keselamatan untuk simpan keputusan.",
+        "lbl_create_pin": "Cipta PIN 6-Digit",
+        "btn_unlock_save": "Buka & Simpan Keputusan",
+        "msg_account_created": "Akaun Dicipta! Sedang membuka...",
+
+        # Profile
+        "profile_title": "👤 Profil Saya",
+        "profile_name": "Nama",
+        "profile_phone": "Telefon",
+        "btn_back_dash": "⬅️ Kembali ke Dashboard",
+
+        # Sidebar
+        "sb_lang": "🌐 Bahasa",
+        "sb_logout": "Log Keluar",
+        "sb_retake_quiz": "🔄 Ambil Semula Kuiz",
+        "sb_start_quiz": "🧭 Mula Kuiz Penemuan",
+        "sb_guest_mode": "👋 Mod Tetamu",
+        "sb_returning_user": "🔐 **Pengguna Sedia Ada**",
+        "sb_login": "Log Masuk",
+        "sb_welcome": "Selamat kembali!",
+
+        # Featured Matches
+        "feat_title": "🌟 Pilihan Utama",
+        "feat_career": "💼 Kerjaya",
+        "badge_dur": "Tempoh",
+        "badge_mode": "Mod",
+        "badge_fees": "Yuran",,
 
         # Engine Audit Messages (Labels & Reasons)
         "chk_malaysian": "Warganegara",
@@ -542,6 +630,9 @@ TEXTS = {
         "quality_safe": "பாதுகாப்பான தேர்வு 🟢",
         "quality_good": "நல்ல பொருத்தம் 🔵",
         "quality_reach": "முயற்சி செய்யலாம் 🟡",
+        "help_pin": "இந்த PIN ஐ நினைவில் கொள்க!",
+        "toast_profile_saved": "சுயவிவரம் வெற்றிகரமாக சேமிக்கப்பட்டது!",
+        "err_save_failed": "சேமிக்க முடியவில்லை: {error}",
         "inst_poly": "பாலிடெக்னிக்",
         "inst_ikbn": "ஐகேபிஎன் / எட்டெக்",
         "inst_kk": "கமூனிடி காலேஜ்",
@@ -551,7 +642,48 @@ TEXTS = {
         "unknown_state": "மலேசியா",
         "status_eligible": "தகுதியுடையவர்",
         "status_not_eligible": "தகுதியற்றவர்",
-        "filter_state": "இடத்தை வடிகட்டவும்:"
+        "status_eligible": "தகுதியுடையவர்",
+        "status_not_eligible": "தகுதியற்றவர்",
+        "filter_state": "இடத்தை வடிகட்டவும்:",
+        
+        # Quiz
+        "quiz_title": "🧭 கண்டுபிடிப்பு வினாடி வினா",
+        "quiz_question_count": "கேள்வி {step} / {total}",
+        "quiz_generating": "பகுப்பாய்வு செய்கிறது...",
+        "quiz_saved": "முடிவுகள் சேமிக்கப்பட்டன!",
+        "quiz_complete": "பகுப்பாய்வு முடிந்தது!",
+        "quiz_return": "முகப்புக்குத் திரும்பு",
+        "btn_back": "⬅️ பின்னால்",
+
+        # Auth/Gate
+        "gate_subtitle": "எல்லாவற்றையும் பார்க்க தயாரா? முழு அறிக்கையை திறக்கவும்.",
+        "gate_pin_instr": "முடிவுகளைச் சேமிக்க பாதுகாப்பான PIN ஐ உருவாக்கவும்.",
+        "lbl_create_pin": "6-இலக்க PIN ஐ உருவாக்கவும்",
+        "btn_unlock_save": "சேமி & திற",
+        "msg_account_created": "கணக்கு உருவாக்கப்பட்டது!",
+
+        # Profile
+        "profile_title": "👤 என் சுயவிவரம்",
+        "profile_name": "பெயர்",
+        "profile_phone": "தொலைபேசி",
+        "btn_back_dash": "⬅️ முகப்புக்குத் திரும்பு",
+
+        # Sidebar
+        "sb_lang": "🌐 மொழி",
+        "sb_logout": "வெளியேறு",
+        "sb_retake_quiz": "🔄 வினாடி வினாவை மீண்டும் எடுக்கவும்",
+        "sb_start_quiz": "🧭 வினாடி வினாவைத் தொடங்குங்கள்",
+        "sb_guest_mode": "👋 விருந்தினர் முறை",
+        "sb_returning_user": "🔐 **ஏற்கனவே உள்ள பயனர்**",
+        "sb_login": "உள்நுழைய",
+        "sb_welcome": "மீண்டும் வருக!",
+
+        # Featured Matches
+        "feat_title": "🌟 சிறப்புத் தேர்வுகள்",
+        "feat_career": "💼 தொழில்",
+        "badge_dur": "காலம்",
+        "badge_mode": "முறை",
+        "badge_fees": "கட்டணம்",
     }
 }
 

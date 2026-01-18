@@ -32,7 +32,8 @@ except Exception as e:
 
 # --- NEW: QUIZ PAGE RENDERER ---
 def render_quiz_page(lang_code, user):
-    st.title("🧭 Discovery Quiz")
+    t = get_text(lang_code)
+    st.title(t['quiz_title'])
     
     # Get Current Question
     q = quiz_manager.get_current_question(lang_code)
@@ -46,7 +47,7 @@ def render_quiz_page(lang_code, user):
     if q:
         # Render Question Card
         with st.container():
-            st.markdown(f"**Question {step + 1} of {total}**")
+            st.markdown(f"**{t['quiz_question_count'].format(step=step+1, total=total)}**")
             st.markdown(f"### {q['prompt']}")
             st.markdown("") # Spacer
             
@@ -59,7 +60,7 @@ def render_quiz_page(lang_code, user):
                     
             st.markdown("---")
             if step > 0:
-                if st.button("⬅️ Back"):
+                if st.button(t['btn_back']):
                     quiz_manager.go_back()
                     st.rerun()
                     
@@ -76,20 +77,20 @@ def render_quiz_page(lang_code, user):
             try:
                 success, msg = auth.save_quiz_results(user['id'], results['student_signals'])
                 if success:
-                    st.toast("Results Saved!")
+                    st.toast(t['quiz_saved'])
                 else:
                     st.error(f"Save Failed: {msg}")
             except Exception as e:
                 st.error(f"Could not save results: {e}")
         
         # Display Results
-        st.success("Analysis Complete!")
+        st.success(t['quiz_complete'])
         st.json(results)
         
         # Save to Session
         st.session_state['student_signals'] = results['student_signals']
         
-        if st.button("Return to Dashboard", use_container_width=True):
+        if st.button(t['quiz_return'], use_container_width=True):
             st.session_state['view_mode'] = 'dashboard'
             st.rerun()
 
@@ -193,23 +194,23 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
 def render_auth_gate(t, current_grades, gender, cb, disability):
     st.markdown("---")
     st.warning(f"🔒 **{t['locked_cta_title']}**")
-    st.write(t['locked_cta_desc'])
+    st.write(t['gate_subtitle'])
     
     st.write("Ready to see everything? Unlock your full report now.")
     
     with st.form("reg_form"):
-        st.write("Create a secure PIN to save your results.")
-        r_name = st.text_input("Full Name", placeholder="Ali Bin Abu")
-        r_phone = st.text_input("Phone Number", placeholder="e.g. 012-3456789")
-        r_pin = st.text_input("Create 6-Digit PIN", type="password", max_chars=6, help="Remember this PIN!")
+        st.write(t['gate_pin_instr'])
+        r_name = st.text_input(t['profile_name'], placeholder="Ali Bin Abu")
+        r_phone = st.text_input(t['profile_phone'], placeholder="e.g. 012-3456789")
+        r_pin = st.text_input(t['lbl_create_pin'], type="password", max_chars=6, help=t['help_pin'])
         
-        if st.form_submit_button("Unlock & Save Results"):
+        if st.form_submit_button(t['btn_unlock_save']):
             # Clean Grades first
             grade_map = {k: v for k, v in current_grades.items() if v != t['opt_not_taken']} if current_grades else {}
             
             success, val = auth.register_user(r_name, r_phone, r_pin, grades=grade_map, gender=gender, colorblind=cb, disability=disability)
             if success:
-                st.success("Account Created! Unlocking...")
+                st.success(t['msg_account_created'])
                 time.sleep(1)
                 st.rerun()
             else:
@@ -221,15 +222,15 @@ def render_auth_gate(t, current_grades, gender, cb, disability):
 
 # --- 5b. PROFILE PAGE ---
 def render_profile_page(user, t):
-    st.title(f"👤 My Profile")
+    st.title(t['profile_title'])
     
     with st.container():
         # Read-Only Section
         c1, c2 = st.columns([1, 2])
         with c1:
-            st.markdown(f"**Name:**\n\n{user.get('full_name', '-')}")
+            st.markdown(f"**{t['profile_name']}:**\n\n{user.get('full_name', '-')}")
         with c2:
-            st.markdown(f"**Phone:**\n\n{user.get('phone', '-')}")
+            st.markdown(f"**{t['profile_phone']}:**\n\n{user.get('phone', '-')}")
             
         st.markdown("---")
         
@@ -284,7 +285,8 @@ def render_profile_page(user, t):
                          st.error(msg)
     
     st.markdown("---")
-    if st.button("⬅️ Back to Dashboard"):
+    st.markdown("---")
+    if st.button(t['btn_back_dash']):
         st.session_state['view_mode'] = 'dashboard'
         st.rerun()
 
@@ -348,7 +350,13 @@ def render_quiz_page(lang_code, user):
 # --- 6. MAIN ROUTER ---
 
 # Init Session
-lang_code = st.sidebar.selectbox("🌐 Language", list(LANGUAGES.keys()), format_func=lambda x: LANGUAGES[x], key="lang_code")
+if 'lang_code' not in st.session_state:
+    st.session_state['lang_code'] = 'en'
+    
+current_lang = st.session_state['lang_code']
+t_temp = get_text(current_lang)
+
+lang_code = st.sidebar.selectbox(t_temp['sb_lang'], list(LANGUAGES.keys()), format_func=lambda x: LANGUAGES[x], key="lang_code")
 t = get_text(lang_code)
 
 auth_status = auth.check_session()
@@ -362,11 +370,11 @@ if user:
     st.sidebar.success(f"👤 {user.get('full_name', 'Student')}")
     
     # Profile Navigation
-    if st.sidebar.button("👤 My Profile", use_container_width=True):
+    if st.sidebar.button(t['profile_title'], use_container_width=True):
         st.session_state['view_mode'] = 'profile'
         st.rerun()
         
-    if st.sidebar.button("Log Out", use_container_width=True):
+    if st.sidebar.button(t['sb_logout'], use_container_width=True):
         auth.logout()
 
     # Quiz Button (Logged In Users Only)
@@ -374,7 +382,7 @@ if user:
     
     # Determine Label
     has_results = bool(user.get('student_signals'))
-    quiz_btn_label = "🔄 Retake Discovery Quiz" if has_results else "🧭 Start Discovery Quiz"
+    quiz_btn_label = t['sb_retake_quiz'] if has_results else t['sb_start_quiz']
     
     if st.sidebar.button(quiz_btn_label, use_container_width=True):
         quiz_manager.reset_quiz()
@@ -382,14 +390,14 @@ if user:
         st.rerun()
 
 if not user:
-    st.sidebar.info("👋 Guest Mode")
-    with st.sidebar.expander("🔐 **Returning Users**"):
-            l_phone = st.text_input("Phone", key="sb_phone")
+    st.sidebar.info(t['sb_guest_mode'])
+    with st.sidebar.expander(t['sb_returning_user']):
+            l_phone = st.text_input(t['profile_phone'], key="sb_phone")
             l_pin = st.text_input("PIN", type="password", key="sb_pin")
-            if st.button("Login", key="sb_login"):
+            if st.button(t['sb_login'], key="sb_login"):
                 success, val = auth.login_user(l_phone, l_pin)
                 if success:
-                    st.toast(f"Welcome back!")
+                    st.toast(t['sb_welcome'])
                     time.sleep(0.5)
                     st.rerun()
                 else:
@@ -485,9 +493,9 @@ if submitted or (user and ('dash' not in st.session_state or force_calc)):
             user['colorblind'] = cb
             user['disability'] = disability
             
-            st.toast("Profile Saved Successfully!")
+            st.toast(t['toast_profile_saved'])
         except Exception as e:
-            st.error(f"Save Failed: {str(e)}")
+            st.error(t['err_save_failed'].format(error=str(e)))
 
     # Determine other_tech/voc flags
     # We consider it "True" if the student has attempted (or passed? Engine checks boolean).
@@ -547,7 +555,7 @@ c3.metric(t['inst_kk'], dash['summary_stats'].get('inst_kk', 0))
 # 2. Featured Matches (Teaser - Limit 3)
 # 2. Featured Matches (Teaser - Dynamic Limit)
 limit = 5 if auth_status else 3
-st.subheader("🌟 Featured Matches")
+st.subheader(t['feat_title'])
 for i, pick in enumerate(dash['featured_matches'][:limit]): # Dynamic Limit
     # User Request: Use actual CSV course name, not simplified headline. Remove ranking #.
     display_title = pick['course_name']
@@ -558,16 +566,16 @@ for i, pick in enumerate(dash['featured_matches'][:limit]): # Dynamic Limit
         # User Request: Limit careers to 3
         if pick.get('jobs'): 
             jobs_list = pick['jobs'][:3]
-            st.markdown(f"**💼 Career:** {', '.join(jobs_list)}")
+            st.markdown(f"**{t['feat_career']}:** {', '.join(jobs_list)}")
             
         st.markdown(f"**🏫 {pick['institution']}**")
         
         # Badge Logic
         st.markdown(f"""
         <div class="badge-container">
-            <div class="badge-base badge-time">⏱️ <b>Duration:</b><br>{pick.get('duration', '-')}</div>
-            <div class="badge-base badge-mode">🛠️ <b>Mode:</b><br>{pick.get('type', 'Full-time')}</div>
-            <div class="badge-base badge-money">💰 <b>Fees:</b><br>{pick.get('fees', '-')}</div>
+            <div class="badge-base badge-time">⏱️ <b>{t['badge_dur']}:</b><br>{pick.get('duration', '-')}</div>
+            <div class="badge-base badge-mode">🛠️ <b>{t['badge_mode']}:</b><br>{pick.get('type', 'Full-time')}</div>
+            <div class="badge-base badge-money">💰 <b>{t['badge_fees']}:</b><br>{pick.get('fees', '-')}</div>
         </div>
         """, unsafe_allow_html=True)
 
