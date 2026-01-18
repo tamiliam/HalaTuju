@@ -14,7 +14,9 @@ TEXTS = {
         "sb_btn_submit": "Check Eligibility",
         "sb_core_subjects": "Core Subjects",
         "sb_science_stream": "Science Stream",
-        "sb_arts_stream": "Arts Stream",
+        "sb_commerce_stream": "Commerce Stream",
+        "sb_arts_electives": "Arts & Language Electives",
+        "sb_tech_voc_stream": "Technical & Vocational",
         "sb_opt_subject": "Optional Subjects",
         "sb_gender": "Gender",
         
@@ -29,18 +31,24 @@ TEXTS = {
         "subj_hist": "History",
         "subj_math": "Mathematics",
         "subj_moral": "Islam/Moral",
+        "subj_sci": "Science",
         
         "subj_addmath": "Add Maths",
         "subj_phy": "Physics",
         "subj_chem": "Chemistry",
         "subj_bio": "Biology",
 
-        "subj_sci": "Science",
         "subj_ekonomi": "Economics",
         "subj_business": "Business",
         "subj_poa": "Accounting (POA)",
         "subj_geo": "Geography",
+        
+        "subj_3rd_lang": "Tamil/Chinese/Arabic",
+        "subj_lit": "Lit (BM/Eng/Chi/Tam)",
         "subj_psv": "Visual Arts (Seni)",
+        
+        "subj_tech": "Engineering/Others",
+        "subj_voc": "Catering/Auto/Vocational",
 
         # Landing & Processing
         "header_title": "Hala Tuju SPM",

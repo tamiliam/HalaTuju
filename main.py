@@ -146,6 +146,7 @@ def render_auth_gate(t, current_grades):
 def render_grade_inputs(t, current_grades, key_suffix=""):
     grade_opts = [t["opt_not_taken"], "A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G"]
     
+    # 1. CORE
     st.markdown(f"**{t['sb_core_subjects']}**")
     bm = st.selectbox(t['subj_bm'], grade_opts, index=get_grade_index('bm', grade_opts, current_grades), key=f"bm{key_suffix}")
     eng = st.selectbox(t['subj_eng'], grade_opts, index=get_grade_index('eng', grade_opts, current_grades), key=f"eng{key_suffix}")
@@ -153,25 +154,38 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
     math = st.selectbox(t['subj_math'], grade_opts, index=get_grade_index('math', grade_opts, current_grades), key=f"math{key_suffix}")
     moral = st.selectbox(t['subj_moral'], grade_opts, index=get_grade_index('moral', grade_opts, current_grades), key=f"moral{key_suffix}")
     
+    # 2. SCIENCE STREAM
     with st.expander(t['sb_science_stream'], expanded=False):
         addmath = st.selectbox(t['subj_addmath'], grade_opts, index=get_grade_index('addmath', grade_opts, current_grades), key=f"addmath{key_suffix}")
         phy = st.selectbox(t['subj_phy'], grade_opts, index=get_grade_index('phy', grade_opts, current_grades), key=f"phy{key_suffix}")
         chem = st.selectbox(t['subj_chem'], grade_opts, index=get_grade_index('chem', grade_opts, current_grades), key=f"chem{key_suffix}")
         bio = st.selectbox(t['subj_bio'], grade_opts, index=get_grade_index('bio', grade_opts, current_grades), key=f"bio{key_suffix}")
     
-    with st.expander(t['sb_arts_stream'], expanded=False):
+    # 3. COMMERCE STREAM
+    with st.expander(t['sb_commerce_stream'], expanded=False):
         sci = st.selectbox(t['subj_sci'], grade_opts, index=get_grade_index('sci', grade_opts, current_grades), key=f"sci{key_suffix}")
         ekonomi = st.selectbox(t['subj_ekonomi'], grade_opts, index=get_grade_index('ekonomi', grade_opts, current_grades), key=f"ekonomi{key_suffix}")
-        business = st.selectbox(t['subj_business'], grade_opts, index=get_grade_index('business', grade_opts, current_grades), key=f"business{key_suffix}")
         poa = st.selectbox(t['subj_poa'], grade_opts, index=get_grade_index('poa', grade_opts, current_grades), key=f"poa{key_suffix}")
+        business = st.selectbox(t['subj_business'], grade_opts, index=get_grade_index('business', grade_opts, current_grades), key=f"business{key_suffix}")
         geo = st.selectbox(t['subj_geo'], grade_opts, index=get_grade_index('geo', grade_opts, current_grades), key=f"geo{key_suffix}")
+
+    # 4. ARTS & LANG ELECTIVES
+    with st.expander(t['sb_arts_electives'], expanded=False):
+        lang3 = st.selectbox(t['subj_3rd_lang'], grade_opts, index=get_grade_index('lang3', grade_opts, current_grades), key=f"3l{key_suffix}")
+        lit = st.selectbox(t['subj_lit'], grade_opts, index=get_grade_index('lit', grade_opts, current_grades), key=f"lit{key_suffix}")
         psv = st.selectbox(t['subj_psv'], grade_opts, index=get_grade_index('psv', grade_opts, current_grades), key=f"psv{key_suffix}")
 
+    # 5. TECHNICAL & VOCATIONAL
+    with st.expander(t['sb_tech_voc_stream'], expanded=False):
+        tech = st.selectbox(t['subj_tech'], grade_opts, index=get_grade_index('tech', grade_opts, current_grades), key=f"tech{key_suffix}")
+        voc = st.selectbox(t['subj_voc'], grade_opts, index=get_grade_index('voc', grade_opts, current_grades), key=f"voc{key_suffix}")
+
     return {
-        'bm': bm, 'eng': eng, 'hist': hist, 'math': math, 'moral': moral,
+        'bm': bm, 'eng': eng, 'hist': hist, 'math': math, 'moral': moral, 'sci': sci,
         'addmath': addmath, 'phy': phy, 'chem': chem, 'bio': bio,
-        'sci': sci, 'ekonomi': ekonomi, 'business': business, 
-        'poa': poa, 'geo': geo, 'psv': psv
+        'ekonomi': ekonomi, 'poa': poa, 'business': business, 'geo': geo,
+        'lang3': lang3, 'lit': lit, 'psv': psv,
+        'tech': tech, 'voc': voc
     }
 
 # --- 5. AUTH BLOCK (THE GATE) ---
@@ -439,8 +453,20 @@ if submitted or 'dash' not in st.session_state or force_calc:
         except Exception as e:
             st.error(f"Save Failed: {str(e)}")
 
+    # Determine other_tech/voc flags
+    # We consider it "True" if the student has attempted (or passed? Engine checks boolean).
+    # Usually "Technical Stream" implies taking the subject.
+    # Let's say if they have a grade better than 'Not Taken', it counts as being in that stream? 
+    # Or should we require a Pass? Engine.py checks "req['pass_stv']" -> "cond = has_pass(all_sci) or has_pass(tech_subjs) or student.other_voc".
+    # So if we map 'tech'/'voc' grades to 'other_tech'/'other_voc' flags, let's treat "Pass" as the trigger for safety.
+    from src.engine import is_pass # Ensure import if needed, or re-implement simplistic check
+    PASS_SET = {"A+", "A", "A-", "B+", "B", "C+", "C", "D", "E"} # Local check
+    
+    is_tech = clean_grades.get('tech') in PASS_SET
+    is_voc = clean_grades.get('voc') in PASS_SET
+
     # Run Engine
-    student_obj = StudentProfile(clean_grades, gender, 'Warganegara', 'Tidak', 'Tidak')
+    student_obj = StudentProfile(clean_grades, gender, 'Warganegara', 'Tidak', 'Tidak', other_tech=is_tech, other_voc=is_voc)
     # with st.spinner("Analyzing..."): # Removed to prevent freeze
     st.session_state['dash'] = generate_dashboard_data(student_obj, df_courses, lang_code=lang_code)
 
