@@ -459,7 +459,7 @@ elif user and st.session_state.get('last_calc_user') != user['id']:
     force_calc = True
     st.session_state['last_calc_user'] = user['id']
 
-if submitted or 'dash' not in st.session_state or force_calc:
+if submitted or (user and ('dash' not in st.session_state or force_calc)):
     cleaned_grades = raw_grades # Debugging alias
     
     # Store in Session for Guest persistence (in case they reload or submit again)
@@ -518,15 +518,17 @@ if submitted or 'dash' not in st.session_state or force_calc:
 
     # ... (skipping render code) ...
 
+
+dash = st.session_state.get('dash')
+
 if auth_status:
     # --- UNLOCKED VIEW ---
     st.markdown("---")
     # ...
 else:
     # --- LOCKED VIEW ---
-    render_auth_gate(t, raw_grades, gender, cb, disability)
-
-dash = st.session_state.get('dash')
+    if dash and dash.get('total_matches', 0) > 0:
+        render_auth_gate(t, raw_grades, gender, cb, disability)
 
 # --- RENDER MAIN CONTENT ---
 st.title(t['header_title'])
