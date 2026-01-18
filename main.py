@@ -544,8 +544,10 @@ c2.metric(t['inst_ikbn'], dash['summary_stats'].get('inst_ikbn', 0))
 c3.metric(t['inst_kk'], dash['summary_stats'].get('inst_kk', 0))
 
 # 2. Featured Matches (Teaser - Limit 3)
+# 2. Featured Matches (Teaser - Dynamic Limit)
+limit = 5 if auth_status else 3
 st.subheader("🌟 Featured Matches")
-for i, pick in enumerate(dash['featured_matches'][:3]): # Limit to 3
+for i, pick in enumerate(dash['featured_matches'][:limit]): # Dynamic Limit
     # User Request: Use actual CSV course name, not simplified headline. Remove ranking #.
     display_title = pick['course_name']
     
@@ -601,68 +603,19 @@ if auth_status:
         if not results:
             st.warning(t['hero_fail'])
         else:
-            # Custom CSS for cards
-            st.markdown("""
-            <style>
-            .course-card {
-                background-color: #262730;
-                padding: 1.5rem;
-                border-radius: 10px;
-                margin-bottom: 1rem;
-                border: 1px solid #464b5d;
-            }
-            .course-title { font-size: 1.2rem; font-weight: bold; color: #ffffff; }
-            .course-inst { font-size: 1rem; color: #cccccc; margin-bottom: 0.5rem; }
-            </style>
-            """, unsafe_allow_html=True)
-
-            # 1. TOP 5 MATCHES (Expanded Cards)
-            st.subheader(f"{t['header_top_matches']}")
+            # 2. REMAINING MATCHES (Compact List - NOW ALL MATCHES)
+            st.subheader(f"{t['header_other_matches']} ({len(results)})")
             
-            top_matches = results[:5]
-            other_matches = results[5:]
-            
-            for i, item in enumerate(top_matches):
+            for item in results:
                 c_name = item[t['table_col_course']]
                 c_inst = item[t['table_col_inst']]
-                c_dur = item.get('duration', '-')
-                c_fees = item.get('fees', '-')
-                c_type = item[t['table_col_cat']] # Category/Type
                 
-                # Render Card
-                with st.container():
-                     st.markdown(f"### {c_name}")
-                     st.markdown(f"**🏫 {c_inst}**")
-                     
-                     # Badges
-                     st.markdown(f"""
-                     <div class="badge-container">
-                        <div class="badge-base badge-time">⏱️ <b>{t['lbl_duration']}:</b> {c_dur}</div>
-                        <div class="badge-base badge-money">💰 <b>{t['lbl_fees']}:</b> {c_fees}</div>
-                        <div class="badge-base badge-mode">🛠️ <b>{t['lbl_mode']}:</b> {c_type}</div>
-                     </div>
-                     """, unsafe_allow_html=True)
-                     
-                     # Careers (if available from original list - wait, df_display might not have 'jobs' if I didn't include it in the dataframe construction?
-                     # 'all_courses' is a list of dicts. pd.DataFrame(all_courses) preserves all columns unless I drop them.
-                     # 'jobs' should be there under 'jobs' key if it wasn't renamed.
-                     if isinstance(item.get('jobs'), list) and item['jobs']:
+                with st.expander(f"{c_name} - {c_inst}"):
+                    st.write(f"**{t['lbl_duration']}:** {item.get('duration', '-')}")
+                    st.write(f"**{t['lbl_fees']}:** {item.get('fees', '-')}")
+                    st.write(f"**{t['table_col_cat']}:** {item[t['table_col_cat']]}")
+                    if item.get('jobs'):
                          st.info(f"💼 **Career:** {', '.join(item['jobs'][:3])}")
-                     
-                     st.markdown("---")
-
-            # 2. REMAINING MATCHES (Compact List)
-            if other_matches:
-                st.subheader(f"{t['header_other_matches']} ({len(other_matches)})")
-                
-                for item in other_matches:
-                    c_name = item[t['table_col_course']]
-                    c_inst = item[t['table_col_inst']]
-                    
-                    with st.expander(f"{c_name} - {c_inst}"):
-                        st.write(f"**{t['lbl_duration']}:** {item.get('duration', '-')}")
-                        st.write(f"**{t['lbl_fees']}:** {item.get('fees', '-')}")
-                        st.write(f"**{t['table_col_cat']}:** {item[t['table_col_cat']]}")
 else:
     # --- LOCKED VIEW ---
     if dash and dash.get('total_matches', 0) > 0:
