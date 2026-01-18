@@ -152,9 +152,8 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             seen_codes.add(x['code'])
             
     # Pick Top 3 Distinct
-    if len(unique_sorted) > 0: top_picks.append(unique_sorted[0])
-    if len(unique_sorted) > 1: top_picks.append(unique_sorted[1])
-    if len(unique_sorted) > 2: top_picks.append(unique_sorted[2])
+    # Pick Top 10 Distinct (Frontend will slice 3 or 5)
+    top_picks = unique_sorted[:10]
 
     # Calculate Unique Courses Count
     unique_course_count = len(set(o['code'] for o in eligible_offerings))

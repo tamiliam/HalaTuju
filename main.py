@@ -603,10 +603,26 @@ if auth_status:
         if not results:
             st.warning(t['hero_fail'])
         else:
-            # 2. REMAINING MATCHES (Compact List - NOW ALL MATCHES)
-            st.subheader(f"{t['header_other_matches']} ({len(results)})")
+            # Filter out Featured Matches from this list
+            # We need to match localized keys in 'results' with raw keys in 'dash[featured_matches]'
+            # But the VALUES are the same.
+            featured = dash['featured_matches'][:limit]
+            seen_set = set()
+            for x in featured:
+                # tuple(Name, Inst)
+                seen_set.add((x['course_name'], x['institution']))
             
+            final_others = []
             for item in results:
+                c_name = item[t['table_col_course']]
+                c_inst = item[t['table_col_inst']]
+                if (c_name, c_inst) not in seen_set:
+                    final_others.append(item)
+
+            # 2. REMAINING MATCHES (Compact List - EXCLUDING FEATURED)
+            st.subheader(f"{t['header_other_matches']} ({len(final_others)})")
+            
+            for item in final_others:
                 c_name = item[t['table_col_course']]
                 c_inst = item[t['table_col_inst']]
                 

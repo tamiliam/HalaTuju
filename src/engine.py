@@ -1,3 +1,123 @@
+"""
+ELIGIBILITY ENGINE — POLICY & INTERPRETATION NOTES
+=================================================
+
+This engine evaluates student eligibility for courses using two datasets:
+1) requirements.csv          (Polytechnic / KK courses)
+2) tvet_requirements.csv     (ILKBS / ILJTM courses)
+
+The logic implemented here MUST follow the policy below. Any deviation
+should be treated as a bug unless the policy itself is explicitly updated.
+
+-----------------------------------------------------------------------
+GENERAL PRINCIPLES
+-----------------------------------------------------------------------
+
+1. All requirements are conjunctive unless explicitly stated otherwise.
+   - If a column exists and is set (e.g. 1 / True), the student must satisfy it.
+   - 0 / Empty / null values impose no constraint.
+
+2. Eligibility is binary.
+   - A student either qualifies or does not qualify for a course.
+   - Each failed requirement should be tracked for explanation purposes.
+
+3. "Pass" and "Credit" are distinct.
+   - Credit implies pass, but pass does not imply credit.
+   - Credit-level requirements are stricter than pass-level requirements.
+
+4. Composite subject requirements are OR-based.
+   - Where a requirement refers to a group of subjects, satisfying ANY ONE
+     of the listed subjects is sufficient.
+
+5. Interview requirements do NOT disqualify a student.
+   - They are advisory flags only (e.g. "Eligible, subject to interview").
+
+-----------------------------------------------------------------------
+requirements.csv (Polytechnic / KK)
+-----------------------------------------------------------------------
+
+Identity & minimums:
+- course_id        : unique course identifier
+- min_credits      : minimum total number of credits required
+
+Citizenship & gender:
+- req_malaysian    : student must be Malaysian
+- req_male         : course open to males only
+- req_female       : course open to females only
+  (These two must never both be set.)
+
+Core pass requirements:
+- pass_bm          : pass Bahasa Malaysia
+- pass_history     : pass History
+- pass_eng         : pass English
+- pass_math        : pass Mathematics
+
+Credit-level requirements:
+- credit_math      : credit in Mathematics
+- credit_bm        : credit in Bahasa Malaysia
+- credit_eng       : credit in English
+
+Composite subject groups (OR conditions):
+- pass_stv         : pass at least one Science, Technical, OR Vocational subject
+- credit_stv       : credit in at least one Science, Technical, OR Vocational subject
+- credit_sf        : credit in Science (General) OR Physics
+- credit_sfmt      : credit in Science (General), Physics, OR Additional Mathematics
+- credit_bmbi      : credit in Bahasa Malaysia OR English
+
+Medical / physical constraints:
+- no_colorblind    : student must NOT be colourblind
+- no_disability    : student must be physically fit (not blind, deaf, dumb, have physical or learning difficulties or other disabilities that will impede practical work)
+
+Interview:
+- req_interview    : interview required; does NOT disqualify eligibility
+
+Remarks:
+- remarks          : free-text notes, not machine-enforced
+
+-----------------------------------------------------------------------
+tvet_requirements.csv (ILKBS / ILJTM)
+-----------------------------------------------------------------------
+
+Minimum academic requirements:
+- min_credits      : minimum number of credits
+- min_pass         : minimum number of passes
+
+Core pass requirements:
+- pass_bm          : pass Bahasa Malaysia
+- pass_history     : pass History
+- pass_math        : pass Mathematics OR Additional Mathematics
+- pass_science_tech: pass Science (Chemistry/Physics/General) OR Technical subject
+- pass_math_sci    : pass Mathematics OR Science (Chemistry/Physics/General)
+
+Credit requirements (OR conditions):
+- credit_math_sci_tech : credit in Math, any Science, OR Technical subject
+- credit_math_sci      : credit in Math OR any Science subject
+- credit_english       : credit in English
+
+Literacy & social constraints:
+- 3m_only          : able to read, write, AND count
+- single           : student must be unmarried
+
+Medical / physical constraints:
+- no_colorblind    : student must not be colourblind
+- no_disability    : student must be physically fit
+
+Remarks:
+- remarks          : free-text notes, not machine-enforced
+
+-----------------------------------------------------------------------
+IMPLEMENTATION WARNING
+-----------------------------------------------------------------------
+Common implementation errors to avoid:
+- Treating OR-based composite requirements as AND conditions
+- Treating interview requirements as disqualifying
+- Requiring multiple credits where only one qualifying subject is needed
+- Failing silently without recording which rule caused rejection
+
+This text is the authoritative description of how the eligibility rules
+are intended to work.
+"""
+
 import pandas as pd
 import numpy as np
 
