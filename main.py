@@ -335,7 +335,12 @@ if user:
 
     # Quiz Button (Logged In Users Only)
     st.sidebar.markdown("---")
-    if st.sidebar.button("🧭 Start Discovery Quiz", use_container_width=True):
+    
+    # Determine Label
+    has_results = bool(user.get('student_signals'))
+    quiz_btn_label = "🔄 Retake Discovery Quiz" if has_results else "🧭 Start Discovery Quiz"
+    
+    if st.sidebar.button(quiz_btn_label, use_container_width=True):
         quiz_manager.reset_quiz()
         st.session_state['view_mode'] = 'quiz'
         st.rerun()
