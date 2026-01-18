@@ -34,7 +34,7 @@ if not DB_CONNECTED:
 # ... (Helper Functions) ...
 
 # --- NEW: QUIZ PAGE RENDERER ---
-def render_quiz_page(lang_code):
+def render_quiz_page(lang_code, user):
     st.title("🧭 Discovery Quiz")
     
     # Get Current Question
@@ -43,13 +43,14 @@ def render_quiz_page(lang_code):
     step = st.session_state['quiz_step']
     
     # Progress Bar
-    progress = (step / total)
+    progress = min(max(step / total, 0.0), 1.0) if total > 0 else 0
     st.progress(progress)
     
     if q:
         # Render Question Card
         with st.container():
-            st.markdown(f"### {step + 1}. {q['prompt']}")
+            st.markdown(f"**Question {step + 1} of {total}**")
+            st.markdown(f"### {q['prompt']}")
             st.markdown("") # Spacer
             
             # Render Options as large buttons
@@ -73,14 +74,22 @@ def render_quiz_page(lang_code):
         # Get Results
         results = quiz_manager.get_final_results()
         
-        # Display Results (Temporary View)
+        # Save to DB if User
+        if user:
+            try:
+                auth.save_quiz_results(user['id'], results['student_signals'])
+                st.toast("Results Saved!")
+            except Exception as e:
+                st.error(f"Could not save results: {e}")
+        
+        # Display Results
         st.success("Analysis Complete!")
         st.json(results)
         
         # Save to Session?
         st.session_state['student_signals'] = results['student_signals']
         
-        if st.button("Return to Dashboard"):
+        if st.button("Return to Dashboard", use_container_width=True):
             st.session_state['view_mode'] = 'dashboard'
             st.rerun()
 
