@@ -301,15 +301,15 @@ if user:
         st.session_state['view_mode'] = 'profile'
         st.rerun()
         
-    if st.sidebar.button("Log Out", use_container_width=True):
+        if st.sidebar.button("Log Out", use_container_width=True):
         auth.logout()
 
-# New: Quiz Button (Visible to everyone)
-st.sidebar.markdown("---")
-if st.sidebar.button("🧭 Start Discovery Quiz", use_container_width=True):
-    quiz_manager.reset_quiz()
-    st.session_state['view_mode'] = 'quiz'
-    st.rerun()
+    # Quiz Button (Logged In Users Only)
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🧭 Start Discovery Quiz", use_container_width=True):
+        quiz_manager.reset_quiz()
+        st.session_state['view_mode'] = 'quiz'
+        st.rerun()
 
 if not user:
     st.sidebar.info("👋 Guest Mode")
