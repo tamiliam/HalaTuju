@@ -77,8 +77,11 @@ def render_quiz_page(lang_code, user):
         # Save to DB if User
         if user:
             try:
-                auth.save_quiz_results(user['id'], results['student_signals'])
-                st.toast("Results Saved!")
+                success, msg = auth.save_quiz_results(user['id'], results['student_signals'])
+                if success:
+                    st.toast("Results Saved!")
+                else:
+                    st.error(f"Save Failed: {msg}")
             except Exception as e:
                 st.error(f"Could not save results: {e}")
         
@@ -301,7 +304,7 @@ if user:
         st.session_state['view_mode'] = 'profile'
         st.rerun()
         
-        if st.sidebar.button("Log Out", use_container_width=True):
+    if st.sidebar.button("Log Out", use_container_width=True):
         auth.logout()
 
     # Quiz Button (Logged In Users Only)
