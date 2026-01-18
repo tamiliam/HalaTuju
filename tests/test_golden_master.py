@@ -309,7 +309,7 @@ class TestGoldenMaster(unittest.TestCase):
         print("   ------------------------------------------------")
 
         # --- THE MAGIC NUMBER ---
-        EXPECTED_BASELINE = 5368  # <--- Ensure this is your set baseline
+        EXPECTED_BASELINE = 5318  # <--- Ensure this is your set baseline
 
         if total_eligible_matches != EXPECTED_BASELINE:
             # Create a clean error message

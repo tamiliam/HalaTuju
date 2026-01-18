@@ -132,7 +132,8 @@ REQ_FLAG_COLUMNS = [
     '3m_only', 'pass_bm', 'credit_bm', 'pass_history', 
     'pass_eng', 'credit_english', 'pass_math', 'credit_math', 'pass_math_addmath',
     'pass_math_science', 'pass_science_tech', 'credit_math_sci',
-    'credit_math_sci_tech', 'pass_stv', 'credit_sf', 'credit_sfmt'
+    'credit_math_sci_tech', 'pass_stv', 'credit_sf', 'credit_sfmt',
+    'credit_bmbi', 'credit_stv'
 ]
 
 REQ_COUNT_COLUMNS = ['min_credits', 'min_pass']
@@ -266,26 +267,60 @@ def check_eligibility(student, req):
     # Group Logic
     pure_sci = [g.get('phy'), g.get('chem'), g.get('bio')]
     all_sci = pure_sci + [g.get('sci')]
-    tech_subjs = [g.get('rc'), g.get('cs'), g.get('agro'), g.get('srt')]
-    if student.other_tech: tech_subjs.append('C')
+    
+    # TVET Special: Science excluding Biology (Phys, Chem, General Sci)
+    sci_no_bio = [g.get('phy'), g.get('chem'), g.get('sci')]
 
+    # Tech/Voc logic: Checks the generic 'tech' and 'voc' inputs
+    # We no longer hardcode specific subjects like RC/CS/Agro/SRT 
+    # because the UI allows generic selection.
+    
     def has_pass(grade_list): return any(is_pass(x) for x in grade_list)
     def has_credit(grade_list): return any(is_credit(x) for x in grade_list)
+    
+    # --- TVET Rules (ILKBS/ILJTM) ---
 
     if req.get('pass_math_science') == 1:
-        cond = is_pass(g.get('math')) or has_pass(pure_sci)
-        if not check("Lulus Matemaik ATAU Sains Tulen", cond, "Perlu Lulus Math/Sains Tulen"): passed_academics = False
+        # Pass Math OR Science (Excluding Biology)
+        cond = is_pass(g.get('math')) or has_pass(sci_no_bio)
+        if not check("Lulus Matemaik ATAU Sains (No Bio)", cond, "Perlu Lulus Math/Sains (Tiada Bio)"): passed_academics = False
+        
     if req.get('pass_science_tech') == 1:
-        cond = has_pass(all_sci) or has_pass(tech_subjs)
-        if not check("Lulus Sains ATAU Teknikal", cond, "Perlu Lulus Sains/Teknikal"): passed_academics = False
+        # Pass Science (Excluding Bio) OR Technical Subject
+        cond = has_pass(sci_no_bio) or is_pass(g.get('tech'))
+        if not check("Lulus Sains (No Bio) ATAU Teknikal", cond, "Perlu Lulus Sains (Tiada Bio)/Teknikal"): passed_academics = False
+        
     if req.get('credit_math_sci') == 1:
+        # Normal TVET: Credit Math OR Science (Any)
+        # Note: Policy doc said "Credit in Math OR any Science subject". 
+        # Typically TVET is strict on Bio, but the doc said "any Science". 
+        # Leaving as 'all_sci' unless specified otherwise.
         cond = is_credit(g.get('math')) or has_credit(all_sci)
-        if not check("Kredit Matematik ATAU Sains Tulen", cond, "Perlu Kredit Math/Sains Tulen"): passed_academics = False
+        if not check("Kredit Matematik ATAU Sains", cond, "Perlu Kredit Math/Sains"): passed_academics = False
+        
     if req.get('credit_math_sci_tech') == 1:
-        cond = is_credit(g.get('math')) or has_credit(all_sci) or has_credit(tech_subjs)
+        cond = is_credit(g.get('math')) or has_credit(all_sci) or is_credit(g.get('tech'))
         if not check("Kredit Math/Sains/Teknikal", cond, "Perlu Kredit Math/Sains/Teknikal"): passed_academics = False
+
+    # --- Poly/KK Rules ---
     
-    # NEW: Specific Science/Math Groupings
+    # NEW: Credit BM or English
+    if req.get('credit_bmbi') == 1:
+        cond = is_credit(g.get('bm')) or is_credit(g.get('eng'))
+        if not check("Kredit BM ATAU BI", cond, "Perlu Kredit BM atau BI"): passed_academics = False
+
+    # NEW: Credit Science/Technical/Vocational
+    if req.get('credit_stv') == 1:
+        # All Science (Inc Bio) OR Tech OR Voc
+        cond = has_credit(all_sci) or is_credit(g.get('tech')) or is_credit(g.get('voc'))
+        if not check("Kredit Sains/Vokasional", cond, "Perlu Kredit Sains/Vokasional"): passed_academics = False
+
+    if req.get('pass_stv') == 1:
+        # Pass Science (Inc Bio) OR Tech OR Voc
+        cond = has_pass(all_sci) or is_pass(g.get('tech')) or is_pass(g.get('voc'))
+        if not check("Aliran Sains/Vokasional", cond, "Perlu Lulus Sains/Vokasional"): passed_academics = False
+
+    # Specific Science/Math Groupings
     if req.get('credit_sf') == 1:
         # Credit in Science (General) OR Physics
         cond = is_credit(g.get('sci')) or is_credit(g.get('phy'))
@@ -295,10 +330,6 @@ def check_eligibility(student, req):
         # Credit in Science (General) OR Physics OR Add Math
         cond = is_credit(g.get('sci')) or is_credit(g.get('phy')) or is_credit(g.get('addmath'))
         if not check("Kredit Sains/Fizik/Add Math", cond, "Perlu Kredit Sains/Fizik/Add Math"): passed_academics = False
-
-    if req.get('pass_stv') == 1:
-        cond = has_pass(all_sci) or has_pass(tech_subjs) or student.other_voc
-        if not check("Aliran Sains/Vokasional", cond, "Perlu Lulus Sains/Vokasional"): passed_academics = False
 
     min_c = req.get('min_credits', 0)
     if min_c > 0:
