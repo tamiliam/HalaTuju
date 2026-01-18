@@ -573,7 +573,7 @@ if auth_status:
     # --- UNLOCKED VIEW ---
     st.markdown("---")
     st.subheader(t['table_title'])
-    st.info(t['unlocked_alert'])
+
     
     all_courses = dash.get('full_list', [])
     if all_courses:
