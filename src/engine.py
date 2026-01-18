@@ -132,7 +132,7 @@ REQ_FLAG_COLUMNS = [
     '3m_only', 'pass_bm', 'credit_bm', 'pass_history', 
     'pass_eng', 'credit_english', 'pass_math', 'credit_math',
     'pass_math_sci', 'pass_science_tech', 'credit_math_sci',
-    'credit_math_sci_tech', 'pass_stv'
+    'credit_math_sci_tech', 'pass_stv', 'credit_sf', 'credit_sfmt'
 ]
 
 REQ_COUNT_COLUMNS = ['min_credits', 'min_pass']
@@ -288,6 +288,18 @@ def check_eligibility(student, req):
     if req.get('credit_math_sci_tech') == 1:
         cond = is_credit(g.get('math')) or has_credit(all_sci) or has_credit(tech_subjs)
         if not check("Kredit Math/Sains/Teknikal", cond, "Perlu Kredit Math/Sains/Teknikal"): passed_academics = False
+    
+    # NEW: Specific Science/Math Groupings
+    if req.get('credit_sf') == 1:
+        # Credit in Science (General) OR Physics
+        cond = is_credit(g.get('sci')) or is_credit(g.get('phy'))
+        if not check("Kredit Sains/Fizik", cond, "Perlu Kredit Sains atau Fizik"): passed_academics = False
+
+    if req.get('credit_sfmt') == 1:
+        # Credit in Science (General) OR Physics OR Add Math
+        cond = is_credit(g.get('sci')) or is_credit(g.get('phy')) or is_credit(g.get('addmath'))
+        if not check("Kredit Sains/Fizik/Add Math", cond, "Perlu Kredit Sains/Fizik/Add Math"): passed_academics = False
+
     if req.get('pass_stv') == 1:
         cond = has_pass(all_sci) or has_pass(tech_subjs) or student.other_voc
         if not check("Aliran Sains/Vokasional", cond, "Perlu Lulus Sains/Vokasional"): passed_academics = False

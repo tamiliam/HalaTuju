@@ -27,6 +27,24 @@ def load_master_data():
     df_tvet_req = load('tvet_requirements.csv')
     df_tvet_inst = load('tvet_institutions.csv')
     df_tvet_courses = load('tvet_courses.csv')
+    
+    # NEW: Load Details
+    df_details = load('details.csv')
+    
+    # Merge Details back into Logic Files
+    if not df_details.empty:
+        # Merge Poly
+        if not df_req.empty:
+            # Drop duplicates in details just in case, though they shouldn't exist
+            # We merge on course_id + institution_id to be precise
+            df_req = pd.merge(df_req, df_details, on=['course_id', 'institution_id'], how='left', suffixes=('', '_y'))
+            # Drop collision columns if any
+            df_req = df_req[[c for c in df_req.columns if not c.endswith('_y')]]
+            
+        # Merge TVET
+        if not df_tvet_req.empty:
+            df_tvet_req = pd.merge(df_tvet_req, df_details, on=['course_id', 'institution_id'], how='left', suffixes=('', '_y'))
+            df_tvet_req = df_tvet_req[[c for c in df_tvet_req.columns if not c.endswith('_y')]]
 
     # --- 2. MERGE POLYTECHNIC DATA ---
     if not df_req.empty and not df_links.empty:
