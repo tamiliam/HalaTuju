@@ -174,6 +174,18 @@ def is_credit(grade):
 def is_attempted(grade):
     return grade in ATTEMPTED_GRADES
 
+def to_int(val):
+    """
+    Safely converts a value to an integer.
+    Handles '1', '1.0', 1.0, True -> 1
+    Handles '0', '0.0', False, None, 'No' -> 0
+    """
+    try:
+        # Convert float-strings like "1.0"
+        return int(float(val))
+    except (ValueError, TypeError):
+        return 0
+
 class StudentProfile:
     def __init__(self, grades, gender, nationality, colorblind, disability, other_tech=False, other_voc=False):
         self.grades = grades
@@ -209,15 +221,15 @@ def check_eligibility(student, req):
 
     # GATEKEEPERS
     # Notice: We removed 'safe_int'. We trust the data is clean now.
-    if req.get('req_malaysian') == 1:
+    if to_int(req.get('req_malaysian')) == 1:
         if not check("Warganegara", student.nationality == 'Warganegara', "Hanya untuk Warganegara"): return False, audit
-    if req.get('req_male') == 1:
+    if to_int(req.get('req_male')) == 1:
         if not check("Jantina (Lelaki)", student.gender == 'Lelaki', "Lelaki Sahaja"): return False, audit
-    if req.get('req_female') == 1:
+    if to_int(req.get('req_female')) == 1:
         if not check("Jantina (Wanita)", student.gender == 'Perempuan', "Wanita Sahaja"): return False, audit
-    if req.get('no_colorblind') == 1:
+    if to_int(req.get('no_colorblind')) == 1:
         if not check("Bebas Buta Warna", student.colorblind == 'Tidak', "Tidak boleh rabun warna"): return False, audit
-    if req.get('no_disability') == 1:
+    if to_int(req.get('no_disability')) == 1:
         if not check("Sihat Tubuh Badan", student.disability == 'Tidak', "Syarat fizikal tidak dipenuhi"): return False, audit
 
     g = student.grades
@@ -226,7 +238,7 @@ def check_eligibility(student, req):
     # Definition: Course only requires BM and Math to be ATTEMPTED (any grade incl. G).
     # This overrides all other academic requirements.
 
-    if req.get('3m_only') == 1:
+    if to_int(req.get('3m_only')) == 1:
         cond = is_attempted(g.get('bm')) and is_attempted(g.get('math'))
         audit.append({
         "label": "Syarat 3M",
@@ -238,28 +250,28 @@ def check_eligibility(student, req):
     # ACADEMIC CHECKS
     passed_academics = True
 
-    if req.get('pass_bm') == 1:
+    if to_int(req.get('pass_bm')) == 1:
         if not check("Lulus BM", is_pass(g.get('bm')), "Gagal Bahasa Melayu"): passed_academics = False
-    if req.get('credit_bm') == 1:
+    if to_int(req.get('credit_bm')) == 1:
         if not check("Kredit BM", is_credit(g.get('bm')), "Tiada Kredit Bahasa Melayu"): passed_academics = False
-    if req.get('pass_history') == 1:
+    if to_int(req.get('pass_history')) == 1:
         if not check("Lulus Sejarah", is_pass(g.get('hist')), "Gagal Sejarah"): passed_academics = False
-    if req.get('pass_eng') == 1:
+    if to_int(req.get('pass_eng')) == 1:
         if not check("Lulus BI", is_pass(g.get('eng')), "Gagal Bahasa Inggeris"): passed_academics = False
-    if req.get('credit_english') == 1:
+    if to_int(req.get('credit_english')) == 1:
         if not check("Kredit BI", is_credit(g.get('eng')), "Tiada Kredit Bahasa Inggeris"): passed_academics = False
 
     # Logic: Passing Add Math satisfies the "Math" requirement.
-    if req.get('pass_math') == 1:
+    if to_int(req.get('pass_math')) == 1:
         # Check Modern Math ONLY (Poly Policy)
         if not check("Lulus Matematik", is_pass(g.get('math')), "Gagal Matematik"): passed_academics = False
 
-    if req.get('pass_math_addmath') == 1:
+    if to_int(req.get('pass_math_addmath')) == 1:
         # Check Modern Math OR Add Math (TVET Policy)
         cond = is_pass(g.get('math')) or is_pass(g.get('addmath'))
         if not check("Lulus Matematik/AddMath", cond, "Gagal Matematik & Add Math"): passed_academics = False
 
-    if req.get('credit_math') == 1:
+    if to_int(req.get('credit_math')) == 1:
         # Check Credit in Modern Math OR Add Math
         cond = is_credit(g.get('math')) or is_credit(g.get('addmath'))
         if not check("Kredit Matematik", cond, "Tiada Kredit Matematik atau Add Math"): passed_academics = False
@@ -280,17 +292,19 @@ def check_eligibility(student, req):
     
     # --- TVET Rules (ILKBS/ILJTM) ---
 
-    if req.get('pass_math_science') == 1:
+    # --- TVET Rules (ILKBS/ILJTM) ---
+
+    if to_int(req.get('pass_math_science')) == 1:
         # Pass Math OR Science (Excluding Biology)
         cond = is_pass(g.get('math')) or has_pass(sci_no_bio)
         if not check("Lulus Matemaik ATAU Sains (No Bio)", cond, "Perlu Lulus Math/Sains (Tiada Bio)"): passed_academics = False
         
-    if req.get('pass_science_tech') == 1:
+    if to_int(req.get('pass_science_tech')) == 1:
         # Pass Science (Excluding Bio) OR Technical Subject
         cond = has_pass(sci_no_bio) or is_pass(g.get('tech'))
         if not check("Lulus Sains (No Bio) ATAU Teknikal", cond, "Perlu Lulus Sains (Tiada Bio)/Teknikal"): passed_academics = False
         
-    if req.get('credit_math_sci') == 1:
+    if to_int(req.get('credit_math_sci')) == 1:
         # Normal TVET: Credit Math OR Science (Any)
         # Note: Policy doc said "Credit in Math OR any Science subject". 
         # Typically TVET is strict on Bio, but the doc said "any Science". 
@@ -298,44 +312,44 @@ def check_eligibility(student, req):
         cond = is_credit(g.get('math')) or has_credit(all_sci)
         if not check("Kredit Matematik ATAU Sains", cond, "Perlu Kredit Math/Sains"): passed_academics = False
         
-    if req.get('credit_math_sci_tech') == 1:
+    if to_int(req.get('credit_math_sci_tech')) == 1:
         cond = is_credit(g.get('math')) or has_credit(all_sci) or is_credit(g.get('tech'))
         if not check("Kredit Math/Sains/Teknikal", cond, "Perlu Kredit Math/Sains/Teknikal"): passed_academics = False
 
     # --- Poly/KK Rules ---
     
     # NEW: Credit BM or English
-    if req.get('credit_bmbi') == 1:
+    if to_int(req.get('credit_bmbi')) == 1:
         cond = is_credit(g.get('bm')) or is_credit(g.get('eng'))
         if not check("Kredit BM ATAU BI", cond, "Perlu Kredit BM atau BI"): passed_academics = False
 
     # NEW: Credit Science/Technical/Vocational
-    if req.get('credit_stv') == 1:
+    if to_int(req.get('credit_stv')) == 1:
         # All Science (Inc Bio) OR Tech OR Voc
         cond = has_credit(all_sci) or is_credit(g.get('tech')) or is_credit(g.get('voc'))
         if not check("Kredit Sains/Vokasional", cond, "Perlu Kredit Sains/Vokasional"): passed_academics = False
 
-    if req.get('pass_stv') == 1:
+    if to_int(req.get('pass_stv')) == 1:
         # Pass Science (Inc Bio) OR Tech OR Voc
         cond = has_pass(all_sci) or is_pass(g.get('tech')) or is_pass(g.get('voc'))
         if not check("Aliran Sains/Vokasional", cond, "Perlu Lulus Sains/Vokasional"): passed_academics = False
 
     # Specific Science/Math Groupings
-    if req.get('credit_sf') == 1:
+    if to_int(req.get('credit_sf')) == 1:
         # Credit in Science (General) OR Physics
         cond = is_credit(g.get('sci')) or is_credit(g.get('phy'))
         if not check("Kredit Sains/Fizik", cond, "Perlu Kredit Sains atau Fizik"): passed_academics = False
 
-    if req.get('credit_sfmt') == 1:
+    if to_int(req.get('credit_sfmt')) == 1:
         # Credit in Science (General) OR Physics OR Add Math
         cond = is_credit(g.get('sci')) or is_credit(g.get('phy')) or is_credit(g.get('addmath'))
         if not check("Kredit Sains/Fizik/Add Math", cond, "Perlu Kredit Sains/Fizik/Add Math"): passed_academics = False
 
-    min_c = req.get('min_credits', 0)
+    min_c = to_int(req.get('min_credits', 0))
     if min_c > 0:
         if not check(f"Minimum {min_c} Kredit", student.credits >= min_c, f"Hanya {student.credits} Kredit (Perlu {min_c})"): passed_academics = False
 
-    min_p = req.get('min_pass', 0)
+    min_p = to_int(req.get('min_pass', 0))
     if min_p > 0:
         if not check(f"Minimum {min_p} Lulus", student.passes >= min_p, f"Hanya {student.passes} Lulus"): passed_academics = False
 
