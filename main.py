@@ -142,44 +142,66 @@ def render_auth_gate(t, current_grades):
     
     st.write("Ready to see everything? Unlock your full report now.")
     
-    # Only need Register tab now since Login is in sidebar? 
-    # But good to keep both for flexibility
-    tab1, tab2 = st.tabs(["Unlock & Save", "Returning User Login"])
+# --- 4. DATA MODEL HELPER ---
+def render_grade_inputs(t, current_grades, key_suffix=""):
+    grade_opts = [t["opt_not_taken"], "A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G"]
     
-    with tab1:
-        with st.form("reg_form"):
-            st.write("Create a secure PIN to save your results.")
-            r_name = st.text_input("Full Name", placeholder="Ali Bin Abu")
-            r_phone = st.text_input("Phone Number", placeholder="e.g. 012-3456789")
-            r_pin = st.text_input("Create 6-Digit PIN", type="password", max_chars=6, help="Remember this PIN!")
-            
-            if st.form_submit_button("Unlock & Save Results"):
-                # Clean Grades first
-                grade_map = {k: v for k, v in current_grades.items() if v != t['opt_not_taken']} if current_grades else {}
-                
-                success, val = auth.register_user(r_name, r_phone, r_pin, grades=grade_map)
-                if success:
-                    st.success("Account Created! Unlocking...")
-                    time.sleep(1)
-                    st.rerun()
-                else:
-                    st.error(val)
+    st.markdown(f"**{t['sb_core_subjects']}**")
+    bm = st.selectbox(t['subj_bm'], grade_opts, index=get_grade_index('bm', grade_opts, current_grades), key=f"bm{key_suffix}")
+    eng = st.selectbox(t['subj_eng'], grade_opts, index=get_grade_index('eng', grade_opts, current_grades), key=f"eng{key_suffix}")
+    hist = st.selectbox(t['subj_hist'], grade_opts, index=get_grade_index('hist', grade_opts, current_grades), key=f"hist{key_suffix}")
+    math = st.selectbox(t['subj_math'], grade_opts, index=get_grade_index('math', grade_opts, current_grades), key=f"math{key_suffix}")
+    moral = st.selectbox(t['subj_moral'], grade_opts, index=get_grade_index('moral', grade_opts, current_grades), key=f"moral{key_suffix}")
+    
+    with st.expander(t['sb_science_stream'], expanded=False):
+        addmath = st.selectbox(t['subj_addmath'], grade_opts, index=get_grade_index('addmath', grade_opts, current_grades), key=f"addmath{key_suffix}")
+        phy = st.selectbox(t['subj_phy'], grade_opts, index=get_grade_index('phy', grade_opts, current_grades), key=f"phy{key_suffix}")
+        chem = st.selectbox(t['subj_chem'], grade_opts, index=get_grade_index('chem', grade_opts, current_grades), key=f"chem{key_suffix}")
+        bio = st.selectbox(t['subj_bio'], grade_opts, index=get_grade_index('bio', grade_opts, current_grades), key=f"bio{key_suffix}")
+    
+    with st.expander(t['sb_arts_stream'], expanded=False):
+        sci = st.selectbox(t['subj_sci'], grade_opts, index=get_grade_index('sci', grade_opts, current_grades), key=f"sci{key_suffix}")
+        ekonomi = st.selectbox(t['subj_ekonomi'], grade_opts, index=get_grade_index('ekonomi', grade_opts, current_grades), key=f"ekonomi{key_suffix}")
+        business = st.selectbox(t['subj_business'], grade_opts, index=get_grade_index('business', grade_opts, current_grades), key=f"business{key_suffix}")
+        poa = st.selectbox(t['subj_poa'], grade_opts, index=get_grade_index('poa', grade_opts, current_grades), key=f"poa{key_suffix}")
+        geo = st.selectbox(t['subj_geo'], grade_opts, index=get_grade_index('geo', grade_opts, current_grades), key=f"geo{key_suffix}")
+        psv = st.selectbox(t['subj_psv'], grade_opts, index=get_grade_index('psv', grade_opts, current_grades), key=f"psv{key_suffix}")
 
-    with tab2:
-        with st.form("login_form_gate"):
-            l_phone = st.text_input("Phone Number", placeholder="e.g. 012-3456789")
-            l_pin = st.text_input("6-Digit PIN", type="password", max_chars=6)
-            if st.form_submit_button("Login"):
-                success, val = auth.login_user(l_phone, l_pin)
-                if success:
-                    st.toast(f"Welcome back, {val['full_name']}!")
-                    time.sleep(1)
-                    st.rerun()
-                else:
-                    st.error(val)
+    return {
+        'bm': bm, 'eng': eng, 'hist': hist, 'math': math, 'moral': moral,
+        'addmath': addmath, 'phy': phy, 'chem': chem, 'bio': bio,
+        'sci': sci, 'ekonomi': ekonomi, 'business': business, 
+        'poa': poa, 'geo': geo, 'psv': psv
+    }
+
+# --- 5. AUTH BLOCK (THE GATE) ---
+def render_auth_gate(t, current_grades):
+    st.markdown("---")
+    st.warning(f"🔒 **{t['locked_cta_title']}**")
+    st.write(t['locked_cta_desc'])
+    
+    st.write("Ready to see everything? Unlock your full report now.")
+    
+    with st.form("reg_form"):
+        st.write("Create a secure PIN to save your results.")
+        r_name = st.text_input("Full Name", placeholder="Ali Bin Abu")
+        r_phone = st.text_input("Phone Number", placeholder="e.g. 012-3456789")
+        r_pin = st.text_input("Create 6-Digit PIN", type="password", max_chars=6, help="Remember this PIN!")
+        
+        if st.form_submit_button("Unlock & Save Results"):
+            # Clean Grades first
+            grade_map = {k: v for k, v in current_grades.items() if v != t['opt_not_taken']} if current_grades else {}
+            
+            success, val = auth.register_user(r_name, r_phone, r_pin, grades=grade_map)
+            if success:
+                st.success("Account Created! Unlocking...")
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error(val)
 
 # --- 5b. PROFILE PAGE ---
-def render_profile_page(user):
+def render_profile_page(user, t):
     st.title(f"👤 My Profile")
     
     with st.container():
@@ -196,8 +218,6 @@ def render_profile_page(user):
         with st.expander("✏️ Edit Details"):
             with st.form("edit_profile"):
                 new_name = st.text_input("Full Name", value=user.get('full_name', ''))
-                # Phone isn't usually editable effectively without re-verify, but allowing for now on request
-                # new_phone = st.text_input("Phone", value=user.get('phone', '')) 
                 
                 if st.form_submit_button("Save Changes"):
                     success, msg = auth.update_profile(user['id'], {"full_name": new_name})
@@ -207,9 +227,21 @@ def render_profile_page(user):
                         st.rerun()
                     else:
                         st.error(msg)
-    
-    st.markdown("### 📚 Saved Grades")
-    st.json(user.get('grades', {}), expanded=False)
+
+        # Edit Grades Form
+        with st.expander("📝 Edit Grades"):
+             with st.form("edit_grades"):
+                 new_grades = render_grade_inputs(t, user.get('grades', {}), key_suffix="_p")
+                 
+                 if st.form_submit_button("Save Grades"):
+                     clean_grades = {k: v for k, v in new_grades.items() if v != t['opt_not_taken']}
+                     success, msg = auth.update_profile(user['id'], {"grades": clean_grades})
+                     if success:
+                         st.success(msg)
+                         time.sleep(1)
+                         st.rerun()
+                     else:
+                         st.error(msg)
     
     st.markdown("---")
     if st.button("⬅️ Back to Dashboard"):
@@ -319,43 +351,28 @@ if not user:
 
 st.sidebar.markdown("---")
 
-# Rest of Sidebar Logic (Grades)
-# Grades Logic
-grade_opts = [t["opt_not_taken"], "A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G"]
-user_grades = user.get('grades', {}) if user else {}
+# Rest of Sidebar Logic
+# GUEST ONLY: Check Eligibility Form
+if not user:
+    # Grades Logic
+    grade_opts = [t["opt_not_taken"], "A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G"]
+    # Fallback/Session grades
+    guest_grades = st.session_state.get('guest_grades', {}) 
+    
+    with st.sidebar.form("grades_form"):
+        st.subheader(t['sb_core_subjects'])
+        # Use Helper
+        raw_grades = render_grade_inputs(t, guest_grades, key_suffix="_sb")
 
-with st.sidebar.form("grades_form"):
-    st.subheader(t['sb_core_subjects'])
-    bm = st.selectbox(t['subj_bm'], grade_opts, index=get_grade_index('bm', grade_opts, user_grades))
-    eng = st.selectbox(t['subj_eng'], grade_opts, index=get_grade_index('eng', grade_opts, user_grades))
-    hist = st.selectbox(t['subj_hist'], grade_opts, index=get_grade_index('hist', grade_opts, user_grades))
-    math = st.selectbox(t['subj_math'], grade_opts, index=get_grade_index('math', grade_opts, user_grades))
-    moral = st.selectbox(t['subj_moral'], grade_opts, index=get_grade_index('moral', grade_opts, user_grades))
-    
-    with st.expander(t['sb_science_stream'], expanded=False):
-        addmath = st.selectbox(t['subj_addmath'], grade_opts, index=get_grade_index('addmath', grade_opts, user_grades))
-        phy = st.selectbox(t['subj_phy'], grade_opts, index=get_grade_index('phy', grade_opts, user_grades))
-        chem = st.selectbox(t['subj_chem'], grade_opts, index=get_grade_index('chem', grade_opts, user_grades))
-        bio = st.selectbox(t['subj_bio'], grade_opts, index=get_grade_index('bio', grade_opts, user_grades))
-    
-    with st.expander(t['sb_arts_stream'], expanded=False):
-        sci = st.selectbox(t['subj_sci'], grade_opts, index=get_grade_index('sci', grade_opts, user_grades))
-        ekonomi = st.selectbox(t['subj_ekonomi'], grade_opts, index=get_grade_index('ekonomi', grade_opts, user_grades))
-        business = st.selectbox(t['subj_business'], grade_opts, index=get_grade_index('business', grade_opts, user_grades))
-        poa = st.selectbox(t['subj_poa'], grade_opts, index=get_grade_index('poa', grade_opts, user_grades))
-        geo = st.selectbox(t['subj_geo'], grade_opts, index=get_grade_index('geo', grade_opts, user_grades))
-        psv = st.selectbox(t['subj_psv'], grade_opts, index=get_grade_index('psv', grade_opts, user_grades))
-
-    gender = st.radio(t["sb_gender"], [t["gender_male"], t["gender_female"]])
-    submitted = st.form_submit_button(f"🚀 {t['sb_btn_submit']}")
-    
-    # Return collected inputs
-    sidebar_outputs = (submitted, {
-        'bm': bm, 'eng': eng, 'hist': hist, 'math': math, 'moral': moral,
-        'addmath': addmath, 'phy': phy, 'chem': chem, 'bio': bio,
-        'sci': sci, 'ekonomi': ekonomi, 'business': business, 
-        'poa': poa, 'geo': geo, 'psv': psv
-    }, gender)
+        gender = st.radio(t["sb_gender"], [t["gender_male"], t["gender_female"]])
+        submitted = st.form_submit_button(f"🚀 {t['sb_btn_submit']}")
+        
+        # Return collected inputs
+        sidebar_outputs = (submitted, raw_grades, gender)
+else:
+    # User is logged in, use their saved data
+    # No sidebar form. Data comes from user profile.
+    sidebar_outputs = (False, user.get('grades', {}), user.get('gender', 'Male'))
 
 submitted, raw_grades, gender = sidebar_outputs
 
@@ -363,7 +380,7 @@ submitted, raw_grades, gender = sidebar_outputs
 view_mode = st.session_state.get('view_mode', 'dashboard')
 
 if view_mode == 'profile' and user:
-    render_profile_page(user)
+    render_profile_page(user, t)
     st.stop() # Stop here, don't render dashboard below
     
 if view_mode == 'quiz':
