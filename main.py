@@ -468,10 +468,17 @@ c3.metric(t['inst_kk'], dash['summary_stats'].get('inst_kk', 0))
 # 2. Featured Matches (Teaser - Limit 3)
 st.subheader("🌟 Featured Matches")
 for i, pick in enumerate(dash['featured_matches'][:3]): # Limit to 3
-    display_title = pick.get('headline') or pick['course_name']
-    with st.expander(f"#{i+1}: {display_title}", expanded=True):
+    # User Request: Use actual CSV course name, not simplified headline. Remove ranking #.
+    display_title = pick['course_name']
+    
+    with st.expander(display_title, expanded=True):
         if pick.get('synopsis'): st.info(pick['synopsis'])
-        if pick.get('jobs'): st.markdown(f"**💼 Career:** {', '.join(pick['jobs'])}")
+        
+        # User Request: Limit careers to 3
+        if pick.get('jobs'): 
+            jobs_list = pick['jobs'][:3]
+            st.markdown(f"**💼 Career:** {', '.join(jobs_list)}")
+            
         st.markdown(f"**🏫 {pick['institution']}**")
         
         # Badge Logic
