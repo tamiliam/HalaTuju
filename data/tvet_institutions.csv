@@ -2,7 +2,7 @@ institution_id,institution_name,acronym,type,category,subcategory,State,address,
 IKBN-001,IKTBN Dusun Tua,IKBNDT,IPTA,ILKBS,IKTBN,Selangor,"Km 25, Dusun Tua, 43100 Hulu Langat, Selangor",03-90217100,https://kemahiran.kbs.gov.my/iktbndusuntua.html
 IKBN-002,IKTBN Sepang,IKBNS,IPTA,ILKBS,IKTBN,Selangor,"Bandar Baru Salak Tinggi, 43900 Sepang, Selangor",03-87061720,https://kemahiran.kbs.gov.my/iktbnsepang.html
 IKBN-003,IKTBN Chembong,IKBNC,IPTA,ILKBS,IKTBN,Negeri Sembilan,"71300 Rembau, Negeri Sembilan",06-6857900,https://kemahiran.kbs.gov.my/iktbnchembong.html
-IKBN-004,IKTBN Bukit Mertajam,IKBNBM,IPTA,ILKBS,IKTBN,Pinang,"Jalan Berapit,14000 Bukit Mertajam, Pulau Pinang",04-5225288   ,https://kemahiran.kbs.gov.my/iktbnbukitmertajam.html
+IKBN-004,IKTBN Bukit Mertajam,IKBNBM,IPTA,ILKBS,IKTBN,Pulau Pinang,"Jalan Berapit,14000 Bukit Mertajam, Pulau Pinang",04-5225288   ,https://kemahiran.kbs.gov.my/iktbnbukitmertajam.html
 IKBN-005,IKTBN Alor Gajah,IKBNAG,IPTA,ILKBS,IKTBN,Melaka,"Km 34, Jalan Masjid Tanah, 78300 Masjid Tanah, Melaka",06-3851255,https://kemahiran.kbs.gov.my/iktbnalorgajah.html
 IKBN-006,IKTBN Negara Pagoh,IKBNNP,IPTA,ILKBS,IKTBN,Johor,"Km 21, Jalan Panchor, 84500 Pagoh, Johor",06-9737836,https://kemahiran.kbs.gov.my/iktbnpagoh.html
 IKBN-007,IKTBN Temerloh,IKBNT,IPTA,ILKBS,IKTBN,Pahang,"Kampung Bongsu, 28500 Lanchang, Temerloh, Pahang",09-2805550,https://kemahiran.kbs.gov.my/iktbntemerloh.html
@@ -35,7 +35,7 @@ IJTM-012,ADTEC JTM Kampus Kota Samarahan,ILPSAMARAHAN,IPTA,ILJTM,ADTEC,Sarawak,"
 IJTM-013,ADTEC JTM Kampus Kota Kinabalu,ILPKINABALU,IPTA,ILJTM,ADTEC,Sabah,"Jalan 3, KKIP Selatan, 88460 Kota Kinabalu, Sabah",088-499825,https://www.ilpkk.gov.my
 IJTM-014,ADTEC JTM Kampus Sandakan,ILPSANDAKAN,IPTA,ILJTM,ADTEC,Sabah,"Batu 5, Jalan Sibuga, 90000 Sandakan, Sabah",089-240500,https://www.ilpsdk.gov.my
 IJTM-015,ADTEC JTM Kampus Marang,ILPMARANG,IPTA,ILJTM,ADTEC,Terengganu,"Kampung Bukit Parit, 21600 Marang, Terengganu",09-6189000,https://www.ilpmrg.gov.my 
-IJTM-016,ADTEC JTM Kampus Nibong Tebal,ILPTEBAL,IPTA,ILJTM,ADTEC,Pinang,"Jalan Bukit Panchor, 14300 Nibong Tebal, Pulau Pinang",04-5956000,https://www.ilpapnt.gov.my  
+IJTM-016,ADTEC JTM Kampus Nibong Tebal,ILPTEBAL,IPTA,ILJTM,ADTEC,Pulau Pinang,"Jalan Bukit Panchor, 14300 Nibong Tebal, Pulau Pinang",04-5956000,https://www.ilpapnt.gov.my  
 IJTM-017,ADTEC JTM Kampus Kangar,ILPKANGAR,IPTA,ILJTM,ADTEC,Perlis,"Padang Behor Mukim Sena, 01000 Kangar, Perlis",04-9777400,https://www.ilpkangar.gov.my
 IJTM-018,ADTEC JTM Kampus Bukit Katil,ADTECJTMKBK,IPTA,ILJTM,ADTEC,Melaka,"Lot 4345, Jalan Tun Telani, Mukim Bukit Katil, Hang Tuah Jaya, 75450 Ayer Keroh, Melaka",06-2320600,https://www.ilpmelaka.gov.my
 IJTM-019,ADTEC JTM Kampus Pedas,ILPPEDAS,IPTA,ILJTM,ADTEC,Negeri Sembilan,"Jalan Pedas Linggi, 71400 Pedas, Negeri Sembilan",06-6853854 / 57 / 58,https://www.ilppedas.gov.my
