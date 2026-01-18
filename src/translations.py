@@ -30,6 +30,17 @@ TEXTS = {
         "gender_female": "Female",
         "opt_yes": "Yes",
         "opt_no": "No",
+
+        # Profile Labels
+        "lbl_colorblind": "Color Blind",
+        "lbl_disability": "Physical Disability",
+        "lbl_fullname": "Full Name",
+        "lbl_gender": "Gender",
+        "lbl_phone": "Phone",
+        "header_edit_details": "✏️ Edit Details",
+        "header_edit_grades": "📝 Edit Grades",
+        "btn_save_changes": "Save Changes",
+        "btn_save_grades": "Save Grades",
         
         # Subject Names
         "subj_bm": "Malay Language",
@@ -157,6 +168,17 @@ TEXTS = {
         "gender_female": "Perempuan",
         "opt_yes": "Ya",
         "opt_no": "Tidak",
+
+        # Profile Labels
+        "lbl_colorblind": "Buta Warna",
+        "lbl_disability": "Kecacatan Fizikal",
+        "lbl_fullname": "Nama Penuh",
+        "lbl_gender": "Jantina",
+        "lbl_phone": "Telefon",
+        "header_edit_details": "✏️ Sunting Butiran",
+        "header_edit_grades": "📝 Sunting Gred",
+        "btn_save_changes": "Simpan Perubahan",
+        "btn_save_grades": "Simpan Gred",
         
         # Subject Names
         "subj_bm": "Bahasa Melayu",
@@ -281,6 +303,17 @@ TEXTS = {
         "gender_female": "பெண்",
         "opt_yes": "ஆம்",
         "opt_no": "இல்லை",
+
+        # Profile Labels
+        "lbl_colorblind": "நிறக்குருடு",
+        "lbl_disability": "உடல் ஊனமுற்றவர்",
+        "lbl_fullname": "முழு பெயர்",
+        "lbl_gender": "பாலினம்",
+        "lbl_phone": "தொலைபேசி",
+        "header_edit_details": "✏️ விவரங்களைத் திருத்து",
+        "header_edit_grades": "📝 தரங்களைத் திருத்து",
+        "btn_save_changes": "மாற்றங்களைச் சேமி",
+        "btn_save_grades": "தரங்களைச் சேமி",
         
         # Subject Names
         "subj_bm": "மலாய் மொழி",

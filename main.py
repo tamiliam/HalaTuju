@@ -233,25 +233,23 @@ def render_profile_page(user, t):
         st.markdown("---")
         
         # Edit Form
-        with st.expander("✏️ Edit Details"):
+        with st.expander(t['header_edit_details']):
             with st.form("edit_profile"):
-                new_name = st.text_input("Full Name", value=user.get('full_name', ''))
-                new_gender = st.radio("Gender", ["Male", "Female"], index=0 if user.get('gender') == "Male" else 1)
+                new_name = st.text_input(t['lbl_fullname'], value=user.get('full_name', ''))
+                new_gender = st.radio(t['lbl_gender'], [t["gender_male"], t["gender_female"]], index=0 if user.get('gender') == "Male" else 1, horizontal=True)
                 
                 # Health
-                st.markdown(f"**{t['sb_colorblind']}**")
                 # Map stored value (Tidak/Ya) to index
                 cb_val = user.get('colorblind', t['opt_no'])
                 # Handle language mismatch by checking if value is known 'Yes' or 'No', otherwise default 0
                 cb_idx = 1 if cb_val == t['opt_yes'] or cb_val == 'Ya' or cb_val == 'Yes' or cb_val == 'ஆம்' else 0
-                new_cb = st.radio("Colorblind", [t['opt_no'], t['opt_yes']], index=cb_idx, key="p_cb", label_visibility="collapsed")
+                new_cb = st.radio(t['lbl_colorblind'], [t['opt_no'], t['opt_yes']], index=cb_idx, key="p_cb", horizontal=True)
                 
-                st.markdown(f"**{t['sb_disability']}**")
                 dis_val = user.get('disability', t['opt_no'])
                 dis_idx = 1 if dis_val == t['opt_yes'] or dis_val == 'Ya' or dis_val == 'Yes' or dis_val == 'ஆம்' else 0
-                new_dis = st.radio("Disability", [t['opt_no'], t['opt_yes']], index=dis_idx, key="p_dis", label_visibility="collapsed")
+                new_dis = st.radio(t['lbl_disability'], [t['opt_no'], t['opt_yes']], index=dis_idx, key="p_dis", horizontal=True)
                 
-                if st.form_submit_button("Save Changes"):
+                if st.form_submit_button(t['btn_save_changes']):
                     success, msg = auth.update_profile(user['id'], {
                         "full_name": new_name, 
                         "gender": new_gender,
@@ -268,11 +266,11 @@ def render_profile_page(user, t):
                         st.error(msg)
 
         # Edit Grades Form
-        with st.expander("📝 Edit Grades"):
+        with st.expander(t['header_edit_grades']):
              with st.form("edit_grades"):
                  new_grades = render_grade_inputs(t, user.get('grades', {}), key_suffix="_p")
                  
-                 if st.form_submit_button("Save Grades"):
+                 if st.form_submit_button(t['btn_save_grades']):
                      clean_grades = {k: v for k, v in new_grades.items() if v != t['opt_not_taken']}
                      success, msg = auth.update_profile(user['id'], {"grades": clean_grades})
                      if success:
@@ -288,6 +286,7 @@ def render_profile_page(user, t):
     if st.button("⬅️ Back to Dashboard"):
         st.session_state['view_mode'] = 'dashboard'
         st.rerun()
+
 
 # --- 5c. QUIZ PAGE ---
 def render_quiz_page(lang_code, user):
@@ -410,16 +409,14 @@ if not user:
         # Use Helper
         raw_grades = render_grade_inputs(t, guest_grades, key_suffix="_sb")
 
-        gender = st.radio(t["sb_gender"], [t["gender_male"], t["gender_female"]])
+
+        gender = st.radio(t["sb_gender"], [t["gender_male"], t["gender_female"]], horizontal=True)
         
-        st.markdown("---")
         # Health Checks
-        st.markdown(f"**{t['sb_colorblind']}**")
-        cb = st.radio("Colorblind", [t['opt_no'], t['opt_yes']], index=0, label_visibility="collapsed", key="sb_cb")
+        cb = st.radio(t['sb_colorblind'], [t['opt_no'], t['opt_yes']], index=0, key="sb_cb", horizontal=True)
         st.markdown(f"[{t['link_cb_test']}]({t['cb_test_url']})")
         
-        st.markdown(f"**{t['sb_disability']}**")
-        disability = st.radio("Disability", [t['opt_no'], t['opt_yes']], index=0, label_visibility="collapsed", key="sb_dis")
+        disability = st.radio(t['sb_disability'], [t['opt_no'], t['opt_yes']], index=0, key="sb_dis", horizontal=True)
 
         st.markdown("---")
         submitted = st.form_submit_button(f"🚀 {t['sb_btn_submit']}")
