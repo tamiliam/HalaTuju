@@ -606,7 +606,8 @@ if auth_status:
         )
 else:
     # --- LOCKED VIEW ---
-    render_auth_gate(t, raw_grades, gender)
+    if dash and dash.get('total_matches', 0) > 0:
+        render_auth_gate(t, raw_grades, gender, cb, disability)
 
 # Footer
 st.markdown("---")
