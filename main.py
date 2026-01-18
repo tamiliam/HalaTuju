@@ -24,12 +24,8 @@ try:
     quiz_manager = QuizManager()
     DB_CONNECTED = True
 except Exception as e:
-    st.error(f"🚨 CRITICAL DB CONNECTION ERROR: {e}")
+    st.error(f"🚨 Connection Error: {e}")
     DB_CONNECTED = False
-    
-if not DB_CONNECTED:
-    st.warning("Please check your internet connection or database configuration.")
-    st.stop()
 
 # ... (Helper Functions) ...
 
@@ -89,7 +85,7 @@ def render_quiz_page(lang_code, user):
         st.success("Analysis Complete!")
         st.json(results)
         
-        # Save to Session?
+        # Save to Session
         st.session_state['student_signals'] = results['student_signals']
         
         if st.button("Return to Dashboard", use_container_width=True):
@@ -101,11 +97,6 @@ def render_quiz_page(lang_code, user):
 # Inside render_sidebar or main logic:
 
 # ... (After Profile Button) ...
-    if st.sidebar.button("🧭 Start Discovery Quiz", use_container_width=True):
-        quiz_manager.reset_quiz()
-        st.session_state['view_mode'] = 'quiz'
-        st.rerun()
-
 # ... (Main Router) ...
 
 def local_css(file_name):
@@ -113,6 +104,17 @@ def local_css(file_name):
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 local_css("assets/style.css")
+
+# --- 2. SETUP ---
+try:
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    auth = AuthManager(supabase)
+    DB_CONNECTED = True
+except Exception:
+    st.error("Database Connection Failed")
+    DB_CONNECTED = False
 
 @st.cache_data
 def get_data():
@@ -287,9 +289,7 @@ def render_quiz_page(lang_code, user):
 lang_code = st.sidebar.selectbox("🌐 Language", list(LANGUAGES.keys()), format_func=lambda x: LANGUAGES[x], key="lang_code")
 t = get_text(lang_code)
 
-auth_status = False
-if DB_CONNECTED and auth:
-    auth_status = auth.check_session()
+auth_status = auth.check_session()
 user = st.session_state['user'] if auth_status else None
 
 # Render Sidebar
@@ -320,16 +320,13 @@ if not user:
             l_phone = st.text_input("Phone", key="sb_phone")
             l_pin = st.text_input("PIN", type="password", key="sb_pin")
             if st.button("Login", key="sb_login"):
-                if auth:
-                    success, val = auth.login_user(l_phone, l_pin)
-                    if success:
-                        st.toast(f"Welcome back!")
-                        time.sleep(0.5)
-                        st.rerun()
-                    else:
-                        st.error(val)
+                success, val = auth.login_user(l_phone, l_pin)
+                if success:
+                    st.toast(f"Welcome back!")
+                    time.sleep(0.5)
+                    st.rerun()
                 else:
-                    st.error("Database unavailable. Cannot login.")
+                    st.error(val)
 
 st.sidebar.markdown("---")
 
