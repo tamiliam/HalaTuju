@@ -135,7 +135,9 @@ TEXTS = {
         "sb_btn_submit": "Semak Kelayakan",
         "sb_core_subjects": "Subject Teras",
         "sb_science_stream": "Aliran Sains",
-        "sb_arts_stream": "Aliran Seni",
+        "sb_commerce_stream": "Aliran Perdagangan",
+        "sb_arts_electives": "Elektif Sastera & Bahasa",
+        "sb_tech_voc_stream": "Teknikal & Vokasional",
         "sb_opt_subject": "Subjek Elektif",
         "sb_gender": "Jantina",
         
@@ -161,7 +163,13 @@ TEXTS = {
         "subj_business": "Perniagaan",
         "subj_poa": "Prinsip Perakaunan",
         "subj_geo": "Geografi",
+        
+        "subj_3rd_lang": "B. Tamil/Cina/Arab",
+        "subj_lit": "Kesusasteraan",
         "subj_psv": "Pendidikan Seni Visual",
+        
+        "subj_tech": "Kejuruteraan/Lain-lain",
+        "subj_voc": "Katering/Auto/Vokasional",
         
         # Landing & Processing
         "header_title": "Hala Tuju SPM",
@@ -245,7 +253,9 @@ TEXTS = {
         "sb_btn_submit": "தகுதியை சரிபார்க்கவும்",
         "sb_core_subjects": "முதன்மை பாடங்கள்",
         "sb_science_stream": "அறிவியல் பிரிவு",
-        "sb_arts_stream": "கலைப் பிரிவு",
+        "sb_commerce_stream": "வணிகப் பிரிவு",
+        "sb_arts_electives": "கலை மற்றும் மொழிப் பாடங்கள்",
+        "sb_tech_voc_stream": "தொழில்நுட்பம் & தொழிற்கல்வி",
         "sb_opt_subject": "கூடுதல் பாடங்கள்",
         "sb_gender": "பாலினம்",
         
@@ -271,7 +281,13 @@ TEXTS = {
         "subj_business": "வணிகம்",
         "subj_poa": "கணக்கியல் (POA)",
         "subj_geo": "புவியியல்",
+        
+        "subj_3rd_lang": "தமிழ்/சீன/அரபு மொழி",
+        "subj_lit": "இலக்கியம்",
         "subj_psv": "காட்சி கலைகள் (Seni)",
+        
+        "subj_tech": "பொறியியல்/பிற",
+        "subj_voc": "கேட்டரிங்/ஆட்டோ/தொழிற்கல்வி",
         
         # Landing & Processing
         "header_title": "Hala Tuju SPM (மேற்படிப்பு வழிகாட்டி)",
