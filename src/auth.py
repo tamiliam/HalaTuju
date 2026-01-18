@@ -182,13 +182,24 @@ class AuthManager:
                 st.session_state['user'].update(updates)
                 return True, "Profile Updated!"
                 
-            # Fallback: If update returns empty (common with certain RLS policies), fetch the user to confirm existence
-            # and assume success if no error was raised.
+            # Fallback: If update returns empty (possible RLS issue), verify persistence
+            # explicitly by fetching the specific columns we tried to update.
             verify = self.supabase.table("student_profiles").select("*").eq("id", user_id).execute()
             if verify.data:
-                 st.session_state['user'].update(updates)
-                 return True, "Profile Updated!"
+                 actual_data = verify.data[0]
+                 # Validation: Check if values match
+                 all_match = True
+                 for k, v in updates.items():
+                     if actual_data.get(k) != v:
+                         all_match = False
+                         break
                  
+                 if all_match:
+                     st.session_state['user'].update(updates)
+                     return True, "Profile Updated!"
+                 else:
+                     return False, "Update execution failed (RLS or Schema Mismatch)"
+                  
             return False, "Update returned no data and verification failed"
         except Exception as e:
             return False, str(e)
