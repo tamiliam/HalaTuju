@@ -244,12 +244,12 @@ def render_profile_page(user, t):
                 cb_val = user.get('colorblind', t['opt_no'])
                 # Handle language mismatch by checking if value is known 'Yes' or 'No', otherwise default 0
                 cb_idx = 1 if cb_val == t['opt_yes'] or cb_val == 'Ya' or cb_val == 'Yes' or cb_val == 'ஆம்' else 0
-                new_cb = st.radio("Colorblind", [t['opt_no'], t['opt_yes']], index=cb_idx, key="p_cb")
+                new_cb = st.radio("Colorblind", [t['opt_no'], t['opt_yes']], index=cb_idx, key="p_cb", label_visibility="collapsed")
                 
                 st.markdown(f"**{t['sb_disability']}**")
                 dis_val = user.get('disability', t['opt_no'])
                 dis_idx = 1 if dis_val == t['opt_yes'] or dis_val == 'Ya' or dis_val == 'Yes' or dis_val == 'ஆம்' else 0
-                new_dis = st.radio("Disability", [t['opt_no'], t['opt_yes']], index=dis_idx, key="p_dis")
+                new_dis = st.radio("Disability", [t['opt_no'], t['opt_yes']], index=dis_idx, key="p_dis", label_visibility="collapsed")
                 
                 if st.form_submit_button("Save Changes"):
                     success, msg = auth.update_profile(user['id'], {
