@@ -33,7 +33,7 @@ class AuthManager:
         pattern = r"^(?:\+?60|0)1[0-9]{1}-?[0-9]{7,8}$"
         return bool(re.match(pattern, phone.strip().replace(" ", "")))
 
-    def register_user(self, name, phone, pin, grades=None, gender=None, email=None):
+    def register_user(self, name, phone, pin, grades=None, gender=None, colorblind=None, disability=None, email=None):
         """Creates a new user with Hashed PIN and optional Initial Grades."""
         if not self.validate_phone(phone):
             return False, "❌ Invalid Phone Format"
@@ -50,6 +50,8 @@ class AuthManager:
             "email": email,
             "grades": grades,
             "gender": gender,
+            "colorblind": colorblind,
+            "disability": disability
             # "updated_at": "now()" 
         }
         
@@ -57,12 +59,14 @@ class AuthManager:
             # Upsert Logic
             existing = self.supabase.table("student_profiles").select("id").eq("phone", phone).execute()
             if existing.data:
-                 # Update PIN, Name, Grades, Gender
+                 # Update PIN, Name, Grades, Gender, Health
                  res = self.supabase.table("student_profiles").update({
                      "full_name": name,
                      "pin_hash": hashed,
                      "grades": grades,
-                     "gender": gender
+                     "gender": gender,
+                     "colorblind": colorblind,
+                     "disability": disability
                  }).eq("phone", phone).execute()
             else:
                  # Insert New

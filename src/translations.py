@@ -19,11 +19,17 @@ TEXTS = {
         "sb_tech_voc_stream": "Technical & Vocational",
         "sb_opt_subject": "Optional Subjects",
         "sb_gender": "Gender",
+        "sb_colorblind": "Color Blind?",
+        "sb_disability": "Physical Disability?",
+        "link_cb_test": "Not sure? Test here (Free)",
+        "cb_test_url": "https://www.colorblindnesstest.org/",
         
         # Options & Inputs
         "opt_not_taken": "Not Taken",
         "gender_male": "Male",
         "gender_female": "Female",
+        "opt_yes": "Yes",
+        "opt_no": "No",
         
         # Subject Names
         "subj_bm": "Malay Language",
@@ -140,11 +146,17 @@ TEXTS = {
         "sb_tech_voc_stream": "Teknikal & Vokasional",
         "sb_opt_subject": "Subjek Elektif",
         "sb_gender": "Jantina",
+        "sb_colorblind": "Buta Warna?",
+        "sb_disability": "Kecacatan Fizikal?",
+        "link_cb_test": "Tidak pasti? Uji di sini (Percuma)",
+        "cb_test_url": "https://www.colorblindnesstest.org/",
         
         # Options & Inputs
         "opt_not_taken": "Tidak Ambil",
         "gender_male": "Lelaki",
         "gender_female": "Perempuan",
+        "opt_yes": "Ya",
+        "opt_no": "Tidak",
         
         # Subject Names
         "subj_bm": "Bahasa Melayu",
@@ -258,11 +270,17 @@ TEXTS = {
         "sb_tech_voc_stream": "தொழில்நுட்பம் & தொழிற்கல்வி",
         "sb_opt_subject": "கூடுதல் பாடங்கள்",
         "sb_gender": "பாலினம்",
+        "sb_colorblind": "நிறக்குருடு?",
+        "sb_disability": "உடல் ஊனமுற்றவரா?",
+        "link_cb_test": "உறுதியாக தெரியவில்லையா? இங்கே சோதிக்கவும் (இலவசம்)",
+        "cb_test_url": "https://www.colorblindnesstest.org/",
         
         # Options & Inputs
         "opt_not_taken": "எடுக்கவில்லை",
         "gender_male": "ஆண்",
         "gender_female": "பெண்",
+        "opt_yes": "ஆம்",
+        "opt_no": "இல்லை",
         
         # Subject Names
         "subj_bm": "மலாய் மொழி",

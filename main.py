@@ -189,7 +189,7 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
     }
 
 # --- 5. AUTH BLOCK (THE GATE) ---
-def render_auth_gate(t, current_grades, gender):
+def render_auth_gate(t, current_grades, gender, cb, disability):
     st.markdown("---")
     st.warning(f"🔒 **{t['locked_cta_title']}**")
     st.write(t['locked_cta_desc'])
@@ -206,13 +206,77 @@ def render_auth_gate(t, current_grades, gender):
             # Clean Grades first
             grade_map = {k: v for k, v in current_grades.items() if v != t['opt_not_taken']} if current_grades else {}
             
-            success, val = auth.register_user(r_name, r_phone, r_pin, grades=grade_map, gender=gender)
+            success, val = auth.register_user(r_name, r_phone, r_pin, grades=grade_map, gender=gender, colorblind=cb, disability=disability)
             if success:
                 st.success("Account Created! Unlocking...")
                 time.sleep(1)
                 st.rerun()
             else:
                 st.error(val)
+
+# ... (skip to main logic)
+
+# update saving logic
+    if user and submitted:
+        try:
+            # Update DB
+            data_payload = {
+                "grades": clean_grades,
+                "gender": gender,
+                "colorblind": cb,
+                "disability": disability,
+                "last_login": "now()" # Update activity
+            }
+            
+            # Execute Update
+            res = supabase.table("student_profiles").update(data_payload).eq("id", user['id']).execute()
+            
+            # Update Local Session User
+            user['grades'] = clean_grades
+            user['gender'] = gender
+            user['colorblind'] = cb
+            user['disability'] = disability
+            
+            st.toast("Profile Saved Successfully!")
+        except Exception as e:
+            st.error(f"Save Failed: {str(e)}")
+
+    # Determine other_tech/voc flags
+    # ...
+    from src.engine import is_pass
+    PASS_SET = {"A+", "A", "A-", "B+", "B", "C+", "C", "D", "E"}
+    
+    is_tech = clean_grades.get('tech') in PASS_SET
+    is_voc = clean_grades.get('voc') in PASS_SET
+
+    # Run Engine
+    # Map Health Strings to Logic (if needed)
+    # The Engine expects "Tidak" for 'healthy'.
+    # Our translation gives 'opt_no' which is "Tidak" / "No".
+    # Engine checks: if req.get('no_colorblind') == 1: if not check(..., student.colorblind == 'Tidak', ...)
+    # So we must ensure we pass the localized string that matches?
+    # Actually, Engine logic at line 98 checks `student.colorblind == 'Tidak'`.
+    # If using English ("No"), this fails.
+    # We should normalize health flags to "Tidak" or "Ya" internally?
+    # OR, update Engine to handle localized inputs?
+    # Easier: Normalize before passing to StudentProfile.
+    
+    def normalize_no(val):
+        # Return 'Tidak' if val is one of the "No" variants
+        if val in ['Tidak', 'No', 'இல்லை', 'False', 0]: return 'Tidak'
+        return 'Ya'
+
+    norm_cb = normalize_no(cb)
+    norm_dis = normalize_no(disability)
+
+    student_obj = StudentProfile(clean_grades, gender, 'Warganegara', norm_cb, norm_dis, other_tech=is_tech, other_voc=is_voc)
+    # ...
+
+# ...
+
+if not auth_status:
+    # --- LOCKED VIEW ---
+    render_auth_gate(t, raw_grades, gender, cb, disability)
 
 # --- 5b. PROFILE PAGE ---
 def render_profile_page(user, t):
@@ -234,8 +298,26 @@ def render_profile_page(user, t):
                 new_name = st.text_input("Full Name", value=user.get('full_name', ''))
                 new_gender = st.radio("Gender", ["Male", "Female"], index=0 if user.get('gender') == "Male" else 1)
                 
+                # Health
+                st.markdown(f"**{t['sb_colorblind']}**")
+                # Map stored value (Tidak/Ya) to index
+                cb_val = user.get('colorblind', t['opt_no'])
+                # Handle language mismatch by checking if value is known 'Yes' or 'No', otherwise default 0
+                cb_idx = 1 if cb_val == t['opt_yes'] or cb_val == 'Ya' or cb_val == 'Yes' or cb_val == 'ஆம்' else 0
+                new_cb = st.radio("Colorblind", [t['opt_no'], t['opt_yes']], index=cb_idx, key="p_cb")
+                
+                st.markdown(f"**{t['sb_disability']}**")
+                dis_val = user.get('disability', t['opt_no'])
+                dis_idx = 1 if dis_val == t['opt_yes'] or dis_val == 'Ya' or dis_val == 'Yes' or dis_val == 'ஆம்' else 0
+                new_dis = st.radio("Disability", [t['opt_no'], t['opt_yes']], index=dis_idx, key="p_dis")
+                
                 if st.form_submit_button("Save Changes"):
-                    success, msg = auth.update_profile(user['id'], {"full_name": new_name, "gender": new_gender})
+                    success, msg = auth.update_profile(user['id'], {
+                        "full_name": new_name, 
+                        "gender": new_gender,
+                        "colorblind": new_cb,
+                        "disability": new_dis
+                    })
                     if success:
                         st.success(msg)
                         # Invalid Cache to force refresh
@@ -384,21 +466,33 @@ if not user:
     guest_grades = st.session_state.get('guest_grades', {}) 
     
     with st.sidebar.form("grades_form"):
-        st.subheader(t['sb_core_subjects'])
+        # st.subheader(t['sb_core_subjects']) # REMOVED DUPLICATE
         # Use Helper
         raw_grades = render_grade_inputs(t, guest_grades, key_suffix="_sb")
 
         gender = st.radio(t["sb_gender"], [t["gender_male"], t["gender_female"]])
+        
+        st.markdown("---")
+        # Health Checks
+        st.markdown(f"**{t['sb_colorblind']}**")
+        cb = st.radio("Colorblind", [t['opt_no'], t['opt_yes']], index=0, label_visibility="collapsed", key="sb_cb")
+        st.markdown(f"[{t['link_cb_test']}]({t['cb_test_url']})")
+        
+        st.markdown(f"**{t['sb_disability']}**")
+        disability = st.radio("Disability", [t['opt_no'], t['opt_yes']], index=0, label_visibility="collapsed", key="sb_dis")
+
+        st.markdown("---")
         submitted = st.form_submit_button(f"🚀 {t['sb_btn_submit']}")
         
         # Return collected inputs
-        sidebar_outputs = (submitted, raw_grades, gender)
+        sidebar_outputs = (submitted, raw_grades, gender, cb, disability)
 else:
     # User is logged in, use their saved data
     # No sidebar form. Data comes from user profile.
-    sidebar_outputs = (False, user.get('grades', {}), user.get('gender', 'Male'))
+    # Default to 'Tidak' if not set
+    sidebar_outputs = (False, user.get('grades', {}), user.get('gender', 'Male'), user.get('colorblind', 'Tidak'), user.get('disability', 'Tidak'))
 
-submitted, raw_grades, gender = sidebar_outputs
+submitted, raw_grades, gender, cb, disability = sidebar_outputs
 
 # --- ROUTER LOGIC ---
 view_mode = st.session_state.get('view_mode', 'dashboard')
@@ -439,6 +533,8 @@ if submitted or 'dash' not in st.session_state or force_calc:
             data_payload = {
                 "grades": clean_grades,
                 "gender": gender,
+                "colorblind": cb,
+                "disability": disability,
                 "last_login": "now()" # Update activity
             }
             
@@ -448,6 +544,8 @@ if submitted or 'dash' not in st.session_state or force_calc:
             # Update Local Session User
             user['grades'] = clean_grades
             user['gender'] = gender
+            user['colorblind'] = cb
+            user['disability'] = disability
             
             st.toast("Profile Saved Successfully!")
         except Exception as e:
@@ -465,10 +563,28 @@ if submitted or 'dash' not in st.session_state or force_calc:
     is_tech = clean_grades.get('tech') in PASS_SET
     is_voc = clean_grades.get('voc') in PASS_SET
 
+    # Normalization for Engine (Expects 'Tidak' for healthy)
+    def normalize_no(val):
+        if val in ['Tidak', 'No', 'இல்லை', 'False', 0]: return 'Tidak'
+        return 'Ya'
+
+    norm_cb = normalize_no(cb)
+    norm_dis = normalize_no(disability)
+
     # Run Engine
-    student_obj = StudentProfile(clean_grades, gender, 'Warganegara', 'Tidak', 'Tidak', other_tech=is_tech, other_voc=is_voc)
+    student_obj = StudentProfile(clean_grades, gender, 'Warganegara', norm_cb, norm_dis, other_tech=is_tech, other_voc=is_voc)
     # with st.spinner("Analyzing..."): # Removed to prevent freeze
     st.session_state['dash'] = generate_dashboard_data(student_obj, df_courses, lang_code=lang_code)
+
+    # ... (skipping render code) ...
+
+if auth_status:
+    # --- UNLOCKED VIEW ---
+    st.markdown("---")
+    # ...
+else:
+    # --- LOCKED VIEW ---
+    render_auth_gate(t, raw_grades, gender, cb, disability)
 
 dash = st.session_state.get('dash')
 
