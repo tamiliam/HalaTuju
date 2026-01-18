@@ -7,15 +7,17 @@ from src.dashboard import generate_dashboard_data
 from src.translations import get_text, LANGUAGES
 from src.quiz_manager import QuizManager
 
-# --- CONFIG & SETUP ---
-# ... (existing setup)
+# --- 2. CONFIGURATION & SETUP ---
 try:
-    # ... (existing supabase init)
+    SUPABASE_URL = st.secrets["SUPABASE_URL"]
+    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
     auth = AuthManager(supabase)
-    quiz_manager = QuizManager() # Init Quiz Manager
+    quiz_manager = QuizManager()
     DB_CONNECTED = True
 except Exception:
-    # ...
+    st.error("Database Connection Failed")
+    DB_CONNECTED = False
 
 # ... (Helper Functions) ...
 
