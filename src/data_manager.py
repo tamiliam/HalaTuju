@@ -2,48 +2,31 @@ import pandas as pd
 import os
 from src.engine import load_and_clean_data
 
-def load_master_data():
-    """
-    Loads and merges all CSVs into a single 'Enriched' DataFrame.
-    Returns: df_offerings (One row per Course-Location pair)
-    """
-    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    data_folder = os.path.join(base_path, 'data')
-
-    # --- 1. LOAD RAW FILES ---
-    def load(filename):
-        path = os.path.join(data_folder, filename)
-        if os.path.exists(path):
-            return load_and_clean_data(path)
-        return pd.DataFrame()
-
-    # Poly Files
-    df_req = load('requirements.csv')
-    df_links = load('links.csv')
-    df_inst = load('institutions.csv')
-    df_courses = load('courses.csv')
-
-    # TVET Files
-    df_tvet_req = load('tvet_requirements.csv')
-    df_tvet_inst = load('tvet_institutions.csv')
-    df_tvet_courses = load('tvet_courses.csv')
-    
     # NEW: Load Details
     df_details = load('details.csv')
     
     # Merge Details back into Logic Files
     if not df_details.empty:
-        # Merge Poly
+        # 1. Merge Poly (Source: 'poly') - ON course_id only (Poly reqs are per-program)
         if not df_req.empty:
-            # Drop duplicates in details just in case, though they shouldn't exist
-            # We merge on course_id + institution_id to be precise
-            df_req = pd.merge(df_req, df_details, on=['course_id', 'institution_id'], how='left', suffixes=('', '_y'))
-            # Drop collision columns if any
+            poly_details = df_details[df_details['source_type'] == 'poly']
+            # Drop source_type column before merge to avoid pollution
+            poly_details = poly_details.drop(columns=['source_type', 'institution_id'], errors='ignore')
+            
+            df_req = pd.merge(df_req, poly_details, on='course_id', how='left', suffixes=('', '_y'))
             df_req = df_req[[c for c in df_req.columns if not c.endswith('_y')]]
             
-        # Merge TVET
+        # 2. Merge TVET (Source: 'tvet') - ON course_id + institution_id (TVET reqs vary by inst)
         if not df_tvet_req.empty:
-            df_tvet_req = pd.merge(df_tvet_req, df_details, on=['course_id', 'institution_id'], how='left', suffixes=('', '_y'))
+            tvet_details = df_details[df_details['source_type'] == 'tvet']
+            tvet_details = tvet_details.drop(columns=['source_type'], errors='ignore')
+            
+            # Ensure keys exist
+            merge_keys = ['course_id']
+            if 'institution_id' in df_tvet_req.columns and 'institution_id' in tvet_details.columns:
+                merge_keys.append('institution_id')
+                
+            df_tvet_req = pd.merge(df_tvet_req, tvet_details, on=merge_keys, how='left', suffixes=('', '_y'))
             df_tvet_req = df_tvet_req[[c for c in df_tvet_req.columns if not c.endswith('_y')]]
 
     # --- 2. MERGE POLYTECHNIC DATA ---
