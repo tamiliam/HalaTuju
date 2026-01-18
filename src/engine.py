@@ -279,7 +279,7 @@ def check_eligibility(student, req):
         cond = has_pass(all_sci) or has_pass(tech_subjs)
         if not check("Lulus Sains ATAU Teknikal", cond, "Perlu Lulus Sains/Teknikal"): passed_academics = False
     if req.get('credit_math_sci') == 1:
-        cond = is_credit(g.get('math')) or has_credit(pure_sci)
+        cond = is_credit(g.get('math')) or has_credit(all_sci)
         if not check("Kredit Matematik ATAU Sains Tulen", cond, "Perlu Kredit Math/Sains Tulen"): passed_academics = False
     if req.get('credit_math_sci_tech') == 1:
         cond = is_credit(g.get('math')) or has_credit(all_sci) or has_credit(tech_subjs)
