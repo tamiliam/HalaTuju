@@ -139,7 +139,60 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             "synopsis": desc_data.get('synopsis', ''),
             "jobs": desc_data.get('jobs', [])
         })
+        
+    return eligible_offerings
 
+def group_courses_by_id(flat_list):
+    """
+    Aggregates a flat list of course/location offerings into unique valid courses.
+    Returns a list of course dictionaries, each containing a 'locations' list.
+    """
+    grouped = {}
+    
+    for item in flat_list:
+        cid = item.get('course_id')
+        if not cid: continue
+        
+        # Initialize Group if new
+        if cid not in grouped:
+            grouped[cid] = {
+                'course_id': cid,
+                'course_name': item.get('course_name'),
+                'fit_reasons': item.get('fit_reasons', []),
+                'headline': item.get('headline', ''),
+                'synopsis': item.get('synopsis', ''),
+                'jobs': item.get('jobs', []),
+                'max_score': -999, # Sentinel
+                'locations': []
+            }
+        
+        # Add Location Entry
+        score = item.get('fit_score', 0)
+        grouped[cid]['locations'].append({
+            'institution_name': item.get('institution'),
+             'score': score,
+             'state': item.get('state'),
+             'fees': item.get('fees'),
+             'type': item.get('type')
+        })
+        
+        # Update Max Score for the Group
+        if score > grouped[cid]['max_score']:
+            grouped[cid]['max_score'] = score
+            # Optional: Capture the 'best fit reasons' from the highest scoring location?
+            # Usually reasons are similar for same course, but Institution modifiers might add some.
+            if item.get('fit_reasons'):
+                grouped[cid]['fit_reasons'] = item.get('fit_reasons')
+
+    # Convert to list and Sort by Max Score Descending
+    final_list = list(grouped.values())
+    final_list.sort(key=lambda x: x['max_score'], reverse=True)
+    
+    # Internal Sort: Sort locations within each group by score descending
+    for group in final_list:
+        group['locations'].sort(key=lambda x: x['score'], reverse=True)
+        
+    return final_list
     # Logic for Top 3 (Teaser) - Prefer varied Types
     top_picks = []
     # Sort by Quality then Name (Safe Bet first)

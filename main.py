@@ -3,7 +3,7 @@ import pandas as pd
 import time
 from supabase import create_client, Client
 from src.engine import StudentProfile
-from src.dashboard import generate_dashboard_data
+from src.dashboard import generate_dashboard_data, group_courses_by_id
 from src.ranking_engine import get_ranked_results, TAG_COUNT
 from src.translations import get_text, LANGUAGES
 from src.quiz_manager import QuizManager
@@ -588,36 +588,99 @@ c3.metric(t['inst_kk'], dash['summary_stats'].get('inst_kk', 0))
 
 # 2. Featured Matches (Teaser - Limit 3)
 # 2. Featured Matches (Teaser - Dynamic Limit)
-limit = 5 if auth_status else 3
-st.subheader(t['feat_title'])
-for i, pick in enumerate(dash['featured_matches'][:limit]): # Dynamic Limit
-    # User Request: Use actual CSV course name, not simplified headline. Remove ranking #.
-    display_title = pick['course_name']
+# --- TIERED DISPLAY LOGIC ---
+    # 1. Group all eligible courses
+    # Note: We group the ENTIRE eligible list, not just top 5, to get the full picture.
+    # The 'ranked' result has split top_5/rest, but for grouping we want to re-merge and group properly.
+all_ranked = sorted(dash['full_list'], key=lambda x: int(x.get('fit_score', 0)), reverse=True)
+grouped_courses = group_courses_by_id(all_ranked)
+
+# 2. Slice Tiers
+tier1_featured = grouped_courses[:5]
+tier2_good = grouped_courses[5:25]
+tier3_rest = grouped_courses[25:]
+
+# --- RENDER TIER 1: FEATURED MATCHES ---
+st.markdown(f"### :star: {t.get('lbl_featured', 'Featured Matches')}")
+
+for pick in tier1_featured:
+    # Display Title with Score
+    display_title = f"{pick['course_name']} [Score: {pick['max_score']}]"
     
     with st.expander(display_title, expanded=True):
-        # RANKING REASONING (If available)
+        # REASONS
         if pick.get('fit_reasons'):
-            # Combine reasons into 1-2 styling sentences
             reason_text = " ".join(pick['fit_reasons'])
-            st.markdown(f":star: **Best Fit Reason:** {reason_text}")
-            
-        if pick.get('synopsis'): st.info(pick['synopsis'])
+            st.markdown(f"**Why:** {reason_text}")
         
-        # User Request: Limit careers to 3
-        if pick.get('jobs'): 
-            jobs_list = pick['jobs'][:3]
-            st.markdown(f"**{t['feat_career']}:** {', '.join(jobs_list)}")
+        # DESCRIPTION
+        if pick.get('headline'):
+            st.markdown(f"*{pick['headline']}*")
+        if pick.get('synopsis'):
+            st.markdown(pick['synopsis'])
+        if pick.get('jobs'):
+            st.markdown(f"💼 **Career:** {', '.join(pick['jobs'])}")
             
-        st.markdown(f"**🏫 {pick['institution']}**")
+        # LOCATIONS (Nested Table)
+        loc_count = len(pick['locations'])
+        st.markdown(f"**Available at {loc_count} Location{'s' if loc_count>1 else ''}:**")
         
-        # Badge Logic
-        st.markdown(f"""
-        <div class="badge-container">
-            <div class="badge-base badge-time">⏱️ <b>{t['badge_dur']}:</b><br>{pick.get('duration', '-')}</div>
-            <div class="badge-base badge-mode">🛠️ <b>{t['badge_mode']}:</b><br>{pick.get('type', 'Full-time')}</div>
-            <div class="badge-base badge-money">💰 <b>{t['badge_fees']}:</b><br>{pick.get('fees', '-')}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        # Simple dataframe for cleaner look than raw JSON
+        import pandas as pd
+        df_loc = pd.DataFrame(pick['locations'])
+        # Filter/Rename cols for display
+        if not df_loc.empty:
+            df_view = df_loc[['institution_name', 'state', 'fees']].rename(columns={
+                'institution_name': 'Institution', 
+                'state': 'State', 
+                'fees': 'Fees'
+            })
+            st.dataframe(df_view, hide_index=True, use_container_width=True)
+
+# --- RENDER TIER 2: GOOD OPTIONS ---
+if tier2_good:
+    st.markdown("---")
+    st.subheader("👍 Worth Considering")
+    for pick in tier2_good:
+         # Compact Card
+        display_title = f"{pick['course_name']} [Score: {pick['max_score']}]"
+        with st.expander(display_title, expanded=False):
+             # Reuse similar layout
+            if pick.get('fit_reasons'):
+                st.markdown(f"**Why:** {' '.join(pick['fit_reasons'])}")
+            if pick.get('headline'):
+                st.markdown(f"*{pick['headline']}*")
+            
+            # Locations
+            loc_count = len(pick['locations'])
+            st.caption(f"Available at {loc_count} Locations (e.g., {pick['locations'][0]['institution_name']})")
+            
+            # Check Availability Button (could expand list)
+            df_loc = pd.DataFrame(pick['locations'])
+            if not df_loc.empty:
+                st.dataframe(df_loc[['institution_name', 'state']].head(5), hide_index=True, use_container_width=True)
+                if loc_count > 5:
+                    st.caption(f"...and {loc_count-5} more.")
+
+# --- RENDER TIER 3: THE REST ---
+if tier3_rest:
+    st.markdown("---")
+    count_rest = len(tier3_rest)
+    if st.button(f"🔍 Explore {count_rest} Other Qualified Courses"):
+        # Simple toggle state handling or just expand a table
+        st.session_state['show_all_rest'] = not st.session_state.get('show_all_rest', False)
+        
+    if st.session_state.get('show_all_rest'):
+        # Table View of the rest
+        rest_data = []
+        for g in tier3_rest:
+            rest_data.append({
+                "Course": g['course_name'],
+                "Score": g['max_score'],
+                "Locations": len(g['locations'])
+            })
+        st.dataframe(pd.DataFrame(rest_data), hide_index=True)
+
 
 # 3. GATED CONTENT
 if auth_status:
