@@ -535,63 +535,55 @@ if submitted or (user and ('dash' not in st.session_state or force_calc)):
 
 
 
-# --- 6. RANKING LOGIC (Run on Every Render) ---
+# --- 6. RANKING LOGIC (ROBUST FIX) ---
 dash = st.session_state.get('dash')
+signals = None  # 1. Initialize to avoid UnboundLocalError
 
-# REGENERATION: Always derive signals from current scores to prevent stale state
-# PRIORITY ORDER:
-# 1. Logic Regeneration (Fresh Quiz)
-# 2. DB Persistence (Page Refresh)
-
-# 1. Try Re-calc from Session Scores (Most Fresh)
+# 2. Resolve Signals (Priority: Session > Quiz Manager > User DB)
+# Check Quiz Manager first (Most fresh)
 if 'quiz_scores' in st.session_state:
     try:
+        # Re-derive signals from raw quiz scores
         results = quiz_manager.get_final_results()
-        st.session_state['student_signals'] = results['student_signals']
+        signals = results.get('student_signals')
+        st.session_state['student_signals'] = signals
     except Exception as e:
         print(f"Error regenerating signals: {e}")
 
-# 2. If missing, Try Load from User DB (Persistence)
-if 'student_signals' not in st.session_state and user and user.get('student_signals'):
-    st.session_state['student_signals'] = user['student_signals']
-    # DEBUG: CONFIRM RESTORE
-    # st.toast("🔄 Ranking Profile Restored from Database", icon="💾")
-
-# Assign local var
-if 'student_signals' in st.session_state:
+# If still no signals, check Session Storage directly
+if not signals and 'student_signals' in st.session_state:
     signals = st.session_state['student_signals']
 
+# If still no signals, check User DB (Persistence)
+if not signals and user and user.get('student_signals'):
+    signals = user['student_signals']
+    st.session_state['student_signals'] = signals # Restore to session
+    # Optional: Toast to confirm restore
+    # st.toast("🔄 Ranking Profile Restored", icon="💾")
 
-# Assign local var
-if 'student_signals' in st.session_state:
-    signals = st.session_state['student_signals']
-
+# 3. Execute Ranking
+# We run this if we have Dashboard Data AND Signals
 if dash and signals:
-    # Validate Signals Type
+    # Validation
     if not isinstance(signals, dict):
-        print(f"CRITICAL: 'signals' is {type(signals)}, expected dict. Content: {signals}")
-        # Try to fix? Or skip?
-        signals = {} 
-
-    # Run Ranking safely
+        print(f"CRITICAL: Signals corrupted. Resetting.")
+        signals = {}
+    
     try:
+        # Perform Ranking
         ranked = get_ranked_results(dash['full_list'], signals)
+        
+        # Update Dashboard Data
+        dash['featured_matches'] = ranked['top_5']
+        dash['full_list'] = ranked['top_5'] + ranked['rest']
+        dash['is_ranked'] = True
+        
+        # Persist Update
+        st.session_state['dash'] = dash
+        
     except Exception as e:
         print(f"RANKING ERROR: {e}")
-        # Fallback to no ranking
-        ranked = {'top_5': [], 'rest': dash['full_list']}
-    
-    # DEBUG: Notify User (Simplified)
-    # top_name = ranked['top_5'][0]['course_name'] if ranked['top_5'] else "None"
-    # st.toast(f"✅ Ranking Applied! Top: {top_name}")
-    
-    # Update Dashboard Data
-    dash['featured_matches'] = ranked['top_5']
-    dash['full_list'] = ranked['top_5'] + ranked['rest'] # Keep table full but sorted
-    dash['is_ranked'] = True
-    
-    # Save back (In case we need it persisted, though local variable 'dash' is ref)
-    st.session_state['dash'] = dash
+        # Fallback: Don't crash app, just show default list
 
 
 
