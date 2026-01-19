@@ -94,24 +94,37 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     # --- A. Fit Scoring (Course) ---
     fit_score = 0
     
-    # 1. Work Preference: Hands-on
+    # 1. Work Preference: Hands-on & Problem Solving
     sig_hands_on = get_signal('work_preference_signals', 'hands_on')
+    sig_prob_solve = get_signal('work_preference_signals', 'problem_solving')
     tag_modality = c_tags.get('work_modality', '')
     
+    # Hands-on rule
     if sig_hands_on > 0 and tag_modality == 'hands_on':
         fit_score += 5
         reasons.append("Matches your hands-on work preference.")
-        # print("DEBUG: +5 Hands On") 
     elif sig_hands_on == 0 and tag_modality == 'hands_on':
         fit_score -= 3
         
+    # Problem Solving rule (New) -> Maps to 'mixed' or 'theoretical'? 
+    # Usually 'mixed' is good for problem solving (balance of theory/practice).
+    if sig_prob_solve > 0 and tag_modality == 'mixed':
+        fit_score += 3
+        reasons.append("Balanced approach suits your problem-solving style.")
+        
     # 2. Environment Fit
     sig_workshop = get_signal('environment_signals', 'workshop_environment')
+    sig_high_ppl_env = get_signal('environment_signals', 'high_people_environment')
     tag_env = c_tags.get('environment', '')
     
     if sig_workshop > 0 and tag_env == 'workshop':
         fit_score += 4
         reasons.append(f"Work environment fits your style ({tag_env}).")
+        
+    # High People Environment rule (New)
+    if sig_high_ppl_env > 0 and (tag_env == 'office' or c_tags.get('people_interaction') == 'high_people'):
+        fit_score += 3
+        reasons.append("Social environment matches your preference.")
 
     # 3. Energy / People Interaction
     sig_low_people = get_signal('energy_sensitivity_signals', 'low_people_tolerance')
@@ -120,14 +133,25 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     if sig_low_people > 0 and tag_people == 'high_people':
         fit_score -= 6
         reasons.append("May be draining due to high public interaction.")
+    
+    # Counter-rule: If they LIKE people, boost High People courses
+    if get_signal('work_preference_signals', 'people_helping') > 0 and tag_people == 'high_people':
+        fit_score += 4
+        reasons.append("Matches your desire to help people.")
         
     # 4. Values Alignment
     sig_risk = get_signal('value_tradeoff_signals', 'income_risk_tolerant')
+    sig_stability = get_signal('value_tradeoff_signals', 'stability_priority')
     tag_outcome = c_tags.get('outcome', '')
     
     if sig_risk > 0 and tag_outcome == 'entrepreneurial':
         fit_score += 3
         reasons.append("Great for future entrepreneurs.")
+        
+    # Stability Rule (New)
+    if sig_stability > 0 and tag_outcome in ['regulated_profession', 'employment_first']:
+        fit_score += 4
+        reasons.append("Offers a stable career pathway.")
 
     # --- B. Institution Modifiers (Tie-breakers) ---
     inst_score = 0
