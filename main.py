@@ -533,15 +533,26 @@ if submitted or (user and ('dash' not in st.session_state or force_calc)):
 dash = st.session_state.get('dash')
 
 # REGENERATION: Always derive signals from current scores to prevent stale state
+# PRIORITY ORDER:
+# 1. Logic Regeneration (Fresh Quiz)
+# 2. DB Persistence (Page Refresh)
+
+# 1. Try Re-calc from Session Scores (Most Fresh)
 if 'quiz_scores' in st.session_state:
     try:
         results = quiz_manager.get_final_results()
-        # Direct assignment ensures we always use the LATEST scores
         st.session_state['student_signals'] = results['student_signals']
-        signals = st.session_state['student_signals']
     except Exception as e:
         print(f"Error regenerating signals: {e}")
-        signals = st.session_state.get('student_signals')
+
+# 2. If missing, Try Load from User DB (Persistence)
+if 'student_signals' not in st.session_state and user and user.get('student_signals'):
+    st.session_state['student_signals'] = user['student_signals']
+    # print("DEBUG: Restored signals from User DB Profile")
+
+# Assign local var
+if 'student_signals' in st.session_state:
+    signals = st.session_state['student_signals']
 
 if dash and signals:
     # Validate Signals Type

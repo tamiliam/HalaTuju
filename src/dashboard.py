@@ -140,10 +140,17 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             "jobs": desc_data.get('jobs', [])
         })
         
+    # Calculate Unique Courses
+    unique_ids = set()
+    for item in eligible_offerings:
+        if item.get('course_id'):
+            unique_ids.add(item['course_id'])
+
     return {
         "featured_matches": [], # Will be populated by Ranking Engine in main.py
         "full_list": eligible_offerings,
         "summary_stats": stats,
+        "total_unique_courses": len(unique_ids),
         "total_matches": stats["inst_poly"] + stats["inst_ikbn"] + stats["inst_kk"] + stats["inst_other"]
     }
 
