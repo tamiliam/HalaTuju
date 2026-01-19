@@ -532,8 +532,11 @@ if submitted or (user and ('dash' not in st.session_state or force_calc)):
 # --- 6. RANKING LOGIC (Run on Every Render) ---
 dash = st.session_state.get('dash')
 
-# REGENERATION FALLBACK: If we have scores but no signals (session loss), regenerate them
-if 'quiz_scores' in st.session_state and 'student_signals' not in st.session_state:
+# REGENERATION FALLBACK: If we have scores but no/empty signals (session loss), regenerate them
+signals_exist = 'student_signals' in st.session_state
+is_empty = signals_exist and not st.session_state['student_signals'].get('work_preference_signals')
+
+if 'quiz_scores' in st.session_state and (not signals_exist or is_empty):
     try:
         results = quiz_manager.get_final_results()
         st.session_state['student_signals'] = results['student_signals']
