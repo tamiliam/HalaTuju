@@ -1,0 +1,2901 @@
+[
+  {
+    "course_id": "POLY-DIP-001",
+    "course_name": "Diploma Agroteknologi",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based", "continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-002",
+    "course_name": "Diploma Bioteknologi",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["assessment_heavy"],
+      "load": "mentally_demanding",
+      "outcome": "pathway_friendly",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-003",
+    "course_name": "Diploma Geomatik",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "regulated_profession",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-004",
+    "course_name": "Diploma in Retail Operations Management",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "balanced_load",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-005",
+    "course_name": "Diploma Insurans",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "high_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["assessment_heavy"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-006",
+    "course_name": "Diploma Kejuruteraan Alam Sekitar",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "balanced_load",
+      "outcome": "public_sector_friendly",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-007",
+    "course_name": "Diploma Kejuruteraan Awam",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-008",
+    "course_name": "Diploma Kejuruteraan Elektrik",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "regulated_profession",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-009",
+    "course_name": "Diploma Kejuruteraan Elektrik & Elektronik",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["assessment_heavy"],
+      "load": "mentally_demanding",
+      "outcome": "pathway_friendly",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-010",
+    "course_name": "Diploma Kejuruteraan Elektrik & Instrumentasi",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-011",
+    "course_name": "Diploma Kejuruteraan Elektrik (Kecekapan Tenaga)",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "employment_first",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-012",
+    "course_name": "Diploma Kejuruteraan Elektrik (Tenaga Hijau)",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "employment_first",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-013",
+    "course_name": "Diploma Kejuruteraan Elektronik",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["assessment_heavy"],
+      "load": "mentally_demanding",
+      "outcome": "pathway_friendly",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-014",
+    "course_name": "Diploma Kejuruteraan Elektronik (Kawalan)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-015",
+    "course_name": "Diploma Kejuruteraan Elektronik (Komputer)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "employment_first",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-016",
+    "course_name": "Diploma Kejuruteraan Elektronik (Komunikasi)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["assessment_heavy"],
+      "load": "balanced_load",
+      "outcome": "industry_specific",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-017",
+    "course_name": "Diploma Kejuruteraan Elektronik (Perubatan)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "high_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["assessment_heavy"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-018",
+    "course_name": "Diploma Kejuruteraan Kimia",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["assessment_heavy"],
+      "load": "balanced_load",
+      "outcome": "pathway_friendly",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-019",
+    "course_name": "Diploma Kejuruteraan Mekanikal",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-020",
+    "course_name": "Diploma Kejuruteraan Mekanikal (Automasi)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-021",
+    "course_name": "Diploma Kejuruteraan Mekanikal (Automotif)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "high_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-022",
+    "course_name": "Diploma Kejuruteraan Mekanikal (Bahan)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-023",
+    "course_name": "Diploma Kejuruteraan Mekanikal (Loji Kuasa)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-024",
+    "course_name": "Diploma Kejuruteraan Mekanikal (Pembuatan)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-025",
+    "course_name": "Diploma Kejuruteraan Mekanikal (Pembungkusan Perindustrian)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "balanced_load",
+      "outcome": "industry_specific",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-026",
+    "course_name": "Diploma Kejuruteraan Mekanikal (Penyamanan Udara dan Penyejukbekuan)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-027",
+    "course_name": "Diploma Kejuruteraan Mekanikal (Pertanian)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-028",
+    "course_name": "Diploma Kejuruteraan Mekanikal (Petrokimia)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-029",
+    "course_name": "Diploma Kejuruteraan Mekanikal (Plastik Perindustrian)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-030",
+    "course_name": "Diploma Kejuruteraan Mekanikal (Rekabentuk Pembuatan Automotif)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-031",
+    "course_name": "Diploma Kejuruteraan Mekanikal (Rekabentuk Produk)",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "employment_first",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-032",
+    "course_name": "Diploma Kejuruteraan Mekatronik",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-033",
+    "course_name": "Diploma Kejuruteraan Penyenggaraan Pesawat",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-034",
+    "course_name": "Diploma Kejuruteraan Perkapalan",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "regulated_profession",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-035",
+    "course_name": "Diploma Kejuruteraan Perkhidmatan Bangunan",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based", "continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-036",
+    "course_name": "Diploma Kejuruteraan Proses (Petrokimia)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-037",
+    "course_name": "Diploma Keusahawanan",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "high_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-038",
+    "course_name": "Diploma Kewangan",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "high_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["assessment_heavy"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-039",
+    "course_name": "Diploma Kewangan Islam",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "high_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["assessment_heavy"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-040",
+    "course_name": "Diploma Pelancongan Rekreasi",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "high_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-041",
+    "course_name": "Diploma Pemasaran",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "high_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "private_sector_dominant",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-042",
+    "course_name": "Diploma Pengajian Perniagaan",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "high_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["assessment_heavy"],
+      "load": "mentally_demanding",
+      "outcome": "private_sector_dominant",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-043",
+    "course_name": "Diploma Pengurusan Acara",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "high_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-044",
+    "course_name": "Diploma Pengurusan Hotel",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-045",
+    "course_name": "Diploma Pengurusan Logistik dan Rantaian Bekalan",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "private_sector_dominant",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-046",
+    "course_name": "Diploma Pengurusan Pelancongan",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-047",
+    "course_name": "Diploma Pengurusan Peruncitan",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "balanced_load",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-048",
+    "course_name": "Diploma Pengurusan Resort",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-049",
+    "course_name": "Diploma Perakaunan",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["assessment_heavy"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-050",
+    "course_name": "Diploma Perancangan Bandar dan Wilayah",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "public_sector_friendly",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-051",
+    "course_name": "Diploma Perkhidmatan Makanan Amalan Halal",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-052",
+    "course_name": "Diploma Perniagaan Antarabangsa",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["assessment_heavy"],
+      "load": "mentally_demanding",
+      "outcome": "private_sector_dominant",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-053",
+    "course_name": "Diploma Reka Bentuk Fesyen",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-054",
+    "course_name": "Diploma Rekabentuk Grafik",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-055",
+    "course_name": "Diploma Rekabentuk Industri",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-056",
+    "course_name": "Diploma Sains Kesetiausahaan",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "private_sector_dominant",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-057",
+    "course_name": "Diploma Seni Bina",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-058",
+    "course_name": "Diploma Seni Kulinari",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-059",
+    "course_name": "Diploma Senibina Kapal",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-060",
+    "course_name": "Diploma Sistem Maklumat Perniagaan",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "private_sector_dominant",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-061",
+    "course_name": "Diploma Teknologi Akuakultur",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-062",
+    "course_name": "Diploma Teknologi Berasaskan Kayu",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-063",
+    "course_name": "Diploma Teknologi Hortikultur Landskap",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-064",
+    "course_name": "Diploma Teknologi Kejuruteraan Elektrik Marin",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-065",
+    "course_name": "Diploma Teknologi Kejuruteraan Pembinaan Marin",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-066",
+    "course_name": "Diploma Teknologi Kimia (Lemak dan Minyak)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["assessment_heavy"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-067",
+    "course_name": "Diploma Teknologi Kreatif Digital Animasi",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-068",
+    "course_name": "Diploma Teknologi Kreatif Digital Produksi Video",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "high_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-069",
+    "course_name": "Diploma Teknologi Kreatif Digital Seni",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-070",
+    "course_name": "Diploma Teknologi Makanan",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["assessment_heavy"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-071",
+    "course_name": "Diploma Teknologi Makanan Pengurusan Halal",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["assessment_heavy"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-072",
+    "course_name": "Diploma Teknologi Maklumat (Software & App Development)",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "low_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "private_sector_dominant",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-073",
+    "course_name": "Diploma Teknologi Maklumat (Networking System)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "private_sector_dominant",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-074",
+    "course_name": "Diploma Teknologi Maklumat (Information Security)",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "low_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-075",
+    "course_name": "Diploma Teknologi Maklumat (Digital Game Programming)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "private_sector_dominant",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-076",
+    "course_name": "Diploma Teknologi Maklumat (Web Development)",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "private_sector_dominant",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-077",
+    "course_name": "Diploma Teknologi Maklumat (Data Management & Visualization)",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "low_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "private_sector_dominant",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-078",
+    "course_name": "Diploma Teknologi Media Cetak",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "balanced_load",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-079",
+    "course_name": "Diploma Ukur Bahan",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-080",
+    "course_name": "Diploma Reka Bentuk Fesyen Batik",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-081",
+    "course_name": "Diploma Reka Bentuk Kraf",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-DIP-082",
+    "course_name": "Diploma Pengurusan Logistik dan Rantaian Bekalan",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "private_sector_dominant",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "POLY-CET-001",
+    "course_name": "Sijil Kejuruteraan Awam",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "POLY-CET-002",
+    "course_name": "Sijil Kejuruteraan Elektrik",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "POLY-CET-003",
+    "course_name": "Sijil Kejuruteraan Mekanikal",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-001",
+    "course_name": "Diploma Dandanan Rambut",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-002",
+    "course_name": "Diploma in 3D Animation Technology",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-003",
+    "course_name": "Diploma in Architectural Technology",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-004",
+    "course_name": "Diploma in Culinary Arts",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-005",
+    "course_name": "Diploma in Electronics Instrumentation Technology",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-006",
+    "course_name": "Diploma in Games Art Technology",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-007",
+    "course_name": "Diploma in Hotel Management",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-008",
+    "course_name": "Diploma in Mechanical Design Technology",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "employment_first",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-009",
+    "course_name": "Diploma in Mobile Technology",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-010",
+    "course_name": "Diploma In Patisserie",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-011",
+    "course_name": "Diploma in Rail Signalling And Communication Technology",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-012",
+    "course_name": "Diploma in Sound & Lighting Technology",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-013",
+    "course_name": "Diploma in Telecommunication Technology",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-014",
+    "course_name": "Diploma Teknologi Kenderaan Perdagangan",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-015",
+    "course_name": "Diploma Teknologi Solar Fotovoltan",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-DIP-016",
+    "course_name": "Diploma Terapi Kecantikan",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-001",
+    "course_name": "Certificate in Culinary Arts",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-002",
+    "course_name": "Certificate in Food & Beverage Service",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-003",
+    "course_name": "Certificate In Recreational Tourism",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-004",
+    "Sijil Agroteknologi": "Diploma Agroteknologi",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-005",
+    "course_name": "Sijil Animasi 2D",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "pathway_friendly",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-006",
+    "course_name": "Sijil Animasi 3D",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "pathway_friendly",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-007",
+    "course_name": "Sijil Dandanan Rambut",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-008",
+    "course_name": "Sijil Fesyen dan Pakaian",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-009",
+    "course_name": "Sijil Kulinari",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-010",
+    "course_name": "Sijil Landskap",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-011",
+    "course_name": "Sijil Multimedia Kreatif Pengiklanan",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-012",
+    "course_name": "Sijil Operasi Perhotelan",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-013",
+    "course_name": "Sijil Pastri",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-014",
+    "course_name": "Sijil Pengembaraan Pelancongan",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-015",
+    "course_name": "Sijil Pengendalian Acara",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "high_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-016",
+    "course_name": "Sijil Pengoperasian Perniagaan",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "employment_first",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-017",
+    "course_name": "Sijil Penyelenggaraan Bangunan",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-018",
+    "course_name": "Sijil Penyeliaan Tapak Bina",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-019",
+    "course_name": "Sijil Perkhidmatan Logistik",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "employment_first",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-020",
+    "course_name": "Sijil Rekabentuk Dalaman",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-021",
+    "course_name": "Sijil Rekabentuk dan Pembuatan Perabot",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-022",
+    "course_name": "Sijil Seni Visual Kreatif",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-023",
+    "course_name": "Sijil Teknologi Akuakultur",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-024",
+    "course_name": "Sijil Teknologi Automotif",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-025",
+    "course_name": "Sijil Teknologi Elektrik",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-026",
+    "course_name": "Sijil Teknologi Elektrik Pemasangan dan Perkhidmatan",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-027",
+    "course_name": "Sijil Teknologi Maklumat",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "pathway_friendly",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-028",
+    "course_name": "Sijil Teknologi Pembinaan Bangunan",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-029",
+    "course_name": "Sijil Teknologi Pembuatan",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-030",
+    "course_name": "Sijil Teknologi Pemprosesan Makanan",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "balanced_load",
+      "outcome": "employment_first",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-031",
+    "course_name": "Sijil Teknologi Penyejukan dan Penyamanan Udara",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-032",
+    "course_name": "Sijil Teknologi Penyelenggaraan Kenderaan Pacuan Empat Roda",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-033",
+    "course_name": "Sijil Teknologi Penyenggaraan Industri",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-034",
+    "course_name": "Sijil Teknologi Penyenggaraan Motosikal Berkuasa Tinggi",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-035",
+    "course_name": "Sijil Teknologi Peranti Mudah Alih",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-036",
+    "course_name": "Sijil Teknologi Senibina",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "pathway_friendly",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-037",
+    "course_name": "Sijil Teknologi Telekomunikasi",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "KKOM-CET-038",
+    "course_name": "Sijil Terapi Kecantikan dan Spa",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "IKBN-DIP-001",
+    "course_name": "Diploma Teknologi Elektrik (Penjaga Jentera Elektrik - A1)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "regulated_profession",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-DIP-002",
+    "course_name": "Diploma Teknologi Elektrik (Penyejukbekuan & Penyamanan Udara)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "balanced_load",
+      "outcome": "employment_first",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "IKBN-DIP-003",
+    "course_name": "Diploma Teknologi Fesyen Dan Pakaian (Rekaan Fesyen)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-DIP-006",
+    "course_name": "Diploma Teknologi Mekanikal (Rekabentuk Produk Industri)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "employment_first",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "IKBN-DIP-007",
+    "course_name": "Diploma Teknologi Pembuatan Makanan (Pemprosesan)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "balanced_load",
+      "outcome": "regulated_profession",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-001",
+    "course_name": "Sijil Lanjutan Teknologi Automotif (Penyelenggaraan Jentera Berat)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-002",
+    "course_name": "Sijil Lanjutan Teknologi Automotif (Penyelenggaraan Kenderaan Perdagangan)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-003",
+    "course_name": "Sijil Lanjutan Teknologi Automotif (Penyelenggaraan Kereta)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-004",
+    "course_name": "Sijil Lanjutan Teknologi Automotif (Penyelenggaraan Kereta/EV)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-005",
+    "course_name": "Sijil Lanjutan Teknologi Automotif (Vehicle Painting)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-006",
+    "course_name": "Sijil Lanjutan Teknologi Awam (Lukisan Senibina)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "employment_first",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-007",
+    "course_name": "Sijil Lanjutan Teknologi Awam (Penyelenggaraan Bangunan)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-008",
+    "course_name": "Sijil Lanjutan Teknologi Elektrik (Pendawaian Elektrik Tiga Fasa - PW4)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "regulated_profession",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-009",
+    "course_name": "Sijil Lanjutan Teknologi Elektrik (Penyamanan Udara & Pemanasan Domestik)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-010",
+    "course_name": "Sijil Lanjutan Teknologi Elektronik (Elektronik Industri)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-011",
+    "course_name": "Sijil Lanjutan Teknologi Fesyen Dan Pakaian (Jahitan Pakaian Wanita)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-012",
+    "course_name": "Sijil Lanjutan Teknologi Hospitaliti (Kaunter Hadapan - Front Office)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "balanced_load",
+      "outcome": "employment_first",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-013",
+    "course_name": "Sijil Lanjutan Teknologi Hospitaliti (Penyajian)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-014",
+    "course_name": "Sijil Lanjutan Teknologi Hospitaliti (Penyediaan Makanan)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-015",
+    "course_name": "Sijil Lanjutan Teknologi Hospitaliti (Penyediaan Pastri)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-016",
+    "course_name": "Sijil Lanjutan Teknologi Hospitaliti (Penyediaan Roti)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-017",
+    "course_name": "Sijil Lanjutan Teknologi Kosmetologi (Perekaan Gaya Rambut)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-018",
+    "course_name": "Sijil Lanjutan Teknologi Kosmetologi (Terapi Kecantikan)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "high_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-019",
+    "course_name": "Sijil Lanjutan Teknologi Maklumat (Perekabentuk Multimedia Pengarangan)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-020",
+    "course_name": "Sijil Lanjutan Teknologi Marin (Penyelenggaraan)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-021",
+    "course_name": "Sijil Lanjutan Teknologi Mekanikal (Boilermaker)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-022",
+    "course_name": "Sijil Lanjutan Teknologi Mekanikal (Kimpalan Arka)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-023",
+    "course_name": "Sijil Lanjutan Teknologi Mekanikal (Kimpalan)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-024",
+    "course_name": "Sijil Lanjutan Teknologi Mekanikal (Mekatronik)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-025",
+    "course_name": "Sijil Lanjutan Teknologi Mekanikal (Operasi Fabrikasi Paip)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-026",
+    "course_name": "Sijil Lanjutan Teknologi Mekanikal (Penyelenggaraan Industri)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-027",
+    "course_name": "Sijil Lanjutan Teknologi Mekanikal (Pesawat - Komposit)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-028",
+    "course_name": "Sijil Lanjutan Teknologi Mekanikal (Pesawat - Metal)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-029",
+    "course_name": "Sijil Lanjutan Teknologi Mekanikal (Rekabentuk Produk Industri)",
+    "tags": {
+      "work_modality": "theoretical",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-032",
+    "course_name": "Sijil Teknologi Awam (Scaffolding - Tubular)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "IKBN-CET-034",
+    "course_name": "Sijil Teknologi Elektrik (Pendawaian Elektrik Satu Fasa - PW2)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "regulated_profession",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-DIP-010",
+    "course_name": "Diploma Teknologi Jaminan Kualiti",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["assessment_heavy", "continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "IJTM-DIP-017",
+    "course_name": "Diploma Teknologi Mekatronik",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based", "continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-DIP-019",
+    "course_name": "Diploma Teknologi Mikroelektronik",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["assessment_heavy", "continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "IJTM-DIP-022",
+    "course_name": "Diploma Teknologi Pembuatan (Pemesinan)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-DIP-024",
+    "course_name": "Diploma Teknologi Pengeluaran Automotif",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-DIP-026",
+    "course_name": "Diploma Teknologi Penyelenggaraan Kapal Terbang",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["assessment_heavy", "continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "regulated_profession",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-DIP-032",
+    "course_name": "Diploma Teknologi Elektronik",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-DIP-033",
+    "course_name": "Diploma Teknologi Mekatronik",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based", "continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-DIP-034",
+    "course_name": "Diploma Teknologi Komputer",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "private_sector_dominant",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "IJTM-DIP-035",
+    "course_name": "Diploma Teknologi Pembuatan (Pemesinan)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based", "continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-001",
+    "course_name": "Sijil Teknologi Automotif (Automasi Industri)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-002",
+    "course_name": "Sijil Teknologi Automotif (Pembuatan)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-003",
+    "course_name": "Sijil Teknologi Automotif (Servis dan Penyelenggaraan)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-004",
+    "course_name": "Sijil Teknologi Automotif Servis",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-005",
+    "course_name": "Sijil Teknologi Binaan (Sivil dan Struktur)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-006",
+    "course_name": "Sijil Teknologi Binaan Paip dan Sanitari",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-007",
+    "course_name": "Sijil Teknologi CADD Mekanikal Pembuatan",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "employment_first",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-008",
+    "course_name": "Sijil Teknologi CADD-Senibina",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "employment_first",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-009",
+    "course_name": "Sijil Teknologi Elektrik Pendawaian Tiga Fasa",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "regulated_profession",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-010",
+    "course_name": "Sijil Teknologi Elektronik Industri",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-011",
+    "course_name": "Sijil Teknologi Fabrikasi Struktur Logam (Minyak Dan Gas)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-012",
+    "course_name": "Sijil Teknologi Fabrikasi Struktur Logam Minyak dan Gas",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-013",
+    "course_name": "Sijil Teknologi Instrumen Perindustrian",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "lab"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-014",
+    "course_name": "Sijil Teknologi Kenderaan Perdagangan Berat",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-015",
+    "course_name": "Sijil Teknologi Kimpalan",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-016",
+    "course_name": "Sijil Teknologi Komputer (Sistem)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "balanced_load",
+      "outcome": "private_sector_dominant",
+      "environment": "mixed_environment"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-017",
+    "course_name": "Sijil Teknologi Komputer Rangkaian",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "private_sector_dominant",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-018",
+    "course_name": "Sijil Teknologi Komputer(Sistem)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "balanced_load",
+      "outcome": "employment_first",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-019",
+    "course_name": "Sijil Teknologi Mekatronik",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-020",
+    "course_name": "Sijil Teknologi Minyak dan Gas (Lukisan Perpaipan)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-021",
+    "course_name": "Sijil Teknologi Minyak dan Gas (Mekanikal - Plant Downstream)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-022",
+    "course_name": "Sijil Teknologi Minyak dan Gas (Mekanikal Plant Downstream)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-023",
+    "course_name": "Sijil Teknologi Multimedia Interaktif",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-024",
+    "course_name": "Sijil Teknologi Pemasangan Paip Minyak dan Gas",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-025",
+    "course_name": "Sijil Teknologi Pembuatan (Pemesinan)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-026",
+    "course_name": "Sijil Teknologi Pembuatan (Perkakasan Dai)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-027",
+    "course_name": "Sijil Teknologi Pembuatan (Perkakasan Die)",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-028",
+    "course_name": "Sijil Teknologi Pembuatan (Perkakasan Mould)",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-029",
+    "course_name": "Sijil Teknologi Pembuatan Pemesinan",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-030",
+    "course_name": "Sijil Teknologi Pembuatan Perkakasan Dai",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "low_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["continuous_assessment"],
+      "load": "mentally_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-031",
+    "course_name": "Sijil Teknologi Penyejukbekuan dan Penyamanan Udara",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-032",
+    "course_name": "Sijil Teknologi Penyelenggaraan Bangunan dan Fasiliti",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "employment_first",
+      "environment": "field"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-033",
+    "course_name": "Sijil Teknologi Penyelenggaraan Mekanikal",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-034",
+    "course_name": "Sijil Teknologi Polimer",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-035",
+    "course_name": "Sijil Teknologi Rekabentuk & Pengeluaran Perabot",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["project_based"],
+      "load": "physically_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "workshop"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-036",
+    "course_name": "Sijil Teknologi Rekabentuk Grafik",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "abstract",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-037",
+    "course_name": "Sijil Teknologi Rekabentuk Produk Industri",
+    "tags": {
+      "work_modality": "mixed",
+      "people_interaction": "moderate_people",
+      "cognitive_type": "problem_solving",
+      "learning_style": ["project_based"],
+      "load": "mentally_demanding",
+      "outcome": "entrepreneurial",
+      "environment": "office"
+    }
+  },
+  {
+    "course_id": "IJTM-CET-038",
+    "course_name": "Sijil Teknologi Telekomunikasi",
+    "tags": {
+      "work_modality": "hands_on",
+      "people_interaction": "low_people",
+      "cognitive_type": "procedural",
+      "learning_style": ["continuous_assessment"],
+      "load": "physically_demanding",
+      "outcome": "industry_specific",
+      "environment": "field"
+    }
+  }
+]

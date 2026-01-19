@@ -21,19 +21,19 @@ def get_quiz_questions(lang_code):
         "id": "q2_environment",
         "prompt": "On most days, you’d rather be working in:",
         "options": [
-          {"text": "A workshop, lab, or technical space", "signals": {"workshop": 1}},
-          {"text": "An office or computer-based setting", "signals": {"office": 1}},
-          {"text": "A place where you interact with many people", "signals": {"high_people": 1}},
-          {"text": "Different locations (field work, site visits)", "signals": {"field": 1}},
-          {"text": "No strong preference", "signals": {}}
+          {"text": "A workshop, lab, or technical space", "signals": {"workshop_environment": 1}},
+          {"text": "An office or computer-based setting", "signals": {"office_environment": 1}},
+          {"text": "A place where you interact with many people", "signals": {"high_people_environment": 1}},
+          {"text": "Different locations (field work, site visits)", "signals": {"field_environment": 1}},
+          {"text": "No strong preference", "signals": {"no_preference": 1}}
         ]
       },
       {
         "id": "q3_learning",
         "prompt": "Which describes you better as a student?",
         "options": [
-          {"text": "I learn best by doing and practising", "signals": {"hands_on": 1}},
-          {"text": "I prefer understanding concepts before applying them", "signals": {"theoretical": 1}},
+          {"text": "I learn best by doing and practising", "signals": {"learning_by_doing": 1}},
+          {"text": "I prefer understanding concepts before applying them", "signals": {"concept_first": 1}},
           {"text": "I’m okay memorising if expectations are clear", "signals": {"rote_tolerant": 1}},
           {"text": "I do better with projects than exams", "signals": {"project_based": 1}},
           {"text": "I struggle with exams under time pressure", "signals": {"exam_sensitive": 1}}
@@ -43,11 +43,11 @@ def get_quiz_questions(lang_code):
         "id": "q4_values",
         "prompt": "Right now, which matters more to you?",
         "options": [
-          {"text": "Job stability after graduation", "signals": {"stability": 2}},
-          {"text": "Income potential, even if risky", "signals": {"income_focus": 2}},
-          {"text": "Opportunities to continue to a degree", "signals": {"pathway_focus": 2}},
-          {"text": "Doing work that feels meaningful", "signals": {"meaning_focus": 2}},
-          {"text": "Finishing studies quickly to start working", "signals": {"fast_employment": 2}}
+          {"text": "Job stability after graduation", "signals": {"stability_priority": 2}},
+          {"text": "Income potential, even if risky", "signals": {"income_risk_tolerant": 2}},
+          {"text": "Opportunities to continue to a degree", "signals": {"pathway_priority": 2}},
+          {"text": "Doing work that feels meaningful", "signals": {"meaning_priority": 2}},
+          {"text": "Finishing studies quickly to start working", "signals": {"fast_employment_priority": 2}}
         ]
       },
       {
@@ -55,8 +55,8 @@ def get_quiz_questions(lang_code):
         "prompt": "After a full day, what usually drains you more?",
         "options": [
           {"text": "Dealing with many people", "signals": {"low_people_tolerance": 1}},
-          {"text": "Concentrating on technical or detailed work", "signals": {"mental_fatigue": 1}},
-          {"text": "Physical or hands-on work", "signals": {"physical_fatigue": 1}},
+          {"text": "Concentrating on technical or detailed work", "signals": {"mental_fatigue_sensitive": 1}},
+          {"text": "Physical or hands-on work", "signals": {"physical_fatigue_sensitive": 1}},
           {"text": "Being under time pressure", "signals": {"time_pressure_sensitive": 1}},
           {"text": "Nothing in particular", "signals": {}}
         ]

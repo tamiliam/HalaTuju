@@ -84,44 +84,65 @@ class QuizManager:
     def get_final_results(self):
         """
         Formats the accumulated flat scores into the requested JSON structure.
+        Strict 5-category taxonomy refactor.
         """
         raw = st.session_state['quiz_scores']
         
-        # Define Categories Mappings (Based on Signal Names in prompt)
-        # We categorize based on known keys from the prompt.
-        
-        # Interest: hands_on, problem_solving, people_helping, creative, organising, workshop, office, high_people, field
-        # Learning: theoretical, rote_tolerant, project_based, exam_sensitive
-        # Values: stability, income_focus, pathway_focus, meaning_focus, fast_employment, low_people_tolerance, mental_fatigue, physical_fatigue, time_pressure_sensitive
-        # Survival: allowance_priority, proximity_priority, employment_guarantee
-        
+        # Taxonomy Definition (Canonical)
         categories = {
-            "interest_signals": ["hands_on", "problem_solving", "people_helping", "creative", "organising", "workshop", "office", "high_people", "field"],
-            "learning_signals": ["theoretical", "rote_tolerant", "project_based", "exam_sensitive"],
-            "value_signals": ["stability", "income_focus", "pathway_focus", "meaning_focus", "fast_employment", "low_people_tolerance", "mental_fatigue", "physical_fatigue", "time_pressure_sensitive"],
-            "survival_signals": ["allowance_priority", "proximity_priority", "employment_guarantee"]
+            "work_preference_signals": [
+                "hands_on",
+                "problem_solving",
+                "people_helping",
+                "creative",
+                "organising"
+            ],
+            "learning_tolerance_signals": [
+                "learning_by_doing",
+                "concept_first",
+                "rote_tolerant",
+                "project_based",
+                "exam_sensitive"
+            ],
+            "environment_signals": [
+                "workshop_environment",
+                "office_environment",
+                "high_people_environment",
+                "field_environment",
+                "no_preference"
+            ],
+            "value_tradeoff_signals": [
+                "stability_priority",
+                "income_risk_tolerant",
+                "pathway_priority",
+                "meaning_priority",
+                "fast_employment_priority"
+            ],
+            "energy_sensitivity_signals": [
+                "low_people_tolerance",
+                "mental_fatigue_sensitive",
+                "physical_fatigue_sensitive",
+                "time_pressure_sensitive"
+            ]
         }
         
+        # Initialize Output Structure
         output = {
             "student_signals": {
-                "interest_signals": {},
-                "learning_signals": {},
-                "value_signals": {},
-                "survival_signals": {}
+                "work_preference_signals": {},
+                "learning_tolerance_signals": {},
+                "environment_signals": {},
+                "value_tradeoff_signals": {},
+                "energy_sensitivity_signals": {}
             }
         }
         
+        # Strict Mapping
         for sig, score in raw.items():
             if score > 0:
-                found = False
                 for cat, keys in categories.items():
                     if sig in keys:
                         output["student_signals"][cat][sig] = score
-                        found = True
                         break
-                if not found:
-                    # Fallback or if I missed a key mapping
-                    # Put in interest as default or log it
-                    pass 
-                    
+        
         return output
