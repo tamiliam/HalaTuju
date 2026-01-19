@@ -17,7 +17,11 @@ def load_master_data():
             if clean:
                 return load_and_clean_data(p)
             else:
-                return pd.read_csv(p)
+                for enc in ['utf-8', 'cp1252', 'latin1']:
+                    try:
+                        return pd.read_csv(p, encoding=enc)
+                    except UnicodeDecodeError:
+                        continue
         return pd.DataFrame()
 
     # Load Base Logic Files (Sanitized)

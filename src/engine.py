@@ -147,7 +147,17 @@ def load_and_clean_data(filepath):
     Converts '1.0', 'Yes', 'True' -> 1
     Converts '0', 'No', 'False', NaN -> 0
     """
-    df = pd.read_csv(filepath)
+
+    df = None
+    for enc in ['utf-8', 'cp1252', 'latin1']:
+        try:
+            df = pd.read_csv(filepath, encoding=enc)
+            break
+        except UnicodeDecodeError:
+            continue
+    
+    if df is None:
+        raise ValueError(f"Could not read {filepath} with supported encodings.")
     
     # List of columns that MUST be integers (0 or 1)
     # flag_columns = [ ... ] (Moved to module constant REQ_FLAG_COLUMNS)
