@@ -565,7 +565,8 @@ st.warning(f"🔍 RANK CHECK - Dash exists: {dash is not None}, Quiz scores in s
 
 # 2. Resolve Signals (Priority: Session > Quiz Manager > User DB)
 # Check Quiz Manager first (Most fresh)
-if 'quiz_scores' in st.session_state:
+# CRITICAL: Only if quiz_scores has actual data. On refresh, it's empty dict {}.
+if 'quiz_scores' in st.session_state and st.session_state['quiz_scores']:
     try:
         # Re-derive signals from raw quiz scores
         results = quiz_manager.get_final_results()
