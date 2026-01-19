@@ -363,6 +363,12 @@ t = get_text(lang_code)
 auth_status = auth.check_session()
 user = st.session_state['user'] if auth_status else None
 
+# IMMEDIATE RESTORATION: If user just logged in (cookie found), restore signals NOW
+if user and 'student_signals' not in st.session_state and user.get('student_signals'):
+    st.session_state['student_signals'] = user.get('student_signals')
+    # Force Rerun to ensure the whole script sees the signals (prevents "flicker" of unranked state)
+    st.rerun()
+
 # Render Sidebar
 st.sidebar.title(f"📝 {t['sb_title']}")
 
