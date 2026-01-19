@@ -154,9 +154,6 @@ class QuizManager:
                     if sig in keys:
                         # DEBUG: MATCH FOUND
                         # st.write(f"MATCH: {sig} -> {cat}")
-                        # DEBUG: MATCH FOUND
-                        # st.write(f"MATCH: {sig} -> {cat}")
-                    if sig in keys:
                         output["student_signals"][cat][sig] = score
                         
                         # Populate Signal Strength (Lightweight map)
