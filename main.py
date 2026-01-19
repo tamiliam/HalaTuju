@@ -715,27 +715,9 @@ if auth_status:
         if not results:
             st.warning(t['hero_fail'])
         else:
-        if not results:
-            st.warning(t['hero_fail'])
-        else:
-            # 2. REMAINING MATCHES (Compact List)
-            # Tier 3 Logic handles "The Rest" above.
-            # This legacy table rendering is redundant now that we have the Tier 3 Button.
-            # However, if we want to keep the "Filterable Table" feature, we should just show it all?
-            # Or perhaps this entire Filter section is now redundant?
-            # User request: "The remaining are not listed... given a link... list simply a table."
-            # So the Tier 3 Logic I added earlier handles this.
-            # This block is likely implementing the OLD "All Matches" table.
-            
-            # Let's keep the filter UI but apply it to the Tier 3 data if needed?
-            # Actually, the user's request implies the "Rest" table is separate.
-            # The NameError is because 'limit' is gone.
-            
-            # Temporary Fix: Just list them all (results) without filtering 'featured'.
-            # Better Fix: Remove this entire block if it conflicts with the new Tier 3 button.
-            # But wait, Tier 3 button just shows a dataframe.
-            # This block shows expandable cards for ALL matches.
-            pass
+            # Show the filtered results as a table (Legacy Filter Support)
+            # This allows users to use the bottom "Filter" widgets if they want.
+            st.dataframe(df_filtered, hide_index=True)
 else:
     # --- LOCKED VIEW ---
     if dash and dash.get('total_matches', 0) > 0:
