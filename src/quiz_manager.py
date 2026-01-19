@@ -144,10 +144,18 @@ class QuizManager:
         unknown_signals = []
 
         # Strict Mapping with Strength & Unknown Handling
+        # DEBUG: Verify Loop
+        st.write("DEBUG GEN: Raw Scores Keys:", list(raw.keys()))
+        
         for sig, score in raw.items():
             if score > 0:
                 found = False
                 for cat, keys in categories.items():
+                    if sig in keys:
+                        # DEBUG: MATCH FOUND
+                        # st.write(f"MATCH: {sig} -> {cat}")
+                        # DEBUG: MATCH FOUND
+                        # st.write(f"MATCH: {sig} -> {cat}")
                     if sig in keys:
                         output["student_signals"][cat][sig] = score
                         
