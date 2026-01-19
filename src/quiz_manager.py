@@ -109,7 +109,9 @@ class QuizManager:
                 "office_environment",
                 "high_people_environment",
                 "field_environment",
-                "no_preference"
+                # Semantic: Neutral signal. Does not boost or penalize any course. 
+                # Used to explicitly record "no bias" or "openness".
+                "no_preference" 
             ],
             "value_tradeoff_signals": [
                 "stability_priority",
@@ -134,15 +136,35 @@ class QuizManager:
                 "environment_signals": {},
                 "value_tradeoff_signals": {},
                 "energy_sensitivity_signals": {}
-            }
+            },
+            # Design Affordance: Validated signal strength map (no ranking logic yet)
+            "signal_strength": {} 
         }
         
-        # Strict Mapping
+        unknown_signals = []
+
+        # Strict Mapping with Strength & Unknown Handling
         for sig, score in raw.items():
             if score > 0:
+                found = False
                 for cat, keys in categories.items():
                     if sig in keys:
                         output["student_signals"][cat][sig] = score
+                        
+                        # Populate Signal Strength (Lightweight map)
+                        # Score 2+ -> Strong, 1 -> Moderate
+                        strength = "strong" if score >= 2 else "moderate"
+                        output["signal_strength"][sig] = strength
+                        
+                        found = True
                         break
+                
+                if not found:
+                    unknown_signals.append(sig)
+        
+        # Dev-Only Visibility for Unknown Signals
+        if unknown_signals:
+            st.session_state["unknown_quiz_signals"] = unknown_signals
+            # logger.warning(f"Unknown signals found: {unknown_signals}")
         
         return output
