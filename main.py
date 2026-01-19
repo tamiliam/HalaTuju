@@ -524,24 +524,29 @@ if submitted or (user and ('dash' not in st.session_state or force_calc)):
     st.session_state['dash'] = generate_dashboard_data(student_obj, df_courses, lang_code=lang_code)
     
     # --- NEW: APPLY RANKING IF QUIZ RESULTS EXIST ---
-    if 'student_signals' in st.session_state:
-        signals = st.session_state['student_signals']
-        dash_data = st.session_state['dash']
-        
-        # Run Ranking
-        ranked = get_ranked_results(dash_data['full_list'], signals)
-        
-        # Update Dashboard Data
-        dash_data['featured_matches'] = ranked['top_5']
-        dash_data['full_list'] = ranked['top_5'] + ranked['rest'] # Keep table full but sorted
-        dash_data['is_ranked'] = True
-        
         st.session_state['dash'] = dash_data
 
     # ... (skipping render code) ...
 
 
+
+# --- 6. RANKING LOGIC (Run on Every Render) ---
 dash = st.session_state.get('dash')
+
+if dash and 'student_signals' in st.session_state:
+    signals = st.session_state['student_signals']
+    
+    # Run Ranking
+    ranked = get_ranked_results(dash['full_list'], signals)
+    
+    # Update Dashboard Data
+    dash['featured_matches'] = ranked['top_5']
+    dash['full_list'] = ranked['top_5'] + ranked['rest'] # Keep table full but sorted
+    dash['is_ranked'] = True
+    
+    # Save back (In case we need it persisted, though local variable 'dash' is ref)
+    st.session_state['dash'] = dash
+
 
 if auth_status:
     # --- UNLOCKED VIEW ---
