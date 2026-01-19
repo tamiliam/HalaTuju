@@ -537,6 +537,10 @@ if dash and 'student_signals' in st.session_state:
     # Run Ranking
     ranked = get_ranked_results(dash['full_list'], signals)
     
+    # DEBUG: Notify User
+    top_name = ranked['top_5'][0]['course_name'] if ranked['top_5'] else "None"
+    st.toast(f"✅ Ranking Applied! Top: {top_name}")
+    
     # Update Dashboard Data
     dash['featured_matches'] = ranked['top_5']
     dash['full_list'] = ranked['top_5'] + ranked['rest'] # Keep table full but sorted
