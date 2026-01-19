@@ -350,9 +350,13 @@ def render_quiz_page(lang_code, user):
         st.json(results)
         
         if st.button("Return to Dashboard", use_container_width=True):
+            # UPDATE SESSION WITH NEW RESULTS
+            st.session_state['student_signals'] = results['student_signals']
+            
             # Cleanup volatile scores before returning
             if 'quiz_scores' in st.session_state:
                 del st.session_state['quiz_scores']
+                
             st.session_state['view_mode'] = 'dashboard'
             st.rerun()
 
