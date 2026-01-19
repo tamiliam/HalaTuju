@@ -341,11 +341,6 @@ def render_quiz_page(lang_code, user):
             try:
                 auth.save_quiz_results(user['id'], results['student_signals'])
                 st.toast("Results Saved!")
-                
-                # CRITICAL: Clear volatile quiz scores after saving to DB
-                # This prevents stale scores from overriding DB signals on refresh
-                if 'quiz_scores' in st.session_state:
-                    del st.session_state['quiz_scores']
                     
             except Exception as e:
                 st.error(f"Could not save results: {e}")
@@ -355,6 +350,9 @@ def render_quiz_page(lang_code, user):
         st.json(results)
         
         if st.button("Return to Dashboard", use_container_width=True):
+            # Cleanup volatile scores before returning
+            if 'quiz_scores' in st.session_state:
+                del st.session_state['quiz_scores']
             st.session_state['view_mode'] = 'dashboard'
             st.rerun()
 
