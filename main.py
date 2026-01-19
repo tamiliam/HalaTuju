@@ -4,6 +4,7 @@ import time
 from supabase import create_client, Client
 from src.engine import StudentProfile
 from src.dashboard import generate_dashboard_data
+from src.ranking_engine import get_ranked_results
 from src.translations import get_text, LANGUAGES
 from src.quiz_manager import QuizManager
 from src.auth import AuthManager
@@ -521,6 +522,21 @@ if submitted or (user and ('dash' not in st.session_state or force_calc)):
     student_obj = StudentProfile(clean_grades, gender, 'Warganegara', norm_cb, norm_dis, other_tech=is_tech, other_voc=is_voc)
     # with st.spinner("Analyzing..."): # Removed to prevent freeze
     st.session_state['dash'] = generate_dashboard_data(student_obj, df_courses, lang_code=lang_code)
+    
+    # --- NEW: APPLY RANKING IF QUIZ RESULTS EXIST ---
+    if 'student_signals' in st.session_state:
+        signals = st.session_state['student_signals']
+        dash_data = st.session_state['dash']
+        
+        # Run Ranking
+        ranked = get_ranked_results(dash_data['full_list'], signals)
+        
+        # Update Dashboard Data
+        dash_data['featured_matches'] = ranked['top_5']
+        dash_data['full_list'] = ranked['top_5'] + ranked['rest'] # Keep table full but sorted
+        dash_data['is_ranked'] = True
+        
+        st.session_state['dash'] = dash_data
 
     # ... (skipping render code) ...
 
@@ -561,6 +577,12 @@ for i, pick in enumerate(dash['featured_matches'][:limit]): # Dynamic Limit
     display_title = pick['course_name']
     
     with st.expander(display_title, expanded=True):
+        # RANKING REASONING (If available)
+        if pick.get('fit_reasons'):
+            # Combine reasons into 1-2 styling sentences
+            reason_text = " ".join(pick['fit_reasons'])
+            st.markdown(f":star: **Best Fit Reason:** {reason_text}")
+            
         if pick.get('synopsis'): st.info(pick['synopsis'])
         
         # User Request: Limit careers to 3
