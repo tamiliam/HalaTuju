@@ -524,8 +524,6 @@ if submitted or (user and ('dash' not in st.session_state or force_calc)):
     st.session_state['dash'] = generate_dashboard_data(student_obj, df_courses, lang_code=lang_code)
     
     # --- NEW: APPLY RANKING IF QUIZ RESULTS EXIST ---
-        st.session_state['dash'] = dash_data
-
     # ... (skipping render code) ...
 
 
