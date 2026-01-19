@@ -125,6 +125,12 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     if sig_high_ppl_env > 0 and (tag_env == 'office' or c_tags.get('people_interaction') == 'high_people'):
         fit_score += 3
         reasons.append("Social environment matches your preference.")
+        
+    # Office Environment Rule (New - Specific match)
+    sig_office = get_signal('environment_signals', 'office_environment')
+    if sig_office > 0 and tag_env == 'office':
+        fit_score += 4
+        reasons.append(f"Matches your preference for office environments.")
 
     # 3. Energy / People Interaction
     sig_low_people = get_signal('energy_sensitivity_signals', 'low_people_tolerance')
@@ -142,6 +148,7 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     # 4. Values Alignment
     sig_risk = get_signal('value_tradeoff_signals', 'income_risk_tolerant')
     sig_stability = get_signal('value_tradeoff_signals', 'stability_priority')
+    sig_pathway = get_signal('value_tradeoff_signals', 'pathway_priority')
     tag_outcome = c_tags.get('outcome', '')
     
     if sig_risk > 0 and tag_outcome == 'entrepreneurial':
@@ -152,6 +159,11 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     if sig_stability > 0 and tag_outcome in ['regulated_profession', 'employment_first']:
         fit_score += 4
         reasons.append("Offers a stable career pathway.")
+        
+    # Pathway Priority Rule (New)
+    if sig_pathway > 0 and tag_outcome == 'pathway_friendly':
+        fit_score += 4
+        reasons.append("Designed for easy continuation to Degree.")
 
     # --- B. Institution Modifiers (Tie-breakers) ---
     inst_score = 0
