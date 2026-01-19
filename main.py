@@ -550,14 +550,10 @@ if dash and 'student_signals' in st.session_state:
     # Run Ranking
     ranked = get_ranked_results(dash['full_list'], signals)
     
-    # DEBUG: Notify User
-    top_name = ranked['top_5'][0]['course_name'] if ranked['top_5'] else "None"
-    st.toast(f"✅ Ranking Applied! Top: {top_name} (Tags Loaded: {TAG_COUNT})")
+    # DEBUG: Notify User (Simplified)
+    # top_name = ranked['top_5'][0]['course_name'] if ranked['top_5'] else "None"
+    # st.toast(f"✅ Ranking Applied! Top: {top_name}")
     
-    # DEBUG: Inspect Signals
-    with st.expander("Debug Signals passed to Engine"):
-        st.write(signals)
-
     # Update Dashboard Data
     dash['featured_matches'] = ranked['top_5']
     dash['full_list'] = ranked['top_5'] + ranked['rest'] # Keep table full but sorted
@@ -600,10 +596,6 @@ st.subheader(t['feat_title'])
 for i, pick in enumerate(dash['featured_matches'][:limit]): # Dynamic Limit
     # User Request: Use actual CSV course name, not simplified headline. Remove ranking #.
     display_title = pick['course_name']
-    
-    # DEBUG: Show Score
-    if 'fit_score' in pick:
-        display_title += f" [Score: {pick['fit_score']}]"
     
     with st.expander(display_title, expanded=True):
         # RANKING REASONING (If available)

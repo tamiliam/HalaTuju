@@ -145,7 +145,7 @@ class QuizManager:
 
         # Strict Mapping with Strength & Unknown Handling
         # DEBUG: Verify Loop
-        st.write("DEBUG GEN: Raw Scores Keys:", list(raw.keys()))
+        # st.write("DEBUG GEN: Raw Scores Keys:", list(raw.keys()))
         
         for sig, score in raw.items():
             if score > 0:
