@@ -363,9 +363,20 @@ t = get_text(lang_code)
 auth_status = auth.check_session()
 user = st.session_state['user'] if auth_status else None
 
+# DEBUG: Check if user has signals in DB
+if user:
+    has_signals_in_db = bool(user.get('student_signals'))
+    has_signals_in_session = 'student_signals' in st.session_state
+    st.warning(f"🔍 DEBUG - User Found | DB Signals: {has_signals_in_db} | Session Signals: {has_signals_in_session}")
+    if has_signals_in_db and user.get('student_signals'):
+        st.write(f"DB Signal Keys: {list(user.get('student_signals', {}).keys())}")
+else:
+    st.error("🔍 DEBUG - No User Found")
+
 # IMMEDIATE RESTORATION: If user just logged in (cookie found), restore signals NOW
 if user and 'student_signals' not in st.session_state and user.get('student_signals'):
     st.session_state['student_signals'] = user.get('student_signals')
+    st.success("🔄 Early Restoration Triggered - Rerunning...")
     # Force Rerun to ensure the whole script sees the signals (prevents "flicker" of unranked state)
     st.rerun()
 
@@ -531,8 +542,6 @@ if submitted or (user and ('dash' not in st.session_state or force_calc)):
     
     # --- NEW: APPLY RANKING IF QUIZ RESULTS EXIST ---
     # ... (skipping render code) ...
-
-
 
 
 # --- 6. RANKING LOGIC (ROBUST FIX) ---
