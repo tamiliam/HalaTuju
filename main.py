@@ -528,8 +528,18 @@ if submitted or (user and ('dash' not in st.session_state or force_calc)):
 
 
 
+
 # --- 6. RANKING LOGIC (Run on Every Render) ---
 dash = st.session_state.get('dash')
+
+# REGENERATION FALLBACK: If we have scores but no signals (session loss), regenerate them
+if 'quiz_scores' in st.session_state and 'student_signals' not in st.session_state:
+    try:
+        results = quiz_manager.get_final_results()
+        st.session_state['student_signals'] = results['student_signals']
+        st.toast("✅ Restored Quiz Signals")
+    except Exception as e:
+        print(f"Error regenerating signals: {e}")
 
 if dash and 'student_signals' in st.session_state:
     signals = st.session_state['student_signals']
@@ -548,15 +558,7 @@ if dash and 'student_signals' in st.session_state:
     
     # Save back (In case we need it persisted, though local variable 'dash' is ref)
     st.session_state['dash'] = dash
-else:
-    # DEBUG: WHY SKIPPED?
-    has_signals = 'student_signals' in st.session_state
-    has_dash = dash is not None
-    if has_dash and not has_signals:
-        st.error(f"⚠️ Ranking Block Skipped: Dashboard exists, but NO 'student_signals' found in session.")
-        st.write("Session Keys:", list(st.session_state.keys()))
-    elif not has_dash:
-        st.error("⚠️ Ranking Block Skipped: 'dash' object is None.")
+
 
 
 if auth_status:
