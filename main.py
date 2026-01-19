@@ -544,8 +544,19 @@ if 'quiz_scores' in st.session_state:
         signals = st.session_state.get('student_signals')
 
 if dash and signals:
-    # Run Ranking
-    ranked = get_ranked_results(dash['full_list'], signals)
+    # Validate Signals Type
+    if not isinstance(signals, dict):
+        print(f"CRITICAL: 'signals' is {type(signals)}, expected dict. Content: {signals}")
+        # Try to fix? Or skip?
+        signals = {} 
+
+    # Run Ranking safely
+    try:
+        ranked = get_ranked_results(dash['full_list'], signals)
+    except Exception as e:
+        print(f"RANKING ERROR: {e}")
+        # Fallback to no ranking
+        ranked = {'top_5': [], 'rest': dash['full_list']}
     
     # DEBUG: Notify User (Simplified)
     # top_name = ranked['top_5'][0]['course_name'] if ranked['top_5'] else "None"
