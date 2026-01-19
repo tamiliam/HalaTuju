@@ -548,6 +548,15 @@ if dash and 'student_signals' in st.session_state:
     
     # Save back (In case we need it persisted, though local variable 'dash' is ref)
     st.session_state['dash'] = dash
+else:
+    # DEBUG: WHY SKIPPED?
+    has_signals = 'student_signals' in st.session_state
+    has_dash = dash is not None
+    if has_dash and not has_signals:
+        st.error(f"⚠️ Ranking Block Skipped: Dashboard exists, but NO 'student_signals' found in session.")
+        st.write("Session Keys:", list(st.session_state.keys()))
+    elif not has_dash:
+        st.error("⚠️ Ranking Block Skipped: 'dash' object is None.")
 
 
 if auth_status:
