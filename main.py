@@ -548,6 +548,9 @@ if submitted or (user and ('dash' not in st.session_state or force_calc)):
 dash = st.session_state.get('dash')
 signals = None  # 1. Initialize to avoid UnboundLocalError
 
+# DEBUG: Track state
+st.warning(f"🔍 RANK CHECK - Dash exists: {dash is not None}, Quiz scores in session: {'quiz_scores' in st.session_state}")
+
 # 2. Resolve Signals (Priority: Session > Quiz Manager > User DB)
 # Check Quiz Manager first (Most fresh)
 if 'quiz_scores' in st.session_state:
@@ -556,23 +559,31 @@ if 'quiz_scores' in st.session_state:
         results = quiz_manager.get_final_results()
         signals = results.get('student_signals')
         st.session_state['student_signals'] = signals
+        st.info("✅ Signals from Quiz Manager")
     except Exception as e:
         print(f"Error regenerating signals: {e}")
 
 # If still no signals, check Session Storage directly
 if not signals and 'student_signals' in st.session_state:
     signals = st.session_state['student_signals']
+    st.info("✅ Signals from Session Storage")
 
 # If still no signals, check User DB (Persistence)
 if not signals and user and user.get('student_signals'):
     signals = user['student_signals']
     st.session_state['student_signals'] = signals # Restore to session
-    # Optional: Toast to confirm restore
-    # st.toast("🔄 Ranking Profile Restored", icon="💾")
+    st.info("✅ Signals from User DB (Restored)")
+
+# DEBUG: Final state
+if signals:
+    st.success(f"🎯 SIGNALS READY - Categories: {list(signals.keys())}")
+else:
+    st.error("❌ NO SIGNALS AVAILABLE")
 
 # 3. Execute Ranking
 # We run this if we have Dashboard Data AND Signals
 if dash and signals:
+    st.info("🚀 EXECUTING RANKING...")
     # Validation
     if not isinstance(signals, dict):
         print(f"CRITICAL: Signals corrupted. Resetting.")
@@ -590,9 +601,22 @@ if dash and signals:
         # Persist Update
         st.session_state['dash'] = dash
         
+        # DEBUG: Show top score
+        if ranked['top_5']:
+            top_score = ranked['top_5'][0].get('fit_score', 'N/A')
+            top_name = ranked['top_5'][0].get('course_name', 'Unknown')
+            st.success(f"✅ RANKING APPLIED - Top: {top_name} (Score: {top_score})")
+        
     except Exception as e:
+        st.error(f"RANKING ERROR: {e}")
         print(f"RANKING ERROR: {e}")
         # Fallback: Don't crash app, just show default list
+elif not dash:
+    st.error("❌ RANKING SKIPPED - No Dashboard Data")
+elif not signals:
+    st.error("❌ RANKING SKIPPED - No Signals")
+else:
+    st.error("❌ RANKING SKIPPED - Unknown Reason")
 
 
 
