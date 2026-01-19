@@ -551,6 +551,10 @@ if dash and 'student_signals' in st.session_state:
     top_name = ranked['top_5'][0]['course_name'] if ranked['top_5'] else "None"
     st.toast(f"✅ Ranking Applied! Top: {top_name} (Tags Loaded: {TAG_COUNT})")
     
+    # DEBUG: Inspect Signals
+    with st.expander("Debug Signals passed to Engine"):
+        st.write(signals)
+
     # Update Dashboard Data
     dash['featured_matches'] = ranked['top_5']
     dash['full_list'] = ranked['top_5'] + ranked['rest'] # Keep table full but sorted
