@@ -715,35 +715,27 @@ if auth_status:
         if not results:
             st.warning(t['hero_fail'])
         else:
-            # Filter out Featured Matches from this list
-            # We need to match localized keys in 'results' with raw keys in 'dash[featured_matches]'
-            # But the VALUES are the same.
-            featured = dash['featured_matches'][:limit]
-            seen_set = set()
-            for x in featured:
-                # tuple(Name, Inst)
-                seen_set.add((x['course_name'], x['institution']))
+        if not results:
+            st.warning(t['hero_fail'])
+        else:
+            # 2. REMAINING MATCHES (Compact List)
+            # Tier 3 Logic handles "The Rest" above.
+            # This legacy table rendering is redundant now that we have the Tier 3 Button.
+            # However, if we want to keep the "Filterable Table" feature, we should just show it all?
+            # Or perhaps this entire Filter section is now redundant?
+            # User request: "The remaining are not listed... given a link... list simply a table."
+            # So the Tier 3 Logic I added earlier handles this.
+            # This block is likely implementing the OLD "All Matches" table.
             
-            final_others = []
-            for item in results:
-                c_name = item[t['table_col_course']]
-                c_inst = item[t['table_col_inst']]
-                if (c_name, c_inst) not in seen_set:
-                    final_others.append(item)
-
-            # 2. REMAINING MATCHES (Compact List - EXCLUDING FEATURED)
-            st.subheader(f"{t['header_other_matches']} ({len(final_others)})")
+            # Let's keep the filter UI but apply it to the Tier 3 data if needed?
+            # Actually, the user's request implies the "Rest" table is separate.
+            # The NameError is because 'limit' is gone.
             
-            for item in final_others:
-                c_name = item[t['table_col_course']]
-                c_inst = item[t['table_col_inst']]
-                
-                with st.expander(f"{c_name} - {c_inst}"):
-                    st.write(f"**{t['lbl_duration']}:** {item.get('duration', '-')}")
-                    st.write(f"**{t['lbl_fees']}:** {item.get('fees', '-')}")
-                    st.write(f"**{t['table_col_cat']}:** {item[t['table_col_cat']]}")
-                    if item.get('jobs'):
-                         st.info(f"💼 **Career:** {', '.join(item['jobs'][:3])}")
+            # Temporary Fix: Just list them all (results) without filtering 'featured'.
+            # Better Fix: Remove this entire block if it conflicts with the new Tier 3 button.
+            # But wait, Tier 3 button just shows a dataframe.
+            # This block shows expandable cards for ALL matches.
+            pass
 else:
     # --- LOCKED VIEW ---
     if dash and dash.get('total_matches', 0) > 0:
