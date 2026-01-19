@@ -31,6 +31,7 @@ def load_course_tags():
 
 # Cache tags on module load (simple caching)
 COURSE_TAGS = load_course_tags()
+TAG_COUNT = len(COURSE_TAGS)
 
 def load_institution_modifiers():
     """

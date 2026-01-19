@@ -4,7 +4,7 @@ import time
 from supabase import create_client, Client
 from src.engine import StudentProfile
 from src.dashboard import generate_dashboard_data
-from src.ranking_engine import get_ranked_results
+from src.ranking_engine import get_ranked_results, TAG_COUNT
 from src.translations import get_text, LANGUAGES
 from src.quiz_manager import QuizManager
 from src.auth import AuthManager
@@ -549,7 +549,7 @@ if dash and 'student_signals' in st.session_state:
     
     # DEBUG: Notify User
     top_name = ranked['top_5'][0]['course_name'] if ranked['top_5'] else "None"
-    st.toast(f"✅ Ranking Applied! Top: {top_name}")
+    st.toast(f"✅ Ranking Applied! Top: {top_name} (Tags Loaded: {TAG_COUNT})")
     
     # Update Dashboard Data
     dash['featured_matches'] = ranked['top_5']

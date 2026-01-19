@@ -130,8 +130,10 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             "duration": row.get('duration', '-'),
             "type": inst_type_name,
             "quality": quality_name,
+            "quality": quality_name,
             "quality_key": quality_key, # Keep key for logic if needed
             "code": cid,
+            "course_id": cid, # REQUIRED for Ranking Engine
             # Rich Content
             "headline": desc_data.get('headline', ''),
             "synopsis": desc_data.get('synopsis', ''),
