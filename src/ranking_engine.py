@@ -6,6 +6,7 @@ import os
 BASE_SCORE = 100
 GLOBAL_CAP = 20
 INSTITUTION_CAP = 5
+CATEGORY_CAP = 6 # Normalized cap per category
 
 def load_course_tags():
     """
@@ -74,7 +75,6 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     """
     
     # 1. Get Metadata
-    # 1. Get Metadata
     c_tags = COURSE_TAGS.get(course_id, {})
     i_mods = INST_MODIFIERS.get(institution_id, {})
     
@@ -85,15 +85,23 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     else:
         signals = student_profile
     
-    score_adjust = 0
     reasons = []
+    
+    # Initialize Categorical Buckets
+    cat_scores = {
+        'work_preference_signals': 0,
+        'learning_tolerance_signals': 0,
+        'environment_signals': 0,
+        'value_tradeoff_signals': 0,
+        'energy_sensitivity_signals': 0
+    }
     
     # Helper to safeguard signal access
     def get_signal(category, key):
         return signals.get(category, {}).get(key, 0)
     
     # --- A. Fit Scoring (Course) ---
-    fit_score = 0
+    # We now accumulate into buckets instead of a flat variable
     
     # 1. Work Preference: Hands-on & Problem Solving
     sig_hands_on = get_signal('work_preference_signals', 'hands_on')
@@ -102,16 +110,23 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     
     # Hands-on rule
     if sig_hands_on > 0 and tag_modality == 'hands_on':
-        fit_score += 5
+        cat_scores['work_preference_signals'] += 5
         reasons.append("Matches your hands-on work preference.")
     elif sig_hands_on == 0 and tag_modality == 'hands_on':
-        fit_score -= 3
+        cat_scores['work_preference_signals'] -= 3
+        # Note: Negative scores are also accumulated
         
-    # Problem Solving rule (New) -> Maps to 'mixed' or 'theoretical'? 
-    # Usually 'mixed' is good for problem solving (balance of theory/practice).
+    # Problem Solving rule
     if sig_prob_solve > 0 and tag_modality == 'mixed':
-        fit_score += 3
+        cat_scores['work_preference_signals'] += 3
         reasons.append("Balanced approach suits your problem-solving style.")
+        
+    # People Helping (Belongs to Work Preference usually, or Value?)
+    # Based on taxonomy, people_helping is in work_preference_signals
+    if get_signal('work_preference_signals', 'people_helping') > 0 and c_tags.get('people_interaction') == 'high_people':
+        cat_scores['work_preference_signals'] += 4
+        reasons.append("Matches your desire to help people.")
+
         
     # 2. Environment Fit
     sig_workshop = get_signal('environment_signals', 'workshop_environment')
@@ -119,32 +134,28 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     tag_env = c_tags.get('environment', '')
     
     if sig_workshop > 0 and tag_env == 'workshop':
-        fit_score += 4
+        cat_scores['environment_signals'] += 4
         reasons.append(f"Work environment fits your style ({tag_env}).")
         
-    # High People Environment rule (New)
+    # High People Environment rule
     if sig_high_ppl_env > 0 and (tag_env == 'office' or c_tags.get('people_interaction') == 'high_people'):
-        fit_score += 3
+        cat_scores['environment_signals'] += 3
         reasons.append("Social environment matches your preference.")
         
-    # Office Environment Rule (New - Specific match)
+    # Office Environment Rule
     sig_office = get_signal('environment_signals', 'office_environment')
     if sig_office > 0 and tag_env == 'office':
-        fit_score += 4
+        cat_scores['environment_signals'] += 4
         reasons.append(f"Matches your preference for office environments.")
 
-    # 3. Energy / People Interaction
+    # 3. Energy / People Interaction (Energy Sensitivity)
     sig_low_people = get_signal('energy_sensitivity_signals', 'low_people_tolerance')
     tag_people = c_tags.get('people_interaction', '')
     
     if sig_low_people > 0 and tag_people == 'high_people':
-        fit_score -= 6
+        cat_scores['energy_sensitivity_signals'] -= 6
         reasons.append("May be draining due to high public interaction.")
     
-    # Counter-rule: If they LIKE people, boost High People courses
-    if get_signal('work_preference_signals', 'people_helping') > 0 and tag_people == 'high_people':
-        fit_score += 4
-        reasons.append("Matches your desire to help people.")
         
     # 4. Values Alignment
     sig_risk = get_signal('value_tradeoff_signals', 'income_risk_tolerant')
@@ -153,20 +164,29 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     tag_outcome = c_tags.get('outcome', '')
     
     if sig_risk > 0 and tag_outcome == 'entrepreneurial':
-        fit_score += 3
+        cat_scores['value_tradeoff_signals'] += 3
         reasons.append("Great for future entrepreneurs.")
         
     # Stability Rule (New)
     if sig_stability > 0 and tag_outcome in ['regulated_profession', 'employment_first']:
-        fit_score += 4
+        cat_scores['value_tradeoff_signals'] += 4
         reasons.append("Offers a stable career pathway.")
         
     # Pathway Priority Rule (New)
     if sig_pathway > 0 and tag_outcome == 'pathway_friendly':
-        fit_score += 4
+        cat_scores['value_tradeoff_signals'] += 4
         reasons.append("Designed for easy continuation to Degree.")
 
-    # --- B. Institution Modifiers (Tie-breakers) ---
+    # --- B. Normalization & Aggregation ---
+    fit_score = 0
+    
+    # Sum capped category scores
+    for cat, score in cat_scores.items():
+        # Clamp between -CAP and +CAP
+        capped = max(min(score, CATEGORY_CAP), -CATEGORY_CAP)
+        fit_score += capped
+        
+    # --- C. Institution Modifiers (Tie-breakers) ---
     inst_score = 0
     
     # 1. Survival Support -> Subsistence
@@ -179,7 +199,7 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     # Check 'allowance' via direct property if modifiers exist? 
     # Plan called for +4. Current strict taxonomy doesn't pass it. 
     # SKIPPING for now to prevent errors, as verified previously.
-
+    
     # Cap Institution Score
     inst_score = max(min(inst_score, INSTITUTION_CAP), -INSTITUTION_CAP)
     
