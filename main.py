@@ -551,14 +551,9 @@ if 'student_signals' not in st.session_state and user and user.get('student_sign
     # DEBUG: CONFIRM RESTORE
     # st.toast("🔄 Ranking Profile Restored from Database", icon="💾")
 
-# DEBUG: INSPECT STATE (Temporary for User)
-if user:
-   st.info(f"DEBUG: User Found. Signals Key Present? {'Yes' if user.get('student_signals') else 'No'}")
-   if user.get('student_signals'):
-       # st.write(f"DEBUG: Signal Content: {user['student_signals']}")
-       pass
-else:
-   st.error("DEBUG: No User Session Found (Are you logged in?)")
+# Assign local var
+if 'student_signals' in st.session_state:
+    signals = st.session_state['student_signals']
 
 
 # Assign local var
