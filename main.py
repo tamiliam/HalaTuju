@@ -79,6 +79,10 @@ def render_quiz_page(lang_code, user):
                 success, msg = auth.save_quiz_results(user['id'], results['student_signals'])
                 if success:
                     st.toast(t['quiz_saved'])
+                    
+                    # CRITICAL: Clear volatile quiz scores after saving to DB
+                    if 'quiz_scores' in st.session_state:
+                        del st.session_state['quiz_scores']
                 else:
                     st.error(f"Save Failed: {msg}")
             except Exception as e:
@@ -337,6 +341,12 @@ def render_quiz_page(lang_code, user):
             try:
                 auth.save_quiz_results(user['id'], results['student_signals'])
                 st.toast("Results Saved!")
+                
+                # CRITICAL: Clear volatile quiz scores after saving to DB
+                # This prevents stale scores from overriding DB signals on refresh
+                if 'quiz_scores' in st.session_state:
+                    del st.session_state['quiz_scores']
+                    
             except Exception as e:
                 st.error(f"Could not save results: {e}")
         
