@@ -15,8 +15,8 @@ def check():
     df = load_master_data()
     print(f"Total Rows: {len(df)}")
     
-    # Search for KKOM-CET-005
-    target = 'KKOM-CET-005'
+    # Search for POLY-DIP-001
+    target = 'POLY-DIP-001'
     print(f"\n--- Checking Tags for {target} ---")
     tags = COURSE_TAGS.get(target)
     if tags:

@@ -594,6 +594,10 @@ for i, pick in enumerate(dash['featured_matches'][:limit]): # Dynamic Limit
     # User Request: Use actual CSV course name, not simplified headline. Remove ranking #.
     display_title = pick['course_name']
     
+    # DEBUG: Show Score
+    if 'fit_score' in pick:
+        display_title += f" [Score: {pick['fit_score']}]"
+    
     with st.expander(display_title, expanded=True):
         # RANKING REASONING (If available)
         if pick.get('fit_reasons'):

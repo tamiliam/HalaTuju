@@ -226,8 +226,8 @@ def get_ranked_results(eligible_courses, student_profile):
             print(f"Base: {BASE_SCORE} -> Final: {score} (Reasons: {reasons})")
             debug_count += 1
         
-    # Sort by score descending
-    ranked_list.sort(key=lambda x: x['fit_score'], reverse=True)
+    # Sort by score descending (Force Int to avoid string sort issues)
+    ranked_list.sort(key=lambda x: int(x['fit_score']), reverse=True)
     
     # Split
     top_5 = ranked_list[:5]
