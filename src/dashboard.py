@@ -140,7 +140,11 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             "jobs": desc_data.get('jobs', [])
         })
         
-    return eligible_offerings
+    return {
+        "featured_matches": [], # Will be populated by Ranking Engine in main.py
+        "full_list": eligible_offerings,
+        "total_matches": stats["inst_poly"] + stats["inst_ikbn"] + stats["inst_kk"] + stats["inst_other"]
+    }
 
 def group_courses_by_id(flat_list):
     """
