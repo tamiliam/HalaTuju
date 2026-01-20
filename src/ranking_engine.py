@@ -62,7 +62,52 @@ def load_institution_modifiers():
         print(f"Error loading inst modifiers: {e}")
         return {}
 
+def load_institution_priorities():
+    """
+    Loads institution subcategories from CSVs for tie-breaking.
+    Returns: {inst_id: subcategory_string}
+    """
+    priorities = {}
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(current_dir)
+    
+    # Files to check
+    files = ['institutions.csv', 'tvet_institutions.csv']
+    
+    for filename in files:
+        path = os.path.join(project_root, 'data', filename)
+        if not os.path.exists(path):
+            continue
+            
+        try:
+            df = pd.read_csv(path)
+            # Ensure columns exist
+            if 'institution_id' in df.columns and 'subcategory' in df.columns:
+                for _, row in df.iterrows():
+                    inst_id = str(row['institution_id']).strip()
+                    subcat = str(row['subcategory']).strip()
+                    priorities[inst_id] = subcat
+        except Exception as e:
+            print(f"Error loading priorities from {filename}: {e}")
+            
+    return priorities
+
 INST_MODIFIERS = load_institution_modifiers()
+INST_SUBCATEGORIES = load_institution_priorities()
+
+# Tie-breaker Map (Higher is better)
+INST_PRIORITY_MAP = {
+  "Premier": 10,
+  "Konvensional": 9,
+  "JMTI": 8,
+  "METrO": 7,
+  "ADTEC": 6,
+  "IKTBN": 5,
+  "Kolej Komuniti": 4,
+  "ILP": 3,
+  "IKBN": 2,
+  "IKBS": 1
+}
 
 def calculate_fit_score(student_profile, course_id, institution_id):
     """
@@ -420,8 +465,32 @@ def get_ranked_results(eligible_courses, student_profile):
         
         ranked_list.append(new_item)
         
-    # Sort by score descending (Force Int to avoid string sort issues)
-    ranked_list.sort(key=lambda x: int(x['fit_score']), reverse=True)
+    # Sort by:
+    # 1. Score (Desc)
+    # 2. Institution Priority (Desc)
+    # 3. Course Name (Asc) - (Using negative ord sort or just tuple comparison works safely in Python)
+    
+    def sort_key(item):
+        score = int(item['fit_score'])
+        inst_id = str(item.get('institution_id', '')).strip()
+        subcat = INST_SUBCATEGORIES.get(inst_id, '')
+        priority = INST_PRIORITY_MAP.get(subcat, 0) # Default 0 if unknown
+        name = item.get('course_name', '')
+        
+        # Python sorts tuples element by element.
+        # We want Score DESC, Priority DESC, Name ASC
+        # So we return (score, priority, reversed_name) OR use reverse=True on (score, priority) and invert name?
+        # Easier: Return tuple for "Highest First", so (score, priority, -name_rank?)
+        # Actually, python's list.sort with reverse=True sorts (10, 5) > (10, 4).
+        # But Name needs to be Ascending (A > B in reverse? No. "A" < "B").
+        # If Reverse=True: "Z" comes before "A". We want "A" first.
+        # So we need to invert the string comparison or use a complex key.
+        # Cleanest way:
+        # Sort key is regular (Ascending): (-score, -priority, name)
+        # and use reverse=False (default).
+        return (-score, -priority, name)
+
+    ranked_list.sort(key=sort_key)
     
     # Split
     top_5 = ranked_list[:5]
