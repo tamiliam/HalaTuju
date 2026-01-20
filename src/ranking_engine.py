@@ -54,7 +54,9 @@ def load_institution_modifiers():
             for item in data:
                 key = item.get('inst_id', item.get('institution_id'))
                 if key:
-                    mapping[key] = item.get('modifiers', {})
+                    # Robustness: Strip whitespace from keys
+                    clean_key = str(key).strip()
+                    mapping[clean_key] = item.get('modifiers', {})
             return mapping
     except Exception as e:
         print(f"Error loading inst modifiers: {e}")
@@ -70,7 +72,10 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     
     # 1. Get Metadata
     c_tags = COURSE_TAGS.get(course_id, {})
-    i_mods = INST_MODIFIERS.get(institution_id, {})
+    
+    # Robustness: Strip whitespace from input ID
+    clean_inst_id = str(institution_id).strip()
+    i_mods = INST_MODIFIERS.get(clean_inst_id, {})
     
     # Handle input flexibility
     if 'student_signals' in student_profile:
@@ -250,7 +255,7 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     # Cultural Safety Net
     sig_proximity = get_signal('value_tradeoff_signals', 'proximity_priority') 
     safety_net = i_mods.get('cultural_safety_net', 'low')
-    
+
     if sig_proximity > 0:
         if safety_net == 'high':
             inst_score += 4 # Strong boost for community hubs
