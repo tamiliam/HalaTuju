@@ -114,7 +114,6 @@ def calculate_fit_score(student_profile, course_id, institution_id):
         reasons.append("Matches your hands-on work preference.")
     elif sig_hands_on == 0 and tag_modality == 'hands_on':
         cat_scores['work_preference_signals'] -= 3
-        # Note: Negative scores are also accumulated
         
     # Problem Solving rule
     if sig_prob_solve > 0 and tag_modality == 'mixed':
@@ -122,7 +121,6 @@ def calculate_fit_score(student_profile, course_id, institution_id):
         reasons.append("Balanced approach suits your problem-solving style.")
         
     # People Helping (Belongs to Work Preference usually, or Value?)
-    # Based on taxonomy, people_helping is in work_preference_signals
     if get_signal('work_preference_signals', 'people_helping') > 0 and c_tags.get('people_interaction') == 'high_people':
         cat_scores['work_preference_signals'] += 4
         reasons.append("Matches your desire to help people.")
@@ -148,34 +146,60 @@ def calculate_fit_score(student_profile, course_id, institution_id):
         cat_scores['environment_signals'] += 4
         reasons.append(f"Matches your preference for office environments.")
 
-    # 3. Energy / People Interaction (Energy Sensitivity)
+    # 3. Learning Tolerance (NEW: Completeness)
+    sig_learning = get_signal('learning_tolerance_signals', 'learning_by_doing')
+    sig_theory = get_signal('learning_tolerance_signals', 'theory_oriented')
+    
+    # Learning by Doing -> Hands-on/Mixed
+    if sig_learning > 0 and tag_modality in ['hands_on', 'mixed']:
+         cat_scores['learning_tolerance_signals'] += 3
+         reasons.append(f"Suits your 'learning by doing' style ({tag_modality}).")
+         
+    # Theory Oriented -> Theory/Mixed
+    if sig_theory > 0 and tag_modality in ['theory', 'mixed']:
+         cat_scores['learning_tolerance_signals'] += 3
+         reasons.append(f"Suits your theory-oriented preference.")
+
+    # 4. Energy Sensitivity (Extended)
     sig_low_people = get_signal('energy_sensitivity_signals', 'low_people_tolerance')
+    sig_fatigue = get_signal('energy_sensitivity_signals', 'physical_fatigue_sensitive')
     tag_people = c_tags.get('people_interaction', '')
     
     if sig_low_people > 0 and tag_people == 'high_people':
         cat_scores['energy_sensitivity_signals'] -= 6
         reasons.append("May be draining due to high public interaction.")
     
+    # Physical Fatigue Rule (Proxy: Hands-on implies physical demand)
+    # TODO: Add specific 'physical_demand' tag to course schema for better precision
+    if sig_fatigue > 0 and tag_modality == 'hands_on':
+        cat_scores['energy_sensitivity_signals'] -= 3 
+        reasons.append("Warning: Course may cover physically demanding tasks.")
         
-    # 4. Values Alignment
+    # 5. Values Alignment (Extended)
     sig_risk = get_signal('value_tradeoff_signals', 'income_risk_tolerant')
     sig_stability = get_signal('value_tradeoff_signals', 'stability_priority')
     sig_pathway = get_signal('value_tradeoff_signals', 'pathway_priority')
+    sig_meaning = get_signal('value_tradeoff_signals', 'meaning_priority')
     tag_outcome = c_tags.get('outcome', '')
     
     if sig_risk > 0 and tag_outcome == 'entrepreneurial':
         cat_scores['value_tradeoff_signals'] += 3
         reasons.append("Great for future entrepreneurs.")
         
-    # Stability Rule (New)
+    # Stability Rule
     if sig_stability > 0 and tag_outcome in ['regulated_profession', 'employment_first']:
         cat_scores['value_tradeoff_signals'] += 4
         reasons.append("Offers a stable career pathway.")
         
-    # Pathway Priority Rule (New)
+    # Pathway Priority Rule
     if sig_pathway > 0 and tag_outcome == 'pathway_friendly':
         cat_scores['value_tradeoff_signals'] += 4
         reasons.append("Designed for easy continuation to Degree.")
+        
+    # Meaning Priority Rule (Proxy: Helping People or Regulated Profession)
+    if sig_meaning > 0 and (c_tags.get('people_interaction') == 'high_people' or tag_outcome == 'regulated_profession'):
+        cat_scores['value_tradeoff_signals'] += 3
+        reasons.append("Aligns with your priority for meaningful/service-oriented work.")
 
     # --- B. Normalization & Aggregation ---
     fit_score = 0
@@ -195,10 +219,6 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     # Fallback to check if it's in a different location or just handle gracefully if missing
     
     sig_subsistence = student_profile.get('unknown_signals', []) # Not used logic-wise yet
-    
-    # Check 'allowance' via direct property if modifiers exist? 
-    # Plan called for +4. Current strict taxonomy doesn't pass it. 
-    # SKIPPING for now to prevent errors, as verified previously.
     
     # Cap Institution Score
     inst_score = max(min(inst_score, INSTITUTION_CAP), -INSTITUTION_CAP)
