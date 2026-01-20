@@ -34,8 +34,8 @@ class AIReportWrapper:
                 
             if self.api_key:
                 genai.configure(api_key=self.api_key)
-                # Use Gemini 1.5 Flash for speed/cost balance
-                self.model = genai.GenerativeModel('gemini-1.5-flash', 
+                # Fallback to gemini-pro as 1.5-flash is 404ing in this env
+                self.model = genai.GenerativeModel('gemini-pro', 
                                                  generation_config={"response_mime_type": "application/json"})
         except Exception as e:
             print(f"AI Wrapper Init Error: {e}")
