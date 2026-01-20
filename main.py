@@ -632,9 +632,17 @@ all_ranked = sorted(dash['full_list'], key=lambda x: int(x.get('fit_score', 0)),
 grouped_courses = group_courses_by_id(all_ranked)
 
 # 2. Slice Tiers
-tier1_featured = grouped_courses[:5]
-tier2_good = grouped_courses[5:25]
-tier3_rest = grouped_courses[25:]
+# LOGIC UPDATE: Guests only see Top 3. Users see Top 5 + Tier 2 + Tier 3.
+if not auth_status:
+    # --- GUEST MODE ---
+    tier1_featured = grouped_courses[:3] # Strictly Top 3
+    tier2_good = [] # Hide
+    tier3_rest = [] # Hide
+else:
+    # --- USER MODE ---
+    tier1_featured = grouped_courses[:5]
+    tier2_good = grouped_courses[5:25]
+    tier3_rest = grouped_courses[25:]
 
 # --- RENDER TIER 1: FEATURED MATCHES ---
 st.markdown(f"### :star: {t.get('lbl_featured', 'Featured Matches')}")
