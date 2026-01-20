@@ -109,6 +109,17 @@ INST_PRIORITY_MAP = {
   "IKBS": 1
 }
 
+# Credential Priority Map (Higher is better)
+def get_credential_priority(course_name):
+    name_lower = course_name.lower().strip()
+    if name_lower.startswith("diploma"):
+        return 3
+    elif "sijil lanjutan" in name_lower: # Check substring for Sijil Lanjutan
+        return 2
+    elif name_lower.startswith("sijil"):
+        return 1
+    return 0
+
 def calculate_fit_score(student_profile, course_id, institution_id):
     """
     Calculates the fit score for a single course/institution pair.
@@ -467,28 +478,22 @@ def get_ranked_results(eligible_courses, student_profile):
         
     # Sort by:
     # 1. Score (Desc)
-    # 2. Institution Priority (Desc)
-    # 3. Course Name (Asc) - (Using negative ord sort or just tuple comparison works safely in Python)
+    # 2. Credential Priority (Desc) - [Diploma > Sijil Lanjutan > Sijil]
+    # 3. Institution Priority (Desc)
+    # 4. Course Name (Asc)
     
     def sort_key(item):
         score = int(item['fit_score'])
         inst_id = str(item.get('institution_id', '')).strip()
         subcat = INST_SUBCATEGORIES.get(inst_id, '')
-        priority = INST_PRIORITY_MAP.get(subcat, 0) # Default 0 if unknown
-        name = item.get('course_name', '')
+        inst_priority = INST_PRIORITY_MAP.get(subcat, 0)
         
-        # Python sorts tuples element by element.
-        # We want Score DESC, Priority DESC, Name ASC
-        # So we return (score, priority, reversed_name) OR use reverse=True on (score, priority) and invert name?
-        # Easier: Return tuple for "Highest First", so (score, priority, -name_rank?)
-        # Actually, python's list.sort with reverse=True sorts (10, 5) > (10, 4).
-        # But Name needs to be Ascending (A > B in reverse? No. "A" < "B").
-        # If Reverse=True: "Z" comes before "A". We want "A" first.
-        # So we need to invert the string comparison or use a complex key.
-        # Cleanest way:
-        # Sort key is regular (Ascending): (-score, -priority, name)
-        # and use reverse=False (default).
-        return (-score, -priority, name)
+        c_name = item.get('course_name', '')
+        cred_priority = get_credential_priority(c_name)
+        
+        # Sort Tuple (Descending items negative):
+        # (-score, -cred_priority, -inst_priority, name)
+        return (-score, -cred_priority, -inst_priority, c_name)
 
     ranked_list.sort(key=sort_key)
     
