@@ -1,54 +1,59 @@
+import streamlit as st
 import json
 import os
-import streamlit as st
 from src.prompts import SYSTEM_PROMPT
 
 try:
-    from openai import OpenAI
-    HAS_OPENAI = True
+    import google.generativeai as genai
+    HAS_GEMINI = True
 except ImportError:
-    HAS_OPENAI = False
-    print("Warning: 'openai' module not found. AI features disabled.")
+    HAS_GEMINI = False
+    print("Warning: 'google-generativeai' module not found. AI features disabled.")
 
 class AIReportWrapper:
     """
-    Wrapper for Generative AI reporting.
+    Wrapper for Generative AI reporting using Google Gemini.
     """
     
     def __init__(self):
         # Try loading key from Streamlit secrets or Env
         self.api_key = None
-        self.client = None
+        self.model = None
         
-        if not HAS_OPENAI:
+        if not HAS_GEMINI:
             return
-            
+
         try:
-            if "OPENAI_API_KEY" in st.secrets:
-                self.api_key = st.secrets["OPENAI_API_KEY"]
+            # Check for GEMINI_API_KEY first, fallback to GOOGLE_API_KEY
+            if "GEMINI_API_KEY" in st.secrets:
+                self.api_key = st.secrets["GEMINI_API_KEY"]
+            elif "GOOGLE_API_KEY" in st.secrets:
+                self.api_key = st.secrets["GOOGLE_API_KEY"]
             else:
-                self.api_key = os.getenv("OPENAI_API_KEY")
+                self.api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
                 
             if self.api_key:
-                self.client = OpenAI(api_key=self.api_key)
+                genai.configure(api_key=self.api_key)
+                # Use Gemini 1.5 Flash for speed/cost balance
+                self.model = genai.GenerativeModel('gemini-1.5-flash', 
+                                                 generation_config={"response_mime_type": "application/json"})
         except Exception as e:
             print(f"AI Wrapper Init Error: {e}")
 
     def generate_narrative_report(self, student_profile, top_courses):
         """
-        Generates a deep narrative report using LLM.
+        Generates a deep narrative report using Gemini 1.5.
         """
-        if not HAS_OPENAI:
-             return {"error": "AI Module Missing (pip install openai)"}
+        if not HAS_GEMINI:
+             return {"error": "AI Module Missing (pip install google-generativeai)"}
              
-        if not self.client:
-            return {"error": "AI Service Unavailable (No Key)"}
+        if not self.model:
+            return {"error": "AI Service Unavailable (Missing GEMINI_API_KEY)"}
 
         # Prepare Payload
-        # We only need impactful signals, not everything
         summary_signals = self._extract_dominant_signals(student_profile.get('student_signals', {}))
         
-        # Simplified course list to save tokens
+        # Simplified course list
         course_context = []
         for c in top_courses[:3]:
             course_context.append({
@@ -57,31 +62,42 @@ class AIReportWrapper:
                 "score": c.get('fit_score')
             })
             
-        payload = {
+        # Context Construction
+        user_context = json.dumps({
             "student_summary": summary_signals,
             "top_courses": course_context
-        }
+        })
+        
+        # Prompt Composition
+        # Gemini handles system instructions in the model init (system_instruction=...) 
+        # But we can also prepend it to the prompt which works well for 1.5.
+        # Let's use the explicit system instruction in the chat/generate call if possible or just prepend.
+        # Prepending is reliable.
+        full_prompt = f"{SYSTEM_PROMPT}\n\nHere is the student data:\n{user_context}"
         
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o", # Or gpt-3.5-turbo if cost is concern
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": json.dumps(payload)}
-                ],
-                temperature=0.7,
-                response_format={"type": "json_object"}
-            )
+            response = self.model.generate_content(full_prompt)
             
-            content = response.choices[0].message.content
-            return json.loads(content)
+            # Parse JSON
+            # Gemini 1.5 Flash in JSON mode returns raw text that is JSON.
+            try:
+                result = json.loads(response.text)
+                return result
+            except json.JSONDecodeError:
+                # Fallback if model wraps in markdown json blocks
+                text = response.text.strip()
+                if text.startswith("```json"):
+                    text = text[7:-3].strip()
+                elif text.startswith("```"):
+                    text = text[3:-3].strip()
+                return json.loads(text)
             
         except Exception as e:
             return {"error": f"Generation Failed: {str(e)}"}
 
     def _extract_dominant_signals(self, signals):
         """
-        Extracts only signals > 0 to reduce noise for the AI.
+        Extracts only signals > 0 to reduce noise.
         """
         dominant = {}
         for category, sig_dict in signals.items():

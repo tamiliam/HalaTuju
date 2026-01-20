@@ -5,3 +5,4 @@ openpyxl
 supabase
 bcrypt
 extra-streamlit-components
+google-generativeai
