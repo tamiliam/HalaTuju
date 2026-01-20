@@ -449,6 +449,31 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     
     return final_score, final_reasons
 
+def sort_courses(course_list):
+    """
+    Sorts a list of courses based on comprehensive hierarchy:
+    1. Score (Desc)
+    2. Credential Priority (Desc)
+    3. Institution Priority (Desc)
+    4. Course Name (Asc)
+    """
+    def sort_key(item):
+        score = int(item.get('fit_score', 0)) # Default to 0 if unranked
+        inst_id = str(item.get('institution_id', '')).strip()
+        subcat = INST_SUBCATEGORIES.get(inst_id, '')
+        inst_priority = INST_PRIORITY_MAP.get(subcat, 0)
+        
+        c_name = item.get('course_name', '')
+        cred_priority = get_credential_priority(c_name)
+        
+        # Sort Tuple (Descending items negative):
+        # (-score, -cred_priority, -inst_priority, name)
+        return (-score, -cred_priority, -inst_priority, c_name)
+
+    # Sort in place vs return new list? 
+    # Python's list.sort() is in-place. Let's return a sorted copy for safety/chaining.
+    return sorted(course_list, key=sort_key)
+
 def get_ranked_results(eligible_courses, student_profile):
     """
     eligible_courses: List of dicts (from engine.py) including 'course_id' and 'institution_id'.
@@ -476,26 +501,8 @@ def get_ranked_results(eligible_courses, student_profile):
         
         ranked_list.append(new_item)
         
-    # Sort by:
-    # 1. Score (Desc)
-    # 2. Credential Priority (Desc) - [Diploma > Sijil Lanjutan > Sijil]
-    # 3. Institution Priority (Desc)
-    # 4. Course Name (Asc)
-    
-    def sort_key(item):
-        score = int(item['fit_score'])
-        inst_id = str(item.get('institution_id', '')).strip()
-        subcat = INST_SUBCATEGORIES.get(inst_id, '')
-        inst_priority = INST_PRIORITY_MAP.get(subcat, 0)
-        
-        c_name = item.get('course_name', '')
-        cred_priority = get_credential_priority(c_name)
-        
-        # Sort Tuple (Descending items negative):
-        # (-score, -cred_priority, -inst_priority, name)
-        return (-score, -cred_priority, -inst_priority, c_name)
-
-    ranked_list.sort(key=sort_key)
+    # Use shared sorting logic
+    ranked_list = sort_courses(ranked_list)
     
     # Split
     top_5 = ranked_list[:5]

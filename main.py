@@ -4,7 +4,7 @@ import time
 from supabase import create_client, Client
 from src.engine import StudentProfile
 from src.dashboard import generate_dashboard_data, group_courses_by_id
-from src.ranking_engine import get_ranked_results, TAG_COUNT
+from src.ranking_engine import get_ranked_results, TAG_COUNT, sort_courses
 from src.translations import get_text, LANGUAGES
 from src.quiz_manager import QuizManager
 from src.auth import AuthManager
@@ -628,7 +628,8 @@ c3.metric(t['inst_kk'], dash['summary_stats'].get('inst_kk', 0))
     # 1. Group all eligible courses
     # Note: We group the ENTIRE eligible list, not just top 5, to get the full picture.
     # The 'ranked' result has split top_5/rest, but for grouping we want to re-merge and group properly.
-all_ranked = sorted(dash['full_list'], key=lambda x: int(x.get('fit_score', 0)), reverse=True)
+    # Use robust sorting logic (Score > Credential > Institution > Name)
+all_ranked = sort_courses(dash['full_list'])
 grouped_courses = group_courses_by_id(all_ranked)
 
 # 2. Slice Tiers
