@@ -83,7 +83,9 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     else:
         signals = student_profile
     
-    reasons = []
+    reasons = [] # Deprecated, separating types
+    match_reasons = []
+    caution_reasons = []
     
     # Initialize Categorical Buckets
     cat_scores = {
@@ -110,19 +112,19 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     # Hands-on rule
     if sig_hands_on > 0 and tag_modality == 'hands_on':
         cat_scores['work_preference_signals'] += 5
-        reasons.append("Matches your hands-on work preference.")
+        match_reasons.append("hands-on work preference")
     elif sig_hands_on == 0 and tag_modality == 'hands_on':
         cat_scores['work_preference_signals'] -= 3
         
     # Problem Solving rule
     if sig_prob_solve > 0 and tag_modality == 'mixed':
         cat_scores['work_preference_signals'] += 3
-        reasons.append("Balanced approach suits your problem-solving style.")
+        match_reasons.append("problem-solving style")
         
     # People Helping
     if get_signal('work_preference_signals', 'people_helping') > 0 and c_tags.get('people_interaction') == 'high_people':
         cat_scores['work_preference_signals'] += 4
-        reasons.append("Matches your desire to help people.")
+        match_reasons.append("desire to help people")
         
     # Creative Rule (Updated: Split Logic)
     tag_learning = c_tags.get('learning_style', []) 
@@ -130,13 +132,13 @@ def calculate_fit_score(student_profile, course_id, institution_id):
         boosted = False
         if 'project_based' in tag_learning:
             cat_scores['work_preference_signals'] += 4
-            reasons.append("Matches your creative thinking style (Project Based).")
+            match_reasons.append("creative thinking style (Project Based)")
             boosted = True
         
         # If not already boosted by project_based, apply the Abstract check with lower weight
         if not boosted and tag_cognitive == 'abstract':
              cat_scores['work_preference_signals'] += 2
-             reasons.append("Matches your creative thinking style (Abstract).")
+             match_reasons.append("creative thinking style (Abstract)")
 
     # 2. Environment Fit
     sig_workshop = get_signal('environment_signals', 'workshop_environment')
@@ -146,23 +148,23 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     
     if sig_workshop > 0 and tag_env == 'workshop':
         cat_scores['environment_signals'] += 4
-        reasons.append(f"Work environment fits your style ({tag_env}).")
+        match_reasons.append(f"preference for {tag_env} environments")
         
     # High People Environment rule
     if sig_high_ppl_env > 0 and (tag_env == 'office' or c_tags.get('people_interaction') == 'high_people'):
         cat_scores['environment_signals'] += 3
-        reasons.append("Social environment matches your preference.")
+        match_reasons.append("social environment preference")
         
     # Office Environment Rule
     sig_office = get_signal('environment_signals', 'office_environment')
     if sig_office > 0 and tag_env == 'office':
         cat_scores['environment_signals'] += 4
-        reasons.append(f"Matches your preference for office environments.")
+        match_reasons.append(f"preference for office environments")
 
     # Field Environment Rule
     if sig_field > 0 and tag_env == 'field':
         cat_scores['environment_signals'] += 4
-        reasons.append("Matches your preference for field/outdoor work.")
+        match_reasons.append("preference for field/outdoor work")
 
     # 3. Learning Tolerance
     sig_learning = get_signal('learning_tolerance_signals', 'learning_by_doing')
@@ -174,22 +176,22 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     # Learning by Doing
     if sig_learning > 0 and (tag_modality == 'hands_on' or 'project_based' in tag_styles):
          cat_scores['learning_tolerance_signals'] += 3
-         reasons.append(f"Aligned with your 'learning by doing' preference.")
+         match_reasons.append("learning by doing preference")
          
     # Theory Oriented
     if sig_theory > 0 and tag_modality in ['theory', 'mixed']:
          cat_scores['learning_tolerance_signals'] += 3
-         reasons.append(f"Suits your theory-oriented preference.")
+         match_reasons.append("theory-oriented preference")
          
     # Concept First
     if sig_concept > 0 and (tag_modality == 'theoretical' or tag_cognitive == 'abstract'):
         cat_scores['learning_tolerance_signals'] += 3
-        reasons.append("Matches your preference for conceptual learning.")
+        match_reasons.append("preference for conceptual learning")
          
     # Project Based Rule
     if sig_project > 0 and 'project_based' in tag_styles:
          cat_scores['learning_tolerance_signals'] += 3
-         reasons.append("Aligns with your preference for project-based assessment.")
+         match_reasons.append("preference for project-based assessment")
 
     # 4. Energy Sensitivity
     sig_low_people = get_signal('energy_sensitivity_signals', 'low_people_tolerance')
@@ -199,18 +201,18 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     
     if sig_low_people > 0 and tag_people == 'high_people':
         cat_scores['energy_sensitivity_signals'] -= 6
-        reasons.append("May be draining due to high public interaction.")
+        caution_reasons.append("May be draining due to high public interaction.")
     
     # Physical Fatigue Rule (Safety Rail)
     if sig_fatigue > 0 and tag_load == 'physically_demanding':
         cat_scores['energy_sensitivity_signals'] -= 6 
-        reasons.append("Caution: Course is physically demanding.")
+        caution_reasons.append("Caution: Course is physically demanding.")
 
     # Mental Fatigue Rule (Safety Rail)
     sig_mental_fatigue = get_signal('energy_sensitivity_signals', 'mental_fatigue_sensitive')
     if sig_mental_fatigue > 0 and tag_load == 'mentally_demanding':
         cat_scores['energy_sensitivity_signals'] -= 6
-        reasons.append("Caution: Course is mentally demanding.")
+        caution_reasons.append("Caution: Course is mentally demanding.")
         
     # 5. Values Alignment
     sig_risk = get_signal('value_tradeoff_signals', 'income_risk_tolerant')
@@ -221,22 +223,22 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     
     if sig_risk > 0 and tag_outcome == 'entrepreneurial':
         cat_scores['value_tradeoff_signals'] += 3
-        reasons.append("Great for future entrepreneurs.")
+        match_reasons.append("entrepreneurial ambition")
         
     # Stability Rule
     if sig_stability > 0 and tag_outcome in ['regulated_profession', 'employment_first']:
         cat_scores['value_tradeoff_signals'] += 4
-        reasons.append("Offers a stable career pathway.")
+        match_reasons.append("need for a stable career pathway")
         
     # Pathway Priority Rule
     if sig_pathway > 0 and tag_outcome == 'pathway_friendly':
         cat_scores['value_tradeoff_signals'] += 4
-        reasons.append("Designed for easy continuation to Degree.")
+        match_reasons.append("priority for degree pathways")
         
     # Meaning Priority Rule
     if sig_meaning > 0 and (c_tags.get('people_interaction') == 'high_people' or tag_outcome == 'regulated_profession'):
         cat_scores['value_tradeoff_signals'] += 3
-        reasons.append("Aligns with your priority for meaningful/service-oriented work.")
+        match_reasons.append("priority for meaningful/service-oriented work")
 
     # --- v1.3 Fast Employment & Pathway Conflict ---
     sig_fast_emp = get_signal('value_tradeoff_signals', 'fast_employment_priority')
@@ -245,10 +247,10 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     if sig_fast_emp > 0:
         if tag_outcome == 'employment_first':
             cat_scores['value_tradeoff_signals'] += 4
-            reasons.append("Matches your priority for fast employment.")
+            match_reasons.append("priority for fast employment")
         elif tag_outcome == 'industry_specific':
             cat_scores['value_tradeoff_signals'] += 2
-            reasons.append("Industry-specific focus aids quick entry.")
+            match_reasons.append("industry-specific focus")
             
         # Structure preference when needing money fast
         tag_struct_v13 = c_tags.get('career_structure', 'volatile')
@@ -261,7 +263,7 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     if sig_pathway > 0 and sig_fast_emp > 0:
         if tag_outcome == 'pathway_friendly':
             cat_scores['value_tradeoff_signals'] -= 2
-            reasons.append("Pathway score dampened by fast employment priority.")
+            caution_reasons.append("Pathway score dampened by fast employment priority.")
 
     # --- v1.2 Taxonomy Enhancements ---
     
@@ -276,49 +278,49 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     if sig_meaning > 0:
         if tag_service == 'care':
             cat_scores['value_tradeoff_signals'] += 4
-            reasons.append("Matches your desire for care-oriented roles.")
+            match_reasons.append("desire for care-oriented roles")
         elif tag_interaction == 'relational':
             cat_scores['value_tradeoff_signals'] += 3
-            reasons.append("Matches your preference for relational work.")
+            match_reasons.append("preference for relational work")
         elif tag_service == 'service':
             cat_scores['value_tradeoff_signals'] += 1
-            reasons.append("Matches your service orientation.")
+            match_reasons.append("service orientation")
 
     # 2. Strengthen Burnout Protection (Safety Rails)
     if sig_low_people > 0:
         if tag_interaction == 'transactional':
             cat_scores['energy_sensitivity_signals'] -= 2
-            reasons.append("Transactional interaction may be draining.")
+            caution_reasons.append("Transactional interaction may be draining.")
         if tag_service == 'service':
             cat_scores['energy_sensitivity_signals'] -= 2
-            reasons.append("Service focus may be draining.")
+            caution_reasons.append("Service focus may be draining.")
 
     # 3. Clarify Stability vs Risk Preference
     if sig_stability > 0 and tag_structure == 'stable':
          cat_scores['value_tradeoff_signals'] += 3
-         reasons.append("Aligns with your preference for stable career structures.")
+         match_reasons.append("preference for stable career structures")
          
     if sig_risk > 0:
         if tag_structure == 'volatile':
             cat_scores['value_tradeoff_signals'] += 2
-            reasons.append("Matches your tolerance for volatile income.")
+            match_reasons.append("tolerance for volatile income")
         elif tag_structure == 'portfolio':
             cat_scores['value_tradeoff_signals'] += 2
-            reasons.append("Matches your interest in portfolio careers.")
+            match_reasons.append("interest in portfolio careers")
 
     # 4. Use Credential Status Carefully
     if sig_stability > 0 and tag_credential == 'regulated':
         cat_scores['value_tradeoff_signals'] += 2
-        reasons.append("Regulated profession provides additional confidence.")
+        match_reasons.append("regulated profession confidence")
 
     # 5. Improve Creative Matching
     if sig_creative > 0:
         if tag_creative_out == 'expressive':
             cat_scores['work_preference_signals'] += 4
-            reasons.append("Matches your expressive creative style.")
+            match_reasons.append("expressive creative style")
         elif tag_creative_out == 'design':
             cat_scores['work_preference_signals'] += 3
-            reasons.append("Matches your design-oriented creative preference.")
+            match_reasons.append("design-oriented creative preference")
 
     # --- B. Normalization & Aggregation ---
     fit_score = 0
@@ -338,7 +340,7 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     
     if sig_income_focus > 0 and is_urban:
         inst_score += 2
-        reasons.append("Campus location suits income/urban focus.")
+        match_reasons.append("income/urban focus")
         
     # Cultural Safety Net
     sig_proximity = get_signal('value_tradeoff_signals', 'proximity_priority') 
@@ -347,18 +349,17 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     if sig_proximity > 0:
         if safety_net == 'high':
             inst_score += 4 # Strong boost for community hubs
-            reasons.append("High community support available.")
+            match_reasons.append("need for high community support")
         elif safety_net == 'low':
             inst_score -= 2 # Slight nudge away from isolation
+            caution_reasons.append("Low community support may isolate.")
             
     # v1.3 Fast Employment Support logic
-    # Proximity + High Support + Fast Emp = Boost
-    # Reuse sig_proximity from above
     sig_fast_emp_inst = get_signal('value_tradeoff_signals', 'fast_employment_priority')
     
     if sig_proximity > 0 and sig_fast_emp_inst > 0 and safety_net == 'high':
         inst_score += 2
-        reasons.append("Local high-support environment boosts job prospects.")
+        match_reasons.append("need for local high-support job networks")
             
     # Cap Institution Score
     inst_score = max(min(inst_score, INSTITUTION_CAP), -INSTITUTION_CAP)
@@ -369,7 +370,28 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     
     final_score = BASE_SCORE + total_adjust
     
-    return final_score, reasons
+    # --- Formulate Natural Language Reason ---
+    final_reasons = []
+    
+    if match_reasons:
+        # Deduplicate while preserving order
+        unique_matches = []
+        [unique_matches.append(x) for x in match_reasons if x not in unique_matches]
+        
+        if len(unique_matches) == 1:
+            combined = f"Matches or aligns with your {unique_matches[0]}."
+        elif len(unique_matches) == 2:
+            combined = f"Matches or aligns with your {unique_matches[0]} and {unique_matches[1]}."
+        else:
+            # Oxford comma
+            combined = f"Matches or aligns with your {', '.join(unique_matches[:-1])}, and {unique_matches[-1]}."
+        
+        final_reasons.append(combined)
+
+    # Append Cautions/Risks (kept separate for emphasis)
+    final_reasons.extend(caution_reasons)
+    
+    return final_score, final_reasons
 
 def get_ranked_results(eligible_courses, student_profile):
     """
