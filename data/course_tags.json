@@ -6,10 +6,18 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based", "continuous_assessment"],
+      "learning_style": [
+        "project_based",
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -19,10 +27,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "abstract",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "mentally_demanding",
       "outcome": "pathway_friendly",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -32,10 +47,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "regulated_profession",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -45,10 +67,17 @@
       "work_modality": "mixed",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "balanced_load",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -58,10 +87,17 @@
       "work_modality": "theoretical",
       "people_interaction": "high_people",
       "cognitive_type": "abstract",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -71,10 +107,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "balanced_load",
       "outcome": "public_sector_friendly",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -84,10 +127,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -97,10 +147,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "regulated_profession",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -110,10 +167,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "mentally_demanding",
       "outcome": "pathway_friendly",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -123,10 +187,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -136,10 +207,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "employment_first",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -149,10 +227,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "employment_first",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -162,10 +247,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "abstract",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "mentally_demanding",
       "outcome": "pathway_friendly",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -175,10 +267,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -188,10 +287,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "employment_first",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -201,10 +307,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "balanced_load",
       "outcome": "industry_specific",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -214,10 +327,17 @@
       "work_modality": "mixed",
       "people_interaction": "high_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -227,10 +347,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "balanced_load",
       "outcome": "pathway_friendly",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -240,10 +367,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -253,10 +387,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -266,10 +407,17 @@
       "work_modality": "hands_on",
       "people_interaction": "high_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -279,10 +427,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -292,10 +447,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -305,10 +467,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -318,10 +487,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "balanced_load",
       "outcome": "industry_specific",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -331,10 +507,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -344,10 +527,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -357,10 +547,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -370,10 +567,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -383,10 +587,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "design",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -396,10 +607,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "employment_first",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "regulated",
+      "creative_output": "design",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -409,10 +627,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -422,10 +647,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -435,10 +667,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "regulated_profession",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -448,10 +687,18 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based", "continuous_assessment"],
+      "learning_style": [
+        "project_based",
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "stable"
     }
   },
   {
@@ -461,10 +708,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -474,10 +728,17 @@
       "work_modality": "theoretical",
       "people_interaction": "high_people",
       "cognitive_type": "abstract",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -487,10 +748,17 @@
       "work_modality": "theoretical",
       "people_interaction": "high_people",
       "cognitive_type": "abstract",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -500,10 +768,17 @@
       "work_modality": "theoretical",
       "people_interaction": "high_people",
       "cognitive_type": "abstract",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -513,10 +788,17 @@
       "work_modality": "mixed",
       "people_interaction": "high_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -526,10 +808,17 @@
       "work_modality": "theoretical",
       "people_interaction": "high_people",
       "cognitive_type": "abstract",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "private_sector_dominant",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -539,10 +828,17 @@
       "work_modality": "theoretical",
       "people_interaction": "high_people",
       "cognitive_type": "abstract",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "mentally_demanding",
       "outcome": "private_sector_dominant",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -552,10 +848,17 @@
       "work_modality": "mixed",
       "people_interaction": "high_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -565,10 +868,17 @@
       "work_modality": "hands_on",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -578,10 +888,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "private_sector_dominant",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -591,10 +908,17 @@
       "work_modality": "mixed",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -604,10 +928,17 @@
       "work_modality": "mixed",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "balanced_load",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -617,10 +948,17 @@
       "work_modality": "hands_on",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -630,10 +968,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -643,10 +988,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "public_sector_friendly",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -656,10 +1008,17 @@
       "work_modality": "hands_on",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -669,10 +1028,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "mentally_demanding",
       "outcome": "private_sector_dominant",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -682,10 +1048,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -695,10 +1068,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -708,10 +1088,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "design",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -721,10 +1108,17 @@
       "work_modality": "theoretical",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "private_sector_dominant",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -734,10 +1128,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -747,10 +1148,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -760,10 +1168,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -773,10 +1188,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "private_sector_dominant",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -786,10 +1208,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -799,10 +1228,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -812,10 +1248,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "design",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -825,10 +1268,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -838,10 +1288,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -851,10 +1308,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "abstract",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -864,10 +1328,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -877,10 +1348,17 @@
       "work_modality": "hands_on",
       "people_interaction": "high_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -890,10 +1368,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -903,10 +1388,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "abstract",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -916,10 +1408,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["assessment_heavy"],
+      "learning_style": [
+        "assessment_heavy"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -929,10 +1428,17 @@
       "work_modality": "theoretical",
       "people_interaction": "low_people",
       "cognitive_type": "abstract",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "private_sector_dominant",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -942,10 +1448,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "private_sector_dominant",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -955,10 +1468,17 @@
       "work_modality": "theoretical",
       "people_interaction": "low_people",
       "cognitive_type": "abstract",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -968,10 +1488,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "private_sector_dominant",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -981,10 +1508,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "private_sector_dominant",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -994,10 +1528,17 @@
       "work_modality": "theoretical",
       "people_interaction": "low_people",
       "cognitive_type": "abstract",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "private_sector_dominant",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1007,10 +1548,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "balanced_load",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1020,10 +1568,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1033,10 +1588,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -1046,10 +1608,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1059,10 +1628,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "private_sector_dominant",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1072,10 +1648,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -1085,10 +1668,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -1098,10 +1688,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -1111,10 +1708,17 @@
       "work_modality": "hands_on",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1124,10 +1728,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -1137,10 +1748,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -1150,10 +1768,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -1163,10 +1788,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1176,10 +1808,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -1189,10 +1828,17 @@
       "work_modality": "mixed",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1202,10 +1848,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "abstract",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "employment_first",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "design",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1215,10 +1868,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1228,10 +1888,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1241,10 +1908,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1254,10 +1928,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1267,10 +1948,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1280,10 +1968,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1293,10 +1988,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1306,10 +2008,17 @@
       "work_modality": "hands_on",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "care",
+      "interaction_type": "relational",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1319,10 +2028,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -1332,10 +2048,17 @@
       "work_modality": "hands_on",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1345,10 +2068,17 @@
       "work_modality": "mixed",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1358,10 +2088,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1371,10 +2108,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "pathway_friendly",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -1384,10 +2128,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "pathway_friendly",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -1397,10 +2148,17 @@
       "work_modality": "hands_on",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1410,10 +2168,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -1423,10 +2188,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1436,10 +2208,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "design",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1449,10 +2228,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1462,10 +2248,17 @@
       "work_modality": "hands_on",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1475,10 +2268,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1488,10 +2288,17 @@
       "work_modality": "mixed",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1501,10 +2308,17 @@
       "work_modality": "mixed",
       "people_interaction": "high_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1514,10 +2328,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "employment_first",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1527,10 +2348,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1540,10 +2368,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1553,10 +2388,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "employment_first",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1566,10 +2408,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "design",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1579,10 +2428,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "design",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1592,10 +2448,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -1605,10 +2468,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1618,10 +2488,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1631,10 +2508,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -1644,10 +2528,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -1657,10 +2548,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "abstract",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "pathway_friendly",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1670,10 +2568,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1683,10 +2588,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1696,10 +2608,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "balanced_load",
       "outcome": "employment_first",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1709,10 +2628,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1722,10 +2648,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1735,10 +2668,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1748,10 +2688,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1761,10 +2708,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1774,10 +2728,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "pathway_friendly",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "regulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -1787,10 +2748,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1800,10 +2768,17 @@
       "work_modality": "hands_on",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "care",
+      "interaction_type": "relational",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1813,10 +2788,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "regulated_profession",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -1826,10 +2808,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "balanced_load",
       "outcome": "employment_first",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -1839,10 +2828,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -1852,10 +2848,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "employment_first",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "design",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1865,10 +2868,17 @@
       "work_modality": "mixed",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "balanced_load",
       "outcome": "regulated_profession",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1878,10 +2888,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1891,10 +2908,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1904,10 +2928,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1917,10 +2948,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1930,10 +2968,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1943,10 +2988,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "employment_first",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -1956,10 +3008,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -1969,10 +3028,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "regulated_profession",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -1982,10 +3048,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -1995,10 +3068,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2008,10 +3088,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -2021,10 +3108,17 @@
       "work_modality": "mixed",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "balanced_load",
       "outcome": "employment_first",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2034,10 +3128,17 @@
       "work_modality": "hands_on",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2047,10 +3148,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2060,10 +3168,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2073,10 +3188,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2086,10 +3208,17 @@
       "work_modality": "hands_on",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2099,10 +3228,17 @@
       "work_modality": "hands_on",
       "people_interaction": "high_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "care",
+      "interaction_type": "relational",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2112,10 +3248,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2125,10 +3268,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2138,10 +3288,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2151,10 +3308,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2164,10 +3328,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2177,10 +3348,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2190,10 +3368,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2203,10 +3388,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2216,10 +3408,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -2229,10 +3428,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -2242,10 +3448,17 @@
       "work_modality": "theoretical",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "design",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2255,10 +3468,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2268,10 +3488,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "regulated_profession",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -2281,10 +3508,18 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["assessment_heavy", "continuous_assessment"],
+      "learning_style": [
+        "assessment_heavy",
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2294,10 +3529,18 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based", "continuous_assessment"],
+      "learning_style": [
+        "project_based",
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2307,10 +3550,18 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "abstract",
-      "learning_style": ["assessment_heavy", "continuous_assessment"],
+      "learning_style": [
+        "assessment_heavy",
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2320,10 +3571,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2333,10 +3591,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2346,10 +3611,18 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["assessment_heavy", "continuous_assessment"],
+      "learning_style": [
+        "assessment_heavy",
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "regulated_profession",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2359,10 +3632,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2372,10 +3652,18 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based", "continuous_assessment"],
+      "learning_style": [
+        "project_based",
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2385,10 +3673,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "private_sector_dominant",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2398,10 +3693,18 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based", "continuous_assessment"],
+      "learning_style": [
+        "project_based",
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2411,10 +3714,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2424,10 +3734,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2437,10 +3754,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2450,10 +3774,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2463,10 +3794,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2476,10 +3814,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2489,10 +3834,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "employment_first",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "design",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2502,10 +3854,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "employment_first",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -2515,10 +3874,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "regulated_profession",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "regulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "stable"
     }
   },
   {
@@ -2528,10 +3894,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2541,10 +3914,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2554,10 +3934,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2567,10 +3954,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "lab"
+      "environment": "lab",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2580,10 +3974,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2593,10 +3994,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2606,10 +4014,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "balanced_load",
       "outcome": "private_sector_dominant",
-      "environment": "mixed_environment"
+      "environment": "mixed_environment",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2619,10 +4034,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "private_sector_dominant",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2632,10 +4054,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "balanced_load",
       "outcome": "employment_first",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2645,10 +4074,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2658,10 +4094,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2671,10 +4114,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "service",
+      "interaction_type": "transactional",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2684,10 +4134,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2697,10 +4154,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2710,10 +4174,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2723,10 +4194,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2736,10 +4214,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2749,10 +4234,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2762,10 +4254,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2775,10 +4274,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2788,10 +4294,17 @@
       "work_modality": "mixed",
       "people_interaction": "low_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "mentally_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2801,10 +4314,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2814,10 +4334,17 @@
       "work_modality": "hands_on",
       "people_interaction": "moderate_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "employment_first",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2827,10 +4354,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2840,10 +4374,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2853,10 +4394,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "physically_demanding",
       "outcome": "entrepreneurial",
-      "environment": "workshop"
+      "environment": "workshop",
+      "credential_status": "unregulated",
+      "creative_output": "design",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2866,10 +4414,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "abstract",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "expressive",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "portfolio"
     }
   },
   {
@@ -2879,10 +4434,17 @@
       "work_modality": "mixed",
       "people_interaction": "moderate_people",
       "cognitive_type": "problem_solving",
-      "learning_style": ["project_based"],
+      "learning_style": [
+        "project_based"
+      ],
       "load": "mentally_demanding",
       "outcome": "entrepreneurial",
-      "environment": "office"
+      "environment": "office",
+      "credential_status": "unregulated",
+      "creative_output": "design",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   },
   {
@@ -2892,10 +4454,17 @@
       "work_modality": "hands_on",
       "people_interaction": "low_people",
       "cognitive_type": "procedural",
-      "learning_style": ["continuous_assessment"],
+      "learning_style": [
+        "continuous_assessment"
+      ],
       "load": "physically_demanding",
       "outcome": "industry_specific",
-      "environment": "field"
+      "environment": "field",
+      "credential_status": "unregulated",
+      "creative_output": "none",
+      "service_orientation": "neutral",
+      "interaction_type": "mixed",
+      "career_structure": "volatile"
     }
   }
 ]

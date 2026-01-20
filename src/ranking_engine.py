@@ -238,6 +238,63 @@ def calculate_fit_score(student_profile, course_id, institution_id):
         cat_scores['value_tradeoff_signals'] += 3
         reasons.append("Aligns with your priority for meaningful/service-oriented work.")
 
+    # --- v1.2 Taxonomy Enhancements ---
+    
+    # Extract new tags with conservative defaults
+    tag_service = c_tags.get('service_orientation', 'neutral')
+    tag_interaction = c_tags.get('interaction_type', 'mixed')
+    tag_structure = c_tags.get('career_structure', 'volatile') # Conservative default
+    tag_credential = c_tags.get('credential_status', 'unregulated')
+    tag_creative_out = c_tags.get('creative_output', 'none')
+
+    # 1. Refine "Helping / Meaning" Logic
+    if sig_meaning > 0:
+        if tag_service == 'care':
+            cat_scores['value_tradeoff_signals'] += 4
+            reasons.append("Matches your desire for care-oriented roles.")
+        elif tag_interaction == 'relational':
+            cat_scores['value_tradeoff_signals'] += 3
+            reasons.append("Matches your preference for relational work.")
+        elif tag_service == 'service':
+            cat_scores['value_tradeoff_signals'] += 1
+            reasons.append("Matches your service orientation.")
+
+    # 2. Strengthen Burnout Protection (Safety Rails)
+    if sig_low_people > 0:
+        if tag_interaction == 'transactional':
+            cat_scores['energy_sensitivity_signals'] -= 2
+            reasons.append("Transactional interaction may be draining.")
+        if tag_service == 'service':
+            cat_scores['energy_sensitivity_signals'] -= 2
+            reasons.append("Service focus may be draining.")
+
+    # 3. Clarify Stability vs Risk Preference
+    if sig_stability > 0 and tag_structure == 'stable':
+         cat_scores['value_tradeoff_signals'] += 3
+         reasons.append("Aligns with your preference for stable career structures.")
+         
+    if sig_risk > 0:
+        if tag_structure == 'volatile':
+            cat_scores['value_tradeoff_signals'] += 2
+            reasons.append("Matches your tolerance for volatile income.")
+        elif tag_structure == 'portfolio':
+            cat_scores['value_tradeoff_signals'] += 2
+            reasons.append("Matches your interest in portfolio careers.")
+
+    # 4. Use Credential Status Carefully
+    if sig_stability > 0 and tag_credential == 'regulated':
+        cat_scores['value_tradeoff_signals'] += 2
+        reasons.append("Regulated profession provides additional confidence.")
+
+    # 5. Improve Creative Matching
+    if sig_creative > 0:
+        if tag_creative_out == 'expressive':
+            cat_scores['work_preference_signals'] += 4
+            reasons.append("Matches your expressive creative style.")
+        elif tag_creative_out == 'design':
+            cat_scores['work_preference_signals'] += 3
+            reasons.append("Matches your design-oriented creative preference.")
+
     # --- B. Normalization & Aggregation ---
     fit_score = 0
     
