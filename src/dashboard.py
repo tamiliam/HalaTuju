@@ -100,7 +100,6 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
         inst_type_name = txt.get(inst_key, txt.get("inst_other", "TVET"))
         
         # Consistent key usage
-        # Consistent key usage
         if inst_key in stats:
             stats[inst_key] += 1
         else:
@@ -116,12 +115,6 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
         cid = str(row.get('course_id', '')).strip().upper() # Normalize ID
         desc_data = course_info.get(cid, {})
         
-        # DEBUG LOGGING (Check Streamlit Cloud Logs)
-        # if not desc_data:
-        #    print(f"MISSING DESC for Course ID: {cid}")
-        # else:
-        #    print(f"FOUND DESC for {cid}: {desc_data.get('headline')}")
-        
         eligible_offerings.append({
             "course_name": row.get('course_name', txt["unknown_course"]),
             "institution": row.get('institution_name', txt["unknown_inst"]),
@@ -130,14 +123,14 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             "duration": row.get('duration', '-'),
             "type": inst_type_name,
             "quality": quality_name,
-            "quality": quality_name,
             "quality_key": quality_key, # Keep key for logic if needed
             "code": cid,
             "course_id": cid, # REQUIRED for Ranking Engine
             # Rich Content
             "headline": desc_data.get('headline', ''),
             "synopsis": desc_data.get('synopsis', ''),
-            "jobs": desc_data.get('jobs', [])
+            "jobs": desc_data.get('jobs', []),
+            "institution_id": row.get('institution_id') # CRITICAL: Required for Ranking Engine
         })
         
     # Calculate Unique Courses

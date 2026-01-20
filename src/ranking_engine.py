@@ -205,6 +205,12 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     if sig_fatigue > 0 and tag_load == 'physically_demanding':
         cat_scores['energy_sensitivity_signals'] -= 6 
         reasons.append("Caution: Course is physically demanding.")
+
+    # Mental Fatigue Rule (Safety Rail)
+    sig_mental_fatigue = get_signal('energy_sensitivity_signals', 'mental_fatigue_sensitive')
+    if sig_mental_fatigue > 0 and tag_load == 'mentally_demanding':
+        cat_scores['energy_sensitivity_signals'] -= 6
+        reasons.append("Caution: Course is mentally demanding.")
         
     # 5. Values Alignment
     sig_risk = get_signal('value_tradeoff_signals', 'income_risk_tolerant')
@@ -287,9 +293,6 @@ def get_ranked_results(eligible_courses, student_profile):
     """
     ranked_list = []
     
-    # Debug Limiter
-    debug_count = 0
-    
     for item in eligible_courses:
         c_id = item.get('course_id')
         i_id = item.get('institution_id')
@@ -303,12 +306,6 @@ def get_ranked_results(eligible_courses, student_profile):
         new_item['fit_reasons'] = reasons
         
         ranked_list.append(new_item)
-        
-        # TRACE LOG (First 3 items only)
-        if debug_count < 3:
-            print(f"DEBUG TRACE: {c_name}")
-            print(f"Base: {BASE_SCORE} -> Final: {score} (Reasons: {reasons})")
-            debug_count += 1
         
     # Sort by score descending (Force Int to avoid string sort issues)
     ranked_list.sort(key=lambda x: int(x['fit_score']), reverse=True)
