@@ -8,6 +8,8 @@ from src.ranking_engine import get_ranked_results, TAG_COUNT, sort_courses
 from src.translations import get_text, LANGUAGES
 from src.quiz_manager import QuizManager
 from src.auth import AuthManager
+from src.reports.insight_generator import InsightGenerator
+from src.reports.ai_wrapper import AIReportWrapper
 from src.data_manager import load_master_data
 
 # --- 1. CONFIGURATION ---
@@ -644,6 +646,46 @@ else:
     tier1_featured = grouped_courses[:5]
     tier2_good = grouped_courses[5:25]
     tier3_rest = grouped_courses[25:]
+
+# --- REPORTING LAYER ---
+if signals and tier1_featured:
+    st.markdown("---")
+    st.subheader("📊 Your Personal Insight")
+    
+    # Reconstruct profile for report
+    profile_for_report = {
+        "grades": user.get('grades', {}) if user else {},
+        "student_signals": signals
+    }
+    
+    # 1. Deterministic Report
+    insights = InsightGenerator.generate_report(profile_for_report, tier1_featured)
+    
+    # Display Compact
+    rc1, rc2 = st.columns(2)
+    with rc1:
+        st.info(f"**Academic:** {insights['academic_snapshot']}")
+        st.success(f"**Style:** {insights['learning_style']}")
+    with rc2:
+        st.warning(f"**Note:** {insights['caution']}")
+        
+    # 2. Generative AI Report
+    with st.expander("✨ Deep AI Analysis (Beta)", expanded=False):
+        st.caption("Get a personalized narrative explaining your results.")
+        if st.button("Generate Deep Report"):
+            with st.spinner("Consulting AI Counselor..."):
+                ai_wrapper = AIReportWrapper()
+                report = ai_wrapper.generate_narrative_report(profile_for_report, tier1_featured)
+                
+                if "error" in report:
+                    st.error(report['error'])
+                else:
+                    st.markdown(f"### {report.get('hook', 'Analysis')}")
+                    st.markdown(f"**Why These Courses?**\n{report.get('why', '')}")
+                    st.markdown(f"**Trade-offs:**\n{report.get('trade_offs', '')}")
+                    st.markdown(f"**Risks:**\n{report.get('risks', '')}")
+
+    st.markdown("---")
 
 # --- RENDER TIER 1: FEATURED MATCHES ---
 st.markdown(f"### :star: {t.get('lbl_featured', 'Featured Matches')}")
