@@ -463,7 +463,7 @@ def sort_courses(course_list):
         subcat = INST_SUBCATEGORIES.get(inst_id, '')
         inst_priority = INST_PRIORITY_MAP.get(subcat, 0)
         
-        c_name = item.get('course_name', '')
+        c_name = str(item.get('course_name') or '')
         cred_priority = get_credential_priority(c_name)
         
         # Sort Tuple (Descending items negative):
