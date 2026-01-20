@@ -19,8 +19,10 @@ def load_master_data():
             else:
                 for enc in ['utf-8', 'cp1252', 'latin1']:
                     try:
-                        return pd.read_csv(p, encoding=enc)
-                    except UnicodeDecodeError:
+                        # Use python engine for better regex/quote handling and skip bad lines
+                        return pd.read_csv(p, encoding=enc, on_bad_lines='skip', engine='python')
+                    except Exception as e:
+                        print(f"Warning: Failed to load {filename} with {enc}: {e}")
                         continue
         return pd.DataFrame()
 
