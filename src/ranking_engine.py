@@ -129,6 +129,7 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     # 2. Environment Fit
     sig_workshop = get_signal('environment_signals', 'workshop_environment')
     sig_high_ppl_env = get_signal('environment_signals', 'high_people_environment')
+    sig_field = get_signal('environment_signals', 'field_environment')
     tag_env = c_tags.get('environment', '')
     
     if sig_workshop > 0 and tag_env == 'workshop':
@@ -146,9 +147,16 @@ def calculate_fit_score(student_profile, course_id, institution_id):
         cat_scores['environment_signals'] += 4
         reasons.append(f"Matches your preference for office environments.")
 
+    # Field Environment Rule (NEW)
+    if sig_field > 0 and tag_env == 'field':
+        cat_scores['environment_signals'] += 4
+        reasons.append("Matches your preference for field/outdoor work.")
+
     # 3. Learning Tolerance (NEW: Completeness)
     sig_learning = get_signal('learning_tolerance_signals', 'learning_by_doing')
     sig_theory = get_signal('learning_tolerance_signals', 'theory_oriented')
+    sig_project = get_signal('learning_tolerance_signals', 'project_based')
+    tag_styles = c_tags.get('learning_style', []) # Expecting a list
     
     # Learning by Doing -> Hands-on/Mixed
     if sig_learning > 0 and tag_modality in ['hands_on', 'mixed']:
@@ -159,6 +167,11 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     if sig_theory > 0 and tag_modality in ['theory', 'mixed']:
          cat_scores['learning_tolerance_signals'] += 3
          reasons.append(f"Suits your theory-oriented preference.")
+         
+    # Project Based Rule (NEW)
+    if sig_project > 0 and 'project_based' in tag_styles:
+         cat_scores['learning_tolerance_signals'] += 3
+         reasons.append("Aligns with your preference for project-based assessment.")
 
     # 4. Energy Sensitivity (Extended)
     sig_low_people = get_signal('energy_sensitivity_signals', 'low_people_tolerance')
