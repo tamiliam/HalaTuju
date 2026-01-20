@@ -679,11 +679,10 @@ if signals and tier1_featured:
                 
                 if "error" in report:
                     st.error(report['error'])
+                elif "markdown" in report:
+                    st.markdown(report['markdown'])
                 else:
-                    st.markdown(f"### {report.get('hook', 'Analysis')}")
-                    st.markdown(f"**Why These Courses?**\n{report.get('why', '')}")
-                    st.markdown(f"**Trade-offs:**\n{report.get('trade_offs', '')}")
-                    st.markdown(f"**Risks:**\n{report.get('risks', '')}")
+                    st.warning("Report format unrecognized.")
 
     st.markdown("---")
 

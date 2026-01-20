@@ -35,14 +35,15 @@ class AIReportWrapper:
             if self.api_key:
                 genai.configure(api_key=self.api_key)
                 # Found available alias via list_models()
-                self.model = genai.GenerativeModel('gemini-flash-latest', 
-                                                 generation_config={"response_mime_type": "application/json"})
+                # Remove JSON MIME type for Markdown output
+                self.model = genai.GenerativeModel('gemini-flash-latest')
         except Exception as e:
             print(f"AI Wrapper Init Error: {e}")
 
     def generate_narrative_report(self, student_profile, top_courses):
         """
         Generates a deep narrative report using Gemini 1.5.
+        Returns a dictionary with 'markdown' key.
         """
         if not HAS_GEMINI:
              return {"error": "AI Module Missing (pip install google-generativeai)"}
@@ -69,28 +70,12 @@ class AIReportWrapper:
         })
         
         # Prompt Composition
-        # Gemini handles system instructions in the model init (system_instruction=...) 
-        # But we can also prepend it to the prompt which works well for 1.5.
-        # Let's use the explicit system instruction in the chat/generate call if possible or just prepend.
-        # Prepending is reliable.
-        full_prompt = f"{SYSTEM_PROMPT}\n\nHere is the student data:\n{user_context}"
+        full_prompt = f"{SYSTEM_PROMPT}\n\nHere is the student data (Use this to customize the report):\n{user_context}"
         
         try:
             response = self.model.generate_content(full_prompt)
-            
-            # Parse JSON
-            # Gemini 1.5 Flash in JSON mode returns raw text that is JSON.
-            try:
-                result = json.loads(response.text)
-                return result
-            except json.JSONDecodeError:
-                # Fallback if model wraps in markdown json blocks
-                text = response.text.strip()
-                if text.startswith("```json"):
-                    text = text[7:-3].strip()
-                elif text.startswith("```"):
-                    text = text[3:-3].strip()
-                return json.loads(text)
+            # Return raw markdown text
+            return {"markdown": response.text}
             
         except Exception as e:
             return {"error": f"Generation Failed: {str(e)}"}
