@@ -50,14 +50,8 @@ def load_institution_modifiers():
         with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
             # transform list to dict: {inst_id: modifiers_dict}
-            # Note: institutions.json is a list of objects with "inst_id" or "institution_id"?
-            # Based on previous context, likely "inst_id" or "institution_id".
-            # Safe checking both or dumping first item to see.
-            # Assuming "inst_id" based on user context earlier.
-            
             mapping = {}
             for item in data:
-                # Handle potential key variations if any, but sticking to "inst_id" as seen in prior JSON snippet
                 key = item.get('inst_id', item.get('institution_id'))
                 if key:
                     mapping[key] = item.get('modifiers', {})
@@ -78,8 +72,7 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     c_tags = COURSE_TAGS.get(course_id, {})
     i_mods = INST_MODIFIERS.get(institution_id, {})
     
-    # FIX: Handle input flexibility. 
-    # If key 'student_signals' exists, use it. Otherwise assume input IS the signals dict.
+    # Handle input flexibility
     if 'student_signals' in student_profile:
         signals = student_profile['student_signals']
     else:
@@ -101,7 +94,6 @@ def calculate_fit_score(student_profile, course_id, institution_id):
         return signals.get(category, {}).get(key, 0)
     
     # --- A. Fit Scoring (Course) ---
-    # We now accumulate into buckets instead of a flat variable
     
     # 1. Work Preference: Hands-on & Problem Solving
     sig_hands_on = get_signal('work_preference_signals', 'hands_on')
@@ -116,25 +108,31 @@ def calculate_fit_score(student_profile, course_id, institution_id):
         reasons.append("Matches your hands-on work preference.")
     elif sig_hands_on == 0 and tag_modality == 'hands_on':
         cat_scores['work_preference_signals'] -= 3
-        # Note: Negative scores are also accumulated
         
     # Problem Solving rule
     if sig_prob_solve > 0 and tag_modality == 'mixed':
         cat_scores['work_preference_signals'] += 3
         reasons.append("Balanced approach suits your problem-solving style.")
         
-    # People Helping (Belongs to Work Preference usually, or Value?)
+    # People Helping
     if get_signal('work_preference_signals', 'people_helping') > 0 and c_tags.get('people_interaction') == 'high_people':
         cat_scores['work_preference_signals'] += 4
         reasons.append("Matches your desire to help people.")
         
-    # Creative Rule (NEW)
+    # Creative Rule (Updated: Split Logic)
     tag_learning = c_tags.get('learning_style', []) 
-    if sig_creative > 0 and ('project_based' in tag_learning or tag_cognitive == 'abstract'):
-        cat_scores['work_preference_signals'] += 4
-        reasons.append("Matches your creative thinking style.")
-
+    if sig_creative > 0:
+        boosted = False
+        if 'project_based' in tag_learning:
+            cat_scores['work_preference_signals'] += 4
+            reasons.append("Matches your creative thinking style (Project Based).")
+            boosted = True
         
+        # If not already boosted by project_based, apply the Abstract check with lower weight
+        if not boosted and tag_cognitive == 'abstract':
+             cat_scores['work_preference_signals'] += 2
+             reasons.append("Matches your creative thinking style (Abstract).")
+
     # 2. Environment Fit
     sig_workshop = get_signal('environment_signals', 'workshop_environment')
     sig_high_ppl_env = get_signal('environment_signals', 'high_people_environment')
@@ -156,39 +154,39 @@ def calculate_fit_score(student_profile, course_id, institution_id):
         cat_scores['environment_signals'] += 4
         reasons.append(f"Matches your preference for office environments.")
 
-    # Field Environment Rule (NEW)
+    # Field Environment Rule
     if sig_field > 0 and tag_env == 'field':
         cat_scores['environment_signals'] += 4
         reasons.append("Matches your preference for field/outdoor work.")
 
-    # 3. Learning Tolerance (NEW: Completeness)
+    # 3. Learning Tolerance
     sig_learning = get_signal('learning_tolerance_signals', 'learning_by_doing')
     sig_theory = get_signal('learning_tolerance_signals', 'theory_oriented')
     sig_project = get_signal('learning_tolerance_signals', 'project_based')
     sig_concept = get_signal('learning_tolerance_signals', 'concept_first')
-    tag_styles = c_tags.get('learning_style', []) # Expecting a list
+    tag_styles = c_tags.get('learning_style', [])
     
-    # Learning by Doing -> Hands-on/Mixed
+    # Learning by Doing
     if sig_learning > 0 and (tag_modality == 'hands_on' or 'project_based' in tag_styles):
          cat_scores['learning_tolerance_signals'] += 3
          reasons.append(f"Aligned with your 'learning by doing' preference.")
          
-    # Theory Oriented -> Theory/Mixed
+    # Theory Oriented
     if sig_theory > 0 and tag_modality in ['theory', 'mixed']:
          cat_scores['learning_tolerance_signals'] += 3
          reasons.append(f"Suits your theory-oriented preference.")
          
-    # Concept First (NEW)
+    # Concept First
     if sig_concept > 0 and (tag_modality == 'theoretical' or tag_cognitive == 'abstract'):
         cat_scores['learning_tolerance_signals'] += 3
         reasons.append("Matches your preference for conceptual learning.")
          
-    # Project Based Rule (NEW)
+    # Project Based Rule
     if sig_project > 0 and 'project_based' in tag_styles:
          cat_scores['learning_tolerance_signals'] += 3
          reasons.append("Aligns with your preference for project-based assessment.")
 
-    # 4. Energy Sensitivity (Extended)
+    # 4. Energy Sensitivity
     sig_low_people = get_signal('energy_sensitivity_signals', 'low_people_tolerance')
     sig_fatigue = get_signal('energy_sensitivity_signals', 'physical_fatigue_sensitive')
     tag_people = c_tags.get('people_interaction', '')
@@ -198,13 +196,12 @@ def calculate_fit_score(student_profile, course_id, institution_id):
         cat_scores['energy_sensitivity_signals'] -= 6
         reasons.append("May be draining due to high public interaction.")
     
-    # Physical Fatigue Rule (Specific Tag Check)
-    # TODO: Add specific 'physical_demand' tag to course schema for better precision
+    # Physical Fatigue Rule (Safety Rail)
     if sig_fatigue > 0 and tag_load == 'physically_demanding':
         cat_scores['energy_sensitivity_signals'] -= 6 
         reasons.append("Caution: Course is physically demanding.")
         
-    # 5. Values Alignment (Extended)
+    # 5. Values Alignment
     sig_risk = get_signal('value_tradeoff_signals', 'income_risk_tolerant')
     sig_stability = get_signal('value_tradeoff_signals', 'stability_priority')
     sig_pathway = get_signal('value_tradeoff_signals', 'pathway_priority')
@@ -225,7 +222,7 @@ def calculate_fit_score(student_profile, course_id, institution_id):
         cat_scores['value_tradeoff_signals'] += 4
         reasons.append("Designed for easy continuation to Degree.")
         
-    # Meaning Priority Rule (Proxy: Helping People or Regulated Profession)
+    # Meaning Priority Rule
     if sig_meaning > 0 and (c_tags.get('people_interaction') == 'high_people' or tag_outcome == 'regulated_profession'):
         cat_scores['value_tradeoff_signals'] += 3
         reasons.append("Aligns with your priority for meaningful/service-oriented work.")
@@ -242,17 +239,7 @@ def calculate_fit_score(student_profile, course_id, institution_id):
     # --- C. Institution Modifiers (Tie-breakers) ---
     inst_score = 0
     
-    # 1. Survival Support -> Subsistence
-    # Note: 'allowance_priority' not strictly in 5-cat taxonomy, but checking anyway
-    sig_allowance = get_signal('value_tradeoff_signals', 'allowance_priority') 
-    # Fallback to check if it's in a different location or just handle gracefully if missing
-    
-    sig_subsistence = student_profile.get('unknown_signals', []) # Not used logic-wise yet
-    
-    # Urban/Rural Preference (using Income Proxy logic)
-    # Check if student wants High Income/Urban areas (Proxy via income_risk_tolerant or similar?)
-    # User feedback asked for 'income_focus' - likely 'income_risk_tolerant' or 'fast_employment'?
-    # Map 'income_risk_tolerant' to urban preference for now.
+    # Urban/Rural Preference
     sig_income_focus = get_signal('value_tradeoff_signals', 'income_risk_tolerant')
     is_urban = i_mods.get('urban', False)
     
@@ -260,9 +247,7 @@ def calculate_fit_score(student_profile, course_id, institution_id):
         inst_score += 2
         reasons.append("Campus location suits income/urban focus.")
         
-    # Cultural Safety Net (The "Indian Population" Logic)
-    # We use 'proximity_priority' as the proxy for "Community Support"
-    # Note: We added proximity_priority to value_tradeoff_signals in quiz_manager.py
+    # Cultural Safety Net
     sig_proximity = get_signal('value_tradeoff_signals', 'proximity_priority') 
     safety_net = i_mods.get('cultural_safety_net', 'low')
     
