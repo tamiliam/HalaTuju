@@ -1,6 +1,6 @@
-# Ranking Logic & Taxonomy (v1.2)
+# Ranking Logic & Taxonomy (v1.3)
 
-**Version:** 1.2
+**Version:** 1.3
 **Last Updated:** 2026-01-20
 **Status:** Live Implementation
 
@@ -185,6 +185,11 @@ Raw signals are grouped into 5 semantic categories for the ranking engine.
 | | `stability_priority` | `career_structure` == 'stable' | **+3** | **v1.2: Structure Match** |
 | | `stability_priority` | `credential_status` == 'regulated' | **+2** | **v1.2: Confidence Boost** |
 | | `pathway_priority` | `outcome` == 'pathway_friendly' | **+4** | Degree route match |
+| | `pathway_priority` | `outcome` == 'pathway_friendly' AND `fast_emp` conflict | **-2** | **v1.3: Balancing Penalty** |
+| | `fast_employment_priority`| `outcome` == 'employment_first' | **+4** | **v1.3: Fast Track Match** |
+| | `fast_employment_priority`| `outcome` == 'industry_specific' | **+2** | **v1.3: Niche Skill Match** |
+| | `fast_employment_priority`| `career_structure` == 'stable' | **+1** | **v1.3: Safe fast money** |
+| | `fast_employment_priority`| `career_structure` == 'volatile' | **-1** | **v1.3: Risky fast money** |
 | | `meaning_priority` | `high_people` OR `regulated_profession` | **+3** | Service/Meaning match |
 | | `meaning_priority` | `service_orientation` == 'care' | **+4** | **v1.2: Deep Meaning (Care)** |
 | | `meaning_priority` | `interaction_type` == 'relational' | **+3** | **v1.2: Relational Meaning** |
@@ -197,6 +202,7 @@ Raw signals are grouped into 5 semantic categories for the ranking engine.
 | `income_risk_tolerant` | `urban` == True | **+2** (Urban center opportunity) |
 | `proximity_priority` | `cultural_safety_net` == 'high' | **+4** (Strong community support) |
 | `proximity_priority` | `cultural_safety_net` == 'low' | **-2** (Isolation penalty) |
+| `fast_employment` + `proximity` | `cultural_safety_net` == 'high' | **+2** (v1.3: Local job network) |
 
 
 ### 3. Caps & Limits

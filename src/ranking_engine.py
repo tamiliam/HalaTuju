@@ -238,6 +238,31 @@ def calculate_fit_score(student_profile, course_id, institution_id):
         cat_scores['value_tradeoff_signals'] += 3
         reasons.append("Aligns with your priority for meaningful/service-oriented work.")
 
+    # --- v1.3 Fast Employment & Pathway Conflict ---
+    sig_fast_emp = get_signal('value_tradeoff_signals', 'fast_employment_priority')
+    
+    # 1. Fast Employment Enhancement
+    if sig_fast_emp > 0:
+        if tag_outcome == 'employment_first':
+            cat_scores['value_tradeoff_signals'] += 4
+            reasons.append("Matches your priority for fast employment.")
+        elif tag_outcome == 'industry_specific':
+            cat_scores['value_tradeoff_signals'] += 2
+            reasons.append("Industry-specific focus aids quick entry.")
+            
+        # Structure preference when needing money fast
+        tag_struct_v13 = c_tags.get('career_structure', 'volatile')
+        if tag_struct_v13 == 'stable':
+            cat_scores['value_tradeoff_signals'] += 1
+        elif tag_struct_v13 == 'volatile':
+            cat_scores['value_tradeoff_signals'] -= 1
+
+    # 2. Pathway vs. Fast Emp Balancing
+    if sig_pathway > 0 and sig_fast_emp > 0:
+        if tag_outcome == 'pathway_friendly':
+            cat_scores['value_tradeoff_signals'] -= 2
+            reasons.append("Pathway score dampened by fast employment priority.")
+
     # --- v1.2 Taxonomy Enhancements ---
     
     # Extract new tags with conservative defaults
@@ -325,6 +350,15 @@ def calculate_fit_score(student_profile, course_id, institution_id):
             reasons.append("High community support available.")
         elif safety_net == 'low':
             inst_score -= 2 # Slight nudge away from isolation
+            
+    # v1.3 Fast Employment Support logic
+    # Proximity + High Support + Fast Emp = Boost
+    # Reuse sig_proximity from above
+    sig_fast_emp_inst = get_signal('value_tradeoff_signals', 'fast_employment_priority')
+    
+    if sig_proximity > 0 and sig_fast_emp_inst > 0 and safety_net == 'high':
+        inst_score += 2
+        reasons.append("Local high-support environment boosts job prospects.")
             
     # Cap Institution Score
     inst_score = max(min(inst_score, INSTITUTION_CAP), -INSTITUTION_CAP)
