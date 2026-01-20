@@ -118,7 +118,10 @@ class QuizManager:
                 "income_risk_tolerant",
                 "pathway_priority",
                 "meaning_priority",
-                "fast_employment_priority"
+                "fast_employment_priority",
+                "proximity_priority",
+                "allowance_priority",
+                "employment_guarantee"
             ],
             "energy_sensitivity_signals": [
                 "low_people_tolerance",
