@@ -43,27 +43,34 @@ def load_master_data():
     
     # Merge Details back into Logic Files
     if not df_details.empty:
-        # 1. Merge Poly (Source: 'poly') - ON course_id only (Poly reqs are per-program)
-        if not df_req.empty:
-            poly_details = df_details[df_details['source_type'] == 'poly']
-            # Drop source_type column before merge to avoid pollution
-            poly_details = poly_details.drop(columns=['source_type', 'institution_id'], errors='ignore')
-            
-            df_req = pd.merge(df_req, poly_details, on='course_id', how='left', suffixes=('', '_y'))
-            df_req = df_req[[c for c in df_req.columns if not c.endswith('_y')]]
-            
-        # 2. Merge TVET (Source: 'tvet') - ON course_id + institution_id (TVET reqs vary by inst)
-        if not df_tvet_req.empty:
-            tvet_details = df_details[df_details['source_type'] == 'tvet']
-            tvet_details = tvet_details.drop(columns=['source_type'], errors='ignore')
-            
-            # Ensure keys exist
-            merge_keys = ['course_id']
-            if 'institution_id' in df_tvet_req.columns and 'institution_id' in tvet_details.columns:
-                merge_keys.append('institution_id')
+        try:
+            # 1. Merge Poly (Source: 'poly') - ON course_id only (Poly reqs are per-program)
+            if not df_req.empty:
+                poly_details = df_details[df_details['source_type'] == 'poly'].copy()
+                # Drop source_type column before merge to avoid pollution
+                poly_details = poly_details.drop(columns=['source_type', 'institution_id'], errors='ignore')
                 
-            df_tvet_req = pd.merge(df_tvet_req, tvet_details, on=merge_keys, how='left', suffixes=('', '_y'))
-            df_tvet_req = df_tvet_req[[c for c in df_tvet_req.columns if not c.endswith('_y')]]
+                # Check if columns overlap
+                cols_to_use = list(poly_details.columns)
+                if 'course_id' not in cols_to_use:
+                     print("WARNING: details.csv missing course_id")
+                else:
+                    df_req = pd.merge(df_req, poly_details, on='course_id', how='left', suffixes=('', '_details'))
+                    # Clean up _details suffixes if any collision
+        
+            # 2. Merge TVET (Source: 'tvet')
+            if not df_tvet_req.empty:
+                tvet_details = df_details[df_details['source_type'] == 'tvet'].copy()
+                tvet_details = tvet_details.drop(columns=['source_type'], errors='ignore')
+                
+                merge_keys = ['course_id']
+                if 'institution_id' in df_tvet_req.columns and 'institution_id' in tvet_details.columns:
+                    merge_keys.append('institution_id')
+                    
+                df_tvet_req = pd.merge(df_tvet_req, tvet_details, on=merge_keys, how='left', suffixes=('', '_details'))
+        except Exception as e:
+            print(f"Error merging details.csv: {e}")
+
 
     # --- 2. MERGE POLYTECHNIC DATA ---
     if not df_req.empty and not df_links.empty:

@@ -256,8 +256,7 @@ def display_course_card(pick, t=None):
         st.markdown(header_html, unsafe_allow_html=True)
         
         # 2. Description & Headline
-        if pick.get('headline'):
-             st.markdown(f"**{pick['headline']}**")
+        # 2. Description (Headline Removed)
              
         if pick.get('synopsis'):
             st.write(pick['synopsis'])
