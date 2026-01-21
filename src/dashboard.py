@@ -1,4 +1,9 @@
 import pandas as pd
+import sys
+import os
+# Add the project root directory to Python's path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import streamlit as st
 from src.engine import check_eligibility, ALL_REQ_COLUMNS
 from src.translations import get_text
