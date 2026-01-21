@@ -367,10 +367,20 @@ def render_quiz_page(lang_code, user):
                 st.error(f"Could not save results: {e}")
         
         # Display Results
-        st.success("Analysis Complete!")
-        st.json(results)
+        t_complete = t.get('quiz_complete', "Profil Anda Telah Disimpan!")
+        st.success(t_complete)
+
+        # Explainer Text
+        st.markdown("""
+        **Terima kasih!** Jawapan anda telah direkodkan.
+        Kami telah menyusun semula senarai kursus berdasarkan personaliti dan minat anda.
+        Kursus yang anda lihat di **Dashboard** kini telah disesuaikan khas untuk anda.
+        """)
+
+        # Call to Action (CTA)
+        st.info("💡 **Langkah Seterusnya:** Sila kembali ke tab **Dashboard** untuk melihat cadangan kursus anda.")
         
-        if st.button("Return to Dashboard", use_container_width=True):
+        if st.button("Ke Halaman Dashboard ➡️", use_container_width=True, type="primary"):
             # UPDATE SESSION WITH NEW RESULTS
             st.session_state['student_signals'] = results['student_signals']
             
@@ -380,6 +390,14 @@ def render_quiz_page(lang_code, user):
                 
             st.session_state['view_mode'] = 'dashboard'
             st.rerun()
+
+        st.markdown("---")
+        st.markdown("🔍 **Ingin tahu lebih lanjut?** Klik butang **✨ Deep AI Analysis (Beta)** di menu sisi / dashboard untuk mendapatkan laporan kerjaya penuh.")
+
+        # Hide Raw Data in Expander
+        with st.expander("🛠️ View Debug Data (Raw Profile)"):
+            st.json(results)
+
 
 # --- 6. MAIN ROUTER ---
 
