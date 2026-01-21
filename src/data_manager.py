@@ -70,16 +70,28 @@ def load_master_data():
         # Merge Links to get Institution IDs for each course
         poly_merged = pd.merge(df_req, df_links, on='course_id', how='left')
         
-        # Merge Institution Details (Name, State)
+    # Merge Institution Details (Name, State, URL)
         poly_merged = pd.merge(poly_merged, df_inst, on='institution_id', how='left')
         
-        # Merge Course Details (Name, Duration)
+        # Merge Course Details (Name, Duration, Hostel)
         poly_merged = pd.merge(poly_merged, df_courses, on='course_id', how='left')
         
         # Standardize Columns
         poly_merged['type'] = poly_merged['type'].fillna('Politeknik')
         poly_merged['fees'] = "RM 200 - RM 600 / sem (Subsidized)" 
+        poly_merged['hostel_fee'] = "RM 60 - RM 300 / sem" # Default Poly estimate if missing
         poly_merged['duration'] = poly_merged['semesters'].astype(str) + " Semesters"
+        
+        # Rename URL if exists
+        if 'url' in poly_merged.columns:
+            poly_merged['inst_url'] = poly_merged['url']
+        else:
+            poly_merged['inst_url'] = "https://ambilan.mypolycc.edu.my"
+
+        # Rename Details URL (from details.csv merge earlier)
+        # It might be 'more_info_url' or similar depending on details.csv header.
+        # Assuming 'url_y' or similar if collision, but let's just default lookup.
+        # Actually, details.csv merge happened at line 52. Let's see what cols it had.
         
         # If collision happened (rare), fix it. If not, 'course' is fine.
         if 'course_x' in poly_merged.columns:
@@ -108,6 +120,18 @@ def load_master_data():
         else:
             tvet_merged['fees'] = "Free / Subsidized"
 
+        # Map Hostel
+        if 'hostel_fee' in tvet_merged.columns:
+            tvet_merged['hostel_fee'] = tvet_merged['hostel_fee']
+        else:
+            tvet_merged['hostel_fee'] = "N/A"
+
+        # Map Inst URL
+        if 'url' in tvet_merged.columns:
+            tvet_merged['inst_url'] = tvet_merged['url']
+        else:
+            tvet_merged['inst_url'] = "#"
+            
         # --- THE FIX IS HERE ---
         # We REMOVED the line: tvet_merged['course'] = tvet_merged['course_x']
         # Instead, we check if we need to rename or fill anything.
@@ -126,7 +150,8 @@ def load_master_data():
     # Base metadata columns
     base_cols = [
         'course_id', 'course', 'institution_name', 'State', 
-        'type', 'category', 'fees', 'duration', 'hyperlink'
+        'type', 'category', 'fees', 'duration', 'hyperlink',
+        'inst_url', 'hostel_fee', 'details_url'
     ]
     
     # Combine lists

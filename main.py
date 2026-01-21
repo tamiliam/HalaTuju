@@ -715,38 +715,55 @@ if signals and tier1_featured:
 st.markdown(f"### :star: {t.get('lbl_featured', 'Featured Matches')}")
 
 for pick in tier1_featured:
-    # Display Title with Score
-    display_title = f"{pick['course_name']} [Score: {pick['max_score']}]"
-    
-    with st.expander(display_title, expanded=True):
-        # REASONS
-        if pick.get('fit_reasons'):
-            reason_text = " ".join(pick['fit_reasons'])
-            st.markdown(f"**Why:** {reason_text}")
+    with st.container(border=True):
+        # 1. Header (Bold Title)
+        st.markdown(f"#### **{pick['course_name']}** [Score: {pick['max_score']}]")
         
-        # DESCRIPTION
-        if pick.get('headline'):
-            st.markdown(f"*{pick['headline']}*")
-        if pick.get('synopsis'):
-            st.markdown(pick['synopsis'])
+        # 2. Metadata Row
+        # Get representative values from first location or top-level group
+        loc0 = pick['locations'][0] if pick['locations'] else {}
+        
+        dur = pick.get('duration', 'N/A')
+        fees = loc0.get('fees', 'N/A')
+        hostel = loc0.get('hostel_fee', 'N/A')
+        det_url = loc0.get('details_url', '#')
+        
+        # Format: Time | Fees | Hostel | Link
+        meta_html = f"""
+        <div style='margin-bottom:12px; font-size:0.95em;'>
+            ⏱️ {dur} &nbsp;|&nbsp; 
+            💰 {fees} &nbsp;|&nbsp; 
+            🏠 {hostel} &nbsp;|&nbsp; 
+            <a href="{det_url}" target="_blank">More details</a>
+        </div>
+        """
+        st.markdown(meta_html, unsafe_allow_html=True)
+        
+        # 3. Description (Optional, keeping purely content elements)
+        # User asked to remove "Why:", so we skip reasons.
+        # User implies keeping content "Below career, and above Institutions box" -> implies Career is kept?
+        # "Below career, and above the Institutions box, add the following..."
+        # So we KEEP Career.
+        
         if pick.get('jobs'):
-            st.markdown(f"💼 **Career:** {', '.join(pick['jobs'])}")
+             st.markdown(f"💼 **Career:** {', '.join(pick['jobs'])}")
+             st.markdown("") # Spacer
+
+        # 4. Institution Table
+        # "Make the name ... clickable"
+        # "Remove Fees column"
+        if pick['locations']:
+            # Construct Markdown Table manually for clean hyperlink control
+            md_table = "| Institution | State |\n|---|---|\n"
+            for loc in pick['locations']:
+                name = loc.get('institution_name', 'Unknown')
+                url = loc.get('inst_url', '#')
+                state = loc.get('state', '-')
+                
+                # Markdown Link: [Name](URL)
+                md_table += f"| [{name}]({url}) | {state} |\n"
             
-        # LOCATIONS (Nested Table)
-        loc_count = len(pick['locations'])
-        st.markdown(f"**Available at {loc_count} Location{'s' if loc_count>1 else ''}:**")
-        
-        # Simple dataframe for cleaner look than raw JSON
-        import pandas as pd
-        df_loc = pd.DataFrame(pick['locations'])
-        # Filter/Rename cols for display
-        if not df_loc.empty:
-            df_view = df_loc[['institution_name', 'state', 'fees']].rename(columns={
-                'institution_name': 'Institution', 
-                'state': 'State', 
-                'fees': 'Fees'
-            })
-            st.dataframe(df_view, hide_index=True, use_container_width=True)
+            st.markdown(md_table)
 
 # --- RENDER TIER 2: GOOD OPTIONS ---
 if tier2_good:

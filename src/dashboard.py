@@ -131,7 +131,11 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             "headline": desc_data.get('headline', ''),
             "synopsis": desc_data.get('synopsis', ''),
             "jobs": desc_data.get('jobs', []),
-            "institution_id": row.get('institution_id') # CRITICAL: Required for Ranking Engine
+            "institution_id": row.get('institution_id'), # CRITICAL: Required for Ranking Engine
+            # Meta
+            "inst_url": row.get('inst_url', '#'),
+            "hostel_fee": row.get('hostel_fee', 'N/A'),
+            "details_url": row.get('details_url', '#')
         })
         
     # Calculate Unique Courses
@@ -164,6 +168,7 @@ def group_courses_by_id(flat_list):
             grouped[cid] = {
                 'course_id': cid,
                 'course_name': item.get('course_name'),
+                'duration': item.get('duration'), # Added Duration
                 'fit_reasons': item.get('fit_reasons', []),
                 'headline': item.get('headline', ''),
                 'synopsis': item.get('synopsis', ''),
@@ -179,7 +184,10 @@ def group_courses_by_id(flat_list):
              'score': score,
              'state': item.get('state'),
              'fees': item.get('fees'),
-             'type': item.get('type')
+             'type': item.get('type'),
+             'inst_url': item.get('inst_url'),
+             'hostel_fee': item.get('hostel_fee'),
+             'details_url': item.get('details_url')
         })
         
         # Update Max Score for the Group
