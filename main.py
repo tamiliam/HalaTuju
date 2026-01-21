@@ -367,20 +367,15 @@ def render_quiz_page(lang_code, user):
                 st.error(f"Could not save results: {e}")
         
         # Display Results
-        t_complete = t.get('quiz_complete', "Profil Anda Telah Disimpan!")
-        st.success(t_complete)
+        st.success(t.get('quiz_complete', "Success!"))
 
         # Explainer Text
-        st.markdown("""
-        **Terima kasih!** Jawapan anda telah direkodkan.
-        Kami telah menyusun semula senarai kursus berdasarkan personaliti dan minat anda.
-        Kursus yang anda lihat di **Dashboard** kini telah disesuaikan khas untuk anda.
-        """)
+        st.markdown(t.get('quiz_msg_success', "Results saved."))
 
         # Call to Action (CTA)
-        st.info("💡 **Langkah Seterusnya:** Sila kembali ke tab **Dashboard** untuk melihat cadangan kursus anda.")
+        st.info(t.get('quiz_cta_intro', "Next Steps"))
         
-        if st.button("Ke Halaman Dashboard ➡️", use_container_width=True, type="primary"):
+        if st.button(t.get('quiz_btn_dashboard', "Dashboard"), use_container_width=True, type="primary"):
             # UPDATE SESSION WITH NEW RESULTS
             st.session_state['student_signals'] = results['student_signals']
             
@@ -392,10 +387,10 @@ def render_quiz_page(lang_code, user):
             st.rerun()
 
         st.markdown("---")
-        st.markdown("🔍 **Ingin tahu lebih lanjut?** Klik butang **✨ Deep AI Analysis (Beta)** di menu sisi / dashboard untuk mendapatkan laporan kerjaya penuh.")
+        st.markdown(t.get('quiz_cta_ai', "AI Report"))
 
         # Hide Raw Data in Expander
-        with st.expander("🛠️ View Debug Data (Raw Profile)"):
+        with st.expander(t.get('quiz_debug_label', "Debug Data")):
             st.json(results)
 
 

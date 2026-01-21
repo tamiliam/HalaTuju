@@ -162,6 +162,13 @@ TEXTS = {
         "quiz_generating": "Generating your fit...",
         "quiz_saved": "Results Saved!",
         "quiz_complete": "Analysis Complete!",
+        "quiz_msg_success": """**Thank you!** Your answers have been recorded.
+        We have re-ranked the course list based on your personality and interests.
+        The courses you see on the **Dashboard** are now personalized just for you.""",
+        "quiz_cta_intro": "💡 **Next Step:** Return to the **Dashboard** tab to view your personalized recommendations.",
+        "quiz_btn_dashboard": "Go to Dashboard ➡️",
+        "quiz_cta_ai": "🔍 **Want to know more?** Click **✨ Deep AI Analysis (Beta)** on the sidebar/dashboard for a full career report.",
+        "quiz_debug_label": "🛠️ View Debug Data (Raw Profile)",
         "quiz_return": "Return to Dashboard",
         "btn_back": "⬅️ Back",
 
@@ -404,6 +411,13 @@ TEXTS = {
         "quiz_generating": "Sedang menganalisis...",
         "quiz_saved": "Keputusan Disimpan!",
         "quiz_complete": "Analisis Selesai!",
+        "quiz_msg_success": """**Terima kasih!** Jawapan anda telah direkodkan.
+        Kami telah menyusun semula senarai kursus berdasarkan personaliti dan minat anda.
+        Kursus yang anda lihat di **Dashboard** kini telah disesuaikan khas untuk anda.""",
+        "quiz_cta_intro": "💡 **Langkah Seterusnya:** Sila kembali ke tab **Dashboard** untuk melihat cadangan kursus anda.",
+        "quiz_btn_dashboard": "Ke Halaman Dashboard ➡️",
+        "quiz_cta_ai": "🔍 **Ingin tahu lebih lanjut?** Klik **✨ Deep AI Analysis (Beta)** di menu sisi / dashboard untuk mendapatkan laporan kerjaya penuh.",
+        "quiz_debug_label": "🛠️ Lihat Data Debug (Profil Mentah)",
         "quiz_return": "Kembali ke Dashboard",
         "btn_back": "⬅️ Kembali",
 
@@ -646,7 +660,14 @@ TEXTS = {
         "quiz_question_count": "கேள்வி {step} / {total}",
         "quiz_generating": "பகுப்பாய்வு செய்கிறது...",
         "quiz_saved": "முடிவுகள் சேமிக்கப்பட்டன!",
-        "quiz_complete": "பகுப்பாய்வு முடிந்தது!",
+        "quiz_complete": "சுயவிவரம் சேமிக்கப்பட்டது!",
+        "quiz_msg_success": """**நன்றி!** உங்கள் பதில்கள் பதிவு செய்யப்பட்டுள்ளன.
+        உங்கள் ஆளுமை மற்றும் ஆர்வங்களின் அடிப்படையில் படிப்புகளின் பட்டியலை மறுவரிசைப்படுத்தியுள்ளோம்.
+        **Dashboard**-இல் நீங்கள் பார்க்கும் படிப்புகள் இப்போது உங்களுக்கானவே பிரத்யேகமாகத் தனிப்பயனாக்கப்பட்டுள்ளன.""",
+        "quiz_cta_intro": "💡 **அடுத்த படி:** உங்கள் பரிந்துரைக்கப்பட்ட படிப்புகளைக் காண **Dashboard** தாவலுக்குத் திரும்பவும்.",
+        "quiz_btn_dashboard": "Dashboard-க்குச் செல்க ➡️",
+        "quiz_cta_ai": "🔍 **மேலும் அறிய வேண்டுமா?** முழுமையான தொழில் அறிக்கையைப் பெற பக்கப்பட்டியில் உள்ள **✨ Deep AI Analysis (Beta)** பொத்தானைக் கிளிக் செய்யவும்.",
+        "quiz_debug_label": "🛠️ Debug தரவை பார்க்க (Raw Profile)",
         "quiz_return": "முகப்புக்குத் திரும்பு",
         "btn_back": "⬅️ பின்னால்",
 
