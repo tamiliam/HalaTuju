@@ -68,7 +68,7 @@ TEXTS = {
         "subj_voc": "Catering/Auto/Vocational",
 
         # Landing & Processing
-        "header_title": "Hala Tuju SPM",
+        "header_title": "Hala Tuju Pelajar Lepasan SPM",
         "header_subtitle": "See which Polytechnic, IKBN, and Community College courses you qualify for.",
         "landing_msg": "👈 Please enter your exam results on the left to start.",
         "spinner_msg": "Checking official entry requirements...",
@@ -316,7 +316,7 @@ TEXTS = {
         "subj_voc": "Katering/Auto/Vokasional",
         
         # Landing & Processing
-        "header_title": "Hala Tuju SPM",
+        "header_title": "Hala Tuju Pelajar Lepasan SPM",
         "header_subtitle": "Semak kelayakan anda untuk Politeknik, IKBN, dan Kolej Komuniti.",
         "landing_msg": "👈 Sila masukkan keputusan di sebelah kiri untuk bermula.",
         "spinner_msg": "Sedang menyemak syarat kemasukan rasmi...",
@@ -558,7 +558,7 @@ TEXTS = {
         "subj_voc": "கேட்டரிங்/ஆட்டோ/தொழிற்கல்வி",
         
         # Landing & Processing
-        "header_title": "Hala Tuju SPM (மேற்படிப்பு வழிகாட்டி)",
+        "header_title": "Hala Tuju Pelajar Lepasan SPM (மேற்படிப்பு வழிகாட்டி)",
         "header_subtitle": "பாலிடெக்னிக், IKBN மற்றும் சமூகக் கல்லூரிகளில் உங்களுக்கான வாய்ப்புகளைக் கண்டறியுங்கள்.",
         "landing_msg": "👈 தொடங்க, இடதுபுறத்தில் உங்கள் தேர்வு முடிவுகளை உள்ளிடவும்.",
         "spinner_msg": "அதிகாரப்பூர்வ தகுதித் தேவைகளை சரிபார்க்கிறது...",

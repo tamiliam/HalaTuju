@@ -15,7 +15,7 @@ from src.reports.pdf_generator import PDFReportGenerator
 from datetime import datetime
 
 # --- 1. CONFIGURATION ---
-st.set_page_config(page_title="Hala Tuju SPM", page_icon="🎓", layout="centered")
+st.set_page_config(page_title="Hala Tuju Pelajar Lepasan SPM", page_icon="🎓", layout="centered")
 
 # --- 2. CONFIGURATION & SETUP ---
 auth = None
