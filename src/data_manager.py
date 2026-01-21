@@ -140,6 +140,11 @@ def load_master_data():
         # Standardize Columns
         tvet_merged['type'] = tvet_merged['type'].fillna('TVET')
         
+        # Map Duration (TVET uses 'months')
+        if 'months' in tvet_merged.columns:
+             # Ensure string and append " Months" if it's a number
+             tvet_merged['duration'] = tvet_merged['months'].astype(str) + " Months"
+        
         # Map Fees (Priority: details > tvet_courses > default)
         if 'tuition_fee_semester' in tvet_merged.columns:
             tvet_merged['fees'] = tvet_merged['tuition_fee_semester']
@@ -148,8 +153,10 @@ def load_master_data():
         else:
             tvet_merged['fees'] = "Free / Subsidized"
 
-        # Map Hostel
-        if 'hostel_fee' in tvet_merged.columns:
+        # Map Hostel (Priority: details.hostel_fee_semester > tvet_courses.hostel_fee > N/A)
+        if 'hostel_fee_semester' in tvet_merged.columns:
+             tvet_merged['hostel_fee'] = tvet_merged['hostel_fee_semester']
+        elif 'hostel_fee' in tvet_merged.columns:
             tvet_merged['hostel_fee'] = tvet_merged['hostel_fee']
         else:
             tvet_merged['hostel_fee'] = "N/A"
