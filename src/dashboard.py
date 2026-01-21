@@ -305,24 +305,21 @@ def display_course_card(pick, t=None):
 
     # 4. Construct Full Card
     full_card_html = textwrap.dedent(f"""
-    <div class="course-card">
-        <h3 class="card-title">{c_name}</h3>
-        <div class="card-id">Fit Score: {score}</div>
-        
-        <div class="card-desc">
-            {synopsis}
-        </div>
-        
-        <div class="meta-row">
-            <span class="meta-pill pill-dur">🕒 {dur}</span>
-            <span class="meta-pill pill-fees">💰 {fees}</span>
-            <span class="meta-pill pill-hostel">🏠 {hostel}</span>
-            <a href="{det_url}" target="_blank" class="meta-pill pill-link">More details ↗</a>
-        </div>
-        
-        {career_html}
-        {tbl_html}
-    </div>
+<div class="course-card">
+<h3 class="card-title">{c_name}</h3>
+<div class="card-id">Fit Score: {score}</div>
+<div class="card-desc">
+{synopsis}
+</div>
+<div class="meta-row">
+<span class="meta-pill pill-dur">🕒 {dur}</span>
+<span class="meta-pill pill-fees">💰 {fees}</span>
+<span class="meta-pill pill-hostel">🏠 {hostel}</span>
+<a href="{det_url}" target="_blank" class="meta-pill pill-link">More details ↗</a>
+</div>
+{career_html}
+{tbl_html}
+</div>
     """)
     
     st.markdown(full_card_html, unsafe_allow_html=True)
