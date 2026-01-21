@@ -443,6 +443,62 @@ if user:
         st.session_state['view_mode'] = 'quiz'
         st.rerun()
 
+    # --- AI COUNSELLOR (SIDEBAR) ---
+    # Only show if we have ranked results
+    if 'dash' in st.session_state and st.session_state['dash'].get('is_ranked'):
+        st.sidebar.markdown("---")
+        with st.sidebar.expander(t.get('quiz_cta_ai', "✨ Deep AI Analysis (Beta)"), expanded=False):
+            st.caption("Get a personalized narrative explaining your results.")
+            
+            # Reconstruction of data for AI
+            # We need to grab these from session/user safely
+            ai_dash = st.session_state['dash']
+            ai_signals = st.session_state.get('student_signals', {})
+            
+            # Fallback if signals missing from session but in user
+            if not ai_signals and user.get('student_signals'):
+                ai_signals = user['student_signals']
+                
+            ai_profile = {
+                "grades": user.get('grades', {}) if user else {},
+                "student_signals": ai_signals
+            }
+            # Top 3-5 matches
+            ai_top = ai_dash.get('featured_matches', [])[:5] 
+            
+            if st.button("Generate Deep Report", key="btn_ai_gen_sb", use_container_width=True):
+                with st.spinner(t.get('quiz_generating', "Consulting AI Counselor...")):
+                    from src.reports.ai_wrapper import AIReportWrapper # Lazy import
+                    ai_wrapper = AIReportWrapper()
+                    report = ai_wrapper.generate_narrative_report(ai_profile, ai_top)
+                    
+                    if "error" in report:
+                         st.error(report['error'])
+                    elif "markdown" in report:
+                        st.markdown(report['markdown'])
+                        
+                        # PDF Logic
+                        try:
+                            from src.reports.pdf_generator import PDFReportGenerator
+                            pdf_gen = PDFReportGenerator()
+                            c_name = report.get('counsellor_name', "HalaTuju (AI)")
+                            pdf_buffer = pdf_gen.generate_pdf(ai_profile, report['markdown'], counsellor_name=c_name)
+                            
+                            curr_year = datetime.now().year
+                            anon_id = str(user.get('id', 'Guest'))[-6:] if user else "Guest"
+                            fname = f"Laporan_Kerjaya_SPM_{curr_year}_{anon_id}.pdf"
+                            
+                            st.download_button(
+                                label="📄 PDF",
+                                data=pdf_buffer,
+                                file_name=fname,
+                                mime="application/pdf",
+                                key="btn_pdf_dl_sb"
+                            )
+                        except Exception as e:
+                            print(f"PDF Error: {e}")
+
+
 if not user:
     st.sidebar.info(t['sb_guest_mode'])
     with st.sidebar.expander(t['sb_returning_user']):
@@ -701,45 +757,6 @@ if signals and tier1_featured:
     with rc2:
         st.warning(f"**Note:** {insights['caution']}")
         
-    # 2. Generative AI Report
-    with st.expander("✨ Deep AI Analysis (Beta)", expanded=False):
-        st.caption("Get a personalized narrative explaining your results.")
-        if st.button("Generate Deep Report"):
-            with st.spinner("Consulting AI Counselor..."):
-                ai_wrapper = AIReportWrapper()
-                report = ai_wrapper.generate_narrative_report(profile_for_report, tier1_featured)
-                
-                if "error" in report:
-                    st.error(report['error'])
-                elif "markdown" in report:
-                    st.markdown(report['markdown'])
-                    
-                    # --- PDF DOWNLOAD FEATURE ---
-                    try:
-                        pdf_gen = PDFReportGenerator()
-                        c_name = report.get('counsellor_name', "HalaTuju (AI Kaunselor)")
-                        pdf_buffer = pdf_gen.generate_pdf(profile_for_report, report['markdown'], counsellor_name=c_name)
-                        
-                        # Filename: Laporan_Kerjaya_SPM_[Year]_[AnonID].pdf
-                        curr_year = datetime.now().year
-                        anon_id = str(user.get('id', 'Guest'))[-6:] if user else "Guest"
-                        fname = f"Laporan_Kerjaya_SPM_{curr_year}_{anon_id}.pdf"
-                        
-                        st.download_button(
-                            label="📄 Muat Turun PDF (Rasmi)",
-                            data=pdf_buffer,
-                            file_name=fname,
-                            mime="application/pdf",
-                            key="btn_pdf_dl"
-                        )
-                    except Exception as e:
-                        print(f"PDF Gen Error: {e}")
-                        st.warning("PDF generation failed. Please try again.")
-                        
-                else:
-                    st.warning("Report format unrecognized.")
-
-    st.markdown("---")
 
 # --- RENDER TIER 1: FEATURED MATCHES ---
 st.markdown(f"### :star: {t.get('lbl_featured', 'Featured Matches')}")

@@ -52,12 +52,9 @@ class AIReportWrapper:
             return {"error": "AI Service Unavailable (Missing GEMINI_API_KEY)"}
 
         # 0. Determine Persona
-        gender = student_profile.get('gender', 'M').upper()
-        # Check for Male signals (M or L for Lelaki)
-        if gender.startswith('M') or gender.startswith('L'):
-            counsellor_name = "Cikgu Siva"
-        else:
-            counsellor_name = "Cikgu Mani"
+        # 0. Determine Persona (Randomized for variety)
+        import random
+        counsellor_name = random.choice(["Cikgu Siva", "Cikgu Mani"])
 
         # Prepare Context Strings
         # 1. Profile
