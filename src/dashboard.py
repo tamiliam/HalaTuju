@@ -285,7 +285,7 @@ def display_course_card(pick, t=None):
         
         # 4. Career Section
         if pick.get('jobs'):
-             st.markdown(f"💼 **Career:** {', '.join(pick['jobs'])}")
+             st.markdown(f"💼 {', '.join(pick['jobs'])}")
              # Spacer removed per user request
 
         # 5. Location Table
@@ -299,8 +299,8 @@ def display_course_card(pick, t=None):
              <table style="width:100%; border-collapse: collapse; font-size: 0.95em;">
                  <thead>
                      <tr style="border-bottom: 2px solid #f0f2f6;">
-                         <th style="text-align: left; padding: 8px;">Institution</th>
-                         <th style="text-align: left; padding: 8px;">State</th>
+                         <th style="text-align: left; padding: 4px;">Institution</th>
+                         <th style="text-align: left; padding: 4px;">State</th>
                      </tr>
                  </thead>
                  <tbody>
@@ -314,8 +314,8 @@ def display_course_card(pick, t=None):
                  # Row styling
                  row_html = textwrap.dedent(f"""
                  <tr style="border-bottom: 1px solid #f0f2f6;">
-                     <td style="padding: 8px;"><a href="{url}" target="_blank" style="text-decoration:none; color:#0e1117; font-weight:500;">{name}</a></td>
-                     <td style="padding: 8px; color: #555;">{state}</td>
+                     <td style="padding: 4px;"><a href="{url}" target="_blank" style="text-decoration:none; color:#0e1117; font-weight:500;">{name}</a></td>
+                     <td style="padding: 4px; color: #555;">{state}</td>
                  </tr>
                  """)
                  tbl_html += row_html
