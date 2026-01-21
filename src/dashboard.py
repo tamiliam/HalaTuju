@@ -281,27 +281,27 @@ def display_course_card(pick, t=None):
              state = loc.get('state', '-')
              
              rows += f"""
-             <tr style="border-bottom: 1px solid #f1f2f6;">
-                <td style="padding: 8px;"><a href="{url}" target="_blank" style="text-decoration:none; color:#2d3436; font-weight:600;">{name}</a></td>
-                <td style="padding: 8px; color: #636e72;">{state}</td>
-             </tr>
-             """
+<tr style="border-bottom: 1px solid #f1f2f6;">
+<td style="padding: 8px;"><a href="{url}" target="_blank" style="text-decoration:none; color:#2d3436; font-weight:600;">{name}</a></td>
+<td style="padding: 8px; color: #636e72;">{state}</td>
+</tr>
+"""
              
          tbl_html = f"""
-         <div class="inst-table-container {scroll_class}" style="{container_style}">
-             <table style="width:100%; border-collapse: collapse; font-size: 0.9em;">
-                 <thead>
-                     <tr style="border-bottom: 2px solid #e1e1e1; background: #fafafa;">
-                         <th style="padding: 8px; text-align:left; color:#6C5CE7; font-weight:700;">Institution</th>
-                         <th style="padding: 8px; text-align:left; color:#6C5CE7; font-weight:700;">State</th>
-                     </tr>
-                 </thead>
-                 <tbody>
-                    {rows}
-                 </tbody>
-             </table>
-         </div>
-         """
+<div class="inst-table-container {scroll_class}" style="{container_style}">
+<table style="width:100%; border-collapse: collapse; font-size: 0.9em;">
+<thead>
+<tr style="border-bottom: 2px solid #e1e1e1; background: #fafafa;">
+<th style="padding: 8px; text-align:left; color:#6C5CE7; font-weight:700;">Institution</th>
+<th style="padding: 8px; text-align:left; color:#6C5CE7; font-weight:700;">State</th>
+</tr>
+</thead>
+<tbody>
+{rows}
+</tbody>
+</table>
+</div>
+"""
 
     # 4. Construct Full Card
     full_card_html = textwrap.dedent(f"""
