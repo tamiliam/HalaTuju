@@ -53,6 +53,7 @@ class AIReportWrapper:
 
         # Prepare Payload
         summary_signals = self._extract_dominant_signals(student_profile.get('student_signals', {}))
+        spm_grades = student_profile.get('grades', {})
         
         # Simplified course list
         course_context = []
@@ -66,6 +67,7 @@ class AIReportWrapper:
         # Context Construction
         user_context = json.dumps({
             "student_summary": summary_signals,
+            "spm_grades": spm_grades,
             "top_courses": course_context
         })
         
