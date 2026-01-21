@@ -304,7 +304,7 @@ def display_course_card(pick, t=None):
          """
 
     # 4. Construct Full Card
-    full_card_html = f"""
+    full_card_html = textwrap.dedent(f"""
     <div class="course-card">
         <h3 class="card-title">{c_name}</h3>
         <div class="card-id">Fit Score: {score}</div>
@@ -323,6 +323,6 @@ def display_course_card(pick, t=None):
         {career_html}
         {tbl_html}
     </div>
-    """
+    """)
     
     st.markdown(full_card_html, unsafe_allow_html=True)
