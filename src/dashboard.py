@@ -290,8 +290,10 @@ def display_course_card(pick, t=None):
         # 5. Location Table
         # "Make the Locations table fit windows not content" -> Use HTML with width=100%
         if locs:
+             import textwrap # Local import to fix indentation
+             
              # Header
-             tbl_html = """
+             tbl_html = textwrap.dedent("""
              <div style="margin-top: 10px;">
              <table style="width:100%; border-collapse: collapse; font-size: 0.95em;">
                  <thead>
@@ -301,7 +303,7 @@ def display_course_card(pick, t=None):
                      </tr>
                  </thead>
                  <tbody>
-             """
+             """)
              
              for loc in locs:
                  name = loc.get('institution_name', 'Unknown')
@@ -309,12 +311,12 @@ def display_course_card(pick, t=None):
                  state = loc.get('state', '-')
                  
                  # Row styling
-                 row_html = f"""
+                 row_html = textwrap.dedent(f"""
                  <tr style="border-bottom: 1px solid #f0f2f6;">
                      <td style="padding: 8px;"><a href="{url}" target="_blank" style="text-decoration:none; color:#0e1117; font-weight:500;">{name}</a></td>
                      <td style="padding: 8px; color: #555;">{state}</td>
                  </tr>
-                 """
+                 """)
                  tbl_html += row_html
                  
              tbl_html += "</tbody></table></div>"
