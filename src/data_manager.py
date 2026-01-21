@@ -160,6 +160,12 @@ def load_master_data():
         else:
             tvet_merged['inst_url'] = "#"
             
+        # Map Details URL (TVET)
+        if 'hyperlink' in tvet_merged.columns:
+            tvet_merged['details_url'] = tvet_merged['hyperlink'].fillna('#')
+        else:
+            tvet_merged['details_url'] = '#'
+            
         # --- THE FIX IS HERE ---
         # We REMOVED the line: tvet_merged['course'] = tvet_merged['course_x']
         # Instead, we check if we need to rename or fill anything.
@@ -186,6 +192,10 @@ def load_master_data():
     cols_to_keep = base_cols + ALL_REQ_COLUMNS
     
     master_df = pd.concat([poly_final, tvet_final], ignore_index=True)
+    
+    # Final Safety: Fill N/A details_url with '#'
+    if 'details_url' in master_df.columns:
+        master_df['details_url'] = master_df['details_url'].fillna('#')
     
     # Ensure all crucial columns exist
     for col in cols_to_keep:
