@@ -60,6 +60,7 @@ class AIReportWrapper:
         for c in top_courses[:3]:
             course_context.append({
                 "course_name": c.get('course_name'),
+                "institution": c.get('institution_name', 'Unknown'),
                 "fit_reasons": c.get('fit_reasons', []),
                 "score": c.get('fit_score')
             })
