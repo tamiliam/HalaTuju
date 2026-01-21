@@ -288,12 +288,35 @@ def display_course_card(pick, t=None):
              st.markdown("") # Spacer
 
         # 5. Location Table
+        # "Make the Locations table fit windows not content" -> Use HTML with width=100%
         if locs:
-             md = "| Institution | State |\n|---|---|\n"
+             # Header
+             tbl_html = """
+             <div style="margin-top: 10px;">
+             <table style="width:100%; border-collapse: collapse; font-size: 0.95em;">
+                 <thead>
+                     <tr style="border-bottom: 2px solid #f0f2f6;">
+                         <th style="text-align: left; padding: 8px;">Institution</th>
+                         <th style="text-align: left; padding: 8px;">State</th>
+                     </tr>
+                 </thead>
+                 <tbody>
+             """
+             
              for loc in locs:
                  name = loc.get('institution_name', 'Unknown')
                  url = loc.get('inst_url', '#')
                  state = loc.get('state', '-')
-                 md += f"| [{name}]({url}) | {state} |\n"
+                 
+                 # Row styling
+                 row_html = f"""
+                 <tr style="border-bottom: 1px solid #f0f2f6;">
+                     <td style="padding: 8px;"><a href="{url}" target="_blank" style="text-decoration:none; color:#0e1117; font-weight:500;">{name}</a></td>
+                     <td style="padding: 8px; color: #555;">{state}</td>
+                 </tr>
+                 """
+                 tbl_html += row_html
+                 
+             tbl_html += "</tbody></table></div>"
              
-             st.markdown(md)
+             st.markdown(tbl_html, unsafe_allow_html=True)
