@@ -271,8 +271,6 @@ def display_course_card(pick, t=None):
         hostel = loc0.get('hostel_fee', 'N/A')
         det_url = loc0.get('details_url', '#')
         
-        # DEBUG
-        st.write("Debug loc0:", loc0)
 
         
         meta_html = f"""
