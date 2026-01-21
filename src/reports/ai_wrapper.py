@@ -51,7 +51,14 @@ class AIReportWrapper:
         if not self.model:
             return {"error": "AI Service Unavailable (Missing GEMINI_API_KEY)"}
 
-        # Prepare Payload
+        # 0. Determine Persona
+        gender = student_profile.get('gender', 'M').upper()
+        # Check for Male signals (M or L for Lelaki)
+        if gender.startswith('M') or gender.startswith('L'):
+            counsellor_name = "Cikgu Siva"
+        else:
+            counsellor_name = "Cikgu Mani"
+
         # Prepare Context Strings
         # 1. Profile
         summary_signals = self._extract_dominant_signals(student_profile.get('student_signals', {}))
@@ -69,28 +76,28 @@ class AIReportWrapper:
             c_name = c.get('course_name')
             inst = c.get('institution_name', 'Unknown')
             score = c.get('fit_score')
-            # institution_type is not directly in top_courses dict usually, unless enriched. 
-            # We will use what's available.
             courses_str += f"{i+1}. {c_name} at {inst} (Fit Score: {score})\n"
             
         # Prompt Composition
-        # The prompt has placeholders {student_profile}, {academic_context}, {recommended_courses}
-        # We use strict formatting to replace them.
         try:
             full_prompt = SYSTEM_PROMPT.format(
+                counsellor_name=counsellor_name,
                 student_profile=profile_str,
                 academic_context=academic_str,
                 recommended_courses=courses_str
             )
         except Exception as e:
-            # Fallback if format fails (e.g. braces in prompt)
+            # Fallback if format fails
             print(f"Prompt formatting error: {e}")
-            full_prompt = f"{SYSTEM_PROMPT}\n\nDATA:\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
+            full_prompt = f"Anda ialah {counsellor_name}.\n{SYSTEM_PROMPT}\n\nDATA:\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
         
         try:
             response = self.model.generate_content(full_prompt)
-            # Return raw markdown text
-            return {"markdown": response.text}
+            # Return raw markdown text AND the persona name used
+            return {
+                "markdown": response.text,
+                "counsellor_name": counsellor_name
+            }
             
         except Exception as e:
             return {"error": f"Generation Failed: {str(e)}"}

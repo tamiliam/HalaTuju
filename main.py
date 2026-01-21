@@ -11,6 +11,8 @@ from src.auth import AuthManager
 from src.reports.insight_generator import InsightGenerator
 from src.reports.ai_wrapper import AIReportWrapper
 from src.data_manager import load_master_data
+from src.reports.pdf_generator import PDFReportGenerator
+from datetime import datetime
 
 # --- 1. CONFIGURATION ---
 st.set_page_config(page_title="Hala Tuju SPM", page_icon="🎓", layout="centered")
@@ -681,6 +683,29 @@ if signals and tier1_featured:
                     st.error(report['error'])
                 elif "markdown" in report:
                     st.markdown(report['markdown'])
+                    
+                    # --- PDF DOWNLOAD FEATURE ---
+                    try:
+                        pdf_gen = PDFReportGenerator()
+                        c_name = report.get('counsellor_name', "HalaTuju (AI Kaunselor)")
+                        pdf_buffer = pdf_gen.generate_pdf(profile_for_report, report['markdown'], counsellor_name=c_name)
+                        
+                        # Filename: Laporan_Kerjaya_SPM_[Year]_[AnonID].pdf
+                        curr_year = datetime.now().year
+                        anon_id = str(user.get('id', 'Guest'))[-6:] if user else "Guest"
+                        fname = f"Laporan_Kerjaya_SPM_{curr_year}_{anon_id}.pdf"
+                        
+                        st.download_button(
+                            label="📄 Muat Turun PDF (Rasmi)",
+                            data=pdf_buffer,
+                            file_name=fname,
+                            mime="application/pdf",
+                            key="btn_pdf_dl"
+                        )
+                    except Exception as e:
+                        print(f"PDF Gen Error: {e}")
+                        st.warning("PDF generation failed. Please try again.")
+                        
                 else:
                     st.warning("Report format unrecognized.")
 
