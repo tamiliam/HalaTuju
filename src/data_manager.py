@@ -78,9 +78,28 @@ def load_master_data():
         
         # Standardize Columns
         poly_merged['type'] = poly_merged['type'].fillna('Politeknik')
-        poly_merged['fees'] = "RM 200 - RM 600 / sem (Subsidized)" 
-        poly_merged['hostel_fee'] = "RM 60 - RM 300 / sem" # Default Poly estimate if missing
-        poly_merged['duration'] = poly_merged['semesters'].astype(str) + " Semesters"
+        
+        # Fees & Hostel (Prefer details.csv, fallback to defaults)
+        if 'tuition_fee_semester' in poly_merged.columns:
+             poly_merged['fees'] = poly_merged['tuition_fee_semester'].fillna("RM 200/sem (Subsidized)")
+        else:
+             poly_merged['fees'] = "RM 200/sem (Subsidized)"
+
+        if 'hostel_fee_semester' in poly_merged.columns:
+             poly_merged['hostel_fee'] = poly_merged['hostel_fee_semester'].fillna("RM 60/sem")
+        else:
+             poly_merged['hostel_fee'] = "RM 60/sem"
+
+        if 'hyperlink' in poly_merged.columns:
+            poly_merged['details_url'] = poly_merged['hyperlink'].fillna('#')
+        else:
+            poly_merged['details_url'] = '#'
+
+        # Duration
+        if 'semesters' in poly_merged.columns:
+            poly_merged['duration'] = poly_merged['semesters'].astype(str) + " Semesters"
+        else:
+            poly_merged['duration'] = "N/A"
         
         # Rename URL if exists
         if 'url' in poly_merged.columns:
@@ -114,8 +133,10 @@ def load_master_data():
         # Standardize Columns
         tvet_merged['type'] = tvet_merged['type'].fillna('TVET')
         
-        # Map fees from 'tuition_fee' if it exists
-        if 'tuition_fee' in tvet_merged.columns:
+        # Map Fees (Priority: details > tvet_courses > default)
+        if 'tuition_fee_semester' in tvet_merged.columns:
+            tvet_merged['fees'] = tvet_merged['tuition_fee_semester']
+        elif 'tuition_fee' in tvet_merged.columns:
             tvet_merged['fees'] = tvet_merged['tuition_fee']
         else:
             tvet_merged['fees'] = "Free / Subsidized"

@@ -714,56 +714,12 @@ if signals and tier1_featured:
 # --- RENDER TIER 1: FEATURED MATCHES ---
 st.markdown(f"### :star: {t.get('lbl_featured', 'Featured Matches')}")
 
-for pick in tier1_featured:
-    with st.container(border=True):
-        # 1. Header (Bold Title)
-        st.markdown(f"#### **{pick['course_name']}** [Score: {pick['max_score']}]")
-        
-        # 2. Metadata Row
-        # Get representative values from first location or top-level group
-        loc0 = pick['locations'][0] if pick['locations'] else {}
-        
-        dur = pick.get('duration', 'N/A')
-        fees = loc0.get('fees', 'N/A')
-        hostel = loc0.get('hostel_fee', 'N/A')
-        det_url = loc0.get('details_url', '#')
-        
-        # Format: Time | Fees | Hostel | Link
-        meta_html = f"""
-        <div style='margin-bottom:12px; font-size:0.95em;'>
-            ⏱️ {dur} &nbsp;|&nbsp; 
-            💰 {fees} &nbsp;|&nbsp; 
-            🏠 {hostel} &nbsp;|&nbsp; 
-            <a href="{det_url}" target="_blank">More details</a>
-        </div>
-        """
-        st.markdown(meta_html, unsafe_allow_html=True)
-        
-        # 3. Description (Optional, keeping purely content elements)
-        # User asked to remove "Why:", so we skip reasons.
-        # User implies keeping content "Below career, and above Institutions box" -> implies Career is kept?
-        # "Below career, and above the Institutions box, add the following..."
-        # So we KEEP Career.
-        
-        if pick.get('jobs'):
-             st.markdown(f"💼 **Career:** {', '.join(pick['jobs'])}")
-             st.markdown("") # Spacer
+# Import UI Component (Lazy import or move to top)
+from src.dashboard import display_course_card
 
-        # 4. Institution Table
-        # "Make the name ... clickable"
-        # "Remove Fees column"
-        if pick['locations']:
-            # Construct Markdown Table manually for clean hyperlink control
-            md_table = "| Institution | State |\n|---|---|\n"
-            for loc in pick['locations']:
-                name = loc.get('institution_name', 'Unknown')
-                url = loc.get('inst_url', '#')
-                state = loc.get('state', '-')
-                
-                # Markdown Link: [Name](URL)
-                md_table += f"| [{name}]({url}) | {state} |\n"
-            
-            st.markdown(md_table)
+for pick in tier1_featured:
+    # Use the new Refactored Card
+    display_course_card(pick, t)
 
 # --- RENDER TIER 2: GOOD OPTIONS ---
 if tier2_good:

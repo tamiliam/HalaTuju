@@ -236,3 +236,64 @@ def group_courses_by_id(flat_list):
         "full_list": sorted_offerings, 
         "is_locked": True 
     }
+# --- UI HELPERS ---
+def display_course_card(pick, t=None):
+    """
+    Renders a single "Product Card" for a course recommendation.
+    """
+    import streamlit as st
+    
+    with st.container(border=True):
+        # 1. Header
+        c_name = pick.get('course_name', 'Unknown Course')
+        score = pick.get('max_score', 0)
+        
+        header_html = f"""
+        <h4 style='margin-bottom:0px; padding-bottom:0px;'>{c_name} 
+        <span style='font-size:0.7em; color:gray; font-weight:normal'>[{score}]</span>
+        </h4>
+        """
+        st.markdown(header_html, unsafe_allow_html=True)
+        
+        # 2. Description & Headline
+        if pick.get('headline'):
+             st.markdown(f"**{pick['headline']}**")
+             
+        if pick.get('synopsis'):
+            st.write(pick['synopsis'])
+            
+        # 3. Meta Info Row
+        locs = pick.get('locations', [])
+        loc0 = locs[0] if locs else {}
+        
+        dur = pick.get('duration') or "N/A"
+        
+        fees = loc0.get('fees', 'N/A')
+        hostel = loc0.get('hostel_fee', 'N/A')
+        det_url = loc0.get('details_url', '#')
+        
+        meta_html = f"""
+        <div style='margin-top:8px; margin-bottom:12px; font-size:0.9em; color:#444;'>
+            🕒 {dur} &nbsp;|&nbsp; 
+            💰 {fees} &nbsp;|&nbsp; 
+            🏠 {hostel} &nbsp;|&nbsp; 
+            <a href="{det_url}" target="_blank">More details</a>
+        </div>
+        """
+        st.markdown(meta_html, unsafe_allow_html=True)
+        
+        # 4. Career Section
+        if pick.get('jobs'):
+             st.markdown(f"💼 **Career:** {', '.join(pick['jobs'])}")
+             st.markdown("") # Spacer
+
+        # 5. Location Table
+        if locs:
+             md = "| Institution | State |\n|---|---|\n"
+             for loc in locs:
+                 name = loc.get('institution_name', 'Unknown')
+                 url = loc.get('inst_url', '#')
+                 state = loc.get('state', '-')
+                 md += f"| [{name}]({url}) | {state} |\n"
+             
+             st.markdown(md)
