@@ -240,91 +240,89 @@ def group_courses_by_id(flat_list):
 def display_course_card(pick, t=None):
     """
     Renders a single "Product Card" for a course recommendation.
+    Uses 'course-card' CSS class for modern styling (Gen Z appeal).
     """
     import streamlit as st
+    import textwrap
     
-    with st.container(border=True):
-        # 1. Header
-        c_name = pick.get('course_name', 'Unknown Course')
-        score = pick.get('max_score', 0)
-        
-        header_html = f"""
-        <h4 style='margin-bottom:8px; padding-bottom:0px;'>{c_name} 
-        <span style='font-size:0.7em; color:gray; font-weight:normal'>[{score}]</span>
-        </h4>
-        """
-        st.markdown(header_html, unsafe_allow_html=True)
-        
-        # 2. Description & Headline
-        # 2. Description (Headline Removed)
+    # 1. Setup Data
+    c_name = pick.get('course_name', 'Unknown Course')
+    score = pick.get('max_score', 0)
+    synopsis = pick.get('synopsis', '')
+    
+    locs = pick.get('locations', [])
+    loc0 = locs[0] if locs else {}
+    
+    dur = pick.get('duration') or "N/A"
+    fees = loc0.get('fees', 'N/A')
+    hostel = loc0.get('hostel_fee', 'N/A')
+    det_url = loc0.get('details_url', '#')
+    
+    # 2. Career HTML
+    career_html = ""
+    if pick.get('jobs'):
+         career_html = f'<div class="career-box">💼 {", ".join(pick["jobs"])}</div>'
+    
+    # 3. Table HTML
+    tbl_html = ""
+    if locs:
+         container_style = "margin-top: 8px;"
+         scroll_class = ""
+         
+         # Logic: Scroll if > 5 items
+         if len(locs) > 5:
+              container_style += " max-height: 250px; overflow-y: auto; padding-right: 4px;"
+              scroll_class = "scroll-box"
+         
+         rows = ""
+         for loc in locs:
+             name = loc.get('institution_name', 'Unknown')
+             url = loc.get('inst_url', '#')
+             state = loc.get('state', '-')
              
-        if pick.get('synopsis'):
-            st.write(pick['synopsis'])
-            
-        # 3. Meta Info Row
-        locs = pick.get('locations', [])
-        loc0 = locs[0] if locs else {}
-        
-        dur = pick.get('duration') or "N/A"
-        
-        fees = loc0.get('fees', 'N/A')
-        hostel = loc0.get('hostel_fee', 'N/A')
-        det_url = loc0.get('details_url', '#')
-        
-
-        
-        meta_html = f"""
-        <div style='margin-top:8px; margin-bottom:12px; font-size:0.9em; color:#444;'>
-            🕒 {dur} &nbsp;|&nbsp; 
-            💰 {fees} &nbsp;|&nbsp; 
-            🏠 {hostel} &nbsp;|&nbsp; 
-            <a href="{det_url}" target="_blank">More details</a>
-        </div>
-        """
-        st.markdown(meta_html, unsafe_allow_html=True)
-        
-        # 4. Career Section
-        if pick.get('jobs'):
-             st.markdown(f"💼 {', '.join(pick['jobs'])}")
-             # Spacer removed per user request
-
-        # 5. Location Table
-        # "Make the Locations table fit windows not content" -> Use HTML with width=100%
-        if locs:
-             import textwrap # Local import to fix indentation
+             rows += f"""
+             <tr style="border-bottom: 1px solid #f1f2f6;">
+                <td style="padding: 8px;"><a href="{url}" target="_blank" style="text-decoration:none; color:#2d3436; font-weight:600;">{name}</a></td>
+                <td style="padding: 8px; color: #636e72;">{state}</td>
+             </tr>
+             """
              
-             # Header
-             # Scrollable logic for > 5 items
-             container_style = "margin-top: 2px;"
-             if len(locs) > 5:
-                  container_style += " max-height: 250px; overflow-y: auto; overflow-x: hidden; padding-right: 2px;"
-
-             tbl_html = textwrap.dedent(f"""
-             <div style="{container_style}">
-             <table style="width:100%; border-collapse: collapse; font-size: 0.95em;">
+         tbl_html = f"""
+         <div class="inst-table-container {scroll_class}" style="{container_style}">
+             <table style="width:100%; border-collapse: collapse; font-size: 0.9em;">
                  <thead>
-                     <tr style="border-bottom: 2px solid #f0f2f6;">
-                         <th style="text-align: left; padding: 4px;">Institution</th>
-                         <th style="text-align: left; padding: 4px;">State</th>
+                     <tr style="border-bottom: 2px solid #e1e1e1; background: #fafafa;">
+                         <th style="padding: 8px; text-align:left; color:#6C5CE7; font-weight:700;">Institution</th>
+                         <th style="padding: 8px; text-align:left; color:#6C5CE7; font-weight:700;">State</th>
                      </tr>
                  </thead>
                  <tbody>
-             """)
-             
-             for loc in locs:
-                 name = loc.get('institution_name', 'Unknown')
-                 url = loc.get('inst_url', '#')
-                 state = loc.get('state', '-')
-                 
-                 # Row styling
-                 row_html = textwrap.dedent(f"""
-                 <tr style="border-bottom: 1px solid #f0f2f6;">
-                     <td style="padding: 4px;"><a href="{url}" target="_blank" style="text-decoration:none; color:#0e1117; font-weight:500;">{name}</a></td>
-                     <td style="padding: 4px; color: #555;">{state}</td>
-                 </tr>
-                 """)
-                 tbl_html += row_html
-                 
-             tbl_html += "</tbody></table></div>"
-             
-             st.markdown(tbl_html, unsafe_allow_html=True)
+                    {rows}
+                 </tbody>
+             </table>
+         </div>
+         """
+
+    # 4. Construct Full Card
+    full_card_html = f"""
+    <div class="course-card">
+        <h3 class="card-title">{c_name}</h3>
+        <div class="card-id">Fit Score: {score}</div>
+        
+        <div class="card-desc">
+            {synopsis}
+        </div>
+        
+        <div class="meta-row">
+            <span class="meta-pill pill-dur">🕒 {dur}</span>
+            <span class="meta-pill pill-fees">💰 {fees}</span>
+            <span class="meta-pill pill-hostel">🏠 {hostel}</span>
+            <a href="{det_url}" target="_blank" class="meta-pill pill-link">More details ↗</a>
+        </div>
+        
+        {career_html}
+        {tbl_html}
+    </div>
+    """
+    
+    st.markdown(full_card_html, unsafe_allow_html=True)
