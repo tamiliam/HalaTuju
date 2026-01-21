@@ -93,15 +93,32 @@ def render_quiz_page(lang_code, user):
                 st.error(f"Could not save results: {e}")
         
         # Display Results
-        st.success(t['quiz_complete'])
-        st.json(results)
+        st.success(t.get('quiz_complete', "Profil Anda Telah Disimpan!"))
+        
+        # Explainer Text
+        st.markdown("""
+        **Terima kasih!** Jawapan anda telah direkodkan.
+        Kami telah menyusun semula senarai kursus berdasarkan personaliti dan minat anda.
+        Kursus yang anda lihat di **Dashboard** kini telah disesuaikan khas untuk anda.
+        """)
+        
+        # Call to Action (CTA)
+        st.info("💡 **Langkah Seterusnya:** Sila kembali ke tab **Dashboard** untuk melihat cadangan kursus anda.")
+        
+        if st.button("Ke Halaman Dashboard ➡️", use_container_width=True, type="primary"):
+            st.session_state['view_mode'] = 'dashboard'
+            st.rerun()
+            
+        st.markdown("---")
+        st.markdown("🔍 **Ingin tahu lebih lanjut?** Klik butang **✨ Deep AI Analysis (Beta)** di menu sisi / dashboard untuk mendapatkan laporan kerjaya penuh.")
+
+        # Hide Raw Data in Expander
+        with st.expander("🛠️ View Debug Data (Raw Profile)"):
+            st.json(results)
         
         # Save to Session
         st.session_state['student_signals'] = results['student_signals']
-        
-        if st.button(t['quiz_return'], use_container_width=True):
-            st.session_state['view_mode'] = 'dashboard'
-            st.rerun()
+
 
 # --- SIDEBAR LOGIC ---
 # ...
