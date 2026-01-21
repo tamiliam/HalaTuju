@@ -294,8 +294,13 @@ def display_course_card(pick, t=None):
              import textwrap # Local import to fix indentation
              
              # Header
-             tbl_html = textwrap.dedent("""
-             <div style="margin-top: 2px;">
+             # Scrollable logic for > 5 items
+             container_style = "margin-top: 2px;"
+             if len(locs) > 5:
+                  container_style += " max-height: 250px; overflow-y: auto; overflow-x: hidden; padding-right: 2px;"
+
+             tbl_html = textwrap.dedent(f"""
+             <div style="{container_style}">
              <table style="width:100%; border-collapse: collapse; font-size: 0.95em;">
                  <thead>
                      <tr style="border-bottom: 2px solid #f0f2f6;">
