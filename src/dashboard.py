@@ -249,7 +249,7 @@ def display_course_card(pick, t=None):
         score = pick.get('max_score', 0)
         
         header_html = f"""
-        <h4 style='margin-bottom:0px; padding-bottom:0px;'>{c_name} 
+        <h4 style='margin-bottom:8px; padding-bottom:0px;'>{c_name} 
         <span style='font-size:0.7em; color:gray; font-weight:normal'>[{score}]</span>
         </h4>
         """
@@ -284,7 +284,7 @@ def display_course_card(pick, t=None):
         # 4. Career Section
         if pick.get('jobs'):
              st.markdown(f"💼 **Career:** {', '.join(pick['jobs'])}")
-             st.markdown("") # Spacer
+             # Spacer removed per user request
 
         # 5. Location Table
         # "Make the Locations table fit windows not content" -> Use HTML with width=100%
@@ -293,7 +293,7 @@ def display_course_card(pick, t=None):
              
              # Header
              tbl_html = textwrap.dedent("""
-             <div style="margin-top: 10px;">
+             <div style="margin-top: 2px;">
              <table style="width:100%; border-collapse: collapse; font-size: 0.95em;">
                  <thead>
                      <tr style="border-bottom: 2px solid #f0f2f6;">
