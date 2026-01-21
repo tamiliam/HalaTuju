@@ -282,7 +282,7 @@ def display_course_card(pick, t=None):
              
              rows += f"""
 <tr style="border-bottom: 1px solid #f1f2f6;">
-<td style="padding: 8px;"><a href="{url}" target="_blank" style="text-decoration:none; color:#2d3436; font-weight:600;">{name}</a></td>
+<td style="padding: 8px;"><a href="{url}" target="_blank" class="inst-link">{name}</a></td>
 <td style="padding: 8px; color: #636e72;">{state}</td>
 </tr>
 """

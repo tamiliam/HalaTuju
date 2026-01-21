@@ -9,7 +9,9 @@
 }
 
 /* 2. HEADERS (Vibrant Gradient Text) */
-h1, h2, h3 {
+h1,
+h2,
+h3 {
     background: linear-gradient(90deg, #6C5CE7 0%, #FF7675 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -17,14 +19,21 @@ h1, h2, h3 {
     letter-spacing: -0.5px;
 }
 
-h1 { font-size: 3rem !important; }
-h2 { font-size: 2rem !important; margin-top: 1rem !important; }
+h1 {
+    font-size: 3rem !important;
+}
+
+h2 {
+    font-size: 2rem !important;
+    margin-top: 1rem !important;
+}
 
 /* 3. BUTTONS (The "Simpan" Fix & Pop) */
 /* Primary Buttons (Streamlit default buttons) */
-div.stButton > button {
+div.stButton>button {
     background: linear-gradient(90deg, #6C5CE7 0%, #a29bfe 100%) !important;
-    color: #FFFFFF !important; /* High Contrast White Code */
+    color: #FFFFFF !important;
+    /* High Contrast White Code */
     font-weight: 700 !important;
     border: none !important;
     border-radius: 12px !important;
@@ -35,12 +44,12 @@ div.stButton > button {
     letter-spacing: 0.5px;
 }
 
-div.stButton > button:hover {
+div.stButton>button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(108, 92, 231, 0.3) !important;
 }
 
-div.stButton > button:active {
+div.stButton>button:active {
     transform: translateY(0px);
 }
 
@@ -51,12 +60,12 @@ div[data-testid="stExpander"] {
     background: #FFFFFF !important;
     border: 1px solid #dfe6e9 !important;
     border-radius: 16px !important;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.02) !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02) !important;
     transition: transform 0.2s;
 }
 
 div[data-testid="stExpander"]:hover {
-    box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05) !important;
 }
 
 .streamlit-expanderHeader {
@@ -69,7 +78,8 @@ div[data-testid="stExpander"]:hover {
 div[data-testid="stMetricValue"] {
     font-family: 'Outfit', sans-serif !important;
     font-weight: 800 !important;
-    color: #6C5CE7 !important; /* Brand Color */
+    color: #6C5CE7 !important;
+    /* Brand Color */
 }
 
 div[data-testid="stMetricLabel"] {
@@ -96,18 +106,39 @@ div[data-testid="stMetricLabel"] {
 }
 
 /* Pop Colors */
-.badge-time { background: #e3f2fd; color: #0984e3; border-color: #bbdefb; }
-.badge-mode { background: #f3e5f5; color: #8e44ad; border-color: #e1bee7; }
-.badge-money { background: #e8f5e9; color: #00b894; border-color: #c8e6c9; }
-.badge-hostel { background: #fff3e0; color: #e17055; border-color: #ffe0b2; }
+.badge-time {
+    background: #e3f2fd;
+    color: #0984e3;
+    border-color: #bbdefb;
+}
+
+.badge-mode {
+    background: #f3e5f5;
+    color: #8e44ad;
+    border-color: #e1bee7;
+}
+
+.badge-money {
+    background: #e8f5e9;
+    color: #00b894;
+    border-color: #c8e6c9;
+}
+
+.badge-hostel {
+    background: #fff3e0;
+    color: #e17055;
+    border-color: #ffe0b2;
+}
 
 /* 7. FORM ELEMENTS */
-input, select {
+input,
+select {
     border-radius: 10px !important;
     border: 1px solid #dfe6e9 !important;
 }
 
-input:focus, select:focus {
+input:focus,
+select:focus {
     border-color: #6C5CE7 !important;
     box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.1) !important;
 }
@@ -124,7 +155,8 @@ div[data-testid="stToast"] {
     background: #FFFFFF;
     border-radius: 20px;
     padding: 24px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.05); /* Ultra soft shadow */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    /* Ultra soft shadow */
     border: 1px solid #f1f2f6;
     margin-bottom: 24px;
     transition: all 0.3s ease;
@@ -198,18 +230,34 @@ div[data-testid="stToast"] {
     white-space: nowrap;
 }
 
-.pill-dur { background: #e3f2fd; color: #0984e3; }
-.pill-fees { background: #e8f5e9; color: #00b894; }
-.pill-hostel { background: #fff3e0; color: #e17055; }
-.pill-link { 
-    background: #6C5CE7; 
-    color: #fff !important; 
+.pill-dur {
+    background: #e3f2fd;
+    color: #0984e3;
+}
+
+.pill-fees {
+    background: #e8f5e9;
+    color: #00b894;
+}
+
+.pill-hostel {
+    background: #fff3e0;
+    color: #e17055;
+}
+
+.pill-link {
+    background: #6C5CE7;
+    color: #fff !important;
     text-decoration: none !important;
-    padding: 6px 16px; border-radius: 20px;
+    padding: 6px 16px;
+    border-radius: 20px;
     transition: background 0.2s;
     box-shadow: 0 4px 10px rgba(108, 92, 231, 0.2);
 }
-.pill-link:hover { background: #5a4bcf; }
+
+.pill-link:hover {
+    background: #5a4bcf;
+}
 
 /* Career Section with Gradient Border */
 .career-box {
@@ -230,5 +278,22 @@ div[data-testid="stToast"] {
 .inst-table-container {
     border: 1px solid #f1f2f6;
     border-radius: 12px;
-    overflow: hidden; /* Clips scrollbar corners */
+    overflow: hidden;
+    /* Clips scrollbar corners */
+}
+
+/* Institution Link styling */
+.inst-link {
+    text-decoration: none;
+    color: #2d3436;
+    font-weight: 600;
+    transition: color 0.2s, text-decoration-color 0.2s;
+    border-bottom: 1px dotted transparent;
+    /* Subtle hint */
+}
+
+.inst-link:hover {
+    color: #6C5CE7;
+    /* Brand Purple */
+    border-bottom: 1px solid #6C5CE7;
 }
