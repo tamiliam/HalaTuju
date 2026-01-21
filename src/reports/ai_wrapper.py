@@ -52,28 +52,40 @@ class AIReportWrapper:
             return {"error": "AI Service Unavailable (Missing GEMINI_API_KEY)"}
 
         # Prepare Payload
+        # Prepare Context Strings
+        # 1. Profile
         summary_signals = self._extract_dominant_signals(student_profile.get('student_signals', {}))
+        profile_str = f"Traits: {json.dumps(summary_signals)}"
+        
+        # 2. Academic Context (Grades)
         spm_grades = student_profile.get('grades', {})
-        
-        # Simplified course list
-        course_context = []
-        for c in top_courses[:3]:
-            course_context.append({
-                "course_name": c.get('course_name'),
-                "institution": c.get('institution_name', 'Unknown'),
-                "fit_reasons": c.get('fit_reasons', []),
-                "score": c.get('fit_score')
-            })
+        academic_str = "SPM Results:\n"
+        for subject, grade in spm_grades.items():
+            academic_str += f"- {subject}: {grade}\n"
             
-        # Context Construction
-        user_context = json.dumps({
-            "student_summary": summary_signals,
-            "spm_grades": spm_grades,
-            "top_courses": course_context
-        })
-        
+        # 3. Recommended Courses
+        courses_str = ""
+        for i, c in enumerate(top_courses[:3]):
+            c_name = c.get('course_name')
+            inst = c.get('institution_name', 'Unknown')
+            score = c.get('fit_score')
+            # institution_type is not directly in top_courses dict usually, unless enriched. 
+            # We will use what's available.
+            courses_str += f"{i+1}. {c_name} at {inst} (Fit Score: {score})\n"
+            
         # Prompt Composition
-        full_prompt = f"{SYSTEM_PROMPT}\n\nHere is the student data (Use this to customize the report):\n{user_context}"
+        # The prompt has placeholders {student_profile}, {academic_context}, {recommended_courses}
+        # We use strict formatting to replace them.
+        try:
+            full_prompt = SYSTEM_PROMPT.format(
+                student_profile=profile_str,
+                academic_context=academic_str,
+                recommended_courses=courses_str
+            )
+        except Exception as e:
+            # Fallback if format fails (e.g. braces in prompt)
+            print(f"Prompt formatting error: {e}")
+            full_prompt = f"{SYSTEM_PROMPT}\n\nDATA:\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
         
         try:
             response = self.model.generate_content(full_prompt)

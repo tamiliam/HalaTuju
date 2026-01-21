@@ -16,7 +16,7 @@ def get_institution_type(row):
     t = str(row.get('type', '')).upper()
     code = str(row.get('course_id', '')).upper()
     name = str(row.get('institution_name', '')).upper()
-    cat = str(row.get('category', '')).upper() # Some files might have this
+    acronym = str(row.get('acronym', '')).upper() # Added for robust ID
     
     # 1. Politeknik
     if "POLITEKNIK" in t or "POLY" in code or "POLITEKNIK" in name:
@@ -30,7 +30,8 @@ def get_institution_type(row):
     # ILKBS = Institut Latihan KBS (IKBN, IKTBN)
     # ILJTM = Institut Latihan Jabatan Tenaga Manusia (ILP, ADTEC, JMTI)
     elif (any(x in t for x in ["ILKBS", "ILJTM", "TVET"]) or 
-          any(x in name for x in ["IKBN", "IKTBN", "ILP", "ADTEC", "JMTI"])):
+          any(x in name for x in ["IKBN", "IKTBN", "ILP", "ADTEC", "JMTI", "JAPAN", "JEPUN"]) or
+          "JMTI" in acronym):
         return "inst_ikbn"
         
     else:
