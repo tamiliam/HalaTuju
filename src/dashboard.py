@@ -384,6 +384,7 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
 <span class="meta-pill pill-dur">🕒 {dur}</span>
 <span class="meta-pill pill-fees">💰 {fees}</span>
 <span class="meta-pill pill-hostel">🏠 {hostel}</span>
+<a href="{det_url}" target="_blank" class="meta-pill pill-link">More details ↗</a>
 </div>
 {career_html}
 {tbl_html}
