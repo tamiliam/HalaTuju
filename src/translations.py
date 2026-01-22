@@ -276,7 +276,16 @@ TEXTS = {
         "chk_min_credit": "Minimum {min_c} Credits",
         "fail_min_credit": "Only {credits} Credits (Need {min_c})",
         "chk_min_pass": "Minimum {min_p} Passes",
-        "fail_min_pass": "Only {passes} Passes"
+        "fail_min_pass": "Only {passes} Passes",
+        
+        # WhatsApp Share
+        "wa_share_msg": """Hi Mum/Dad,
+
+I just checked my options after SPM on this app called Hala Tuju. It suggested a few courses that might fit my results:
+
+{courses}
+I’m not sure yet, but these look okay. Can we discuss this later?
+👉 https://halatuju.streamlit.app"""
     },
     
     "bm": {
@@ -542,7 +551,16 @@ TEXTS = {
         "chk_min_credit": "Minimum {min_c} Kredit",
         "fail_min_credit": "Hanya {credits} Kredit (Perlu {min_c})",
         "chk_min_pass": "Minimum {min_p} Lulus",
-        "fail_min_pass": "Hanya {passes} Lulus"
+        "fail_min_pass": "Hanya {passes} Lulus",
+        
+        # WhatsApp Share
+        "wa_share_msg": """Salam Mak/Ayah,
+
+Saya baru check peluang sambung belajar kat Hala Tuju. Sistem tu ada cadangkan beberapa kursus untuk saya, contohnya:
+
+{courses}
+Nampak macam menarik. Nanti bila free, boleh tak kita tengok sama-sama?
+👉 https://halatuju.streamlit.app"""
     },
 
     "ta": {
@@ -751,6 +769,15 @@ TEXTS = {
         "badge_dur": "காலம்",
         "badge_mode": "முறை",
         "badge_fees": "கட்டணம்",
+        
+        # WhatsApp Share
+        "wa_share_msg": """வணக்கம் அம்மா/அப்பா,
+
+Hala Tuju என்ற இணையத்தளத்தில் என் மேல் படிப்புக்கான வாய்ப்புகளைத் தேடினேன். அது எனக்குச் சில படிப்பங்களைப் பரிந்துரைத்தது:
+
+{courses}
+இது பற்றி உங்கள் ஆலோசனையைக் கேட்க விரும்புகிறேன். நேரம் கிடைக்கும்போது நாம் இதைப் பற்றிப் பேசலாமா?
+👉 https://halatuju.streamlit.app"""
     }
 }
 

@@ -561,18 +561,28 @@ def render_ai_report_page(user, t):
     
     with col2:
         # WhatsApp Share Button
-        student_name = user.get('full_name', 'Student') if user else 'Student'
-        
         # Get Top 3 Courses for the message
         top_courses_msg = ""
         ranked_courses = st.session_state.get('ranked_courses', [])
         if ranked_courses:
             for i, course in enumerate(ranked_courses[:3]):
                 c_name = course.get('Course Name', 'Unknown')
-                top_courses_msg += f"{i+1}. {c_name}\n"
+                top_courses_msg += f"{i+1}. {c_name}\n" # Newline for list
+        
+        # Get localized message template
+        # Need to ensure 't' is available here. It usually is passed or defined.
+        # If not, fetch it.
+        from src.translations import get_text
+        t_local = get_text(st.session_state.get('lang_code', 'en'))
+        
+        msg_template = t_local.get('wa_share_msg', "")
         
         # Create a shareable message
-        whatsapp_text = f"Hai Mak/Ayah, saya baru buat ujian minat kerjaya. Ini 3 kursus yang paling sesuai dengan saya:\n\n{top_courses_msg}\nLaporan penuh ada dalam PDF yg saya baru download. Boleh tengok detail kat: https://halatuju.streamlit.app"
+        try:
+            whatsapp_text = msg_template.format(courses=top_courses_msg)
+        except Exception:
+            # Fallback if format fails
+            whatsapp_text = f"Hala Tuju Report:\n\n{top_courses_msg}\nhttps://halatuju.streamlit.app"
         
         # URL encode properly
         from urllib.parse import quote
