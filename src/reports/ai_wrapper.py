@@ -17,11 +17,13 @@ class AIReportWrapper:
     """
     
     # Model cascade: Try these models in order until one works
+    # Based on official deprecation schedule (as of Jan 2026)
     MODEL_CASCADE = [
-        "gemini-2.5-flash",       # Try the newest balanced model first
-        "gemini-2.5-flash-lite",  # Fallback 1 (Usually has highest throughput)
-        "gemini-1.5-flash",       # Fallback 2 (Stable, widely available)
-        "gemini-1.5-flash-8b"     # Fallback 3 (Smallest, fastest, most available)
+        "gemini-3-flash-preview",  # Newest (preview, no shutdown announced)
+        "gemini-2.5-flash",        # Stable (shutdown June 17, 2026)
+        "gemini-2.5-flash-lite",   # High throughput (shutdown July 22, 2026)
+        "gemini-2.0-flash",        # Legacy fallback (shutdown Feb 5, 2026)
+        "gemini-1.5-flash"         # Old reliable (if still available)
     ]
     
     def __init__(self):
