@@ -167,7 +167,7 @@ class AIReportWrapper:
             print("All Gemini models failed. Attempting OpenAI fallback...")
             try:
                 response = self.openai_client.chat.completions.create(
-                    model="gpt-4o-mini",
+                    model="gpt-5-nano",
                     messages=[
                         {"role": "system", "content": "You are a helpful and empathetic career counselor for Malaysian students."},
                         {"role": "user", "content": full_prompt}
@@ -178,7 +178,7 @@ class AIReportWrapper:
                 return {
                     "markdown": text,
                     "counsellor_name": counsellor_name,
-                    "model_used": "openai-gpt-4o-mini"
+                    "model_used": "openai-gpt-5-nano"
                 }
             except Exception as e:
                 print(f"OpenAI fallback failed: {e}")
