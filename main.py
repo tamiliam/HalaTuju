@@ -367,48 +367,50 @@ def render_quiz_page(lang_code, user):
                 st.error(f"Could not save results: {e}")
             
             # AUTO-GENERATE AI COUNSELOR REPORT SILENTLY (separate try-except to avoid blocking quiz save)
-            try:
-                # Generate report silently in background - no UI shown to user
-                from src.reports.ai_wrapper import AIReportWrapper
-                
-                # Prepare data for AI report
-                ai_dash = st.session_state.get('dash', {})
-                ai_top = ai_dash.get('featured_matches', [])[:5] if ai_dash else []
-                
-                ai_profile = {
-                    "full_name": user.get('full_name', ''),
-                    "grades": user.get('grades', {}),
-                    "student_signals": results['student_signals']
-                }
-                
-                # Generate the report silently
-                ai_wrapper = AIReportWrapper()
-                report = ai_wrapper.generate_narrative_report(ai_profile, ai_top)
-                
-                if "error" not in report and "markdown" in report:
-                    # Save report to session state first
-                    st.session_state['ai_report'] = report
+            # Show loading indicator focused on course ranking, not report
+            with st.spinner("🔄 Menganalisis keputusan anda dan menyusun kursus..."):
+                try:
+                    # Generate report silently in background - no UI shown to user
+                    from src.reports.ai_wrapper import AIReportWrapper
                     
-                    # Then save to database (convert to JSON string for storage)
-                    try:
-                        import json
-                        report_json = json.dumps(report)
-                        success, msg = auth.update_profile(user['id'], {"ai_report": report_json})
-                        if success:
-                            # Manually update the user object in session state
-                            if 'user' in st.session_state:
-                                st.session_state['user']['ai_report'] = report_json
-                            print("AI report generated and saved silently")
-                        else:
-                            print(f"Database save returned: {msg}")
-                    except Exception as db_error:
-                        print(f"Database save failed: {db_error}")
-                else:
-                    error_msg = report.get('error', 'Unknown error')
-                    print(f"AI Report generation failed: {error_msg}")
+                    # Prepare data for AI report
+                    ai_dash = st.session_state.get('dash', {})
+                    ai_top = ai_dash.get('featured_matches', [])[:5] if ai_dash else []
                     
-            except Exception as ai_error:
-                print(f"AI Report generation exception: {ai_error}")
+                    ai_profile = {
+                        "full_name": user.get('full_name', ''),
+                        "grades": user.get('grades', {}),
+                        "student_signals": results['student_signals']
+                    }
+                    
+                    # Generate the report silently
+                    ai_wrapper = AIReportWrapper()
+                    report = ai_wrapper.generate_narrative_report(ai_profile, ai_top)
+                    
+                    if "error" not in report and "markdown" in report:
+                        # Save report to session state first
+                        st.session_state['ai_report'] = report
+                        
+                        # Then save to database (convert to JSON string for storage)
+                        try:
+                            import json
+                            report_json = json.dumps(report)
+                            success, msg = auth.update_profile(user['id'], {"ai_report": report_json})
+                            if success:
+                                # Manually update the user object in session state
+                                if 'user' in st.session_state:
+                                    st.session_state['user']['ai_report'] = report_json
+                                print("AI report generated and saved silently")
+                            else:
+                                print(f"Database save returned: {msg}")
+                        except Exception as db_error:
+                            print(f"Database save failed: {db_error}")
+                    else:
+                        error_msg = report.get('error', 'Unknown error')
+                        print(f"AI Report generation failed: {error_msg}")
+                        
+                except Exception as ai_error:
+                    print(f"AI Report generation exception: {ai_error}")
             
             # Set flag to indicate dashboard hasn't been visited yet after quiz
             st.session_state['dashboard_visited_post_quiz'] = False
