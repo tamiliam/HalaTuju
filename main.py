@@ -1103,18 +1103,26 @@ if auth_status:
             # Filters: cat_filter (Type), state_filter (State)
             # cat_filter/state_filter are lists of selected strings
             
-            for raw_item in grouped_courses:
+            # Use 'all_courses' which is currently defined in this scope
+            # Re-apply filters manually because we cannot use the DataFrame for 'display_course_card'
+            
+            filtered_raw = []
+            
+            # Helper: Check if item matches filters
+            # Filters: cat_filter (Type), state_filter (State)
+            # cat_filter values come from df_display which used raw 'type' (renamed col matches value)
+            # state_filter values are explicitly STRINGS
+            
+            for raw_item in all_courses:
                  # Check Type (inst_type_name)
                  item_type = raw_item.get('type')
                  
-                 # Check State
-                 item_state = raw_item.get('state')
+                 # Check State (ensure str for comparison)
+                 item_state = str(raw_item.get('state')) if raw_item.get('state') else None
                  
                  # Apply Filter Logic
-                 # If filter is empty, it usually means 'All' (but here Streamlit multiselect empty usually means nothing? 
-                 # No, usually logical check above handles default: if not cat_filter: cat_filter = all_cats)
-                 
-                 # In this app, cat_filter and state_filter are populated.
+                 # If cat_filter is empty (user cleared it), it shows nothing (standard multiselect behavior unless handled)
+                 # Original dataframe logic: isin([]) -> False. So we keep that behavior.
                  
                  if item_type not in cat_filter: continue
                  if item_state not in state_filter: continue
@@ -1122,7 +1130,7 @@ if auth_status:
                  filtered_raw.append(raw_item)
             
             if not filtered_raw:
-                 st.info("No courses match the selected filters.")
+                 st.info(f"No courses match the selected filters. (Filters: {len(cat_filter)} Cats, {len(state_filter)} Locs)")
             else:
                 # 1. Init Pagination & Top Controls
                 pg_key = "list_page"
@@ -1136,12 +1144,9 @@ if auth_status:
                 # 3. Render Batch using Rich Cards
                 st.markdown("---")
                 
-                # 2-Column Grid for Grid-style card layout? 
-                # User said "list only 10 courses". A vertical list is fine.
-                # Rich cards are wide.
-                
                 for pick in batch_raw:
                      # Render Card (No trigger needed)
+                     # Ensure we pass all needed fields. 'pick' is the raw dict.
                      display_course_card(pick, t, show_trigger=False, show_title=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
