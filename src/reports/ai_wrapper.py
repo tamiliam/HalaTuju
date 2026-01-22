@@ -13,45 +13,61 @@ except ImportError:
 class AIReportWrapper:
     """
     Wrapper for Generative AI reporting using Google Gemini.
+    Implements model cascade to handle rate limits.
     """
+    
+    # Model cascade: Try these models in order until one works
+    MODEL_CASCADE = [
+        "gemini-2.5-flash",       # Try the newest balanced model first
+        "gemini-2.5-flash-lite",  # Fallback 1 (Usually has highest throughput)
+        "gemini-1.5-flash",       # Fallback 2 (Stable, widely available)
+        "gemini-1.5-flash-8b"     # Fallback 3 (Smallest, fastest, most available)
+    ]
     
     def __init__(self):
         # Try loading key from Streamlit secrets or Env
         self.api_key = None
+        self.api_key = os.getenv("GEMINI_API_KEY")
         self.model = None
         
         if not HAS_GEMINI:
+            print("google-generativeai not installed")
             return
-
+            
+        if not self.api_key:
+            print("GEMINI_API_KEY not found in environment")
+            return
+        
         try:
-            # Check for GEMINI_API_KEY first, fallback to GOOGLE_API_KEY
-            if "GEMINI_API_KEY" in st.secrets:
-                self.api_key = st.secrets["GEMINI_API_KEY"]
-            elif "GOOGLE_API_KEY" in st.secrets:
-                self.api_key = st.secrets["GOOGLE_API_KEY"]
-            else:
-                self.api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+            genai.configure(api_key=self.api_key)
+            
+            # Try models in cascade order
+            for model_name in self.MODEL_CASCADE:
+                try:
+                    self.model = genai.GenerativeModel(model_name)
+                    print(f"Successfully initialized AI model: {model_name}")
+                    break  # Success, stop trying
+                except Exception as model_error:
+                    print(f"Failed to initialize {model_name}: {model_error}")
+                    continue  # Try next model
+            
+            if not self.model:
+                print("All models in cascade failed to initialize")
                 
-            if self.api_key:
-                genai.configure(api_key=self.api_key)
-                # Found available alias via list_models()
-                # Remove JSON MIME type for Markdown output
-                self.model = genai.GenerativeModel('gemini-2.5-flash-lite')
         except Exception as e:
             print(f"AI Wrapper Init Error: {e}")
 
     def generate_narrative_report(self, student_profile, top_courses):
         """
-        Generates a deep narrative report using Gemini 1.5.
+        Generates a deep narrative report using Gemini with model cascade fallback.
         Returns a dictionary with 'markdown' key.
         """
         if not HAS_GEMINI:
              return {"error": "AI Module Missing (pip install google-generativeai)"}
              
         if not self.model:
-            return {"error": "AI Service Unavailable (Missing GEMINI_API_KEY)"}
+            return {"error": "AI Service Unavailable (Missing GEMINI_API_KEY or all models failed)"}
 
-        # 0. Determine Persona
         # 0. Determine Persona (Randomized for variety)
         import random
         counsellor_name = random.choice(["Cikgu Siva", "Cikgu Mani"])
@@ -92,16 +108,36 @@ class AIReportWrapper:
             print(f"Prompt formatting error: {e}")
             full_prompt = f"Anda ialah {counsellor_name}.\n{SYSTEM_PROMPT}\n\nDATA:\nStudent: {student_name}\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
         
-        try:
-            response = self.model.generate_content(full_prompt)
-            # Return raw markdown text AND the persona name used
-            return {
-                "markdown": response.text,
-                "counsellor_name": counsellor_name
-            }
-            
-        except Exception as e:
-            return {"error": f"Generation Failed: {str(e)}"}
+        # Try to generate with cascade fallback
+        for attempt, model_name in enumerate(self.MODEL_CASCADE):
+            try:
+                # Reinitialize model if needed
+                if attempt > 0:
+                    print(f"Retrying with {model_name}...")
+                    self.model = genai.GenerativeModel(model_name)
+                
+                response = self.model.generate_content(full_prompt)
+                text = response.text
+                
+                # Success! Return the report
+                return {
+                    "markdown": text,
+                    "counsellor_name": counsellor_name,
+                    "model_used": model_name
+                }
+                
+            except Exception as e:
+                error_msg = str(e)
+                print(f"Generation failed with {model_name}: {error_msg}")
+                
+                # If this was the last model, return error
+                if attempt == len(self.MODEL_CASCADE) - 1:
+                    return {"error": f"All models failed. Last error: {error_msg}"}
+                
+                # Otherwise continue to next model
+                continue
+        
+        return {"error": "Failed to generate report with any model"}
 
     def _extract_dominant_signals(self, signals):
         """
