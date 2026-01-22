@@ -940,10 +940,11 @@ else:
     msg = t['hero_success'].format(count=dash['total_matches'])
 st.success(msg)
 
-c1, c2, c3 = st.columns(3)
+c1, c2, c3, c4 = st.columns(4)
 c1.metric(t['inst_poly'], dash['summary_stats'].get('inst_poly', 0))
-c2.metric(t['inst_ikbn'], dash['summary_stats'].get('inst_ikbn', 0))
-c3.metric(t['inst_kk'], dash['summary_stats'].get('inst_kk', 0))
+c2.metric(t['inst_kk'], dash['summary_stats'].get('inst_kk', 0))
+c3.metric(t['inst_iljtm'], dash['summary_stats'].get('inst_iljtm', 0))
+c4.metric(t['inst_ilkbs'], dash['summary_stats'].get('inst_ilkbs', 0))
 
 # 2. Featured Matches (Teaser - Limit 3)
 # 2. Featured Matches (Teaser - Dynamic Limit)
