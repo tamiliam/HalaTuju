@@ -63,26 +63,34 @@ def get_institution_type(row):
     # Returns a translation KEY based on the category
     # Categories: Politeknik, Kolej Komuniti, ILKBS, ILJTM
     t = str(row.get('type', '')).upper()
+    cat = str(row.get('category', '')).upper()
     code = str(row.get('course_id', '')).upper()
     name = str(row.get('institution_name', '')).upper()
     acronym = str(row.get('acronym', '')).upper() # Added for robust ID
     
-    # 1. Politeknik
+    # 1. Prioritize 'category' column if available (Most robust)
+    if "POLITEKNIK" in cat: return "inst_poly"
+    if "KOLEJ KOMUNITI" in cat: return "inst_kk"
+    if "JABATAN TENAGA MANUSIA" in cat or "ILJTM" in cat: return "inst_iljtm"
+    if "ILKBS" in cat or "BELIA DAN SUKAN" in cat: return "inst_ilkbs"
+
+    # 2. Fallback: Check Name/Type strings (Legacy)
+    # Politeknik
     if "POLITEKNIK" in t or "POLY" in code or "POLITEKNIK" in name:
         return "inst_poly"
         
-    # 2. Kolej Komuniti
+    # Kolej Komuniti
     elif "KOLEJ" in t or "KK" in code or "KOMUNITI" in name:
         return "inst_kk"
         
-    # 3. ILJTM (Institut Latihan Jabatan Tenaga Manusia)
+    # ILJTM (Institut Latihan Jabatan Tenaga Manusia)
     # Includes: ILP, ADTEC, JMTI
     elif (any(x in t for x in ["ILJTM"]) or 
           any(x in name for x in ["ILP", "ADTEC", "JMTI", "JAPAN", "JEPUN"]) or
           "JMTI" in acronym):
         return "inst_iljtm"
 
-    # 4. ILKBS (Institut Latihan KBS)
+    # ILKBS (Institut Latihan KBS)
     # Includes: IKBN, IKTBN
     elif (any(x in t for x in ["ILKBS", "IKBN", "IKTBN"]) or 
           any(x in name for x in ["IKBN", "IKTBN"])):
@@ -114,7 +122,7 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
     eligible_offerings = []
     
     # Initialize stats using stable internal keys (matching get_institution_type)
-    stats_keys = ["inst_poly", "inst_ikbn", "inst_kk", "inst_other"]
+    stats_keys = ["inst_poly", "inst_kk", "inst_iljtm", "inst_ilkbs", "inst_other"]
     stats = {k: 0 for k in stats_keys}
     
     # 1. OPTIMIZATION: Check eligibility by Requirement Signature (not just Course ID)
