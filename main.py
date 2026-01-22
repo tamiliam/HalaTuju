@@ -367,76 +367,86 @@ def render_quiz_page(lang_code, user):
                 st.error(f"Could not save results: {e}")
             
             # AUTO-GENERATE AI COUNSELLOR REPORT (BACKGROUND THREAD)
-            # We want to show rotating messages for ~12-15s while AI thinks, then REVEAL.
-            from concurrent.futures import ThreadPoolExecutor
-            
-            progress_messages = [
-                "🔍 Menganalisis keputusan SPM & kekuatan akademik...",
-                "🧠 Memadankan gaya pembelajaran & minat kerjaya...",
-                "🏢 Menyemak ketersediaan kampus & lokasi...",
-                "✨ Menyusun strategi laluan terbaik anda...",
-                "✅ Laporan hampir siap..."
-            ]
-            
-            status_container = st.empty()
-            
-            # Helper to run AI (Blocking Function)
-            def run_ai_task(user_profile, dash_data):
-                try:
-                    # Wrapper must be instantiated inside or passed explicitly?
-                    # Be safe: Init here to ensure thread has access (though secrets are global)
-                    from src.reports.ai_wrapper import AIReportWrapper
-                    wrapper = AIReportWrapper()
-                    top_matches = dash_data.get('featured_matches', [])[:5]
-                    return wrapper.generate_narrative_report(user_profile, top_matches)
-                except Exception as e:
-                    return {"error": str(e)}
-
-            # Prepare Data
-            ai_dash = st.session_state.get('dash', {})
-            ai_profile = {
-                "full_name": user.get('full_name', ''),
-                "grades": user.get('grades', {}),
-                "student_signals": results['student_signals']
-            }
-            
-            # Execute in Background
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(run_ai_task, ai_profile, ai_dash)
+            # Run only once per quiz session
+            if not st.session_state.get('ai_gen_done'):
+                # WE WANT TO HIDE EVERYTHING ELSE WHILE THIS RUNS
+                # So we use a big empty container or just run this *before* printing the success messages below.
                 
-                # UI Loop: Rotate messages while waiting
-                idx = 0
-                while not future.done():
-                    msg = progress_messages[idx % len(progress_messages)]
-                    status_container.info(f"🤖 {msg}")
-                    time.sleep(2.5) # Wait 2.5s per message
-                    idx += 1
+                from concurrent.futures import ThreadPoolExecutor
                 
-                # Get Result
-                report = future.result()
-            
-            # Clear Status
-            status_container.empty()
-            
-            # Process Report
-            if "error" not in report and "markdown" in report:
-                 st.session_state['ai_report'] = report
-                 
-                 # Save to DB
-                 try:
-                     import json
-                     report_json = json.dumps(report)
-                     auth.update_profile(user['id'], {"ai_report": report_json})
-                     if 'user' in st.session_state:
-                         st.session_state['user']['ai_report'] = report_json
-                 except Exception:
-                     pass
-            else:
-                 print(f"AI Gen Error: {report.get('error')}")
+                progress_messages = [
+                    "🔍 Menganalisis keputusan SPM & kekuatan akademik...",
+                    "🧠 Memadankan gaya pembelajaran & minat kerjaya...",
+                    "🏢 Menyemak ketersediaan kampus & lokasi...",
+                    "✨ Menyusun strategi laluan terbaik anda...",
+                    "✅ Laporan hampir siap..."
+                ]
+                
+                status_container = st.empty()
+                
+                # Helper to run AI (Blocking Function)
+                def run_ai_task(user_profile, dash_data):
+                    try:
+                        # Wrapper must be instantiated inside or passed explicitly?
+                        # Be safe: Init here to ensure thread has access (though secrets are global)
+                        from src.reports.ai_wrapper import AIReportWrapper
+                        wrapper = AIReportWrapper()
+                        top_matches = dash_data.get('featured_matches', [])[:5]
+                        return wrapper.generate_narrative_report(user_profile, top_matches)
+                    except Exception as e:
+                        return {"error": str(e)}
 
-            # Set flag: Dashboard NOT yet explored
-            st.session_state['dashboard_visited_post_quiz'] = False
-            st.session_state['report_just_unlocked'] = False # Reset unlock flag
+                # Prepare Data
+                ai_dash = st.session_state.get('dash', {})
+                ai_profile = {
+                    "full_name": user.get('full_name', ''),
+                    "grades": user.get('grades', {}),
+                    "student_signals": results['student_signals']
+                }
+                
+                # Execute in Background
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(run_ai_task, ai_profile, ai_dash)
+                    
+                    # UI Loop: Rotate messages while waiting
+                    idx = 0
+                    while not future.done():
+                        # CLAMP index to last message
+                        # Message holds at "Almost ready..." until done
+                        msg_idx = min(idx, len(progress_messages) - 1)
+                        msg = progress_messages[msg_idx]
+                        
+                        status_container.info(f"🤖 {msg}")
+                        time.sleep(2.5) # Wait 2.5s per message
+                        idx += 1
+                    
+                    # Get Result
+                    report = future.result()
+                
+                # Clear Status
+                status_container.empty()
+                
+                # Process Report
+                if "error" not in report and "markdown" in report:
+                     st.session_state['ai_report'] = report
+                     
+                     # Save to DB
+                     try:
+                         import json
+                         report_json = json.dumps(report)
+                         auth.update_profile(user['id'], {"ai_report": report_json})
+                         if 'user' in st.session_state:
+                             st.session_state['user']['ai_report'] = report_json
+                     except Exception:
+                         pass
+                else:
+                     print(f"AI Gen Error: {report.get('error')}")
+
+                # Set flags
+                st.session_state['dashboard_visited_post_quiz'] = False
+                st.session_state['report_just_unlocked'] = False # Reset unlock flag
+                st.session_state['ai_gen_done'] = True # MARK DONE
+
 
         
         # Display Results - Focus on Course Ranking Update
@@ -661,6 +671,8 @@ if user:
     if st.sidebar.button(quiz_btn_label, use_container_width=True):
         quiz_manager.reset_quiz()
         st.session_state['view_mode'] = 'quiz'
+        # Reset Gen Flag
+        if 'ai_gen_done' in st.session_state: del st.session_state['ai_gen_done']
         st.rerun()
 
     # --- AI COUNSELLOR (SIDEBAR) ---
