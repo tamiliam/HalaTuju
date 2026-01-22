@@ -1078,11 +1078,21 @@ if auth_status:
         # --- SEARCH BAR ---
         search_term = st.text_input(f"🔍 {t.get('lbl_search', 'Search Courses')}", placeholder="Type course name or institution...", key="search_term").strip().lower()
         
-        c_filter1, c_filter2 = st.columns(2)
-        cat_col = t['table_col_cat']
-        cat_filter = c_filter1.multiselect(t['filter_label'], options=df_display[cat_col].unique(), default=df_display[cat_col].unique())
-        state_opts = sorted([str(x) for x in df_display["state"].unique() if x])
-        state_filter = c_filter2.multiselect(f"📍 {t.get('filter_state', 'Filter Location:')}", options=state_opts, default=state_opts)
+        # --- FILTER POPOVER ---
+        # Option 1: Clean Popover UI
+        with st.popover("🌪️ Filter Options", use_container_width=False):
+            st.markdown("### Refine your list")
+            
+            # 1. Institution Type
+            cat_col = t['table_col_cat']
+            cat_filter = st.multiselect(t['filter_label'], options=df_display[cat_col].unique(), default=df_display[cat_col].unique())
+            
+            # 2. Location
+            state_opts = sorted([str(x) for x in df_display["state"].unique() if x])
+            state_filter = st.multiselect(f"📍 {t.get('filter_state', 'Filter Location:')}", options=state_opts, default=state_opts)
+            
+            # 3. Course Category (Placeholder / WIP)
+            # st.caption("Example: Engineering, Tourism (Coming Soon)")
         
         # Apply Filter
         mask = (df_display[cat_col].isin(cat_filter)) & (df_display["state"].isin(state_filter))
