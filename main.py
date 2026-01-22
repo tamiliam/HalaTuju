@@ -362,6 +362,32 @@ def render_quiz_page(lang_code, user):
             try:
                 auth.save_quiz_results(user['id'], results['student_signals'])
                 st.toast("Results Saved!")
+                
+                # AUTO-GENERATE AI COUNSELOR REPORT
+                with st.spinner("Generating your personalized counselor report..."):
+                    from src.reports.ai_wrapper import AIReportWrapper
+                    
+                    # Prepare data for AI report
+                    ai_dash = st.session_state.get('dash', {})
+                    ai_top = ai_dash.get('featured_matches', [])[:5] if ai_dash else []
+                    
+                    ai_profile = {
+                        "full_name": user.get('full_name', ''),
+                        "grades": user.get('grades', {}),
+                        "student_signals": results['student_signals']
+                    }
+                    
+                    # Generate the report
+                    ai_wrapper = AIReportWrapper()
+                    report = ai_wrapper.generate_narrative_report(ai_profile, ai_top)
+                    
+                    if "error" not in report and "markdown" in report:
+                        # Save report to database
+                        auth.update_profile(user['id'], {"ai_report": report})
+                        st.session_state['ai_report'] = report
+                        st.toast("✨ Counselor report generated!")
+                    else:
+                        print(f"AI Report generation failed: {report.get('error', 'Unknown error')}")
                     
             except Exception as e:
                 st.error(f"Could not save results: {e}")
@@ -534,38 +560,24 @@ if user:
         st.rerun()
 
     # --- AI COUNSELLOR (SIDEBAR) ---
-    # Only show if we have ranked results (student has taken quiz)
+    # Only show if student has taken quiz
     if 'dash' in st.session_state and st.session_state['dash'].get('is_ranked'):
         
-        # Reconstruction of data for AI
-        ai_dash = st.session_state['dash']
-        ai_signals = st.session_state.get('student_signals', {})
+        # Check if report exists (in session or database)
+        report = st.session_state.get('ai_report')
+        if not report and user.get('ai_report'):
+            # Load from database if not in session
+            report = user['ai_report']
+            st.session_state['ai_report'] = report
         
-        # Fallback if signals missing from session but in user
-        if not ai_signals and user.get('student_signals'):
-            ai_signals = user['student_signals']
-            
-        ai_profile = {
-            "full_name": user.get('full_name', '') if user else '',
-            "grades": user.get('grades', {}) if user else {},
-            "student_signals": ai_signals
-        }
-        # Top 3-5 matches
-        ai_top = ai_dash.get('featured_matches', [])[:5] 
-        
-        if st.sidebar.button("✨ Generate Deep Report", key="btn_ai_gen_sb", use_container_width=True):
-            with st.spinner("Consulting AI Counselor..."):
-                from src.reports.ai_wrapper import AIReportWrapper # Lazy import
-                ai_wrapper = AIReportWrapper()
-                report = ai_wrapper.generate_narrative_report(ai_profile, ai_top)
-                
-                if "error" in report:
-                     st.error(report['error'])
-                else:
-                    # Store report in session state and switch to AI report view
-                    st.session_state['ai_report'] = report
-                    st.session_state['view_mode'] = 'ai_report'
-                    st.rerun()
+        # Button to access the counselor report
+        if st.sidebar.button("📋 Counselor Report", key="btn_ai_access_sb", use_container_width=True):
+            if report and "markdown" in report:
+                # Switch to AI report view
+                st.session_state['view_mode'] = 'ai_report'
+                st.rerun()
+            else:
+                st.sidebar.warning("Report not available. Please retake the Discovery Quiz.")
 
 
 if not user:
