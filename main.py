@@ -1022,22 +1022,17 @@ if tier2_good:
          # Compact Card
         display_title = f"{pick['course_name']} [Score: {pick['max_score']}]"
         with st.expander(display_title, expanded=False):
-             # Reuse similar layout
-            if pick.get('fit_reasons'):
-                st.markdown(f"**Why:** {' '.join(pick['fit_reasons'])}")
-            if pick.get('headline'):
-                st.markdown(f"*{pick['headline']}*")
-            
-            # Locations
-            loc_count = len(pick['locations'])
-            st.caption(f"Available at {loc_count} Locations (e.g., {pick['locations'][0]['institution_name']})")
-            
-            # Check Availability Button (could expand list)
-            df_loc = pd.DataFrame(pick['locations'])
-            if not df_loc.empty:
-                st.dataframe(df_loc[['institution_name', 'state']].head(5), hide_index=True, use_container_width=True)
-                if loc_count > 5:
-                    st.caption(f"...and {loc_count-5} more.")
+             # Reuse RICH Card Layout
+             # We pass show_trigger logic here too: if report locked, show button.
+             # This means unlocking works from Tier 2 as well!
+             is_locked_t2 = not st.session_state.get('dashboard_visited_post_quiz', True)
+             clicked_t2 = display_course_card(pick, t, show_trigger=is_locked_t2)
+             
+             if clicked_t2:
+                 if not st.session_state.get('dashboard_visited_post_quiz', False):
+                     st.session_state['dashboard_visited_post_quiz'] = True
+                     st.session_state['report_just_unlocked'] = True
+                     st.rerun()
 
 # --- RENDER TIER 3: THE REST ---
 if tier3_rest:
