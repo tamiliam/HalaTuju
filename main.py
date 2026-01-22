@@ -368,7 +368,6 @@ def render_quiz_page(lang_code, user):
             
             # AUTO-GENERATE AI COUNSELOR REPORT SILENTLY (separate try-except to avoid blocking quiz save)
             # Show rotating progress messages
-            import time
             import threading
             
             # Progress messages to rotate through
