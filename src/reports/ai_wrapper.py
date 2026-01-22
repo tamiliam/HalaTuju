@@ -97,11 +97,7 @@ class AIReportWrapper:
         if not self.model:
             return {"error": "AI Service Unavailable (Missing GEMINI_API_KEY or all models failed)"}
 
-        # 0. Determine Persona (Randomized for variety)
-        import random
-        counsellor_name = random.choice(["Cikgu Siva", "Cikgu Mani"])
-
-        # Prepare Context Strings
+        # Prepare Context Strings (Once)
         # 0. Student Name
         student_name = student_profile.get('full_name', 'pelajar')
         
@@ -122,25 +118,34 @@ class AIReportWrapper:
             inst = c.get('institution_name', 'Unknown')
             score = c.get('fit_score')
             courses_str += f"{i+1}. {c_name} at {inst} (Fit Score: {score})\n"
-            
-        # Prompt Composition
-        try:
-            full_prompt = SYSTEM_PROMPT.format(
-                counsellor_name=counsellor_name,
-                student_name=student_name,
-                student_profile=profile_str,
-                academic_context=academic_str,
-                recommended_courses=courses_str
-            )
-        except Exception as e:
-            # Fallback if format fails
-            print(f"Prompt formatting error: {e}")
-            full_prompt = f"Anda ialah {counsellor_name}.\n{SYSTEM_PROMPT}\n\nDATA:\nStudent: {student_name}\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
-        
+
         # Try to generate with cascade fallback
         # 1. Try Gemini Models
         if self.model:
             for attempt, model_name in enumerate(self.MODEL_CASCADE):
+                # Determine Persona based on Model
+                if "gemini-3" in model_name:
+                    counsellor_name = "Cikgu Venu"
+                elif "gemini-2.5" in model_name:
+                    counsellor_name = "Cikgu Gopal"
+                elif "gemini-2.0" in model_name:
+                    counsellor_name = "Cikgu Guna"
+                else:
+                    counsellor_name = "Cikgu Guna" # Default fallback for older Gemini models
+
+                # Format Prompt with specific Persona
+                try:
+                    full_prompt = SYSTEM_PROMPT.format(
+                        counsellor_name=counsellor_name,
+                        student_name=student_name,
+                        student_profile=profile_str,
+                        academic_context=academic_str,
+                        recommended_courses=courses_str
+                    )
+                except Exception as e:
+                    print(f"Prompt formatting error: {e}")
+                    full_prompt = f"Anda ialah {counsellor_name}.\n{SYSTEM_PROMPT}\n\nDATA:\nStudent: {student_name}\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
+
                 try:
                     # Reinitialize model if needed
                     if attempt > 0:
@@ -165,6 +170,21 @@ class AIReportWrapper:
         # 2. Try OpenAI Fallback (if configured)
         if self.openai_client:
             print("All Gemini models failed. Attempting OpenAI fallback...")
+            
+            # OpenAI Persona: Cikgu Mani
+            counsellor_name = "Cikgu Mani"
+            try:
+                full_prompt = SYSTEM_PROMPT.format(
+                    counsellor_name=counsellor_name,
+                    student_name=student_name,
+                    student_profile=profile_str,
+                    academic_context=academic_str,
+                    recommended_courses=courses_str
+                )
+            except Exception:
+                # Use pre-formatted fallback if simple format fails (rare)
+                 full_prompt = f"Anda ialah {counsellor_name}.\n{SYSTEM_PROMPT}\n\nDATA:\nStudent: {student_name}\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
+
             try:
                 response = self.openai_client.chat.completions.create(
                     model="gpt-5-nano",
