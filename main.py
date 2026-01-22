@@ -411,42 +411,69 @@ def render_ai_report_page(user, t):
     
     st.markdown("---")
     
-    # PDF Download Button
-    try:
-        from src.reports.pdf_generator import PDFReportGenerator
-        from datetime import datetime
-        
-        # Reconstruct profile for PDF
-        ai_signals = st.session_state.get('student_signals', {})
-        if not ai_signals and user and user.get('student_signals'):
-            ai_signals = user['student_signals']
+    # Action Buttons Row
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        # PDF Download Button
+        try:
+            from src.reports.pdf_generator import PDFReportGenerator
+            from datetime import datetime
             
-        ai_profile = {
-            "full_name": user.get('full_name', '') if user else '',
-            "grades": user.get('grades', {}) if user else {},
-            "student_signals": ai_signals
-        }
+            # Reconstruct profile for PDF
+            ai_signals = st.session_state.get('student_signals', {})
+            if not ai_signals and user and user.get('student_signals'):
+                ai_signals = user['student_signals']
+                
+            ai_profile = {
+                "full_name": user.get('full_name', '') if user else '',
+                "grades": user.get('grades', {}) if user else {},
+                "student_signals": ai_signals
+            }
+            
+            pdf_gen = PDFReportGenerator()
+            c_name = report.get('counsellor_name', "HalaTuju (AI)")
+            pdf_buffer = pdf_gen.generate_pdf(ai_profile, report['markdown'], counsellor_name=c_name)
+            
+            curr_year = datetime.now().year
+            anon_id = str(user.get('id', 'Guest'))[-6:] if user else "Guest"
+            fname = f"Laporan_Kerjaya_SPM_{curr_year}_{anon_id}.pdf"
+            
+            st.download_button(
+                label="📄 Download PDF",
+                data=pdf_buffer,
+                file_name=fname,
+                mime="application/pdf",
+                key="btn_pdf_dl_page",
+                use_container_width=True
+            )
+        except Exception as e:
+            print(f"PDF Error: {e}")
+            st.button("📄 Download PDF", disabled=True, use_container_width=True)
+    
+    with col2:
+        # WhatsApp Share Button
+        student_name = user.get('full_name', 'Student') if user else 'Student'
+        # Create a shareable message
+        whatsapp_text = f"Laporan Kerjaya HalaTuju untuk {student_name}\n\nSila muat turun laporan penuh di: https://halatuju.streamlit.app"
+        whatsapp_url = f"https://wa.me/?text={whatsapp_text.replace(' ', '%20').replace('\n', '%0A')}"
         
-        pdf_gen = PDFReportGenerator()
-        c_name = report.get('counsellor_name', "HalaTuju (AI)")
-        pdf_buffer = pdf_gen.generate_pdf(ai_profile, report['markdown'], counsellor_name=c_name)
-        
-        curr_year = datetime.now().year
-        anon_id = str(user.get('id', 'Guest'))[-6:] if user else "Guest"
-        fname = f"Laporan_Kerjaya_SPM_{curr_year}_{anon_id}.pdf"
-        
-        st.download_button(
-            label="📄 Download PDF",
-            data=pdf_buffer,
-            file_name=fname,
-            mime="application/pdf",
-            key="btn_pdf_dl_page",
+        st.link_button(
+            label="📲 Share with Parent",
+            url=whatsapp_url,
             use_container_width=True
         )
-    except Exception as e:
-        print(f"PDF Error: {e}")
-        st.warning("PDF generation unavailable at the moment.")
     
+    with col3:
+        # Print Button (uses browser print dialog)
+        if st.button("🖨️ Print Report", use_container_width=True, key="btn_print"):
+            st.markdown("""
+            <script>
+            window.print();
+            </script>
+            """, unsafe_allow_html=True)
+    
+    st.markdown("---")
     # Back to Dashboard button
     if st.button("⬅️ Back to Dashboard", use_container_width=True, type="primary"):
         st.session_state['view_mode'] = 'dashboard'
