@@ -1103,38 +1103,69 @@ if auth_status:
             # Filters: cat_filter (Type), state_filter (State)
             # cat_filter/state_filter are lists of selected strings
             
-            # Use 'all_courses' which is currently defined in this scope
-            # Re-apply filters manually because we cannot use the DataFrame for 'display_course_card'
+            # Use 'grouped_courses' (Aggregated by Course ID)
+            # This ensures we display 1 card per course with multiple locations inside.
             
             filtered_raw = []
             
             # Helper: Check if item matches filters
             # Filters: cat_filter (Type), state_filter (State)
-            # cat_filter values come from df_display which used raw 'type' (renamed col matches value)
-            # state_filter values are explicitly STRINGS
             
-            for raw_item in all_courses:
-                 # Check Type (inst_type_name)
-                 item_type = raw_item.get('type')
+            for group in grouped_courses:
+                 # Deep check inside 'locations' 
+                 # We only want to show the locations that match the filter.
+                 # If no locations match, the course shouldn't be shown.
                  
-                 # Check State (ensure str for comparison)
-                 item_state = str(raw_item.get('state')) if raw_item.get('state') else None
+                 valid_locs = []
+                 original_locs = group.get('locations', [])
                  
-                 # Apply Filter Logic
-                 # If cat_filter is empty (user cleared it), it shows nothing (standard multiselect behavior unless handled)
-                 # Original dataframe logic: isin([]) -> False. So we keep that behavior.
+                 for loc in original_locs:
+                      # Check Type
+                      l_type = loc.get('type')
+                      
+                      # Check State
+                      l_state = str(loc.get('state')) if loc.get('state') else None
+                      
+                      if l_type in cat_filter and l_state in state_filter:
+                           valid_locs.append(loc)
                  
-                 if item_type not in cat_filter: continue
-                 if item_state not in state_filter: continue
-                 
-                 filtered_raw.append(raw_item)
+                 if valid_locs:
+                      # Create a display copy to avoid mutating the original global cache
+                      # Shallow copy is fine for the dict, but we need to replace the list
+                      display_copy = group.copy()
+                      display_copy['locations'] = valid_locs
+                      
+                      # Optional: Update Top Metadata based on best remaining location?
+                      # For now, keep original course metadata (name, synopsis)
+                      
+                      filtered_raw.append(display_copy)
             
             if not filtered_raw:
                  st.info(f"No courses match the selected filters. (Filters: {len(cat_filter)} Cats, {len(state_filter)} Locs)")
             else:
-                # 1. Init Pagination & Top Controls
+                # 1. Init Pagination (Only calculate page, don't render controls yet if user wants bottom only)
+                # But we need 'render_pagination' to get the current page state and handle logic.
+                # So we call it but HIDE the output? Or modify render_pagination to have 'render=False'?
+                # Modifying dashboard.py is cleaner.
+                # OR: Just call it with unique_id="hidden" and maybe use CSS to hide it? No, that's hacky.
+                # Better: Allow 'render_pagination' to just return state.
+                
+                # Let's check 'src/dashboard.py'. It renders headers/buttons immediately.
+                # Quick fix: Just let it render at bottom. 
+                # But we need the current page number BEFORE slicing.
+                
+                # We can manually get the page number from session state.
                 pg_key = "list_page"
-                current_page = render_pagination(len(filtered_raw), BATCH_SIZE, pg_key, unique_id="top")
+                if pg_key not in st.session_state: st.session_state[pg_key] = 1
+                
+                # Ensure page is valid
+                from src.dashboard import BATCH_SIZE
+                import math
+                total_items = len(filtered_raw)
+                total_pages = math.ceil(total_items / BATCH_SIZE)
+                if st.session_state[pg_key] > total_pages: st.session_state[pg_key] = 1
+                
+                current_page = st.session_state[pg_key]
                 
                 # 2. Slice Data
                 start = (current_page - 1) * BATCH_SIZE
@@ -1146,13 +1177,15 @@ if auth_status:
                 
                 for pick in batch_raw:
                      # Render Card (No trigger needed)
-                     # Ensure we pass all needed fields. 'pick' is the raw dict.
+                     # Now 'pick' is a GROUPED object with 'locations' list.
+                     # display_course_card handles this perfectly.
                      display_course_card(pick, t, show_trigger=False, show_title=True)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 
                 # 4. Render Pagination Controls at Bottom
-                render_pagination(len(filtered_raw), BATCH_SIZE, pg_key, unique_id="bottom")
+                # This will render the buttons and update state on click
+                render_pagination(total_items, BATCH_SIZE, pg_key, unique_id="bottom")
 
 else:
     # --- LOCKED VIEW ---
