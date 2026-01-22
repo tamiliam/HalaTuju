@@ -467,11 +467,15 @@ def render_ai_report_page(user, t):
     with col3:
         # Print Button (uses browser print dialog)
         if st.button("🖨️ Print Report", use_container_width=True, key="btn_print"):
-            st.markdown("""
-            <script>
-            window.print();
-            </script>
-            """, unsafe_allow_html=True)
+            import streamlit.components.v1 as components
+            components.html(
+                """
+                <script>
+                window.print();
+                </script>
+                """,
+                height=0,
+            )
     
     st.markdown("---")
     # Back to Dashboard button
