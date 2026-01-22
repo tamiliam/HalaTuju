@@ -1091,97 +1091,63 @@ if auth_status:
         if not results:
             st.warning(t['hero_fail'])
         else:
-            # --- PAGINATED LIST VIEW ---
+ # --- PAGINATED LIST VIEW ---
             from src.dashboard import render_pagination, BATCH_SIZE
             
-            # 1. Init Pagination
-            pg_key = "list_page"
-            current_page = render_pagination(len(results), BATCH_SIZE, pg_key)
+            # Use 'grouped_courses' which is the raw list of all courses
+            # Re-apply filters manually because we cannot use the DataFrame for 'display_course_card'
             
-            # 2. Slice Data
-            start = (current_page - 1) * BATCH_SIZE
-            end = start + BATCH_SIZE
-            batch = results[start:end]
-            
-            # 3. Render Batch using Rich Cards
-            st.markdown("---")
-            for item in batch:
-                # We need to reconstruct the 'pick' object format expected by display_course_card
-                # The 'results' here come from df_filtered which might have renamed columns?
-                # Let's check: df_display renamed cols on line 1052.
-                # WARNING: The `display_course_card` expects raw keys (course_name, etc)!
-                # But `df_display` has renamed keys for the Table view (legacy).
-                # We should use the ORIGINAL objects if possible or map back.
-                
-                # BETTER APPROACH: Filter the original list `all_courses` directly, avoid DF rename mess.
-                # Let's re-apply filter on `all_courses` list to keep raw dicts.
-                pass 
-                
-            # RE-DOING FILTER LOGIC ON RAW DATA for simplicity in this block
-            # (To avoid column name conflicts)
             filtered_raw = []
             
             # Helper: Check if item matches filters
             # Filters: cat_filter (Type), state_filter (State)
-            for raw_item in all_courses:
-                 # Check Type
-                 # Map raw type to display type?
-                 # dashboard.py: "type": inst_type_name
-                 # item['type'] is the localized string already from generate_dashboard_data
-                 
+            # cat_filter/state_filter are lists of selected strings
+            
+            for raw_item in grouped_courses:
+                 # Check Type (inst_type_name)
                  item_type = raw_item.get('type')
+                 
+                 # Check State
                  item_state = raw_item.get('state')
                  
-                 # Check Cat Filter
-                 if item_type not in cat_filter: continue
+                 # Apply Filter Logic
+                 # If filter is empty, it usually means 'All' (but here Streamlit multiselect empty usually means nothing? 
+                 # No, usually logical check above handles default: if not cat_filter: cat_filter = all_cats)
                  
-                 # Check State Filter
+                 # In this app, cat_filter and state_filter are populated.
+                 
+                 if item_type not in cat_filter: continue
                  if item_state not in state_filter: continue
                  
                  filtered_raw.append(raw_item)
-                 
-            # NOW paginate the RAW objects
-            current_page = render_pagination(len(filtered_raw), BATCH_SIZE, pg_key)
-            start = (current_page - 1) * BATCH_SIZE
-            end = start + BATCH_SIZE
-            batch_raw = filtered_raw[start:end]
             
-            for pick in batch_raw:
-                 # Render Card (No trigger button needed here as they are already unlocked)
-                 display_course_card(pick, t, show_trigger=False, show_title=False)
-                 
-            st.markdown("---")
-            # Bottom Pagination (Optional, or just top is enough? User asked for bottom in screenshot?)
-            # Let's stick to top as defined by render_pagination placement, or call again?
-            # State update inside render_pagination handles it, calling it twice might render buttons twice.
-            # If we want bottom pagination, we should assign output to variable first.
-            
-            # Actually, `render_pagination` RENDERS the buttons immediately.
-            # If we want it at bottom, we call it at bottom.
-            # But we need `current_page` to slice data.
-            # So: Call a helper that RETURNS page but DONT render? No, standard pattern is top or bottom.
-            # Let's put it at BOTTOM as per request "next page like in the image" (usually bottom).
-            
-            # Wait, if we render at bottom, we need to know Page ID `start` beforehand.
-            # So we get page from state manually, slice, render, THEN render buttons at bottom.
-            
-            # Manual Get
-            if pg_key not in st.session_state: st.session_state[pg_key] = 1
-            curr = st.session_state[pg_key]
-            
-            # Slice
-            start = (curr - 1) * BATCH_SIZE
-            end = start + BATCH_SIZE
-            batch_raw = filtered_raw[start:end]
-            
-            # Render Cards
-            for pick in batch_raw:
-                 display_course_card(pick, t, show_trigger=False, show_title=True) # Show Title here since no Expander
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            # Render Pagination Controls at Bottom
-            render_pagination(len(filtered_raw), BATCH_SIZE, pg_key)
+            if not filtered_raw:
+                 st.info("No courses match the selected filters.")
+            else:
+                # 1. Init Pagination & Top Controls
+                pg_key = "list_page"
+                current_page = render_pagination(len(filtered_raw), BATCH_SIZE, pg_key, unique_id="top")
+                
+                # 2. Slice Data
+                start = (current_page - 1) * BATCH_SIZE
+                end = start + BATCH_SIZE
+                batch_raw = filtered_raw[start:end]
+                
+                # 3. Render Batch using Rich Cards
+                st.markdown("---")
+                
+                # 2-Column Grid for Grid-style card layout? 
+                # User said "list only 10 courses". A vertical list is fine.
+                # Rich cards are wide.
+                
+                for pick in batch_raw:
+                     # Render Card (No trigger needed)
+                     display_course_card(pick, t, show_trigger=False, show_title=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # 4. Render Pagination Controls at Bottom
+                render_pagination(len(filtered_raw), BATCH_SIZE, pg_key, unique_id="bottom")
 
 else:
     # --- LOCKED VIEW ---

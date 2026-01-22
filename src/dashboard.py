@@ -18,7 +18,7 @@ except ImportError:
 
 BATCH_SIZE = 10 # Configurable
 
-def render_pagination(total_items, items_per_page, current_page_key):
+def render_pagination(total_items, items_per_page, current_page_key, unique_id="main"):
     import math
     if total_items <= items_per_page: return 1
     
@@ -37,11 +37,11 @@ def render_pagination(total_items, items_per_page, current_page_key):
         st.session_state[current_page_key] = max(1, min(p, total_pages))
     
     with c1:
-        if st.button("<<", key=f"{current_page_key}_first", disabled=(current==1)):
+        if st.button("<<", key=f"{current_page_key}_{unique_id}_first", disabled=(current==1)):
             set_page(1)
             st.rerun()
     with c2:
-        if st.button("<", key=f"{current_page_key}_prev", disabled=(current==1)):
+        if st.button("<", key=f"{current_page_key}_{unique_id}_prev", disabled=(current==1)):
             set_page(current - 1)
             st.rerun()
             
@@ -49,11 +49,11 @@ def render_pagination(total_items, items_per_page, current_page_key):
         st.markdown(f"<div style='text-align:center; padding-top: 5px;'>Page <b>{current}</b> of <b>{total_pages}</b></div>", unsafe_allow_html=True)
         
     with c4:
-        if st.button(">", key=f"{current_page_key}_next", disabled=(current==total_pages)):
+        if st.button(">", key=f"{current_page_key}_{unique_id}_next", disabled=(current==total_pages)):
             set_page(current + 1)
             st.rerun()
     with c5:
-        if st.button(">>", key=f"{current_page_key}_last", disabled=(current==total_pages)):
+        if st.button(">>", key=f"{current_page_key}_{unique_id}_last", disabled=(current==total_pages)):
             set_page(total_pages)
             st.rerun()
             
