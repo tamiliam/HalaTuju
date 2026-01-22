@@ -369,7 +369,34 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
     # Conditionally render Title
     title_html = f'<h3 class="card-title">{c_name}</h3>' if show_title else ''
     
-    card_header_html = textwrap.dedent(f"""
+    # Logic: If NOT interactive (show_trigger=False), we embed the table INSIDE the card.
+    
+    if not show_trigger:
+        # EMBEDDED MODE
+        card_html = textwrap.dedent(f"""
+<div class="course-card" style="margin-bottom: 20px; padding-bottom: 5px;">
+{title_html}
+<div class="card-id">Fit Score: {score}</div>
+<div class="card-desc">
+{synopsis}
+</div>
+<div class="meta-row">
+<span class="meta-pill pill-dur">🕒 {dur}</span>
+<span class="meta-pill pill-fees">💰 {fees}</span>
+<span class="meta-pill pill-hostel">🏠 {hostel}</span>
+</div>
+{career_html}
+<hr style="margin: 10px 0; border: 0; border-top: 1px dashed #e1e1e1;">
+<div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">📍 Available at:</div>
+{tbl_html}
+</div>
+        """)
+        st.markdown(card_html, unsafe_allow_html=True)
+        return False
+        
+    else:
+        # INTERACTIVE MODE (Standard)
+        card_header_html = textwrap.dedent(f"""
 <div class="course-card" style="margin-bottom: 10px; padding-bottom: 5px;">
 {title_html}
 <div class="card-id">Fit Score: {score}</div>
@@ -384,26 +411,28 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
 </div>
 {career_html}
 </div>
-    """)
-    
-    st.markdown(card_header_html, unsafe_allow_html=True)
-    
-    # Part B: Native Interaction Trigger
-    clicked = False
-    if show_trigger:
-        # Using a unique key for every card is crucial
-        clicked = st.button(f"✨ Key Matching Factors ({len(reasons)} reason{'s' if len(reasons)!=1 else ''})", key=f"btn_why_{pick.get('course_id')}_{pick.get('institution_id', 'gen')}")
+        """)
         
-        if clicked:
-            # Show reasons dynamically if clicked (or could be used just as a trigger)
-             if reasons_html:
-                 st.markdown(f"<div style='background:#f8f9fa; padding:10px; border-radius:8px; border:1px dashed #6C5CE7;'><strong>Why match?</strong>{reasons_html}</div>", unsafe_allow_html=True)
-             else:
-                 st.info("High alignment with your academic strengths and interest profile.")
+        st.markdown(card_header_html, unsafe_allow_html=True)
+        
+        # Part B: Native Interaction Trigger
+        clicked = False
+        if show_trigger:
+            # Using a unique key for every card is crucial
+            clicked = st.button(f"✨ Key Matching Factors ({len(reasons)} reason{'s' if len(reasons)!=1 else ''})", key=f"btn_why_{pick.get('course_id')}_{pick.get('institution_id', 'gen')}")
+            
+            if clicked:
+                # Show reasons dynamically if clicked (or could be used just as a trigger)
+                 if reasons_html:
+                     st.markdown(f"<div style='background:#f8f9fa; padding:10px; border-radius:8px; border:1px dashed #6C5CE7;'><strong>Why match?</strong>{reasons_html}</div>", unsafe_allow_html=True)
+                 else:
+                     st.info("High alignment with your academic strengths and interest profile.")
 
-    # Part C: Footer (Table)
-    st.markdown(tbl_html, unsafe_allow_html=True)
-    
-    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-    
-    return clicked
+        # Part C: Footer (Table) - Rendered OUTSIDE in Interactive Mode (Wait, usually Tier 1 doesn't show table until expand? Or Tier 2?)
+        # Actually Tier 1 shows table. Tier 2 shows table.
+        # Original code rendered table OUTSIDE card.
+        st.markdown(tbl_html, unsafe_allow_html=True)
+        
+        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+        
+        return clicked

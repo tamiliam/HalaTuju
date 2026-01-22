@@ -1075,6 +1075,9 @@ if auth_status:
             "quality": t['table_col_status']
         })
         
+        # --- SEARCH BAR ---
+        search_term = st.text_input(f"🔍 {t.get('lbl_search', 'Search Courses')}", placeholder="Type course name or institution...", key="search_term").strip().lower()
+        
         c_filter1, c_filter2 = st.columns(2)
         cat_col = t['table_col_cat']
         cat_filter = c_filter1.multiselect(t['filter_label'], options=df_display[cat_col].unique(), default=df_display[cat_col].unique())
@@ -1112,12 +1115,18 @@ if auth_status:
             # Filters: cat_filter (Type), state_filter (State)
             
             for group in grouped_courses:
-                 # Deep check inside 'locations' 
-                 # We only want to show the locations that match the filter.
-                 # If no locations match, the course shouldn't be shown.
+                 # Check Search Term (Course Level)
+                 c_name = str(group.get('course_name', '')).lower()
+                 c_head = str(group.get('headline', '')).lower()
+                 c_syn = str(group.get('synopsis', '')).lower()
                  
+                 course_matches_search = (search_term in c_name or search_term in c_head or search_term in c_syn)
+                 
+                 # Check Filters & Locations Search
                  valid_locs = []
                  original_locs = group.get('locations', [])
+                 
+                 loc_matches_search = False
                  
                  for loc in original_locs:
                       # Check Type
@@ -1126,17 +1135,41 @@ if auth_status:
                       # Check State
                       l_state = str(loc.get('state')) if loc.get('state') else None
                       
+                      # Check Search (Location Level)
+                      l_inst = str(loc.get('institution_name', '')).lower()
+                      if search_term in l_inst:
+                           loc_matches_search = True
+                      
+                      # Filter Logic
                       if l_type in cat_filter and l_state in state_filter:
                            valid_locs.append(loc)
                  
+                 # Final Decision:
+                 # 1. Must match standard CAT/STATE filters (by having at least 1 valid location)
+                 # 2. Must match SEARCH (either course text OR at least one institution/location name)
+                 
+                 # Wait, if search matches "University X", we should probably show the course even if only that location matches?
+                 # But we also applied CAT/STATE filters.
+                 # Let's say SEARCH acts as an additional AND filter on top of the list.
+                 # If I search "Johor", but the state filter excludes Johor, it won't show. That's fine.
+                 
+                 # Logic:
+                 # If valid_locs is empty, it's filtered out by Cat/State. Skip.
+                 # If valid_locs is NOT empty, we check Search.
+                 # Is Match = course_matches_search OR (search_term in any of the valid_locs institution names)
+                 
                  if valid_locs:
+                      # Check Search
+                      if search_term:
+                           # Does any of the VALID locations match?
+                           any_loc_match = any(search_term in str(l.get('institution_name','')).lower() for l in valid_locs)
+                           if not (course_matches_search or any_loc_match):
+                                continue
+                                
                       # Create a display copy to avoid mutating the original global cache
                       # Shallow copy is fine for the dict, but we need to replace the list
                       display_copy = group.copy()
                       display_copy['locations'] = valid_locs
-                      
-                      # Optional: Update Top Metadata based on best remaining location?
-                      # For now, keep original course metadata (name, synopsis)
                       
                       filtered_raw.append(display_copy)
             
