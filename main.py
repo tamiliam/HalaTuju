@@ -456,6 +456,7 @@ if user:
             ai_signals = user['student_signals']
             
         ai_profile = {
+            "full_name": user.get('full_name', '') if user else '',
             "grades": user.get('grades', {}) if user else {},
             "student_signals": ai_signals
         }

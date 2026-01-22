@@ -57,6 +57,9 @@ class AIReportWrapper:
         counsellor_name = random.choice(["Cikgu Siva", "Cikgu Mani"])
 
         # Prepare Context Strings
+        # 0. Student Name
+        student_name = student_profile.get('full_name', 'pelajar')
+        
         # 1. Profile
         summary_signals = self._extract_dominant_signals(student_profile.get('student_signals', {}))
         profile_str = f"Traits: {json.dumps(summary_signals)}"
@@ -79,6 +82,7 @@ class AIReportWrapper:
         try:
             full_prompt = SYSTEM_PROMPT.format(
                 counsellor_name=counsellor_name,
+                student_name=student_name,
                 student_profile=profile_str,
                 academic_context=academic_str,
                 recommended_courses=courses_str
@@ -86,7 +90,7 @@ class AIReportWrapper:
         except Exception as e:
             # Fallback if format fails
             print(f"Prompt formatting error: {e}")
-            full_prompt = f"Anda ialah {counsellor_name}.\n{SYSTEM_PROMPT}\n\nDATA:\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
+            full_prompt = f"Anda ialah {counsellor_name}.\n{SYSTEM_PROMPT}\n\nDATA:\nStudent: {student_name}\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
         
         try:
             response = self.model.generate_content(full_prompt)
