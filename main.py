@@ -373,11 +373,11 @@ def render_quiz_page(lang_code, user):
             
             # Progress messages to rotate through
             progress_messages = [
-                "📊 Menganalisis keputusan SPM anda...",
-                "🧠 Memahami gaya pembelajaran anda...",
-                "🎯 Mencari kursus yang sesuai...",
-                "🔄 Menyusun ranking kursus...",
-                "✨ Hampir siap..."
+                t.get('progress_analyzing_spm', "📊 Analyzing..."),
+                t.get('progress_understanding_style', "🧠 Understanding..."),
+                t.get('progress_finding_courses', "🎯 Finding courses..."),
+                t.get('progress_ranking_courses', "🔄 Ranking..."),
+                t.get('progress_almost_ready', "✨ Almost ready...")
             ]
             
             # Create placeholder for rotating message
@@ -446,14 +446,14 @@ def render_quiz_page(lang_code, user):
             st.session_state['dashboard_visited_post_quiz'] = False
         
         # Display Results - Focus on Course Ranking Update
-        st.success("✅ Ranking kursus telah dikemas kini!")
+        st.success(t.get('quiz_ranking_updated', "✅ Ranking updated!"))
 
         # Explainer Text
-        st.markdown("📊 **Sila ke Dashboard untuk melihat cadangan anda.**")
-        st.markdown("Kursus telah disusun mengikut kesesuaian anda berdasarkan keputusan Discovery Quiz.")
+        st.markdown(t.get('quiz_view_dashboard_msg', "📊 **Please view Dashboard.**"))
+        st.markdown(t.get('quiz_courses_ranked_msg', "Courses have been ranked."))
 
         # Call to Action (CTA)
-        if st.button("📊 Lihat Dashboard", use_container_width=True, type="primary"):
+        if st.button(t.get('btn_view_dashboard', "📊 View Dashboard"), use_container_width=True, type="primary"):
             # UPDATE SESSION WITH NEW RESULTS
             st.session_state['student_signals'] = results['student_signals']
             
@@ -668,11 +668,11 @@ if user:
         
         if not dashboard_visited:
             # Show prompt to view dashboard first
-            st.sidebar.info("📊 **Lihat kursus yang dicadangkan di bawah.**\n\nPerhatikan susunan ranking.")
+            st.sidebar.info(t.get('report_prompt_explore', "📊 **View courses below.**"))
         else:
             # Dashboard has been visited - show unlock message if just unlocked
             if st.session_state.get('report_just_unlocked', False):
-                st.sidebar.success("💡 **Tertanya-tanya kenapa kursus ini di atas?**\n\nLaporan kaunseling kini tersedia.")
+                st.sidebar.success(t.get('report_unlock_msg', "💡 **Report available!**"))
                 st.session_state['report_just_unlocked'] = False
             
             # Button to access the counselor report

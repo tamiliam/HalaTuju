@@ -194,6 +194,23 @@ TEXTS = {
         "sb_returning_user": "🔐 **Returning Users**",
         "sb_login": "Login",
         "sb_welcome": "Welcome back!",
+        
+        # Post-Quiz Progress Messages
+        "progress_analyzing_spm": "📊 Analyzing your SPM results...",
+        "progress_understanding_style": "🧠 Understanding your learning style...",
+        "progress_finding_courses": "🎯 Finding suitable courses...",
+        "progress_ranking_courses": "🔄 Ranking courses...",
+        "progress_almost_ready": "✨ Almost ready...",
+        
+        # Post-Quiz Success
+        "quiz_ranking_updated": "✅ Course ranking has been updated!",
+        "quiz_view_dashboard_msg": "📊 **Please go to Dashboard to view your recommendations.**",
+        "quiz_courses_ranked_msg": "Courses have been arranged according to your suitability based on the Discovery Quiz results.",
+        "btn_view_dashboard": "📊 View Dashboard",
+        
+        # Report Gating
+        "report_prompt_explore": "📊 **View the recommended courses below.**\n\nNotice the ranking order.",
+        "report_unlock_msg": "💡 **Wondering why these courses are ranked this way?**\n\nCounseling report now available.",
 
         # Featured Matches
         "feat_title": "🌟 Featured Matches",
@@ -438,11 +455,28 @@ TEXTS = {
         "sb_lang": "🌐 Bahasa",
         "sb_logout": "Log Keluar",
         "sb_retake_quiz": "🔄 Ambil Semula Kuiz",
-        "sb_start_quiz": "🧭 Mula Kuiz Penemuan",
+        "sb_start_quiz": "🧭 Mula Kuiz Discovery",
         "sb_guest_mode": "👋 Mod Tetamu",
         "sb_returning_user": "🔐 **Pengguna Sedia Ada**",
         "sb_login": "Log Masuk",
         "sb_welcome": "Selamat kembali!",
+        
+        # Post-Quiz Progress Messages
+        "progress_analyzing_spm": "📊 Menganalisis keputusan SPM anda...",
+        "progress_understanding_style": "🧠 Memahami gaya pembelajaran anda...",
+        "progress_finding_courses": "🎯 Mencari kursus yang sesuai...",
+        "progress_ranking_courses": "🔄 Menyusun ranking kursus...",
+        "progress_almost_ready": "✨ Hampir siap...",
+        
+        # Post-Quiz Success
+        "quiz_ranking_updated": "✅ Ranking kursus telah dikemas kini!",
+        "quiz_view_dashboard_msg": "📊 **Sila ke Dashboard untuk melihat cadangan anda.**",
+        "quiz_courses_ranked_msg": "Kursus telah disusun mengikut kesesuaian anda berdasarkan keputusan Discovery Quiz.",
+        "btn_view_dashboard": "📊 Lihat Dashboard",
+        
+        # Report Gating
+        "report_prompt_explore": "📊 **Lihat kursus yang dicadangkan di bawah.**\n\nPerhatikan susunan ranking.",
+        "report_unlock_msg": "💡 **Tertanya-tanya kenapa kursus ini di atas?**\n\nLaporan kaunseling kini tersedia.",
 
         # Featured Matches
         "feat_title": "🌟 Pilihan Utama",
@@ -687,12 +721,29 @@ TEXTS = {
         # Sidebar
         "sb_lang": "🌐 மொழி",
         "sb_logout": "வெளியேறு",
-        "sb_retake_quiz": "🔄 வினாடி வினாவை மீண்டும் எடுக்கவும்",
-        "sb_start_quiz": "🧭 வினாடி வினாவைத் தொடங்குங்கள்",
+        "sb_retake_quiz": "🔄 மறுபரிசோதனை",
+        "sb_start_quiz": "🧭 கண்டுபிடிப்பு வினாடி வினா",
         "sb_guest_mode": "👋 விருந்தினர் முறை",
-        "sb_returning_user": "🔐 **ஏற்கனவே உள்ள பயனர்**",
-        "sb_login": "உள்நுழைய",
-        "sb_welcome": "மீண்டும் வருக!",
+        "sb_returning_user": "🔐 **திரும்பும் பயனர்கள்**",
+        "sb_login": "உள்நுழை",
+        "sb_welcome": "மீண்டும் வரவேற்கிறோம்!",
+        
+        # Post-Quiz Progress Messages
+        "progress_analyzing_spm": "📊 உங்கள் SPM முடிவுகளை பகுப்பாய்வு செய்கிறது...",
+        "progress_understanding_style": "🧠 உங்கள் கற்றல் பாணியை புரிந்துகொள்கிறது...",
+        "progress_finding_courses": "🎯 பொருத்தமான படிப்புகளை கண்டறிகிறது...",
+        "progress_ranking_courses": "🔄 படிப்புகளை வரிசைப்படுத்துகிறது...",
+        "progress_almost_ready": "✨ கிட்டத்தட்ட தயார்...",
+        
+        # Post-Quiz Success
+        "quiz_ranking_updated": "✅ படிப்பு வரிசை புதுப்பிக்கப்பட்டது!",
+        "quiz_view_dashboard_msg": "📊 **உங்கள் பரிந்துரைகளை பார்க்க டாஷ்போர்டுக்கு செல்லவும்.**",
+        "quiz_courses_ranked_msg": "கண்டுபிடிப்பு வினாடி வினா முடிவுகளின் அடிப்படையில் படிப்புகள் உங்கள் பொருத்தத்திற்கு ஏற்ப ஏற்பாடு செய்யப்பட்டுள்ளன.",
+        "btn_view_dashboard": "📊 டாஷ்போர்டை பார்க்கவும்",
+        
+        # Report Gating
+        "report_prompt_explore": "📊 **கீழே பரிந்துரைக்கப்பட்ட படிப்புகளை பார்க்கவும்.**\n\nவரிசை வரிசையை கவனியுங்கள்.",
+        "report_unlock_msg": "💡 **இந்த படிப்புகள் ஏன் இவ்வாறு வரிசைப்படுத்தப்பட்டுள்ளன என்று ஆச்சரியமாக உள்ளதா?**\n\nஆலோசனை அறிக்கை இப்போது கிடைக்கிறது.",
 
         # Featured Matches
         "feat_title": "🌟 சிறப்புத் தேர்வுகள்",
