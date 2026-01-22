@@ -13,7 +13,51 @@ try:
 except ImportError:
     # Fallback/Debug
     print("WARNING: Could not import src.description. Using empty dict.")
+    print("WARNING: Could not import src.description. Using empty dict.")
     course_info = {}
+
+BATCH_SIZE = 10 # Configurable
+
+def render_pagination(total_items, items_per_page, current_page_key):
+    import math
+    if total_items <= items_per_page: return 1
+    
+    total_pages = math.ceil(total_items / items_per_page)
+    
+    # Get Current Page from Session (safe get)
+    if current_page_key not in st.session_state:
+        st.session_state[current_page_key] = 1
+        
+    current = st.session_state[current_page_key]
+    
+    # Render Controls
+    c1, c2, c3, c4, c5 = st.columns([1,1,2,1,1])
+    
+    def set_page(p):
+        st.session_state[current_page_key] = max(1, min(p, total_pages))
+    
+    with c1:
+        if st.button("<<", key=f"{current_page_key}_first", disabled=(current==1)):
+            set_page(1)
+            st.rerun()
+    with c2:
+        if st.button("<", key=f"{current_page_key}_prev", disabled=(current==1)):
+            set_page(current - 1)
+            st.rerun()
+            
+    with c3:
+        st.markdown(f"<div style='text-align:center; padding-top: 5px;'>Page <b>{current}</b> of <b>{total_pages}</b></div>", unsafe_allow_html=True)
+        
+    with c4:
+        if st.button(">", key=f"{current_page_key}_next", disabled=(current==total_pages)):
+            set_page(current + 1)
+            st.rerun()
+    with c5:
+        if st.button(">>", key=f"{current_page_key}_last", disabled=(current==total_pages)):
+            set_page(total_pages)
+            st.rerun()
+            
+    return current
 
 def get_institution_type(row):
     # Returns a translation KEY based on the category

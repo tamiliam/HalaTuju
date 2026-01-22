@@ -1091,9 +1091,98 @@ if auth_status:
         if not results:
             st.warning(t['hero_fail'])
         else:
-            # Show the filtered results as a table (Legacy Filter Support)
-            # This allows users to use the bottom "Filter" widgets if they want.
-            st.dataframe(df_filtered, hide_index=True)
+            # --- PAGINATED LIST VIEW ---
+            from src.dashboard import render_pagination, BATCH_SIZE
+            
+            # 1. Init Pagination
+            pg_key = "list_page"
+            current_page = render_pagination(len(results), BATCH_SIZE, pg_key)
+            
+            # 2. Slice Data
+            start = (current_page - 1) * BATCH_SIZE
+            end = start + BATCH_SIZE
+            batch = results[start:end]
+            
+            # 3. Render Batch using Rich Cards
+            st.markdown("---")
+            for item in batch:
+                # We need to reconstruct the 'pick' object format expected by display_course_card
+                # The 'results' here come from df_filtered which might have renamed columns?
+                # Let's check: df_display renamed cols on line 1052.
+                # WARNING: The `display_course_card` expects raw keys (course_name, etc)!
+                # But `df_display` has renamed keys for the Table view (legacy).
+                # We should use the ORIGINAL objects if possible or map back.
+                
+                # BETTER APPROACH: Filter the original list `all_courses` directly, avoid DF rename mess.
+                # Let's re-apply filter on `all_courses` list to keep raw dicts.
+                pass 
+                
+            # RE-DOING FILTER LOGIC ON RAW DATA for simplicity in this block
+            # (To avoid column name conflicts)
+            filtered_raw = []
+            
+            # Helper: Check if item matches filters
+            # Filters: cat_filter (Type), state_filter (State)
+            for raw_item in all_courses:
+                 # Check Type
+                 # Map raw type to display type?
+                 # dashboard.py: "type": inst_type_name
+                 # item['type'] is the localized string already from generate_dashboard_data
+                 
+                 item_type = raw_item.get('type')
+                 item_state = raw_item.get('state')
+                 
+                 # Check Cat Filter
+                 if item_type not in cat_filter: continue
+                 
+                 # Check State Filter
+                 if item_state not in state_filter: continue
+                 
+                 filtered_raw.append(raw_item)
+                 
+            # NOW paginate the RAW objects
+            current_page = render_pagination(len(filtered_raw), BATCH_SIZE, pg_key)
+            start = (current_page - 1) * BATCH_SIZE
+            end = start + BATCH_SIZE
+            batch_raw = filtered_raw[start:end]
+            
+            for pick in batch_raw:
+                 # Render Card (No trigger button needed here as they are already unlocked)
+                 display_course_card(pick, t, show_trigger=False, show_title=False)
+                 
+            st.markdown("---")
+            # Bottom Pagination (Optional, or just top is enough? User asked for bottom in screenshot?)
+            # Let's stick to top as defined by render_pagination placement, or call again?
+            # State update inside render_pagination handles it, calling it twice might render buttons twice.
+            # If we want bottom pagination, we should assign output to variable first.
+            
+            # Actually, `render_pagination` RENDERS the buttons immediately.
+            # If we want it at bottom, we call it at bottom.
+            # But we need `current_page` to slice data.
+            # So: Call a helper that RETURNS page but DONT render? No, standard pattern is top or bottom.
+            # Let's put it at BOTTOM as per request "next page like in the image" (usually bottom).
+            
+            # Wait, if we render at bottom, we need to know Page ID `start` beforehand.
+            # So we get page from state manually, slice, render, THEN render buttons at bottom.
+            
+            # Manual Get
+            if pg_key not in st.session_state: st.session_state[pg_key] = 1
+            curr = st.session_state[pg_key]
+            
+            # Slice
+            start = (curr - 1) * BATCH_SIZE
+            end = start + BATCH_SIZE
+            batch_raw = filtered_raw[start:end]
+            
+            # Render Cards
+            for pick in batch_raw:
+                 display_course_card(pick, t, show_trigger=False, show_title=True) # Show Title here since no Expander
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Render Pagination Controls at Bottom
+            render_pagination(len(filtered_raw), BATCH_SIZE, pg_key)
+
 else:
     # --- LOCKED VIEW ---
     if dash and dash.get('total_matches', 0) > 0:
