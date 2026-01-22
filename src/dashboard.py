@@ -246,6 +246,7 @@ def display_course_card(pick, t=None):
     """
     Renders a single "Product Card" for a course recommendation.
     Uses 'course-card' CSS class for modern styling (Gen Z appeal).
+    Returns True if the 'See why' button is clicked.
     """
     import streamlit as st
     import textwrap
@@ -254,6 +255,13 @@ def display_course_card(pick, t=None):
     c_name = pick.get('course_name', 'Unknown Course')
     score = pick.get('max_score', 0)
     synopsis = pick.get('synopsis', '')
+    
+    # Fit Reasons Logic
+    reasons = pick.get('fit_reasons', [])
+    reasons_html = ""
+    if reasons:
+        reasons_list = "".join([f"<li>{r}</li>" for r in reasons[:3]])
+        reasons_html = f"<ul style='margin: 5px 0 10px 15px; color: #555;'>{reasons_list}</ul>"
     
     locs = pick.get('locations', [])
     loc0 = locs[0] if locs else {}
@@ -268,7 +276,7 @@ def display_course_card(pick, t=None):
     if pick.get('jobs'):
          career_html = f'<div class="career-box">💼 {", ".join(pick["jobs"])}</div>'
     
-    # 3. Table HTML
+    # 3. Table HTML (Preserved as Visible)
     tbl_html = ""
     if locs:
          container_style = "margin-top: 8px;"
@@ -284,11 +292,13 @@ def display_course_card(pick, t=None):
              name = loc.get('institution_name', 'Unknown')
              url = loc.get('inst_url', '#')
              state = loc.get('state', '-')
+             score_loc = loc.get('score', 0)
              
              rows += f"""
 <tr style="border-bottom: 1px solid #f1f2f6;">
 <td style="padding: 8px;"><a href="{url}" target="_blank" class="inst-link">{name}</a></td>
 <td style="padding: 8px; color: #636e72;">{state}</td>
+<td style="padding: 8px; text-align:right; font-weight:bold; color:#6C5CE7;">{score_loc}</td>
 </tr>
 """
              
@@ -299,6 +309,7 @@ def display_course_card(pick, t=None):
 <tr style="border-bottom: 2px solid #e1e1e1; background: #fafafa;">
 <th style="padding: 8px; text-align:left; color:#6C5CE7; font-weight:700;">Institution</th>
 <th style="padding: 8px; text-align:left; color:#6C5CE7; font-weight:700;">State</th>
+<th style="padding: 8px; text-align:right; color:#6C5CE7; font-weight:700;">Fit</th>
 </tr>
 </thead>
 <tbody>
@@ -308,9 +319,11 @@ def display_course_card(pick, t=None):
 </div>
 """
 
-    # 4. Construct Full Card
-    full_card_html = textwrap.dedent(f"""
-<div class="course-card">
+    # 4. Construct Card Parts
+    
+    # Part A: Header
+    card_header_html = textwrap.dedent(f"""
+<div class="course-card" style="margin-bottom: 10px; padding-bottom: 5px;">
 <h3 class="card-title">{c_name}</h3>
 <div class="card-id">Fit Score: {score}</div>
 <div class="card-desc">
@@ -320,11 +333,27 @@ def display_course_card(pick, t=None):
 <span class="meta-pill pill-dur">🕒 {dur}</span>
 <span class="meta-pill pill-fees">💰 {fees}</span>
 <span class="meta-pill pill-hostel">🏠 {hostel}</span>
-<a href="{det_url}" target="_blank" class="meta-pill pill-link">More details ↗</a>
 </div>
 {career_html}
-{tbl_html}
 </div>
     """)
     
-    st.markdown(full_card_html, unsafe_allow_html=True)
+    st.markdown(card_header_html, unsafe_allow_html=True)
+    
+    # Part B: Native Interaction Trigger
+    # Using a unique key for every card is crucial
+    clicked = st.button(f"✨ Key Matching Factors ({len(reasons)} reason{'s' if len(reasons)!=1 else ''})", key=f"btn_why_{pick.get('course_id')}_{pick.get('institution_id', 'gen')}")
+    
+    if clicked:
+        # Show reasons dynamically if clicked (or could be used just as a trigger)
+         if reasons_html:
+             st.markdown(f"<div style='background:#f8f9fa; padding:10px; border-radius:8px; border:1px dashed #6C5CE7;'><strong>Why match?</strong>{reasons_html}</div>", unsafe_allow_html=True)
+         else:
+             st.info("High alignment with your academic strengths and interest profile.")
+
+    # Part C: Footer (Table)
+    st.markdown(tbl_html, unsafe_allow_html=True)
+    
+    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+    
+    return clicked

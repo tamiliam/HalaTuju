@@ -366,83 +366,78 @@ def render_quiz_page(lang_code, user):
             except Exception as e:
                 st.error(f"Could not save results: {e}")
             
-            # AUTO-GENERATE AI COUNSELOR REPORT SILENTLY (separate try-except to avoid blocking quiz save)
-            # Show rotating progress messages
-            import threading
+            # AUTO-GENERATE AI COUNSELLOR REPORT (BACKGROUND THREAD)
+            # We want to show rotating messages for ~12-15s while AI thinks, then REVEAL.
+            from concurrent.futures import ThreadPoolExecutor
             
-            # Progress messages to rotate through
             progress_messages = [
-                t.get('progress_analyzing_spm', "📊 Analyzing..."),
-                t.get('progress_understanding_style', "🧠 Understanding..."),
-                t.get('progress_finding_courses', "🎯 Finding courses..."),
-                t.get('progress_ranking_courses', "🔄 Ranking..."),
-                t.get('progress_almost_ready', "✨ Almost ready...")
+                "🔍 Menganalisis keputusan SPM & kekuatan akademik...",
+                "🧠 Memadankan gaya pembelajaran & minat kerjaya...",
+                "🏢 Menyemak ketersediaan kampus & lokasi...",
+                "✨ Menyusun strategi laluan terbaik anda...",
+                "✅ Laporan hampir siap..."
             ]
             
-            # Create placeholder for rotating message
-            progress_placeholder = st.empty()
+            status_container = st.empty()
             
-            # Function to rotate messages
-            def rotate_messages():
-                for i, msg in enumerate(progress_messages):
-                    progress_placeholder.info(f"🔄 {msg}")
-                    if i < len(progress_messages) - 1:  # Don't sleep on last message
-                        time.sleep(3)
+            # Helper to run AI (Blocking Function)
+            def run_ai_task(user_profile, dash_data):
+                try:
+                    # Wrapper must be instantiated inside or passed explicitly?
+                    # Be safe: Init here to ensure thread has access (though secrets are global)
+                    from src.reports.ai_wrapper import AIReportWrapper
+                    wrapper = AIReportWrapper()
+                    top_matches = dash_data.get('featured_matches', [])[:5]
+                    return wrapper.generate_narrative_report(user_profile, top_matches)
+                except Exception as e:
+                    return {"error": str(e)}
+
+            # Prepare Data
+            ai_dash = st.session_state.get('dash', {})
+            ai_profile = {
+                "full_name": user.get('full_name', ''),
+                "grades": user.get('grades', {}),
+                "student_signals": results['student_signals']
+            }
             
-            # Start message rotation in background
-            message_thread = threading.Thread(target=rotate_messages)
-            message_thread.start()
+            # Execute in Background
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(run_ai_task, ai_profile, ai_dash)
+                
+                # UI Loop: Rotate messages while waiting
+                idx = 0
+                while not future.done():
+                    msg = progress_messages[idx % len(progress_messages)]
+                    status_container.info(f"🤖 {msg}")
+                    time.sleep(2.5) # Wait 2.5s per message
+                    idx += 1
+                
+                # Get Result
+                report = future.result()
             
-            try:
-                # Generate report silently in background - no UI shown to user
-                from src.reports.ai_wrapper import AIReportWrapper
-                
-                # Prepare data for AI report
-                ai_dash = st.session_state.get('dash', {})
-                ai_top = ai_dash.get('featured_matches', [])[:5] if ai_dash else []
-                
-                ai_profile = {
-                    "full_name": user.get('full_name', ''),
-                    "grades": user.get('grades', {}),
-                    "student_signals": results['student_signals']
-                }
-                
-                # Generate the report silently
-                ai_wrapper = AIReportWrapper()
-                report = ai_wrapper.generate_narrative_report(ai_profile, ai_top)
-                
-                if "error" not in report and "markdown" in report:
-                    # Save report to session state first
-                    st.session_state['ai_report'] = report
-                    
-                    # Then save to database (convert to JSON string for storage)
-                    try:
-                        import json
-                        report_json = json.dumps(report)
-                        success, msg = auth.update_profile(user['id'], {"ai_report": report_json})
-                        if success:
-                            # Manually update the user object in session state
-                            if 'user' in st.session_state:
-                                st.session_state['user']['ai_report'] = report_json
-                            print("AI report generated and saved silently")
-                        else:
-                            print(f"Database save returned: {msg}")
-                    except Exception as db_error:
-                        print(f"Database save failed: {db_error}")
-                else:
-                    error_msg = report.get('error', 'Unknown error')
-                    print(f"AI Report generation failed: {error_msg}")
-                    
-            except Exception as ai_error:
-                print(f"AI Report generation exception: {ai_error}")
-            finally:
-                # Wait for message thread to complete
-                message_thread.join(timeout=1)
-                # Clear the progress message
-                progress_placeholder.empty()
+            # Clear Status
+            status_container.empty()
             
-            # Set flag to indicate dashboard hasn't been visited yet after quiz
+            # Process Report
+            if "error" not in report and "markdown" in report:
+                 st.session_state['ai_report'] = report
+                 
+                 # Save to DB
+                 try:
+                     import json
+                     report_json = json.dumps(report)
+                     auth.update_profile(user['id'], {"ai_report": report_json})
+                     if 'user' in st.session_state:
+                         st.session_state['user']['ai_report'] = report_json
+                 except Exception:
+                     pass
+            else:
+                 print(f"AI Gen Error: {report.get('error')}")
+
+            # Set flag: Dashboard NOT yet explored
             st.session_state['dashboard_visited_post_quiz'] = False
+            st.session_state['report_just_unlocked'] = False # Reset unlock flag
+
         
         # Display Results - Focus on Course Ranking Update
         st.success(t.get('quiz_ranking_updated', "✅ Ranking updated!"))
@@ -694,7 +689,9 @@ if user:
         
         if not dashboard_visited:
             # Show prompt to view dashboard first
-            st.sidebar.info(t.get('report_prompt_explore', "📊 **View courses in main page.**"))
+            st.sidebar.info("💡 **Explore courses to unlock report**")
+            # Optionally show a greyed out button?
+            st.sidebar.button("🔒 Counselor Report", disabled=True, use_container_width=True)
         else:
             # Dashboard has been visited - show unlock message if just unlocked
             if st.session_state.get('report_just_unlocked', False):
@@ -915,12 +912,11 @@ if auth_status:
 st.title(t['header_title'])
 
 # Track dashboard visit for report unlocking
-if user and dash and dash.get('total_matches', 0) > 0:
-    # Check if this is first visit after quiz completion
-    if not st.session_state.get('dashboard_visited_post_quiz', True):
-        # Mark as visited and set unlock flag
-        st.session_state['dashboard_visited_post_quiz'] = True
-        st.session_state['report_just_unlocked'] = True
+    # Logic: Defaults to False if key doesn't exist
+    # If False, we hide the button.
+    # We only flip to True if user INTERACTS.
+    pass
+
 
 if not dash or dash['total_matches'] == 0:
     st.info(t['landing_msg'])
@@ -992,7 +988,17 @@ from src.dashboard import display_course_card
 
 for pick in tier1_featured:
     # Use the new Refactored Card
-    display_course_card(pick, t)
+    # It returns TRUE if the user clicked the interaction button
+    interacted = display_course_card(pick, t)
+    
+    if interacted:
+        # User engaged with the content!
+        # Unlock the report
+        if not st.session_state.get('dashboard_visited_post_quiz', False):
+             st.session_state['dashboard_visited_post_quiz'] = True
+             st.session_state['report_just_unlocked'] = True
+             st.rerun() # Refresh to show the sidebar button
+
 
 # --- RENDER TIER 2: GOOD OPTIONS ---
 if tier2_good:
