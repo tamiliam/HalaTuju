@@ -10,6 +10,13 @@ except ImportError:
     HAS_GEMINI = False
     print("Warning: 'google-generativeai' module not found. AI features disabled.")
 
+try:
+    from openai import OpenAI
+    HAS_OPENAI = True
+except ImportError:
+    HAS_OPENAI = False
+    print("Warning: 'openai' module not found.")
+
 class AIReportWrapper:
     """
     Wrapper for Generative AI reporting using Google Gemini.
@@ -58,6 +65,26 @@ class AIReportWrapper:
                 
         except Exception as e:
             print(f"AI Wrapper Init Error: {e}")
+
+        # OpenAI Initialization (Fallback)
+        self.openai_client = None
+        self.openai_api_key = os.getenv("OPENAI_API_KEY")
+        
+        # Also check Streamlit secrets if not in env
+        if not self.openai_api_key:
+            try:
+                self.openai_api_key = st.secrets.get("OPENAI_API_KEY")
+            except Exception:
+                pass
+        
+        if HAS_OPENAI and self.openai_api_key:
+            try:
+                self.openai_client = OpenAI(api_key=self.openai_api_key)
+                print("Successfully initialized OpenAI client (Fallback)")
+            except Exception as e:
+                print(f"Failed to initialize OpenAI client: {e}")
+        else:
+            print("OpenAI fallback not configured (Missing 'openai' module or OPENAI_API_KEY)")
 
     def generate_narrative_report(self, student_profile, top_courses):
         """
@@ -111,35 +138,53 @@ class AIReportWrapper:
             full_prompt = f"Anda ialah {counsellor_name}.\n{SYSTEM_PROMPT}\n\nDATA:\nStudent: {student_name}\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
         
         # Try to generate with cascade fallback
-        for attempt, model_name in enumerate(self.MODEL_CASCADE):
+        # 1. Try Gemini Models
+        if self.model:
+            for attempt, model_name in enumerate(self.MODEL_CASCADE):
+                try:
+                    # Reinitialize model if needed
+                    if attempt > 0:
+                        print(f"Retrying with {model_name}...")
+                        self.model = genai.GenerativeModel(model_name)
+                    
+                    response = self.model.generate_content(full_prompt)
+                    text = response.text
+                    
+                    # Success! Return the report
+                    return {
+                        "markdown": text,
+                        "counsellor_name": counsellor_name,
+                        "model_used": model_name
+                    }
+                    
+                except Exception as e:
+                    error_msg = str(e)
+                    print(f"Generation failed with {model_name}: {error_msg}")
+                    continue
+        
+        # 2. Try OpenAI Fallback (if configured)
+        if self.openai_client:
+            print("All Gemini models failed. Attempting OpenAI fallback...")
             try:
-                # Reinitialize model if needed
-                if attempt > 0:
-                    print(f"Retrying with {model_name}...")
-                    self.model = genai.GenerativeModel(model_name)
-                
-                response = self.model.generate_content(full_prompt)
-                text = response.text
-                
-                # Success! Return the report
+                response = self.openai_client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful and empathetic career counselor for Malaysian students."},
+                        {"role": "user", "content": full_prompt}
+                    ],
+                    temperature=0.7
+                )
+                text = response.choices[0].message.content
                 return {
                     "markdown": text,
                     "counsellor_name": counsellor_name,
-                    "model_used": model_name
+                    "model_used": "openai-gpt-4o-mini"
                 }
-                
             except Exception as e:
-                error_msg = str(e)
-                print(f"Generation failed with {model_name}: {error_msg}")
-                
-                # If this was the last model, return error
-                if attempt == len(self.MODEL_CASCADE) - 1:
-                    return {"error": f"All models failed. Last error: {error_msg}"}
-                
-                # Otherwise continue to next model
-                continue
-        
-        return {"error": "Failed to generate report with any model"}
+                print(f"OpenAI fallback failed: {e}")
+                return {"error": f"All AI services failed. Gemini: {error_msg if 'error_msg' in locals() else 'Init failed'}, OpenAI: {str(e)}"}
+
+        return {"error": "Failed to generate report with any model (OpenAI not configured or failed)"}
 
     def _extract_dominant_signals(self, signals):
         """
