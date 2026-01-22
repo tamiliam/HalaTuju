@@ -1079,17 +1079,22 @@ if auth_status:
         search_term = st.text_input(f"🔍 {t.get('lbl_search', 'Search Courses')}", placeholder="Type course name or institution...", key="search_term").strip().lower()
         
         # --- FILTER POPOVER ---
-        # Option 1: Clean Popover UI
+        # Option 1: Clean Popover UI with Blue Pills
         with st.popover("🌪️ Filter Options", use_container_width=False):
             st.markdown("### Refine your list")
             
-            # 1. Institution Type
+            # 1. Institution Type (Pills)
             cat_col = t['table_col_cat']
-            cat_filter = st.multiselect(t['filter_label'], options=df_display[cat_col].unique(), default=df_display[cat_col].unique())
+            # st.pills is available in newer Streamlit versions
+            cat_filter = st.pills(t['filter_label'], options=df_display[cat_col].unique(), selection_mode="multi", default=df_display[cat_col].unique(), key="pill_cat")
             
-            # 2. Location
-            state_opts = sorted([str(x) for x in df_display["state"].unique() if x])
-            state_filter = st.multiselect(f"📍 {t.get('filter_state', 'Filter Location:')}", options=state_opts, default=state_opts)
+            st.markdown("---")
+            
+            # 2. Location (Pills inside Expander to save space)
+            # Use a slightly different label or expander title
+            with st.expander(f"📍 {t.get('filter_state', 'Filter Location')}", expanded=True):
+                 state_opts = sorted([str(x) for x in df_display["state"].unique() if x])
+                 state_filter = st.pills("Select States", options=state_opts, selection_mode="multi", default=state_opts, key="pill_state")
             
             # 3. Course Category (Placeholder / WIP)
             # st.caption("Example: Engineering, Tourism (Coming Soon)")
