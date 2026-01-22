@@ -912,10 +912,9 @@ if auth_status:
 st.title(t['header_title'])
 
 # Track dashboard visit for report unlocking
-    # Logic: Defaults to False if key doesn't exist
-    # If False, we hide the button.
-    # We only flip to True if user INTERACTS.
-    pass
+# Logic: Defaults to False if key doesn't exist
+# If False, we hide the button.
+# We only flip to True if user INTERACTS.
 
 
 if not dash or dash['total_matches'] == 0:
