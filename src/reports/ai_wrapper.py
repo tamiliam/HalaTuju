@@ -36,7 +36,7 @@ class AIReportWrapper:
                 genai.configure(api_key=self.api_key)
                 # Found available alias via list_models()
                 # Remove JSON MIME type for Markdown output
-                self.model = genai.GenerativeModel('gemini-flash-latest')
+                self.model = genai.GenerativeModel('gemini-1.5-flash')
         except Exception as e:
             print(f"AI Wrapper Init Error: {e}")
 
