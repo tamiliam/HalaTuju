@@ -75,13 +75,18 @@ def get_institution_type(row):
     elif "KOLEJ" in t or "KK" in code or "KOMUNITI" in name:
         return "inst_kk"
         
-    # 3. TVET Agencies (ILKBS & ILJTM) -> Map to IKBN/Skills bucket
-    # ILKBS = Institut Latihan KBS (IKBN, IKTBN)
-    # ILJTM = Institut Latihan Jabatan Tenaga Manusia (ILP, ADTEC, JMTI)
-    elif (any(x in t for x in ["ILKBS", "ILJTM", "TVET"]) or 
-          any(x in name for x in ["IKBN", "IKTBN", "ILP", "ADTEC", "JMTI", "JAPAN", "JEPUN"]) or
+    # 3. ILJTM (Institut Latihan Jabatan Tenaga Manusia)
+    # Includes: ILP, ADTEC, JMTI
+    elif (any(x in t for x in ["ILJTM"]) or 
+          any(x in name for x in ["ILP", "ADTEC", "JMTI", "JAPAN", "JEPUN"]) or
           "JMTI" in acronym):
-        return "inst_ikbn"
+        return "inst_iljtm"
+
+    # 4. ILKBS (Institut Latihan KBS)
+    # Includes: IKBN, IKTBN
+    elif (any(x in t for x in ["ILKBS", "IKBN", "IKTBN"]) or 
+          any(x in name for x in ["IKBN", "IKTBN"])):
+        return "inst_ilkbs"
         
     else:
         # Fallback: If it's none of the above, but we need to classify it.

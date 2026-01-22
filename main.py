@@ -1084,16 +1084,34 @@ if auth_status:
             st.markdown("### Refine your list")
             
             # 1. Institution Type (Pills)
+            # Custom Sort Order: Poly, KK, ILJTM, ILKBS
+            inst_order = [t.get('inst_poly'), t.get('inst_kk'), t.get('inst_iljtm'), t.get('inst_ilkbs')]
+            def sort_inst(x):
+                try: return inst_order.index(x)
+                except ValueError: return 999
+
             cat_col = t['table_col_cat']
+            cat_opts = sorted(df_display[cat_col].unique(), key=sort_inst)
+            
             # st.pills is available in newer Streamlit versions
-            cat_filter = st.pills(t['filter_label'], options=df_display[cat_col].unique(), selection_mode="multi", default=df_display[cat_col].unique(), key="pill_cat")
+            cat_filter = st.pills(t['filter_label'], options=cat_opts, selection_mode="multi", default=cat_opts, key="pill_cat")
             
             st.markdown("---")
             
             # 2. Location (Pills inside Expander to save space)
-            # Use a slightly different label or expander title
+            # Custom Sort Order
+            state_priority = [
+                "WP Kuala Lumpur", "Selangor", "Kedah", "Pulau Pinang", "Perak", 
+                "Negeri Sembilan", "Melaka", "Johor", "Pahang", "Perlis", 
+                "Kelantan", "Terengganu", "Sabah", "Sarawak", "WP Labuan"
+            ]
+            def sort_state(x):
+                try: return state_priority.index(x)
+                except ValueError: return 999
+            
             with st.expander(f"📍 {t.get('filter_state', 'Filter Location')}", expanded=True):
-                 state_opts = sorted([str(x) for x in df_display["state"].unique() if x])
+                 state_raw = [str(x) for x in df_display["state"].unique() if x]
+                 state_opts = sorted(state_raw, key=sort_state)
                  state_filter = st.pills("Select States", options=state_opts, selection_mode="multi", default=state_opts, key="pill_state")
             
             # 3. Course Category (Placeholder / WIP)
