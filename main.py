@@ -1020,13 +1020,14 @@ if tier2_good:
     st.subheader("👍 Worth Considering")
     for pick in tier2_good:
          # Compact Card
-        display_title = f"{pick['course_name']} [Score: {pick['max_score']}]"
+        display_title = f"{pick['course_name']}" # Remove Score from header
         with st.expander(display_title, expanded=False):
              # Reuse RICH Card Layout
              # We pass show_trigger logic here too: if report locked, show button.
              # This means unlocking works from Tier 2 as well!
              is_locked_t2 = not st.session_state.get('dashboard_visited_post_quiz', True)
-             clicked_t2 = display_course_card(pick, t, show_trigger=is_locked_t2)
+             # Hide redundant title inside card
+             clicked_t2 = display_course_card(pick, t, show_trigger=is_locked_t2, show_title=False)
              
              if clicked_t2:
                  if not st.session_state.get('dashboard_visited_post_quiz', False):

@@ -242,7 +242,7 @@ def group_courses_by_id(flat_list):
         "is_locked": True 
     }
 # --- UI HELPERS ---
-def display_course_card(pick, t=None, show_trigger=True):
+def display_course_card(pick, t=None, show_trigger=True, show_title=True):
     """
     Renders a single "Product Card" for a course recommendation.
     Uses 'course-card' CSS class for modern styling (Gen Z appeal).
@@ -322,9 +322,12 @@ def display_course_card(pick, t=None, show_trigger=True):
     # 4. Construct Card Parts
     
     # Part A: Header
+    # Conditionally render Title
+    title_html = f'<h3 class="card-title">{c_name}</h3>' if show_title else ''
+    
     card_header_html = textwrap.dedent(f"""
 <div class="course-card" style="margin-bottom: 10px; padding-bottom: 5px;">
-<h3 class="card-title">{c_name}</h3>
+{title_html}
 <div class="card-id">Fit Score: {score}</div>
 <div class="card-desc">
 {synopsis}
