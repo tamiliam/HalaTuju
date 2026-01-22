@@ -969,26 +969,27 @@ else:
     tier3_rest = grouped_courses[25:]
 
 # --- REPORTING LAYER ---
-if signals and tier1_featured:
-    st.markdown("---")
-    st.subheader("📊 Your Personal Insight")
-    
-    # Reconstruct profile for report
-    profile_for_report = {
-        "grades": user.get('grades', {}) if user else {},
-        "student_signals": signals
-    }
-    
-    # 1. Deterministic Report
-    insights = InsightGenerator.generate_report(profile_for_report, tier1_featured)
-    
-    # Display Compact
-    rc1, rc2 = st.columns(2)
-    with rc1:
-        st.info(f"**Academic:** {insights['academic_snapshot']}")
-        st.success(f"**Style:** {insights['learning_style']}")
-    with rc2:
-        st.warning(f"**Note:** {insights['caution']}")
+# [DISABLED] Per user request
+# if signals and tier1_featured:
+#     st.markdown("---")
+#     st.subheader("📊 Your Personal Insight")
+#     
+#     # Reconstruct profile for report
+#     profile_for_report = {
+#         "grades": user.get('grades', {}) if user else {},
+#         "student_signals": signals
+#     }
+#     
+#     # 1. Deterministic Report
+#     insights = InsightGenerator.generate_report(profile_for_report, tier1_featured)
+#     
+#     # Display Compact
+#     rc1, rc2 = st.columns(2)
+#     with rc1:
+#         st.info(f"**Academic:** {insights['academic_snapshot']}")
+#         st.success(f"**Style:** {insights['learning_style']}")
+#     with rc2:
+#         st.warning(f"**Note:** {insights['caution']}")
         
 
 # --- RENDER TIER 1: FEATURED MATCHES ---
@@ -1036,23 +1037,25 @@ if tier2_good:
                      st.rerun()
 
 # --- RENDER TIER 3: THE REST ---
-if tier3_rest:
-    st.markdown("---")
-    count_rest = len(tier3_rest)
-    if st.button(f"🔍 Explore {count_rest} Other Qualified Courses"):
-        # Simple toggle state handling or just expand a table
-        st.session_state['show_all_rest'] = not st.session_state.get('show_all_rest', False)
-        
-    if st.session_state.get('show_all_rest'):
-        # Table View of the rest
-        rest_data = []
-        for g in tier3_rest:
-            rest_data.append({
-                "Course": g['course_name'],
-                "Score": g['max_score'],
-                "Locations": len(g['locations'])
-            })
-        st.dataframe(pd.DataFrame(rest_data), hide_index=True)
+# --- RENDER TIER 3: THE REST ---
+# [DISABLED] Per user request
+# if tier3_rest:
+#     st.markdown("---")
+#     count_rest = len(tier3_rest)
+#     if st.button(f"🔍 Explore {count_rest} Other Qualified Courses"):
+#         # Simple toggle state handling or just expand a table
+#         st.session_state['show_all_rest'] = not st.session_state.get('show_all_rest', False)
+#         
+#     if st.session_state.get('show_all_rest'):
+#         # Table View of the rest
+#         rest_data = []
+#         for g in tier3_rest:
+#             rest_data.append({
+#                 "Course": g['course_name'],
+#                 "Score": g['max_score'],
+#                 "Locations": len(g['locations'])
+#             })
+#         st.dataframe(pd.DataFrame(rest_data), hide_index=True)
 
 
 # 3. GATED CONTENT
