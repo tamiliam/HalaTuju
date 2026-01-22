@@ -1191,6 +1191,9 @@ if auth_status:
             if not filtered_raw:
                  st.info(f"No courses match the selected filters. (Filters: {len(cat_filter)} Cats, {len(state_filter)} Locs)")
             else:
+                # Show Result Count
+                st.caption(f"Showing {len(filtered_raw)} result{'s' if len(filtered_raw) != 1 else ''}")
+
                 # 1. Init Pagination (Only calculate page, don't render controls yet if user wants bottom only)
                 # But we need 'render_pagination' to get the current page state and handle logic.
                 # So we call it but HIDE the output? Or modify render_pagination to have 'render=False'?
