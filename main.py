@@ -390,6 +390,7 @@ def render_quiz_page(lang_code, user):
                     - 📊 Analyzing your SPM results
                     - 🧠 Understanding your learning style
                     - 🎯 Matching you with suitable careers
+                    - 🔄 Reranking courses for you
                     - ✍️ Writing your personalized report
                     
                     *This will take about 10-15 seconds...*
