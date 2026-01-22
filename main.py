@@ -394,6 +394,65 @@ def render_quiz_page(lang_code, user):
             st.json(results)
 
 
+# --- 5d. AI REPORT PAGE ---
+def render_ai_report_page(user, t):
+    """Render the AI-generated career counseling report in full-page view"""
+    report = st.session_state.get('ai_report', {})
+    
+    if not report or "markdown" not in report:
+        st.error("No report available. Please generate a report first.")
+        if st.button("⬅️ Back to Dashboard"):
+            st.session_state['view_mode'] = 'dashboard'
+            st.rerun()
+        return
+    
+    # Display the AI report
+    st.markdown(report['markdown'])
+    
+    st.markdown("---")
+    
+    # PDF Download Button
+    try:
+        from src.reports.pdf_generator import PDFReportGenerator
+        from datetime import datetime
+        
+        # Reconstruct profile for PDF
+        ai_signals = st.session_state.get('student_signals', {})
+        if not ai_signals and user and user.get('student_signals'):
+            ai_signals = user['student_signals']
+            
+        ai_profile = {
+            "full_name": user.get('full_name', '') if user else '',
+            "grades": user.get('grades', {}) if user else {},
+            "student_signals": ai_signals
+        }
+        
+        pdf_gen = PDFReportGenerator()
+        c_name = report.get('counsellor_name', "HalaTuju (AI)")
+        pdf_buffer = pdf_gen.generate_pdf(ai_profile, report['markdown'], counsellor_name=c_name)
+        
+        curr_year = datetime.now().year
+        anon_id = str(user.get('id', 'Guest'))[-6:] if user else "Guest"
+        fname = f"Laporan_Kerjaya_SPM_{curr_year}_{anon_id}.pdf"
+        
+        st.download_button(
+            label="📄 Download PDF",
+            data=pdf_buffer,
+            file_name=fname,
+            mime="application/pdf",
+            key="btn_pdf_dl_page",
+            use_container_width=True
+        )
+    except Exception as e:
+        print(f"PDF Error: {e}")
+        st.warning("PDF generation unavailable at the moment.")
+    
+    # Back to Dashboard button
+    if st.button("⬅️ Back to Dashboard", use_container_width=True, type="primary"):
+        st.session_state['view_mode'] = 'dashboard'
+        st.rerun()
+
+
 # --- 6. MAIN ROUTER ---
 
 # Init Session
@@ -471,29 +530,11 @@ if user:
                 
                 if "error" in report:
                      st.error(report['error'])
-                elif "markdown" in report:
-                    st.markdown(report['markdown'])
-                    
-                    # PDF Logic
-                    try:
-                        from src.reports.pdf_generator import PDFReportGenerator
-                        pdf_gen = PDFReportGenerator()
-                        c_name = report.get('counsellor_name', "HalaTuju (AI)")
-                        pdf_buffer = pdf_gen.generate_pdf(ai_profile, report['markdown'], counsellor_name=c_name)
-                        
-                        curr_year = datetime.now().year
-                        anon_id = str(user.get('id', 'Guest'))[-6:] if user else "Guest"
-                        fname = f"Laporan_Kerjaya_SPM_{curr_year}_{anon_id}.pdf"
-                        
-                        st.download_button(
-                            label="📄 Download PDF",
-                            data=pdf_buffer,
-                            file_name=fname,
-                            mime="application/pdf",
-                            key="btn_pdf_dl_sb"
-                        )
-                    except Exception as e:
-                        print(f"PDF Error: {e}")
+                else:
+                    # Store report in session state and switch to AI report view
+                    st.session_state['ai_report'] = report
+                    st.session_state['view_mode'] = 'ai_report'
+                    st.rerun()
 
 
 if not user:
@@ -556,6 +597,10 @@ if view_mode == 'profile' and user:
     
 if view_mode == 'quiz':
     render_quiz_page(lang_code, user)
+    st.stop()
+
+if view_mode == 'ai_report':
+    render_ai_report_page(user, t)
     st.stop()
 
 # --- DASHBOARD LOGIC (Below) ---
