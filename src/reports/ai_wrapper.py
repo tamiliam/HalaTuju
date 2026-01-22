@@ -123,20 +123,26 @@ class AIReportWrapper:
         # 1. Try Gemini Models
         if self.model:
             for attempt, model_name in enumerate(self.MODEL_CASCADE):
-                # Determine Persona based on Model
+                # Determine Persona & Gender based on Model
+                # Default
+                counsellor_name = "Cikgu Guna"
+                gender_context = "wanita"
+
                 if "gemini-3" in model_name:
                     counsellor_name = "Cikgu Venu"
+                    gender_context = "lelaki"
                 elif "gemini-2.5" in model_name:
                     counsellor_name = "Cikgu Gopal"
+                    gender_context = "lelaki"
                 elif "gemini-2.0" in model_name:
                     counsellor_name = "Cikgu Guna"
-                else:
-                    counsellor_name = "Cikgu Guna" # Default fallback for older Gemini models
+                    gender_context = "wanita"
 
                 # Format Prompt with specific Persona
                 try:
                     full_prompt = SYSTEM_PROMPT.format(
                         counsellor_name=counsellor_name,
+                        gender_context=gender_context,
                         student_name=student_name,
                         student_profile=profile_str,
                         academic_context=academic_str,
@@ -144,7 +150,7 @@ class AIReportWrapper:
                     )
                 except Exception as e:
                     print(f"Prompt formatting error: {e}")
-                    full_prompt = f"Anda ialah {counsellor_name}.\n{SYSTEM_PROMPT}\n\nDATA:\nStudent: {student_name}\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
+                    full_prompt = f"Anda ialah {counsellor_name} (jantina: {gender_context}).\n{SYSTEM_PROMPT}\n\nDATA:\nStudent: {student_name}\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
 
                 try:
                     # Reinitialize model if needed
@@ -173,9 +179,12 @@ class AIReportWrapper:
             
             # OpenAI Persona: Cikgu Mani
             counsellor_name = "Cikgu Mani"
+            gender_context = "wanita"
+            
             try:
                 full_prompt = SYSTEM_PROMPT.format(
                     counsellor_name=counsellor_name,
+                    gender_context=gender_context,
                     student_name=student_name,
                     student_profile=profile_str,
                     academic_context=academic_str,
@@ -183,7 +192,7 @@ class AIReportWrapper:
                 )
             except Exception:
                 # Use pre-formatted fallback if simple format fails (rare)
-                 full_prompt = f"Anda ialah {counsellor_name}.\n{SYSTEM_PROMPT}\n\nDATA:\nStudent: {student_name}\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
+                 full_prompt = f"Anda ialah {counsellor_name} (jantina: {gender_context}).\n{SYSTEM_PROMPT}\n\nDATA:\nStudent: {student_name}\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
 
             try:
                 response = self.openai_client.chat.completions.create(
