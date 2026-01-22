@@ -386,8 +386,6 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
 <span class="meta-pill pill-hostel">🏠 {hostel}</span>
 </div>
 {career_html}
-<hr style="margin: 10px 0; border: 0; border-top: 1px dashed #e1e1e1;">
-<div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">📍 Available at:</div>
 {tbl_html}
 </div>
         """)
