@@ -667,16 +667,18 @@ if user:
         
         if not dashboard_visited:
             # Show prompt to view dashboard first
-            st.sidebar.info(t.get('report_prompt_explore', "📊 **View courses below.**"))
+            st.sidebar.info(t.get('report_prompt_explore', "📊 **View courses in main page.**"))
         else:
             # Dashboard has been visited - show unlock message if just unlocked
             if st.session_state.get('report_just_unlocked', False):
                 st.sidebar.success(t.get('report_unlock_msg', "💡 **Report available!**"))
-                st.session_state['report_just_unlocked'] = False
+                # Don't clear the flag immediately - let it persist for this session
             
-            # Button to access the counselor report
+            # Always show button when dashboard has been visited
             if st.sidebar.button("📋 Counselor Report", key="btn_ai_access_sb", use_container_width=True):
                 if report and "markdown" in report:
+                    # Clear the unlock flag when accessing report
+                    st.session_state['report_just_unlocked'] = False
                     # Switch to AI report view
                     st.session_state['view_mode'] = 'ai_report'
                     st.rerun()

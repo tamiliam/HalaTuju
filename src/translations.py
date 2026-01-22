@@ -209,7 +209,7 @@ TEXTS = {
         "btn_view_dashboard": "📊 View Dashboard",
         
         # Report Gating
-        "report_prompt_explore": "📊 **View the recommended courses below.**\n\nNotice the ranking order.",
+        "report_prompt_explore": "📊 **View the recommended courses in the main page.**\n\nNotice the ranking order.",
         "report_unlock_msg": "💡 **Wondering why these courses are ranked this way?**\n\nCounseling report now available.",
 
         # Featured Matches
@@ -475,7 +475,7 @@ TEXTS = {
         "btn_view_dashboard": "📊 Lihat Dashboard",
         
         # Report Gating
-        "report_prompt_explore": "📊 **Lihat kursus yang dicadangkan di bawah.**\n\nPerhatikan susunan ranking.",
+        "report_prompt_explore": "📊 **Lihat kursus yang dicadangkan di halaman utama.**\n\nPerhatikan susunan ranking.",
         "report_unlock_msg": "💡 **Tertanya-tanya kenapa kursus ini di atas?**\n\nLaporan kaunseling kini tersedia.",
 
         # Featured Matches
@@ -742,7 +742,7 @@ TEXTS = {
         "btn_view_dashboard": "📊 டாஷ்போர்டை பார்க்கவும்",
         
         # Report Gating
-        "report_prompt_explore": "📊 **கீழே பரிந்துரைக்கப்பட்ட படிப்புகளை பார்க்கவும்.**\n\nவரிசை வரிசையை கவனியுங்கள்.",
+        "report_prompt_explore": "📊 **பிரதான பக்கத்தில் பரிந்துரைக்கப்பட்ட படிப்புகளை பார்க்கவும்.**\n\nவரிசை வரிசையை கவனியுங்கள்.",
         "report_unlock_msg": "💡 **இந்த படிப்புகள் ஏன் இவ்வாறு வரிசைப்படுத்தப்பட்டுள்ளன என்று ஆச்சரியமாக உள்ளதா?**\n\nஆலோசனை அறிக்கை இப்போது கிடைக்கிறது.",
 
         # Featured Matches
