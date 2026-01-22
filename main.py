@@ -368,7 +368,37 @@ def render_quiz_page(lang_code, user):
             
             # AUTO-GENERATE AI COUNSELOR REPORT (separate try-except to avoid blocking quiz save)
             try:
-                with st.spinner("Generating your personalized counselor report..."):
+                # Create a more engaging loading experience
+                st.markdown("---")
+                st.markdown("### 🎓 Preparing Your Personalized Career Report")
+                
+                # Create columns for visual layout
+                col1, col2 = st.columns([1, 2])
+                
+                with col1:
+                    # Display counselor avatars/icons
+                    st.markdown("""
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 60px; margin-bottom: 10px;">👨‍🏫</div>
+                        <div style="font-size: 14px; color: #666;">Cikgu Siva & Cikgu Mani</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with col2:
+                    st.info("""
+                    **Our AI counselors are:**
+                    - 📊 Analyzing your SPM results
+                    - 🧠 Understanding your learning style
+                    - 🎯 Matching you with suitable careers
+                    - ✍️ Writing your personalized report
+                    
+                    *This will take about 10-15 seconds...*
+                    """)
+                
+                # Progress indicator
+                progress_placeholder = st.empty()
+                
+                with st.spinner(""):  # Empty spinner to show loading state
                     from src.reports.ai_wrapper import AIReportWrapper
                     
                     # Prepare data for AI report
@@ -393,8 +423,16 @@ def render_quiz_page(lang_code, user):
                         try:
                             import json
                             report_json = json.dumps(report)
-                            auth.update_profile(user['id'], {"ai_report": report_json})
-                            st.toast("✨ Counselor report generated and saved!")
+                            success, msg = auth.update_profile(user['id'], {"ai_report": report_json})
+                            if success:
+                                # Manually update the user object in session state
+                                if 'user' in st.session_state:
+                                    st.session_state['user']['ai_report'] = report_json
+                                progress_placeholder.success("✅ Your counselor report is ready!")
+                                st.balloons()
+                            else:
+                                print(f"Database save returned: {msg}")
+                                st.warning(f"Report generated but save issue: {msg}")
                         except Exception as db_error:
                             print(f"Database save failed: {db_error}")
                             st.warning("Report generated but not saved to database. It will be available this session only.")
