@@ -417,7 +417,7 @@ def render_quiz_page(lang_code, user):
                         msg = progress_messages[msg_idx]
                         
                         status_container.info(f"🤖 {msg}")
-                        time.sleep(2.5) # Wait 2.5s per message
+                        time.sleep(4) # Wait 4s per message
                         idx += 1
                     
                     # Get Result
