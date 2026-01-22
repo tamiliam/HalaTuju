@@ -211,7 +211,7 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
         "full_list": eligible_offerings,
         "summary_stats": stats,
         "total_unique_courses": len(unique_ids),
-        "total_matches": stats["inst_poly"] + stats["inst_ikbn"] + stats["inst_kk"] + stats["inst_other"]
+        "total_matches": stats["inst_poly"] + stats["inst_iljtm"] + stats["inst_ilkbs"] + stats["inst_kk"] + stats["inst_other"]
     }
 
 def group_courses_by_id(flat_list):
