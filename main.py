@@ -363,7 +363,11 @@ def render_quiz_page(lang_code, user):
                 auth.save_quiz_results(user['id'], results['student_signals'])
                 st.toast("Results Saved!")
                 
-                # AUTO-GENERATE AI COUNSELOR REPORT
+            except Exception as e:
+                st.error(f"Could not save results: {e}")
+            
+            # AUTO-GENERATE AI COUNSELOR REPORT (separate try-except to avoid blocking quiz save)
+            try:
                 with st.spinner("Generating your personalized counselor report..."):
                     from src.reports.ai_wrapper import AIReportWrapper
                     
@@ -382,15 +386,26 @@ def render_quiz_page(lang_code, user):
                     report = ai_wrapper.generate_narrative_report(ai_profile, ai_top)
                     
                     if "error" not in report and "markdown" in report:
-                        # Save report to database
-                        auth.update_profile(user['id'], {"ai_report": report})
+                        # Save report to session state first
                         st.session_state['ai_report'] = report
-                        st.toast("✨ Counselor report generated!")
+                        
+                        # Then save to database (convert to JSON string for storage)
+                        try:
+                            import json
+                            report_json = json.dumps(report)
+                            auth.update_profile(user['id'], {"ai_report": report_json})
+                            st.toast("✨ Counselor report generated and saved!")
+                        except Exception as db_error:
+                            print(f"Database save failed: {db_error}")
+                            st.warning("Report generated but not saved to database. It will be available this session only.")
                     else:
-                        print(f"AI Report generation failed: {report.get('error', 'Unknown error')}")
-                    
-            except Exception as e:
-                st.error(f"Could not save results: {e}")
+                        error_msg = report.get('error', 'Unknown error')
+                        print(f"AI Report generation failed: {error_msg}")
+                        st.warning(f"Could not generate counselor report: {error_msg}")
+                        
+            except Exception as ai_error:
+                print(f"AI Report generation exception: {ai_error}")
+                st.warning("Could not generate counselor report. You can try again from the sidebar.")
         
         # Display Results
         st.success(t.get('quiz_complete', "Success!"))
@@ -594,15 +609,25 @@ if user:
         st.rerun()
 
     # --- AI COUNSELLOR (SIDEBAR) ---
-    # Only show if student has taken quiz
-    if 'dash' in st.session_state and st.session_state['dash'].get('is_ranked'):
+    # Show if student has completed the quiz (has student_signals)
+    has_completed_quiz = bool(user.get('student_signals'))
+    if has_completed_quiz:
         
         # Check if report exists (in session or database)
         report = st.session_state.get('ai_report')
         if not report and user.get('ai_report'):
             # Load from database if not in session
-            report = user['ai_report']
-            st.session_state['ai_report'] = report
+            import json
+            try:
+                # Parse JSON string from database
+                if isinstance(user['ai_report'], str):
+                    report = json.loads(user['ai_report'])
+                else:
+                    report = user['ai_report']
+                st.session_state['ai_report'] = report
+            except json.JSONDecodeError as e:
+                print(f"Failed to parse AI report from database: {e}")
+                report = None
         
         # Button to access the counselor report
         if st.sidebar.button("📋 Counselor Report", key="btn_ai_access_sb", use_container_width=True):
