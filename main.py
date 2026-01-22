@@ -366,96 +366,62 @@ def render_quiz_page(lang_code, user):
             except Exception as e:
                 st.error(f"Could not save results: {e}")
             
-            # AUTO-GENERATE AI COUNSELOR REPORT (separate try-except to avoid blocking quiz save)
+            # AUTO-GENERATE AI COUNSELOR REPORT SILENTLY (separate try-except to avoid blocking quiz save)
             try:
-                # Create a more engaging loading experience
-                st.markdown("---")
-                st.markdown("### 🎓 Preparing Your Personalized Career Report")
+                # Generate report silently in background - no UI shown to user
+                from src.reports.ai_wrapper import AIReportWrapper
                 
-                # Create columns for visual layout
-                col1, col2 = st.columns([1, 2])
+                # Prepare data for AI report
+                ai_dash = st.session_state.get('dash', {})
+                ai_top = ai_dash.get('featured_matches', [])[:5] if ai_dash else []
                 
-                with col1:
-                    # Display counselor avatars/icons
-                    st.markdown("""
-                    <div style="text-align: center; padding: 20px;">
-                        <div style="font-size: 60px; margin-bottom: 10px;">👨‍🏫</div>
-                        <div style="font-size: 14px; color: #666;">Cikgu Siva & Cikgu Mani</div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                ai_profile = {
+                    "full_name": user.get('full_name', ''),
+                    "grades": user.get('grades', {}),
+                    "student_signals": results['student_signals']
+                }
                 
-                with col2:
-                    st.info("""
-                    **Our AI counselors are:**
-                    - 📊 Analyzing your SPM results
-                    - 🧠 Understanding your learning style
-                    - 🎯 Matching you with suitable careers
-                    - 🔄 Reranking courses for you
-                    - ✍️ Writing your personalized report
-                    
-                    *This will take about 10-15 seconds...*
-                    """)
+                # Generate the report silently
+                ai_wrapper = AIReportWrapper()
+                report = ai_wrapper.generate_narrative_report(ai_profile, ai_top)
                 
-                # Progress indicator
-                progress_placeholder = st.empty()
-                
-                with st.spinner(""):  # Empty spinner to show loading state
-                    from src.reports.ai_wrapper import AIReportWrapper
+                if "error" not in report and "markdown" in report:
+                    # Save report to session state first
+                    st.session_state['ai_report'] = report
                     
-                    # Prepare data for AI report
-                    ai_dash = st.session_state.get('dash', {})
-                    ai_top = ai_dash.get('featured_matches', [])[:5] if ai_dash else []
+                    # Then save to database (convert to JSON string for storage)
+                    try:
+                        import json
+                        report_json = json.dumps(report)
+                        success, msg = auth.update_profile(user['id'], {"ai_report": report_json})
+                        if success:
+                            # Manually update the user object in session state
+                            if 'user' in st.session_state:
+                                st.session_state['user']['ai_report'] = report_json
+                            print("AI report generated and saved silently")
+                        else:
+                            print(f"Database save returned: {msg}")
+                    except Exception as db_error:
+                        print(f"Database save failed: {db_error}")
+                else:
+                    error_msg = report.get('error', 'Unknown error')
+                    print(f"AI Report generation failed: {error_msg}")
                     
-                    ai_profile = {
-                        "full_name": user.get('full_name', ''),
-                        "grades": user.get('grades', {}),
-                        "student_signals": results['student_signals']
-                    }
-                    
-                    # Generate the report
-                    ai_wrapper = AIReportWrapper()
-                    report = ai_wrapper.generate_narrative_report(ai_profile, ai_top)
-                    
-                    if "error" not in report and "markdown" in report:
-                        # Save report to session state first
-                        st.session_state['ai_report'] = report
-                        
-                        # Then save to database (convert to JSON string for storage)
-                        try:
-                            import json
-                            report_json = json.dumps(report)
-                            success, msg = auth.update_profile(user['id'], {"ai_report": report_json})
-                            if success:
-                                # Manually update the user object in session state
-                                if 'user' in st.session_state:
-                                    st.session_state['user']['ai_report'] = report_json
-                                progress_placeholder.success("✅ Your counselor report is ready!")
-                                st.balloons()
-                            else:
-                                print(f"Database save returned: {msg}")
-                                st.warning(f"Report generated but save issue: {msg}")
-                        except Exception as db_error:
-                            print(f"Database save failed: {db_error}")
-                            st.warning("Report generated but not saved to database. It will be available this session only.")
-                    else:
-                        error_msg = report.get('error', 'Unknown error')
-                        print(f"AI Report generation failed: {error_msg}")
-                        st.warning(f"Could not generate counselor report: {error_msg}")
-                        
             except Exception as ai_error:
                 print(f"AI Report generation exception: {ai_error}")
-                st.warning("Could not generate counselor report. You can try again from the sidebar.")
+            
+            # Set flag to indicate dashboard hasn't been visited yet after quiz
+            st.session_state['dashboard_visited_post_quiz'] = False
         
-        # Display Results
-        st.success(t.get('quiz_complete', "Success!"))
+        # Display Results - Focus on Course Ranking Update
+        st.success("✅ Ranking kursus telah dikemas kini!")
 
         # Explainer Text
-        st.markdown(t.get('quiz_msg_success', "Results saved."))
+        st.markdown("📊 **Sila ke Dashboard untuk melihat cadangan anda.**")
+        st.markdown("Kursus telah disusun mengikut kesesuaian anda berdasarkan keputusan Discovery Quiz.")
 
         # Call to Action (CTA)
-        st.info(t.get('quiz_cta_intro', "Next Steps"))
-        
-        if st.button(t.get('quiz_btn_dashboard', "Dashboard"), use_container_width=True, type="primary"):
+        if st.button("📊 Lihat Dashboard", use_container_width=True, type="primary"):
             # UPDATE SESSION WITH NEW RESULTS
             st.session_state['student_signals'] = results['student_signals']
             
@@ -465,9 +431,6 @@ def render_quiz_page(lang_code, user):
                 
             st.session_state['view_mode'] = 'dashboard'
             st.rerun()
-
-        st.markdown("---")
-        st.markdown(t.get('quiz_cta_ai', "AI Report"))
 
         # Hide Raw Data in Expander
         with st.expander(t.get('quiz_debug_label', "Debug Data")):
@@ -652,10 +615,6 @@ if user:
     has_completed_quiz = bool(user.get('student_signals'))
     if has_completed_quiz:
         
-        # Debug: Check what's in the user object
-        print(f"DEBUG: user.get('ai_report') = {user.get('ai_report')}")
-        print(f"DEBUG: 'ai_report' in user = {'ai_report' in user}")
-        
         # Check if report exists (in session or database)
         report = st.session_state.get('ai_report')
         if not report and user.get('ai_report'):
@@ -668,19 +627,30 @@ if user:
                 else:
                     report = user['ai_report']
                 st.session_state['ai_report'] = report
-                print(f"DEBUG: Loaded report from database, has markdown: {'markdown' in report}")
             except json.JSONDecodeError as e:
                 print(f"Failed to parse AI report from database: {e}")
                 report = None
         
-        # Button to access the counselor report
-        if st.sidebar.button("📋 Counselor Report", key="btn_ai_access_sb", use_container_width=True):
-            if report and "markdown" in report:
-                # Switch to AI report view
-                st.session_state['view_mode'] = 'ai_report'
-                st.rerun()
-            else:
-                st.sidebar.warning("Report not available. Please retake the Discovery Quiz.")
+        # Check if dashboard has been visited after quiz completion
+        dashboard_visited = st.session_state.get('dashboard_visited_post_quiz', True)  # Default True for existing users
+        
+        if not dashboard_visited:
+            # Show prompt to view dashboard first
+            st.sidebar.info("📊 **Lihat kursus yang dicadangkan di bawah.**\n\nPerhatikan susunan ranking.")
+        else:
+            # Dashboard has been visited - show unlock message if just unlocked
+            if st.session_state.get('report_just_unlocked', False):
+                st.sidebar.success("💡 **Tertanya-tanya kenapa kursus ini di atas?**\n\nLaporan kaunseling kini tersedia.")
+                st.session_state['report_just_unlocked'] = False
+            
+            # Button to access the counselor report
+            if st.sidebar.button("📋 Counselor Report", key="btn_ai_access_sb", use_container_width=True):
+                if report and "markdown" in report:
+                    # Switch to AI report view
+                    st.session_state['view_mode'] = 'ai_report'
+                    st.rerun()
+                else:
+                    st.sidebar.warning("Report not available. Please retake the Discovery Quiz.")
 
 
 if not user:
@@ -883,6 +853,14 @@ if auth_status:
 
 # --- RENDER MAIN CONTENT ---
 st.title(t['header_title'])
+
+# Track dashboard visit for report unlocking
+if user and dash and dash.get('total_matches', 0) > 0:
+    # Check if this is first visit after quiz completion
+    if not st.session_state.get('dashboard_visited_post_quiz', True):
+        # Mark as visited and set unlock flag
+        st.session_state['dashboard_visited_post_quiz'] = True
+        st.session_state['report_just_unlocked'] = True
 
 if not dash or dash['total_matches'] == 0:
     st.info(t['landing_msg'])
