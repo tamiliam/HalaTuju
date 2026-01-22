@@ -613,6 +613,10 @@ if user:
     has_completed_quiz = bool(user.get('student_signals'))
     if has_completed_quiz:
         
+        # Debug: Check what's in the user object
+        print(f"DEBUG: user.get('ai_report') = {user.get('ai_report')}")
+        print(f"DEBUG: 'ai_report' in user = {'ai_report' in user}")
+        
         # Check if report exists (in session or database)
         report = st.session_state.get('ai_report')
         if not report and user.get('ai_report'):
@@ -625,6 +629,7 @@ if user:
                 else:
                     report = user['ai_report']
                 st.session_state['ai_report'] = report
+                print(f"DEBUG: Loaded report from database, has markdown: {'markdown' in report}")
             except json.JSONDecodeError as e:
                 print(f"Failed to parse AI report from database: {e}")
                 report = None
