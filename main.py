@@ -432,6 +432,40 @@ def render_ai_report_page(user, t):
             st.rerun()
         return
     
+    # Add print-friendly CSS
+    st.markdown("""
+    <style>
+    @media print {
+        /* Hide Streamlit UI elements */
+        header, footer, .stApp > header, [data-testid="stSidebar"] {
+            display: none !important;
+        }
+        
+        /* Ensure content is visible */
+        .main .block-container {
+            max-width: 100% !important;
+            padding: 1rem !important;
+        }
+        
+        /* Make sure markdown content prints */
+        .stMarkdown, .stMarkdown * {
+            color: black !important;
+            background: white !important;
+        }
+        
+        /* Page breaks */
+        h1, h2, h3 {
+            page-break-after: avoid;
+        }
+        
+        /* Hide buttons when printing */
+        button, .stButton {
+            display: none !important;
+        }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # Display the AI report
     st.markdown(report['markdown'])
     
