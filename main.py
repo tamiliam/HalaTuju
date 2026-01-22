@@ -562,9 +562,21 @@ def render_ai_report_page(user, t):
     with col2:
         # WhatsApp Share Button
         student_name = user.get('full_name', 'Student') if user else 'Student'
+        
+        # Get Top 3 Courses for the message
+        top_courses_msg = ""
+        ranked_courses = st.session_state.get('ranked_courses', [])
+        if ranked_courses:
+            for i, course in enumerate(ranked_courses[:3]):
+                c_name = course.get('Course Name', 'Unknown')
+                top_courses_msg += f"{i+1}. {c_name}\n"
+        
         # Create a shareable message
-        whatsapp_text = f"Laporan Kerjaya HalaTuju untuk {student_name}\n\nSila muat turun laporan penuh di: https://halatuju.streamlit.app"
-        whatsapp_url = f"https://wa.me/?text={whatsapp_text.replace(' ', '%20').replace('\n', '%0A')}"
+        whatsapp_text = f"Hai Mak/Ayah, saya baru buat ujian minat kerjaya. Ini 3 kursus yang paling sesuai dengan saya:\n\n{top_courses_msg}\nLaporan penuh ada dalam PDF yg saya baru download. Boleh tengok detail kat: https://halatuju.streamlit.app"
+        
+        # URL encode properly
+        from urllib.parse import quote
+        whatsapp_url = f"https://wa.me/?text={quote(whatsapp_text)}"
         
         st.link_button(
             label="📲 Share with Parent",
