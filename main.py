@@ -1000,7 +1000,10 @@ from src.dashboard import display_course_card
 for pick in tier1_featured:
     # Use the new Refactored Card
     # It returns TRUE if the user clicked the interaction button
-    interacted = display_course_card(pick, t)
+    # Logic: Show Trigger Button ONLY if dashboard is "locked" (not yet visited post quiz)
+    is_locked = not st.session_state.get('dashboard_visited_post_quiz', True)
+    
+    interacted = display_course_card(pick, t, show_trigger=is_locked)
     
     if interacted:
         # User engaged with the content!

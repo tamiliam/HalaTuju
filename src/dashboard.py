@@ -242,7 +242,7 @@ def group_courses_by_id(flat_list):
         "is_locked": True 
     }
 # --- UI HELPERS ---
-def display_course_card(pick, t=None):
+def display_course_card(pick, t=None, show_trigger=True):
     """
     Renders a single "Product Card" for a course recommendation.
     Uses 'course-card' CSS class for modern styling (Gen Z appeal).
@@ -341,15 +341,17 @@ def display_course_card(pick, t=None):
     st.markdown(card_header_html, unsafe_allow_html=True)
     
     # Part B: Native Interaction Trigger
-    # Using a unique key for every card is crucial
-    clicked = st.button(f"✨ Key Matching Factors ({len(reasons)} reason{'s' if len(reasons)!=1 else ''})", key=f"btn_why_{pick.get('course_id')}_{pick.get('institution_id', 'gen')}")
-    
-    if clicked:
-        # Show reasons dynamically if clicked (or could be used just as a trigger)
-         if reasons_html:
-             st.markdown(f"<div style='background:#f8f9fa; padding:10px; border-radius:8px; border:1px dashed #6C5CE7;'><strong>Why match?</strong>{reasons_html}</div>", unsafe_allow_html=True)
-         else:
-             st.info("High alignment with your academic strengths and interest profile.")
+    clicked = False
+    if show_trigger:
+        # Using a unique key for every card is crucial
+        clicked = st.button(f"✨ Key Matching Factors ({len(reasons)} reason{'s' if len(reasons)!=1 else ''})", key=f"btn_why_{pick.get('course_id')}_{pick.get('institution_id', 'gen')}")
+        
+        if clicked:
+            # Show reasons dynamically if clicked (or could be used just as a trigger)
+             if reasons_html:
+                 st.markdown(f"<div style='background:#f8f9fa; padding:10px; border-radius:8px; border:1px dashed #6C5CE7;'><strong>Why match?</strong>{reasons_html}</div>", unsafe_allow_html=True)
+             else:
+                 st.info("High alignment with your academic strengths and interest profile.")
 
     # Part C: Footer (Table)
     st.markdown(tbl_html, unsafe_allow_html=True)
