@@ -366,10 +366,9 @@ def render_profile_page(user, t):
                             "student_signals": updated_signals
                         })
                         if success:
-                            st.success(msg)
-                        # Invalid Cache to force refresh
-                        if 'dash' in st.session_state: del st.session_state['dash']
-                        time.sleep(1)
+                            # Invalid Cache to force refresh
+                            if 'dash' in st.session_state: del st.session_state['dash']
+                            time.sleep(1)
                             st.rerun()
                         else:
                             st.error(msg)
