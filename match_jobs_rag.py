@@ -13,23 +13,39 @@ except ImportError:
     print("CRITICAL: google-generativeai module not found.")
     exit(1)
 
-# Retrieve API Key
-API_KEY = os.getenv("GEMINI_API_KEY")
-if not API_KEY:
-    try:
-        import streamlit as st
-        API_KEY = st.secrets.get("GEMINI_API_KEY")
-    except:
-        pass
-if not API_KEY:
-    print("CRITICAL: GEMINI_API_KEY not found.")
+try:
+    from openai import OpenAI
+except ImportError:
+    print("CRITICAL: openai module not found.")
     exit(1)
 
-genai.configure(api_key=API_KEY)
+# Retrieve API Keys
+GEMINI_KEY = os.getenv("GEMINI_API_KEY")
+OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+
+# Fallback to Streamlit secrets
+if not GEMINI_KEY or not OPENAI_KEY:
+    try:
+        import streamlit as st
+        if not GEMINI_KEY: GEMINI_KEY = st.secrets.get("GEMINI_API_KEY")
+        if not OPENAI_KEY: OPENAI_KEY = st.secrets.get("OPENAI_API_KEY")
+    except:
+        pass
+
+if not GEMINI_KEY:
+    print("CRITICAL: GEMINI_API_KEY not found.")
+    exit(1)
+if not OPENAI_KEY:
+    print("CRITICAL: OPENAI_API_KEY not found.")
+    exit(1)
+
+# Configure Clients
+genai.configure(api_key=GEMINI_KEY)
+client = OpenAI(api_key=OPENAI_KEY)
 
 # Models
 EMBED_MODEL = "models/text-embedding-004"
-LLM_MODEL = "gemini-2.0-flash" 
+OPENAI_MODEL = "gpt-4o-mini"
 
 DATA_DIR = "data"
 JOBS_FILE = os.path.join(DATA_DIR, "jobs_mapped.csv")
@@ -93,7 +109,7 @@ def get_query_embeddings_batch(texts):
              results.extend([None]*len(batch))
     return results
 
-def match_with_llm(model, job_title, candidates, retries=5):
+def match_with_openai(job_title, candidates, retries=3):
     cand_str = ""
     for c in candidates:
         cand_str += f"- {c['title']} (Code: {c['code']})\n"
@@ -116,16 +132,21 @@ def match_with_llm(model, job_title, candidates, retries=5):
     
     for attempt in range(retries):
         try:
-            response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-            return json.loads(response.text)
+            response = client.chat.completions.create(
+                model=OPENAI_MODEL,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that outputs only valid JSON."},
+                    {"role": "user", "content": prompt}
+                ],
+                response_format={"type": "json_object"}
+            )
+            return json.loads(response.choices[0].message.content)
         except Exception as e:
-            if "quota" in str(e).lower() or "429" in str(e):
-                wait = (attempt + 1) * 15 # Aggressive wait: 15, 30, 45...
-                print(f"Rate limit for '{job_title}'. Waiting {wait}s...")
-                time.sleep(wait)
-            else:
-                print(f"LLM Error for {job_title}: {e}")
+            if "context_length" in str(e):
                 return {}
+            print(f"OpenAI Error for {job_title}: {e}")
+            time.sleep(1)
+            
     return {}
 
 def match_jobs_rag():
@@ -164,31 +185,37 @@ def match_jobs_rag():
     jobs_to_process = []
     job_indices = []
     
-    print("3. Scanning for unmatched jobs...")
+    print("3. Scanning for matched jobs (Refining with OpenAI)...")
+    manual_count = 0
+    already_done_count = 0
+    
     for idx, row in enumerate(rows):
-        # Skip if manual match exists
-        if row.get('masco', '').strip(): continue
+        # Skip if manual match exists (authoritative)
+        if row.get('masco', '').strip(): 
+            manual_count += 1
+            continue
         
-        # SKIP only if MANUAL match exists
-        if row.get('masco', '').strip(): continue
-        
-        # We DO NOT skip imperfect matches anymore, because we want to improve them.
-        # if row.get('imperfect_masco', '').strip(): continue
+        # NOTE: We can uncomment this if we want to skip already AI-matched rows
+        # if row.get('imperfect_masco', '').strip(): 
+        #    already_done_count += 1
+        #    continue
         
         jobs_to_process.append(row.get('jobs', ''))
         job_indices.append(idx)
         
-    print(f"   Found {len(jobs_to_process)} remaining jobs to match.")
+    print(f"   Found {len(jobs_to_process)} jobs to match.")
+    print(f"   Skipped {manual_count} manual matches.")
+    # print(f"   Skipped {already_done_count} existing AI matches.")
+    
     if not jobs_to_process:
         print("No jobs left to match.")
         return
 
-    print("4. Embedding Jobs Batch...")
+    print("4. Embedding Jobs Batch (Gemini)...")
     job_vecs = get_query_embeddings_batch(jobs_to_process)
     
     # 5. RAG Loop
-    print("5. RAG Matching...")
-    llm_model = genai.GenerativeModel(LLM_MODEL)
+    print("5. RAG Matching (OpenAI)...")
     matches_found = 0
     
     for i, job_vec in enumerate(job_vecs):
@@ -208,27 +235,28 @@ def match_jobs_rag():
         candidates = [masco_lookup[idx] for idx in top_indices]
         
         # B. Generation
-        result = match_with_llm(llm_model, job_title, candidates)
+        result = match_with_openai(job_title, candidates)
         code = result.get('masco_code', '')
         title = result.get('masco_title', '')
         
-        if code and title:
+        if code:
             rows[row_idx]['imperfect_masco'] = code
             rows[row_idx]['imperfect_match'] = title
             matches_found += 1
-            print(f"   Matched: {job_title} -> {title}")
+            print(f"   Matched: {job_title} -> {title} ({code})")
         
-        # Save every 10 rows to allow resuming
-        if i % 10 == 0:
+        # Save every 20 rows
+        if i % 20 == 0:
             with open(JOBS_FILE, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
                 writer.writerows(rows)
         
-        # Rate Limit Safety: 10 seconds delay = 6 RPM
-        time.sleep(10)
+        # No significant sleep needed for OpenAI paid tier/free tier 2
+        # Just a tiny breather
+        time.sleep(0.1)
 
-    print(f"Done. {matches_found} new matches.")
+    print(f"Done. {matches_found} matches updated.")
     # Final Save
     with open(JOBS_FILE, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)

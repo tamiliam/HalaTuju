@@ -168,8 +168,8 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
         else:
             # Fallback: If it's undefined (Other), we group it under Skills (IKBN/TVET) for display simplicity
             # unless it explicitly looks like something else. 
-            # For now, let's assume 'Other' -> 'inst_ikbn' (General TVET/Skills)
-            stats["inst_ikbn"] += 1
+            # For now, let's assume 'Other' -> 'inst_ilkbs' (General TVET/Skills)
+            stats["inst_ilkbs"] += 1
         
         quality_key = calculate_match_quality(student, row)
         quality_name = txt.get(quality_key, "Unknown")

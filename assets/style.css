@@ -55,23 +55,54 @@ div.stButton>button:active {
 
 /* Secondary/Ghost Buttons if needed (uncomment if you add .secondary class) */
 
-/* 4. CARDS & CONTAINERS (Soft & Clean) */
+/* 4. CARDS & CONTAINERS (Vibrant Expanders) */
 div[data-testid="stExpander"] {
     background: #FFFFFF !important;
-    border: 1px solid #dfe6e9 !important;
-    border-radius: 16px !important;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02) !important;
-    transition: transform 0.2s;
+    border: none !important;
+    border-radius: 20px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05) !important;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Colorful gradient top bar for expanders */
+div[data-testid="stExpander"]::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(90deg, #6C5CE7, #FF7675);
+    z-index: 10;
 }
 
 div[data-testid="stExpander"]:hover {
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05) !important;
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(108, 92, 231, 0.12) !important;
 }
 
+/* Expander Header (Course Title) */
 .streamlit-expanderHeader {
     font-family: 'Outfit', sans-serif !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
     color: #2D3436 !important;
+    padding-top: 8px !important;
+}
+
+/* Remove inner card styling when inside expander (Flat Mode) */
+div[data-testid="stExpander"] .course-card {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+div[data-testid="stExpander"] .course-card::before {
+    display: none !important; /* Hide the gradient bar on inner card since expander has it */
 }
 
 /* 5. METRICS (Big & Bold) */
