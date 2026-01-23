@@ -197,7 +197,8 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             # Meta
             "inst_url": row.get('inst_url', '#'),
             "hostel_fee": row.get('hostel_fee', 'N/A'),
-            "details_url": row.get('details_url', '#')
+            "details_url": row.get('details_url', '#'),
+            "frontend_label": row.get('frontend_label', 'General') # Added for filtering
         })
         
     # Calculate Unique Courses
@@ -235,6 +236,7 @@ def group_courses_by_id(flat_list):
                 'headline': item.get('headline', ''),
                 'synopsis': item.get('synopsis', ''),
                 'jobs': item.get('jobs', []),
+                'frontend_label': item.get('frontend_label', 'General'), # Added for filtering
                 'max_score': -999, # Sentinel
                 'locations': []
             }

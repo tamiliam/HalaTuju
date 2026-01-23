@@ -1,0 +1,4855 @@
+no,kod_masco,tajuk_pekerjaan
+3513,1,Tentera Darat Malaysia (TDM)
+3609,2,Tentera Laut Diraja Malaysia (TLDM)
+3635,3,Tentera Udara Malaysia (TUDM)
+1,11,"Ketua Eksekutif, Pegawai Kanan, Dan Penggubal Undang-Undang"
+3514,11,Pegawai Tugas Ikhtisas (TDM)
+87,12,Pengurus Pentadbiran Dan Komersil
+3519,12,Pegawai Tugas Am (TDM)
+161,13,Pengurus Pengeluaran Dan Pembuatan
+3537,13,Anggota Lain-Lain Pangkat (TDM)
+235,14,"Pengurus Hospitaliti, Runcit, Dan Perkhidmatan Lain"
+266,15,Pengurus Teknologi Maklumat Dan Komunikasi
+308,16,Pengurus Perkhidmatan
+380,21,Profesional Sains Dan Kejuruteraan
+3610,21,Pegawai Tugas Am (TLDM)
+788,22,Profesional Kesihatan
+3615,22,Anggota Lain-Lain Pangkat (TLDM)
+944,23,Profesional Perguruan
+1048,24,Profesional Perniagaan Dan Pentadbiran
+1249,25,Profesional Teknologi Maklumat Dan Komunikasi
+1435,26,Profesional Perundangan
+1470,27,Profesional Perkhidmatan Hospitaliti Dan Yang Berkaitan
+1487,28, Profesional Sosial Dan Kebudayaan
+1647,29,Profesional Badan Pengawalaturan
+1690,31,Profesional Bersekutu Sains Dan Kejuruteraan
+3636,31,Pegawai Tugas Am (TUDM)
+2187,32,Profesional Bersekutu Kesihatan
+3648,32,Anggota Lain-Lain Pangkat (TUDM)
+2334,33,Profesional Bersekutu Perniagaan Dan Pentadbiran
+2470,34,Profesional Bersekutu Perundangan
+2490,35,Juruteknik Maklumat Dan Komunikasi
+2588,36,"Profesional Bersekutu Sosial, Kebudayaan, Dan Yang Berkaitan"
+2809,37,Profesional Bersekutu Badan Pengawalaturan
+2861,41,Kerani Pejabat
+2908,42,Kerani Perkhidmatan Pelanggan
+2969,43,Kerani Perekodan Data Berangka Dan Bahan
+3087,44,Pekerja Sokongan Perkeranian Lain
+3150,51,Pekerja Perkhidmatan Peribadi
+3250,52,Pekerja Jualan
+3301,53,Pekerja Perkhidmatan Pendidikan Dan Sosial
+3330,54,Pekerja Perkhidmatan Perlindungan
+3389,61,Pekerja Kemahiran Pertanian Dan Penternakan Berorientasikan Pasaran
+3442,62,"Pekerja Kemahiran Perhutanan, Perikanan, Dan Perburuan Berorientasikan Pasaran"
+3497,63,"Peladang, Nelayan, Pemburu, Dan Pemungut Berorientasikan Sara Diri"
+3674,71,Pekerja Bangunan Dan Pekerja Pertukangan Yang Berkaitan (Tidak Termasuk Juruelektrik)
+3794,72,"Pekerja Logam, Jentera, Dan Pekerja Pertukangan Yang Berkaitan"
+3944,73,Pekerja Kraftangan Dan Pencetakan
+4092,74,Pekerja Pertukangan Elektrik Dan Elektronik
+4146,75,Pekerja Pemprosesan Makanan Dan Yang Berkaitan
+4189,76,Pekerja Kemahiran Lain
+4298,81,Operator Mesin Dan Loji Pegun
+4523,82,Pemasang
+4570,83,Pemandu Dan Operator Loji Bergerak
+4642,91,Pencuci dan Pembantu
+4672,92,"Buruh Pertanian, Perhutanan, Penternakan, dan Perikanan"
+4712,93,"Buruh Perlombongan, Pembinaan, Pembuatan, dan Pengangkutan"
+4769,94,Pembantu Penyediaan Makanan
+4784,95,Pekerja Perkhidmatan Tepi Jalan dan Pekerja Jualan Dan Yang Berkaitan
+4794,96,Pekerja Asas Lain
+2,111,Penggubal Undang-Undang Dan Pegawai Kanan
+3515,111,Pegawai Tugas Ikhtisas (Tdm)
+70,112,Pengarah Urusan Dan Ketua Eksekutif
+88,121,Pengurus Perkhidmatan Perniagaan Dan Pentadbiran
+3520,121,Pegawai Tugas Am (Tdm)
+136,122,"Pengurus Jualan, Pemasaran, Dan Pembangunan"
+162,131,Pengurus Pengeluaran
+3538,131,Anggota Lain-Lain Pangkat (Tdm)
+177,132,"Pengurus Pembuatan, Perlombongan, Pembinaan, Dan Pengagihan"
+236,141,Pengurus Hotel Dan Restoran
+258,142,Pengurus Perdagangan Runcit Dan Borong
+267,151,Pengurus Teknologi Maklumat Dan Komunikasi
+309,161,Pengurus Perkhidmatan Professional
+344,162,Pengurus Perkhidmatan Lain
+381,211,"Ahli Fizik, Kimia Dan Profesional Berkaitan"
+3611,211,Pegawai Tugas Am (Tldm)
+423,212,"Ahli Matematik, Aktuari, Dan Perangkawan"
+432,213,Profesional Sains Hayat
+516,214,Profesional Kejuruteraan (Tidak Termasuk Elektroteknologi)
+651,215,Jurutera Elektroteknologi
+677,216,"Arkitek, Perancang, Juruukur, Dan Pereka"
+713,217,"Pengawal Kapal, Pesawat, Dan Kereta Api/ Lokomotif"
+757,218,"Profesional Perlombongan, Pembuatan, Dan Pembinaan"
+789,221,Doktor Perubatan
+3616,221,Anggota Lain-Lain Pangkat (Tldm)
+848,222,Profesional Kejururawatan Dan Perbidanan
+856,223,Profesional Perubatan Tradisional Dan Komplementari
+861,224,Pengamal Paramedik
+864,225,Pakar Veterinar
+870,226,Profesional Kesihatan Lain
+945,231,Profesional Perguruan Universiti Dan Pendidikan Tinggi
+982,232,Guru Pendidikan Vokasional
+985,233,Guru Pendidikan Menengah
+990,234,Guru Sekolah Rendah Dan Pendidikan Awal Kanak-Kanak
+997,235,"Guru Muzik, Seni, Dan Seni Persembahan"
+1007,236,Guru Bahasa
+1011,237,Guru Agama
+1015,238,Pengajar Kemahiran Teknologi Dan Teknikal
+1029,239,Profesional Perguruan Lain
+1049,241,Profesional Kewangan
+1115,242,Profesional Pentadbiran
+1199,243,"Profesional Jualan, Pemasaran, Dan Perhubungan Awam"
+1250,251,Pembangun Dan Juruanalisis Perisian Dan Aplikasi
+1315,252,Profesional Pangkalan Data Dan Rangkaian
+1364,253,Profesional Keselamatan Teknologi Maklumat
+1381,254,Profesional Kandungan Kreatif Dan Digital
+1436,261,Profesional Perundangan
+1471,271,Profesional Hotel Dan Restoran
+1488,281,"Pustakawan, Juruarkib, Dan Kurator"
+1499,282,Profesional Sosial Dan Keagamaan
+1544,283,"Pengarang, Wartawan, Dan Ahli Linguistik"
+1575,284,Artis Kreatif Dan Persembahan
+1648,291,Profesional Badan Pengawalaturan
+1691,311,Juruteknik Sains Fizik Dan Kejuruteraan
+3637,311,Pegawai Tugas Am (Tudm)
+1914,312,"Penyelia Perlombongan, Pembuatan, Dan Pembinaan"
+1969,313,Juruteknik Kawalan Proses
+2068,314,Juruteknik Sains Hayat Dan Profesional Bersekutu Yang Berkaitan
+2127,315,"Juruteknik Kapal, Pesawat, Dan Kereta Api"
+2184,316,Profesional Bersekutu Sains Nuklear
+2188,321,Juruteknik Perubatan Dan Farmaseutikal
+3649,321,Anggota Lain-Lain Pangkat (Tudm)
+2225,322,Profesional Bersekutu Kejururawatan Dan Perbidanan
+2233,323,Profesional Bersekutu Perubatan Tradisional Dan Komplementari
+2246,324,Juruteknik Dan Pembantu Veterinar
+2257,325,Profesional Bersekutu Kesihatan Lain
+2335,331,Profesional Bersekutu Kewangan Dan Matematik
+2384,332,Ejen Dan Broker Jualan Dan Pembelian
+2407,333,Ejen Perkhidmatan Perniagaan
+2425,334,Profesional Bersekutu Pentadbiran Dan Terkhusus
+2471,341,Profesional Bersekutu Perundangan
+2491,351,Juruteknik Operasi Teknologi Maklumat Dan Sokongan Pengguna
+2556,352,Juruteknik Telekomunikasi Dan Penyiaran
+2589,361,Profesional Bersekutu Sosial Dan Keagamaan
+2631,362,"Profesional Bersekutu Kesukanan, Pertahanan Diri, Dan Kecergasan"
+2683,363,Profesional Bersekutu Kesenian Dan Kebudayaan
+2790,364,Profesional Bersekutu Kulinari
+2810,371,Profesional Bersekutu Badan Pengawalaturan
+2862,411,Kerani Am Pejabat
+2881,412,Setiausaha (AM)
+2889,413,Pengendali Papan Kekunci
+2909,421,"Juruwang, Pemungut Wang, Dan Kerani Yang Berkaitan"
+2931,422,Pekerja Maklumat Pelanggan
+2970,431,Kerani Data Berangka
+3027,432,Kerani Perekodan Bahan Dan Pengangkutan
+3088,441,Pekerja Sokongan Perkeranian Lain
+3151,511,"Atendan Perjalanan, Konduktor, Dan Pemandu Perjalanan"
+3166,512,Tukang Masak
+3180,513,Pelayan Dan Pelayan Bar
+3192,514,"Pendandan Rambut, Jurusolek Dan Pekerja Yang Berkaitan"
+3208,515,Penyelia Bangunan Dan Pengemasan
+3227,516,Pekerja Perkhidmatan Peribadi Lain
+3251,521,Jurujual Tepi Jalan Dan Pasar
+3259,522,Jurujual Kedai
+3275,523,Juruwang Dan Kerani Tiket
+3280,524,Pekerja Jualan Lain
+3302,531,Pekerja Asuhan Kanak-Kanak Dan Pembantu Guru
+3311,532,Pekerja Penjagaan Diri Dalam Perkhidmatan Kesihatan
+3331,541,Pekerja Perkhidmatan Perlindungan
+3390,611,Pekebun Dan Penanam Tanaman Pasaran
+3414,612,Pengeluar Haiwan
+3438,613,Pengeluar Tanaman Dan Haiwan Campuran
+3443,621,Pekerja Kemahiran Perhutanan Dan Yang Berkaitan
+3463,622,"Pekerja Kemahiran Perikanan, Pemburu Dan Penjerat"
+3498,631,Peladang Tanaman Berorientasikan Sara Diri
+3501,632,Peladang Ternakan Berorientasikan Sara Diri
+3504,633,Peladang Tanaman Dan Ternakan Campuran Berorientasikan Sara Diri
+3509,634,"Nelayan, Pemburu, Penjerat, Dan Pemungut Berorientasikan Sara Diri"
+3675,711,Pekerja Kerangka Bangunan Dan Pekerja Pertukangan Yang Berkaitan
+3736,712,Pekerja Penyiap Bangunan Dan Pekerja Pertukangan Yang Berkaitan
+3772,713,"Tukang Cat, Pencuci Struktur Bangunan Dan Pekerja Pertukangan Yang Berkaitan"
+3795,721,"Pekerja Pembuat Acuan, Pengimpal Logam Kepingan Dan Struktur, Dan Pekerja Pertukangan Yang Berkaitan"
+3846,722,"Tukang Besi, Pembuat Peralatan, Dan Pekerja Pertukangan Yang Berkaitan"
+3877,723,Mekanik Dan Pembaik Jentera
+3945,731,Pekerja Kraftangan
+4040,732,Pekerja Pertukangan Pencetakan
+4093,741,Pemasang Dan Pembaik Kelengkapan Elektrik
+4135,742,Pemasang Dan Pembaik Elektronik Dan Telekomunikasi
+4147,751,Pekerja Pemprosesan Makanan Dan Yang Berkaitan
+4190,761,"Perawat Kayu, Pembuat Kabinet Dan Pekerja Pertukangan Yang Berkaitan"
+4214,762,Pembuat Pakaian Dan Yang Berkaitan
+4275,763,Pekerja Kemahiran Lain Dan Yang Berkaitan
+4299,811,Operator Loji Perlombongan Dan Pemprosesan Galian
+4324,812,Operator Loji Pemprosesan Dan Pengemas Logam
+4341,813,Operator Mesin Dan Loji Produk Kimia Dan Fotografi
+4385,814,"Operator Mesin Produk Getah, Plastik, Dan Kertas"
+4410,815,"Operator Mesin Produk Tekstil, Bulu, Dan Kulit"
+4440,816,Operator Mesin Produk Makanan Dan Yang Berkaitan
+4465,817,Operator Loji Pemprosesan Kayu Dan Pembuatan Kertas
+4488,818,Operator Mesin Dan Loji Pegun Yang Lain
+4524,821,Pemasang
+4549,822,Operator-Pengeset Peralatan-Mesin
+4571,831,Pemandu Enjin Lokomotif Dan Pekerja Yang Berkaitan
+4585,832,"Pemandu Kereta, Van, Dan Motosikal"
+4600,833,Pemandu Trak Berat Dan Bas
+4608,834,"Orang Yang Bertanggugjawab (OYB) (Kren Menara, Mesin Angkat Barang & Penumpang))"
+4630,835,Kelasi Kapal Dan Pekerja Yang Berkaitan
+4643,911,"Pencuci Dan Pembantu Rumah, Hotel, Dan Pejabat"
+4654,912,"Pencuci Kenderaan Dan Tetingkap, Pekerja Dobi, Dan Pekerja Pencucian Tangan Yang Lain"
+4673,921,"Buruh Pertanian, Perhutanan, Penternakan, Dan Perikanan"
+4713,931,Buruh Perlombongan Dan Pembinaan
+4734,932,Buruh Pembuatan
+4747,933,Buruh Pengangkutan Dan Penyimpanan
+4770,941,Pembantu Penyediaan Makanan
+4785,951,Pekerja Perkhidmatan Tepi Jalan Dan Yang Berkaitan
+4791,952,Penjual Tepi Jalan (Tidak Termasuk Makanan)
+4795,961,Pemungut Sampah
+4805,962,Pekerja Asas Yang Lain
+3,1111,Penggubal Undang-Undang
+20,1112,Pegawai Kanan Kerajaan
+61,1113,Ketua Adat Dan Ketua Kampung
+65,1114,Pegawai Kanan Pertubuhan Berkepentingan Khas
+71,1121,Pengarah Urusan Dan Ketua Eksekutif
+89,1211,Pengurus Kewangan
+106,1212,Pengurus Sumber Manusia
+110,1213,Pengurus Dasar Dan Perancangan
+114,1214,Pengurus Perkhidmatan Perniagaan
+126,1215,Pengurus Pentadbiran
+132,1216,Pengurus Kualiti
+135,1219,Pengurus Perkhidmatan Perniagaan Dan Pentadbiran Yang Tidak Dikelaskan Di Mana-Mana
+137,1221,Pengurus Jualan Dan Pemasaran
+148,1222,Pengurus Pengiklanan Dan Perhubungan Awam
+157,1223,Pengurus Penyelidikan Dan Pembangunan
+163,1311,"Pengurus Pengeluaran Pertanian, Perhutanan, Dan Penternakan"
+174,1312,Pengurus Pengeluaran Akuakultur Dan Perikanan
+178,1321,Pengurus Pembuatan
+200,1322,Pengurus Perlombongan
+207,1323,Pengurus Pembinaan
+222,1324,"Pengurus Bekalan, Pengagihan, Dan Yang Berkaitan"
+237,1411,Pengurus Hotel Dan Rumah Penginapan
+249,1412,Pengurus Restoran
+259,1421,Pengurus Perdagangan Runcit Dan Borong
+268,1511,Pengurus Teknologi Maklumat Dan Komunikasi
+310,1611,Pengurus Perkhidmatan Penjagaan Kanak-Kanak
+312,1612,Pengurus Perkhidmatan Kesihatan
+321,1613,Pengurus Perkhidmatan Penjagaan Orang Tua
+323,1614,Pengurus Kebajikan Sosial
+327,1615,Pengurus Pendidikan
+333,1616,Pengurus Cawangan Perkhidmatan Kewangan Dan Insurans
+338,1617,Pengurus Perundangan
+340,1618,Pengurus Harta
+342,1619,Pengurus Perkhidmatan Profesional Yang Tidak Dikelaskan Di Mana-Mana
+345,1621,Pengurus Pusat Sukan Dan Rekreasi
+358,1622,"Pengurus Perkhidmatan Penjagaan Diri, Pembersihan, Dan Yang Berkaitan"
+368,1623,Pengurus Keselamatan
+370,1624,"Pengurus Pusat Kebudayaan, Muzium, Dan Perpustakaan"
+378,1629,Pengurus Perkhidmatan Profesional Yang Tidak Dikelaskan Di Mana-Mana
+382,2111,Ahli Fizik Dan Astronomi
+387,2112,Ahli Meteorologi Dan Ahli Seismologi
+396,2113,Ahli Kimia
+400,2114,Ahli Geologi Dan Geofizik
+424,2121,"Ahli Matematik, Aktuari, Dan Perangkawan"
+433,2131,"Profesional Biologi, Botani, Zoologi Dan Profesional Berkaitan"
+444,2132,"Penasihat Perladangan, Pertanian, Perhutanan, Dan Perikanan"
+457,2133,Profesional Perlindungan Alam Sekitar
+480,2134,"Profesional Farmakologi, Patologi Dan Profesional Yang Berkaitan"
+517,2141,Jurutera Industri Dan Pengeluaran
+566,2142,Jurutera Awam
+589,2143,Jurutera Alam Sekitar
+594,2144,Jurutera Mekanikal
+610,2145,Jurutera Kimia
+612,2146,"Jurutera Perlombongan, Ahli Kaji Logam Dan Profesional Yang Berkaitan"
+636,2149,Profesional Kejuruteraan (Tidak Termasuk Elektroteknologi) Yang Tidak Dikelaskan Di Mana-Mana
+652,2151,Jurutera Elektrik
+660,2152,Jurutera Elektronik
+670,2153,Jurutera Telekomunikasi
+678,2161,Arkitek Bangunan
+683,2162,Arkitek Landskap
+686,2163,Pereka Produk Dan Pakaian
+693,2164,Perancang Bandar Dan Trafik
+701,2165,Pelukis Peta Dan Juruukur
+706,2166,Pereka Grafik Dan Multimedia
+714,2171,Jurutera Kapal
+719,2172,Pegawai Dan Pilot Dek Kapal
+726,2173,Juruterbang Pesawat Udara Dan Profesional Yang Berkaitan
+744,2174,Pengawal Trafik Udara
+753,2175,Pengawal Kereta Api/ Lokomotif
+755,2179,Pengawal Pengangkutan Yang Tidak Dikelaskan Di Mana-Mana
+758,2181,Profesional Perlombongan
+760,2182,Profesional Pembuatan
+785,2183,Profesional Pembinaan
+790,2211,Pengamal Perubatan Umum
+810,2212,Pengamal Perubatan Pakar
+849,2221,Profesional Kejururawatan
+854,2222,Profesional Perbidanan
+857,2231,Ahli Perubatan Tradisional Dan Komplementari
+862,2241,Pengamal Paramedik
+865,2251,Pakar Veterinar
+871,2261,Doktor Pergigian
+876,2262,Ahli Farmasi
+882,2263,Profesional Persekitaran Dan Kesihatan Pekerjaan Dan Kebersihan
+905,2264,Jurupulih Anggota
+915,2265,Pegawai Diet Dan Pegawai Nutrisi
+920,2266,Pegawai Audiologi Dan Jurupulih Pertuturan
+925,2267,Optometris
+930,2268,Jurupulih Pekerjaan
+934,2269,Profesional Kesihatan Yang Tidak Dikelaskan Di Mana-Mana
+946,2311,Profesional Perguruan Universiti Dan Pendidikan Tinggi
+983,2321,Guru Pendidikan Vokasional
+986,2331,Guru Pendidikan Menengah
+991,2341,Guru Sekolah Rendah
+995,2342,Guru Pendidikan Awal Kanak-Kanak
+998,2351,Guru Muzik
+1000,2352,Guru Seni
+1003,2353,Guru Seni Persembahan
+1008,2361,Guru Bahasa
+1012,2371,Guru Agama
+1016,2381,Pegawai Latihan Vokasional
+1030,2391,Pakar Kaedah Pendidikan
+1036,2392,Guru Pendidikan Khas
+1038,2393,Jurulatih Teknologi Maklumat
+1041,2399,Profesional Perguruan Yang Tidak Dikelaskan Di Mana-Mana
+1050,2411,Akauntan Dan Juruaudit
+1082,2412,Penasihat Kewangan Dan Pelaburan
+1098,2413,Juruanalisis Kewangan
+1116,2421,Juruanalisis Pengurusan Dan Organisasi
+1133,2422,Profesional Pentadbiran Dasar
+1136,2423,Profesional Personel Dan Kerjaya
+1151,2424,Profesional Pembangunan Latihan Dan Kakitangan
+1160,2425,Profesional Pentadbiran
+1177,2426,Profesional Penyelidikan Dan Pembangunan
+1200,2431,Profesional Pengiklanan Dan Pemasaran
+1220,2432,Profesional Perhubungan Awam
+1239,2433,Profesional Jualan Teknikal Dan Perubatan (Tidak Termasuk ICT)
+1244,2434,Profesional Jualan Teknologi Maklumat Dan Komunikasi (ICT)
+1251,2511,Juruanalisis Sistem Komputer
+1278,2512,Pembangun Perisian
+1291,2513,Pembangun Web Dan Multimedia
+1296,2514,Pengaturcara Aplikasi
+1304,2519,Pembangun Dan Juruanalisis Perisian Dan Aplikasi Yang Tidak Dikelaskan Di Mana-Mana
+1316,2521,Pereka Dan Pentadbir Pangkalan Data
+1328,2522,Pentadbir Sistem Teknologi Maklumat
+1349,2523,Profesional Rangkaian Komputer
+1353,2524,Profesional Data
+1365,2531,Profesional Keselamatan Siber
+1382,2541,Profesional Kesan Visual Dan Animasi
+1404,2542,Profesional Permainan Digital Dan E-Sukan
+1422,2543,Profesional Pereka Kandungan Kreatif
+1437,2611,Peguam
+1449,2612,Hakim
+1455,2619,Profesional Perundangan Yang Tidak Dikelaskan Di Mana-Mana
+1472,2711,Profesional Hotel
+1477,2712,Profesional Restoran
+1489,2811,Juruarkib Dan Kurator
+1493,2812,Pustakawan Dan Profesional Maklumat Yang Berkaitan
+1500,2821,Ahli Ekonomi
+1505,2822,"Ahli Sosiologi, Ahli Antropologi Dan Profesional Yang Berkaitan"
+1514,2823,"Ahli Falsafah, Sejarawan, Dan Ahli Sains Politik"
+1519,2824,Ahli Psikologi
+1527,2825,Profesional Kerja Sosial Dan Kaunseling
+1535,2826,Profesional Keagamaan
+1545,2831,Pengarang Dan Penulis Yang Berkaitan
+1551,2832,Wartawan
+1565,2833,"Penterjemah, Jurubahasa, Dan Ahli Linguistik Lain"
+1576,2841,Artis Visual
+1579,2842,"Ahli Muzik, Penyanyi, Dan Komposer"
+1597,2843,Penari Dan Pereka Tari
+1603,2844,"Pengarah Dan Penerbit Filem, Pementasan Dan Yang Berkaitan"
+1618,2845,Pelakon
+1623,2846,"Juruhebah Radio, Televisyen, Dan Media Lain"
+1628,2847,"Badut, Ahli Silap Mata, Akrobat Dan Profesional Yang Berkaitan"
+1638,2848,Penjaga Dan Jurulatih Haiwan
+1640,2849,Artis Kreatif Dan Persembahan Yang Tidak Dikelaskan Di Mana-Mana
+1649,2911,Profesional Inspektor Kastam Dan Sempadan
+1654,2912,Profesional Pegawai Percukaian Dan Eksais
+1661,2913,Profesional Pegawai Faedah Sosial Kerajaan
+1664,2914,Profesional Pegawai Pelesenan Kerajaan
+1668,2915,Inspektor Dan Detektif Polis Profesional
+1670,2916,Profesional Pegawai Sivil
+1679,2919,Profesional Badan Pengawalaturan Yang Tidak Dikelaskan Di Mana-Mana
+1692,3111,Juruteknik Sains Kimia Dan Fizik
+1731,3112,Juruteknik Kejuruteraan Awam
+1774,3113,Juruteknik Kejuruteraan Elektrik
+1790,3114,Juruteknik Kejuruteraan Elektronik
+1796,3115,Juruteknik Kejuruteraan Mekanikal
+1837,3116,Juruteknik Kejuruteraan Kimia
+1848,3117,Juruteknik Perlombongan Dan Kaji Logam
+1866,3118,Pelukis Pelan Dan Juruteknik Ukur
+1883,3119,Juruteknik Industri Dan Pengeluaran
+1915,3121,Penyelia Perlombongan
+1920,3122,Penyelia Pembuatan
+1954,3123,Penyelia Pembinaan
+1967,3129,Penyelia Lain Yang Tidak Dikelaskan Di Mana-Mana
+1970,3131,Operator Loji Penjana Kuasa
+2005,3132,Operator Loji Insinerator Dan Perawatan Air
+2027,3133,Pengawal Loji Pemprosesan Kimia
+2032,3134,Operator Loji Penapisan Petroleum Dan Gas Asli
+2060,3135,Pengawal Proses Pengeluaran Logam
+2067,3139,Juruteknik Kawalan Proses Yang Tidak Dikelaskan Di Mana-Mana
+2069,3141,Juruteknik Sains Hayat (Tidak Termasuk Perubatan)
+2088,3142,Juruteknik Pertanian Dan Penternakan
+2110,3143,Juruteknik Perhutanan
+2117,3144,Juruteknik Perikanan
+2128,3151,Juruteknik Pesawat Udara
+2151,3152,Juruteknik Kapal/ Marin
+2160,3153,Juruteknik Kereta Api/ Lokomotif
+2169,3154,Juruteknik Kenderaan Bermotor
+2179,3159,Juruteknik Pengangkutan Yang Tidak Dikelaskan Di Mana-Mana
+2185,3161,Profesional Bersekutu Penyelidikan Dan Pembangunan Nuklear
+2189,3211,Juruteknik Kelengkapan Pengimejan Perubatan Dan Terapeutik
+2195,3212,Juruteknik Makmal Perubatan Dan Patologi
+2212,3213,Juruteknik Dan Pembantu Farmaseutikal
+2218,3214,Juruteknik Perubatan Dan Prostetik Pergigian
+2222,3215,Juruteknik Ortotik Dan Prostetik
+2226,3221,Profesional Bersekutu Kejururawatan (Kecuali Pergigian)
+2230,3222,Profesional Bersekutu Perbidanan
+2234,3231,Profesional Bersekutu Perubatan Tradisional Dan Komplementari
+2247,3241,Juruteknik Dan Pembantu Veterinar
+2258,3251,Pembantu Pergigian Dan Ahli Terapi
+2264,3252,Juruteknik Rekod Perubatan Dan Maklumat Kesihatan
+2267,3253,Pekerja Kesihatan Masyarakat
+2271,3254,Juruoptik Pendispensan
+2274,3255,Juruteknik Dan Pembantu Jurupulih Anggota
+2284,3256,Pembantu Perubatan
+2298,3257,Pemeriksa Kesihatan Pekerjaan Dan Persekitaran Dan Bersekutu
+2326,3258,Pembantu Ambulans
+2330,3259,Profesional Bersekutu Kesihatan Yang Tidak Dikelaskan Di Mana-Mana
+2336,3311,Perunding Dan Broker Sekuriti Dan Kewangan
+2344,3312,Pegawai Kredit Dan Pinjaman
+2353,3313,Profesional Bersekutu Perakaunan Dan Pengauditan
+2372,3314,"Profesional Bersekutu Perangkaan, Matematik, Dan Aktuari"
+2374,3315,Penilai Dan Pentaksir Kerugian
+2385,3321,Wakil Insurans
+2389,3322,Wakil Jualan Komersil
+2395,3323,Pembeli
+2402,3324,Broker Perdagangan
+2408,3331,Ejen Pelepasan Dan Pengangkutan
+2410,3332,Ejen Persidangan Dan Acara
+2416,3333,Ejen Dan Kontraktor Pekerjaan
+2418,3334,Ejen Hartanah Dan Harta
+2422,3339,Ejen Perkhidmatan Perniagaan Yang Tidak Dikelaskan Di Mana-Mana
+2426,3341,Profesional Bersekutu Pentadbiran
+2440,3342,Setiausaha Perundangan
+2442,3343,Setiausaha Pentadbiran Dan Eksekutif
+2460,3344,Setiausaha Perubatan
+2472,3411,Profesional Bersekutu Perundangan Dan Yang Berkaitan
+2492,3511,Juruteknik Operasi Teknologi Maklumat Dan Komunikasi
+2523,3512,Juruteknik Sokongan Pengguna Teknologi Maklumat Dan Komunikasi
+2542,3513,Juruteknik Rangkaian Dan Sistem Komputer
+2549,3514,Juruteknik Web
+2557,3521,Juruteknik Penyiaran Dan Audiovisual
+2583,3522,Juruteknik Kejuruteraan Telekomunikasi
+2590,3611,Profesional Bersekutu Kerja Sosial
+2623,3612,Profesional Bersekutu Keagamaan
+2632,3621,Atlet Dan Ahli Sukan
+2645,3622,"Jurulatih, Pengajar, Dan Pegawai Sukan"
+2668,3623,"Ketua Program, Dan Pengajar Kecergasan Dan Rekreasi"
+2684,3631,Jurugambar
+2705,3632,Pereka Bentuk Dan Juruhias Dalaman
+2735,3633,"Profesional Bersekutu Galeri, Muzium, Dan Perpustakaan"
+2750,3634,Profesional Bersekutu Kebudayaan Dan Kesenian
+2789,3639,Profesional Bersekutu Kesenian Dan Kebudayaan Yang Tidak Dikelaskan Di Mana- Mana
+2791,3641,Jurumasak
+2811,3711,Profesional Bersekutu Inspektor Kastam Dan Sempadan
+2818,3712,Profesional Bersekutu Pegawai Percukaian Dan Eksais
+2821,3713,Profesional Bersekutu Pegawai Faedah Sosial Kerajaan
+2823,3714,Profesional Bersekutu Pegawai Pelesenan Kerajaan
+2827,3715,Pegawai Polis
+2835,3716,Profesional Bersekutu Pertahanan Awam
+2843,3719,Profesional Bersekutu Badan Pengawalaturan Yang Tidak Dikelaskan Di Mana-Mana
+2863,4111,Kerani Am Pejabat
+2882,4121,Setiausaha (Am)
+2890,4131,Jurutaip
+2896,4132,Kerani Kemasukan Data
+2910,4211,Juruwang Bank Dan Kerani Yang Berkaitan
+2916,4212,"Penerima Taruhan, Krupier, Dan Pekerja Permainan Yang Berkaitan"
+2919,4213,Broker Gadaian Dan Peminjam Wang
+2922,4214,"Pemungut Hutang Dan Sewa, Dan Pekerja Yang Berkaitan"
+2932,4221,Perunding Perjalanan Dan Kerani Yang Berkaitan
+2936,4222,Kerani Pusat Penerangan Informasi
+2944,4223,Operator Telefon
+2946,4224,Penyambut Tetamu
+2957,4225,Kerani Pertanyaan
+2963,4226,Penemuduga Tinjauan Dan Penyelidikan Pasaran
+2966,4229,Pekerja Maklumat Pelanggan Yang Tidak Dikelaskan Di Mana-Mana
+2971,4311,Kerani Perakaunan Dan Simpan Kira
+2992,4312,"Kerani Perangkaan, Kewangan, Dan Insurans"
+3025,4313,Kerani Gaji
+3028,4321,Kerani Stok
+3040,4322,Kerani Pengeluaran
+3064,4323,Kerani Pengangkutan
+3089,4411,Kerani Perpustakaan
+3094,4412,Kerani Pengedaran Dan Pengisihan Mel
+3106,4413,"Kerani Pengekodan, Pembacaan Pruf Dan Yang Berkaitan"
+3111,4414,Jurutulis Dan Pekerja Yang Berkaitan
+3115,4415,Kerani Pemfailan Dan Penyalinan
+3119,4416,Kerani Personel
+3130,4419,Pekerja Sokongan Perkeranian Lain Yang Tidak Dikelaskan Di Mana-Mana
+3152,5111,Atendan Perjalanan Dan Pelayan Perjalanan
+3158,5112,Konduktor Pengangkutan
+3163,5113,Pemandu Perjalanan
+3167,5121,Tukang Masak
+3181,5131,Pelayan
+3189,5132,Pelayan Bar
+3193,5141,Pendandan Rambut
+3196,5142,Jurusolek Dan Pekerja Yang Berkaitan
+3209,5151,"Penyelia Pencucian Dan Pengemasan Di Pejabat, Hotel Dan Pertubuhan Lain"
+3214,5152,Jurukemas Domestik
+3218,5153,Penjaga Bangunan
+3228,5161,"Ahli Nujum, Tukang Tilik Dan Pekerja Yang Berkaitan"
+3231,5162,Pengiring Dan Pelayan
+3234,5163,Pekerja Pengebumian Dan Perapian Mayat
+3239,5164,Perapi Haiwan Peliharaan Dan Penjaga Haiwan
+3244,5165,Pengajar Pemanduan
+3246,5169,Pekerja Perkhidmatan Peribadi Yang Tidak Dikelaskan Di Mana-Mana
+3252,5211,Jurujual Di Gerai Dan Pasar
+3256,5212,Jurujual Makanan Di Tepi Jalan
+3260,5221,Penjaga Kedai
+3264,5222,Penyelia Kedai
+3270,5223,Pembantu Jualan Di Kedai
+3276,5231,Juruwang Dan Kerani Tiket
+3281,5241,Model Fesyen Dan Model Lain
+3284,5242,Penunjuk Cara Jualan
+3289,5243,Jurujual Pintu-Ke-Pintu
+3292,5244,Jurujual Pusat Perhubungan
+3295,5245,Atendan Pam Dan Pusat Servis
+3297,5246,Atendan Kaunter Makanan
+3299,5249,Pekerja Jualan Yang Tidak Dikelaskan Di Mana-Mana
+3303,5311,Pekerja Asuhan Kanak-Kanak
+3305,5312,Pembantu Guru
+3312,5321,Pembantu Penjagaan Kesihatan
+3324,5322,Pekerja Penjagaan Diri Di Rumah
+3329,5329,Pekerja Penjagaan Diri Dalam Perkhidmatan Kesihatan Yang Tidak Dikelaskandi Mana-Mana
+3332,5411,Ahli Bomba
+3336,5412,Pegawai Polis Rendah
+3343,5413,Pengawal Penjara
+3345,5414,Pengawal Keselamatan
+3360,5415,Pegawai Dan Pembantu Imigresen/ Kastam
+3363,5419,Pekerja Perkhidmatan Perlindungan Yang Tidak Dikelaskan Di Mana-Mana
+3391,6111,Penanam Tanaman Ladang
+3404,6112,Penanam Pokok Renek
+3406,6113,"Pekebun, Penanam Hortikultur Dan Tapak Semaian"
+3410,6114,Penanam Tanaman Campuran
+3412,6115,Penanam Sayur-Sayuran
+3415,6121,Pengeluar Ternakan Dan Tenusu
+3420,6122,Pengeluar Ternakan Ayam Itik
+3425,6123,Pemelihara Lebah Dan Ulat Sutera
+3429,6129,Pengeluar Haiwan Dan Pekerja Berkaitan Yang Tidak Dikelaskan Di Mana-Mana
+3439,6131,Pengeluar Tanaman Dan Haiwan Campuran
+3444,6211,Pekerja Kemahiran Perhutanan Dan Yang Berkaitan
+3464,6221,Pengeluar Perikanan Dan Akuakultur
+3486,6222,Pekerja Kemahiran Perikanan Perairan Pedalaman Dan Pantai
+3493,6223,Pekerja Kemahiran Perikanan Laut Dalam
+3495,6224,Pemburu Dan Penjerat
+3499,6311,Peladang Tanaman Berorientasikan Sara Diri
+3502,6321,Peladang Ternakan Berorientasikan Sara Diri
+3505,6331,Peladang Tanaman Dan Ternakan Campuran Berorientasikan Sara Diri
+3510,6341,"Nelayan, Pemburu, Penjerat, Dan Pemungut Berorientasikan Sara Diri"
+3676,7111,Pembina Rumah Dan Pekerja Binaan
+3686,7112,Penerap Bata Dan Pekerja Yang Berkaitan
+3696,7113,"Tukang Batu, Pemotong Batu, Pemecah Batu, Dan Pengukir Batu"
+3709,7114,"Tukang Letak Konkrit, Pengemas Konkrit, Dan Pekerja Yang Berkaitan"
+3718,7115,Tukang Kayu Dan Tukang Tanggam
+3731,7119,Pekerja Kerangka Bangunan Dan Pekerja Pertukangan Berkaitan Yang Tidak Dikelaskan Di Mana-Mana
+3737,7121,Pemasang Bumbung
+3742,7122,Penurap Lantai Dan Pengatur Jubin
+3746,7123,Tukang Plaster
+3748,7124,Tukang Penebatan
+3754,7125,Tukang Kaca
+3757,7126,Tukang Paip Dan Jurugegas Paip
+3769,7127,Mekanik Penyaman Udara Dan Penyejukan
+3773,7131,Tukang Cat Dan Pekerja Yang Berkaitan
+3783,7132,Tukang Sembur Cat Dan Varnis
+3789,7133,Pencuci Struktur Bangunan
+3796,7211,Pembuat Acuan Dan Pembuat Teras Logam
+3805,7212,Pengimpal Dan Pemotong Besi
+3815,7213,Pekerja Kepingan Logam
+3828,7214,Penyedia Dan Penegak Logam Struktur
+3837,7215,Jurutali Dan Penyambung Kabel
+3847,7221,"Tukang Besi, Tukang Tukul, Dan Pekerja Mesin Penempa Logam"
+3853,7222,Pembuat Peralatan Dan Pekerja Yang Berkaitan
+3859,7223,Pengeset Dan Pengendali Peralatan Untuk Mesin Kerja Logam
+3867,7224,"Penggilap Logam, Pencanai Roda, Dan Pengasah Peralatan"
+3878,7231,Mekanik Dan Pembaik Kenderaan Bermotor
+3904,7232,Mekanik Dan Pembaik Enjin Pesawat Udara
+3917,7233,Mekanik Dan Pembaik Jentera Pertanian Dan Perindustrian
+3932,7234,Pembaik Basikal Dan Pekerja Yang Berkaitan
+3937,7239,Mekanik Dan Pembaik Jentera Yang Tidak Dikelaskan Di Mana-Mana
+3946,7311,Pembuat Dan Pembaik Peralatan Jitu
+3964,7312,Pembuat Dan Penala Alat Muzik
+3970,7313,Pekerja Barang Kemas Dan Logam Berharga
+3982,7314,Tukang Tembikar Dan Pekerja Yang Berkaitan
+3989,7315,"Pembuat, Pemotong, Pencanai, Dan Pengemas Kaca"
+3998,7316,"Penulis Papan Tanda, Pelukis Hiasan, Pengukir, Dan Penggores"
+4011,7317,"Pekerja Kraftangan Kayu, Bakul Dan Bahan Yang Berkaitan"
+4022,7318,"Pekerja Kraftangan Tekstil, Barangan Kulit Dan Bahan Yang Berkaitan"
+4034,7319,Pekerja Kraftangan Yang Tidak Dikelaskan Di Mana-Mana
+4041,7321,Pekerja Prapencetakan
+4050,7322,Pencetak
+4072,7323,Pekerja Kemasan Akhir Dan Penjilid Pencetakan
+4084,7324,Pengukir Dan Penggores Pencetakan Dan Foto
+4094,7411,Juruelektrik Bangunan Dan Yang Berkaitan
+4098,7412,Mekanik Dan Jurugegas Elektrik
+4122,7413,Pemasang Dan Pembaik Talian Elektrik
+4136,7421,Mekanik Dan Penservis Elektronik
+4140,7422,Pemasang Dan Penservis Teknologi Maklumat Dan Komunikasi
+4148,7511,"Pekerja Pemprosesan Daging, Ikan, Dan Penyedia Makanan Yang Berkaitan"
+4160,7512,"Pembuat Roti, Pastri, Pasta, Dan Konfeksi"
+4170,7513,Pembuat Produk Tenusu
+4173,7514,"Pengawet Buah-Buahan, Sayur-Sayuran Dan Yang Berkaitan"
+4179,7515,Perasa Dan Penggred Makanan Dan Minuman
+4186,7516,Penyedia Tembakau Dan Pembuat Produk Tembakau
+4191,7611,Perawat Kayu
+4196,7612,Pembuat Kabinet Dan Pekerja Yang Berkaitan
+4210,7613,Pengeset Dan Pengendali Perkakas Mesin Untuk Kerja Kayu
+4215,7621,"Tukang Jahit, Penjahit Pakaian, Penjahit Pakaian Bulu, Dan Pembuat Topi"
+4239,7622,Pembuat-Pola Dan Pemotong Pakaian Dan Bahan Lain Yang Berkaitan
+4253,7623,Pembuat Kasut Dan Pekerja Yang Berkaitan
+4264,7624,Pekerja Upholsteri Dan Yang Berkaitan
+4273,7625,"Pengemas Kulit Bulu, Penyamak Kulit Binatang, Dan Penyedia Belulang"
+4276,7631,Penyelam Dalam Air
+4281,7632,Pembedil Dan Pembagas
+4284,7633,Penggred Dan Penguji Produk (Tidak Termasuk Makanan Dan Minuman)
+4287,7634,Pengasap Dan Pengawal Perosak Dan Rumpai
+4292,7639,Pekerja Kemahiran Lain Dan Yang Berkaitan Yang Tidak Dikelaskan Di Mana-Mana
+4300,8111,Pelombong Dan Pekerja Kuari
+4306,8112,Operator Loji Pemprosesan Galian Dan Batu
+4314,8113,Penggerudi Dan Pengorek Telaga Dan Pekerja Yang Berkaitan
+4322,8114,"Operator Mesin Produk Simen, Batu, Dan Galian Lain"
+4325,8121,Operator Loji Pemprosesan Logam
+4331,8122,"Operator Mesin Pengemas, Penyadur, Dan Penyalut Logam"
+4342,8131,Operator Mesin Dan Loji Produk Kimia
+4379,8132,Operator Mesin Produk Fotografi
+4386,8141,Operator Mesin Produk Getah
+4403,8142,Operator Mesin Produk Plastik
+4406,8143,Operator Mesin Produk Kertas
+4411,8151,"Operator Mesin Penyedia Gentian, Pemintal, Dan Pelilit"
+4413,8152,Operator Mesin Tenun Dan Kait
+4417,8153,Operator Mesin Jahit
+4420,8154,"Operator Mesin Peluntur, Pencelup, Dan Pencuci Fabrik"
+4424,8155,Operator Mesin Penyedia Bulu Dan Kulit
+4426,8156,Operator Mesin Membuat Kasut Dan Yang Berkaitan
+4433,8157,Operator Mesin Dobi
+4435,8159,"Operator Mesin Produk Tekstil, Bulu, Dan Kulit Yang Tidak Dikelaskan Di Mana-Mana"
+4441,8161,Operator Mesin Produk Makanan Dan Yang Berkaitan
+4466,8171,Operator Loji Pulpa Dan Pembuatan Kertas
+4476,8172,Operator Loji Pemprosesan Kayu
+4483,8173,Operator Mesin Produk Kayu
+4489,8181,Operator Loji Kaca Dan Seramik
+4501,8182,Operator Enjin Dan Dandang Stim
+4510,8183,"Operator Mesin Pembungkus, Pembotol, Dan Pelabel"
+4514,8189,Operator Mesin Dan Loji Pegun Lain Yang Tidak Dikelaskan Di Mana-Mana
+4525,8211,Pemasang Jentera Mekanikal
+4532,8212,Pemasang Kelengkapan Elektrik Dan Elektronik
+4536,8213,"Pemasang Produk Kulit, Logam, Getah, Dan Plastik"
+4542,8219,Pemasang Yang Tidak Dikelaskan Di Mana-Mana
+4550,8221,Operator-Pengeset Peralatan-Mesin
+4572,8311,Pemandu Enjin Lokomotif
+4576,8312,"Operator Brek, Isyarat, Dan Suis Landasan Keretapi"
+4586,8321,Penunggang (Pemandu) Motosikal
+4590,8322,"Pemandu Kereta, Teksi, Dan Van"
+4601,8331,Pemandu Bas Dan Trem
+4603,8332,Pemandu Trak Berat Dan Lori
+4609,8341,Operator Loji Bergerak Bagi Ladang Dan Perhutanan
+4611,8342,Operator Loji Tolak Tanah Dan Yang Berkaitan
+4616,8343,"Operator Loji Kren, Takal Dan Yang Berkaitan"
+4625,8344,Operator Trak Angkat
+4631,8351,Kelasi Kapal Dan Pekerja Yang Berkaitan
+4644,9111,Pencuci Dan Pembantu Domestik
+4647,9112,"Pencuci Dan Pembantu Di Pejabat, Hotel, Dan Pertubuhan Lain"
+4655,9121,Tukang Dobi Dan Tukang Seterika (Tangan)
+4658,9122,Pencuci Kenderaan
+4661,9123,Pencuci Permukaan Dan Tetingkap
+4663,9129,Pekerja Pencucian Lain Yang Tidak Dikelaskan Di Mana-Mana
+4674,9211,Buruh Ladang Tanaman
+4685,9212,Buruh Ladang Ternakan
+4690,9213,Buruh Ladang Tanaman Dan Ternakan Campuran
+4694,9214,Buruh Kebun Dan Hortikultur
+4702,9215,Buruh Perhutanan
+4707,9216,Buruh Perikanan Dan Akuakultur
+4709,9219,"Buruh Pertanian, Perhutanan, Penternakan, Dan Perikanan Yang Tidak Dikelaskan Di Mana-Mana"
+4714,9311,Buruh Perlombongan Dan Perkuarian
+4718,9312,Buruh Kejuruteraan Awam
+4727,9313,Buruh Pembinaan Bangunan
+4735,9321,Buruh Pembuatan
+4746,9329,Buruh Pembuatan Yang Tidak Dikelaskan Di Mana-Mana
+4748,9331,Pengayuh Kenderaan Tangan Atau Berpedal
+4750,9332,Pemandu Kenderaan Dan Jentera Tarikan-Haiwan
+4752,9333,Pekerja Pengangkutan Barang Dan Buruh Penyimpanan
+4767,9334,Pengisi Rak
+4771,9411,Penyedia Makanan Segera
+4775,9412,Pembantu Dapur
+4786,9511,Pekerja Perkhidmatan Tepi Jalan Dan Pekerja Yang Berkaitan
+4792,9521,Penjual Tepi Jalan (Tidak Termasuk Makanan)
+4796,9611,Pemungut Sampah
+4798,9612,Pengisih Barang Buangan Dan Barang Kitar Semula
+4800,9613,Tukang Sapu Dan Buruh Yang Berkaitan
+4806,9621,"Penghantar Mesej Dan Bungkusan, Dan Porter Bagasi"
+4827,9622,Pekerja Rencam
+4837,9623,Pembaca Meter Dan Pemungut Wang Mesin-Layan Diri
+4840,9624,Pengangkat Air Dan Pemungut Kayu Api
+4842,9625,Atendan
+4859,9629,Pekerja Asas Yang Lain Yang Tidak Dikelaskan Di Mana-Mana
+3516,0111-01,Pegawai Perubatan
+3517,0111-02,Pegawai Pergigian
+3518,0111-03,Pegawai Farmasi
+3521,0121-01,Pegawai Rejimen Askar Melayu DiRaja (RAMD)
+3522,0121-02,Pegawai Rejimen Renjer DiRaja (RRD)
+3523,0121-03,Pegawai Kor Armor DiRaja (KAD)
+3524,0121-04,Pegawai Rejimen Semboyan DiRaja (RSD)
+3525,0121-05,Pegawai Rejimen Askar Jurutera DiRaja (RAJD)
+3526,0121-06,Pegawai Rejimen Artileri Diraja (RAD)
+3527,0121-07,Pegawai Kor Perkhidmatan Am (KPA)
+3528,0121-08,Pegawai Kor Kesihatan DiRaja (KKD)
+3529,0121-09,Pegawai Kor Polis Tentera DiRaja (KPTD)
+3530,0121-10,Pegawai Kor Risik DiRaja (KRD)
+3531,0121-11,Pegawai Kor Perkhidmatan DiRaja (KPD)
+3532,0121-12,Pegawai Kor Ordnan DiRaja (KOD)
+3533,0121-13,Pegawai Kor Jurutera Letrik dan Jentera DiRaja (KJLJD)
+3534,0121-14,Pegawai Kor Agama Angkatan Tentera (KAGAT)
+3535,0121-15,Pegawai Askar Wataniah (AW)
+3536,0121-16,Pegawai Rejimen Sempadan (RS)
+3539,0131-01,Anggota Infantri
+3540,0131-02,Anggota Senjata Bantuan Infantri
+3541,0131-03,Anggota Pengurusan Pengangkutan
+3542,0131-04,Krew Mekanize
+3543,0131-05,Anggota Kerani Ketenteraan
+3544,0131-06,Anggota Pentadbir Logistik
+3545,0131-07,Jurulatih Jasmani (TDM)
+3546,0131-08,Juru Rintis Serang
+3547,0131-09,Krew Semboyan
+3548,0131-10,Anggota Pancaragam (TDM)
+3549,0131-11,Anggota Gerak Khas
+3550,0131-12,Krew Armor
+3551,0131-13,Juruteknik Komunikasi dan Informasi
+3552,0131-14,Jurusistem Komunikasi dan Informasi
+3553,0131-15,Jurukomunikasi Kombat Semboyan
+3554,0131-16,Jurupelan
+3555,0131-17,Juruukur
+3556,0131-18,Penerap Bata
+3557,0131-19,Jurukerja Paip
+3558,0131-20,Jurulogam
+3559,0131-21,Tukang Kayu dan Tanggam
+3560,0131-22,Tukang Cat dan Hias
+3561,0131-23,Pemandu Loji
+3562,0131-24,Jurugegas Pembakaran Dalam dan Pam
+3563,0131-25,Jurugegas Loji
+3564,0131-26,Juruelektrik
+3565,0131-27,Juruteknik Pemusnahan
+3566,0131-28,Jurumeriam
+3567,0131-29,Pemprosesan Data Balistik
+3568,0131-30,Juruukur Artileri
+3569,0131-31,Pengesan Artileri
+3570,0131-32,Anggota Kawalan Tembakan
+3571,0131-33,Anggota Meriam Pertahanan Udara
+3572,0131-34,Jururadar
+3573,0131-35,Kerani Perakaunan Ketenteraan
+3574,0131-36,Jurusistem Perakaunan Ketenteraan
+3575,0131-37,Pembantu Pendidikan
+3576,0131-38,Wartawan Tempur
+3577,0131-39,Paramedik
+3578,0131-40,Penolong Pegawai Perubatan
+3579,0131-41,Jururawat Terlatih
+3580,0131-42,Penolong Pegawai Kesihatan Persekitaran
+3581,0131-43,Juruteknologi Makmal Perubatan
+3582,0131-44,Juru X-Ray
+3583,0131-45,Penolong Pegawai Farmasi
+3584,0131-46,Juruteknologi Pergigian
+3585,0131-47,Jururawat Pergigian
+3586,0131-48,Jurupulih Perubatan Anggota/Fisioterapi
+3587,0131-49,Jurupulih Perubatan Cara kerja
+3588,0131-50,Penolong Pegawai Veterinar
+3589,0131-51,Anggota Polis Tentera
+3590,0131-52,Anggota Keselamatan dan Risik Balas
+3591,0131-53,Gerak Saraf Perang Saraf
+3592,0131-54,Perisikan Imejeri
+3593,0131-55,Perisikan Strategik
+3594,0131-56,Operasi Human Intelligence
+3595,0131-57,Operasi Perisikan Khas
+3596,0131-58,Chef Tentera
+3597,0131-59,Juruteknik Logistik
+3598,0131-60,Juruteknik Peluru
+3599,0131-61,Juruteknik Percetakan
+3600,0131-62,Juruteknik Kejuruteraan Automatif
+3601,0131-63,Juruteknik Kejuruteraan Elektronik
+3602,0131-64,Juruteknik Kejuruteraan Senjata
+3603,0131-65,Juruteknik Kejuruteraan Pembuatan
+3604,0131-66,Juruteknik Kejuruteraan Kembalik
+3605,0131-67,Juruteknik Kejuruteraan Avionik
+3606,0131-68,Juruteknik Kejuruteraan Aeromekanikal
+3607,0131-69,Juruteknik Kejuruteraan Persenjataan Pesawat
+3608,0131-70,Penasihat Hal Ehwal Islam Ketenteraan
+3612,0211-01,Pegawai Eksekutif
+3613,0211-02,Pegawai Teknikal
+3614,0211-03,Pegawai Bekalan
+3617,0221-01,Anggota Peperangan Atas Permukaan
+3618,0221-02,Anggota Peperangan Bawah Permukaan (Senjata)
+3619,0221-03,Anggota Peperangan Bawah Permukaan (Kawalan)
+3620,0221-04,Anggota Juruplot Taktikal Peperangan
+3621,0221-05,Anggota Provos Tentera Laut
+3622,0221-06,Anggota Penyelam Ranjau
+3623,0221-07,Anggota Hidrografi
+3624,0221-08,Anggota Komunikasi
+3625,0221-09,Anggota Jurulatih Jasmani
+3626,0221-10,Anggota Pentadbiran Dan Kewangan
+3627,0221-11,Anggota Teknisyen Logistik
+3628,0221-12,Anggota Bendari
+3629,0221-13,Anggota Petugas Wisma Pegawai
+3630,0221-14,Anggota Pancaragam (TLDM)
+3631,0221-15,Anggota Teknisyen Marin Kuasa Gerak
+3632,0221-16,Anggota Teknisyen Marin Srimala
+3633,0221-17,Anggota Teknisyen Elektrik Senjata Dan Kuasa
+3634,0221-18,Anggota Teknisyen Elektrik Radio dan Radar
+3638,0311-01,Pegawai Cawang Juruterbang Tugas Am
+3639,0311-02,Pegawai Cawang Jurumalim
+3640,0311-03,Pegawai Cawang Kejuruteraan
+3641,0311-04,Pegawai Cawang Urusetia
+3642,0311-05,Pegawai Cawang Materiel
+3643,0311-06,Pegawai Cawang Kawalan Lalu Lintas Udara
+3644,0311-07,Pegawai Cawang Kawalan Pertahanan Udara
+3645,0311-08,Pegawai Cawang Bomba
+3646,0311-09,Pegawai Cawang Jurutera Penerbangan
+3647,0311-10,Pegawai Cawang Jurusensor Senjata
+3650,0321-01,Juruteknik Aeromech
+3651,0321-02,Juruteknik Avionic
+3652,0321-03,Juruteknik Aerospace Support Engineering
+3653,0321-04,Juruteknik Aviation Information Technology
+3654,0321-05,Juruteknik Rangka Kapal Terbang
+3655,0321-06,Juruteknik Enjin
+3656,0321-08,Juruteknik Instrumen
+3657,0321-09,Juruteknik Elektron
+3658,0321-10,Juruteknik Senjata
+3659,0321-11,Juruteknik Alat Bantuan Udara
+3660,0321-12,Pembantu Statik
+3661,0321-13,Juruteknik Permukaan dan Keselamatan
+3662,0321-14,Juruteknik Tukang Kayu
+3663,0321-15,Kuartermaster Udara
+3664,0321-16,Pramugari
+3665,0321-17,Juruteknik Pengawasan Udara
+3666,0321-18,Pembantu Kawalan Trafik Udara
+3667,0321-19,Ahli Bomba
+3668,0321-20,Juru Katalog (Meterial)
+3669,0321-22,Pembantu Tadbir
+3670,0321-23,Pembantu Pertahanan
+3671,0321-24,Jurulatih Jasmani (TUDM)
+3672,0321-25,Anggota Pancaragam (TUDM)
+4,1111-01,Perdana Menteri
+5,1111-02,Timbalan Perdana Menteri
+6,1111-03,Menteri
+7,1111-04,Timbalan Menteri
+8,1111-05,Ahli Parlimen
+9,1111-06,Ketua Menteri
+10,1111-07,Exco Negeri
+11,1111-08,Ahli Dewan Undangan Negeri
+12,1111-09,Timbalan Ketua Menteri
+13,1111-10,Menteri Muda
+14,1111-11,Menteri Besar
+15,1111-12,Yang di-Pertua Dewan Negara
+16,1111-13,Timbalan Yang di-Pertua Dewan Negara
+17,1111-14,Ahli Dewan Negara
+18,1111-15,Yang di-Pertua Dewan Rakyat
+19,1111-16,Timbalan Yang di-Pertua Dewan Rakyat
+21,1112-01,Penyimpan Mohor Besar Raja-Raja
+22,1112-02,Ketua Setiausaha Negara
+23,1112-03,Ketua Pengarah Perkhidmatan Awam
+24,1112-04,Peguam Negara
+25,1112-05,Ketua Setiausaha Perbendaharaan
+26,1112-06,Ketua Audit Negara
+27,1112-07,Ketua Polis Negara
+28,1112-08,Ketua Pengarah Kesihatan
+29,1112-09,Panglima Angkatan Tentera
+30,1112-10,Akauntan Negara
+31,1112-11,Gabenor
+32,1112-12,Ketua Pengarah Kastam
+33,1112-13,Ketua Pengarah Bomba
+34,1112-14,Ketua Setiausaha Kementerian
+35,1112-15,Ketua Pengarah Jabatan Kerajaan
+36,1112-16,"Pengurus Besar, Kerajaan Serantau"
+37,1112-17,Ketua Jabatan Kerajaan
+38,1112-18,Ketua Perangkawan
+39,1112-19,Setiausaha Suruhanjaya
+40,1112-20,Setiausaha Kerajaan Negeri
+41,1112-21,Timbalan Setiausaha Kerajaan Negeri
+42,1112-22,Ketua Pegawai Eksekutif Badan Berkanun
+43,1112-26,Duta
+44,1112-27,Konsul Besar
+45,1112-28,Pesuruhjaya Tinggi Kerajaan
+46,1112-29,Setiausaha Kedutaan
+47,1112-30,Datuk Bandar
+48,1112-31,Yang Dipertua Pihak Berkuasa Tempatan
+49,1112-32,Setiausaha Dewan Negara
+50,1112-33,Setiausaha Dewan Rakyat
+51,1112-34,Pesuruhjaya Polis
+52,1112-35,Ketua Pentadbir Parlimen
+53,1112-36,Ketua Pegawai Eksekutif Pos Malaysia
+54,1112-37,Timbalan Ketua Setiausaha Pentadbiran Kerajaan
+55,1112-38,Ketua Bahagian/Seksyen/Unit
+56,1112-39,Laksamana Madya Maritim
+57,1112-40,Laksamana Muda Maritim
+58,1112-41,Timbalan Ketua Polis Negara
+59,1112-42,Timbalan Pesuruhjaya Polis
+60,1112-43,Atase
+62,1113-01,Penghulu Gred NP29
+63,1113-04,Ketua Kampung
+64,1113-16,Orang Besar Berempat
+66,1114-01,Presiden Parti Politik
+67,1114-02,Presiden Persekutuan Majikan-Majikan
+68,1114-04,Presiden Kongres Kesatuan Pekerja-Pekerja di dalam Perkhidmatan Awam
+69,1114-12,Pegawai Kanan Organisasi Berkepentingan Khas
+72,1121-01,Ketua Pegawai Eksekutif (CEO)
+73,1121-02,Ketua Pegawai Operasi
+74,1121-03,Ketua Pegawai Perundangan
+75,1121-04,Ketua Pegawai Teknikal
+76,1121-05,Pengarah Eksekutif
+77,1121-07,Timbalan Pengarah Eksekutif
+78,1121-09,Pengarah Perusahaan
+79,1121-10,Pengerusi Perusahaan
+80,1121-11,Pengurus Lapangan Terbang
+81,1121-12,Pengurus Pelabuhan
+82,1121-13,Pengurus Penyiaran Radio dan Televisyen
+83,1121-23,Pengurus Besar
+84,1121-29,Pengurus Gred P2
+85,1121-30,Pengurus Kanan Gred P1
+86,1121-31,Penolong Pengurus Gred P3
+90,1211-03,Pengurus Akaun
+91,1211-04,Pengurus Bajet
+92,1211-05,Pengurus Audit
+93,1211-06,Pengurus Audit dan Pengurusan Risiko
+94,1211-07,Pengurus Kredit
+95,1211-08,Pengurus Insurans
+96,1211-09,Pengurus Dana
+97,1211-10,Pengurus Perbendaharaan
+98,1211-12,Pengurus Perbelanjaan
+99,1211-14,Pengurus Cukai
+100,1211-15,Pengurus Tuntutan
+101,1211-19,Pengurus Risiko
+102,1211-23,Pengurus Penilaian Aktuari
+103,1211-24,Pengurus Pembidaan
+104,1211-27,Pengurus Harga Pindahan
+105,1211-28,Ketua Pengurusan Penajajaminan dan Portfolio
+107,1212-01,Ketua Pegawai Sumber Manusia
+108,1212-02,Pengurus Sumber Manusia
+109,1212-05,Pengurus Kesihatan dan Keselamatan Pekerjaan
+111,1213-01,Pengurus Dasar dan Perancangan
+112,1213-03,Pengurus Perancangan Korporat
+113,1213-07,Pengurus Program
+115,1214-01,Ketua Pegawai Pematuhan
+116,1214-07,Pengurus Pembangunan Perniagaan
+117,1214-08,Pengurus Pematuhan
+118,1214-09,Pengurus Fesyen dan Pakaian
+119,1214-10,Pengurus Pematuhan Halal
+120,1214-11,Pengurus Rantaian Bekalan
+121,1214-12,Pengurus Pembangunan Perniagaan dan Produk
+122,1214-13,Pengurus Kemampanan
+123,1214-14,Pengurus Projek
+124,1214-16,Pengurus Teknologi
+125,1214-17,Ketua Pegawai Perniagaan
+127,1215-01,Pengurus Pentadbiran
+128,1215-04,Pengurus Prasarana
+129,1215-06,Ketua Komunikasi Korporat
+130,1215-08,Ketua Pentadbir Perniagaan
+131,1215-09,Pengurus Pejabat Maya
+133,1216-01,Pengurus Kawalan Kualiti
+134,1216-03,"Pengurus Jaminan Kualiti, Pengilangan Makanan Halal"
+138,1221-01,Ketua Pegawai Pemasaran
+139,1221-02,Pengurus Jualan
+140,1221-04,Pengurus Pemasaran
+141,1221-07,Pengurus Produk
+142,1221-08,Pengurus Jenama
+143,1221-10,Pengurus Pusat Beli-Belah
+144,1221-11,Pengurus Runcit
+145,1221-14,Pengurus Cawangan
+146,1221-19,Pengurus Pemasaran dan Pengoptimuman Enjin Carian (SEO)
+147,1221-20,Pengurus Pelesenan
+149,1222-01,Pengurus Pengiklanan
+150,1222-02,Pengurus Hal Ehwal Am
+151,1222-05,Pengurus Pameran
+152,1222-06,Pengurus Khidmat Pelanggan
+153,1222-13,Pengurus Media Sosial
+154,1222-14,Pengurus Pelancongan
+155,1222-15,Pengurus Majlis
+156,1222-16,Pengurus Tinjauan Soal Selidik
+158,1223-01,Pengurus Penyelidikan dan Pembangunan
+159,1223-04,"Pengurus Penyelidikan dan Pembangunan, Pengilangan Makanan Halal"
+160,1223-05,"Pengurus Penyelidikan dan Pembangunan, Industri Halal"
+164,1311-01,Pengurus Taman/Ladang Gred G41
+165,1311-02,Pengurus Perhutanan
+166,1311-03,Pengurus Ladang
+167,1311-04,Pengurus Hortikultur
+168,1311-06,Pengurus Pertanian
+169,1311-08,Pengurus Penternakan
+170,1311-11,Pengurus Veterinar
+171,1311-13,Pengurus Pengeluaran Ternakan Halal
+172,1311-14,"Pengurus Padang, Rumput"
+173,1311-15,Pengurus Penetasan
+175,1312-02,Pengurus Pengeluaran dan Operasi Perikanan
+176,1312-03,Pengurus Operasi Akuakultur
+179,1321-01,Pengurus Pembuatan
+180,1321-04,Pengurus Elektrik
+181,1321-05,Pengurus Tenaga
+182,1321-07,"Pengurus Pengeluaran, Pemprosesan Makanan"
+183,1321-08,Pengurus Pembuatan Badan Kapal
+184,1321-09,Pengurus Mekanikal
+185,1321-10,Pengurus Kimpalan
+186,1321-11,Pengurus Kilang Minyak
+187,1321-12,"Pengurus, Pengilangan Makanan Halal"
+188,1321-13,"Pengurus Pengeluaran, Pemprosesan Daging Halal"
+189,1321-14,Pengurus Penyelenggaraan
+190,1321-15,Pengurus Loji Penjanaan Tenaga Biomas (BEGP)
+191,1321-16,Penolong Pengurus Loji Penjanaan Tenaga Biomas (BEGP)
+192,1321-18,Pengurus Loji Tapak Pelupusan Gas
+193,1321-20,Pengurus Loji Anaerobic Digester Biogas
+194,1321-21,Pengurus Pengeluaran Fotovoltan
+195,1321-26,Pengurus Loji Penjanaan Kuasa
+196,1321-28,Pengurus Pengeluaran Kimia
+197,1321-33,Pengurus Reka bentuk
+198,1321-36,Ketua Rawatan Panas (Logam)
+199,1321-37,Pengurus Stor
+201,1322-01,"Pengurus Pengeluaran dan Operasi, Perlombongan"
+202,1322-03,"Pengurus Pengeluaran dan Operasi, Pengekstrakan Minyak dan Gas"
+203,1322-07,Pengurus Pemasangan Luar Pesisir
+204,1322-09,Pengawal Pengeluaran Perlombongan
+205,1322-10,Pengurus Kaji Logam
+206,1322-11,Pengurus Pemasangan Luar Pesisir: Minyak atau Gas
+208,1323-01,Pengurus Pembinaan
+209,1323-03,Pengurus Kontrak Pembinaan
+210,1323-10,Pengurus Senibina dan Bangunan
+211,1323-11,Pengurus Ukur Tanah
+212,1323-12,Pengarah Kejuruteraan Pembinaan
+213,1323-13,Pengurus Kejuruteraan Pembinaan
+214,1323-14,Pengurus Penyelenggaraan Kemudahan Bangunan Hijau
+215,1323-15,Penolong Pengurus Penyelenggaraan Kemudahan Bangunan Hijau
+216,1323-16,Pengurus Perobohan Bangunan
+217,1323-17,Penolong Pengurus Perobohan Bangunan
+218,1323-18,Pembangun Bangunan Hijau
+219,1323-19,Pengurus Ukur Bahan
+220,1323-20,Kontraktor Pembinaan
+221,1323-21,Ketua Arkitek
+223,1324-01,Ketua Stesen Kereta api
+224,1324-02,Pengurus Pengangkutan
+225,1324-03,Pengurus Bekalan
+226,1324-04,Pengurus Gudang
+227,1324-05,Pengurus Logistik
+228,1324-06,Pengurus Pembelian
+229,1324-07,"Pengurus Pengeluaran dan Operasi, Pengangkutan"
+230,1324-14,Pengurus Perkapalan
+231,1324-16,Pengurus Operasi Logistik Halal
+232,1324-18,Penolong Pengurus Kawalan Bahan
+233,1324-23,Pengurus Pembelian Pemprosesan Daging Halal
+234,1324-24,Pengurus Kenderan Udara Tanpa Pemandu (UAV)
+238,1411-02,Pengurus Asrama Gred N41
+239,1411-05,"Pengurus Pengeluaran dan Operasi, Hotel"
+240,1411-07,Pengurus Rumah Tamu
+241,1411-08,Pengurus Rumah Tumpangan
+242,1411-09,Pengurus Kaunter Depan
+243,1411-10,Pengurus Kaunter Pejabat
+244,1411-11,Pengurus Perkhidmatan Makanan dan Minuman
+245,1411-12,Pengurus Resort
+246,1411-13,Pengurus Penginapan
+247,1411-14,Pengurus Pengendalian Makanan
+248,1411-15,Pengurus Acara Hotel
+250,1412-01,Pengurus Restoran
+251,1412-02,Pengurus Bar
+252,1412-03,Pengurus Kafe
+253,1412-04,Pengurus Kantin
+254,1412-05,"Pengurus Kafe, Bar dan Snack-Bar"
+255,1412-06,Pengurus Katering
+256,1412-10,Pengurus Bilik Jamuan
+257,1412-15,Pengurus Jurumasak
+260,1421-07,Pengurus Jualan Eksport
+261,1421-11,Peraih
+262,1421-12,Peruncit
+263,1421-13,"Pengurus Pengeluaran dan Operasi, Perdagangan Runcit (Kedai)"
+264,1421-14,"Pengurus Pengeluaran dan Operasi, Perdagangan Runcit (Pasar Raya)"
+265,1421-15,Pengurus Import-Eksport
+269,1511-01,Ketua Pegawai Maklumat
+270,1511-02,Ketua Pegawai Data
+271,1511-03,Ketua Pegawai Keselamatan Maklumat
+272,1511-05,Ketua Arkitek Teknologi Maklumat
+273,1511-06,Pengurus Sistem Maklumat
+274,1511-08,Pengurus Pusat Komuniti Desa (Teknologi Maklumat)
+275,1511-10,Pengurus Perkhidmatan Komputer
+276,1511-11,Pengurus Pemprosesan Data
+277,1511-12,Pengurus Pembangunan Aplikasi
+278,1511-13,Pengurus Operasi Data
+279,1511-14,Pengurus Pembangunan Teknologi Maklumat dan Komunikasi (ICT)
+280,1511-16,Penyedia Perkhidmatan Internet
+281,1511-17,Pengurus Rangkaian
+282,1511-18,Pengarah Animasi
+283,1511-19,Pengurus Audio Visual
+284,1511-20,Pengurus Pangkalan Data
+285,1511-21,Pengurus Keselamatan Komputer
+286,1511-22,Pengurus Projek Teknologi Maklumat
+287,1511-24,Pengurus Program Teknologi Maklumat
+288,1511-27,Pengurus Bioinformatik
+289,1511-28,Pengurus Kreatif Multimedia
+290,1511-29,Pengurus Prestasi Rangkaian
+291,1511-30,Pengurus Operasi Rangkaian
+292,1511-31,Pengurus Pelaksanaan Rangkaian
+293,1511-32,Pengurus Pembangunan Perniagaan Teknologi Maklumat
+294,1511-33,Pengurus Transformasi Teknologi (IT)
+295,1511-34,Pengurus Sokongan Teknologi Maklumat
+296,1511-35,Pengurus Pembangunan Perisian
+297,1511-36,Pengurus Pembangunan Aplikasi E-Dagang
+298,1511-37,Pengurus Tadbir Teknologi Maklumat
+299,1511-38,Pengurus Pemodelan Maklumat Bangunan (BIM)
+300,1511-40,Pengarah Keselamatan Siber
+301,1511-42,Pengurus Solution Architect
+302,1511-43,Pengurus Software Architect
+303,1511-44,Pengurus Data Analisis
+304,1511-45,Ketua Seksyen Analisis Kegagalan (Sistem)
+305,1511-46,Pengurus Kandungan (ICT)
+306,1511-47,Pengurus Data
+307,1511-48,Pengurus Sistem Maklumat Pengurusan
+311,1611-01,Pengurus Pusat Asuhan Kanak-Kanak
+313,1612-02,Pengarah Jururawat
+314,1612-10,Pengurus Fitonutrien
+315,1612-11,Pendidik Kesihatan
+316,1612-14,Pentadbir Kemudahan Kesihatan
+317,1612-16,"Matron, hospital"
+318,1612-17,Ketua Pegawai Klinikal
+319,1612-18,Ketua Pegawai Kesihatan Awam
+320,1612-19,Pengurus Farmasi
+322,1613-06,Pengurus Pusat Penjagaan Orang Tua
+324,1614-01,Pengurus Kerja Sosial
+325,1614-03,Pengurus Pusat Komuniti
+326,1614-05,Pengurus Khidmat Keluarga
+328,1615-01,Pengurus Pendidikan
+329,1615-02,Canselor
+330,1615-03,Pengetua
+331,1615-04,Guru Besar
+332,1615-06,Dekan
+334,1616-01,Pengurus Cawangan Kewangan dan Insurans
+335,1616-04,Pengurus Bank
+336,1616-05,Pengurus Kesatuan Kredit
+337,1616-06,Pengurus Agensi Insurans
+339,1617-01,Pengurus Perundangan dan Pengurusan Risiko
+341,1618-01,Pengurus Penyelenggaraan Harta
+343,1619-01,Pengurus Agensi Pentafsiran
+346,1621-01,Pengurus Aktiviti Sukan
+347,1621-02,Pengurus Rekreasi
+348,1621-03,Pengurus Agensi Pelancongan
+349,1621-04,Pengurus Taman
+350,1621-07,Pengurus Kasino
+351,1621-08,Pengurus Kelab
+352,1621-09,Pengurus Litar Lumba Kuda
+353,1621-10,Pengurus Medan Karavan
+354,1621-16,Pengurus Tapak Perkhemahan
+355,1621-17,"Pengurus Pengeluaran dan Operasi, Pentas"
+356,1621-18,Pengurus Lumba Kereta
+357,1621-19,Pengurus E-Sukan
+359,1622-01,Pengurus Perkhidmatan Penjagaan Diri
+360,1622-04,Pengurus Pelupusan Sampah
+361,1622-05,"Pengurus Pendobian, Pencucian Kering dan Penseterikaan"
+362,1622-10,Pengurus Pengemasan Bilik
+363,1622-13,Pengurus Pembentungan
+364,1622-15,Penolong Pengurus Sisa Pepejal
+365,1622-18,Pengurus Air Sisa
+366,1622-23,Pengurus Loji Insinerator
+367,1622-25,Pengurus Letak Kereta
+369,1623-01,Pengurus Keselamatan
+371,1624-01,Pengurus Perpustakaan
+372,1624-02,Pengurus Muzium
+373,1624-04,Pengurus Kebudayaan
+374,1624-06,Pengurus Perkhidmatan Pemulihan (Arkib)
+375,1624-08,Pengurus Pentas
+376,1624-09,Pengurus Wayang
+377,1624-12,Pengurus Artis
+383,2111-01,Ahli Fizik
+384,2111-03,Ahli Aerodinamik
+385,2111-23,Ahli Astronomi
+386,2111-29,Angkasawan
+388,2112-01,Pegawai Meteorologi Gred C41
+389,2112-02,Ahli Meteorologi
+390,2112-03,Ahli Klimatologi
+391,2112-05,Ahli Meteorologi-Ramalan Cuaca
+392,2112-06,Ahli Seismologi
+393,2112-07,Jururamal Cuaca
+394,2112-10,"Ahli Meteorologi, Alam Sekitar"
+395,2112-11,"Ahli Meteorologi, Ramalan Cuaca Berangka"
+397,2113-02,Ahli Kimia
+398,2113-28,Ahli Geokimia
+399,2113-40,Pakar Moringa
+401,2114-02,Ahli Geologi
+402,2114-11,Ahli Geologi Marin
+403,2114-13,Ahli Oseanografi
+404,2114-18,Ahli Geofizik Geomorfologi
+405,2114-19,Ahli Geofizik Seismologi
+406,2114-20,Ahli Geomagnet
+407,2114-23,Ahli Hidrogeologi
+408,2114-24,Ahli Hidrologi
+409,2114-28,Ahli Paleontologi
+410,2114-29,Ahli Stratigraf
+411,2114-31,Ahli Geosains Petroleum
+412,2114-32,Ahli Geosains
+413,2114-34,Ahli Geologi Tapak
+414,2114-36,Ahli Geologi Reservoir
+415,2114-37,Ahli Geologi Struktur
+416,2114-39,Ahli Oseanografi Fizik
+417,2114-40,Interpreter Seismik
+418,2114-41,Pakar Geologi
+419,2114-42,Pakar Geofizik
+420,2114-43,Pegawai Geosains Gred C41
+421,2114-44,Geomekanik
+422,2114-45,Sedementologist
+425,2121-01,Perangkawan Gred E41
+426,2121-02,Ahli Matematik
+427,2121-07,Perangkawan Tinjauan
+428,2121-08,Ahli Biometrik
+429,2121-09,Ahli Demografi
+430,2121-11,Aktuari
+431,2121-15,Ahli Metrologi
+434,2131-01,Pegawai Hidupan Liar Gred G41
+435,2131-02,Ahli Imunologi
+436,2131-03,Ahli Mikrobiologi
+437,2131-04,Ahli Serologi
+438,2131-08,Ahli Biologi
+439,2131-17,Ahli Sitologi
+440,2131-20,Ahli Botani
+441,2131-27,Ahli Genetik
+442,2131-38,Ahli Kultur Ikan
+443,2131-51,Ahli Ekologi
+445,2132-01,Pegawai Perikanan Gred G41
+446,2132-02,Pemelihara Hutan Gred G41
+447,2132-03,Pegawai Pertanian Gred G41
+448,2132-04,Pegawai Rancangan Tanah Gred G41
+449,2132-05,Pegawai Pertanian
+450,2132-06,Penasihat Penanaman
+451,2132-09,Pendemonstrasi Ladang
+452,2132-10,Pegawai Perhutanan
+453,2132-11,Pegawai Pemulihara Hutan
+454,2132-13,Eksekutif Ladang Pertanian
+455,2132-14,Eksekutif Akuakultur
+456,2132-15,Eksekutif Perladangan
+458,2133-01,Pegawai Kawalan Alam Sekitar Gred C41
+459,2133-02,Ahli Agronomi
+460,2133-04,Ahli Sains Pertanian
+461,2133-05,Ahli Florikultur
+462,2133-06,Ahli Hortikultur
+463,2133-07,Ahli Olerikultur
+464,2133-08,Ahli Pomologi
+465,2133-09,Ahli Anatomi Kayu
+466,2133-10,Ahli Arborikultur
+467,2133-11,Ahli Pemulihara Tanih
+468,2133-12,Ahli Sains Perhutanan
+469,2133-13,Ahli Sains Tanih
+470,2133-14,Ahli Silvikultur
+471,2133-15,Juruanalisis Kayu
+472,2133-16,Ahli Sains Haiwan
+473,2133-17,Ahli Sains Penyelidikan Alam Sekitar
+474,2133-18,Pegawai Pemulihara
+475,2133-19,Ahli Sains Pemulihara
+476,2133-20,Penasihat Alam Sekitar
+477,2133-21,Juruaudit Alam Sekitar
+478,2133-22,Konsultan Alam Sekitar
+479,2133-23,Ahli Sains Semulajadi
+481,2134-02,Ahli Biokimia
+482,2134-03,Ahli Biokimia Enzim
+483,2134-04,Ahli Biokimia Klinikal
+484,2134-05,Ahli Biokimia Protein
+485,2134-06,Ahli Biokimia Steroid
+486,2134-07,Ahli Kimia Biologi
+487,2134-08,Ahli Biofizik
+488,2134-09,Ahli Endokrinologi
+489,2134-10,Ahli Fisiologi
+490,2134-11,Ahli Fisiologi Endokrinologi
+491,2134-12,Ahli Fisiologi Epidemiologi
+492,2134-13,Ahli Fisiologi Haiwan
+493,2134-14,Ahli Fisiologi Neurologi
+494,2134-15,Ahli Fisiologi Tumbuhan
+495,2134-16,Ahli Farmakologi
+496,2134-17,Ahli Farmakologi Toksikologi
+497,2134-18,Ahli Farmakologi Veterinar
+498,2134-19,Ahli Toksikologi
+499,2134-20,Ahli Histopatologi
+500,2134-21,Ahli Neuropatologi
+501,2134-22,Ahli Patologi
+502,2134-23,Ahli Patologi Forensik
+503,2134-24,Ahli Patologi Haiwan
+504,2134-25,Ahli Patologi Histopatologi
+505,2134-26,Ahli Patologi Klinikal
+506,2134-27,Ahli Patologi Neuropatologi
+507,2134-28,Ahli Patologi Pembedahan
+508,2134-29,Ahli Patologi Perubatan
+509,2134-30,Ahli Patologi Tumbuhan
+510,2134-31,Ahli Patologi Veterinar
+511,2134-32,Ahli Epidemiologi
+512,2134-33,Pakar Bio-Fermentasi
+513,2134-34,Ahli Farmasi Penyelidikan dan Pembangunan
+514,2134-35,Pakar Pemeliharaan Lebah
+515,2134-36,Pakar Embriologi
+518,2141-01,Jurutera Automasi
+519,2141-02,Jurutera Robotik
+520,2141-03,Jurutera Perindustrian
+521,2141-04,Jurutera Pengeluaran
+522,2141-06,Juruanalisis Komunikasi
+523,2141-09,Jurutera Perancangan
+524,2141-10,Jurutera Sistem (Kecuali Komputer)
+525,2141-11,Jurutera Pereka Sistem (Kecuali Komputer)
+526,2141-13,Jurutera Kecekapan Perindustrian
+527,2141-14,Jurutera Masa dan Gerakan
+528,2141-15,Jurutera Penilaian Kos
+529,2141-16,Ahli Teknologi Barangan Kulit
+530,2141-17,Ahli Teknologi Kaca
+531,2141-18,Ahli Teknologi Pembungkusan
+532,2141-19,Ahli Teknologi Pencetakan
+533,2141-20,Ahli Teknologi Seramik
+534,2141-21,Ahli Teknologi Simen
+535,2141-22,Ahli Teknologi Tekstil
+536,2141-23,Ahli Teknologi Kayu
+537,2141-24,Jurutera Loji
+538,2141-26,Jurutera Reka bentuk Bungkusan Litar Bersepadu Analog (IC)
+539,2141-27,Ahli Teknologi Perabot Lembut
+540,2141-28,Ahli Teknologi Pengukiran
+541,2141-30,Jurutera Pembungkusan
+542,2141-32,Jurutera Keandalan
+543,2141-33,Ketua Jurutera Pemodelan
+544,2141-34,Ketua Jurutera Keandalan
+545,2141-35,Juruteknologi Tenunan
+546,2141-40,Perunding Fungsian Techno
+547,2141-42,Jurutera Fotonik
+548,2141-44,Jurutera SCADA
+549,2141-51,Jurutera Kaji Selidik
+550,2141-53,Penyelaras Kejuruteraan
+551,2141-55,Jurutera Tenaga
+552,2141-56,Jurutera Tenaga Baharu
+553,2141-57,Jurutera Persekitaran
+554,2141-58,Jurutera Tenaga Angin
+555,2141-59,Juruaudit Tenaga
+556,2141-60,Ahli Teknologi Industri 4.0
+557,2141-63,Jurutera Pembuatan
+558,2141-64,Jurutera Kilang Minyak
+559,2141-68,Jurutera Proses
+560,2141-69,Jurutera Bahan
+561,2141-73,Jurutera Komponen
+562,2141-74,Jurutera Perkakas
+563,2141-76,Jurutera Pemeriksaan Optik Automatik (AOI)
+564,2141-77,Jurutera Analisis Kegagalan (FA)
+565,2141-79,Jurutera Mod Kegagalan dan Analisis Kesan (FMEA)
+567,2142-01,Pegawai Eksekutif (Kejuruteraan) Gred 41
+568,2142-02,Jurutera Gred J41
+569,2142-03,Pegawai Eksekutif (Kejuruteraan) Gred L5
+570,2142-04,Jurutera
+571,2142-05,Ahli Teknologi
+572,2142-06,Ahli Teknologi Kejuruteraan Awam
+573,2142-07,Jurutera Awam
+574,2142-08,Jurutera Tapak Bina
+575,2142-36,Jurutera Reka bentuk Saliran
+576,2142-38,Jurutera Lapisan Asas
+577,2142-43,Jurutera Reka Bentuk Awam dan Struktur
+578,2142-45,Juruukur Bahan Gred J41
+579,2142-46,Juruukur Bangunan Gred J41
+580,2142-47,Pegawai Eksekutif (Ukur Bangunan) Gred 41
+581,2142-48,Juruukur Bahan
+582,2142-51,Jurutera Bahan Pembinaan
+583,2142-52,Jurutera Gred 23
+584,2142-53,Juruukur Bahan Gred 23
+585,2142-54,Juruukur Bangunan Gred 23
+586,2142-56,Jurutera Gred J48
+587,2142-57,Jurutera Perancang
+588,2142-59,Jurutera Berdasarkan Pemantauan Keadaan (CBM)
+590,2143-01,Jurutera Alam Sekitar
+591,2143-02,Jurutera Kumbahan dan Sanitasi
+592,2143-04,Jurupemulihan Persekitaran
+593,2143-05,Juruanalis Persekitaran
+595,2144-01,Ahli Teknologi Kejuruteraan Mekanikal
+596,2144-02,Jurutera Mekanikal
+597,2144-04,Jurutera Lif
+598,2144-13,Orang Yang Kompeten (OYK) - Jurutera Enjin Pembakaran Dalam (IPD)
+599,2144-21,Orang Yang Kompeten (OYK) - Jurutera Stim (JS)
+600,2144-27,"Jurutera Mekanikal, Pesawat"
+601,2144-36,Jurutera Kimpalan
+602,2144-38,Jurutera Penyelenggaraan Mekanikal
+603,2144-43,Juruteknologi Kejuruteraan
+604,2144-49,Jurutera CAD atau CAM (Reka Bentuk dan Pembuatan Berbantu Komputer)
+605,2144-58,Juruteknologi Robotik
+606,2144-59,Jurutera Aeroangkasa
+607,2144-61,Jurutera Statik
+608,2144-63,Pengaturcara Robotik
+609,2144-66,Jurutera Pengudaraan Lombong
+611,2145-03,Jurutera Kimia
+613,2146-01,Jurutera Perlombongan
+614,2146-02,"Jurutera Perlombongan, Logam"
+615,2146-03,"Jurutera Perlombongan, Batu Arang"
+616,2146-04,"Jurutera Perlombongan, Bukan Logam"
+617,2146-05,"Jurutera Perlombongan, Intan"
+618,2146-06,"Jurutera Perlombongan, Petroleum"
+619,2146-08,Jurutera Ujian Logam
+620,2146-09,Ahli Kaji Logam
+621,2146-15,Ahli Teknologi Ekstraktif
+622,2146-16,Penguji Logam
+623,2146-17,Jurutera Minyak dan Gas Asli
+624,2146-24,Ketua Bahagian Marin
+625,2146-32,Jurutera Wellsite (Perancangan)
+626,2146-40,Jurutera Bahan dan Logam
+627,2146-41,Jurutera Hidraulik
+628,2146-42,Jurutera Pengurusan Air
+629,2146-43,Jurutera Rekabentuk Produk Pembangunan dan Penyelidikan Perlombongan
+630,2146-44,Jurutera Kesediaan dan Jaminan Operasi
+631,2146-45,Jurutera Mekanikal Saluran Paip
+632,2146-48,Jurutera Tekanan Saluran Paip
+633,2146-49,Pakar Letupan (Lombong)
+634,2146-54,Pakar Perkhidmatan Protokol Kawalan Transmisi
+635,2146-55,Jurutera Mud
+637,2149-01,Jurutera Bahan Peletupan
+638,2149-02,Jurutera Penyelamat Marin
+639,2149-03,Jurutera Nuklear
+640,2149-07,Jurutera Kesihatan dan Keselamatan Perindustrian
+641,2149-09,Jurutera Kualiti
+642,2149-10,Pemeriksa Kilang dan Jentera
+643,2149-13,Jurutera Perkhidmatan Lapangan
+644,2149-18,Jurutera Penyelidikan
+645,2149-19,Jurutera Biomedikal
+646,2149-20,Jurutera Optik
+647,2149-21,Jurutera Pemeriksa Jaminan Kualiti atau Kawalan Kualiti (QA atau QC)
+648,2149-22,Pemeriksa Kilang dan Jentera Gred J41
+649,2149-23,Jurutera Komisen
+650,2149-24,Jurutera Nano
+653,2151-01,Ahli Teknologi Kejuruteraan Elektrik
+654,2151-02,Jurutera Elektrik
+655,2151-25,Jurutera Media Proses
+656,2151-29,Penguji atau Jurutera Ukuran (Elektrik)
+657,2151-34,Jurutera Penyelidikan dan Pembangunan Reka bentuk Elektrik
+658,2151-35,Juruaudit Tenaga Elektrik
+659,2151-36,Penguasa Elektrik
+661,2152-01,Ahli Teknologi Kejuruteraan Elektronik
+662,2152-02,Jurutera Elektronik
+663,2152-19,Pereka Papan Sistem Tertanam
+664,2152-23,Pereka Litar Bersepadu Analog (IC)
+665,2152-31,Jurutera Proses Wafer Fabrikasi Elektronik
+666,2152-32,Penguji atau Jurutera Ukuran (Elektronik)
+667,2152-36,Jurutera Pemasangan Proses Pakej Litar Bersepadu (IC)
+668,2152-44,Jurutera Wintel (Elektronik)
+669,2152-45,Pegawai Elektroteknikal
+671,2153-01,Jurutera Telekomunikasi
+672,2153-17,Jurutera Rangkaian Teras Perkhidmatan Jaminan
+673,2153-23,Jurutera Sistem dan Rangkaian
+674,2153-28,Jurutera Sistem Bunyi
+675,2153-30,Jurutera Akustik
+676,2153-31,Saintis Komunikasi
+679,2161-01,Arkitek Gred J41
+680,2161-02,Arkitek
+681,2161-03,Arkitek Dalaman
+682,2161-06,Arkitek Gred 23
+684,2162-01,Arkitek Landskap Gred J41
+685,2162-02,Arkitek Landskap
+687,2163-01,Pereka Produk Komersil
+688,2163-19,Pereka Teknologi Terma Solar
+689,2163-23,Pereka Teknologi Biomass
+690,2163-24,Pereka Hidro Teknologi
+691,2163-26,Pereka Profesional Teknologi Hijau
+692,2163-31,Pakar Analisis Produk dan Rekaan
+694,2164-01,Pegawai Perancang Bandar dan Desa Gred J41
+695,2164-02,Perancang Bandar
+696,2164-03,Perancang Bandar dan Luar Bandar
+697,2164-04,Jurutera Trafik
+698,2164-05,Perancang Trafik
+699,2164-06,Perancang Tanah
+700,2164-07,Perancang Bandar dan Wilayah
+702,2165-01,Jurugeospatial Gred J41
+703,2165-02,Juruukur Gred J41
+704,2165-03,Jurukartografi
+705,2165-07,Juruukur
+707,2166-01,Pereka Gred B41
+708,2166-02,Pereka Laman E-Dagang
+709,2166-03,Pereka Gred B43
+710,2166-04,Pereka Gred B47
+711,2166-05,Pereka Gred B51
+712,2166-06,Pereka Gred B53
+715,2171-01,Jurutera Kapal
+716,2171-02,Jurutera Marin
+717,2171-05,Arkitek Kapal
+718,2171-07,Ketua Jurutera (Marin)
+720,2172-01,Pegawai Laut Gred AL41
+721,2172-03,Jurumudi Hoverkraf
+722,2172-05,Kapten Pelabuhan
+723,2172-07,Jurumudi Kapal
+724,2172-10,Superintenden Marin (Dek)
+725,2172-11,Eksekutif Perkapalan
+727,2173-01,Juruterbang/ Pemeriksa Juruterbang Gred AT41
+728,2173-02,Pemeriksa Kapal Terbang Gred AT41
+729,2173-03,Juruterbang
+730,2173-05,Pengajar Penerbangan
+731,2173-10,Jurutera Pereka Pesawat
+732,2173-11,Jurutera Aeronautik
+733,2173-12,Juruterbang/Pemeriksa Juruterbang Gred AT43
+734,2173-13,Juruterbang/Pemeriksa Juruterbang Gred AT47
+735,2173-14,Juruterbang/Pemeriksa Juruterbang Gred AT51
+736,2173-15,Juruterbang/Pemeriksa Juruterbang Gred AT53
+737,2173-16,Pemeriksa Kapal Terbang Gred AT43
+738,2173-17,Pemeriksa Kapal Terbang Gred AT47
+739,2173-18,Pemeriksa Kapal Terbang Gred AT51
+740,2173-19,Pemeriksa Kapal Terbang Gred AT53
+741,2173-20,Kakitangan Kajian Kelayakan Udara
+742,2173-22,Pegawai Penerbangan Marin
+743,2173-23,Jurutera Penyelenggaraan Pesawat Berlesen
+745,2174-01,Pegawai Kawalan Trafik Udara Gred A41
+746,2174-02,Pengawal Trafik Udara
+747,2174-03,Pengawal Pusat Operasi
+748,2174-04,Pegawai Kargo Udara
+749,2174-05,"Eksekutif Perancangan Bengkel, Pesawat"
+750,2174-06,"Eksekutif Rekod Teknikal, Pesawat"
+751,2174-07,"Pentadbir Rekod Teknikal, Pesawat"
+752,2174-08,"Pengawal Bahan Kanan, Pesawat"
+754,2175-01,Pegawai Operasi Kereta api dan Lokomotif
+756,2179-01,Juruterbang Drone
+759,2181-01,Eksekutif Perlombongan
+761,2182-01,Eksekutif Pembuatan
+762,2182-02,Eksekutif Jaminan Kualiti
+763,2182-03,Juruanalisis Jaminan Kualiti
+764,2182-07,Eksekutif Stor
+765,2182-12,Pengawal Kualiti Produk
+766,2182-15,Pegawai Jaminan Mutu Gred P3
+767,2182-17,Penguasa Dandang
+768,2182-18,Pakar Rantaian Bekalan-Perolehan
+769,2182-20,"Eksekutif Pengeluaran, Pengilangan Makanan Halal"
+770,2182-21,"Eksekutif Jaminan Kualiti, Pemprosesan Daging Halal"
+771,2182-29,Penasihat Perkhidmatan Teknikal
+772,2182-30,"Juruanalisis Produk, Industri Halal"
+773,2182-31,Pakar Bahan
+774,2182-33,Eksekutif Pembangunan Produk
+775,2182-35,Perunding Produk
+776,2182-42,"Pakar Proses, Pengguna Gaya Hidup"
+777,2182-44,Penganalisis Produk dan Kimia
+778,2182-46,Juruanalisis Laporan
+779,2182-49,Pakar Pencetakan
+780,2182-51,Penyelaras Pengenalan Produk Baharu
+781,2182-52,"Eksekutif Kawalan Kualiti, Produk Halal"
+782,2182-53,Juruanalisis Penyaringan
+783,2182-54,"Eksekutif Jaminan Kualiti, Pembuatan Makanan Halal"
+784,2182-55,Penyelaras Inventori
+786,2183-01,Eksekutif Binaan
+787,2183-05,Sistem Pengurusan Aset Rutin (SPA Eksekutif)
+791,2211-01,Pegawai Perubatan Gred UD41
+792,2211-02,Doktor Perubatan
+793,2211-03,Pegawai Perubatan
+794,2211-07,Doktor Perubatan Ginekologi
+795,2211-08,Doktor Perubatan Kardiologi
+796,2211-10,Doktor Perubatan Obstetrik
+797,2211-11,Doktor Perubatan Oftalmologi
+798,2211-12,Doktor Perubatan Psikiatri
+799,2211-13,Doktor Perubatan Radiologi
+800,2211-18,Doktor Kulit
+801,2211-19,Pegawai Perubatan Gred UD43/UD47
+802,2211-20,Pegawai Perubatan Gred UD43
+803,2211-21,Pegawai Perubatan Gred UD47
+804,2211-22,Pegawai Perubatan Gred UD51
+805,2211-23,Pegawai Perubatan Gred UD53
+806,2211-24,Pegawai Perubatan Gred 23
+807,2211-25,Doktor Pengurusan Perniagaan Perubatan
+808,2211-26,Pegawai Kawalan Infeksi
+809,2211-28,"Doktor Perubatan, Integratif"
+811,2212-01,"Pakar Telinga, Hidung dan Kerongkong"
+812,2212-02,Pakar Jantung
+813,2212-03,Pakar Mata
+814,2212-04,Pakar Anestetik
+815,2212-05,Pakar Anestetik Jantung
+816,2212-06,Pakar Onkologi Perubatan
+817,2212-07,Pakar Onkologi Radioterapi
+818,2212-08,Pakar Psikiatri
+819,2212-09,Pakar Oftalmologi
+820,2212-10,Pakar Kardiologi
+821,2212-11,Pakar Neurologi
+822,2212-12,Pakar Ginekologi
+823,2212-13,Pakar Ginekologi dan Obstetrisian
+824,2212-14,Pakar Ginekologi Kesuburan dan Obstetrisian
+825,2212-16,Pakar Ginekologi Perubatan Fetomaternal dan Obstetrisian
+826,2212-17,Pakar Bedah
+827,2212-24,Pakar Bedah Pediatrik
+828,2212-26,Pakar Bedah Plastik dan Pembinaan Semula
+829,2212-32,Pakar Bedah Vaskular
+830,2212-33,Pakar Dermatologi
+831,2212-34,Pakar Ortopedik
+832,2212-35,Pakar Otolaringologi
+833,2212-36,Pakar Pediatrik
+834,2212-44,Pakar Perubatan
+835,2212-55,Pakar Podiatri
+836,2212-56,Pakar Prostetik
+837,2212-57,Pakar Radiologi
+838,2212-58,Pakar Radiologi Diagnostik
+839,2212-59,Pakar Radiologi Intervensional
+840,2212-60,Pakar Radiologi Perubatan Nuklear
+841,2212-61,Pakar Radiologi Radioterapi
+842,2212-62,Pakar Urologi
+843,2212-63,Pakar Venereologi
+844,2212-64,Pakar Osteopati
+845,2212-68,Pegawai Perubatan Pakar Gred UD55
+846,2212-69,Pakar Klinik Pematuhan Terapi Ubat (MTA)
+847,2212-70,Pakar Kiropodi
+850,2221-01,Jururawat Gred U41
+851,2221-02,Jururawat Profesional
+852,2221-09,Jururawat Pakar
+853,2221-10,Instruktor Jururawat
+855,2222-01,Jururawat Perbidanan Profesional
+858,2231-01,Profesional Pengamal Perubatan Traditional
+859,2231-02,Ahli Perubatan Traditional
+860,2231-07,Pengamal Perubatan Herba
+863,2241-01,Paramedik
+866,2251-01,Pegawai Veterinar Gred GV41
+867,2251-02,Pakar Veterinar
+868,2251-03,Pakar Epidemiologi Veterinar
+869,2251-08,Pegawai Veterinar
+872,2261-01,Pegawai Pergigian Gred UG41
+873,2261-02,Doktor Pergigian
+874,2261-17,Pakar Bedah Mulut dan Maksilofasial
+875,2261-18,Ahli Patologi Mulut
+877,2262-01,Pegawai Farmasi Gred UF41
+878,2262-02,Ahli Farmasi
+879,2262-06,Ahli Kimia Pendispensan
+880,2262-07,Pegawai Farmasi Gred UF44
+881,2262-08,Juruanalisis Farmakokinetik
+883,2263-01,Pegawai Kesihatan Persekitaran Gred U41
+884,2263-06,Pegawai Kesihatan dan Keselamatan Pekerjaan
+885,2263-20,Penasihat Kesihatan dan Keselamatan Pekerjaan
+886,2263-24,Orang Yang Kompeten (OYK) - Penguji Gas Bertauliah dan Penyelia Kemasukan
+887,2263-25,Orang Yang Kompeten (OYK) - Penaksir Kualiti Udara Dalaman (IAQ)
+888,2263-27,Orang Yang Kompeten (OYK) - Pengapit
+889,2263-28,Orang Kompeten Pengurusan Sisa
+890,2263-29,Juruaudit Bangunan
+891,2263-30,Pegawai Teknologi Makanan Gred C41
+892,2263-31,Eksekutif Halal
+893,2263-32,"Eksekutif Halal, Pengilangan Makanan Halal"
+894,2263-33,"Eksekutif Halal, Rumah Sembelih"
+895,2263-34,"Eksekutif Halal, Pemprosesan Daging"
+896,2263-35,"Eksekutif Halal, Operasi Logistik"
+897,2263-37,Ahli Teknologi Makanan dan Minuman
+898,2263-40,"Pegawai Penguatkuasaan, Industri Halal"
+899,2263-41,Jurutera Tapak Pelupusan
+900,2263-43,Orang Yang Kompeten (OYK) - Lif Gred 1
+901,2263-44,Orang Yang Kompeten (OYK) - Major Hazard
+902,2263-48,Penyelaras Tindak Balas Kecemasan
+903,2263-49,Ahli Ergonomi
+904,2263-50,Penguji Gas Bertauliah & Penyelia Kemasukan
+906,2264-01,Pegawai Pemulihan Perubatan Gred U41
+907,2264-02,Jurupulih Perubatan
+908,2264-07,Tukang Urut Terapeutik
+909,2264-09,Juruterapi Fizikal Geriatrik
+910,2264-11,Juruterapi Fizikal Ortopedik
+911,2264-12,Pengajar Jurupulih Anggota
+912,2264-13,Pegawai Jurupulih Anggota Gred 23
+913,2264-15,Kiropraktor
+914,2264-16,Osteopati
+916,2265-01,Pegawai Dietetik Gred U41
+917,2265-02,Pakar Dietetik
+918,2265-06,Pakar Nutrisi
+919,2265-14,Pegawai Penyediaan Makanan Gred C41
+921,2266-01,Pegawai Audiologi
+922,2266-02,Jurupulih Pertuturan
+923,2266-03,Pakar Ortoepi
+924,2266-05,Jurupulih Bahasa
+926,2267-01,Pegawai Optometri Gred U41
+927,2267-02,Optometris
+928,2267-05,Pakar Ortoptik
+929,2267-06,Jurupulih Orang Buta
+931,2268-01,Jurupulih Pekerjaan
+932,2268-02,Pegawai Jurupulih Kerja Gred 23
+933,2268-03,Pengurus Kes Gred 23
+935,2269-01,Juru X-Ray Gred U41
+936,2269-02,Pengajar Gred U41
+937,2269-04,Pakar Perfusi
+938,2269-05,Penolong Pegawai Perubatan Gred U41
+939,2269-09,Penyelaras Ujian Klinikal
+940,2269-10,Juruanalisis Penjagaan Kesihatan
+941,2269-11,Ahli Terapi Radiasi Perubatan
+942,2269-12,Ahli Teknologi Perubatan Nuklear
+943,2269-13,Ahli Kinesiologi
+947,2311-01,Pensyarah Universiti Gred DS45
+948,2311-02,Pensyarah Perubatan Gred DU51P
+949,2311-03,Pensyarah UiTM Gred DM41
+950,2311-04,Penolong Pensyarah UiTM Gred DM29
+951,2311-05,Pensyarah Pergigian Gred DUG51P
+952,2311-06,Pegawai Pendidikan Pengajian Tinggi Gred DH41
+953,2311-07,Pegawai Pendidikan Pengajian Tinggi Gred DH29
+954,2311-08,Pensyarah
+955,2311-09,Tutor
+956,2311-17,Pensyarah Farmasi Gred DUF45
+957,2311-18,Pegawai Pendidikan Pengajian Tinggi Gred DH31
+958,2311-19,Pegawai Pendidikan Pengajian Tinggi Gred DH33
+959,2311-20,Pegawai Pendidikan Pengajian Tinggi Gred DH39
+960,2311-21,Pegawai Pendidikan Pengajian Tinggi Gred DH43
+961,2311-22,Pegawai Pendidikan Pengajian Tinggi Gred DH47
+962,2311-23,Pegawai Pendidikan Pengajian Tinggi Gred DH51
+963,2311-24,Pegawai Pendidikan Pengajian Tinggi Gred DH53
+964,2311-25,Pensyarah UiTM Gred DM45
+965,2311-26,Pensyarah UiTM Gred DM51
+966,2311-27,Pensyarah UiTM Gred DM53
+967,2311-28,Pensyarah Universiti Gred DS51
+968,2311-29,Pensyarah Universiti Gred DS53
+969,2311-30,Pensyarah Perubatan Gred DU51
+970,2311-31,Pensyarah Perubatan Gred DU53
+971,2311-32,Pensyarah Pergigian Gred DUG51
+972,2311-33,Pensyarah Pergigian Gred DUG53
+973,2311-34,Pensyarah Farmasi Gred DUF51
+974,2311-35,Pensyarah Farmasi Gred DUF53
+975,2311-36,Pensyarah UiTM Gred Khas C
+976,2311-37,Pensyarah Universiti Gred Khas C
+977,2311-38,Pensyarah Perubatan Gred DU55
+978,2311-39,Pensyarah Perubatan Gred Khas C
+979,2311-40,Pensyarah Pergigian Gred DUG55
+980,2311-41,Pensyarah Pergigian Gred Khas C
+981,2311-42,Pensyarah Farmasi Gred Khas C
+984,2321-02,Guru Vokasional
+987,2331-01,Pegawai Perkhidmatan Pendidikan Siswazah Gred DG41
+988,2331-02,Guru Pendidikan Menengah
+989,2331-05,Pegawai Perkhidmatan Pendidikan Gred DG41
+992,2341-01,Pegawai Perkhidmatan Pendidikan Lepasan Diploma Gred DGA29
+993,2341-02,Guru Sekolah Rendah
+994,2341-03,Pegawai Perkhidmatan Pendidikan Gred DG29
+996,2342-03,Guru Pra-Sekolah
+999,2351-01,Guru Muzik
+1001,2352-01,Guru Seni Halus
+1002,2352-03,Guru Lukisan
+1004,2353-01,Guru Peragaan
+1005,2353-02,Guru Tari
+1006,2353-03,Guru Drama
+1009,2361-01,Guru Bahasa Gred DG41
+1010,2361-06,Guru Bahasa
+1013,2371-02,Guru Pengajian Islam
+1014,2371-03,Guru Pengajian Agama Lain
+1017,2381-01,Pegawai Latihan Vokasional Gred DV41
+1018,2381-02,Pengajar Latihan Kemahiran
+1019,2381-03,Penolong Pegawai Latihan Vokasional Gred DV29
+1020,2381-04,Pegawai Latihan Gred E41
+1021,2381-05,Penolong Pegawai Latihan Gred E29
+1022,2381-06,Penolong Pegawai Latihan Vokasional Gred DV35
+1023,2381-07,Penolong Pegawai Latihan Vokasional Gred DV37
+1024,2381-08,Penolong Pegawai Latihan Vokasional Gred DV39
+1025,2381-09,Pegawai Latihan Vokasional Gred DV43
+1026,2381-10,Pegawai Latihan Vokasional Gred DV47
+1027,2381-11,Pegawai Latihan Vokasional Gred DV51
+1028,2381-12,Pegawai Latihan Vokasional Gred DV53
+1031,2391-01,Pembangun Kurikulum
+1032,2391-02,Pakar Kaedah Pendidikan
+1033,2391-03,Nazir Sekolah
+1034,2391-08,Penyelidik Sistem Pendidikan
+1035,2391-12,Pendidik
+1037,2392-07,Guru Pembelajaran Pengajian Khas Untuk Orang Cacat
+1039,2393-01,Fasilitator Arahan Satelit
+1040,2393-03,Jurulatih Perisian
+1042,2399-01,Pegawai Kesatria Gred S41
+1043,2399-02,Kaunselor Pendidikan
+1044,2399-06,Guru Tuisyen
+1045,2399-07,Guru Sukan
+1046,2399-08,Guru Sekolah Swasta
+1047,2399-11,Guru
+1051,2411-01,Akauntan Gred WA41
+1052,2411-02,Pegawai Eksekutif (Perakaunan) Gred 41
+1053,2411-03,Pegawai Eksekutif (Perakaunan) Gred 9
+1054,2411-04,Pegawai Eksekutif (Perakaunan) Gred L5
+1055,2411-06,Akauntan
+1056,2411-09,Perunding Cukai
+1057,2411-18,Pengawal Kos
+1058,2411-19,Akauntan Bertauliah
+1059,2411-20,Pengawal Kewangan
+1060,2411-23,Juruaudit Gred W41
+1061,2411-24,Pegawai Eksekutif (Pengauditan) Gred 41
+1062,2411-25,Juruaudit
+1063,2411-28,Pegawai Eksekutif (Pengauditan) Gred 9
+1064,2411-29,Pegawai Eksekutif (Pengauditan) Gred L5
+1065,2411-30,Eksekutif Gaji
+1066,2411-35,Akauntan Drilling
+1067,2411-36,Ajuster
+1068,2411-37,Juruaudit Dalaman
+1069,2411-38,Akauntan Forensik
+1070,2411-39,Penganggar Kos
+1071,2411-40,"Juruaudit, Industri Halal"
+1072,2411-41,Pegawai Eksekutif Akaun
+1073,2411-43,Akauntan Gred WA47
+1074,2411-44,Akauntan Gred WA51
+1075,2411-45,Akauntan Gred WA53
+1076,2411-46,Akauntan Gred 23
+1077,2411-47,Pentadbir dan Eksekutif Akaun
+1078,2411-49,Juruanalisis Akaun
+1079,2411-50,Pakar Strategi Teknologi (Akauntan)
+1080,2411-51,Juruanalisis Kos
+1081,2411-53,Penganalisis Pengurusan Perakaunan Am
+1083,2412-01,Pegawai Kewangan Gred W41
+1084,2412-02,Pegawai Eksekutif (Kewangan) Gred L5
+1085,2412-03,Penasihat Kewangan Korporat
+1086,2412-07,Eksekutif Pegawai Bank
+1087,2412-09,Perancang Estet
+1088,2412-10,Eksekutif Hartanah
+1089,2412-14,Pegawai Penilaian Gred W41
+1090,2412-15,Pegawai Kewangan
+1091,2412-17,Eksekutif Pajakan
+1092,2412-18,Pegawai Tadbir (Pelaburan) Gred N48
+1093,2412-19,Perunding Kewangan
+1094,2412-21,Perunding Pengurusan Modal Insan (HCM)
+1095,2412-22,Pakar Bancassurance
+1096,2412-23,Pakar Pengurusan Modal Kerja
+1097,2412-24,Pakar Tender/Bid
+1099,2413-01,Juruanalisis Kewangan
+1100,2413-07,Juruanalisis Hutang
+1101,2413-10,Penganalisis Ekuiti
+1102,2413-11,Pegawai Pengurusan Risiko
+1103,2413-13,Pegawai Risiko Operasi
+1104,2413-15,Pemodel Resiko
+1105,2413-18,Penganalisis Laporan Kewangan
+1106,2413-19,Eksekutif Pengurusan Risiko Kredit
+1107,2413-23,Juruanalisis Perakaunan Bank
+1108,2413-24,Jurutera Pengurusan Risiko
+1109,2413-26,Juruanalisis Bayaran Akaun
+1110,2413-27,Juruanalisis Perakaunan
+1111,2413-28,Juruanalisis Penyelesaian
+1112,2413-30,Juruanalisis
+1113,2413-35,Juruanalisis Pengurusan Aset
+1114,2413-41,Juruanalisis Pampasan dan Faedah
+1117,2421-01,Juruanalisis Pengelolaan dan Kaedah
+1118,2421-03,Juruanalisis Penyelidikan Operasi
+1119,2421-04,Perunding Pengurusan
+1120,2421-06,Juruanalisis Strategi
+1121,2421-07,Penyelidik Pasaran-Penganalisis Perniagaan (Organisasi)
+1122,2421-08,Perunding Francais
+1123,2421-12,Juruanalisis Derivatif Pertukaran Asing
+1124,2421-15,Juruanalisis Pemprosesan Transaksi
+1125,2421-16,Pakar Perancangan
+1126,2421-21,Juruanalisis Projek
+1127,2421-22,Juruanalisis Penyelidikan Unit Penyiasatan Am (GIU)
+1128,2421-24,Perunding Penyelesaian
+1129,2421-25,Pakar Penyelesaian
+1130,2421-26,Juruanalisis Komoditi
+1131,2421-27,Eksekutif Perancangan
+1132,2421-30,Ketua Juruanalisis Kontrak
+1134,2422-01,Pegawai Tadbir dan Diplomatik Gred M41
+1135,2422-02,Juruanalisis Dasar
+1137,2423-01,Pegawai Keselamatan Personel
+1138,2423-05,Juruanalisis Pekerjaan
+1139,2423-08,Pegawai Bimbingan Pekerjaan
+1140,2423-09,Penasihat Kerjaya
+1141,2423-10,Pendamai Perhubungan Pengurusan Buruh
+1142,2423-12,Pakar Sumber Manusia
+1143,2423-13,Kaunselor Bimbingan Vokasional
+1144,2423-19,Pakar Pengurusan Bakat
+1145,2423-20,Pakar Latihan
+1146,2423-22,Eksekutif Latihan Industri Halal
+1147,2423-24,Pegawai Pengambilan Pelajar
+1148,2423-26,Perunding Imej
+1149,2423-28,Penasihat Pendaftaran
+1150,2423-29,Pakar Pembelajaran Digital
+1152,2424-01,Pegawai Latihan Kakitangan
+1153,2424-02,Pegawai Latihan Kakitangan Vokasional
+1154,2424-03,Pakar Pembangunan Guna Tenaga
+1155,2424-04,Pembangun Latihan
+1156,2424-05,Pegawai Latihan Industri Halal
+1157,2424-06,Jurulatih Berpengalaman
+1158,2424-07,Jurulatih Peningkatan Berterusan
+1159,2424-08,Pakar Penambahbaikan Berterusan
+1161,2425-01,Pegawai Tadbir Gred N41
+1162,2425-02,Pegawai Eksekutif (Pentadbiran) Gred 41
+1163,2425-03,Pegawai Eksekutif (Pentadbiran) Gred L5
+1164,2425-04,Pegawai Suruhanjaya Perkhidmatan Awam
+1165,2425-07,Pegawai Eksekutif Badan Berkanun
+1166,2425-08,Eksekutif Pentadbiran
+1167,2425-09,Pendaftar Kolej/Universiti
+1168,2425-12,Eksekutif Operasi
+1169,2425-14,Pegawai Pengawal Dokumen
+1170,2425-18,Pegawai Tadbir Gred 23
+1171,2425-19,Eksekutif Penyediaan Kerja
+1172,2425-20,Pegawai Pengurusan Projek
+1173,2425-21,Eksekutif Pengurusan
+1174,2425-23,Pegawai Pengesah
+1175,2425-25,Eksekutif Pemantauan dan Penilaian
+1176,2425-26,Pakar Operasi
+1178,2426-01,Pegawai Penyelidik Gred Q41
+1179,2426-02,Pegawai Sains Gred C41
+1180,2426-03,Penyelidik Agro-Based Biotek Makanan
+1181,2426-04,Penyelidik Biotek Akuakultur
+1182,2426-05,Penyelidik Biotek Pertanian
+1183,2426-07,Eksekutif Penyelidikan dan Pembangunan (Pertanian)
+1184,2426-08,Penyelidik Akua dan Marin
+1185,2426-09,Eksekutif Penyelidikan dan Pembangunan
+1186,2426-10,Pegawai Penyelidik Sosial Gred N41
+1187,2426-12,"Eksekutif Penyelidikan dan Pembangunan, Pengilangan Makanan Halal"
+1188,2426-13,Pegawai Penyelidik
+1189,2426-14,Pengawal Penyelidikan dan Pembangunan Kimpalan Laser Polimer
+1190,2426-15,Ahli Teknologi Penyelidikan Bahan Api Teknologi Hijau
+1191,2426-16,Pegawai Penyelidik Gred Q43
+1192,2426-17,Pegawai Penyelidik Gred Q47
+1193,2426-18,Pegawai Penyelidik Gred Q51
+1194,2426-19,Pegawai Penyelidik Gred Q53
+1195,2426-20,Pegawai Penyelidik Gred 23
+1196,2426-21,Penyelidik
+1197,2426-22,Eksekutif Makmal
+1198,2426-23,Penganalisis Makmal
+1201,2431-04,Pegawai Kecekapan Perniagaan
+1202,2431-05,Eksekutif Perniagaan
+1203,2431-06,Ejen Paten
+1204,2431-10,Pakar Komunikasi Pasaran
+1205,2431-11,Pegawai Pematuhan
+1206,2431-13,Penganalisis Pematuhan
+1207,2431-15,Jurutera Pembangunan Perniagaan
+1208,2431-18,Eksekutif Eksport
+1209,2431-20,Eksekutif Pemasaran
+1210,2431-21,Eksekutif Pembangunan Perniagaan
+1211,2431-22,Eksekutif Pentadbiran Jualan
+1212,2431-32,Jurutera Jualan Teknikal
+1213,2431-34,Eksekutif Pemasaran Media Sosial
+1214,2431-43,Pakar Produk
+1215,2431-49,"Pakar Pemasaran, Automasi"
+1216,2431-50,Eksekutif Pengiklanan-Promosi
+1217,2431-57,Perunding Pengurusan Pesanan
+1218,2431-59,Eksekutif Penjanaan Utama
+1219,2431-60,Pengulas Produk
+1221,2432-01,Pegawai Penerangan Gred S41
+1222,2432-02,Pegawai Perhubungan Awam
+1223,2432-03,Eksekutif Hal Ehwal Korporat
+1224,2432-05,Eksekutif Perhubungan Awam
+1225,2432-08,Eksekutif Komunikasi Korporat
+1226,2432-11,Perancang Media
+1227,2432-12,Pegawai Pelancongan
+1228,2432-13,Pegawai Khidmat Pelanggan
+1229,2432-16,Eksekutif Tempahan Jualan
+1230,2432-18,Pegawai Kaunter Pejabat
+1231,2432-19,Eksekutif Korporat
+1232,2432-21,Pegawai Pengurusan Program
+1233,2432-29,Pakar Ketenunan Wajar Pelanggan (CDD)
+1234,2432-32,Juruanalisis Ketenunan Wajar Pelanggan (CDD)
+1235,2432-33,Juruanalisis Kesedaran Pelanggan
+1236,2432-34,Eksekutif Strategi Korporat
+1237,2432-36,"Pakar Penyelesaian Perusahaan, Perkongsian Strategik"
+1238,2432-38,Pakar Pengalaman Pengguna
+1240,2433-01,Wakil Jualan Perubatan
+1241,2433-13,Pakar Aplikasi (POCT/Ujian Titik Penjagaan)
+1242,2433-14,Pakar Aplikasi (Hematologi)
+1243,2433-15,Pakar Aplikasi (Biokimia)
+1245,2434-01,Wakil Jualan Teknologi Maklumat dan Komunikasi
+1246,2434-03,Jurutera Sokongan Produk
+1247,2434-06,Jurutera Produk Teknologi Maklumat
+1248,2434-10,Pakar Teknologi Internet-Perbankan Digital
+1252,2511-01,Juruanalisis Sistem Maklumat Pengurusan (MIS)
+1253,2511-03,Perunding Java
+1254,2511-05,Perunding Teknologi Maklumat
+1255,2511-09,Pereka Sistem Teknologi Maklumat
+1256,2511-16,Pakar Teknikal (.Net)
+1257,2511-17,Perunding Java
+1258,2511-23,Pakar Aplikasi JD Edwars (JDE)
+1259,2511-38,Pakar Siebel
+1260,2511-42,Pereka Daftar Pemindahan Level (RTL) (Teknologi Maklumat)
+1261,2511-44,Jurutera Reka Bentuk (Teknologi Maklumat)
+1262,2511-46,Pereka Logik (Teknologi Maklumat)
+1263,2511-53,Perunding SAP (Aplikasi dan Produk Sistem)
+1264,2511-57,Juruanalisis Sistem E-Dagang
+1265,2511-58,Jurutera CAE (Computer-Aided Engineering )
+1266,2511-59,Juruanalisis Sistem Gred 23
+1267,2511-61,Juruanalisis Sistem
+1268,2511-62,Juruanalisis Inovasi Teknologi
+1269,2511-63,Juruanalisis Digital
+1270,2511-64,Eksekutif / Pegawai Transformasi Digital
+1271,2511-66,Juruanalisis Sistem (Java)
+1272,2511-67,Juruanalisis Perniagaan Aplikasi dan Produk Sistem (SAP)
+1273,2511-68,Pakar Service Desk
+1274,2511-69,Juruanalisis Keperluan
+1275,2511-70,Juruanalisis Search Engine Advertising (SEA)
+1276,2511-72,Juruanalisis Pengurusan Vendor (Teknologi Maklumat)
+1277,2511-74,Juruanalisis Ujian Aplikasi dan Produk Sistem (SAP)
+1279,2512-01,Pembangun Perisian
+1280,2512-03,Pereka Perisian
+1281,2512-16,Pengaturcara Web Hypertext Preprocessor (PHP)
+1282,2512-17,"Eksekutif Teknologi Maklumat -""Report Program Generator"" (RPG)"
+1283,2512-18,Pembangun Lotus Notes (Teknologi Maklumat)
+1284,2512-19,Arkitek Sistem Teknologi Maklumat
+1285,2512-24,Pembangun Siebel
+1286,2512-31,Pembangun Data Visual
+1287,2512-42,Pengaturcara RPG (Role-Playing Game)
+1288,2512-43,Eksekutif Sistem Maklumat
+1289,2512-47,Pembangun Sistem
+1290,2512-54,Pembangun Sudut
+1292,2513-01,Pembangun Laman Web
+1293,2513-02,Pembangun Internet atau Intranet
+1294,2513-07,Pembangun Timbunan Penuh
+1295,2513-13,Pereka Media Sosial
+1297,2514-01,Pengaturcara Komputer
+1298,2514-02,Pengaturcara Perisian
+1299,2514-03,Pengaturcara Teknikal
+1300,2514-07,Pengaturcara Sistem
+1301,2514-19,Pengaturcara C atau C++
+1302,2514-33,Pakar Infrastruktur Komputer
+1303,2514-34,Antara Muka Pengguna (UI) atau Gameplay Coders
+1305,2519-01,Penguji Perisian
+1306,2519-02,Penguji Sistem
+1307,2519-07,Jurutera Pengujian (Teknologi Maklumat)
+1308,2519-09,Jurutera Jaminan Aplikasi (Teknologi Maklumat)
+1309,2519-12,Arkitek Siebel Solution
+1310,2519-13,Arkitek Teknikal Siebel
+1311,2519-16,Juruaudit Teknologi Maklumat
+1312,2519-17,Jurutera Pengujian Sistem E-Dagang
+1313,2519-18,Penguji (Selenium dan Cucumber)
+1314,2519-19,Pembangun .Net (DotNet) (Jaminan Kualiti)
+1317,2521-01,Arkitek Pangkalan Data
+1318,2521-03,Pentadbir Pangkalan Data
+1319,2521-05,Auditor Komputer
+1320,2521-07,Jurutera Pangkalan Data Oracle
+1321,2521-08,Pakar Pangkalan Data Oracle
+1322,2521-12,Pakar Gudang Data
+1323,2521-14,Juruanalisis Pangkalan Data Perniagaan
+1324,2521-16,Pentadbir Pangkalan Data E-Dagang
+1325,2521-17,Arkitek Pangkalan Data E-Dagang
+1326,2521-21,Pembangun Pangkalan Data SQL
+1327,2521-22,Pentadbir Pangkalan Data Oracle
+1329,2522-01,Pegawai Teknologi Maklumat Gred F41
+1330,2522-02,Pegawai Eksekutif (Teknologi Maklumat) Gred 41
+1331,2522-03,Pegawai Eksekutif (Teknologi Maklumat) Gred 9
+1332,2522-04,Pegawai Eksekutif (Teknologi Maklumat) Gred L5
+1333,2522-05,Pegawai Sistem Maklumat
+1334,2522-08,Pegawai Sokongan Teknologi Maklumat
+1335,2522-11,Eksekutif Teknologi Maklumat
+1336,2522-14,Jurutera Sokongan Komputer
+1337,2522-15,Pakar Teknikal Teknologi Maklumat
+1338,2522-16,Pentadbir Aplikasi SAP (Aplikasi dan Produk Sistem)
+1339,2522-18,Wakil Sokongan Teknikal Inbound (Teknologi Maklumat)
+1340,2522-22,Arkitek Penyelesaian Pengkomputeran Awan
+1341,2522-23,Pakar Billing
+1342,2522-35,Jurutera Pereka Sistem (Teknologi Maklumat)
+1343,2522-36,Pentadbir Sistem Teknikal
+1344,2522-37,Penyelaras BIM (Pemodelan Maklumat Bangunan)
+1345,2522-38,Pegawai Sistem Maklumat Geografi
+1346,2522-39,Pentadbir Aplikasi Oracle
+1347,2522-43,Perunding Aplikasi (Cloud)
+1348,2522-47,Jurutera Sokongan Perkhidmatan
+1350,2523-01,Juruanalisis Rangkaian
+1351,2523-10,Jurutera Sistem Rangkaian (Teknologi Maklumat)
+1352,2523-11,Pakar Rangkaian
+1354,2524-01,Ahli Sains Data
+1355,2524-02,Jurutera Data
+1356,2524-03,Juruanalisis Data
+1357,2524-06,Arkitek Data
+1358,2524-10,Juruanalisis Data Besar
+1359,2524-11,Jurutera Pembelajaran Mesin
+1360,2524-13,Jurutera Kecerdasan Buatan (AI)
+1361,2524-16,Juruanalisis Data Perniagaan
+1362,2524-25,Penyemak Data Digital
+1363,2524-26,Pakar Migrasi Data
+1366,2531-02,Eksekutif Keselamatan Siber
+1367,2531-03,Pakar Forensik Digital
+1368,2531-05,Pakar Teknologi Keselamatan
+1369,2531-14,Pakar Keselamatan Data
+1370,2531-15,Jurutera Keselamatan (Teknologi Maklumat)
+1371,2531-17,Pakar Keselamatan Siber
+1372,2531-19,Pentadbir Keselamatan (Teknologi Maklumat)
+1373,2531-20,Pegawai Keselamatan Maklumat
+1374,2531-28,Jurutera Keselamatan Sistem
+1375,2531-30,Juruanalisis Keselamatan Siber
+1376,2531-31,Juruanalisis Ujian (Teknologi Maklumat)
+1377,2531-36,Jurutera Infrastruktur Keselamatan
+1378,2531-39,Penilai Keselamatan Internet
+1379,2531-41,Perunding Keselamatan Maklumat
+1380,2531-42,Perunding Keselamatan
+1383,2541-01,Artis Layout
+1384,2541-05,Pemodel 3D
+1385,2541-06,Match Move Artist/3D Tracker
+1386,2541-07,Artis Pencahayaan
+1387,2541-08,Render Wrangler
+1388,2541-09,Artis Roto
+1389,2541-10,Artis Komposit/Komposit
+1390,2541-11,Artis Cerita
+1391,2541-12,Penulis Skrip/Penulis Skrin
+1392,2541-13,Artis Kesan/FX
+1393,2541-14,Artis Grafik
+1394,2541-16,Artis Digital
+1395,2541-19,Artis Penerbitan Meja (Animasi)
+1396,2541-20,Artis Multimedia
+1397,2541-23,Animator Flash
+1398,2541-26,Pakar Visual
+1399,2541-27,Pakar Komputer
+1400,2541-28,Penulis Kandungan Cerita
+1401,2541-30,Penulis Kandungan / Pencipta
+1402,2541-31,3D Generalist
+1403,2541-35,Penulis / Pencipta Kandungan Digital
+1405,2542-01,Pereka Permainan (Digital)
+1406,2542-03,Penguji QA atau Penguji Permainan (Digital)
+1407,2542-04,Pengeluar Permainan (Digital)
+1408,2542-06,Artis 3D
+1409,2542-07,Artis 2D
+1410,2542-08,Animator
+1411,2542-09,Artis Konsep
+1412,2542-10,Artis Teknikal
+1413,2542-11,Pengarah Seni
+1414,2542-15,Pengaturcara Grafik
+1415,2542-16,Artis Grafik dan Bunyi Komputer
+1416,2542-17,Pencipta Grafik
+1417,2542-18,Ketua Artis Grafik
+1418,2542-19,Artis Permainan Video
+1419,2542-20,Artis Komputer Grafik (CG)
+1420,2542-22,Penyelia Animasi
+1421,2542-24,Artis Permainan Digital
+1423,2543-01,Pereka Web
+1424,2543-02,Pereka Grafik
+1425,2543-06,Pereka Penerbitan
+1426,2543-08,Pereka Kreatif
+1427,2543-11,Pereka Antaramuka
+1428,2543-14,Pereka UX (Pengalaman Pengguna)
+1429,2543-16,Pereka Digital
+1430,2543-17,Ketua Pasukan Kreatif
+1431,2543-18,Character Rigger
+1432,2543-21,Juruanalisis Perisikan Perniagaan
+1433,2543-22,Pakar Proses Perniagaan
+1434,2543-24,Penyelaras Kandungan
+1438,2611-01,Pegawai Undang-Undang Gred L41
+1439,2611-02,Pegawai Eksekutif (Undang-Undang) Gred 41
+1440,2611-03,Pegawai Syariah Gred LS41
+1441,2611-04,Pegawai Eksekutif (Perundangan) Gred 9
+1442,2611-05,Pegawai Eksekutif (Perundangan) Gred L5
+1443,2611-06,Pegawai Undang-Undang Perkhidmatan Kerajaan
+1444,2611-08,Pendakwa
+1445,2611-09,Peguam
+1446,2611-19,Pegawai Eksekutif (Perundangan) Gred 48
+1447,2611-20,Pakar Undang-Undang
+1448,2611-22,Pegawai Undang-Undang Gred 23
+1450,2612-01,Hakim
+1451,2612-06,Hakim Mahkamah Tinggi
+1452,2612-07,Hakim Mahkamah Syariah
+1453,2612-08,Hakim Mahkamah Perusahaan
+1454,2612-09,Presiden Mahkamah Perusahaan
+1456,2619-01,Pesuruhjaya Sumpah
+1457,2619-02,Pendaftar Mahkamah
+1458,2619-03,Pegawai Amanah
+1459,2619-04,Pemegang Amanah Raya
+1460,2619-06,Pegawai Kebankrapan
+1461,2619-07,Koroner
+1462,2619-08,Penerima dan Penyelesai Mahkamah
+1463,2619-09,Pakar Tulisan Tangan
+1464,2619-10,Pendraf Parlimen
+1465,2619-11,Penimbang Tara Tuntutan Insurans
+1466,2619-12,Pengadil Rayuan Tuntutan Keselamatan Sosial
+1467,2619-13,Setiausaha Parlimen
+1468,2619-14,Penasihat Amanah
+1469,2619-15,Pemerhati Pilihan Raya
+1473,2711-01,Pegawai Perkhidmatan Tetamu
+1474,2711-02,Eksekutif Operasi Hotel
+1475,2711-06,Eksekutif Kaunter Depan
+1476,2711-07,Eksekutif Pengemasan
+1478,2712-01,Eksekutif Penyediaan Makanan
+1479,2712-02,Pentadbir Dapur
+1480,2712-03,Personel Makanan dan Minuman
+1481,2712-04,Eksekutif Makanan dan Minuman
+1482,2712-06,Kapten Makanan dan Minuman
+1483,2712-07,Penyelaras Makanan dan Minuman
+1484,2712-08,Chef de Cuisine
+1485,2712-09,Jurumasak Eksekutif
+1486,2712-10,Ketua Jurumasak
+1490,2811-01,Pegawai Arkib Gred S41
+1491,2811-02,Kurator Gred S41
+1492,2811-03,Juruarkib
+1494,2812-01,Pustakawan Gred S41
+1495,2812-05,Pustakawan
+1496,2812-06,Ahli Bibliografi
+1497,2812-09,Ahli Dokumentasi
+1498,2812-10,Pengkatalog
+1501,2821-01,Pegawai Ehwal Ekonomi Gred E41
+1502,2821-02,Pegawai Eksekutif (Ekonomi) Gred 9
+1503,2821-04,Ahli Ekonomi
+1504,2821-09,Ahli Ekonomi Rumah Tangga
+1506,2822-01,Ahli Sosiologi
+1507,2822-02,Ahli Antropologi
+1508,2822-03,Ahli Arkeologi
+1509,2822-04,Ahli Geografi
+1510,2822-05,Ahli Penologi
+1511,2822-06,Ahli Kriminologi
+1512,2822-07,Ahli Etnologi
+1513,2822-08,Ahli Sosiologi Patologi Sosial
+1515,2823-01,Ahli Falsafah
+1516,2823-03,Sejarawan
+1517,2823-04,Ahli Sains Politik
+1518,2823-05,Ahli Genealogi
+1520,2824-01,Pegawai Psikologi Gred S41
+1521,2824-02,Pegawai Eksekutif (Psikologi) Gred 41
+1522,2824-04,Ahli Psikologi Klinikal
+1523,2824-05,Ahli Psikologi Pendidikan
+1524,2824-06,Ahli Psikologi Organisasi
+1525,2824-07,Juruterapi Psikologi
+1526,2824-08,Ahli Psikologi Sukan
+1528,2825-01,Pegawai Pembangunan Masyarakat Gred S41
+1529,2825-02,Pekerja Sosial Profesional
+1530,2825-03,Kaunselor
+1531,2825-10,Pegawai Probation
+1532,2825-11,Penganjur Kebajikan Wanita
+1533,2825-12,Pegawai Belia dan Sukan Gred S41
+1534,2825-13,Pegawai Antidadah Gred S41
+1536,2826-01,Pegawai Hal Ehwal Islam Gred S41
+1537,2826-02,Pegawai Agama
+1538,2826-03,Mufti
+1539,2826-04,Imam
+1540,2826-05,Kadi
+1541,2826-06,Paderi Gereja
+1542,2826-07,Sami Kuil
+1543,2826-08,Profesional Keagamaan
+1546,2831-11,Penyusun Iklan
+1547,2831-18,Penyunting
+1548,2831-20,Pembaca Pruf
+1549,2831-23,Pegawai Penerbitan Gred N41
+1550,2831-25,Penulis
+1552,2832-01,Jurulapor Berita
+1553,2832-02,Penulis Ruangan
+1554,2832-03,Wartawan
+1555,2832-04,Penyunting Politik
+1556,2832-05,Penyunting Penyiaran Berita Radio Dan Televisyen
+1557,2832-06,Penyunting Salinan
+1558,2832-07,Penyunting Suratkhabar
+1559,2832-08,Jurulapor Suratkhabar
+1560,2832-11,Jurulapor Berita Televisyen/Radio
+1561,2832-12,Penyunting Akhbar
+1562,2832-13,Wartawan Mahkamah
+1563,2832-14,Wartawan Gred S29
+1564,2832-15,Pegawai Berita Gred S41
+1566,2833-02,Penterjemah
+1567,2833-03,Jurubahasa
+1568,2833-04,Ahli Filologi
+1569,2833-05,Ahli Leksikografi
+1570,2833-07,Penterjemah Sarikata
+1571,2833-08,Perancang Bahasa Gred S41
+1572,2833-09,Jurubahasa Gred LA29
+1573,2833-10,Jurubahasa Gred LA19
+1574,2833-12,Ahli Bahasa
+1577,2841-01,Pemahat
+1578,2841-05,Pelukis
+1580,2842-01,Ahli Muzik Gred B41
+1581,2842-02,Ahli Muzikologi
+1582,2842-03,Pemain Muzik
+1583,2842-04,Adiguru - Makyong
+1584,2842-05,Adiguru - Wayang Kulit
+1585,2842-07,Orkestrator
+1586,2842-08,Pemimpin Pancaragam
+1587,2842-09,Pengarah Muzik
+1588,2842-10,Komposer Muzik
+1589,2842-11,Penyusun Muzik
+1590,2842-13,Konduktor Orkestra
+1591,2842-15,Penyanyi
+1592,2842-16,Konduktor Muzik
+1593,2842-17,Ahli Muzik Gred B43
+1594,2842-18,Ahli Muzik Gred B47
+1595,2842-19,Ahli Muzik Gred B51
+1596,2842-20,Ahli Muzik Gred B53
+1598,2843-01,Penari
+1599,2843-02,Penari Kelab Malam
+1600,2843-03,Pereka Tarian
+1601,2843-04,Pengarah Tarian
+1602,2843-05,Penyusun Tarian
+1604,2844-01,Penerbit Rancangan Gred B41
+1605,2844-02,Penerbit Animasi
+1606,2844-03,Penerbit Multimedia
+1607,2844-05,Pengarah Fotografi Filem
+1608,2844-06,Pengarah Pentas
+1609,2844-12,Penerbit Pementasan
+1610,2844-15,Pengarah Dokumentari
+1611,2844-16,Pengarah Fotografi
+1612,2844-17,Pengarah Teknikal Televisyen atau Radio
+1613,2844-18,Penerbit Teknikal
+1614,2844-19,Penerbit Rancangan Gred B43
+1615,2844-20,Penerbit Rancangan Gred B47
+1616,2844-21,Penerbit Rancangan Gred B51
+1617,2844-22,Penerbit Rancangan Gred B53
+1619,2845-01,Pelakon
+1620,2845-02,Artis Parodi
+1621,2845-03,Tukang Cerita
+1622,2845-04,Artis Mime
+1624,2846-01,Pemutar Lagu
+1625,2846-02,Juruhebah Radio
+1626,2846-03,Juruhebah Televisyen
+1627,2846-07,Pengulas
+1629,2847-01,Akrobat
+1630,2847-02,Ahli Peliuk Badan
+1631,2847-03,Ahli Silap Mata
+1632,2847-04,Badut
+1633,2847-05,Mimik
+1634,2847-08,Penghibur Sarkas Haiwan
+1635,2847-09,Penjugel
+1636,2847-10,Dalang
+1637,2847-11,Ahli Komedi
+1639,2848-01,"Jurulatih Di Zoo, Taman Burung dan Akuatik"
+1641,2849-01,Pegawai Kebudayaan Gred B41
+1642,2849-02,Pegawai Kebudayaan Gred B43
+1643,2849-03,Pegawai Kebudayaan Gred B47
+1644,2849-04,Pegawai Kebudayaan Gred B51
+1645,2849-05,Pegawai Kebudayaan Gred B53
+1646,2849-06,Penceramah Bebas
+1650,2911-01,Penguasa Kastam Gred WK41
+1651,2911-02,Penguasa Imigresen Gred KP41
+1652,2911-03,Perunding Imigresen
+1653,2911-06,Pegawai Kastam dan Eksais
+1655,2912-01,Pegawai Eksekutif (Penaksiran) Gred 41
+1656,2912-02,Pegawai Eksekutif Penaksiran
+1657,2912-03,Pegawai Penilai
+1658,2912-04,Pegawai Eksais
+1659,2912-05,Pegawai Cukai
+1660,2912-06,Pegawai Eksekutif (Penaksiran) Gred 48
+1662,2913-01,Pegawai Faedah Sosial
+1663,2913-03,Pegawai Eksekutif (PERKESO) Gred 23
+1665,2914-01,Pegawai Penguatkuasa Gred KP41
+1666,2914-02,Pegawai Eksekutif (Penguatkuasaan) Gred L5
+1667,2914-03,Pegawai Pelesenan
+1669,2915-01,Pegawai Kanan Polis Gred YA13
+1671,2916-01,Pegawai Pertahanan Awam Gred KP41
+1672,2916-02,Pegawai Pertahanan Awam
+1673,2916-03,Pegawai Perhubungan Perusahaan Gred S41
+1674,2916-04,Pegawai Keselamatan Gred KP41
+1675,2916-05,Pegawai Eksekutif (Keselamatan) Gred 41
+1676,2916-06,Penguasa Bomba Gred KB41
+1677,2916-07,Penguasa Penjara Gred KA41
+1678,2916-08,Pegawai Penguatkuasa Maritim Gred T13
+1680,2919-01,Pegawai Bilik Kawalan
+1681,2919-02,Pegawai Pendaftaran Gred KP41
+1682,2919-03,Pegawai Siasatan Gred P41
+1683,2919-04,Pegawai Siasatan Gred P43
+1684,2919-05,Pegawai Siasatan Gred P47
+1685,2919-06,Pegawai Siasatan Gred P51
+1686,2919-07,Pegawai Siasatan Gred P53
+1687,2919-08,Pegawai Integriti
+1688,2919-09,Pemeriksa Poligraf
+1693,3111-01,Pembantu Makmal Gred C19
+1694,3111-02,Pembantu Penyelidik Gred Q19
+1695,3111-04,Juruteknik Fizik
+1696,3111-05,Juruteknik Geofizik
+1697,3111-06,Juruteknik Kimia
+1698,3111-07,Juruteknik Makmal Sains Fizik
+1699,3111-08,Juruteknik Sains Fizik
+1700,3111-09,Pembantu Makmal Fizik
+1701,3111-10,Pembantu Makmal Kimia
+1702,3111-11,Pembantu Makmal Sains Fizik
+1703,3111-12,Juruteknik Tanih
+1704,3111-13,Pembantu Makmal Tanih
+1705,3111-14,Juruteknik Meteorologi
+1706,3111-15,Pembantu Meteorologi
+1707,3111-16,Juruteknik Geologi
+1708,3111-17,Pembantu Makmal Geologi
+1709,3111-18,Konduktor Penyelidikan Makmal Ladang
+1710,3111-19,Juruteknik Astronomi
+1711,3111-20,Juruteknik Oseanografi
+1712,3111-21,Pembantu Makmal
+1713,3111-22,Juruteknik Aerologik
+1714,3111-23,Pengawal Runtuhan
+1715,3111-24,Pemproses Data Iklim
+1716,3111-25,Juruteknik Perkhidmatan Iklim
+1717,3111-26,Inspektor Meteorologi
+1718,3111-27,Pembantu Stesen Kaji Cuaca
+1719,3111-28,"Juruteknik Operasi, Stesen Kaji Cuaca"
+1720,3111-29,Pemerhati Keadaan Cuaca
+1721,3111-30,Pembantu Geosains Gred C19
+1722,3111-31,Pembantu Makmal Gred K1
+1723,3111-32,Juruteknik Makmal
+1724,3111-33,Penolong Pegawai Meteorologi Gred C29
+1725,3111-34,Penolong Pegawai Geosains Gred C29
+1726,3111-36,Penolong Pegawai Sains Gred C29
+1727,3111-37,Penolong Pegawai Penyelidik Gred Q29
+1728,3111-38,Juruteknik Proses Kimia
+1729,3111-39,Juruteknik Sains Forensik
+1730,3111-40,Pembantu Ahli Kimia
+1732,3112-01,Juruteknik Instrumen Perindustrian
+1733,3112-02,Juruteknik Kejuruteraan Awam
+1734,3112-03,Pembantu Kejuruteraan Awam
+1735,3112-04,Penganggar Kejuruteraan Awam
+1736,3112-05,Penyelia Kerja
+1737,3112-06,Pembantu Teknik Ukur
+1738,3112-07,Pembantu Ukur
+1739,3112-08,Pereka Kejuruteraan
+1740,3112-09,"Penyelia, Kejuruteraan Awam"
+1741,3112-10,Juruteknik Mesin Penggerudian Terowong
+1742,3112-11,Inspektor Bangunan
+1743,3112-12,Juruteknik Geoteknik
+1744,3112-13,Inspektor Kebakaran
+1745,3112-14,Juruteknik Ukur
+1746,3112-15,Juruteknik Binaan
+1747,3112-16,Jurubina Bangunan
+1748,3112-17,Juruteknik Instrumen Proses
+1749,3112-18,Pembantu Ukur Bangunan
+1750,3112-19,Penolong Jurutera Gred JA29
+1751,3112-20,Penolong Pegawai Eksekutif (Kejuruteraan) Gred 31
+1752,3112-21,Penolong Pegawai Eksekutif (Juruteknik) Gred L8
+1753,3112-22,Penolong Pegawai Eksekutif (Kejuruteraan) Gred L8
+1754,3112-23,Penolong Jurutera
+1755,3112-24,Penolong Pegawai Eksekutif Kejuruteraan
+1756,3112-25,Penolong Jurutera Awam
+1757,3112-26,Juruteknik Operasi
+1758,3112-27,Juruteknik Penyelenggaraan Kemudahan Bangunan Hijau
+1759,3112-28,Pembantu Juruteknik Penyelenggaraan Kemudahan Bangunan Hijau
+1760,3112-29,Juruteknik Perobohan Bangunan
+1761,3112-30,Pembantu Jurutera Penyelenggaraan
+1762,3112-31,Juruteknik Ukur Bahan
+1763,3112-32,Penolong Juruukur Bahan Gred JA29
+1764,3112-33,Pembantu Juruukur Bahan
+1765,3112-34,Penolong Jurutera Gred 19
+1766,3112-35,Penolong Juruukur Bahan Gred 19
+1767,3112-36,Pembantu Teknik Ukur Bangunan Gred 19
+1768,3112-37,Penolong Juruukur Bangunan Gred J29
+1769,3112-38,Ketua Penyelenggara Kebakaran
+1770,3112-39,Juruteknik Penyelenggara Kebakaran
+1771,3112-40,Juruteknik Kejuruteraan
+1772,3112-41,Penolong Teknikal
+1773,3112-42,Penarik Rantai
+1775,3113-01,Juruteknik Kejuruteraan Elektrik
+1776,3113-02,Juruteknik Pemotongan Wayar
+1777,3113-03,Juruteknik Kejuruteraan Elektrik Voltan Tinggi
+1778,3113-04,Pembantu Kejuruteraan Elektrik
+1779,3113-05,Pembantu Teknik Elektrik
+1780,3113-06,Penyelia Elektrik
+1781,3113-07,Penyelia Elektrik Dan Peralatan
+1782,3113-08,Pembantu Kejuruteraan Elektrik Sistem Voltan Tinggi
+1783,3113-09,Juruteknik Kejuruteraan Elektrik Transmisi Kuasa Elektrik
+1784,3113-10,Penganggar Kejuruteraan Elektrik
+1785,3113-11,Juruteknik Elektrik Kenderaan
+1786,3113-12,Penyambung Kabel Gentian Optik
+1787,3113-14,Juruteknik Elektrik Voltan Tinggi
+1788,3113-15,Juruteknik Nyahpepijat
+1789,3113-16,Penolong Jurutera Elektrik
+1791,3114-01,Juruteknik Kejuruteraan Elektronik
+1792,3114-02,Penganggar Kejuruteraan Elektronik
+1793,3114-03,Pembantu Kejuruteraan Elektronik
+1794,3114-04,Juruteknik Reka Bentuk Elektronik
+1795,3114-05,Juruteknik Elektronik Fabrikasi Wafer
+1797,3115-01,Juruteknik Kejuruteraan Aeroangkasa (Mekanikal)
+1798,3115-02,Juruteknik Kejuruteraan Aeronautik
+1799,3115-03,Juruteknik Kejuruteraan Automobil
+1800,3115-09,Juruteknik Kejuruteraan Mekanikal (Pertanian)
+1801,3115-12,Pembantu Kejuruteraan Aeronautik (Mekanikal) Dan Kelengkapan
+1802,3115-13,Pembantu Kejuruteraan Automobil
+1803,3115-14,Pembantu Kejuruteraan Mekanikal
+1804,3115-15,Penganggar Kejuruteraan Mekanikal
+1805,3115-16,Ketua Dok Kering
+1806,3115-17,Ketua Dok Galian
+1807,3115-18,Juruteknik Kejuruteraan Marin
+1808,3115-19,Pembantu Kejuruteraan Marin
+1809,3115-21,Juruteknik Hos Hidraulik
+1810,3115-23,Juruteknik Automasi Robot
+1811,3115-24,Juruteknik Mekatronik
+1812,3115-25,Juruteknik Mesin
+1813,3115-26,Juruteknik Kejuruteraan Aeronotik
+1814,3115-27,Juruteknik CNC (Kawalan Berangka Komputer)
+1815,3115-28,Juruteknik Kimpalan
+1816,3115-29,Juruteknik Pembuatan Logam
+1817,3115-31,Orang Yang Kompeten (OYK) - Juruteknik Higien 1
+1818,3115-33,Penyelia CNC (Kawalan Berangka Komputer)
+1819,3115-34,Pemeriksa Kereta Motor Gred AB19
+1820,3115-35,Penolong Jurutera Automasi Perindustrian
+1821,3115-36,Penolong Jurutera CAD/CAM (Rekabentuk Dan Pembuatan Berbantu Komputer)
+1822,3115-37,Penolong Jurutera Mekatronik
+1823,3115-38,Juruteknik CAD/CAM (Rekabentuk Dan Pembuatan Berbantu Komputer)
+1824,3115-44,Pendraf AutoCad
+1825,3115-45,Pakar Penanda
+1826,3115-46,Pemeriksa Kereta Motor Gred AB29
+1827,3115-47,Juruteknik Robotik
+1828,3115-48,Juruteknik Peralatan
+1829,3115-49,Penolong Jurutera Peralatan
+1830,3115-50,Penolong Jurutera Kimpalan
+1831,3115-51,Juruteknik Kalibrasi
+1832,3115-52,Orang Yang Kompeten (OYK) - Juruteknik Higien 2
+1833,3115-53,Pereka AutoCad
+1834,3115-54,Penyelia Pneumatik
+1835,3115-55,Juruteknik Pembaikan Dan Penyelenggaraan (R&M)
+1836,3115-56,Juruteknik Kejuruteraan Optik
+1838,3116-01,Juruteknik Kejuruteraan Kimia
+1839,3116-02,Juruteknik Kejuruteraan Proses Kimia
+1840,3116-03,Juruteknik Kejuruteraan Petroleum
+1841,3116-04,Ahli Teknologi Minyak
+1842,3116-05,Juruteknik Kejuruteraan Kimia (Petroleum)
+1843,3116-06,Juruteknik Penapisan Petroleum
+1844,3116-07,Pembantu Makmal Penapisan Petroleum
+1845,3116-09,Penganggar Kejuruteraan Kimia
+1846,3116-10,Pembantu Kejuruteraan Kimia
+1847,3116-11,Juruteknik Kejuruteraan Proses
+1849,3117-01,Juruteknik Kaji Logam
+1850,3117-02,Juruteknik Kaji Logam Ekstraktif
+1851,3117-03,Juruteknik Pengekstrakan Petroleum dan Gas Asli
+1852,3117-04,Pembantu Makmal Kaji Logam
+1853,3117-09,Pembantu Kaji Logam Fizik
+1854,3117-10,Juruteknik Kejuruteraan Perlombongan
+1855,3117-11,Pembantu Perlombongan
+1856,3117-12,Juruteknik Peletup Telaga Minyak dan Gas
+1857,3117-13,Pembantu Pengekstrakan Petroleum dan Gas Asli
+1858,3117-14,Pengasid Telaga Minyak dan Gas
+1859,3117-16,Juruteknik Pam Minyak
+1860,3117-17,Juruteknik Lombong Arang Batu
+1861,3117-18,Juruteknik Pengorek Blok
+1862,3117-20,Pembantu Kaji Logam Ekstraktif
+1863,3117-21,Juruteknik Foundri
+1864,3117-22,Juruteknik Pengeluaran Bahan Api Teknologi Hijau
+1865,3117-23,Profesional Bersekutu Lapangan
+1867,3118-01,Pelukis Pelan (Seni Bina) Gred JA19
+1868,3118-02,Juruteknik Lukis Pelan
+1869,3118-03,Pelukis Pelan
+1870,3118-22,Penyurih
+1871,3118-23,Ilustrator Kejuruteraan
+1872,3118-24,Juruteknik Geospatial
+1873,3118-25,Juruteknik Landskap
+1874,3118-26,Penolong Pegawai Seni Bina Gred JA29
+1875,3118-27,Pelukis Pelan (Kejuruteraan Awam) Gred JA19
+1876,3118-28,Penolong Arkitek Landskap Gred JA29
+1877,3118-29,Penolong Pegawai Tanah (Semenanjung) NT29
+1878,3118-30,Penolong Pentadbir Tanah (Sabah dan Sarawak) Gred NT29
+1879,3118-31,Penolong Juruukur Gred JA29
+1880,3118-32,Penolong Pegawai Perancang Bandar dan Desa Gred JA29
+1881,3118-33,Penolong Pegawai Seni Bina Gred 19
+1882,3118-34,Penolong Arkitek
+1884,3119-01,Juruteknik
+1885,3119-02,Juruteknik Gred P4
+1886,3119-14,"Pembantu Kejuruteraan, Pengeluaran"
+1887,3119-15,Juruteknik Kejuruteraan (Pengeluaran)
+1888,3119-16,Penyiasat Kebakaran
+1889,3119-19,Juruteknik Kawalan Kualiti
+1890,3119-20,Juruteknik Pemotongan
+1891,3119-24,Juruproses Gred K2
+1892,3119-28,Juruteknik Kejuruteraan Jaminan Kualiti
+1893,3119-29,Penolong Pemeriksa Kilang dan Jentera Gred JA29
+1894,3119-31,Juruteknik Pencelupan
+1895,3119-36,Juruteknik Sisa Pepejal
+1896,3119-37,Pembantu Juruteknik Sisa Pepejal
+1897,3119-38,Juruteknik Air
+1898,3119-39,Pembantu Juruteknik Air
+1899,3119-40,Juruteknik Air Sisa
+1900,3119-42,Juruteknik Lukisan
+1901,3119-43,Juruteknik Pemprosesan Makanan
+1902,3119-44,Juruteknik Pengisar Aci Engkol
+1903,3119-45,Juruteknik Penyelidikan Agro-Based Biotek Makanan
+1904,3119-46,Juruteknik Penyelidikan Biotek Akuakultur
+1905,3119-47,Pembantu Juruteknik
+1906,3119-48,Juruteknik Ujian
+1907,3119-49,Juruteknik Kualiti Air
+1908,3119-50,Juruteknik Perkakas
+1909,3119-51,Penolong Pakar Pengeluaran
+1910,3119-52,Penolong Eksekutif Pengeluaran
+1911,3119-53,Juruteknik Pembuatan
+1912,3119-54,Juruteknik Analisis Bahan
+1913,3119-55,Pengendali Surface Mount Technology (SMT)
+1916,3121-01,Penyelia Lombong
+1917,3121-02,Penyelia Kuari
+1918,3121-03,Penyelia Slickline
+1919,3121-04,Penyelia Perkhidmatan
+1921,3122-01,Penyelia Pembuatan
+1922,3122-02,Penyelia Pengeluaran
+1923,3122-03,Penyelia Kemasan
+1924,3122-04,Penyelia Pembungkusan
+1925,3122-05,Penyelia Pengkompaunan
+1926,3122-06,Penyelia Barangan Siap
+1927,3122-07,Penyelia Pemotong
+1928,3122-08,Penyelia Kilang Papan
+1929,3122-09,Penyelia Pemeriksaan Papan Lapis
+1930,3122-10,Penyelia Penggergaji
+1931,3122-11,Ketua Penyelia Hookman
+1932,3122-12,Penyelia Balak
+1933,3122-13,"Penyelaras Kawasan, Pembuatan"
+1934,3122-15,Penyelia Kawalan Kualiti
+1935,3122-17,Pemeriksa Penguji Kualiti
+1936,3122-18,"Penyelia Pengeluaran, Pengilangan Makanan Halal"
+1937,3122-19,"Penyelia Jaminan Kualiti, Pengilangan Makanan Halal"
+1938,3122-20,"Penyelia Jaminan Kualiti, Pemprosesan Daging Halal"
+1939,3122-21,Penyelia Teknikal
+1940,3122-22,Inspektor Non-Destructive Testing (NDT)
+1941,3122-23,Penyelia
+1942,3122-24,Penyelia Stor
+1943,3122-25,Penyelia Syif
+1944,3122-26,Penyelia Penyelenggaraan
+1945,3122-27,Penyelia Gred P4
+1946,3122-28,"Penyelia, Rumah Sembelihan Halal"
+1947,3122-29,"Penyelia Gudang, Operasi Logistik Halal"
+1948,3122-30,Pembantu Penyelia
+1949,3122-31,Ketua Penyelia
+1950,3122-32,Penyelia Kemudahan
+1951,3122-33,Penyelia Penghantaran
+1952,3122-34,Pengawal Robot Industri
+1953,3122-35,Penyelia Jaminan Kualiti
+1955,3123-01,Penyelia Operasi
+1956,3123-02,Penyelia Projek
+1957,3123-03,Penyelia Pembinaan
+1958,3123-04,Penyelia Tapak
+1959,3123-05,Penyelaras Tapak
+1960,3123-06,Orang Yang Kompeten (OYK) - Penyelia Keselamatan Tapak Bina
+1961,3123-07,Penyelia Turap Jalan
+1962,3123-08,Penyelia Landskap
+1963,3123-09,Penyelia Penggerudian
+1964,3123-10,Penyelia Persekitaran
+1965,3123-11,"Penyelia, Pembinaan Bangunan"
+1966,3123-12,"Penyelia, Operasi Bangunan"
+1968,3129-01,Penyelia Pembersihan
+1971,3131-01,Penghantar Muatan Tenaga Elektrik
+1972,3131-02,Operator Papan Suis Elektrik
+1973,3131-03,Operator Stesen Hidroelektrik
+1974,3131-04,Operator Loji Penjanaan Kuasa
+1975,3131-05,"Operator Turbin, Stesen Kuasa"
+1976,3131-06,Pengendali Loji Tenaga Elektrik
+1977,3131-08,Operator Loji Tenaga Hidroelektrik
+1978,3131-09,Operator Loji Kuasa Nuklear
+1979,3131-10,Operator Loji Tenaga Solar
+1980,3131-11,Operator Kawalan Pengagihan
+1981,3131-12,Operator Station Penjana
+1982,3131-13,Operator Sistem Tenaga
+1983,3131-14,Operator Loji Penjanaan Tenaga Biomas (Penyediaan Bahan Api)
+1984,3131-15,Penyelia Loji Penjanaan Tenaga Biomas (Bahan Binaan Mentah)
+1985,3131-16,Juruteknik Sel Solar
+1986,3131-17,Operator Reaktor Kuasa Nuklear
+1987,3131-18,Juruteknik Bahan Api Biologi
+1988,3131-19,Penyelia Bahan Api Biologi
+1989,3131-20,Operator Loji Bahan Api Biologi
+1990,3131-21,"Operator, Panel Kawalan: Reaktor Nuklear"
+1991,3131-22,"Penghantar, Beban: Elektrik (Power Station)"
+1992,3131-23,"Operator, Panel Kawalan: Kuasa (Pengeluaran)"
+1993,3131-24,"Operator, Penjana: Tenaga Elektrik"
+1994,3131-25,"Operator, Loji Tenaga Geo-Thermal"
+1995,3131-26,"Operator, Loji Gas Asli: Penjanaan Tenaga Elektrik"
+1996,3131-27,"Operator, Loji Kuasa Nuklear"
+1997,3131-28,"Operator, Penyukat: Aliran Elektrik"
+1998,3131-29,"Operator, Loji Tenaga Wap"
+1999,3131-30,"Operator, Papan Kuasa: Stesen Kuasa Elektrik"
+2000,3131-31,"Operator, Papan Kuasa: Penjana Stesen Kuasa"
+2001,3131-32,"Operator, Loji Kuasa Tidal"
+2002,3131-33,"Operator, Turbin: Penjanaan Elektrik"
+2003,3131-34,"Operator, Loji Tenaga Angin: Penjanaan Kuasa Elektrik"
+2004,3131-35,Juruteknik H2S (Hydrogen Sulfide) (Operasi)
+2006,3132-01,Operator Enjin Pegun
+2007,3132-02,Operator Pemampat
+2008,3132-03,Operator Pemampat Gas
+2009,3132-04,Operator Loji Insinerator
+2010,3132-05,Operator Stesen Pengepaman
+2011,3132-06,Operator Alat Pemanasan dan Pengalihudaraan
+2012,3132-07,Operator Sistem Penyejukan
+2013,3132-08,Operator Loji Kumbahan
+2014,3132-10,Operator Sisa Ais
+2015,3132-11,Operator Corong Tuang
+2016,3132-12,Operator Insenarator
+2017,3132-13,Operator Proses Sisa Cecair
+2018,3132-14,Operator Sisa Air
+2019,3132-16,Merinyu Tali Air Gred J19
+2020,3132-17,Penyelia Loji Insinerator
+2021,3132-18,"Operator, Relau: Pelupusan Sampah"
+2022,3132-19,"Operator, Panel Kawalan: Insinerator"
+2023,3132-20,"Operator, Panel Kawalan: Rawatan Air"
+2024,3132-21,"Operator, Penapis: Air"
+2025,3132-22,"Operator, Pembersihan Loji: Air"
+2026,3132-23,"Pembekal, Loji Pembersihan Air"
+2028,3133-01,Juruteknik Proses Kimia
+2029,3133-02,Penyelia Loji Kimia
+2030,3133-04,Operator Penapisan Kimia dan Pengasingan Peralatan
+2031,3133-05,Pengendali Kimia-Pegun dan Reaktor
+2033,3134-01,Operator Pam Penapisan Petroleum
+2034,3134-02,Operator Penyuling Penapisan Petroleum
+2035,3134-03,Pengawal Penapisan Petroleum
+2036,3134-04,Operator Penyahsulfur Penapisan Petroleum
+2037,3134-05,Operator Loji Asetilena
+2038,3134-06,Operator Loji Gas
+2039,3134-07,Operator Loji Klorin
+2040,3134-08,Operator Loji Oksigen
+2041,3134-09,Operator Loji Parafin
+2042,3134-10,Pengadun Penapisan Petroleum
+2043,3134-11,Operator Pengolahan Penapisan Petroleum dan Gas Asli
+2044,3134-12,Operator Stesen Pengepam Petroleum dan Gas Asli
+2045,3134-13,Operator Loji Pencairan Gas
+2046,3134-14,Pengisi dan Penguji Silinder (Gas Termampat dan Gas Cecair)
+2047,3134-15,Operator Blender/petroleum and Natural Gas Refining (ethyl)
+2048,3134-16,Operator Still/petroleum and Natural Gas Refining
+2049,3134-17,Juruteknik Proses Penapisan
+2050,3134-18,Operator Proses Petroleum
+2051,3134-19,Penyelia Pengendali Dandang
+2052,3134-20,Operator Tapak Loji
+2053,3134-21,Operator Tapak Pelupusan Telaga Gas
+2054,3134-22,Penyelia Kawalan Operasi Gas Tapak Pelupusan
+2055,3134-23,Penyelia Loji Anaerobic Digester Biogas
+2056,3134-24,Operator Pam
+2057,3134-25,Operator Penyuling
+2058,3134-26,Pengawal Penapisan Am
+2059,3134-27,Operator Slickline
+2061,3135-01,Pengawal Mesin Penggelek Logam
+2062,3135-02,"Pengeset, Logam"
+2063,3135-03,Operator Kawalan Proses Logam
+2064,3135-04,Operator Relau Letupan
+2065,3135-05,Caster Kawalan Pusat
+2066,3135-06,Pengendali Kawalan Kilang Guling
+2070,3141-01,Juruteknik Biologi
+2071,3141-02,Juruteknik Entomologi
+2072,3141-03,Juruteknik Tisu Kultur
+2073,3141-04,Juruteknik Botani
+2074,3141-05,Pembantu Botani
+2075,3141-06,Pembantu Makmal Penyelidikan Botani
+2076,3141-07,"Juruteknik, Pembiakbakaan Buatan"
+2077,3141-08,Pembantu Makmal Penyelidikan Pembiakbakaan Buatan
+2078,3141-09,Juruteknik Zoologi
+2079,3141-10,Pembantu Makmal Penyelidikan Zoologi
+2080,3141-11,Taksidermis
+2081,3141-12,Pembantu Penyelidik (Sains)
+2082,3141-13,Juruteknik Bakteriologi
+2083,3141-14,Juruteknik Biokimia
+2084,3141-15,Juruteknik Herbarium
+2085,3141-16,Juruteknik Farmakologi
+2086,3141-17,Juruteknik Serologi
+2087,3141-18,Pembantu Entomologi
+2089,3142-01,Juruteknik Agronomi
+2090,3142-02,Juruteknik Penyelidikan Tanaman
+2091,3142-03,Juruteknik Sains Tanah
+2092,3142-04,Juruteknik Florikultur
+2093,3142-05,Juruteknik Hortikultur
+2094,3142-06,Juruteknik Olerikultur
+2095,3142-07,Juruteknik Pomologi
+2096,3142-08,Juruteknik Tapak Semaian
+2097,3142-09,Pengawal Pegairan
+2098,3142-10,Juruteknik Tenusu
+2099,3142-11,Pegawai Teknikal Ladang Tanaman
+2100,3142-12,Penguji Ternakan
+2101,3142-13,Pegawai Teknikal Hortikultur
+2102,3142-14,Pegawai Teknikal Ternakan
+2103,3142-15,Pembantu Pertanian
+2104,3142-16,Penolong Pegawai Pertanian Gred G29
+2105,3142-17,Penolong Pegawai Rancangan Tanah Gred G29
+2106,3142-18,Penyelia Pengeluaran Ternakan Halal
+2107,3142-19,Penolong Pengurus Taman/Ladang Gred G29
+2108,3142-20,Pembantu Taman/Ladang Gred G19
+2109,3142-21,Penyelia Rancangan Tanah Gred G19
+2111,3143-01,Juruteknik Arborikultur
+2112,3143-02,Juruteknik Perhutanan
+2113,3143-03,Juruteknik Silvikultur
+2114,3143-04,Penolong Pemelihara Hutan Gred G29
+2115,3143-05,Penolong Pegawai Hidupan Liar Gred G29
+2116,3143-06,Pembantu Hidupan Liar Gred G19
+2118,3144-01,Juruteknik Penetasan
+2119,3144-02,Penyelia Penetasan
+2120,3144-03,Juruteknik Perikanan
+2121,3144-04,Pembantu Penetasan
+2122,3144-05,Juruteknik Akuakultur
+2123,3144-06,Pembantu Perikanan
+2124,3144-07,Penolong Pegawai Perikanan Gred G29
+2125,3144-08,Pembantu Perikanan Gred G19
+2126,3144-09,Penyelia Tapak Akuakultur
+2129,3151-01,Juruteknik Keselamatan Trafik Udara
+2130,3151-02,Juruteknik Pesawat
+2131,3151-03,Juruteknik Penyelenggaraan Penerbangan
+2132,3151-04,Juruteknik Perkhidmatan Pesawat
+2133,3151-05,Juruteknik Penyelenggaraan Pesawat (Kerangka Pesawat Udara)
+2134,3151-06,Juruteknik Penyelenggaraan Pesawat (Enjin)
+2135,3151-07,Pemulih Pesawat
+2136,3151-08,Juruteknik Loji Kuasa dan Kerangka Pesawat Udara
+2137,3151-09,Juruteknik Kerangka Pesawat Udara
+2138,3151-10,Juruteknik Helikopter
+2139,3151-11,Juruteknik Enjin Jet
+2140,3151-12,Juruteknik Sistem Pneudraulic (Pesawat)
+2141,3151-13,Juruteknik Loji Kuasa (Pesawat)
+2142,3151-14,Juruteknik Komponen Enjin Roket
+2143,3151-15,Penolong Pemeriksa Kapal Terbang Gred A29
+2144,3151-16,Penolong Pegawai Kawalan Trafik Udara Gred A29
+2145,3151-17,"Penyedia Kerja, Teknikal (Pesawat)"
+2146,3151-18,"Penyelia Perancangan Dok, Pesawat"
+2147,3151-19,"Perancang Dok, Pesawat"
+2148,3151-20,"Perancang Bengkel, Pesawat"
+2149,3151-21,"Pengawal Bahan, Pesawat"
+2150,3151-22,Juruteknik Avionic
+2152,3152-01,Pembantu Laut Gred A19
+2153,3152-02,Pengawal Tambatan
+2154,3152-03,Juragan Perahu Layar
+2155,3152-04,Penyelia Trafik Kapal Kargo
+2156,3152-05,Juruteknik Enjin Marin
+2157,3152-06,Juruteknik Kapal
+2158,3152-07,Penyelia Marin
+2159,3152-08,Penolong Pegawai Laut Gred A29
+2161,3153-01,Juruteknik Kereta api
+2162,3153-02,Penyelia Kereta api
+2163,3153-03,Penyelia Lokomotif
+2164,3153-04,Penyelia Transit Aliran Ringan
+2165,3153-05,Inspektor Kereta api
+2166,3153-06,Juruteknik Rangkaian Trek
+2167,3153-07,Juruteknik Isyarat dan Komunikasi
+2168,3153-08,Juruteknik Gerakan Rel Stok
+2170,3154-01,Juruteknik Kenderaan
+2171,3154-02,Juruteknik Sistem Enjin dan Minyak Kenderaan Bermotor
+2172,3154-03,Juruteknik Mekatronik Kenderaan Bermotor
+2173,3154-04,Juruteknik Automotif Sistem Brek
+2174,3154-05,Juruteknik Bingkai Badan Kenderaan
+2175,3154-06,Juruteknik Kenderaan Bermotor
+2176,3154-07,Penolong Pereka Kenderaan Teknologi Hijau
+2177,3154-08,Juruteknik Kren
+2178,3154-09,Juruteknik Kejuruteraan Automotif
+2180,3159-01,Penyelia Pengangkutan Jalan
+2181,3159-02,Penyelia Logistik
+2182,3159-03,"Penyelia Pengangkutan, Operasi Logistik Halal"
+2183,3159-04,Penolong Fasilitator Infrastruktur Teknologi Hijau
+2186,3161-01,Juruteknik Nuklear
+2190,3211-01,Juru x-Ray Gred U29
+2191,3211-02,Juru x-Ray
+2192,3211-03,Juruteknik Radiologi
+2193,3211-04,Juru X-Ray Perubatan Diagnostik
+2194,3211-05,Mammografer
+2196,3212-01,Juruteknik Anatomi
+2197,3212-02,Juruteknik Bank Darah
+2198,3212-03,Juruteknik Biofizik
+2199,3212-04,Juruteknik Ekologi
+2200,3212-05,Juruteknik Genetik
+2201,3212-06,Juruteknik Hematologi
+2202,3212-07,Juruteknik Histologi
+2203,3212-08,Juruteknik Sitologi
+2204,3212-09,Juruteknik Fisiologi
+2205,3212-10,Juruteknik Patologi
+2206,3212-11,Juruteknik Sains Perubatan
+2207,3212-12,Pembantu Parasitologi
+2208,3212-13,Juruteknik Makmal Perubatan
+2209,3212-14,Juruteknik Pembedahan
+2210,3212-15,Juruteknologi Makmal Perubatan Gred U29
+2211,3212-16,Juruteknologi Makmal Perubatan
+2213,3213-01,Pembantu Farmaseutikal
+2214,3213-02,Pembantu Makmal Farmaseutikal
+2215,3213-03,Juruteknik Farmasi
+2216,3213-04,Pembantu Farmasi
+2217,3213-05,Penolong Pegawai Farmasi Gred U29
+2219,3214-01,Juruteknik Pergigian
+2220,3214-04,Orthotist
+2221,3214-05,Juruteknologi Pergigian Gred U29
+2223,3215-02,Juruteknik Prostetik
+2224,3215-03,Juruteknik Perubatan Gred U19
+2227,3221-01,Jururawat Gred U29
+2228,3221-02,Pembantu Jururawat
+2229,3221-04,Jururawat Praktikal
+2231,3222-01,Bidan
+2232,3222-02,Pembantu Bidan
+2235,3231-01,Pengamal Perubatan Tradisonal Melayu
+2236,3231-02,Pengamal Perubatan Tradisional Cina
+2237,3231-03,Pengamal Perubatan Tradisional India
+2238,3231-04,Pendispens Ubat Tradisional Cina
+2239,3231-05,Bomoh
+2240,3231-06,Juruterapi Bekam
+2241,3231-07,Bomoh Tulang
+2242,3231-08,Ahli Herba
+2243,3231-09,Ahli Refleksologi
+2244,3231-10,Juruteknik Akupuntur
+2245,3231-11,Juruteknik Ayurvedik
+2248,3241-01,Pembantu Veterinar Gred G19
+2249,3241-02,Juruteknik Veterinar
+2250,3241-03,Juruteknik Penyelidikan Biotek Veterinar
+2251,3241-06,Pembantu Veterinar Permanian Beradas
+2252,3241-07,Veterinar Permanian Beradas
+2253,3241-08,Juruteknik Pengeluaran Biotek Veterinar
+2254,3241-09,Jururawat Veterinar
+2255,3241-10,Penolong Pegawai Veterinar Gred G29
+2256,3241-11,Ahli Terapi Haiwan
+2259,3251-01,Pembantu Pembedahan Pergigian Gred U19
+2260,3251-02,Jururawat Kesihatan Pergigian
+2261,3251-05,Penolong Pergigian
+2262,3251-06,Jurupembersihan Pergigian
+2263,3251-07,Juruterapi Pergigian Gred U29
+2265,3252-02,Pengkod Klinikal
+2266,3252-06,Kerani Rekod Perubatan
+2268,3253-02,Promoter Kesihatan Masyarakat
+2269,3253-04,Pekerja Kesihatan Kampung
+2270,3253-05,Jururawat Masyarakat Gred U19
+2272,3254-01,Juruoptik
+2273,3254-02,Juruoptik Kanta Lekap
+2275,3255-01,Pembantu Jurupulih Anggota
+2276,3255-02,Juruelektroterapi
+2277,3255-04,Ahli Hydroterapi
+2278,3255-05,Juruterapi Urutan
+2279,3255-06,Juruteknik Jurupulih Anggota
+2280,3255-08,Juruterapi Shiatsu
+2281,3255-09,Jurupulih Perubatan Gred U29
+2282,3255-10,Penolong Pengurus Kes Gred 19
+2283,3255-11,Juruterapi Tekanan
+2285,3256-01,Pembantu Makmal Perubatan
+2286,3256-02,Penolong Hospital
+2287,3256-04,Pembantu Klinik
+2288,3256-05,Juruperalatan Radiograf
+2289,3256-07,Jurukelengkapan X-Ray
+2290,3256-08,Juruperalatan Elektrokardiograf
+2291,3256-09,Juruperalatan Elektroensefalograf
+2292,3256-10,Juruperalatan Pengimbasan
+2293,3256-11,Jurusonografi
+2294,3256-12,Juruultrasonografi
+2295,3256-13,Pengajar Klinikal
+2296,3256-14,Pembantu Ophthalmic
+2297,3256-15,Penolong Pegawai Perubatan Gred U29
+2299,3257-01,Pemeriksa Unit Kesihatan Awam
+2300,3257-04,Pemeriksa Restoran Kesihatan Awam
+2301,3257-05,Pemeriksa Kesihatan dan Keselamatan Pekerjaan
+2302,3257-09,Penyelia Kesihatan Pekerjaan
+2303,3257-10,Pemeriksa Kebersihan Pekerjaan
+2304,3257-11,Juruteknik Kebersihan Pekerjaan
+2305,3257-12,Pemeriksa Kualiti Produk
+2306,3257-13,Juruteknik Kesihatan dan Keselamatan
+2307,3257-15,Pemeriksa Keselamatan dan Kesihatan Perlindungan Pengguna
+2308,3257-17,Pemeriksa Sanitari
+2309,3257-19,Pemeriksa Keselamatan Kenderaan
+2310,3257-20,Pemeriksa Pusat Kecantikan
+2311,3257-28,Pemeriksa Sisa Berbahaya
+2312,3257-31,Pemeriksa Kebersihan Industri
+2313,3257-32,Pemeriksa Kawalan Sisa Industri
+2314,3257-33,Pemeriksa Jururawat Rumah
+2315,3257-35,Pemeriksa Air
+2316,3257-36,Pemeriksa Keselamatan Lombong
+2317,3257-37,Pemeriksa Lombong
+2318,3257-39,Pemantau Radiasi
+2319,3257-41,Pemeriksa Kawalan Tikus
+2320,3257-43,Pemeriksa Loji Sisa Rawatan Air
+2321,3257-44,Pemeriksa Sanitasi dan Keselamatan Makanan
+2322,3257-47,Penolong Pegawai Teknologi Makanan Gred C29
+2323,3257-48,Penolong Pegawai Kesihatan Persekitaran Gred U29
+2324,3257-49,Penolong Pegawai Kawalan Alam Sekitar Gred C29
+2325,3257-50,Pembantu Teknologi Air
+2327,3258-01,Pembantu Ambulans
+2328,3258-02,Pegawai Ambulans
+2329,3258-05,Juruteknik Kecemasan
+2331,3259-01,Perunding Kesihatan
+2332,3259-02,Juruteknik Terapi Pernafasan
+2333,3259-03,Penolong Dietetik
+2337,3311-01,Broker Sekuriti
+2338,3311-02,Broker Stok dan Saham
+2339,3311-06,Perunding Matawang Asing
+2340,3311-07,Pedagang Forex
+2341,3311-09,Perunding Perbendaharaan
+2342,3311-10,Penganalisis Kewangan
+2343,3311-11,Pegawai Broker
+2345,3312-01,Pegawai Gadai Janji
+2346,3312-02,Pegawai Pinjaman
+2347,3312-03,Eksekutif Kawalan Kredit
+2348,3312-05,Eksekutif Tuntutan
+2349,3312-06,Pegawai Lejar Am
+2350,3312-07,Eksekutif Kos
+2351,3312-10,Pegawai Risiko Kredit
+2352,3312-11,Pakar Kawalan Kredit Pesanan Tunai (O2C)
+2354,3313-02,Penyelia Akaun
+2355,3313-03,Penyelia Kewangan
+2356,3313-04,Penolong Akauntan Gred W29
+2357,3313-05,Penolong Juruaudit Gred W29
+2358,3313-06,Penolong Pegawai Eksekutif (Perakaunan) Gred 31
+2359,3313-07,Penolong Pegawai Eksekutif (Perakaunan) Gred 6
+2360,3313-08,Penolong Pegawai Eksekutif (Perakaunan) Gred L8
+2361,3313-09,Penolong Pegawai Eksekutif Perakaunan
+2362,3313-11,Penolong Pegawai Eksekutif (Pengauditan) Gred 31
+2363,3313-12,Penolong Pegawai Eksekutif (Pengauditan) Gred 6
+2364,3313-13,Penolong Pegawai Eksekutif Pengauditan
+2365,3313-14,Penolong Pegawai Eksekutif (Pengauditan) Gred L8
+2366,3313-15,Penolong Pegawai Eksekutif (Kewangan) Gred L8
+2367,3313-17,Juruteknik Perakaunan
+2368,3313-18,Juruteknik Audit Tenaga
+2369,3313-19,Pegawai Kerja Akaun Gred 19
+2370,3313-23,Penolong Pengawal Kewangan
+2371,3313-24,Agen Cukai
+2373,3314-01,Penolong Pegawai Perangkaan Gred E29
+2375,3315-01,Pentaksir
+2376,3315-02,Jurunilai
+2377,3315-03,Pentaksir Hasil
+2378,3315-04,Inspektor Tuntutan
+2379,3315-05,Pentaksir Tuntutan
+2380,3315-06,Pelaras Insurans
+2381,3315-07,Pentaksir Insurans
+2382,3315-08,Pentafsir Hartanah
+2383,3315-09,Penolong Pegawai Penilaian Gred W29
+2386,3321-02,Broker Insurans
+2387,3321-03,Penaja Jamin Insurans
+2388,3321-09,Pegawai Tuntutan
+2390,3322-01,Jurujual Komersil
+2391,3322-03,Pencari Langganan
+2392,3322-15,Wakil Jualan Gred P4
+2393,3322-16,Penolong Pegawai Pemasaran
+2394,3322-24,Penolong Pembangunan Perniagaan
+2396,3323-01,Eksekutif Perancangan dan Pengagihan
+2397,3323-03,Pembeli
+2398,3323-15,Pakar Operasi Pembelian Untuk Membayar
+2399,3323-16,Penganalisis Sokongan Perolehan
+2400,3323-17,Eksekutif Pengumpulan
+2401,3323-18,Eksekutif Proses Pesanan
+2403,3324-01,Broker Komoditi
+2404,3324-02,Broker Perkapalan
+2405,3324-03,Broker Perdagangan
+2406,3324-04,Peniaga Pemborong
+2409,3331-03,Ejen Perkapalan
+2411,3332-01,Ejen Pameran dan Konvensyen
+2412,3332-03,Ejen Pelancongan
+2413,3332-05,Penganjur Persidangan dan Acara
+2414,3332-06,Perancang Perkahwinan
+2415,3332-08,Perancang Acara
+2417,3333-01,Ejen Pengambilan Pekerja
+2419,3334-01,Ejen Hartanah
+2420,3334-03,Peniaga Harta
+2421,3334-07,Perunding Penyelesaian Konflik
+2423,3339-01,Jurulelong
+2424,3339-06,Penganjur Sukan
+2427,3341-02,Penyelia Kemasukan Data
+2428,3341-05,Penyelia Pentadbiran
+2429,3341-12,Penolong Pegawai Ehwal Ekonomi Gred E29
+2430,3341-13,Penolong Pegawai Penerangan Gred S29
+2431,3341-14,Penolong Perancang Bahasa Gred S29
+2432,3341-15,Penolong Pegawai Tadbir Gred N29
+2433,3341-16,Penolong Pegawai Penerbitan Gred N29
+2434,3341-17,Penolong Pengurus Asrama Gred N29
+2435,3341-18,Penolong Pegawai Eksekutif (Pentadbiran) Gred L8
+2436,3341-20,Penolong Pegawai Eksekutif (Pentadbiran) Gred 31
+2437,3341-21,Penolong Pegawai Eksekutif (Ekonomi) Gred 6
+2438,3341-22,Pelatih Hal Ehwal Korporat
+2439,3341-25,Pegawai Eksekutif Gred 19
+2441,3342-01,Setiausaha Perundangan
+2443,3343-01,Penolong Pegawai Eksekutif (Kesetiausahaan) Gred 31
+2444,3343-02,Penolong Pegawai Eksekutif (Kesetiausahaan) Gred 6
+2445,3343-03,Penolong Pegawai Eksekutif (Kesetiausahaan) Gred L8
+2446,3343-04,Pembantu Peribadi
+2447,3343-05,Pembantu Eksekutif Pentadbiran
+2448,3343-06,Setiausaha Eksekutif Pentadbiran Kerajaan
+2449,3343-07,Setiausaha Syarikat (sektor awam)
+2450,3343-08,Jurulapor Verbatim
+2451,3343-09,Ketua Setiausaha Pejabat
+2452,3343-10,Setiausaha Eksekutif
+2453,3343-11,Setiausaha Eksekutif Jawatankuasa
+2454,3343-12,Setiausaha Eksekutif Pentadbiran Bukan Kerajaan
+2455,3343-13,Setiausaha Eksekutif Pentadbiran
+2456,3343-15,Pegawai Konsul
+2457,3343-16,Penolong Pegawai Eksekutif Kesetiausahaan
+2458,3343-17,Setiausaha Pentadbiran
+2459,3343-18,Pembantu Surat-Menyurat
+2461,3344-01,Setiausaha Perubatan
+2462,3344-02,"Pembantu Perubatan, Pentadbiran"
+2463,3344-03,Setiausaha Wad Hospital
+2464,3344-04,Setiausaha Penjagaan Pesakit
+2465,3344-05,Stenografer Perubatan
+2466,3344-06,Pembantu Insurans Perubatan
+2467,3344-07,Setiausaha Bil Perubatan
+2468,3344-08,Setiausaha Patologi
+2469,3344-09,Ahli Transkripsi Perubatan
+2473,3411-01,Bailif
+2474,3411-02,Pembantu Perundangan
+2475,3411-03,Kerani Pemindahhakkan
+2476,3411-04,Pembantu Peguam
+2477,3411-05,Kerani Undang-undang
+2478,3411-06,Kerani Hakim
+2479,3411-07,Kerani Mahkamah
+2480,3411-08,Kerani Litigasi
+2481,3411-09,Pembantu Barister
+2482,3411-10,Pembantu Peguamcara
+2483,3411-11,Penolong Pegawai Undang-undang Gred L29
+2484,3411-12,Penolong Pegawai Eksekutif (Undang-undang) Gred 31
+2485,3411-13,Penolong Pegawai Eksekutif (Perundangan) Gred 6
+2486,3411-14,Penolong Pegawai Eksekutif (Perundangan) Gred L8
+2487,3411-15,Penolong Perundangan
+2488,3411-16,Penolong Pegawai Eksekutif Perundangan
+2489,3411-17,Penolong Pegawai Syariah Gred LS29
+2493,3511-01,Juruteknik Komputer Gred FT19
+2494,3511-02,Pembantu Tadbir (Operator Komputer) Gred 21
+2495,3511-03,Pembantu Tadbir (Juruteknik Komputer) Gred 21
+2496,3511-04,Pembantu Eksekutif (Teknologi Maklumat) Gred 3
+2497,3511-05,Juruteknik Komputer
+2498,3511-06,Jurukelengkapan Jitu Komputer
+2499,3511-08,Jurukelengkapan Jitu Komputer Pencetak Kelajuan Tinggi
+2500,3511-09,Jurupemprosesan Data Elektronik (EDP)
+2501,3511-10,Pembantu Kejuruteraan Komputer
+2502,3511-11,Penolong Penyelia Pemprosesan Data Elektronik (EDP)
+2503,3511-12,Penyelia Pemprosesan Data Elektronik
+2504,3511-13,Juruteknik Semikonduktor
+2505,3511-14,Juruteknik Sistem Maklumat
+2506,3511-15,Pembantu Teknologi Maklumat
+2507,3511-16,Pengendali Konsol Komputer
+2508,3511-19,Pengendali Pencetak Komputer Berkelajuan Tinggi
+2509,3511-20,Operator Peralatan Periferal Komputer
+2510,3511-21,Juruteknik Perkakasan
+2511,3511-22,Pembantu Tadbir Juruteknik Komputer
+2512,3511-23,Pembantu Kejuruteraan Telekomunikasi
+2513,3511-24,Penyelia Sistem Maklumat Pengurusan
+2514,3511-25,Penolong Pegawai Teknologi Maklumat Gred FA29
+2515,3511-26,Penolong Pegawai Eksekutif (Teknologi Maklumat) Gred 31
+2516,3511-27,Penolong Pegawai Eksekutif (Teknologi Maklumat) Gred 6
+2517,3511-28,Penolong Pegawai Eksekutif (Teknologi Maklumat) Gred L8
+2518,3511-29,Penolong Pegawai Teknologi Maklumat
+2519,3511-30,Penolong Eksekutif Sistem Komputer
+2520,3511-31,Juruteknik Perkhidmatan (Pencetak Pelbagai Fungsi)
+2521,3511-34,Pengatur Program Komputer Gred 19
+2522,3511-35,Penolong Jurutera PLC (Pengawal Logik Boleh Diprogram)
+2524,3512-01,Juruteknik Meja Bantu Komputer
+2525,3512-02,Juruteknik Sokongan Komputer Peribadi
+2526,3512-03,Juruteknik Teknologi Maklumat
+2527,3512-04,Operator Meja Bantu Komputer
+2528,3512-05,Pembantu Kejuruteraan Komputer dan Komunikasi
+2529,3512-06,Pembantu Komputer
+2530,3512-07,Pembantu Komunikasi (ICT)
+2531,3512-08,Pembantu Pangkalan Data
+2532,3512-09,Pembantu Pengaturcaraan Komputer
+2533,3512-10,Pembantu Perkhidmatan Komputer Pengguna
+2534,3512-11,Pegawai Meja Bantu Pelanggan
+2535,3512-12,Pengajar Pusat Panggilan
+2536,3512-13,Penyelia Pusat Data
+2537,3512-14,Pembantu Pusat Data
+2538,3512-15,Juruteknik Sokongan Teknikal
+2539,3512-16,Operator Wayarles Gred N19
+2540,3512-18,Juruteknik Sokongan Perisian Perakaunan
+2541,3512-19,Juruteknik Analisis Kegagalan
+2543,3513-01,Juruteknik Rangkaian Komputer
+2544,3513-02,Juruteknik Rangkaian Sokongan
+2545,3513-03,Juruteknik Keselamatan Rangkaian (ICT)
+2546,3513-04,Juruteknik Keselamatan Sistem & Aplikasi ICT
+2547,3513-05,Penolong Jurutera Rangkaian
+2548,3513-06,Penolong Pegawai Keselamatan Sistem
+2550,3514-01,Juruteknik Laman Web
+2551,3514-02,Juruteknik Web
+2552,3514-03,Juruanimasi Multimedia
+2553,3514-04,Penolong Pereka Grafik
+2554,3514-05,Juruteknik Seni dan Reka Bentuk
+2555,3514-06,Penolong Kreatif
+2558,3521-01,Juruaudio Visual Gred N19
+2559,3521-02,Juruwayang Gambar
+2560,3521-03,Operator Audio Visual
+2561,3521-04,Pembantu Produksi (Media)
+2562,3521-05,Pembantu Wayang Gambar
+2563,3521-06,Juruteknik Kesan Bunyi
+2564,3521-07,Pengadun Alih Suara
+2565,3521-08,Pengadun Bunyi
+2566,3521-09,Penyunting Bunyi
+2567,3521-10,Jurutayang Pawagam
+2568,3521-11,Pegawai Radio Kapal
+2569,3521-12,Juruteknik Penyiaran
+2570,3521-13,Juruteknik Peralatan Audio dan Video
+2571,3521-14,Juruperalatan Penyiaran
+2572,3521-15,Juruperalatan Penyiaran Radio dan Televisyen
+2573,3521-16,Juruperalatan Radio Pangkalan Darat
+2574,3521-17,Juruperalatan Radio Penerbangan
+2575,3521-18,Juruperalatan Telekomunikasi
+2576,3521-19,Juruperalatan Transmisi Radio dan Televisyen
+2577,3521-20,Operator Peralatan Penyiaran
+2578,3521-21,Jurukamera (Motion Picture)
+2579,3521-22,Jurukamera (Video)
+2580,3521-23,Juruvideografi
+2581,3521-24,Penolong Jurutera Telekomunikasi
+2582,3521-25,Penolong Editor
+2584,3522-01,Juruteknik Kejuruteraan Aeroangkasa (Telekomunikasi)
+2585,3522-02,Juruteknik Kejuruteraan Telekomunikasi
+2586,3522-03,Juruteknik Komunikasi
+2587,3522-04,Juruteknik Telekomunikasi
+2591,3611-01,Pekerja Sosial
+2592,3611-02,"Pekerja Sosial, Kerja Berkumpulan"
+2593,3611-03,"Pegawai Kebajikan, Industri"
+2594,3611-04,"Pegawai Kebajikan, Perunding Cara"
+2595,3611-05,"Pegawai Parol, Profesional Bersekutu"
+2596,3611-06,"Pegawai Perunding Cara, Profesional Bersekutu"
+2597,3611-07,Pegawai Perancang Keluarga
+2598,3611-08,Pekerja Kebajikan Sosial
+2599,3611-09,"Pekerja Kebajikan Sosial, Kerja Kes"
+2600,3611-10,"Pekerja Sosial, Kebajikan Kanak-Kanak"
+2601,3611-11,"Pekerja Sosial, Masalah Remaja"
+2602,3611-12,"Pekerja Sosial, Masyarakat"
+2603,3611-13,"Pekerja Sosial, Perubatan"
+2604,3611-14,"Pekerja Sosial, Psikiatri"
+2605,3611-15,Penganjur Kebajikan
+2606,3611-16,Pembantu Kaunselor
+2607,3611-17,Pekerja Pembangunan Masyarakat
+2608,3611-18,Pekerja Perkhidmatan Masyarakat
+2609,3611-19,Pegawai Perkhidmatan Hilang Upaya
+2610,3611-20,Pekerja Perkhidmatan Keluarga
+2611,3611-21,Pengajar Kemahiran Hidup
+2612,3611-22,Pekerja Kesihatan Mental
+2613,3611-23,Pekerja Sokongan Kebajikan
+2614,3611-24,Penyelia Perlindungan Wanita
+2615,3611-25,Pekerja Belia
+2616,3611-26,Penolong Pegawai Penyelidik Sosial Gred N29
+2617,3611-27,Penolong Pegawai Pembangunan Masyarakat Gred S29
+2618,3611-28,Penolong Pegawai Psikologi Gred S29
+2619,3611-29,Penolong Pegawai Antidadah Gred S29
+2620,3611-30,Penolong Pegawai Eksekutif (Psikologi) Gred 31
+2621,3611-31,Pemaju Masyarakat Pendidikan Kemahiran Jahitan
+2622,3611-32,Pemaju Masyarakat Pendidikan Kemahiran Masakan
+2624,3612-01,Sami
+2625,3612-02,Biarawan
+2626,3612-03,Pendakwah
+2627,3612-04,Bilal
+2628,3612-05,Penyembuh Rohani
+2629,3612-06,Penolong Pegawai Hal Ehwal Islam Gred S29
+2630,3612-07,Mutawif/Mutawifah
+2633,3621-01,Ahli Sukan
+2634,3621-02,Atlet
+2635,3621-03,Peninju
+2636,3621-04,Pemain Bola Sepak
+2637,3621-05,Pemain Hoki
+2638,3621-06,Pemain Tenis
+2639,3621-07,Ahli Gusti
+2640,3621-08,Pemain Catur
+2641,3621-09,Pemain Golf
+2642,3621-10,Penungggang Kuda Lumba
+2643,3621-11,Pemandu Perlumbaan
+2644,3621-12,Pemain E-Sukan
+2646,3622-01,Penolong Pegawai Belia dan Sukan Gred S29
+2647,3622-02,Pegawai Sukan
+2648,3622-03,Pengadil
+2649,3622-04,Jurulatih Sukan
+2650,3622-05,Jurulatih Senamrobik
+2651,3622-06,Jurulatih Judo
+2652,3622-07,Jurulatih Karate
+2653,3622-08,Jurulatih Silat
+2654,3622-09,Jurulatih Taekwando
+2655,3622-10,Jurulatih Tenis
+2656,3622-11,Jurulatih Tai-Chi
+2657,3622-12,Jurulatih Yoga
+2658,3622-13,Jurulatih Renang
+2659,3622-14,"Jurulatih, Pengajar dan Pegawai Sukan Lain (Dalaman)"
+2660,3622-15,"Jurulatih, Pengajar dan Pegawai Sukan Lain (Luaran)"
+2661,3622-16,Pengajar Sukan
+2662,3622-17,Pengajar dan Penyelaras Latihan Berkumpulan
+2663,3622-18,Penjaga Garisan
+2664,3622-19,Pengajar Renang
+2665,3622-20,Jurulatih Am
+2666,3622-21,Pengajar Am
+2667,3622-22,Penolong Pegawai Kesatria Gred S29
+2669,3623-01,Pengajar Kecergasan Fizikal
+2670,3623-02,Pengajar Biliard
+2671,3623-03,Pengajar Catur
+2672,3623-04,Pengajar Pelayaran
+2673,3623-05,Pengajar Tunggang Kuda
+2674,3623-06,Pemandu Aktiviti Lasak
+2675,3623-07,Penyelia Rumah Kelab
+2676,3623-08,Pelatih Persendirian
+2677,3623-09,Pengajar Aerobik
+2678,3623-10,Pengajar Penyelam
+2679,3623-11,Pengajar Kecergasan
+2680,3623-12,Ketua Selam
+2681,3623-13,Pelatih Profesional
+2682,3623-14,Koordinator Program (Sukan)
+2685,3631-01,Pembantu Tadbir (Ahli Fotografi) Gred 21
+2686,3631-02,Jurugambar
+2687,3631-03,Jurugambar Ilustrasi Komersil
+2688,3631-04,Jurugambar Akhbar
+2689,3631-05,Jurugambar Berita
+2690,3631-06,Wartawan Gambar
+2691,3631-07,Jurugambar Udara
+2692,3631-08,Mikrofotografer
+2693,3631-09,Jurugambar Mikrofotografi
+2694,3631-11,Jurugambar Saintifik
+2695,3631-12,Jurugambar Komersil
+2696,3631-13,Jurugambar Industri
+2697,3631-14,Jurugambar Potret
+2698,3631-15,Jurufotografi Gred B19
+2699,3631-16,Jurufotografi Gred B29
+2700,3631-17,Jurufotografi Gred B21
+2701,3631-18,Jurufotografi Gred B25
+2702,3631-19,Jurufotografi Gred B31
+2703,3631-20,Jurufotografi Gred B37
+2704,3631-21,Jurufotografi Gred B39
+2706,3632-01,Pereka Gred B19
+2707,3632-02,Pereka Hiasan Dalaman
+2708,3632-03,Pereka Perabot
+2709,3632-04,Pereka Poster
+2710,3632-05,Penerbitan Desktop Artis
+2711,3632-06,Ilustrator Buku
+2712,3632-07,Ilustrator Pengiklanan
+2713,3632-08,Artis Pameran
+2714,3632-09,Juruhias Pameran
+2715,3632-10,Pereka Hiasan Visual
+2716,3632-11,Pereka Lambang
+2717,3632-12,Pereka Pameran
+2718,3632-13,Pereka Pameran Jendela Pamer
+2719,3632-14,Pereka Pemandangan
+2720,3632-15,Pereka Pertunjukan
+2721,3632-16,Juruhias Dalaman
+2722,3632-17,Pereka Kerja Logam Perhiasan
+2723,3632-18,Juruhias Set Wayang Gambar
+2724,3632-19,Pereka Set Teater
+2725,3632-20,Penggubah Bunga
+2726,3632-21,Juruteknik Ukiran
+2727,3632-22,Pereka Set
+2728,3632-23,Window Dresser
+2729,3632-24,Pereka Gred B21
+2730,3632-25,Pereka Gred B25
+2731,3632-26,Pereka Gred B29
+2732,3632-27,Pereka Gred B31
+2733,3632-28,Pereka Gred B37
+2734,3632-29,Eksekutif Fit Out
+2736,3633-01,Pembantu Arkib Gred S19
+2737,3633-02,Pembantu Pemuliharaan Gred S19
+2738,3633-03,Pembantu Muzium Gred S19
+2739,3633-04,Juruteknik Galeri
+2740,3633-05,Juruteknik Perpustakaan
+2741,3633-06,Juruteknik Muzium
+2742,3633-07,Penolong Pegawai Arkib Gred S29
+2743,3633-08,Penolong Kurator Gred S29
+2744,3633-09,Penolong Pustakawan Gred S29
+2745,3633-10,Penolong Pegawai Eksekutif (Perpustakaan) Gred 6
+2746,3633-11,Penolong Eksekutif Perpustakaan
+2747,3633-12,Penolong Pegawai Eksekutif Perpustakaan
+2748,3633-13,Penolong Pegawai Eksekutif (Perpustakaan) Gred 31
+2749,3633-14,Pemaju Masyarakat Pusat Sumber Gred S19
+2751,3634-01,Ahli Muzik Gred B19
+2752,3634-02,Artis Budaya Gred B19
+2753,3634-03,Ahli Muzik Gred B29
+2754,3634-04,Artis Budaya B29
+2755,3634-05,Pegawai Kebudayaan Gred B19
+2756,3634-06,Pegawai Kebudayaan Gred B29
+2757,3634-07,Penerbit Rancangan Gred B19
+2758,3634-08,Juruteknik Kesan Khas
+2759,3634-09,Juruteknik Pencahayaan
+2760,3634-10,Penyelaras Program (Penyiaran)
+2761,3634-11,Pembantu Ingat
+2762,3634-12,Penyelia Harta (Penyiaran)
+2763,3634-13,Tukang Skrip
+2764,3634-14,Juruteknik Pentas
+2765,3634-15,Penyelaras Stunt
+2766,3634-16,Pelakon Aksi
+2767,3634-17,Juruteknik Teater
+2768,3634-18,Penerbit Rancangan Gred B21
+2769,3634-19,Penerbit Rancangan Gred B25
+2770,3634-20,Penerbit Rancangan Gred B29
+2771,3634-21,Penerbit Rancangan Gred B31
+2772,3634-22,Penerbit Rancangan Gred B37
+2773,3634-23,Ahli Muzik Gred B21
+2774,3634-24,Ahli Muzik Gred B25
+2775,3634-25,Ahli Muzik Gred B31
+2776,3634-26,Ahli Muzik Gred B37
+2777,3634-27,Pegawai Kebudayaan Gred B21
+2778,3634-28,Pegawai Kebudayaan Gred B25
+2779,3634-29,Pegawai Kebudayaan Gred B31
+2780,3634-30,Pegawai Kebudayaan Gred B37
+2781,3634-31,Artis Budaya B21
+2782,3634-32,Artis Budaya B25
+2783,3634-33,Artis Budaya B31
+2784,3634-34,Artis Budaya B37
+2785,3634-35,Artis Budaya B39
+2786,3634-36,Tukang Karut (Dikir Barat)
+2787,3634-37,Penyelaras Program
+2788,3634-38,Penolong Pengeluar
+2792,3641-01,Sous Chef
+2793,3641-02,Chef De Partie
+2794,3641-03,Jurumasak Kanan
+2795,3641-04,Chef
+2796,3641-05,Jurumasak Panggang
+2797,3641-06,Jurumasak Dim Sum
+2798,3641-07,Jurumasak Masakan Melayu
+2799,3641-08,Jurumasak Pastri
+2800,3641-09,Penyedia Hidangan
+2801,3641-10,Penyelaras Dapur
+2802,3641-11,Saucier
+2803,3641-12,Penolong Jurumasak
+2804,3641-13,Penolong Jurumasak Dim Sum
+2805,3641-14,Penolong Jurumasak Eksekutif
+2806,3641-15,Eksekutif Sous Chef
+2807,3641-16,Penolong Eksekutif Penyedia Makanan
+2808,3641-17,Penolong Pegawai Penyediaan Makanan Gred C29
+2812,3711-01,Inspektor Kastam
+2813,3711-02,Inspektor Kastam dan Sempadan
+2814,3711-03,Inspektor Sempadan
+2815,3711-04,Pegawai Pemeriksaan Pasport
+2816,3711-05,Penolong Penguasa Kastam Gred WK29
+2817,3711-06,Penolong Penguasa Imigresen KP29
+2819,3712-01,Penolong Pegawai Eksekutif (Penaksiran) Gred 31
+2820,3712-02,Penolong Pegawai Eksekutif Penaksiran
+2822,3713-01,Penolong Pegawai Tuntutan Keselamatan Sosial
+2824,3714-01,Inspektor Pelesenan
+2825,3714-02,Penolong Pegawai Penguatkuasa Gred KP29
+2826,3714-03,Penolong Pegawai Eksekutif (Penguatkuasaan) Gred L8
+2828,3715-01,Inspektor Polis
+2829,3715-02,Detektif Polis
+2830,3715-03,Pegawai Polis
+2831,3715-04,Ejen Pertanyaan Polis
+2832,3715-05,Pegawai Patrol Polis
+2833,3715-06,Detektif Persendirian
+2834,3715-07,Penyiasat Persendirian
+2836,3716-01,Inspektor Perkhidmatan Awam
+2837,3716-02,Inspektor Pentadbiran Kerajaan
+2838,3716-03,Pegawai RELA
+2839,3716-04,Askar Wataniah
+2840,3716-05,Penolong Pegawai Pertahanan Awam Gred KP29
+2841,3716-06,Penolong Pegawai Keselamatan Gred KP29
+2842,3716-07,Penolong Pegawai Eksekutif (Keselamatan) Gred 31
+2844,3719-01,Pegawai Lain-lain Pangkat Penguat Kuasa Maritim Gred T5
+2845,3719-02,Pegawai Pemeriksa Harga
+2846,3719-03,Inspektor Kebakaran dan Keselamatan
+2847,3719-04,Inspektor Timbang dan Sukat
+2848,3719-05,Pegawai Pemeriksa Gaji
+2849,3719-06,Pegawai Pusat Pengundian
+2850,3719-07,Inspektor Pertanian
+2851,3719-08,Inspektor Penternakan
+2852,3719-09,Inspektor Hutan
+2853,3719-10,Algojo
+2854,3719-11,Penolong Penguasa Bomba Gred KB29
+2855,3719-12,Penolong Penguasa Penjara Gred KA29
+2856,3719-13,Penolong Pegawai Siasatan Gred P29
+2857,3719-14,Penolong Pegawai Siasatan Gred P31
+2858,3719-15,Penolong Pegawai Siasatan Gred P37
+2859,3719-16,Penolong Pegawai Perhubungan Perusahaan Gred S29
+2860,3719-17,Penolong Pegawai Pendaftaran Gred KP29
+2864,4111-01,Pembantu Tadbir (Perkeranian/Operasi) Gred N19
+2865,4111-02,Pembantu Pentadbir Tanah Gred NT19
+2866,4111-03,Pembantu Tadbir (Pereka) Gred 21
+2867,4111-04,Pembantu Tadbir (Perkeranian) Gred 21
+2868,4111-05,Pembantu Tadbir (Kejuruteraan) Gred 21
+2869,4111-06,Pembantu Eksekutif (Pentadbiran dan Sokongan) Gred 3
+2870,4111-07,Pembantu Eksekutif (Kejuruteraan) Gred 3
+2871,4111-08,Pembantu Eksekutif (Perkeranian) Gred L11
+2872,4111-10,Kerani Pejabat
+2873,4111-12,Kerani Perkhidmatan Bilik
+2874,4111-13,Kerani Sulit
+2875,4111-18,Pembantu Tadbir Am
+2876,4111-21,Kerani Pentadbiran Gred K1
+2877,4111-25,Pembantu Eksekutif (Ekonomi) Gred 3
+2878,4111-26,Pembantu Ehwal Ekonomi Gred E19
+2879,4111-27,Pegawai Kerani Gred 14
+2880,4111-28,Pembantu Penyelaras
+2883,4121-01,Setiausaha Pejabat Gred N29
+2884,4121-02,Pembantu Setiausaha Pejabat Gred N19
+2885,4121-03,Pembantu Tadbir (Kesetiausahaan) Gred 21
+2886,4121-04,Pembantu Eksekutif (Kesetiausahaan) Gred 3
+2887,4121-07,Setiausaha
+2888,4121-13,Setiausaha/Pembantu Setiausaha Gred 19
+2891,4131-01,Jurutaip
+2892,4131-02,Jurutrengkas
+2893,4131-04,Pembantu Am Jurutaip
+2894,4131-05,Pentranskripsi
+2895,4131-06,Pengesah Pengecaman Aksara Optik (OCR)
+2897,4132-01,Kerani Indeks
+2898,4132-02,Kerani Rekod
+2899,4132-03,Pembantu Am Sistem Maklumat (Operator Mesin Prosesan Data)
+2900,4132-04,Kerani Kemasukan Data Komputer
+2901,4132-05,Operator Kemasukan Data
+2902,4132-06,Kerani Kemasukan Bayaran
+2903,4132-07,Kerani Teknologi Maklumat
+2904,4132-08,Kerani Sistem Maklumat Pengurusan
+2905,4132-09,Kerani Kemasukan Data
+2906,4132-10,Kerani Sistem
+2907,4132-11,Pelabel Data dan Media
+2911,4211-01,Kerani Pos
+2912,4211-02,Juruwang Bank
+2913,4211-04,Pengurup Wang
+2914,4211-05,Kerani Deposit Selamat
+2915,4211-08,Kerani Kaunter Pejabat Pos
+2917,4212-01,Kerani Kaunter Pertaruhan
+2918,4212-02,Kerani Penerima Taruhan
+2920,4213-01,Broker Gadaian
+2921,4213-02,Pemberi Pinjam Wang
+2923,4214-01,Pemungut Bayaran
+2924,4214-02,Pemungut Bil
+2925,4214-03,Pemungut Derma
+2926,4214-04,Pemungut Hutang
+2927,4214-05,Pemungut Sewa
+2928,4214-06,Kerani Sewa
+2929,4214-07,Kerani Sewa Kenderaan Berat
+2930,4214-08,Kerani Sewa Kereta
+2933,4221-01,Perunding Pelancongan
+2934,4221-03,Kerani Agensi Pelancongan
+2935,4221-06,Kerani Pengeluaran Tiket Perjalanan
+2937,4222-01,Pembantu Penerangan Gred S19
+2938,4222-02,Kerani Janji Temu
+2939,4222-03,Penyelia Perkhidmatan Pelanggan
+2940,4222-04,Kerani Pusat Panggilan
+2941,4222-05,Pembantu Perkhidmatan Pelanggan
+2942,4222-06,Ejen Pusat Panggilan (Perkhidmatan Pelanggan)
+2943,4222-07,Kerani Pusat Perhubungan Informasi Pelanggan
+2945,4223-01,Operator Perkhidmatan Telekomunikasi
+2947,4224-01,Penyambut Tetamu
+2948,4224-02,Penyambut Tetamu Perubatan
+2949,4224-04,Penyambut Tetamu Telefon
+2950,4224-10,Penyambut Tetamu Hotel
+2951,4224-12,Pembantu Tempahan
+2952,4224-13,Penyelia Tempahan
+2953,4224-14,Concierge
+2954,4224-15,"Ketua, Concierge"
+2955,4224-17,Pembantu Perkhidmatan Tetamu
+2956,4224-18,Ejen Tempahan
+2958,4225-01,Pembantu Tadbir (Khidmat Pelanggan) Gred 21
+2959,4225-02,Pegawai Khidmat Pelanggan Gred N19
+2960,4225-03,Kerani Aduan Pelanggan
+2961,4225-05,Kerani Maklumat
+2962,4225-06,Pegawai Khidmat Pelanggan Gred 14
+2964,4226-01,Penemuduga Penyelidikan Pasaran
+2965,4226-02,Penemuduga Tinjauan
+2967,4229-01,Kerani Kemasukan Hospital
+2968,4229-03,Pakar Kelayakan
+2972,4311-01,Pembantu Tadbir (Perakaunan) Gred 21
+2973,4311-02,Pembantu Eksekutif (Perakaunan) Gred 3
+2974,4311-12,Kerani Lelong
+2975,4311-14,Kerani Audit
+2976,4311-15,Kerani Kawalan Kredit
+2977,4311-18,Kerani Bil
+2978,4311-19,Kerani Harta
+2979,4311-20,Kerani Kos
+2980,4311-22,Kerani Pengiraan Kos
+2981,4311-23,Kerani Tunai Pejabat
+2982,4311-24,Pembantu Kos
+2983,4311-25,Pembantu Akauntan Gred W19
+2984,4311-26,Pembantu Juruaudit Gred W19
+2985,4311-27,Pembantu Tadbir (Pengauditan) Gred 21
+2986,4311-28,Pembantu Eksekutif (Pengauditan) Gred 3
+2987,4311-29,Pembantu Kewangan
+2988,4311-31,Pembantu Tadbir Pengauditan
+2989,4311-32,Pembantu Juruteknik Audit Tenaga
+2990,4311-33,Penyimpan Akaun Gred 14
+2991,4311-34,Pembantu Pematuhan
+2993,4312-01,Pembantu Tadbir (Kewangan) Gred W19
+2994,4312-02,Pembantu Eksekutif (Kewangan) Gred 3
+2995,4312-03,Kerani Perangkaan
+2996,4312-04,Pembanci Data Sosial dan Ekonomi
+2997,4312-05,Pembanci Lapangan
+2998,4312-06,Pembanci Pendapat Umum
+2999,4312-07,Pembanci Penyelidikan Pasaran
+3000,4312-09,Kerani Tuntutan
+3001,4312-10,Pembantu Penyelia Insurans Penaja Jaminan
+3002,4312-12,Pembantu Penaja Jaminan Insurans
+3003,4312-13,Pembantu Polisi Insurans
+3004,4312-14,Pembantu Tuntutan Insurans
+3005,4312-15,Kerani Kewangan
+3006,4312-16,Kerani Aktuari
+3007,4312-17,Kerani Broker Saham
+3008,4312-18,Kerani Insurans
+3009,4312-19,Kerani Cukai
+3010,4312-20,Kerani Pelaburan
+3011,4312-21,Kerani Pelarasan
+3012,4312-22,Kerani Pembrokeran
+3013,4312-23,Kerani Pendaftaran Saham dan Stok
+3014,4312-24,Kerani Perkadaran
+3015,4312-25,Pembantu Broker
+3016,4312-26,Kerani Bon
+3017,4312-27,Kerani Cagaran
+3018,4312-28,Kerani Gadai Janji
+3019,4312-29,Kerani Rumah Penjelasan Perbankan
+3020,4312-30,Kerani Kewangan Gred K1
+3021,4312-31,Pembantu Perangkaan Gred E19
+3022,4312-33,Pembantu Aktuari
+3023,4312-34,Pembantu E-Dagang
+3024,4312-35,Pembantu Pajakan
+3026,4313-01,Kerani Gaji
+3029,4321-01,Kerani Bahan Mentah
+3030,4321-03,Kerani Gudang
+3031,4321-04,Kerani Penerimaan
+3032,4321-06,Kerani Stor
+3033,4321-18,Kerani Kawalan Makanan dan Minuman
+3034,4321-22,Kerani Timbangan
+3035,4321-25,Kerani Pemeriksa Barang
+3036,4321-30,Kerani Angkut Barang
+3037,4321-36,Kerani Import-Eksport
+3038,4321-39,Penyelenggara Stor Gred K1
+3039,4321-40,Jurumovan Gred K1
+3041,4322-01,Kerani Pengeluaran
+3042,4322-02,Kerani Kawalan Pengeluaran
+3043,4322-03,Kerani Operasi
+3044,4322-04,Kerani Ladang
+3045,4322-05,Kerani Kejuruteraan
+3046,4322-09,Kerani Pembelian Belian
+3047,4322-11,Kerani Perolehan
+3048,4322-12,Kerani Pengurusan Pesanan
+3049,4322-14,Kerani Penyelenggaraan
+3050,4322-17,Kerani Perancangan Bahan
+3051,4322-18,Kerani Pesanan Bahan
+3052,4322-20,Kerani Perkakas
+3053,4322-21,Kerani Perkhidmatan
+3054,4322-22,Kerani Tapak
+3055,4322-23,Kerani Loji Janakuasa
+3056,4322-24,Kerani Perancangan Pengeluaran
+3057,4322-25,Kerani Juruteknik
+3058,4322-26,Kerani Penyelenggara Kemudahan Prasarana
+3059,4322-28,Kerani Jaminan Kualiti
+3060,4322-29,Kerani Kawalan Kuantiti
+3061,4322-30,Kerani Jadual (Bahan)
+3062,4322-31,Pembantu Jaminan Mutu Gred K1
+3063,4322-32,Pembantu Jaminan Mutu
+3065,4323-01,Kerani Logistik
+3066,4323-02,Kerani Pengangkutan
+3067,4323-05,"Kerani Kawalan, Perkhidmatan Kereta api"
+3068,4323-08,Penjaga Yard Kereta Api
+3069,4323-09,"Inspektor, Perkhidmatan Pengangkutan Jalan"
+3070,4323-10,Inspektor Perkhidmatan Bas
+3071,4323-11,"Kerani Kawalan, Perkhidmatan Pengangkutan Jalan"
+3072,4323-13,"Kerani Penghantaran, Pengangkutan Jalan"
+3073,4323-15,Kerani Operasi Pengangkutan Udara
+3074,4323-21,Jurudermaga
+3075,4323-23,Pegawai Feri
+3076,4323-24,Pengawal Apungan
+3077,4323-25,"Kerani Kawalan, Perkhidmatan Pengangkutan Laut"
+3078,4323-26,"Kerani Penghantaran, Bot"
+3079,4323-27,"Kerani Penghantaran, Saluran Paip Gas"
+3080,4323-28,"Kerani Penghantaran, Saluran Paip Minyak"
+3081,4323-29,Koordinator Perkapalan
+3082,4323-31,Inspektor Perkeranian Perkhidmatan Pengangkutan Kereta Api
+3083,4323-32,Kerani Pengangkutan Barangan Kereta Api
+3084,4323-33,Pegawai Tuntutan Kereta Api
+3085,4323-34,Pengawal Perkeranian Perkhidmatan Kereta Api
+3086,4323-35,Pembantu Logistik
+3090,4411-01,Pembantu Tadbir (Perpustakaan) Gred 21
+3091,4411-02,Pembantu Eksekutif (Perpustakaan) Gred 3
+3092,4411-06,Pembantu Pustakawan Gred S19
+3093,4411-07,Pembantu Perpustakaan
+3095,4412-01,Posmen
+3096,4412-02,"Kerani, Mel Penghantaran"
+3097,4412-03,"Pembantu, Mel Penghantaran"
+3098,4412-04,Penghantar Proses
+3099,4412-05,Penghantar Saman
+3100,4412-06,Kerani Mel Pengasingan
+3101,4412-07,"Kerani Kawalan, Depot Mel"
+3102,4412-08,"Kerani Kawalan, Mel"
+3103,4412-09,"Kerani Kawalan, Perkhidmatan Pos"
+3104,4412-10,"Kerani, Mel"
+3105,4412-12,"Kerani, Senarai Mel"
+3107,4413-01,Kerani Pembacaan Pruf
+3108,4413-03,Kerani Penerbitan
+3109,4413-04,Kerani Pengekodan
+3110,4413-05,Pembantu Penerbitan Gred N19
+3112,4414-01,Penulis Petisyen
+3113,4414-02,Penulis Awam
+3114,4414-03,Jurutulis
+3116,4415-01,Kerani Pemfailan
+3117,4415-09,"Pembantu Dokumen, Pengilangan Makanan Halal"
+3118,4415-10,"Kerani Dokumen, Operasi Logistik Halal"
+3120,4416-01,Kerani Pekerjaan
+3121,4416-02,Kerani Hal Ehwal Am
+3122,4416-03,Kerani Personel
+3123,4416-05,Pembantu Personel
+3124,4416-06,Kerani Mesin Cetak Alamat
+3125,4416-07,Kerani Pendaftaran
+3126,4416-08,Kerani Pengelasan
+3127,4416-09,Kerani Probet
+3128,4416-10,Pembantu Sumber Manusia
+3129,4416-11,Pembantu Pembelajaran dan Pembangunan
+3131,4419-01,Pembantu Pakaian
+3132,4419-02,Kerani Keselamatan
+3133,4419-03,Pembantu Tadbir (Undang-Undang) Gred L19
+3134,4419-04,Pembantu Syariah Gred LS19
+3135,4419-05,Bentara Parlimen Gred N11
+3136,4419-06,Pembantu Operasi Gred N11
+3137,4419-07,Pembantu Hal Ehwal Islam Gred S19
+3138,4419-08,Pembantu Perhubungan Perusahaan Gred S19
+3139,4419-09,Pembantu Penilaian Gred W19
+3140,4419-10,Pembantu Pembangunan Masyarakat Gred S19
+3141,4419-11,Pembantu Penyelidik Sosial Gred N19
+3142,4419-12,Pembantu Antidadah Gred S19
+3143,4419-14,Pembantu Belia dan Sukan Gred S19
+3144,4419-15,Pembantu Tadbir (Penaksiran) Gred 21
+3145,4419-16,Pembantu Pegawai Cukai Penganggar
+3146,4419-17,Pembantu Pegawai Eksais
+3147,4419-20,Pembantu Operasi Gred 9
+3148,4419-21,Pembantu Operasi
+3153,5111-06,Pramugara/Pramugari
+3154,5111-09,Kru Penerbangan
+3155,5111-12,Kru Bas Bergerak Gred K3
+3156,5111-13,Kru Belon Udara Panas
+3157,5111-14,Penyedia Kerja Perjalanan
+3159,5112-02,Inspektor Tiket
+3160,5112-06,Pengawal Kereta api Penumpang
+3161,5112-07,Pengawal Landasan
+3162,5112-08,Konduktor Pengangkutan
+3164,5113-01,Pemandu Pelancong
+3165,5113-06,Pengiring Lawatan
+3168,5121-01,Tukang Masak
+3169,5121-02,"Tukang Masak, Perkhidmatan Hotel dan Katering"
+3170,5121-03,"Tukang Masak, Perkhidmatan Persendirian"
+3171,5121-04,"Tukang Masak, Pengetinan dan Pengawetan Makanan"
+3172,5121-05,Pembantu Barbekiu
+3173,5121-06,Pembantu Jurumasak
+3174,5121-07,Pembantu Tukang Masak
+3175,5121-08,Tukang Masak Kapal
+3176,5121-09,Tukang Masak Gred K1
+3177,5121-10,Pembantu Kulinari
+3178,5121-11,Pembantu Penyediaan Makanan Gred N19
+3179,5121-12,Ketua Tukang Masak
+3182,5131-03,Pelayan Bankuet
+3183,5131-04,Penyelia Makanan dan Minuman
+3184,5131-05,Penyelia Outlet
+3185,5131-06,Penyelia Restoran
+3186,5131-08,"Pekerja Makanan dan Minuman, Perkhidmatan Bilik"
+3187,5131-10,Barista
+3188,5131-11,Pramusaji Gred K3
+3190,5132-01,Pelayan Bar
+3191,5132-02,Pembantu Pelayan Bar
+3194,5141-02,Pendandan Rambut
+3195,5141-03,Tukang Gunting Rambut
+3197,5142-01,Jurusolek Gred B19
+3198,5142-02,Jurusolek
+3199,5142-04,Jurukecantikan Tangan
+3200,5142-05,Jurukecantikan Kaki dan Kuku
+3201,5142-08,Juruterapi Kecantikan dan Kesihatan
+3202,5142-09,Juruterapi Spa
+3203,5142-10,Perunding Pelangsingan Badan
+3204,5142-11,Jurusolek Gred B21
+3205,5142-12,Jurusolek Gred B25
+3206,5142-13,Jurusolek Gred B27
+3207,5142-14,Konsultan Kecantikan
+3210,5151-01,Penyelia Bankuet Hotel dan Penginapan
+3211,5151-02,Penyelia Tingkat Hotel dan Penginapan
+3212,5151-03,Penyelia Pengemasan
+3213,5151-11,Pelayan Bilik
+3215,5152-02,Pelayan Besar
+3216,5152-05,Pembantu Linen
+3217,5152-06,Jurukemas
+3219,5153-01,Penyelia Asrama Gred N19
+3220,5153-02,Penjaga Bangunan
+3221,5153-06,Penjaga Gereja
+3222,5153-07,Siak/Noja
+3223,5153-09,Janitor
+3224,5153-10,Penyelia Kem
+3225,5153-11,Pembantu Tadbir Asrama
+3226,5153-12,Warden
+3229,5161-01,Ahli Nujum
+3230,5161-03,Tukang Tilik
+3232,5162-01,Dang Pewara
+3233,5162-02,Juruiring
+3235,5163-01,Atendan Rumah Mayat
+3236,5163-02,Pekerja Urusan Pengebumian
+3237,5163-04,Kusangren (Peratap Upahan)
+3238,5163-06,Penggali Kubur
+3240,5164-01,Penjaga Haiwan
+3241,5164-02,"Penjaga Di Zoo, Taman Burung dan Akuatik"
+3242,5164-03,Penjaga Zoo
+3243,5164-04,Pekerja Veterinar
+3245,5165-01,Pengajar Pemanduan
+3247,5169-01,Penganjur Kelab
+3248,5169-02,Pegawai Perhubungan Pelanggan
+3249,5169-03,Kru Acara
+3253,5211-04,Jurujual Kaunter Promoter
+3254,5211-09,Vendor Gerai/Pasar
+3255,5211-13,Jurujual (Gerai/Promoter) Gred K2
+3257,5212-01,Penjaja (Makanan)
+3258,5212-02,Penjual Makanan Tepi Jalan
+3261,5221-01,Penjaga Kedai
+3262,5221-02,Pekedai Runcit
+3263,5221-03,Ejen Akhbar
+3265,5222-01,Penyelia Kedai
+3266,5222-02,Penyelia Jualan
+3267,5222-03,Penyelia Pasar Raya
+3268,5222-04,Penyelia Pembayaran
+3269,5222-05,Penyelia (Gerai/Kiosk) Gred K1
+3271,5223-01,Pembantu Jualan
+3272,5223-02,Pembantu Kedai
+3273,5223-08,Kerani Pentadbiran Jualan
+3274,5223-14,Pembantu Runcit
+3277,5231-01,Juruwang
+3278,5231-12,Kerani Pengeluaran Tiket (Kecuali Perjalanan)
+3279,5231-19,Juruwang Gred K2
+3282,5241-01,Model Fesyen
+3283,5241-03,Model Artis
+3285,5242-01,Penunjuk Cara
+3286,5242-02,Promoter Jualan
+3287,5242-03,Pedagang Jualan
+3288,5242-04,Pempengaruh Media Sosial
+3290,5243-01,Jurujual Jualan Langsung
+3291,5243-02,Jurujual Pintu-ke-Pintu
+3293,5244-05,Telemarketer
+3294,5244-06,Jurujual Pusat Perhubungan
+3296,5245-01,Atendan Stesen Petrol
+3298,5246-01,Atendan Kaunter Makanan
+3300,5249-01,Jurujual Sewa
+3304,5311-01,Pekerja Asuhan Kanak-Kanak
+3306,5312-01,Pembantu Pengurusan Murid Gred N19
+3307,5312-06,Pekerja Tadika
+3308,5312-07,Pembantu Pegawai Latihan Gred E19
+3309,5312-08,Pembantu Pegawai Latihan Vokasional DV19
+3310,5312-10,Pembantu Pegawai Latihan Vokasional DV21
+3313,5321-01,Pembantu Perawatan Kesihatan Gred U11
+3314,5321-02,Pembantu Kesihatan Awam Gred U19
+3315,5321-03,Pembantu Perawatan
+3316,5321-06,Pembantu Pergigian
+3317,5321-08,Pembantu Kelahiran (Klinik atau Hospital)
+3318,5321-10,Pembantu Penjagaan Pesakit
+3319,5321-11,Pembantu Psikiatri
+3320,5321-12,Pembantu Peti Kecemasan
+3321,5321-13,Pembantu Pengimbasan Perubatan
+3322,5321-14,Phlebotomist
+3323,5321-15,Pembantu Steril
+3325,5322-05,Pembantu Urus Rumah Gred K3
+3326,5322-09,"Pembantu, Penjagaan Orang Tua (Rumah)"
+3327,5322-10,Pekerja Penjagaan (Rumah)
+3328,5322-12,"Pembantu, Penjagaan Bayi (Rumah)"
+3333,5411-01,Pegawai Bomba Gred KB19
+3334,5411-02,Pemadam Kebakaran
+3335,5411-03,Pegawai Pencegahan Kebakaran
+3337,5412-01,Pegawai Rendah Polis dan Konstabel Sokongan Gred YT1
+3338,5412-02,Pegawai Rendah dan Konstabel Orang Asli Gred YP1
+3339,5412-03,Sukarelawan Polis
+3340,5412-04,Peronda Polis
+3341,5412-08,Koperal Polis
+3342,5412-11,Pegawai Rendah Polis dan Konstabel Gred YA1
+3344,5413-01,Pegawai Penjara Gred KA19
+3346,5414-01,Pembantu Keselamatan Gred KP19
+3347,5414-02,Pengawal Keselamatan Gred KP11
+3348,5414-03,Pembantu Tadbir (Keselamatan) Gred 21
+3349,5414-04,Pembantu Am (Pengawal Keselamatan) Gred 1
+3350,5414-05,Pembantu Am (Keselamatan) Gred 1
+3351,5414-06,Pengawal Aktiviti Perjudian
+3352,5414-07,Pengawal Peribadi
+3353,5414-08,Pengawal Jabatan Gedung Industri
+3354,5414-09,Pengawal Keselamatan Persendirian
+3355,5414-10,Pengawal
+3356,5414-17,Penjaga Pintu
+3357,5414-18,Ketua Pengawal Keselamatan
+3358,5414-19,Pasukan Sukarelawan Malaysia (RELA)
+3359,5414-20,Jaga Gred K3
+3361,5415-01,Pegawai Imigresen Gred KP19
+3362,5415-02,Pembantu Penguasa Kastam Gred WK19
+3364,5419-01,Pegawai Lain-Lain Pangkat Penguat kuasa Maritim Gred T1
+3365,5419-02,Warden Permainan
+3366,5419-05,Penyiasat Perindustrian
+3367,5419-06,Penyelia Rekreasi
+3368,5419-07,Atendan Kolam Renang
+3369,5419-08,Penyelamat
+3370,5419-09,Juruselam Penyelamat
+3371,5419-11,Warden Lalu lintas
+3372,5419-12,Peronda Lebuhraya
+3373,5419-13,Pengawal Trafik
+3374,5419-14,Warden Kawalan Haiwan
+3375,5419-15,Peronda Pantai
+3376,5419-16,Pengawal Lintasan Jalan
+3377,5419-17,Detektif Pasar Raya
+3378,5419-18,Pembantu Penyiasatan KR17
+3379,5419-19,Pengawas Pemulihan N1
+3380,5419-20,Pembantu Pertahanan Awam Gred KP19
+3381,5419-21,Pemeriksa Cap Jari Gred N19
+3382,5419-22,Pembantu Pegawai Faedah Sosial
+3383,5419-23,Pembantu Penguatkuasa Gred KP19
+3384,5419-24,Pembantu Eksekutif (Penguatkuasaan) Gred L11
+3385,5419-25,Pembantu Pegawai Pelesenan
+3386,5419-29,Pembantu Pendaftaran Gred KP19
+3387,5419-30,Pembantu Hidupan Liar Gred G11
+3392,6111-01,Pekebun Tanaman Ladang
+3393,6111-11,Pesawah Padi
+3394,6111-12,Konduktor Lapangan dan Kilang Getah
+3395,6111-13,Konduktor Lapangan Kelapa Sawit
+3396,6111-14,Inspektor Kualiti Ladang
+3397,6111-15,Mandor Ladang
+3398,6111-17,Penggred Kelapa Sawit
+3399,6111-18,Penyelia Ladang
+3400,6111-19,Pekerja Kemahiran Pertanian (Tanaman ladang)
+3401,6111-23,Pekebun buah-buahan
+3402,6111-27,Pekebun Tanaman Berserat
+3403,6111-32,Pekebun Buah-buahan Tropika
+3405,6112-01,Pekebun Pokok Renek
+3407,6113-01,Pekebun
+3408,6113-06,Penggaya Bonsai
+3409,6113-07,Pekebun Landskap
+3411,6114-01,Pekebun Tanaman Campuran
+3413,6115-01,Pekebun Sayur-Sayuran
+3416,6121-01,Pembiak baka Haiwan Ternakan
+3417,6121-03,Pekerja Kemahiran Ladang Ternakan Campuran
+3418,6121-04,Pengeluar Haiwan Tenusu
+3419,6121-09,Penternak
+3421,6122-03,Penternak Poltri
+3422,6122-05,Pembiak baka Poltri
+3423,6122-13,Operator Inkubator (Ladang Poltri)
+3424,6122-14,"Penentu Jantina, Poltri"
+3426,6123-01,Pemelihara Lebah
+3427,6123-02,Penternak Lebah Madu
+3428,6123-06,Penternak Ulat Sutera
+3430,6129-01,Pemvaksin Haiwan
+3431,6129-02,Pekerja Inkubator
+3432,6129-03,Penternak Ular
+3433,6129-04,Penternak Buaya
+3434,6129-05,Penternak Lintah
+3435,6129-06,Penternak Cacing
+3436,6129-07,Pembiak baka Reptilia
+3437,6129-08,Pembiak baka Siput
+3440,6131-01,Peladang Hasil Campuran (Tanaman dan Penternakan)
+3441,6131-02,Penternak (Ternakan Campuran)
+3445,6211-01,Pengawas Hutan Gred G19
+3446,6211-02,Pembalak
+3447,6211-04,Juruarah Balak
+3448,6211-05,"Pemanjat Pokok Tinggi, Pembalakan"
+3449,6211-06,Pembalak Bawah Air
+3450,6211-09,Penggred Balak
+3451,6211-11,Juruisyarat Pembalakan
+3452,6211-12,Operator Yard
+3453,6211-13,Operator Pencengkam Balak
+3454,6211-14,Pekerja Kemahiran Perhutanan
+3455,6211-15,Pembuat Rakit Balak
+3456,6211-16,Pemeriksa Balak
+3457,6211-17,Pengawas Hutan
+3458,6211-19,Pengupas Balak
+3459,6211-20,Penyelia Pembalakan
+3460,6211-21,Pembakar Arang
+3461,6211-22,Renjer Hutan Gred G19
+3462,6211-23,Renjer Hutan
+3465,6221-01,Penternak Ternakan Air
+3466,6221-02,Penternak Perikanan
+3467,6221-03,Pemelihara Mutiara
+3468,6221-04,Pekerja Kemahiran Ladang Ikan
+3469,6221-05,Penanam Algae
+3470,6221-06,Pekerja Kemahiran Ladang Makanan Laut
+3471,6221-07,Penternak Ikan Hiasan
+3472,6221-08,Penternak Ternakan Air Bercengkerang
+3473,6221-09,Penternak Gamat
+3474,6221-10,Penternak Penyu
+3475,6221-11,Pengeluar Produk Hidupan Laut
+3476,6221-12,Penternak Akuakultur
+3477,6221-13,Penternak Makanan Laut
+3478,6221-14,Penternak Tiram
+3479,6221-15,Pembiak Mutiara
+3480,6221-16,Pengeluar Keropok
+3481,6221-17,Pengeluar Otak-Otak
+3482,6221-18,Pengeluar Bebola Ikan
+3483,6221-19,Pekerja Penetasan Ikan
+3484,6221-20,Pembiak Ikan
+3485,6221-21,Pengeluar Ikan Masin
+3487,6222-01,Pekerja Penangkapan Ikan Laut atau Air Tawar
+3488,6222-02,"Pekerja Perikanan, Pedalaman"
+3489,6222-03,"Pekerja Perikanan, Pantai"
+3490,6222-04,Penyelam Mutiara
+3491,6222-05,Penyelam Tiram
+3492,6222-06,Awak-Awak
+3494,6223-01,Pekerja Perikanan Laut Dalam
+3496,6224-01,Pemburu
+3500,6311-01,Penanam Tanaman Sara Diri
+3503,6321-01,Peladang Ternakan Sara Diri
+3506,6331-01,Peladang Tanaman dan Ternakan Campuran Sara Diri
+3507,6331-02,"Penternak, Campuran dan Sara Diri"
+3508,6331-03,"Pekerja Ladang, Kemahiran (Perladangan Sara Diri)"
+3511,6341-06,Pemungut Buah-Buahan Herba dan Sayur-Sayuran Hutan
+3512,6341-13,"Pengutip, Pemburu"
+3677,7111-01,Pembina Rumah
+3678,7111-02,Pekerja Penyelenggaraan Bangunan
+3679,7111-03,Orang Yang Kompeten (OYK) - Pengendali Perancah
+3680,7111-04,Pekerja Kerangka Bangunan
+3681,7111-05,Penegak
+3682,7111-06,Barbender
+3683,7111-07,Pekerja Binaan
+3684,7111-08,Pemasang Pracetak Konkrit IBS (Sistem Binaan Berindustri)
+3685,7111-09,Pemasang Panel Lightweight IBS (Sistem Binaan Berindustri)
+3687,7112-01,Penerap Bata
+3688,7112-02,Penerap Bata Tanah
+3689,7112-03,Pengatur Bebendul Jalan
+3690,7112-05,Penyusun Batu
+3691,7112-06,Penerap Bata Blok
+3692,7112-07,Penerap Bata Tahan Panas
+3693,7112-08,Pembina Cerobong Asap
+3694,7112-09,"Penerap Bata, Pembinaan"
+3695,7112-10,Tukang Batu Pembinaan
+3697,7113-01,Pemecah Batu
+3698,7113-04,Penggergaji Batu
+3699,7113-05,Penggred Batu
+3700,7113-07,Pencanai Batu
+3701,7113-09,Penggilap Batu
+3702,7113-10,Pemotong Granit
+3703,7113-11,Penyiap Batu
+3704,7113-12,Tukang Batu
+3705,7113-13,Pemecah Pasir
+3706,7113-14,Pengemas Batu
+3707,7113-15,Operator Mesin Pelarik Batu
+3708,7113-16,Pemotong dan Pengemas Batu
+3710,7114-01,Pekerja Konkrit Bertetulang
+3711,7114-02,Pekerja Penutup Acuan Konkrit
+3712,7114-04,Pekerja Besi Bertetulang
+3713,7114-05,Pelentur Keluli
+3714,7114-06,Pengemas Simen
+3715,7114-07,Pekerja Simen
+3716,7114-08,"Pekerja Simen, Telaga Petroleum dan Gas"
+3717,7114-09,Pemasang Keluli
+3719,7115-01,Tukang Kayu
+3720,7115-02,Tukang Kayu Pembinaan
+3721,7115-03,Tukang Tanggam Pembinaan
+3722,7115-04,Tukang Tanggam Kapal
+3723,7115-05,Pembina Bot Kayu
+3724,7115-06,Serimala Kayu
+3725,7115-07,Tukang Kayu Kapal
+3726,7115-08,Tukang Tanggam Pesawat
+3727,7115-09,Tukang Kayu Pentas dan Studio
+3728,7115-10,Tukang Kayu Meja
+3729,7115-11,Tukang Ukir Kayu
+3730,7115-14,Pembelah Kayu
+3732,7119-01,Tukang Pasang Longkang
+3733,7119-02,Pekerja Peruntuhan
+3734,7119-03,Pemasang Papan Iklan
+3735,7119-04,Tukang Menara
+3738,7121-01,Pemasang Bumbung
+3739,7121-07,Pemasang Atap Pelindung
+3740,7121-08,Pemasang Siling
+3741,7121-09,"Pemasang Bumbung, Rencaman"
+3743,7122-01,Pemasang Jubin
+3744,7122-08,Penggilap Marmar
+3745,7122-09,Tukang Pasang Permaidani
+3747,7123-01,Tukang Plaster
+3749,7124-01,Tukang Penebat
+3750,7124-02,"Tukang Penebat, Bangunan"
+3751,7124-06,"Tukang Penebat, Peralatan Penyejukan"
+3752,7124-08,"Tukang Penebat, Kalis Bunyi"
+3753,7124-09,Pemasang Penebat
+3755,7125-01,Tukang Kaca
+3756,7125-03,"Tukang Kaca, Kenderaan"
+3758,7126-01,Tukang Paip
+3759,7126-02,Jurugegas Paip
+3760,7126-03,Jurugegas Tiub Paip Pesawat
+3761,7126-04,"Jurugegas Paip, Bekalan Air"
+3762,7126-05,"Jurugegas Paip, Kumbahan"
+3763,7126-06,"Jurugegas Paip, Marin"
+3764,7126-07,"Jurugegas Paip, Pengalihudaran"
+3765,7126-08,Penggali Telaga
+3766,7126-09,Jurugegas
+3767,7126-10,Tukang Pasang Paip
+3768,7126-11,Tukang Boring Air
+3770,7127-01,Mekanik Kelengkapan Penyejukan
+3771,7127-02,Mekanik Kelengkapan Penyaman Udara
+3774,7131-01,Tukang Cat
+3775,7131-02,"Tukang Cat, Kaca"
+3776,7131-03,"Tukang Cat, Seramik"
+3777,7131-05,"Tukang Cat, Struktur Keluli"
+3778,7131-06,Pemasang Kertas Dinding
+3779,7131-08,"Tukang Cat, Logam"
+3780,7131-09,Pengecat Papan Tanda
+3781,7131-10,"Tukang Cat, Badan Kapal"
+3782,7131-11,Pengecat Salutan Serbuk
+3784,7132-01,Penyembur Cat
+3785,7132-04,Penyembur Varnis
+3786,7132-06,"Penyembur Varnis, Logam"
+3787,7132-07,"Penyembur Varnis, Kayu"
+3788,7132-08,"Penyembur Varnis, Rotan"
+3790,7133-01,Pencuci Luar Bangunan
+3791,7133-02,Pembagas Pasir (luar bangunan)
+3792,7133-03,Penyapu Cerobong Asap
+3793,7133-04,Pekerja Penyahtinjaan
+3797,7211-01,Pembuat Acuan
+3798,7211-02,Pembaik Acuan Foundri
+3799,7211-03,Pembuat Acuan Lantai Foundri
+3800,7211-04,Pembuat Acuan Logam
+3801,7211-05,Pembuat Acuan Lubang Foundri
+3802,7211-08,Pemeriksa Teras Foundri
+3803,7211-09,Tukang Acuan
+3804,7211-10,Jurufoundri
+3806,7212-01,Jurukimpal
+3807,7212-02,Pemotong Besi
+3808,7212-03,Fomen Pengimpal
+3809,7212-04,Tukang Penunu Plumbum
+3810,7212-05,Jurukimpal Arka Tungsten Gas
+3811,7212-06,Jurukimpal Bawah Laut
+3812,7212-07,Tukang Loyang
+3813,7212-09,Jurukimpal Paip Gas
+3814,7212-10,Pengimpal Fabrikator
+3816,7213-01,Pekerja Kepingan Logam
+3817,7213-02,Tukang Tembaga
+3818,7213-03,Pembuat Dandang
+3819,7213-04,Tukang Tebuk
+3820,7213-05,Pekerja Kepingan Logam Kenderaan
+3821,7213-06,Pekerja Kepingan Logam Perhiasan
+3822,7213-07,Pekerja Kepingan Logam Pesawat Udara
+3823,7213-08,Pengetuk Panel Kenderaan
+3824,7213-09,Pengetuk Panel Pesawat
+3825,7213-10,Tukang Tanda Kepingan Logam
+3826,7213-11,Tukang Pateri
+3827,7213-12,Pemateri Logam
+3829,7214-01,Pekerja Keluli Struktur
+3830,7214-02,Penegak Kerangka Keluli
+3831,7214-03,Pembuat Plat Kapal
+3832,7214-04,Pekerja Rivet (Pasak)
+3833,7214-05,Tukang Tanda Kerangka Logam
+3834,7214-06,Serimala Kapal Logam
+3835,7214-08,Penyedia Kerangka Logam
+3836,7214-09,Jurugegas Badan Kapal
+3838,7215-01,Jurutali
+3839,7215-02,Jurutali Peralatan Angkat
+3840,7215-04,Jurutali Pembalakan
+3841,7215-05,Jurutali Kapal
+3842,7215-06,Jurutali Penggerudian Telaga Petroleum dan Gas
+3843,7215-07,Penyambung Tali Kabel
+3844,7215-08,Jurutali Pesawat Udara
+3845,7215-09,Jurutali Kabel Kereta api
+3848,7221-01,Tukang Besi
+3849,7221-02,Tukang Tukul
+3850,7221-03,Pekerja Drop-Hammer
+3851,7221-04,Pekerja Penempaan Logam
+3852,7221-05,Tukang Perkakas
+3854,7222-01,Pembuat Perkakas Acuan
+3855,7222-05,Tukang Anak Kunci
+3856,7222-06,Tukang Kunci
+3857,7222-07,Tukang Senjata Api
+3858,7222-08,Jurugegas Penyelenggaraan Peralatan Statik
+3860,7223-01,Pelaras Mesin Kerja Logam
+3861,7223-02,Pengendali Mesin Kerja Logam
+3862,7223-03,Pengeset Mesin Kerja Logam
+3863,7223-04,Pengendali Mesin Boring
+3864,7223-05,Pengeset Alatan Mesin
+3865,7223-06,Pengendali Alatan Mesin
+3866,7223-07,Pengendali Pengeset Alatan Mesin
+3868,7224-01,Pencanai Logam
+3869,7224-03,Pengasah Alat Mesin
+3870,7224-04,Pembaik Gergaji
+3871,7224-08,Pencanai Aci Engkol
+3872,7224-09,Penggilap Logam
+3873,7224-10,Pengemas Logam
+3874,7224-11,Pencanai Ulir
+3875,7224-12,Pengasah Pisau
+3876,7224-13,Pencanai Alatan
+3879,7231-01,Mekanik
+3880,7231-02,Mekanik Jentolak
+3881,7231-03,Mekanik Motosikal
+3882,7231-04,Mekanik Kenderaan Bermotor
+3883,7231-05,Mekanik Bengkel
+3884,7231-06,Mekanik Garaj
+3885,7231-07,Pekerja Bengkel
+3886,7231-08,Fomen Kenderaan
+3887,7231-09,Mekanik Automotif
+3888,7231-10,Pembuat Bingkai Badan Kenderaan
+3889,7231-11,Pemukul Panel Badan Kenderaan
+3890,7231-12,Pemasang Sealant
+3891,7231-13,Pemerinci Kereta
+3892,7231-14,Mekanik Automotif Sistem Perkhidmatan Brek
+3893,7231-15,Jurugegas Diesel (pengangkutan jalan)
+3894,7231-16,Jurugegas Enjin (kereta motor)
+3895,7231-17,Mekanik Sistem Enjin dan Minyak Kenderaan Bermotor
+3896,7231-18,Mekanik Mekatronik Kenderaan Bermotor
+3897,7231-19,Pembaik Kenderaan Bermotor
+3898,7231-20,Mekanik Enjil Kecil
+3899,7231-21,Ketua Mekanik
+3900,7231-22,Mekanik Penyelenggaraan Kereta Elektrik
+3901,7231-23,Mekanik Penyelenggaraan Kenderaan Gas Asli
+3902,7231-24,Mekanik Penyelenggaraan Kenderaan Bahan Api
+3903,7231-25,Kru Pit
+3905,7232-01,Mekanik Enjin Pesawat
+3906,7232-02,Jurugegas Enjin Pesawat
+3907,7232-03,Mekanik Perkhidmatan Pesawat
+3908,7232-04,Mekanik Helikopter
+3909,7232-05,Mekanik Penyelenggaraan Pesawat (Kerangka Pesawat Udara)
+3910,7232-07,Mekanik Pesawat
+3911,7232-08,Mekanik Loji Kuasa dan Kerangka Pesawat Udara
+3912,7232-09,Mekanik Kerangka Pesawat Udara
+3913,7232-10,Mekanik Enjin Jet
+3914,7232-11,Mekanik Sistem Pneudraulik (Pesawat)
+3915,7232-12,Mekanik Loji Kuasa (Pesawat)
+3916,7232-13,Mekanik Komponen Enjin Roket
+3918,7233-01,Mekanik Jentera
+3919,7233-02,Mekanik Jentera Perlombongan
+3920,7233-03,Mekanik Alat Mesin
+3921,7233-04,Mekanik Jentera Perindustrian
+3922,7233-05,Mekanik Penyelenggaraan Loji
+3923,7233-06,Pekerja Sapu Minyak dan Gris
+3924,7233-07,Mekanik Jentera Pembinaan
+3925,7233-09,Pembaik Jentera Ladang
+3926,7233-10,Jurugegas Jentera Perlombongan
+3927,7233-12,Jurugegas Enjin Pegun
+3928,7233-13,Pembaik Enjin Pegun
+3929,7233-14,Jurumesin Industri
+3930,7233-15,Jurumesin CNC (Kawalan Berangka Komputer)
+3931,7233-16,Penuras Jentera
+3933,7234-03,Pembaik Kincir
+3934,7234-04,Mekanik Basikal
+3935,7234-05,Pembaik Kereta Bayi
+3936,7234-06,Pembaik Kerusi Roda
+3938,7239-01,Mekanik Enjin Marin
+3939,7239-02,Mekanik Kapal
+3940,7239-03,Jurugegas Enjin Kereta api
+3941,7239-04,Pembaik Enjin Kereta api
+3942,7239-05,Pembantu Pemeriksa Kilang dan Jentera Gred J19
+3943,7239-06,Pembantu Mekanik
+3947,7311-01,Pembuat Instrumen Jitu
+3948,7311-02,Pembuat Instrumen Pembedahan
+3949,7311-03,Pembuat Instrumen Saintifik
+3950,7311-04,Pembuat Peralatan Fotografi
+3951,7311-05,Pembuat Prostesis Pergigian
+3952,7311-06,Pembuat Peralatan Ortopedik
+3953,7311-07,Pembuat Jam
+3954,7311-08,Pembuat Instrumen Optik
+3955,7311-09,Pembuat Alat Imbangan
+3956,7311-10,Pembuat Barometer
+3957,7311-11,Pembuat Instrumen Meteorologi
+3958,7311-12,Pembuat Instrumen Nautika
+3959,7311-13,Pembaik Prostesis Pergigian
+3960,7311-14,Pembaik Peralatan Ortopedik
+3961,7311-15,Pembaik Jam
+3962,7311-16,Pembaik Instrumen Optik
+3963,7311-17,Pembaik Alat Imbangan
+3965,7312-01,Pembuat Peralatan Muzik
+3966,7312-02,Penala Peralatan Muzik
+3967,7312-04,Pembuat Piano
+3968,7312-05,Pembuat Dram
+3969,7312-07,Pelarik Peralatan Muzik
+3971,7313-01,Tukang Barang Kemas
+3972,7313-02,Tukang Emas
+3973,7313-03,Tukang Perak
+3974,7313-04,Tukang Pewter
+3975,7313-05,Pembaik Barang Kemas
+3976,7313-06,Penggred Emas
+3977,7313-07,Pemotong Permata
+3978,7313-08,Pengatur Permata
+3979,7313-09,Penggelek Logam Berharga
+3980,7313-10,Pengukir Barang Kemas
+3981,7313-12,Penyadur Enamel Barang Kemas
+3983,7314-01,Tukang Tembikar
+3984,7314-02,Penekan Acuan Bata dan Jubin
+3985,7314-04,Penuang Tembikar dan Porselin
+3986,7314-06,Pelempar Alin Tembikar dan Porselin
+3987,7314-07,Pembuat Acuan Tembikar dan Porselin
+3988,7314-09,Pengendali Mesin Jig Tembikar dan Porselin
+3990,7315-01,Pembengkok Kaca
+3991,7315-02,Peniup Kaca
+3992,7315-03,Pemotong Kaca
+3993,7315-04,Pemotong Kaca Optik
+3994,7315-05,Penggilap Kaca
+3995,7315-06,Pencanai Kaca
+3996,7315-08,Pengemas Kaca
+3997,7315-09,Pembikin Kerangka Kaca
+3999,7316-01,Penggores
+4000,7316-02,Pengukir
+4001,7316-03,Pembagas Pasir Kaca
+4002,7316-04,Pencelup Seramik
+4003,7316-05,"Penyadur Enamel, Kaca"
+4004,7316-06,"Penyadur Perak, Cermin"
+4005,7316-07,Pembuat Alat Elektrotaip
+4006,7316-08,Pembuat Alat Stereotaip
+4007,7316-09,"Penghala, Plat Pencetak"
+4008,7316-10,Pelukis Hiasan
+4009,7316-11,Penulis Papan Tanda
+4010,7316-12,Pengukir Kaca
+4012,7317-01,Penganyam Tikar
+4013,7317-02,"Pekerja Kraftangan, Barangan Kayu"
+4014,7317-03,Pembuat Bakul
+4015,7317-04,Pembuat Penyapu
+4016,7317-05,"Pekerja Kraftangan, Tenunan Buluh"
+4017,7317-06,"Pekerja Kraftangan, Barangan Batu"
+4018,7317-07,Pembuat Berus
+4019,7317-08,Pembuat Perabot Rotan
+4020,7317-09,Pembuat Anyaman Rotan
+4021,7317-10,Pengajar Pemintal
+4023,7318-01,Penganyam Songket
+4024,7318-02,Pencanting Batik
+4025,7318-03,Pembuat Barangan Kulit
+4026,7318-04,"Pekerja Kraftangan, Karpet"
+4027,7318-05,"Pekerja Kraftangan, Barangan Kulit"
+4028,7318-06,"Pekerja Kraftangan, Tekstil"
+4029,7318-07,Penyikat Gentian Tekstil
+4030,7318-08,Perayau Gentian Tekstil
+4031,7318-09,Perajut
+4032,7318-10,Pemutar Benang dan Yarn
+4033,7318-11,Penenun Karpet
+4035,7319-01,Pembuat Lencana
+4036,7319-02,Pekerja Tukangan
+4037,7319-03,Pembuat Mainan Logam
+4038,7319-04,Pembuat Aksesori
+4039,7319-05,Pekerja Kraftangan
+4042,7321-01,Pengatur Huruf
+4043,7321-03,Pengatur Taip
+4044,7321-04,Pekerja Kelengkapan Penerbitan Desktop
+4045,7321-05,Pekerja Penekan Garisan
+4046,7321-06,Pekerja Talian Rentas
+4047,7321-07,Pembuat Skrin
+4048,7321-08,Pekerja Pra-Penekan
+4049,7321-09,Pembuat Plat (Pencetakan)
+4051,7322-01,Pencetak
+4052,7322-02,Pencetak Tekstil
+4053,7322-03,Pencetak Blok
+4054,7322-04,Operator Penekan Pencetakan Timbul
+4055,7322-05,Penyurih Corak Tekstil
+4056,7322-06,Operator Penekan Digital
+4057,7322-07,Pengendali Feeder (Pencetakan)
+4058,7322-08,Operator Penekan Flexographic
+4059,7322-09,Operator Penekan Gravure
+4060,7322-10,Pencetak Skrin
+4061,7322-11,Operator Penekan Pencetakan Skrin
+4062,7322-12,Operator Penekan Web
+4063,7322-13,"Operator Mesin, Penekan Cetak Silinder"
+4064,7322-14,"Operator Mesin, Penekan Cetak Ofset"
+4065,7322-15,"Operator Mesin, Penekan Cetak Putar"
+4066,7322-16,"Operator Mesin, Penekan Cetak Rotogravure"
+4067,7322-17,"Operator Mesin, Penekan Cetak Litografi Langsung"
+4068,7322-18,"Operator Mesin, Penekan Cetak Kertas Dinding"
+4069,7322-19,Pencetak Kertas Dinding
+4070,7322-20,Operator Pencetakan
+4071,7322-21,Pembantu Pencetakan
+4073,7323-02,Pemotong Kertas
+4074,7323-03,Pelekap Peta dan Carta
+4075,7323-04,Pencetak Timbul Buku
+4076,7323-05,Pekerja Kemasan Akhir Buku
+4077,7323-06,"Operator, Collator"
+4078,7323-08,Operator Foil Stamp
+4079,7323-09,Operator Folder
+4080,7323-10,Operator Pelbagai Jilid
+4081,7323-12,Operator Saddle Stitch
+4082,7323-13,"Operator Mesin, Penjilidan Buku"
+4083,7323-14,"Operator Mesin, Ukir Timbul Buku"
+4085,7324-01,Pengukir Pencetakan Plat Logam
+4086,7324-02,Penggores Pencetakan Plat Logam
+4087,7324-03,Pengukir Pencetakan Batu Litografi
+4088,7324-04,Pengukir Foto
+4089,7324-05,Pekerja Bilik Gelap
+4090,7324-06,Pencuci Filem Warna dan Hitam Putih
+4091,7324-07,Pencuci Filem X-Ray
+4095,7411-01,Juruelektrik Bangunan
+4096,7411-02,Juruelektrik Pembinaan
+4097,7411-03,Juruelektrik
+4099,7412-01,Penjaga Jentera Elektrik Gred J19
+4100,7412-02,Penjaga Jentera Elektrik Gred 11
+4101,7412-03,Penjaga Jentera Sekatan Voltan Tinggi
+4102,7412-04,Jurugegas Elektrik
+4103,7412-06,Pendawai
+4104,7412-07,Pembaik Pulih Elektrik Peralatan Rumah
+4105,7412-09,Fomen Penyelenggaraan
+4106,7412-10,Penjana Generator Elektrik
+4107,7412-11,Jurugegas Elektrik Jentera Pejabat
+4108,7412-12,Jurugegas Elektrik Motor dan Dinamo
+4109,7412-13,Jurugegas Penyelenggaraan
+4110,7412-14,Juruelektrik Kapal
+4111,7412-15,Juruelektrik Kenderaan
+4112,7412-16,Juruelektrik Pesawat
+4113,7412-17,Juruelektrik Pentas dan Studio
+4114,7412-18,Mekanik Lif
+4115,7412-20,Jurugegas Generator Elektrik
+4116,7412-21,Penjaga Jentera Elektrik
+4117,7412-22,Penjaga Jentera Elektrik Gred P4
+4118,7412-23,Penjaga Jentera Elektrik AO
+4119,7412-24,Penjaga Jentera Elektrik BO
+4120,7412-25,Pendawai Elektrik
+4121,7412-26,Penjaga Jentera Elektrik Gred J26
+4123,7413-01,Pemasang Talian Tenaga Elektrik
+4124,7413-02,Pekerja Talian Kabel
+4125,7413-03,Penyambung Kabel Elektrik
+4126,7413-04,Pemasang Kabel Bawah Tanah
+4127,7413-05,Pemasang Kabel Bawah Laut
+4128,7413-06,Pekerja Sistem Pembaik
+4129,7413-07,Juruelektrik Penyelenggaraan
+4130,7413-08,Pemasang Pemanas dan Penyelenggaraan Terma Solar
+4131,7413-09,Pemasang Penyelenggaraan dan Pemasangan Photovoltaic Solar
+4132,7413-10,Pemasang Penyelenggaraan dan Pemasangan Air Panas Solar
+4133,7413-11,Pemasang Penyelenggaraan dan Pemasangan Biomas
+4134,7413-12,Pemasang Penyelenggaraan dan Pemasangan Hydro
+4137,7421-01,Jurugegas Elektronik
+4138,7421-04,"Jurugegas Elektronik, Kelengkapan Meteorologi"
+4139,7421-05,Mekanik Kelengkapan Elektronik
+4141,7422-02,Pemasang Telefon dan Telegraf
+4142,7422-07,Jurugegas Peralatan Komputer
+4143,7422-11,Jurugegas Elektronik Komputer
+4144,7422-13,Operator Peralatan Tanpa Wayar
+4145,7422-14,Operator Komputer Gred 14
+4149,7511-01,Penyembelih
+4150,7511-02,Pemotong Daging
+4151,7511-03,Penghiris Daging
+4152,7511-04,Pembuat Sosej
+4153,7511-05,Pengawet Daging
+4154,7511-06,Penggaram Ikan
+4155,7511-07,Penjeruk Ikan
+4156,7511-08,Pemfilet Ikan
+4157,7511-09,Pembersih Sarang Burung
+4158,7511-10,"Pemeriksa Halal, Rumah Sembelihan"
+4159,7511-11,"Penyembelih Halal, Rumah Sembelihan"
+4161,7512-01,Pembuat Roti
+4162,7512-02,Pembuat Pastri
+4163,7512-03,Pembuat Konfeksi
+4164,7512-04,Pembuat Coklat
+4165,7512-05,Pembuat Yis
+4166,7512-06,Pembuat Mee
+4167,7512-07,Pembuat Pasta
+4168,7512-08,Pembuat Gula-Gula Getah
+4169,7512-09,Pembantu Bakeri
+4171,7513-01,Pembuat Keju
+4172,7513-03,Pembuat Mentega
+4174,7514-02,Pengawet Sayuran
+4175,7514-03,Pembuat Jus Buah-Buahan
+4176,7514-05,Pembuat Jus Sayur-Sayuran
+4177,7514-07,Pemerah Minyak
+4178,7514-08,Penjeruk Sayuran/Buah
+4180,7515-10,Penggred Sayur-Sayuran
+4181,7515-14,Pemeriksa Padi
+4182,7515-16,Penggred Ikan
+4183,7515-18,Penggred Telur
+4184,7515-19,Penggred Sarang Burung
+4185,7515-20,"Inspektor Kualiti, Pemprosesan Daging Halal"
+4187,7516-06,Pengawet Tembakau
+4188,7516-08,Penghiris Tembakau
+4192,7611-02,Perawat Kayu
+4193,7611-03,Pengering Kayu
+4194,7611-04,Penggred Kayu
+4195,7611-05,Penggred Venir
+4197,7612-01,Pembuat Kabinet
+4198,7612-04,Pembuat Keranda
+4199,7612-05,Pembuat Terompah
+4200,7612-06,Pembuat Model Kayu
+4201,7612-07,Pemasang Venir
+4202,7612-08,Pembuat Bingkai Gambar
+4203,7612-11,Pembuat Kerja Kayu
+4204,7612-13,Pembuat Alat Permainan Kayu
+4205,7612-14,Pembuat Peralatan Sukan Kayu
+4206,7612-15,Penggilap Kayu
+4207,7612-16,Pengilat Kayu
+4208,7612-17,Pengukir Kayu
+4209,7612-18,Pembuat Paten Kayu
+4211,7613-03,Pengeset Mesin Kayu
+4212,7613-05,"Penggergaji Tepat, Kerja Kayu"
+4213,7613-07,"Operator Mesin Penetap, Kerja Kayu"
+4216,7621-03,Pembuat Topi Wanita
+4217,7621-04,Pembuat Songkok
+4218,7621-06,Pembuat Rambut Palsu
+4219,7621-07,Operator Menjahit
+4220,7621-09,Pekerja Menjahit
+4221,7621-10,Pembaik Permaidani
+4222,7621-11,Penyulam Tangan
+4223,7621-12,Pembuat Bunga Tiruan
+4224,7621-13,Pembuat Anak Patung dan Alat Permainan Lembut
+4225,7621-14,Pembaik Fabrik Kait
+4226,7621-15,Pembuat Renda Tangan
+4227,7621-16,Pembuat Guni
+4228,7621-17,Pembuat Layar Khemah dan Kajang
+4229,7621-18,Pembuat Payung
+4230,7621-20,Pembuat Sarung Tangan Jaring
+4231,7621-21,Penarik Benang Mesin Tenun Tangan
+4232,7621-22,Penenun Sarung Tangan Kain
+4233,7621-23,Pengait Krusye Tangan
+4234,7621-24,Pengait Tangan
+4235,7621-25,Pengajar Menenun
+4236,7621-27,Pembuat Telekung
+4237,7621-28,Penjahit Bulu Binatang
+4238,7621-29,Pembuat Sampel
+4240,7622-01,"Pembuat-Pola, Pakaian"
+4241,7622-02,"Pembuat-Pola, Topi"
+4242,7622-03,Pembuat Pakaian
+4243,7622-05,Pemotong Khemah
+4244,7622-09,Pemotong Tilam
+4245,7622-10,Pembuat-Pola Kertas
+4246,7622-11,"Pembuat-Pola, Khemah"
+4247,7622-12,"Pembuat-Pola, Layar"
+4248,7622-13,"Pembuat-Pola, Payung"
+4249,7622-14,"Pembuat-Pola, Sarung Tangan"
+4250,7622-15,"Pembuat-Pola, Tilam"
+4251,7622-16,"Pembuat-Pola, Bulu Binatang"
+4252,7622-17,Prototaip Digital
+4254,7623-01,Pembuat Kasut
+4255,7623-02,Pembuat Kasut Bedah
+4256,7623-03,Pembuat Kasut Ortopedik
+4257,7623-04,Pembaik Kasut
+4258,7623-06,Pembuat Pola Kasut
+4259,7623-07,Pembuat Kasut Sukan
+4260,7623-08,Pembuat Peralatan Kasut Sukan
+4261,7623-09,Pembuat Beg Tangan Kulit
+4262,7623-10,Pembuat Dompet
+4263,7623-11,Pembuat Tali Pinggang
+4265,7624-01,Pembuat Upholsteri Perabot
+4266,7624-02,Pembuat Upholsteri Kenderaan
+4267,7624-03,Pembuat Tilam
+4268,7624-05,Pembuat Perabot Lembut
+4269,7624-06,Pembuat Peralatan Tempat Tidur
+4270,7624-07,Pembuat Upholsteri Pesawat Udara
+4271,7624-08,Pembuat Upholsteri Gerabak Kereta api
+4272,7624-09,Pembuat Upholsteri Ortopedik
+4274,7625-02,Penyamak Kulit
+4277,7631-01,Juruselam
+4278,7631-02,"Juruselam, Pembinaan"
+4279,7631-03,Pekerja Dalam Air
+4280,7631-04,Juruselam Bawah Air
+4282,7632-02,Pembagas
+4283,7632-04,Peletup
+4285,7633-02,Inspektor Kualiti
+4286,7633-03,Pengelas Benang Bulu
+4288,7634-06,"Operator Pengasapan, Perkhidmatan"
+4289,7634-07,"Operator Pengasapan, Rumpai"
+4290,7634-08,"Operator Pengasapan, Tanih"
+4291,7634-09,Pengawal Rumpai
+4293,7639-01,Pengemas Lensa Optik
+4294,7639-02,Pembuat Acuan Lensa Optik
+4295,7639-03,Operator Kamera
+4296,7639-04,Pembantu Kemahiran Gred H19
+4301,8111-01,Pelombong
+4302,8111-06,"Pengumpul Sampel, Lombong"
+4303,8111-08,Pengumpul Sampel Kuari
+4304,8111-09,Tukang Kayu Bawah Tanah
+4305,8111-13,Pelombong Arang Batu
+4307,8112-01,"Operator Mesin, Pemprosesan Batu"
+4308,8112-06,Operator Pengasing Magnet
+4309,8112-07,Pekerja Pengapungan Galian
+4310,8112-08,Pengolah Bijih Timah
+4311,8112-10,"Operator Loji Pemprosesan, Galian dan Batu"
+4312,8112-11,Operator Loji Pencampuran
+4313,8112-13,Pengendali Mesin Penghancur (Pemprosesan Mineral atau Batu)
+4315,8113-03,"Operator, Peralatan Gerudi Telaga"
+4316,8113-05,"Operator, Peralatan Menarik Telaga Minyak dan Gas"
+4317,8113-06,"Operator Mesin, Peralatan Gerudi Telaga"
+4318,8113-07,Penggerudi
+4319,8113-13,Penolak Alat
+4320,8113-18,Operator Perkhidmatan
+4321,8113-19,"Pembantu Operator – L&PI,II"
+4323,8114-10,"Operator Mesin, Penggilap Batu"
+4326,8121-01,Operator Relau
+4327,8121-14,"Operator Mesin, Acuan Tuang"
+4328,8121-28,Penarik Dawai
+4329,8121-29,Penarik Paip dan Tiub Tanpa Kelim
+4330,8121-32,Penggelek Keluli
+4332,8122-02,Penyadur Elektroplat
+4333,8122-03,"Operator Mesin, Pencelupan Logam"
+4334,8122-04,Penyadur Celup Panas
+4335,8122-08,"Pembagas Pasir, Logam"
+4336,8122-09,"Operator Mesin, Kemasan Barangan Logam Tuang"
+4337,8122-10,Pekerja Kemasan Tuangan
+4338,8122-11,Pembersih Logam
+4339,8122-13,Operator Pengoksida
+4340,8122-14,Operator Acuan
+4343,8131-01,"Operator Mesin, Pembancuh Cat"
+4344,8131-04,"Operator Mesin, Penghalus Proses Kimia"
+4345,8131-05,"Operator Pengisar Gelek, Proses Kimia"
+4346,8131-06,"Operator Penghancur, Proses Kimia"
+4347,8131-07,"Pembancuh Belerang, Proses Kimia"
+4348,8131-08,"Operator Loji Pengolahan Haba, Proses Kimia"
+4349,8131-09,"Operator Pengering, Proses Kimia"
+4350,8131-10,"Operator Peralatan Masak, Proses Kimia"
+4351,8131-12,"Operator Retort, Proses Kimia"
+4352,8131-13,Operator Semburan Kering Proses Kimia
+4353,8131-14,Operatur Tanur Proses Kimia
+4354,8131-15,"Pekerja Relau, Simen"
+4355,8131-17,"Tukang Masak, Proses Kimia"
+4356,8131-18,"Operator Penekan, Penurasan Proses Kimia"
+4357,8131-19,"Operator Mesin, Pengayak, Proses Kimia"
+4358,8131-20,"Operator Pengasing, Proses Kimia"
+4359,8131-21,Operator Peralatan Merawat Minyak Mentah
+4360,8131-22,Penuras Dram Putar
+4361,8131-23,Operator Loji Asid
+4362,8131-24,Operator Loji Baja
+4363,8131-25,"Operator Mesin, Peluntur Kimia"
+4364,8131-26,Operator Vakum Pan Kimia (Kecuali Petroleum dan Gas Asli)
+4365,8131-27,Operator Penukar Proses Kimia (Kecuali Petroleum dan Gas Asli)
+4366,8131-28,Operator Penyejat
+4367,8131-29,Operator Penyulingan Kelompok (Proses Kimia Kecuali Petroleum dan Gas Asli)
+4368,8131-30,Operator Penyulingan Proses Kimia
+4369,8131-31,Operator Penyulingan Berterusan (Proses Kimia Kecuali Petroleum dan Gas Asli)
+4370,8131-32,Operator Penyulingan Turpentin
+4371,8131-33,Operator Tanur Arang
+4372,8131-34,Pembakar Sulfur
+4373,8131-35,Pembuat Busa Kimia
+4374,8131-36,Pembuat Yarn Sintetik
+4375,8131-37,Penukar Reaktor (Proses Kimia)
+4376,8131-38,Penyadur Enamel Kimia
+4377,8131-41,"Operator Mesin, Pengeluaran Coke"
+4378,8131-45,"Operator Mesin, Pembasuhan Kimia dan Bahan Berkaitan"
+4380,8132-05,"Operator Mesin, Mesin Pemprosesan Filem"
+4381,8132-10,"Operator Mesin, Produk Fotografi"
+4382,8132-14,"Operator, Kamera Wayang Gambar"
+4383,8132-19,Pekerja Kemasan Foto
+4384,8132-22,Pemproses Foto
+4387,8141-01,"Operator Mesin, Pengisar Getah"
+4388,8141-02,"Operator Mesin, Penyembul Getah"
+4389,8141-03,"Operator Mesin, Penekan Acuan Getah"
+4390,8141-04,"Operator Mesin, Kalender Getah"
+4391,8141-05,"Operator Mesin, Pemotong Getah"
+4392,8141-06,"Operator Mesin, Pengeluaran Tayar"
+4393,8141-08,"Operator Mesin, Pengeluaran Cop Getah"
+4394,8141-09,"Operator Mesin, Produk Getah"
+4395,8141-10,Pembuat Beg Udara
+4396,8141-11,Pembuat Busa Getah
+4397,8141-12,Pembuat Hos
+4398,8141-13,"Operator Mesin, Busa Getah"
+4399,8141-14,Pembentuk Getah
+4400,8141-16,Pembeku Getah
+4401,8141-21,Pekerja Proses Getah Cebis
+4402,8141-22,"Operator Mesin, Pelapis Getah"
+4404,8142-01,"Operator Mesin, Pembancuh Plastik"
+4405,8142-07,"Operator Mesin, Ukir Timbul Plastik"
+4407,8143-01,"Operator Mesin, Pengeluaran Karton dan Kotak Kertas"
+4408,8143-09,"Operator Mesin, Pengeluaran Beg Kertas"
+4409,8143-11,"Operator Mesin, Penyalut"
+4412,8151-01,"Operator Mesin, Pemintal Benang dan Yarn"
+4414,8152-01,"Operator Mesin, Penggulung Benang (Menenun Tekstil)"
+4415,8152-08,Pemasang Mesin Tenun
+4416,8152-13,"Penyulam, Mesin"
+4418,8153-01,Operator Mesin Jahit
+4419,8153-04,"Operator Mesin Jahit, Sulaman"
+4421,8154-01,"Operator Mesin, Peluntur Tekstil"
+4422,8154-02,"Operator Mesin, Pencelup"
+4423,8154-05,"Operator Mesin, Pencelup Tekstil"
+4425,8155-01,"Operator Mesin, Pemproses Belulang"
+4427,8156-01,"Operator Mesin, Pengeluaran Kasut"
+4428,8156-05,"Operator Mesin, Pengeluaran Kasut Khas/Orang Kurang Upaya"
+4429,8156-06,"Operator Mesin, Pengeluaran Bagasi"
+4430,8156-07,"Operator Mesin, Pengeluaran Beg Tangan"
+4431,8156-08,"Operator Mesin, Pengeluaran Tali Pinggang"
+4432,8156-09,"Operator Mesin, Pengeluaran Abah-abah"
+4434,8157-02,"Operator Mesin, Pencucian"
+4436,8159-01,"Operator Mesin, Pemotong Pakaian"
+4437,8159-05,"Operator Mesin, Pengeluaran Tilam"
+4438,8159-07,"Operator Mesin, Pembuat Pola Tekstil"
+4439,8159-08,"Operator Mesin, Pelipat Pakaian"
+4442,8161-03,"Operator Mesin, Pemproses Makanan"
+4443,8161-08,"Operator Mesin, Pengetinan Daging Makanan"
+4444,8161-09,"Operator Mesin, Pengetinan Ikan"
+4445,8161-11,"Operator Mesin, Pemproses Produk Tenusu"
+4446,8161-18,Pengasing Krim Tenusu
+4447,8161-19,Atendan Pengisar Bijian
+4448,8161-21,Pembantu Pengisar
+4449,8161-22,Pencampur Rempah
+4450,8161-26,Pengisar Minyak Kelapa Sawit
+4451,8161-29,Pengisar Rempah
+4452,8161-40,"Operator Mesin, Pengeluaran Sagu"
+4453,8161-41,Atendan Penstril Kelapa Sawit
+4454,8161-42,"Operator Mesin, Penekan Buah-Buahan"
+4455,8161-51,"Operator Mesin, Pengetinan Makanan"
+4456,8161-52,Operator Loji Majerin
+4457,8161-53,Operator Loji Pemeringkatan
+4458,8161-54,Pembakar Kacang
+4459,8161-57,Pengawet Sos dan Rempah-Ratus
+4460,8161-59,Operator Pemprosesan dan Penapisan Gula
+4461,8161-60,Atendan Pempastur (Bru)
+4462,8161-68,"Operator Tanur, Pemaltan Arak"
+4463,8161-73,"Operator Mesin, Bru"
+4464,8161-86,Penggiling Makanan
+4467,8171-01,Operator Pencerna Pulpa
+4468,8171-03,Operator Pemukul Pulpa
+4469,8171-04,"Operator Mesin, Pengisar Kayu"
+4470,8171-05,"Operator Mesin, Peluntur"
+4471,8171-06,"Pemotong, Pulpa Kertas"
+4472,8171-08,"Operator Mesin, Pembuatan Kertas"
+4473,8171-10,"Operator, Loji Pulpa Kertas"
+4474,8171-11,Operator Injap
+4475,8171-12,Operator Kertas Pulp
+4477,8172-01,Operator Kilang Papan
+4478,8172-06,"Operator Larik, Pemotong Venier"
+4479,8172-09,Penyusun Teras Papan Lapis
+4480,8172-10,Operator Penekan Papan Lapis
+4481,8172-11,"Operator Mesin, Pengering Kayu"
+4482,8172-17,Operator Pelekat Kayu
+4484,8173-01,"Operator Larik, Kerja Kayu"
+4485,8173-02,Pemesin Kayu
+4486,8173-06,"Operator, Penghalus"
+4487,8173-07,"Operator Mesin, Pengeluaran Perabot"
+4490,8181-01,"Operator Mesin, Pencampur Tanah Liat"
+4491,8181-07,Operator Relau Penyepuh Lindapan Kaca
+4492,8181-08,Operator Tanur Bata dan Jubin
+4493,8181-12,Operator Tanur Tembikar dan Porselin
+4494,8181-27,Pembancuh Tanah Liat
+4495,8181-28,Pembuat Tanah Liat Tembikar
+4496,8181-29,Pembuat Gentian Kaca
+4497,8181-30,Pembuat Penggilap
+4498,8181-31,Pembuat Tiub Kaca
+4499,8181-32,Pencampur Kaca
+4500,8181-33,Penggilap Plat Kaca
+4502,8182-01,Operator Loji Gred H11
+4503,8182-02,Pendandang
+4504,8182-03,"Operator Dandang, Kapal"
+4505,8182-04,"Operator Kebakaran, Kapal"
+4506,8182-05,Operator Loji Dandang Stim
+4507,8182-08,Boilerman (Juru Dandang) Gred K2
+4508,8182-09,Orang Yang Kompeten (OYK) - Drebar Enjin Stim
+4509,8182-10,Orang Yang Kompeten (OYK) - Drebar Enjin Pembakaran Dalam
+4511,8183-01,Operator Karton
+4512,8183-03,Pekerja Pembungkus
+4513,8183-11,"Operator Mesin, Pengisi Bekas"
+4515,8189-01,Operator Mesin
+4516,8189-09,"Operator Mesin, Peralatan Menanda Jalan"
+4517,8189-10,Ketua Operator
+4518,8189-11,Operator Pengeluaran Produk Elektronik
+4519,8189-12,Operator Mesin Gred K2
+4520,8189-13,Operator Pengeluaran Gred K3
+4521,8189-15,Operator Mesin Edger
+4522,8189-16,Pemasang Produk
+4526,8211-01,Pemasang
+4527,8211-05,"Pemasang, Pesawat"
+4528,8211-13,"Pemasang, Jentera Perindustrian"
+4529,8211-16,Fomen Mekanikal
+4530,8211-21,"Pemasang, Kenderaan"
+4531,8211-23,Pemasangan Mekatronik
+4533,8212-01,"Pemasang, Peralatan Elektrik"
+4534,8212-02,"Pemasang, Peralatan Elektronik"
+4535,8212-03,"Pemasang, Semikonduktor"
+4537,8213-01,"Pemasang, Produk Kulit"
+4538,8213-02,"Pemasang, Produk Logam"
+4539,8213-03,"Pemasang, Produk Getah"
+4540,8213-04,"Pemasang, Produk Plastik"
+4541,8213-06,"Pemasang, Payung"
+4543,8219-01,"Pemasang, Produk Kayu"
+4544,8219-02,"Pemasang, Produk Komposit"
+4545,8219-03,"Pemasang, Produk Tekstil"
+4546,8219-07,Pengemas Perabot (Kayu)
+4547,8219-08,"Pemasang, Barang Kemas"
+4548,8219-11,"Pemasang, Produk Paperboard"
+4551,8221-01,"Operator, Mesin Pembentuk Logam"
+4552,8221-04,"Operator, Mesin Pengeluaran Kabel"
+4553,8221-05,"Operator, Mesin Penekan Logam Kecuali Penempaan"
+4554,8221-07,"Operator, Mesin Penekan Pengecap Logam"
+4555,8221-20,"Operator, Mesin Pengeluaran Alat Permainan Logam"
+4556,8221-21,"Operator, Mesin Pengeluaran Barangan Dawai"
+4557,8221-22,"Operator, Mesin Pengeluaran Dandang"
+4558,8221-23,"Operator, Mesin Pengeluaran Jam"
+4559,8221-24,"Operator, Mesin Pengeluaran Nat Logam"
+4560,8221-26,"Operator, Mesin Pengeluaran Paku"
+4561,8221-28,"Operator, Mesin Pengeluaran Penukar Tertib"
+4562,8221-38,"Operator, Mesin Peniup Teras"
+4563,8221-43,"Operator, Mesin Syiling Logam"
+4564,8221-44,"Operator, Pengeset Mesin Kerja Logam"
+4565,8221-45,Pembuat Teras Mesin Foundri
+4566,8221-46,Penggelek dan Pengukir Plat Cetak Logam Mesin
+4567,8221-47,Operator-Pengeset
+4568,8221-54,"Operator, Mesin Pelarik"
+4569,8221-55,Operator Mesin Penekan
+4573,8311-01,Pemandu Lokomotif Gred A13
+4574,8311-02,Pemandu Kereta Api
+4575,8311-10,Pemandu Lokomotif Gred A19
+4577,8312-01,"Pekerja Lansing, Kereta Api"
+4578,8312-02,"Jurusemboyan, Kereta Api"
+4579,8312-03,"Pelangsir, Kereta Api"
+4580,8312-04,Pekerja Yard
+4581,8312-05,"Pengganding Yard, Kereta Api"
+4582,8312-06,"Penyimpang, Kereta Api"
+4583,8312-07,"Penjaga Pintu Pagar, Kereta Api"
+4584,8312-08,Operator Mesin Pelukis Jalan
+4587,8321-01,Penunggang Motosikal
+4588,8321-02,Penghantar Cepat
+4589,8321-04,Pemandu Motosikal Roda Tiga
+4591,8322-01,Pemandu Kenderaan Gred H11
+4592,8322-02,Pembantu Am (Pemandu Kenderaan) Gred 1
+4593,8322-03,Pembantu Am (Pemanduan) Gred 1
+4594,8322-04,Pemandu Teksi
+4595,8322-05,Pemandu
+4596,8322-08,Joki Kereta
+4597,8322-11,Pemandu Ambulans
+4598,8322-12,Pemandu Gred K3
+4599,8322-13,Pemandu e-Hailing
+4602,8331-01,Pemandu Bas
+4604,8332-01,Pemandu Lori
+4605,8332-02,Kelindan Lori
+4606,8332-10,Pemandu/Operator Jentera Pemunggah Gred H11
+4607,8332-14,Operator Sistem Bahan Bakar Pesawat Udara
+4610,8341-01,"Operator, Peralatan Ladang Bermotor"
+4612,8342-01,"Operator, Jengkaut"
+4613,8342-02,"Operator, Mesin Penggali Parit"
+4614,8342-16,Pekerja Konrit Terowong
+4615,8342-19,Pekerja Pembinaan Jalan
+4617,8343-01,"Orang Yang Kompeten (OYK) - Operator, Kren"
+4618,8343-02,"Operator, Takal"
+4619,8343-04,"Operator, Lif Pengendalian Bahan"
+4620,8343-05,"Operator, Kereta Kabel"
+4621,8343-06,"Operator, Kren Bangunan"
+4622,8343-07,"Operator, Kren Bergerak"
+4623,8343-08,"Orang Yang Bertanggungjawab (OYB) (Kren Menara, Mesin Angkat Barang dan Penumpang)"
+4624,8343-09,Orang Yang Bertanggungjawab (OYB) (Pelantar Kerja dan Gondola)
+4626,8344-01,"Operator, Trak Forklift"
+4627,8344-02,"Operator, Trak Perindustrian"
+4628,8344-03,"Operator, Trak Angkat"
+4629,8344-04,Pemandu Forklift
+4632,8351-01,Jurumudi
+4633,8351-08,Kelasi
+4634,8351-09,Pembantu Perkapalan
+4635,8351-13,Pengawal Pelantar
+4636,8351-14,Pengendali Bot Penyelamat
+4637,8351-15,Penjaga Rumah Api
+4638,8351-16,Serang
+4639,8351-19,Juruminyak Enjin
+4640,8351-20,Pengelap Mesin
+4645,9111-02,Orang Gaji
+4646,9111-07,Pencuci Pakaian Rumah
+4648,9112-01,Pengemas Bilik
+4649,9112-04,Tukang Cuci
+4650,9112-07,Bellboy
+4651,9112-08,Pekerja Perkhidmatan Pengemasan dan Penyajian
+4652,9112-09,Pembersih Pesawat (Dalaman)
+4653,9112-10,Pembersih Kenderaan (Dalaman)
+4656,9121-01,Pekerja Dobi dan Pencucian Kering
+4657,9121-02,Tukang Seterika
+4659,9122-01,Pencuci Kenderaan
+4660,9122-04,"Pembasuh, Auto-Pengamplasan"
+4662,9123-01,Pencuci Tetingkap
+4664,9129-01,Pekerja Kelengkapan Dandanan Diri
+4665,9129-02,Pekerja Pencucian
+4666,9129-03,Pencuci Permaidani
+4667,9129-04,Pencuci Kolam Renang
+4668,9129-05,Pencuci Grafiti
+4669,9129-06,"Pencuci Tangan, Pembuatan"
+4670,9129-07,Pembersih Sungai
+4671,9129-08,Pembersih Kumbahan
+4675,9211-01,Buruh Tanaman Ladang
+4676,9211-09,Pekerja Pembajaan
+4677,9211-10,Pekerja Penuai
+4678,9211-11,Pemetik Buah
+4679,9211-12,Pemetik Sayur-sayuran
+4680,9211-14,Penoreh Getah
+4681,9211-20,Penyadap Kelapa
+4682,9211-21,Pekerja Estet
+4683,9211-23,Pengupas Buah
+4684,9211-25,Penimbang Getah Skrap
+4686,9212-01,Buruh Ladang Ternakan
+4687,9212-03,"Buruh Ladang Ternakan, Tenusu"
+4688,9212-04,"Buruh Ladang Ternakan, Poltri"
+4689,9212-05,Pemungut Telur
+4691,9213-01,Buruh Ladang
+4692,9213-02,Pekerja Kebun
+4693,9213-03,Pekerja Ladang
+4695,9214-01,Pemotong Rumput
+4696,9214-02,Pemotong Pokok
+4697,9214-03,Pekerja Penyelenggaraan Padang Permainan
+4698,9214-04,Pekerja Penyelenggaraan Padang Golf
+4699,9214-06,Buruh Kebun
+4700,9214-07,Buruh Hortikultur
+4701,9214-08,Buruh Nurseri
+4703,9215-01,Buruh Perhutanan
+4704,9215-02,Buruh Pemburuan
+4705,9215-04,Penebang Pokok
+4706,9215-05,Penyemai Pokok
+4708,9216-01,Buruh Perikanan
+4710,9219-01,Buruh Sangkar Buaya
+4711,9219-02,Buruh Sangkar Ular
+4715,9311-02,Buruh Perlombongan
+4716,9311-06,Pekerja Pemasiran
+4717,9311-07,Pekerja Batu
+4719,9312-01,Buruh Pembinaan (Kejuruteraan Awam)
+4720,9312-02,Buruh Penyelenggaraan (Empangan)
+4721,9312-03,"Pekerja Tapak, Am"
+4722,9312-04,Pekerja Acuan Pembinaan
+4723,9312-05,Pekerja Cerucuk
+4724,9312-06,Buruh Jentera Tolak Tanah
+4725,9312-07,Pekerja Landasan Kereta api
+4726,9312-08,Buruh Binaan (Minyak dan Gas)
+4728,9313-01,Pengandar Raga
+4729,9313-02,Buruh Penyelenggaraan
+4730,9313-04,Buruh Penggalian
+4731,9313-05,Pembersih Tanah
+4732,9313-06,Tukang Pembinaan Bangunan
+4733,9313-07,Buruh Perobohan
+4736,9321-01,Pembungkus (Tangan)
+4737,9321-04,Buruh Pembuatan
+4738,9321-05,Pengisih
+4739,9321-06,Pelilit Lingkaran Tangan
+4740,9321-07,Buruh Pemasangan
+4741,9321-08,Pembancuh Tangan
+4742,9321-09,Pembuat Karton dan Kotak Kertas Tangan
+4743,9321-10,Tukang Nyala Rumah Asap
+4744,9321-12,Pembantu Kilang
+4745,9321-13,Pengendali Bahan Mentah
+4749,9331-02,Pengayuh Kenderaan Berpedal
+4751,9332-01,Pemandu Kenderaan Tarikan-Haiwan
+4753,9333-01,Pekerja Pengangkutan Barang
+4754,9333-02,Buruh Limbungan
+4755,9333-03,Pekerja Limbungan
+4756,9333-04,Pemunggah Kapal
+4757,9333-05,Pengendali Kargo Barang Angkut Produk
+4758,9333-06,Pekerja Muatan Barang Kereta api dan Kenderaan
+4759,9333-07,Pekerja Muatan Barang Kapal Terbang
+4760,9333-08,Pekerja Muatan Barang Bot (Cecair dan Gas)
+4761,9333-09,Porter Gudang
+4762,9333-10,Pengendali Bahan
+4763,9333-11,Pengendali Perabot
+4764,9333-13,Atendan Stor
+4765,9333-15,Pekerja Stor
+4766,9333-16,Pekerja Gudang
+4768,9334-01,Pengisi Rak
+4772,9411-01,Penyedia Makanan Segera
+4773,9411-04,Kru Restoran
+4774,9411-05,Sandwichsta
+4776,9412-01,Pembantu Dapur
+4777,9412-02,Pencuci Pinggan Mangkuk
+4778,9412-03,Penolong Dapur
+4779,9412-04,Porter Dapur
+4780,9412-05,Atendan Pantri
+4781,9412-06,Pembantu Tukang Masak Gred K3
+4782,9412-07,Pembantu Gerai Makan
+4783,9412-08,Pembantu Penyediaan Makanan
+4787,9511-01,Pencuci Kereta Jalanan
+4788,9511-02,Budak Suruhan
+4789,9511-03,Penjaga Kereta
+4790,9511-04,Pengedar Risalah
+4793,9521-03,Penjaja
+4797,9611-04,Pemungut Barang Buangan
+4799,9612-01,Pengisih Sampah
+4801,9613-01,Tukang Sapu Jalan
+4802,9613-03,Tukang Sapu Lantai
+4803,9613-04,Buruh Kerja Rencam
+4804,9613-06,"Pekerja Pembersih, Mesin Penyedut"
+4807,9621-01,Pembantu Am (Penghantar Notis) Gred 1
+4808,9621-02,Penghantar Notis Gred N11
+4809,9621-03,Pembantu Am (Sokongan) Gred 1
+4810,9621-04,Penghantar Mesej Khidmat Kiriman Cepat
+4811,9621-05,Porter Bagasi
+4812,9621-06,Budak Pejabat
+4813,9621-07,Pencari Dokumen
+4814,9621-08,Penghantar Surat Khabar
+4815,9621-09,Kedi Golf
+4816,9621-10,Pembantu Penghantaran
+4817,9621-11,Penampal Poster
+4818,9621-12,Penghantar Dokumen
+4819,9621-13,Pengangkut Barang
+4820,9621-14,Budak Bilik
+4821,9621-15,Porter
+4822,9621-16,Penghantar
+4823,9621-17,Penghantar Pos
+4824,9621-18,Penolak Troli
+4825,9621-19,Pembantu Am
+4826,9621-20,Pembantu Bahagian
+4828,9622-01,Pembantu Am (Perkhidmatan) Gred 1
+4829,9622-02,Pekerja Rencam Pekerjaan Asas
+4830,9622-03,Pekerja Am
+4831,9622-04,Pekerja Rencam Pelbagai Pekerjaan Asas
+4832,9622-05,Pekerja Am Gred K3
+4833,9622-06,Kru Pengeluaran
+4834,9622-07,Pembantu Pengeluaran
+4835,9622-08,Pembantu Penyelenggaraan
+4836,9622-09,Pembantu Awam Gred H11
+4838,9623-01,Pembaca Meter
+4839,9623-02,Pemungut Wang Mesin-Layan diri
+4841,9624-01,Pemungut Kayu Api
+4843,9625-01,Atendan
+4844,9625-03,Atendan Hospital
+4845,9625-04,Atendan Veterinar
+4846,9625-05,Atendan Tempat Letak Kereta
+4847,9625-06,Atendan Lif
+4848,9625-07,Atendan Taman Hiburan Rekreasi
+4849,9625-09,Atendan Bilik
+4850,9625-10,Atendan Bilik Rehat
+4851,9625-11,Atendan Dobi
+4852,9625-16,Atendan Kren
+4853,9625-17,Atendan Kenderaan
+4854,9625-18,Atendan Tanjakan
+4855,9625-19,Atendan Jeti
+4856,9625-21,Atendan Mesin
+4857,9625-22,Atendan Penyelenggaraan
+4858,9625-24,Pengutip Tiket
+4860,9629-01,Pekerja Buruh
+4861,9629-02,Pekerja Pengembungan

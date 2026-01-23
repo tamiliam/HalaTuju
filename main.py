@@ -133,9 +133,14 @@ def local_css(file_name):
 
 local_css("assets/style.css")
 
-@st.cache_data
+@st.cache_data(ttl=60) # Reduced TTL to force refresh during dev
 def get_data():
     return load_master_data()
+
+# Force clear cache if data seems stale (Debug/Dev Fix)
+if 'data_refreshed' not in st.session_state:
+    st.cache_data.clear()
+    st.session_state['data_refreshed'] = True
 
 df_courses = get_data()
 
@@ -1115,8 +1120,13 @@ if auth_status:
                  state_opts = sorted(state_raw, key=sort_state)
                  state_filter = st.pills("Select States", options=state_opts, selection_mode="multi", default=state_opts, key="pill_state")
             
-            # 3. Course Category (Placeholder / WIP)
-            # st.caption("Example: Engineering, Tourism (Coming Soon)")
+            # 3. Field of Study (New)
+            field_raw = [str(x) for x in df_display["frontend_label"].unique() if x]
+            field_opts = sorted(field_raw)
+            with st.expander("📚 Filter by Field", expanded=False):
+                field_filter = st.pills("Select Fields", options=field_opts, selection_mode="multi", default=field_opts, key="pill_field")
+            
+            # Course Category (Placeholder / WIP)
         
         # Apply Filter
         mask = (df_display[cat_col].isin(cat_filter)) & (df_display["state"].isin(state_filter))
@@ -1146,9 +1156,15 @@ if auth_status:
             filtered_raw = []
             
             # Helper: Check if item matches filters
-            # Filters: cat_filter (Type), state_filter (State)
+            # Filters: cat_filter (Type), state_filter (State), field_filter (Label)
             
             for group in grouped_courses:
+                 # 0. Check Field Filter (Course Level)
+                 # If course's field is NOT in selected fields, skip entirely
+                 c_field = str(group.get('frontend_label', 'General'))
+                 if c_field not in field_filter:
+                     continue
+
                  # Check Search Term (Course Level)
                  c_name = str(group.get('course_name', '')).lower()
                  c_head = str(group.get('headline', '')).lower()
