@@ -578,50 +578,8 @@ def render_ai_report_page(user, t):
         return
     
     # Add print-friendly CSS
-    st.markdown("""
-    <style>
-    @media print {
-        /* PROVEN FIX: Isolation Method */
-        
-        /* 1. Hide EVERYTHING */
-        body, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
-            visibility: hidden !important;
-            height: auto !important;
-            overflow: visible !important;
-        }
-        
-        /* 2. Show ONLY the Printable Area */
-        .printable-area {
-            visibility: visible !important;
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 20px !important;
-            background: white !important;
-            color: black !important;
-            z-index: 9999 !important;
-        }
-        
-        .printable-area * {
-            visibility: visible !important;
-            color: black !important;
-            box-shadow: none !important;
-        }
-        
-        /* 3. Hide non-text elements inside the report if needed */
-        button { display: none !important; }
-        
-        /* 4. Page Breaks */
-        h1, h2 { page-break-before: always; }
-        h1:first-of-type { page-break-before: avoid; }
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Display the AI report wrapped in a printable container
-    st.markdown(f'<div class="printable-area">{report["markdown"]}</div>', unsafe_allow_html=True)
+    # Display the AI report
+    st.markdown(report['markdown'])
     
     st.markdown("---")
     
@@ -719,14 +677,77 @@ def render_ai_report_page(user, t):
         # Print Button (uses browser print dialog)
         if st.button("🖨️ Print Report", use_container_width=True, key="btn_print"):
             import streamlit.components.v1 as components
-            components.html(
-                """
-                <script>
-                window.print();
-                </script>
-                """,
-                height=0,
-            )
+            import json
+            
+            # 1. Get the markdown content
+            md_content = report.get('markdown', '')
+            
+            # 2. Escape it safely for JS injection using JSON stringification
+            # This handles newlines, quotes, and backslashes automatically
+            safe_md_json = json.dumps(md_content)
+            
+            # 3. Inject JS to open a new window, render MD -> HTML, and print
+            js_code = f"""
+            <script>
+                // The content is a JSON string, so we parse it to get the raw string back
+                const markdownText = {safe_md_json};
+                
+                const printWindow = window.open('', '_blank');
+                if (printWindow) {{
+                    printWindow.document.write(`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>Career Guidance Report</title>
+                            <!-- Load marked.js for Markdown parsing -->
+                            <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"><\/script>
+                            <style>
+                                body {{
+                                    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                                    line-height: 1.6;
+                                    color: #333;
+                                    max-width: 800px;
+                                    margin: 0 auto;
+                                    padding: 40px;
+                                }}
+                                h1, h2, h3 {{ color: #2c3e50; }}
+                                h1 {{ border-bottom: 2px solid #eee; padding-bottom: 10px; }}
+                                hr {{ border: 0; border-top: 1px solid #eee; margin: 20px 0; }}
+                                table {{ border-collapse: collapse; width: 100%; margin: 20px 0; }}
+                                th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
+                                th {{ background-color: #f8f9fa; }}
+                                blockquote {{ border-left: 4px solid #6C5CE7; margin: 0; padding-left: 15px; color: #555; }}
+                                @media print {{
+                                    body {{ padding: 0; }}
+                                    button {{ display: none; }}
+                                }}
+                            </style>
+                        </head>
+                        <body>
+                            <div id="content">Loading report...</div>
+                            <script>
+                                document.addEventListener('DOMContentLoaded', function() {{
+                                    const contentDiv = document.getElementById('content');
+                                    // Parse Markdown to HTML
+                                    contentDiv.innerHTML = marked.parse(markdownText);
+                                    
+                                    // Wait a brief moment for images/fonts (if any) then print
+                                    setTimeout(() => {{
+                                        window.print();
+                                        // Optional: window.close(); 
+                                    }}, 500);
+                                }});
+                            <\/script>
+                        </body>
+                        </html>
+                    `);
+                    printWindow.document.close();
+                }} else {{
+                    alert('Please allow popups for this site to print the report.');
+                }}
+            </script>
+            """
+            components.html(js_code, height=0, width=0)
     
     st.markdown("---")
     # Back to Dashboard button
