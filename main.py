@@ -658,17 +658,23 @@ def render_ai_report_page(user, t):
     
     with col2:
         # WhatsApp Share Button
+        
         # Get Top 3 Courses for the message
         top_courses_msg = ""
         
-        # Try to get courses from ranked_courses (if available) or from dashboard_data
+        # Try to get courses from ranked_courses (if available) or from dashboard data
         ranked_courses = st.session_state.get('ranked_courses', [])
-        if not ranked_courses:
-            # Fallback: Get from dashboard grouped data
-            dashboard_data = st.session_state.get('dashboard_data', {})
-            grouped_courses = dashboard_data.get('grouped_courses', [])
-            ranked_courses = grouped_courses[:3] if grouped_courses else []
         
+        if not ranked_courses:
+            # Fallback 1: Check 'dash' session state (featured_matches)
+            dash_data = st.session_state.get('dash', {})
+            ranked_courses = dash_data.get('featured_matches', [])
+            
+        if not ranked_courses:
+            # Fallback 2: Check full list from 'dash'
+            dash_data = st.session_state.get('dash', {})
+            ranked_courses = dash_data.get('full_list', [])[:3]
+
         if ranked_courses:
             for i, course in enumerate(ranked_courses[:3]):
                 # Use correct key: 'course_name' (lowercase with underscore)
