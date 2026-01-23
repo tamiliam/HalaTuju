@@ -332,25 +332,25 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
     hostel = loc0.get('hostel_fee', 'N/A')
     det_url = loc0.get('details_url', '#')
     
-    # 2. Career HTML (Jobs as Hyperlinks)
+    # 2. Career HTML (Jobs as Pill Badges)
     career_html = ""
     jobs = pick.get('jobs', [])
     if jobs:
         # Jobs can be [{title, url}, ...] or legacy ["string", ...]
-        job_links = []
+        job_pills = []
         for job in jobs:
             if isinstance(job, dict):
                 title = job.get('title', '')
                 url = job.get('url', '')
                 if url:
-                    job_links.append(f'<a href="{url}" target="_blank" style="color:#6C5CE7; text-decoration:none; border-bottom:1px dotted #6C5CE7;">{title}</a>')
+                    job_pills.append(f'<a href="{url}" target="_blank" class="job-pill">{title}</a>')
                 else:
-                    job_links.append(title)
+                    job_pills.append(f'<span class="job-pill job-pill-inactive">{title}</span>')
             else:
                 # Legacy: plain string
-                job_links.append(str(job))
-        if job_links:
-            career_html = f'<div class="career-box">💼 {", ".join(job_links)}</div>'
+                job_pills.append(f'<span class="job-pill job-pill-inactive">{job}</span>')
+        if job_pills:
+            career_html = f'<div class="career-pills-container">💼 <div class="career-pills">{"".join(job_pills)}</div></div>'
     
     # 3. Table HTML (Preserved as Visible)
     tbl_html = ""
