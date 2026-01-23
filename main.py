@@ -660,10 +660,19 @@ def render_ai_report_page(user, t):
         # WhatsApp Share Button
         # Get Top 3 Courses for the message
         top_courses_msg = ""
+        
+        # Try to get courses from ranked_courses (if available) or from dashboard_data
         ranked_courses = st.session_state.get('ranked_courses', [])
+        if not ranked_courses:
+            # Fallback: Get from dashboard grouped data
+            dashboard_data = st.session_state.get('dashboard_data', {})
+            grouped_courses = dashboard_data.get('grouped_courses', [])
+            ranked_courses = grouped_courses[:3] if grouped_courses else []
+        
         if ranked_courses:
             for i, course in enumerate(ranked_courses[:3]):
-                c_name = course.get('Course Name', 'Unknown')
+                # Use correct key: 'course_name' (lowercase with underscore)
+                c_name = course.get('course_name', course.get('Course Name', 'Unknown'))
                 top_courses_msg += f"{i+1}. {c_name}\n" # Newline for list
         
         # Get localized message template
