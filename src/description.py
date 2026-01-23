@@ -29,6 +29,9 @@ def _load_jobs_from_csv():
                     title = row.get('job_title', '').strip()
                     url = row.get('url', '').strip()
                     if code and title:
+                        # Add text fragment to scroll to "Kod MASCO" on mobile
+                        if url and not url.endswith('#:~:text=Kod%20MASCO'):
+                            url += '#:~:text=Kod%20MASCO'
                         masco_lookup[code] = {"title": title, "url": url}
         except Exception as e:
             print(f"Warning: Could not load masco_details.csv: {e}")
