@@ -41,6 +41,26 @@ TEXTS = {
         "header_edit_grades": "📝 Edit Grades",
         "btn_save_changes": "Save Changes",
         "btn_save_grades": "Save Grades",
+        "btn_update_profile": "Update Profile",
+        
+        # New Logistics Labels
+        "lbl_preferred_name": "Preferred Name",
+        "lbl_email": "Email (Optional)",
+        "lbl_city": "City",
+        "lbl_state": "State",
+        "lbl_financial": "Financial Pressure",
+        "lbl_travel": "Willingness to travel for education",
+        
+        # Financial Options
+        "fin_low": "Low (family can support)",
+        "fin_med": "Medium (some help, but careful)",
+        "fin_high": "High (need lowest-cost option)",
+        
+        # Travel Options
+        "travel_near": "Near home only",
+        "travel_state": "Same state",
+        "travel_peninsula": "Anywhere in Semenanjung Malaysia",
+        "travel_any": "No restrictions",
         
         # Subject Names
         "subj_bm": "Malay Language",
@@ -323,6 +343,26 @@ I’m not sure yet, but these look okay. Can we discuss this later?
         "header_edit_grades": "📝 Sunting Gred",
         "btn_save_changes": "Simpan Perubahan",
         "btn_save_grades": "Simpan Gred",
+        "btn_update_profile": "Kemaskini Profil",
+        
+        # New Logistics Labels
+        "lbl_preferred_name": "Nama Pilihan",
+        "lbl_email": "Emel (Pilihan)",
+        "lbl_city": "Bandar",
+        "lbl_state": "Negei",
+        "lbl_financial": "Tekanan Kewangan",
+        "lbl_travel": "Kesanggupan Berjauhan",
+        
+        # Financial Options
+        "fin_low": "Rendah (Keluarga boleh tampung)",
+        "fin_med": "Sederhana (Perlu bantuan, berjimat)",
+        "fin_high": "Tinggi (Perlu kos paling rendah)",
+        
+        # Travel Options
+        "travel_near": "Berdekatan rumah sahaja",
+        "travel_state": "Dalam negeri yang sama",
+        "travel_peninsula": "Semenanjung Malaysia sahaja",
+        "travel_any": "Tiada halangan (Borneo/Semenanjung)",
         
         # Subject Names
         "subj_bm": "Bahasa Melayu",
@@ -599,6 +639,26 @@ Nampak macam menarik. Nanti bila free, boleh tak kita tengok sama-sama?
         "header_edit_grades": "📝 தரங்களைத் திருத்து",
         "btn_save_changes": "மாற்றங்களைச் சேமி",
         "btn_save_grades": "தரங்களைச் சேமி",
+        "btn_update_profile": "சுயவிவரத்தைப் புதுப்பிக்கவும்", # Update Profile
+        
+        # New Logistics Labels
+        "lbl_preferred_name": "விருப்பமான பெயர்",
+        "lbl_email": "மின்னஞ்சல் (விருப்பத் தேர்வு)",
+        "lbl_city": "நகரம்",
+        "lbl_state": "மாநிலம்",
+        "lbl_financial": "நிதி நிலைமை",
+        "lbl_travel": "கல்விக்காக பயணம் செய்ய விருப்பம்",
+        
+        # Financial Options
+        "fin_low": "குறைவு (குடும்ப ஆதரவு உள்ளது)",
+        "fin_med": "நடுத்தரம் (சில உதவிகள் தேவை)",
+        "fin_high": "அதிகம் (குறைந்த செலவு தேவை)",
+        
+        # Travel Options
+        "travel_near": "வீட்டின் அருகில் மட்டும்",
+        "travel_state": "அதே மாநிலத்தில்",
+        "travel_peninsula": "தீபகற்ப மலேசியாவில் எங்கு வேண்டுமானாலும்",
+        "travel_any": "எந்த கட்டுப்பாடுகளும் இல்லை",
         
         # Subject Names
         "subj_bm": "மலாய் மொழி",
