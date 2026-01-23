@@ -291,11 +291,17 @@ def render_profile_page(user, t):
                 st.markdown(f"### {t['lbl_financial']}")
                 
                 # Financial Slider
-                # Map using translated strings
+                # Map using translated strings - Bold only the label, not the description
+                def bold_label(full_str):
+                    parts = full_str.split(" (", 1)
+                    if len(parts) == 2:
+                        return f"**{parts[0]}** ({parts[1]}"
+                    return f"**{full_str}**"
+                
                 fin_map = {
-                    0: f"**{t['fin_low']}**", 
-                    50: f"**{t['fin_med']}**", 
-                    100: f"**{t['fin_high']}**"
+                    0: bold_label(t['fin_low']), 
+                    50: bold_label(t['fin_med']), 
+                    100: bold_label(t['fin_high'])
                 }
                 
                 # Reverse lookup needs to handle potentially non-bold stored values from previous saves
