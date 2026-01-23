@@ -261,7 +261,7 @@ def render_profile_page(user, t):
         # Read-Only Section
         c1, c2 = st.columns([1, 2])
         with c1:
-            st.markdown(f"**Preferred Name:**\n\n{user.get('full_name', '-')}")
+            st.markdown(f"**{t.get('lbl_preferred_name_display', 'Preferred Name:')}**\n\n{user.get('full_name', '-')}")
         with c2:
             st.markdown(f"**{t['profile_phone']}:**\n\n{user.get('phone', '-')}")
             
@@ -825,6 +825,9 @@ if user:
                 st.sidebar.success(t.get('report_unlock_msg', "💡 **Report available!**"))
                 # Don't clear the flag immediately - let it persist for this session
             
+            if not report:
+                 st.sidebar.warning(t.get('err_report_unavailable', "Report not available. Please retake the Discovery Quiz."))
+            
             # Always show button when dashboard has been visited
             if st.sidebar.button(f"📋 {t.get('counselor_report', 'Counselor Report')}", key="btn_ai_access_sb", use_container_width=True):
                 if report and "markdown" in report:
@@ -834,7 +837,7 @@ if user:
                     st.session_state['view_mode'] = 'ai_report'
                     st.rerun()
                 else:
-                    st.sidebar.warning("Report not available. Please retake the Discovery Quiz.")
+                    st.sidebar.warning(t.get('err_report_unavailable', "Report not available. Please retake the Discovery Quiz."))
 
 
 if not user:

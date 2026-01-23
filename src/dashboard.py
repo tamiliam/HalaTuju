@@ -388,8 +388,8 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
 <table style="width:100%; border-collapse: collapse; font-size: 0.9em;">
 <thead>
 <tr style="border-bottom: 2px solid #e1e1e1; background: #fafafa;">
-<th style="padding: 8px; text-align:left; color:#6C5CE7; font-weight:700;">Institution</th>
-<th style="padding: 8px; text-align:left; color:#6C5CE7; font-weight:700;">State</th>
+<th style="padding: 8px; text-align:left; color:#6C5CE7; font-weight:700;">{t.get('lbl_institution', 'Institution') if t else 'Institution'}</th>
+<th style="padding: 8px; text-align:left; color:#6C5CE7; font-weight:700;">{t.get('lbl_state', 'State') if t else 'State'}</th>
 </tr>
 </thead>
 <tbody>
