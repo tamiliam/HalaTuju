@@ -374,7 +374,6 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
 <tr style="border-bottom: 1px solid #f1f2f6;">
 <td style="padding: 8px;"><a href="{url}" target="_blank" class="inst-link">{name}</a></td>
 <td style="padding: 8px; color: #636e72;">{state}</td>
-<td style="padding: 8px; text-align:right; font-weight:bold; color:#6C5CE7;">{score_loc}</td>
 </tr>
 """
              
@@ -385,7 +384,6 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
 <tr style="border-bottom: 2px solid #e1e1e1; background: #fafafa;">
 <th style="padding: 8px; text-align:left; color:#6C5CE7; font-weight:700;">Institution</th>
 <th style="padding: 8px; text-align:left; color:#6C5CE7; font-weight:700;">State</th>
-<th style="padding: 8px; text-align:right; color:#6C5CE7; font-weight:700;">Fit</th>
 </tr>
 </thead>
 <tbody>
@@ -408,7 +406,6 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
         card_html = textwrap.dedent(f"""
 <div class="course-card" style="margin-bottom: 20px; padding-bottom: 5px;">
 {title_html}
-<div class="card-id">Fit Score: {score}</div>
 <div class="card-desc">
 {synopsis}
 </div>
@@ -430,7 +427,6 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
         card_header_html = textwrap.dedent(f"""
 <div class="course-card" style="margin-bottom: 10px; padding-bottom: 5px;">
 {title_html}
-<div class="card-id">Fit Score: {score}</div>
 <div class="card-desc">
 {synopsis}
 </div>

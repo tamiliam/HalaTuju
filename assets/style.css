@@ -350,6 +350,32 @@ div[data-testid="stToast"] {
     overflow: hidden;
 }
 
+.inst-table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em;
+}
+
+.inst-table-container tr {
+    border-bottom: 1px solid #f1f2f6;
+}
+
+.inst-table-container th,
+.inst-table-container td {
+    padding: 12px 16px;
+    text-align: left;
+}
+
+.inst-table-container th {
+    color: #6C5CE7;
+    font-weight: 700;
+    background: #fafafa;
+}
+
+.inst-table-container td:nth-child(2) {
+    color: #636e72;
+}
+
 /* Institution Link styling */
 .inst-link {
     text-decoration: none;
