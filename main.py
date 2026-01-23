@@ -1085,6 +1085,15 @@ if auth_status:
         search_term = st.text_input(f"🔍 {t.get('lbl_search', 'Search Courses')}", placeholder="Type course name or institution...", key="search_term").strip().lower()
         
         # --- FILTER POPOVER ---
+        # Robustness: Ensure columns exist (Handle Stale Session State)
+        if "frontend_label" not in df_display.columns:
+            df_display["frontend_label"] = "General"
+            
+        if "level" not in df_display.columns:
+            # If missing, it implies stale data. We should probably force refresh, 
+            # but for now, prevent crash.
+            df_display["level"] = "Certificate"
+
         # Option 1: Clean Popover UI with Blue Pills
         with st.popover("🌪️ Filter Options", use_container_width=False):
             st.markdown("### Filter")
