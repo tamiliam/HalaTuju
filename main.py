@@ -72,7 +72,7 @@ def render_quiz_page(lang_code, user):
                     
     elif quiz_manager.is_complete(lang_code):
         # Quiz Complete Transition
-        with st.spinner("Generating your fit..."):
+        with st.spinner(t.get('quiz_generating', "Generating your fit...")):
             time.sleep(1.5)
             
         # Get Results
@@ -425,7 +425,7 @@ def render_quiz_page(lang_code, user):
     if q:
         # Render Question Card
         with st.container():
-            st.markdown(f"**Question {step + 1} of {total}**")
+            st.markdown(f"**{t['quiz_question_count'].format(step=step+1, total=total)}**")
             st.markdown(f"### {q['prompt']}")
             st.markdown("") # Spacer
             
@@ -437,13 +437,13 @@ def render_quiz_page(lang_code, user):
                     
             st.markdown("---")
             if step > 0:
-                if st.button("⬅️ Back"):
+                if st.button(t['btn_back']):
                     quiz_manager.go_back()
                     st.rerun()
                     
     elif quiz_manager.is_complete(lang_code):
         # Quiz Complete Transition
-        with st.spinner("Generating your fit..."):
+        with st.spinner(t.get('quiz_generating', "Generating your fit...")):
             time.sleep(1.5)
             
         # Get Results
@@ -453,7 +453,7 @@ def render_quiz_page(lang_code, user):
         if user:
             try:
                 auth.save_quiz_results(user['id'], results['student_signals'])
-                st.toast("Results Saved!")
+                st.toast(t.get('quiz_saved', "Results Saved!"))
                 
             except Exception as e:
                 st.error(f"Could not save results: {e}")
@@ -826,7 +826,7 @@ if user:
                 # Don't clear the flag immediately - let it persist for this session
             
             # Always show button when dashboard has been visited
-            if st.sidebar.button("📋 Counselor Report", key="btn_ai_access_sb", use_container_width=True):
+            if st.sidebar.button(f"📋 {t.get('counselor_report', 'Counselor Report')}", key="btn_ai_access_sb", use_container_width=True):
                 if report and "markdown" in report:
                     # Clear the unlock flag when accessing report
                     st.session_state['report_just_unlocked'] = False
@@ -1109,7 +1109,7 @@ else:
         
 
 # --- RENDER TIER 1: FEATURED MATCHES ---
-st.markdown(f"### :star: {t.get('lbl_featured', 'Featured Matches')}")
+st.markdown(f"### :star: {t.get('feat_title', 'Featured Matches')}")
 
 # Import UI Component (Lazy import or move to top)
 from src.dashboard import display_course_card
@@ -1134,7 +1134,7 @@ for pick in tier1_featured:
 # --- RENDER TIER 2: GOOD OPTIONS ---
 if tier2_good:
     st.markdown("---")
-    st.subheader("👍 Worth Considering")
+    st.subheader(t.get('worth_considering', "👍 Worth Considering"))
     for pick in tier2_good:
          # Compact Card
         display_title = f"{pick['course_name']}" # Remove Score from header
@@ -1192,7 +1192,7 @@ if auth_status:
         })
         
         # --- SEARCH BAR ---
-        search_term = st.text_input(f"🔍 {t.get('lbl_search', 'Search Courses')}", placeholder="Type course name or institution...", key="search_term").strip().lower()
+        search_term = st.text_input(f"🔍 {t.get('lbl_search', 'Search Courses')}", placeholder=t.get('search_placeholder', "Type course name or institution..."), key="search_term").strip().lower()
         
         # --- FILTER POPOVER ---
         # Robustness: Ensure columns exist (Handle Stale Session State)
@@ -1205,7 +1205,7 @@ if auth_status:
             df_display["level"] = "Certificate"
 
         # Option 1: Clean Popover UI with Blue Pills
-        with st.popover("🌪️ Filter Options", use_container_width=False):
+        with st.popover(t.get('filter_options', "🌪️ Filter Options"), use_container_width=False):
             st.markdown("### Filter")
             
             # 1. Institution Type (Expanded)
@@ -1218,7 +1218,7 @@ if auth_status:
             cat_col = t['table_col_cat']
             cat_opts = sorted(df_display[cat_col].unique(), key=sort_inst)
             
-            with st.expander("By Institution Type", expanded=True):
+            with st.expander(t.get('filter_by_inst_type', "By Institution Type"), expanded=True):
                 cat_filter = st.pills("Select Type", options=cat_opts, selection_mode="multi", default=cat_opts, key="pill_cat", label_visibility="collapsed")
             
             # 2. Location (Collapsed)
@@ -1231,7 +1231,7 @@ if auth_status:
                 try: return state_priority.index(x)
                 except ValueError: return 999
             
-            with st.expander("By State", expanded=False):
+            with st.expander(t.get('filter_by_state', "By State"), expanded=False):
                  state_raw = [str(x) for x in df_display["state"].unique() if x]
                  state_opts = sorted(state_raw, key=sort_state)
                  state_filter = st.pills("Select States", options=state_opts, selection_mode="multi", default=state_opts, key="pill_state", label_visibility="collapsed")
@@ -1239,13 +1239,13 @@ if auth_status:
             # 3. Field of Study (Collapsed)
             field_raw = [str(x) for x in df_display["frontend_label"].unique() if x]
             field_opts = sorted(field_raw)
-            with st.expander("By Field of Education", expanded=False):
+            with st.expander(t.get('filter_by_field', "By Field of Education"), expanded=False):
                 field_filter = st.pills("Select Fields", options=field_opts, selection_mode="multi", default=field_opts, key="pill_field", label_visibility="collapsed")
 
             # 4. Level of Education (New)
             level_raw = [str(x) for x in df_display["level"].unique() if x]
             level_opts = sorted(level_raw)
-            with st.expander("By Level of Education", expanded=False):
+            with st.expander(t.get('filter_by_level', "By Level of Education"), expanded=False):
                 level_filter = st.pills("Select Level", options=level_opts, selection_mode="multi", default=level_opts, key="pill_level", label_visibility="collapsed")
             
             # Course Category (Placeholder / WIP)
@@ -1353,7 +1353,7 @@ if auth_status:
                  st.info(f"No courses match the selected filters. (Filters: {len(cat_filter)} Cats, {len(state_filter)} Locs)")
             else:
                 # Show Result Count
-                st.caption(f"Showing {len(filtered_raw)} result{'s' if len(filtered_raw) != 1 else ''}")
+                st.caption(t.get('filter_count', "Showing {shown} of {total} courses.").format(shown=len(filtered_raw), total=total_items_raw))
 
                 # 1. Init Pagination (Only calculate page, don't render controls yet if user wants bottom only)
                 # But we need 'render_pagination' to get the current page state and handle logic.
@@ -1397,7 +1397,7 @@ if auth_status:
                 
                 # 4. Render Pagination Controls at Bottom
                 # This will render the buttons and update state on click
-                render_pagination(total_items, BATCH_SIZE, pg_key, unique_id="bottom")
+                render_pagination(total_items, BATCH_SIZE, pg_key, unique_id="bottom", t=t)
 
 else:
     # --- LOCKED VIEW ---

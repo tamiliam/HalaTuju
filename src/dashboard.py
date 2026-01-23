@@ -18,7 +18,7 @@ except ImportError:
 
 BATCH_SIZE = 10 # Configurable
 
-def render_pagination(total_items, items_per_page, current_page_key, unique_id="main"):
+def render_pagination(total_items, items_per_page, current_page_key, unique_id="main", t=None):
     import math
     if total_items <= items_per_page: return 1
     
@@ -46,7 +46,13 @@ def render_pagination(total_items, items_per_page, current_page_key, unique_id="
             st.rerun()
             
     with c3:
-        st.markdown(f"<div style='text-align:center; padding-top: 5px;'>Page <b>{current}</b> of <b>{total_pages}</b></div>", unsafe_allow_html=True)
+        # Localized Page Count
+        if t:
+            count_html = t.get('lbl_page_count', "Page <b>{current}</b> of <b>{total}</b>").format(current=current, total=total_pages)
+        else:
+            count_html = f"Page <b>{current}</b> of <b>{total_pages}</b>"
+            
+        st.markdown(f"<div style='text-align:center; padding-top: 5px;'>{count_html}</div>", unsafe_allow_html=True)
         
     with c4:
         if st.button(">", key=f"{current_page_key}_{unique_id}_next", disabled=(current==total_pages)):
@@ -413,7 +419,7 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
 <span class="meta-pill pill-dur">🕒 {dur}</span>
 <span class="meta-pill pill-fees">💰 {fees}</span>
 <span class="meta-pill pill-hostel">🏠 {hostel}</span>
-<a href="{det_url}" target="_blank" class="meta-pill pill-link">More details ↗</a>
+<a href="{det_url}" target="_blank" class="meta-pill pill-link">{t.get('more_details', 'More details ↗') if t else 'More details ↗'}</a>
 </div>
 {career_html}
 {tbl_html}
@@ -434,7 +440,7 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
 <span class="meta-pill pill-dur">🕒 {dur}</span>
 <span class="meta-pill pill-fees">💰 {fees}</span>
 <span class="meta-pill pill-hostel">🏠 {hostel}</span>
-<a href="{det_url}" target="_blank" class="meta-pill pill-link">More details ↗</a>
+<a href="{det_url}" target="_blank" class="meta-pill pill-link">{t.get('more_details', 'More details ↗') if t else 'More details ↗'}</a>
 </div>
 {career_html}
 </div>
