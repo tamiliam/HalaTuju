@@ -1,120 +1,8 @@
 import streamlit as st
-import re # Added for validation
-
-# ... (Previous imports)
-
-# ... (Inside render_profile_page)
-
-        # Edit Form
-        with st.expander(t['header_edit_details'], expanded=True):
-            with st.form("edit_profile"):
-                new_name = st.text_input(t['lbl_preferred_name'], value=user.get('full_name', ''))
-                new_email = st.text_input(t['lbl_email'], value=user.get('email', ''))
-                
-                # Location & logistics
-                c_city, c_state = st.columns(2)
-                
-                # Fetch existing extras from student_signals (softly)
-                user_signals = user.get('student_signals') or {}
-                
-                with c_city:
-                    new_city = st.text_input(t['lbl_city'], value=user_signals.get('city', ''))
-                with c_state:
-                    state_opts = ["Johor", "Kedah", "Kelantan", "Melaka", "Negeri Sembilan", "Pahang", "Perak", "Perlis", "Pulau Pinang", "Sabah", "Sarawak", "Selangor", "Terengganu", "WP Kuala Lumpur", "WP Labuan", "WP Putrajaya"]
-                    curr_state = user_signals.get('state')
-                    state_idx = state_opts.index(curr_state) if curr_state in state_opts else 0
-                    new_state = st.selectbox(t['lbl_state'], state_opts, index=state_idx)
-                    
-                st.markdown("---")
-                st.markdown(f"### {t['lbl_financial']}")
-                
-                # Financial Slider
-                # Map using translated strings
-                fin_map = {
-                    0: f"**{t['fin_low']}**", 
-                    50: f"**{t['fin_med']}**", 
-                    100: f"**{t['fin_high']}**"
-                }
-                
-                # Reverse lookup needs to handle potentially non-bold stored values from previous saves
-                # We store the *Key* or the *Value*? Previous code stored the String.
-                # To be robust, let's store standard keys? No, user asked for bold labels.
-                # Let's clean the stored value to find the slider position.
-                
-                curr_fin_raw = user_signals.get('financial_pressure', t['fin_med'])
-                
-                # Heuristic to find position
-                slider_val = 50
-                if "Low" in curr_fin_raw or "Rendah" in curr_fin_raw or "குறைவு" in curr_fin_raw: slider_val = 0
-                elif "High" in curr_fin_raw or "Tinggi" in curr_fin_raw or "அதிகம்" in curr_fin_raw: slider_val = 100
-                
-                new_fin_val = st.select_slider(
-                    t['lbl_financial'],
-                    options=[0, 50, 100],
-                    value=slider_val,
-                    format_func=lambda x: fin_map[x],
-                    label_visibility="collapsed"
-                )
-                new_fin_str = fin_map[new_fin_val].replace("**", "") # Store clean text
-                
-                # Travel Willingness
-                travel_opts = [t['travel_near'], t['travel_state'], t['travel_peninsula'], t['travel_any']]
-                
-                # Map stored value to current language option
-                # This is tricky if language changes. Ideally we store codes (0,1,2,3).
-                # For now, simplistic index matching or default to 2.
-                # Let's default to index 2 ("Semanjung")
-                travel_idx = 2
-                
-                curr_travel = user_signals.get('travel_willingness', '')
-                # Try to fuzzy match
-                if curr_travel:
-                    # Simple check against all opts (in current lang)
-                    if curr_travel in travel_opts:
-                        travel_idx = travel_opts.index(curr_travel)
-                
-                new_travel = st.selectbox(t['lbl_travel'], travel_opts, index=travel_idx)
-                
-                st.markdown("---")
-                
-                new_gender = st.radio(t['lbl_gender'], [t["gender_male"], t["gender_female"]], index=0 if user.get('gender') == "Male" else 1, horizontal=True)
-                
-                # Health
-                # Map stored value (Tidak/Ya) to index
-                cb_val = user.get('colorblind', t['opt_no'])
-                cb_idx = 1 if cb_val == t['opt_yes'] or cb_val == 'Ya' or cb_val == 'Yes' or cb_val == 'ஆம்' else 0
-                new_cb = st.radio(t['lbl_colorblind'], [t['opt_no'], t['opt_yes']], index=cb_idx, key="p_cb", horizontal=True)
-                
-                dis_val = user.get('disability', t['opt_no'])
-                dis_idx = 1 if dis_val == t['opt_yes'] or dis_val == 'Ya' or dis_val == 'Yes' or dis_val == 'ஆம்' else 0
-                new_dis = st.radio(t['lbl_disability'], [t['opt_no'], t['opt_yes']], index=dis_idx, key="p_dis", horizontal=True)
-                
-                if st.form_submit_button(t['btn_update_profile']): # Updated Label "Kemaskini" / "Update"
-                    # Validate Email
-                    valid_email = True
-                    if new_email:
-                         if not re.match(r"[^@]+@[^@]+\.[^@]+", new_email):
-                             st.error(t['err_email_invalid'])
-                             valid_email = False
-                    
-                    if valid_email:
-                        # Merge Extras into Student Signals
-                        updated_signals = user_signals.copy()
-                        updated_signals.update({
-                            "city": new_city,
-                            "state": new_state,
-                            "financial_pressure": new_fin_str,
-                            "travel_willingness": new_travel
-                        })
-                    
-                        success, msg = auth.update_profile(user['id'], {
-                            "full_name": new_name,
-                            "email": new_email,
-                            "gender": new_gender,
-                            "colorblind": new_cb,
-                            "disability": new_dis,
-                            "student_signals": updated_signals
-                        })
+import re
+import pandas as pd
+import time
+from supabase import create_client, Client
 from src.engine import StudentProfile
 from src.dashboard import generate_dashboard_data, group_courses_by_id
 from src.ranking_engine import get_ranked_results, TAG_COUNT, sort_courses
@@ -382,8 +270,8 @@ def render_profile_page(user, t):
         # Edit Form
         with st.expander(t['header_edit_details'], expanded=True):
             with st.form("edit_profile"):
-                new_name = st.text_input("Preferred Name", value=user.get('full_name', ''))
-                new_email = st.text_input("Email", value=user.get('email', ''))
+                new_name = st.text_input(t['lbl_preferred_name'], value=user.get('full_name', ''))
+                new_email = st.text_input(t['lbl_email'], value=user.get('email', ''))
                 
                 # Location & logistics
                 c_city, c_state = st.columns(2)
@@ -392,47 +280,59 @@ def render_profile_page(user, t):
                 user_signals = user.get('student_signals') or {}
                 
                 with c_city:
-                    new_city = st.text_input("City", value=user_signals.get('city', ''))
+                    new_city = st.text_input(t['lbl_city'], value=user_signals.get('city', ''))
                 with c_state:
                     state_opts = ["Johor", "Kedah", "Kelantan", "Melaka", "Negeri Sembilan", "Pahang", "Perak", "Perlis", "Pulau Pinang", "Sabah", "Sarawak", "Selangor", "Terengganu", "WP Kuala Lumpur", "WP Labuan", "WP Putrajaya"]
                     curr_state = user_signals.get('state')
                     state_idx = state_opts.index(curr_state) if curr_state in state_opts else 0
-                    new_state = st.selectbox("State", state_opts, index=state_idx)
+                    new_state = st.selectbox(t['lbl_state'], state_opts, index=state_idx)
                     
                 st.markdown("---")
-                st.markdown("### Financial & Logistics")
+                st.markdown(f"### {t['lbl_financial']}")
                 
                 # Financial Slider
-                # Low (0), Medium (50), High (100) -> Mapping strings
-                fin_map = {0: "Low (family can support)", 50: "Medium (some help, but careful)", 100: "High (need lowest-cost option)"}
-                rev_fin = {v: k for k, v in fin_map.items()}
+                # Map using translated strings
+                fin_map = {
+                    0: f"**{t['fin_low']}**", 
+                    50: f"**{t['fin_med']}**", 
+                    100: f"**{t['fin_high']}**"
+                }
                 
-                curr_fin = user_signals.get('financial_pressure', "Medium (some help, but careful)")
-                slider_val = rev_fin.get(curr_fin, 50)
+                # Reverse lookup needs to handle potentially non-bold stored values from previous saves
+                curr_fin_raw = user_signals.get('financial_pressure', t['fin_med'])
+                
+                # Heuristic to find position
+                slider_val = 50
+                if "Low" in curr_fin_raw or "Rendah" in curr_fin_raw or "குறைவு" in curr_fin_raw: slider_val = 0
+                elif "High" in curr_fin_raw or "Tinggi" in curr_fin_raw or "அதிகம்" in curr_fin_raw: slider_val = 100
                 
                 new_fin_val = st.select_slider(
-                    "Financial Pressure",
+                    t['lbl_financial'],
                     options=[0, 50, 100],
                     value=slider_val,
-                    format_func=lambda x: fin_map[x]
+                    format_func=lambda x: fin_map[x],
+                    label_visibility="collapsed"
                 )
-                new_fin_str = fin_map[new_fin_val]
+                new_fin_str = fin_map[new_fin_val].replace("**", "") # Store clean text
                 
                 # Travel Willingness
-                travel_opts = ["Near home only", "Same state", "Anywhere in Semenanjung Malaysia", "No restrictions"]
-                curr_travel = user_signals.get('travel_willingness', "Anywhere in Semenanjung Malaysia")
-                travel_idx = travel_opts.index(curr_travel) if curr_travel in travel_opts else 2
+                travel_opts = [t['travel_near'], t['travel_state'], t['travel_peninsula'], t['travel_any']]
                 
-                new_travel = st.selectbox("Willingness to travel for education", travel_opts, index=travel_idx)
+                # Map stored value to current language option
+                travel_idx = 2
+                curr_travel = user_signals.get('travel_willingness', '')
+                if curr_travel:
+                    if curr_travel in travel_opts:
+                        travel_idx = travel_opts.index(curr_travel)
+                
+                new_travel = st.selectbox(t['lbl_travel'], travel_opts, index=travel_idx)
                 
                 st.markdown("---")
                 
                 new_gender = st.radio(t['lbl_gender'], [t["gender_male"], t["gender_female"]], index=0 if user.get('gender') == "Male" else 1, horizontal=True)
                 
                 # Health
-                # Map stored value (Tidak/Ya) to index
                 cb_val = user.get('colorblind', t['opt_no'])
-                # Handle language mismatch by checking if value is known 'Yes' or 'No', otherwise default 0
                 cb_idx = 1 if cb_val == t['opt_yes'] or cb_val == 'Ya' or cb_val == 'Yes' or cb_val == 'ஆம்' else 0
                 new_cb = st.radio(t['lbl_colorblind'], [t['opt_no'], t['opt_yes']], index=cb_idx, key="p_cb", horizontal=True)
                 
@@ -440,26 +340,33 @@ def render_profile_page(user, t):
                 dis_idx = 1 if dis_val == t['opt_yes'] or dis_val == 'Ya' or dis_val == 'Yes' or dis_val == 'ஆம்' else 0
                 new_dis = st.radio(t['lbl_disability'], [t['opt_no'], t['opt_yes']], index=dis_idx, key="p_dis", horizontal=True)
                 
-                if st.form_submit_button(t['btn_save_changes']):
-                    # Merge Extras into Student Signals
-                    updated_signals = user_signals.copy()
-                    updated_signals.update({
-                        "city": new_city,
-                        "state": new_state,
-                        "financial_pressure": new_fin_str,
-                        "travel_willingness": new_travel
-                    })
-                
-                    success, msg = auth.update_profile(user['id'], {
-                        "full_name": new_name,
-                        "email": new_email,
-                        "gender": new_gender,
-                        "colorblind": new_cb,
-                        "disability": new_dis,
-                        "student_signals": updated_signals
-                    })
-                    if success:
-                        st.success(msg)
+                if st.form_submit_button(t['btn_update_profile']):
+                    # Validate Email
+                    valid_email = True
+                    if new_email:
+                         if not re.match(r"[^@]+@[^@]+\.[^@]+", new_email):
+                             st.error(t['err_email_invalid'])
+                             valid_email = False
+                    
+                    if valid_email:
+                        updated_signals = user_signals.copy()
+                        updated_signals.update({
+                            "city": new_city,
+                            "state": new_state,
+                            "financial_pressure": new_fin_str,
+                            "travel_willingness": new_travel
+                        })
+                    
+                        success, msg = auth.update_profile(user['id'], {
+                            "full_name": new_name,
+                            "email": new_email,
+                            "gender": new_gender,
+                            "colorblind": new_cb,
+                            "disability": new_dis,
+                            "student_signals": updated_signals
+                        })
+                        if success:
+                            st.success(msg)
                         # Invalid Cache to force refresh
                         if 'dash' in st.session_state: del st.session_state['dash']
                         time.sleep(1)
