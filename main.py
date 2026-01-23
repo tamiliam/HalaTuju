@@ -677,73 +677,49 @@ def render_ai_report_page(user, t):
         # Print Button (uses browser print dialog)
         if st.button("🖨️ Print Report", use_container_width=True, key="btn_print"):
             import streamlit.components.v1 as components
-            import json
+            import base64
+            from src.reports.pdf_generator import PDFReportGenerator
             
-            # 1. Get the markdown content
-            md_content = report.get('markdown', '')
+            # 1. Generate PDF (Reuse Download Logic)
+            # Reconstruct profile for PDF
+            ai_signals = st.session_state.get('student_signals', {})
+            if not ai_signals and user and user.get('student_signals'):
+                ai_signals = user['student_signals']
+                
+            ai_profile = {
+                "full_name": user.get('full_name', '') if user else '',
+                "grades": user.get('grades', {}) if user else {},
+                "student_signals": ai_signals
+            }
             
-            # 2. Escape it safely for JS injection using JSON stringification
-            # This handles newlines, quotes, and backslashes automatically
-            safe_md_json = json.dumps(md_content)
+            pdf_gen = PDFReportGenerator()
+            c_name = report.get('counsellor_name', "HalaTuju (AI)")
+            pdf_buffer = pdf_gen.generate_pdf(ai_profile, report['markdown'], counsellor_name=c_name)
             
-            # 3. Inject JS to open a new window, render MD -> HTML, and print
+            # 2. Encode to Base64
+            b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
+            
+            # 3. Open in New Window via Iframe
+            # Note: Automatic printing of PDF frames is browser-dependent.
+            # We show the PDF and the user can click the print icon in the PDF viewer.
             js_code = f"""
             <script>
-                // The content is a JSON string, so we parse it to get the raw string back
-                const markdownText = {safe_md_json};
-                
-                const printWindow = window.open('', '_blank');
-                if (printWindow) {{
-                    printWindow.document.write(`
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                            <title>Career Guidance Report</title>
-                            <!-- Load marked.js for Markdown parsing -->
-                            <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"><\/script>
-                            <style>
-                                body {{
-                                    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-                                    line-height: 1.6;
-                                    color: #333;
-                                    max-width: 800px;
-                                    margin: 0 auto;
-                                    padding: 40px;
-                                }}
-                                h1, h2, h3 {{ color: #2c3e50; }}
-                                h1 {{ border-bottom: 2px solid #eee; padding-bottom: 10px; }}
-                                hr {{ border: 0; border-top: 1px solid #eee; margin: 20px 0; }}
-                                table {{ border-collapse: collapse; width: 100%; margin: 20px 0; }}
-                                th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
-                                th {{ background-color: #f8f9fa; }}
-                                blockquote {{ border-left: 4px solid #6C5CE7; margin: 0; padding-left: 15px; color: #555; }}
-                                @media print {{
-                                    body {{ padding: 0; }}
-                                    button {{ display: none; }}
-                                }}
-                            </style>
-                        </head>
-                        <body>
-                            <div id="content">Loading report...</div>
-                            <script>
-                                document.addEventListener('DOMContentLoaded', function() {{
-                                    const contentDiv = document.getElementById('content');
-                                    // Parse Markdown to HTML
-                                    contentDiv.innerHTML = marked.parse(markdownText);
-                                    
-                                    // Wait a brief moment for images/fonts (if any) then print
-                                    setTimeout(() => {{
-                                        window.print();
-                                        // Optional: window.close(); 
-                                    }}, 500);
-                                }});
-                            <\/script>
-                        </body>
-                        </html>
-                    `);
-                    printWindow.document.close();
+                const pdfData = "data:application/pdf;base64,{b64_pdf}";
+                const printWin = window.open('', '_blank');
+                if (printWin) {{
+                    printWin.document.write('<html><head><title>Print Report</title>');
+                    printWin.document.write('<style>body, html {{ margin: 0; padding: 0; height: 100%; overflow: hidden; }} iframe {{ width: 100%; height: 100%; border: none; }}</style>');
+                    printWin.document.write('</head><body>');
+                    printWin.document.write('<iframe width="100%" height="100%" src="' + pdfData + '"></iframe>');
+                    printWin.document.write('</body></html>');
+                    printWin.document.close();
+                    
+                    // Attempt to auto-print after a delay (works in some browsers like Chrome)
+                    setTimeout(() => {{
+                        printWin.print(); 
+                    }}, 1000);
                 }} else {{
-                    alert('Please allow popups for this site to print the report.');
+                    alert('Please allow popups to print the report.');
                 }}
             </script>
             """
