@@ -370,9 +370,9 @@ def render_profile_page(user, t):
                         # Invalid Cache to force refresh
                         if 'dash' in st.session_state: del st.session_state['dash']
                         time.sleep(1)
-                        st.rerun()
-                    else:
-                        st.error(msg)
+                            st.rerun()
+                        else:
+                            st.error(msg)
 
         # Edit Grades Form
         with st.expander(t['header_edit_grades']):
