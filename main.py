@@ -699,27 +699,29 @@ def render_ai_report_page(user, t):
             # 2. Encode to Base64
             b64_pdf = base64.b64encode(pdf_buffer.getvalue()).decode('utf-8')
             
-            # 3. Open in New Window via Iframe
-            # Note: Automatic printing of PDF frames is browser-dependent.
-            # We show the PDF and the user can click the print icon in the PDF viewer.
+            # 3. Open in New Window via Blob URL (More reliable than Iframes/Data URIs)
             js_code = f"""
             <script>
-                const pdfData = "data:application/pdf;base64,{b64_pdf}";
-                const printWin = window.open('', '_blank');
-                if (printWin) {{
-                    printWin.document.write('<html><head><title>Print Report</title>');
-                    printWin.document.write('<style>body, html {{ margin: 0; padding: 0; height: 100%; overflow: hidden; }} iframe {{ width: 100%; height: 100%; border: none; }}</style>');
-                    printWin.document.write('</head><body>');
-                    printWin.document.write('<iframe width="100%" height="100%" src="' + pdfData + '"></iframe>');
-                    printWin.document.write('</body></html>');
-                    printWin.document.close();
-                    
-                    // Attempt to auto-print after a delay (works in some browsers like Chrome)
-                    setTimeout(() => {{
-                        printWin.print(); 
-                    }}, 1000);
-                }} else {{
-                    alert('Please allow popups to print the report.');
+                const b64 = "{b64_pdf}";
+                
+                // Convert Base64 to Blob
+                const byteCharacters = atob(b64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {{
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }}
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], {{type: 'application/pdf'}});
+                
+                // Create Blob URL
+                const blobUrl = URL.createObjectURL(blob);
+                
+                // Open in new tab/window
+                const printWin = window.open(blobUrl, '_blank');
+                
+                // Optional: Hint user to print if needed, but the native viewer usually has a print button
+                if (!printWin) {{
+                    alert('Please allow popups to view and print the report.');
                 }}
             </script>
             """
