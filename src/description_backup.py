@@ -1,77 +1,7 @@
 # description.py
 
 # This file contains the "Human-Friendly" descriptions for all Polytechnic Courses.
-# Jobs are now dynamically loaded from CSV files (course_masco_link.csv + masco_details.csv)
-
-import os
-import csv
-
-def _load_jobs_from_csv():
-    """
-    Loads job data from CSV files and returns a mapping:
-    {course_id: [{"title": "Job Title", "url": "https://..."}, ...]}
-    """
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(current_dir)
-    data_dir = os.path.join(project_root, 'data')
-    
-    link_file = os.path.join(data_dir, 'course_masco_link.csv')
-    details_file = os.path.join(data_dir, 'masco_details.csv')
-    
-    # 1. Load MASCO Details: {masco_code: {title, url}}
-    masco_lookup = {}
-    if os.path.exists(details_file):
-        try:
-            with open(details_file, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    code = row.get('masco_code', '').strip()
-                    title = row.get('job_title', '').strip()
-                    url = row.get('url', '').strip()
-                    if code and title:
-                        masco_lookup[code] = {"title": title, "url": url}
-        except Exception as e:
-            print(f"Warning: Could not load masco_details.csv: {e}")
-    
-    # 2. Load Course-MASCO Links: {course_id: [masco_codes]}
-    course_masco = {}
-    if os.path.exists(link_file):
-        try:
-            with open(link_file, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    course_id = row.get('course_id', '').strip()
-                    masco_code = row.get('masco_code', '').strip()
-                    if course_id and masco_code:
-                        if course_id not in course_masco:
-                            course_masco[course_id] = []
-                        # Avoid duplicates
-                        if masco_code not in course_masco[course_id]:
-                            course_masco[course_id].append(masco_code)
-        except Exception as e:
-            print(f"Warning: Could not load course_masco_link.csv: {e}")
-    
-    # 3. Join: {course_id: [{title, url}, ...]}
-    result = {}
-    for course_id, masco_codes in course_masco.items():
-        jobs = []
-        seen_titles = set()  # Avoid duplicate job titles
-        for code in masco_codes:
-            if code in masco_lookup:
-                job = masco_lookup[code]
-                if job["title"] not in seen_titles:
-                    jobs.append(job)
-                    seen_titles.add(job["title"])
-        result[course_id] = jobs
-    
-    return result
-
-# Load jobs once at module import
-_JOBS_DATA = _load_jobs_from_csv()
-
-def get_jobs_for_course(course_id):
-    """Returns list of job dicts [{title, url}, ...] for a course."""
-    return _JOBS_DATA.get(course_id, [])
+# It is imported by app.py to display the "Course Details" card.
 
 course_info = {
     # --- AGROTECHNOLOGY ---

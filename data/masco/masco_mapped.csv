@@ -1,0 +1,552 @@
+course_id,masco_code,job_title
+POLY-DIP-001,3142,Juruteknik Pertanian Dan Penternakan
+POLY-DIP-001,3142-16,Penolong Pegawai Pertanian Gred G29
+POLY-DIP-001,3111-18,Konduktor Penyelidikan Makmal Ladang
+POLY-DIP-002,3111-36,Penolong Pegawai Sains Gred C29
+POLY-DIP-002,3111-32,Juruteknik Makmal
+POLY-DIP-002,3141,Juruteknik Sains Hayat (Tidak Termasuk Perubatan)
+POLY-DIP-003,3112-14,Juruteknik Ukur
+POLY-DIP-003,3118-29,Penolong Pegawai Tanah (Semenanjung) NT29
+POLY-DIP-003,3118,Pelukis Pelan Dan Juruteknik Ukur
+POLY-DIP-004,5222,Penyelia Kedai
+POLY-DIP-004,3322-16,Penolong Pegawai Pemasaran
+POLY-DIP-004,5222-02,Penyelia Jualan
+POLY-DIP-005,3321,Wakil Insurans
+POLY-DIP-005,3315-06,Pelaras Insurans
+POLY-DIP-005,4312-14,Pembantu Tuntutan Insurans
+POLY-DIP-006,3257-49,Penolong Pegawai Kawalan Alam Sekitar Gred C29
+POLY-DIP-006,3119-40,Juruteknik Air Sisa
+POLY-DIP-006,3119-36,Juruteknik Sisa Pepejal
+POLY-DIP-007,3112-25,Penolong Jurutera Awam
+POLY-DIP-007,3112,Juruteknik Kejuruteraan Awam
+POLY-DIP-007,3112-15,Juruteknik Binaan
+POLY-DIP-008,3113,Juruteknik Kejuruteraan Elektrik
+POLY-DIP-008,3113-16,Penolong Jurutera Elektrik
+POLY-DIP-008,3113-14,Juruteknik Elektrik Voltan Tinggi
+POLY-DIP-009,3114,Juruteknik Kejuruteraan Elektronik
+POLY-DIP-009,3113,Juruteknik Kejuruteraan Elektrik
+POLY-DIP-009,3114-04,Juruteknik Reka Bentuk Elektronik
+POLY-DIP-010,3139,Juruteknik Kawalan Proses
+POLY-DIP-010,3115-35,Penolong Jurutera Automasi Perindustrian
+POLY-DIP-010,3115-23,Juruteknik Automasi Robot
+POLY-DIP-011,3313-18,Juruteknik Audit Tenaga
+POLY-DIP-011,3113-16,Penolong Jurutera Elektrik
+POLY-DIP-011,4311-32,Pembantu Juruteknik Audit Tenaga
+POLY-DIP-012,3113-03,Juruteknik Kejuruteraan Elektrik Voltan Tinggi
+POLY-DIP-012,3112-27,Juruteknik Penyelenggaraan Kemudahan Bangunan Hijau
+POLY-DIP-012,3313-18,Juruteknik Audit Tenaga
+POLY-DIP-013,3114,Juruteknik Kejuruteraan Elektronik
+POLY-DIP-013,3511-13,Juruteknik Semikonduktor
+POLY-DIP-013,3114-05,Juruteknik Elektronik Fabrikasi Wafer
+POLY-DIP-014,3115-23,Juruteknik Automasi Robot
+POLY-DIP-014,3111-38,Juruteknik Proses Kimia
+POLY-DIP-014,3112-17,Juruteknik Instrumen Proses
+POLY-DIP-015,3513,Juruteknik Rangkaian Dan Sistem Komputer
+POLY-DIP-015,3511-03,Pembantu Tadbir (Juruteknik Komputer) Gred 21
+POLY-DIP-015,3114-04,Juruteknik Reka Bentuk Elektronik
+POLY-DIP-016,3522,Juruteknik Kejuruteraan Telekomunikasi
+POLY-DIP-016,3513-01,Juruteknik Rangkaian Komputer
+POLY-DIP-016,3153-07,Juruteknik Isyarat dan Komunikasi
+POLY-DIP-017,3211,Juruteknik Kelengkapan Pengimejan Perubatan Dan Terapeutik
+POLY-DIP-017,3211-03,Juruteknik Radiologi
+POLY-DIP-017,3114,Juruteknik Kejuruteraan Elektronik
+POLY-DIP-018,3116,Juruteknik Kejuruteraan Kimia
+POLY-DIP-018,3116-02,Juruteknik Kejuruteraan Proses Kimia
+POLY-DIP-018,3111-06,Juruteknik Kimia
+POLY-DIP-019,3115,Juruteknik Kejuruteraan Mekanikal
+POLY-DIP-019,3115-25,Juruteknik Mesin
+POLY-DIP-019,3115-55,Juruteknik Pembaikan Dan Penyelenggaraan (R&M)
+POLY-DIP-020,3115-35,Penolong Jurutera Automasi Perindustrian
+POLY-DIP-020,3115-47,Juruteknik Robotik
+POLY-DIP-020,3115-38,Juruteknik CAD/CAM (Rekabentuk Dan Pembuatan Berbantu Komputer)
+POLY-DIP-021,3154,Juruteknik Kenderaan Bermotor
+POLY-DIP-021,3154-03,Juruteknik Mekatronik Kenderaan Bermotor
+POLY-DIP-021,3115,Juruteknik Kejuruteraan Mekanikal
+POLY-DIP-022,3117,Juruteknik Perlombongan Dan Kaji Logam
+POLY-DIP-022,3117-01,Juruteknik Kaji Logam
+POLY-DIP-022,3115-29,Juruteknik Pembuatan Logam
+POLY-DIP-023,3151-13,Juruteknik Loji Kuasa
+POLY-DIP-023,3113-09,Juruteknik Kejuruteraan Elektrik Transmisi Kuasa Elektrik
+POLY-DIP-023,3151-08,Juruteknik Loji Kuasa dan Kerangka Pesawat Udara
+POLY-DIP-024,3115-27,Juruteknik CNC (Kawalan Berangka Komputer)
+POLY-DIP-024,3119-53,Juruteknik Pembuatan
+POLY-DIP-024,3115-38,Juruteknik CAD/CAM
+POLY-DIP-025,3122-04,Penyelia Pembungkusan
+POLY-DIP-025,3511-31,Juruteknik Perkhidmatan (Pencetak Pelbagai Fungsi)
+POLY-DIP-025,7322-21,Pembantu Pencetakan
+POLY-DIP-026,3115,Juruteknik Kejuruteraan Mekanikal
+POLY-DIP-026,3115-14,Pembantu Kejuruteraan Mekanikal
+POLY-DIP-027,3115-09,Juruteknik Kejuruteraan Mekanikal (Pertanian)
+POLY-DIP-027,3142-16,Penolong Pegawai Pertanian Gred G29
+POLY-DIP-027,3142,Juruteknik Pertanian Dan Penternakan
+POLY-DIP-028,3116-03,Juruteknik Kejuruteraan Petroleum
+POLY-DIP-028,3116-06,Juruteknik Penapisan Petroleum
+POLY-DIP-028,3116-05,Juruteknik Kejuruteraan Kimia (Petroleum)
+POLY-DIP-029,7211-01,Pembuat Acuan
+POLY-DIP-029,7211-02,Pembaik Acuan Foundri
+POLY-DIP-030,3154-09,Juruteknik Kejuruteraan Automotif
+POLY-DIP-030,3115-38,Juruteknik CAD/CAM
+POLY-DIP-030,3154-04,Juruteknik Automotif Sistem Brek
+POLY-DIP-031,3118-02,Juruteknik Lukis Pelan
+POLY-DIP-031,3115-38,Juruteknik CAD/CAM
+POLY-DIP-031,3112-01,Juruteknik Instrumen Perindustrian
+POLY-DIP-032,3115-24,Juruteknik Mekatronik
+POLY-DIP-032,3115-23,Juruteknik Automasi Robot
+POLY-DIP-032,3154-03,Juruteknik Mekatronik Kenderaan Bermotor
+POLY-DIP-033,3151-05,Juruteknik Penyelenggaraan Pesawat (Kerangka Pesawat Udara)
+POLY-DIP-033,3151-06,Juruteknik Penyelenggaraan Pesawat (Enjin)
+POLY-DIP-033,3151,Juruteknik Pesawat Udara
+POLY-DIP-034,3152,Juruteknik Kapal/ Marin
+POLY-DIP-034,3152-06,Juruteknik Kapal
+POLY-DIP-034,3521-11,Pegawai Radio Kapal
+POLY-DIP-035,3112-27,Juruteknik Penyelenggaraan Kemudahan Bangunan Hijau
+POLY-DIP-035,3112-37,Penolong Juruukur Bangunan Gred J29
+POLY-DIP-035,3112-28,Pembantu Juruteknik Penyelenggaraan Kemudahan Bangunan
+POLY-DIP-036,3116-02,Juruteknik Kejuruteraan Proses Kimia
+POLY-DIP-036,3111-38,Juruteknik Proses Kimia
+POLY-DIP-036,3112-17,Juruteknik Instrumen Proses
+POLY-DIP-037,3322-24,Penolong Pembangunan Perniagaan
+POLY-DIP-037,4312-34,Pembantu E-Dagang
+POLY-DIP-038,3313-23,Penolong Pengawal Kewangan
+POLY-DIP-038,3313-03,Penyelia Kewangan
+POLY-DIP-038,3313-15,Penolong Pegawai Eksekutif (Kewangan)
+POLY-DIP-039,3411-17,Penolong Pegawai Syariah Gred LS29
+POLY-DIP-039,3313-23,Penolong Pengawal Kewangan
+POLY-DIP-039,3612-06,Penolong Pegawai Hal Ehwal Islam Gred S29
+POLY-DIP-040,5419-06,Penyelia Rekreasi
+POLY-DIP-040,3332-03,Ejen Pelancongan
+POLY-DIP-040,3142-20,Pembantu Taman/Ladang Gred G19
+POLY-DIP-041,3322-16,Penolong Pegawai Pemasaran
+POLY-DIP-041,3322,Wakil Jualan Komersil
+POLY-DIP-041,5222-02,Penyelia Jualan
+POLY-DIP-042,3322-24,Penolong Pembangunan Perniagaan
+POLY-DIP-042,4416-10,Pembantu Sumber Manusia
+POLY-DIP-043,3332-08,Perancang Acara
+POLY-DIP-043,3332,Ejen Persidangan Dan Acara
+POLY-DIP-043,3332-05,Penganjur Persidangan dan Acara
+POLY-DIP-044,4224-10,Penyambut Tetamu Hotel
+POLY-DIP-044,5151-01,Penyelia Bankuet Hotel dan Penginapan
+POLY-DIP-044,5121-02,Tukang Masak, Perkhidmatan Hotel dan Katering
+POLY-DIP-045,4323-35,Pembantu Logistik
+POLY-DIP-045,3159-02,Penyelia Logistik
+POLY-DIP-045,3122-29,Penyelia Gudang, Operasi Logistik Halal
+POLY-DIP-046,3332-03,Ejen Pelancongan
+POLY-DIP-046,4221-01,Perunding Pelancongan
+POLY-DIP-046,4221-03,Kerani Agensi Pelancongan
+POLY-DIP-047,5222,Penyelia Kedai
+POLY-DIP-047,5223-01,Pembantu Jualan
+POLY-DIP-048,5151-02,Penyelia Tingkat Hotel dan Penginapan
+POLY-DIP-048,5419-06,Penyelia Rekreasi
+POLY-DIP-048,4224-10,Penyambut Tetamu Hotel
+POLY-DIP-049,3313-17,Juruteknik Perakaunan
+POLY-DIP-049,3313-09,Penolong Pegawai Eksekutif Perakaunan
+POLY-DIP-049,3313-26,Pembantu Akauntan
+POLY-DIP-050,3118-32,Penolong Pegawai Perancang Bandar dan Desa Gred JA29
+POLY-DIP-050,3118-25,Juruteknik Landskap
+POLY-DIP-050,3118-28,Penolong Arkitek Landskap Gred JA29
+POLY-DIP-051,3122-18,Penyelia Pengeluaran, Pengilangan Makanan Halal
+POLY-DIP-051,3122-19,Penyelia Jaminan Kualiti, Pengilangan Makanan Halal
+POLY-DIP-051,3122-28,Penyelia, Rumah Sembelihan Halal
+POLY-DIP-052,3159-02,Penyelia Logistik
+POLY-DIP-052,3159-03,Penyelia Pengangkutan, Operasi Logistik Halal
+POLY-DIP-052,4312-34,Pembantu E-Dagang
+POLY-DIP-053,3119-06,Penolong Pereka Fesyen
+POLY-DIP-053,7531-01,Pembuat Pola (Pakaian)
+POLY-DIP-053,7533-02,Tukang Jahit
+POLY-DIP-054,3514-04,Penolong Pereka Grafik
+POLY-DIP-054,3514-03,Juruanimasi Multimedia
+POLY-DIP-054,2166-02,Pereka Grafik
+POLY-DIP-055,3112-01,Juruteknik Instrumen Perindustrian
+POLY-DIP-055,3119,Juruteknik Industri Dan Pengeluaran
+POLY-DIP-055,2163-02,Pereka Produk
+POLY-DIP-056,3343-01,Penolong Pegawai Eksekutif (Kesetiausahaan) Gred 31
+POLY-DIP-056,3341-20,Penolong Pegawai Eksekutif (Pentadbiran)
+POLY-DIP-056,4120,Setiausaha
+POLY-DIP-057,3118-26,Penolong Pegawai Seni Bina Gred JA29
+POLY-DIP-057,3118-33,Penolong Pegawai Seni Bina Gred 19
+POLY-DIP-057,3112,Juruteknik Kejuruteraan Awam
+POLY-DIP-058,3641-14,Penolong Jurumasak Eksekutif
+POLY-DIP-058,3434-01,Chef
+POLY-DIP-058,5121-02,Tukang Masak
+POLY-DIP-059,3152,Juruteknik Kapal/ Marin
+POLY-DIP-059,3152-06,Juruteknik Kapal
+POLY-DIP-059,2144-03,Arkitek Kapal
+POLY-DIP-060,3511-14,Juruteknik Sistem Maklumat
+POLY-DIP-060,3514,Juruteknik Web
+POLY-DIP-060,3512-01,Juruanalisis Sistem
+POLY-DIP-061,3144-07,Penolong Pegawai Perikanan Gred G29
+POLY-DIP-061,3119-46,Juruteknik Penyelidikan Biotek Akuakultur
+POLY-DIP-061,3142,Juruteknik Pertanian Dan Penternakan
+POLY-DIP-062,7115,Tukang Kayu Dan Tukang Tanggam
+POLY-DIP-062,7115-05,Pembina Bot Kayu
+POLY-DIP-063,3118-25,Juruteknik Landskap
+POLY-DIP-063,3118-28,Penolong Arkitek Landskap Gred JA29
+POLY-DIP-063,3142-05,Juruteknik Hortikultur
+POLY-DIP-064,3115-18,Juruteknik Kejuruteraan Marin
+POLY-DIP-064,3152,Juruteknik Kapal/ Marin
+POLY-DIP-064,3152-05,Juruteknik Enjin Marin
+POLY-DIP-065,3152,Juruteknik Kapal/ Marin
+POLY-DIP-065,3115-28,Juruteknik Kimpalan
+POLY-DIP-065,7212-01,Pengimpal
+POLY-DIP-066,3111-06,Juruteknik Kimia
+POLY-DIP-066,3111-38,Juruteknik Proses Kimia
+POLY-DIP-067,3514-03,Juruanimasi Multimedia
+POLY-DIP-067,2166-02,Pereka Grafik
+POLY-DIP-068,3521-22,Jurukamera (Video)
+POLY-DIP-068,3521-25,Penolong Editor
+POLY-DIP-068,3521-04,Pembantu Produksi (Media)
+POLY-DIP-069,3514-03,Juruanimasi Multimedia
+POLY-DIP-069,2166,Pereka Grafik Dan Multimedia
+POLY-DIP-070,3257-47,Penolong Pegawai Teknologi Makanan Gred C29
+POLY-DIP-070,3119-43,Juruteknik Pemprosesan Makanan
+POLY-DIP-070,3119-19,Juruteknik Kawalan Kualiti
+POLY-DIP-071,3122-18,Penyelia Pengeluaran, Pengilangan Makanan Halal
+POLY-DIP-071,3122-19,Penyelia Jaminan Kualiti, Pengilangan Makanan Halal
+POLY-DIP-071,3122-28,Penyelia, Rumah Sembelihan Halal
+POLY-DIP-072,3512-09,Pembantu Pengaturcaraan Komputer
+POLY-DIP-072,3512-06,Penolong Pembangun Perisian
+POLY-DIP-072,2512-03,Pembangun Perisian
+POLY-DIP-073,3513-01,Juruteknik Rangkaian Komputer
+POLY-DIP-073,3513,Juruteknik Rangkaian Dan Sistem Komputer
+POLY-DIP-073,2523,Profesional Rangkaian Komputer
+POLY-DIP-074,3513-04,Juruteknik Keselamatan Sistem & Aplikasi ICT
+POLY-DIP-074,3513-06,Penolong Pegawai Keselamatan Sistem
+POLY-DIP-074,3513-03,Juruteknik Keselamatan Rangkaian (ICT)
+POLY-DIP-075,2512-03,Pembangun Perisian
+POLY-DIP-075,3512-09,Pembantu Pengaturcaraan Komputer
+POLY-DIP-075,3514-03,Juruanimasi Multimedia
+POLY-DIP-076,3514,Juruteknik Web
+POLY-DIP-076,3514-01,Juruteknik Laman Web
+POLY-DIP-076,2513,Pembangun Web Dan Multimedia
+POLY-DIP-077,3512-08,Pembantu Pangkalan Data
+POLY-DIP-077,3512-13,Penyelia Pusat Data
+POLY-DIP-077,2521-02,Pentadbir Pangkalan Data
+POLY-DIP-078,7322-21,Pembantu Pencetakan
+POLY-DIP-078,7321,Penyedia Pruf Dan Pembuat Plat
+POLY-DIP-078,3341-16,Penolong Pegawai Penerbitan Gred N29
+POLY-DIP-079,3112-32,Penolong Juruukur Bahan Gred JA29
+POLY-DIP-079,3112-31,Juruteknik Ukur Bahan
+POLY-DIP-079,3112-33,Pembantu Juruukur Bahan
+POLY-DIP-080,7318,Pekerja Kraftangan Tekstil, Kulit Dan Bahan Yang Berkaitan
+POLY-DIP-080,7318-02,Pencelup Fabrik
+POLY-DIP-080,7318-04,Pencanting Batik
+POLY-DIP-081,7316,Penulis Papan Tanda, Pelukis Hiasan, Pengukir, Dan Penggores
+POLY-DIP-081,7115-11,Tukang Ukir Kayu
+POLY-DIP-082,4323-35,Pembantu Logistik
+POLY-DIP-082,3159-02,Penyelia Logistik
+POLY-CET-001,3112,Juruteknik Kejuruteraan Awam
+POLY-CET-001,3112-03,Pembantu Kejuruteraan Awam
+POLY-CET-002,3113,Juruteknik Kejuruteraan Elektrik
+POLY-CET-002,3113-04,Pembantu Kejuruteraan Elektrik
+POLY-CET-002,7412-01,Pendawai Elektrik
+POLY-CET-003,3115,Juruteknik Kejuruteraan Mekanikal
+POLY-CET-003,3115-14,Pembantu Kejuruteraan Mekanikal
+KKOM-DIP-001,5141-02,Pendandan Rambut
+KKOM-DIP-001,5141-03,Tukang Gunting Rambut
+KKOM-DIP-002,3514-03,Juruanimasi Multimedia
+KKOM-DIP-002,2166-02,Pereka Grafik
+KKOM-DIP-003,3118-34,Penolong Arkitek
+KKOM-DIP-003,3118-01,Pelukis Pelan (Seni Bina) Gred JA19
+KKOM-DIP-003,3118-03,Pelukis Pelan
+KKOM-DIP-004,5121-06,Pembantu Jurumasak
+KKOM-DIP-004,3641-12,Penolong Jurumasak
+KKOM-DIP-005,3112-01,Juruteknik Instrumen Perindustrian
+KKOM-DIP-005,3114,Juruteknik Kejuruteraan Elektronik
+KKOM-DIP-006,2166-03,Artis Multimedia
+KKOM-DIP-006,3514-03,Juruanimasi Multimedia
+KKOM-DIP-007,4224-10,Penyambut Tetamu Hotel
+KKOM-DIP-007,5151-01,Penyelia Bankuet Hotel dan Penginapan
+KKOM-DIP-008,3118-02,Juruteknik Lukis Pelan
+KKOM-DIP-008,3115-38,Juruteknik CAD/CAM
+KKOM-DIP-009,3522-04,Juruteknik Telekomunikasi
+KKOM-DIP-009,7422-02,Pembaik Pulih Telefon Bimbit
+KKOM-DIP-010,7512-02,Pembuat Pastri
+KKOM-DIP-010,7512-09,Pembantu Bakeri
+KKOM-DIP-010,3641-08,Jurumasak Pastri
+KKOM-DIP-011,3153,Juruteknik Kereta Api/ Lokomotif
+KKOM-DIP-011,3153-07,Juruteknik Isyarat dan Komunikasi
+KKOM-DIP-012,3521,Juruteknik Penyiaran Dan Audiovisual
+KKOM-DIP-012,3634-09,Juruteknik Pencahayaan
+KKOM-DIP-012,3521-13,Juruteknik Peralatan Audio dan Video
+KKOM-DIP-013,3522,Juruteknik Kejuruteraan Telekomunikasi
+KKOM-DIP-013,3522-04,Juruteknik Telekomunikasi
+KKOM-DIP-013,7422,Pemasang Dan Pembaik Peralatan Teknologi Maklumat Dan Komunikasi
+KKOM-DIP-014,3154,Juruteknik Kenderaan Bermotor
+KKOM-DIP-014,7231,Mekanik Dan Pembaik Kenderaan Bermotor
+KKOM-DIP-015,3131-16,Juruteknik Sel Solar
+KKOM-DIP-015,7411,Juruelektrik Bangunan Dan Yang Berkaitan
+KKOM-DIP-016,5142,Jurukecantikan Dan Pekerja Yang Berkaitan
+KKOM-DIP-016,5142-08,Juruterapi Kecantikan dan Kesihatan
+KKOM-CET-001,3641-12,Penolong Jurumasak
+KKOM-CET-001,5121-06,Pembantu Jurumasak
+KKOM-CET-002,5131,Pelayan
+KKOM-CET-002,5131-11,Pramusaji Gred K3
+KKOM-CET-002,5131-06,Penyelia Restoran
+KKOM-CET-003,5419-06,Penyelia Rekreasi
+KKOM-CET-003,3332-03,Ejen Pelancongan
+KKOM-CET-003,3142-20,Pembantu Taman/Ladang Gred G19
+KKOM-CET-004,3142,Juruteknik Pertanian Dan Penternakan
+KKOM-CET-004,3142-16,Penolong Pegawai Pertanian Gred G29
+KKOM-CET-004,3142-01,Juruteknik Agronomi
+KKOM-CET-005,3514-03,Juruanimasi Multimedia
+KKOM-CET-005,2166-03,Artis Multimedia
+KKOM-CET-006,3514-03,Juruanimasi Multimedia
+KKOM-CET-006,2166-03,Artis Multimedia
+KKOM-CET-007,5141,Pendandan Rambut
+KKOM-CET-007,5141-03,Tukang Gunting Rambut
+KKOM-CET-008,7621,Tukang Jahit, Penjahit Pakaian, Penjahit Pakaian Bulu, Dan Pembuat Topi
+KKOM-CET-008,7621-09,Pekerja Menjahit
+KKOM-CET-008,4419-01,Pembantu Pakaian
+KKOM-CET-009,5121-07,Pembantu Tukang Masak
+KKOM-CET-009,5121-10,Pembantu Kulinari
+KKOM-CET-009,3641-12,Penolong Jurumasak
+KKOM-CET-010,3118-25,Juruteknik Landskap
+KKOM-CET-010,3142-20,Pembantu Taman/Ladang Gred G19
+KKOM-CET-010,3123-08,Penyelia Landskap
+KKOM-CET-011,3632-07,Ilustrator Pengiklanan
+KKOM-CET-011,3514-04,Penolong Pereka Grafik
+KKOM-CET-011,3514-06,Penolong Kreatif
+KKOM-CET-012,4224-10,Penyambut Tetamu Hotel
+KKOM-CET-012,5151-01,Penyelia Bankuet Hotel dan Penginapan
+KKOM-CET-013,7512-02,Pembuat Pastri
+KKOM-CET-013,7512-09,Pembantu Bakeri
+KKOM-CET-013,3641-08,Jurumasak Pastri
+KKOM-CET-014,4221-03,Kerani Agensi Pelancongan
+KKOM-CET-014,3332-03,Ejen Pelancongan
+KKOM-CET-014,5112-02,Inspektor Tiket
+KKOM-CET-015,3332,Ejen Persidangan Dan Acara
+KKOM-CET-015,3332-05,Penganjur Persidangan dan Acara
+KKOM-CET-016,3313-08,Penolong Pegawai Eksekutif (Perakaunan) Gred L8
+KKOM-CET-016,4110,Kerani Pejabat Am
+KKOM-CET-017,3112-27,Juruteknik Penyelenggaraan Kemudahan Bangunan Hijau
+KKOM-CET-017,7411,Juruelektrik Bangunan Dan Yang Berkaitan
+KKOM-CET-017,7126,Tukang Paip Dan Jurufit Paip
+KKOM-CET-018,3123,Penyelia Pembinaan
+KKOM-CET-018,3112-15,Juruteknik Binaan
+KKOM-CET-019,4321,Kerani Stok
+KKOM-CET-019,4323-35,Pembantu Logistik
+KKOM-CET-019,3159-02,Penyelia Logistik
+KKOM-CET-020,3632-02,Pereka Hiasan Dalaman
+KKOM-CET-020,3118-02,Juruteknik Lukis Pelan
+KKOM-CET-021,7115,Tukang Kayu Dan Tukang Tanggam
+KKOM-CET-021,7522,Pembuat Kabinet Dan Pekerja Yang Berkaitan
+KKOM-CET-022,7317,Pekerja Kraftangan Kayu, Bakul Dan Bahan Yang Berkaitan
+KKOM-CET-022,3514-05,Juruteknik Seni dan Reka Bentuk
+KKOM-CET-023,3142,Juruteknik Pertanian Dan Penternakan
+KKOM-CET-023,6221,Pekerja Mahir Akuakultur
+KKOM-CET-024,7231,Mekanik Dan Pembaik Kenderaan Bermotor
+KKOM-CET-024,3154,Juruteknik Kenderaan Bermotor
+KKOM-CET-025,7412-01,Pendawai Elektrik
+KKOM-CET-025,3113-04,Pembantu Kejuruteraan Elektrik
+KKOM-CET-026,7411,Juruelektrik Bangunan Dan Yang Berkaitan
+KKOM-CET-026,7412,Mekanik Dan Pemasang Elektrik
+KKOM-CET-027,3511-03,Pembantu Tadbir (Juruteknik Komputer) Gred 21
+KKOM-CET-027,3512-01,Juruanalisis Sistem
+KKOM-CET-027,2523,Profesional Rangkaian Komputer
+KKOM-CET-028,3112-15,Juruteknik Binaan
+KKOM-CET-028,7112,Tukang Bata Dan Pekerja Yang Berkaitan
+KKOM-CET-029,3115-38,Juruteknik CAD/CAM
+KKOM-CET-029,7223,Set-Up Dan Operator Mesin Perkakas Kerja Logam
+KKOM-CET-030,3119-43,Juruteknik Pemprosesan Makanan
+KKOM-CET-030,8160,Operator Mesin Pemprosesan Makanan Dan Produk Berkaitan
+KKOM-CET-031,7127,Mekanik Penyaman Udara Dan Penyejukan
+KKOM-CET-031,7127-02,Mekanik Kelengkapan Penyaman Udara
+KKOM-CET-032,7231,Mekanik Dan Pembaik Kenderaan Bermotor
+KKOM-CET-032,3154,Juruteknik Kenderaan Bermotor
+KKOM-CET-033,3115,Juruteknik Kejuruteraan Mekanikal
+KKOM-CET-033,3115-14,Pembantu Kejuruteraan Mekanikal
+KKOM-CET-034,7231-01,Mekanik Motosikal
+KKOM-CET-034,3154-06,Juruteknik Kenderaan Bermotor
+KKOM-CET-035,7422-02,Pembaik Pulih Telefon Bimbit
+KKOM-CET-035,3522-04,Juruteknik Telekomunikasi
+KKOM-CET-036,3118-34,Penolong Arkitek
+KKOM-CET-036,3118-03,Pelukis Pelan
+KKOM-CET-037,3522,Juruteknik Kejuruteraan Telekomunikasi
+KKOM-CET-037,7422,Pemasang Dan Pembaik Peralatan Teknologi Maklumat Dan Komunikasi
+KKOM-CET-038,5142,Jurukecantikan Dan Pekerja Yang Berkaitan
+KKOM-CET-038,5142-08,Juruterapi Kecantikan dan Kesihatan
+IKBN-DIP-001,7412-21,Penjaga Jentera Elektrik
+IKBN-DIP-001,7412-03,Penjaga Jentera Sekatan Voltan Tinggi
+IKBN-DIP-002,7127,Mekanik Penyaman Udara Dan Penyejukan
+IKBN-DIP-002,7127-02,Mekanik Kelengkapan Penyaman Udara
+IKBN-DIP-003,2163-02,Pereka Fesyen
+IKBN-DIP-003,7531,Tukang Jahit
+IKBN-DIP-006,2163-02,Pereka Produk
+IKBN-DIP-006,3115-38,Juruteknik CAD/CAM
+IKBN-DIP-007,3119-43,Juruteknik Pemprosesan Makanan
+IKBN-DIP-007,8160,Operator Mesin Pemprosesan Makanan
+IKBN-CET-001,7233,Mekanik Dan Pembaik Jentera Pertanian Dan Perindustrian
+IKBN-CET-001,7233-07,Mekanik Jentera Pembinaan
+IKBN-CET-002,7231-07,Mekanik Enjin Diesel
+IKBN-CET-002,7231,Mekanik Dan Pembaik Kenderaan Bermotor
+IKBN-CET-003,7231,Mekanik Dan Pembaik Kenderaan Bermotor
+IKBN-CET-003,3154,Juruteknik Kenderaan Bermotor
+IKBN-CET-004,7231,Mekanik Dan Pembaik Kenderaan Bermotor
+IKBN-CET-004,3113-11,Juruteknik Elektrik Kenderaan
+IKBN-CET-005,7132,Penyembur Cat Dan Varnis
+IKBN-CET-005,7132-02,Pengecat Kenderaan
+IKBN-CET-006,3118-01,Pelukis Pelan (Seni Bina) Gred JA19
+IKBN-CET-006,3118-03,Pelukis Pelan
+IKBN-CET-007,3112-27,Juruteknik Penyelenggaraan Kemudahan Bangunan Hijau
+IKBN-CET-007,7126,Tukang Paip Dan Jurufit Paip
+IKBN-CET-008,7412-25,Pendawai Elektrik
+IKBN-CET-008,7412-06,Pendawai
+IKBN-CET-009,7127,Mekanik Penyaman Udara Dan Penyejukan
+IKBN-CET-009,7127-02,Mekanik Kelengkapan Penyaman Udara
+IKBN-CET-010,3114,Juruteknik Kejuruteraan Elektronik
+IKBN-CET-010,7421,Mekanik Dan Pemasang Elektronik
+IKBN-CET-011,7621,Tukang Jahit, Penjahit Pakaian, Penjahit Pakaian Bulu, Dan Pembuat Topi
+IKBN-CET-011,4419-01,Pembantu Pakaian
+IKBN-CET-012,4224,Penyambut Tetamu
+IKBN-CET-012,4224-01,Penyambut Tetamu
+IKBN-CET-013,5131-11,Pramusaji Gred K3
+IKBN-CET-013,5131,Pelayan
+IKBN-CET-014,5121,Tukang Masak
+IKBN-CET-014,3641-12,Penolong Jurumasak
+IKBN-CET-015,7512-02,Pembuat Pastri
+IKBN-CET-015,7512-09,Pembantu Bakeri
+IKBN-CET-006,3118-01,Pelukis Pelan (Seni Bina) Gred JA19
+IKBN-CET-006,3118-03,Pelukis Pelan
+IKBN-CET-007,3112-27,Juruteknik Penyelenggaraan Kemudahan Bangunan Hijau
+IKBN-CET-007,7126,Tukang Paip Dan Jurufit Paip
+IKBN-CET-008,7412-25,Pendawai Elektrik
+IKBN-CET-008,7412-06,Pendawai
+IKBN-CET-009,7127,Mekanik Penyaman Udara Dan Penyejukan
+IKBN-CET-009,7127-02,Mekanik Kelengkapan Penyaman Udara
+IKBN-CET-010,3114,Juruteknik Kejuruteraan Elektronik
+IKBN-CET-010,7421,Mekanik Dan Pemasang Elektronik
+IKBN-CET-011,7621,Tukang Jahit, Penjahit Pakaian, Penjahit Pakaian Bulu, Dan Pembuat Topi
+IKBN-CET-011,4419-01,Pembantu Pakaian
+IKBN-CET-012,4224,Penyambut Tetamu
+IKBN-CET-012,4224-01,Penyambut Tetamu
+IKBN-CET-013,5131-11,Pramusaji Gred K3
+IKBN-CET-013,5131,Pelayan
+IKBN-CET-014,5121,Tukang Masak
+IKBN-CET-014,3641-12,Penolong Jurumasak
+IKBN-CET-015,7512-02,Pembuat Pastri
+IKBN-CET-015,7512-09,Pembantu Bakeri
+IKBN-CET-016,7512-01,Pembuat Roti
+IKBN-CET-016,7512,Pembuat Roti, Pastri, Pasta, Dan Konfeksi
+IKBN-CET-017,5141-02,Pendandan Rambut
+IKBN-CET-017,5141,Pendandan Rambut
+IKBN-CET-018,5142,Jurukecantikan Dan Pekerja Yang Berkaitan
+IKBN-CET-018,5142-08,Juruterapi Kecantikan dan Kesihatan
+IKBN-CET-019,3514-06,Penolong Kreatif
+IKBN-CET-019,2166,Pereka Grafik Dan Multimedia
+IKBN-CET-020,3115-18,Juruteknik Kejuruteraan Marin
+IKBN-CET-020,3152-05,Juruteknik Enjin Marin
+IKBN-CET-021,7213-03,Pembuat Dandang
+IKBN-CET-022,7212-05,Jurukimpal Arka Tungsten Gas
+IKBN-CET-022,7212-01,Pengimpal
+IKBN-CET-023,7212-01,Pengimpal
+IKBN-CET-023,7212-06,Jurukimpal Arka Logam Gas
+IKBN-CET-024,3115-24,Juruteknik Mekatronik
+IKBN-CET-024,3115-23,Juruteknik Automasi Robot
+IKBN-CET-025,7126-01,Jurufit Paip
+IKBN-CET-025,7126-02,Jurufit Paip Gas
+IKBN-CET-026,3115,Juruteknik Kejuruteraan Mekanikal
+IKBN-CET-026,3115-14,Pembantu Kejuruteraan Mekanikal
+IKBN-CET-027,3151-05,Juruteknik Penyelenggaraan Pesawat (Kerangka Pesawat Udara)
+IKBN-CET-028,3151-05,Juruteknik Penyelenggaraan Pesawat (Kerangka Pesawat Udara)
+IKBN-CET-029,2163-02,Pereka Produk
+IKBN-CET-029,3115-38,Juruteknik CAD/CAM
+IKBN-CET-032,7111-03,Orang Yang Kompeten (OYK) - Pengendali Perancah
+IKBN-CET-032,7119-01,Pemasang Perancah
+IKBN-CET-034,7412-25,Pendawai Elektrik
+IJTM-DIP-010,3119-28,Juruteknik Kejuruteraan Jaminan Kualiti
+IJTM-DIP-010,3119-19,Juruteknik Kawalan Kualiti
+IJTM-DIP-017,3115-24,Juruteknik Mekatronik
+IJTM-DIP-017,3115-47,Juruteknik Robotik
+IJTM-DIP-019,3511-13,Juruteknik Semikonduktor
+IJTM-DIP-022,3115-27,Juruteknik CNC (Kawalan Berangka Komputer)
+IJTM-DIP-022,3115-29,Juruteknik Pembuatan Logam
+IJTM-DIP-024,3115-38,Juruteknik CAD/CAM
+IJTM-DIP-024,3119,Juruteknik Industri Dan Pengeluaran
+IJTM-DIP-024,8211,Pemasang Jentera Mekanikal
+IJTM-DIP-026,3151-05,Juruteknik Penyelenggaraan Pesawat (Kerangka Pesawat Udara)
+IJTM-DIP-026,3151-06,Juruteknik Penyelenggaraan Pesawat (Enjin)
+IJTM-DIP-026,3151,Juruteknik Pesawat Udara
+IJTM-DIP-032,3114,Juruteknik Kejuruteraan Elektronik
+IJTM-DIP-032,7421,Mekanik Dan Pemasang Elektronik
+IJTM-DIP-033,3115-24,Juruteknik Mekatronik
+IJTM-DIP-033,3115-23,Juruteknik Automasi Robot
+IJTM-DIP-034,3512,Juruteknik Sokongan Pengguna Teknologi Maklumat Dan Komunikasi
+IJTM-DIP-034,3513,Juruteknik Rangkaian Dan Sistem Komputer
+IJTM-DIP-035,3115-38,Juruteknik CAD/CAM
+IJTM-DIP-035,3115-27,Juruteknik CNC (Kawalan Berangka Komputer)
+IJTM-CET-001,3115-23,Juruteknik Automasi Robot
+IJTM-CET-001,3115-35,Penolong Jurutera Automasi Perindustrian
+IJTM-CET-002,7211-01,Pembuat Acuan
+IJTM-CET-002,7222,Pembuat Alat Dan Pembuat Acuan
+IJTM-CET-003,7231,Mekanik Dan Pembaik Kenderaan Bermotor
+IJTM-CET-003,3154,Juruteknik Kenderaan Bermotor
+IJTM-CET-004,7231,Mekanik Dan Pembaik Kenderaan Bermotor
+IJTM-CET-004,3154,Juruteknik Kenderaan Bermotor
+IJTM-CET-005,3123,Penyelia Pembinaan
+IJTM-CET-005,3112-15,Juruteknik Binaan
+IJTM-CET-006,7126,Tukang Paip Dan Jurugegas Paip
+IJTM-CET-006,7126-01,Tukang Paip
+IJTM-CET-007,3118-02,Juruteknik Lukis Pelan
+IJTM-CET-007,3115-38,Juruteknik CAD/CAM
+IJTM-CET-008,3118-01,Pelukis Pelan (Seni Bina) Gred JA19
+IJTM-CET-008,3118-03,Pelukis Pelan
+IJTM-CET-009,7412-25,Pendawai Elektrik
+IJTM-CET-009,7412-06,Pendawai
+IJTM-CET-010,3114,Juruteknik Kejuruteraan Elektronik
+IJTM-CET-010,7421,Mekanik Dan Pemasang Elektronik
+IJTM-CET-011,7212-01,Pengimpal
+IJTM-CET-011,7214-01,Penyedia Struktur Logam
+IJTM-CET-012,7214,Penyedia Dan Pemasang Struktur Logam
+IJTM-CET-012,7212,Jurukimpal Dan Pemotong Api
+IJTM-CET-013,3112-01,Juruteknik Instrumen Perindustrian
+IJTM-CET-013,3112-17,Juruteknik Instrumen Proses
+IJTM-CET-014,7231-15,Jurugegas Diesel (pengangkutan jalan)
+IJTM-CET-014,7231,Mekanik Dan Pembaik Kenderaan Bermotor
+IJTM-CET-015,7212,Jurukimpal Dan Pemotong Api
+IJTM-CET-015,7212-01,Pengimpal
+IJTM-CET-016,3511-03,Pembantu Tadbir (Juruteknik Komputer) Gred 21
+IJTM-CET-016,3512,Juruteknik Sokongan Pengguna Teknologi Maklumat Dan Komunikasi
+IJTM-CET-017,3513-01,Juruteknik Rangkaian Komputer
+IJTM-CET-017,3513,Juruteknik Rangkaian Dan Sistem Komputer
+IJTM-CET-018,3511-22,Pembantu Tadbir Juruteknik Komputer
+IJTM-CET-018,3512-01,Juruanalisis Sistem
+IJTM-CET-019,3115-24,Juruteknik Mekatronik
+IJTM-CET-019,3115-23,Juruteknik Automasi Robot
+IJTM-CET-020,3118-05,Pelukis Pelan (Mekanikal)
+IJTM-CET-020,3118-02,Juruteknik Lukis Pelan
+IJTM-CET-021,3115-55,Juruteknik Pembaikan Dan Penyelenggaraan (R&M)
+IJTM-CET-021,3134,Operator Loji Pemprosesan Petroleum Dan Gas Asli
+IJTM-CET-022,3115-55,Juruteknik Pembaikan Dan Penyelenggaraan (R&M)
+IJTM-CET-022,3134,Operator Loji Pemprosesan Petroleum Dan Gas Asli
+IJTM-CET-023,3514-03,Juruanimasi Multimedia
+IJTM-CET-023,2166,Pereka Grafik Dan Multimedia
+IJTM-CET-024,7126-02,Jurufit Paip Gas
+IJTM-CET-024,7126-01,Jurufit Paip
+IJTM-CET-025,3115-25,Juruteknik Mesin
+IJTM-CET-025,7223,Set-Up Dan Operator Mesin Perkakas Kerja Logam
+IJTM-CET-026,7211-09,Tukang Acuan
+IJTM-CET-026,7222,Pembuat Alat Dan Pembuat Acuan
+IJTM-CET-027,7211-01,Pembuat Acuan
+IJTM-CET-027,7222,Pembuat Alat Dan Pembuat Acuan
+IJTM-CET-028,7211-09,Tukang Acuan
+IJTM-CET-028,8142,Operator Mesin Produk Plastik
+IJTM-CET-029,3115-25,Juruteknik Mesin
+IJTM-CET-029,7223,Set-Up Dan Operator Mesin Perkakas Kerja Logam
+IJTM-CET-030,7211-09,Tukang Acuan
+IJTM-CET-030,7222,Pembuat Alat Dan Pembuat Acuan
+IJTM-CET-031,7127,Mekanik Penyaman Udara Dan Penyejukan
+IJTM-CET-031,7127-02,Mekanik Kelengkapan Penyaman Udara
+IJTM-CET-032,3112-27,Juruteknik Penyelenggaraan Kemudahan Bangunan Hijau
+IJTM-CET-032,7111,Pembina Rumah
+IJTM-CET-033,3115,Juruteknik Kejuruteraan Mekanikal
+IJTM-CET-033,7233,Mekanik Dan Pembaik Jentera Pertanian Dan Perindustrian
+IJTM-CET-034,8142,Operator Mesin Produk Plastik
+IJTM-CET-034,8142-01,Operator Mesin Pengacuan Suntikan (Plastik)
+IJTM-CET-035,7522,Pembuat Kabinet Dan Pekerja Yang Berkaitan
+IJTM-CET-035,3632-03,Pereka Perabot
+IJTM-CET-036,3514-04,Penolong Pereka Grafik
+IJTM-CET-036,2166-02,Pereka Grafik
+IJTM-CET-037,2163-02,Pereka Produk
+IJTM-CET-037,3115-38,Juruteknik CAD/CAM
+IJTM-CET-038,3522-04,Juruteknik Telekomunikasi
+IJTM-CET-038,7422,Pemasang Dan Pembaik Peralatan Teknologi Maklumat Dan Komunikasi

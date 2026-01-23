@@ -9,12 +9,12 @@ from src.engine import check_eligibility, ALL_REQ_COLUMNS
 from src.translations import get_text
 
 try:
-    from src.description import course_info
+    from src.description import course_info, get_jobs_for_course
 except ImportError:
     # Fallback/Debug
     print("WARNING: Could not import src.description. Using empty dict.")
-    print("WARNING: Could not import src.description. Using empty dict.")
     course_info = {}
+    def get_jobs_for_course(cid): return []
 
 BATCH_SIZE = 10 # Configurable
 
@@ -192,7 +192,7 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             # Rich Content
             "headline": desc_data.get('headline', ''),
             "synopsis": desc_data.get('synopsis', ''),
-            "jobs": desc_data.get('jobs', []),
+            "jobs": get_jobs_for_course(cid),  # Dynamic from CSV
             "institution_id": row.get('institution_id'), # CRITICAL: Required for Ranking Engine
             # Meta
             "inst_url": row.get('inst_url', '#'),
@@ -332,10 +332,25 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
     hostel = loc0.get('hostel_fee', 'N/A')
     det_url = loc0.get('details_url', '#')
     
-    # 2. Career HTML
+    # 2. Career HTML (Jobs as Hyperlinks)
     career_html = ""
-    if pick.get('jobs'):
-         career_html = f'<div class="career-box">💼 {", ".join(pick["jobs"])}</div>'
+    jobs = pick.get('jobs', [])
+    if jobs:
+        # Jobs can be [{title, url}, ...] or legacy ["string", ...]
+        job_links = []
+        for job in jobs:
+            if isinstance(job, dict):
+                title = job.get('title', '')
+                url = job.get('url', '')
+                if url:
+                    job_links.append(f'<a href="{url}" target="_blank" style="color:#6C5CE7; text-decoration:none; border-bottom:1px dotted #6C5CE7;">{title}</a>')
+                else:
+                    job_links.append(title)
+            else:
+                # Legacy: plain string
+                job_links.append(str(job))
+        if job_links:
+            career_html = f'<div class="career-box">💼 {", ".join(job_links)}</div>'
     
     # 3. Table HTML (Preserved as Visible)
     tbl_html = ""
