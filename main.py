@@ -581,63 +581,47 @@ def render_ai_report_page(user, t):
     st.markdown("""
     <style>
     @media print {
-        /* 1. Global Reset to ensure scrolling works/printing works */
-        html, body, .stApp {
+        /* PROVEN FIX: Isolation Method */
+        
+        /* 1. Hide EVERYTHING */
+        body, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
+            visibility: hidden !important;
             height: auto !important;
-            width: 100% !important;
             overflow: visible !important;
-            background-color: white !important;
         }
-
-        /* 2. Hide Streamlit Chrome (Header, Footer, Sidebar, Buttons) */
-        header, 
-        [data-testid="stHeader"],
-        footer, 
-        .stApp > header, 
-        [data-testid="stSidebar"],
-        .stDeployButton,
-        [data-testid="stToolbar"],
-        button, 
-        .stButton,
-        .stDownloadButton {
-            display: none !important;
-        }
-
-        /* 3. Force Main Content to be Visible & Full Width */
-        .main .block-container {
-            max-width: 100% !important;
-            padding: 2rem 1rem !important;
+        
+        /* 2. Show ONLY the Printable Area */
+        .printable-area {
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
             margin: 0 !important;
-            box-shadow: none !important;
-            border: none !important;
-        }
-        
-        /* 4. Ensure Text is Black (Fixes Dark Mode Issues) */
-        .stMarkdown, p, h1, h2, h3, h4, h5, h6, li, span, div {
+            padding: 20px !important;
+            background: white !important;
             color: black !important;
-            color-adjust: exact !important;
-            -webkit-print-color-adjust: exact !important;
+            z-index: 9999 !important;
         }
         
-        /* 5. Page Break Controls */
-        h1, h2, h3 {
-            page-break-after: avoid;
-            page-break-inside: avoid;
-        }
-        p, li {
-            page-break-inside: avoid;
+        .printable-area * {
+            visibility: visible !important;
+            color: black !important;
+            box-shadow: none !important;
         }
         
-        /* 6. Hide Action Buttons Row specifically if it leaks */
-        [data-testid="stHorizontalBlock"] button {
-             display: none !important;
-        }
+        /* 3. Hide non-text elements inside the report if needed */
+        button { display: none !important; }
+        
+        /* 4. Page Breaks */
+        h1, h2 { page-break-before: always; }
+        h1:first-of-type { page-break-before: avoid; }
     }
     </style>
     """, unsafe_allow_html=True)
     
-    # Display the AI report
-    st.markdown(report['markdown'])
+    # Display the AI report wrapped in a printable container
+    st.markdown(f'<div class="printable-area">{report["markdown"]}</div>', unsafe_allow_html=True)
     
     st.markdown("---")
     
