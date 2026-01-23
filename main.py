@@ -1087,9 +1087,9 @@ if auth_status:
         # --- FILTER POPOVER ---
         # Option 1: Clean Popover UI with Blue Pills
         with st.popover("🌪️ Filter Options", use_container_width=False):
-            st.markdown("### Refine your list")
+            st.markdown("### Filter")
             
-            # 1. Institution Type (Pills)
+            # 1. Institution Type (Expanded)
             # Custom Sort Order: Poly, KK, ILJTM, ILKBS
             inst_order = [t.get('inst_poly'), t.get('inst_kk'), t.get('inst_iljtm'), t.get('inst_ilkbs')]
             def sort_inst(x):
@@ -1099,13 +1099,10 @@ if auth_status:
             cat_col = t['table_col_cat']
             cat_opts = sorted(df_display[cat_col].unique(), key=sort_inst)
             
-            # st.pills is available in newer Streamlit versions
-            cat_filter = st.pills(t['filter_label'], options=cat_opts, selection_mode="multi", default=cat_opts, key="pill_cat")
+            with st.expander("By Institution Type", expanded=True):
+                cat_filter = st.pills("Select Type", options=cat_opts, selection_mode="multi", default=cat_opts, key="pill_cat", label_visibility="collapsed")
             
-            st.markdown("---")
-            
-            # 2. Location (Pills inside Expander to save space)
-            # Custom Sort Order
+            # 2. Location (Collapsed)
             state_priority = [
                 "WP Kuala Lumpur", "Selangor", "Kedah", "Pulau Pinang", "Perak", 
                 "Negeri Sembilan", "Melaka", "Johor", "Pahang", "Perlis", 
@@ -1115,16 +1112,16 @@ if auth_status:
                 try: return state_priority.index(x)
                 except ValueError: return 999
             
-            with st.expander(f"📍 {t.get('filter_state', 'Filter Location')}", expanded=True):
+            with st.expander("By State", expanded=False):
                  state_raw = [str(x) for x in df_display["state"].unique() if x]
                  state_opts = sorted(state_raw, key=sort_state)
-                 state_filter = st.pills("Select States", options=state_opts, selection_mode="multi", default=state_opts, key="pill_state")
+                 state_filter = st.pills("Select States", options=state_opts, selection_mode="multi", default=state_opts, key="pill_state", label_visibility="collapsed")
             
-            # 3. Field of Study (New)
+            # 3. Field of Study (Collapsed)
             field_raw = [str(x) for x in df_display["frontend_label"].unique() if x]
             field_opts = sorted(field_raw)
-            with st.expander("📚 Filter by Field", expanded=False):
-                field_filter = st.pills("Select Fields", options=field_opts, selection_mode="multi", default=field_opts, key="pill_field")
+            with st.expander("By Field of Education", expanded=False):
+                field_filter = st.pills("Select Fields", options=field_opts, selection_mode="multi", default=field_opts, key="pill_field", label_visibility="collapsed")
             
             # Course Category (Placeholder / WIP)
         
