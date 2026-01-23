@@ -133,7 +133,7 @@ def local_css(file_name):
 
 local_css("assets/style.css")
 
-@st.cache_data(ttl=60) # Reduced TTL to force refresh during dev
+@st.cache_data(ttl=59) # Force new cache key
 def get_data():
     return load_master_data()
 
@@ -1122,6 +1122,12 @@ if auth_status:
             field_opts = sorted(field_raw)
             with st.expander("By Field of Education", expanded=False):
                 field_filter = st.pills("Select Fields", options=field_opts, selection_mode="multi", default=field_opts, key="pill_field", label_visibility="collapsed")
+
+            # 4. Level of Education (New)
+            level_raw = [str(x) for x in df_display["level"].unique() if x]
+            level_opts = sorted(level_raw)
+            with st.expander("By Level of Education", expanded=False):
+                level_filter = st.pills("Select Level", options=level_opts, selection_mode="multi", default=level_opts, key="pill_level", label_visibility="collapsed")
             
             # Course Category (Placeholder / WIP)
         
@@ -1153,13 +1159,17 @@ if auth_status:
             filtered_raw = []
             
             # Helper: Check if item matches filters
-            # Filters: cat_filter (Type), state_filter (State), field_filter (Label)
+            # Filters: cat_filter (Type), state_filter (State), field_filter (Label), level_filter (Level)
             
             for group in grouped_courses:
-                 # 0. Check Field Filter (Course Level)
-                 # If course's field is NOT in selected fields, skip entirely
+                 # 0a. Check Field Filter
                  c_field = str(group.get('frontend_label', 'General'))
                  if c_field not in field_filter:
+                     continue
+                 
+                 # 0b. Check Level Filter
+                 c_level = str(group.get('level', 'Certificate'))
+                 if c_level not in level_filter:
                      continue
 
                  # Check Search Term (Course Level)

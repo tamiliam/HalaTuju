@@ -198,7 +198,8 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             "inst_url": row.get('inst_url', '#'),
             "hostel_fee": row.get('hostel_fee', 'N/A'),
             "details_url": row.get('details_url', '#'),
-            "frontend_label": row.get('frontend_label', 'General') # Added for filtering
+            "frontend_label": row.get('frontend_label', 'General'), # Added for filtering
+            "level": row.get('level', 'Certificate') # Added for Education Level filter
         })
         
     # Calculate Unique Courses
@@ -237,6 +238,7 @@ def group_courses_by_id(flat_list):
                 'synopsis': item.get('synopsis', ''),
                 'jobs': item.get('jobs', []),
                 'frontend_label': item.get('frontend_label', 'General'), # Added for filtering
+                'level': item.get('level', 'Certificate'), # Added for Education Level filter
                 'max_score': -999, # Sentinel
                 'locations': []
             }
