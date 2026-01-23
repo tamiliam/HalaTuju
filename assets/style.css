@@ -307,143 +307,47 @@ div[data-testid="stToast"] {
     flex: 1;
 }
 
-/* Job Pills (Clickable) */
+/* Job Pills (Clickable) - Plain with Subtle Border */
 .job-pill {
     display: inline-block;
     padding: 6px 14px;
     border-radius: 50px;
     font-size: 0.85rem;
     font-weight: 600;
-    background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+    background: #ffffff;
     color: #2d3436;
     text-decoration: none;
     transition: all 0.25s ease;
-    border: 2px solid transparent;
-    box-shadow: 0 2px 8px rgba(253, 203, 110, 0.3);
+    border: 1.5px solid #dfe6e9;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .job-pill:hover {
-    background: linear-gradient(135deg, #fdcb6e, #fab1a0);
+    border-color: #6C5CE7;
+    border-width: 2px;
+    background: #f8f9fa;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(253, 203, 110, 0.5);
-    border-color: #e17055;
+    box-shadow: 0 4px 8px rgba(108, 92, 231, 0.15);
+    color: #6C5CE7;
 }
 
 .job-pill-inactive {
     background: #f1f2f6;
     color: #636e72;
+    border-color: #e1e1e1;
     box-shadow: none;
     cursor: default;
 }
 
-/* Table Refinements - Responsive */
+/* Table Refinements */
 .inst-table-container {
     border: 1px solid #f1f2f6;
     border-radius: 12px;
     overflow: hidden;
-}
-
-/* Desktop/Tablet: Show as table */
-@media (min-width: 768px) {
-    .inst-table-container table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.9em;
-    }
-
-    .inst-table-container thead {
-        display: table-header-group;
-    }
-
-    .inst-table-container tbody {
-        display: table-row-group;
-    }
-
-    .inst-table-container tr {
-        display: table-row;
-        border-bottom: 1px solid #f1f2f6;
-    }
-
-    .inst-table-container th,
-    .inst-table-container td {
-        display: table-cell;
-        padding: 8px;
-    }
-
-    .inst-table-container th:nth-child(1),
-    .inst-table-container td:nth-child(1) {
-        text-align: left;
-        color: #6C5CE7;
-        font-weight: 700;
-    }
-
-    .inst-table-container th:nth-child(2),
-    .inst-table-container td:nth-child(2) {
-        text-align: left;
-        color: #636e72;
-    }
-
-    .inst-table-container th:nth-child(3),
-    .inst-table-container td:nth-child(3) {
-        text-align: right;
-        font-weight: bold;
-        color: #6C5CE7;
-    }
-}
-
-/* Mobile: Convert to stacked cards */
-@media (max-width: 767px) {
-    .inst-table-container table {
-        display: block;
-    }
-
-    .inst-table-container thead {
-        display: none;
-        /* Hide headers on mobile */
-    }
-
-    .inst-table-container tbody {
-        display: block;
-    }
-
-    .inst-table-container tr {
-        display: block;
-        background: #fafafa;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        padding: 12px;
-        border: 1px solid #e1e1e1;
-    }
-
-    .inst-table-container td {
-        display: block;
-        text-align: left !important;
-        padding: 4px 0;
-        border: none;
-    }
-
-    /* Add labels for mobile */
-    .inst-table-container td:nth-child(1)::before {
-        content: "🏫 ";
-        font-weight: bold;
-    }
-
-    .inst-table-container td:nth-child(2)::before {
-        content: "📍 ";
-        color: #636e72;
-    }
-
-    .inst-table-container td:nth-child(3)::before {
-        content: "✨ Fit: ";
-        color: #6C5CE7;
-        font-weight: bold;
-    }
-
-    .inst-table-container td:nth-child(3) {
-        font-weight: bold;
-        color: #6C5CE7;
-        font-size: 1.1em;
-    }
 }
 
 /* Institution Link styling */
