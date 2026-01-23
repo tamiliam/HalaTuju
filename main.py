@@ -231,15 +231,16 @@ def render_auth_gate(t, current_grades, gender, cb, disability):
     
     with st.form("reg_form"):
         st.write(t['gate_pin_instr'])
-        r_name = st.text_input(t['profile_name'], placeholder="Ali Bin Abu")
+        r_name = st.text_input(t.get('lbl_preferred_name', "Preferred Name"), placeholder="Ali")
         r_phone = st.text_input(t['profile_phone'], placeholder="e.g. 012-3456789")
+        r_email = st.text_input("Email (Optional)", placeholder="ali@example.com")
         r_pin = st.text_input(t['lbl_create_pin'], type="password", max_chars=6, help=t['help_pin'])
         
         if st.form_submit_button(t['btn_unlock_save']):
             # Clean Grades first
             grade_map = {k: v for k, v in current_grades.items() if v != t['opt_not_taken']} if current_grades else {}
             
-            success, val = auth.register_user(r_name, r_phone, r_pin, grades=grade_map, gender=gender, colorblind=cb, disability=disability)
+            success, val = auth.register_user(r_name, r_phone, r_pin, grades=grade_map, gender=gender, colorblind=cb, disability=disability, email=r_email)
             if success:
                 st.success(t['msg_account_created'])
                 time.sleep(1)
@@ -259,16 +260,60 @@ def render_profile_page(user, t):
         # Read-Only Section
         c1, c2 = st.columns([1, 2])
         with c1:
-            st.markdown(f"**{t['profile_name']}:**\n\n{user.get('full_name', '-')}")
+            st.markdown(f"**Preferred Name:**\n\n{user.get('full_name', '-')}")
         with c2:
             st.markdown(f"**{t['profile_phone']}:**\n\n{user.get('phone', '-')}")
             
         st.markdown("---")
         
         # Edit Form
-        with st.expander(t['header_edit_details']):
+        with st.expander(t['header_edit_details'], expanded=True):
             with st.form("edit_profile"):
-                new_name = st.text_input(t['lbl_fullname'], value=user.get('full_name', ''))
+                new_name = st.text_input("Preferred Name", value=user.get('full_name', ''))
+                new_email = st.text_input("Email", value=user.get('email', ''))
+                
+                # Location & logistics
+                c_city, c_state = st.columns(2)
+                
+                # Fetch existing extras from student_signals (softly)
+                user_signals = user.get('student_signals') or {}
+                
+                with c_city:
+                    new_city = st.text_input("City", value=user_signals.get('city', ''))
+                with c_state:
+                    state_opts = ["Johor", "Kedah", "Kelantan", "Melaka", "Negeri Sembilan", "Pahang", "Perak", "Perlis", "Pulau Pinang", "Sabah", "Sarawak", "Selangor", "Terengganu", "WP Kuala Lumpur", "WP Labuan", "WP Putrajaya"]
+                    curr_state = user_signals.get('state')
+                    state_idx = state_opts.index(curr_state) if curr_state in state_opts else 0
+                    new_state = st.selectbox("State", state_opts, index=state_idx)
+                    
+                st.markdown("---")
+                st.markdown("### Financial & Logistics")
+                
+                # Financial Slider
+                # Low (0), Medium (50), High (100) -> Mapping strings
+                fin_map = {0: "Low (family can support)", 50: "Medium (some help, but careful)", 100: "High (need lowest-cost option)"}
+                rev_fin = {v: k for k, v in fin_map.items()}
+                
+                curr_fin = user_signals.get('financial_pressure', "Medium (some help, but careful)")
+                slider_val = rev_fin.get(curr_fin, 50)
+                
+                new_fin_val = st.select_slider(
+                    "Financial Pressure",
+                    options=[0, 50, 100],
+                    value=slider_val,
+                    format_func=lambda x: fin_map[x]
+                )
+                new_fin_str = fin_map[new_fin_val]
+                
+                # Travel Willingness
+                travel_opts = ["Near home only", "Same state", "Anywhere in Semenanjung Malaysia", "No restrictions"]
+                curr_travel = user_signals.get('travel_willingness', "Anywhere in Semenanjung Malaysia")
+                travel_idx = travel_opts.index(curr_travel) if curr_travel in travel_opts else 2
+                
+                new_travel = st.selectbox("Willingness to travel for education", travel_opts, index=travel_idx)
+                
+                st.markdown("---")
+                
                 new_gender = st.radio(t['lbl_gender'], [t["gender_male"], t["gender_female"]], index=0 if user.get('gender') == "Male" else 1, horizontal=True)
                 
                 # Health
@@ -283,11 +328,22 @@ def render_profile_page(user, t):
                 new_dis = st.radio(t['lbl_disability'], [t['opt_no'], t['opt_yes']], index=dis_idx, key="p_dis", horizontal=True)
                 
                 if st.form_submit_button(t['btn_save_changes']):
+                    # Merge Extras into Student Signals
+                    updated_signals = user_signals.copy()
+                    updated_signals.update({
+                        "city": new_city,
+                        "state": new_state,
+                        "financial_pressure": new_fin_str,
+                        "travel_willingness": new_travel
+                    })
+                
                     success, msg = auth.update_profile(user['id'], {
-                        "full_name": new_name, 
+                        "full_name": new_name,
+                        "email": new_email,
                         "gender": new_gender,
                         "colorblind": new_cb,
-                        "disability": new_dis
+                        "disability": new_dis,
+                        "student_signals": updated_signals
                     })
                     if success:
                         st.success(msg)
