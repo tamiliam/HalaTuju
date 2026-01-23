@@ -348,6 +348,12 @@ def render_profile_page(user, t):
                              st.error(t['err_email_invalid'])
                              valid_email = False
                     
+                    # Validate City (Alphabets/Spaces only)
+                    if new_city:
+                         if not re.match(r"^[a-zA-Z\s]+$", new_city):
+                             st.error("❌ City: Only alphabets and spaces allowed.")
+                             valid_email = False
+                    
                     if valid_email:
                         updated_signals = user_signals.copy()
                         updated_signals.update({

@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import os
 from src.prompts import SYSTEM_PROMPT
+from src.translations import TEXTS
 
 try:
     import google.generativeai as genai
@@ -108,8 +109,21 @@ class AIReportWrapper:
         # 2. Academic Context (Grades)
         spm_grades = student_profile.get('grades', {})
         academic_str = "SPM Results:\n"
+        
+        # Use English labels for standardized AI prompting
+        en_texts = TEXTS.get('en', {})
+        
         for subject, grade in spm_grades.items():
-            academic_str += f"- {subject}: {grade}\n"
+            # Try to find human name first (pref: subj_{code})
+            # Handle special cases like '3l' -> 'subj_3rd_lang' if needed
+            
+            label_key = f"subj_{subject}"
+            
+            # Special manual mapping for known deviations if any
+            if subject == 'lang3': label_key = 'subj_3rd_lang'
+            
+            human_subject = en_texts.get(label_key, subject.upper())
+            academic_str += f"- {human_subject}: {grade}\n"
             
         # 3. Recommended Courses
         courses_str = ""
