@@ -306,7 +306,7 @@ I just checked my options after SPM on this app called Hala Tuju. It suggested a
 
 {courses}
 I’m not sure yet, but these look okay. Can we discuss this later?
-👉 https://halatuju.streamlit.app"""
+https://halatuju.streamlit.app"""
     },
     
     "bm": {
@@ -602,7 +602,7 @@ Saya baru check peluang sambung belajar kat Hala Tuju. Sistem tu ada cadangkan b
 
 {courses}
 Nampak macam menarik. Nanti bila free, boleh tak kita tengok sama-sama?
-👉 https://halatuju.streamlit.app"""
+https://halatuju.streamlit.app"""
     },
 
     "ta": {
@@ -840,7 +840,7 @@ Hala Tuju என்ற இணையத்தளத்தில் என் ம�
 
 {courses}
 இது பற்றி உங்கள் ஆலோசனையைக் கேட்க விரும்புகிறேன். நேரம் கிடைக்கும்போது நாம் இதைப் பற்றிப் பேசலாமா?
-👉 https://halatuju.streamlit.app"""
+https://halatuju.streamlit.app"""
     }
 }
 

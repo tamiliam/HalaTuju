@@ -581,31 +581,56 @@ def render_ai_report_page(user, t):
     st.markdown("""
     <style>
     @media print {
-        /* Hide Streamlit UI elements */
-        header, footer, .stApp > header, [data-testid="stSidebar"] {
+        /* 1. Global Reset to ensure scrolling works/printing works */
+        html, body, .stApp {
+            height: auto !important;
+            width: 100% !important;
+            overflow: visible !important;
+            background-color: white !important;
+        }
+
+        /* 2. Hide Streamlit Chrome (Header, Footer, Sidebar, Buttons) */
+        header, 
+        [data-testid="stHeader"],
+        footer, 
+        .stApp > header, 
+        [data-testid="stSidebar"],
+        .stDeployButton,
+        [data-testid="stToolbar"],
+        button, 
+        .stButton,
+        .stDownloadButton {
             display: none !important;
         }
-        
-        /* Ensure content is visible */
+
+        /* 3. Force Main Content to be Visible & Full Width */
         .main .block-container {
             max-width: 100% !important;
-            padding: 1rem !important;
+            padding: 2rem 1rem !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
         }
         
-        /* Make sure markdown content prints */
-        .stMarkdown, .stMarkdown * {
+        /* 4. Ensure Text is Black (Fixes Dark Mode Issues) */
+        .stMarkdown, p, h1, h2, h3, h4, h5, h6, li, span, div {
             color: black !important;
-            background: white !important;
+            color-adjust: exact !important;
+            -webkit-print-color-adjust: exact !important;
         }
         
-        /* Page breaks */
+        /* 5. Page Break Controls */
         h1, h2, h3 {
             page-break-after: avoid;
+            page-break-inside: avoid;
+        }
+        p, li {
+            page-break-inside: avoid;
         }
         
-        /* Hide buttons when printing */
-        button, .stButton {
-            display: none !important;
+        /* 6. Hide Action Buttons Row specifically if it leaks */
+        [data-testid="stHorizontalBlock"] button {
+             display: none !important;
         }
     }
     </style>
