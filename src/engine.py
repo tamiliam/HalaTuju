@@ -307,10 +307,6 @@ def check_eligibility(student, req):
     
     # --- TVET Rules (ILKBS/ILJTM) ---
 
-    # --- TVET Rules (ILKBS/ILJTM) ---
-
-    # --- TVET Rules (ILKBS/ILJTM) ---
-
     if to_int(req.get('pass_math_science')) == 1:
         # Pass Math OR Science (Excluding Biology)
         cond = is_pass(g.get('math')) or has_pass(sci_no_bio)

@@ -10,7 +10,7 @@ from src.ranking_engine import get_ranked_results, sort_courses
 from src.translations import get_text, LANGUAGES
 from src.quiz_manager import QuizManager
 from src.auth import AuthManager
-from src.reports.insight_generator import InsightGenerator
+# from src.reports.insight_generator import InsightGenerator
 from src.reports.ai_wrapper import AIReportWrapper
 from src.data_manager import load_master_data
 from src.reports.pdf_generator import PDFReportGenerator
