@@ -1,7 +1,7 @@
 import streamlit as st
 import json
 import os
-from src.prompts import SYSTEM_PROMPT
+from src.prompts import SYSTEM_PROMPT, SYSTEM_PROMPT_EN
 from src.translations import TEXTS
 
 try:
@@ -87,7 +87,7 @@ class AIReportWrapper:
         else:
             print("OpenAI fallback not configured (Missing 'openai' module or OPENAI_API_KEY)")
 
-    def generate_narrative_report(self, student_profile, top_courses):
+    def generate_narrative_report(self, student_profile, top_courses, language='bm'):
         """
         Generates a deep narrative report using Gemini with model cascade fallback.
         Returns a dictionary with 'markdown' key.
@@ -152,9 +152,12 @@ class AIReportWrapper:
                     counsellor_name = "Cikgu Guna"
                     gender_context = "wanita"
 
+                # Select Prompt based on Language
+                target_prompt = SYSTEM_PROMPT_EN if language == 'en' else SYSTEM_PROMPT
+
                 # Format Prompt with specific Persona
                 try:
-                    full_prompt = SYSTEM_PROMPT.format(
+                    full_prompt = target_prompt.format(
                         counsellor_name=counsellor_name,
                         gender_context=gender_context,
                         student_name=student_name,
@@ -164,7 +167,7 @@ class AIReportWrapper:
                     )
                 except Exception as e:
                     print(f"Prompt formatting error: {e}")
-                    full_prompt = f"Anda ialah {counsellor_name} (jantina: {gender_context}).\n{SYSTEM_PROMPT}\n\nDATA:\nStudent: {student_name}\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
+                    full_prompt = f"Anda ialah {counsellor_name} (jantina: {gender_context}).\n{target_prompt}\n\nDATA:\nStudent: {student_name}\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
 
                 try:
                     # Reinitialize model if needed
@@ -196,7 +199,10 @@ class AIReportWrapper:
             gender_context = "wanita"
             
             try:
-                full_prompt = SYSTEM_PROMPT.format(
+                # Select Prompt based on Language (for OpenAI too)
+                target_prompt = SYSTEM_PROMPT_EN if language == 'en' else SYSTEM_PROMPT
+                
+                full_prompt = target_prompt.format(
                     counsellor_name=counsellor_name,
                     gender_context=gender_context,
                     student_name=student_name,
@@ -206,7 +212,7 @@ class AIReportWrapper:
                 )
             except Exception:
                 # Use pre-formatted fallback if simple format fails (rare)
-                 full_prompt = f"Anda ialah {counsellor_name} (jantina: {gender_context}).\n{SYSTEM_PROMPT}\n\nDATA:\nStudent: {student_name}\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
+                 full_prompt = f"Anda ialah {counsellor_name} (jantina: {gender_context}).\n{target_prompt}\n\nDATA:\nStudent: {student_name}\nProfile: {profile_str}\nGrades: {academic_str}\nCourses: {courses_str}"
 
             try:
                 response = self.openai_client.chat.completions.create(

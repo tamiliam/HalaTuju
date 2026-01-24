@@ -416,7 +416,36 @@ def render_quiz_page(lang_code, user):
                         from src.reports.ai_wrapper import AIReportWrapper
                         wrapper = AIReportWrapper()
                         top_matches = dash_data.get('featured_matches', [])[:5]
-                        return wrapper.generate_narrative_report(user_profile, top_matches)
+                        
+                        # LOGIC: Determine Report Language
+                        # Priority: 1. if Eng > C+ AND Eng > BM -> English. 2. Else -> Malay
+                        target_lang = 'bm'
+                        
+                        grades = user_profile.get('grades', {})
+                        # Ensure keys match your form inputs (e.g., 'eng', 'bm')
+                        # Grade Rank Map: Lower is Better
+                        GRADE_RANK = {
+                            "A+": 0, "A": 1, "A-": 2, 
+                            "B+": 3, "B": 4, "C+": 5, 
+                            "C": 6, "D": 7, "E": 8, "G": 9, "TH": 10
+                        }
+                        
+                        grade_eng = grades.get('eng')
+                        grade_bm = grades.get('bm')
+                        
+                        if grade_eng and grade_bm:
+                            val_eng = GRADE_RANK.get(grade_eng, 99)
+                            val_bm = GRADE_RANK.get(grade_bm, 99)
+                            threshold = GRADE_RANK.get('C+', 5)
+                            
+                            # Rule: English if (Eng >= B) AND (Eng < BM) [Better grade = lower value]
+                            # "Eng > C+" means rank value < 5 (0,1,2,3,4)
+                            # "Eng > BM" means val_eng < val_bm
+                            
+                            if val_eng < threshold and val_eng < val_bm:
+                                target_lang = 'en'
+                        
+                        return wrapper.generate_narrative_report(user_profile, top_matches, language=target_lang)
                     except Exception as e:
                         return {"error": str(e)}
 
