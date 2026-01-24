@@ -496,8 +496,8 @@ def render_quiz_page(lang_code, user):
                      print(f"AI Gen Error: {report.get('error')}")
 
                 # Set flags
-                st.session_state['dashboard_visited_post_quiz'] = False
-                st.session_state['report_just_unlocked'] = False # Reset unlock flag
+                # st.session_state['dashboard_visited_post_quiz'] = False # REMOVED GATING
+                st.session_state['report_just_unlocked'] = True # Unlock immediately
                 st.session_state['ai_gen_done'] = True # MARK DONE
 
 
@@ -834,33 +834,19 @@ if user:
                 print(f"Failed to parse AI report from database: {e}")
                 report = None
         
-        # Check if dashboard has been visited after quiz completion
-        dashboard_visited = st.session_state.get('dashboard_visited_post_quiz', True)  # Default True for existing users
+        if not report:
+             st.sidebar.warning(t.get('err_report_unavailable', "Report not available. Please retake the Discovery Quiz."))
         
-        if not dashboard_visited:
-            # Show prompt to view dashboard first
-            st.sidebar.info(t.get('msg_explore_unlock', "💡 **Explore courses to unlock report**"))
-            # Optionally show a greyed out button?
-            st.sidebar.button(t.get('btn_counselor_lock', "🔒 Counselor Report"), disabled=True, use_container_width=True)
-        else:
-            # Dashboard has been visited - show unlock message if just unlocked
-            if st.session_state.get('report_just_unlocked', False):
-                st.sidebar.success(t.get('report_unlock_msg', "💡 **Report available!**"))
-                # Don't clear the flag immediately - let it persist for this session
-            
-            if not report:
-                 st.sidebar.warning(t.get('err_report_unavailable', "Report not available. Please retake the Discovery Quiz."))
-            
-            # Always show button when dashboard has been visited
-            if st.sidebar.button(f"📋 {t.get('counselor_report', 'Counselor Report')}", key="btn_ai_access_sb", use_container_width=True):
-                if report and "markdown" in report:
-                    # Clear the unlock flag when accessing report
-                    st.session_state['report_just_unlocked'] = False
-                    # Switch to AI report view
-                    st.session_state['view_mode'] = 'ai_report'
-                    st.rerun()
-                else:
-                    st.sidebar.warning(t.get('err_report_unavailable', "Report not available. Please retake the Discovery Quiz."))
+        # Always show button when dashboard has been visited
+        if st.sidebar.button(f"📋 {t.get('counselor_report', 'Counselor Report')}", key="btn_ai_access_sb", use_container_width=True):
+            if report and "markdown" in report:
+                # Clear the unlock flag when accessing report
+                st.session_state['report_just_unlocked'] = False
+                # Switch to AI report view
+                st.session_state['view_mode'] = 'ai_report'
+                st.rerun()
+            else:
+                st.sidebar.warning(t.get('err_report_unavailable', "Report not available. Please retake the Discovery Quiz."))
 
 
 if not user:
