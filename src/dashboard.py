@@ -205,7 +205,10 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             "hostel_fee": row.get('hostel_fee', 'N/A'),
             "details_url": row.get('details_url', '#'),
             "frontend_label": row.get('frontend_label', 'General'), # Added for filtering
-            "level": row.get('level', 'Certificate') # Added for Education Level filter
+            "level": row.get('level', 'Certificate'), # Added for Education Level filter
+            # Requirement Flags for Warning Pills
+            "req_interview": row.get('req_interview', 0),
+            "single": row.get('single', 0)
         })
         
     # Calculate Unique Courses
@@ -353,17 +356,18 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
     req_int = pick.get('req_interview', 0)
     req_single = pick.get('single', 0)
     
-    warn_pills = []
+    warn_notes = []
     if req_int == 1:
-        lbl = t.get('req_interview_label', '⚠️ Interview Required') if t else '⚠️ Interview Required'
-        warn_pills.append(f'<span style="background:#FFF3CD; color:#856404; padding:2px 6px; border-radius:4px; font-size:0.8em; font-weight:600; margin-right:5px; border:1px solid #FFEEBA;">{lbl}</span>')
+        lbl = t.get('req_interview_note', '📋 Candidates are required to appear for an interview.') if t else '📋 Candidates are required to appear for an interview.'
+        warn_notes.append(lbl)
         
     if req_single == 1:
-        lbl = t.get('req_single_label', '⚠️ Unmarried Only') if t else '⚠️ Unmarried Only'
-        warn_pills.append(f'<span style="background:#F8D7DA; color:#721C24; padding:2px 6px; border-radius:4px; font-size:0.8em; font-weight:600; margin-right:5px; border:1px solid #F5C6CB;">{lbl}</span>')
+        lbl = t.get('req_single_note', '💍 This programme is only open to unmarried applicants.') if t else '💍 This programme is only open to unmarried applicants.'
+        warn_notes.append(lbl)
         
-    if warn_pills:
-        warn_html = f"<div style='margin-bottom:8px;'>{''.join(warn_pills)}</div>"
+    if warn_notes:
+        notes_html = "".join([f'<div style="color:#666; font-size:0.85em; font-style:italic; margin-bottom:4px;">{note}</div>' for note in warn_notes])
+        warn_html = f"<div style='margin: 8px 0; padding: 8px 12px; background: #f8f9fa; border-left: 3px solid #6C5CE7; border-radius: 4px;'>{notes_html}</div>"
 
     # 2. Career HTML (Jobs as Pill Badges)
     career_html = ""

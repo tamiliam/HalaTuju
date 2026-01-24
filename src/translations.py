@@ -300,8 +300,8 @@ TEXTS = {
         "fail_min_pass": "Only {passes} Passes",
         
         # New Requirement Flags
-        "req_interview_label": "⚠️ Interview Required",
-        "req_single_label": "⚠️ Unmarried Only",
+        "req_interview_note": "📋 Candidates are required to appear for an interview.",
+        "req_single_note": "💍 Only open to unmarried applicants (IKTBN Termeloh).",
         
         # WhatsApp Share
         "wa_share_msg": """Hi Mum/Dad,
@@ -636,6 +636,8 @@ https://halatuju.streamlit.app""",
         # New Requirement Flags
         "req_interview_label": "⚠️ Temuduga Diperlukan",
         "req_single_label": "⚠️ Bujang Sahaja",
+        "req_interview_note": "📋 Calon dikehendaki menghadiri temuduga.",
+        "req_single_note": "💍 Terbuka kepada calon bujang sahaja (IKTBN Termeloh).",
         
         # WhatsApp Share
         "wa_share_msg": """Salam Mak/Ayah,
@@ -940,6 +942,12 @@ https://halatuju.streamlit.app""",
         "badge_dur": "காலம்",
         "badge_mode": "முறை",
         "badge_fees": "கட்டணம்",
+
+        # New Requirement Flags
+        "req_interview_label": "⚠️ Interview Required",
+        "req_single_label": "⚠️ Unmarried Only",
+        "req_interview_note": "📋 விண்ணப்பதாரர்கள் நேர்காணலுக்கு வர வேண்டும்.",
+        "req_single_note": "💍 திருமணமாகாதவர்களுக்கு மட்டுமே (IKTBN Termeloh).",
         
         # WhatsApp Share
         "wa_share_msg": """வணக்கம் அம்மா/அப்பா,
