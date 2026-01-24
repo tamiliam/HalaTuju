@@ -92,7 +92,7 @@ TEXTS = {
         "header_subtitle": "See which Polytechnic, IKBN, and Community College courses you qualify for.",
         "landing_msg": """Welcome! 🎓
 
-Not sure what to do after SPM? You’re not alone — and you don’t have to figure it out by yourself. HalaTuju helps you explore realistic study pathways based on your results and preferences, step by step.
+HalaTuju was created for post-SPM students. It helps you explore study pathways based on your results and preferences, step by step.
 
 How it works:
 
@@ -451,7 +451,7 @@ https://halatuju.streamlit.app""",
         "header_subtitle": "Semak kelayakan anda untuk Politeknik, IKBN, dan Kolej Komuniti.",
         "landing_msg": """Selamat Datang! 🎓
 
-Tidak pasti apa nak buat selepas SPM? Anda tidak keseorangan — dan anda tidak perlu memikirkannya sendirian. HalaTuju membantu anda meneroka laluan pengajian yang realistik berdasarkan keputusan dan pilihan anda, langkah demi langkah.
+HalaTuju dicipta untuk pelajar lepasan SPM. Ia membantu anda meneroka laluan pengajian yang realistik berdasarkan keputusan dan pilihan anda, langkah demi langkah.
 
 Cara ia berfungsi:
 
