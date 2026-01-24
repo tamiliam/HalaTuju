@@ -1,7 +1,9 @@
 import pandas as pd
 import os
+import streamlit as st
 from src.engine import load_and_clean_data
 
+@st.cache_data(ttl=3600)
 def load_master_data():
     """
     Loads and merges all data files into a single master dataframe.

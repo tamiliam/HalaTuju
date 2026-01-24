@@ -3,9 +3,9 @@ import re
 import pandas as pd
 import time
 from supabase import create_client, Client
-from src.engine import StudentProfile
+
 from src.dashboard import generate_dashboard_data, group_courses_by_id
-from src.ranking_engine import get_ranked_results, TAG_COUNT, sort_courses
+from src.ranking_engine import get_ranked_results, sort_courses
 from src.translations import get_text, LANGUAGES
 from src.quiz_manager import QuizManager
 from src.auth import AuthManager
@@ -36,89 +36,7 @@ except Exception as e:
 
 # ... (Helper Functions) ...
 
-# --- NEW: QUIZ PAGE RENDERER ---
-def render_quiz_page(lang_code, user):
-    t = get_text(lang_code)
-    st.title(t['quiz_title'])
-    
-    # Get Current Question
-    q = quiz_manager.get_current_question(lang_code)
-    total = quiz_manager.get_total_questions(lang_code)
-    step = st.session_state['quiz_step']
-    
-    # Progress Bar
-    progress = min(max(step / total, 0.0), 1.0) if total > 0 else 0
-    st.progress(progress)
-    
-    if q:
-        # Render Question Card
-        with st.container():
-            st.markdown(f"**{t['quiz_question_count'].format(step=step+1, total=total)}**")
-            st.markdown(f"### {q['prompt']}")
-            st.markdown("") # Spacer
-            
-            # Render Options as large buttons
-            for i, opt in enumerate(q['options']):
-                # Use a unique key for every option/step combo
-                if st.button(opt['text'], key=f"q{step}_opt{i}", use_container_width=True):
-                    quiz_manager.handle_answer(opt)
-                    st.rerun()
-                    
-            st.markdown("---")
-            if step > 0:
-                if st.button(t['btn_back']):
-                    quiz_manager.go_back()
-                    st.rerun()
-                    
-    elif quiz_manager.is_complete(lang_code):
-        # Quiz Complete Transition
-        with st.spinner(t.get('quiz_generating', "Generating your fit...")):
-            time.sleep(1.5)
-            
-        # Get Results
-        results = quiz_manager.get_final_results()
-        
-        # Save to DB if User
-        if user:
-            try:
-                success, msg = auth.save_quiz_results(user['id'], results['student_signals'])
-                if success:
-                    st.toast(t['quiz_saved'])
-                    
-                    # CRITICAL: Clear volatile quiz scores after saving to DB
-                    if 'quiz_scores' in st.session_state:
-                        del st.session_state['quiz_scores']
-                else:
-                    st.error(f"Save Failed: {msg}")
-            except Exception as e:
-                st.error(f"Could not save results: {e}")
-        
-        # Display Results
-        st.success(t.get('quiz_complete', "Profil Anda Telah Disimpan!"))
-        
-        # Explainer Text
-        st.markdown("""
-        **Terima kasih!** Jawapan anda telah direkodkan.
-        Kami telah menyusun semula senarai kursus berdasarkan personaliti dan minat anda.
-        Kursus yang anda lihat di **Dashboard** kini telah disesuaikan khas untuk anda.
-        """)
-        
-        # Call to Action (CTA)
-        st.info("💡 **Langkah Seterusnya:** Sila kembali ke tab **Dashboard** untuk melihat cadangan kursus anda.")
-        
-        if st.button("Ke Halaman Dashboard ➡️", use_container_width=True, type="primary"):
-            st.session_state['view_mode'] = 'dashboard'
-            st.rerun()
-            
-        st.markdown("---")
-        st.markdown("🔍 **Ingin tahu lebih lanjut?** Klik butang **✨ Deep AI Analysis (Beta)** di menu sisi / dashboard untuk mendapatkan laporan kerjaya penuh.")
 
-        # Hide Raw Data in Expander
-        with st.expander("🛠️ View Debug Data (Raw Profile)"):
-            st.json(results)
-        
-        # Save to Session
-        st.session_state['student_signals'] = results['student_signals']
 
 
 # --- SIDEBAR LOGIC ---
@@ -411,7 +329,8 @@ def render_profile_page(user, t):
 
 # --- 5c. QUIZ PAGE ---
 def render_quiz_page(lang_code, user):
-    st.title("🧭 Discovery Quiz")
+    t = get_text(lang_code)
+    st.title(t['quiz_title'])
     
     # Get Current Question
     q = quiz_manager.get_current_question(lang_code)
