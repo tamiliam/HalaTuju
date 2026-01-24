@@ -782,7 +782,15 @@ if user:
     st.sidebar.markdown("---")
     
     # Determine Label
-    has_results = bool(user.get('student_signals'))
+    # Helper: Strictly validate if quiz answers actually exist
+    def has_valid_results(u):
+        if not u: return False
+        sig = u.get('student_signals')
+        if not sig or not isinstance(sig, dict): return False
+        # key check: 'top_intelligences' or 'career_matches' or 'code_primary'
+        return bool(sig.get('top_intelligences') or sig.get('code_primary') or sig.get('career_matches'))
+
+    has_results = has_valid_results(user)
     quiz_btn_label = t['sb_retake_quiz'] if has_results else t['sb_start_quiz']
     
     if st.sidebar.button(quiz_btn_label, use_container_width=True):
@@ -793,15 +801,7 @@ if user:
         st.rerun()
 
     # --- AI COUNSELLOR (SIDEBAR) ---
-    # Helper: Strictly validate if quiz answers actually exist
-    def has_valid_results(u):
-        sig = u.get('student_signals')
-        if not sig or not isinstance(sig, dict): return False
-        # key check: 'top_intelligences' or 'career_matches' or 'code_primary'
-        # Adjust based on what engine.py actually produces.
-        # Based on typical flow, 'top_intelligences' is a good proxy for completed quiz.
-        return bool(sig.get('top_intelligences') or sig.get('code_primary') or sig.get('career_matches'))
-
+    
     # Show if student has completed the quiz (has VALID student_signals)
     has_completed_quiz = has_valid_results(user)
     
