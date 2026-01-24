@@ -147,7 +147,7 @@ def render_auth_gate(t, current_grades, gender, cb, disability):
     st.warning(f"🔒 **{t['locked_cta_title']}**")
     st.write(t['gate_subtitle'])
     
-    st.write("Ready to see everything? Unlock your full report now.")
+
     
     with st.form("reg_form"):
         st.write(t['gate_pin_instr'])
@@ -1036,7 +1036,7 @@ else:
         
 
 # --- RENDER TIER 1: FEATURED MATCHES ---
-st.markdown(f"### :star: {t.get('feat_title', 'Featured Matches')}")
+st.markdown(f"### {t.get('feat_title', 'Featured Matches')}")
 
 # Import UI Component (Lazy import or move to top)
 from src.dashboard import display_course_card
