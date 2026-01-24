@@ -675,13 +675,54 @@ def render_ai_report_page(user, t):
 
 # Init Session
 if 'lang_code' not in st.session_state:
-    st.session_state['lang_code'] = 'en'
+    # Priority: 1. URL Query Param 2. Default 'en'
+    # st.query_params is the new API (st.experimental_get_query_params is deprecated)
+    # Check if 'lang' in query params
+    params = st.query_params
     
+    # URL Param
+    url_lang = params.get("lang", None)
+    
+    # Set init
+    if url_lang and url_lang in LANGUAGES:
+        st.session_state['lang_code'] = url_lang
+    else:
+        st.session_state['lang_code'] = 'en'
+
+# Sync Check: If logged in, maybe override with profile preference?
+# This happens after auth check below, so we might re-set it later.
+
 current_lang = st.session_state['lang_code']
 t_temp = get_text(current_lang)
 
-lang_code = st.sidebar.selectbox(t_temp['sb_lang'], list(LANGUAGES.keys()), format_func=lambda x: LANGUAGES[x], key="lang_code")
-t = get_text(lang_code)
+def on_lang_change():
+    # Update Query Param
+    new_lang = st.session_state.get('lang_code_select')
+    st.session_state['lang_code'] = new_lang
+    st.query_params["lang"] = new_lang
+    
+    # If logged in, save to profile
+    if auth.check_session() and 'user' in st.session_state and st.session_state['user']:
+        u = st.session_state['user']
+        # Fetch latest signals or init
+        signals = u.get('student_signals') or {}
+        signals['lang_pref'] = new_lang
+        # Background update (fire and forget logic typically, but here sync)
+        auth.update_profile(u['id'], {"student_signals": signals})
+
+# Render Widget
+# Note: Key must be different from 'lang_code' to avoid session state conflict if we want manual callback
+lang_code = st.sidebar.selectbox(
+    t_temp['sb_lang'], 
+    list(LANGUAGES.keys()), 
+    format_func=lambda x: LANGUAGES[x], 
+    index=list(LANGUAGES.keys()).index(current_lang),
+    key="lang_code_select",
+    on_change=on_lang_change
+)
+
+# Ensure session state is synced if widget changes (handled by callback, but safety)
+t = get_text(current_lang)
 
 auth_status = auth.check_session()
 user = st.session_state['user'] if auth_status else None
@@ -725,6 +766,17 @@ if user:
     # --- AI COUNSELLOR (SIDEBAR) ---
     # Show if student has completed the quiz (has student_signals)
     has_completed_quiz = bool(user.get('student_signals'))
+    
+    # RESTORE LANGUAGE FROM PROFILE (Once per session load)
+    if user and 'lang_restored' not in st.session_state:
+        signals = user.get('student_signals') or {}
+        saved_lang = signals.get('lang_pref')
+        if saved_lang and saved_lang in LANGUAGES and saved_lang != st.session_state.get('lang_code'):
+            st.session_state['lang_code'] = saved_lang
+            st.session_state['lang_restored'] = True
+            st.rerun()
+        st.session_state['lang_restored'] = True # Mark checked
+        
     if has_completed_quiz:
         
         # Check if report exists (in session or database)
