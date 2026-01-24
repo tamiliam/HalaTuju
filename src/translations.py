@@ -96,20 +96,16 @@ Not sure what to do after SPM? You’re not alone — and you don’t have to fi
 
 How it works:
 
-**1. Enter Your Results**
-
+**1. Enter Your Results**  
 Use the sidebar on the left to key in your SPM results (trial or actual).
 
-**2. See What You’re Eligible For**
-
+**2. See What You’re Eligible For**  
 We’ll instantly show you courses where you meet the minimum requirements.
 
-**3. Explore Your Best Matches**
-
+**3. Explore Your Best Matches**  
 Answer a short 1-minute quiz. We’ll rank eligible courses based on how well they fit you — not just your grades.
 
-**4. Understand the Rankings (Optional)**
-
+**4. Understand the Rankings (Optional)**  
 If you want deeper clarity, unlock a personalised Counsellor’s Report that explains why certain courses rise to the top and what you should consider next.
 
 Ready to explore your options?
@@ -459,20 +455,16 @@ Tidak pasti apa nak buat selepas SPM? Anda tidak keseorangan — dan anda tidak 
 
 Cara ia berfungsi:
 
-**1. Masukkan Keputusan Anda**
-
+**1. Masukkan Keputusan Anda**  
 Gunakan bar sisi di sebelah kiri untuk memasukkan keputusan SPM anda (percubaan atau sebenar).
 
-**2. Lihat Layak Ke Tidak**
-
+**2. Lihat Layak Ke Tidak**  
 Kami akan tunjukkan serta-merta kursus yang anda melepasi syarat minimum.
 
-**3. Terokai Padanan Terbaik Anda**
-
+**3. Terokai Padanan Terbaik Anda**  
 Jawab kuiz pendek 1 minit. Kami akan menyusun kursus yang layak berdasarkan kesesuaian dengan anda — bukan sekadar gred semata-mata.
 
-**4. Fahamkan Kedudukan (Pilihan)**
-
+**4. Fahamkan Kedudukan (Pilihan)**  
 Jika anda mahukan penjelasan lebih mendalam, dapatkan Laporan Kaunselor yang diperibadikan yang menjelaskan mengapa kursus tertentu berada di kedudukan teratas dan apa yang patut anda pertimbangkan seterusnya.
 
 Bersedia untuk meneroka pilihan anda?
@@ -818,20 +810,16 @@ SPM-க்குப் பிறகு என்ன செய்வது என
 
 இது எப்படி வேலை செய்கிறது:
 
-**1. உங்கள் முடிவுகளை உள்ளிடவும்**
-
+**1. உங்கள் முடிவுகளை உள்ளிடவும்**  
 இடதுபுறமுள்ள பக்கப்பட்டியைப் (sidebar) பயன்படுத்தி உங்கள் SPM முடிவுகளை (மாதிரி அல்லது அசல்) உள்ளிடவும்.
 
-**2. நீங்கள் எதற்கெல்லாம் தகுதியானவர் என்று பாருங்கள்**
-
+**2. நீங்கள் எதற்கெல்லாம் தகுதியானவர் என்று பாருங்கள்**  
 குறைந்தபட்சத் தகுதிகளை நீங்கள் பூர்த்தி செய்யும் படிப்புகளை நாங்கள் உடனடியாகக் காட்டுவோம்.
 
-**3. உங்களுக்குப் பொருத்தமானவற்றைத் தேர்ந்தெடுக்கவும்**
-
+**3. உங்களுக்குப் பொருத்தமானவற்றைத் தேர்ந்தெடுக்கவும்**  
 ஒரு நிமிட வினாடி வினாவிற்குப் பதிலளிக்கவும். தகுதியான படிப்புகளை, உங்கள் மதிப்பெண்களை மட்டும் பார்க்காமல், அவை உங்களுக்கு எவ்வளவு பொருத்தமானவை என்பதை அடிப்படையாகக் கொண்டு நாங்கள் வரிசைப்படுத்துவோம்.
 
-**4. தரவரிசையைப் புரிந்துகொள்ளுங்கள் (விருப்பத் தேர்வு)**
-
+**4. தரவரிசையைப் புரிந்துகொள்ளுங்கள் (விருப்பத் தேர்வு)**  
 உங்களுக்குத் தெளிவான வழிகாட்டுதல் தேவைப்பட்டால், குறிப்பிட்ட படிப்புகள் ஏன் முதலிடத்தில் உள்ளன என்பதையும், அடுத்து நீங்கள் என்ன செய்ய வேண்டும் என்பதையும் விளக்கும் தனிப்பயனாக்கப்பட்ட ஆலோசகர் அறிக்கையைப் (Counsellor’s Report) பெறுங்கள்.
 
 உங்கள் விருப்பங்களை ஆராயத் தயாரா?
