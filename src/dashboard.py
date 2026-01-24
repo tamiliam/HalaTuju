@@ -448,6 +448,7 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
 <span class="meta-pill pill-hostel">🏠 {hostel}</span>
 <a href="{det_url}" target="_blank" class="meta-pill pill-link">{t.get('more_details', 'More details ↗') if t else 'More details ↗'}</a>
 </div>
+{warn_html}
 {career_html}
 {tbl_html}
 </div>
