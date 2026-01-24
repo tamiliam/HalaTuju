@@ -158,9 +158,17 @@ def render_auth_gate(t, current_grades, gender, cb, disability):
         
         if st.form_submit_button(t['btn_unlock_save']):
             # Pre-validation (Localized)
+            # Pre-validation (Localized)
+            valid = True
             if len(r_pin) != 6 or not r_pin.isdigit():
                  st.error(t.get('err_pin_length', "❌ PIN must be 6 digits"))
-            else:
+                 valid = False
+                 
+            if r_email and not re.match(r"[^@]+@[^@]+\.[^@]+", r_email):
+                 st.error(t.get('err_email_invalid', "❌ Invalid Email"))
+                 valid = False
+                 
+            if valid:
                 # Clean Grades first
                 grade_map = {k: v for k, v in current_grades.items() if v != t['opt_not_taken']} if current_grades else {}
                 
