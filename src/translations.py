@@ -90,7 +90,26 @@ TEXTS = {
         # Landing & Processing
         "header_title": "Hala Tuju Pelajar Lepasan SPM",
         "header_subtitle": "See which Polytechnic, IKBN, and Community College courses you qualify for.",
-        "landing_msg": "👈 Please enter your exam results on the left to start.",
+        "landing_msg": """Welcome! 🎓
+
+Not sure what to do after SPM? You’re not alone — and you don’t have to figure it out by yourself. HalaTuju helps you explore realistic study pathways based on your results and preferences, step by step.
+
+How it works:
+
+1. Enter Your Results
+Use the sidebar on the left to key in your SPM results (trial or actual).
+
+2. See What You’re Eligible For
+We’ll instantly show you courses where you meet the minimum requirements.
+
+3. Explore Your Best Matches
+Answer a short 1-minute quiz. We’ll rank eligible courses based on how well they fit you — not just your grades.
+
+4. Understand the Rankings (Optional)
+If you want deeper clarity, unlock a personalised Counsellor’s Report that explains why certain courses rise to the top and what you should consider next.
+
+Ready to explore your options?
+Start by entering your results — you can decide the next steps as you go. 🚀""",
         "spinner_msg": "Checking official entry requirements...",
         
         # Results
@@ -430,7 +449,26 @@ https://halatuju.streamlit.app""",
         # Landing & Processing
         "header_title": "Hala Tuju Pelajar Lepasan SPM",
         "header_subtitle": "Semak kelayakan anda untuk Politeknik, IKBN, dan Kolej Komuniti.",
-        "landing_msg": "👈 Sila masukkan keputusan di sebelah kiri untuk bermula.",
+        "landing_msg": """Selamat Datang! 🎓
+
+Tidak pasti apa nak buat selepas SPM? Anda tidak keseorangan — dan anda tidak perlu memikirkannya sendirian. HalaTuju membantu anda meneroka laluan pengajian yang realistik berdasarkan keputusan dan pilihan anda, langkah demi langkah.
+
+Cara ia berfungsi:
+
+1. Masukkan Keputusan Anda
+Gunakan bar sisi di sebelah kiri untuk memasukkan keputusan SPM anda (percubaan atau sebenar).
+
+2. Lihat Layak Ke Tidak
+Kami akan tunjukkan serta-merta kursus yang anda melepasi syarat minimum.
+
+3. Terokai Padanan Terbaik Anda
+Jawab kuiz pendek 1 minit. Kami akan menyusun kursus yang layak berdasarkan kesesuaian dengan anda — bukan sekadar gred semata-mata.
+
+4. Fahamkan Kedudukan (Pilihan)
+Jika anda mahukan penjelasan lebih mendalam, dapatkan Laporan Kaunselor yang diperibadikan yang menjelaskan mengapa kursus tertentu berada di kedudukan teratas dan apa yang patut anda pertimbangkan seterusnya.
+
+Bersedia untuk meneroka pilihan anda?
+Mula dengan memasukkan keputusan anda — anda boleh tentukan langkah seterusnya sambil berjalan. 🚀""",
         "spinner_msg": "Sedang menyemak syarat kemasukan rasmi...",
         
         # Results
@@ -766,7 +804,26 @@ https://halatuju.streamlit.app""",
         # Landing & Processing
         "header_title": "Hala Tuju Pelajar Lepasan SPM (மேற்படிப்பு வழிகாட்டி)",
         "header_subtitle": "பாலிடெக்னிக், IKBN மற்றும் சமூகக் கல்லூரிகளில் உங்களுக்கான வாய்ப்புகளைக் கண்டறியுங்கள்.",
-        "landing_msg": "👈 தொடங்க, இடதுபுறத்தில் உங்கள் தேர்வு முடிவுகளை உள்ளிடவும்.",
+        "landing_msg": """நல்வரவு! 🎓
+
+SPM-க்குப் பிறகு என்ன செய்வது என்று தெரியவில்லையா? நீங்கள் தனியாக இல்லை — இதை நீங்களே கண்டுபிடிக்க வேண்டிய அவசியமும் இல்லை. உங்கள் முடிவுகள் மற்றும் விருப்பங்களின் அடிப்படையில் நடைமுறைக்கு ஏற்ற உயர்கல்விப் பாதைகளை, ஒவ்வொரு படியாகக் கண்டறிய 'HalaTuju' உதவுகிறது.
+
+இது எப்படி வேலை செய்கிறது:
+
+1. உங்கள் முடிவுகளை உள்ளிடவும்
+இடதுபுறமுள்ள பக்கப்பட்டியைப் (sidebar) பயன்படுத்தி உங்கள் SPM முடிவுகளை (மாதிரி அல்லது அசல்) உள்ளிடவும்.
+
+2. நீங்கள் எதற்கெல்லாம் தகுதியானவர் என்று பாருங்கள்
+குறைந்தபட்சத் தகுதிகளை நீங்கள் பூர்த்தி செய்யும் படிப்புகளை நாங்கள் உடனடியாகக் காட்டுவோம்.
+
+3. உங்களுக்குப் பொருத்தமானவற்றைத் தேர்ந்தெடுக்கவும்
+ஒரு நிமிட வினாடி வினாவிற்குப் பதிலளிக்கவும். தகுதியான படிப்புகளை, உங்கள் மதிப்பெண்களை மட்டும் பார்க்காமல், அவை உங்களுக்கு எவ்வளவு பொருத்தமானவை என்பதை அடிப்படையாகக் கொண்டு நாங்கள் வரிசைப்படுத்துவோம்.
+
+4. தரவரிசையைப் புரிந்துகொள்ளுங்கள் (விருப்பத் தேர்வு)
+உங்களுக்குத் தெளிவான வழிகாட்டுதல் தேவைப்பட்டால், குறிப்பிட்ட படிப்புகள் ஏன் முதலிடத்தில் உள்ளன என்பதையும், அடுத்து நீங்கள் என்ன செய்ய வேண்டும் என்பதையும் விளக்கும் தனிப்பயனாக்கப்பட்ட ஆலோசகர் அறிக்கையைப் (Counsellor’s Report) பெறுங்கள்.
+
+உங்கள் விருப்பங்களை ஆராயத் தயாரா?
+உங்கள் முடிவுகளை உள்ளிடுவதன் மூலம் தொடங்குங்கள் — அடுத்த கட்டங்களை நீங்கள் போகப்போகத் தீர்மானித்துக் கொள்ளலாம். 🚀""",
         "spinner_msg": "அதிகாரப்பூர்வ தகுதித் தேவைகளை சரிபார்க்கிறது...",
         
         # Results
