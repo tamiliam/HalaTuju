@@ -816,7 +816,8 @@ if user:
             st.rerun()
         st.session_state['lang_restored'] = True # Mark checked
         
-    if has_completed_quiz:
+    # Only show these if NOT currently in Quiz Mode (avoids cluttering the quiz screen)
+    if has_completed_quiz and st.session_state.get('view_mode') != 'quiz':
         
         # Check if report exists (in session or database)
         report = st.session_state.get('ai_report')
