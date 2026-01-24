@@ -234,10 +234,14 @@ def check_eligibility(student, req):
     # Notice: We removed 'safe_int'. We trust the data is clean now.
     if to_int(req.get('req_malaysian')) == 1:
         if not check("chk_malaysian", student.nationality == 'Warganegara', "fail_malaysian"): return False, audit
+    # Gender normalization: Accept any language (EN/MS/TA)
+    MALE_VALUES = {'Lelaki', 'Male', 'ஆண்'}
+    FEMALE_VALUES = {'Perempuan', 'Female', 'பெண்'}
+    
     if to_int(req.get('req_male')) == 1:
-        if not check("chk_male", student.gender == 'Lelaki', "fail_male"): return False, audit
+        if not check("chk_male", student.gender in MALE_VALUES, "fail_male"): return False, audit
     if to_int(req.get('req_female')) == 1:
-        if not check("chk_female", student.gender == 'Perempuan', "fail_female"): return False, audit
+        if not check("chk_female", student.gender in FEMALE_VALUES, "fail_female"): return False, audit
     if to_int(req.get('no_colorblind')) == 1:
         if not check("chk_colorblind", student.colorblind == 'Tidak', "fail_colorblind"): return False, audit
     if to_int(req.get('no_disability')) == 1:
