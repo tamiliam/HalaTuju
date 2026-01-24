@@ -3,6 +3,7 @@ import re
 import pandas as pd
 import time
 from supabase import create_client, Client
+from src.engine import StudentProfile
 
 from src.dashboard import generate_dashboard_data, group_courses_by_id
 from src.ranking_engine import get_ranked_results, sort_courses
