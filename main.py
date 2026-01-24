@@ -152,21 +152,25 @@ def render_auth_gate(t, current_grades, gender, cb, disability):
     with st.form("reg_form"):
         st.write(t['gate_pin_instr'])
         r_name = st.text_input(t.get('lbl_preferred_name', "Preferred Name"), placeholder="Ali")
-        r_phone = st.text_input(t['profile_phone'], placeholder="e.g. 012-3456789")
-        r_email = st.text_input("Email (Optional)", placeholder="ali@example.com")
+        r_phone = st.text_input(t['profile_phone'], placeholder=t.get('ph_phone', "e.g. 012-3456789"))
+        r_email = st.text_input(t.get('lbl_email', "Email (Optional)"), placeholder="ali@example.com")
         r_pin = st.text_input(t['lbl_create_pin'], type="password", max_chars=6, help=t['help_pin'])
         
         if st.form_submit_button(t['btn_unlock_save']):
-            # Clean Grades first
-            grade_map = {k: v for k, v in current_grades.items() if v != t['opt_not_taken']} if current_grades else {}
-            
-            success, val = auth.register_user(r_name, r_phone, r_pin, grades=grade_map, gender=gender, colorblind=cb, disability=disability, email=r_email)
-            if success:
-                st.success(t['msg_account_created'])
-                time.sleep(1)
-                st.rerun()
+            # Pre-validation (Localized)
+            if len(r_pin) != 6 or not r_pin.isdigit():
+                 st.error(t.get('err_pin_length', "❌ PIN must be 6 digits"))
             else:
-                st.error(val)
+                # Clean Grades first
+                grade_map = {k: v for k, v in current_grades.items() if v != t['opt_not_taken']} if current_grades else {}
+                
+                success, val = auth.register_user(r_name, r_phone, r_pin, grades=grade_map, gender=gender, colorblind=cb, disability=disability, email=r_email)
+                if success:
+                    st.success(t['msg_account_created'])
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.error(val)
 
 # ... (skip to main logic)
 
@@ -276,7 +280,7 @@ def render_profile_page(user, t):
                     # Validate City (Alphabets/Spaces only)
                     if new_city:
                          if not re.match(r"^[a-zA-Z\s]+$", new_city):
-                             st.error("❌ City: Only alphabets and spaces allowed.")
+                             st.error(t.get('err_city_invalid', "❌ City: Only alphabets and spaces allowed."))
                              valid_email = False
                     
                     if valid_email:
@@ -386,13 +390,13 @@ def render_quiz_page(lang_code, user):
                 
                 from concurrent.futures import ThreadPoolExecutor
                 
-                progress_messages = [
-                    "🔍 Menganalisis keputusan SPM & kekuatan akademik...",
-                    "🧠 Memadankan gaya pembelajaran & minat kerjaya...",
-                    "🏢 Menyemak ketersediaan kampus & lokasi...",
-                    "✨ Menyusun strategi laluan terbaik anda...",
-                    "✅ Laporan hampir siap..."
-                ]
+                progress_messages = t.get('progress_messages', [
+                    "🔍 Analyzing SPM results & academic strengths...",
+                    "🧠 Matching learning style & career interests...",
+                    "🏢 Checking campus availability & locations...",
+                    "✨ Strategizing your best pathways...",
+                    "✅ Report almost ready..."
+                ])
                 
                 status_container = st.empty()
                 
@@ -736,9 +740,9 @@ if user:
         
         if not dashboard_visited:
             # Show prompt to view dashboard first
-            st.sidebar.info("💡 **Explore courses to unlock report**")
+            st.sidebar.info(t.get('msg_explore_unlock', "💡 **Explore courses to unlock report**"))
             # Optionally show a greyed out button?
-            st.sidebar.button("🔒 Counselor Report", disabled=True, use_container_width=True)
+            st.sidebar.button(t.get('btn_counselor_lock', "🔒 Counselor Report"), disabled=True, use_container_width=True)
         else:
             # Dashboard has been visited - show unlock message if just unlocked
             if st.session_state.get('report_just_unlocked', False):

@@ -452,7 +452,8 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
         clicked = False
         if show_trigger:
             # Using a unique key for every card is crucial
-            clicked = st.button(f"✨ Key Matching Factors ({len(reasons)} reason{'s' if len(reasons)!=1 else ''})", key=f"btn_why_{pick.get('course_id')}_{pick.get('institution_id', 'gen')}")
+            btn_label = t.get('lbl_key_factors', "✨ Key Matching Factors ({count})").format(count=len(reasons))
+            clicked = st.button(btn_label, key=f"btn_why_{pick.get('course_id')}_{pick.get('institution_id', 'gen')}")
             
             if clicked:
                 # Show reasons dynamically if clicked (or could be used just as a trigger)
