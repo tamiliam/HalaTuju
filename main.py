@@ -787,8 +787,9 @@ if user:
         if not u: return False
         sig = u.get('student_signals')
         if not sig or not isinstance(sig, dict): return False
-        # key check: 'top_intelligences' or 'career_matches' or 'code_primary'
-        return bool(sig.get('top_intelligences') or sig.get('code_primary') or sig.get('career_matches'))
+        # key check: look for actual signal categories from quiz_manager
+        # 'work_preference_signals' is a robust indicator of quiz completion.
+        return bool(sig.get('work_preference_signals') or sig.get('learning_tolerance_signals'))
 
     has_results = has_valid_results(user)
     quiz_btn_label = t['sb_retake_quiz'] if has_results else t['sb_start_quiz']
