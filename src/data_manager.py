@@ -194,7 +194,7 @@ def load_master_data():
     base_cols = [
         'course_id', 'course', 'institution_name', 'State', 
         'type', 'category', 'fees', 'duration', 'hyperlink',
-        'inst_url', 'hostel_fee', 'details_url'
+        'inst_url', 'hostel_fee', 'details_url', 'level'
     ]
     
     # Combine lists
@@ -202,34 +202,9 @@ def load_master_data():
     
     master_df = pd.concat([poly_final, tvet_final], ignore_index=True)
     
-    master_df = pd.concat([poly_final, tvet_final], ignore_index=True)
-    
     # Final Safety: Fill N/A details_url with '#'
     if 'details_url' in master_df.columns:
         master_df['details_url'] = master_df['details_url'].fillna('#')
-        
-    # --- LEVEL INFERENCE (Poly/KK) ---
-    # Tvet usually has 'level'. Poly often infers from ID (DIP vs CET/SIJIL).
-    if 'level' not in master_df.columns:
-        master_df['level'] = 'Certificate' # Default
-        
-    # Apply logic to rows where level is missing or default
-    def refine_level(row):
-        existing = str(row.get('level', '')).lower()
-        cid = str(row.get('course_id', '')).upper()
-        
-        # If already Diploma, keep it
-        if 'diploma' in existing:
-            return 'Diploma'
-        if 'sijil' in existing and 'lanjutan' in existing:
-            return 'Sijil Lanjutan'
-            
-        # Inference from ID
-        if 'DIP' in cid:
-            return 'Diploma'
-        return 'Certificate' # Fallback for CET/SIJIL
-        
-    master_df['level'] = master_df.apply(refine_level, axis=1)
     
     # Ensure all crucial columns exist
     for col in cols_to_keep:
