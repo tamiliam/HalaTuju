@@ -368,9 +368,26 @@ def render_quiz_page(lang_code, user):
                     st.rerun()
                     
             st.markdown("---")
+            
+            # Navigation Support
+            c_nav1, c_nav2 = st.columns([1, 4])
+            
             if step > 0:
-                if st.button(t['btn_back']):
-                    quiz_manager.go_back()
+                with c_nav1:
+                    if st.button(t['btn_back']):
+                        quiz_manager.go_back()
+                        st.rerun()
+                
+            # "Return to Dashboard" / Cancel Quiz
+            # Logic: If step > 0 (Attempting), show option to abort.
+            # If step 0, maybe just a back button? User asked for it between 1-6.
+            # "Between quiz 2-6, next to back button". 
+            
+            with c_nav2:
+                if st.button(t['quiz_return']): # "Return to Dashboard"
+                    st.session_state['view_mode'] = 'dashboard'
+                    # Optional: reset quiz? No, let them resume if they want? 
+                    # User request implies "Escape hatch".
                     st.rerun()
                     
     elif quiz_manager.is_complete(lang_code):
@@ -816,8 +833,14 @@ if user:
             st.rerun()
         st.session_state['lang_restored'] = True # Mark checked
         
-    # Only show these if NOT currently in Quiz Mode (avoids cluttering the quiz screen)
-    if has_completed_quiz and st.session_state.get('view_mode') != 'quiz':
+    # Logic for Visibility:
+    # 1. Show if valid results exist (has_completed_quiz)
+    # 2. BUT HIDE if we are in the middle of generating a new report (i.e., Quiz is Complete AND View Mode is Quiz)
+    #    User requested: Keep visible during reattempt (step 0-5), hide ONLY when submitted (complete).
+    
+    hide_report = (st.session_state.get('view_mode') == 'quiz' and quiz_manager.is_complete(lang_code))
+    
+    if has_completed_quiz and not hide_report:
         
         # Check if report exists (in session or database)
         report = st.session_state.get('ai_report')
