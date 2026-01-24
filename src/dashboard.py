@@ -338,6 +338,26 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
     hostel = loc0.get('hostel_fee', 'N/A')
     det_url = loc0.get('details_url', '#')
     
+    # v1.4: Add requirement flags (Interview / Single)
+    # Check pick dict for these keys. Engine.py loads req_interview and single.
+    # Note: 'pick' is often a result from get_ranked_results which copies everything.
+    
+    warn_html = ""
+    req_int = pick.get('req_interview', 0)
+    req_single = pick.get('single', 0)
+    
+    warn_pills = []
+    if req_int == 1:
+        lbl = t.get('req_interview_label', '⚠️ Interview Required') if t else '⚠️ Interview Required'
+        warn_pills.append(f'<span style="background:#FFF3CD; color:#856404; padding:2px 6px; border-radius:4px; font-size:0.8em; font-weight:600; margin-right:5px; border:1px solid #FFEEBA;">{lbl}</span>')
+        
+    if req_single == 1:
+        lbl = t.get('req_single_label', '⚠️ Unmarried Only') if t else '⚠️ Unmarried Only'
+        warn_pills.append(f'<span style="background:#F8D7DA; color:#721C24; padding:2px 6px; border-radius:4px; font-size:0.8em; font-weight:600; margin-right:5px; border:1px solid #F5C6CB;">{lbl}</span>')
+        
+    if warn_pills:
+        warn_html = f"<div style='margin-bottom:8px;'>{''.join(warn_pills)}</div>"
+
     # 2. Career HTML (Jobs as Pill Badges)
     career_html = ""
     jobs = pick.get('jobs', [])
@@ -442,6 +462,7 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
 <span class="meta-pill pill-hostel">🏠 {hostel}</span>
 <a href="{det_url}" target="_blank" class="meta-pill pill-link">{t.get('more_details', 'More details ↗') if t else 'More details ↗'}</a>
 </div>
+{warn_html}
 {career_html}
 </div>
         """)

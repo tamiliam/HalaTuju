@@ -133,7 +133,8 @@ REQ_FLAG_COLUMNS = [
     'pass_eng', 'credit_english', 'pass_math', 'credit_math', 'pass_math_addmath',
     'pass_math_science', 'pass_science_tech', 'credit_math_sci',
     'credit_math_sci_tech', 'pass_stv', 'credit_sf', 'credit_sfmt',
-    'credit_bmbi', 'credit_stv'
+    'credit_bmbi', 'credit_stv',
+    'req_interview', 'single'
 ]
 
 REQ_COUNT_COLUMNS = ['min_credits', 'min_pass']

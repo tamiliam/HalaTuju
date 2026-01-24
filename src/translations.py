@@ -299,6 +299,10 @@ TEXTS = {
         "chk_min_pass": "Minimum {min_p} Passes",
         "fail_min_pass": "Only {passes} Passes",
         
+        # New Requirement Flags
+        "req_interview_label": "⚠️ Interview Required",
+        "req_single_label": "⚠️ Unmarried Only",
+        
         # WhatsApp Share
         "wa_share_msg": """Hi Mum/Dad,
 
@@ -628,6 +632,10 @@ https://halatuju.streamlit.app""",
         "fail_min_credit": "Hanya {credits} Kredit (Perlu {min_c})",
         "chk_min_pass": "Minimum {min_p} Lulus",
         "fail_min_pass": "Hanya {passes} Lulus",
+        
+        # New Requirement Flags
+        "req_interview_label": "⚠️ Temuduga Diperlukan",
+        "req_single_label": "⚠️ Bujang Sahaja",
         
         # WhatsApp Share
         "wa_share_msg": """Salam Mak/Ayah,
