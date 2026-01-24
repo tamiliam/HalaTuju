@@ -245,9 +245,16 @@ def group_courses_by_id(flat_list):
                 'jobs': item.get('jobs', []),
                 'frontend_label': item.get('frontend_label', 'General'), # Added for filtering
                 'level': item.get('level', 'Certificate'), # Added for Education Level filter
+                'req_interview': 0, # Initialize flags
+                'single': 0,
                 'max_score': -999, # Sentinel
                 'locations': []
             }
+        
+        # Aggregate Flags (Max Logic: If ANY location requires it, flag it)
+        # This is safer for warnings like "Unmarried Only".
+        grouped[cid]['req_interview'] = max(grouped[cid]['req_interview'], item.get('req_interview', 0))
+        grouped[cid]['single'] = max(grouped[cid]['single'], item.get('single', 0))
         
         # Add Location Entry
         score = item.get('fit_score', 0)
