@@ -781,7 +781,7 @@ if user and 'student_signals' not in st.session_state and user.get('student_sign
     st.rerun()
 
 # Render Sidebar
-st.sidebar.title(f"📝 {t['sb_title']}")
+st.sidebar.title(f"{t['sb_title']}")
 
 # User Badge & Profile Nav
 if user:
