@@ -97,7 +97,7 @@ HalaTuju was created for post-SPM students. It helps you explore study pathways 
 How it works:
 
 **1. Enter Your Results**  
-👈 Use the sidebar on the left to key in your SPM results (trial or actual).
+👈 Click on >> symbol at top left-hand corner and key in your SPM results (trial or actual).
 
 **2. See What You’re Eligible For**  
 We’ll instantly show you courses where you meet the minimum requirements.
@@ -456,7 +456,7 @@ HalaTuju dicipta untuk pelajar lepasan SPM. Ia membantu anda meneroka laluan pen
 Cara ia berfungsi:
 
 **1. Masukkan Keputusan Anda**  
-👈 Gunakan bar sisi di sebelah kiri untuk memasukkan keputusan SPM anda (percubaan atau sebenar).
+👈 Klik pada >> simbol di sudut kiri atas dan memasukkan keputusan SPM anda (percubaan atau sebenar).
 
 **2. Lihat Layak Ke Tidak**  
 Kami akan tunjukkan serta-merta kursus yang anda melepasi syarat minimum.
@@ -811,7 +811,7 @@ SPM-க்குப் பிறகு என்ன செய்வது என
 என்ன செய்வது:
 
 **1. உங்கள் முடிவுகளை உள்ளிடவும்**  
-👈 இடப்புறமுள்ள பக்கப்பட்டியைப் (sidebar) பயன்படுத்தி உங்கள் SPM முடிவுகளை (மாதிரி அல்லது அசல்) உள்ளிடவும்.
+👈 மேல் இடது மூலையில் உள்ள >> சின்னத்தைத் தட்டி, உங்கள் SPM முடிவுகளை (மாதிரி அல்லது அசல்) உள்ளிடவும்.
 
 **2. நீங்கள் எதற்கெல்லாம் தகுதியானவர் என்று பாருங்கள்**  
 குறைந்தபட்சத் தகுதிகளை நீங்கள் பூர்த்தி செய்யும் படிப்புகளை நாங்கள் உடனடியாகக் காட்டுவோம்.
