@@ -37,9 +37,6 @@ except Exception as e:
 
 # ... (Helper Functions) ...
 
-
-
-
 # --- SIDEBAR LOGIC ---
 # ...
 # Inside render_sidebar or main logic:
@@ -147,7 +144,6 @@ def render_auth_gate(t, current_grades, gender, cb, disability):
     st.warning(f"🔒 **{t['locked_cta_title']}**")
     st.write(t['gate_subtitle'])
     
-
     
     with st.form("reg_form"):
         st.write(t['gate_pin_instr'])
@@ -181,7 +177,6 @@ def render_auth_gate(t, current_grades, gender, cb, disability):
                     st.error(val)
 
 # ... (skip to main logic)
-
 
 
 # --- 5b. PROFILE PAGE ---
@@ -887,7 +882,7 @@ if not user:
                 else:
                     st.error(val)
 
-st.sidebar.markdown("---")
+# st.sidebar.markdown("---")
 
 # Rest of Sidebar Logic
 # GUEST ONLY: Check Eligibility Form
