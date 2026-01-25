@@ -781,7 +781,7 @@ if user and 'student_signals' not in st.session_state and user.get('student_sign
     st.rerun()
 
 # Render Sidebar
-st.sidebar.title(f"{t['sb_title']}")
+# Title removed from here (Moved to Guest Only section)
 
 # User Badge & Profile Nav
 if user:
@@ -897,6 +897,7 @@ if not user:
     # Fallback/Session grades
     guest_grades = st.session_state.get('guest_grades', {}) 
     
+    st.sidebar.title(f"{t['sb_title']}")
     with st.sidebar.form("grades_form"):
         # st.subheader(t['sb_core_subjects']) # REMOVED DUPLICATE
         # Use Helper
