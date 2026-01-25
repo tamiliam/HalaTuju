@@ -28,8 +28,8 @@ masco_code,job_title,url
 3514,Juruteknik Web,https://emasco.mohr.gov.my/masco/3514
 3521,Juruteknik Penyiaran Dan Audiovisual,https://emasco.mohr.gov.my/masco/3521
 3522,Juruteknik Kejuruteraan Telekomunikasi,https://emasco.mohr.gov.my/masco/3522
-4111-10,Kerani Pejabat Am,https://emasco.mohr.gov.my/masco/4110
-4121-07,Setiausaha,https://emasco.mohr.gov.my/masco/4120
+4111-10,Kerani Pejabat Am,https://emasco.mohr.gov.my/masco/4111-10
+4121-07,Setiausaha,https://emasco.mohr.gov.my/masco/4121-07
 4224,Penyambut Tetamu,https://emasco.mohr.gov.my/masco/4224
 4321,Kerani Stok,https://emasco.mohr.gov.my/masco/4321
 5121,Tukang Masak,https://emasco.mohr.gov.my/masco/5121
@@ -59,18 +59,18 @@ masco_code,job_title,url
 7421,Mekanik Dan Pemasang Elektronik,https://emasco.mohr.gov.my/masco/7421
 7422,Pemasang Dan Pembaik Peralatan Teknologi Maklumat Dan Komunikasi,https://emasco.mohr.gov.my/masco/7422
 7512,Pembuat Roti,https://emasco.mohr.gov.my/masco/7512
-7612,Pembuat Kabinet Dan Pekerja Yang Berkaitan,https://emasco.mohr.gov.my/masco/7522
-7621,Tukang Jahit,https://emasco.mohr.gov.my/masco/7531
+7612,Pembuat Kabinet Dan Pekerja Yang Berkaitan,https://emasco.mohr.gov.my/masco/7612
+7621,Tukang Jahit,https://emasco.mohr.gov.my/masco/7621
 7621,Tukang Jahit,https://emasco.mohr.gov.my/masco/7621
 8142,Operator Mesin Produk Plastik,https://emasco.mohr.gov.my/masco/8142
-8189-01,Operator Mesin Pemprosesan Makanan Dan Produk Berkaitan,https://emasco.mohr.gov.my/masco/8160
+8189-01,Operator Mesin Pemprosesan Makanan Dan Produk Berkaitan,https://emasco.mohr.gov.my/masco/8189-01
 8211,Pemasang Jentera Mekanikal,https://emasco.mohr.gov.my/masco/8211
-2171-05,Arkitek Kapal,https://emasco.mohr.gov.my/masco/2144-03
-2163-01,Pereka Produk,https://emasco.mohr.gov.my/masco/2163-02
+2171-05,Arkitek Kapal,https://emasco.mohr.gov.my/masco/2171-05
+2163-01,Pereka Produk,https://emasco.mohr.gov.my/masco/2163-01
 2166-02,Pereka Grafik,https://emasco.mohr.gov.my/masco/2166-02
 2166-03,Artis Multimedia,https://emasco.mohr.gov.my/masco/2166-03
 2512-03,Pembangun Perisian,https://emasco.mohr.gov.my/masco/2512-03
-2521-03,Pentadbir Pangkalan Data,https://emasco.mohr.gov.my/masco/2521-02
+2521-03,Pentadbir Pangkalan Data,https://emasco.mohr.gov.my/masco/2521-03
 3111-06,Juruteknik Kimia,https://emasco.mohr.gov.my/masco/3111-06
 3111-18,Konduktor Penyelidikan Makmal Ladang,https://emasco.mohr.gov.my/masco/3111-18
 3111-32,Juruteknik Makmal,https://emasco.mohr.gov.my/masco/3111-32
@@ -117,7 +117,7 @@ masco_code,job_title,url
 3118-01,Pelukis Pelan (Seni Bina) Gred JA19,https://emasco.mohr.gov.my/masco/3118-01
 3118-02,Juruteknik Lukis Pelan,https://emasco.mohr.gov.my/masco/3118-02
 3118-03,Pelukis Pelan,https://emasco.mohr.gov.my/masco/3118-03
-3118,Pelukis Pelan (Mekanikal),https://emasco.mohr.gov.my/masco/3118-05
+3118,Pelukis Pelan (Mekanikal),https://emasco.mohr.gov.my/masco/3118
 3118-25,Juruteknik Landskap,https://emasco.mohr.gov.my/masco/3118-25
 3118-26,Penolong Pegawai Seni Bina Gred JA29,https://emasco.mohr.gov.my/masco/3118-26
 3118-28,Penolong Arkitek Landskap Gred JA29,https://emasco.mohr.gov.my/masco/3118-28
@@ -125,7 +125,7 @@ masco_code,job_title,url
 3118-32,Penolong Pegawai Perancang Bandar dan Desa Gred JA29,https://emasco.mohr.gov.my/masco/3118-32
 3118-33,Penolong Pegawai Seni Bina Gred 19,https://emasco.mohr.gov.my/masco/3118-33
 3118-34,Penolong Arkitek,https://emasco.mohr.gov.my/masco/3118-34
-3514-04,Penolong Pereka Fesyen,https://emasco.mohr.gov.my/masco/3119-06
+3514-04,Penolong Pereka Fesyen,https://emasco.mohr.gov.my/masco/3514-04
 3119-19,Juruteknik Kawalan Kualiti,https://emasco.mohr.gov.my/masco/3119-19
 3119-28,Juruteknik Kejuruteraan Jaminan Kualiti,https://emasco.mohr.gov.my/masco/3119-28
 3119-36,Juruteknik Sisa Pepejal,https://emasco.mohr.gov.my/masco/3119-36
@@ -168,7 +168,7 @@ masco_code,job_title,url
 3313-17,Juruteknik Perakaunan,https://emasco.mohr.gov.my/masco/3313-17
 3313-18,Juruteknik Audit Tenaga,https://emasco.mohr.gov.my/masco/3313-18
 3313-23,Penolong Pengawal Kewangan,https://emasco.mohr.gov.my/masco/3313-23
-4311-25,Pembantu Akauntan,https://emasco.mohr.gov.my/masco/3313-26
+4311-25,Pembantu Akauntan,https://emasco.mohr.gov.my/masco/4311-25
 3315-06,Pelaras Insurans,https://emasco.mohr.gov.my/masco/3315-06
 3322-16,Penolong Pegawai Pemasaran,https://emasco.mohr.gov.my/masco/3322-16
 3322-24,Penolong Pembangunan Perniagaan,https://emasco.mohr.gov.my/masco/3322-24
@@ -179,7 +179,7 @@ masco_code,job_title,url
 3341-20,Penolong Pegawai Eksekutif (Pentadbiran),https://emasco.mohr.gov.my/masco/3341-20
 3343-01,Penolong Pegawai Eksekutif (Kesetiausahaan) Gred 31,https://emasco.mohr.gov.my/masco/3343-01
 3411-17,Penolong Pegawai Syariah Gred LS29,https://emasco.mohr.gov.my/masco/3411-17
-3641-04,Chef,https://emasco.mohr.gov.my/masco/3434-01
+3641-04,Chef,https://emasco.mohr.gov.my/masco/3641-04
 3511-03,Pembantu Tadbir (Juruteknik Komputer) Gred 21,https://emasco.mohr.gov.my/masco/3511-03
 3511-13,Juruteknik Semikonduktor,https://emasco.mohr.gov.my/masco/3511-13
 3511-14,Juruteknik Sistem Maklumat,https://emasco.mohr.gov.my/masco/3511-14
@@ -245,7 +245,7 @@ masco_code,job_title,url
 7126-01,Jurufit Paip,https://emasco.mohr.gov.my/masco/7126-01
 7126-02,Jurufit Paip Gas,https://emasco.mohr.gov.my/masco/7126-02
 7127-02,Mekanik Kelengkapan Penyaman Udara,https://emasco.mohr.gov.my/masco/7127-02
-7131-11,Pengecat Kenderaan,https://emasco.mohr.gov.my/masco/7132-02
+7131-11,Pengecat Kenderaan,https://emasco.mohr.gov.my/masco/7131-11
 7211-01,Pembuat Acuan,https://emasco.mohr.gov.my/masco/7211-01
 7211-02,Pembaik Acuan Foundri,https://emasco.mohr.gov.my/masco/7211-02
 7211-09,Tukang Acuan,https://emasco.mohr.gov.my/masco/7211-09
@@ -270,7 +270,7 @@ masco_code,job_title,url
 7512-01,Pembuat Roti,https://emasco.mohr.gov.my/masco/7512-01
 7512-02,Pembuat Pastri,https://emasco.mohr.gov.my/masco/7512-02
 7512-09,Pembantu Bakeri,https://emasco.mohr.gov.my/masco/7512-09
-8159-07,Pembuat Pola (Pakaian),https://emasco.mohr.gov.my/masco/7531-01
-7621,Tukang Jahit,https://emasco.mohr.gov.my/masco/7533-02
+8159-07,Pembuat Pola (Pakaian),https://emasco.mohr.gov.my/masco/8159-07
+7621,Tukang Jahit,https://emasco.mohr.gov.my/masco/7621
 7621-09,Pekerja Menjahit,https://emasco.mohr.gov.my/masco/7621-09
 8142-01,Operator Mesin Pengacuan Suntikan (Plastik),https://emasco.mohr.gov.my/masco/8142-01
