@@ -125,6 +125,71 @@ PASS_GRADES = {"A+", "A", "A-", "B+", "B", "C+", "C", "D", "E"}
 CREDIT_GRADES = {"A+", "A", "A-", "B+", "B", "C+", "C"}
 ATTEMPTED_GRADES = PASS_GRADES | {"G"}
 
+# --- MERIT CALCULATION CONSTANTS ---
+MERIT_GRADE_POINTS = {
+    "A+": 18, "A": 16, "A-": 14,
+    "B+": 12, "B": 10, "C+": 8, "C": 6,
+    "D": 4, "E": 2, "G": 0
+}
+
+# Subject Lists (Shared Source of Truth)
+SUBJ_LIST_SCIENCE = ["chem", "phy", "bio", "addmath"]
+SUBJ_LIST_ARTS = [
+    "b_arab", "b_cina", "b_tamil", 
+    "ekonomi", "geo", 
+    "lit_bm", "lit_eng", "lit_cina", "lit_tamil",
+    "lukisan", "psv", "business", "poa", "keusahawanan"
+]
+SUBJ_LIST_EXTRA = [
+    "moral", "islam", "pertanian", "sci", "srt", "addsci"
+]
+
+def calculate_merit_score(sec1_grades, sec2_grades, sec3_grades, coq_score):
+    """
+    Calculates the detailed academic merit and final merit based on the 18-point scale.
+    
+    Args:
+        sec1_grades (list): List of grades (str) for Section 1 (Compulsory)
+        sec2_grades (list): List of grades (str) for Section 2 (Stream Electives)
+        sec3_grades (list): List of grades (str) for Section 3 (Additional)
+        coq_score (float): Co-Curriculum Score (0-10)
+        
+    Returns:
+        dict: {
+            "academic_merit": float,
+            "final_merit": float,
+            "total_academic_points": int
+        }
+    """
+    def get_points(g_list):
+        return sum(MERIT_GRADE_POINTS.get(g, 0) for g in g_list)
+        
+    p1 = get_points(sec1_grades)
+    p2 = get_points(sec2_grades)
+    p3 = get_points(sec3_grades)
+    
+    total_points = p1 + p2 + p3
+    
+    # Formula: ((S1 * 5/8) + (S2 * 5/6) + (S3 * 5/18)) * (9/8)
+    academic_merit = ((p1 * 5/8) + (p2 * 5/6) + (p3 * 5/18)) * (9/8)
+    
+    # Cap at 90.00
+    academic_merit = min(academic_merit, 90.00)
+    
+    # Final = (Academic + CoQ)
+    # Note: The prompt formula says "(Academic_Merit + Co_Curriculum_Score)/ 100 %"
+    # Usually this means the sum IS the percentage (out of 100).
+    # Academic max 90 + CoQ max 10 = 100.
+    
+    final_merit = academic_merit + min(max(coq_score, 0), 10.0)
+    
+    return {
+        "academic_merit": round(academic_merit, 2),
+        "final_merit": round(final_merit, 2),
+        "total_points": total_points
+    }
+
+
 # Define all columns used for requirement checking
 # This acts as the Single Source of Truth for other modules (like dashboard.py)
 REQ_FLAG_COLUMNS = [

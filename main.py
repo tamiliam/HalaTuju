@@ -3,7 +3,7 @@ import re
 import pandas as pd
 import time
 from supabase import create_client, Client
-from src.engine import StudentProfile
+from src.engine import StudentProfile, SUBJ_LIST_SCIENCE, SUBJ_LIST_ARTS, SUBJ_LIST_EXTRA, calculate_merit_score
 
 from src.dashboard import generate_dashboard_data, group_courses_by_id
 from src.ranking_engine import get_ranked_results, sort_courses
@@ -96,47 +96,184 @@ def render_auth_gate(t, current_grades):
 def render_grade_inputs(t, current_grades, key_suffix=""):
     grade_opts = [t["opt_not_taken"], "A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G"]
     
-    # 1. CORE
-    st.markdown(f"**{t['sb_core_subjects']}**")
-    bm = st.selectbox(t['subj_bm'], grade_opts, index=get_grade_index('bm', grade_opts, current_grades), key=f"bm{key_suffix}")
-    eng = st.selectbox(t['subj_eng'], grade_opts, index=get_grade_index('eng', grade_opts, current_grades), key=f"eng{key_suffix}")
-    hist = st.selectbox(t['subj_hist'], grade_opts, index=get_grade_index('hist', grade_opts, current_grades), key=f"hist{key_suffix}")
-    math = st.selectbox(t['subj_math'], grade_opts, index=get_grade_index('math', grade_opts, current_grades), key=f"math{key_suffix}")
-    moral = st.selectbox(t['subj_moral'], grade_opts, index=get_grade_index('moral', grade_opts, current_grades), key=f"moral{key_suffix}")
-    
-    # 2. SCIENCE STREAM
-    with st.expander(t['sb_science_stream'], expanded=False):
-        addmath = st.selectbox(t['subj_addmath'], grade_opts, index=get_grade_index('addmath', grade_opts, current_grades), key=f"addmath{key_suffix}")
-        phy = st.selectbox(t['subj_phy'], grade_opts, index=get_grade_index('phy', grade_opts, current_grades), key=f"phy{key_suffix}")
-        chem = st.selectbox(t['subj_chem'], grade_opts, index=get_grade_index('chem', grade_opts, current_grades), key=f"chem{key_suffix}")
-        bio = st.selectbox(t['subj_bio'], grade_opts, index=get_grade_index('bio', grade_opts, current_grades), key=f"bio{key_suffix}")
-    
-    # 3. COMMERCE STREAM
-    with st.expander(t['sb_commerce_stream'], expanded=False):
-        sci = st.selectbox(t['subj_sci'], grade_opts, index=get_grade_index('sci', grade_opts, current_grades), key=f"sci{key_suffix}")
-        ekonomi = st.selectbox(t['subj_ekonomi'], grade_opts, index=get_grade_index('ekonomi', grade_opts, current_grades), key=f"ekonomi{key_suffix}")
-        poa = st.selectbox(t['subj_poa'], grade_opts, index=get_grade_index('poa', grade_opts, current_grades), key=f"poa{key_suffix}")
-        business = st.selectbox(t['subj_business'], grade_opts, index=get_grade_index('business', grade_opts, current_grades), key=f"business{key_suffix}")
-        geo = st.selectbox(t['subj_geo'], grade_opts, index=get_grade_index('geo', grade_opts, current_grades), key=f"geo{key_suffix}")
-
-    # 4. ARTS & LANG ELECTIVES
-    with st.expander(t['sb_arts_electives'], expanded=False):
-        lang3 = st.selectbox(t['subj_3rd_lang'], grade_opts, index=get_grade_index('lang3', grade_opts, current_grades), key=f"3l{key_suffix}")
-        lit = st.selectbox(t['subj_lit'], grade_opts, index=get_grade_index('lit', grade_opts, current_grades), key=f"lit{key_suffix}")
-        psv = st.selectbox(t['subj_psv'], grade_opts, index=get_grade_index('psv', grade_opts, current_grades), key=f"psv{key_suffix}")
-
-    # 5. TECHNICAL & VOCATIONAL
-    with st.expander(t['sb_tech_voc_stream'], expanded=False):
-        tech = st.selectbox(t['subj_tech'], grade_opts, index=get_grade_index('tech', grade_opts, current_grades), key=f"tech{key_suffix}")
-        voc = st.selectbox(t['subj_voc'], grade_opts, index=get_grade_index('voc', grade_opts, current_grades), key=f"voc{key_suffix}")
-
-    return {
-        'bm': bm, 'eng': eng, 'hist': hist, 'math': math, 'moral': moral, 'sci': sci,
-        'addmath': addmath, 'phy': phy, 'chem': chem, 'bio': bio,
-        'ekonomi': ekonomi, 'poa': poa, 'business': business, 'geo': geo,
-        'lang3': lang3, 'lit': lit, 'psv': psv,
-        'tech': tech, 'voc': voc
+    # Map Internal Keys to Display Names
+    KEY_DISPLAY = {
+        # Science
+        "chem": "Chemistry", "phy": "Physics", "bio": "Biology", "addmath": "Add Maths",
+        # Arts
+        "b_arab": "Bahasa Arab", "b_cina": "Bahasa Cina", "b_tamil": "Bahasa Tamil",
+        "ekonomi": "Economy", "geo": "Geography",
+        "lit_bm": "Literature (BM)", "lit_eng": "Literature (English)",
+        "lit_cina": "Literature (Chinese)", "lit_tamil": "Literature (Tamil)",
+        "lukisan": "Lukisan", "psv": "Seni Visual",
+        "business": "Perniagaan", "poa": "Prinsip Perakaunan",
+        "keusahawanan": "Pengajian Keusahawanan",
+        # Extra
+        "moral": "Pendidikan Moral/Islam",
+        "pertanian": "Pertanian", "sci": "Sains", 
+        "srt": "Sains Rumah Tangga", "addsci": "Sains Tambahan",
+        "tech": "Technical (General)", "voc": "Vocational (General)"
     }
+    # Reverse Map
+    DISPLAY_KEY = {v: k for k, v in KEY_DISPLAY.items()}
+
+    # --- MASTER CONTROL ---
+    st.subheader("🎓 SPM Results Entry")
+    stream_mode = st.radio("Select Stream", ["STEM A (Science)", "ARTS (Sastra)"], horizontal=True, key=f"stream_mode{key_suffix}")
+    is_stem = "STEM" in stream_mode
+
+    # --- SECTION 1: COMPULSORY ---
+    st.markdown("##### 1. Compulsory Subjects")
+    c1, c2 = st.columns(2)
+    with c1:
+        bm = st.selectbox(t['subj_bm'], grade_opts, index=get_grade_index('bm', grade_opts, current_grades), key=f"bm{key_suffix}")
+        eng = st.selectbox(t['subj_eng'], grade_opts, index=get_grade_index('eng', grade_opts, current_grades), key=f"eng{key_suffix}")
+    with c2:
+        math = st.selectbox(t['subj_math'], grade_opts, index=get_grade_index('math', grade_opts, current_grades), key=f"math{key_suffix}")
+        hist = st.selectbox(t['subj_hist'], grade_opts, index=get_grade_index('hist', grade_opts, current_grades), key=f"hist{key_suffix}")
+
+    # --- SECTION 2: STREAM ELECTIVES ---
+    st.markdown(f"##### 2. Stream Electives ({'STEM' if is_stem else 'ARTS'})")
+    
+    # Determine Options
+    if is_stem:
+        # Filter for Science keys
+        pool_2_keys = SUBJ_LIST_SCIENCE
+    else:
+        # Filter for Arts keys
+        pool_2_keys = SUBJ_LIST_ARTS
+        
+    display_opts_2 = [KEY_DISPLAY.get(k, k) for k in pool_2_keys if k in KEY_DISPLAY]
+    display_opts_2.sort()
+
+    # Pre-fill Logic: Find existing grades that match this pool
+    prefill_2 = []
+    if current_grades:
+        for k in pool_2_keys:
+            if k in current_grades and current_grades[k] in grade_opts and current_grades[k] != t['opt_not_taken']:
+                prefill_2.append(k)
+
+    selected_2_keys = []
+    grades_2_values = []
+    
+    # Render 2 Rows
+    for i in range(2):
+        c_sub, c_grd = st.columns([3, 1])
+        
+        # Default Value
+        def_idx = 0
+        if i < len(prefill_2):
+            def_key = prefill_2[i]
+            def_name = KEY_DISPLAY.get(def_key)
+            if def_name in display_opts_2:
+                def_idx = display_opts_2.index(def_name) + 1 # +1 for "-"
+        
+        with c_sub:
+            s_val = st.selectbox(f"Stream Subject {i+1}", ["-"] + display_opts_2, index=def_idx, key=f"s2_subj_{i}{key_suffix}")
+        with c_grd:
+            # If subject selected, try to get grade
+            def_grade_idx = 0
+            if s_val != "-":
+                k = DISPLAY_KEY.get(s_val)
+                if k in current_grades:
+                     def_grade_idx = get_grade_index(k, grade_opts, current_grades)
+            
+            g_val = st.selectbox(f"Grade", grade_opts, index=def_grade_idx, key=f"s2_grade_{i}{key_suffix}", label_visibility="collapsed")
+        
+        if s_val != "-":
+            k = DISPLAY_KEY.get(s_val)
+            selected_2_keys.append(k)
+            grades_2_values.append(g_val)
+
+    # --- SECTION 3: ADDITIONAL SUBJECTS ---
+    st.markdown("##### 3. Additional Subjects")
+    
+    # Pool = All Lists Combined (Science + Arts + Extra)
+    # Exclude: Keys already selected in Sec 2
+    # Note: Logic says combined list.
+    full_pool = SUBJ_LIST_SCIENCE + SUBJ_LIST_ARTS + SUBJ_LIST_EXTRA
+    full_pool = list(dict.fromkeys(full_pool)) # Unique
+    
+    avail_keys = [k for k in full_pool if k not in selected_2_keys]
+    display_opts_3 = [KEY_DISPLAY.get(k, k) for k in avail_keys if k in KEY_DISPLAY]
+    display_opts_3.sort()
+    
+    # Pre-fill Logic: Find matches in current_grades that are NOT in Compulsory or Sec 2
+    compulsory_keys = ['bm', 'eng', 'math', 'hist']
+    prefill_3 = []
+    if current_grades:
+        for k, v in current_grades.items():
+            if k not in compulsory_keys and k not in selected_2_keys and k in avail_keys:
+                 if v in grade_opts and v != t['opt_not_taken']:
+                     prefill_3.append(k)
+                     
+    selected_3_keys = []
+    grades_3_values = []
+
+    for i in range(2):
+        c_sub, c_grd = st.columns([3, 1])
+        
+        def_idx = 0
+        if i < len(prefill_3):
+            def_key = prefill_3[i]
+            def_name = KEY_DISPLAY.get(def_key)
+            if def_name in display_opts_3:
+                def_idx = display_opts_3.index(def_name) + 1
+        
+        with c_sub:
+            s_val = st.selectbox(f"Extra Subject {i+1}", ["-"] + display_opts_3, index=def_idx, key=f"s3_subj_{i}{key_suffix}")
+        with c_grd:
+            def_grade_idx = 0
+            if s_val != "-":
+                k = DISPLAY_KEY.get(s_val)
+                if k in current_grades:
+                     def_grade_idx = get_grade_index(k, grade_opts, current_grades)
+            g_val = st.selectbox(f"Grade", grade_opts, index=def_grade_idx, key=f"s3_grade_{i}{key_suffix}", label_visibility="collapsed")
+
+        if s_val != "-":
+            k = DISPLAY_KEY.get(s_val)
+            selected_3_keys.append(k)
+            grades_3_values.append(g_val)
+
+    # --- SECTION 4: CO-CURRICULUM ---
+    st.markdown("##### 4. Co-Curriculum")
+    # Restore CoQ if available (handle float/string)
+    stored_coq = current_grades.get('coq', 0.0)
+    try:
+        stored_coq = float(stored_coq)
+    except:
+        stored_coq = 0.0
+        
+    coq = st.number_input("Score (0.00 - 10.00)", min_value=0.0, max_value=10.0, value=stored_coq, step=0.1, format="%.2f", key=f"coq{key_suffix}")
+
+    # --- MERIT CALCULATION DISPLAY ---
+    sec1_grades = [bm, eng, math, hist]
+    
+    merit = calculate_merit_score(sec1_grades, grades_2_values, grades_3_values, coq)
+    
+    curr_color = "blue"
+    if merit['final_merit'] > 80: curr_color = "green"
+    elif merit['final_merit'] < 40: curr_color = "red"
+    
+    st.markdown(f'''
+    <div style="background-color: #f0f2f6; padding: 15px; border-radius: 10px; margin-top: 10px; border-left: 5px solid {curr_color}">
+        <h4 style="margin:0; color: #333;">📊 Merit Score: {merit['final_merit']:.2f}%</h4>
+        <small>Academic: {merit['academic_merit']:.2f} | Points: {merit['total_points']}</small>
+    </div>
+    ''', unsafe_allow_html=True)
+
+    # Compile Result
+    ret_grades = {
+        'bm': bm, 'eng': eng, 'math': math, 'hist': hist,
+        'coq': coq
+    }
+    for k, g in zip(selected_2_keys, grades_2_values):
+        ret_grades[k] = g
+    for k, g in zip(selected_3_keys, grades_3_values):
+        ret_grades[k] = g
+        
+    return ret_grades
+
 
 # --- 5. AUTH BLOCK (THE GATE) ---
 def render_auth_gate(t, current_grades, gender, cb, disability):
