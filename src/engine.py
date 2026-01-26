@@ -170,8 +170,11 @@ def calculate_merit_score(sec1_grades, sec2_grades, sec3_grades, coq_score):
     
     total_points = p1 + p2 + p3
     
-    # Formula: ((S1 * 5/8) + (S2 * 5/6) + (S3 * 5/18)) * (9/8)
-    academic_merit = ((p1 * 5/8) + (p2 * 5/6) + (p3 * 5/18)) * (9/8)
+    # Formula: ((S1 * 40/72) + (S2 * 5/6) + (S3 * 5/18)) * (9/8)
+    # S1 (4 subjects, max 72) -> Weight 40. Factor = 40/72 = 5/9.
+    # S2 (2 subjects, max 36) -> Weight 30. Factor = 30/36 = 5/6.
+    # S3 (2 subjects, max 36) -> Weight 10. Factor = 10/36 = 5/18.
+    academic_merit = ((p1 * 5/9) + (p2 * 5/6) + (p3 * 5/18)) * (9/8)
     
     # Cap at 90.00
     academic_merit = min(academic_merit, 90.00)
