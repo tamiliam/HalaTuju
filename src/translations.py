@@ -90,7 +90,7 @@ TEXTS = {
         # Landing & Processing
         "header_title": "Hala Tuju Pelajar Lepasan SPM",
         "header_subtitle": "See which Polytechnic, IKBN, and Community College courses you qualify for.",
-        "landing_msg": """Welcome! 🎓
+        "landing_msg": """Welcome!
 
 HalaTuju was created for post-SPM students. It helps you explore study pathways based on your results and preferences, step by step.
 
