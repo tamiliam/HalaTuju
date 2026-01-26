@@ -97,7 +97,7 @@ HalaTuju was created for post-SPM students. It helps you explore study pathways 
 How it works:
 
 **1. Enter Your Results**  
-👈 Click on >> symbol at top left-hand corner and key in your SPM results (trial or actual).
+👈 Enter your SPM results in side panel. Click on >> symbol at top left-hand corner if side panel is not visible.
 
 **2. See What You’re Eligible For**  
 We’ll instantly show you courses where you meet the minimum requirements.
