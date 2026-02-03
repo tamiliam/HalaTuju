@@ -277,6 +277,11 @@ def load_master_data():
             master_df[col] = 0 if col in ALL_REQ_COLUMNS else None
             
     # Rename for consistency
+    # First, drop any existing 'course_name' column to avoid duplicates
+    if 'course_name' in master_df.columns and 'course' in master_df.columns:
+        # Use 'course' as the canonical source, drop old 'course_name'
+        master_df = master_df.drop(columns=['course_name'])
+
     master_df = master_df.rename(columns={
         'course': 'course_name',
         'State': 'state'
