@@ -2,11 +2,21 @@ import pandas as pd
 import json
 import os
 
+from src.engine import check_merit_probability
+
 # --- Constants & Tuning knobs ---
 BASE_SCORE = 100
 GLOBAL_CAP = 20
 INSTITUTION_CAP = 5
 CATEGORY_CAP = 6 # Normalized cap per category
+
+# Merit-based ranking penalty (v1.4)
+# Applied after fit score calculation as "reality check"
+MERIT_PENALTY = {
+    "High": 0,    # Meets/exceeds cutoff - no penalty
+    "Fair": -5,   # Within 5 points of cutoff
+    "Low": -15    # Significantly below cutoff
+}
 
 def load_course_tags():
     """
@@ -491,14 +501,24 @@ def get_ranked_results(eligible_courses, student_profile):
         c_id = item.get('course_id')
         i_id = item.get('institution_id')
         c_name = item.get('course_name', 'Unknown')
-        
+
         score, reasons = calculate_fit_score(student_profile, c_id, i_id)
-        
+
+        # v1.4: Apply merit-based penalty as "reality check"
+        # Only applies to courses with merit cutoff data
+        merit_cutoff = item.get('merit_cutoff', 0)
+        student_merit = item.get('student_merit', 0)
+
+        if merit_cutoff and merit_cutoff > 0:
+            prob_label, _ = check_merit_probability(student_merit, merit_cutoff)
+            penalty = MERIT_PENALTY.get(prob_label, 0)
+            score += penalty  # penalty is negative for Fair/Low
+
         # Clone item to avoid mutating original list references if reused
         new_item = item.copy()
         new_item['fit_score'] = score
         new_item['fit_reasons'] = reasons
-        
+
         ranked_list.append(new_item)
         
     # Use shared sorting logic

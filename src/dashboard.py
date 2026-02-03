@@ -391,25 +391,28 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
     merit_html = ""
     s_merit = pick.get('student_merit', 0)
     cutoff = pick.get('merit_cutoff', 0)
-    
+    course_id = pick.get('course_id', '')
+
     if cutoff and cutoff > 0:
          prob_label, prob_color = check_merit_probability(s_merit, cutoff)
-         # Translate label?
+         # Translate label
          if t:
              if prob_label == "High": txt_label = t.get('prob_high', 'High Chance')
              elif prob_label == "Fair": txt_label = t.get('prob_fair', 'Medium Chance')
              else: txt_label = t.get('prob_low', 'Low Chance')
-             
+
              note = t.get('merit_note', 'Score: {score} | Cutoff: {cutoff}').format(score=s_merit, cutoff=cutoff)
          else:
              txt_label = f"{prob_label} Chance"
              note = f"Score: {s_merit} | Cutoff: {cutoff}"
-             
-         merit_html = f'''
-         <div class="meta-pill" style="background-color: {prob_color}; color: #fff; border: none; font-weight: 600;" title="{note}">
-            📊 {txt_label}
-         </div>
-         '''
+
+         merit_html = f'<div class="meta-pill" style="background-color: {prob_color}; color: #fff; border: none; font-weight: 600;" title="{note}">📊 {txt_label}</div>'
+
+    elif course_id.startswith(('IJTM', 'IKBN')):
+         # TVET courses (ILJTM/IKBN) - no merit data available, show neutral badge
+         txt_label = t.get('prob_unknown', 'No Data') if t else 'No Data'
+         note = t.get('merit_unknown_note', 'Merit cutoff data not available for TVET courses') if t else 'Merit cutoff data not available for TVET courses'
+         merit_html = f'<div class="meta-pill" style="background-color: #95a5a6; color: #fff; border: none; font-weight: 600;" title="{note}">📊 {txt_label}</div>'
     
     # v1.4: Add requirement flags (Interview / Single)
     # Check pick dict for these keys. Engine.py loads req_interview and single.

@@ -1,7 +1,7 @@
-# Ranking Logic & Taxonomy (v1.3)
+# Ranking Logic & Taxonomy (v1.4)
 
-**Version:** 1.3
-**Last Updated:** 2026-01-20
+**Version:** 1.4
+**Last Updated:** 2026-02-03
 **Status:** Live Implementation
 
 This document serves as the definitive source of truth for the adversarial testing of the ranking engine. It describes the data taxonomy, input signals, and the exact scoring logic used in `src/ranking_engine.py`.
@@ -205,14 +205,29 @@ Raw signals are grouped into 5 semantic categories for the ranking engine.
 | `fast_employment` + `proximity` | `cultural_safety_net` == 'high' | **+2** (v1.3: Local job network) |
 
 
-### 3. Caps & Limits
+### 3. Merit Penalty (v1.4 - "Reality Check")
+
+Applied **after** fit score calculation. Only affects courses with `merit_cutoff` data (Poly/KK/UA).
+
+| Merit Status | Condition | Penalty |
+| :--- | :--- | :--- |
+| **High Chance** | `student_merit >= cutoff` | **0** (no penalty) |
+| **Fair Chance** | `student_merit >= cutoff - 5` | **-5** |
+| **Low Chance** | `student_merit < cutoff - 5` | **-15** |
+
+*   **Rationale:** A course may be a great "fit" based on preferences, but if admission probability is low, it should rank lower than equally-fitting courses with better admission chances.
+*   **No Merit Data:** Courses without `merit_cutoff` (e.g., TVET, PISMP) receive no penalty.
+
+### 4. Caps & Limits
 *   **Institution Cap:** Max **+/- 5** points from institution modifiers logic.
 *   **Category Cap:** Max **+/- 6** points per signal category (e.g., you can't get +20 just from Work Preference matches).
 *   **Global Cap:** Total adjustment is clamped to **+/- 20** points from Base Score.
-    *   *Min Score:* 80
+*   **Merit Penalty:** Applied after global cap, can push score below 80.
+    *   *Min Score (without merit penalty):* 80
     *   *Max Score:* 120
+    *   *Theoretical Min (with Low Chance penalty):* 65
 
-### 4. Edge Cases & Limits
+### 5. Edge Cases & Limits
 *   **Non-Additive Semantics:** Multiple rules within the same category may fire, but their combined effect is constrained by category caps (±6) to prevent over-amplification.
 
 ---

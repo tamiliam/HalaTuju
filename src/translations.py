@@ -235,8 +235,10 @@ Start by entering your results — you can decide the next steps as you go. 🚀
         "prob_high": "High Chance",
         "prob_fair": "Medium Chance",
         "prob_low": "Low Chance",
+        "prob_unknown": "No Data",
         "merit_note": "Your Score: {score} | Cutoff: {cutoff}",
-        
+        "merit_unknown_note": "Merit cutoff data not available for TVET courses",
+
         # Quiz
         "quiz_title": "🧭 Discovery Quiz",
         "quiz_question_count": "Question {step} of {total}",
@@ -629,8 +631,10 @@ Mula dengan memasukkan keputusan anda — anda boleh tentukan langkah seterusnya
         "prob_high": "Peluang Tinggi",
         "prob_fair": "Peluang Sederhana",
         "prob_low": "Peluang Rendah",
+        "prob_unknown": "Tiada Data",
         "merit_note": "Markah Anda: {score} | Tutup: {cutoff}",
-        
+        "merit_unknown_note": "Data merit tidak tersedia untuk kursus TVET",
+
         # Quiz
         "quiz_title": "🧭 Kuiz Penemuan",
         "quiz_question_count": "Soalan {step} dari {total}",
@@ -1026,7 +1030,9 @@ SPM-க்குப் பிறகு என்ன செய்வது என
         "prob_high": "அதிக வாய்ப்பு",
         "prob_fair": "மிதமான வாய்ப்பு",
         "prob_low": "குறைந்த வாய்ப்பு",
+        "prob_unknown": "தரவு இல்லை",
         "merit_note": "உங்கள் மதிப்பெண்: {score} | வெட்டுப்புள்ளி: {cutoff}",
+        "merit_unknown_note": "TVET படிப்புகளுக்கு தகுதி தரவு கிடைக்கவில்லை",
 
         # Quiz
         "quiz_title": "🧭 கண்டுபிடிப்பு வினாடி வினா",
