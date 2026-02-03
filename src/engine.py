@@ -120,16 +120,26 @@ are intended to work.
 
 import pandas as pd
 import numpy as np
+import json
+import itertools
 
 PASS_GRADES = {"A+", "A", "A-", "B+", "B", "C+", "C", "D", "E"}
 CREDIT_GRADES = {"A+", "A", "A-", "B+", "B", "C+", "C"}
 ATTEMPTED_GRADES = PASS_GRADES | {"G"}
 
-# --- MERIT CALCULATION CONSTANTS ---
+# --- MERIT CALCULATION CONSTANTS (High is Good) ---
 MERIT_GRADE_POINTS = {
     "A+": 18, "A": 16, "A-": 14,
     "B+": 12, "B": 10, "C+": 8, "C": 6,
     "D": 4, "E": 2, "G": 0
+}
+
+# --- AGGREGATE CALCULATION CONSTANTS (Low is Good) ---
+# Used for "tidak melebihi X unit" checks (e.g. STPM Entry)
+AGGREGATE_GRADE_POINTS = {
+    "A+": 0, "A": 1, "A-": 2,
+    "B+": 3, "B": 4, "C+": 5, "C": 6,
+    "D": 7, "E": 8, "G": 9
 }
 
 # Subject Lists (Shared Source of Truth)
@@ -147,19 +157,6 @@ SUBJ_LIST_EXTRA = [
 def calculate_merit_score(sec1_grades, sec2_grades, sec3_grades, coq_score):
     """
     Calculates the detailed academic merit and final merit based on the 18-point scale.
-    
-    Args:
-        sec1_grades (list): List of grades (str) for Section 1 (Compulsory)
-        sec2_grades (list): List of grades (str) for Section 2 (Stream Electives)
-        sec3_grades (list): List of grades (str) for Section 3 (Additional)
-        coq_score (float): Co-Curriculum Score (0-10)
-        
-    Returns:
-        dict: {
-            "academic_merit": float,
-            "final_merit": float,
-            "total_academic_points": int
-        }
     """
     def get_points(g_list):
         return sum(MERIT_GRADE_POINTS.get(g, 0) for g in g_list)
@@ -171,19 +168,8 @@ def calculate_merit_score(sec1_grades, sec2_grades, sec3_grades, coq_score):
     total_points = p1 + p2 + p3
     
     # Formula: ((S1 * 40/72) + (S2 * 5/6) + (S3 * 5/18)) * (9/8)
-    # S1 (4 subjects, max 72) -> Weight 40. Factor = 40/72 = 5/9.
-    # S2 (2 subjects, max 36) -> Weight 30. Factor = 30/36 = 5/6.
-    # S3 (2 subjects, max 36) -> Weight 10. Factor = 10/36 = 5/18.
     academic_merit = ((p1 * 5/9) + (p2 * 5/6) + (p3 * 5/18)) * (9/8)
-    
-    # Cap at 90.00
     academic_merit = min(academic_merit, 90.00)
-    
-    # Final = (Academic + CoQ)
-    # Note: The prompt formula says "(Academic_Merit + Co_Curriculum_Score)/ 100 %"
-    # Usually this means the sum IS the percentage (out of 100).
-    # Academic max 90 + CoQ max 10 = 100.
-    
     final_merit = academic_merit + min(max(coq_score, 0), 10.0)
     
     return {
@@ -192,9 +178,7 @@ def calculate_merit_score(sec1_grades, sec2_grades, sec3_grades, coq_score):
         "total_points": total_points
     }
 
-
 # Define all columns used for requirement checking
-# This acts as the Single Source of Truth for other modules (like dashboard.py)
 REQ_FLAG_COLUMNS = [
     'req_malaysian', 'req_male', 'req_female', 'no_colorblind', 'no_disability',
     '3m_only', 'pass_bm', 'credit_bm', 'pass_history', 
@@ -202,21 +186,19 @@ REQ_FLAG_COLUMNS = [
     'pass_math_science', 'pass_science_tech', 'credit_math_sci',
     'credit_math_sci_tech', 'pass_stv', 'credit_sf', 'credit_sfmt',
     'credit_bmbi', 'credit_stv',
-    'req_interview', 'single'
+    'req_interview', 'single', 'req_group_diversity'
 ]
 
-REQ_COUNT_COLUMNS = ['min_credits', 'min_pass']
+REQ_COUNT_COLUMNS = ['min_credits', 'min_pass', 'max_aggregate_units']
+REQ_TEXT_COLUMNS = ['subject_group_req']
 
-ALL_REQ_COLUMNS = REQ_FLAG_COLUMNS + REQ_COUNT_COLUMNS
+ALL_REQ_COLUMNS = REQ_FLAG_COLUMNS + REQ_COUNT_COLUMNS + REQ_TEXT_COLUMNS
 
 # --- 1. DATA SANITIZER (The Bouncer) ---
 def load_and_clean_data(filepath):
     """
     Loads CSV and enforces strict integer types for flag columns.
-    Converts '1.0', 'Yes', 'True' -> 1
-    Converts '0', 'No', 'False', NaN -> 0
     """
-
     df = None
     for enc in ['utf-8', 'cp1252', 'latin1']:
         try:
@@ -228,18 +210,24 @@ def load_and_clean_data(filepath):
     if df is None:
         raise ValueError(f"Could not read {filepath} with supported encodings.")
     
-    # List of columns that MUST be integers (0 or 1)
-    # flag_columns = [ ... ] (Moved to module constant REQ_FLAG_COLUMNS)
-    
+    # Ensure all columns exist
+    for col in ALL_REQ_COLUMNS:
+        if col not in df.columns:
+            if col in REQ_FLAG_COLUMNS + REQ_COUNT_COLUMNS:
+               df[col] = 0
+            else:
+               df[col] = ""
+
     for col in REQ_FLAG_COLUMNS:
-        if col in df.columns:
-            # Force numeric, turning errors (like 'Yes') into NaN
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
     
-    # Handle 'min_credits' and 'min_pass' separately (they are counts, not flags)
     for col in REQ_COUNT_COLUMNS:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
+        # Default max_aggregate_units to 100 (loose) if 0/missing
+        if col == 'max_aggregate_units':
+             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(100).astype(int)
+             df.loc[df[col] == 0, col] = 100 # Treat 0 as "No Limit" (100)
+        else:
+             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
             
     return df
 
@@ -254,16 +242,122 @@ def is_attempted(grade):
     return grade in ATTEMPTED_GRADES
 
 def to_int(val):
-    """
-    Safely converts a value to an integer.
-    Handles '1', '1.0', 1.0, True -> 1
-    Handles '0', '0.0', False, None, 'No' -> 0
-    """
     try:
-        # Convert float-strings like "1.0"
         return int(float(val))
     except (ValueError, TypeError):
         return 0
+
+def map_subject_code(subj_code):
+    """Maps CSV/PDF subject codes to internal StudentProfile keys."""
+    s = subj_code.upper()
+    if s == "BM": return "bm"
+    if s == "BI": return "eng"
+    if s == "HISTORY": return "hist"
+    if s == "MATH": return "math"
+    if s == "ADDMATH": return "addmath"
+    if s == "PHYSICS": return "phy"
+    if s == "CHEMISTRY": return "chem"
+    if s == "BIOLOGY": return "bio"
+    if s == "SCIENCE": return "sci"
+    if s == "PAI": return "islam"
+    if s == "BC": return "b_cina"
+    if s == "BT": return "b_tamil"
+    if s == "BA": return "b_arab"
+    if s == "PSV": return "psv"
+    if s == "GEO": return "geo"
+    if s == "EKONOMI": return "ekonomi"
+    # Fallback to lowercase
+    return subj_code.lower()
+
+def check_subject_group_logic(student_grades, rule_json_str, max_agg_units, check_diversity=False):
+    """
+    Evaluates complex subject group rules from a JSON string.
+    """
+    if not rule_json_str or rule_json_str.strip() == "":
+        return True, None
+        
+    try:
+        rules = json.loads(rule_json_str)
+    except json.JSONDecodeError:
+        return False, "Invalid Requirement Format"
+
+    # If it's a list, we treat it as AND conditions (match ALL rules in the list)
+    if isinstance(rules, list):
+        for rule in rules:
+            min_grade = rule.get("min_grade", "E")
+            min_count = rule.get("min_count", 1)
+            
+            # --- AGGREGATE UNIT & DIVERSITY CHECK (STPM STYLE) ---
+            if "allowed_groups" in rule and check_diversity:
+                allowed_groups = rule.get("allowed_groups", [])
+                valid_entries = []
+                
+                for g_idx, subjects_in_group in enumerate(allowed_groups):
+                    for subj in subjects_in_group:
+                        student_key = map_subject_code(subj)
+                        
+                        grade = student_grades.get(student_key)
+                        
+                        if grade and is_attempted(grade):
+                            pts = AGGREGATE_GRADE_POINTS.get(grade, 10)
+                            threshold_pts = AGGREGATE_GRADE_POINTS.get(min_grade, 8) # E=8 default
+                            
+                            valid_entries.append({
+                                "subj": student_key,
+                                "group": g_idx, 
+                                "points": pts,
+                                "grade": grade,
+                                "meets_grade": pts <= threshold_pts
+                            })
+
+                # 2. Find a valid combination of 'min_count' subjects
+                # Optimization: Group valid subjects by group_index, picking best per group
+                best_per_group = {}
+                for entry in valid_entries:
+                    g = entry['group']
+                    if g not in best_per_group or entry['points'] < best_per_group[g]['points']:
+                        best_per_group[g] = entry
+                
+                available_subjects = list(best_per_group.values())
+                
+                if len(available_subjects) < min_count:
+                    return False, f"Not enough subject groups (Found {len(available_subjects)}, Need {min_count})"
+                
+                found_valid_combo = False
+                
+                for combo in itertools.combinations(available_subjects, min_count):
+                    passes_grade_req = sum(1 for e in combo if e['meets_grade']) == min_count
+                    total_pts = sum(e['points'] for e in combo)
+                    passes_agg = total_pts <= max_agg_units
+                    
+                    if passes_grade_req and passes_agg:
+                        found_valid_combo = True
+                        break
+                        
+                if not found_valid_combo:
+                    return False, f"Diversity/Aggregate Failed (Max Units: {max_agg_units})"
+
+            # --- SIMPLE LIST CHECK (PISMP STYLE) ---
+            elif "subjects" in rule:
+                subjects = rule.get("subjects", [])
+                count_ok = 0
+                if not subjects:
+                    continue
+
+                for subj in subjects:
+                    student_key = map_subject_code(subj)
+                    
+                    grade = student_grades.get(student_key)
+                    if grade:
+                        pts = AGGREGATE_GRADE_POINTS.get(grade, 10)
+                        threshold = AGGREGATE_GRADE_POINTS.get(min_grade, 8)
+                        if pts <= threshold:
+                            count_ok += 1
+                            
+                if count_ok < min_count:
+                    return False, f"Subject Count Fail: Need {min_count} from {subjects} with grade {min_grade}"
+
+    return True, None
 
 class StudentProfile:
     def __init__(self, grades, gender, nationality, colorblind, disability, other_tech=False, other_voc=False):
@@ -315,12 +409,15 @@ def check_eligibility(student, req):
     if to_int(req.get('no_disability')) == 1:
         if not check("chk_disability", student.disability == 'Tidak', "fail_disability"): return False, audit
 
+    # NEW: Age Limit Check
+    age_limit = to_int(req.get('age_limit', 0))
+    if age_limit > 0:
+        # Assuming student age is valid (TODO: Add age to StudentProfile, default pass for now)
+        pass 
+
     g = student.grades
 
     # --- TVET SPECIAL: 3M ONLY ---
-    # Definition: Course only requires BM and Math to be ATTEMPTED (any grade incl. G).
-    # This overrides all other academic requirements.
-
     if to_int(req.get('3m_only')) == 1:
         cond = is_attempted(g.get('bm')) and is_attempted(g.get('math'))
         audit.append({
@@ -367,29 +464,20 @@ def check_eligibility(student, req):
     sci_no_bio = [g.get('phy'), g.get('chem'), g.get('sci')]
 
     # Tech/Voc logic: Checks the generic 'tech' and 'voc' inputs
-    # We no longer hardcode specific subjects like RC/CS/Agro/SRT 
-    # because the UI allows generic selection.
-    
     def has_pass(grade_list): return any(is_pass(x) for x in grade_list)
     def has_credit(grade_list): return any(is_credit(x) for x in grade_list)
     
     # --- TVET Rules (ILKBS/ILJTM) ---
 
     if to_int(req.get('pass_math_science')) == 1:
-        # Pass Math OR Science (Excluding Biology)
         cond = is_pass(g.get('math')) or has_pass(sci_no_bio)
         if not check("chk_pass_math_sci_nb", cond, "fail_pass_math_sci_nb"): passed_academics = False
         
     if to_int(req.get('pass_science_tech')) == 1:
-        # Pass Science (Excluding Bio) OR Technical Subject
         cond = has_pass(sci_no_bio) or is_pass(g.get('tech'))
         if not check("chk_pass_sci_tech", cond, "fail_pass_sci_tech"): passed_academics = False
         
     if to_int(req.get('credit_math_sci')) == 1:
-        # Normal TVET: Credit Math OR Science (Any)
-        # Note: Policy doc said "Credit in Math OR any Science subject". 
-        # Typically TVET is strict on Bio, but the doc said "any Science". 
-        # Leaving as 'all_sci' unless specified otherwise.
         cond = is_credit(g.get('math')) or has_credit(all_sci)
         if not check("chk_credit_math_sci", cond, "fail_credit_math_sci"): passed_academics = False
         
@@ -399,32 +487,37 @@ def check_eligibility(student, req):
 
     # --- Poly/KK Rules ---
     
-    # NEW: Credit BM or English
     if to_int(req.get('credit_bmbi')) == 1:
         cond = is_credit(g.get('bm')) or is_credit(g.get('eng'))
         if not check("chk_credit_bmbi", cond, "fail_credit_bmbi"): passed_academics = False
 
-    # NEW: Credit Science/Technical/Vocational
     if to_int(req.get('credit_stv')) == 1:
-        # All Science (Inc Bio) OR Tech OR Voc
         cond = has_credit(all_sci) or is_credit(g.get('tech')) or is_credit(g.get('voc'))
         if not check("chk_credit_stv", cond, "fail_credit_stv"): passed_academics = False
 
     if to_int(req.get('pass_stv')) == 1:
-        # Pass Science (Inc Bio) OR Tech OR Voc
         cond = has_pass(all_sci) or is_pass(g.get('tech')) or is_pass(g.get('voc'))
         if not check("chk_pass_stv", cond, "fail_pass_stv"): passed_academics = False
 
-    # Specific Science/Math Groupings
     if to_int(req.get('credit_sf')) == 1:
-        # Credit in Science (General) OR Physics
         cond = is_credit(g.get('sci')) or is_credit(g.get('phy'))
         if not check("chk_credit_sf", cond, "fail_credit_sf"): passed_academics = False
 
     if to_int(req.get('credit_sfmt')) == 1:
-        # Credit in Science (General) OR Physics OR Add Math
         cond = is_credit(g.get('sci')) or is_credit(g.get('phy')) or is_credit(g.get('addmath'))
         if not check("chk_credit_sfmt", cond, "fail_credit_sfmt"): passed_academics = False
+
+    # --- ADVANCED RULES (JSON Logic) ---
+    json_req = req.get('subject_group_req', "")
+    if json_req and json_req != "":
+        max_agg = to_int(req.get('max_aggregate_units', 100))
+        # Don't let 0 mean fail, 0 means no limit check usually? 
+        # But our loader logic already set it to 100 if user input was 0/missing.
+        
+        check_div = to_int(req.get('req_group_diversity', 0)) == 1
+        
+        passed, reason = check_subject_group_logic(g, json_req, max_agg, check_div)
+        if not check("chk_adv_subj_group", passed, reason): passed_academics = False
 
     min_c = to_int(req.get('min_credits', 0))
     if min_c > 0:

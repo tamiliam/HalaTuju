@@ -67,7 +67,7 @@ def render_pagination(total_items, items_per_page, current_page_key, unique_id="
 
 def get_institution_type(row):
     # Returns a translation KEY based on the category
-    # Categories: Politeknik, Kolej Komuniti, ILKBS, ILJTM
+    # Categories: Politeknik, Kolej Komuniti, ILKBS, ILJTM, PISMP, STPM
     t = str(row.get('type', '')).upper()
     cat = str(row.get('category', '')).upper()
     code = str(row.get('course_id', '')).upper()
@@ -79,8 +79,18 @@ def get_institution_type(row):
     if "KOLEJ KOMUNITI" in cat: return "inst_kk"
     if "JABATAN TENAGA MANUSIA" in cat or "ILJTM" in cat: return "inst_iljtm"
     if "ILKBS" in cat or "BELIA DAN SUKAN" in cat: return "inst_ilkbs"
+    if "PISMP" in cat or "IPG" in cat: return "inst_ipg"
+    if "STPM" in cat or "FORM 6" in cat: return "inst_form6"
+    if "MATRIKULASI" in cat: return "inst_matrik"
+    if "UNIVERSITI" in cat or "UA" in cat: return "inst_uni"
 
     # 2. Fallback: Check Name/Type strings (Legacy)
+    # PISMP
+    if "PISMP" in t or "IPG" in name: return "inst_ipg"
+    
+    # STPM
+    if "STPM" in t or "FORM 6" in name: return "inst_form6"
+
     # Politeknik
     if "POLITEKNIK" in t or "POLY" in code or "POLITEKNIK" in name:
         return "inst_poly"
@@ -128,7 +138,7 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
     eligible_offerings = []
     
     # Initialize stats using stable internal keys (matching get_institution_type)
-    stats_keys = ["inst_poly", "inst_kk", "inst_iljtm", "inst_ilkbs", "inst_other"]
+    stats_keys = ["inst_poly", "inst_kk", "inst_iljtm", "inst_ilkbs", "inst_ipg", "inst_form6", "inst_matrik", "inst_uni", "inst_other"]
     stats = {k: 0 for k in stats_keys}
     
     # 1. OPTIMIZATION: Check eligibility by Requirement Signature (not just Course ID)

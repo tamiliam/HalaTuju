@@ -1,0 +1,247 @@
+--- MOHE ORPHANS REPORT ---
+Courses present in MOHE data but NOT found in HalaTuju.
+
+[UA PROGRAMS] Orphans: 221
+          code                                                        program_name                                     university
+0    UH0010003                                                     ASASI AGRISAINS                      Universiti Malaysia Sabah
+1    UY0000015                                                   ASASI BAHASA ARAB         Universiti Islam Antarabangsa Malaysia
+2    UY0000001                     ASASI BAHASA ARAB UNTUK KOMUNIKASI ANTARABANGSA         Universiti Islam Antarabangsa Malaysia
+3    UY0000016                                               ASASI BAHASA INGGERIS         Universiti Islam Antarabangsa Malaysia
+4    UY0000014                 ASASI BAHASA INGGERIS UNTUK KOMUNIKASI ANTARABANGSA         Universiti Islam Antarabangsa Malaysia
+5    UY0000012                   ASASI BAHASA MELAYU UNTUK KOMUNIKASI ANTARABANGSA         Universiti Islam Antarabangsa Malaysia
+6    UY0000011                                    ASASI EKONOMI & SAINS PENGURUSAN         Universiti Islam Antarabangsa Malaysia
+7    UY0000005                                                       ASASI FARMASI         Universiti Islam Antarabangsa Malaysia
+8    UY0000006          ASASI ILMU PENGETAHUAN BERTERASKAN WAHYU DAN WARISAN ISLAM         Universiti Islam Antarabangsa Malaysia
+9    UY0000004                                                 ASASI KEJURURAWATAN         Universiti Islam Antarabangsa Malaysia
+10   UE0520001                                                  ASASI KEJURUTERAAN                      Universiti Teknologi Mara
+11   UY0520001                                                  ASASI KEJURUTERAAN         Universiti Islam Antarabangsa Malaysia
+14   UZ0520001                                    ASASI KEJURUTERAAN DAN TEKNOLOGI        Universiti Pertahanan Nasional Malaysia
+15   UM0221002                                               ASASI PENGAJIAN ISLAM                              Universiti Malaya
+16   UM0221001                                     ASASI PENGAJIAN ISLAM DAN SAINS                              Universiti Malaya
+17   UW0010003                                                ASASI PENGKOMPUTERAN                    Universiti Malaysia Sarawak
+18   UZ0345001                                       ASASI PENGURUSAN DAN STRATEGI        Universiti Pertahanan Nasional Malaysia
+19   UY0000010     ASASI PENGURUSAN PELANCONGAN / FOUNDATION IN TOURISM MANAGEMENT         Universiti Islam Antarabangsa Malaysia
+20   UY0000019                                                     ASASI PERGIGIAN         Universiti Islam Antarabangsa Malaysia
+21   UY0000018                                                     ASASI PERUBATAN         Universiti Islam Antarabangsa Malaysia
+22   UZ0721001                                                     ASASI PERUBATAN        Universiti Pertahanan Nasional Malaysia
+23   UD0010001                                 ASASI PERUBATAN DAN SAINS KESIHATAN                Universiti Sultan Zainal Abidin
+24   UE0545001                                                         ASASI SAINS                      Universiti Teknologi Mara
+25   UH0010001                                                         ASASI SAINS                      Universiti Malaysia Sabah
+26   UL0010001                                                         ASASI SAINS                   Universiti Malaysia Kelantan
+27   UM0440001                                                 ASASI SAINS FIZIKAL                              Universiti Malaya
+28   UW0010002                                                 ASASI SAINS FIZIKAL                    Universiti Malaysia Sarawak
+29   UY0000002                                                 ASASI SAINS FIZIKAL         Universiti Islam Antarabangsa Malaysia
+30   UM0421001                                                   ASASI SAINS HAYAT                              Universiti Malaya
+31   UW0010001                                                   ASASI SAINS HAYAT                    Universiti Malaysia Sarawak
+32   UY0000013                                                   ASASI SAINS HAYAT         Universiti Islam Antarabangsa Malaysia
+33   UY0000017                                             ASASI SAINS KEMANUSIAAN         Universiti Islam Antarabangsa Malaysia
+34   UY0000003                                     ASASI SAINS KESIHATAN BERSEKUTU         Universiti Islam Antarabangsa Malaysia
+35   UY0481001                                                ASASI SAINS KOMPUTER         Universiti Islam Antarabangsa Malaysia
+36   UP0000001                                               ASASI SAINS PERTANIAN                      Universiti Putra Malaysia
+37   UH0010004                                                  ASASI SAINS SOSIAL                      Universiti Malaysia Sabah
+38   UL0010002                                                  ASASI SAINS SOSIAL                   Universiti Malaysia Kelantan
+39   UM0010001                                                  ASASI SAINS SOSIAL                              Universiti Malaya
+40   UD0010004                                             ASASI SAINS SOSIAL Baru                Universiti Sultan Zainal Abidin
+41   UY0000009                        ASASI SENI BINA DAN REKA BENTUK ALAM SEKITAR         Universiti Islam Antarabangsa Malaysia
+42   UG0010001                                                          ASASI STEM                 Universiti Malaysia Terengganu
+44   UH0010002                                            ASASI TEKNOLOGI MAKLUMAT                      Universiti Malaysia Sabah
+45   UL0481001                                   ASASI TEKNOLOGI MAKLUMAT HUFFAZ #                   Universiti Malaysia Kelantan
+46   UE0222001                                                        ASASI TESL #                      Universiti Teknologi Mara
+47   UY0000007                                                 ASASI UNDANG-UNDANG         Universiti Islam Antarabangsa Malaysia
+48   UE0380001                                           ASASI UNDANG-UNDANG (KPM)                      Universiti Teknologi Mara
+49   UE0380002                                          ASASI UNDANG-UNDANG (UITM)                      Universiti Teknologi Mara
+50   UK0010001                                                   ASASIPINTAR UKM #                 Universiti Kebangsaan Malaysia
+55   UD4221001                                        DIPLOMA AL QURAN & AS SUNNAH                Universiti Sultan Zainal Abidin
+56   UE4343004                                          DIPLOMA ANALISIS PELABURAN                      Universiti Teknologi Mara
+57   UE4213001                                                   DIPLOMA ANIMASI #                      Universiti Teknologi Mara
+58   UD4224001                                 DIPLOMA BAHASA & KESUSASTERAAN ARAB                Universiti Sultan Zainal Abidin
+59   UA4222001                                         DIPLOMA BAHASA ETNIK Baru #             Universiti Pendidikan Sultan Idris
+60   UA4224001                                           DIPLOMA BAHASA INGGERIS #             Universiti Pendidikan Sultan Idris
+61   UE4224001                    DIPLOMA BAHASA INGGERIS KOMUNIKASI PROFESIONAL #                      Universiti Teknologi Mara
+63   UD4221005                                                      DIPLOMA DAKWAH                Universiti Sultan Zainal Abidin
+64   UC4340001                                             DIPLOMA E-COMMERCE Baru            Universiti Teknikal Malaysia Melaka
+65   UE4727001                                                     DIPLOMA FARMASI                      Universiti Teknologi Mara
+66   UD4726001                                                 DIPLOMA FISIOTERAPI                Universiti Sultan Zainal Abidin
+67   UE4726002                                                 DIPLOMA FISIOTERAPI                      Universiti Teknologi Mara
+68   UE4213004                                    DIPLOMA FOTOMEDIA KREATIF Baru #                      Universiti Teknologi Mara
+92   UE4322003                                     DIPLOMA INFORMATIK PERPUSTAKAAN                      Universiti Teknologi Mara
+94   UZ4813001                                     DIPLOMA KECERGASAN PERTAHANAN #        Universiti Pertahanan Nasional Malaysia
+95   UE4723001                                               DIPLOMA KEJURURAWATAN                      Universiti Teknologi Mara
+97   UR4851001                              DIPLOMA KEJURUTERAAN ALAM SEKITAR Baru                     Universiti Malaysia Perlis
+99   UB4526001                                           DIPLOMA KEJURUTERAAN AWAM            Universiti Tun Hussein Onn Malaysia
+100  UE4526003                                           DIPLOMA KEJURUTERAAN AWAM                      Universiti Teknologi Mara
+101  UJ4526001                                           DIPLOMA KEJURUTERAAN AWAM  Universiti Malaysia Pahang Al-Sultan Abdullah
+102  UR4521002                                          DIPLOMA KEJURUTERAAN BAHAN                     Universiti Malaysia Perlis
+104  UB4522001                                       DIPLOMA KEJURUTERAAN ELEKTRIK            Universiti Tun Hussein Onn Malaysia
+105  UC4522001                                       DIPLOMA KEJURUTERAAN ELEKTRIK            Universiti Teknikal Malaysia Melaka
+106  UR4522001                                       DIPLOMA KEJURUTERAAN ELEKTRIK                     Universiti Malaysia Perlis
+109  UE4523001                          DIPLOMA KEJURUTERAAN ELEKTRIK (ELEKTRONIK)                      Universiti Teknologi Mara
+111  UE4522002                               DIPLOMA KEJURUTERAAN ELEKTRIK (KUASA)                      Universiti Teknologi Mara
+113  UJ4523001                        DIPLOMA KEJURUTERAAN ELEKTRIK DAN ELEKTRONIK  Universiti Malaysia Pahang Al-Sultan Abdullah
+115  UC4523001                                     DIPLOMA KEJURUTERAAN ELEKTRONIK            Universiti Teknikal Malaysia Melaka
+116  UR4523003                                     DIPLOMA KEJURUTERAAN ELEKTRONIK                     Universiti Malaysia Perlis
+122  UE4524001                                          DIPLOMA KEJURUTERAAN KIMIA                      Universiti Teknologi Mara
+123  UJ4524001                                          DIPLOMA KEJURUTERAAN KIMIA  Universiti Malaysia Pahang Al-Sultan Abdullah
+124  UH4520001                         DIPLOMA KEJURUTERAAN KIMIA (MINYAK DAN GAS)                      Universiti Malaysia Sabah
+125  UR4523002                                       DIPLOMA KEJURUTERAAN KOMPUTER                     Universiti Malaysia Perlis
+127  UB4521002                                      DIPLOMA KEJURUTERAAN MEKANIKAL            Universiti Tun Hussein Onn Malaysia
+128  UC4521001                                      DIPLOMA KEJURUTERAAN MEKANIKAL            Universiti Teknikal Malaysia Melaka
+129  UE4521001                                      DIPLOMA KEJURUTERAAN MEKANIKAL                      Universiti Teknologi Mara
+130  UJ4521001                                      DIPLOMA KEJURUTERAAN MEKANIKAL  Universiti Malaysia Pahang Al-Sultan Abdullah
+144  UR4523001                                     DIPLOMA KEJURUTERAAN MEKATRONIK                     Universiti Malaysia Perlis
+145  UC4540001                                      DIPLOMA KEJURUTERAAN PEMBUATAN            Universiti Teknikal Malaysia Melaka
+146  UR4540001                                      DIPLOMA KEJURUTERAAN PEMBUATAN                     Universiti Malaysia Perlis
+151  UP4524001  DIPLOMA KEJURUTERAAN TEKNOLOGI PERTANIAN (KAMPUS BINTULU, SARAWAK)                      Universiti Putra Malaysia
+152  UJ4862001                         DIPLOMA KESELAMATAN DAN KESIHATAN PEKERJAAN  Universiti Malaysia Pahang Al-Sultan Abdullah
+153  UP4640001   DIPLOMA KESIHATAN HAIWAN DAN PETERNAKAN (KAMPUS BINTULU, SARAWAK)                      Universiti Putra Malaysia
+154  UE4422001                                      DIPLOMA KESIHATAN PERSEKITARAN                      Universiti Teknologi Mara
+156  UA4345001                                                DIPLOMA KEUSAHAWANAN             Universiti Pendidikan Sultan Idris
+157  UE4621001                                           DIPLOMA KEUSAHAWANAN TANI                      Universiti Teknologi Mara
+159  UD4343002                                                    DIPLOMA KEWANGAN                Universiti Sultan Zainal Abidin
+161  UE4321001                                        DIPLOMA KOMUNIKASI DAN MEDIA                      Universiti Teknologi Mara
+162  UD4221008                                       DIPLOMA MEDIA PENYIARAN ISLAM                Universiti Sultan Zainal Abidin
+163  UE4421001                                                DIPLOMA MIKROBIOLOGI                      Universiti Teknologi Mara
+164  UE4343005                                                    DIPLOMA MUAMALAT                      Universiti Teknologi Mara
+165  UA4212001                                                     DIPLOMA MUZIK #             Universiti Pendidikan Sultan Idris
+168  UD4342001                                                   DIPLOMA PEMASARAN                Universiti Sultan Zainal Abidin
+169  UP4310001               DIPLOMA PEMBANGUNAN MANUSIA (KAMPUS BINTULU, SARAWAK)                      Universiti Putra Malaysia
+170  UE4724001                               DIPLOMA PEMBANTU PEMBEDAHAN PERGIGIAN                      Universiti Teknologi Mara
+171  UE4726001                                         DIPLOMA PEMULIHAN CARAKERJA                      Universiti Teknologi Mara
+172  UA4143001                               DIPLOMA PENDIDIKAN AWAL KANAK-KANAK #             Universiti Pendidikan Sultan Idris
+173  UE4143001                               DIPLOMA PENDIDIKAN AWAL KANAK-KANAK #                      Universiti Teknologi Mara
+174  UE4146001                                          DIPLOMA PENDIDIKAN ISLAM #                      Universiti Teknologi Mara
+175  UD4343001                                              DIPLOMA PENGAJIAN BANK                Universiti Sultan Zainal Abidin
+176  UD4343003                                          DIPLOMA PENGAJIAN INSURANS                Universiti Sultan Zainal Abidin
+177  UE4343003                                          DIPLOMA PENGAJIAN INSURANS                      Universiti Teknologi Mara
+178  UE4343002                                         DIPLOMA PENGAJIAN PERBANKAN                      Universiti Teknologi Mara
+179  UE4340001                                        DIPLOMA PENGAJIAN PERNIAGAAN                      Universiti Teknologi Mara
+181  UE4340002                         DIPLOMA PENGAJIAN PERNIAGAAN (PENGANGKUTAN)                      Universiti Teknologi Mara
+182  UE4813001                                             DIPLOMA PENGAJIAN SUKAN                      Universiti Teknologi Mara
+183  UA4220001                                   DIPLOMA PENGAJIAN TURATH ISLAMI #             Universiti Pendidikan Sultan Idris
+184  UE4725002                                        DIPLOMA PENGIMEJAN PERUBATAN                      Universiti Teknologi Mara
+186  UE4346001                            DIPLOMA PENGURUSAN DAN TEKNOLOGI PEJABAT                      Universiti Teknologi Mara
+187  UE4221001                                            DIPLOMA PENGURUSAN HALAL                      Universiti Teknologi Mara
+188  UE4581002                                         DIPLOMA PENGURUSAN HARTANAH                      Universiti Teknologi Mara
+189  UE4811002                                            DIPLOMA PENGURUSAN HOTEL                      Universiti Teknologi Mara
+191  UE4620002                             DIPLOMA PENGURUSAN INDUSTRI PERLADANGAN                      Universiti Teknologi Mara
+192  UZ4345001                                         DIPLOMA PENGURUSAN LOGISTIK        Universiti Pertahanan Nasional Malaysia
+194  UE4322001                                         DIPLOMA PENGURUSAN MAKLUMAT                      Universiti Teknologi Mara
+196  UE4812001                                      DIPLOMA PENGURUSAN PELANCONGAN                      Universiti Teknologi Mara
+197  UE4811004                             DIPLOMA PENGURUSAN PERKHIDMATAN MAKANAN                      Universiti Teknologi Mara
+198  UP4621002    DIPLOMA PENGURUSAN PERLADANGAN MAKANAN (KAMPUS BINTULU, SARAWAK)                      Universiti Putra Malaysia
+199  UP4345001             DIPLOMA PENGURUSAN PERNIAGAAN (KAMPUS BINTULU, SARAWAK)                      Universiti Putra Malaysia
+202  UE4212003                                             DIPLOMA PENGURUSAN SENI                      Universiti Teknologi Mara
+203  UE4813002                               DIPLOMA PENGURUSAN SUKAN DAN REKREASI                      Universiti Teknologi Mara
+204  UD4345001                                   DIPLOMA PENGURUSAN SUMBER MANUSIA                Universiti Sultan Zainal Abidin
+205  UE4345001                                            DIPLOMA PENTADBIRAN AWAM                      Universiti Teknologi Mara
+206  UD4221002                                           DIPLOMA PENTADBIRAN ISLAM                Universiti Sultan Zainal Abidin
+207  UE4345002                                        DIPLOMA PENTADBIRAN KORPORAT                      Universiti Teknologi Mara
+208  UZ4340001                                      DIPLOMA PENTADBIRAN PERNIAGAAN        Universiti Pertahanan Nasional Malaysia
+209  UE4222001                                             DIPLOMA PENULISAN SKRIP                      Universiti Teknologi Mara
+211  UD4344001                                                  DIPLOMA PERAKAUNAN                Universiti Sultan Zainal Abidin
+212  UE4344001                                                  DIPLOMA PERAKAUNAN                      Universiti Teknologi Mara
+213  UE4581003                              DIPLOMA PERANCANGAN BANDAR & WILAYAH #                      Universiti Teknologi Mara
+215  UP4623001                        DIPLOMA PERHUTANAN (KAMPUS BINTULU, SARAWAK)                      Universiti Putra Malaysia
+216  UG4624001                                                   DIPLOMA PERIKANAN                 Universiti Malaysia Terengganu
+217  UP4624001                         DIPLOMA PERIKANAN (KAMPUS BINTULU, SARAWAK)                      Universiti Putra Malaysia
+220  UD4340001                                     DIPLOMA PERNIAGAAN ANTARABANGSA                Universiti Sultan Zainal Abidin
+221  UP4621001                    DIPLOMA PERNIAGAANTANI (KAMPUS BINTULU, SARAWAK)                      Universiti Putra Malaysia
+222  UP4621003                         DIPLOMA PERTANIAN (KAMPUS BINTULU, SARAWAK)                      Universiti Putra Malaysia
+223  UE4212005                                    DIPLOMA PRODUKSI AUDIO DIGITAL #                      Universiti Teknologi Mara
+224  UD4725001                                                  DIPLOMA RADIOGRAFI                Universiti Sultan Zainal Abidin
+225  UA4481002                     DIPLOMA REKA BENTUK DAN PEMBANGUNAN PERMAINAN #             Universiti Pendidikan Sultan Idris
+230  UE4214003                 DIPLOMA REKA BENTUK SERAMIK INDUSTRI KREATIF Baru #                      Universiti Teknologi Mara
+232  UD4214001                                  DIPLOMA REKABENTUK PERINDUSTRIAN #                Universiti Sultan Zainal Abidin
+233  UA4440001                                                       DIPLOMA SAINS             Universiti Pendidikan Sultan Idris
+234  UE4545004                                                       DIPLOMA SAINS                      Universiti Teknologi Mara
+235  UA4461001                                           DIPLOMA SAINS (MATEMATIK)             Universiti Pendidikan Sultan Idris
+236  UE4462002                                               DIPLOMA SAINS AKTUARI                      Universiti Teknologi Mara
+237  UE4581004                                              DIPLOMA SAINS GEOMATIK                      Universiti Teknologi Mara
+238  UB4545001                                                DIPLOMA SAINS GUNAAN            Universiti Tun Hussein Onn Malaysia
+239  UJ4545001                                              DIPLOMA SAINS INDUSTRI  Universiti Malaysia Pahang Al-Sultan Abdullah
+240  UD4723001                                         DIPLOMA SAINS KEJURURAWATAN                Universiti Sultan Zainal Abidin
+242  UA4481001                                              DIPLOMA SAINS KOMPUTER             Universiti Pendidikan Sultan Idris
+243  UC4481002                                              DIPLOMA SAINS KOMPUTER            Universiti Teknikal Malaysia Melaka
+244  UD4481003                                              DIPLOMA SAINS KOMPUTER                Universiti Sultan Zainal Abidin
+245  UE4481001                                              DIPLOMA SAINS KOMPUTER                      Universiti Teknologi Mara
+246  UJ4481001                                              DIPLOMA SAINS KOMPUTER  Universiti Malaysia Pahang Al-Sultan Abdullah
+247  UP4481001                    DIPLOMA SAINS KOMPUTER (KAMPUS BINTULU, SARAWAK)                      Universiti Putra Malaysia
+248  UE4461001                                             DIPLOMA SAINS MATEMATIK                      Universiti Teknologi Mara
+249  UA4813001                             DIPLOMA SAINS SUKAN DAN KEJURULATIHAN #             Universiti Pendidikan Sultan Idris
+250  UD4221003                                     DIPLOMA SEJARAH & TAMADUN ISLAM                Universiti Sultan Zainal Abidin
+252  UE4211002                                           DIPLOMA SENI HALUS Baru #                      Universiti Teknologi Mara
+254  UE4811003                                               DIPLOMA SENI KULINARI                      Universiti Teknologi Mara
+255  UE4215002     DIPLOMA SENI LUKIS DAN SENI REKA (SENI REKA LOGAM HALUS) Baru #                      Universiti Teknologi Mara
+256  UE4215001         DIPLOMA SENI LUKIS DAN SENI REKA (SENI REKA TEKSTIL) Baru #                      Universiti Teknologi Mara
+257  UE4212001                                                DIPLOMA SENI MUZIK #                      Universiti Teknologi Mara
+258  UE4811001                                                 DIPLOMA SENI PASTRI                      Universiti Teknologi Mara
+259  UE4213005                                     DIPLOMA SENI REKA GRAFIK Baru #                      Universiti Teknologi Mara
+261  UE4581001                                         DIPLOMA SENIBINA LANDSKAP #                      Universiti Teknologi Mara
+262  UE4343001                                  DIPLOMA SISTEM MAKLUMAT PERAKAUNAN                      Universiti Teknologi Mara
+264  UE4462001                                                   DIPLOMA STATISTIK                      Universiti Teknologi Mara
+265  UD4221007                                                     DIPLOMA SYARIAH                Universiti Sultan Zainal Abidin
+266  UZ4221001                                DIPLOMA TAHFIZ DAN TAFSIR AL-QURAN #        Universiti Pertahanan Nasional Malaysia
+267  UA4212002                                                      DIPLOMA TARI #             Universiti Pendidikan Sultan Idris
+268  UE4212004                                            DIPLOMA TARI PERSEMBAHAN                      Universiti Teknologi Mara
+269  UE4212002                                                      DIPLOMA TEATER                      Universiti Teknologi Mara
+270  UA4212003                                                    DIPLOMA TEATER #             Universiti Pendidikan Sultan Idris
+272  UE4620001                                        DIPLOMA TEKNOLOGI AKUAKULTUR                      Universiti Teknologi Mara
+273  UB4213001                                           DIPLOMA TEKNOLOGI ANIMASI            Universiti Tun Hussein Onn Malaysia
+275  UE4582001                                            DIPLOMA TEKNOLOGI BINAAN                      Universiti Teknologi Mara
+276  UE4213002                                           DIPLOMA TEKNOLOGI FILEM #                      Universiti Teknologi Mara
+277  UE4581005                                        DIPLOMA TEKNOLOGI GEOSPATIAL                      Universiti Teknologi Mara
+278  UE4545001                                   DIPLOMA TEKNOLOGI HIGIEN INDUSTRI                      Universiti Teknologi Mara
+280  UE4543001                                DIPLOMA TEKNOLOGI INDUSTRI PERKAYUAN                      Universiti Teknologi Mara
+282  UB4524001                                DIPLOMA TEKNOLOGI KEJURUTERAAN KIMIA            Universiti Tun Hussein Onn Malaysia
+283  UR4524001                           DIPLOMA TEKNOLOGI KEJURUTERAAN KIMIA Baru                     Universiti Malaysia Perlis
+284  UR4521003                            DIPLOMA TEKNOLOGI KEJURUTERAAN MEKANIKAL                     Universiti Malaysia Perlis
+286  UJ4521002                            DIPLOMA TEKNOLOGI KEJURUTERAAN PEMBUATAN  Universiti Malaysia Pahang Al-Sultan Abdullah
+287  UR4543001                         DIPLOMA TEKNOLOGI KEJURUTERAAN POLIMER Baru                     Universiti Malaysia Perlis
+289  UE4524002                               DIPLOMA TEKNOLOGI KIMIA PERINDUSTRIAN                      Universiti Teknologi Mara
+290  UE4213003                          DIPLOMA TEKNOLOGI KOMUNIKASI MEDIA DIGITAL                      Universiti Teknologi Mara
+295  UE4541001                                           DIPLOMA TEKNOLOGI MAKANAN                      Universiti Teknologi Mara
+298  UD4482001                                          DIPLOMA TEKNOLOGI MAKLUMAT                Universiti Sultan Zainal Abidin
+299  UB4481001                                          DIPLOMA TEKNOLOGI MAKLUMAT            Universiti Tun Hussein Onn Malaysia
+300  UA4545001                                            DIPLOMA TEKNOLOGI MAKMAL             Universiti Pendidikan Sultan Idris
+301  UD4725002                                  DIPLOMA TEKNOLOGI MAKMAL PERUBATAN                Universiti Sultan Zainal Abidin
+302  UE4725001                                  DIPLOMA TEKNOLOGI MAKMAL PERUBATAN                      Universiti Teknologi Mara
+304  UD4540001                                         DIPLOMA TEKNOLOGI PEMBUATAN                Universiti Sultan Zainal Abidin
+305  UE4620003                                 DIPLOMA TEKNOLOGI PENGELUARAN HERBA                      Universiti Teknologi Mara
+306  UE4213006                                 DIPLOMA TEKNOLOGI PERCETAKAN Baru #                      Universiti Teknologi Mara
+307  UE4545003                                           DIPLOMA TEKNOLOGI POLIMER                      Universiti Teknologi Mara
+308  UE4214001                              DIPLOMA TEKNOLOGI REKABENTUK DALAMAN #                      Universiti Teknologi Mara
+309  UE4214002                           DIPLOMA TEKNOLOGI SENI REKA FESYEN Baru #                      Universiti Teknologi Mara
+310  UE4214004                    DIPLOMA TEKNOLOGI SENI REKA PERINDUSTRIAN Baru #                      Universiti Teknologi Mara
+312  UE4542001                               DIPLOMA TEKNOLOGI TEKSTIL DAN PAKAIAN                      Universiti Teknologi Mara
+313  UE4526002                                                  DIPLOMA UKUR BAHAN                      Universiti Teknologi Mara
+315  UE4526001                                               DIPLOMA UKUR BANGUNAN                      Universiti Teknologi Mara
+316  UD4380001                                               DIPLOMA UNDANG-UNDANG                Universiti Sultan Zainal Abidin
+317  UD4221006                                                   DIPLOMA USULUDDIN                Universiti Sultan Zainal Abidin
+318  UU0345001                                            PROGRAM ASASI PENGURUSAN                      Universiti Utara Malaysia
+319  UE6581001                            SARJANA MUDA SAINS (KEPUJIAN) SENIBINA #                      Universiti Teknologi Mara
+358  UQ0340001                                     TAMHIDI PERAKAUNAN DAN MUAMALAT                Universiti Sains Islam Malaysia
+359  UQ0421001                              TAMHIDI PERUBATAN, PERGIGIAN DAN SAINS                Universiti Sains Islam Malaysia
+360  UQ0440005                                 TAMHIDI SAINS FIZIKAL DAN TEKNOLOGI                Universiti Sains Islam Malaysia
+361  UQ0010002                                           TAMHIDI SAINS SOSIAL Baru                Universiti Sains Islam Malaysia
+362  UQ0381001                                   TAMHIDI SYARIAH DAN UNDANG-UNDANG                Universiti Sains Islam Malaysia
+
+[POLY/KK PROGRAMS] Orphans: 18
+          code                                                                                 program_name                           university
+12   OM0520001               ASASI KEJURUTERAAN & TEKNOLOGI - UNIVERSITI MALAYSIA PAHANG AL-SULTAN ABDULLAH                           Kolej Mara
+13   OM0520002                               ASASI KEJURUTERAAN & TEKNOLOGI - UNIVERSITI TEKNOLOGI MALAYSIA                           Kolej Mara
+43   FB0500001                                                    ASASI TEKNOLOGI KEJURUTERAAN (ASASI TVET)  Universiti Awam|berkenaan sahaja.">
+52   FC3811006                                                     CERTIFICATE IN FOOD AND BEVERAGE SERVICE                       Kolej Komuniti
+71   OP4344001                                                       DIPLOMA IN ACCOUNTING + DATA ANALYTICS               Kolej Profesional Mara
+72   OP4344003            DIPLOMA IN ACCOUNTING + SAP S/4HANA FINANCIAL ACCOUNTING ASSOCIATES CERTIFICATION               Kolej Profesional Mara
+74   OP4340002         DIPLOMA IN BUSINESS INFORMATION TECHNOLOGY + VISUAL BUSINESS ANALYTICS CERTIFICATION               Kolej Profesional Mara
+75   OP4340003                                                                  DIPLOMA IN BUSINESS STUDIES               Kolej Profesional Mara
+76   OP4481001                                                                  DIPLOMA IN COMPUTER SCIENCE               Kolej Profesional Mara
+77   OP4481002                        DIPLOMA IN COMPUTER SCIENCE + VISUAL BUSINESS ANALYTICS CERTIFICATION               Kolej Profesional Mara
+78   OP4213001      DIPLOMA IN CREATIVE DIGITAL MEDIA PRODUCTION + DIGITAL MEDIA PROFESSIONAL CERTIFICATE #               Kolej Profesional Mara
+80   OP4224001                         DIPLOMA IN ENGLISH COMMUNICATION + SIJIL PENTERJEMAHAN BAHASA ITBM #               Kolej Profesional Mara
+82   OP4345002                                DIPLOMA IN HALAL INDUSTRY + CERTIFIED HALAL EXECUTIVE PROGRAM               Kolej Profesional Mara
+84   OP4840001  DIPLOMA IN INTEGRATED LOGISTICS MANAGEMENT + CHARTERED INSTITUTE OF LOGISTICS AND TRANSPORT               Kolej Profesional Mara
+85   OP4340001                  DIPLOMA IN INTERNATIONAL BUSINESS + CERTIFIED SPECIALIST DIGITAL LEADERSHIP               Kolej Profesional Mara
+86   OP4343001                      DIPLOMA IN ISLAMIC FINANCE + ASSOCIATE QUALIFICATION IN ISLAMIC FINANCE               Kolej Profesional Mara
+87   OP4342001                  DIPLOMA IN MARKETING + CERTIFIED PROFESSIONAL MARKETER (ASIA) CERTIFICATION               Kolej Profesional Mara
+354  FC3215001                                                 SIJIL TEKNOLOGI REKA BENTUK GRAFIK KREATIF #                       Kolej Komuniti

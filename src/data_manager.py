@@ -186,6 +186,67 @@ def load_master_data():
     else:
         tvet_final = pd.DataFrame()
 
+    # --- 3b. MERGE NEW PATHWAYS (PISMP, STPM, etc.) ---
+    df_pathways = load('new_pathways_requirements.csv', clean=True)
+    if not df_pathways.empty:
+        # PISMP Defaults
+        mask_pismp = df_pathways['type'] == 'PISMP'
+        df_pathways.loc[mask_pismp, 'institution_name'] = "IPG (Institut Pendidikan Guru)"
+        df_pathways.loc[mask_pismp, 'State'] = "Various Locations"
+        df_pathways.loc[mask_pismp, 'fees'] = "Free (Allowance Provided)"
+        df_pathways.loc[mask_pismp, 'duration'] = "5 Years (1yr Foundation + 4yr Degree)"
+        df_pathways.loc[mask_pismp, 'inst_url'] = "https://pismp.moe.gov.my/"
+        df_pathways.loc[mask_pismp, 'level'] = "Bachelor Degree"
+        df_pathways.loc[mask_pismp, 'category'] = "PISMP"
+
+        # STPM Defaults
+        mask_stpm = df_pathways['type'] == 'STPM'
+        df_pathways.loc[mask_stpm, 'institution_name'] = "Form 6 Centre / School"
+        df_pathways.loc[mask_stpm, 'State'] = "Nationwide"
+        df_pathways.loc[mask_stpm, 'fees'] = "Free (Public Schools)"
+        df_pathways.loc[mask_stpm, 'duration'] = "1.5 Years"
+        df_pathways.loc[mask_stpm, 'inst_url'] = "https://moe.gov.my"
+        df_pathways.loc[mask_stpm, 'level'] = "Pre-University"
+        df_pathways.loc[mask_stpm, 'category'] = "STPM"
+
+        # Other Defaults if not set
+        df_pathways['details_url'] = df_pathways.get('details_url', '#')
+        df_pathways['hostel_fee'] = "Varies"
+        df_pathways['course'] = df_pathways['course_name'] # Rename for standardized 'course' col if needed
+        
+        pathways_final = df_pathways
+    # --- 3c. MERGE PUBLIC UNIVERSITY (UA) DATA ---
+    df_ua = load('university_requirements.csv', clean=True)
+    if not df_ua.empty:
+        # Load Name Updates if available
+        df_ua_courses = load('university_courses_update.csv')
+        if not df_ua_courses.empty:
+             df_ua = pd.merge(df_ua, df_ua_courses[['course_id', 'course']], on='course_id', how='left')
+        else:
+             df_ua['course'] = df_ua['course_name'] if 'course_name' in df_ua.columns else df_ua['course_id']
+
+        # UA Defaults
+        df_ua['fees'] = "Subsidized (Approx. RM 1000/sem)"
+        df_ua['duration'] = "3-4 Years"
+        df_ua['inst_url'] = "https://upu.mohe.gov.my"
+        df_ua['level'] = "Bachelor Degree"
+        df_ua['category'] = "Public University" # For Filters
+
+        # Extract University Name from notes or default
+        # Notes format: "Program Name | University Name"
+        def extract_uni(note):
+            if isinstance(note, str) and '|' in note:
+                return note.split('|')[-1].strip()
+            return "Public University"
+            
+        df_ua['institution_name'] = df_ua['notes'].apply(extract_uni)
+        df_ua['State'] = "Various" # Hard to look up without mapping file
+        df_ua['details_url'] = "https://upu.mohe.gov.my" # Generic for now
+
+        ua_final = df_ua
+    else:
+        ua_final = pd.DataFrame()
+
     # --- 4. COMBINE & CLEAN ---
     # Define explicitly all cols we need. Add more if engine needs them.
     from src.engine import ALL_REQ_COLUMNS
@@ -194,13 +255,13 @@ def load_master_data():
     base_cols = [
         'course_id', 'course', 'institution_name', 'State', 
         'type', 'category', 'fees', 'duration', 'hyperlink',
-        'inst_url', 'hostel_fee', 'details_url', 'level'
+        'inst_url', 'hostel_fee', 'details_url', 'level', 'merit_cutoff'
     ]
     
     # Combine lists
     cols_to_keep = base_cols + ALL_REQ_COLUMNS
     
-    master_df = pd.concat([poly_final, tvet_final], ignore_index=True)
+    master_df = pd.concat([poly_final, tvet_final, pathways_final, ua_final], ignore_index=True)
     
     # Final Safety: Fill N/A details_url with '#'
     if 'details_url' in master_df.columns:
