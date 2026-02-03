@@ -211,26 +211,24 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
     selected_2_keys = []
     grades_2_values = []
     selected_2_names = []  # Track display names to prevent duplicates
-    all_stream_selections = []  # Track all selections for duplicate check
 
-    # Render 2 Rows for stream electives
+    # Render 2 Rows for stream electives (no filtering - allow all options)
+    stream_subj_values = []  # Collect values for duplicate check
     for i in range(2):
         c_sub, c_grd = st.columns([3, 1])
-
-        # Filter out already-selected subjects for this dropdown
-        available_opts = [opt for opt in display_opts_2 if opt not in selected_2_names]
 
         # Default Value
         def_idx = 0
         if i < len(prefill_2):
             def_key = prefill_2[i]
             def_name = KEY_DISPLAY.get(def_key)
-            if def_name in available_opts:
-                def_idx = available_opts.index(def_name) + 1 # +1 for "-"
+            if def_name in display_opts_2:
+                def_idx = display_opts_2.index(def_name) + 1 # +1 for "-"
 
         with c_sub:
             # Widget key includes stream_key to force recreation when stream changes
-            s_val = st.selectbox(f"Stream Subject {i+1}", ["-"] + available_opts, index=def_idx, key=f"s2_subj_{i}_{stream_key}{key_suffix}")
+            s_val = st.selectbox(f"Stream Subject {i+1}", ["-"] + display_opts_2, index=def_idx, key=f"s2_subj_{i}_{stream_key}{key_suffix}")
+            stream_subj_values.append(s_val)
         with c_grd:
             # If subject selected, try to get grade
             def_grade_idx = 0
@@ -241,22 +239,18 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
 
             g_val = st.selectbox(f"Grade", grade_opts, index=def_grade_idx, key=f"s2_grade_{i}_{stream_key}{key_suffix}", label_visibility="collapsed")
 
-        # Track all non-empty selections for duplicate validation
+        # Only add to results if not a duplicate
         if s_val != "-":
-            all_stream_selections.append((s_val, g_val, i))
             k = DISPLAY_KEY.get(s_val)
-            if k and s_val not in selected_2_names:  # Only add if not already selected
+            if k and s_val not in selected_2_names:
                 selected_2_keys.append(k)
                 grades_2_values.append(g_val)
                 selected_2_names.append(s_val)
 
-    # Check for duplicate selections and show error
-    seen_subjects = set()
-    for subj, grade, idx in all_stream_selections:
-        if subj in seen_subjects:
-            st.markdown(f"<small style='color: #ff4b4b;'>⚠️ Select a different subject (duplicate: {subj})</small>", unsafe_allow_html=True)
-            break
-        seen_subjects.add(subj)
+    # Check for duplicate and show error message
+    non_empty = [v for v in stream_subj_values if v != "-"]
+    if len(non_empty) != len(set(non_empty)):
+        st.markdown("<small style='color: #ff4b4b;'>⚠️ Select different subjects - duplicates will be ignored</small>", unsafe_allow_html=True)
 
     # --- SECTION 3: ADDITIONAL SUBJECTS ---
     st.markdown("##### 3. Additional Subjects")
@@ -283,23 +277,22 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
     selected_3_keys = []
     grades_3_values = []
     selected_3_names = []  # Track display names to prevent duplicates
-    all_extra_selections = []  # Track all selections for duplicate check
 
+    # Render 2 Rows for extra subjects (no filtering - allow all options)
+    extra_subj_values = []  # Collect values for duplicate check
     for i in range(2):
         c_sub, c_grd = st.columns([3, 1])
-
-        # Filter out already-selected subjects for this dropdown
-        available_opts_3 = [opt for opt in display_opts_3 if opt not in selected_3_names]
 
         def_idx = 0
         if i < len(prefill_3):
             def_key = prefill_3[i]
             def_name = KEY_DISPLAY.get(def_key)
-            if def_name in available_opts_3:
-                def_idx = available_opts_3.index(def_name) + 1
+            if def_name in display_opts_3:
+                def_idx = display_opts_3.index(def_name) + 1
 
         with c_sub:
-            s_val = st.selectbox(f"Extra Subject {i+1}", ["-"] + available_opts_3, index=def_idx, key=f"s3_subj_{i}{key_suffix}")
+            s_val = st.selectbox(f"Extra Subject {i+1}", ["-"] + display_opts_3, index=def_idx, key=f"s3_subj_{i}{key_suffix}")
+            extra_subj_values.append(s_val)
         with c_grd:
             def_grade_idx = 0
             if s_val != "-":
@@ -308,22 +301,18 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
                      def_grade_idx = get_grade_index(k, grade_opts, current_grades)
             g_val = st.selectbox(f"Grade", grade_opts, index=def_grade_idx, key=f"s3_grade_{i}{key_suffix}", label_visibility="collapsed")
 
-        # Track all non-empty selections for duplicate validation
+        # Only add to results if not a duplicate
         if s_val != "-":
-            all_extra_selections.append((s_val, g_val, i))
             k = DISPLAY_KEY.get(s_val)
-            if k and s_val not in selected_3_names:  # Only add if not already selected
+            if k and s_val not in selected_3_names:
                 selected_3_keys.append(k)
                 grades_3_values.append(g_val)
                 selected_3_names.append(s_val)
 
-    # Check for duplicate selections and show error
-    seen_extra = set()
-    for subj, grade, idx in all_extra_selections:
-        if subj in seen_extra:
-            st.markdown(f"<small style='color: #ff4b4b;'>⚠️ Select a different subject (duplicate: {subj})</small>", unsafe_allow_html=True)
-            break
-        seen_extra.add(subj)
+    # Check for duplicate and show error message
+    non_empty_extra = [v for v in extra_subj_values if v != "-"]
+    if len(non_empty_extra) != len(set(non_empty_extra)):
+        st.markdown("<small style='color: #ff4b4b;'>⚠️ Select different subjects - duplicates will be ignored</small>", unsafe_allow_html=True)
 
     # --- SECTION 4: CO-CURRICULUM ---
     st.markdown("##### 4. Co-Curriculum")
