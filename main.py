@@ -352,8 +352,8 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
     elif merit['final_merit'] < 40: curr_color = "red"
     
     st.markdown(f'''
-    <div style="background-color: #f0f2f6; padding: 15px; border-radius: 10px; margin-top: 10px; border-left: 5px solid {curr_color}">
-        <h4 style="margin:0; color: #333;">📊 Merit Score: {merit['final_merit']:.2f}%</h4>
+    <div style="background-color: #f0f2f6; padding: 8px 12px; border-radius: 8px; margin: 15px 0; border-left: 4px solid {curr_color}">
+        <span style="margin:0; color: #333; font-weight: 600;">📊 Merit: {merit['final_merit']:.1f}%</span>
     </div>
     ''', unsafe_allow_html=True)
 
@@ -1156,7 +1156,6 @@ if not user:
         
         disability = st.radio(t['sb_disability'], [t['opt_no'], t['opt_yes']], index=0, key="sb_dis", horizontal=True)
 
-        st.markdown("---")
         submitted = st.form_submit_button(f"🚀 {t['sb_btn_submit']}")
         
         # Return collected inputs
