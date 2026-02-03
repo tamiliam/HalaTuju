@@ -369,7 +369,7 @@ def render_profile_page(user, t):
         # Edit Form
         with st.expander(t['header_edit_details'], expanded=True):
             with st.form("edit_profile"):
-                new_name = st.text_input(t['lbl_preferred_name'], value=user.get('full_name', ''))
+                new_name = st.text_input(t['lbl_preferred_name'], value=user.get('full_name', ''), placeholder="Min 2 characters")
                 new_email = st.text_input(t['lbl_email'], value=user.get('email', ''))
                 
                 # Location & logistics
@@ -446,20 +446,20 @@ def render_profile_page(user, t):
                 new_dis = st.radio(t['lbl_disability'], [t['opt_no'], t['opt_yes']], index=dis_idx, key="p_dis", horizontal=True)
                 
                 if st.form_submit_button(t['btn_update_profile']):
-                    # Validate Email
-                    valid_email = True
+                    # Validate form fields
+                    valid_form = True
                     if new_email:
                          if not re.match(r"[^@]+@[^@]+\.[^@]+", new_email):
                              st.error(t['err_email_invalid'])
-                             valid_email = False
-                    
+                             valid_form = False
+
                     # Validate City (Alphabets/Spaces only)
                     if new_city:
                          if not re.match(r"^[a-zA-Z\s]+$", new_city):
                              st.error(t.get('err_city_invalid', "❌ City: Only alphabets and spaces allowed."))
-                             valid_email = False
-                    
-                    if valid_email:
+                             valid_form = False
+
+                    if valid_form:
                         updated_signals = user_signals.copy()
                         updated_signals.update({
                             "city": new_city,
@@ -477,7 +477,8 @@ def render_profile_page(user, t):
                             "student_signals": updated_signals
                         })
                         if success:
-                            # Invalid Cache to force refresh
+                            st.success(msg)
+                            # Invalidate cache to force refresh
                             if 'dash' in st.session_state: del st.session_state['dash']
                             time.sleep(1)
                             st.rerun()
@@ -501,7 +502,6 @@ def render_profile_page(user, t):
                      else:
                          st.error(msg)
     
-    st.markdown("---")
     st.markdown("---")
     if st.button(t['btn_back_dash']):
         st.session_state['view_mode'] = 'dashboard'

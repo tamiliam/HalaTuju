@@ -168,9 +168,17 @@ class AuthManager:
         st.rerun()
 
     def update_profile(self, user_id, updates):
-        """Updates specific profile fields"""
+        """Updates specific profile fields with validation"""
         try:
-            # updates['updated_at'] = "now()" # Column missing in DB
+            # Validate name if being updated
+            if 'full_name' in updates:
+                name = (updates['full_name'] or "").strip()
+                if len(name) < 2:
+                    return False, "❌ Name must be at least 2 characters"
+                if len(name) > 100:
+                    return False, "❌ Name is too long (max 100 characters)"
+                updates['full_name'] = name  # Use cleaned version
+
             res = self.supabase.table("student_profiles").update(updates).eq("id", user_id).execute()
             
             if res.data:
