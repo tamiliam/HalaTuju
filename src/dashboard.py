@@ -5,7 +5,11 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import streamlit as st
-from src.engine import check_eligibility, ALL_REQ_COLUMNS
+from src.engine import (
+    check_eligibility, ALL_REQ_COLUMNS,
+    check_eligibility, ALL_REQ_COLUMNS,
+    calculate_merit_score, prepare_merit_inputs, check_merit_probability
+)
 from src.translations import get_text
 
 try:
@@ -141,6 +145,16 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
     stats_keys = ["inst_poly", "inst_kk", "inst_iljtm", "inst_ilkbs", "inst_ipg", "inst_form6", "inst_matrik", "inst_uni", "inst_other"]
     stats = {k: 0 for k in stats_keys}
     
+    # 0. MERIT CALCULATION (For Public Unis)
+    # Calculate once per student
+    s1, s2, s3 = prepare_merit_inputs(student.grades)
+    # Default KoQ to 5.0 (Average) since we don't ask for it yet
+    # Assuming student object strictly has grades, if coq_score missing default to 5.0
+    coq = getattr(student, 'coq_score', 5.0)
+    merit_res = calculate_merit_score(s1, s2, s3, coq_score=coq)
+    student_merit = merit_res['final_merit']
+
+    
     # 1. OPTIMIZATION: Check eligibility by Requirement Signature (not just Course ID)
     # Different locations for the same course might have slightly different requirements (rare but possible).
     # We create a "signature" of the requirements columns to verify unique sets.
@@ -218,7 +232,9 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
             "level": row.get('level', 'Certificate'), # Added for Education Level filter
             # Requirement Flags for Warning Pills
             "req_interview": row.get('req_interview', 0),
-            "single": row.get('single', 0)
+            "single": row.get('single', 0),
+            "merit_cutoff": row.get('merit_cutoff', 0),
+            "student_merit": student_merit
         })
         
     # Calculate Unique Courses
@@ -260,6 +276,8 @@ def group_courses_by_id(flat_list):
                 'level': item.get('level', 'Certificate'), # Added for Education Level filter
                 'req_interview': 0, # Initialize flags
                 'single': 0,
+                'merit_cutoff': 0,
+                'student_merit': item.get('student_merit', 0),
                 'max_score': -999, # Sentinel
                 'locations': []
             }
@@ -268,6 +286,16 @@ def group_courses_by_id(flat_list):
         # This is safer for warnings like "Unmarried Only".
         grouped[cid]['req_interview'] = max(grouped[cid]['req_interview'], item.get('req_interview', 0))
         grouped[cid]['single'] = max(grouped[cid]['single'], item.get('single', 0))
+        
+        # Merit Logic: Use Max cutoff? Or Min? If cutoffs vary by location?
+        # A safer bet for admission display: Show the lowest cutoff (easiest to get in) or highest?
+        # Let's preserve the one from the 'best fit' location or just max.
+        # Generally cutoffs are per-program.
+        current_cutoff = grouped[cid].get('merit_cutoff', 0)
+        new_cutoff = item.get('merit_cutoff', 0)
+        if new_cutoff > 0:
+             # Use the one provided if not set, or maybe max?
+             grouped[cid]['merit_cutoff'] = max(current_cutoff, new_cutoff)
         
         # Add Location Entry
         score = item.get('fit_score', 0)
@@ -356,7 +384,32 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
     dur = pick.get('duration') or "N/A"
     fees = loc0.get('fees', 'N/A')
     hostel = loc0.get('hostel_fee', 'N/A')
+    hostel = loc0.get('hostel_fee', 'N/A')
     det_url = loc0.get('details_url', '#')
+    
+    # Merit Badge Logic
+    merit_html = ""
+    s_merit = pick.get('student_merit', 0)
+    cutoff = pick.get('merit_cutoff', 0)
+    
+    if cutoff and cutoff > 0:
+         prob_label, prob_color = check_merit_probability(s_merit, cutoff)
+         # Translate label?
+         if t:
+             if prob_label == "High": txt_label = t.get('prob_high', 'High Chance')
+             elif prob_label == "Fair": txt_label = t.get('prob_fair', 'Medium Chance')
+             else: txt_label = t.get('prob_low', 'Low Chance')
+             
+             note = t.get('merit_note', 'Score: {score} | Cutoff: {cutoff}').format(score=s_merit, cutoff=cutoff)
+         else:
+             txt_label = f"{prob_label} Chance"
+             note = f"Score: {s_merit} | Cutoff: {cutoff}"
+             
+         merit_html = f'''
+         <div class="meta-pill" style="background-color: {prob_color}; color: #fff; border: none; font-weight: 600;" title="{note}">
+            📊 {txt_label}
+         </div>
+         '''
     
     # v1.4: Add requirement flags (Interview / Single)
     # Check pick dict for these keys. Engine.py loads req_interview and single.
@@ -460,6 +513,7 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
 <span class="meta-pill pill-dur">🕒 {dur}</span>
 <span class="meta-pill pill-fees">💰 {fees}</span>
 <span class="meta-pill pill-hostel">🏠 {hostel}</span>
+{merit_html}
 <a href="{det_url}" target="_blank" class="meta-pill pill-link">{t.get('more_details', 'More details ↗') if t else 'More details ↗'}</a>
 </div>
 {warn_html}
@@ -482,6 +536,7 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
 <span class="meta-pill pill-dur">🕒 {dur}</span>
 <span class="meta-pill pill-fees">💰 {fees}</span>
 <span class="meta-pill pill-hostel">🏠 {hostel}</span>
+{merit_html}
 <a href="{det_url}" target="_blank" class="meta-pill pill-link">{t.get('more_details', 'More details ↗') if t else 'More details ↗'}</a>
 </div>
 {warn_html}

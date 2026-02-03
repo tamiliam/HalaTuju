@@ -229,6 +229,13 @@ Start by entering your results — you can decide the next steps as you go. 🚀
         "status_eligible": "Eligible",
         "status_not_eligible": "Not Eligible",
         "filter_state": "Filter Location:",
+
+        # Merit Probability
+        "lbl_merit_score": "Merit Score",
+        "prob_high": "High Chance",
+        "prob_fair": "Medium Chance",
+        "prob_low": "Low Chance",
+        "merit_note": "Your Score: {score} | Cutoff: {cutoff}",
         
         # Quiz
         "quiz_title": "🧭 Discovery Quiz",
@@ -616,6 +623,13 @@ Mula dengan memasukkan keputusan anda — anda boleh tentukan langkah seterusnya
         "status_eligible": "Layak",
         "status_not_eligible": "Tidak Layak",
         "filter_state": "Tapis Lokasi:",
+
+        # Merit Probability
+        "lbl_merit_score": "Markah Merit",
+        "prob_high": "Peluang Tinggi",
+        "prob_fair": "Peluang Sederhana",
+        "prob_low": "Peluang Rendah",
+        "merit_note": "Markah Anda: {score} | Tutup: {cutoff}",
         
         # Quiz
         "quiz_title": "🧭 Kuiz Penemuan",
@@ -1007,6 +1021,13 @@ SPM-க்குப் பிறகு என்ன செய்வது என
         "status_not_eligible": "தகுதியற்றவர்",
         "filter_state": "இடத்தை வடிகட்டவும்:",
         
+        # Merit Probability
+        "lbl_merit_score": "தகுதி மதிப்பெண்",
+        "prob_high": "அதிக வாய்ப்பு",
+        "prob_fair": "மிதமான வாய்ப்பு",
+        "prob_low": "குறைந்த வாய்ப்பு",
+        "merit_note": "உங்கள் மதிப்பெண்: {score} | வெட்டுப்புள்ளி: {cutoff}",
+
         # Quiz
         "quiz_title": "🧭 கண்டுபிடிப்பு வினாடி வினா",
         "quiz_question_count": "கேள்வி {step} / {total}",

@@ -44,6 +44,9 @@ def load_master_data():
     
     # NEW: Load Details
     df_details = load('details.csv')
+
+    # NEW: Load Merit Cutoffs
+    df_merit = load('merit_cutoffs.csv', clean=True)
     
     # Merge Details back into Logic Files
     if not df_details.empty:
@@ -128,7 +131,13 @@ def load_master_data():
         # Fallback if still empty/NaN
         if 'course' not in poly_merged.columns:
              poly_merged['course'] = poly_merged['course_id'] # Last resort
-            
+        
+        # Merge Merit Cutoffs for Poly
+        if not df_merit.empty:
+            # df_merit has course_id, merit_cutoff, type
+            # We filter for POLY_KK if needed, or just merge on course_id
+            poly_merged = pd.merge(poly_merged, df_merit[['course_id', 'merit_cutoff']], on='course_id', how='left')
+
         poly_final = poly_merged
     else:
         poly_final = pd.DataFrame()

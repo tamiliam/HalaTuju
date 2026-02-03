@@ -590,3 +590,85 @@ def check_eligibility(student, req):
         if not check(f"chk_min_pass", student.passes >= min_p, f"fail_min_pass"): passed_academics = False
 
     return passed_academics, audit
+
+# --- MERIT HELPER ---
+def check_merit_probability(student_merit, course_cutoff):
+    """
+    Returns (label, color_hex) based on the gap between student merit and course cutoff.
+    """
+    try:
+        cutoff = float(course_cutoff)
+        merit = float(student_merit)
+    except:
+        return "Unknown", "#95a5a6" # Grey
+
+    # Logic from Plan
+    # >= Cutoff : High (Green)
+    # >= Cutoff - 5 : Fair (Yellow)
+    # < Cutoff - 5 : Low (Red)
+
+    gap = merit - cutoff
+    
+    if gap >= 0:
+        return "High", "#2ecc71" # Green
+    elif gap >= -5:
+        return "Fair", "#f1c40f" # Yellow
+    else:
+        return "Low", "#e74c3c" # Red
+
+# --- MERIT PREPARATION ---
+def prepare_merit_inputs(grades):
+    """
+    Intelligently splits grades into Sec1 (5 subjs), Sec2 (3 subjs), Sec3 (1 subj)
+    for UPU-style merit calculation.
+    """
+    # 1. Identify Stream (Heuristic)
+    has_phy = 'phy' in grades
+    has_chem = 'chem' in grades
+    has_bio = 'bio' in grades
+    is_science = has_phy and has_chem
+    
+    # helper
+    def get_g(s): return grades.get(s, 'G')
+    
+    # 2. Section 3: History (Critical for UPU)
+    sec3 = [get_g('history')]
+    
+    # 3. Section 1: 5 Critical Subjects
+    sec1_keys = []
+    if is_science:
+        # Math, AddMath, Phy, Chem, Bio/Others
+        candidates = ['math', 'addmath', 'phy', 'chem', 'bio']
+        for k in candidates:
+            if k in grades: sec1_keys.append(k)
+    else:
+        # BM, Math, Sci, + Best 2
+        candidates = ['bm', 'math', 'sci']
+        for k in candidates:
+             if k in grades: sec1_keys.append(k)
+             
+    # Fill Sec1 to 5 items with best remaining
+    # Sort remaining by grade point
+    all_keys = list(grades.keys())
+    used = set(['history'] + sec1_keys)
+    remaining = [k for k in all_keys if k not in used and grades[k] not in ['G', 'E', 'D', 'C', 'C+']] # Prioritize high grades
+    
+    # Sort logic: A+ > A ...
+    # Reuse MERIT_GRADE_POINTS
+    remaining.sort(key=lambda k: MERIT_GRADE_POINTS.get(grades[k], 0), reverse=True)
+    
+    while len(sec1_keys) < 5 and remaining:
+        k = remaining.pop(0)
+        sec1_keys.append(k)
+        
+    sec1 = [grades.get(k) for k in sec1_keys]
+    
+    # 4. Section 2: Next 3 Best
+    sec2_keys = []
+    while len(sec2_keys) < 3 and remaining:
+        k = remaining.pop(0)
+        sec2_keys.append(k)
+        
+    sec2 = [grades.get(k) for k in sec2_keys]
+    
+    return sec1, sec2, sec3

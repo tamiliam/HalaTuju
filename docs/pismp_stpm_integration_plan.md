@@ -9,7 +9,7 @@ This plan outlines the steps to integrate additional programs from `Random/data/
 ## User Review Required
 > [!IMPORTANT]
 > **Bumiputra Filtering**: Filtering out programs where `bumiputera` != "No".
-> **Duplicate Handling**: Explicitly **excluding** programs matching "Politeknik", "Kolej Komuniti", or "ILKM" from the new source to prevent overlapping with existing `requirements.csv`.
+> **Duplicate Handling**: Explicitly **excluding** programs matching "Politeknik", "Kolej Komuniti", or "ILJTM", or "ILKBS" from the new source to prevent overlapping with existing `requirements.csv`.
 > **New Category**: Adding **"Universiti Awam" (Public University)**, **"Ijazah Perguruan" (Teacher Degree)**, and **"Kolej Tingkatan 6" (Form 6 College)** as new categories on the Dashboard.
 
 ## 1. Missing Information Analysis
