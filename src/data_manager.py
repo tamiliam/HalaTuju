@@ -21,8 +21,10 @@ def load_master_data():
             else:
                 for enc in ['utf-8', 'cp1252', 'latin1']:
                     try:
-                        # Use python engine for better regex/quote handling and skip bad lines
-                        return pd.read_csv(p, encoding=enc, on_bad_lines='skip', engine='python')
+                        # Revert to standard engine (C-based) which aligns with v1.0 behavior
+                        return pd.read_csv(p, encoding=enc)
+                    except UnicodeDecodeError:
+                        continue
                     except Exception as e:
                         print(f"Warning: Failed to load {filename} with {enc}: {e}")
                         continue
@@ -116,14 +118,16 @@ def load_master_data():
         else:
             poly_merged['inst_url'] = "https://ambilan.mypolycc.edu.my"
 
-        # Rename Details URL (from details.csv merge earlier)
-        # It might be 'more_info_url' or similar depending on details.csv header.
-        # Assuming 'url_y' or similar if collision, but let's just default lookup.
-        # Actually, details.csv merge happened at line 52. Let's see what cols it had.
-        
-        # If collision happened (rare), fix it. If not, 'course' is fine.
-        if 'course_x' in poly_merged.columns:
+        # Fix Course Name Collision (course mixed with details causes _x, _y)
+        # Priority: course_y (from courses.csv) > course_x (from details/req) > course
+        if 'course_y' in poly_merged.columns:
+            poly_merged['course'] = poly_merged['course_y'].fillna(poly_merged.get('course_x', poly_merged.get('course', '')))
+        elif 'course_x' in poly_merged.columns:
             poly_merged['course'] = poly_merged['course_x']
+
+        # Fallback if still empty/NaN
+        if 'course' not in poly_merged.columns:
+             poly_merged['course'] = poly_merged['course_id'] # Last resort
             
         poly_final = poly_merged
     else:
