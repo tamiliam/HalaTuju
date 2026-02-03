@@ -203,9 +203,82 @@ def load_master_data():
     pathways_final = pd.DataFrame()
 
     # --- 3c. MERGE PUBLIC UNIVERSITY (UA) DATA ---
-    # DISABLED: Data files incomplete. See docs/university_integration_plan.md for requirements.
-    # Required files before enabling: university_institutions.csv, expanded university_courses.csv
-    ua_final = pd.DataFrame()
+    # Load UA requirements from parsed MOHE data
+    df_ua_req = load('university_requirements.csv', clean=True)
+    df_ua_courses = load('university_courses.csv')
+    df_ua_inst = load('university_institutions.csv')
+
+    if not df_ua_req.empty:
+        ua_merged = df_ua_req.copy()
+
+        # Merge with university_courses.csv to get course metadata
+        if not df_ua_courses.empty:
+            ua_merged = pd.merge(ua_merged, df_ua_courses, on='course_id', how='left')
+
+        # Extract course name and institution from notes column (most reliable source)
+        # Format: "PROGRAM NAME | INSTITUTION NAME"
+        if 'notes' in ua_merged.columns:
+            split_data = ua_merged['notes'].str.split(' \\| ', n=1, expand=True, regex=True)
+            if split_data.shape[1] >= 2:
+                course_from_notes = split_data[0].str.strip()
+                institution_from_notes = split_data[1].str.strip()
+
+                # Handle column name conflicts (course_x, course_y)
+                if 'course_y' in ua_merged.columns:
+                    # Prefer course_y (from university_courses.csv)
+                    ua_merged['course'] = ua_merged['course_y'].fillna(course_from_notes)
+                elif 'course_x' in ua_merged.columns:
+                    ua_merged['course'] = ua_merged['course_x'].fillna(course_from_notes)
+                else:
+                    ua_merged['course'] = course_from_notes
+
+                # Always use institution name from notes (most reliable)
+                ua_merged['institution_name'] = institution_from_notes
+
+        # Try to match with university_institutions.csv for additional metadata (state, URL)
+        if not df_ua_inst.empty and 'institution_name' in ua_merged.columns:
+            # Merge by institution_name (fuzzy match might fail, so use left join)
+            ua_merged = pd.merge(
+                ua_merged,
+                df_ua_inst[['institution_name', 'state', 'url', 'address']],
+                on='institution_name',
+                how='left',
+                suffixes=('', '_from_inst')
+            )
+
+        # Set type and category based on level column
+        ua_merged['type'] = 'UA'
+        if 'level' in ua_merged.columns:
+            ua_merged['category'] = ua_merged['level'].fillna('Asasi / Foundation')
+        else:
+            ua_merged['category'] = 'Asasi / Foundation'
+
+        # Map state (prefer from institution data, fallback to parsing or default)
+        if 'state' in ua_merged.columns:
+            ua_merged['State'] = ua_merged['state'].fillna('Various')
+        else:
+            ua_merged['State'] = 'Various'
+
+        # Map fees and duration
+        ua_merged['fees'] = 'Contact Institution'
+
+        if 'semesters' in ua_merged.columns:
+            ua_merged['duration'] = ua_merged['semesters'].astype(str) + " Semesters"
+        else:
+            ua_merged['duration'] = '1-2 Semesters'
+
+        # Map URLs
+        if 'url' in ua_merged.columns:
+            ua_merged['inst_url'] = ua_merged['url'].fillna('#')
+        else:
+            ua_merged['inst_url'] = '#'
+
+        ua_merged['details_url'] = '#'
+        ua_merged['hyperlink'] = '#'
+
+        ua_final = ua_merged
+    else:
+        ua_final = pd.DataFrame()
 
     # --- 4. COMBINE & CLEAN ---
     # Define explicitly all cols we need. Add more if engine needs them.

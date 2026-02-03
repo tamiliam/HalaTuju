@@ -125,6 +125,8 @@ import itertools
 
 PASS_GRADES = {"A+", "A", "A-", "B+", "B", "C+", "C", "D", "E"}
 CREDIT_GRADES = {"A+", "A", "A-", "B+", "B", "C+", "C"}
+CREDIT_B_GRADES = {"A+", "A", "A-", "B+", "B"}  # Grade B or better (for UA requirements)
+DISTINCTION_GRADES = {"A+", "A", "A-"}  # Grade A- or better (for UA requirements)
 ATTEMPTED_GRADES = PASS_GRADES | {"G"}
 
 # --- MERIT CALCULATION CONSTANTS (High is Good) ---
@@ -175,9 +177,10 @@ SUBJ_LIST_VOCATIONAL = [
     "voc_catering", "voc_tailoring"
 ]
 
-# General Electives (moral kept, islam removed - Islamic school subject)
+# General Electives (includes compulsory PI/PM)
 SUBJ_LIST_EXTRA = [
-    "moral", "pertanian", "sci", "srt", "addsci",
+    "islam", "moral",  # Compulsory: PI for Muslim, PM for non-Muslim
+    "pertanian", "sci", "srt", "addsci",
     "sports_sci", "music"
 ]
 
@@ -225,16 +228,27 @@ def calculate_merit_score(sec1_grades, sec2_grades, sec3_grades, coq_score):
 # Define all columns used for requirement checking
 REQ_FLAG_COLUMNS = [
     'req_malaysian', 'req_male', 'req_female', 'no_colorblind', 'no_disability',
-    '3m_only', 'pass_bm', 'credit_bm', 'pass_history', 
+    '3m_only', 'pass_bm', 'credit_bm', 'pass_history',
     'pass_eng', 'credit_english', 'pass_math', 'credit_math', 'pass_math_addmath',
     'pass_math_science', 'pass_science_tech', 'credit_math_sci',
     'credit_math_sci_tech', 'pass_stv', 'credit_sf', 'credit_sfmt',
     'credit_bmbi', 'credit_stv',
-    'req_interview', 'single', 'req_group_diversity'
+    'req_interview', 'single', 'req_group_diversity',
+    # UA (University/Asasi) columns - Grade B requirements
+    'credit_bm_b', 'credit_eng_b', 'credit_math_b', 'credit_addmath_b',
+    # UA - Distinction requirements (Grade A-)
+    'distinction_bm', 'distinction_eng', 'distinction_math', 'distinction_addmath',
+    'distinction_bio', 'distinction_phy', 'distinction_chem', 'distinction_sci',
+    # UA - OR group requirements
+    'credit_science_group', 'credit_math_or_addmath',
+    # UA - PI/PM requirements
+    'pass_islam', 'credit_islam', 'pass_moral', 'credit_moral',
+    # UA - Science requirements
+    'pass_sci', 'credit_sci', 'credit_addmath'
 ]
 
 REQ_COUNT_COLUMNS = ['min_credits', 'min_pass', 'max_aggregate_units']
-REQ_TEXT_COLUMNS = ['subject_group_req']
+REQ_TEXT_COLUMNS = ['subject_group_req', 'complex_requirements']
 
 ALL_REQ_COLUMNS = REQ_FLAG_COLUMNS + REQ_COUNT_COLUMNS + REQ_TEXT_COLUMNS
 
@@ -282,6 +296,14 @@ def is_pass(grade):
 def is_credit(grade):
     return grade in CREDIT_GRADES
 
+def is_credit_b(grade):
+    """Grade B or better (B, B+, A-, A, A+)"""
+    return grade in CREDIT_B_GRADES
+
+def is_distinction(grade):
+    """Grade A- or better (A-, A, A+)"""
+    return grade in DISTINCTION_GRADES
+
 def is_attempted(grade):
     return grade in ATTEMPTED_GRADES
 
@@ -313,13 +335,65 @@ def map_subject_code(subj_code):
     # Fallback to lowercase
     return subj_code.lower()
 
+def check_complex_requirements(student_grades, complex_req_json_str):
+    """
+    Evaluates university OR-group requirements from complex_requirements JSON.
+
+    Format: {"or_groups": [{"count": N, "grade": "B", "subjects": [...]}]}
+
+    Logic: Each OR group must be satisfied (AND logic between groups).
+    Within each group, need 'count' subjects with at least 'grade' (OR logic).
+    """
+    if not complex_req_json_str or complex_req_json_str.strip() == "":
+        return True, None
+
+    try:
+        data = json.loads(complex_req_json_str)
+    except json.JSONDecodeError:
+        return False, "Invalid Complex Requirement Format"
+
+    or_groups = data.get('or_groups', [])
+    if not or_groups:
+        return True, None
+
+    # Each OR group must be satisfied (AND logic between groups)
+    for group_idx, group in enumerate(or_groups):
+        min_count = group.get('count', 1)
+        min_grade = group.get('grade', 'E')
+        subjects = group.get('subjects', [])
+
+        if not subjects:
+            continue
+
+        # Count how many subjects meet the grade requirement
+        count_ok = 0
+        for subj in subjects:
+            student_key = map_subject_code(subj)
+            grade = student_grades.get(student_key)
+
+            if grade:
+                # Convert grade to points for comparison
+                pts = AGGREGATE_GRADE_POINTS.get(grade, 10)
+                threshold = AGGREGATE_GRADE_POINTS.get(min_grade, 8)
+
+                if pts <= threshold:
+                    count_ok += 1
+
+        # Check if this group's requirement is satisfied
+        if count_ok < min_count:
+            subj_list = ', '.join(subjects[:5]) + ('...' if len(subjects) > 5 else '')
+            return False, f"Complex Req Fail: Need {min_count} from [{subj_list}] with grade {min_grade} (Found {count_ok})"
+
+    return True, None
+
+
 def check_subject_group_logic(student_grades, rule_json_str, max_agg_units, check_diversity=False):
     """
     Evaluates complex subject group rules from a JSON string.
     """
     if not rule_json_str or rule_json_str.strip() == "":
         return True, None
-        
+
     try:
         rules = json.loads(rule_json_str)
     except json.JSONDecodeError:
@@ -485,6 +559,52 @@ def check_eligibility(student, req):
     if to_int(req.get('credit_english')) == 1:
         if not check("chk_credit_eng", is_credit(g.get('eng')), "fail_credit_eng"): passed_academics = False
 
+    # --- UA Grade B Requirements (stricter than Credit C) ---
+    if to_int(req.get('credit_bm_b')) == 1:
+        if not check("chk_credit_bm_b", is_credit_b(g.get('bm')), "fail_credit_bm_b"): passed_academics = False
+    if to_int(req.get('credit_eng_b')) == 1:
+        if not check("chk_credit_eng_b", is_credit_b(g.get('eng')), "fail_credit_eng_b"): passed_academics = False
+    if to_int(req.get('credit_math_b')) == 1:
+        if not check("chk_credit_math_b", is_credit_b(g.get('math')), "fail_credit_math_b"): passed_academics = False
+    if to_int(req.get('credit_addmath_b')) == 1:
+        if not check("chk_credit_addmath_b", is_credit_b(g.get('addmath')), "fail_credit_addmath_b"): passed_academics = False
+
+    # --- UA Distinction Requirements (Grade A- or better) ---
+    if to_int(req.get('distinction_bm')) == 1:
+        if not check("chk_distinction_bm", is_distinction(g.get('bm')), "fail_distinction_bm"): passed_academics = False
+    if to_int(req.get('distinction_eng')) == 1:
+        if not check("chk_distinction_eng", is_distinction(g.get('eng')), "fail_distinction_eng"): passed_academics = False
+    if to_int(req.get('distinction_math')) == 1:
+        if not check("chk_distinction_math", is_distinction(g.get('math')), "fail_distinction_math"): passed_academics = False
+    if to_int(req.get('distinction_addmath')) == 1:
+        if not check("chk_distinction_addmath", is_distinction(g.get('addmath')), "fail_distinction_addmath"): passed_academics = False
+    if to_int(req.get('distinction_bio')) == 1:
+        if not check("chk_distinction_bio", is_distinction(g.get('bio')), "fail_distinction_bio"): passed_academics = False
+    if to_int(req.get('distinction_phy')) == 1:
+        if not check("chk_distinction_phy", is_distinction(g.get('phy')), "fail_distinction_phy"): passed_academics = False
+    if to_int(req.get('distinction_chem')) == 1:
+        if not check("chk_distinction_chem", is_distinction(g.get('chem')), "fail_distinction_chem"): passed_academics = False
+    if to_int(req.get('distinction_sci')) == 1:
+        if not check("chk_distinction_sci", is_distinction(g.get('sci')), "fail_distinction_sci"): passed_academics = False
+
+    # --- PI/PM Requirements ---
+    if to_int(req.get('pass_islam')) == 1:
+        if not check("chk_pass_islam", is_pass(g.get('islam')), "fail_pass_islam"): passed_academics = False
+    if to_int(req.get('credit_islam')) == 1:
+        if not check("chk_credit_islam", is_credit(g.get('islam')), "fail_credit_islam"): passed_academics = False
+    if to_int(req.get('pass_moral')) == 1:
+        if not check("chk_pass_moral", is_pass(g.get('moral')), "fail_pass_moral"): passed_academics = False
+    if to_int(req.get('credit_moral')) == 1:
+        if not check("chk_credit_moral", is_credit(g.get('moral')), "fail_credit_moral"): passed_academics = False
+
+    # --- UA Science Requirements ---
+    if to_int(req.get('pass_sci')) == 1:
+        if not check("chk_pass_sci", is_pass(g.get('sci')), "fail_pass_sci"): passed_academics = False
+    if to_int(req.get('credit_sci')) == 1:
+        if not check("chk_credit_sci", is_credit(g.get('sci')), "fail_credit_sci"): passed_academics = False
+    if to_int(req.get('credit_addmath')) == 1:
+        if not check("chk_credit_addmath", is_credit(g.get('addmath')), "fail_credit_addmath"): passed_academics = False
+
     # Logic: Passing Add Math satisfies the "Math" requirement.
     if to_int(req.get('pass_math')) == 1:
         # Check Modern Math ONLY (Poly Policy)
@@ -510,7 +630,24 @@ def check_eligibility(student, req):
     # Tech/Voc logic: Checks the generic 'tech' and 'voc' inputs
     def has_pass(grade_list): return any(is_pass(x) for x in grade_list)
     def has_credit(grade_list): return any(is_credit(x) for x in grade_list)
-    
+
+    # --- UA Rules (University/Asasi) ---
+    if to_int(req.get('credit_science_group')) == 1:
+        # Credit in any science subject: Phy/Chem/Bio/Sci/AddSci
+        all_sci_with_addsci = all_sci + [g.get('addsci'), g.get('comp_sci')]
+        cond = has_credit(all_sci_with_addsci)
+        if not check("chk_credit_sci_group", cond, "fail_credit_sci_group"): passed_academics = False
+
+    if to_int(req.get('credit_math_or_addmath')) == 1:
+        # Credit in Math OR Add Math (explicit OR group)
+        cond = is_credit(g.get('math')) or is_credit(g.get('addmath'))
+        if not check("chk_credit_math_or_addmath", cond, "fail_credit_math_or_addmath"): passed_academics = False
+
+    if to_int(req.get('single')) == 1:
+        # Must be unmarried (skip check - we don't capture marital status yet)
+        # For now, pass this check - users can self-filter
+        pass
+
     # --- TVET Rules (ILKBS/ILJTM) ---
 
     if to_int(req.get('pass_math_science')) == 1:
@@ -573,13 +710,19 @@ def check_eligibility(student, req):
     json_req = req.get('subject_group_req', "")
     if json_req and json_req != "":
         max_agg = to_int(req.get('max_aggregate_units', 100))
-        # Don't let 0 mean fail, 0 means no limit check usually? 
+        # Don't let 0 mean fail, 0 means no limit check usually?
         # But our loader logic already set it to 100 if user input was 0/missing.
-        
+
         check_div = to_int(req.get('req_group_diversity', 0)) == 1
-        
+
         passed, reason = check_subject_group_logic(g, json_req, max_agg, check_div)
         if not check("chk_adv_subj_group", passed, reason): passed_academics = False
+
+    # --- UNIVERSITY COMPLEX REQUIREMENTS (OR-Groups) ---
+    complex_req = req.get('complex_requirements', "")
+    if complex_req and complex_req != "":
+        passed, reason = check_complex_requirements(g, complex_req)
+        if not check("chk_complex_req", passed, reason): passed_academics = False
 
     min_c = to_int(req.get('min_credits', 0))
     if min_c > 0:

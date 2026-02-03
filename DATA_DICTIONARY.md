@@ -68,7 +68,41 @@ Specialized groupings used often in technical training.
 | `no_disability` | `1` = Applicant must be physically fit (no disabilities hindering practical work). |
 | `req_interview` | `1` = Interview is required. (Note: Does not disqualify eligibility in the engine; purely informational). |
 
-### 7. Other
+### 7. University/Asasi (UA) Requirements
+
+These columns are used for Asasi and Foundation programs. Source: `data/university_requirements.csv`.
+
+#### Grade B Requirements (stricter than Credit C)
+| Column | Requirement |
+| :--- | :--- |
+| `credit_bm_b` | Grade **B** or better in Bahasa Malaysia. |
+| `credit_eng_b` | Grade **B** or better in English. |
+| `credit_math_b` | Grade **B** or better in Mathematics. |
+| `credit_addmath_b` | Grade **B** or better in Additional Mathematics. |
+
+#### Distinction Requirements (Grade A-)
+| Column | Requirement |
+| :--- | :--- |
+| `distinction_bm` | Grade **A-** or better in Bahasa Malaysia. |
+| `distinction_eng` | Grade **A-** or better in English. |
+| `distinction_addmath` | Grade **A-** or better in Additional Mathematics. |
+
+#### OR-Group Requirements
+| Column | Logic |
+| :--- | :--- |
+| `credit_science_group` | Credit in **any** Science (Phy/Chem/Bio/Sci/AddSci/CompSci). |
+| `credit_math_or_addmath` | Credit in **Math** OR **Add Math**. |
+
+#### PI/PM Requirements
+| Column | Requirement |
+| :--- | :--- |
+| `pass_islam` | Pass in Pendidikan Islam. |
+| `credit_islam` | Credit in Pendidikan Islam. |
+| `pass_moral` | Pass in Pendidikan Moral. |
+| `credit_moral` | Credit in Pendidikan Moral. |
+
+### 8. Other
 | Column | Description |
 | :--- | :--- |
 | `remarks` | Free text notes (not used for logic). |
+| `syarat_khas_raw` | Original special requirements text from MOHE (for debugging). |
