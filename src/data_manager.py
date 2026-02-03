@@ -247,7 +247,8 @@ def load_master_data():
             )
 
         # Set type and category based on level column
-        ua_merged['type'] = 'UA'
+        # Use consistent type naming (Bahasa Melayu) for filter compatibility
+        ua_merged['type'] = 'Universiti Awam'
         if 'level' in ua_merged.columns:
             ua_merged['category'] = ua_merged['level'].fillna('Asasi / Foundation')
         else:

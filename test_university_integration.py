@@ -16,8 +16,8 @@ def test_data_loading():
 
     df = load_master_data()
 
-    # Check if UA courses exist
-    ua_courses = df[df['type'] == 'UA']
+    # Check if UA courses exist (type='Universiti Awam' in BM)
+    ua_courses = df[df['type'] == 'Universiti Awam']
     print(f"\nTotal courses loaded: {len(df)}")
     print(f"University (UA) courses: {len(ua_courses)}")
 
@@ -54,7 +54,7 @@ def test_eligibility_engine():
     print("=" * 60)
 
     df = load_master_data()
-    ua_courses = df[df['type'] == 'UA']
+    ua_courses = df[df['type'] == 'Universiti Awam']
 
     if len(ua_courses) == 0:
         print("[ERROR] No UA courses to test!")
@@ -142,7 +142,7 @@ def test_complex_requirements():
     print("=" * 60)
 
     df = load_master_data()
-    ua_courses = df[df['type'] == 'UA']
+    ua_courses = df[df['type'] == 'Universiti Awam']
 
     # Find courses with complex_requirements
     with_complex = ua_courses[ua_courses['complex_requirements'].notna() & (ua_courses['complex_requirements'] != '')]

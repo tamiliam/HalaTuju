@@ -71,22 +71,22 @@ def render_pagination(total_items, items_per_page, current_page_key, unique_id="
 
 def get_institution_type(row):
     # Returns a translation KEY based on the category
-    # Current Categories: Politeknik, Kolej Komuniti, ILKBS, ILJTM
-    # Future Categories (pending data): Asasi, Universiti Awam - see docs/university_integration_plan.md
+    # Current Categories: Politeknik, Kolej Komuniti, ILKBS, ILJTM, Universiti Awam (v1.1)
     t = str(row.get('type', '')).upper()
     cat = str(row.get('category', '')).upper()
     code = str(row.get('course_id', '')).upper()
     name = str(row.get('institution_name', '')).upper()
     acronym = str(row.get('acronym', '')).upper() # Added for robust ID
 
-    # 1. Prioritize 'category' column if available (Most robust)
+    # 1. Prioritize 'type' column first (Most robust for UA courses)
+    # University courses set type='Universiti Awam' explicitly in data_manager
+    if "UNIVERSITI AWAM" in t or "UNIVERSITI" in t: return "inst_ua"
+
+    # 2. Check 'category' column for other institution types
     if "POLITEKNIK" in cat: return "inst_poly"
     if "KOLEJ KOMUNITI" in cat: return "inst_kk"
     if "JABATAN TENAGA MANUSIA" in cat or "ILJTM" in cat: return "inst_iljtm"
     if "ILKBS" in cat or "BELIA DAN SUKAN" in cat: return "inst_ilkbs"
-    # FUTURE: Asasi and Universiti Awam detection (disabled - data incomplete)
-    # if "ASASI" in cat: return "inst_asasi"
-    # if "UNIVERSITI AWAM" in cat: return "inst_ua"
 
     # 2. Fallback: Check Name/Type strings (Legacy)
     # PISMP
@@ -142,9 +142,8 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
     eligible_offerings = []
     
     # Initialize stats using stable internal keys (matching get_institution_type)
-    # Current: Poly, KK, ILJTM, ILKBS only
-    # FUTURE: Add inst_asasi, inst_ua when university data is ready (see docs/university_integration_plan.md)
-    stats_keys = ["inst_poly", "inst_kk", "inst_iljtm", "inst_ilkbs", "inst_other"]
+    # Current: Poly, KK, ILJTM, ILKBS, UA (Universiti Awam integrated v1.1)
+    stats_keys = ["inst_poly", "inst_kk", "inst_iljtm", "inst_ilkbs", "inst_ua", "inst_other"]
     stats = {k: 0 for k in stats_keys}
     
     # 0. MERIT CALCULATION (For Public Unis)
@@ -250,7 +249,7 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
         "full_list": eligible_offerings,
         "summary_stats": stats,
         "total_unique_courses": len(unique_ids),
-        "total_matches": stats["inst_poly"] + stats["inst_kk"] + stats["inst_iljtm"] + stats["inst_ilkbs"] + stats["inst_other"]
+        "total_matches": stats["inst_poly"] + stats["inst_kk"] + stats["inst_iljtm"] + stats["inst_ilkbs"] + stats["inst_ua"] + stats["inst_other"]
     }
 
 def group_courses_by_id(flat_list):

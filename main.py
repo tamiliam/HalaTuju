@@ -1341,13 +1341,13 @@ else:
     msg = t['hero_success'].format(count=dash['total_matches'])
 st.success(msg)
 
-# 4 categories: Poly, KK, ILJTM, ILKBS
-# FUTURE: Expand to 6 categories (+ Asasi, Universiti Awam) when data ready - see docs/university_integration_plan.md
-c1, c2, c3, c4 = st.columns(4)
+# 5 categories: Poly, KK, ILJTM, ILKBS, UA (Universiti Awam integrated v1.1)
+c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric(t['inst_poly'], dash['summary_stats'].get('inst_poly', 0))
 c2.metric(t['inst_kk'], dash['summary_stats'].get('inst_kk', 0))
 c3.metric(t['inst_iljtm'], dash['summary_stats'].get('inst_iljtm', 0))
 c4.metric(t['inst_ilkbs'], dash['summary_stats'].get('inst_ilkbs', 0))
+c5.metric(t['inst_ua'], dash['summary_stats'].get('inst_ua', 0))
 
 # 2. Featured Matches (Teaser - Limit 3)
 # 2. Featured Matches (Teaser - Dynamic Limit)
@@ -1497,8 +1497,8 @@ if auth_status:
             st.markdown("### Filter")
             
             # 1. Institution Type (Expanded)
-            # Custom Sort Order: Poly, KK, ILJTM, ILKBS
-            inst_order = [t.get('inst_poly'), t.get('inst_kk'), t.get('inst_iljtm'), t.get('inst_ilkbs')]
+            # Custom Sort Order: Poly, KK, ILJTM, ILKBS, UA
+            inst_order = [t.get('inst_poly'), t.get('inst_kk'), t.get('inst_iljtm'), t.get('inst_ilkbs'), t.get('inst_ua')]
             def sort_inst(x):
                 try: return inst_order.index(x)
                 except ValueError: return 999
