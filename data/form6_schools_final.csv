@@ -1,0 +1,569 @@
+institution_id,institution_name,acronym,type,category,subcategory,School_Type,State,address,phone,url,subject_ba,subject_bc,subject_bi_muet,subject_bio,subject_bm,subject_bt,subject_che,subject_eko,subject_geo,subject_ict,subject_kmk,subject_l.eng,subject_mm,subject_mm/pp,subject_mt,subject_pa,subject_pakn,subject_phy,subject_pk,subject_pp,subject_sej,subject_ss,subject_sv,subject_sya,subject_tah,subject_usul
+JEB0015,Sekolah Tinggi Batu Pahat,,IPTA,Kolej Tingkatan 6,STPM Campuran,Sekolah Tinggi,Johor,"Jalan Zaharah, 83000 Batu Pahat, Johor",07-4341097,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,1,1,1,0,0,0
+JEB0016,SMK (P) Temenggong Ibrahim,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"35, Jalan Tasek, 83000 Batu Pahat, Johor",07-4342161,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEA0019,SMK Datin Onn,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Kampung Kenangan Dato Onn, 83000 Batu Pahat, Johor",07-4343497,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+JEA0010,SMK Dato Bentara Luar,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Jalan Lim Yew Leong, 83000 Batu Pahat, Johor",07-4341640,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,0,0,1,0,0,0
+JEA0020,SMK Dato Seth,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Jalan Yong Peng-Muar, 83700 Yong Peng, Johor",07-4671044,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+JEA0015,SMK Dato Sulaiman,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Parit Sulong, 83500 Batu Pahat, Johor",07-4186214,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEA0016,SMK Dato' Onn,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Simpang Lima, 83020 Batu Pahat, Johor",07-4138453,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEE0034,SMK Datuk Menteri,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Ayer Hitam, 86100 Batu Pahat, Johor",07-7581134,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEB0018,SMK Munsyi Sulaiman,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"KM 6, Jalan Kluang, 83000 Batu Pahat, Johor",07-4341949,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,0,0,0,0,1,0,1,0,0,0
+JEE0020,SMK Semerah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Kampung Lubok, Semerah, 83600 Batu Pahat, Johor",07-4161014,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEA0013,SMK Senggarang,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Jalan Parit Jabar, Senggarang, 83200 Batu Pahat, Johor",07-4291675,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEA0014,SMK Seri Medan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Jalan Parit Hj. Ariff, Seri Medan, 83400 Batu Pahat, Johor",07-4850243,,0,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+JEE0019,SMK Tun Ismail,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Jalan Sekolah, 86400 Parit Raja, Johor",07-4541232,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEE0018,SMK Tun Sardon,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"JKR 940, Jalan S.M.K. Tun Sardon, Rengit, 83100 Batu Pahat, Johor",07-4241020,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEE0041,SMK Tunku Putra,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"KM 12, Jalan Besar, Tongkang Pechah, 83010 Batu Pahat, Johor",07-4151030,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,0,0,0,1,0,0,0,0,0
+JEE0040,SMK Yong Peng,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Johor,"Jalan Ann Loh Yuen, Yong Peng, 83700 Batu Pahat, Johor",07-4671885,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+JEB1001,Maktab Sultan Abu Bakar,,IPTA,Kolej Tingkatan 6,STPM Campuran,Maktab,Johor,"JKR 469 Jalan Sungai Chat, 80100 Johor Bahru, Johor",07-2222651,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+JEB1003,SMK Aminudin Baki,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Jalan Abdul Samad, 80100 Johor Bahru, Johor",07-2221293,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEB1002,SMK Dato Jaafar,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Jalan Yahya Aldatar, 80300 Johor Bahru, Johor",07-2221071,,0,0,1,1,0,0,1,1,1,0,0,0,1,0,1,1,1,1,0,0,1,0,0,0,0,0
+JEE1004,SMK Gelang Patah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Gelang Patah, 81550 Gelang Patah, Johor",07-5101213,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0
+JEA1059,SMK Mutiara Rini,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Jalan Persiaran Utama, 81300 Skudai, Johor",07-5569845,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEA1006,SMK Skudai,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Taman Sri Skudai, 81300 Skudai, Johor",07-5563890,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+JEA1001,SMK Sultan Ismail,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Jalan Sek. Sultan Ismail, 80100 Johor Bahru, Johor",07-2216316,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+JEA1002,SMK Tasek Utara,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Susur 7, Jalan Tun Abd Razak, 80350 Johor Bahru, Johor",07-2361806,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+JEB2037,SM Tinggi Kluang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SM,Johor,"429, Jalan Sekolah, 86000 Kluang, Johor",07-7711037,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+JEE2042,SMK Dato Hj Hasan Yunus,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Jalan Sekolah, 86300 Rengam, Johor",07-7535264,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,1,1,0,0,0
+JEA2033,SMK Sultan Abdul Jalil,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"KM 5, Jalan Mersing, 86000 Kluang, Johor",07-7712734,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+JEA2036,SMK Taman Kluang Barat,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Jalan Yule Catto, Taman Kluang Barat, 86000 Kluang, Johor",07-7727427,,0,0,1,0,1,0,0,1,1,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,0
+JEA3045,SMK Adela,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"FELDA Adela, 81900 Kota Tinggi, Johor",07-8278340,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+JEA3036,SMK Bandar Easter,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Peti Surat 49, FELDA Easter, 81900 Kota Tinggi, Johor",07-8925822,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0
+JEA3038,SMK Bandar Kota Tinggi,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Peti Surat 78, 81907 Kota Tinggi, Johor",07-8832055,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEA3043,SMK Bandar Mas,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Jalan Cendana Utama, Bandar Mas, 81900 Kota Tinggi, Johor",07-8236500,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEB3043,SMK Laksmana,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Jalan Bukit Sri Lalang, Peti Surat 74, 81907 Kota Tinggi, Johor",07-8831303,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+JEA3060,SMK Pengerang Utama,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Persiaran Bayu Damai 2, Taman Bayu Damai, 81620 Pengerang, Johor",07-8263213,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEA3039,SMK Tan Sri Jaafar Albar,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Tanjung Sedili, 81910 Kota Tinggi, Johor",07-8918224,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0
+JEA3037,SMK Tun Habab,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Jalan Tajul, 81900 Kota Tinggi, Johor",07-8831026,,0,0,1,1,1,0,1,1,1,1,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+JEA3057,SMK Bandar Tenggara Mod 3,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Jalan Tun Abdul Jalil, 81440 Bandar Tenggara, Johor",07-8961037,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,1,0,0
+JEE8001,SMK Sultan Ibrahim,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Jalan Lengkongan, 81000 Kulai, Johor",07-6631303,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+JEB4044,SMK Seri Mersing,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Peti Surat 10, Jalan Ismail, 86807 Mersing, Johor",07-7991150,,0,0,1,0,1,0,1,1,1,0,0,0,0,0,1,1,0,0,0,0,1,1,1,0,0,0
+JEA4034,SMK Tenggaroh,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"FELDA Tenggaroh 2, 86810 Mersing, Johor",07-7911272,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+JEE4036,SMK Ungku Husin,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Jalan Haji Ariffin, 86900 Endau, Johor",07-7943234,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEB5021,Sekolah Tinggi Muar,,IPTA,Kolej Tingkatan 6,STPM Campuran,Sekolah Tinggi,Johor,"Jalan Meriam, 84000 Muar, Johor",06-9521360,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+JEB5025,SMK (P) Sultan Abu Bakar,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Peti Surat 58, Jalan Abdul Rahman, 84007 Muar, Johor",06-9521261,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+JEA5022,SMK Dato Seri Amar Diraja,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Jalan Tunku Bendahara, Kampung Dato' Sri Amar, 84000 Muar, Johor",06-9521472,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+JEA5032,SMK Pekan Baru,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Pos Semerah, 83600 Semerah, Johor",07-4161221,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEA5024,SMK Raja Muda,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Peti Surat 3, Jalan Mahmood, 84150 Parit Jawa, Johor",06-9874242,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEE5027,SMK Sultan Alauddin Riayat Shah 1,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Pekan Pagoh, 84600 Muar, Johor",06-9746228,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEE5023,SMK Tengku Mahkota,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"KM 5, Parit Raja, Jalan Temenggong Ahmad, 84000 Muar, Johor",06-9812781,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEA5035,SMK Tun Dr Ismail,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Bakri, 84200 Muar, Johor",06-9866260,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEA5023,SMK Tun Perak,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"KM 4, Jalan Salleh, 84000 Muar, Johor",06-9521771,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEE1005,SMK Dato Penggawa Timur,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"KM 24, Jalan Besar Masai, 81750 Masai, Johor",07-2511035,,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+JEA1047,SMK Pasir Gudang 2,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Jalan Mawar Putih, Taman Mawar, 81700 Pasir Gudang, Johor",07-2523955,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0,1,0,1,1,0,0
+JEA1053,SMK Taman Daya,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Jalan Rumbia 39, Taman Daya, 81100 Johor Bahru, Johor",07-3514378,,0,0,1,1,1,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,1,1,0,0,0
+JEA1045,SMK Taman Johor Jaya 1,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Jalan Bakawali 75, Taman Johor Jaya, 81100 Johor Bahru, Johor",07-3546651,,0,0,1,1,1,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0,1,0,1,0,0,0
+JEE1011,SMK Ulu Tiram,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Wakil Pos Ulu Tiram, 81800 Ulu Tiram, Johor",07-8611178,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+JEA6013,Kolej Tingkatan Enam Pontian,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Johor,"PTD15944 Mukim Pontian, 82000 Pontian, Johor",07-6860159,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+JEE6017,SMK Benut,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Jalan Jaafar, 82200 Benut, Johor",07-6903254,,0,0,1,1,1,0,1,0,1,0,1,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+JEA6010,SMK Dato Mohd Yunos Sulaiman,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Jalan Sawah, 81500 Pekan Nanas, Johor",07-6991831,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEA6007,SMK Sri Kukup,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Kukup, 82300 Kukup, Johor",07-6960219,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0
+JEB7029,Sekolah Tinggi Segamat,,IPTA,Kolej Tingkatan 6,STPM Campuran,Sekolah Tinggi,Johor,"JKR 106, Jalan Sekolah, 85000 Segamat, Johor",07-9312472,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,0,1,0,0,1,0,1,0,0,0
+JEE7037,SMK Chaah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Jalan Kampung Jawa Baru, Chaah, 85400 Chaah, Johor",07-9261133,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+JEA7032,SMK Dato' Bentara Dalam,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"KM 3, Jalan Genuang, 85000 Segamat, Johor",07-9433250,,0,0,1,0,1,0,0,1,1,0,0,0,1,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEB7032,SMK Labis,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Jalan Muar, 85300 Labis, Johor",07-9251306,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+JEE7033,SMK Munshi Ibrahim,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"JKR 484 Jalan Sekolah, 85300 Labis, Johor",07-9251600,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+JEA7035,SMK Palong Timur,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Jalan Seri Tanjung, 85100 Batu Anam, Johor",06-4668203,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0
+JEB7030,SMK Seg Hwa,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Johor,"Jalan Tahang Rimau, 85000 Segamat, Johor",07-9311235,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+JEA9010,SMK Bukit Gambir Mod 3,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Kampung Sungai Jaya, 84800 Bukit Gambir, Johor",06-9761050,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+JEA9009,SMK Ledang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Johor,"Jalan Sialang, 84900 Tangkak, Johor",06-9781266,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+JEA9005,SMK Parit Bunga,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"KM 5, Parit Bunga, 84000 Tangkak, Johor",06-9522957,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+JEA9001,SMK Tengku Mahmud Iskandar,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Batu 8, Sungai Mati, 84400 Ledang, Johor",06-9751066,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+JEA9002,SMK Tengku Temenggong Ahmad,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Johor,"Kundang Ulu, 84710 Kundang Ulu, Johor",06-9728488,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+KEA0035,SMK Baling,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Kedah,"Jalan Kulim Baling, 09100 Baling, Kedah",04-4701218,,0,0,1,1,1,0,1,1,1,1,1,0,0,0,1,1,0,1,0,0,1,0,1,1,0,0
+KEE0038,SMK Kuala Ketil,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Batu Pekaka, 09300 Kuala Ketil, Kedah",04-4434251,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+KEE0039,SMK Kuala Pegang,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Kuala Pegang, 09110 Baling, Kedah",04-4765230,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1,1,1,0,0
+KEB2096,Kolej Sultan Abdul Hamid,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej,Kedah,"Jalan Langgar, 05460 Alor Setar, Kedah",04-7332300,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+KEA2186,Kolej Tingkatan Enam Sultan Sallehuddin,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Kedah,"Jalan Hutan Kampong, 05350 Alor Star, Kedah",04-7203381,,0,0,1,1,1,0,1,1,1,0,0,0,1,0,1,1,1,1,0,0,1,1,1,0,0,0
+KEB2094,SMJK Keat Hwa,,IPTA,Kolej Tingkatan 6,STPM Sains,SMJK,Kedah,"Jalan Kuala Kedah, 05400 Alor Setar, Kedah",04-7722053,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+KEEB001,SMK Pokok Sena,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Panchor, 06400 Pokok Sena, Kedah",04-7821237,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+KEA2094,SMK Seberang Perak,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Teratai Putih, Taman Berjaya, 05050 Alor Setar, Kedah",04-7771709,,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+KEE2108,SMK Tengku Laksamana,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Kuala Kedah, 06600 Alor Setar, Kedah",04-7716482,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEE2107,SMK Tun Sharifah Rodziah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Kuala Kedah, 05400 Alor Setar, Kedah",04-7711102,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+KEE2100,SMK Tunku Abdul Malik,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Alor Merah, 05250 Alor Star, Kedah",04-7319358,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+KEE2104,SMK Tunku Abd. Aziz,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Simpang Empat, 06650 Alor Setar, Kedah",04-7641213,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEA3111,SMK Aman Jaya,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Kedah,"Sungai Lalang, 08000 Sungai Petani, Kedah",04-4581996,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+KEA3109,SMK Bandar Sungai Petani,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Pahlawan, 08000 Sungai Petani, Kedah",04-4216257,,0,0,1,0,1,1,0,1,0,0,1,0,0,0,0,1,1,0,0,0,1,0,0,0,0,0
+KEE3052,SMK Bedong,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Bedong, 08100 Bedong, Kedah",04-4581272,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+KEE3053,SMK Che Tom,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Bakar Arang, 08000 Sungai Petani, Kedah",04-4252182,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0
+KEB3047,SMK Dato Bijaya Setia,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Kedah,"Jalan Kuala Ketil, 08000 Sungai Petani, Kedah",04-4212308,,0,0,1,0,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,1,0,0,0,0,0
+KEB3049,SMK Ibrahim,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Kedah,"Jalan Kolam Ayer, 08000 Sungai Petani, Kedah",04-4212633,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+KEA3046,SMK Khir Johari,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Kedah,"Jalan Pengkalan, 08000 Sungai Petani, Kedah",04-4212648,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,1,0,0,0,1,0,0,0,0,0
+KEA3107,SMK Kota Kuala Muda,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Pantai Merdeka, 08500 Kota Kuala Muda, Kedah",04-4374224,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEE3055,SMK Merbok,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Merbok, 08400 Merbok, Kedah",04-4572078,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEB3051,SMK Sin Min,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Kedah,"Jalan Pegawai, 08000 Sungai Petani, Kedah",04-4212623,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+KEB3050,SMK St Theresa,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Kolam Air, 08000 Sungai Petani, Kedah",04-4212266,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEA9001,SMK Sungai Limau,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Sungai Limau Dalam, 06910 Yan, Kedah",04-7691759,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+KEA3106,SMK Sungai Pasir,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Batu Lintang, Sungai Pasir, 08000 Sungai Petani, Kedah",04-4311764,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEA3105,SMK Tunku Ismail,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Sungai Petani, 08000 Sungai Petani, Kedah",04-4225508,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEE3057,SMK Tunku Sulong,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jeniang, 08700 Gurun, Kedah",04-4644236,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEE8018,SMK Yan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Tunku Ibrahim, 08200 Sik, Kedah",04-4695278,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+KEE4041,SMK Ayer Hitam,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Simpang Empat Kerpan, 06150 Ayer Hitam, Kedah",04-7940226,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+KEA4058,SMK Changlun,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"KM 11, Lebuhraya Utara Selatan, 06010 Changlun, Kedah",04-9241293,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0
+KEA4062,SMK Hosba,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Lebuhraya Utara Selatan, 06010 Changlun, Kedah",04-9243128,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEE4037,SMK Jitra,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Kedah,"Jalan Jitra, 06000 Jitra, Kedah",04-9171260,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+KEA4060,SMK Megat Dewa,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Kodiang, 06100 Kodiang, Kedah",04-9251948,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEE4040,SMK Pulau Nyior,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Kodiang, 06000 Jitra, Kedah",04-9291288,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+KEE4038,SMK Seri Mahawangsa,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Changlun, 06000 Jitra, Kedah",04-9171548,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,1,0,0,0,1,0,0,0,0,0
+KEA4061,SMK Tunku Anum Tunku Abdul Rahman,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Tok Jalai, 06000 Jitra, Kedah",04-7144960,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+KEE4039,SMK Tunku Bendahara,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"KM 5, Jalan Changlun, 06100 Kodiang, Kedah",04-9251344,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+KEA5078,Kolej Tingkatan Enam Kulim,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Kedah,"Taman Mahsuri Padang Serai, 09400 Padang Serai, Kedah",04-4855370,,0,0,1,1,1,1,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+KEB5025,SMK Chio Min,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Kedah,"Jalan Kelang Sago, 09000 Kulim, Kedah",04-4907552,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,1,0,0,0,0,0
+KEA5070,SMK Junjung,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Junjong, 09000 Kulim, Kedah",04-4871659,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+KEA5026,SMK Keladi,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Keladi, 09000 Kulim, Kedah",04-4953497,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEA5067,SMK Labu Besar,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Pekan Labu Besar, 09010 Kulim, Kedah",04-4031693,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEE1018,SMK Serdang,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Selama, 09800 Serdang, Kedah",04-4077223,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEE1017,SMK Sultan Ahmad Tajuddin,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Permatang Pasir, 34950 Bandar Baharu, Kedah",05-7161055,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEA5023,SMK Sungai Kob,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Pekan Sungai Kob, 09700 Karangan, Kedah",04-4023555,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEE6016,SMK Mahsuri,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Ayer Hangat Mukim Kuah, 07000 Langkawi, Kedah",04-9666245,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEA6015,SMK Tunku Putra,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Padang Matsirat, 07100 Langkawi, Kedah",04-9551384,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEE7017,SMK Datuk Syed Ahmad,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Batu 20, Jalan Langgar, Kuala Nerang, 06300 Kuala Nerang, Kedah",04-7866217,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEA7018,SMK Lubok Merbau,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"FELDA Lubok Merbau, 06710 Pendang, Kedah",04-7520933,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+KEA7019,SMK Naka,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Pekan Naka Mukim Tekai Kanan, 06350 Alor Star, Kedah",04-7851517,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+KEAA092,SMK Kubor Panjang,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Kubor Panjang, 06760 Alor Setar, Kedah",04-7846076,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+KEEA103,SMK Pendang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Kedah,"Batu 16, Jalan Pendang, 06700 Pendang, Kedah",04-7596249,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+KEAA181,SMK Syed Ibrahim,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Padang Pusing, 06700 Pendang, Kedah",04-7596273,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+KEAA183,SMK Tunku Temenggung,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kedah,"Jalan Banggol Pauh, 06700 Pendang, Kedah",04-7599269,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0
+DEE0039,SMK Bachok,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Kampung Kemudi, Bachok, 16300 Bachok, Kelantan",09-7788255,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA0033,SMK Badak,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Cabang Tiga Melawi, 16310 Bachok, Kelantan",09-7787411,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA0040,SMK Dato' Perdana,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Kelantan,"Kampung Tangok, 16300 Bachok, Kelantan",09-7530021,,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,0,1,0,0,0,0
+DEA0034,SMK Long Yunus,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Beris Kubor Besar, 16350 Bachok, Kelantan",09-7788358,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,1,1,0,1,0,0,0
+DEA0038,SMK Sri Gunung,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Bukit Chenda, Gunong, 16390 Bachok, Kelantan",09-7825225,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DRA0001,SMKA Tok Bachok,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMKA,Kelantan,"Kampung Tangok, Jalan Bachok - Jelawat, 16300 Bachok, Kelantan",09-7780085,,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,1,0
+DEA8002,SMK Bandar Chiku,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Bandar Chiku, 18300 Gua Musang, Kelantan",09-9285335,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA8001,SMK Tengku Indera Petra (1),,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Persiaran Raya, 18300 Gua Musang, Kelantan",09-9121663,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA9001,SMK Ayer Lanas,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"KM 40, Jalan Jeli Tanah Merah, 17700 Jeli, Kelantan",09-9468234,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEB1137,Maktab Sultan Ismail,,IPTA,Kolej Tingkatan 6,STPM Campuran,Maktab,Kelantan,"Jalan Telipot, Belakang Smk Sultan Ismail, 15150 Kota Bharu, Kelantan",09-7418772,,0,0,1,1,0,0,1,0,0,1,0,0,1,0,1,1,0,1,0,0,0,1,1,0,0,0
+DEB1139,SMJK Chung Hwa (Kemanusiaan),,IPTA,Kolej Tingkatan 6,STPM Campuran,SMJK,Kelantan,"Jalan Atas Banggol, 15300 Kota Bharu, Kelantan",09-7442086,,0,1,1,1,1,0,1,1,1,0,0,0,1,0,1,1,0,1,0,0,1,0,0,0,0,0
+DEA1126,SMK Dato' Ahmad Maher,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Long Yunus, 15200 Kota Bharu, Kelantan",09-7418250,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+DEA1123,SMK Ismail Petra,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Kelantan,"Kompleks Sekolah-Sekolah Wakaf Mek Zainab, 15300 Kota Bharu, Kelantan",09-7481848,,0,0,1,1,0,0,1,0,0,1,0,0,0,0,1,1,0,1,0,0,0,1,0,0,0,0
+DEE1126,SMK Ketereh,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"KM 21, Kampung Dendang Jalan Kuala Krai, 16450 Kota Bharu, Kelantan",09-7886875,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEE1127,SMK Kota,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Salor, Sebelah Rtm Kelantan, Wakaf Che Yeh, 15100 Kota Bharu, Kelantan",09-7483312,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEE1140,SMK Kota Bharu,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Kompleks Wakaf Mek Zainab, 15300 Kota Bharu, Kelantan",09-7482320,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA1129,SMK Kubang Kerian (1),,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Raja Perempuan Zainab II, 16150 Kota Bharu, Kelantan",09-7652046,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA1141,SMK Kubang Kerian (2),,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Kampung Chica, 16150 Kota Bharu, Kelantan",09-7654726,,0,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+DEE1130,SMK Melor,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Hadapan Petronas Kampung Melor Jalan Pasir Puteh, 16400 Kota Bharu, Kelantan",09-7835320,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA1131,SMK Mulong,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Kuala Krai, 16010 Kota Bharu, Kelantan",09-7126232,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEE1133,SMK Pengkalan Chepa (1),,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Maktab, 16100 Kota Bharu, Kelantan",09-7713840,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+DEA1135,SMK Puteri,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Kompleks Sekolah-Sekolah, Wakaf Mek Zainab, 15300 Kota Bharu, Kelantan",09-7419712,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,1,1,0,1,0,0,0
+DEA1125,SMK Raja Sakti,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Kota Jembal, 16150 Kota Bharu, Kelantan",09-7652359,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEE1141,SMK Sultan Ismail,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Telipot, 15150 Kota Bharu, Kelantan",09-7481245,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEB1142,SMK Zainab (1),,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Telipot, 15150 Kota Bharu, Kelantan",09-7418643,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+DEA1144,SMK Zainab (2),,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Merbau, 15300 Kota Bharu, Kelantan",09-7486178,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+DEA7418,SMK Dabong,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Kampung Dabong, 18200 Dabong, Kelantan",09-9607927,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0
+DEA7407,SMK Kuala Krai,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Kuala Krai Kelantan, 18000 Kuala Krai, Kelantan",09-9602291,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA7419,SMK Pahi,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Kelantan,"KM 9, Lebuhraya Kuala Krai-Gua Musang, 18000 Kuala Krai, Kelantan",09-9609600,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,1,0,0,0,0
+DEE7409,SMK Sultan Yahya Petra (1),,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Kem, 18000 Kuala Krai, Kelantan",09-9666077,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA7422,SMK Sultan Yahya Petra (2),,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Rest House, 18000 Kuala Krai, Kelantan",09-9662201,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEE2191,SMK Hamzah (1),,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Bahagia, 18500 Machang, Kelantan",09-9751300,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA2189,SMK Machang,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Sebelah Ipd Machang, 18500 Machang, Kelantan",09-9751235,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA2188,SMK Seri Intan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Batu 32, Kampung Pek, Jalan Kuala Krai, 18500 Machang, Kelantan",09-9770179,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA3240,SMK Kangkong,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Kampung Kangkong, Jalan Pasir Mas - Tanah Merah, 17040 Pasir Mas, Kelantan",09-7962330,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA3428,SMK Kubang Bemban,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"KM 2, Jalan Meranti, 17000 Pasir Mas, Kelantan",09-7922650,,0,0,1,1,1,0,0,1,0,0,0,0,0,0,1,1,0,1,0,0,1,1,0,0,0,0
+DEA3243,SMK Pasir Mas,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Masjid Pasir Mas, 17000 Pasir Mas, Kelantan",09-7909095,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEE3244,SMK Rantau Panjang,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Pekan Rantau Panjang, 17200 Rantau Panjang, Kelantan",09-7950450,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEE3247,SMK Sultan Ibrahim (1),,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Meranti, 17000 Pasir Mas, Kelantan",09-7909214,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA3425,SMK Sultan Ibrahim (2),,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Hospital, 17000 Pasir Mas, Kelantan",09-7909311,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA3245,SMK Tendong,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Tendong, 17030 Pasir Mas, Kelantan",09-7198429,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA3241,SMK Tengku Panglima Raja,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"KM 2, Jalan Pasir Mas - Tanah Merah, 17000 Pasir Mas, Kelantan",09-7922440,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA4286,SMK Bukit Jawa,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Selising, Pasir Puteh, 16810 Selising, Kelantan",09-7891212,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA4294,SMK Cherang Ruku,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Cherang Ruku, 16700 Pasir Puteh, Kelantan",09-6912275,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+DEE4289,SMK Kamil,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Kelantan,"Pasir Puteh, 16800 Pasir Puteh, Kelantan",09-7855300,,0,0,1,1,0,0,0,1,1,0,0,0,0,0,1,1,0,1,0,0,0,1,0,0,0,0
+DEA4297,SMK Seri Aman,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Taman Kobena, 16800 Pasir Puteh, Kelantan",09-7855200,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA4287,SMK Tok Janggut,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Pasir Puteh - Kota Bharu, 16800 Pasir Puteh, Kelantan",09-7866334,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEE5324,SMK Dato' Mahmud Paduka Raja (1),,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Jalan Klinik, 17500 Tanah Merah, Kelantan",09-9503300,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA5416,SMK Tan Sri Mohamed Yaacob,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"KM 21, Jalan Jedok, Kampung Batu Gajah, 17510 Tanah Merah, Kelantan",09-9581373,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA5417,SMK Tanah Merah (1),,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Kelantan,"Jalan Ismail Petra, 17500 Tanah Merah, Kelantan",09-9556167,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,1,1,0,0,0
+DEA5421,SMK Tanah Merah (2),,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"KM 2, Jalan Ismail Petra, 17500 Tanah Merah, Kelantan",09-9558701,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+DEA6357,SMK Chabang Empat,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Kampung Chabang Empat, 16210 Tumpat, Kelantan",09-7190615,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA6358,SMK Dato' Biji Wangsa,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Kompleks Sekolah Tumpat, 16200 Tumpat, Kelantan",09-7257280,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+DEA6359,SMK Kampong Laut,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Kampung Laut, Palekbang, 16040 Tumpat, Kelantan",09-7196217,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA6360,SMK Mahmud Mahyidin,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Kelantan,"Pasir Pekan, 16250 Wakaf Bharu, Kelantan",09-7196864,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,1,0,0,0,0
+DEE6362,SMK Tumpat,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Kompleks Sekolah-Sekolah Kelaboran, Jalan Kelaboran, 16200 Tumpat, Kelantan",09-7257251,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+DEA6362,SMK Wakaf Bharu,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Kelantan,"Wakaf Bharu, 16250 Wakaf Bharu, Kelantan",09-7196168,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+MEB0078,SMJK Pulau Sebang,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMJK,Melaka,"Pulau Sebang, 73000 Tampin Pos, Melaka",06-4411346,,0,0,1,0,1,0,0,1,0,0,0,0,1,0,0,1,0,0,0,0,1,0,1,0,0,0
+MEE0075,SMK Dato' Dol Said,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Melaka,"Jalan Dato' Dol Said, 78000 Alor Gajah, Melaka",06-5561286,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+MEA0072,SMK Datuk Haji Talib Karim,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Melaka,"Serahan Tingkap 2080, 78000 Alor Gajah, Melaka",06-5561285,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+MEA0071,SMK Ghafar Baba,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Melaka,"Masjid Tanah, 78300 Masjid Tanah, Melaka",06-3841257,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+MEA0095,SMK Lubok China,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Melaka,"Lubok China, 78100 Lubok China, Melaka",06-6966375,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+MEB0079,SMK Sultan Alauddin,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Melaka,"Masjid Tanah, 78300 Masjid Tanah, Melaka",06-3841249,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+MEB1063,SMK Datuk Bendahara,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Melaka,"Jalan Pegawai, 77000 Jasin, Melaka",06-5291278,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+MEA1060,SMK Iskandar Shah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Melaka,"Jalan Kelubi, 77000 Jasin, Melaka",06-5291266,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+MEA1081,SMK Tun Syed Zahiruddin,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Melaka,"Ayer Tawar, 77300 Merlimau, Melaka",06-2633492,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,1,1,0,0,0
+MEB2103,Kolej T6 Tun Fatimah,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Melaka,"Lorong Tun Fatimah Durian Daun, 75400 Melaka, Melaka",06-2831803,,0,0,1,1,1,0,1,1,0,0,1,0,1,1,1,1,0,1,1,0,1,1,1,0,0,0
+MEB2091,SMK Gajah Berang,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Melaka,"Jalan Gajah Berang, 75200 Melaka, Melaka",06-2831476,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+MEA2087,SMK Munshi Abdullah,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Melaka,"Batu Berendam, 75350 Melaka, Melaka",06-3175320,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,1,1,1,0,0,0
+MEA2089,SMK Seri Tanjong,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Melaka,"Tanjung Kling Pos, 76400 Tanjong Kling, Melaka",06-3511539,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+MEB2090,SMK Tinggi Melaka,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Melaka,"61 Jalan Chan Koon Cheng, 75000 Melaka, Melaka",06-2824466,,0,0,1,1,1,0,1,1,0,1,0,0,1,0,1,1,1,1,0,0,1,1,1,0,0,0
+MEA2094,SMK Tun Haji Abdul Malek,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Melaka,"KM 10, Cheng, 75250 Melaka, Melaka",06-3357473,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+MEB2102,SMK Tun Tuah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Melaka,"Kampung Lapan, Bachang, 75200 Melaka, Melaka",06-3355945,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0,1,0,1,0,0,0
+NEE6002,SMK Batu Kikir,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Negeri Sembilan,"Batu Kikir, 72200 Batu Kikir, Negeri Sembilan",06-4981393,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+NEE6001,SMK Datuk Mansor,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Negeri Sembilan,"KM 4, Jalan Juasseh, 72100 Bahau, Negeri Sembilan",06-4541121,,0,0,1,1,1,1,1,1,1,0,0,0,0,0,1,1,1,1,0,0,1,0,1,0,0,0
+NEA0025,SMK Duma,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Negeri Sembilan,"KM 2, Jalan Pertang, Kuala Klawang, 71600 Jelebu, Negeri Sembilan",06-6136225,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+NEA6003,SMK Seri Perpatih,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Negeri Sembilan,"Pusat Bandar Palong 4, 5 & 6, 73430 Gemas, Negeri Sembilan",06-4666362,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+NEB1081,SMK Tuanku Muhammad,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Negeri Sembilan,"KM 2, Jalan Tampin, 72000 Kuala Pilah, Negeri Sembilan",06-4811030,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0,1,1,1,0,0,0
+NEB2054,SMK Tinggi Port Dickson,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Negeri Sembilan,"KM 3, Jalan Pantai, 71000 Port Dickson, Negeri Sembilan",06-6471295,,0,0,1,1,1,1,1,1,1,0,0,0,0,0,1,1,1,1,0,0,1,0,0,0,0,0
+NRA3001,SMK Agama Dato' Haji Abu Hassan Haji Sail,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Negeri Sembilan,"KM 1, Jalan Seperi, 71400 Pedas, Negeri Sembilan",06-6857162,,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,1,0
+NEA3035,SMK Dato Sedia Raja,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Negeri Sembilan,"KM 27, Jalan Seremban Tampin, 71309 Rembau, Negeri Sembilan",06-6851214,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+NFT4003,SM Agama Dato' Klana Petra Maamor,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMA,Negeri Sembilan,"KM 5, Jalan Seremban Kuala Pilah, Ampangan, 70400 Seremban, Negeri Sembilan",06-7639361,,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,1,0,1
+NRA4002,SM Agama Persekutuan Labu,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMA,Negeri Sembilan,"KM 11, Jalan Labu, 71900 Labu, Negeri Sembilan",06-7912245,,1,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+NRA4001,SMK Agama Sheikh Hj Mohd Said,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Negeri Sembilan,"Jalan Tunku Kurshiah, 70400 Seremban, Negeri Sembilan",06-7623778,,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,1,0,1
+NEE4100,SMK Dato' Mohd Said.,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Negeri Sembilan,"Pekan Nilai, 71800 Nilai, Negeri Sembilan",06-7991213,,0,0,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,1,0,1,0,0,0
+NEE4101,SMK Mantin,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Negeri Sembilan,"Batu 10, Jalan Besar Mantin, 71700 Mantin, Negeri Sembilan",06-7581251,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+NEE4099,SMK Rantau,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Negeri Sembilan,"KM 11, Jalan Linsum, 71200 Seremban, Negeri Sembilan",06-6941269,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+NEA4114,SMK Taman Forest Height,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Negeri Sembilan,"Precint 4, Persiaran Forest Heights 2, 70450 Seremban, Negeri Sembilan",06-7633951,,0,0,1,1,1,1,1,1,1,1,0,0,1,0,1,1,1,1,0,0,1,1,1,1,0,0
+NEA4088,SMK Tunku Ampuan Durah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Negeri Sembilan,"Jalan Sikamat, 70400 Seremban, Negeri Sembilan",06-7625590,,0,0,1,0,1,0,0,1,0,0,0,0,1,0,0,1,1,0,0,0,1,0,1,0,0,0
+NEE5040,SMK Dato'Mohd Taha,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Negeri Sembilan,"KM 28, Jalan Tampin Gemas, 73200 Gemencheh, Negeri Sembilan",06-4316544,,0,0,1,0,1,1,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+NEE5038,SMK Tuanku Abdul Rahman,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Negeri Sembilan,"Jalan Tok Sulong, 73400 Gemas, Negeri Sembilan",07-9481055,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+NEE5037,SMK Tunku Besar,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Negeri Sembilan,"KM 2, Jalan Seremban, 73000 Tampin, Negeri Sembilan",06-4415425,,0,0,1,1,1,1,1,1,0,0,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+CEB0019,SMK Ketari,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"Jalan Kuala Lumpur, 28700 Bentong, Pahang",09-2221278,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,1,1,0,0,1,1,1,0,0,0
+CEAA062,SMK Mengkarak,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"Kampung Mengkarak, 28200 Bandar Bera, Pahang",09-2552215,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,0,0,0,1,1,1,0,0,0
+CEAA156,SMK Purun,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"FELDA Purun, 28330 Triang, Pahang",09-2481997,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+CEBA072,SMK Triang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"Jalan Mengkuang, 28300 Triang, Pahang",09-2507351,,0,0,1,1,0,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,0,0,0,0,0,0
+CEB1003,SMK Sultan Ahmad Shah,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"Persiaran Dayang Endah, Tanah Rata, 39000 Tanah Rata, Pahang",05-4911018,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+CEE2032,SMK Jerantut,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Jalan Tembeling, 27000 Jerantut, Pahang",09-2662255,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+CEA2046,SMK Padang Saujana Jerantut,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"Jalan Pejabat Kerajaan, 27000 Jerantut, Pahang",09-2601310,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0
+CEA2048,SMK Temin,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Km.5 Jalan Temerloh, 27000 Jerantut, Pahang",09-2662722,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+CRA2001,SMKA Tengku Ampuan Hajjah Afzan Pahang,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMKA,Pahang,"KM 4, Jalan Jerantut-Temerloh, 27000 Jerantut, Pahang",09-2663330,,1,0,1,0,0,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,1,0,1
+CEA4022,SMK Abdul Rahman Talib,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"Jalan Alor Akar, 25250 Kuantan, Pahang",09-5602244,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,1,0,1,0,0,0
+CEA4088,SMK Astana,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Jalan Sungai Lembing, 25200 Kuantan, Pahang",09-5721522,,0,0,1,0,1,0,0,1,1,0,0,0,1,0,0,1,1,0,0,0,1,1,1,0,0,0
+CEA4096,SMK Padang Garuda,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Jalan Lapangan Terbang Shah Kampung Pandan 1, 26070 Kuantan, Pahang",09-5381016,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+CEB4032,SMK Sultan Abu Bakar,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"Jalan Beserah, 25300 Kuantan, Pahang",09-5665759,,0,0,1,1,1,0,1,1,1,0,0,0,1,0,1,1,0,1,0,0,1,1,1,0,0,0
+CEA4079,SMK Tok Sera,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Jalan Tg Muhamad, 25050 Kuantan, Pahang",09-5686810,,0,0,1,0,1,0,0,1,1,0,0,0,1,0,0,1,1,0,0,0,1,0,1,0,0,0
+CEE3037,SMK Clifford,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"KM 1, Jalan Lipis-Raub, 27200 Kuala Lipis, Pahang",09-3101242,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+CEA3057,SMK Seri Lipis,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"KM 8, Jalan Lipis Padang Tengku, 27200 Kuala Lipis, Pahang",09-3101321,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+CEA9165,SMK Jengka 16,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"FELDA Sena Jengka 16, Jalan Utama, 26400 Bandar Jengka, Pahang",09-4663789,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+CEA9114,SMK Jengka 2,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"FELDA Cempaka Jengka 2, 26430 Bandar Jengka, Pahang",09-4674325,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+CEA9157,SMK Jengka Pusat,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"Bandar Jengka, 26400 Bandar Jengka, Pahang",09-4677581,,0,0,1,0,1,0,1,0,1,0,1,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0
+CEA9059,SMK Maran,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Jalan Berkat, 26500 Maran, Pahang",09-4771243,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+CEA9163,SMK Seri Jengka,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Pekan Tajau, 26500 Maran, Pahang",09-4771671,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1,1,0,0,0
+CEA9060,Smktaa Chenor,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Chenor, 28100 Chenor, Pahang",09-2995373,,0,0,1,0,0,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,0,1,1,0,0,0
+CEA5053,SMK Dato Mahmud Mat,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Tanah Puteh, 26600 Pekan, Pahang",09-4269145,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+CEE5062,SMK Sultan Ahmad,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"Jalan Rompin Lama, 26600 Pekan, Pahang",09-4221252,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,1,1,0,0,0
+CEA5054,SMK Tengku Abdullah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Jalan Haji Montok, 26600 Pekan, Pahang",09-4221261,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+CEA5061,Smk(Lktp) Chini,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"FELDA Chini 2, 26690 Chini, Pahang",09-4566163,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+CEA6023,SMK Dong,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"KM 16, Jalan Lipis, Kampung Dong, 27400 Raub, Pahang",09-3658225,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0
+CEA6024,SMK Lktp Tersang,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"FELDA Tersang 2, 27610 Raub, Pahang",09-3403931,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0
+CEB6026,SMK Mahmud,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"Jalan Tras, 27600 Raub, Pahang",09-3551046,,0,0,1,1,1,0,1,1,1,1,0,0,0,0,1,1,0,1,0,0,1,1,1,0,0,0
+CEA6025,SMK Seri Raub,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"Jalan Simpang Kallang, 27600 Raub, Pahang",09-3501111,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+CRA8001,SMK Agama Pahang,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Jalan Sekolah Agama, 26700 Muadzam Shah, Pahang",09-4523901,,1,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,1,0,0
+CEA8017,SMK Rompin,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Jalan Tuan Syed Othman, 26800 Kuala Rompin, Pahang",09-4145228,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+CEA8027,SMK Selancar,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Jalan Selancar 6, 26700 Muadzam Shah, Pahang",09-4371357,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+CEA8025,SMK Seri Rompin,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"KM 20, Jalan Rompin-Pekan, 26810 Kuala Rompin, Pahang",TIADA,,0,0,1,1,1,0,1,0,1,0,0,0,0,0,1,1,0,0,0,0,0,0,1,0,0,0
+CEA8019,SMK Tg Gemok,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Kampung Tanjung Gemok, 26820 Kuala Rompin, Pahang",09-4132640,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+CEB7068,SMK Abu Bakar,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Jalan Temerloh-Mentakab, 28000 Temerloh, Pahang",09-2961260,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+CEA7065,SMK Datuk Bahaman,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pahang,"Lanchang, 28500 Lanchang, Pahang",09-2803252,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0
+CEE7070,SMK Mentakab,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"Jalan Pekeliling, 28400 Mentakab, Pahang",09-2771155,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,1,1,0,0,1,1,1,0,0,0
+CEA7063,SMK Temerloh,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pahang,"Jalan Mentakab, 28000 Temerloh, Pahang",09-2961316,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,1,1,0,0,1,0,1,0,0,0
+AEEB001,SMK Khir Johari,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Batu 17, Jalan Bagan Datoh, 36300 Sungai Sumun, Perak",05-6489218,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+AEEB002,SMK Tun Abdul Razak,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Batu 23, Selekoh, 36200 Selekoh, Perak",05-6489235,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+AEA0041,Kolej Tingkatan Enam Tapah,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Perak,"Jalan Bidor Lama, 35000 Tapah, Perak",05-4013677,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,1,1,0,0,1,0,1,0,0,0
+AEEA001,SMK Dato' Zulkifli Mohamad,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Slim River, 35800 Slim River, Perak",05-4528275,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+AEAA004,SMK Proton City,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan PC10, Proton City, 35900 Tanjong Malim, Perak",05-4581431,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+AEE0040,SMK Sungkai,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Pekan Lama, 35600 Sungkai, Perak",05-4386609,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+AEB5168,SMK Horley Methodist,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Raja Musa, 36000 Teluk Intan, Perak",05-6221215,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,1,0,1,0,0,0
+AEB5170,SMK San Min,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Perak,"Lot 1146, Jalan Merbok, 36000 Teluk Intan, Perak",05-6221216,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+AEA5073,SMK Seri Perak,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Changkat Jong, 36000 Teluk Intan, Perak",05-6221707,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+AEB5167,SMK St Anthony,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Peti Surat 128, 36000 Teluk Intan, Perak",05-6221914,,0,0,1,1,1,1,1,1,0,0,0,0,1,0,1,1,0,1,0,0,1,0,1,0,0,0
+AEB5165,SMK Sultan Abdul Aziz,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Padang Tembak, 36007 Teluk Intan, Perak",05-6221159,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,1,0,1,0,0,0
+AEA5074,SMK Sultan Abdullah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Batu 11 1/2 Jalan Chenderong Balai, 36600 Chenderong Balai, Perak",05-6511835,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+AEE7031,SMK Dato' Ahmad,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Alang Iskandar, 33400 Lenggong, Perak",05-7691260,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+AEE7033,SMK Tun Saban,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Tasek, 33100 Pengkalan Hulu, Perak",04-4778245,,0,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,1,0,0
+AEB2063,SMK Sultan Yussuf,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Ilmu, 31000 Batu Gajah, Perak",05-3633203,,0,0,1,1,1,0,1,1,0,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+AEB2061,Kolej Tingkatan Enam Seri Ipoh,,IPTA,Kolej Tingkatan 6,STPM Sastera,Kolej Tingkatan 6,Perak,"Lebuh Jansz, 30200 Ipoh, Perak",05-2549207,,0,0,1,0,1,1,0,1,0,0,0,0,1,0,0,1,1,0,0,0,1,0,1,0,0,0
+AEB2059,Kolej Tingkatan Enam Seri Putera,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Perak,"Kepayang, Fair Park, 31400 Ipoh, Perak",05-5450902,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,1,1,1,0,0,0
+AEB2043,SMK Anderson,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Hospital, 30450 Ipoh, Perak",05-2494900,,0,0,1,1,0,0,1,1,1,0,0,0,1,0,1,1,1,1,0,0,1,0,0,0,0,0
+AEA2046,SMK Dato' Haji Mohd Taib,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Sekolah, 31200 Chemor, Perak",05-2011808,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+AEA2051,SMK Jalan Tasek,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Sultan Azlan Shah (U), Taman Tasek Indra, 31400 Ipoh, Perak",05-5497606,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,1,0,0,0,0,0
+AEA2049,SMK Kg Pasir Puteh,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Pengkalan Barat 18, 31650 Ipoh, Perak",05-3225150,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+AEB2062,SMK Menglembu,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Menglembu, 31450 Menglembu, Perak",05-2812559,,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0,0,0,1,0,0,0
+AEB2045,SMK Methodist Acs,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"No. 111, Jalan Lahat, 30200 Ipoh, Perak",05-2549336,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,1,0,1,0,0,0
+AEA2041,SMK Raja Chulan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Dairy, 31400 Ipoh, Perak",05-5457082,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+AEB2046,SMK Raja Perempuan,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Batu Bungkal, 30250 Ipoh, Perak",05-2494830,,0,0,1,1,0,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,0,0,0,0,0,0
+AEB2053,SMK Sam Tet,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Perak,"No. 5, Jalan Gereja, 30300 Ipoh, Perak",05-2545457,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+AEA2047,SMK Seri Keledang,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Perak,"Persiaran Keledang Timur 2, 31450 Menglembu, Perak",05-2813240,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+AEB2044,SMK St Michael,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Dato S P Seenivasagam, 30000 Ipoh, Perak",05-2540418,,0,0,1,1,1,0,1,1,0,1,0,0,1,0,1,1,1,1,0,0,1,0,0,0,0,0
+AEA3040,SMK Alang Iskandar,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Kurau, 34300 Bagan Serai, Perak",05-7210346,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,1,0,0,0,1,1,1,0,0,0
+AEA3038,SMK Panglima Bukit Gantang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Sekolah, 34200 Parit Buntar, Perak",05-7161161,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+AEE4070,SMK Clifford,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Taiping, 33009 Kuala Kangsar, Perak",05-7731313,,0,0,1,1,1,0,1,1,0,0,1,0,1,0,1,1,0,1,0,0,1,0,1,0,0,0
+AEB4072,SMK Raja Muda Musa,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Sultan Iskandar Shah, 33007 Kuala Kangsar, Perak",05-7733112,,0,0,1,0,1,0,0,1,0,1,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+AEB4076,SMK Shing Chung,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Perak,"Jalan Besar, 31100 Sungai Siput (U), Perak",05-5981353,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+AEA4085,SMK Toh Muda Abdul Aziz,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Sentosa, 31100 Sungai Siput (U), Perak",05-5951370,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,1,0,0,0,1,0,1,0,0,0
+AEB4073,SMK Tsung Wah,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Perak,"66-B, Jalan Dato Sagor, 33000 Kuala Kangsar, Perak",05-7777644,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+AEE6059,SMK Dato' Haji Hussein,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Wan Md Razalli, 34100 Selama, Perak",05-8394048,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+AEE6058,SMK Dato' Kamaruddin,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Besar Batu Kurau, 34500 Batu Kurau, Perak",05-8880346,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+AEA6048,SMK Doktor Burhanuddin,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"No. 58, Jalan Raja Sulong, Kampung Boyan, 34000 Taiping, Perak",05-8072213,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0,1,0,0,0,0,0
+AEB6054,SMK Hua Lian,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Perak,"No. 10, Jalan Lumba Kuda, 34008 Taiping, Perak",05-8073472,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+AEA6052,SMK Kamunting,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Kampung Expo, 34600 Kamunting, Perak",05-8913723,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+AEE6050,SMK King Edward Vii,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Muzium Hulu, 34000 Taiping, Perak",05-8073191,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,1,0,1,0,0,0
+AEA6051,SMK Simpang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Matang, 34700 Simpang, Perak",05-8471144,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,0,1,0,0,1,0,0,0,0,0
+AEB6051,SMK St George,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Stesen, 34000 Taiping, Perak",05-8072408,,0,1,1,1,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,1,0,1,0,0,0
+AEE6060,SMK Tat Beng,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Sungai Nyior, 34800 Trong, Perak",05-8544220,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+AEA1110,SMK Ahmad Boestamam,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Hj Mohd Ali, 32000 Sitiawan, Perak",05-6911552,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+AEE1036,SMK Ambrose,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Ayer Tawar, 32400 Ayer Tawar, Perak",05-6722373,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+AEB1034,SMK Ayer Tawar,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Perak,"Jalan Pasar, 32400 Ayer Tawar, Perak",05-6722042,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+AEE1026,SMK Methodist Acs,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Lin Chen Mei, 32000 Sitiawan, Perak",05-6911071,,0,1,1,1,1,0,1,1,0,0,0,0,1,0,1,1,0,1,0,0,1,0,1,0,0,0
+AEB1031,SMK Nan Hwa,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Perak,"Jalan Lin Chen Mei, 32000 Sitiawan, Perak",05-6911077,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+AEE1032,SMK Raja Shahriman,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Jalan Parit, 32700 Beruas, Perak",05-6749237,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+AEE8701,SMK Iskandar Shah,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perak,"Jalan Pejabat Pos, 32800 Parit, Perak",05-3771228,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+AEA8003,SMK Sultan Abdul Jalil Shah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perak,"Seberang Perak, 36000 Teluk Intan, Perak",05-6553954,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+REE0059,SMK Derma,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perlis,"Jalan Penjara, 01000 Kangar, Perlis",04-9761202,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+REB0058,SMK Perlis,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Perlis,"Jalan Raja Syed Alwi, 01000 Kangar, Perlis",04-9761024,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+REB0057,SMK Putra,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perlis,"Jalan Padang Katong, 01000 Kangar, Perlis",04-9761150,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+REE0060,SMK Syed Alwi,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perlis,"Kayang, 01000 Kangar, Perlis",04-9762539,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+REA0056,SMK Syed Hassan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perlis,"Jalan Sekolah Derma, 01000 Kangar, Perlis",04-9766217,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0
+REE0063,SMK Tengku Suleiman,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Perlis,"Jalan Bukit Keteri, Beseri, 02400 Kangar, Perlis",04-9381367,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+PEA3034,SMK Seri Balik Pulau,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pulau Pinang,"Jalan Sungai Nipah, 11020 Balik Pulau, Pulau Pinang",04-8668262,,0,0,1,0,1,0,1,1,0,0,1,0,1,0,1,1,0,1,0,0,1,0,0,0,0,0
+PEB3038,SMK Sungai Ara,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pulau Pinang,"Jalan Dato' Hj Ismail Bin Hashim, 11900 Bayan Lepas, Pulau Pinang",04-6434557,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,1,1,0,0,1,0,1,0,0,0
+PEA4004,SMK Mutiara Impian,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pulau Pinang,"Jalan Besar, 14100 Simpang Ampat, Pulau Pinang",04-5873660,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0
+PEE4035,SMK Simpang Empat,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pulau Pinang,"Jalan Besar, 14100 Simpang Ampat, Pulau Pinang",04-5887255,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,1,0,0,0,0,0
+PEE4036,SMK Tun Syed Sheh Barakbah,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pulau Pinang,"Jalan Sungai Duri, Sungai Bakap, 14200 Sungai Jawi, Pulau Pinang",04-5824476,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+PEE4037,SMK Tunku Abdul Rahman,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pulau Pinang,"Jalan Bukit Panchor, 14300 Nibong Tebal, Pulau Pinang",04-5935030,,0,0,1,1,1,0,1,1,1,0,0,0,1,0,1,1,1,1,0,0,1,0,0,0,0,0
+PEB0045,SMJK Jit Sin,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMJK,Pulau Pinang,"Jalan Binjai, Taman Sri Rambai, 14000 Bukit Mertajam, Pulau Pinang",04-5391036,,0,1,1,1,0,0,1,1,0,1,0,0,1,0,1,1,1,1,0,0,0,0,0,0,0,0
+PEE0041,SMK Penanti,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pulau Pinang,"Kubang Semang, 14400 Kubang Semang, Pulau Pinang",04-5213215,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+PEA0004,SMK Seberang Jaya,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pulau Pinang,"Lengkok Sembilang, Seberang Jaya, 13700 Perai, Pulau Pinang",04-3996601,,0,0,1,1,1,0,1,1,0,0,1,0,0,0,1,1,1,1,0,0,1,0,0,0,0,0
+PEB0042,SMK Tinggi Bukit Mertajam,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pulau Pinang,"77, Jalan Sri Bukit, 14000 Bukit Mertajam, Pulau Pinang",04-5393420,,0,0,1,1,1,0,1,1,0,1,1,0,1,0,1,1,1,1,0,0,1,0,0,0,0,0
+PEA2089,Kolej Tingkatan Enam Desa Murni,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Pulau Pinang,"Sungai Dua, 13800 Butterworth, Pulau Pinang",04-3567569,,0,0,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,0,0,1,1,1,1,0,1
+PEA2056,SMJK Chung Ling Butterworth,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMJK,Pulau Pinang,"Jalan Ong Yi How, 13400 Butterworth, Pulau Pinang",04-3316480,,0,1,1,1,0,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,0,0,0,0,0,0
+PEA2054,SMK Datuk Hj Ahmad Badawi,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Pulau Pinang,"Jalan Datuk Haji Ahmad Badawi, 13200 Kepala Batas, Pulau Pinang",04-5751142,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+PEA2057,SMK Teluk Air Tawar,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pulau Pinang,"Telok Ayer Tawar, 13050 Butterworth, Pulau Pinang",04-3512320,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,1,1,0,0,1,0,0,1,0,0
+PEE1111,Kolej Tingkatan Enam Hj Zainul Abidin,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Pulau Pinang,"Jalan Hamilton, 11600 Georgetown, Pulau Pinang",04-2827933,,0,0,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,0,0,1,1,1,1,0,0
+PEB1096,SMJK Chung Ling Pulau Pinang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMJK,Pulau Pinang,"Kampung Baru, 11400 George Town, Pulau Pinang",04-8282435,,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0
+PEB1093,SMJK Perempuan China,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMJK,Pulau Pinang,"2, Jalan Gottlieb, 10350 Georgetown, Pulau Pinang",04-2277124,,0,1,1,1,0,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,0,0,0,0,0,0
+PEB1106,SMK (L) Methodist,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pulau Pinang,"250 Jalan Ayer Itam, 10460 Georgetown, Pulau Pinang",04-2293986,,0,1,1,1,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,1,0,0,0,0,0
+PEB1095,SMK Chung Hwa,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Pulau Pinang,"2, Pesiaran Tembaga, 11600 Georgetown, Pulau Pinang",04-6583414,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+PEB1103,SMK Heng Ee,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pulau Pinang,"99 Jalan Hamilton, 11600 George Town, Pulau Pinang",04-2824402,,0,1,1,1,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,0,0,1,0,0,0
+PEA1092,SMK Hutchings,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pulau Pinang,Pulau Pinang,TIADA,,0,0,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,0,0,1,0,1,0,0,0
+PEB1094,SMK Penang Free,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pulau Pinang,"Jalan Masjid Negeri, 11600 Georgetown, Pulau Pinang",04-2815814,,0,0,1,1,1,0,1,1,0,0,0,1,1,0,1,1,1,1,0,0,1,0,0,0,0,0
+PEB1110,SMK St. Xavier,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Pulau Pinang,"Lebuh Farquhar, 10200 Georgetown, Pulau Pinang",04-2610411,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,1,0,0,0,0,0
+XEA6065,SMK Beaufort,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 291, 89808 Beaufort, Sabah",087-211125,,0,0,1,1,1,0,1,1,1,0,1,0,1,0,1,1,0,1,0,0,1,1,1,0,0,0
+XEA6066,SMK Beaufort Ii,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 362, 89809 Beaufort, Sabah",087-214599,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+XEE6011,SMK Gadong,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 178, 89808 Beaufort, Sabah",087-221602,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+XEE6021,SMK Kota Klias,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 164, 89808 Beaufort, Sabah",087-881168,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEA6100,SMK Membakut Ii,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 205, 89727 Membakut, Sabah",087-889854,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+XEE6061,SMK Weston,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 197, 89808 Beaufort, Sabah",087-871454,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+XEE2103,SMK Beluran,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 30, 90107 Beluran, Sabah",089-511259,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,1,0,0
+XEA2143,SMK Pamol,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 3018, 90733 Sandakan, Sabah",089-515575,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XFE1021,SM Ken Hwa Keningau,,IPTA,Kolej Tingkatan 6,STPM Campuran,SM,Sabah,"Peti Surat 55, 89007 Keningau, Sabah",087-331561,,0,1,1,1,1,0,1,0,0,0,0,0,0,0,1,1,1,1,0,0,1,0,1,0,0,0
+XEE1023,SMK Gunsanad,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 85, 89007 Keningau, Sabah",087-331587,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+XEA1058,SMK Keningau,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 272, 89008 Keningau, Sabah",087-333107,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+XEA1059,SMK Keningau Dua,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 1994, 89008 Keningau, Sabah",087-391280,,0,0,1,0,1,0,0,1,1,1,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+XEA1060,SMK Sook,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 1613, 89008 Keningau, Sabah",087-365464,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+XEA2220,SMK Bukit Garam,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Wdt 12, Kota Kinabatangan, 90200 Kinabatangan, Sabah",089-561909,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+XEE5318,SMK Arshad,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 19, 89157 Kota Belud, Sabah",088-976530,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,1,0,0,0,1,0,0,0,0,0
+XEA5353,SMK Pekan Kota Belud,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Wdt 139, 89159 Kota Belud, Sabah",088-977279,,0,0,1,0,1,0,0,1,1,1,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0
+XEA5351,SMK Taun Gusi,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 81, 89158 Kota Belud, Sabah",088-976116,,0,0,1,0,1,0,0,1,1,1,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+XEA4048,Kolej Tingkatan Enam Kota Kinabalu,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Sabah,"Beg Berkunci 2031, 88450 Kota Kinabalu, Sabah",088-470761,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,1,1,0,0,1,1,1,0,0,0
+XEE4038,Maktab Sabah,,IPTA,Kolej Tingkatan 6,STPM Campuran,Maktab,Sabah,"10548 Peti Surat, Kota Kinabalu, 88806, Sabah",088-225201,,0,0,1,1,1,0,1,1,1,1,0,0,1,0,1,1,0,1,0,0,1,1,1,1,0,0
+XFE4001,SM All Saints,,IPTA,Kolej Tingkatan 6,STPM Campuran,SM,Sabah,"10520 P.O. Box  Jalan Teluk Likas, Kota Kinabalu, 88400, Sabah",088-428610,,0,0,1,1,1,0,1,1,1,0,0,0,1,0,1,1,0,1,0,0,1,0,1,0,0,0
+XFE4022,SM La Salle,,IPTA,Kolej Tingkatan 6,STPM Campuran,SM,Sabah,"10282 Peti Surat, Kota Kinabalu, 88803, Sabah",088-224326,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,1,0,1,0,0,0
+XFE4027,SM Lok Yuk,,IPTA,Kolej Tingkatan 6,STPM Sastera,SM,Sabah,"10352 Peti Surat, Kota Kinabalu, 88300, Sabah",088-426737,,0,0,1,0,1,0,0,1,0,0,0,0,1,0,0,1,1,0,0,0,1,1,1,0,0,0
+XFE4021,SM Tinggi,,IPTA,Kolej Tingkatan 6,STPM Campuran,SM,Sabah,"10224 Peti Surat, Kota Kinabalu, 88300, Sabah",088-211788,,0,1,1,1,1,0,1,1,1,0,0,0,1,0,1,1,1,1,0,0,0,0,1,0,0,0
+XEE4020,SMK Likas,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 235, 88856 Kota Kinabalu, Sabah",088-239595,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEA4040,SMK Sanzac,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 264, 88100 Kota Kinabalu, Sabah",088-210360,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+XRA4003,SMKA Kota Kinabalu,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMKA,Sabah,"Jalan Bukit Padang, 88300 Kota Kinabalu, Sabah",088-243548,,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,1,1,1
+XEA5102,SMK Bengkongan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 454, 89107 Kota Marudu, Sabah",088-667521,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+XEE5118,SMK Kota Marudu,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 11, 89107 Kota Marudu, Sabah",088-661346,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,0,0,0,1,1,1,0,0,0
+XEA5105,SMK Kota Marudu Ii,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Beg Berkunci 18, 89108 Kota Marudu, Sabah",088-661319,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0
+XEA5101,SMK Tandek,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 153, 89108 Kota Marudu, Sabah",088-661173,,0,0,1,1,1,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,1,1,1,0,0,0
+XEE6310,SMK Kuala Penyu,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 29, 89747 Kuala Penyu, Sabah",087-884275,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEA6314,SMK Menumbok,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 03, 89767 Menumbok, Sabah",087-831282,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEA6315,SMK Pekan Kuala Penyu,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 207, 89747 Kuala Penyu, Sabah",087-885851,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEE5019,SMK Abdul Rahim,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 131, 89057 Kudat, Sabah",088-612092,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,0,0,0,1,1,1,0,0,0
+XEA5001,SMK Kudat,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 353, 89058 Kudat, Sabah",088-611316,,0,0,1,1,1,0,1,1,1,1,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+XEA5023,SMK Kudat Ii,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 505, 89058 Kudat, Sabah",088-621381,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+XEA5022,SMK Pinawantai,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Wdt 21, 89058 Kudat, Sabah",088-615730,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0
+XEA5004,SMK Sikuati,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 355, 89058 Kudat, Sabah",088-613498,,0,0,1,1,1,0,1,1,1,1,1,0,0,0,1,1,0,1,0,0,1,1,1,0,0,0
+XEA3201,SMK Kunak Jaya,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 124, 91207 Kunak, Sabah",089-851667,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+XEE3117,SMK Agaseh,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"60254 Peti Surat, Lahad Datu, 91112, Sabah",089-881836,,0,0,1,1,1,0,1,1,1,1,1,0,0,0,1,1,1,0,0,0,1,0,0,0,0,0
+XEA3106,SMK Segama,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"61400 Batu 13 Jalan Sandakan, Lahad Datu, 91122, Sabah",089-888679,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+XEA3104,SMK Sepagaya,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"61054 Peti Surat, Lahad Datu, 91119, Sabah",089-884554,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,1,1,0,0,1,0,0,0,0,0
+XEA3101,SMK Tungku,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"60847 Peti Surat, Lahad Datu, 91117, Sabah",089-871101,,0,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+XEA1111,SMK Nabawan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 68, 89957 Nabawan, Sabah",087-366215,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+XEA4262,SMK Benoni,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 189, 89608 Papar, Sabah",088-912337,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEE6102,SMK Bongawan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 03, 89700 Bongawan, Sabah",087-861990,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+XEA4261,SMK Kinarut,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 637, 89608 Papar, Sabah",088-750181,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEE4239,SMK Majakir,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 110, 89608 Papar, Sabah",088-913554,,0,0,1,1,1,0,0,1,1,0,1,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+XEA4263,SMK Takis,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 486, 89600 Papar, Sabah",088-915251,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XRA4201,SMKA Tun Datu Mustapha,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMKA,Sabah,"Wdt 15, 89609 Papar, Sabah",088-752955,,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,1,0,1
+XEA4130,SMK Limbanak,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Sabah,"Peti Surat 495, 89507 Penampang, Sabah",088-728264,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+XEE4110,SMK Putatan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 96, 88200 Putatan, Sabah",088-764368,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,1,1,1,0,0
+XEA5217,SMK Pinggan-Pinggan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 441, 89108 Kota Marudu, Sabah",088-662872,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+XEA5216,SMK Pitas,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 284, 89108 Pitas, Sabah",088-613244,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEA5221,SMK Pitas Ii,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Beg Berkunci No. 4, 89108 Kota Marudu, Sabah",088-687091,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+XEA5403,SMK Kundasang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 105, 89308 Ranau, Sabah",088-878433,,0,0,1,1,1,0,0,1,1,0,0,0,0,0,1,1,0,1,0,0,1,1,1,1,0,0
+XEA5404,SMK Lohan,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 197, 89308 Ranau, Sabah",088-875241,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,0,0,0,1,1,1,0,0,0
+XEE5435,"SMK Mat Salleh, Ranau",,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 43, 89307 Ranau, Sabah",088-875445,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,1,1,0,0,0
+XEA5407,SMK Ranau,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 661, 89308 Ranau, Sabah",088-879861,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0
+XRA5401,SMKA Mohamad Ali Ranau,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMKA,Sabah,"Peti Surat 124, 89308 Ranau, Sabah",088-876215,,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,1,0,1
+XEA2073,Kolej Tingkatan Enam Datuk Pengiran Galpam,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Sabah,"Peti Surat 200, 90307 Sandakan, Sabah",089-211604,,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,0,0,1,1,1,1,0,1
+XEA2072,SMK Batu Sapi,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 1760, 90719 Sandakan, Sabah",089-612954,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+XEA2071,SMK Elopura,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 1091, 90712 Sandakan, Sabah",089-533960,,0,0,1,1,1,0,1,1,0,0,1,0,0,0,1,1,0,1,0,0,1,1,0,0,0,0
+XEA2083,SMK Elopura 2,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Tingkat 5, Wisma Persekutuan, 90000 Sandakan, Sabah",089-632601,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0
+XEA2075,SMK Muhibbah,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Batu 4, Jalan Cecily Utara, 90000 Sandakan, Sabah",089-214491,,0,0,1,1,1,0,1,1,1,0,0,0,1,0,1,1,0,0,0,0,1,1,1,0,0,0
+XEA2084,SMK Sandakan 2,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 2769, 90731 Sandakan, Sabah",089-632810,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEA2081,SMK Segaliud,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 2594, 90729 Sandakan, Sabah",TIADA,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+XEA3329,SMK Bugaya,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"W.D.T 25, 91309 Semporna, Sabah",089-781591,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEA3330,SMK Bum-Bum,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"W.D.T 72, 91308 Semporna, Sabah",089-786710,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEE3318,SMK Dtk Pg. Abdullah,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 114, 91308 Semporna, Sabah",089-781657,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,0,0,0,1,1,1,0,0,0
+XEA3331,SMK Tagasan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 409, 91308 Semporna, Sabah",089-784164,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEE6221,"SMK Pengiran Omar, Sipitang",,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 29, 89857 Sipitang, Sabah",087-821439,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,1,1,0,0,0
+XEA6203,SMK Sindumin,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"W.D.T. 44, 89859 Sipitang, Sabah",087-811766,,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0
+XEA1219,SMK Tambunan,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 30, 89657 Tambunan, Sabah",087-774097,,0,0,1,1,1,0,1,1,1,1,0,0,0,0,1,1,0,1,0,0,1,1,1,0,0,0
+XFE3002,SMK Abaka,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"61754 Peti Surat, Tawau, 91027, Sabah",089-768871,,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+XEA3053,SMK Balung,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"60070 Peti Surat, Tawau, 91010, Sabah",089-951032,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0
+XEA3062,SMK Kinabutan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"60267 Peti Surat, Tawau, 91012, Sabah",089-912161,,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+XEA3064,SMK Kinabutan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 272, 91007 Tawau, Sabah",089-902773,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEA3067,SMK Kinabutan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 1701, 91042 Tawau, Sabah",089-927017,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEA1345,SMK Kemabong,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 281, 89908 Tenom, Sabah",087-737299,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0
+XEE1338,SMK Tenom,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 195, 89908 Tenom, Sabah",087-735242,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEA2224,SMK Penangah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 82, 89320 Telupid, Sabah",087-307445,,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+XEA2141,SMK Telupid,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 02, 89320 Telupid, Sabah",089-521734,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0
+XEA4302,SMK Sri Nangka,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Peti Surat 803, 89208 Tuaran, Sabah",088-793779,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+XEE4401,SMK Tamparuli,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Wdt 70, 89259 Tamparuli, Sabah",088-782345,,0,0,1,1,1,0,1,1,1,1,1,0,0,0,1,1,0,0,0,0,1,1,1,0,0,0
+XEA4401,SMK Tenghilan,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sabah,"Peti Surat 875, 89257 Tamparuli, Sabah",088-981197,,0,0,1,1,1,0,1,1,1,1,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+XEE4322,SMK Tun Fuad Stephens,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sabah,"Beg Berkunci 5, 89259 Tamparuli, Sabah",088-782835,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEB4302,SMK Long Lama,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Jalan Mawar, 98300 Long Lama, Sarawak",085-771278,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEB4301,SMK Marudi,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Limbang, Marudi, 98050 Baram, Sarawak",085-755435,,0,1,1,0,1,0,1,0,1,0,0,0,0,0,1,1,0,1,0,0,1,1,1,0,0,0
+YEE1101,SMK Bau,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Sebuku, 94000 Bau, Sarawak",082-763117,,0,0,1,1,1,0,1,1,1,0,1,0,1,0,1,1,0,1,0,0,1,0,1,0,0,0
+YEE7201,SMK Belaga,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Jalan Taman Tipung Tului, 96900 Belaga, Sarawak",086-461445,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+YEE2402,SMK Datuk Patinggi Kedit,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"KM 7.2, Jalan Betong/Kuching, 95700 Betong, Sarawak",083-472018,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+YEA2401,SMK Pusa,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"KM 1, Jalan Besar Pusa, 94950 Pusa, Sarawak",083-465133,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEE2401,SMK Saribas,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Pekan Debak, 95500 Debak, Sarawak",083-464109,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+YEA2402,SMK Spaoh,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Jalan Kampung Spaoh, 95600 Spaoh, Sarawak",083-473399,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YFB2401,SMK St Augustine,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Jalan Datuk Basil Temenggong, 95700 Betong, Sarawak",083-472122,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEA9104,SMK Asyakirin,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"D/A Pejabat Pendidikan Daerah Bintulu, KM 5, Jalan Sultan Iskandar, 97000 Bintulu, Sarawak",086-255592,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0
+YEA9101,SMK Bandar Bintulu,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Peti Surat 607, Bintulu, 97008 Bintulu, Sarawak",086-332615,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,0,0,1,0,0,0
+YEE9103,SMK Bintulu,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"KM 5, Jalan Sultan Iskandar, P.O. Box 97, 97007 Bintulu, Sarawak",086-331217,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+YEA9103,SMK Kidurong,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Peti Surat 2078, 97011 Bintulu, Sarawak",086-254225,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,0,0,1,0,0,0
+YEA3501,SMK Oya,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"D/A Pejabat Pendidikan Daerah Dalat, 96410 Oya, Sarawak",084-867885,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEE6402,SMK Toh Puan Datuk Patinggi Hajah Normah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"D/A Pejabat Pendidikan Daerah Daro, 96200 Daro, Sarawak",084-823262,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEA3302,SMK Kanowit,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Jalan Durin Kanowit Sibu, 96700 Kanowit, Sarawak",084-752152,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEA7103,SMK Kapit No.2,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"D/A Pejabat Pendidikan Daerah Kapit, Tingkat 1 & 2, Wisma Persekutuan, Jalan Penghulu Nyanggau, 96807 Kapit, Sarawak",084-796071,,0,0,1,1,1,0,1,0,1,0,1,0,0,0,1,1,0,0,0,0,1,0,1,0,0,0
+YEA1205,SMK Bako,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Jalan Bako, 93050 Kuching, Sarawak",082-432251,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEE1204,SMK Batu Lintang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan College, 93200 Kuching, Sarawak",082-254579,,0,0,1,1,1,0,1,1,1,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+YEA1201,SMK D.P.H.A. Gapor,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Lorong Stampin 23, Jalan Stampin, 93350 Kuching, Sarawak",082-451130,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+YEB1201,SMK Green Road,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Lebuh Sockalingam, Jalan Green, 93150 Kuching, Sarawak",082-243541,,0,1,1,1,1,0,1,1,1,0,0,0,0,0,1,1,1,1,0,0,1,0,0,0,0,0
+YEE1201,SMK Pending,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Tun Razak, 93450 Kuching, Sarawak",082-331210,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,1,1,0,0,1,1,1,0,0,0
+YEA1301,SMK Petra Jaya,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Jalan Semarak, Petra Jaya, 93050 Kuching, Sarawak",082-254824,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YFB1202,SMK St Joseph,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Tun Abang Hj Openg, 93000 Kuching, Sarawak",082-240885,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+YFB1204,SMK St Joseph,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Mcdougall, 93000 Kuching, Sarawak",082-242539,,0,0,1,1,1,0,1,1,1,0,0,1,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+YEE1301,SMK Tun Abang Haji Openg,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Jalan Demak, Petra Jaya, 93050 Kuching, Sarawak",082-447540,,0,0,1,0,1,0,0,1,1,1,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEA5202,SMK Merapok,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"KM 30, Jalan Merapok, 98850 Lawas, Sarawak",TIADA,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEA5102,SMK Kubong,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Bukit Empas, Batu 2, Jalan Kubong, 98700 Limbang, Sarawak",085-216602,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+YEE2301,SMK Engkilili,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"KM 3, Engkilili, 95800 Engkilili, Sarawak",083-563020,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEE1401,SMK Lundu,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"KM 2, Jalan Lundu/Pandan, 94500 Lundu, Sarawak",082-735252,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+YEE6301,SMK Meradong,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Kanowit-Julau-Durin, 96509 Bintangor, Sarawak",084-691911,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,1,1,0,0,0
+YEB4101,Kolej Tun Datu Tuanku Haji Bujang,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej,Sarawak,"Jalan Bunga Tanjung 2, Tanjung Lobang, 98009 Miri, Sarawak",085-411795,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,0,1,0,0,1,1,1,0,0,0
+YEA4102,SMK Baru,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Cahaya Lopeng, 98000 Miri, Sarawak",085-431707,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+YFB4101,SMK Chung Hua,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Sarawak,"Peti Surat 116, Jalan Brighton, 98007 Miri, Sarawak",085-433517,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+YEE4101,SMK Lutong,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Pantai, Lutong, 98100 Miri, Sarawak",085-655205,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+YEA4107,SMK Merbau,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Lot 6410, Blok 10, Kuala Baram Land District, 98100 Miri, Sarawak",085-665159,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEE3401,SMK Three Rivers,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"D/A Pejabat Pendidikan Daerah Mukah, Jalan Haji Mohamad Fauzi, 96400 Mukah, Sarawak",084-871240,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,0,0,0,1,0,1,0,0,0
+YEA1304,SMK Batu Kawa,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Jalan Batu Kawa, Off Jalan Field Force, 93250 Kuching, Sarawak",082-688140,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+YEA1208,SMK Matang Jaya,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Taman Matang Jaya, Jalan Matang, 93050 Kuching, Sarawak",082-647560,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,0,0,0,1,1,1,0,0,0
+YEB1301,SMK Tun Abdul Razak,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"KM 38, Jalan Kuching-Serian, 94200 Kuching, Sarawak",082-895226,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+YEA8101,SMK Asajaya,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Jalan Kampung Asajaya Laut, 94600 Asajaya, Sarawak",082-824010,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEA8102,SMK Kota Samarahan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Jalan Dato Mohd Musa, 94300 Kota Samarahan, Sarawak",082-672353,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEE8101,SMK Muara Tuang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"KM 9, Jalan Dato Mohd Musa, 94300 Kota Samarahan, Sarawak",082-617362,,0,0,1,1,1,0,1,1,0,0,1,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+YEA1302,SMK Wira Penrissen,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"KM 14, Jalan Kuching-Serian, 94300 Kota Samarahan, Sarawak",082-612740,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEAA201,Kolej Tingkatan Enam Saratok,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Sarawak,"Lot 2443 Blok 7, Awik-Krian Land District, Sungai Danan, 95400 Saratok, Sarawak",083-436317,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,0,0,0,1,0,1,0,0,0
+YEB6101,SMK Bandar Sarikei,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Peti Surat 228, 96100 Sarikei, Sarawak",084-651210,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEE6101,SMK Sg Paoh,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Peti Surat 160, 96107 Sarikei, Sarawak",084-671020,,0,0,1,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YFB6102,SMK St Anthony,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"KM 1, Jalan Repok, 96100 Sarikei, Sarawak",084-651363,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+YEB8204,SMK Balai Ringin,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"KM 93, Jalan Kuching / Sri Aman, 94700 Serian, Sarawak",082-877510,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEB8205,SMK Serian,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Ilmu, 94700 Serian, Sarawak",082-874001,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,0,0,0,1,0,1,0,0,0
+YEA8201,SMK Taee,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"KM 9, Jalan Riih-Baki, 94700 Serian, Sarawak",TIADA,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEB8203,SMK Tarat,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"KM 53, Jalan Kuching/Serian, 94700 Serian, Sarawak",082-874128,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEA3106,SMK Bandar Sibu,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Ling Kai Cheng, 96000 Sibu, Sarawak",084-336601,,0,1,1,1,1,0,1,1,1,0,0,0,1,0,1,1,0,1,0,0,1,0,1,0,0,0
+YFB3106,SMK Chung Hua,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Lanang, 96000 Sibu, Sarawak",084-211035,,0,1,1,1,1,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+YEE3201,SMK Durin,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Peti Surat 190, Jalan Durin, 96007 Sibu, Sarawak",084-736386,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEE3202,SMK Jalan Oya,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Jalan Kemuyang, 96000 Sibu, Sarawak",084-217610,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+YEE3102,SMK Kampung Nangka,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Tun Abang Haji Openg, 96000 Sibu, Sarawak",084-334988,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,0,0,1,0,0,0
+YEA3104,SMK Lanang,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"P.O. Box 1369, Jalan Lada, 96000 Sibu, Sarawak",084-215540,,0,1,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+YEB3201,SMK Luar Bandar Sibu No.1,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"P.O. Box 355, Jalan Oya, 96007 Sibu, Sarawak",084-894363,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YFB3101,SMK Methodist,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Tun Abang Haji Openg, 96000 Sibu, Sarawak",084-330414,,0,1,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,0,0,1,0,0,0
+YEE3101,SMK Rosli Dhoby,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Deshon, 96000 Sibu, Sarawak",084-323419,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,1,1,0,0,0
+YFB3102,SMK Sacred Heart,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"KM 3, Jalan Oya, Peti Surat 99, 96000 Sibu, Sarawak",084-322619,,0,1,1,1,1,0,1,1,1,0,0,0,1,0,1,1,1,1,0,0,0,0,1,0,0,0
+YEA3105,SMK Sg Merah,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Jalan Ulu Sungai Merah, 96000 Sibu, Sarawak",084-311302,,0,1,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+YEA3103,SMK Sibu Jaya,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"KM 32, Jalan Durin, Taman Sibu Jaya, 96000 Sibu, Sarawak",011-65728009,,0,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+YFB3105,SMK Tung Hua,,IPTA,Kolej Tingkatan 6,STPM Sains,SMK,Sarawak,"Jalan Tun Abang Haji Openg, Peti Surat 64, 96007 Sibu, Sarawak",084-330299,,0,0,1,1,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,0,0,0,0
+YEE8304,SMK Simunjan No.1,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Kampung Melanjok, 94800 Simunjan, Sarawak",082-805122,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEE7301,SMK Song,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Peti Surat No. 3, 96850 Song, Sarawak",084-777255,,0,0,1,0,1,0,0,0,1,0,1,0,0,0,0,1,0,0,0,0,1,1,1,0,0,0
+YEE2101,SMK Simanggang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Sarawak,"Peti Surat 304, 95000 Sri Aman, Sarawak",083-322232,,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+YEA2101,SMK Sri Aman,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Peti Surat 62, 95007 Sri Aman, Sarawak",083-326985,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+YEE4401,SMK Luar Bandar Miri,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"KM 55, Jalan Miri-Bintulu C D T 242, 98009 Miri, Sarawak",085-710260,,0,0,1,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+YEA4401,SMK Suai,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"Peti Surat 235 Pejabat Pos Batu Niah, 98200 Niah, Sarawak",085-738373,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+YEA9201,SMK Tatau,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Sarawak,"D/A Pejabat Pendidikan Daerah Tatau, Jalan Kampung Dagang, 97200 Tatau, Sarawak",086-584616,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+BEA8605,SMK Bukit Gading,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Selangor,"KM 26, Sungai Plong, 47000 Sungai Buloh, Selangor",03-60383258,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,1,0,0,0,1,0,1,0,0,0
+BEA7615,SMK Darul Ehsan,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Jalan 29, Selayang Baru, 68100 Batu Caves, Selangor",03-61364877,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,1,1,1,0,0,0
+BEA7601,SMK Gombak Setia,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Jalan Seri Setia, 53100 Gombak, Selangor",03-61896329,,0,0,1,1,1,0,1,1,1,1,0,0,0,0,1,1,0,0,0,0,1,0,0,0,0,0
+BEB7652,SMK Hulu Kelang,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Selangor,"KM 7, Jalan Hulu Kelang, 68000 Ampang, Selangor",03-42565159,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+BEB7651,SMK Kepong,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Jalan Frim, Kepong, 52100 Kuala Lumpur, Selangor",03-62740080,,0,0,1,1,0,0,1,1,1,0,0,0,0,0,1,1,1,1,0,0,0,0,1,0,0,0
+BEB7654,SMK Seri Garing,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Jalan Kuala Garing, 48000 Rawang, Selangor",03-60916491,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,1,0,1,0,0,0
+BEA7617,SMK Taman Desa,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Bandar Country Homes, 48000 Rawang, Selangor",03-60917935,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,1,0,0,0,1,0,1,0,0,0
+BEA7604,SMK Taman Ehsan,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Kepong, Selangor, 52100 Kuala Lumpur, Selangor",03-62762618,,0,0,1,1,0,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,1,0,0,0,0,0
+BEA4628,SMK Bandar Tasik Kesuma,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Selangor,"Jalan Kesuma 7/1, Bandar Tasik Kesuma, 43700 Beranang, Selangor",03-87667599,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0
+BEA4630,SMK Bandar Tun Hussein Onn 2,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Persiaran Suadamai, Bandar Tun Hussein Onn, 43200 Cheras, Selangor",03-90766753,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,1,0,0,0,1,0,0,0,0,0
+BEA4631,SMK Pandan Mewah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Selangor,"Jalan Pandan Mewah 1, Pandan Mewah, 55100 Kuala Lumpur, Selangor",03-42954210,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0,1,0,0,0,0,0
+BEA4611,SMK Perimbun,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Selangor,"KM 16, Jalan Cheras, 43200 Cheras, Selangor",03-90745828,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+BEA4604,SMK Sultan Abdul Aziz Shah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Selangor,"KM 22, Jalan Cheras, 43000 Kajang, Selangor",03-87376387,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+BEA4601,SMK Taman Tasik,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Jalan Tasik Tambahan 2, 68000 Ampang, Selangor",03-42912049,,0,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+BEB4069,SMK Tinggi Kajang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Jalan Semenyih, 43000 Kajang, Selangor",03-87363044,,0,0,1,1,1,1,1,1,1,0,1,0,0,0,1,1,1,1,0,0,1,1,1,1,0,0
+BEB4070,SMK Yu Hua,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Jalan Low Ti Kok, 43000 Kajang, Selangor",03-87367514,,0,1,1,1,0,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0
+BEA5061,SMK Kuala Kubu Bharu,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Jalan Kolam Air, 44000 Kuala Kubu Bharu, Selangor",03-60641162,,0,0,1,0,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+BEA5063,SMK Sungai Choh,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Kampung Sungai Choh, 48000 Rawang, Selangor",03-60916081,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,1,0,0,0,1,0,1,0,0,0
+BEA0099,Kolej Tingkatan Enam Sri Istana,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Selangor,"Jalan Istana, 41000 Klang, Selangor",03-33724846,,0,0,1,1,1,1,1,1,1,1,0,0,1,0,1,1,1,1,0,0,1,1,1,0,0,0
+BEA0110,SMK Sungai Kapar Indah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Selangor,"Jalan Harapan 3A, Taman Sungai Kapar Indah, Kapar, 42200 Klang, Selangor",03-32903121,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0,1,1,1,0,0,0
+BEB0102,SMK Tinggi Klang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Lot 161 & 48, Jalan Meru, 41710 Klang, Selangor",03-33412340,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,1,0,1,1,0,0
+BEA1066,SMK Telok Datok,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Jalan Sultan Abdul Samad, 42700 Banting, Selangor",03-31871303,,0,0,1,1,1,1,1,1,1,0,1,0,0,0,1,1,1,1,0,0,1,0,1,0,0,0
+BEA1069,SMK Telok Panglima Garang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"P Pos Telok, 42500 Telok Panglima Garan, Selangor",03-31227914,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,0,0,0,1,0,1,0,0,0
+BEB3078,Kolej Tingkatan Enam Sultan Abdul Aziz,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Selangor,"Jalan Dato' Hamzah, 45000 Kuala Selangor, Selangor",03-32891380,,1,0,1,1,1,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,1,0,1,1,0,1
+BEA8609,Kolej Tingkatan Enam Puchong,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Selangor,"Batu 8, Jalan Puchong, 47100 Puchong, Selangor",03-80702830,,0,0,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,1,1,1,0,0,0
+BEA8619,Kolej Tingkatan Enam Shah Alam,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Selangor,"Jalan Timun 24/1, 40300 Shah Alam, Selangor",03-55414172,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,0,1,0,0,1,1,1,0,0,0
+BEA8606,SMK Seri Serdang,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Taman Sri Serdang, 43300 Seri Kembangan, Selangor",03-89489199,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,0,1,0,0,1,0,0,0,0,0
+BEA8631,Kolej Tingkatan Enam Bandar Utama,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Selangor,"1 Pintasan Bandar Utama, 47800 Petaling Jaya, Selangor",03-77252829,,0,0,1,1,1,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,1,1,0,0,0,0
+BEA8669,Kolej Tingkatan Enam Petaling Jaya,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Selangor,"Jalan PJS 5/26, Petaling Jaya, 46000 Petaling Jaya, Selangor",03-77726570,,0,0,1,1,1,0,1,1,0,0,1,1,1,0,1,1,1,1,0,0,1,1,1,0,0,0
+BEB8653,SMK Katholik,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Jalan 10/3, 46000 Petaling Jaya, Selangor",03-79565484,,0,1,1,1,0,0,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0
+BEB6044,Kolej Tingkatan Enam Tunku Abdul Rahman Putra,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Selangor,"Jalan Kalabakan, 45200 Sabak Bernam, Selangor",03-32161394,,0,0,1,1,1,0,1,1,1,1,1,0,1,0,1,1,0,1,0,0,1,1,1,1,0,0
+BEA9604,SMK Bandar Baru Salak Tinggi,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Taman Dahlia, Bandar Baru Salak Tinggi, 43900 Sepang, Selangor",03-87068849,,0,0,1,0,1,0,1,0,0,0,0,0,0,0,1,1,0,1,0,0,1,0,0,0,0,0
+BEA9609,SMK Cyberjaya,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Selangor,"Persiaran Fauna 2, Zon Flagship 2, 63000 Cyberjaya, Selangor",03-83188088,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+BEB9651,SMK Sungai Pelek,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Selangor,"Pekan Sungai Pelek, 43950 Sg.Pelek, Selangor",03-31411245,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,0,0,0,1,0,0,0,0,0
+TEA0069,SMK Bukit Payong,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Kampung Bukit Payong, 22010 Jerteh, Terengganu",09-6061262,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA0070,SMK Bukit Payong,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Kampung Renek, 22020 Jerteh, Terengganu",09-6974037,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA0058,SMK Kuala Besut,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Kuala Besut, 22300 Besut, Terengganu",09-6902851,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA0060,SMK Nasiruddin Shah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Alor Lintang, 22200 Besut, Terengganu",09-6956050,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA0073,SMK Putra,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Kampung Darau, 22000 Jerteh, Terengganu",09-6973590,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA0059,SMK Seri Nering,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Kampung Pulau Rimau, 22000 Jerteh, Terengganu",09-6971355,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0
+TEB0062,SMK Tengku Mahmud,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Terengganu,"Kampung Alor Lintang, 22200 Besut, Terengganu",09-6956144,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,0,0,0,1,1,1,0,0,0
+TEA1032,SMK Durian Mas,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Bandar Al Muktafi Billah Shah, 23400 Dungun, Terengganu",09-8223500,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+TEA1037,SMK Ketengah Jaya,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Bandar Ketengah Jaya, 23300 Dungun, Terengganu",09-8200150,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+TEA1030,SMK Paka,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Jalan Santong, 23100 Paka, Terengganu",09-8271662,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+TEA1029,SMK Tengku Intan Zaharah,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Terengganu,"Dungun, 23000 Dungun, Terengganu",09-8481834,,0,0,1,1,1,0,1,1,1,0,0,0,1,0,1,1,0,0,0,0,1,0,1,0,0,0
+TEA5047,Kolej Tingkatan Enam Hulu Terengganu,,IPTA,Kolej Tingkatan 6,STPM Campuran,Kolej Tingkatan 6,Terengganu,"Kuala Berang, 21700 Kuala Berang, Terengganu",09-6813145,,0,0,1,0,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,1,1,0,0,0
+TEA5040,SMK Kuala Telemong,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Kampung Kuala Telemong, 21210 Kuala Terengganu, Terengganu",09-6142446,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+TEA5037,SMK Landas,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"KM 19, Jalan Jerangau, 21820 Ajil, Terengganu",011-65752502,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA5038,SMK Menerong,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Kampung Menerong, 21800 Ajil, Terengganu",09-6122582,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA2023,SMK Badrul Alam Shah,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Kemasek, 24200 Kemaman, Terengganu",09-8662220,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+TEA2021,SMK Cheneh Baru,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Bandar Ceneh Baru, 24000 Kemaman, Terengganu",09-8730223,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA2022,SMK Chukai,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Jalan Kubang Kurus, 24000 Chukai, Terengganu",09-8591301,,0,0,1,0,1,0,0,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEB2025,SMK Sultan Ismail,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Terengganu,"Jalan Kemaman - K. Trg, 24000 Kemaman, Terengganu",09-8591955,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+TEA3110,SMK Belara,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Manir, 21200 Kuala Terengganu, Terengganu",09-6152080,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA3088,SMK Manir,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Kampung Kubang Jela, 21200 Kuala Terengganu, Terengganu",09-6152315,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA3083,SMK Padang Midin,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Terengganu,"Jalan Kuala Berang, 21400 Kuala Terengganu, Terengganu",09-6220833,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,0,0,0,1,0,1,0,0,0
+TEA3123,SMK Seri Nilam,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Jalan Kubang Tangga, 20050 Kuala Terengganu, Terengganu",09-6301700,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA3112,SMK Sultan Ahmad,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Losong Haji Mat Shafie, Chabang Tiga, 21000 Kuala Terengganu, Terengganu",09-6222272,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEB3091,SMK Sultan Sulaiman,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Terengganu,"Jalan Sultan Mahmud, 20400 Kuala Terengganu, Terengganu",09-6175315,,0,0,1,1,1,0,1,1,1,1,0,0,0,0,1,1,0,1,0,0,1,0,1,0,0,0
+TEA4013,SMK Bukit Sawa,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Kampung Bukit Sawa, Marang, 21400 Bukit Payong, Terengganu",09-6191379,,0,0,1,0,1,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA4011,SMK Merchang,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Kampung Merchang, 21610 Marang, Terengganu",09-8321187,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA4015,SMK Pengkalan Berangan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Kampung Pengkalan Berangan, 21040 Kuala Terengganu, Terengganu",09-6805150,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+TEA4014,SMK Tengku Lela Segara,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Terengganu,"Jalan Sungai Kerak, Mrg, 21600 Marang, Terengganu",09-6182227,,0,0,1,1,1,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,1,1,1,0,0,0
+TEA4012,SMK Tun Telanai,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Jalan Kuala Berang, 21400 Kuala Terengganu, Terengganu",09-6191375,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA6089,SMK Bukit Nenas,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Bukit Nenas, 21500 Setiu, Terengganu",09-8248532,,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0
+TEA6083,SMK Chalok Model Khas,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"KM 65, Kg.Chalok, 21450 Permaisuri, Terengganu",09-6576013,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+TEA6081,SMK Penarek,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Sekolah Menengah Kebangsaan Penarik, 22120 Permaisuri, Terengganu",09-8247139,,0,0,1,0,1,0,0,1,1,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0
+TEA6082,SMK Saujana,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Jalan Fikri, 22110 Permaisuri, Terengganu",011-65752004,,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+TEA6080,SMK Sungai Tong,,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Terengganu,"Sungai Tong, 21500 Sungai Tong, Terengganu",09-6571776,,0,0,1,1,1,0,1,1,1,0,0,0,0,0,1,1,0,0,0,0,1,0,1,0,0,0
+TEA6057,SMK Tengku Ibrahim,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Terengganu,"Bandar Permaisuri, 22100 Setiu, Terengganu",09-6092323,,0,0,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,0,0,0,1,0,1,0,0,0
+WEE1011,SMK Labuan,,IPTA,Kolej Tingkatan 6,STPM Sastera,SMK,Wp Labuan,"81094 Peti Surat, Labuan, 87021, Wp Labuan",087-412450,,1,0,1,0,1,0,0,1,1,1,1,0,0,0,0,1,0,0,0,0,1,0,1,0,0,1
+WEA2010,SMK Putrajaya Presint 5(1),,IPTA,Kolej Tingkatan 6,STPM Campuran,SMK,Wp Putrajaya,"Jalan P5A/5, Presint 5, 62000 Putrajaya, Wp Putrajaya",03-88610565,,1,0,1,1,1,0,1,1,0,0,0,0,0,0,1,1,0,0,0,0,1,0,1,1,0,0
