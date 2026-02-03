@@ -344,11 +344,23 @@ def check_complex_requirements(student_grades, complex_req_json_str):
     Logic: Each OR group must be satisfied (AND logic between groups).
     Within each group, need 'count' subjects with at least 'grade' (OR logic).
     """
-    if not complex_req_json_str or complex_req_json_str.strip() == "":
+    # Handle NaN/None/empty values (pandas can pass NaN as float)
+    if complex_req_json_str is None or complex_req_json_str == "":
+        return True, None
+
+    # Check for NaN (float type)
+    if isinstance(complex_req_json_str, float):
+        import math
+        if math.isnan(complex_req_json_str):
+            return True, None
+
+    # Convert to string and validate
+    complex_req_str = str(complex_req_json_str).strip()
+    if not complex_req_str or complex_req_str.lower() == "nan":
         return True, None
 
     try:
-        data = json.loads(complex_req_json_str)
+        data = json.loads(complex_req_str)
     except json.JSONDecodeError:
         return False, "Invalid Complex Requirement Format"
 
