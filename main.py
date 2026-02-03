@@ -180,19 +180,16 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
     DISPLAY_KEY = {v: k for k, v in KEY_DISPLAY.items()}
 
     # --- MASTER CONTROL ---
-    st.subheader("🎓 SPM Results Entry")
-
     # Stream selection is read from session state (set OUTSIDE the form for immediate updates)
     stream_state_key = f"stream_selection{key_suffix}"
-    stream_mode = st.session_state.get(stream_state_key, "Science (STEM)")
-    is_stem = "Science" in stream_mode
-    is_tech_voc = "Technical" in stream_mode
+    stream_mode = st.session_state.get(stream_state_key, "STEM A")
+    is_stem = "STEM A" in stream_mode
+    is_tech_voc = "STEM B" in stream_mode
     # Stream key used in widget keys to force dropdown recreation when stream changes
     stream_key = "stem" if is_stem else ("techvoc" if is_tech_voc else "arts")
 
     # --- SECTION 1: COMPULSORY SUBJECTS (Slider-based) ---
     st.markdown("##### 1. Compulsory Subjects")
-    st.caption("Slide to select your grade (G → A+)")
 
     c1, c2 = st.columns(2)
     with c1:
@@ -207,10 +204,8 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
         hist = st.select_slider("Hist Grade", options=SLIDER_GRADES, value=get_slider_default('hist'), key=f"hist{key_suffix}", label_visibility="collapsed")
 
     # --- SECTION 2: STREAM ELECTIVES ---
-    stream_label = "STEM" if is_stem else ("Technical/Vocational" if is_tech_voc else "Arts")
-    # DEBUG: Uncomment to verify stream selection is working
-    # st.caption(f"DEBUG: stream_mode='{stream_mode}', is_stem={is_stem}, is_tech_voc={is_tech_voc}")
-    st.markdown(f"##### 2. Stream Electives ({stream_label})")
+    stream_label = "STEM A" if is_stem else ("STEM B/C" if is_tech_voc else "Arts")
+    st.markdown(f"##### 2. {stream_label} (Best 2 subjects)")
 
     # Determine Options based on stream
     if is_stem:
@@ -249,7 +244,7 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
 
         with c_sub:
             # Widget key includes stream_key to force recreation when stream changes
-            s_val = st.selectbox(f"Stream Subject {i+1}", ["-"] + display_opts_2, index=def_idx, key=f"s2_subj_{i}_{stream_key}{key_suffix}")
+            s_val = st.selectbox(f"Subject", ["-"] + display_opts_2, index=def_idx, key=f"s2_subj_{i}_{stream_key}{key_suffix}", label_visibility="collapsed")
             stream_subj_values.append(s_val)
         with c_grd:
             # If subject selected, try to get grade
@@ -274,8 +269,8 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
     if len(non_empty) != len(set(non_empty)):
         st.markdown("<small style='color: #ff4b4b;'>Duplicate subject</small>", unsafe_allow_html=True)
 
-    # --- SECTION 3: ADDITIONAL SUBJECTS ---
-    st.markdown("##### 3. Additional Subjects")
+    # --- SECTION 3: OTHER BEST SUBJECTS ---
+    st.markdown("##### 3. Other best subjects")
 
     # Pool = All Lists Combined (Science + Arts + Technical + IT + Vocational + Extra)
     # Exclude: Keys already selected in Sec 2
@@ -313,7 +308,7 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
                 def_idx = display_opts_3.index(def_name) + 1
 
         with c_sub:
-            s_val = st.selectbox(f"Extra Subject {i+1}", ["-"] + display_opts_3, index=def_idx, key=f"s3_subj_{i}{key_suffix}")
+            s_val = st.selectbox(f"Subject", ["-"] + display_opts_3, index=def_idx, key=f"s3_subj_{i}{key_suffix}", label_visibility="collapsed")
             extra_subj_values.append(s_val)
         with c_grd:
             def_grade_idx = 0
@@ -359,7 +354,6 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
     st.markdown(f'''
     <div style="background-color: #f0f2f6; padding: 15px; border-radius: 10px; margin-top: 10px; border-left: 5px solid {curr_color}">
         <h4 style="margin:0; color: #333;">📊 Merit Score: {merit['final_merit']:.2f}%</h4>
-        <small>Academic: {merit['academic_merit']:.2f} | Points: {merit['total_points']}</small>
     </div>
     ''', unsafe_allow_html=True)
 
@@ -556,7 +550,7 @@ def render_profile_page(user, t):
              # Stream selection OUTSIDE the form for immediate updates
              st.radio(
                  "Select Stream",
-                 ["Science (STEM)", "Arts (Sastera)", "Technical/Vocational"],
+                 ["STEM A", "Arts", "STEM B/C"],
                  horizontal=True,
                  key="stream_selection_p"
              )
@@ -1143,7 +1137,7 @@ if not user:
     # Stream selection OUTSIDE the form for immediate updates
     st.sidebar.radio(
         "Select Stream",
-        ["Science (STEM)", "Arts (Sastera)", "Technical/Vocational"],
+        ["STEM A", "Arts", "STEM B/C"],
         horizontal=True,
         key="stream_selection_sb"
     )
