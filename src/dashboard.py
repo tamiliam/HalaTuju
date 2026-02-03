@@ -71,22 +71,22 @@ def render_pagination(total_items, items_per_page, current_page_key, unique_id="
 
 def get_institution_type(row):
     # Returns a translation KEY based on the category
-    # Categories: Politeknik, Kolej Komuniti, ILKBS, ILJTM, PISMP, STPM
+    # Current Categories: Politeknik, Kolej Komuniti, ILKBS, ILJTM
+    # Future Categories (pending data): Asasi, Universiti Awam - see docs/university_integration_plan.md
     t = str(row.get('type', '')).upper()
     cat = str(row.get('category', '')).upper()
     code = str(row.get('course_id', '')).upper()
     name = str(row.get('institution_name', '')).upper()
     acronym = str(row.get('acronym', '')).upper() # Added for robust ID
-    
+
     # 1. Prioritize 'category' column if available (Most robust)
     if "POLITEKNIK" in cat: return "inst_poly"
     if "KOLEJ KOMUNITI" in cat: return "inst_kk"
     if "JABATAN TENAGA MANUSIA" in cat or "ILJTM" in cat: return "inst_iljtm"
     if "ILKBS" in cat or "BELIA DAN SUKAN" in cat: return "inst_ilkbs"
-    if "PISMP" in cat or "IPG" in cat: return "inst_ipg"
-    if "STPM" in cat or "FORM 6" in cat: return "inst_form6"
-    if "MATRIKULASI" in cat: return "inst_matrik"
-    if "UNIVERSITI" in cat or "UA" in cat: return "inst_uni"
+    # FUTURE: Asasi and Universiti Awam detection (disabled - data incomplete)
+    # if "ASASI" in cat: return "inst_asasi"
+    # if "UNIVERSITI AWAM" in cat: return "inst_ua"
 
     # 2. Fallback: Check Name/Type strings (Legacy)
     # PISMP
@@ -142,7 +142,9 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
     eligible_offerings = []
     
     # Initialize stats using stable internal keys (matching get_institution_type)
-    stats_keys = ["inst_poly", "inst_kk", "inst_iljtm", "inst_ilkbs", "inst_ipg", "inst_form6", "inst_matrik", "inst_uni", "inst_other"]
+    # Current: Poly, KK, ILJTM, ILKBS only
+    # FUTURE: Add inst_asasi, inst_ua when university data is ready (see docs/university_integration_plan.md)
+    stats_keys = ["inst_poly", "inst_kk", "inst_iljtm", "inst_ilkbs", "inst_other"]
     stats = {k: 0 for k in stats_keys}
     
     # 0. MERIT CALCULATION (For Public Unis)
@@ -248,7 +250,7 @@ def generate_dashboard_data(student, df_master, lang_code="en"):
         "full_list": eligible_offerings,
         "summary_stats": stats,
         "total_unique_courses": len(unique_ids),
-        "total_matches": stats["inst_poly"] + stats["inst_iljtm"] + stats["inst_ilkbs"] + stats["inst_kk"] + stats["inst_other"]
+        "total_matches": stats["inst_poly"] + stats["inst_kk"] + stats["inst_iljtm"] + stats["inst_ilkbs"] + stats["inst_other"]
     }
 
 def group_courses_by_id(flat_list):

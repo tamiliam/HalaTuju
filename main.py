@@ -99,7 +99,18 @@ def render_auth_gate(t, current_grades):
 # --- 4. DATA MODEL HELPER ---
 def render_grade_inputs(t, current_grades, key_suffix=""):
     grade_opts = [t["opt_not_taken"], "A+", "A", "A-", "B+", "B", "C+", "C", "D", "E", "G"]
-    
+
+    # Slider options: worst to best (left to right feels natural for improvement)
+    SLIDER_GRADES = ["G", "E", "D", "C", "C+", "B", "B+", "A-", "A", "A+"]
+
+    def get_slider_default(subject_key):
+        """Get default slider value from current grades, default to 'C' if not found."""
+        if current_grades and subject_key in current_grades:
+            grade = current_grades[subject_key]
+            if grade in SLIDER_GRADES:
+                return grade
+        return "C"  # Default to passing grade
+
     # Map Internal Keys to Display Names
     KEY_DISPLAY = {
         # Science
@@ -148,27 +159,35 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
 
     # --- MASTER CONTROL ---
     st.subheader("🎓 SPM Results Entry")
-    stream_mode = st.radio(
-        "Select Stream",
-        ["Science (STEM)", "Arts (Sastera)", "Technical/Vocational"],
-        horizontal=True,
-        key=f"stream_mode{key_suffix}"
-    )
+
+    # Stream selection is read from session state (set OUTSIDE the form for immediate updates)
+    stream_state_key = f"stream_selection{key_suffix}"
+    stream_mode = st.session_state.get(stream_state_key, "Science (STEM)")
     is_stem = "Science" in stream_mode
     is_tech_voc = "Technical" in stream_mode
+    # Stream key used in widget keys to force dropdown recreation when stream changes
+    stream_key = "stem" if is_stem else ("techvoc" if is_tech_voc else "arts")
 
-    # --- SECTION 1: COMPULSORY ---
+    # --- SECTION 1: COMPULSORY SUBJECTS (Slider-based) ---
     st.markdown("##### 1. Compulsory Subjects")
+    st.caption("Slide to select your grade (G → A+)")
+
     c1, c2 = st.columns(2)
     with c1:
-        bm = st.selectbox(t['subj_bm'], grade_opts, index=get_grade_index('bm', grade_opts, current_grades), key=f"bm{key_suffix}")
-        eng = st.selectbox(t['subj_eng'], grade_opts, index=get_grade_index('eng', grade_opts, current_grades), key=f"eng{key_suffix}")
+        st.markdown(f"**{t['subj_bm']}**")
+        bm = st.select_slider("BM Grade", options=SLIDER_GRADES, value=get_slider_default('bm'), key=f"bm{key_suffix}", label_visibility="collapsed")
+        st.markdown(f"**{t['subj_eng']}**")
+        eng = st.select_slider("Eng Grade", options=SLIDER_GRADES, value=get_slider_default('eng'), key=f"eng{key_suffix}", label_visibility="collapsed")
     with c2:
-        math = st.selectbox(t['subj_math'], grade_opts, index=get_grade_index('math', grade_opts, current_grades), key=f"math{key_suffix}")
-        hist = st.selectbox(t['subj_hist'], grade_opts, index=get_grade_index('hist', grade_opts, current_grades), key=f"hist{key_suffix}")
+        st.markdown(f"**{t['subj_math']}**")
+        math = st.select_slider("Math Grade", options=SLIDER_GRADES, value=get_slider_default('math'), key=f"math{key_suffix}", label_visibility="collapsed")
+        st.markdown(f"**{t['subj_hist']}**")
+        hist = st.select_slider("Hist Grade", options=SLIDER_GRADES, value=get_slider_default('hist'), key=f"hist{key_suffix}", label_visibility="collapsed")
 
     # --- SECTION 2: STREAM ELECTIVES ---
     stream_label = "STEM" if is_stem else ("Technical/Vocational" if is_tech_voc else "Arts")
+    # DEBUG: Uncomment to verify stream selection is working
+    # st.caption(f"DEBUG: stream_mode='{stream_mode}', is_stem={is_stem}, is_tech_voc={is_tech_voc}")
     st.markdown(f"##### 2. Stream Electives ({stream_label})")
 
     # Determine Options based on stream
@@ -191,35 +210,53 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
 
     selected_2_keys = []
     grades_2_values = []
-    
-    # Render 2 Rows
+    selected_2_names = []  # Track display names to prevent duplicates
+    all_stream_selections = []  # Track all selections for duplicate check
+
+    # Render 2 Rows for stream electives
     for i in range(2):
         c_sub, c_grd = st.columns([3, 1])
-        
+
+        # Filter out already-selected subjects for this dropdown
+        available_opts = [opt for opt in display_opts_2 if opt not in selected_2_names]
+
         # Default Value
         def_idx = 0
         if i < len(prefill_2):
             def_key = prefill_2[i]
             def_name = KEY_DISPLAY.get(def_key)
-            if def_name in display_opts_2:
-                def_idx = display_opts_2.index(def_name) + 1 # +1 for "-"
-        
+            if def_name in available_opts:
+                def_idx = available_opts.index(def_name) + 1 # +1 for "-"
+
         with c_sub:
-            s_val = st.selectbox(f"Stream Subject {i+1}", ["-"] + display_opts_2, index=def_idx, key=f"s2_subj_{i}{key_suffix}")
+            # Widget key includes stream_key to force recreation when stream changes
+            s_val = st.selectbox(f"Stream Subject {i+1}", ["-"] + available_opts, index=def_idx, key=f"s2_subj_{i}_{stream_key}{key_suffix}")
         with c_grd:
             # If subject selected, try to get grade
             def_grade_idx = 0
             if s_val != "-":
                 k = DISPLAY_KEY.get(s_val)
-                if k in current_grades:
+                if k and k in current_grades:
                      def_grade_idx = get_grade_index(k, grade_opts, current_grades)
-            
-            g_val = st.selectbox(f"Grade", grade_opts, index=def_grade_idx, key=f"s2_grade_{i}{key_suffix}", label_visibility="collapsed")
-        
+
+            g_val = st.selectbox(f"Grade", grade_opts, index=def_grade_idx, key=f"s2_grade_{i}_{stream_key}{key_suffix}", label_visibility="collapsed")
+
+        # Track all non-empty selections for duplicate validation
         if s_val != "-":
+            all_stream_selections.append((s_val, g_val, i))
             k = DISPLAY_KEY.get(s_val)
-            selected_2_keys.append(k)
-            grades_2_values.append(g_val)
+            if k and s_val not in selected_2_names:  # Only add if not already selected
+                selected_2_keys.append(k)
+                grades_2_values.append(g_val)
+                selected_2_names.append(s_val)
+
+    # Check for duplicate selections and show error
+    seen_subjects = set()
+    for subj, grade, idx in all_stream_selections:
+        if subj in seen_subjects:
+            st.markdown(f"<small style='color: #ff4b4b;'>⚠️ Select a different subject (duplicate: {subj})</small>", unsafe_allow_html=True)
+            break
+        seen_subjects.add(subj)
 
     # --- SECTION 3: ADDITIONAL SUBJECTS ---
     st.markdown("##### 3. Additional Subjects")
@@ -245,31 +282,48 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
                      
     selected_3_keys = []
     grades_3_values = []
+    selected_3_names = []  # Track display names to prevent duplicates
+    all_extra_selections = []  # Track all selections for duplicate check
 
     for i in range(2):
         c_sub, c_grd = st.columns([3, 1])
-        
+
+        # Filter out already-selected subjects for this dropdown
+        available_opts_3 = [opt for opt in display_opts_3 if opt not in selected_3_names]
+
         def_idx = 0
         if i < len(prefill_3):
             def_key = prefill_3[i]
             def_name = KEY_DISPLAY.get(def_key)
-            if def_name in display_opts_3:
-                def_idx = display_opts_3.index(def_name) + 1
-        
+            if def_name in available_opts_3:
+                def_idx = available_opts_3.index(def_name) + 1
+
         with c_sub:
-            s_val = st.selectbox(f"Extra Subject {i+1}", ["-"] + display_opts_3, index=def_idx, key=f"s3_subj_{i}{key_suffix}")
+            s_val = st.selectbox(f"Extra Subject {i+1}", ["-"] + available_opts_3, index=def_idx, key=f"s3_subj_{i}{key_suffix}")
         with c_grd:
             def_grade_idx = 0
             if s_val != "-":
                 k = DISPLAY_KEY.get(s_val)
-                if k in current_grades:
+                if k and k in current_grades:
                      def_grade_idx = get_grade_index(k, grade_opts, current_grades)
             g_val = st.selectbox(f"Grade", grade_opts, index=def_grade_idx, key=f"s3_grade_{i}{key_suffix}", label_visibility="collapsed")
 
+        # Track all non-empty selections for duplicate validation
         if s_val != "-":
+            all_extra_selections.append((s_val, g_val, i))
             k = DISPLAY_KEY.get(s_val)
-            selected_3_keys.append(k)
-            grades_3_values.append(g_val)
+            if k and s_val not in selected_3_names:  # Only add if not already selected
+                selected_3_keys.append(k)
+                grades_3_values.append(g_val)
+                selected_3_names.append(s_val)
+
+    # Check for duplicate selections and show error
+    seen_extra = set()
+    for subj, grade, idx in all_extra_selections:
+        if subj in seen_extra:
+            st.markdown(f"<small style='color: #ff4b4b;'>⚠️ Select a different subject (duplicate: {subj})</small>", unsafe_allow_html=True)
+            break
+        seen_extra.add(subj)
 
     # --- SECTION 4: CO-CURRICULUM ---
     st.markdown("##### 4. Co-Curriculum")
@@ -487,6 +541,13 @@ def render_profile_page(user, t):
 
         # Edit Grades Form
         with st.expander(t['header_edit_grades']):
+             # Stream selection OUTSIDE the form for immediate updates
+             st.radio(
+                 "Select Stream",
+                 ["Science (STEM)", "Arts (Sastera)", "Technical/Vocational"],
+                 horizontal=True,
+                 key="stream_selection_p"
+             )
              with st.form("edit_grades"):
                  new_grades = render_grade_inputs(t, user.get('grades', {}), key_suffix="_p")
                  
@@ -1066,6 +1127,15 @@ if not user:
     guest_grades = st.session_state.get('guest_grades', {}) 
     
     st.sidebar.title(f"{t['sb_title']}")
+
+    # Stream selection OUTSIDE the form for immediate updates
+    st.sidebar.radio(
+        "Select Stream",
+        ["Science (STEM)", "Arts (Sastera)", "Technical/Vocational"],
+        horizontal=True,
+        key="stream_selection_sb"
+    )
+
     with st.sidebar.form("grades_form"):
         # st.subheader(t['sb_core_subjects']) # REMOVED DUPLICATE
         # Use Helper
@@ -1260,6 +1330,8 @@ else:
     msg = t['hero_success'].format(count=dash['total_matches'])
 st.success(msg)
 
+# 4 categories: Poly, KK, ILJTM, ILKBS
+# FUTURE: Expand to 6 categories (+ Asasi, Universiti Awam) when data ready - see docs/university_integration_plan.md
 c1, c2, c3, c4 = st.columns(4)
 c1.metric(t['inst_poly'], dash['summary_stats'].get('inst_poly', 0))
 c2.metric(t['inst_kk'], dash['summary_stats'].get('inst_kk', 0))

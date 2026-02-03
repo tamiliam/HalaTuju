@@ -41,7 +41,7 @@ def load_master_data():
     
     df_tvet_inst = load('tvet_institutions.csv')
     df_tvet_courses = load('tvet_courses.csv')
-    
+
     # NEW: Load Details
     df_details = load('details.csv')
 
@@ -203,8 +203,8 @@ def load_master_data():
     pathways_final = pd.DataFrame()
 
     # --- 3c. MERGE PUBLIC UNIVERSITY (UA) DATA ---
-    # DISABLED: Not ready for production yet. Only Poly/KK/TVET are active.
-    # See public_university_integration_plan.md for future integration.
+    # DISABLED: Data files incomplete. See docs/university_integration_plan.md for requirements.
+    # Required files before enabling: university_institutions.csv, expanded university_courses.csv
     ua_final = pd.DataFrame()
 
     # --- 4. COMBINE & CLEAN ---
