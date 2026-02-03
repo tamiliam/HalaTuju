@@ -168,8 +168,8 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
         "voc_landscape": "Landskap dan Nurseri",
         "voc_catering": "Katering dan Penyajian",
         "voc_tailoring": "Jahitan dan Rekaan Pakaian",
-        # Extra / Other
-        "moral": "Pendidikan Moral",
+        # Extra / Other (includes compulsory PI/PM)
+        "islam": "Pendidikan Islam", "moral": "Pendidikan Moral",
         "pertanian": "Pertanian", "sci": "Sains",
         "srt": "Sains Rumah Tangga", "addsci": "Sains Tambahan",
         "sports_sci": "Sains Sukan", "music": "Pendidikan Muzik",
