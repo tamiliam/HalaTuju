@@ -3,7 +3,11 @@ import re
 import pandas as pd
 import time
 from supabase import create_client, Client
-from src.engine import StudentProfile, SUBJ_LIST_SCIENCE, SUBJ_LIST_ARTS, SUBJ_LIST_EXTRA, calculate_merit_score
+from src.engine import (
+    StudentProfile, calculate_merit_score,
+    SUBJ_LIST_SCIENCE, SUBJ_LIST_ARTS, SUBJ_LIST_EXTRA,
+    SUBJ_LIST_TECHNICAL, SUBJ_LIST_IT, SUBJ_LIST_VOCATIONAL
+)
 
 from src.dashboard import generate_dashboard_data, group_courses_by_id
 from src.ranking_engine import get_ranked_results, sort_courses
@@ -100,18 +104,43 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
     KEY_DISPLAY = {
         # Science
         "chem": "Chemistry", "phy": "Physics", "bio": "Biology", "addmath": "Add Maths",
-        # Arts
-        "b_arab": "Bahasa Arab", "b_cina": "Bahasa Cina", "b_tamil": "Bahasa Tamil",
+        # Arts (b_arab removed - Islamic school subject)
+        "b_cina": "Bahasa Cina", "b_tamil": "Bahasa Tamil",
         "ekonomi": "Economy", "geo": "Geography",
         "lit_bm": "Literature (BM)", "lit_eng": "Literature (English)",
         "lit_cina": "Literature (Chinese)", "lit_tamil": "Literature (Tamil)",
         "lukisan": "Lukisan", "psv": "Seni Visual",
         "business": "Perniagaan", "poa": "Prinsip Perakaunan",
         "keusahawanan": "Pengajian Keusahawanan",
-        # Extra
-        "moral": "Pendidikan Moral/Islam",
-        "pertanian": "Pertanian", "sci": "Sains", 
+        # Technical/Engineering (NEW)
+        "eng_civil": "Peng. Kejuruteraan Awam",
+        "eng_mech": "Peng. Kejuruteraan Mekanikal",
+        "eng_elec": "Peng. Kejuruteraan Elektrik",
+        "eng_draw": "Lukisan Kejuruteraan",
+        "gkt": "Grafik Komunikasi Teknikal",
+        "kelestarian": "Asas Kelestarian",
+        "reka_cipta": "Reka Cipta",
+        # IT/Computing (NEW)
+        "comp_sci": "Sains Komputer",
+        "multimedia": "Produksi Multimedia",
+        "digital_gfx": "Reka Bentuk Grafik Digital",
+        # Vocational - MPV (NEW)
+        "voc_construct": "Pembinaan Domestik",
+        "voc_plumb": "Kerja Paip Domestik",
+        "voc_wiring": "Pendawaian Domestik",
+        "voc_weld": "Kimpalan Arka",
+        "voc_auto": "Menservis Automobil",
+        "voc_elec_serv": "Servis Peralatan Elektrik",
+        "voc_food": "Tanaman Makanan",
+        "voc_landscape": "Landskap dan Nurseri",
+        "voc_catering": "Katering dan Penyajian",
+        "voc_tailoring": "Jahitan dan Rekaan Pakaian",
+        # Extra / Other
+        "moral": "Pendidikan Moral",
+        "pertanian": "Pertanian", "sci": "Sains",
         "srt": "Sains Rumah Tangga", "addsci": "Sains Tambahan",
+        "sports_sci": "Sains Sukan", "music": "Pendidikan Muzik",
+        # Legacy keys (for backward compatibility)
         "tech": "Technical (General)", "voc": "Vocational (General)"
     }
     # Reverse Map
@@ -119,8 +148,14 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
 
     # --- MASTER CONTROL ---
     st.subheader("🎓 SPM Results Entry")
-    stream_mode = st.radio("Select Stream", ["STEM A (Science)", "ARTS (Sastra)"], horizontal=True, key=f"stream_mode{key_suffix}")
-    is_stem = "STEM" in stream_mode
+    stream_mode = st.radio(
+        "Select Stream",
+        ["Science (STEM)", "Arts (Sastera)", "Technical/Vocational"],
+        horizontal=True,
+        key=f"stream_mode{key_suffix}"
+    )
+    is_stem = "Science" in stream_mode
+    is_tech_voc = "Technical" in stream_mode
 
     # --- SECTION 1: COMPULSORY ---
     st.markdown("##### 1. Compulsory Subjects")
@@ -133,14 +168,15 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
         hist = st.selectbox(t['subj_hist'], grade_opts, index=get_grade_index('hist', grade_opts, current_grades), key=f"hist{key_suffix}")
 
     # --- SECTION 2: STREAM ELECTIVES ---
-    st.markdown(f"##### 2. Stream Electives ({'STEM' if is_stem else 'ARTS'})")
-    
-    # Determine Options
+    stream_label = "STEM" if is_stem else ("Technical/Vocational" if is_tech_voc else "Arts")
+    st.markdown(f"##### 2. Stream Electives ({stream_label})")
+
+    # Determine Options based on stream
     if is_stem:
-        # Filter for Science keys
         pool_2_keys = SUBJ_LIST_SCIENCE
+    elif is_tech_voc:
+        pool_2_keys = SUBJ_LIST_TECHNICAL + SUBJ_LIST_IT + SUBJ_LIST_VOCATIONAL
     else:
-        # Filter for Arts keys
         pool_2_keys = SUBJ_LIST_ARTS
         
     display_opts_2 = [KEY_DISPLAY.get(k, k) for k in pool_2_keys if k in KEY_DISPLAY]
@@ -187,12 +223,12 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
 
     # --- SECTION 3: ADDITIONAL SUBJECTS ---
     st.markdown("##### 3. Additional Subjects")
-    
-    # Pool = All Lists Combined (Science + Arts + Extra)
+
+    # Pool = All Lists Combined (Science + Arts + Technical + IT + Vocational + Extra)
     # Exclude: Keys already selected in Sec 2
-    # Note: Logic says combined list.
-    full_pool = SUBJ_LIST_SCIENCE + SUBJ_LIST_ARTS + SUBJ_LIST_EXTRA
-    full_pool = list(dict.fromkeys(full_pool)) # Unique
+    full_pool = (SUBJ_LIST_SCIENCE + SUBJ_LIST_ARTS + SUBJ_LIST_TECHNICAL +
+                 SUBJ_LIST_IT + SUBJ_LIST_VOCATIONAL + SUBJ_LIST_EXTRA)
+    full_pool = list(dict.fromkeys(full_pool))  # Unique
     
     avail_keys = [k for k in full_pool if k not in selected_2_keys]
     display_opts_3 = [KEY_DISPLAY.get(k, k) for k in avail_keys if k in KEY_DISPLAY]

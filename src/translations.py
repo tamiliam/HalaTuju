@@ -87,6 +87,36 @@ TEXTS = {
         "subj_tech": "Engineering/Others",
         "subj_voc": "Catering/Auto/Vocational",
 
+        # Technical/Engineering Subjects (NEW)
+        "subj_eng_civil": "Civil Engineering Studies",
+        "subj_eng_mech": "Mechanical Engineering Studies",
+        "subj_eng_elec": "Electrical & Electronic Eng.",
+        "subj_eng_draw": "Engineering Drawing",
+        "subj_gkt": "Technical Communication Graphics",
+        "subj_kelestarian": "Sustainability Basics",
+        "subj_reka_cipta": "Design & Innovation",
+
+        # IT/Computing Subjects (NEW)
+        "subj_comp_sci": "Computer Science",
+        "subj_multimedia": "Multimedia Production",
+        "subj_digital_gfx": "Digital Graphics Design",
+
+        # Vocational Subjects - MPV (NEW)
+        "subj_voc_construct": "Domestic Construction",
+        "subj_voc_plumb": "Domestic Plumbing",
+        "subj_voc_wiring": "Domestic Wiring",
+        "subj_voc_weld": "Arc Welding",
+        "subj_voc_auto": "Automobile Servicing",
+        "subj_voc_elec_serv": "Electrical Equipment Servicing",
+        "subj_voc_food": "Food Crops",
+        "subj_voc_landscape": "Landscape & Nursery",
+        "subj_voc_catering": "Catering & Serving",
+        "subj_voc_tailoring": "Tailoring & Fashion Design",
+
+        # Other Electives (NEW)
+        "subj_sports_sci": "Sports Science",
+        "subj_music": "Music Education",
+
         # Landing & Processing
         "header_title": "Hala Tuju Pelajar Lepasan SPM",
         "header_subtitle": "See which Polytechnic, IKBN, and Community College courses you qualify for.",
@@ -449,7 +479,37 @@ https://halatuju.streamlit.app""",
         
         "subj_tech": "Kejuruteraan/Lain-lain",
         "subj_voc": "Katering/Auto/Vokasional",
-        
+
+        # Technical/Engineering Subjects (NEW)
+        "subj_eng_civil": "Pengajian Kejuruteraan Awam",
+        "subj_eng_mech": "Pengajian Kejuruteraan Mekanikal",
+        "subj_eng_elec": "Peng. Kejuruteraan Elektrik & Elektronik",
+        "subj_eng_draw": "Lukisan Kejuruteraan",
+        "subj_gkt": "Grafik Komunikasi Teknikal",
+        "subj_kelestarian": "Asas Kelestarian",
+        "subj_reka_cipta": "Reka Cipta",
+
+        # IT/Computing Subjects (NEW)
+        "subj_comp_sci": "Sains Komputer",
+        "subj_multimedia": "Produksi Multimedia",
+        "subj_digital_gfx": "Reka Bentuk Grafik Digital",
+
+        # Vocational Subjects - MPV (NEW)
+        "subj_voc_construct": "Pembinaan Domestik",
+        "subj_voc_plumb": "Kerja Paip Domestik",
+        "subj_voc_wiring": "Pendawaian Domestik",
+        "subj_voc_weld": "Kimpalan Arka",
+        "subj_voc_auto": "Menservis Automobil",
+        "subj_voc_elec_serv": "Menservis Peralatan Elektrik Domestik",
+        "subj_voc_food": "Tanaman Makanan",
+        "subj_voc_landscape": "Landskap dan Nurseri",
+        "subj_voc_catering": "Katering dan Penyajian",
+        "subj_voc_tailoring": "Jahitan dan Rekaan Pakaian",
+
+        # Other Electives (NEW)
+        "subj_sports_sci": "Sains Sukan",
+        "subj_music": "Pendidikan Muzik",
+
         # Landing & Processing
         "header_title": "Hala Tuju Pelajar Lepasan SPM",
         "header_subtitle": "Semak kelayakan anda untuk Politeknik, IKBN, dan Kolej Komuniti.",
@@ -808,7 +868,37 @@ https://halatuju.streamlit.app""",
         
         "subj_tech": "பொறியியல்/பிற",
         "subj_voc": "கேட்டரிங்/ஆட்டோ/தொழிற்கல்வி",
-        
+
+        # Technical/Engineering Subjects (NEW)
+        "subj_eng_civil": "சிவில் பொறியியல் படிப்பு",
+        "subj_eng_mech": "இயந்திரப் பொறியியல் படிப்பு",
+        "subj_eng_elec": "மின்னணுப் பொறியியல் படிப்பு",
+        "subj_eng_draw": "பொறியியல் வரைபடம்",
+        "subj_gkt": "தொழில்நுட்ப தகவல் வரைகலை",
+        "subj_kelestarian": "நிலைத்தன்மை அடிப்படைகள்",
+        "subj_reka_cipta": "வடிவமைப்பு மற்றும் புத்தாக்கம்",
+
+        # IT/Computing Subjects (NEW)
+        "subj_comp_sci": "கணினி அறிவியல்",
+        "subj_multimedia": "மல்டிமீடியா தயாரிப்பு",
+        "subj_digital_gfx": "டிஜிட்டல் கிராஃபிக்ஸ் வடிவமைப்பு",
+
+        # Vocational Subjects - MPV (NEW)
+        "subj_voc_construct": "உள்நாட்டு கட்டுமானம்",
+        "subj_voc_plumb": "உள்நாட்டு குழாய் வேலை",
+        "subj_voc_wiring": "உள்நாட்டு மின்கம்பி வேலை",
+        "subj_voc_weld": "ஆர்க் வெல்டிங்",
+        "subj_voc_auto": "வாகன சேவை",
+        "subj_voc_elec_serv": "மின் சாதன சேவை",
+        "subj_voc_food": "உணவுப் பயிர்கள்",
+        "subj_voc_landscape": "நிலப்பரப்பு மற்றும் நர்சரி",
+        "subj_voc_catering": "கேட்டரிங் மற்றும் பரிமாறல்",
+        "subj_voc_tailoring": "தையல் மற்றும் ஆடை வடிவமைப்பு",
+
+        # Other Electives (NEW)
+        "subj_sports_sci": "விளையாட்டு அறிவியல்",
+        "subj_music": "இசைக் கல்வி",
+
         # Landing & Processing
         "header_title": "Hala Tuju Pelajar Lepasan SPM (மேற்படிப்பு வழிகாட்டி)",
         "header_subtitle": "பாலிடெக்னிக், IKBN மற்றும் சமூகக் கல்லூரிகளில் உங்களுக்கான வாய்ப்புகளைக் கண்டறியுங்கள்.",

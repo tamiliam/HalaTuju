@@ -142,17 +142,61 @@ AGGREGATE_GRADE_POINTS = {
     "D": 7, "E": 8, "G": 9
 }
 
-# Subject Lists (Shared Source of Truth)
+# ============================================
+# SUBJECT LISTS - Single Source of Truth
+# ============================================
+
+# Science Stream Electives
 SUBJ_LIST_SCIENCE = ["chem", "phy", "bio", "addmath"]
+
+# Arts Stream Electives (b_arab removed - Islamic school subject)
 SUBJ_LIST_ARTS = [
-    "b_arab", "b_cina", "b_tamil", 
-    "ekonomi", "geo", 
+    "b_cina", "b_tamil",
+    "ekonomi", "geo",
     "lit_bm", "lit_eng", "lit_cina", "lit_tamil",
     "lukisan", "psv", "business", "poa", "keusahawanan"
 ]
-SUBJ_LIST_EXTRA = [
-    "moral", "islam", "pertanian", "sci", "srt", "addsci"
+
+# Technical/Engineering Subjects (NEW)
+SUBJ_LIST_TECHNICAL = [
+    "eng_civil", "eng_mech", "eng_elec",
+    "eng_draw", "gkt", "kelestarian", "reka_cipta"
 ]
+
+# IT/Computing Subjects (NEW)
+SUBJ_LIST_IT = [
+    "comp_sci", "multimedia", "digital_gfx"
+]
+
+# Vocational Subjects - MPV (NEW)
+SUBJ_LIST_VOCATIONAL = [
+    "voc_construct", "voc_plumb", "voc_wiring", "voc_weld",
+    "voc_auto", "voc_elec_serv", "voc_food", "voc_landscape",
+    "voc_catering", "voc_tailoring"
+]
+
+# General Electives (moral kept, islam removed - Islamic school subject)
+SUBJ_LIST_EXTRA = [
+    "moral", "pertanian", "sci", "srt", "addsci",
+    "sports_sci", "music"
+]
+
+# ============================================
+# COMPOSITE GROUPS - For Eligibility Logic
+# ============================================
+# These groups are used for STV and similar composite checks
+
+SUBJ_GROUP_SCIENCE = ["chem", "phy", "bio", "sci", "addsci"]
+SUBJ_GROUP_TECHNICAL = SUBJ_LIST_TECHNICAL + SUBJ_LIST_IT
+SUBJ_GROUP_VOCATIONAL = SUBJ_LIST_VOCATIONAL
+
+# Legacy key mapping (for backward compatibility with existing user data)
+LEGACY_KEY_MAP = {
+    "tech": "eng_civil",  # Map generic 'tech' to most common technical subject
+    "voc": "voc_weld",    # Map generic 'voc' to most common vocational subject
+    "islam": "moral",     # Map removed subject to moral (neutral fallback)
+    "b_arab": "b_tamil"   # Map removed Arabic to Tamil (neutral fallback)
+}
 
 def calculate_merit_score(sec1_grades, sec2_grades, sec3_grades, coq_score):
     """
@@ -474,15 +518,21 @@ def check_eligibility(student, req):
         if not check("chk_pass_math_sci_nb", cond, "fail_pass_math_sci_nb"): passed_academics = False
         
     if to_int(req.get('pass_science_tech')) == 1:
-        cond = has_pass(sci_no_bio) or is_pass(g.get('tech'))
+        # Check any technical subject (including IT) for pass
+        has_tech_pass = any(is_pass(g.get(s)) for s in SUBJ_GROUP_TECHNICAL)
+        legacy_tech_pass = is_pass(g.get('tech'))
+        cond = has_pass(sci_no_bio) or has_tech_pass or legacy_tech_pass
         if not check("chk_pass_sci_tech", cond, "fail_pass_sci_tech"): passed_academics = False
-        
+
     if to_int(req.get('credit_math_sci')) == 1:
         cond = is_credit(g.get('math')) or has_credit(all_sci)
         if not check("chk_credit_math_sci", cond, "fail_credit_math_sci"): passed_academics = False
-        
+
     if to_int(req.get('credit_math_sci_tech')) == 1:
-        cond = is_credit(g.get('math')) or has_credit(all_sci) or is_credit(g.get('tech'))
+        # Check any technical subject (including IT) for credit
+        has_tech_credit = any(is_credit(g.get(s)) for s in SUBJ_GROUP_TECHNICAL)
+        legacy_tech_credit = is_credit(g.get('tech'))
+        cond = is_credit(g.get('math')) or has_credit(all_sci) or has_tech_credit or legacy_tech_credit
         if not check("chk_credit_math_sci_tech", cond, "fail_credit_math_sci_tech"): passed_academics = False
 
     # --- Poly/KK Rules ---
@@ -492,11 +542,23 @@ def check_eligibility(student, req):
         if not check("chk_credit_bmbi", cond, "fail_credit_bmbi"): passed_academics = False
 
     if to_int(req.get('credit_stv')) == 1:
-        cond = has_credit(all_sci) or is_credit(g.get('tech')) or is_credit(g.get('voc'))
+        # Check any technical subject (including IT) or vocational subject for credit
+        has_tech_credit = any(is_credit(g.get(s)) for s in SUBJ_GROUP_TECHNICAL)
+        has_voc_credit = any(is_credit(g.get(s)) for s in SUBJ_GROUP_VOCATIONAL)
+        # Also check legacy 'tech'/'voc' keys for backward compatibility
+        legacy_tech_credit = is_credit(g.get('tech'))
+        legacy_voc_credit = is_credit(g.get('voc'))
+        cond = has_credit(all_sci) or has_tech_credit or has_voc_credit or legacy_tech_credit or legacy_voc_credit
         if not check("chk_credit_stv", cond, "fail_credit_stv"): passed_academics = False
 
     if to_int(req.get('pass_stv')) == 1:
-        cond = has_pass(all_sci) or is_pass(g.get('tech')) or is_pass(g.get('voc'))
+        # Check any technical subject (including IT) or vocational subject for pass
+        has_tech_pass = any(is_pass(g.get(s)) for s in SUBJ_GROUP_TECHNICAL)
+        has_voc_pass = any(is_pass(g.get(s)) for s in SUBJ_GROUP_VOCATIONAL)
+        # Also check legacy 'tech'/'voc' keys for backward compatibility
+        legacy_tech_pass = is_pass(g.get('tech'))
+        legacy_voc_pass = is_pass(g.get('voc'))
+        cond = has_pass(all_sci) or has_tech_pass or has_voc_pass or legacy_tech_pass or legacy_voc_pass
         if not check("chk_pass_stv", cond, "fail_pass_stv"): passed_academics = False
 
     if to_int(req.get('credit_sf')) == 1:
