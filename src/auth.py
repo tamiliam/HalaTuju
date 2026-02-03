@@ -39,60 +39,48 @@ class AuthManager:
             return False, "❌ Invalid Phone Format"
         if not pin.isdigit() or len(pin) != 6:
             return False, "❌ PIN must be 6 digits"
-            
-        hashed = self.hash_pin(pin)
-        grades = grades or {}
-        
-        data = {
-            "full_name": name,
-            "phone": phone,
-            "pin_hash": hashed,
-            "email": email,
-            "grades": grades,
-            "gender": gender,
-            "colorblind": colorblind,
-            "disability": disability
-            # "updated_at": "now()" 
-        }
-        
+
         try:
-            # Upsert Logic
+            # Check if phone already exists (UNIQUE enforcement)
             existing = self.supabase.table("student_profiles").select("id").eq("phone", phone).execute()
             if existing.data:
-                 # Update PIN, Name, Grades, Gender, Health
-                 res = self.supabase.table("student_profiles").update({
-                     "full_name": name,
-                     "pin_hash": hashed,
-                     "grades": grades,
-                     "gender": gender,
-                     "colorblind": colorblind,
-                     "disability": disability
-                 }).eq("phone", phone).execute()
-            else:
-                 # Insert New
-                 res = self.supabase.table("student_profiles").insert(data).execute()
+                return False, "❌ Phone number already registered. Please login instead."
+
+            # Phone is unique - proceed with registration
+            hashed = self.hash_pin(pin)
+            grades = grades or {}
+
+            data = {
+                "full_name": name,
+                "phone": phone,
+                "pin_hash": hashed,
+                "email": email,
+                "grades": grades,
+                "gender": gender,
+                "colorblind": colorblind,
+                "disability": disability
+            }
+
+            res = self.supabase.table("student_profiles").insert(data).execute()
 
             # Handle Response
             if res.data:
                 user = res.data[0]
                 self.set_session(user)
                 return True, user
-            
-            # FALLBACK: Sometimes update/insert doesn't return rows depending on headers/RLS
-            # Verify if user exists manually
+
+            # FALLBACK: Sometimes insert doesn't return rows depending on headers/RLS
+            # Verify if user was created
             verify = self.supabase.table("student_profiles").select("*").eq("phone", phone).execute()
             if verify.data:
-                 user = verify.data[0]
-                 self.set_session(user)
-                 return True, user
-                 
-            return False, f"Debug: Op Success but No Data returned. Res: {res}"
-            
+                user = verify.data[0]
+                self.set_session(user)
+                return True, user
+
+            return False, "Registration failed. Please try again."
+
         except Exception as e:
             return False, f"Error: {e}"
-        except Exception as e:
-            return False, f"Error: {e}"
-        return False, "Unknown Error"
 
     def login_user(self, phone, pin):
         """Standard Login Flow"""
