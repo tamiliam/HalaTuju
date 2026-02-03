@@ -23,6 +23,28 @@ from datetime import datetime
 # --- 1. CONFIGURATION ---
 st.set_page_config(page_title="Hala Tuju Pelajar Lepasan SPM", page_icon="🎓", layout="centered")
 
+# --- SIDEBAR CONTROL HELPERS ---
+def collapse_sidebar():
+    """Inject JS to collapse sidebar on mobile."""
+    st.markdown("""
+        <script>
+            var sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
+            if (sidebar) { sidebar.setAttribute('aria-expanded', 'false'); }
+            var btn = window.parent.document.querySelector('[data-testid="collapsedControl"]');
+            if (!btn) { btn = window.parent.document.querySelector('button[kind="headerNoPadding"]'); }
+            if (btn) { btn.click(); }
+        </script>
+    """, unsafe_allow_html=True)
+
+def expand_sidebar():
+    """Inject JS to expand sidebar on mobile."""
+    st.markdown("""
+        <script>
+            var sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
+            if (sidebar) { sidebar.setAttribute('aria-expanded', 'true'); }
+        </script>
+    """, unsafe_allow_html=True)
+
 # --- 2. CONFIGURATION & SETUP ---
 auth = None
 quiz_manager = None
@@ -250,7 +272,7 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
     # Check for duplicate and show error message
     non_empty = [v for v in stream_subj_values if v != "-"]
     if len(non_empty) != len(set(non_empty)):
-        st.markdown("<small style='color: #ff4b4b;'>⚠️ Select different subjects - duplicates will be ignored</small>", unsafe_allow_html=True)
+        st.markdown("<small style='color: #ff4b4b;'>Duplicate subject</small>", unsafe_allow_html=True)
 
     # --- SECTION 3: ADDITIONAL SUBJECTS ---
     st.markdown("##### 3. Additional Subjects")
@@ -312,7 +334,7 @@ def render_grade_inputs(t, current_grades, key_suffix=""):
     # Check for duplicate and show error message
     non_empty_extra = [v for v in extra_subj_values if v != "-"]
     if len(non_empty_extra) != len(set(non_empty_extra)):
-        st.markdown("<small style='color: #ff4b4b;'>⚠️ Select different subjects - duplicates will be ignored</small>", unsafe_allow_html=True)
+        st.markdown("<small style='color: #ff4b4b;'>Duplicate subject</small>", unsafe_allow_html=True)
 
     # --- SECTION 4: CO-CURRICULUM ---
     st.markdown("##### 4. Co-Curriculum")
@@ -387,6 +409,7 @@ def render_auth_gate(t, current_grades, gender, cb, disability):
                 success, val = auth.register_user(r_name, r_phone, r_pin, grades=grade_map, gender=gender, colorblind=cb, disability=disability, email=r_email)
                 if success:
                     st.success(t['msg_account_created'])
+                    expand_sidebar()  # Open sidebar for newly registered user
                     time.sleep(1)
                     st.rerun()
                 else:
@@ -1182,8 +1205,12 @@ elif user and st.session_state.get('last_calc_user') != user['id']:
     st.session_state['last_calc_user'] = user['id']
 
 if submitted or (user and ('dash' not in st.session_state or force_calc)):
+    # Collapse sidebar on mobile after form submission
+    if submitted:
+        collapse_sidebar()
+
     cleaned_grades = raw_grades # Debugging alias
-    
+
     # Store in Session for Guest persistence (in case they reload or submit again)
     clean_grades = {k: v for k, v in raw_grades.items() if v != t['opt_not_taken']}  
     st.session_state['guest_grades'] = clean_grades 
@@ -1268,8 +1295,10 @@ if not signals and user and user.get('student_signals'):
     st.session_state['student_signals'] = signals # Restore to session
 
 # 3. Execute Ranking
-# We run this if we have Dashboard Data AND Signals
-if dash and signals:
+# Run if we have Dashboard Data. Use empty signals if no quiz taken (merit-based ranking still applies)
+if not signals:
+    signals = {}  # Default: no preference signals, but merit ranking still works
+if dash:
     # Validation
     if not isinstance(signals, dict):
         print(f"CRITICAL: Signals corrupted. Resetting.")
