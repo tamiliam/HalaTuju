@@ -35,6 +35,13 @@ class AuthManager:
 
     def register_user(self, name, phone, pin, grades=None, gender=None, colorblind=None, disability=None, email=None):
         """Creates a new user with Hashed PIN and optional Initial Grades."""
+        # Validate name (strip whitespace, min 2 chars, max 100)
+        name = (name or "").strip()
+        if len(name) < 2:
+            return False, "❌ Please enter your name (at least 2 characters)"
+        if len(name) > 100:
+            return False, "❌ Name is too long (max 100 characters)"
+
         if not self.validate_phone(phone):
             return False, "❌ Invalid Phone Format"
         if not pin.isdigit() or len(pin) != 6:
