@@ -226,9 +226,9 @@ def load_master_data():
             ua_merged['course'] = ua_merged['course_x']
         # else: 'course' column already exists from merge
 
-        # Set type and category based on level column
-        # Use consistent type naming (Bahasa Melayu) for filter compatibility
-        ua_merged['type'] = ua_merged['type'].fillna('Universiti Awam')
+        # Set type and category for UA courses
+        # IMPORTANT: Use assignment (not fillna) to ensure consistent type for dashboard categorization
+        ua_merged['type'] = 'Universiti Awam'  # Overwrites 'IPTA' from institutions.csv
         if 'level' in ua_merged.columns:
             ua_merged['category'] = ua_merged['level'].fillna('Asasi / Foundation')
         else:
