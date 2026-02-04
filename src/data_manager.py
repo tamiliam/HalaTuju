@@ -36,10 +36,10 @@ def load_master_data():
 
     # Load Metadata Files (Raw)
     df_links = load('links.csv')
-    df_inst = load('institutions.csv')
+    df_inst = load('institutions.csv')  # Now includes Poly/KK/TVET/UA institutions
     df_courses = load('courses.csv')
-    
-    df_tvet_inst = load('tvet_institutions.csv')
+
+    # df_tvet_inst removed - now in institutions.csv
     df_tvet_courses = load('tvet_courses.csv')
 
     # NEW: Load Details
@@ -143,9 +143,9 @@ def load_master_data():
     # --- 3. MERGE TVET DATA ---
     if not df_tvet_req.empty:
         tvet_merged = df_tvet_req.copy()
-        
-        # Merge Inst Details
-        tvet_merged = pd.merge(tvet_merged, df_tvet_inst, on='institution_id', how='left')
+
+        # Merge Inst Details (from unified institutions.csv)
+        tvet_merged = pd.merge(tvet_merged, df_inst, on='institution_id', how='left')
         
         # Merge Course Details
         tvet_merged = pd.merge(tvet_merged, df_tvet_courses, on='course_id', how='left')
@@ -206,7 +206,7 @@ def load_master_data():
     # Load UA requirements from parsed MOHE data
     df_ua_req = load('university_requirements.csv', clean=True)
     df_ua_courses = load('university_courses.csv')
-    df_ua_inst = load('university_institutions.csv')
+    # df_ua_inst removed - now in unified institutions.csv
 
     if not df_ua_req.empty:
         ua_merged = df_ua_req.copy()
@@ -235,16 +235,22 @@ def load_master_data():
                 # Always use institution name from notes (most reliable)
                 ua_merged['institution_name'] = institution_from_notes
 
-        # Try to match with university_institutions.csv for additional metadata (state, URL)
-        if not df_ua_inst.empty and 'institution_name' in ua_merged.columns:
-            # Merge by institution_name (fuzzy match might fail, so use left join)
-            ua_merged = pd.merge(
-                ua_merged,
-                df_ua_inst[['institution_name', 'state', 'url', 'address']],
-                on='institution_name',
-                how='left',
-                suffixes=('', '_from_inst')
-            )
+        # Match with unified institutions.csv for additional metadata (state, URL)
+        if 'institution_name' in ua_merged.columns:
+            # Filter to just university institutions
+            df_ua_inst_filtered = df_inst[df_inst['type'] == 'IPTA'].copy()
+            if not df_ua_inst_filtered.empty:
+                # Merge by institution_name (fuzzy match might fail, so use left join)
+                ua_merged = pd.merge(
+                    ua_merged,
+                    df_ua_inst_filtered[['institution_name', 'State', 'url', 'address']],
+                    on='institution_name',
+                    how='left',
+                    suffixes=('', '_from_inst')
+                )
+                # Rename State to lowercase for consistency
+                if 'State' in ua_merged.columns:
+                    ua_merged = ua_merged.rename(columns={'State': 'state'})
 
         # Set type and category based on level column
         # Use consistent type naming (Bahasa Melayu) for filter compatibility
