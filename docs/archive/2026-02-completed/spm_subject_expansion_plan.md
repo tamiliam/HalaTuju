@@ -1,9 +1,18 @@
 # SPM Subject Expansion Implementation Plan
 
-**Version:** 1.0
-**Date:** 2026-02-03
-**Status:** Ready for Implementation
+**Version:** 1.1
+**Date:** 2026-02-04
+**Status:** CLOSED (Policy Decision)
 **Author:** Claude Code
+
+---
+
+> **Resolution (2026-02-04):**
+> - All mainstream, technical, and vocational SPM subjects are now covered
+> - Islamic school subjects explicitly excluded by policy
+> - SKM qualifications out of scope
+> - Bumiputra-only courses out of scope
+> - No further expansion needed for v1.x
 
 ---
 

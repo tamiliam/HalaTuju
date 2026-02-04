@@ -1,9 +1,12 @@
 # University Requirements Rebuild Plan
 
-> **Status**: PLANNING
-> **Created**: 2026-02-03
+> **Status**: DEFERRED (v1.x enhancement, lower priority)
+> **Last Updated**: 2026-02-04
 > **Source**: `Random/data/spm/mohe_programs_with_khas.csv` (364 programs)
 > **Target**: `data/university_requirements.csv`
+>
+> **Note:** Basic UA integration is DONE (87 courses). This plan is for ENHANCED eligibility
+> via syarat_khas parsing. Lower priority than PISMP and course details work.
 
 ---
 

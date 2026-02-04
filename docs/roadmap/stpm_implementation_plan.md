@@ -1,5 +1,11 @@
 # STPM Eligibility System Implementation Plan
 
+> **Status:** DEFERRED (v2.x)
+> **Last Updated:** 2026-02-04
+> **Rationale:** Requires UI/UX rethink for STPM grade entry. Data exists but integration is complex.
+
+---
+
 **Goal:** Transform scraped STPM university program data into a machine-readable eligibility checking system, similar to HalaTuju's SPM engine.
 
 **Current State:**
