@@ -4,3 +4,8 @@ __pycache__/
 .env
 venv/
 .streamlit/secrets.toml
+
+# Debug and temporary files
+debug_output.txt
+*.log
+test_output.txt
