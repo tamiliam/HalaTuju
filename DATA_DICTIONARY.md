@@ -85,7 +85,12 @@ These columns are used for Asasi and Foundation programs. Source: `data/universi
 | :--- | :--- |
 | `distinction_bm` | Grade **A-** or better in Bahasa Malaysia. |
 | `distinction_eng` | Grade **A-** or better in English. |
+| `distinction_math` | Grade **A-** or better in Mathematics. |
 | `distinction_addmath` | Grade **A-** or better in Additional Mathematics. |
+| `distinction_bio` | Grade **A-** or better in Biology. |
+| `distinction_phy` | Grade **A-** or better in Physics. |
+| `distinction_chem` | Grade **A-** or better in Chemistry. |
+| `distinction_sci` | Grade **A-** or better in General Science. |
 
 #### OR-Group Requirements
 | Column | Logic |
@@ -100,6 +105,36 @@ These columns are used for Asasi and Foundation programs. Source: `data/universi
 | `credit_islam` | Credit in Pendidikan Islam. |
 | `pass_moral` | Pass in Pendidikan Moral. |
 | `credit_moral` | Credit in Pendidikan Moral. |
+
+#### Science Requirements
+| Column | Requirement |
+| :--- | :--- |
+| `pass_sci` | Pass in General Science. |
+| `credit_sci` | Credit in General Science. |
+| `credit_addmath` | Credit in Additional Mathematics. |
+
+#### Complex Requirements (JSON)
+| Column | Description |
+| :--- | :--- |
+| `complex_requirements` | JSON string encoding OR-group requirements. See format below. |
+
+**Complex Requirements Format:**
+```json
+{
+  "or_groups": [
+    {
+      "count": 2,
+      "grade": "B",
+      "subjects": ["phy", "chem", "bio"]
+    }
+  ]
+}
+```
+
+**Logic:**
+- Each OR-group must be satisfied (AND logic between groups)
+- Within each group, student needs `count` subjects with at least `grade` (OR logic within subjects)
+- Example: Need 2 subjects with Grade B from [Physics, Chemistry, Biology] AND 1 subject with Grade C+ from [Computer Science, Additional Mathematics]
 
 ### 8. Other
 | Column | Description |

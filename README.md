@@ -1,10 +1,20 @@
 # 🎓 HalaTuju: SPM Leaver Course Recommender
 
-HalaTuju is an AI-powered analytics and recommendation platform designed to help SPM (Sijil Pelajaran Malaysia) leavers navigate their post-secondary education options. It aggregates data from Polytechnics, Community Colleges, and TVET institutions (ILKBS, ILJTM) to provide personalized course matching based on academic results, interests, and career aspirations.
+HalaTuju is an AI-powered analytics and recommendation platform designed to help SPM (Sijil Pelajaran Malaysia) leavers navigate their post-secondary education options. It aggregates data from Polytechnics, Community Colleges, TVET institutions (ILKBS, ILJTM), and Public Universities (IPTA) to provide personalized course matching based on academic results, interests, and career aspirations.
+
+## 📊 Course Coverage
+
+- **814+ Courses** across multiple pathways:
+  - Polytechnics (Diploma programs)
+  - Community Colleges (Certificate & Diploma programs)
+  - TVET Institutions (ILKBS, ILJTM vocational training)
+  - **Public Universities (87 Asasi/Foundation programs from 20 IPTA)**
 
 ## 🚀 Key Features
 
--   **Smart Eligibility Engine**: Automatically checks student grades against thousands of course requirements (General & Specific rules).
+-   **Smart Eligibility Engine**: Automatically checks student grades against thousands of course requirements:
+    -   Polytechnic/KK/TVET: General & Specific rules
+    -   **University (IPTA): Grade B requirements, Distinction requirements (A-), Complex OR-group logic**
 -   **Holistic Ranking System**: Ranks eligible courses using a weighted scoring model that considers:
     -   Academic Fit
     -   Interest Alignment (based on RIASEC/Holland Code)
