@@ -118,53 +118,123 @@ def render_progress_bar(current_step):
 
 
 def render_step_welcome(t):
-    """Step 1: Welcome screen with value proposition."""
+    """Step 1: Welcome screen with value proposition and language selection."""
 
+    # Language selection at top
     st.markdown("""
-        <div style="text-align: center; padding: 40px 20px;">
-            <h1 style="font-size: 2.5em; margin-bottom: 10px;">🎓 Hala Tuju</h1>
+        <div style="text-align: center; margin-bottom: 10px;">
+            <span style="color: #6B7280; font-size: 0.9em;">🌐 Pilih Bahasa / Choose Language</span>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Language buttons
+    lang_col1, lang_col2, lang_col3 = st.columns(3)
+
+    current_lang = st.session_state.get('lang_code', 'bm')
+
+    with lang_col1:
+        bm_style = "primary" if current_lang == 'bm' else "secondary"
+        if st.button("🇲🇾 Bahasa Melayu", key="lang_bm", use_container_width=True,
+                     type=bm_style if current_lang == 'bm' else "secondary"):
+            st.session_state['lang_code'] = 'bm'
+            st.rerun()
+
+    with lang_col2:
+        en_style = "primary" if current_lang == 'en' else "secondary"
+        if st.button("🇬🇧 English", key="lang_en", use_container_width=True,
+                     type=en_style if current_lang == 'en' else "secondary"):
+            st.session_state['lang_code'] = 'en'
+            st.rerun()
+
+    with lang_col3:
+        ta_style = "primary" if current_lang == 'ta' else "secondary"
+        if st.button("🇮🇳 தமிழ்", key="lang_ta", use_container_width=True,
+                     type=ta_style if current_lang == 'ta' else "secondary"):
+            st.session_state['lang_code'] = 'ta'
+            st.rerun()
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Welcome header - localized
+    welcome_headers = {
+        'bm': ("🎓 Hala Tuju", "Cari kursus terbaik untuk anda selepas SPM"),
+        'en': ("🎓 Hala Tuju", "Find the best courses for you after SPM"),
+        'ta': ("🎓 ஹாலா துஜு", "SPM பிறகு உங்களுக்கான சிறந்த படிப்புகளைக் கண்டறியுங்கள்")
+    }
+
+    title, subtitle = welcome_headers.get(current_lang, welcome_headers['bm'])
+
+    st.markdown(f"""
+        <div style="text-align: center; padding: 20px 20px 40px 20px;">
+            <h1 style="font-size: 2.5em; margin-bottom: 10px;">{title}</h1>
             <p style="font-size: 1.3em; color: #6B7280; margin-bottom: 30px;">
-                Cari kursus terbaik untuk anda selepas SPM
+                {subtitle}
             </p>
         </div>
     """, unsafe_allow_html=True)
 
-    # Value proposition cards
+    # Value proposition cards - localized
+    card_texts = {
+        'bm': [
+            ("13,000+ Kursus", "Politeknik, Kolej Komuniti, TVET, Universiti"),
+            ("Padanan Tepat", "Berdasarkan keputusan SPM anda"),
+            ("Percuma", "Tiada yuran, tiada pendaftaran")
+        ],
+        'en': [
+            ("13,000+ Courses", "Polytechnic, Community College, TVET, University"),
+            ("Accurate Matching", "Based on your SPM results"),
+            ("Free", "No fees, no registration")
+        ],
+        'ta': [
+            ("13,000+ படிப்புகள்", "பாலிடெக்னிக், சமூகக் கல்லூரி, TVET, பல்கலைக்கழகம்"),
+            ("துல்லியமான பொருத்தம்", "உங்கள் SPM முடிவுகளின் அடிப்படையில்"),
+            ("இலவசம்", "கட்டணம் இல்லை, பதிவு இல்லை")
+        ]
+    }
+
+    cards = card_texts.get(current_lang, card_texts['bm'])
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown("""
+        st.markdown(f"""
             <div style="text-align: center; padding: 20px; background: #F0FDF4; border-radius: 12px;">
                 <div style="font-size: 2em;">📊</div>
-                <h4 style="margin: 10px 0 5px 0;">13,000+ Kursus</h4>
-                <p style="font-size: 0.9em; color: #6B7280; margin: 0;">Politeknik, Kolej Komuniti, TVET, Universiti</p>
+                <h4 style="margin: 10px 0 5px 0;">{cards[0][0]}</h4>
+                <p style="font-size: 0.9em; color: #6B7280; margin: 0;">{cards[0][1]}</p>
             </div>
         """, unsafe_allow_html=True)
 
     with col2:
-        st.markdown("""
+        st.markdown(f"""
             <div style="text-align: center; padding: 20px; background: #EEF2FF; border-radius: 12px;">
                 <div style="font-size: 2em;">🎯</div>
-                <h4 style="margin: 10px 0 5px 0;">Padanan Tepat</h4>
-                <p style="font-size: 0.9em; color: #6B7280; margin: 0;">Berdasarkan keputusan SPM anda</p>
+                <h4 style="margin: 10px 0 5px 0;">{cards[1][0]}</h4>
+                <p style="font-size: 0.9em; color: #6B7280; margin: 0;">{cards[1][1]}</p>
             </div>
         """, unsafe_allow_html=True)
 
     with col3:
-        st.markdown("""
+        st.markdown(f"""
             <div style="text-align: center; padding: 20px; background: #FEF3C7; border-radius: 12px;">
                 <div style="font-size: 2em;">⚡</div>
-                <h4 style="margin: 10px 0 5px 0;">Percuma</h4>
-                <p style="font-size: 0.9em; color: #6B7280; margin: 0;">Tiada yuran, tiada pendaftaran</p>
+                <h4 style="margin: 10px 0 5px 0;">{cards[2][0]}</h4>
+                <p style="font-size: 0.9em; color: #6B7280; margin: 0;">{cards[2][1]}</p>
             </div>
         """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # CTA Button
+    # CTA Button - localized
+    cta_texts = {
+        'bm': "🚀 Mula Sekarang",
+        'en': "🚀 Start Now",
+        'ta': "🚀 இப்போது தொடங்கு"
+    }
+    cta_text = cta_texts.get(current_lang, cta_texts['bm'])
+
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("🚀 Mula Sekarang", use_container_width=True, type="primary", key="btn_start_wizard"):
+        if st.button(cta_text, use_container_width=True, type="primary", key="btn_start_wizard"):
             set_wizard_step('stream')
             st.rerun()
 
