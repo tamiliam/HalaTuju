@@ -1520,18 +1520,19 @@ if auth_status:
                 except ValueError: return 999
             
             with st.expander(t.get('filter_by_state', "By State"), expanded=False):
-                 state_raw = [str(x) for x in df_display["state"].unique() if x]
+                 # Filter out NaN values properly before converting to string
+                 state_raw = [str(x) for x in df_display["state"].unique() if pd.notna(x) and str(x).lower() != 'nan']
                  state_opts = sorted(state_raw, key=sort_state)
                  state_filter = st.pills("Select States", options=state_opts, selection_mode="multi", default=state_opts, key="pill_state", label_visibility="collapsed")
             
             # 3. Field of Study (Collapsed)
-            field_raw = [str(x) for x in df_display["frontend_label"].unique() if x]
+            field_raw = [str(x) for x in df_display["frontend_label"].unique() if pd.notna(x) and str(x).lower() != 'nan']
             field_opts = sorted(field_raw)
             with st.expander(t.get('filter_by_field', "By Field of Education"), expanded=False):
                 field_filter = st.pills("Select Fields", options=field_opts, selection_mode="multi", default=field_opts, key="pill_field", label_visibility="collapsed")
 
             # 4. Level of Education (New)
-            level_raw = [str(x) for x in df_display["level"].unique() if x]
+            level_raw = [str(x) for x in df_display["level"].unique() if pd.notna(x) and str(x).lower() != 'nan']
             level_opts = sorted(level_raw)
             with st.expander(t.get('filter_by_level', "By Level of Education"), expanded=False):
                 level_filter = st.pills("Select Level", options=level_opts, selection_mode="multi", default=level_opts, key="pill_level", label_visibility="collapsed")

@@ -358,6 +358,27 @@ def group_courses_by_id(flat_list):
         "is_locked": True 
     }
 # --- UI HELPERS ---
+def clean_nan_value(value, default='N/A'):
+    """
+    Clean NaN values from pandas dataframes for UI display.
+    Handles float nan, string 'nan', None, and empty strings.
+    """
+    if value is None or value == '':
+        return default
+
+    # Check for float NaN
+    if isinstance(value, float):
+        import math
+        if math.isnan(value):
+            return default
+
+    # Check for string 'nan' (case insensitive)
+    if isinstance(value, str) and value.lower() == 'nan':
+        return default
+
+    return value
+
+
 def display_course_card(pick, t=None, show_trigger=True, show_title=True):
     """
     Renders a single "Product Card" for a course recommendation.
@@ -366,27 +387,27 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
     """
     import streamlit as st
     import textwrap
-    
+
     # 1. Setup Data
     c_name = pick.get('course_name', 'Unknown Course')
     score = pick.get('max_score', 0)
     synopsis = pick.get('synopsis', '')
-    
+
     # Fit Reasons Logic
     reasons = pick.get('fit_reasons', [])
     reasons_html = ""
     if reasons:
         reasons_list = "".join([f"<li>{r}</li>" for r in reasons[:3]])
         reasons_html = f"<ul style='margin: 5px 0 10px 15px; color: #555;'>{reasons_list}</ul>"
-    
+
     locs = pick.get('locations', [])
     loc0 = locs[0] if locs else {}
-    
-    dur = pick.get('duration') or "N/A"
-    fees = loc0.get('fees', 'N/A')
-    hostel = loc0.get('hostel_fee', 'N/A')
-    hostel = loc0.get('hostel_fee', 'N/A')
-    det_url = loc0.get('details_url', '#')
+
+    # Clean NaN values for display
+    dur = clean_nan_value(pick.get('duration'), "N/A")
+    fees = clean_nan_value(loc0.get('fees'), 'N/A')
+    hostel = clean_nan_value(loc0.get('hostel_fee'), 'N/A')
+    det_url = clean_nan_value(loc0.get('details_url'), '#')
     
     # Merit Badge Logic
     merit_html = ""
@@ -471,9 +492,9 @@ def display_course_card(pick, t=None, show_trigger=True, show_title=True):
          for loc in locs:
              name = loc.get('institution_name', 'Unknown')
              url = loc.get('inst_url', '#')
-             state = loc.get('state', '-')
+             state = clean_nan_value(loc.get('state'), '-')
              score_loc = loc.get('score', 0)
-             
+
              rows += f"""
 <tr style="border-bottom: 1px solid #f1f2f6;">
 <td style="padding: 8px;"><a href="{url}" target="_blank" class="inst-link">{name}</a></td>
