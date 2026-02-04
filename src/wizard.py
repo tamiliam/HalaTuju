@@ -69,52 +69,51 @@ def get_step_index(step):
 
 
 def render_progress_bar(current_step):
-    """Render visual progress indicator."""
+    """Render visual progress indicator using Streamlit columns."""
     current_idx = get_step_index(current_step)
-    total_steps = len(WIZARD_STEPS) - 1  # Exclude 'complete'
+    steps = WIZARD_STEPS[:-1]  # Exclude 'complete'
 
-    # Build progress dots
-    dots_html = ""
-    for i, step in enumerate(WIZARD_STEPS[:-1]):  # Exclude 'complete'
+    # Use Streamlit columns for reliable rendering
+    cols = st.columns(len(steps))
+
+    for i, (col, step) in enumerate(zip(cols, steps)):
         icon, label = STEP_LABELS[step]
 
-        if i < current_idx:
-            # Completed step
-            dot_style = "background: #10B981; color: white;"
-            line_style = "background: #10B981;"
-        elif i == current_idx:
-            # Current step
-            dot_style = "background: #6366F1; color: white; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.3);"
-            line_style = "background: #E5E7EB;"
-        else:
-            # Future step
-            dot_style = "background: #E5E7EB; color: #9CA3AF;"
-            line_style = "background: #E5E7EB;"
+        with col:
+            # Determine step state
+            if i < current_idx:
+                # Completed
+                bg_color = "#10B981"
+                text_color = "white"
+                label_color = "#374151"
+            elif i == current_idx:
+                # Current
+                bg_color = "#6366F1"
+                text_color = "white"
+                label_color = "#374151"
+            else:
+                # Future
+                bg_color = "#E5E7EB"
+                text_color = "#9CA3AF"
+                label_color = "#9CA3AF"
 
-        dots_html += f'''
-            <div style="display: flex; flex-direction: column; align-items: center; z-index: 1;">
-                <div style="width: 40px; height: 40px; border-radius: 50%; display: flex;
-                            align-items: center; justify-content: center; font-size: 18px; {dot_style}">
-                    {icon}
-                </div>
-                <span style="font-size: 11px; margin-top: 4px; color: {'#374151' if i <= current_idx else '#9CA3AF'};">
-                    {label}
-                </span>
-            </div>
-        '''
+            st.markdown(
+                f"""<div style="text-align: center;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%;
+                                background: {bg_color}; color: {text_color};
+                                display: inline-flex; align-items: center; justify-content: center;
+                                font-size: 18px; margin: 0 auto;">
+                        {icon}
+                    </div>
+                    <div style="font-size: 11px; color: {label_color}; margin-top: 4px;">
+                        {label}
+                    </div>
+                </div>""",
+                unsafe_allow_html=True
+            )
 
-        # Add connecting line (except after last step)
-        if i < len(WIZARD_STEPS) - 2:
-            dots_html += f'''
-                <div style="flex: 1; height: 3px; {line_style} margin: 0 -5px; margin-top: -20px;"></div>
-            '''
-
-    st.markdown(f'''
-        <div style="display: flex; align-items: flex-start; justify-content: space-between;
-                    padding: 20px 10px; margin-bottom: 20px;">
-            {dots_html}
-        </div>
-    ''', unsafe_allow_html=True)
+    # Add spacing after progress bar
+    st.markdown("<br>", unsafe_allow_html=True)
 
 
 def render_step_welcome(t):
@@ -446,7 +445,7 @@ def render_wizard(t):
     st.markdown("""
         <style>
             /* Prevent horizontal swipe on wizard */
-            .wizard-container {
+            .stApp {
                 touch-action: pan-y !important;
                 overscroll-behavior-x: none !important;
             }
@@ -464,7 +463,6 @@ def render_wizard(t):
                 }
             }
         </style>
-        <div class="wizard-container">
     """, unsafe_allow_html=True)
 
     # Only show progress bar if past welcome
@@ -483,8 +481,6 @@ def render_wizard(t):
     elif current_step == 'complete':
         # This should not render - main.py will take over
         pass
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def get_wizard_results():
