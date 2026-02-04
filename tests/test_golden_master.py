@@ -16,10 +16,10 @@ class TestGoldenMaster(unittest.TestCase):
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         data_folder = os.path.join(project_root, 'data')
         
-        files_to_load = ['requirements.csv', 'tvet_requirements.csv']
+        files_to_load = ['requirements.csv', 'tvet_requirements.csv', 'university_requirements.csv']
         dfs = []
         
-        print(f"\n🔹 Loading and Cleaning Data from: {data_folder}")
+        print(f"\n[*] Loading and Cleaning Data from: {data_folder}")
         for filename in files_to_load:
             full_path = os.path.join(data_folder, filename)
             
@@ -33,13 +33,13 @@ class TestGoldenMaster(unittest.TestCase):
                 except Exception as e:
                     print(f"   Error reading {filename}: {e}")
             else:
-                print(f"   ⚠️  Warning: {filename} not found in {data_folder}")
+                print(f"   [!] Warning: {filename} not found in {data_folder}")
         
         if not dfs:
             raise unittest.SkipTest("No requirements files found! Cannot run Golden Master.")
             
         cls.df_courses = pd.concat(dfs, ignore_index=True)
-        print(f"   ✅ Total Combined Courses: {len(cls.df_courses)}")
+        print(f"   [OK] Total Combined Courses: {len(cls.df_courses)}")
 
         # 2. Define The Edge Case Squad (The Constants)
         cls.students = [
@@ -283,6 +283,72 @@ class TestGoldenMaster(unittest.TestCase):
                 grades={'rc':'D'},
                 gender='Lelaki', nationality='Warganegara', colorblind='Tidak', disability='Ya',
                 other_voc=True
+            ),
+
+            # --- UNIVERSITY (UA) REQUIREMENTS TESTING (43-50) ---
+
+            # 43. The "Grade B Strong Candidate"
+            # Scenario: Meets Grade B requirements (BM, Eng, AddMath all B or better)
+            # Should qualify for UA courses with credit_bm_b, credit_eng_b, credit_addmath_b
+            StudentProfile(
+                grades={'bm':'B', 'eng':'B', 'hist':'C', 'math':'B', 'addmath':'B+', 'phy':'A', 'chem':'B', 'bio':'C'},
+                gender='Lelaki', nationality='Warganegara', colorblind='Tidak', disability='Tidak'
+            ),
+
+            # 44. The "Distinction Achiever"
+            # Scenario: Has distinction grades (A-/A/A+) in BM, Math, Sciences
+            # Should qualify for UA courses requiring distinction_bm, distinction_phy, etc.
+            StudentProfile(
+                grades={'bm':'A', 'eng':'B+', 'hist':'C', 'math':'A-', 'addmath':'A+', 'phy':'A', 'chem':'A-', 'bio':'A'},
+                gender='Lelaki', nationality='Warganegara', colorblind='Tidak', disability='Tidak'
+            ),
+
+            # 45. The "Grade B Borderline Fail"
+            # Scenario: Has C+ grades (good, but NOT Grade B)
+            # Should FAIL courses requiring credit_bm_b, credit_eng_b (needs B or better)
+            StudentProfile(
+                grades={'bm':'C+', 'eng':'C+', 'hist':'C', 'math':'C+', 'addmath':'C+', 'phy':'B', 'chem':'C'},
+                gender='Lelaki', nationality='Warganegara', colorblind='Tidak', disability='Tidak'
+            ),
+
+            # 46. The "Complex OR-Group Qualifier"
+            # Scenario: Has 2 sciences with Grade B (Phy A, Chem B, Bio D)
+            # Should satisfy: {"count": 2, "grade": "B", "subjects": ["phy", "chem", "bio"]}
+            StudentProfile(
+                grades={'bm':'B', 'eng':'C', 'hist':'C', 'math':'C', 'phy':'A', 'chem':'B', 'bio':'D', 'comp_sci':'B'},
+                gender='Lelaki', nationality='Warganegara', colorblind='Tidak', disability='Tidak'
+            ),
+
+            # 47. The "Complex OR-Group Fail"
+            # Scenario: Has only 1 science with Grade B (needs 2)
+            # Should FAIL: {"count": 2, "grade": "B", "subjects": ["phy", "chem", "bio"]}
+            StudentProfile(
+                grades={'bm':'B', 'eng':'C', 'hist':'C', 'math':'C', 'phy':'B', 'chem':'D', 'bio':'E'},
+                gender='Lelaki', nationality='Warganegara', colorblind='Tidak', disability='Tidak'
+            ),
+
+            # 48. The "Pendidikan Islam Qualifier"
+            # Scenario: Has credit in PI (for Muslim students)
+            # Should qualify for courses requiring credit_islam
+            StudentProfile(
+                grades={'bm':'B', 'eng':'C', 'hist':'C', 'math':'C', 'islam':'B', 'phy':'C'},
+                gender='Lelaki', nationality='Warganegara', colorblind='Tidak', disability='Tidak'
+            ),
+
+            # 49. The "Pendidikan Moral Qualifier"
+            # Scenario: Has credit in PM (for non-Muslim students)
+            # Should qualify for courses requiring credit_moral
+            StudentProfile(
+                grades={'bm':'B', 'eng':'C', 'hist':'C', 'math':'C', 'moral':'B', 'chem':'C'},
+                gender='Lelaki', nationality='Warganegara', colorblind='Tidak', disability='Tidak'
+            ),
+
+            # 50. The "Mixed UA Requirements"
+            # Scenario: Meets some but not all requirements (has Grade B BM, Distinction Phy, but weak Eng)
+            # Should fail courses needing both credit_bm_b AND credit_eng_b
+            StudentProfile(
+                grades={'bm':'A', 'eng':'D', 'hist':'C', 'math':'B', 'phy':'A-', 'chem':'B'},
+                gender='Lelaki', nationality='Warganegara', colorblind='Tidak', disability='Tidak'
             )
         ]
 
@@ -293,7 +359,7 @@ class TestGoldenMaster(unittest.TestCase):
         """
         total_eligible_matches = 0
         
-        print("\n🔹 GOLDEN MASTER: Running Integration Matrix...")
+        print("\n[*] GOLDEN MASTER: Running Integration Matrix...")
         print(f"   Students: {len(self.students)} | Courses: {len(self.df_courses)}")
         print(f"   Total Checks: {len(self.students) * len(self.df_courses)}")
 
@@ -305,11 +371,11 @@ class TestGoldenMaster(unittest.TestCase):
                     total_eligible_matches += 1
 
         print("   ------------------------------------------------")
-        print(f"   🏆 TOTAL VALID APPLICATIONS: {total_eligible_matches}")
+        print(f"   [***] TOTAL VALID APPLICATIONS: {total_eligible_matches}")
         print("   ------------------------------------------------")
 
         # --- THE MAGIC NUMBER ---
-        EXPECTED_BASELINE = 5318  # <--- Ensure this is your set baseline
+        EXPECTED_BASELINE = 8280  # Updated 2026-02-04: Added 87 UA courses + 8 UA student profiles
 
         if total_eligible_matches != EXPECTED_BASELINE:
             # Create a clean error message
@@ -317,7 +383,7 @@ class TestGoldenMaster(unittest.TestCase):
             direction = "more" if diff > 0 else "fewer"
             
             error_msg = (
-                f"\n\n❌ REGRESSION DETECTED!\n"
+                f"\n\n[X] REGRESSION DETECTED!\n"
                 f"   Expected: {EXPECTED_BASELINE}\n"
                 f"   Actual:   {total_eligible_matches}\n"
                 f"   Diff:     {diff} matches ({abs(diff)} {direction} than expected)\n\n"
@@ -328,7 +394,7 @@ class TestGoldenMaster(unittest.TestCase):
             )
             self.fail(error_msg)
         else:
-            print("   ✅ Golden Master Verification Passed. System Integrity: 100%")
+            print("   [OK] Golden Master Verification Passed. System Integrity: 100%")
 
 if __name__ == '__main__':
     unittest.main()
