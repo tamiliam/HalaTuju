@@ -205,66 +205,34 @@ def load_master_data():
     # --- 3c. MERGE PUBLIC UNIVERSITY (UA) DATA ---
     # Load UA requirements from parsed MOHE data
     df_ua_req = load('university_requirements.csv', clean=True)
-    df_ua_courses = load('university_courses.csv')
-    # df_ua_inst removed - now in unified institutions.csv
+    # df_ua_courses removed - now merged into unified courses.csv
 
-    if not df_ua_req.empty:
-        ua_merged = df_ua_req.copy()
+    if not df_ua_req.empty and not df_links.empty:
+        # Follow same pattern as Poly/KK: links.csv → institutions.csv → courses.csv
+        # Merge Links to get Institution IDs for each course
+        ua_merged = pd.merge(df_ua_req, df_links, on='course_id', how='left')
 
-        # Merge with university_courses.csv to get course metadata
-        if not df_ua_courses.empty:
-            ua_merged = pd.merge(ua_merged, df_ua_courses, on='course_id', how='left')
+        # Merge Institution Details (Name, State, URL)
+        ua_merged = pd.merge(ua_merged, df_inst, on='institution_id', how='left')
 
-        # Extract course name and institution from notes column (most reliable source)
-        # Format: "PROGRAM NAME | INSTITUTION NAME"
-        if 'notes' in ua_merged.columns:
-            split_data = ua_merged['notes'].str.split(' \\| ', n=1, expand=True, regex=True)
-            if split_data.shape[1] >= 2:
-                course_from_notes = split_data[0].str.strip()
-                institution_from_notes = split_data[1].str.strip()
+        # Merge Course Details (Name, Duration, etc.)
+        ua_merged = pd.merge(ua_merged, df_courses, on='course_id', how='left')
 
-                # Handle column name conflicts (course_x, course_y)
-                if 'course_y' in ua_merged.columns:
-                    # Prefer course_y (from university_courses.csv)
-                    ua_merged['course'] = ua_merged['course_y'].fillna(course_from_notes)
-                elif 'course_x' in ua_merged.columns:
-                    ua_merged['course'] = ua_merged['course_x'].fillna(course_from_notes)
-                else:
-                    ua_merged['course'] = course_from_notes
-
-                # Always use institution name from notes (most reliable)
-                ua_merged['institution_name'] = institution_from_notes
-
-        # Match with unified institutions.csv for additional metadata (state, URL)
-        if 'institution_name' in ua_merged.columns:
-            # Filter to just university institutions
-            df_ua_inst_filtered = df_inst[df_inst['type'] == 'IPTA'].copy()
-            if not df_ua_inst_filtered.empty:
-                # Merge by institution_name (fuzzy match might fail, so use left join)
-                ua_merged = pd.merge(
-                    ua_merged,
-                    df_ua_inst_filtered[['institution_name', 'State', 'url', 'address']],
-                    on='institution_name',
-                    how='left',
-                    suffixes=('', '_from_inst')
-                )
-                # Rename State to lowercase for consistency
-                if 'State' in ua_merged.columns:
-                    ua_merged = ua_merged.rename(columns={'State': 'state'})
+        # Handle column name conflicts (course_x, course_y from merges)
+        if 'course_y' in ua_merged.columns:
+            # Prefer course_y (from courses.csv)
+            ua_merged['course'] = ua_merged['course_y'].fillna(ua_merged.get('course_x', ''))
+        elif 'course_x' in ua_merged.columns:
+            ua_merged['course'] = ua_merged['course_x']
+        # else: 'course' column already exists from merge
 
         # Set type and category based on level column
         # Use consistent type naming (Bahasa Melayu) for filter compatibility
-        ua_merged['type'] = 'Universiti Awam'
+        ua_merged['type'] = ua_merged['type'].fillna('Universiti Awam')
         if 'level' in ua_merged.columns:
             ua_merged['category'] = ua_merged['level'].fillna('Asasi / Foundation')
         else:
             ua_merged['category'] = 'Asasi / Foundation'
-
-        # Map state (prefer from institution data, fallback to parsing or default)
-        if 'state' in ua_merged.columns:
-            ua_merged['State'] = ua_merged['state'].fillna('Various')
-        else:
-            ua_merged['State'] = 'Various'
 
         # Map fees and duration
         ua_merged['fees'] = 'Contact Institution'

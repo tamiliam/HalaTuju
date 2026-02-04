@@ -1,6 +1,8 @@
 [
   {
     "inst_id": "POLY-001",
+    "name": "Politeknik Ungku Omar",
+    "address": "Jalan Raja Musa Mahadi, 31400 Ipoh, Perak",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -12,6 +14,8 @@
   },
   {
     "inst_id": "POLY-002",
+    "name": "Politeknik Sultan Haji Ahmad Shah",
+    "address": "Semambu, 25350 Kuantan, Pahang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -23,6 +27,8 @@
   },
   {
     "inst_id": "POLY-003",
+    "name": "Politeknik Sultan Abdul Halim Muadzam Shah",
+    "address": "Bandar Darulaman, 06000 Jitra, Kedah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -34,6 +40,8 @@
   },
   {
     "inst_id": "POLY-004",
+    "name": "Politeknik Kota Bharu",
+    "address": "Km 24, Pangkal Kalong, Kok Lanas, 16450 Ketereh, Kelantan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -45,6 +53,8 @@
   },
   {
     "inst_id": "POLY-005",
+    "name": "Politeknik Kuching Sarawak",
+    "address": "Km 22, Jalan Matang, 93050 Kuching, Sarawak",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -56,6 +66,8 @@
   },
   {
     "inst_id": "POLY-006",
+    "name": "Politeknik Port Dickson",
+    "address": "Km 14, Jalan Pantai, 71050 Si Rusa, Negeri Sembilan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "high",
@@ -67,6 +79,8 @@
   },
   {
     "inst_id": "POLY-007",
+    "name": "Politeknik Kota Kinabalu",
+    "address": "No. 4, Jalan Politeknik, Kkip Barat, Kota Kinabalu Industrial Park, 88460 Kota Kinabalu, Sabah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -78,6 +92,8 @@
   },
   {
     "inst_id": "POLY-008",
+    "name": "Politeknik Sultan Salahuddin Abdul Aziz Shah",
+    "address": "Persiaran Usahawan, Seksyen U1, 40150 Shah Alam, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -89,6 +105,8 @@
   },
   {
     "inst_id": "POLY-009",
+    "name": "Politeknik Ibrahim Sultan",
+    "address": "Km 10, Jalan Kong Kong, 81700 Pasir Gudang, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -100,6 +118,8 @@
   },
   {
     "inst_id": "POLY-010",
+    "name": "Politeknik Seberang Perai",
+    "address": "Jalan Permatang Pauh, 13500 Permatang Pauh, Pulau Pinang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -111,6 +131,8 @@
   },
   {
     "inst_id": "POLY-011",
+    "name": "Politeknik Melaka",
+    "address": "No. 2, Jalan Ppm 10, Plaza Pandan Malim, 75250 Balai Panjang, Melaka",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -122,6 +144,8 @@
   },
   {
     "inst_id": "POLY-012",
+    "name": "Politeknik Kuala Terengganu",
+    "address": "Jalan Sultan Ismail, 20200 Kuala Terengganu, Terengganu",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -133,6 +157,8 @@
   },
   {
     "inst_id": "POLY-013",
+    "name": "Politeknik Sultan Mizan Zainal Abidin",
+    "address": "Km 8, Jalan Paka, 23000 Dungun, Terengganu",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -144,6 +170,8 @@
   },
   {
     "inst_id": "POLY-014",
+    "name": "Politeknik Merlimau",
+    "address": "Km 2.5, Jalan Merlimau-Jasin, 77300 Merlimau, Melaka",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -155,6 +183,8 @@
   },
   {
     "inst_id": "POLY-015",
+    "name": "Politeknik Sultan Azlan Shah",
+    "address": "Behrang Stesen, 35950 Behrang, Perak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -166,6 +196,8 @@
   },
   {
     "inst_id": "POLY-016",
+    "name": "Politeknik Tuanku Sultanah Bahiyah",
+    "address": "Kulim Hi-Tech Park, 09000 Kulim, Kedah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "high",
@@ -177,6 +209,8 @@
   },
   {
     "inst_id": "POLY-017",
+    "name": "Politeknik Sultan Idris Shah",
+    "address": "Sungai Lang, 45100 Sungai Air Tawar, Selangor",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -188,6 +222,8 @@
   },
   {
     "inst_id": "POLY-018",
+    "name": "Politeknik Tuanku Syed Sirajuddin",
+    "address": "Pauh Putra, 02600 Arau, Perlis",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -199,6 +235,8 @@
   },
   {
     "inst_id": "POLY-019",
+    "name": "Politeknik Muadzam Shah",
+    "address": "Lebuhraya Tun Abdul Razak, 26700 Muadzam Shah, Pahang",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -210,6 +248,8 @@
   },
   {
     "inst_id": "POLY-020",
+    "name": "Politeknik Mukah Sarawak",
+    "address": "Km 7.5, Jalan Oya, 96400 Mukah, Sarawak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -221,6 +261,8 @@
   },
   {
     "inst_id": "POLY-021",
+    "name": "Politeknik Balik Pulau",
+    "address": "Pinang Nirai Mukim 6, 11000 Balik Pulau, Pulau Pinang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -232,6 +274,8 @@
   },
   {
     "inst_id": "POLY-022",
+    "name": "Politeknik Jeli",
+    "address": "Jalan Raya Timur - Barat, 17600 Jeli, Kelantan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -243,6 +287,8 @@
   },
   {
     "inst_id": "POLY-023",
+    "name": "Politeknik Nilai",
+    "address": "Kompleks Pendidikan Bandar Enstek, 71760 Bandar Enstek, Negeri Sembilan",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -254,6 +300,8 @@
   },
   {
     "inst_id": "POLY-024",
+    "name": "Politeknik Banting",
+    "address": "Persiaran Ilmu, Jln Sultan Abdul Samad, 42700 Banting, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -265,6 +313,8 @@
   },
   {
     "inst_id": "POLY-025",
+    "name": "Politeknik Mersing",
+    "address": "Jalan Nitar, 86800 Mersing, Johor",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -276,6 +326,8 @@
   },
   {
     "inst_id": "POLY-026",
+    "name": "Politeknik Hulu Terengganu",
+    "address": "Jalan Pengkalan Gawi Tasik Kenyir, Kuala Jeneris, 21700 Kuala Berang, Hulu Terengganu, Terengganu",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -287,6 +339,8 @@
   },
   {
     "inst_id": "POLY-027",
+    "name": "Politeknik Sandakan",
+    "address": "Education Hub, Batu 10, Jalan Sungai Batang, 90000 Sandakan, Sabah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -298,6 +352,8 @@
   },
   {
     "inst_id": "POLY-028",
+    "name": "Politeknik METrO Kuala Lumpur",
+    "address": "No. 2-14, Jalan Setiawangsa 10, Taman Setiawangsa, 54200 Kuala Lumpur, WP Kuala Lumpur",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -309,6 +365,8 @@
   },
   {
     "inst_id": "POLY-029",
+    "name": "Politeknik METrO Kuantan",
+    "address": "No. A-5, Jalan Tun Ismail 2, Sri Dagangan 2, 25000 Kuantan, Pahang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -320,6 +378,8 @@
   },
   {
     "inst_id": "POLY-030",
+    "name": "Politeknik METrO Johor Bahru",
+    "address": "No. 64, Jalan Suria 19, Taman Putera, 81100 Johor Bahru, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -331,6 +391,8 @@
   },
   {
     "inst_id": "POLY-031",
+    "name": "Politeknik METrO Betong",
+    "address": "1-12, Fasa 2, Bandar Baru Betong, Jalan Bandar Baru, 95700 Betong, Sarawak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -342,6 +404,8 @@
   },
   {
     "inst_id": "POLY-032",
+    "name": "Politeknik METrO Tasek Gelugor",
+    "address": "No.25, Jalan Komersial 2, Pusat Komersial Tasek Gelugor, 13300 Tasek Gelugor, Pulau Pinang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -353,6 +417,8 @@
   },
   {
     "inst_id": "POLY-033",
+    "name": "Politeknik Tun Syed Nasir Syed Ismail",
+    "address": "Hab Pendidikan Tinggi Pagoh, Km 1, Jln Panchor, 84600 Pagoh, Muar, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -364,6 +430,8 @@
   },
   {
     "inst_id": "POLY-034",
+    "name": "Politeknik Besut",
+    "address": "Jalan Bukit Keluang, 22200 Besut, Terengganu",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -375,6 +443,8 @@
   },
   {
     "inst_id": "POLY-035",
+    "name": "Politeknik Bagan Datuk",
+    "address": "Jalan Bagan Datuk, 36100 Bagan Datuk, Perak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -386,6 +456,8 @@
   },
   {
     "inst_id": "POLY-036",
+    "name": "Politeknik Tawau",
+    "address": "Km 36, Jalan Apas Balung, 91009 Tawau, Sabah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -397,6 +469,8 @@
   },
   {
     "inst_id": "KKOM-001",
+    "name": "Kolej Komuniti Teluk Intan",
+    "address": "10-20 Persiaran Intanova, Taman Intanova, 36000 Teluk Intan, Perak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "high",
@@ -408,6 +482,8 @@
   },
   {
     "inst_id": "KKOM-002",
+    "name": "Kolej Komuniti Chenderoh",
+    "address": "Lot 43, Jalan Perindustrian Miel 2, Kawasan Perindustrian Iks, 33700 Kuala Kangsar, Perak",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -419,6 +495,8 @@
   },
   {
     "inst_id": "KKOM-003",
+    "name": "Kolej Komuniti Gerik",
+    "address": "Bukit Nasah, 33300 Gerik, Perak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -430,6 +508,8 @@
   },
   {
     "inst_id": "KKOM-004",
+    "name": "Kolej Komuniti Sungai Siput",
+    "address": "Kampung Sungai Sejuk, Peti Surat 390, 31100 Sungai Siput (U), Perak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "high",
@@ -441,6 +521,8 @@
   },
   {
     "inst_id": "KKOM-005",
+    "name": "Kolej Komuniti Pasir Salak",
+    "address": "Jalan Lebuh Paduka, Changkat Lada, 36800 Kampung Gajah, Perak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -452,6 +534,8 @@
   },
   {
     "inst_id": "KKOM-006",
+    "name": "Kolej Komuniti Batu Gajah",
+    "address": "11338-11359 Jalan Bandar Baharu 2, Pusat Bandar Baru, 31000 Batu Gajah, Perak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -463,6 +547,8 @@
   },
   {
     "inst_id": "KKOM-007",
+    "name": "Kolej Komuniti Taiping",
+    "address": "No. 25, Laluan Kamunting 3, Bandar Kamunting, 34600 Kamunting, Perak",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -474,6 +560,8 @@
   },
   {
     "inst_id": "KKOM-008",
+    "name": "Kolej Komuniti Bagan Datuk",
+    "address": "No. 40-51, Lorong Lagenda 2, Medaniaga Lagenda, 36400 Hutan Melintang, Perak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "high",
@@ -485,6 +573,8 @@
   },
   {
     "inst_id": "KKOM-009",
+    "name": "Kolej Komuniti Bagan Serai",
+    "address": "No. 29, Jalan Syed Thauphy 2, 34300 Bagan Serai, Perak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -496,6 +586,8 @@
   },
   {
     "inst_id": "KKOM-010",
+    "name": "Kolej Komuniti Manjung",
+    "address": "Lot 31, Persiaran PM 2/2, Pusat Bandar Seri Manjung, Seksyen 2, 32040 Manjung, Perak",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -507,6 +599,8 @@
   },
   {
     "inst_id": "KKOM-011",
+    "name": "Kolej Komuniti Kuala Kangsar",
+    "address": "No. 60-62, Bangunan MPKK, Jalan Dato Maharaja Lela, 33000 Kuala Kangsar, Perak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -518,6 +612,8 @@
   },
   {
     "inst_id": "KKOM-012",
+    "name": "Kolej Komuniti Tapah",
+    "address": "Lot 9396, Wisma Chan Poh Lim, 35000 Tapah, Perak",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -529,6 +625,8 @@
   },
   {
     "inst_id": "KKOM-013",
+    "name": "Kolej Komuniti Gopeng",
+    "address": "Peti Surat 11, Kompleks RTC Perak, Km 16, Jalan Gopeng, Kawasan Perindustrian Gopeng 2, 31600 Gopeng, Perak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -540,6 +638,8 @@
   },
   {
     "inst_id": "KKOM-014",
+    "name": "Kolej Komuniti Sabak Bernam",
+    "address": "Jalan Raja Chulan, 45200 Sabak Bernam, Selangor",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -551,6 +651,8 @@
   },
   {
     "inst_id": "KKOM-015",
+    "name": "Kolej Komuniti Kuala Langat",
+    "address": "Jalan Sultan Suleiman Shah, Jugra, 42700 Banting, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -562,6 +664,8 @@
   },
   {
     "inst_id": "KKOM-016",
+    "name": "Kolej Komuniti Hulu Selangor",
+    "address": "No. 43-57, Jalan Kelah 2, Taman Perniagaan Kelah, 44300 Batang Kali, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -573,6 +677,8 @@
   },
   {
     "inst_id": "KKOM-017",
+    "name": "Kolej Komuniti Hulu Langat",
+    "address": "Jalan Prima Saujana 2/G, Taman Prima Saujana, 43000 Kajang, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -584,6 +690,8 @@
   },
   {
     "inst_id": "KKOM-018",
+    "name": "Kolej Komuniti Selayang",
+    "address": "Persiaran Pegawai, Km 16, Jalan Ipoh, 68100 Batu Caves, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -595,6 +703,8 @@
   },
   {
     "inst_id": "KKOM-019",
+    "name": "Kolej Komuniti Ampang",
+    "address": "Lot Pt 3890, 25 & 27, Jalan Bukit Indah 4, Taman Bukit Indah, 68000 Ampang, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -606,6 +716,8 @@
   },
   {
     "inst_id": "KKOM-020",
+    "name": "Kolej Komuniti Kelana Jaya",
+    "address": "No. 2, Jalan PJS 5/28b, Petaling Jaya Commercial City, 46150 Petaling Jaya, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -617,6 +729,8 @@
   },
   {
     "inst_id": "KKOM-021",
+    "name": "Kolej Komuniti Tanjung Karang",
+    "address": "Jalan PB 1, Pusat Bandar Tanjong Karang, 45500 Tanjong Karang, Selangor",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -628,6 +742,8 @@
   },
   {
     "inst_id": "KKOM-022",
+    "name": "Kolej Komuniti Klang",
+    "address": "No. 2680, Persiaran Tengku Ampuan Rahimah, Taman Lipat Kajang, 41200 Klang, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -639,6 +755,8 @@
   },
   {
     "inst_id": "KKOM-023",
+    "name": "Kolej Komuniti Shah Alam",
+    "address": "D/A Politeknik Sultan Salahuddin Abdul Aziz Shah, Persiaran Usahawan, Sejsyen U1, 40150 Shah Alam, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -650,6 +768,8 @@
   },
   {
     "inst_id": "KKOM-024",
+    "name": "Kolej Komuniti Kuala Langat Cawangan Sepang",
+    "address": "Wisma Aziz Dan Rahmah, Jalan Warisan Putra 1, Taman Warisan Putra, 43800 Dengkil, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -661,6 +781,8 @@
   },
   {
     "inst_id": "KKOM-025",
+    "name": "Kolej Komuniti Kuantan",
+    "address": "B24, Jalan IM 3/13, Bandar Indera Mahkota, 25200 Kuantan, Pahang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -672,6 +794,8 @@
   },
   {
     "inst_id": "KKOM-026",
+    "name": "Kolej Komuniti Bentong",
+    "address": "Km 6, Karak Setia, 28600 Karak, Pahang",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "high",
@@ -683,6 +807,8 @@
   },
   {
     "inst_id": "KKOM-027",
+    "name": "Kolej Komuniti Temerloh",
+    "address": "By Pass Batu 2, Jalan Temerloh, Kg. Chatin Ulu, 28400 Mentakab, Pahang",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -694,6 +820,8 @@
   },
   {
     "inst_id": "KKOM-028",
+    "name": "Kolej Komuniti Paya Besar",
+    "address": "Batu 19, Jalan Maran, 26300 Gambang, Pahang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -705,6 +833,8 @@
   },
   {
     "inst_id": "KKOM-029",
+    "name": "Kolej Komuniti Rompin",
+    "address": "Km 5, Jalan Pekan Rompin, 26800 Kuala Rompin, Pahang",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -716,6 +846,8 @@
   },
   {
     "inst_id": "KKOM-030",
+    "name": "Kolej Komuniti Pekan",
+    "address": "Jalan Pekan-Kuantan, Peramu Jaya, 26600 Pekan, Pahang",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -727,6 +859,8 @@
   },
   {
     "inst_id": "KKOM-031",
+    "name": "Kolej Komuniti Jerantut",
+    "address": "Taman Wawasan, Jalan Jerantut-Temerloh, 27000 Jerantut, Pahang",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -738,6 +872,8 @@
   },
   {
     "inst_id": "KKOM-032",
+    "name": "Kolej Komuniti Raub",
+    "address": "No. 11-19, Taman Amalina Lestari, Simpang Kallang, 27600 Raub, Pahang",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -749,6 +885,8 @@
   },
   {
     "inst_id": "KKOM-033",
+    "name": "Kolej Komuniti Bera",
+    "address": "No. 1, Jalan Bera Jaya 2, Taman Bera Jaya, 28300 Triang, Pahang",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -760,6 +898,8 @@
   },
   {
     "inst_id": "KKOM-034",
+    "name": "Kolej Komuniti Kok Lanas",
+    "address": "Kok Lanas, 16450 Ketereh, Kelantan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -771,6 +911,8 @@
   },
   {
     "inst_id": "KKOM-035",
+    "name": "Kolej Komuniti Jeli",
+    "address": "Lot 2396, Kg. Chedok, Bukit Bunga, 17500 Tanah Merah, Kelantan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -782,6 +924,8 @@
   },
   {
     "inst_id": "KKOM-036",
+    "name": "Kolej Komuniti Pasir Mas",
+    "address": "Pt 3302-3307, Taman Seri Kota, Pasir Pekan Wakaf Bharu, 16250 Tumpat, Kelantan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -793,6 +937,8 @@
   },
   {
     "inst_id": "KKOM-037",
+    "name": "Kolej Komuniti Pasir Mas Cawangan Rantau Panjang",
+    "address": "Lot 4471 & 4472 (Pt 3113 & 3114), Lebuhraya Rantau Panjang, 17200 Rantau Panjang, Kelantan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -804,6 +950,8 @@
   },
   {
     "inst_id": "KKOM-038",
+    "name": "Kolej Komuniti Segamat",
+    "address": "No. 24-34, Jalan Putra 1/1, Bandar Putra, 85000 Segamat, Johor",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -815,6 +963,8 @@
   },
   {
     "inst_id": "KKOM-039",
+    "name": "Kolej Komuniti Ledang",
+    "address": "Km 5, Jalan Payamas, 84900 Tangkak, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -826,6 +976,8 @@
   },
   {
     "inst_id": "KKOM-040",
+    "name": "Kolej Komuniti Bandar Penawar",
+    "address": "Jalan Ungku Abdul Aziz, Bandar Penawar, 81930 Kota Tinggi, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -837,6 +989,8 @@
   },
   {
     "inst_id": "KKOM-041",
+    "name": "Kolej Komuniti Segamat 2",
+    "address": "Km 4, Jalan Jementah, Batu Anam, 85100 Segamat, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -848,6 +1002,8 @@
   },
   {
     "inst_id": "KKOM-042",
+    "name": "Kolej Komuniti Pasir Gudang",
+    "address": "No. 61, Jalan Kijang, Taman Scientex, 81700 Pasir Gudang, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -859,6 +1015,8 @@
   },
   {
     "inst_id": "KKOM-043",
+    "name": "Kolej Komuniti Kluang",
+    "address": "Jalan 7, Taman Delima, 86000 Kluang, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -870,6 +1028,8 @@
   },
   {
     "inst_id": "KKOM-044",
+    "name": "Kolej Komuniti Batu Pahat",
+    "address": "Jalan EH 1, Evergreen Height, 83000 Batu Pahat, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -881,6 +1041,8 @@
   },
   {
     "inst_id": "KKOM-045",
+    "name": "Kolej Komuniti Muar",
+    "address": "No. 27-37 Pusat Perniagaan Sulaiman, Jalan Sulaiman, 84000 Muar, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -892,6 +1054,8 @@
   },
   {
     "inst_id": "KKOM-046",
+    "name": "Kolej Komuniti Bandar Tenggara",
+    "address": "No. 65-67, Jalan Anggerik 3/1, Taman Anggerik Tenggara, 81440 Bandar Tenggara, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -903,6 +1067,8 @@
   },
   {
     "inst_id": "KKOM-047",
+    "name": "Kolej Komuniti Tanjung Piai",
+    "address": "No. 45-47, Jalan Delima, Pusat Perdagangan Pontian, 82000 Pontian, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -914,6 +1080,8 @@
   },
   {
     "inst_id": "KKOM-048",
+    "name": "Kolej Komuniti Pagoh",
+    "address": "No. 1-6, Jalan Pagoh Jaya 1/5, Taman Pagoh, 84500 Muar, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -925,6 +1093,8 @@
   },
   {
     "inst_id": "KKOM-049",
+    "name": "Kolej Komuniti Kota Tinggi",
+    "address": "Lot 549, No. 1A, Jalan Abdullah, 81900 Kota Tinggi, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -936,6 +1106,8 @@
   },
   {
     "inst_id": "KKOM-050",
+    "name": "Kolej Komuniti Bandar Penawar Cawangan Gelang Patah",
+    "address": "Nusa Bayu Commercial Center, Jalan Nusa Bayu 1/2, Taman Nusa Bayu, 79200 Iskandar Puteri, Johor",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "high",
@@ -947,6 +1119,8 @@
   },
   {
     "inst_id": "KKOM-051",
+    "name": "Kolej Komuniti Bandar Darulaman",
+    "address": "No. 17, Bandar Darulaman Jaya, 06000 Jitra, Kedah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -958,6 +1132,8 @@
   },
   {
     "inst_id": "KKOM-052",
+    "name": "Kolej Komuniti Sungai Petani",
+    "address": "No. 77, Lengkok Cempaka 1, Pusat Bandar Amanjaya, 08000 Sungai Petani, Kedah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -969,6 +1145,8 @@
   },
   {
     "inst_id": "KKOM-053",
+    "name": "Kolej Komuniti Kulim",
+    "address": "Jalan Kota Kenari 2, Taman Kota Kenari, 09000 Kulim, Kedah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -980,6 +1158,8 @@
   },
   {
     "inst_id": "KKOM-054",
+    "name": "Langkawi Tourism Academy @ Kolej Komuniti Langkawi",
+    "address": "Jalan Pantai Chenang, Mukim Kedawang, 07000 Langkawi, Kedah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -991,6 +1171,8 @@
   },
   {
     "inst_id": "KKOM-055",
+    "name": "Kolej Komuniti Baling",
+    "address": "Batu 42, Mukim Pulai, 09100 Baling, Kedah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1002,6 +1184,8 @@
   },
   {
     "inst_id": "KKOM-056",
+    "name": "Kolej Komuniti Padang Terap",
+    "address": "Taman Belimbing Indah, 06300 Kuala Nerang, Kedah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1013,6 +1197,8 @@
   },
   {
     "inst_id": "KKOM-057",
+    "name": "Kolej Komuniti Sik",
+    "address": "No. 28-A, Pusat Perniagaan Alamanda, 08200 Sik, Kedah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1024,6 +1210,8 @@
   },
   {
     "inst_id": "KKOM-058",
+    "name": "Kolej Komuniti Bandar Darulaman Cawangan Jerlun",
+    "address": "No. 1, Tingkat Bawah, Taman Seri Kodiang, 06100 Kodiang, Kedah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1035,6 +1223,8 @@
   },
   {
     "inst_id": "KKOM-059",
+    "name": "Kolej Komuniti Bandar Baharu",
+    "address": "No. 1, Jalan Syariah, 34950 Bandar Baharu, Kedah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -1046,6 +1236,8 @@
   },
   {
     "inst_id": "KKOM-060",
+    "name": "Kolej Komuniti Jerai",
+    "address": "Lot 7, Jalan Delima 1, Taman Delima, 08800 Guar Chempedak, Kedah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1057,6 +1249,8 @@
   },
   {
     "inst_id": "KKOM-061",
+    "name": "Kolej Komuniti Bukit Beruang",
+    "address": "No. 23, Jalan Bbi 1, Taman Bukit Beruang Indah, 75450 Bukit Beruang, Melaka",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -1068,6 +1262,8 @@
   },
   {
     "inst_id": "KKOM-062",
+    "name": "Kolej Komuniti Masjid Tanah",
+    "address": "Paya Rumput, 78300 Masjid Tanah, Melaka",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1079,6 +1275,8 @@
   },
   {
     "inst_id": "KKOM-063",
+    "name": "Kolej Komuniti Selandar",
+    "address": "Jalan Batang Melaka, 77500 Selandar, Melaka",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -1090,6 +1288,8 @@
   },
   {
     "inst_id": "KKOM-064",
+    "name": "Kolej Komuniti Jasin",
+    "address": "Km 24, Taman Iks Merlimau, Jalan Muar, 77300 Merlimau, Melaka",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -1101,6 +1301,8 @@
   },
   {
     "inst_id": "KKOM-065",
+    "name": "Kolej Komuniti Kota Melaka",
+    "address": "No. 5, Kompleks Kesidang, Jalan Tun Perak, 75450 Melaka, Melaka",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1112,6 +1314,8 @@
   },
   {
     "inst_id": "KKOM-066",
+    "name": "Kolej Komuniti Tangga Batu",
+    "address": "Lot 423, Jalan SS 1, Taman Sayang Selasih, 75200 Klebang, Melaka",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1123,6 +1327,8 @@
   },
   {
     "inst_id": "KKOM-067",
+    "name": "Kolej Komuniti Jempol",
+    "address": "Taman Industri Mahsan, Km 5, Jalan Mahsan, 72100 Bahau, Negeri Sembilan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -1134,6 +1340,8 @@
   },
   {
     "inst_id": "KKOM-068",
+    "name": "Kolej Komuniti Jelebu",
+    "address": "Jalan Seperi, 71600 Kuala Klawang, Negeri Sembilan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1145,6 +1353,8 @@
   },
   {
     "inst_id": "KKOM-069",
+    "name": "Kolej Komuniti Rembau",
+    "address": "Lot Pt 2565-2579, Taman Pinggiran Pedas, 71400 Pedas, Negeri Sembilan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -1156,6 +1366,8 @@
   },
   {
     "inst_id": "KKOM-070",
+    "name": "Kolej Komuniti Tampin",
+    "address": "No. 99-100, Jalan Impian Nuri 3, Taman Impian Jaya, 73200 Gemencheh, Negeri Sembilan",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -1167,6 +1379,8 @@
   },
   {
     "inst_id": "KKOM-071",
+    "name": "Kolej Komuniti Kuala Pilah",
+    "address": "Jalan 4, Taman Pilah Jaya, 72000 Kuala Pilah, Negeri Sembilan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -1178,6 +1392,8 @@
   },
   {
     "inst_id": "KKOM-072",
+    "name": "Kolej Komuniti Kepala Batas",
+    "address": "No. 87, Lorong Bertam Indah 1, Taman Bertam Indah, 13200 Kepala Batas, Pulau Pinang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1189,6 +1405,8 @@
   },
   {
     "inst_id": "KKOM-073",
+    "name": "Kolej Komuniti Bayan Baru",
+    "address": "No. 2, Persiaran Paya Terubong 1, 11900 Bayan Lepas, Pulau Pinang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -1200,6 +1418,8 @@
   },
   {
     "inst_id": "KKOM-074",
+    "name": "Kolej Komuniti Seberang Jaya",
+    "address": "Lot Pt 2811-2822, Lorong Desa Pauh 1, Taman Desa Pauh, 13700 Perai, Pulau Pinang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -1211,6 +1431,8 @@
   },
   {
     "inst_id": "KKOM-075",
+    "name": "Kolej Komuniti Nibong Tebal",
+    "address": "No. 2, Jalan Tasek SS1, Bandar Tasek Mutiara, 14120 Simpang Ampat, Pulau Pinang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -1222,6 +1444,8 @@
   },
   {
     "inst_id": "KKOM-076",
+    "name": "Kolej Komuniti Bukit Mertajam",
+    "address": "No. 2, Jalan Koperasi, Taman Koperasi Guru, Jalan Tanah Liat, 14000 Bukit Mertajam, Pulau Pinang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1233,6 +1457,8 @@
   },
   {
     "inst_id": "KKOM-077",
+    "name": "Kolej Komuniti Tasek Gelugor",
+    "address": "Lot 4812, Jalan Tasek Gelugor, Kampung Selamat, 13300 Tasek Gelugor, Pulau Pinang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1244,6 +1470,8 @@
   },
   {
     "inst_id": "KKOM-078",
+    "name": "Kolej Komuniti Kuching",
+    "address": "Lot 3563, Sego Centre, Jalan Sultan Tengah, Petra Jaya, 93050 Kuching, Sarawak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1255,6 +1483,8 @@
   },
   {
     "inst_id": "KKOM-079",
+    "name": "Kolej Komuniti Mas Gading",
+    "address": "Lot 742-750, Off Parent Lot 726, Bau Town District, 94000 Bau, Sarawak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1266,6 +1496,8 @@
   },
   {
     "inst_id": "KKOM-080",
+    "name": "Kolej Komuniti Miri",
+    "address": "5600 Jalan Permyjaya Utama, Pusat Bandar Permyjaya, 98000 Miri, Sarawak",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1277,6 +1509,8 @@
   },
   {
     "inst_id": "KKOM-081",
+    "name": "Kolej Komuniti Sarikei",
+    "address": "No. 7 & 8, Lot 2101 Dan 2102, Blok 36 Jalan Sentral, 96100 Sarikei, Sarawak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1288,6 +1522,8 @@
   },
   {
     "inst_id": "KKOM-082",
+    "name": "Kolej Komuniti Santubong",
+    "address": "Sublot 37-40, Blok B, Pusat Komersial Demak Laut, Jalan Bako 93050 Kuching, Sarawak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1299,6 +1535,8 @@
   },
   {
     "inst_id": "KKOM-083",
+    "name": "Kolej Komuniti Sarikei Cawangan Sibu",
+    "address": "Lot 2577 - 2580, Lorong Wawasan 11f, Campus Park, 96000 Sibu, Sarawak",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1310,6 +1548,8 @@
   },
   {
     "inst_id": "KKOM-084",
+    "name": "Kolej Komuniti Betong",
+    "address": "Lot 2025 (Sublot 16 (Aras Bawah) - Sublot 17), Lot 2026-2027, Block 9, Batu Api Land District (Fasa 2), 95700 Betong, Sarawak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1321,6 +1561,8 @@
   },
   {
     "inst_id": "KKOM-085",
+    "name": "Kolej Komuniti Arau",
+    "address": "Jalan Tengku Budriah, Tambun Tulang, 02600 Arau, Perlis",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1332,6 +1574,8 @@
   },
   {
     "inst_id": "KKOM-086",
+    "name": "Kolej Komuniti Arau Cawangan Kangar",
+    "address": "Lot 7,8,9,10,11, Blok B, Kompleks Niaga Pkenps, Jalan Raja Syed Alwi, 01000 Kangar, Perlis",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1343,6 +1587,8 @@
   },
   {
     "inst_id": "KKOM-087",
+    "name": "Kolej Komuniti Tawau",
+    "address": "Batu 4, Jalan Apas, Perdana Square Commercial Centre (Peti Surat 61607), 91000 Tawau, Sabah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1354,6 +1600,8 @@
   },
   {
     "inst_id": "KKOM-088",
+    "name": "Kolej Komuniti Lahad Datu",
+    "address": "Mdld 7211, Lot 246-255, Bandar Sri Perdana, Jalan Silam, 91110 Lahad Datu, Sabah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1365,6 +1613,8 @@
   },
   {
     "inst_id": "KKOM-089",
+    "name": "Kolej Komuniti Sandakan",
+    "address": "Blok B4 - B5, Bandar Labuk Jaya, Batu 7, Jalan Labuk, 90000 Sandakan, Sabah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1376,6 +1626,8 @@
   },
   {
     "inst_id": "KKOM-090",
+    "name": "Kolej Komuniti Beaufort",
+    "address": "Jalan Melalugus, 89807 Beaufort, Sabah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1387,6 +1639,8 @@
   },
   {
     "inst_id": "KKOM-091",
+    "name": "Kolej Komuniti Tambunan",
+    "address": "Jalan Batu Gong, Peti Surat 405, 89657 Tambunan, Sabah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1398,6 +1652,8 @@
   },
   {
     "inst_id": "KKOM-092",
+    "name": "Kolej Komuniti Penampang",
+    "address": "Lot 5-8, Blok B, Wisma Malakun, Jalan Ramayah-Putatan, 89500 Penampang, Sabah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1409,6 +1665,8 @@
   },
   {
     "inst_id": "KKOM-093",
+    "name": "Kolej Komuniti Kota Marudu",
+    "address": "Blok B1,2, Blok C 1-6, Jaya Industrial Centre, 89108 Kota Marudu, Sabah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1420,6 +1678,8 @@
   },
   {
     "inst_id": "KKOM-094",
+    "name": "Kolej Komuniti Papar",
+    "address": "Lot 32 - 41, Sri Alam Perdana Commercial Centre, 89600 Papar, Sabah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1431,6 +1691,8 @@
   },
   {
     "inst_id": "KKOM-095",
+    "name": "Kolej Komuniti Semporna",
+    "address": "Lot C7-C9, Blok C, Bandar Utama, Jalan Bubul, Peti Surat 402, 91308 Semporna, Sabah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1442,6 +1704,8 @@
   },
   {
     "inst_id": "KKOM-096",
+    "name": "Kolej Komuniti Kuala Terengganu",
+    "address": "Jalan Tengku Ampuan Mariam, 20200 Kuala Terengganu, Terengganu",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1453,6 +1717,8 @@
   },
   {
     "inst_id": "KKOM-097",
+    "name": "Kolej Komuniti Besut",
+    "address": "Tingkat 2 & 3, Bangunan Baitul Ehsan, Jalan Besar Jerteh, 22000 Besut, Terengganu",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1464,6 +1730,8 @@
   },
   {
     "inst_id": "KKOM-098",
+    "name": "Kolej Komuniti Kemaman",
+    "address": "K148-E, Bangunan Majlis Perbandaran Kemaman, 24100 Kijal, Kemaman, Terengganu",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1475,6 +1743,8 @@
   },
   {
     "inst_id": "KKOM-099",
+    "name": "Kolej Komuniti Kuala Terengganu Cawangan Kuala Nerus",
+    "address": "Jalan Tengku Mohamad, 21200 Kuala Terengganu, Terengganu",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1486,6 +1756,8 @@
   },
   {
     "inst_id": "KKOM-100",
+    "name": "Kolej Komuniti Kuala Terengganu Caw. Hulu Terengganu",
+    "address": "No. 25-27, Blok C, Perkedaian Pekan Ajil, 21800 Ajil, Terengganu",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1497,6 +1769,8 @@
   },
   {
     "inst_id": "KKOM-101",
+    "name": "Kolej Komuniti Kuala Terengganu Cawangan Setiu",
+    "address": "Bangunan Wisma Sri Langkap, 21500 Sungai Tong, Terengganu",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1508,6 +1782,8 @@
   },
   {
     "inst_id": "IKBN-001",
+    "name": "IKTBN Dusun Tua",
+    "address": "Km 25, Dusun Tua, 43100 Hulu Langat, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -1519,6 +1795,8 @@
   },
   {
     "inst_id": "IKBN-002",
+    "name": "IKTBN Sepang",
+    "address": "Bandar Baru Salak Tinggi, 43900 Sepang, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -1530,6 +1808,8 @@
   },
   {
     "inst_id": "IKBN-003",
+    "name": "IKTBN Chembong",
+    "address": "71300 Rembau, Negeri Sembilan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -1541,6 +1821,8 @@
   },
   {
     "inst_id": "IKBN-004",
+    "name": "IKTBN Bukit Mertajam",
+    "address": "Jalan Berapit,14000 Bukit Mertajam, Pulau Pinang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1552,6 +1834,8 @@
   },
   {
     "inst_id": "IKBN-005",
+    "name": "IKTBN Alor Gajah",
+    "address": "Km 34, Jalan Masjid Tanah, 78300 Masjid Tanah, Melaka",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1563,6 +1847,8 @@
   },
   {
     "inst_id": "IKBN-006",
+    "name": "IKTBN Negara Pagoh",
+    "address": "Km 21, Jalan Panchor, 84500 Pagoh, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1574,6 +1860,8 @@
   },
   {
     "inst_id": "IKBN-007",
+    "name": "IKTBN Temerloh",
+    "address": "Kampung Bongsu, 28500 Lanchang, Temerloh, Pahang",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -1585,6 +1873,8 @@
   },
   {
     "inst_id": "IKBN-008",
+    "name": "IKTBN Bachok",
+    "address": "Kampong Tangok, 16300 Bachok, Kelantan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1596,6 +1886,8 @@
   },
   {
     "inst_id": "IKBN-009",
+    "name": "IKSN Kuala Langat",
+    "address": "Jalan Sultan Abdul Samad, Kampung Sungai Raba, 42700 Banting, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -1607,6 +1899,8 @@
   },
   {
     "inst_id": "IKBN-010",
+    "name": "IKBN Peretak",
+    "address": "Jalan Ampang Pecah, 44000 Kuala Kubu Bharu, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -1618,6 +1912,8 @@
   },
   {
     "inst_id": "IKBN-011",
+    "name": "IKBN Seri Iskandar",
+    "address": "32600 Bota, Perak",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1629,6 +1925,8 @@
   },
   {
     "inst_id": "IKBN-012",
+    "name": "IKBN Naka",
+    "address": "Mukim Tekai, Pekan Naka, Kedah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1640,6 +1938,8 @@
   },
   {
     "inst_id": "IKBN-013",
+    "name": "IKBN Jitra",
+    "address": "Km 23, Jalan Changloon, 06000 Jitra, Kedah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1651,6 +1951,8 @@
   },
   {
     "inst_id": "IKBN-014",
+    "name": "IKBN Kuala Perlis",
+    "address": "Jalan Bukit Kubu, 02000 Kuala Perlis, Perlis",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1662,6 +1964,8 @@
   },
   {
     "inst_id": "IKBN-015",
+    "name": "IKBN Tanah Merah",
+    "address": "Jalan Bukit Panau, Tanah Merah, Kelantan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1673,6 +1977,8 @@
   },
   {
     "inst_id": "IKBN-016",
+    "name": "IKBN Wakaf Tapai",
+    "address": "Km 24, Jalan Kuala Terengganu-Kuala Berang, 21040, Marang, Terengganu",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1684,6 +1990,8 @@
   },
   {
     "inst_id": "IKBN-017",
+    "name": "IKBN Kemasik",
+    "address": "Km 19, Jalan Kemaman-Dungun, 24200 Kemasik Kemaman, Terengganu",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1695,6 +2003,8 @@
   },
   {
     "inst_id": "IKBN-018",
+    "name": "IKBN Pekan",
+    "address": "Km 55, Jalan Kuantan-Segamat, 26650 Pekan, Pahang",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1706,6 +2016,8 @@
   },
   {
     "inst_id": "IKBN-019",
+    "name": "IKBN Bandar Penawar",
+    "address": "Jalan Kejora Utama, 81930 Bandar Penawar, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1717,6 +2029,8 @@
   },
   {
     "inst_id": "IKBN-020",
+    "name": "IKBN Kinarut",
+    "address": "Jalan Limau Limauan, Kinarut, Sabah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1728,6 +2042,8 @@
   },
   {
     "inst_id": "IKBN-021",
+    "name": "IKBN Miri",
+    "address": "Jalan Permyjaya Utama, Bandar Baru Permyjaya, 98000 Miri, Sarawak",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1739,6 +2055,8 @@
   },
   {
     "inst_id": "IJTM-001",
+    "name": "Institut Teknikal Jepun Malaysia",
+    "address": "59, Lorong Perindustrian Bukit Minyak 15, Kawasan Perindustrian Bukit Minyak, 14100 Simpang Ampat, Pulau Pinang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -1750,6 +2068,8 @@
   },
   {
     "inst_id": "IJTM-002",
+    "name": "ADTEC JTM Kampus Kuala Lumpur",
+    "address": "Jalan Kuchai Lama, 58200 Kuala Lumpur, WP Kuala Lumpur",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -1761,6 +2081,8 @@
   },
   {
     "inst_id": "IJTM-003",
+    "name": "ADTEC JTM Kampus Ipoh",
+    "address": "Kawasan Perindustrian Taman Meru, 30020 Ipoh, Perak",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -1772,6 +2094,8 @@
   },
   {
     "inst_id": "IJTM-004",
+    "name": "ADTEC JTM Kampus Taiping",
+    "address": "PT 15643, Kamunting Raya, Mukim Asam Kumbang, 34600 Kamunting, Taiping, Perak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -1783,6 +2107,8 @@
   },
   {
     "inst_id": "IJTM-005",
+    "name": "ADTEC JTM Kampus Serian",
+    "address": "Lot 2262, Off Jalan Rahun Debak, 94700 Serian, Sarawak",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1794,6 +2120,8 @@
   },
   {
     "inst_id": "IJTM-006",
+    "name": "ADTEC JTM Kampus Jerantut",
+    "address": "Km 9, Jalan Jerantut Temerloh, 27000 Jerantut, Pahang",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1805,6 +2133,8 @@
   },
   {
     "inst_id": "IJTM-007",
+    "name": "ADTEC JTM Kampus Kuala Langat",
+    "address": "Jalan Sultan Abdul Samad, 42700 Banting, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -1816,6 +2146,8 @@
   },
   {
     "inst_id": "IJTM-008",
+    "name": "ADTEC JTM Kampus Perai",
+    "address": "Lorong Perusahaan Satu, Kawasan Perusahaan Perai, 13600 Perai, Pulau Pinang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -1827,6 +2159,8 @@
   },
   {
     "inst_id": "IJTM-009",
+    "name": "ADTEC JTM Kampus Kepala Batas",
+    "address": "Lot 2022, Jalan Tun Hamdan Sheikh Tahir, 13200 Kepala Batas, Pulau Pinang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -1838,6 +2172,8 @@
   },
   {
     "inst_id": "IJTM-010",
+    "name": "ADTEC JTM Kampus Selandar",
+    "address": "Lot 1468, Jalan Batang Melaka, 77500 Selandar, Melaka",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -1849,6 +2185,8 @@
   },
   {
     "inst_id": "IJTM-011",
+    "name": "ADTEC JTM Kampus Mersing",
+    "address": "Km 16, Jalan Jemaluang, 86800 Mersing, Johor",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1860,6 +2198,8 @@
   },
   {
     "inst_id": "IJTM-012",
+    "name": "ADTEC JTM Kampus Kota Samarahan",
+    "address": "Lot 249, Blok 14, Sarawak Natural Resource Park, 94300 Kota Samarahan, Sarawak",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1871,6 +2211,8 @@
   },
   {
     "inst_id": "IJTM-013",
+    "name": "ADTEC JTM Kampus Kota Kinabalu",
+    "address": "Jalan 3, KKIP Selatan, 88460 Kota Kinabalu, Sabah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1882,6 +2224,8 @@
   },
   {
     "inst_id": "IJTM-014",
+    "name": "ADTEC JTM Kampus Sandakan",
+    "address": "Batu 5, Jalan Sibuga, 90000 Sandakan, Sabah",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1893,6 +2237,8 @@
   },
   {
     "inst_id": "IJTM-015",
+    "name": "ADTEC JTM Kampus Marang",
+    "address": "Kampung Bukit Parit, 21600 Marang, Terengganu",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -1904,6 +2250,8 @@
   },
   {
     "inst_id": "IJTM-016",
+    "name": "ADTEC JTM Kampus Nibong Tebal",
+    "address": "Jalan Bukit Panchor, 14300 Nibong Tebal, Pulau Pinang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -1915,6 +2263,8 @@
   },
   {
     "inst_id": "IJTM-017",
+    "name": "ADTEC JTM Kampus Kangar",
+    "address": "Padang Behor Mukim Sena, 01000 Kangar, Perlis",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1926,6 +2276,8 @@
   },
   {
     "inst_id": "IJTM-018",
+    "name": "ADTEC JTM Kampus Bukit Katil",
+    "address": "Lot 4345, Jalan Tun Telani, Mukim Bukit Katil, Hang Tuah Jaya, 75450 Ayer Keroh, Melaka",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1937,6 +2289,8 @@
   },
   {
     "inst_id": "IJTM-019",
+    "name": "ADTEC JTM Kampus Pedas",
+    "address": "Jalan Pedas Linggi, 71400 Pedas, Negeri Sembilan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -1948,6 +2302,8 @@
   },
   {
     "inst_id": "IJTM-020",
+    "name": "ADTEC JTM Kampus Tangkak",
+    "address": "Km 43, Jalan Segamat, Sagil, 84900 Tangkak, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -1959,6 +2315,8 @@
   },
   {
     "inst_id": "IJTM-021",
+    "name": "ADTEC JTM Kampus Pasir Gudang",
+    "address": "Jalan Gangsa, Kawasan Perindustrian Pasir Gudang, 81700 Pasir Gudang, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "moderate",
@@ -1970,6 +2328,8 @@
   },
   {
     "inst_id": "IJTM-022",
+    "name": "ADTEC JTM Kampus Senai",
+    "address": "10, Jalan Persiaran Teknologi, Taman Teknologi Johor, 81400 Senai, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -1981,6 +2341,8 @@
   },
   {
     "inst_id": "IJTM-023",
+    "name": "ADTEC JTM Kampus Miri",
+    "address": "Lot 3226, Blok 6, Mukim Bandar Baru Permy Jaya, 98100 Miri, Sarawak",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -1992,6 +2354,8 @@
   },
   {
     "inst_id": "IJTM-024",
+    "name": "ADTEC JTM Kampus Labuan",
+    "address": "Jalan Mohd Salleh, P.O. Box 80849, 87018 Labuan, WP Labuan",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -2003,6 +2367,8 @@
   },
   {
     "inst_id": "IJTM-025",
+    "name": "ADTEC JTM Kampus Bintulu",
+    "address": "Lot 903, PL957, Blok 37, Jln Bintulu-Sibu 97000, Bintulu, Sarawak",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
@@ -2014,6 +2380,8 @@
   },
   {
     "inst_id": "IJTM-026",
+    "name": "ADTEC JTM Kampus Shah Alam",
+    "address": "No. 5934-1, Jalan Bukit Kemuning, Seksyen 32, 40460 Shah Alam, Selangor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -2025,6 +2393,8 @@
   },
   {
     "inst_id": "IJTM-027",
+    "name": "ADTEC JTM Kampus Kulim",
+    "address": "Lot 635, Jalan Mahang, 09700 Karangan, Kulim, Kedah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "high",
@@ -2036,6 +2406,8 @@
   },
   {
     "inst_id": "IJTM-028",
+    "name": "ADTEC JTM Kampus Jitra",
+    "address": "Bandar Darulaman, 06000 Jitra, Kedah",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -2047,6 +2419,8 @@
   },
   {
     "inst_id": "IJTM-029",
+    "name": "ADTEC Melaka",
+    "address": "Bandar Vendor Taboh Naning, 78000 Alor Gajah, Melaka",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "moderate",
@@ -2058,6 +2432,8 @@
   },
   {
     "inst_id": "IJTM-030",
+    "name": "ADTEC JTM Kampus Batu Pahat",
+    "address": "Km 8, Jalan Tanjung Laboh, 83000 Batu Pahat, Johor",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -2069,6 +2445,8 @@
   },
   {
     "inst_id": "IJTM-031",
+    "name": "ADTEC JTM Kampus Kemaman",
+    "address": "Payoh, 24210 Kemasik,Terengganu",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -2080,6 +2458,8 @@
   },
   {
     "inst_id": "IJTM-032",
+    "name": "ADTEC JTM Kampus Kuantan",
+    "address": "Lot 10, Kawasan Perindustrian Gebeng, 26080 Kuantan, Pahang",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -2091,6 +2471,8 @@
   },
   {
     "inst_id": "IJTM-033",
+    "name": "ADTEC JTM Kampus Kuala Terengganu",
+    "address": "Kawasan Perindustrian Gong Badak, 21300 Kuala Terengganu, Terengganu",
     "modifiers": {
       "urban": true,
       "cultural_safety_net": "low",
@@ -2102,230 +2484,12 @@
   },
   {
     "inst_id": "IJTM-034",
+    "name": "ADTEC JTM Kampus Kota Bharu",
+    "address": "Pengkalan Chepa, 16100 Kota Bharu, Kelantan",
     "modifiers": {
       "urban": false,
       "cultural_safety_net": "low",
       "subsistence_support": true,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-001",
-    "modifiers": {
-      "urban": true,
-      "cultural_safety_net": "high",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-002",
-    "modifiers": {
-      "urban": false,
-      "cultural_safety_net": "high",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-003",
-    "modifiers": {
-      "urban": false,
-      "cultural_safety_net": "moderate",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-004",
-    "modifiers": {
-      "urban": false,
-      "cultural_safety_net": "moderate",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-005",
-    "modifiers": {
-      "urban": false,
-      "cultural_safety_net": "high",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-006",
-    "modifiers": {
-      "urban": false,
-      "cultural_safety_net": "moderate",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-007",
-    "modifiers": {
-      "urban": false,
-      "cultural_safety_net": "low",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-008",
-    "modifiers": {
-      "urban": true,
-      "cultural_safety_net": "low",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-009",
-    "modifiers": {
-      "urban": true,
-      "cultural_safety_net": "low",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-010",
-    "modifiers": {
-      "urban": false,
-      "cultural_safety_net": "moderate",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-011",
-    "modifiers": {
-      "urban": false,
-      "cultural_safety_net": "high",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-012",
-    "modifiers": {
-      "urban": true,
-      "cultural_safety_net": "moderate",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-013",
-    "modifiers": {
-      "urban": false,
-      "cultural_safety_net": "low",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-014",
-    "modifiers": {
-      "urban": false,
-      "cultural_safety_net": "low",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-015",
-    "modifiers": {
-      "urban": true,
-      "cultural_safety_net": "moderate",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-016",
-    "modifiers": {
-      "urban": false,
-      "cultural_safety_net": "low",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-017",
-    "modifiers": {
-      "urban": false,
-      "cultural_safety_net": "low",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-018",
-    "modifiers": {
-      "urban": false,
-      "cultural_safety_net": "low",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-019",
-    "modifiers": {
-      "urban": false,
-      "cultural_safety_net": "low",
-      "subsistence_support": false,
-      "strong_hostel": true,
-      "industry_linked": "pending",
-      "supportive_culture": "pending"
-    }
-  },
-  {
-    "inst_id": "UNIV-020",
-    "modifiers": {
-      "urban": true,
-      "cultural_safety_net": "moderate",
-      "subsistence_support": false,
       "strong_hostel": true,
       "industry_linked": "pending",
       "supportive_culture": "pending"

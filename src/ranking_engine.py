@@ -107,22 +107,34 @@ INST_SUBCATEGORIES = load_institution_priorities()
 
 # Tie-breaker Map (Higher is better)
 INST_PRIORITY_MAP = {
-  "Premier": 10,
-  "Konvensional": 9,
-  "JMTI": 8,
-  "METrO": 7,
-  "ADTEC": 6,
-  "IKTBN": 5,
-  "Kolej Komuniti": 4,
-  "ILP": 3,
-  "IKBN": 2,
-  "IKBS": 1
+  # Universities (IPTA) - Clear hierarchy by university classification
+  "Penyelidikan": 14,    # Research universities (UM, USM, UPM, UKM, UiTM)
+  "Komprehensif": 13,    # Comprehensive universities
+  "Berfokus": 12,        # Focused universities
+  "Teknikal": 11,        # Technical universities
+
+  # Polytechnics & Colleges
+  "Premier": 10,         # Premier polytechnics
+  "Konvensional": 9,     # Regular polytechnics
+  "JMTI": 8,             # Advanced technology training centers
+  "METrO": 7,            # METrO polytechnics
+  "Kolej Komuniti": 6,   # Community colleges (moved up from 4)
+
+  # TVET Institutions
+  "ADTEC": 5,            # German-Malaysian institutes (moved down from 6)
+  "IKTBN": 4,            # Advanced skills training institutes (moved down from 5)
+  "ILP": 3,              # Industrial training institutes
+  "IKBN": 2,             # National skills development centers
+  "IKBS": 1,             # Private skills training centers
+  "IKSN": 2              # National skills development center variant
 }
 
 # Credential Priority Map (Higher is better)
 def get_credential_priority(course_name):
     name_lower = course_name.lower().strip()
-    if name_lower.startswith("diploma"):
+    if name_lower.startswith("asasi") or "foundation" in name_lower:
+        return 4  # Foundation programs (highest - pathway to degree)
+    elif name_lower.startswith("diploma"):
         return 3
     elif "sijil lanjutan" in name_lower: # Check substring for Sijil Lanjutan
         return 2
@@ -465,22 +477,26 @@ def sort_courses(course_list):
     1. Score (Desc)
     2. Credential Priority (Desc)
     3. Institution Priority (Desc)
-    4. Course Name (Asc)
+    4. Merit Points (Desc) - Higher merit = more competitive = higher priority
+    5. Course Name (Asc)
     """
     def sort_key(item):
         score = int(item.get('fit_score', 0)) # Default to 0 if unranked
         inst_id = str(item.get('institution_id', '')).strip()
         subcat = INST_SUBCATEGORIES.get(inst_id, '')
         inst_priority = INST_PRIORITY_MAP.get(subcat, 0)
-        
+
         c_name = str(item.get('course_name') or '')
         cred_priority = get_credential_priority(c_name)
-        
-        # Sort Tuple (Descending items negative):
-        # (-score, -cred_priority, -inst_priority, name)
-        return (-score, -cred_priority, -inst_priority, c_name)
 
-    # Sort in place vs return new list? 
+        # Merit cutoff (higher = more competitive)
+        merit = float(item.get('merit_cutoff', 0) or 0)
+
+        # Sort Tuple (Descending items negative):
+        # (-score, -cred_priority, -inst_priority, -merit, name)
+        return (-score, -cred_priority, -inst_priority, -merit, c_name)
+
+    # Sort in place vs return new list?
     # Python's list.sort() is in-place. Let's return a sorted copy for safety/chaining.
     return sorted(course_list, key=sort_key)
 

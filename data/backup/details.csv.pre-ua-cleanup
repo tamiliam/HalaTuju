@@ -1,0 +1,408 @@
+course_id,req_interview,single,source_type,institution_id,hyperlink,monthly_allowance,practical_allowance,free_hostel,free_meals,tuition_fee_semester,hostel_fee_semester,registration_fee,details_syarat_etc
+POLY-DIP-001,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DG002,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-002,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DG001,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-003,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA010,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-004,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP016,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-005,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP002,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-006,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA008,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-007,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA001,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-008,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE001,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-009,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE007,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-010,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DR003,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-011,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE011,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-012,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE009,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-013,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE020,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-014,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE002,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-015,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE003,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-016,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE004,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-017,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DE005,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-018,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DR004,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-019,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM001,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-020,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM014,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-021,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM002,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-022,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM010,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-023,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM020,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-024,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM004,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-025,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM021,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-026,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM005,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-027,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM006,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-028,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DR002,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-029,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM018,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-030,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM012,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-031,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM013,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-032,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DM011,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-033,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DB001,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-034,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DK001,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-035,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA002,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-036,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DR001,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-037,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP012,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-038,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP017,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-039,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP015,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-040,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DH009,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-041,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP004,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-042,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP005,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-043,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DH001,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-044,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DH007,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-045,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP014,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-046,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DH004,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-047,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP008,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-048,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DH008,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-049,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP018,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-050,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA004,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-051,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DH010,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-052,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP006,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-053,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DV015,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-054,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DV002,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-055,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DV003,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-056,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP007,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-057,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA005,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-058,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DH019,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-059,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DK002,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-060,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP013,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-061,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DG005,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-062,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA003,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-063,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DG006,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-064,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DD002,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-065,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DD003,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-066,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DT003,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-067,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DV014,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-068,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DV013,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-069,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DV012,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-070,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DT001,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-071,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DT002,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-072,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DF008,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-073,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DF008,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-074,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DF008,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-075,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DF008,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-076,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DF008,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-077,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DF008,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-078,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DV006,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-079,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DA006,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-080,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DV011,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-081,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DV010,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-DIP-082,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=D&id=DP014,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-CET-001,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=S&id=SJ001,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-CET-002,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=S&id=SJ003,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+POLY-CET-003,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=S&id=SJ002,0,0,,,RM 200 / semester,RM 60 / semester,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-001,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DH015,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-002,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DV017,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-003,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DA011,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-004,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DH013,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-005,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DE015,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-006,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DV016,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-007,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DH011,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-008,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DM015,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-009,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DE012,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-010,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DH012,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-011,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DE017,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-012,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DE016,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-013,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DE013,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-014,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DM016,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-015,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DE014,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-DIP-016,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=d&id=DH014,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-001,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH009,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-002,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH017,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-003,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH016,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-004,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SG003,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-005,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SV008,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-006,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SV007,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-007,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH015,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-008,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SV009,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-009,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH011,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-010,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SA016,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-011,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SV006,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-012,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH010,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-013,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH013,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-014,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH004,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-015,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH006,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-016,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SP007,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-017,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SA014,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-018,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SA015,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-019,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SP009,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-020,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SA025,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-021,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SA013,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-022,1,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SV005,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-023,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SG004,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-024,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SM031,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-025,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SE010,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-026,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SE015,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-027,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SF003,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-028,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SA011,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-029,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SM012,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-030,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SG008,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-031,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SM018,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-032,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SM029,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-033,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SM027,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-034,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SM028,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-035,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SE012,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-036,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SA012,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-037,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SE011,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+KKOM-CET-038,0,0,poly,,https://ambilan.mypolycc.edu.my/portalbpp2/index.asp?pg=program&kat=s&id=SH014,0,0,,,Percuma,Percuma,,"Tidak mempunyai ketidakupayaan penglihatan (buta, buta warna), pendengaran, pertuturan, fizikal, pembelajaran atau lain-lain yang menyukarkan kerja-kerja amali"
+IKBN-DIP-001,0,0,tvet,IKBN-004,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=35198,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-DIP-001,0,0,tvet,IKBN-005,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=35199,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-DIP-001,0,0,tvet,IKBN-020,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=35202,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-DIP-002,0,0,tvet,IKBN-012,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14258,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-DIP-003,0,0,tvet,IKBN-010,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=35118,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-DIP-006,0,0,tvet,IKBN-001,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14603,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-DIP-007,0,0,tvet,IKBN-012,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=43815,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-001,0,0,tvet,IKBN-001,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14612,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-001,0,0,tvet,IKBN-003,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14375,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-001,0,0,tvet,IKBN-014,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14465,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-002,0,0,tvet,IKBN-003,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14399,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-002,0,0,tvet,IKBN-008,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14276,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-002,0,0,tvet,IKBN-014,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14477,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-003,0,0,tvet,IKBN-007,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14411,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-003,0,0,tvet,IKBN-014,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14483,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-004,0,0,tvet,IKBN-003,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=44202,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-005,0,0,tvet,IKBN-003,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=43845,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-005,0,1,tvet,IKBN-007,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=45292,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-005,0,0,tvet,IKBN-008,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=45289,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-005,0,0,tvet,IKBN-014,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14456,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-005,0,0,tvet,IKBN-021,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14531,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-006,0,0,tvet,IKBN-003,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14363,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-006,0,0,tvet,IKBN-014,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14468,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-007,0,0,tvet,IKBN-016,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=45298,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-008,0,0,tvet,IKBN-004,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33765,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-008,0,0,tvet,IKBN-020,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33768,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-009,0,0,tvet,IKBN-012,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=30635,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-010,0,0,tvet,IKBN-004,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14489,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-010,0,0,tvet,IKBN-011,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14450,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-011,0,0,tvet,IKBN-013,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14240,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-012,0,0,tvet,IKBN-017,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14798,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-013,0,0,tvet,IKBN-010,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14639,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-014,0,0,tvet,IKBN-019,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14195,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-014,0,0,tvet,IKBN-021,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14561,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-015,0,0,tvet,IKBN-005,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14342,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-015,0,0,tvet,IKBN-008,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14306,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-016,0,0,tvet,IKBN-017,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14783,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-017,0,0,tvet,IKBN-010,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14660,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-018,0,0,tvet,IKBN-017,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=44208,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-019,0,0,tvet,IKBN-011,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14453,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-020,0,0,tvet,IKBN-014,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14471,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-021,0,0,tvet,IKBN-018,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14432,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-022,0,0,tvet,IKBN-016,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14759,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-023,0,0,tvet,IKBN-001,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14567,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-024,0,0,tvet,IKBN-004,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=30661,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-025,0,0,tvet,IKBN-018,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14435,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-026,0,0,tvet,IKBN-004,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14504,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-026,0,0,tvet,IKBN-021,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=14525,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-027,0,0,tvet,IKBN-018,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=30656,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-028,0,0,tvet,IKBN-018,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=30653,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-029,0,0,tvet,IKBN-015,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=45421,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-032,0,0,tvet,IKBN-014,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=30659,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-034,0,0,tvet,IKBN-011,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33783,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IKBN-CET-034,0,0,tvet,IKBN-013,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33777,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-DIP-010,0,0,tvet,IJTM-004,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=9581,RM-,RM-,0,1,"RM 1,500 / semester",RM 308 / semester,,
+IJTM-DIP-017,0,0,tvet,IJTM-004,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=35147,RM-,RM-,0,1,"RM 1,500 / semester",RM 308 / semester,,
+IJTM-DIP-017,0,0,tvet,IJTM-027,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33902,RM-,RM-,0,1,"RM 1,500 / semester",RM 308 / semester,,
+IJTM-DIP-019,0,0,tvet,IJTM-004,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36797,RM-,RM-,0,1,"RM 1,500 / semester",RM 308 / semester,,
+IJTM-DIP-022,0,0,tvet,IJTM-027,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33893,RM-,RM-,0,1,"RM 1,500 / semester",RM 308 / semester,,
+IJTM-DIP-024,0,0,tvet,IJTM-026,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=10049,RM-,RM-,0,1,"RM 1,500 / semester",RM 308 / semester,,
+IJTM-DIP-026,0,0,tvet,IJTM-026,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=10007,RM-,RM-,0,1,"RM 1,500 / semester",RM 308 / semester,,
+IJTM-DIP-032,0,0,tvet,IJTM-001,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=8718,RM-,RM-,0,1,"RM 1,500 / semester",RM 308 / semester,,
+IJTM-DIP-033,0,0,tvet,IJTM-001,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=34568,RM-,RM-,0,1,"RM 1,500 / semester",RM 308 / semester,,
+IJTM-DIP-034,0,0,tvet,IJTM-001,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7774,RM-,RM-,0,1,"RM 1,500 / semester",RM 308 / semester,,
+IJTM-DIP-035,0,0,tvet,IJTM-001,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33983,RM-,RM-,0,1,"RM 1,500 / semester",RM 308 / semester,,
+IJTM-CET-001,0,0,tvet,IJTM-029,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33929,RM-,RM-,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-002,0,0,tvet,IJTM-029,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=40510,RM-,RM-,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-003,0,0,tvet,IJTM-029,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=40507,RM-,RM-,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-004,0,0,tvet,IJTM-002,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=9290,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-004,0,0,tvet,IJTM-008,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7768,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-004,0,0,tvet,IJTM-013,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=8776,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-004,0,0,tvet,IJTM-015,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36888,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-004,0,0,tvet,IJTM-016,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=45048,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-004,0,0,tvet,IJTM-021,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7111,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-004,0,0,tvet,IJTM-028,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7231,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-004,0,0,tvet,IJTM-032,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=40218,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-004,0,0,tvet,IJTM-034,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7306,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-005,0,0,tvet,IJTM-024,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=42539,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-005,0,0,tvet,IJTM-033,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=30603,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-005,0,0,tvet,IJTM-034,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7300,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-006,0,0,tvet,IJTM-024,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=39077,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-007,0,0,tvet,IJTM-003,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36785,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-007,0,0,tvet,IJTM-019,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36755,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-007,0,0,tvet,IJTM-020,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36701,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-008,0,0,tvet,IJTM-019,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7480,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-008,0,0,tvet,IJTM-032,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=30540,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-009,0,0,tvet,IJTM-002,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33911,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-009,0,0,tvet,IJTM-003,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33956,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-009,0,0,tvet,IJTM-013,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33989,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-009,0,0,tvet,IJTM-014,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33995,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-009,0,0,tvet,IJTM-016,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33977,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-009,0,0,tvet,IJTM-021,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33862,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-009,0,0,tvet,IJTM-023,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=34007,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-009,0,0,tvet,IJTM-024,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33914,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-009,0,0,tvet,IJTM-032,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33944,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-009,0,0,tvet,IJTM-034,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33905,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-010,0,0,tvet,IJTM-009,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=10790,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-010,0,0,tvet,IJTM-021,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7102,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-011,0,0,tvet,IJTM-003,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=9551,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-011,0,0,tvet,IJTM-020,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36695,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-011,0,0,tvet,IJTM-021,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36692,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-012,0,0,tvet,IJTM-012,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=30582,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-013,0,0,tvet,IJTM-018,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36746,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-013,0,0,tvet,IJTM-021,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36689,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-014,0,0,tvet,IJTM-028,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33887,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-015,0,0,tvet,IJTM-002,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=39065,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-015,0,0,tvet,IJTM-003,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36779,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-015,0,0,tvet,IJTM-008,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36815,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-015,0,0,tvet,IJTM-012,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36927,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-015,0,0,tvet,IJTM-014,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=44014,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-015,0,0,tvet,IJTM-017,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36803,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-015,0,0,tvet,IJTM-018,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36737,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-015,0,0,tvet,IJTM-020,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36698,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-015,0,0,tvet,IJTM-021,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36683,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-015,0,0,tvet,IJTM-024,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=39071,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-015,0,0,tvet,IJTM-028,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36716,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-015,0,0,tvet,IJTM-032,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36761,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-015,0,0,tvet,IJTM-034,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36731,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-016,0,0,tvet,IJTM-002,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=9272,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-016,0,0,tvet,IJTM-011,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=46910,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-016,0,0,tvet,IJTM-024,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7378,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-016,0,0,tvet,IJTM-033,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=30609,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-017,0,0,tvet,IJTM-007,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=45646,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-017,0,0,tvet,IJTM-013,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=45682,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-017,0,0,tvet,IJTM-014,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=45643,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-017,0,0,tvet,IJTM-020,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=45673,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-018,0,0,tvet,IJTM-032,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=30543,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-019,0,0,tvet,IJTM-015,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=34040,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-019,0,0,tvet,IJTM-017,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33968,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-019,0,0,tvet,IJTM-018,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33920,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-019,0,0,tvet,IJTM-019,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33938,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-019,0,0,tvet,IJTM-020,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33869,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-019,0,0,tvet,IJTM-025,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36921,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-020,0,0,tvet,IJTM-013,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=10964,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-020,0,0,tvet,IJTM-015,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=10082,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-021,0,0,tvet,IJTM-021,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=30438,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-021,0,0,tvet,IJTM-030,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7204,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-022,0,0,tvet,IJTM-024,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7375,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-023,0,0,tvet,IJTM-007,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=34019,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-024,0,0,tvet,IJTM-012,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36930,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-024,0,0,tvet,IJTM-023,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=8005,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-024,0,0,tvet,IJTM-033,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36897,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-025,0,0,tvet,IJTM-002,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33908,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-025,0,0,tvet,IJTM-013,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33986,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-025,0,0,tvet,IJTM-019,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33935,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-025,0,0,tvet,IJTM-032,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33941,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-026,0,0,tvet,IJTM-003,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33959,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-027,0,0,tvet,IJTM-027,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=34511,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-028,0,0,tvet,IJTM-020,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33866,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-029,0,0,tvet,IJTM-012,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33998,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-029,0,0,tvet,IJTM-017,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33965,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-029,0,0,tvet,IJTM-021,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33859,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-030,0,0,tvet,IJTM-021,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=33865,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-031,0,0,tvet,IJTM-002,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=34146,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-031,0,0,tvet,IJTM-003,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=34535,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-031,0,0,tvet,IJTM-005,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=45679,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-031,0,0,tvet,IJTM-009,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=34562,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-031,0,0,tvet,IJTM-023,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=34149,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-031,0,0,tvet,IJTM-024,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=34152,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-031,0,0,tvet,IJTM-028,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=34137,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-031,0,0,tvet,IJTM-033,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=34580,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-031,0,0,tvet,IJTM-034,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=34143,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-032,0,0,tvet,IJTM-024,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=44050,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-033,0,0,tvet,IJTM-002,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=39068,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-033,0,0,tvet,IJTM-003,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36782,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-033,0,0,tvet,IJTM-017,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36806,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-033,0,0,tvet,IJTM-024,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=39074,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-033,0,0,tvet,IJTM-028,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36713,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-033,0,0,tvet,IJTM-032,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36764,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-033,0,0,tvet,IJTM-033,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36891,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-033,0,0,tvet,IJTM-034,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36728,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-034,0,0,tvet,IJTM-015,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36846,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-034,0,0,tvet,IJTM-018,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36749,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-034,0,0,tvet,IJTM-020,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=36704,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-034,0,0,tvet,IJTM-028,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7219,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-035,0,0,tvet,IJTM-034,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7291,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-036,0,0,tvet,IJTM-002,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=9269,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-037,0,0,tvet,IJTM-021,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7066,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-038,0,0,tvet,IJTM-009,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=9617,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-038,0,0,tvet,IJTM-019,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=7489,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+IJTM-CET-038,0,0,tvet,IJTM-023,https://mohon.tvet.gov.my/awam-kursus/kursus?id_kursus=8002,RM100,RM300,1,1,Percuma,Percuma,Percuma,
+UZ0520001,0,1,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UZ/UZ0520001/A/spm,,,,,,,,
+UM0221001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UM/UM0221001/A/spm,,,,,,,,
+UZ0345001,0,1,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UZ/UZ0345001/A/spm,,,,,,,,
+UZ0721001,0,1,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UZ/UZ0721001/A/spm,,,,,,,,
+UL0010001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UL/UL0010001/A/spm,,,,,,,,
+UP0000001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UP/UP0000001/A/spm,,,,,,,,
+UL0010002,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UL/UL0010002/A/spm,,,,,,,,
+UG0010001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UG/UG0010001/A/spm,,,,,,,,
+UK0010001,1,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UK/UK0010001/A/spm,,,,,,,,
+UA4222001,1,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UA/UA4222001/A/spm,,,,,,,,
+UA4224001,1,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UA/UA4224001/A/spm,,,,,,,,
+UC4340001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UC/UC4340001/A/spm,,,,,,,,
+UD4726001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4726001/A/spm,,,,,,,,
+UZ4813001,1,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UZ/UZ4813001/A/spm,,,,,,,,
+UR4851001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UR/UR4851001/A/spm,,,,,,,,
+UB4526001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UB/UB4526001/A/spm,,,,,,,,
+UJ4526001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UJ/UJ4526001/A/spm,,,,,,,,
+UR4521002,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UR/UR4521002/A/spm,,,,,,,,
+UB4522001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UB/UB4522001/A/spm,,,,,,,,
+UC4522001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UC/UC4522001/A/spm,,,,,,,,
+UR4522001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UR/UR4522001/A/spm,,,,,,,,
+UJ4523001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UJ/UJ4523001/A/spm,,,,,,,,
+UC4523001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UC/UC4523001/A/spm,,,,,,,,
+UR4523003,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UR/UR4523003/A/spm,,,,,,,,
+UJ4524001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UJ/UJ4524001/A/spm,,,,,,,,
+UH4520001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UH/UH4520001/A/spm,,,,,,,,
+UR4523002,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UR/UR4523002/A/spm,,,,,,,,
+UB4521002,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UB/UB4521002/A/spm,,,,,,,,
+UC4521001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UC/UC4521001/A/spm,,,,,,,,
+UJ4521001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UJ/UJ4521001/A/spm,,,,,,,,
+UR4523001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UR/UR4523001/A/spm,,,,,,,,
+UC4540001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UC/UC4540001/A/spm,,,,,,,,
+UR4540001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UR/UR4540001/A/spm,,,,,,,,
+UP4524001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UP/UP4524001/A/spm,,,,,,,,
+UJ4862001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UJ/UJ4862001/A/spm,,,,,,,,
+UP4640001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UP/UP4640001/A/spm,,,,,,,,
+UA4345001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UA/UA4345001/A/spm,,,,,,,,
+UD4343002,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4343002/A/spm,,,,,,,,
+UA4212001,1,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UA/UA4212001/A/spm,,,,,,,,
+UD4342001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4342001/A/spm,,,,,,,,
+UP4310001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UP/UP4310001/A/spm,,,,,,,,
+UA4143001,1,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UA/UA4143001/A/spm,,,,,,,,
+UD4343001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4343001/A/spm,,,,,,,,
+UD4343003,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4343003/A/spm,,,,,,,,
+UA4220001,1,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UA/UA4220001/A/spm,,,,,,,,
+UZ4345001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UZ/UZ4345001/A/spm,,,,,,,,
+UP4621002,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UP/UP4621002/A/spm,,,,,,,,
+UP4345001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UP/UP4345001/A/spm,,,,,,,,
+UD4345001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4345001/A/spm,,,,,,,,
+UZ4340001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UZ/UZ4340001/A/spm,,,,,,,,
+UD4344001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4344001/A/spm,,,,,,,,
+UP4623001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UP/UP4623001/A/spm,,,,,,,,
+UG4624001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UG/UG4624001/A/spm,,,,,,,,
+UP4624001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UP/UP4624001/A/spm,,,,,,,,
+UD4340001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4340001/A/spm,,,,,,,,
+UP4621001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UP/UP4621001/A/spm,,,,,,,,
+UP4621003,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UP/UP4621003/A/spm,,,,,,,,
+UD4725001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4725001/A/spm,,,,,,,,
+UA4481002,1,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UA/UA4481002/A/spm,,,,,,,,
+UD4214001,1,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4214001/A/spm,,,,,,,,
+UA4440001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UA/UA4440001/A/spm,,,,,,,,
+UA4461001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UA/UA4461001/A/spm,,,,,,,,
+UB4545001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UB/UB4545001/A/spm,,,,,,,,
+UJ4545001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UJ/UJ4545001/A/spm,,,,,,,,
+UD4723001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4723001/A/spm,,,,,,,,
+UA4481001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UA/UA4481001/A/spm,,,,,,,,
+UC4481002,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UC/UC4481002/A/spm,,,,,,,,
+UD4481003,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4481003/A/spm,,,,,,,,
+UJ4481001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UJ/UJ4481001/A/spm,,,,,,,,
+UP4481001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UP/UP4481001/A/spm,,,,,,,,
+UA4813001,1,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UA/UA4813001/A/spm,,,,,,,,
+UZ4221001,1,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UZ/UZ4221001/A/spm,,,,,,,,
+UA4212002,1,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UA/UA4212002/A/spm,,,,,,,,
+UA4212003,1,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UA/UA4212003/A/spm,,,,,,,,
+UB4213001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UB/UB4213001/A/spm,,,,,,,,
+UB4524001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UB/UB4524001/A/spm,,,,,,,,
+UR4524001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UR/UR4524001/A/spm,,,,,,,,
+UR4521003,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UR/UR4521003/A/spm,,,,,,,,
+UJ4521002,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UJ/UJ4521002/A/spm,,,,,,,,
+UR4543001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UR/UR4543001/A/spm,,,,,,,,
+UD4482001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4482001/A/spm,,,,,,,,
+UB4481001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UB/UB4481001/A/spm,,,,,,,,
+UA4545001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UA/UA4545001/A/spm,,,,,,,,
+UD4725002,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4725002/A/spm,,,,,,,,
+UD4540001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UD/UD4540001/A/spm,,,,,,,,
+UU0345001,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UU/UU0345001/A/spm,,,,,,,,
+UQ0440005,0,0,univ,,https://online.mohe.gov.my/epanduan/carianNamaProgram/UQ/UQ0440005/A/spm,,,,,,,,

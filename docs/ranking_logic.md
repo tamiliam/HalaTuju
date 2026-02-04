@@ -1,8 +1,15 @@
-# Ranking Logic & Taxonomy (v1.4)
+# Ranking Logic & Taxonomy (v1.5)
 
-**Version:** 1.4
-**Last Updated:** 2026-02-03
+**Version:** 1.5
+**Last Updated:** 2026-02-04
 **Status:** Live Implementation
+
+**Changelog v1.5:**
+- Added Section 7: Comprehensive tie-breaking hierarchy documentation
+- Established 5-level cascade for equal-score sorting
+- Clarified credential priority with ASASI/Foundation as highest (4)
+- Documented clear university institution hierarchy (14/13/12/11)
+- Added merit cutoff as competitiveness-based tie-breaker (Level 4)
 
 This document serves as the definitive source of truth for the adversarial testing of the ranking engine. It describes the data taxonomy, input signals, and the exact scoring logic used in `src/ranking_engine.py`.
 
@@ -262,3 +269,212 @@ Applied **after** fit score calculation. Only affects courses with `merit_cutoff
 | `income_risk` + `career_structure` | **Values** |
 | `stability` + `career_structure` | **Values** |
 | `stability` + `credential_status` | **Values** |
+
+---
+
+## Section 7: Tie-Breaking Hierarchy (v1.5)
+**Source:** `src/ranking_engine.py` (lines 462-485)
+
+When multiple courses have the **same fit score**, they are sorted using a comprehensive 5-level cascade to ensure consistent, predictable ranking order.
+
+### The 5-Level Cascade
+
+```
+Level 1: Fit Score (Descending)           ← Primary ranking signal
+    ↓
+Level 2: Credential Priority (Descending)  ← Program type hierarchy
+    ↓
+Level 3: Institution Priority (Descending) ← Institution reputation/type
+    ↓
+Level 4: Merit Cutoff (Descending)        ← Admission competitiveness
+    ↓
+Level 5: Course Name (Ascending)          ← Alphabetical (final tie-breaker)
+```
+
+### Level 1: Fit Score (Primary)
+
+The **fit score** (80-120 range) is calculated as documented in Section 5. This is the primary ranking signal representing how well a course matches the student's profile.
+
+**Example:**
+- Course A: Score 105
+- Course B: Score 105
+- Course C: Score 98
+
+**Result:** A and B tie at 105, both rank above C. Proceed to Level 2 to break A vs B tie.
+
+---
+
+### Level 2: Credential Priority
+
+Foundation/ASASI programs are prioritized highest because they provide the **clearest pathway to degree programs**, which is highly valued by students.
+
+**Credential Priority Table:**
+
+| Priority | Credential Type | Examples | Rationale |
+| :---: | :--- | :--- | :--- |
+| **4** | ASASI / Foundation | "ASASI Kejuruteraan", "Foundation in Science" | Gateway to degree, articulation agreements with universities |
+| **3** | Diploma | "Diploma Kejuruteraan Mekanikal" | 2-3 year programs, industry-ready + degree pathway option |
+| **2** | Sijil Lanjutan | "Sijil Lanjutan Teknologi" | Advanced certificates |
+| **1** | Sijil | "Sijil Teknologi Automotif" | Entry-level certificates |
+| **0** | Other / Unknown | Courses without credential keywords | Default priority |
+
+**Detection Logic:**
+```python
+def get_credential_priority(course_name):
+    name_lower = course_name.lower().strip()
+    if name_lower.startswith("asasi") or "foundation" in name_lower:
+        return 4
+    elif name_lower.startswith("diploma"):
+        return 3
+    elif "sijil lanjutan" in name_lower:
+        return 2
+    elif name_lower.startswith("sijil"):
+        return 1
+    return 0
+```
+
+**Example:**
+- Course A: Score 105, **ASASI** (Priority 4)
+- Course B: Score 105, **Diploma** (Priority 3)
+
+**Result:** A ranks above B (ASASI > Diploma). If both were ASASI, proceed to Level 3.
+
+---
+
+### Level 3: Institution Priority
+
+Institutions are hierarchically ordered by **type and reputation**. Research universities rank highest, followed by polytechnics, community colleges, and TVET institutions.
+
+**Institution Priority Table:**
+
+| Priority | Institution Type | Subcategory | Examples | Count |
+| :---: | :--- | :--- | :--- | ---: |
+| **14** | **University (IPTA)** | Penyelidihan (Research) | UM, USM, UPM, UKM, UiTM | 5 |
+| **13** | **University (IPTA)** | Komprehensif (Comprehensive) | UPNM, UIAM, UMS, UNIMAS, etc. | ~8 |
+| **12** | **University (IPTA)** | Berfokus (Focused) | UTeM, UTHM, UMPSA, UMK, etc. | ~5 |
+| **11** | **University (IPTA)** | Teknikal (Technical) | USIM, UniMAP, UMT, UniSZA, etc. | ~5 |
+| **10** | **Polytechnic** | Premier | Politeknik Premier (4 institutions) | 4 |
+| **9** | **Polytechnic** | Konvensional | Standard polytechnics | ~30 |
+| **8** | **Polytechnic** | JMTI | Jabatan-specific institutions | ~10 |
+| **7** | **Polytechnic** | METrO | Metropolitan polytechnics | ~5 |
+| **6** | **Community College** | Kolej Komuniti | All KK institutions | ~90 |
+| **5** | **TVET** | ADTEC | Advanced Technology Training Centers | ~10 |
+| **4** | **TVET** | IKTBN | National Youth Skills Institutes | ~8 |
+| **3** | **TVET** | ILP | Industrial Training Institutes | ~22 |
+| **2** | **TVET** | IKBN/IKSN | Vocational training centers | ~10 |
+| **1** | **TVET** | IKBS | Agricultural skills institutes | ~5 |
+
+**Rationale:**
+- **Universities (14-11):** Four-tier system reflects Malaysia's official university classification (Research > Comprehensive > Focused > Technical). ASASI programs at research universities provide strongest degree pathway.
+- **Polytechnics (10-7):** Premier institutions have enhanced facilities and industry links. Konvensional are well-established. JMTI/METrO are specialized.
+- **Community Colleges (6):** Strong local presence, affordable, but less research-intensive than polytechnics.
+- **TVET (5-1):** Specialized skills training, less academic emphasis, ranked by institutional maturity and industry recognition.
+
+**Example:**
+- Course A: Score 105, ASASI, **UM (Priority 14)**
+- Course B: Score 105, ASASI, **USIM (Priority 11)**
+
+**Result:** A ranks above B (Penyelidihan > Teknikal). If both were at UM, proceed to Level 4.
+
+---
+
+### Level 4: Merit Cutoff (Competitiveness)
+
+When fit score, credential, and institution are all equal, **more competitive courses** (higher merit cutoffs) rank above less competitive ones.
+
+**Rationale:**
+- Higher merit cutoff = **More selective** = Higher perceived value
+- Students gravitate toward "prestigious" programs even within same institution
+- Reflects real-world application behavior (students prefer competitive courses)
+
+**Sorting:** Descending (higher merit = better)
+
+**Example:**
+- Course A: Score 105, ASASI, UM, **Merit 90**
+- Course B: Score 105, ASASI, UM, **Merit 75**
+
+**Result:** A ranks above B (90 > 75). Higher merit indicates stronger program.
+
+**Special Cases:**
+- Courses **without merit data** (TVET, PISMP) get merit = 0
+- These rank below equivalent courses with merit data
+- Alphabetical name becomes tie-breaker for zero-merit courses
+
+---
+
+### Level 5: Course Name (Alphabetical)
+
+Final tie-breaker ensures **deterministic, stable sorting** even when all other factors are identical.
+
+**Sorting:** Ascending (A → Z)
+
+**Example:**
+- Course A: Score 105, ASASI, UM, Merit 85, **"ASASI Kejuruteraan"**
+- Course B: Score 105, ASASI, UM, Merit 85, **"ASASI Sains"**
+
+**Result:** A ranks above B ("Kejuruteraan" < "Sains" alphabetically).
+
+---
+
+### Complete Example: Tie-Breaking Cascade
+
+**Scenario:** 8 courses all have **Score 105** (tied). How are they ranked?
+
+| Rank | Course | Credential | Institution | Merit | Name | Breaking Point |
+| :---: | :--- | :---: | :--- | :---: | :--- | :--- |
+| **1** | ASASI Kejuruteraan | 4 | UM (14) | 92 | ASASI Kejuruteraan | - |
+| **2** | ASASI Sains | 4 | UM (14) | 88 | ASASI Sains | Level 4 (Merit 92 > 88) |
+| **3** | ASASI Teknologi | 4 | USIM (11) | 85 | ASASI Teknologi | Level 3 (UM > USIM) |
+| **4** | Diploma Mekanikal | 3 | Politeknik Premier (10) | 78 | Diploma Mekanikal | Level 2 (ASASI > Diploma) |
+| **5** | Diploma Elektrik | 3 | Politeknik Premier (10) | 78 | Diploma Elektrik | Level 5 (Mekanikal < Elektrik) |
+| **6** | Diploma Awam | 3 | Politeknik Konvensional (9) | 75 | Diploma Awam | Level 3 (Premier > Konvensional) |
+| **7** | Sijil Automotif | 1 | ILP (3) | 0 | Sijil Automotif | Level 2 (Diploma > Sijil) |
+| **8** | Sijil Binaan | 1 | ILP (3) | 0 | Sijil Binaan | Level 5 (Automotif < Binaan) |
+
+**Cascade Explanation:**
+1. **All tied at Score 105** → Check Credential
+2. **Ranks 1-3:** ASASI (4) beats Diploma (3) and Sijil (1)
+3. **Within ASASI:** UM (14) beats USIM (11)
+4. **Within UM ASASI:** Merit 92 > 88
+5. **Ranks 4-6:** Diploma (3) beats Sijil (1)
+6. **Within Diploma:** Premier (10) > Konvensional (9)
+7. **Within Premier Diploma:** Merit 78 tie → Alphabetical (Elektrik < Mekanikal)
+8. **Ranks 7-8:** Both Sijil at ILP → Alphabetical (Automotif < Binaan)
+
+---
+
+### Implementation Reference
+
+**Function:** `sort_courses()` in `src/ranking_engine.py` (lines 462-485)
+
+**Sort Tuple:**
+```python
+def sort_key(item):
+    score = int(item.get('fit_score', 0))
+    inst_id = str(item.get('institution_id', '')).strip()
+    subcat = INST_SUBCATEGORIES.get(inst_id, '')
+    inst_priority = INST_PRIORITY_MAP.get(subcat, 0)
+
+    c_name = str(item.get('course_name') or '')
+    cred_priority = get_credential_priority(c_name)
+
+    merit = float(item.get('merit_cutoff', 0) or 0)
+
+    # Return tuple: negative values for descending sort, positive for ascending
+    return (-score, -cred_priority, -inst_priority, -merit, c_name)
+```
+
+**Why Negative Values?**
+- Python's `sorted()` sorts in ascending order by default
+- Using negative values for score/priority/merit reverses the order → descending sort
+- Course name remains positive → ascending alphabetical order
+
+---
+
+### Design Principles
+
+1. **Determinism:** Same inputs always produce same ranking order
+2. **Transparency:** Each tie-breaking level has clear rationale
+3. **Fairness:** Merit-based (not arbitrary) at every level
+4. **Stability:** Alphabetical ensures no random shuffling
+5. **User Expectations:** Aligns with student preferences (degree pathway > diploma, research uni > technical uni)
