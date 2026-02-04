@@ -18,6 +18,7 @@ from src.auth import AuthManager
 from src.reports.ai_wrapper import AIReportWrapper
 from src.data_manager import load_master_data
 from src.reports.pdf_generator import PDFReportGenerator
+from src.wizard import render_wizard, is_wizard_complete, get_wizard_results, get_wizard_step
 from datetime import datetime
 
 # --- 1. CONFIGURATION ---
@@ -1188,6 +1189,49 @@ if view_mode == 'ai_report':
     render_ai_report_page(user, t)
     st.stop()
 
+# --- WIZARD MODE FOR GUESTS ---
+# If guest hasn't completed wizard, show wizard instead of dashboard
+if not user and not is_wizard_complete():
+    # Hide sidebar for wizard mode
+    st.markdown("""
+        <style>
+            [data-testid="stSidebar"] { display: none; }
+            [data-testid="collapsedControl"] { display: none; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    render_wizard(t)
+    st.stop()
+
+# --- WIZARD COMPLETION: Run eligibility calculation ---
+if not user and is_wizard_complete() and 'dash' not in st.session_state:
+    # Get wizard data
+    wizard_data = get_wizard_results()
+    raw_grades = wizard_data['grades']
+    profile = wizard_data['profile']
+
+    gender = profile.get('gender', 'Lelaki')
+    cb = profile.get('colorblind', 'Tidak')
+    disability = profile.get('disability', 'Tidak')
+
+    # Store as guest grades for consistency
+    st.session_state['guest_grades'] = raw_grades
+
+    # Run eligibility calculation
+    from src.engine import is_pass
+    PASS_SET = {"A+", "A", "A-", "B+", "B", "C+", "C", "D", "E"}
+
+    is_tech = raw_grades.get('tech') in PASS_SET
+    is_voc = raw_grades.get('voc') in PASS_SET
+
+    student_obj = StudentProfile(raw_grades, gender, 'Warganegara', cb, disability, other_tech=is_tech, other_voc=is_voc)
+    st.session_state['dash'] = generate_dashboard_data(student_obj, df_courses, lang_code=lang_code)
+
+    # Store profile data for sidebar form (if they open it later)
+    st.session_state['wizard_gender'] = gender
+    st.session_state['wizard_cb'] = cb
+    st.session_state['wizard_disability'] = disability
+
 # --- DASHBOARD LOGIC (Below) ---
 # Calculation Logic...
 # Run if: 
@@ -1409,6 +1453,18 @@ c2.metric(t['inst_kk'], dash['summary_stats'].get('inst_kk', 0))
 c3.metric(t['inst_iljtm'], dash['summary_stats'].get('inst_iljtm', 0))
 c4.metric(t['inst_ilkbs'], dash['summary_stats'].get('inst_ilkbs', 0))
 c5.metric(t['inst_ua'], dash['summary_stats'].get('inst_ua', 0))
+
+# Edit Grades button for guests (wizard users)
+if not user and is_wizard_complete():
+    col1, col2, col3 = st.columns([2, 1, 2])
+    with col2:
+        if st.button("✏️ Ubah Keputusan", key="btn_edit_grades", use_container_width=True):
+            # Reset wizard and dashboard
+            from src.wizard import reset_wizard
+            reset_wizard()
+            if 'dash' in st.session_state:
+                del st.session_state['dash']
+            st.rerun()
 
 # 2. Featured Matches (Teaser - Limit 3)
 # 2. Featured Matches (Teaser - Dynamic Limit)
