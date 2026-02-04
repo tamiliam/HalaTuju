@@ -33,6 +33,7 @@ def load_master_data():
     # Load Base Logic Files (Sanitized)
     df_req = load('requirements.csv', clean=True)
     df_tvet_req = load('tvet_requirements.csv', clean=True)
+    df_ua_req = load('university_requirements.csv', clean=True)
 
     # Load Metadata Files (Raw)
     df_links = load('links.csv')
@@ -69,12 +70,20 @@ def load_master_data():
             if not df_tvet_req.empty:
                 tvet_details = df_details[df_details['source_type'] == 'tvet'].copy()
                 tvet_details = tvet_details.drop(columns=['source_type'], errors='ignore')
-                
+
                 merge_keys = ['course_id']
                 if 'institution_id' in df_tvet_req.columns and 'institution_id' in tvet_details.columns:
                     merge_keys.append('institution_id')
-                    
+
                 df_tvet_req = pd.merge(df_tvet_req, tvet_details, on=merge_keys, how='left', suffixes=('', '_details'))
+
+            # 3. Merge UA/University (Source: 'univ')
+            if not df_ua_req.empty:
+                ua_details = df_details[df_details['source_type'] == 'univ'].copy()
+                ua_details = ua_details.drop(columns=['source_type', 'institution_id'], errors='ignore')
+
+                if 'course_id' in ua_details.columns:
+                    df_ua_req = pd.merge(df_ua_req, ua_details, on='course_id', how='left', suffixes=('', '_details'))
         except Exception as e:
             print(f"Error merging details.csv: {e}")
 
@@ -203,8 +212,7 @@ def load_master_data():
     pathways_final = pd.DataFrame()
 
     # --- 3c. MERGE PUBLIC UNIVERSITY (UA) DATA ---
-    # Load UA requirements from parsed MOHE data
-    df_ua_req = load('university_requirements.csv', clean=True)
+    # df_ua_req already loaded at top with other requirements files
     # df_ua_courses removed - now merged into unified courses.csv
 
     if not df_ua_req.empty and not df_links.empty:
@@ -248,8 +256,12 @@ def load_master_data():
         else:
             ua_merged['inst_url'] = '#'
 
-        ua_merged['details_url'] = '#'
-        ua_merged['hyperlink'] = '#'
+        # Map hyperlink to details_url (from details.csv merge)
+        if 'hyperlink' in ua_merged.columns:
+            ua_merged['details_url'] = ua_merged['hyperlink'].fillna('#')
+        else:
+            ua_merged['details_url'] = '#'
+            ua_merged['hyperlink'] = '#'
 
         ua_final = ua_merged
     else:
