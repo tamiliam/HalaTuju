@@ -754,42 +754,46 @@ def render_quiz_page(lang_code, user):
 
 
         
-        # Display Results - Focus on Course Ranking Update
+        # Display Results - Brief success then auto-redirect
         st.success(t.get('quiz_ranking_updated', "✅ Ranking updated!"))
+        st.info("🚀 Membawa anda ke papan pemuka... / Redirecting to dashboard...")
 
-        # Explainer Text
-        st.markdown(t.get('quiz_view_dashboard_msg', "📊 **Please view Dashboard.**"))
-        st.markdown(t.get('quiz_courses_ranked_msg', "Courses have been ranked."))
+        # UPDATE SESSION WITH NEW RESULTS
+        st.session_state['student_signals'] = results['student_signals']
 
-        # Call to Action (CTA)
-        if st.button(t.get('btn_view_dashboard', "📊 View Dashboard"), use_container_width=True, type="primary"):
-            # UPDATE SESSION WITH NEW RESULTS
-            st.session_state['student_signals'] = results['student_signals']
-            
-            # Cleanup volatile scores before returning
-            if 'quiz_scores' in st.session_state:
-                del st.session_state['quiz_scores']
-                
-            st.session_state['view_mode'] = 'dashboard'
-            st.rerun()
+        # Set flag for post-quiz banner on dashboard
+        st.session_state['quiz_just_completed'] = True
 
-        # Hide Raw Data in Expander
-        with st.expander(t.get('quiz_debug_label', "Debug Data")):
-            st.json(results)
+        # Cleanup volatile scores before returning
+        if 'quiz_scores' in st.session_state:
+            del st.session_state['quiz_scores']
+
+        # Auto-redirect to dashboard after brief delay
+        time.sleep(2)
+        st.session_state['view_mode'] = 'dashboard'
+        st.rerun()
 
 
 # --- 5d. AI REPORT PAGE ---
 def render_ai_report_page(user, t):
     """Render the AI-generated career counseling report in full-page view"""
     report = st.session_state.get('ai_report', {})
-    
+
     if not report or "markdown" not in report:
         st.error("No report available. Please generate a report first.")
         if st.button("⬅️ Back to Dashboard"):
             st.session_state['view_mode'] = 'dashboard'
             st.rerun()
         return
-    
+
+    # Scroll to top when report opens (fix for mobile showing bottom)
+    st.markdown('''
+        <script>
+            window.parent.document.querySelector('[data-testid="stAppViewContainer"]').scrollTo(0, 0);
+            window.parent.document.querySelector('section.main').scrollTo(0, 0);
+        </script>
+    ''', unsafe_allow_html=True)
+
     # Add print-friendly CSS
     # Display the AI report
     st.markdown(report['markdown'])
@@ -1116,6 +1120,7 @@ if not user:
             if st.button(t['sb_login'], key="sb_login"):
                 success, val = auth.login_user(l_phone, l_pin)
                 if success:
+                    st.session_state['just_logged_in'] = True  # Flag for welcome modal
                     st.toast(t['sb_welcome'])
                     time.sleep(0.5)
                     st.rerun()
@@ -1323,6 +1328,62 @@ if auth_status:
 
 # --- RENDER MAIN CONTENT ---
 st.title(t['header_title'])
+
+# --- POST-LOGIN WELCOME MODAL ---
+# Show once after login to highlight unlocked features
+if st.session_state.get('just_logged_in') and user:
+    st.session_state['just_logged_in'] = False  # Clear flag
+
+    # Welcome modal with unlocked features
+    with st.container():
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+            <h2 style="margin: 0 0 15px 0; color: white;">🎉 Selamat Datang Kembali!</h2>
+            <p style="margin: 0 0 15px 0; font-size: 1.1em;">Akaun anda telah dibuka. Ini yang baru:</p>
+            <ul style="margin: 0; padding-left: 20px; font-size: 1em;">
+                <li>✅ <b>Senarai penuh kursus</b> - Lihat semua kursus yang layak</li>
+                <li>✅ <b>Discovery Quiz</b> - Ambil kuiz untuk ranking peribadi</li>
+                <li>✅ <b>Laporan Kaunselor</b> - Jana laporan AI selepas kuiz</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Auto-scroll to top
+    st.markdown('''
+        <script>
+            window.parent.document.querySelector('[data-testid="stAppViewContainer"]').scrollTo(0, 0);
+        </script>
+    ''', unsafe_allow_html=True)
+
+# --- POST-QUIZ COMPLETION BANNER ---
+# Show once after quiz to highlight ranked results and counselor report
+if st.session_state.get('quiz_just_completed'):
+    st.session_state['quiz_just_completed'] = False  # Clear flag
+
+    # Success banner with next steps
+    with st.container():
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+                    padding: 20px; border-radius: 12px; margin-bottom: 20px; color: white;">
+            <h2 style="margin: 0 0 15px 0; color: white;">🎯 Kuiz Selesai!</h2>
+            <p style="margin: 0 0 15px 0; font-size: 1.1em;">Kursus anda telah dirank berdasarkan personaliti anda:</p>
+            <ul style="margin: 0; padding-left: 20px; font-size: 1em;">
+                <li>⭐ <b>Top 5 kursus</b> ditandakan "Best Match"</li>
+                <li>📋 <b>Laporan Kaunselor</b> sedia di sidebar - klik untuk lihat!</li>
+                <li>📄 <b>Muat turun PDF</b> untuk simpan atau kongsi</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.toast("🎯 Ranking dikemaskini! Scroll untuk lihat 'Best Match' anda.", icon="✅")
+
+    # Auto-scroll to top
+    st.markdown('''
+        <script>
+            window.parent.document.querySelector('[data-testid="stAppViewContainer"]').scrollTo(0, 0);
+        </script>
+    ''', unsafe_allow_html=True)
 
 # Track dashboard visit for report unlocking
 # Logic: Defaults to False if key doesn't exist
