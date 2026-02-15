@@ -111,7 +111,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (42 tests)
+# Run ALL tests (53 tests)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8280 baseline)
@@ -131,11 +131,12 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 8280 baseline |
 | test_serializers.py | 27 | Grade key mapping, gender/nationality normalization, bool→Ya/Tidak, validation |
 | test_api.py | 14 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality), course/institution CRUD |
+| test_auth.py | 11 | Auth enforcement — protected endpoints reject 403, accept with JWT 200, public endpoints open |
 
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (42 must pass, golden master = 8280)
+# 1. Run all tests (53 must pass, golden master = 8280)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -147,7 +148,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-All 42 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
+All 53 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -163,9 +164,18 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Known Issues
 
-- `require_auth` middleware imported but not active on eligibility endpoint (auth not yet enabled)
 - Ranking endpoint (`/api/v1/ranking/`) is a stub — needs port from `ranking_engine.py`
 - Course names show as course_id when Course table doesn't have the entry (graceful fallback in views.py)
+
+## Next Sprint
+
+**Sprint 2 — Saved Courses Fix + Missing Page Shells**
+- Fix `unsaveCourse` in `halatuju-web/src/lib/api.ts` (use URL-based DELETE `/api/v1/saved-courses/<course_id>/`, not body)
+- Wire saved course state in dashboard to API (replace localStorage)
+- Create shell pages: `/saved`, `/settings`, `/about`, `/privacy`, `/terms`, `/auth/callback`
+- Add 2-3 saved course API tests
+- Deploy frontend
+- Current tests: 53 | Golden master: 8280
 
 ## Streamlit App (Legacy — migrating to Django API)
 
