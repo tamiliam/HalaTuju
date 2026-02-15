@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Lexend font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap');
+
+/* Base styles */
+@layer base {
+  html {
+    font-family: 'Lexend', system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-white text-gray-900 antialiased;
+  }
+}
+
+/* Component styles */
+@layer components {
+  /* Primary button */
+  .btn-primary {
+    @apply bg-primary-500 text-white px-6 py-3 rounded-lg font-medium;
+    @apply hover:bg-primary-600 transition-colors duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Secondary button */
+  .btn-secondary {
+    @apply bg-white text-primary-500 border-2 border-primary-500 px-6 py-3 rounded-lg font-medium;
+    @apply hover:bg-primary-50 transition-colors duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+
+  /* Card */
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+  }
+
+  /* Input field */
+  .input {
+    @apply w-full px-4 py-3 rounded-lg border border-gray-300;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply placeholder:text-gray-400;
+  }
+
+  /* Grade badge */
+  .grade-badge {
+    @apply inline-flex items-center justify-center w-10 h-10 rounded-lg font-semibold text-sm;
+  }
+
+  .grade-badge-a {
+    @apply grade-badge bg-green-100 text-green-700;
+  }
+
+  .grade-badge-b {
+    @apply grade-badge bg-blue-100 text-blue-700;
+  }
+
+  .grade-badge-c {
+    @apply grade-badge bg-yellow-100 text-yellow-700;
+  }
+
+  .grade-badge-d {
+    @apply grade-badge bg-orange-100 text-orange-700;
+  }
+
+  .grade-badge-e {
+    @apply grade-badge bg-red-100 text-red-700;
+  }
+
+  .grade-badge-g {
+    @apply grade-badge bg-gray-100 text-gray-700;
+  }
+}

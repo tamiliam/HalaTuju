@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 .DS_Store
 .env
+.env.local
 venv/
 .streamlit/secrets.toml
 
@@ -9,3 +10,19 @@ venv/
 debug_output.txt
 *.log
 test_output.txt
+
+# Node.js
+node_modules/
+.next/
+.vercel/
+
+# One-time migration SQL batches
+.tmp/
+
+# Root package-lock (not a Node project at root)
+/package-lock.json
+
+# Django
+*.sqlite3
+halatuju_api/staticfiles/
+halatuju_api/db.sqlite3
