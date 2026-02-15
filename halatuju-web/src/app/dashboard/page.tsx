@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { checkEligibility, type StudentProfile, type EligibleCourse } from '@/lib/api'
+import { checkEligibility, getSavedCourses, saveCourse, unsaveCourse, type StudentProfile, type EligibleCourse } from '@/lib/api'
+import { getSession } from '@/lib/supabase'
 
 const SUPABASE_STORAGE = 'https://pbrrlyoyyiftckqvzvvo.supabase.co/storage/v1/object/public/field-images'
 
@@ -29,8 +30,10 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
   const [displayCount, setDisplayCount] = useState(20)
+  const [token, setToken] = useState<string | null>(null)
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
 
-  // Load profile from localStorage on mount
+  // Load profile from localStorage + check auth session on mount
   useEffect(() => {
     const grades = localStorage.getItem('halatuju_grades')
     const profileData = localStorage.getItem('halatuju_profile')
@@ -48,7 +51,48 @@ export default function DashboardPage() {
       })
     }
     setIsLoading(false)
+
+    // Check for Supabase session and load saved courses
+    getSession().then(({ session }) => {
+      if (session?.access_token) {
+        setToken(session.access_token)
+        getSavedCourses({ token: session.access_token })
+          .then(({ saved_courses }) => {
+            setSavedIds(new Set(saved_courses.map(c => c.course_id)))
+          })
+          .catch(() => {}) // Silently fail — saved state is non-critical
+      }
+    }).catch(() => {})
   }, [])
+
+  const handleToggleSave = useCallback(async (courseId: string) => {
+    if (!token) return
+    const isSaved = savedIds.has(courseId)
+
+    // Optimistic update
+    setSavedIds(prev => {
+      const next = new Set(prev)
+      if (isSaved) next.delete(courseId)
+      else next.add(courseId)
+      return next
+    })
+
+    try {
+      if (isSaved) {
+        await unsaveCourse(courseId, { token })
+      } else {
+        await saveCourse(courseId, { token })
+      }
+    } catch {
+      // Revert on failure
+      setSavedIds(prev => {
+        const next = new Set(prev)
+        if (isSaved) next.add(courseId)
+        else next.delete(courseId)
+        return next
+      })
+    }
+  }, [token, savedIds])
 
   // Query eligibility when profile is ready
   const {
@@ -203,7 +247,12 @@ export default function DashboardPage() {
 
               <div className="grid gap-4">
                 {displayedCourses.map((course) => (
-                  <CourseCard key={course.course_id} course={course} />
+                  <CourseCard
+                    key={course.course_id}
+                    course={course}
+                    isSaved={savedIds.has(course.course_id)}
+                    onToggleSave={token ? handleToggleSave : undefined}
+                  />
                 ))}
               </div>
 
@@ -245,7 +294,15 @@ function StatCard({ number, label }: { number: number; label: string }) {
   )
 }
 
-function CourseCard({ course }: { course: EligibleCourse }) {
+function CourseCard({
+  course,
+  isSaved,
+  onToggleSave,
+}: {
+  course: EligibleCourse
+  isSaved: boolean
+  onToggleSave?: (courseId: string) => void
+}) {
   const typeLabels: Record<string, string> = {
     poly: 'Polytechnic',
     tvet: 'TVET',
@@ -268,10 +325,7 @@ function CourseCard({ course }: { course: EligibleCourse }) {
   const imageUrl = getFieldImageUrl(course.field)
 
   return (
-    <Link
-      href={`/course/${course.course_id}`}
-      className="block bg-white rounded-xl border border-gray-200 hover:border-primary-300 hover:shadow-sm transition-all overflow-hidden"
-    >
+    <div className="bg-white rounded-xl border border-gray-200 hover:border-primary-300 hover:shadow-sm transition-all overflow-hidden">
       <div className="flex">
         {/* Field image thumbnail */}
         {imageUrl && (
@@ -284,8 +338,8 @@ function CourseCard({ course }: { course: EligibleCourse }) {
           </div>
         )}
 
-        {/* Course details */}
-        <div className="flex-1 p-5">
+        {/* Course details — clickable link */}
+        <Link href={`/course/${course.course_id}`} className="flex-1 p-5">
           <div className="flex flex-wrap items-center gap-2 mb-2">
             <span
               className={`px-2 py-1 rounded text-xs font-medium ${
@@ -315,25 +369,51 @@ function CourseCard({ course }: { course: EligibleCourse }) {
           <p className="text-gray-500 text-sm">
             {course.field || 'View course details'}
           </p>
-        </div>
+        </Link>
 
-        {/* Arrow */}
-        <div className="flex items-center pr-4 text-gray-400">
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
+        {/* Save button + Arrow */}
+        <div className="flex items-center gap-2 pr-4">
+          {onToggleSave && (
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                onToggleSave(course.course_id)
+              }}
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              aria-label={isSaved ? 'Remove from saved' : 'Save course'}
+            >
+              <svg
+                className={`w-5 h-5 ${isSaved ? 'text-primary-500 fill-primary-500' : 'text-gray-400'}`}
+                viewBox="0 0 24 24"
+                fill={isSaved ? 'currentColor' : 'none'}
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
+                />
+              </svg>
+            </button>
+          )}
+          <Link href={`/course/${course.course_id}`} className="text-gray-400">
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </Link>
         </div>
       </div>
-    </Link>
+    </div>
   )
 }

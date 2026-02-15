@@ -80,7 +80,7 @@ Unmapped keys (e.g. `COMP_SCI`) fall back to `.lower()`.
 
 ### GCP Project
 
-`gen-lang-client-0871147736`
+`gen-lang-client-0871147736` (account: `tamiliam@gmail.com`)
 
 ### Deploy Commands
 
@@ -111,7 +111,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (53 tests)
+# Run ALL tests (56 tests)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8280 baseline)
@@ -132,11 +132,12 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_serializers.py | 27 | Grade key mapping, gender/nationality normalization, bool→Ya/Tidak, validation |
 | test_api.py | 14 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality), course/institution CRUD |
 | test_auth.py | 11 | Auth enforcement — protected endpoints reject 403, accept with JWT 200, public endpoints open |
+| test_saved_courses.py | 3 | Saved course CRUD — save (201), list (appears), delete (removed) |
 
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (53 must pass, golden master = 8280)
+# 1. Run all tests (56 must pass, golden master = 8280)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -148,7 +149,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-All 53 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
+All 56 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -169,13 +170,14 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 2 — Saved Courses Fix + Missing Page Shells**
-- Fix `unsaveCourse` in `halatuju-web/src/lib/api.ts` (use URL-based DELETE `/api/v1/saved-courses/<course_id>/`, not body)
-- Wire saved course state in dashboard to API (replace localStorage)
-- Create shell pages: `/saved`, `/settings`, `/about`, `/privacy`, `/terms`, `/auth/callback`
-- Add 2-3 saved course API tests
-- Deploy frontend
-- Current tests: 53 | Golden master: 8280
+**Sprint 3 — Quiz API Backend**
+- Port `src/quiz_data.py` → `apps/courses/quiz_data.py` (6 questions, 3 languages, pure data)
+- Port `src/quiz_manager.py` → `apps/courses/quiz_engine.py` (stateless: answers in → signals out)
+- New endpoints: `POST /api/v1/quiz/questions/`, `POST /api/v1/quiz/submit/`
+- Update `ProfileView.put()` to accept `student_signals`
+- 8-10 tests (signal accumulation, taxonomy mapping, edge cases)
+- No deploy (backend only)
+- Current tests: 56 | Golden master: 8280
 
 ## Streamlit App (Legacy — migrating to Django API)
 

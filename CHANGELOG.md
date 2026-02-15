@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-02-16 — Sprint 2: Saved Courses Fix + Page Shells
+
+### Added
+- **Saved courses page** (`/saved`): Lists saved courses from API, remove button, login prompt for guests
+- **Settings page** (`/settings`): Links to edit grades, saved courses, about, privacy, terms
+- **About page** (`/about`): Project description and mission
+- **Privacy policy page** (`/privacy`): Data collection, usage, and storage disclosure
+- **Terms of service page** (`/terms`): Disclaimer and liability
+- **Auth callback page** (`/auth/callback`): Handles OAuth redirect from Supabase, redirects to dashboard
+- **Saved course CRUD tests**: 3 new tests covering save (201), list (appears), and delete (removed) (`test_saved_courses.py`)
+- **Bookmark button on dashboard**: Logged-in users see a save/unsave bookmark icon on each course card with optimistic updates
+
+### Fixed
+- **`unsaveCourse` API call**: Changed from body-based DELETE (`/api/v1/saved-courses/` + body) to URL-based DELETE (`/api/v1/saved-courses/<course_id>/`) matching the backend route
+- **`getSavedCourses` return type**: Updated from `string[]` to `Course[]` to match actual backend response
+
+### Changed
+- **Dashboard CourseCard**: Refactored from single `<Link>` wrapper to `<div>` with separate link area and save button, so save/click targets are independent
+- **Dashboard saved state**: Now fetches from Supabase API when session exists (was not wired at all)
+
+### Technical Notes
+- Test count: 53 → 56 (+3 saved course CRUD tests)
+- Golden master: 8280 (unchanged)
+- TypeScript: 0 errors
+- Frontend deployed: revision `halatuju-web-00007-wd8`
+
 ## [1.2.0] - 2026-02-16 — Sprint 1: Git Housekeeping + Auth Enforcement
 
 ### Added

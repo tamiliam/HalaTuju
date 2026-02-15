@@ -101,7 +101,7 @@ export async function getInstitutions(options?: ApiOptions): Promise<{ instituti
   return apiRequest('/api/v1/institutions/', options)
 }
 
-export async function getSavedCourses(options?: ApiOptions): Promise<{ saved_courses: string[] }> {
+export async function getSavedCourses(options?: ApiOptions): Promise<{ saved_courses: Course[] }> {
   return apiRequest('/api/v1/saved-courses/', options)
 }
 
@@ -120,9 +120,8 @@ export async function unsaveCourse(
   courseId: string,
   options?: ApiOptions
 ): Promise<{ message: string }> {
-  return apiRequest('/api/v1/saved-courses/', {
+  return apiRequest(`/api/v1/saved-courses/${courseId}/`, {
     method: 'DELETE',
-    body: JSON.stringify({ course_id: courseId }),
     ...options,
   })
 }
