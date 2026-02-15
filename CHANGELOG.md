@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-02-16 — Sprint 3: Quiz API Backend
+
+### Added
+- **Quiz data module** (`apps/courses/quiz_data.py`): 6 psychometric questions in 3 languages (EN, BM, TA), ported from `src/quiz_data.py`
+- **Quiz engine** (`apps/courses/quiz_engine.py`): Stateless signal accumulator — takes answers in, returns categorised signals in 5-bucket taxonomy
+- **Quiz questions endpoint** (`GET /api/v1/quiz/questions/?lang=en`): Returns quiz questions in requested language, public (no auth)
+- **Quiz submit endpoint** (`POST /api/v1/quiz/submit/`): Accepts 6 answers, returns `student_signals` + `signal_strength`, public (no auth)
+- **Quiz tests** (`test_quiz.py`): 14 new tests covering endpoint behaviour, signal accumulation, taxonomy mapping, validation, and language parity
+
+### Technical Notes
+- Test count: 56 → 70 (+14 quiz tests)
+- Golden master: 8280 (unchanged)
+- No migrations, no deploy (backend only)
+- `ProfileView.put()` already accepts `student_signals` — no change needed
+- Quiz engine is fully stateless: no session, no DB writes. Frontend sends all 6 answers in one POST.
+
 ## [1.3.0] - 2026-02-16 — Sprint 2: Saved Courses Fix + Page Shells
 
 ### Added

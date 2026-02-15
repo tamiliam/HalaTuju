@@ -8,6 +8,8 @@ Endpoints:
 - GET /api/v1/courses/<id>/ - Course detail
 - GET /api/v1/institutions/ - List institutions
 - GET/POST/DELETE /api/v1/saved-courses/ - Saved courses
+- GET /api/v1/quiz/questions/ - Get quiz questions
+- POST /api/v1/quiz/submit/ - Submit quiz answers
 - GET/PUT /api/v1/profile/ - Student profile
 """
 import logging
@@ -25,6 +27,8 @@ from .serializers import (
     EligibilityRequestSerializer,
     EligibilityResponseSerializer,
 )
+from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
+from .quiz_engine import process_quiz_answers
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 
 logger = logging.getLogger(__name__)
@@ -146,6 +150,88 @@ class RankingView(APIView):
             'top_5': [],
             'rest': [],
         })
+
+
+class QuizQuestionsView(APIView):
+    """
+    GET /api/v1/quiz/questions/?lang=en
+
+    Returns the 6 quiz questions in the requested language.
+    Public endpoint — no auth required.
+    """
+
+    def get(self, request):
+        lang = request.query_params.get('lang', 'en')
+        if lang not in SUPPORTED_LANGUAGES:
+            lang = 'en'
+
+        questions = get_quiz_questions(lang)
+        return Response({
+            'questions': questions,
+            'total': len(questions),
+            'lang': lang,
+        })
+
+
+class QuizSubmitView(APIView):
+    """
+    POST /api/v1/quiz/submit/
+
+    Submit quiz answers and receive categorised student signals.
+    Public endpoint — no auth required (signals are returned, not stored).
+
+    Request body:
+    {
+        "answers": [
+            {"question_id": "q1_modality", "option_index": 0},
+            {"question_id": "q2_environment", "option_index": 2},
+            ...
+        ],
+        "lang": "en"  // optional, defaults to "en"
+    }
+
+    Response:
+    {
+        "student_signals": {
+            "work_preference_signals": {"hands_on": 2},
+            ...
+        },
+        "signal_strength": {"hands_on": "strong", ...}
+    }
+    """
+
+    def post(self, request):
+        answers = request.data.get('answers')
+        lang = request.data.get('lang', 'en')
+
+        if not answers or not isinstance(answers, list):
+            return Response(
+                {'error': 'answers must be a non-empty list'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Validate each answer has required fields
+        for i, answer in enumerate(answers):
+            if 'question_id' not in answer:
+                return Response(
+                    {'error': f'answers[{i}] missing question_id'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if 'option_index' not in answer:
+                return Response(
+                    {'error': f'answers[{i}] missing option_index'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        try:
+            result = process_quiz_answers(answers, lang=lang)
+        except ValueError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(result)
 
 
 class CourseListView(APIView):

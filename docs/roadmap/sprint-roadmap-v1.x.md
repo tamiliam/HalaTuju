@@ -21,7 +21,7 @@
 |--------|------|--------|-------|--------|
 | 1 | Git Housekeeping + Auth | DONE (2026-02-16) | +11 | No |
 | 2 | Saved Courses + Page Shells | DONE (2026-02-16) | +3 | Yes |
-| 3 | Quiz API Backend | NOT STARTED | +10 | No |
+| 3 | Quiz API Backend | DONE (2026-02-16) | +14 | No |
 | 4 | Ranking Engine Backend | NOT STARTED | +15 | No |
 | 5 | Quiz Frontend | NOT STARTED | +3 | Yes |
 | 6 | Dashboard Redesign (Card Grid) | NOT STARTED | +2 | Yes |

@@ -11,6 +11,10 @@ urlpatterns = [
     # Ranking
     path('ranking/', views.RankingView.as_view(), name='ranking'),
 
+    # Quiz
+    path('quiz/questions/', views.QuizQuestionsView.as_view(), name='quiz-questions'),
+    path('quiz/submit/', views.QuizSubmitView.as_view(), name='quiz-submit'),
+
     # Course catalog
     path('courses/', views.CourseListView.as_view(), name='course-list'),
     path('courses/<str:course_id>/', views.CourseDetailView.as_view(), name='course-detail'),
