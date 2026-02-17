@@ -111,3 +111,32 @@ class EligibilityResponseSerializer(serializers.Serializer):
     eligible_courses = serializers.ListField()
     total_count = serializers.IntegerField()
     stats = serializers.DictField()
+
+
+class RankingRequestSerializer(serializers.Serializer):
+    """
+    Serializer for ranking request.
+
+    Validates the eligible courses list and student signals
+    sent to the ranking endpoint.
+    """
+    eligible_courses = serializers.ListField(
+        child=serializers.DictField(),
+        required=True,
+        help_text="List of eligible course dicts from eligibility check",
+    )
+    student_signals = serializers.DictField(
+        required=True,
+        help_text="Categorised student signals from quiz",
+    )
+
+    def validate_eligible_courses(self, value):
+        """Ensure each course dict has a course_id."""
+        if not value:
+            raise serializers.ValidationError("eligible_courses must not be empty.")
+        for i, course in enumerate(value):
+            if 'course_id' not in course:
+                raise serializers.ValidationError(
+                    f"eligible_courses[{i}] missing course_id."
+                )
+        return value

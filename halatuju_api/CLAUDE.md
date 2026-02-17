@@ -111,7 +111,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (70 tests)
+# Run ALL tests (104 tests)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8280 baseline)
@@ -134,11 +134,12 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_auth.py | 11 | Auth enforcement — protected endpoints reject 403, accept with JWT 200, public endpoints open |
 | test_saved_courses.py | 3 | Saved course CRUD — save (201), list (appears), delete (removed) |
 | test_quiz.py | 14 | Quiz endpoints (questions 3 langs, submit, validation), engine (accumulation, taxonomy, strength, lang parity) |
+| test_ranking.py | 34 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, top_5/rest split, API endpoint validation |
 
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (70 must pass, golden master = 8280)
+# 1. Run all tests (104 must pass, golden master = 8280)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -150,7 +151,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-All 70 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
+All 104 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -164,23 +165,23 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/models.py` | Django ORM models | No |
 | `apps/courses/quiz_data.py` | Quiz questions (6 Qs × 3 languages) | No |
 | `apps/courses/quiz_engine.py` | Stateless quiz signal accumulator | No |
+| `apps/courses/ranking_engine.py` | Fit score calculation + course ranking | No |
 | `apps/courses/management/commands/load_csv_data.py` | CSV → DB migration | One-time |
 
 ## Known Issues
 
-- Ranking endpoint (`/api/v1/ranking/`) is a stub — needs port from `ranking_engine.py`
 - Course names show as course_id when Course table doesn't have the entry (graceful fallback in views.py)
+- Institution modifiers (urban, cultural_safety_net) loaded from `data/institutions.json` — should migrate to model fields
 
 ## Next Sprint
 
-**Sprint 4 — Ranking Engine Backend**
-- Port `src/ranking_engine.py` → `apps/courses/ranking_engine.py` (551 lines — most complex migration task)
-- Load course tags from `CourseTag` model, institution modifiers from `Institution` model
-- Implement `RankingView.post()` (currently a stub returning empty arrays)
-- Add `RankingRequestSerializer` for input validation
-- 10-15 tests (score calculation, cap enforcement, merit penalty, tie-breaking, sort stability)
-- No deploy (backend only)
-- Current tests: 70 | Golden master: 8280
+**Sprint 5 — Quiz Frontend**
+- Wire quiz UI to `GET /api/v1/quiz/questions/` and `POST /api/v1/quiz/submit/`
+- Wire ranking flow: eligibility results → quiz signals → `POST /api/v1/ranking/`
+- Display ranked results (top 5 + rest) with fit reasons
+- ~3 frontend tests
+- Deploy (frontend only)
+- Current tests: 104 | Golden master: 8280
 
 ## Streamlit App (Legacy — migrating to Django API)
 

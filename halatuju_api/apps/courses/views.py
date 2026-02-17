@@ -26,7 +26,9 @@ from .serializers import (
     InstitutionSerializer,
     EligibilityRequestSerializer,
     EligibilityResponseSerializer,
+    RankingRequestSerializer,
 )
+from .ranking_engine import get_ranked_results
 from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
 from .quiz_engine import process_quiz_answers
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
@@ -141,15 +143,58 @@ class RankingView(APIView):
     POST /api/v1/ranking/
 
     Calculate fit scores for eligible courses based on student signals.
+
+    Request body:
+    {
+        "eligible_courses": [
+            {"course_id": "DIP001", "institution_id": "POLY-001",
+             "course_name": "Diploma Kejuruteraan Mekanikal",
+             "merit_cutoff": 45.0, "student_merit": 50.0},
+            ...
+        ],
+        "student_signals": {
+            "work_preference_signals": {"hands_on": 2, ...},
+            "environment_signals": {...},
+            ...
+        }
+    }
+
+    Response:
+    {
+        "top_5": [...],
+        "rest": [...],
+        "total_ranked": 123
+    }
     """
 
     def post(self, request):
-        # TODO: Implement ranking logic (port from ranking_engine.py)
-        return Response({
-            'message': 'Ranking endpoint - coming soon',
-            'top_5': [],
-            'rest': [],
-        })
+        serializer = RankingRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+        eligible_courses = data['eligible_courses']
+        student_signals = data['student_signals']
+
+        # Get cached ranking data from app config
+        courses_config = apps.get_app_config('courses')
+        course_tags_map = courses_config.course_tags_map
+        inst_modifiers_map = courses_config.inst_modifiers_map
+        inst_subcategories = courses_config.inst_subcategories
+
+        student_profile = {'student_signals': student_signals}
+
+        result = get_ranked_results(
+            eligible_courses,
+            student_profile,
+            course_tags_map,
+            inst_modifiers_map,
+            inst_subcategories,
+        )
+
+        result['total_ranked'] = len(result['top_5']) + len(result['rest'])
+
+        return Response(result)
 
 
 class QuizQuestionsView(APIView):

@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-02-17 — Sprint 4: Ranking Engine Backend
+
+### Added
+- **Ranking engine** (`apps/courses/ranking_engine.py`): Ported 551-line Streamlit ranking engine to Django — pure functions, no globals, no file I/O
+- **Ranking endpoint** (`POST /api/v1/ranking/`): Accepts eligible courses + student signals, returns top 5 + rest with fit scores and natural language reasons
+- **RankingRequestSerializer**: Validates eligible_courses (each must have course_id) and student_signals
+- **Institution data loading**: AppConfig now loads course tags map, institution subcategories, and institution modifiers (from JSON) at startup
+- **Ranking tests** (`test_ranking.py`): 34 new tests covering score calculation, category/institution/global cap enforcement, merit penalty (High/Fair/Low), sort tie-breaking (5 levels), credential priority, top_5/rest split, API endpoint validation
+
+### Technical Notes
+- Test count: 70 → 104 (+34 ranking tests)
+- Golden master: 8280 (unchanged)
+- No migrations, no deploy (backend only)
+- Ranking engine uses dependency injection — course tags and institution data passed as parameters, not loaded from files
+- Institution modifiers (urban, cultural_safety_net) loaded from `data/institutions.json` at startup; future sprint will migrate to model fields
+
 ## [1.4.0] - 2026-02-16 — Sprint 3: Quiz API Backend
 
 ### Added

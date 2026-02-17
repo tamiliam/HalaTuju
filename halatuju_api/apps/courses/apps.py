@@ -21,6 +21,11 @@ class CoursesConfig(AppConfig):
     university_requirements_df = None
     course_tags_df = None
 
+    # Ranking engine data (loaded at startup)
+    course_tags_map = {}       # {course_id: tags_dict}
+    inst_modifiers_map = {}    # {inst_id: modifiers_dict}
+    inst_subcategories = {}    # {inst_id: subcategory_string}
+
     def ready(self):
         """
         Called when Django starts. Load data from DB into Pandas DataFrames.
@@ -45,7 +50,7 @@ class CoursesConfig(AppConfig):
     def _load_data(self):
         """Load all requirement data from database into DataFrames."""
         import pandas as pd
-        from .models import CourseRequirement, CourseTag
+        from .models import CourseRequirement, CourseTag, Institution
 
         logger.info("Loading course data from database...")
 
@@ -67,10 +72,58 @@ class CoursesConfig(AppConfig):
         else:
             logger.warning("No course requirements found in database")
 
-        # Load course tags into DataFrame
+        # Load course tags into DataFrame + dict for ranking engine
         tags_qs = CourseTag.objects.all().values()
         if tags_qs.exists():
             self.course_tags_df = pd.DataFrame(list(tags_qs))
+            # Build {course_id: tags_dict} for ranking engine
+            self.course_tags_map = {
+                row['course_id']: {
+                    k: v for k, v in row.items() if k != 'course_id'
+                }
+                for row in tags_qs
+            }
             logger.info(f"Loaded {len(self.course_tags_df)} course tags")
 
+        # Load institution subcategories for ranking tie-breaking
+        inst_qs = Institution.objects.all().values('institution_id', 'subcategory')
+        self.inst_subcategories = {
+            row['institution_id']: row['subcategory']
+            for row in inst_qs
+            if row['subcategory']
+        }
+        logger.info(f"Loaded {len(self.inst_subcategories)} institution subcategories")
+
+        # Load institution modifiers from JSON (not yet in model)
+        self._load_institution_modifiers()
+
         logger.info("Course data loading complete")
+
+    def _load_institution_modifiers(self):
+        """Load institution modifiers from data/institutions.json."""
+        import json
+        import os
+
+        # JSON is in the Streamlit project root, two levels up from halatuju_api/
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)
+        )))
+        json_path = os.path.join(
+            os.path.dirname(base_dir), 'data', 'institutions.json'
+        )
+
+        if not os.path.exists(json_path):
+            logger.warning(f"Institution modifiers file not found: {json_path}")
+            return
+
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                self.inst_modifiers_map = {
+                    str(item.get('inst_id', '')).strip(): item.get('modifiers', {})
+                    for item in data
+                    if item.get('inst_id')
+                }
+            logger.info(f"Loaded {len(self.inst_modifiers_map)} institution modifiers")
+        except Exception as e:
+            logger.warning(f"Error loading institution modifiers: {e}")
