@@ -59,6 +59,7 @@ class CourseRequirement(models.Model):
             ('kkom', 'Community College'),
             ('tvet', 'TVET/ILKBS/ILJTM'),
             ('ua', 'University/Asasi'),
+            ('pismp', 'PISMP/Teacher Training'),
         ],
         default='poly'
     )

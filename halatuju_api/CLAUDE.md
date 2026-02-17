@@ -111,7 +111,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (106 tests)
+# Run ALL tests (114 tests)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8280 baseline)
@@ -120,7 +120,7 @@ python -m pytest apps/courses/tests/test_golden_master.py -v
 # Serializer tests (27 tests — grade mapping, normalization)
 python -m pytest apps/courses/tests/test_serializers.py -v
 
-# API endpoint tests (16 tests — eligibility, courses, institutions, merit)
+# API endpoint tests (24 tests — eligibility, PISMP, courses, institutions, merit)
 python -m pytest apps/courses/tests/test_api.py -v
 ```
 
@@ -130,7 +130,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 |------|-------|----------------|
 | test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 8280 baseline |
 | test_serializers.py | 27 | Grade key mapping, gender/nationality normalization, bool→Ya/Tidak, validation |
-| test_api.py | 16 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels), course/institution CRUD |
+| test_api.py | 24 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration), course/institution CRUD |
 | test_auth.py | 11 | Auth enforcement — protected endpoints reject 403, accept with JWT 200, public endpoints open |
 | test_saved_courses.py | 3 | Saved course CRUD — save (201), list (appears), delete (removed) |
 | test_quiz.py | 14 | Quiz endpoints (questions 3 langs, submit, validation), engine (accumulation, taxonomy, strength, lang parity) |
@@ -139,7 +139,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (106 must pass, golden master = 8280)
+# 1. Run all tests (114 must pass, golden master = 8280)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -151,7 +151,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-All 106 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
+All 114 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -175,12 +175,11 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 7 — PISMP Integration**
-- Add PISMP (teacher training) course data to requirements
-- New source_type: 'pismp' alongside poly, tvet, ua
-- Update eligibility engine to handle PISMP-specific requirements
-- Dashboard cards should display PISMP courses with appropriate styling
-- Current tests: 106 | Golden master: 8280
+**Sprint 8 — Course Detail Enhancement**
+- Enhance /course/[id] page with institution info, fees, allowance, duration
+- Pull data from CourseInstitution join table
+- Add "Apply" link to official portals
+- Current tests: 114 | Golden master: 8280
 
 ## Streamlit App (Legacy — migrating to Django API)
 

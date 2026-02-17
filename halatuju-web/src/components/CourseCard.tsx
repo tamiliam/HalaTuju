@@ -26,12 +26,14 @@ const TYPE_LABELS: Record<string, string> = {
   poly: 'Polytechnic',
   tvet: 'TVET',
   ua: 'University',
+  pismp: 'Teacher Training',
 }
 
 const TYPE_COLORS: Record<string, string> = {
   poly: 'bg-blue-100 text-blue-700',
   tvet: 'bg-green-100 text-green-700',
   ua: 'bg-purple-100 text-purple-700',
+  pismp: 'bg-amber-100 text-amber-700',
 }
 
 const LEVEL_COLORS: Record<string, string> = {

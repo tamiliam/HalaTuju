@@ -266,7 +266,7 @@ def check_complex_requirements(student_grades, complex_req_json_str):
     Logic: Each OR group must be satisfied (AND logic between groups).
     Within each group, need 'count' subjects with at least 'grade' (OR logic).
     """
-    if complex_req_json_str is None or complex_req_json_str == "":
+    if not complex_req_json_str or not isinstance(complex_req_json_str, str) or complex_req_json_str.strip() == "":
         return True, None
 
     if isinstance(complex_req_json_str, float):
@@ -318,7 +318,7 @@ def check_subject_group_logic(student_grades, rule_json_str, max_agg_units, chec
     """
     Evaluates complex subject group rules from a JSON string.
     """
-    if not rule_json_str or rule_json_str.strip() == "":
+    if not rule_json_str or not isinstance(rule_json_str, str) or rule_json_str.strip() == "":
         return True, None
 
     try:
@@ -381,6 +381,16 @@ def check_subject_group_logic(student_grades, rule_json_str, max_agg_units, chec
                 subjects = rule.get("subjects", [])
                 count_ok = 0
                 if not subjects:
+                    # Empty subjects = count from ALL student grades
+                    # Used by PISMP: "any 5 subjects at A- or better"
+                    for grade in student_grades.values():
+                        if grade:
+                            pts = AGGREGATE_GRADE_POINTS.get(grade, 10)
+                            threshold = AGGREGATE_GRADE_POINTS.get(min_grade, 8)
+                            if pts <= threshold:
+                                count_ok += 1
+                    if count_ok < min_count:
+                        return False, f"Need {min_count} subjects at grade {min_grade} (have {count_ok})"
                     continue
 
                 for subj in subjects:

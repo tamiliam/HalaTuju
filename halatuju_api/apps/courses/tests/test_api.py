@@ -81,6 +81,7 @@ class TestEligibilityEndpoint(TestCase):
             ('requirements.csv', 'poly'),
             ('tvet_requirements.csv', 'tvet'),
             ('university_requirements.csv', 'ua'),
+            ('pismp_requirements.csv', 'pismp'),
         ]
         dfs = []
         for filename, source_type in file_source_map:
@@ -311,6 +312,137 @@ class TestEligibilityEndpoint(TestCase):
                 f"Perfect student should get 'High' for {course['course_id']} "
                 f"(cutoff={course['merit_cutoff']}, merit={course['student_merit']})"
             )
+
+    # --- PISMP Integration Tests ---
+
+    def test_pismp_perfect_student_eligible(self):
+        """Perfect student (all A+) should qualify for PISMP courses."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
+                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+', 'BIO': 'A+',
+            },
+            'gender': 'male',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['eligible_courses']
+        pismp = [c for c in courses if c['source_type'] == 'pismp']
+        self.assertGreater(len(pismp), 0, "Perfect student should qualify for PISMP courses")
+
+    def test_pismp_weak_student_excluded(self):
+        """Student with no A grades should NOT qualify for any PISMP courses."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'BM': 'C', 'BI': 'C', 'SEJ': 'C', 'MAT': 'C',
+                'SN': 'C',
+            },
+            'gender': 'male',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['eligible_courses']
+        pismp = [c for c in courses if c['source_type'] == 'pismp']
+        self.assertEqual(len(pismp), 0, "Student with only C grades should not qualify for PISMP")
+
+    def test_pismp_borderline_student(self):
+        """Student with exactly 5 A- grades should qualify for generic PISMP (5 Cemerlang)."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'BM': 'A-', 'BI': 'A-', 'SEJ': 'A-', 'MAT': 'A-',
+                'SN': 'A-', 'PHY': 'C', 'CHE': 'C',
+            },
+            'gender': 'male',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['eligible_courses']
+        pismp = [c for c in courses if c['source_type'] == 'pismp']
+        self.assertGreater(len(pismp), 0, "Student with 5 A- should qualify for generic PISMP")
+
+    def test_pismp_four_a_excluded(self):
+        """Student with only 4 A grades should NOT qualify for PISMP (need 5 Cemerlang)."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'BM': 'A', 'BI': 'A', 'SEJ': 'A', 'MAT': 'A',
+                'SN': 'C', 'PHY': 'C', 'CHE': 'C',
+            },
+            'gender': 'male',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['eligible_courses']
+        pismp = [c for c in courses if c['source_type'] == 'pismp']
+        self.assertEqual(len(pismp), 0, "Student with only 4 A grades should not qualify for PISMP")
+
+    def test_pismp_malaysian_only(self):
+        """Non-Malaysian should NOT qualify for PISMP (req_malaysian=1)."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
+                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+',
+            },
+            'gender': 'male',
+            'nationality': 'Bukan Warganegara',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['eligible_courses']
+        pismp = [c for c in courses if c['source_type'] == 'pismp']
+        self.assertEqual(len(pismp), 0, "Non-Malaysian should not qualify for PISMP")
+
+    def test_pismp_in_stats(self):
+        """Stats should include 'pismp' count for eligible perfect student."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
+                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+', 'BIO': 'A+',
+            },
+            'gender': 'male',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        stats = response.json()['stats']
+        self.assertIn('pismp', stats)
+        self.assertGreater(stats['pismp'], 0)
+
+    def test_pismp_no_merit_label(self):
+        """PISMP courses should have no merit_label (no cutoff data, like TVET)."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
+                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+',
+            },
+            'gender': 'male',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['eligible_courses']
+        pismp = [c for c in courses if c['source_type'] == 'pismp']
+        self.assertGreater(len(pismp), 0)
+        for course in pismp:
+            self.assertIsNone(course['merit_label'], f"PISMP {course['course_id']} should have no merit label")
+            self.assertIsNone(course['merit_color'])
+
+    def test_pismp_subject_specific_requirement(self):
+        """PISMP Matematik requires A in MATH+ADDMATH. Student without ADDMATH should not qualify."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
+                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+',
+                # No AMT (Add Math) — Matematik PISMP requires A in MATH + ADDMATH
+            },
+            'gender': 'male',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['eligible_courses']
+        # Check Matematik Pendidikan Rendah courses (require A in MATH + ADDMATH)
+        math_pismp = [c for c in courses if c['source_type'] == 'pismp' and 'Matematik' in c.get('course_name', '')]
+        for course in math_pismp:
+            # This student doesn't have ADDMATH, so shouldn't qualify for Matematik PISMP
+            # that requires A in 2 of [MATH, ADDMATH]
+            self.fail(f"Student without ADDMATH should not qualify for {course['course_name']}")
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls')

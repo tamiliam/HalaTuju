@@ -191,7 +191,7 @@ export default function DashboardPage() {
 
           {/* Stats */}
           {eligibilityData && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6 pt-6 border-t">
               <StatCard
                 number={eligibilityData.eligible_courses.length}
                 label="Total Eligible"
@@ -207,6 +207,10 @@ export default function DashboardPage() {
               <StatCard
                 number={eligibilityData.stats.ua || 0}
                 label="University"
+              />
+              <StatCard
+                number={eligibilityData.stats.pismp || 0}
+                label="Teacher Training"
               />
             </div>
           )}
@@ -472,6 +476,7 @@ function FilterDropdown({
       <option value="poly">Polytechnic</option>
       <option value="tvet">TVET</option>
       <option value="ua">University</option>
+      <option value="pismp">Teacher Training</option>
     </select>
   )
 }

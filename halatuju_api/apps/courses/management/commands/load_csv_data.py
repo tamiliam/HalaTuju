@@ -95,6 +95,7 @@ class Command(BaseCommand):
             ('requirements.csv', 'poly'),
             ('tvet_requirements.csv', 'tvet'),
             ('university_requirements.csv', 'ua'),
+            ('pismp_requirements.csv', 'pismp'),
         ]
 
         total = 0

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-02-18 — Sprint 7: PISMP Integration
+
+### Added
+- **73 PISMP (teacher training) courses** integrated into eligibility engine — new `source_type: 'pismp'`
+- **PISMP data file** (`data/pismp_requirements.csv`) — cleaned and formatted from draft
+- **"Teacher Training" filter** in dashboard dropdown and stat card
+- **Amber badge styling** for PISMP courses (`bg-amber-100 text-amber-700`)
+- 8 new backend tests: eligibility, exclusion, borderline, subject-specific, Malaysian-only, stats, merit labels, subject requirements
+- Django migration `0003_add_pismp_source_type`
+
+### Fixed
+- **Empty subjects bug** in `check_subject_group_logic`: rules with `subjects: []` (meaning "any N subjects at grade X") were silently skipped. Now counts from all student grades. Critical for PISMP's "5 Cemerlang from any subjects" requirement.
+- **NaN guard** in `check_subject_group_logic` and `check_complex_requirements`: non-string input (NaN from DataFrame concat) no longer crashes the engine
+
+### Technical Notes
+- Golden master unchanged at 8280 (PISMP data is additive, no existing courses affected)
+- PISMP courses have no `merit_cutoff` — merit labels are `null` (same as TVET)
+- `age_limit` field in PISMP data not implemented (not in student profile) — documented as future enhancement
+
 ## [1.7.0] - 2026-02-17 — Sprint 6: Dashboard Redesign (Card Grid)
 
 ### Added
