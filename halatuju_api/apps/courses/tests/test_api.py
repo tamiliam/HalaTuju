@@ -467,6 +467,102 @@ class TestCourseEndpoints(TestCase):
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls')
+class TestCourseDetailOfferings(TestCase):
+    """Test course detail endpoint returns offering details (fees, hyperlinks, badges)."""
+
+    def setUp(self):
+        self.client = APIClient()
+        from apps.courses.models import Course, Institution, CourseInstitution
+        # Create test course
+        self.course = Course.objects.create(
+            course_id='TEST-DIP-001',
+            course='Test Diploma in Engineering',
+            level='Diploma',
+            department='Engineering',
+            field='Mechanical Engineering',
+            semesters=6,
+        )
+        # Create test institution
+        self.inst = Institution.objects.create(
+            institution_id='TEST-INST-001',
+            institution_name='Test Polytechnic',
+            acronym='TPoly',
+            type='Politeknik',
+            category='Public',
+            state='Selangor',
+        )
+        # Create offering with full details
+        self.offering = CourseInstitution.objects.create(
+            course=self.course,
+            institution=self.inst,
+            hyperlink='https://example.com/apply',
+            tuition_fee_semester='RM 200 / semester',
+            hostel_fee_semester='RM 60 / semester',
+            registration_fee='RM 50',
+            monthly_allowance=100.00,
+            practical_allowance=300.00,
+            free_hostel=True,
+            free_meals=True,
+        )
+
+    def test_course_detail_returns_offering_fees(self):
+        """Course detail should include tuition, hostel, and registration fees."""
+        response = self.client.get(f'/api/v1/courses/{self.course.course_id}/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        inst = data['institutions'][0]
+        self.assertEqual(inst['tuition_fee_semester'], 'RM 200 / semester')
+        self.assertEqual(inst['hostel_fee_semester'], 'RM 60 / semester')
+        self.assertEqual(inst['registration_fee'], 'RM 50')
+
+    def test_course_detail_returns_hyperlink(self):
+        """Course detail should include the application hyperlink."""
+        response = self.client.get(f'/api/v1/courses/{self.course.course_id}/')
+        data = response.json()
+        inst = data['institutions'][0]
+        self.assertEqual(inst['hyperlink'], 'https://example.com/apply')
+
+    def test_course_detail_returns_allowances(self):
+        """Course detail should include monthly and practical allowances."""
+        response = self.client.get(f'/api/v1/courses/{self.course.course_id}/')
+        data = response.json()
+        inst = data['institutions'][0]
+        self.assertEqual(inst['monthly_allowance'], 100.0)
+        self.assertEqual(inst['practical_allowance'], 300.0)
+
+    def test_course_detail_returns_free_badges(self):
+        """Course detail should include free_hostel and free_meals flags."""
+        response = self.client.get(f'/api/v1/courses/{self.course.course_id}/')
+        data = response.json()
+        inst = data['institutions'][0]
+        self.assertTrue(inst['free_hostel'])
+        self.assertTrue(inst['free_meals'])
+
+    def test_course_detail_handles_empty_offering_fields(self):
+        """Offering with no fee data should return empty strings and nulls."""
+        from apps.courses.models import Course, Institution, CourseInstitution
+        course2 = Course.objects.create(
+            course_id='TEST-DIP-002', course='Test Diploma 2',
+            level='Diploma', department='IT', field='IT',
+        )
+        inst2 = Institution.objects.create(
+            institution_id='TEST-INST-002',
+            institution_name='Test College',
+            type='College', category='Private', state='Johor',
+        )
+        CourseInstitution.objects.create(course=course2, institution=inst2)
+
+        response = self.client.get(f'/api/v1/courses/{course2.course_id}/')
+        data = response.json()
+        inst = data['institutions'][0]
+        self.assertEqual(inst['hyperlink'], '')
+        self.assertEqual(inst['tuition_fee_semester'], '')
+        self.assertIsNone(inst['monthly_allowance'])
+        self.assertFalse(inst['free_hostel'])
+        self.assertFalse(inst['free_meals'])
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls')
 class TestInstitutionEndpoints(TestCase):
     """Test institution endpoints."""
 

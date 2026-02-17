@@ -26,7 +26,7 @@
 | 5 | Quiz Frontend | DONE (2026-02-17) | +0 | Yes |
 | 6 | Dashboard Redesign (Card Grid) | DONE (2026-02-17) | +2 | Yes |
 | 7 | PISMP Integration | DONE (2026-02-18) | +8 | Yes |
-| 8 | Course Detail Enhancement | NOT STARTED | +5 | Yes |
+| 8 | Course Detail Enhancement | DONE (2026-02-18) | +5 | Yes |
 | 9 | Data Gap Filling | NOT STARTED | +3 | Yes |
 | 10 | Deterministic Insights | NOT STARTED | +6 | Yes |
 | 11 | AI Report Backend | NOT STARTED | +5 | No |

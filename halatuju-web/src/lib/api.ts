@@ -75,6 +75,15 @@ export interface Institution {
   type: string
   category: string
   state: string
+  // Per-offering details (from CourseInstitution)
+  hyperlink?: string
+  tuition_fee_semester?: string
+  hostel_fee_semester?: string
+  registration_fee?: string
+  monthly_allowance?: number | null
+  practical_allowance?: number | null
+  free_hostel?: boolean
+  free_meals?: boolean
 }
 
 // API Functions

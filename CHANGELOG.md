@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-02-18 — Sprint 8: Course Detail Enhancement
+
+### Added
+- **Course offering details** in `/course/[id]` API response — tuition fees, hostel fees, registration fee, monthly/practical allowances, free hostel/meals flags, application hyperlink
+- **"Apply" button** on institution cards linking to official application portals (407 courses with hyperlinks)
+- **Fee display** on institution cards — tuition, hostel, and registration fees in a clean grid layout
+- **Benefit badges** — "Free Hostel", "Free Meals", and "RM{amount}/month" allowance badges on institution cards
+- **`load_course_details`** management command method — loads `details.csv` to enrich CourseInstitution rows (TVET: per-institution, Poly/Univ: per-course)
+- 5 new backend tests: offering fees, hyperlink, allowances, free badges, empty field handling
+
+### Technical Notes
+- No schema migration needed — CourseInstitution model already had fee fields from initial setup
+- `details.csv` (407 rows): TVET rows have institution_id (per-institution fees), Poly/Univ rows don't (shared fees across all institutions)
+- Golden master unchanged at 8280 (no engine changes)
+
 ## [1.8.0] - 2026-02-18 — Sprint 7: PISMP Integration
 
 ### Added

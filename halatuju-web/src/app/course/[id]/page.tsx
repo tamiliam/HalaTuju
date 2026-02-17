@@ -278,6 +278,9 @@ function InstitutionCard({ institution }: { institution: Institution }) {
     'Sarawak': 'bg-pink-50',
   }
 
+  const hasFees = institution.tuition_fee_semester || institution.registration_fee
+  const hasAllowance = institution.monthly_allowance && institution.monthly_allowance > 0
+
   return (
     <div
       className={`rounded-lg border border-gray-200 p-4 ${
@@ -290,10 +293,10 @@ function InstitutionCard({ institution }: { institution: Institution }) {
             {institution.institution_name}
           </h3>
           <p className="text-sm text-gray-500 mb-2">
-            {institution.acronym && `(${institution.acronym}) • `}
+            {institution.acronym && `(${institution.acronym}) · `}
             {institution.type}
           </p>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
             <svg
               className="w-4 h-4"
               fill="none"
@@ -315,16 +318,72 @@ function InstitutionCard({ institution }: { institution: Institution }) {
             </svg>
             {institution.state}
           </div>
+
+          {/* Fee details */}
+          {hasFees && (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mb-3">
+              {institution.tuition_fee_semester && (
+                <>
+                  <span className="text-gray-500">Tuition</span>
+                  <span className="text-gray-900">{institution.tuition_fee_semester}</span>
+                </>
+              )}
+              {institution.hostel_fee_semester && (
+                <>
+                  <span className="text-gray-500">Hostel</span>
+                  <span className="text-gray-900">{institution.hostel_fee_semester}</span>
+                </>
+              )}
+              {institution.registration_fee && (
+                <>
+                  <span className="text-gray-500">Registration</span>
+                  <span className="text-gray-900">{institution.registration_fee}</span>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Allowance + badges */}
+          <div className="flex flex-wrap items-center gap-2">
+            {hasAllowance && (
+              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
+                RM{institution.monthly_allowance}/month
+              </span>
+            )}
+            {institution.free_hostel && (
+              <span className="px-2 py-0.5 bg-sky-100 text-sky-700 rounded text-xs font-medium">
+                Free Hostel
+              </span>
+            )}
+            {institution.free_meals && (
+              <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">
+                Free Meals
+              </span>
+            )}
+          </div>
         </div>
-        <span
-          className={`px-2 py-1 rounded text-xs font-medium ${
-            institution.category === 'Public'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-blue-100 text-blue-700'
-          }`}
-        >
-          {institution.category}
-        </span>
+
+        <div className="flex flex-col items-end gap-2">
+          <span
+            className={`px-2 py-1 rounded text-xs font-medium ${
+              institution.category === 'Public'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-blue-100 text-blue-700'
+            }`}
+          >
+            {institution.category}
+          </span>
+          {institution.hyperlink && (
+            <a
+              href={institution.hyperlink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 bg-primary-500 text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors"
+            >
+              Apply
+            </a>
+          )}
+        </div>
       </div>
     </div>
   )

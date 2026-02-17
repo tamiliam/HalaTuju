@@ -326,16 +326,26 @@ class CourseDetailView(APIView):
             course = Course.objects.get(course_id=course_id)
             course_data = CourseSerializer(course).data
 
-            # Get institutions offering this course
+            # Get institutions offering this course, with per-offering details
             links = CourseInstitution.objects.filter(
                 course_id=course_id
             ).select_related('institution')
 
-            institutions = [
-                InstitutionSerializer(link.institution).data
-                for link in links
-                if link.institution
-            ]
+            institutions = []
+            for link in links:
+                if not link.institution:
+                    continue
+                inst_data = InstitutionSerializer(link.institution).data
+                # Add per-offering details from CourseInstitution
+                inst_data['hyperlink'] = link.hyperlink or ''
+                inst_data['tuition_fee_semester'] = link.tuition_fee_semester or ''
+                inst_data['hostel_fee_semester'] = link.hostel_fee_semester or ''
+                inst_data['registration_fee'] = link.registration_fee or ''
+                inst_data['monthly_allowance'] = float(link.monthly_allowance) if link.monthly_allowance else None
+                inst_data['practical_allowance'] = float(link.practical_allowance) if link.practical_allowance else None
+                inst_data['free_hostel'] = link.free_hostel
+                inst_data['free_meals'] = link.free_meals
+                institutions.append(inst_data)
 
             return Response({
                 'course': course_data,

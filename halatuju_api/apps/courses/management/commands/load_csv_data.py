@@ -41,6 +41,7 @@ class Command(BaseCommand):
             self.load_requirements(data_dir)
             self.load_institutions(data_dir)
             self.load_course_institutions(data_dir)
+            self.load_course_details(data_dir)
             self.load_course_tags(data_dir)
 
         self.stdout.write(self.style.SUCCESS('Data loaded successfully!'))
@@ -252,6 +253,65 @@ class Command(BaseCommand):
             count += 1
 
         self.stdout.write(f'  Loaded {count} course-institution links')
+
+    def load_course_details(self, data_dir):
+        """Load details.csv to enrich CourseInstitution with fees/allowances/hyperlinks.
+
+        Data structure:
+        - TVET rows have institution_id → update specific CourseInstitution
+        - Poly/Univ rows have no institution_id → update ALL CourseInstitution rows for that course
+        """
+        csv_path = os.path.join(data_dir, 'details.csv')
+        if not os.path.exists(csv_path):
+            self.stdout.write('  Skipping details.csv (not found)')
+            return
+
+        df = pd.read_csv(csv_path, dtype=str)
+        df = df.fillna('')
+
+        count = 0
+        for _, row in df.iterrows():
+            course_id = row.get('course_id')
+            if not course_id:
+                continue
+
+            inst_id = row.get('institution_id', '').strip()
+
+            defaults = {
+                'hyperlink': row.get('hyperlink', ''),
+                'tuition_fee_semester': row.get('tuition_fee_semester', ''),
+                'hostel_fee_semester': row.get('hostel_fee_semester', ''),
+                'registration_fee': row.get('registration_fee', ''),
+                'free_hostel': row.get('free_hostel', '') in ('1', 'true', 'True'),
+                'free_meals': row.get('free_meals', '') in ('1', 'true', 'True'),
+            }
+
+            # Decimal fields
+            for field in ['monthly_allowance', 'practical_allowance']:
+                val = row.get(field, '').strip()
+                if val and val != '0':
+                    # Strip "RM" prefix and parse
+                    cleaned = val.replace('RM', '').replace(',', '').strip()
+                    try:
+                        defaults[field] = float(cleaned)
+                    except (ValueError, TypeError):
+                        pass
+
+            if inst_id:
+                # TVET: update specific course+institution pair
+                updated = CourseInstitution.objects.filter(
+                    course__course_id=course_id,
+                    institution__institution_id=inst_id,
+                ).update(**defaults)
+                count += updated
+            else:
+                # Poly/Univ: update ALL institutions for this course
+                updated = CourseInstitution.objects.filter(
+                    course__course_id=course_id,
+                ).update(**defaults)
+                count += updated
+
+        self.stdout.write(f'  Enriched {count} course-institution rows from details.csv')
 
     def load_course_tags(self, data_dir):
         """Load course_tags.json into CourseTag model."""
