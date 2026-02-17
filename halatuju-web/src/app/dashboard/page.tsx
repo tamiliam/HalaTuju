@@ -10,30 +10,11 @@ import {
   unsaveCourse,
   getRankedResults,
   type StudentProfile,
-  type EligibleCourse,
   type RankedCourse,
   type RankingResult,
 } from '@/lib/api'
 import { getSession } from '@/lib/supabase'
-
-const SUPABASE_STORAGE = 'https://pbrrlyoyyiftckqvzvvo.supabase.co/storage/v1/object/public/field-images'
-
-const FIELD_IMAGE_SLUGS: Record<string, string> = {
-  'Mekanikal & Automotif': 'mekanikal-automotif',
-  'Perniagaan & Perdagangan': 'perniagaan-perdagangan',
-  'Elektrik & Elektronik': 'elektrik-elektronik',
-  'Pertanian & Bio-Industri': 'pertanian-bio-industri',
-  'Sivil, Seni Bina & Pembinaan': 'sivil-senibina-pembinaan',
-  'Hospitaliti, Kulinari & Pelancongan': 'hospitaliti-kulinari-pelancongan',
-  'Komputer, IT & Multimedia': 'komputer-it-multimedia',
-  'Aero, Marin, Minyak & Gas': 'aero-marin-minyakgas',
-  'Seni Reka & Kreatif': 'senireka-kreatif',
-}
-
-function getFieldImageUrl(field: string): string | null {
-  const slug = FIELD_IMAGE_SLUGS[field]
-  return slug ? `${SUPABASE_STORAGE}/${slug}.png` : null
-}
+import CourseCard from '@/components/CourseCard'
 
 export default function DashboardPage() {
   const [profile, setProfile] = useState<StudentProfile | null>(null)
@@ -325,22 +306,10 @@ export default function DashboardPage() {
                 <h2 className="text-lg font-semibold text-gray-900">
                   Eligible Courses ({filteredCourses.length})
                 </h2>
-                <select
-                  className="input w-auto"
-                  value={filter}
-                  onChange={(e) => {
-                    setFilter(e.target.value)
-                    setDisplayCount(20)
-                  }}
-                >
-                  <option value="all">All Types</option>
-                  <option value="poly">Polytechnic</option>
-                  <option value="tvet">TVET</option>
-                  <option value="ua">University</option>
-                </select>
+                <FilterDropdown filter={filter} setFilter={setFilter} setDisplayCount={setDisplayCount} />
               </div>
 
-              <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {displayedCourses.map((course) => (
                   <CourseCard
                     key={course.course_id}
@@ -403,19 +372,7 @@ function RankedResults({
         <h2 className="text-lg font-semibold text-gray-900">
           Ranked Courses ({rankingData.total_ranked})
         </h2>
-        <select
-          className="input w-auto"
-          value={filter}
-          onChange={(e) => {
-            setFilter(e.target.value)
-            setDisplayCount(20)
-          }}
-        >
-          <option value="all">All Types</option>
-          <option value="poly">Polytechnic</option>
-          <option value="tvet">TVET</option>
-          <option value="ua">University</option>
-        </select>
+        <FilterDropdown filter={filter} setFilter={setFilter} setDisplayCount={setDisplayCount} />
       </div>
 
       {/* Top 5 */}
@@ -424,9 +381,9 @@ function RankedResults({
           <h3 className="text-sm font-semibold text-primary-600 uppercase tracking-wide mb-3">
             Top Matches
           </h3>
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTop5.map((course, idx) => (
-              <RankedCourseCard
+              <CourseCard
                 key={course.course_id}
                 course={course}
                 rank={idx + 1}
@@ -444,7 +401,7 @@ function RankedResults({
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
             Other Eligible Courses
           </h3>
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {displayedRest.map((course) => (
               <CourseCard
                 key={course.course_id}
@@ -471,7 +428,7 @@ function RankedResults({
   )
 }
 
-// --- Components ---
+// --- Small Components ---
 
 function LoadingScreen() {
   return (
@@ -493,271 +450,28 @@ function StatCard({ number, label }: { number: number; label: string }) {
   )
 }
 
-function RankedCourseCard({
-  course,
-  rank,
-  isSaved,
-  onToggleSave,
+function FilterDropdown({
+  filter,
+  setFilter,
+  setDisplayCount,
 }: {
-  course: RankedCourse
-  rank: number
-  isSaved: boolean
-  onToggleSave?: (courseId: string) => void
+  filter: string
+  setFilter: (f: string) => void
+  setDisplayCount: (n: number) => void
 }) {
-  const typeLabels: Record<string, string> = {
-    poly: 'Polytechnic',
-    tvet: 'TVET',
-    ua: 'University',
-  }
-
-  const typeColors: Record<string, string> = {
-    poly: 'bg-blue-100 text-blue-700',
-    tvet: 'bg-green-100 text-green-700',
-    ua: 'bg-purple-100 text-purple-700',
-  }
-
-  const levelColors: Record<string, string> = {
-    'Diploma': 'bg-blue-50 text-blue-600',
-    'Sijil': 'bg-green-50 text-green-600',
-    'Sarjana Muda': 'bg-purple-50 text-purple-600',
-    'Asasi': 'bg-orange-50 text-orange-600',
-  }
-
-  const imageUrl = getFieldImageUrl(course.field)
-
   return (
-    <div className="bg-white rounded-xl border-2 border-primary-100 hover:border-primary-300 hover:shadow-sm transition-all overflow-hidden">
-      <div className="flex">
-        {/* Rank badge */}
-        <div className="flex items-center justify-center w-12 bg-primary-50 flex-shrink-0">
-          <span className="text-lg font-bold text-primary-600">#{rank}</span>
-        </div>
-
-        {/* Field image thumbnail */}
-        {imageUrl && (
-          <div className="hidden sm:block w-28 md:w-36 flex-shrink-0 relative">
-            <img
-              src={imageUrl}
-              alt={course.field}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          </div>
-        )}
-
-        {/* Course details */}
-        <Link href={`/course/${course.course_id}`} className="flex-1 p-5">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span
-              className={`px-2 py-1 rounded text-xs font-medium ${
-                typeColors[course.source_type] || 'bg-gray-100 text-gray-700'
-              }`}
-            >
-              {typeLabels[course.source_type] || course.source_type}
-            </span>
-            {course.level && (
-              <span
-                className={`px-2 py-1 rounded text-xs font-medium ${
-                  levelColors[course.level] || 'bg-gray-50 text-gray-600'
-                }`}
-              >
-                {course.level}
-              </span>
-            )}
-            {course.merit_cutoff && (
-              <span className="text-xs text-gray-500">
-                Merit: {course.merit_cutoff}
-              </span>
-            )}
-          </div>
-          <h3 className="text-base font-semibold text-gray-900 mb-1">
-            {course.course_name || course.course_id}
-          </h3>
-          <p className="text-gray-500 text-sm mb-2">
-            {course.field || 'View course details'}
-          </p>
-
-          {/* Fit reasons */}
-          {course.fit_reasons && course.fit_reasons.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {course.fit_reasons.slice(0, 3).map((reason, i) => (
-                <span
-                  key={i}
-                  className="inline-block px-2 py-0.5 bg-primary-50 text-primary-700 text-xs rounded-full"
-                >
-                  {reason}
-                </span>
-              ))}
-            </div>
-          )}
-        </Link>
-
-        {/* Save button + Arrow */}
-        <div className="flex items-center gap-2 pr-4">
-          {onToggleSave && (
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                onToggleSave(course.course_id)
-              }}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-              aria-label={isSaved ? 'Remove from saved' : 'Save course'}
-            >
-              <svg
-                className={`w-5 h-5 ${isSaved ? 'text-primary-500 fill-primary-500' : 'text-gray-400'}`}
-                viewBox="0 0 24 24"
-                fill={isSaved ? 'currentColor' : 'none'}
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
-                />
-              </svg>
-            </button>
-          )}
-          <Link href={`/course/${course.course_id}`} className="text-gray-400">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </Link>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function CourseCard({
-  course,
-  isSaved,
-  onToggleSave,
-}: {
-  course: EligibleCourse
-  isSaved: boolean
-  onToggleSave?: (courseId: string) => void
-}) {
-  const typeLabels: Record<string, string> = {
-    poly: 'Polytechnic',
-    tvet: 'TVET',
-    ua: 'University',
-  }
-
-  const typeColors: Record<string, string> = {
-    poly: 'bg-blue-100 text-blue-700',
-    tvet: 'bg-green-100 text-green-700',
-    ua: 'bg-purple-100 text-purple-700',
-  }
-
-  const levelColors: Record<string, string> = {
-    'Diploma': 'bg-blue-50 text-blue-600',
-    'Sijil': 'bg-green-50 text-green-600',
-    'Sarjana Muda': 'bg-purple-50 text-purple-600',
-    'Asasi': 'bg-orange-50 text-orange-600',
-  }
-
-  const imageUrl = getFieldImageUrl(course.field)
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 hover:border-primary-300 hover:shadow-sm transition-all overflow-hidden">
-      <div className="flex">
-        {/* Field image thumbnail */}
-        {imageUrl && (
-          <div className="hidden sm:block w-28 md:w-36 flex-shrink-0 relative">
-            <img
-              src={imageUrl}
-              alt={course.field}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          </div>
-        )}
-
-        {/* Course details — clickable link */}
-        <Link href={`/course/${course.course_id}`} className="flex-1 p-5">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span
-              className={`px-2 py-1 rounded text-xs font-medium ${
-                typeColors[course.source_type] || 'bg-gray-100 text-gray-700'
-              }`}
-            >
-              {typeLabels[course.source_type] || course.source_type}
-            </span>
-            {course.level && (
-              <span
-                className={`px-2 py-1 rounded text-xs font-medium ${
-                  levelColors[course.level] || 'bg-gray-50 text-gray-600'
-                }`}
-              >
-                {course.level}
-              </span>
-            )}
-            {course.merit_cutoff && (
-              <span className="text-xs text-gray-500">
-                Merit: {course.merit_cutoff}
-              </span>
-            )}
-          </div>
-          <h3 className="text-base font-semibold text-gray-900 mb-1">
-            {course.course_name || course.course_id}
-          </h3>
-          <p className="text-gray-500 text-sm">
-            {course.field || 'View course details'}
-          </p>
-        </Link>
-
-        {/* Save button + Arrow */}
-        <div className="flex items-center gap-2 pr-4">
-          {onToggleSave && (
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                onToggleSave(course.course_id)
-              }}
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-              aria-label={isSaved ? 'Remove from saved' : 'Save course'}
-            >
-              <svg
-                className={`w-5 h-5 ${isSaved ? 'text-primary-500 fill-primary-500' : 'text-gray-400'}`}
-                viewBox="0 0 24 24"
-                fill={isSaved ? 'currentColor' : 'none'}
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
-                />
-              </svg>
-            </button>
-          )}
-          <Link href={`/course/${course.course_id}`} className="text-gray-400">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </Link>
-        </div>
-      </div>
-    </div>
+    <select
+      className="input w-auto"
+      value={filter}
+      onChange={(e) => {
+        setFilter(e.target.value)
+        setDisplayCount(20)
+      }}
+    >
+      <option value="all">All Types</option>
+      <option value="poly">Polytechnic</option>
+      <option value="tvet">TVET</option>
+      <option value="ua">University</option>
+    </select>
   )
 }

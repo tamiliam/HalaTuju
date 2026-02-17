@@ -254,6 +254,64 @@ class TestEligibilityEndpoint(TestCase):
             colorblind_response.json()['total_count']
         )
 
+    def test_eligibility_merit_labels_present(self):
+        """Each eligible course should include merit traffic light fields."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
+                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+'
+            },
+            'gender': 'male',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['eligible_courses']
+        self.assertGreater(len(courses), 0)
+
+        for course in courses:
+            # All courses must have the merit fields
+            self.assertIn('student_merit', course)
+            self.assertIn('merit_label', course)
+            self.assertIn('merit_color', course)
+            self.assertIsInstance(course['student_merit'], (int, float))
+
+            if course['source_type'] == 'tvet':
+                # TVET has no merit data
+                self.assertIsNone(course['merit_label'])
+                self.assertIsNone(course['merit_color'])
+            elif course['merit_cutoff']:
+                # Poly/UA with cutoff should have a label
+                self.assertIn(course['merit_label'], ['High', 'Fair', 'Low'])
+                self.assertIsNotNone(course['merit_color'])
+
+    def test_eligibility_merit_high_for_perfect_student(self):
+        """Perfect student (all A+) should get 'High' merit for all poly courses with cutoffs."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
+                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+', 'BIO': 'A+',
+                'AMT': 'A+',
+            },
+            'gender': 'male',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['eligible_courses']
+
+        poly_with_cutoff = [
+            c for c in courses
+            if c['source_type'] == 'poly' and c['merit_cutoff']
+        ]
+        # Perfect student should have poly courses with cutoffs
+        self.assertGreater(len(poly_with_cutoff), 0)
+
+        for course in poly_with_cutoff:
+            self.assertEqual(
+                course['merit_label'], 'High',
+                f"Perfect student should get 'High' for {course['course_id']} "
+                f"(cutoff={course['merit_cutoff']}, merit={course['student_merit']})"
+            )
+
 
 @override_settings(ROOT_URLCONF='halatuju.urls')
 class TestCourseEndpoints(TestCase):

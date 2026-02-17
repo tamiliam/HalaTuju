@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-02-17 — Sprint 6: Dashboard Redesign (Card Grid)
+
+### Added
+- **Merit traffic lights** on course cards: Green (High Chance), amber (Fair Chance), red (Low Chance) indicators based on student merit vs course cutoff
+- **Student merit calculation** in eligibility endpoint: Computes merit score from SPM grades using UPU-style formula, returns `merit_label`, `merit_color`, `student_merit` per course
+- **CourseCard component** (`components/CourseCard.tsx`): Extracted reusable vertical card with field image header, merit indicator, rank badge, and fit reason tags
+- 2 new backend tests for merit labels in eligibility response
+
+### Changed
+- **Dashboard layout**: Responsive card grid (3 col desktop, 2 tablet, 1 mobile) replaces single-column list
+- **Card design**: Vertical layout with field image on top instead of horizontal flex
+- Low merit courses (`merit_label === 'Low'`) rendered with reduced opacity
+- TVET courses show no merit indicator (no cutoff data)
+- Dashboard reduced from ~764 to ~370 lines by extracting CourseCard and FilterDropdown
+
+### Fixed
+- **Ranking merit penalty** now works correctly: `student_merit` included in eligibility response flows through to ranking API (previously defaulted to 0)
+- Grade key mismatch: `prepare_merit_inputs` expects `'history'`, serializer produces `'hist'` — adapted in eligibility view
+
+### Technical Notes
+- Backend tests: 106 (+2) | Golden master: 8280 (unchanged)
+- New files: `src/components/CourseCard.tsx` | Modified: `views.py`, `test_api.py`, `api.ts`, `dashboard/page.tsx`
+- CoQ (co-curricular quality) score defaults to 5.0 — future enhancement to ask user
+
 ## [1.6.0] - 2026-02-17 — Sprint 5: Quiz Frontend
 
 ### Added

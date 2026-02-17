@@ -20,7 +20,13 @@ from rest_framework import status
 from django.apps import apps
 
 from .models import Course, Institution, StudentProfile, SavedCourse
-from .engine import StudentProfile as EngineStudentProfile, check_eligibility
+from .engine import (
+    StudentProfile as EngineStudentProfile,
+    check_eligibility,
+    prepare_merit_inputs,
+    calculate_merit_score,
+    check_merit_probability,
+)
 from .serializers import (
     CourseSerializer,
     InstitutionSerializer,
@@ -66,6 +72,14 @@ class EligibilityCheckView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         data = serializer.validated_data
+
+        # Compute student merit score once (for traffic light indicators)
+        grades_for_merit = dict(data.get('grades', {}))
+        if 'hist' in grades_for_merit:
+            grades_for_merit['history'] = grades_for_merit.pop('hist')
+        sec1, sec2, sec3 = prepare_merit_inputs(grades_for_merit)
+        merit_result = calculate_merit_score(sec1, sec2, sec3, coq_score=5.0)
+        student_merit = merit_result['final_merit']
 
         # Build StudentProfile for engine
         student = EngineStudentProfile(
@@ -117,6 +131,14 @@ class EligibilityCheckView(APIView):
                 course_level = course.level if course else ''
                 course_field = (course.frontend_label or course.field) if course else ''
 
+                # Compute merit traffic light for this course
+                merit_label = None
+                merit_color = None
+                if merit_cutoff and source_type != 'tvet':
+                    merit_label, merit_color = check_merit_probability(
+                        student_merit, merit_cutoff
+                    )
+
                 eligible_courses.append({
                     'course_id': course_id,
                     'course_name': course_name,
@@ -124,6 +146,9 @@ class EligibilityCheckView(APIView):
                     'field': course_field,
                     'source_type': source_type,
                     'merit_cutoff': merit_cutoff,
+                    'student_merit': student_merit,
+                    'merit_label': merit_label,
+                    'merit_color': merit_color,
                 })
 
                 # Update stats

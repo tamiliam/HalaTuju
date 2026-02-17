@@ -51,6 +51,9 @@ export interface EligibleCourse {
   field: string
   source_type: string
   merit_cutoff: number | null
+  student_merit: number | null
+  merit_label: string | null
+  merit_color: string | null
 }
 
 export interface Course {
