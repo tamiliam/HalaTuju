@@ -3,7 +3,17 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { checkEligibility, getSavedCourses, saveCourse, unsaveCourse, type StudentProfile, type EligibleCourse } from '@/lib/api'
+import {
+  checkEligibility,
+  getSavedCourses,
+  saveCourse,
+  unsaveCourse,
+  getRankedResults,
+  type StudentProfile,
+  type EligibleCourse,
+  type RankedCourse,
+  type RankingResult,
+} from '@/lib/api'
 import { getSession } from '@/lib/supabase'
 
 const SUPABASE_STORAGE = 'https://pbrrlyoyyiftckqvzvvo.supabase.co/storage/v1/object/public/field-images'
@@ -32,6 +42,7 @@ export default function DashboardPage() {
   const [displayCount, setDisplayCount] = useState(20)
   const [token, setToken] = useState<string | null>(null)
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
+  const [quizSignals, setQuizSignals] = useState<Record<string, Record<string, number>> | null>(null)
 
   // Load profile from localStorage + check auth session on mount
   useEffect(() => {
@@ -50,6 +61,13 @@ export default function DashboardPage() {
         disability: parsedProfile.disability || false,
       })
     }
+
+    // Check for quiz signals
+    const signals = localStorage.getItem('halatuju_quiz_signals')
+    if (signals) {
+      setQuizSignals(JSON.parse(signals))
+    }
+
     setIsLoading(false)
 
     // Check for Supabase session and load saved courses
@@ -105,6 +123,22 @@ export default function DashboardPage() {
     enabled: !!profile,
   })
 
+  // Query ranking when eligibility + quiz signals are both ready
+  const {
+    data: rankingData,
+    isLoading: rankingLoading,
+  } = useQuery({
+    queryKey: ['ranking', eligibilityData?.eligible_courses, quizSignals],
+    queryFn: () => getRankedResults(eligibilityData!.eligible_courses, quizSignals!),
+    enabled: !!eligibilityData && !!quizSignals,
+  })
+
+  const handleRetakeQuiz = () => {
+    localStorage.removeItem('halatuju_quiz_signals')
+    localStorage.removeItem('halatuju_signal_strength')
+    setQuizSignals(null)
+  }
+
   if (isLoading) {
     return <LoadingScreen />
   }
@@ -159,15 +193,19 @@ export default function DashboardPage() {
                 Your Course Recommendations
               </h1>
               <p className="text-gray-600">
-                Based on your SPM grades and profile, here are courses you qualify for.
+                {quizSignals
+                  ? 'Ranked by how well they match your interests and preferences.'
+                  : 'Based on your SPM grades and profile, here are courses you qualify for.'}
               </p>
             </div>
-            <Link
-              href="/onboarding/grades"
-              className="btn-secondary whitespace-nowrap"
-            >
-              Edit Profile
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                href="/onboarding/grades"
+                className="btn-secondary whitespace-nowrap"
+              >
+                Edit Profile
+              </Link>
+            </div>
           </div>
 
           {/* Stats */}
@@ -193,11 +231,57 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* Quiz CTA — show when no quiz taken yet */}
+        {eligibilityData && !quizSignals && (
+          <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl p-6 mb-8 text-white">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold mb-1">
+                  Get personalised rankings
+                </h2>
+                <p className="text-primary-100 text-sm">
+                  Answer 6 quick questions about your interests and preferences.
+                  We'll rank your {eligibilityData.eligible_courses.length} eligible courses
+                  to show the best matches first.
+                </p>
+              </div>
+              <Link
+                href="/quiz"
+                className="bg-white text-primary-600 px-6 py-3 rounded-lg font-medium hover:bg-primary-50 transition-colors whitespace-nowrap text-center"
+              >
+                Take Quiz
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Quiz completed banner */}
+        {quizSignals && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-8 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span className="text-green-800 text-sm font-medium">
+                Quiz completed — courses ranked by your preferences
+              </span>
+            </div>
+            <button
+              onClick={handleRetakeQuiz}
+              className="text-green-600 hover:text-green-800 text-sm underline"
+            >
+              Retake Quiz
+            </button>
+          </div>
+        )}
+
         {/* Loading State */}
-        {eligibilityLoading && (
+        {(eligibilityLoading || rankingLoading) && (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
-            <p className="text-gray-600">Checking your eligibility...</p>
+            <p className="text-gray-600">
+              {rankingLoading ? 'Ranking your courses...' : 'Checking your eligibility...'}
+            </p>
           </div>
         )}
 
@@ -216,8 +300,19 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Course List */}
-        {eligibilityData && (() => {
+        {/* Ranked Results — when quiz is completed */}
+        {rankingData && <RankedResults
+          rankingData={rankingData}
+          filter={filter}
+          setFilter={setFilter}
+          displayCount={displayCount}
+          setDisplayCount={setDisplayCount}
+          savedIds={savedIds}
+          onToggleSave={token ? handleToggleSave : undefined}
+        />}
+
+        {/* Flat Course List — when no quiz taken */}
+        {eligibilityData && !quizSignals && !eligibilityLoading && (() => {
           const filteredCourses = filter === 'all'
             ? eligibilityData.eligible_courses
             : eligibilityData.eligible_courses.filter(c => c.source_type === filter)
@@ -274,6 +369,110 @@ export default function DashboardPage() {
   )
 }
 
+// --- Ranked Results Section ---
+
+function RankedResults({
+  rankingData,
+  filter,
+  setFilter,
+  displayCount,
+  setDisplayCount,
+  savedIds,
+  onToggleSave,
+}: {
+  rankingData: RankingResult
+  filter: string
+  setFilter: (f: string) => void
+  displayCount: number
+  setDisplayCount: (n: number) => void
+  savedIds: Set<string>
+  onToggleSave?: (courseId: string) => void
+}) {
+  const filterCourses = (courses: RankedCourse[]) =>
+    filter === 'all' ? courses : courses.filter(c => c.source_type === filter)
+
+  const filteredTop5 = filterCourses(rankingData.top_5)
+  const filteredRest = filterCourses(rankingData.rest)
+  const displayedRest = filteredRest.slice(0, displayCount)
+  const remaining = filteredRest.length - displayCount
+
+  return (
+    <div className="space-y-8">
+      {/* Filter */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">
+          Ranked Courses ({rankingData.total_ranked})
+        </h2>
+        <select
+          className="input w-auto"
+          value={filter}
+          onChange={(e) => {
+            setFilter(e.target.value)
+            setDisplayCount(20)
+          }}
+        >
+          <option value="all">All Types</option>
+          <option value="poly">Polytechnic</option>
+          <option value="tvet">TVET</option>
+          <option value="ua">University</option>
+        </select>
+      </div>
+
+      {/* Top 5 */}
+      {filteredTop5.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-primary-600 uppercase tracking-wide mb-3">
+            Top Matches
+          </h3>
+          <div className="grid gap-4">
+            {filteredTop5.map((course, idx) => (
+              <RankedCourseCard
+                key={course.course_id}
+                course={course}
+                rank={idx + 1}
+                isSaved={savedIds.has(course.course_id)}
+                onToggleSave={onToggleSave}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Rest */}
+      {displayedRest.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            Other Eligible Courses
+          </h3>
+          <div className="grid gap-4">
+            {displayedRest.map((course) => (
+              <CourseCard
+                key={course.course_id}
+                course={course}
+                isSaved={savedIds.has(course.course_id)}
+                onToggleSave={onToggleSave}
+              />
+            ))}
+          </div>
+
+          {remaining > 0 && (
+            <div className="text-center py-4">
+              <button
+                className="btn-secondary"
+                onClick={() => setDisplayCount(displayCount + 20)}
+              >
+                Load More ({remaining} remaining)
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// --- Components ---
+
 function LoadingScreen() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary-50 to-white">
@@ -290,6 +489,151 @@ function StatCard({ number, label }: { number: number; label: string }) {
     <div className="text-center">
       <div className="text-3xl font-bold text-primary-500">{number}</div>
       <div className="text-sm text-gray-600">{label}</div>
+    </div>
+  )
+}
+
+function RankedCourseCard({
+  course,
+  rank,
+  isSaved,
+  onToggleSave,
+}: {
+  course: RankedCourse
+  rank: number
+  isSaved: boolean
+  onToggleSave?: (courseId: string) => void
+}) {
+  const typeLabels: Record<string, string> = {
+    poly: 'Polytechnic',
+    tvet: 'TVET',
+    ua: 'University',
+  }
+
+  const typeColors: Record<string, string> = {
+    poly: 'bg-blue-100 text-blue-700',
+    tvet: 'bg-green-100 text-green-700',
+    ua: 'bg-purple-100 text-purple-700',
+  }
+
+  const levelColors: Record<string, string> = {
+    'Diploma': 'bg-blue-50 text-blue-600',
+    'Sijil': 'bg-green-50 text-green-600',
+    'Sarjana Muda': 'bg-purple-50 text-purple-600',
+    'Asasi': 'bg-orange-50 text-orange-600',
+  }
+
+  const imageUrl = getFieldImageUrl(course.field)
+
+  return (
+    <div className="bg-white rounded-xl border-2 border-primary-100 hover:border-primary-300 hover:shadow-sm transition-all overflow-hidden">
+      <div className="flex">
+        {/* Rank badge */}
+        <div className="flex items-center justify-center w-12 bg-primary-50 flex-shrink-0">
+          <span className="text-lg font-bold text-primary-600">#{rank}</span>
+        </div>
+
+        {/* Field image thumbnail */}
+        {imageUrl && (
+          <div className="hidden sm:block w-28 md:w-36 flex-shrink-0 relative">
+            <img
+              src={imageUrl}
+              alt={course.field}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </div>
+        )}
+
+        {/* Course details */}
+        <Link href={`/course/${course.course_id}`} className="flex-1 p-5">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span
+              className={`px-2 py-1 rounded text-xs font-medium ${
+                typeColors[course.source_type] || 'bg-gray-100 text-gray-700'
+              }`}
+            >
+              {typeLabels[course.source_type] || course.source_type}
+            </span>
+            {course.level && (
+              <span
+                className={`px-2 py-1 rounded text-xs font-medium ${
+                  levelColors[course.level] || 'bg-gray-50 text-gray-600'
+                }`}
+              >
+                {course.level}
+              </span>
+            )}
+            {course.merit_cutoff && (
+              <span className="text-xs text-gray-500">
+                Merit: {course.merit_cutoff}
+              </span>
+            )}
+          </div>
+          <h3 className="text-base font-semibold text-gray-900 mb-1">
+            {course.course_name || course.course_id}
+          </h3>
+          <p className="text-gray-500 text-sm mb-2">
+            {course.field || 'View course details'}
+          </p>
+
+          {/* Fit reasons */}
+          {course.fit_reasons && course.fit_reasons.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {course.fit_reasons.slice(0, 3).map((reason, i) => (
+                <span
+                  key={i}
+                  className="inline-block px-2 py-0.5 bg-primary-50 text-primary-700 text-xs rounded-full"
+                >
+                  {reason}
+                </span>
+              ))}
+            </div>
+          )}
+        </Link>
+
+        {/* Save button + Arrow */}
+        <div className="flex items-center gap-2 pr-4">
+          {onToggleSave && (
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                onToggleSave(course.course_id)
+              }}
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              aria-label={isSaved ? 'Remove from saved' : 'Save course'}
+            >
+              <svg
+                className={`w-5 h-5 ${isSaved ? 'text-primary-500 fill-primary-500' : 'text-gray-400'}`}
+                viewBox="0 0 24 24"
+                fill={isSaved ? 'currentColor' : 'none'}
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
+                />
+              </svg>
+            </button>
+          )}
+          <Link href={`/course/${course.course_id}`} className="text-gray-400">
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

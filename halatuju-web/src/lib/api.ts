@@ -140,3 +140,68 @@ export async function updateProfile(
     ...options,
   })
 }
+
+// Quiz types
+export interface QuizQuestion {
+  id: string
+  prompt: string
+  options: { text: string; signals: Record<string, number> }[]
+}
+
+export interface QuizAnswer {
+  question_id: string
+  option_index: number
+}
+
+export interface QuizResult {
+  student_signals: Record<string, Record<string, number>>
+  signal_strength: Record<string, string>
+}
+
+// Ranked course extends EligibleCourse with fit data
+export interface RankedCourse extends EligibleCourse {
+  fit_score: number
+  fit_reasons: string[]
+  institution_id?: string
+}
+
+export interface RankingResult {
+  top_5: RankedCourse[]
+  rest: RankedCourse[]
+  total_ranked: number
+}
+
+// Quiz API functions
+export async function getQuizQuestions(
+  lang: string = 'en',
+  options?: ApiOptions
+): Promise<{ questions: QuizQuestion[]; total: number; lang: string }> {
+  return apiRequest(`/api/v1/quiz/questions/?lang=${lang}`, options)
+}
+
+export async function submitQuiz(
+  answers: QuizAnswer[],
+  lang: string = 'en',
+  options?: ApiOptions
+): Promise<QuizResult> {
+  return apiRequest('/api/v1/quiz/submit/', {
+    method: 'POST',
+    body: JSON.stringify({ answers, lang }),
+    ...options,
+  })
+}
+
+export async function getRankedResults(
+  eligibleCourses: EligibleCourse[],
+  studentSignals: Record<string, Record<string, number>>,
+  options?: ApiOptions
+): Promise<RankingResult> {
+  return apiRequest('/api/v1/ranking/', {
+    method: 'POST',
+    body: JSON.stringify({
+      eligible_courses: eligibleCourses,
+      student_signals: studentSignals,
+    }),
+    ...options,
+  })
+}

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-02-17 — Sprint 5: Quiz Frontend
+
+### Added
+- **Quiz page** (`/quiz`): Interactive 6-question quiz with step-by-step navigation, progress bar, and auto-advance on selection
+- **Quiz API integration** (`lib/api.ts`): `getQuizQuestions()`, `submitQuiz()`, `getRankedResults()` functions with TypeScript types
+- **Take Quiz CTA** on dashboard: Prominent gradient banner inviting users to personalise their rankings
+- **Ranked results view** on dashboard: Top 5 matches with rank badges and fit reason tags, plus "Other Eligible Courses" section
+- **Quiz state management**: Signals stored in localStorage; retake quiz option clears and resets
+- **Quiz completed banner**: Green confirmation with retake link when quiz has been completed
+
+### Changed
+- Dashboard dynamically switches between flat eligibility list (no quiz) and ranked results (after quiz)
+- Dashboard subtitle updates based on whether quiz has been taken
+
+### Technical Notes
+- Frontend-only sprint — no backend changes, no migrations
+- Backend tests: 104 (unchanged) | Golden master: 8280 (unchanged)
+- New files: `src/app/quiz/page.tsx` | Modified: `src/lib/api.ts`, `src/app/dashboard/page.tsx`
+- Quiz signals persisted in `halatuju_quiz_signals` localStorage key
+- Ranking query uses React Query with eligibility + signals as combined query key
+
 ## [1.5.0] - 2026-02-17 — Sprint 4: Ranking Engine Backend
 
 ### Added

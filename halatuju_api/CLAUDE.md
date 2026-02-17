@@ -175,12 +175,11 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 5 — Quiz Frontend**
-- Wire quiz UI to `GET /api/v1/quiz/questions/` and `POST /api/v1/quiz/submit/`
-- Wire ranking flow: eligibility results → quiz signals → `POST /api/v1/ranking/`
-- Display ranked results (top 5 + rest) with fit reasons
-- ~3 frontend tests
-- Deploy (frontend only)
+**Sprint 6 — Dashboard Redesign (Card Grid)**
+- Card grid layout with merit traffic lights (3 col desktop, 2 tablet, 1 mobile)
+- Quiz is optional with prominent "Take Quiz" button (already wired in Sprint 5)
+- Merit cutoff visual indicators (green/amber/filtered)
+- Card content varies by source type
 - Current tests: 104 | Golden master: 8280
 
 ## Streamlit App (Legacy — migrating to Django API)
