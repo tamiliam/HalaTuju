@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-02-18 — Sprint 12: Report Frontend + PDF
+
+### Added
+- **Report display page** (`/report/[id]`): Renders AI counsellor report as formatted markdown with `react-markdown` and Tailwind Typography prose styling
+- **PDF download**: "Download PDF" button using `window.print()` with `@media print` stylesheet (A4, clean layout, hidden nav)
+- **Generate Report CTA** on dashboard: Auth-protected button calls `POST /api/v1/reports/generate/`, redirects to report page on success
+- **Report API client functions** in `api.ts`: `generateReport()`, `getReport()`, `getReports()` with TypeScript types
+- 4 new view tests: report list (own reports only), report detail, cross-user 404 regression, validation
+
+### Fixed
+- **FK bug in report views**: `ReportDetailView` and `ReportListView` filtered by `student_id=request.user_id` (comparing integer PK with UUID string — would never match). Fixed to `student__supabase_user_id=request.user_id`
+
+### Dependencies
+- Added `react-markdown@10.1.0` for markdown rendering
+- Added `@tailwindcss/typography` for prose styling
+
 ## [1.12.0] - 2026-02-18 — Sprint 11: AI Report Backend
 
 ### Added

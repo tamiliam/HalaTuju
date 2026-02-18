@@ -10,6 +10,7 @@ import {
   saveCourse,
   unsaveCourse,
   getRankedResults,
+  generateReport,
   type StudentProfile,
   type RankedCourse,
   type RankingResult,
@@ -26,6 +27,8 @@ export default function DashboardPage() {
   const [token, setToken] = useState<string | null>(null)
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [quizSignals, setQuizSignals] = useState<Record<string, Record<string, number>> | null>(null)
+  const [reportLoading, setReportLoading] = useState(false)
+  const [reportError, setReportError] = useState<string | null>(null)
 
   // Load profile from localStorage + check auth session on mount
   useEffect(() => {
@@ -120,6 +123,24 @@ export default function DashboardPage() {
     localStorage.removeItem('halatuju_quiz_signals')
     localStorage.removeItem('halatuju_signal_strength')
     setQuizSignals(null)
+  }
+
+  const handleGenerateReport = async () => {
+    if (!token || !eligibilityData) return
+    setReportLoading(true)
+    setReportError(null)
+    try {
+      const result = await generateReport(
+        eligibilityData.eligible_courses,
+        eligibilityData.insights,
+        'bm',
+        { token }
+      )
+      window.location.href = `/report/${result.report_id}`
+    } catch {
+      setReportError('Failed to generate report. Please try again.')
+      setReportLoading(false)
+    }
   }
 
   if (isLoading) {
@@ -223,6 +244,35 @@ export default function DashboardPage() {
         {/* Insights Panel */}
         {eligibilityData?.insights && (
           <InsightsPanel insights={eligibilityData.insights} />
+        )}
+
+        {/* Generate Report CTA — show when logged in and eligibility loaded */}
+        {eligibilityData && token && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-1">
+                  AI Counsellor Report
+                </h2>
+                <p className="text-gray-600 text-sm">
+                  Get a personalised career guidance report from our AI counsellor,
+                  based on your grades and {eligibilityData.eligible_courses.length} eligible courses.
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <button
+                  onClick={handleGenerateReport}
+                  disabled={reportLoading}
+                  className="btn-primary whitespace-nowrap"
+                >
+                  {reportLoading ? 'Generating...' : 'Generate Report'}
+                </button>
+                {reportError && (
+                  <p className="text-red-500 text-sm">{reportError}</p>
+                )}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Quiz CTA — show when no quiz taken yet */}

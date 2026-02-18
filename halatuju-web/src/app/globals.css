@@ -74,3 +74,16 @@
     @apply grade-badge bg-gray-100 text-gray-700;
   }
 }
+
+/* Print styles for report PDF download */
+@media print {
+  body {
+    background: white !important;
+    font-size: 12pt;
+  }
+
+  @page {
+    margin: 2cm;
+    size: A4;
+  }
+}

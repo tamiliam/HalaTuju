@@ -111,7 +111,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (132 tests)
+# Run ALL tests (148 tests)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8280 baseline)
@@ -138,11 +138,12 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_data_loading.py | 5 | TVET metadata enrichment, PISMP metadata enrichment, institution modifiers storage |
 | test_insights.py | 8 | Insights engine: empty input, stream breakdown, labels, top fields, merit counts, level distribution, summary text |
 | test_report_engine.py | 12 | Report engine: format helpers (grades, signals, courses, insights), prompts (BM/EN), persona mapping, Gemini mock (success, cascade, missing key) |
+| test_views.py (reports) | 4 | Report views: list (own only), detail, cross-user 404 regression, validation |
 
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (144 must pass, golden master = 8280)
+# 1. Run all tests (148 must pass, golden master = 8280)
 python manage.py test --verbosity=2
 
 # 2. After any migration that creates/alters tables:
@@ -154,7 +155,7 @@ python manage.py test --verbosity=2
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-All 144 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
+All 148 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -183,11 +184,10 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 12 — Report Frontend + PDF**
-- Build frontend report UI: "Generate Report" button on dashboard, report display page
-- PDF download (server-side or client-side generation)
-- Current tests: 144 | Golden master: 8280
-- Report backend is live — `POST /api/v1/reports/generate/` calls Gemini with BM/EN prompts, model cascade fallback
+**Sprint 13 — Localisation (EN/BM/TA)**
+- Add language switching for UI text (English, Bahasa Melayu, Tamil)
+- Current tests: 148 | Golden master: 8280
+- Report frontend is live — `/report/[id]` page with markdown rendering, PDF download via `window.print()`
 - `google.generativeai` deprecation warning — consider migrating to `google.genai` package
 
 ## Streamlit App (Legacy — migrating to Django API)

@@ -242,3 +242,59 @@ export async function getRankedResults(
     ...options,
   })
 }
+
+// Report types
+export interface GenerateReportResponse {
+  report_id: number
+  markdown: string
+  counsellor_name: string
+  model_used: string
+}
+
+export interface ReportDetail {
+  report_id: number
+  title: string
+  markdown: string
+  summary: string
+  model_used: string
+  created_at: string
+}
+
+export interface ReportListItem {
+  report_id: number
+  title: string
+  summary: string
+  model_used: string
+  created_at: string
+}
+
+// Report API functions
+export async function generateReport(
+  eligibleCourses: EligibleCourse[],
+  insights: Insights,
+  lang: string = 'bm',
+  options?: ApiOptions
+): Promise<GenerateReportResponse> {
+  return apiRequest('/api/v1/reports/generate/', {
+    method: 'POST',
+    body: JSON.stringify({
+      eligible_courses: eligibleCourses,
+      insights,
+      lang,
+    }),
+    ...options,
+  })
+}
+
+export async function getReport(
+  reportId: number,
+  options?: ApiOptions
+): Promise<ReportDetail> {
+  return apiRequest(`/api/v1/reports/${reportId}/`, options)
+}
+
+export async function getReports(
+  options?: ApiOptions
+): Promise<{ reports: ReportListItem[]; count: number }> {
+  return apiRequest('/api/v1/reports/', options)
+}

@@ -117,7 +117,7 @@ class ReportDetailView(APIView):
         try:
             report = GeneratedReport.objects.get(
                 id=report_id,
-                student_id=request.user_id,
+                student__supabase_user_id=request.user_id,
             )
         except GeneratedReport.DoesNotExist:
             return Response(
@@ -141,7 +141,7 @@ class ReportListView(APIView):
 
     def get(self, request):
         reports = GeneratedReport.objects.filter(
-            student_id=request.user_id,
+            student__supabase_user_id=request.user_id,
         ).order_by('-created_at')
 
         return Response({
