@@ -102,7 +102,7 @@ class TestGoldenMaster(unittest.TestCase):
         if not os.path.exists(data_folder):
             raise unittest.SkipTest(f"Data folder not found: {data_folder}")
 
-        files_to_load = ['requirements.csv', 'tvet_requirements.csv', 'university_requirements.csv']
+        files_to_load = ['requirements.csv', 'kkom_requirements.csv', 'tvet_requirements.csv', 'university_requirements.csv']
         dfs = []
 
         print(f"\n[*] Loading and Cleaning Data from: {data_folder}")

@@ -35,6 +35,7 @@ from .serializers import (
     RankingRequestSerializer,
 )
 from .ranking_engine import get_ranked_results
+from .insights_engine import generate_insights
 from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
 from .quiz_engine import process_quiz_answers
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
@@ -156,10 +157,14 @@ class EligibilityCheckView(APIView):
 
         logger.info(f"Eligibility check: {len(eligible_courses)} courses eligible")
 
+        # Generate deterministic insights from results
+        insights = generate_insights(eligible_courses)
+
         return Response({
             'eligible_courses': eligible_courses,
             'total_count': len(eligible_courses),
             'stats': stats,
+            'insights': insights,
         })
 
 
@@ -308,11 +313,11 @@ class CourseListView(APIView):
     """GET /api/v1/courses/ - List all courses with pagination."""
 
     def get(self, request):
-        courses = Course.objects.all()[:100]  # Limit for now
+        courses = Course.objects.all()
         serializer = CourseSerializer(courses, many=True)
         return Response({
             'courses': serializer.data,
-            'count': Course.objects.count(),
+            'count': len(serializer.data),
         })
 
 
@@ -368,10 +373,10 @@ class InstitutionListView(APIView):
         if state:
             qs = qs.filter(state__iexact=state)
 
-        serializer = InstitutionSerializer(qs[:100], many=True)
+        serializer = InstitutionSerializer(qs, many=True)
         return Response({
             'institutions': serializer.data,
-            'count': qs.count(),
+            'count': len(serializer.data),
         })
 
 

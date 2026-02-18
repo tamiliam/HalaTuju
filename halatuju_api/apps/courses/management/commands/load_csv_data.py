@@ -97,6 +97,7 @@ class Command(BaseCommand):
 
         files = [
             ('requirements.csv', 'poly'),
+            ('kkom_requirements.csv', 'kkom'),
             ('tvet_requirements.csv', 'tvet'),
             ('university_requirements.csv', 'ua'),
             ('pismp_requirements.csv', 'pismp'),

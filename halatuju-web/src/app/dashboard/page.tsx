@@ -12,6 +12,7 @@ import {
   type StudentProfile,
   type RankedCourse,
   type RankingResult,
+  type Insights,
 } from '@/lib/api'
 import { getSession } from '@/lib/supabase'
 import CourseCard from '@/components/CourseCard'
@@ -191,7 +192,7 @@ export default function DashboardPage() {
 
           {/* Stats */}
           {eligibilityData && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6 pt-6 border-t">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-6 pt-6 border-t">
               <StatCard
                 number={eligibilityData.eligible_courses.length}
                 label="Total Eligible"
@@ -199,6 +200,10 @@ export default function DashboardPage() {
               <StatCard
                 number={eligibilityData.stats.poly || 0}
                 label="Polytechnic"
+              />
+              <StatCard
+                number={eligibilityData.stats.kkom || 0}
+                label="Kolej Komuniti"
               />
               <StatCard
                 number={eligibilityData.stats.tvet || 0}
@@ -215,6 +220,11 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+
+        {/* Insights Panel */}
+        {eligibilityData?.insights && (
+          <InsightsPanel insights={eligibilityData.insights} />
+        )}
 
         {/* Quiz CTA — show when no quiz taken yet */}
         {eligibilityData && !quizSignals && (
@@ -454,6 +464,76 @@ function StatCard({ number, label }: { number: number; label: string }) {
   )
 }
 
+function InsightsPanel({ insights }: { insights: Insights }) {
+  const meritTotal = insights.merit_summary.high + insights.merit_summary.fair + insights.merit_summary.low
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+      {/* Summary */}
+      <p className="text-gray-700 mb-6">{insights.summary_text}</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Top Fields */}
+        <div>
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            Bidang Teratas
+          </h3>
+          <ul className="space-y-2">
+            {insights.top_fields.map((f) => (
+              <li key={f.field} className="flex justify-between text-sm">
+                <span className="text-gray-700 truncate mr-2">{f.field}</span>
+                <span className="text-gray-500 font-medium whitespace-nowrap">{f.count} kursus</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Level Distribution */}
+        <div>
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            Tahap Pengajian
+          </h3>
+          <ul className="space-y-2">
+            {insights.level_distribution.map((l) => (
+              <li key={l.level} className="flex justify-between text-sm">
+                <span className="text-gray-700 truncate mr-2">{l.level}</span>
+                <span className="text-gray-500 font-medium whitespace-nowrap">{l.count}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Merit Summary */}
+        {meritTotal > 0 && (
+          <div>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+              Peluang Kemasukan
+            </h3>
+            <div className="space-y-2">
+              <MeritBar label="Tinggi" count={insights.merit_summary.high} total={meritTotal} color="bg-green-500" />
+              <MeritBar label="Sederhana" count={insights.merit_summary.fair} total={meritTotal} color="bg-yellow-500" />
+              <MeritBar label="Rendah" count={insights.merit_summary.low} total={meritTotal} color="bg-red-500" />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function MeritBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span className="w-20 text-gray-600">{label}</span>
+      <div className="flex-1 bg-gray-100 rounded-full h-2">
+        <div className={`${color} h-2 rounded-full`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-gray-500 w-8 text-right">{count}</span>
+    </div>
+  )
+}
+
 function FilterDropdown({
   filter,
   setFilter,
@@ -474,6 +554,7 @@ function FilterDropdown({
     >
       <option value="all">All Types</option>
       <option value="poly">Polytechnic</option>
+      <option value="kkom">Kolej Komuniti</option>
       <option value="tvet">TVET</option>
       <option value="ua">University</option>
       <option value="pismp">Teacher Training</option>

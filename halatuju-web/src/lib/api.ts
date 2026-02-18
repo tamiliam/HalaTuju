@@ -86,11 +86,36 @@ export interface Institution {
   free_meals?: boolean
 }
 
+// Insights from eligibility analysis
+export interface InsightsStreamItem {
+  source_type: string
+  label: string
+  count: number
+}
+
+export interface InsightsFieldItem {
+  field: string
+  count: number
+}
+
+export interface InsightsLevelItem {
+  level: string
+  count: number
+}
+
+export interface Insights {
+  stream_breakdown: InsightsStreamItem[]
+  top_fields: InsightsFieldItem[]
+  level_distribution: InsightsLevelItem[]
+  merit_summary: { high: number; fair: number; low: number; no_data: number }
+  summary_text: string
+}
+
 // API Functions
 export async function checkEligibility(
   profile: StudentProfile,
   options?: ApiOptions
-): Promise<{ eligible_courses: EligibleCourse[]; stats: Record<string, number> }> {
+): Promise<{ eligible_courses: EligibleCourse[]; stats: Record<string, number>; insights: Insights }> {
   return apiRequest('/api/v1/eligibility/check/', {
     method: 'POST',
     body: JSON.stringify(profile),
