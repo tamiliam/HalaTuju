@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -149,9 +150,7 @@ export default function DashboardPage() {
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">H</span>
-            </div>
+            <Image src="/logo-icon.png" alt="" width={32} height={32} />
             <span className="font-semibold text-gray-900">HalaTuju</span>
           </Link>
           <div className="flex items-center gap-4">

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 
 const STREAMS = [
@@ -47,9 +48,7 @@ export default function StreamSelectionPage() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">H</span>
-              </div>
+              <Image src="/logo-icon.png" alt="" width={32} height={32} />
               <span className="font-semibold text-gray-900">HalaTuju</span>
             </Link>
             <div className="flex items-center gap-2">

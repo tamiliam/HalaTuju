@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { signInWithPhone, verifyOTP, signInWithGoogle } from '@/lib/supabase'
 
@@ -88,9 +89,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-12 h-12 bg-primary-500 rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-2xl">H</span>
-          </div>
+          <Image src="/logo-icon.png" alt="" width={48} height={48} />
           <span className="text-2xl font-semibold text-gray-900">HalaTuju</span>
         </Link>
 

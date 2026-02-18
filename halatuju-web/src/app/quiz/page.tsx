@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { getQuizQuestions, submitQuiz, type QuizQuestion, type QuizAnswer } from '@/lib/api'
 
@@ -93,9 +94,7 @@ export default function QuizPage() {
       <header className="bg-white border-b">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">H</span>
-            </div>
+            <Image src="/logo-icon.png" alt="" width={32} height={32} />
             <span className="font-semibold text-gray-900">HalaTuju</span>
           </Link>
           <Link href="/dashboard" className="text-gray-500 hover:text-gray-700 text-sm">
