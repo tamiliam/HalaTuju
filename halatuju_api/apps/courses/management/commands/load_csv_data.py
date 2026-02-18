@@ -39,7 +39,10 @@ class Command(BaseCommand):
         with transaction.atomic():
             self.load_courses(data_dir)
             self.load_requirements(data_dir)
+            self.load_tvet_course_metadata(data_dir)
+            self.load_pismp_course_metadata(data_dir)
             self.load_institutions(data_dir)
+            self.load_institution_modifiers(data_dir)
             self.load_course_institutions(data_dir)
             self.load_course_details(data_dir)
             self.load_course_tags(data_dir)
@@ -172,6 +175,87 @@ class Command(BaseCommand):
 
         self.stdout.write(f'  Total requirements: {total}')
 
+    def load_tvet_course_metadata(self, data_dir):
+        """Enrich TVET courses with metadata from tvet_courses.csv.
+
+        TVET courses are created as minimal entries by load_requirements (only course_id
+        and course name from tvet_requirements.csv). tvet_courses.csv has the full metadata:
+        course name, level, department, frontend_label, description, wbl, months (→ semesters).
+        """
+        csv_path = os.path.join(data_dir, 'tvet_courses.csv')
+        if not os.path.exists(csv_path):
+            self.stdout.write('  Skipping tvet_courses.csv (not found)')
+            return
+
+        df = pd.read_csv(csv_path, dtype=str)
+        df = df.fillna('')
+
+        count = 0
+        for _, row in df.iterrows():
+            course_id = row.get('course_id')
+            if not course_id:
+                continue
+
+            defaults = {
+                'course': row.get('course', ''),
+                'level': row.get('level', ''),
+                'department': row.get('department', ''),
+                'field': row.get('department', ''),  # TVET uses department as field
+                'frontend_label': row.get('frontend_label', ''),
+                'description': row.get('description', ''),
+                'wbl': row.get('wbl', '').strip() in ('1', 'true', 'True'),
+            }
+
+            # Convert months to semesters (6 months = 1 semester)
+            months = row.get('months', '').strip()
+            if months:
+                try:
+                    defaults['semesters'] = max(1, int(months) // 6)
+                except (ValueError, TypeError):
+                    pass
+
+            updated = Course.objects.filter(course_id=course_id).update(**defaults)
+            if updated == 0:
+                # Course doesn't exist yet — create it
+                Course.objects.create(course_id=course_id, **defaults)
+            count += 1
+
+        self.stdout.write(f'  Enriched {count} TVET courses from tvet_courses.csv')
+
+    def load_pismp_course_metadata(self, data_dir):
+        """Enrich PISMP courses with metadata.
+
+        PISMP courses are created by load_requirements with only course_id and name.
+        They're all degree-level teacher training programmes (8 semesters).
+        """
+        count = 0
+        for course in Course.objects.filter(requirement__source_type='pismp'):
+            updates = {}
+
+            if not course.level:
+                updates['level'] = 'Ijazah Sarjana Muda Pendidikan'
+            if not course.department:
+                updates['department'] = 'Pendidikan'
+            if not course.field:
+                updates['field'] = 'Pendidikan'
+            if not course.frontend_label:
+                updates['frontend_label'] = 'Pendidikan'
+            if not course.semesters:
+                updates['semesters'] = 8
+            if not course.description:
+                updates['description'] = (
+                    f'Program Ijazah Sarjana Muda Pendidikan (PISMP) dalam bidang '
+                    f'{course.course}. Program ini melatih guru sekolah rendah yang '
+                    f'berkelayakan melalui gabungan teori pendidikan dan latihan mengajar '
+                    f'praktikal selama 4 tahun di Institut Pendidikan Guru (IPG).'
+                )
+
+            if updates:
+                Course.objects.filter(course_id=course.course_id).update(**updates)
+                count += 1
+
+        self.stdout.write(f'  Enriched {count} PISMP courses with metadata')
+
     def load_institutions(self, data_dir):
         """Load institutions.csv into Institution model."""
         csv_path = os.path.join(data_dir, 'institutions.csv')
@@ -218,6 +302,36 @@ class Command(BaseCommand):
             count += 1
 
         self.stdout.write(f'  Loaded {count} institutions')
+
+    def load_institution_modifiers(self, data_dir):
+        """Load institutions.json modifiers into Institution.modifiers JSONField.
+
+        institutions.json contains ranking modifiers (urban, cultural_safety_net, etc.)
+        that were previously loaded from the filesystem at startup. Now stored in DB
+        so they're available on Cloud Run where the data/ directory isn't in the container.
+        """
+        json_path = os.path.join(data_dir, 'institutions.json')
+        if not os.path.exists(json_path):
+            self.stdout.write('  Skipping institutions.json (not found)')
+            return
+
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        count = 0
+        for item in data:
+            inst_id = str(item.get('inst_id', '')).strip()
+            modifiers = item.get('modifiers', {})
+
+            if not inst_id or not modifiers:
+                continue
+
+            updated = Institution.objects.filter(
+                institution_id=inst_id
+            ).update(modifiers=modifiers)
+            count += updated
+
+        self.stdout.write(f'  Loaded {count} institution modifiers from institutions.json')
 
     def load_course_institutions(self, data_dir):
         """Load links.csv into CourseInstitution model."""

@@ -111,7 +111,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (114 tests)
+# Run ALL tests (124 tests)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8280 baseline)
@@ -135,11 +135,12 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_saved_courses.py | 3 | Saved course CRUD — save (201), list (appears), delete (removed) |
 | test_quiz.py | 14 | Quiz endpoints (questions 3 langs, submit, validation), engine (accumulation, taxonomy, strength, lang parity) |
 | test_ranking.py | 34 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, top_5/rest split, API endpoint validation |
+| test_data_loading.py | 5 | TVET metadata enrichment, PISMP metadata enrichment, institution modifiers storage |
 
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (119 must pass, golden master = 8280)
+# 1. Run all tests (124 must pass, golden master = 8280)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -151,7 +152,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-All 119 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
+All 124 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -166,17 +167,20 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/quiz_data.py` | Quiz questions (6 Qs × 3 languages) | No |
 | `apps/courses/quiz_engine.py` | Stateless quiz signal accumulator | No |
 | `apps/courses/ranking_engine.py` | Fit score calculation + course ranking | No |
-| `apps/courses/management/commands/load_csv_data.py` | CSV → DB migration | One-time |
+| `apps/courses/management/commands/load_csv_data.py` | CSV → DB migration (9 loaders) | One-time |
+| `apps/courses/management/commands/audit_data.py` | Data completeness report | No |
 
 ## Known Issues
 
-- Course names show as course_id when Course table doesn't have the entry (graceful fallback in views.py)
-- Institution modifiers (urban, cultural_safety_net) loaded from `data/institutions.json` — should migrate to model fields
+- 73 PISMP courses without course tags (need tag data to be created)
+- 87 offerings without tuition fee data (data not available in source CSVs)
 
 ## Next Sprint
 
-**Sprint 9 — Data Gap Filling**
-- Fill missing data gaps (institution details, course descriptions, missing links)
+**Sprint 10 — Deterministic Insights**
+- Generate deterministic insights from eligibility results (top fields, merit analysis, level distribution)
+- Current tests: 124 | Golden master: 8280
+- All 383 courses now have complete metadata; institution modifiers in DB
 - Current tests: 119 | Golden master: 8280
 - `details.csv` is now loaded into CourseInstitution via `load_course_details` in `load_csv_data.py`
 - Course detail page now shows fees, allowances, "Apply" button, free hostel/meals badges

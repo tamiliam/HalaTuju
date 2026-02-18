@@ -241,6 +241,12 @@ class Institution(models.Model):
     indian_percentage = models.FloatField(null=True, blank=True)
     average_income = models.FloatField(null=True, blank=True)
 
+    # Ranking modifiers (from institutions.json)
+    modifiers = models.JSONField(
+        default=dict, blank=True,
+        help_text="Ranking modifiers: urban, cultural_safety_net, etc."
+    )
+
     class Meta:
         db_table = 'institutions'
         ordering = ['state', 'institution_name']

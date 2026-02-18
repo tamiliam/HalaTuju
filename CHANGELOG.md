@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-02-18 — Sprint 9: Data Gap Filling
+
+### Added
+- **TVET course metadata**: 84 TVET courses enriched with names, levels, departments, descriptions, semesters, and WBL flags from `tvet_courses.csv`
+- **PISMP course metadata**: 73 PISMP courses enriched with level (Ijazah Sarjana Muda Pendidikan), department, field, semesters (8), and auto-generated Malay descriptions
+- **Institution modifiers in DB**: Added `modifiers` JSONField to Institution model — ranking modifiers (urban, cultural_safety_net, etc.) now stored in PostgreSQL instead of loaded from filesystem JSON
+- **`audit_data` management command**: Reports data completeness across courses, requirements, institutions, offerings, and tags
+- 5 new tests: TVET enrichment, PISMP enrichment, institution modifiers storage
+
+### Fixed
+- **Institution modifiers not working on Cloud Run**: Modifiers were read from `data/institutions.json` at startup, but this file isn't in the Docker image. Now loaded from DB via `load_csv_data`.
+
+### Technical Notes
+- Migration 0004: adds `modifiers` JSONField (default={}) to Institution
+- All 383 courses now have complete metadata (description, level, department, field, frontend_label, semesters)
+- `load_csv_data` now runs 9 loaders in sequence: courses → requirements → tvet_metadata → pismp_metadata → institutions → modifiers → links → details → tags
+
 ## [1.9.0] - 2026-02-18 — Sprint 8: Course Detail Enhancement
 
 ### Added

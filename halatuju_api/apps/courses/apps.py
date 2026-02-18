@@ -94,36 +94,14 @@ class CoursesConfig(AppConfig):
         }
         logger.info(f"Loaded {len(self.inst_subcategories)} institution subcategories")
 
-        # Load institution modifiers from JSON (not yet in model)
-        self._load_institution_modifiers()
+        # Load institution modifiers from DB (migrated from JSON file)
+        inst_mod_qs = Institution.objects.exclude(modifiers={}).values(
+            'institution_id', 'modifiers'
+        )
+        self.inst_modifiers_map = {
+            row['institution_id']: row['modifiers']
+            for row in inst_mod_qs
+        }
+        logger.info(f"Loaded {len(self.inst_modifiers_map)} institution modifiers")
 
         logger.info("Course data loading complete")
-
-    def _load_institution_modifiers(self):
-        """Load institution modifiers from data/institutions.json."""
-        import json
-        import os
-
-        # JSON is in the Streamlit project root, two levels up from halatuju_api/
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__)
-        )))
-        json_path = os.path.join(
-            os.path.dirname(base_dir), 'data', 'institutions.json'
-        )
-
-        if not os.path.exists(json_path):
-            logger.warning(f"Institution modifiers file not found: {json_path}")
-            return
-
-        try:
-            with open(json_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                self.inst_modifiers_map = {
-                    str(item.get('inst_id', '')).strip(): item.get('modifiers', {})
-                    for item in data
-                    if item.get('inst_id')
-                }
-            logger.info(f"Loaded {len(self.inst_modifiers_map)} institution modifiers")
-        except Exception as e:
-            logger.warning(f"Error loading institution modifiers: {e}")
