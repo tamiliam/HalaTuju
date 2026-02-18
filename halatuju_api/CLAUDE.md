@@ -137,12 +137,13 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_ranking.py | 34 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, top_5/rest split, API endpoint validation |
 | test_data_loading.py | 5 | TVET metadata enrichment, PISMP metadata enrichment, institution modifiers storage |
 | test_insights.py | 8 | Insights engine: empty input, stream breakdown, labels, top fields, merit counts, level distribution, summary text |
+| test_report_engine.py | 12 | Report engine: format helpers (grades, signals, courses, insights), prompts (BM/EN), persona mapping, Gemini mock (success, cascade, missing key) |
 
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (132 must pass, golden master = 8280)
-python -m pytest apps/courses/tests/ -v
+# 1. Run all tests (144 must pass, golden master = 8280)
+python manage.py test --verbosity=2
 
 # 2. After any migration that creates/alters tables:
 #    Run Supabase Security Advisor and fix all errors
@@ -153,7 +154,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-All 132 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
+All 144 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -171,6 +172,9 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/management/commands/load_csv_data.py` | CSV → DB migration (9 loaders) | One-time |
 | `apps/courses/insights_engine.py` | Deterministic insights from eligibility results | No |
 | `apps/courses/management/commands/audit_data.py` | Data completeness report | No |
+| `apps/reports/report_engine.py` | Gemini-powered narrative report generator | No |
+| `apps/reports/prompts.py` | BM/EN counselor report prompt templates | No |
+| `apps/reports/views.py` | Report API endpoints (generate, detail, list) | No |
 
 ## Known Issues
 
@@ -179,11 +183,12 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 11 — AI Report Backend**
-- Build Gemini-powered narrative report from deterministic insights (insights_engine.py output)
-- Current tests: 132 | Golden master: 8280
-- Insights engine is live — `generate_insights()` produces stream breakdown, top fields, level distribution, merit summary
-- KKOM now has its own `source_type: 'kkom'` (separated from poly)
+**Sprint 12 — Report Frontend + PDF**
+- Build frontend report UI: "Generate Report" button on dashboard, report display page
+- PDF download (server-side or client-side generation)
+- Current tests: 144 | Golden master: 8280
+- Report backend is live — `POST /api/v1/reports/generate/` calls Gemini with BM/EN prompts, model cascade fallback
+- `google.generativeai` deprecation warning — consider migrating to `google.genai` package
 
 ## Streamlit App (Legacy — migrating to Django API)
 
