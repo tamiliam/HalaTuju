@@ -31,7 +31,7 @@
 | 10 | Deterministic Insights | DONE (2026-02-18) | +8 | Yes |
 | 11 | AI Report Backend | DONE (2026-02-18) | +12 | No |
 | 12 | Report Frontend + PDF | DONE (2026-02-18) | +4 | Yes |
-| 13 | Localisation (EN/BM/TA) | NOT STARTED | +3 | Yes |
+| 13 | Localisation (EN/BM/TA) | DONE (2026-02-18) | +0 | Yes |
 | 14 | UX Polish + Settings | NOT STARTED | +3 | Yes |
 | 15 | Cleanup + Documentation | NOT STARTED | 0 | Yes |
 

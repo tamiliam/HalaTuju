@@ -4,38 +4,21 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useT } from '@/lib/i18n'
 
 const STREAMS = [
-  {
-    id: 'science',
-    title: 'Science Stream',
-    subtitle: 'Sains',
-    description: 'Physics, Chemistry, Biology, Additional Mathematics',
-    icon: '🔬',
-  },
-  {
-    id: 'arts',
-    title: 'Arts Stream',
-    subtitle: 'Sastera',
-    description: 'Economics, Accounts, Business, Geography, History',
-    icon: '📚',
-  },
-  {
-    id: 'technical',
-    title: 'Technical/Vocational',
-    subtitle: 'Teknikal/Vokasional',
-    description: 'Engineering, Design, Construction, ICT',
-    icon: '🔧',
-  },
+  { id: 'science', titleKey: 'onboarding.scienceStream', subtitleKey: 'onboarding.scienceStreamLocal', descKey: 'onboarding.scienceStreamDesc', icon: '🔬' },
+  { id: 'arts', titleKey: 'onboarding.artsStream', subtitleKey: 'onboarding.artsStreamLocal', descKey: 'onboarding.artsStreamDesc', icon: '📚' },
+  { id: 'technical', titleKey: 'onboarding.technicalStream', subtitleKey: 'onboarding.technicalStreamLocal', descKey: 'onboarding.technicalStreamDesc', icon: '🔧' },
 ]
 
 export default function StreamSelectionPage() {
   const router = useRouter()
+  const { t } = useT()
   const [selectedStream, setSelectedStream] = useState<string | null>(null)
 
   const handleContinue = () => {
     if (selectedStream) {
-      // Store in session/localStorage
       localStorage.setItem('halatuju_stream', selectedStream)
       router.push('/onboarding/grades')
     }
@@ -49,7 +32,7 @@ export default function StreamSelectionPage() {
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <Image src="/logo-icon.png" alt="" width={32} height={32} />
-              <span className="font-semibold text-gray-900">HalaTuju</span>
+              <span className="font-semibold text-gray-900">{t('common.appName')}</span>
             </Link>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
@@ -74,10 +57,10 @@ export default function StreamSelectionPage() {
       <div className="container mx-auto px-6 py-12 max-w-3xl">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-gray-900 mb-3">
-            What stream did you take?
+            {t('onboarding.streamTitle')}
           </h1>
           <p className="text-gray-600">
-            This helps us show you the right subjects for grade entry.
+            {t('onboarding.streamSubtitle')}
           </p>
         </div>
 
@@ -97,11 +80,11 @@ export default function StreamSelectionPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="text-lg font-semibold text-gray-900">
-                      {stream.title}
+                      {t(stream.titleKey)}
                     </h3>
-                    <span className="text-sm text-gray-500">({stream.subtitle})</span>
+                    <span className="text-sm text-gray-500">({t(stream.subtitleKey)})</span>
                   </div>
-                  <p className="text-gray-600 text-sm">{stream.description}</p>
+                  <p className="text-gray-600 text-sm">{t(stream.descKey)}</p>
                 </div>
                 <div
                   className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
@@ -136,14 +119,14 @@ export default function StreamSelectionPage() {
             href="/"
             className="px-6 py-3 text-gray-600 hover:text-gray-900"
           >
-            Back
+            {t('common.back')}
           </Link>
           <button
             onClick={handleContinue}
             disabled={!selectedStream}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Continue
+            {t('common.continue')}
           </button>
         </div>
       </div>

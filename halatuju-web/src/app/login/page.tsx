@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { signInWithPhone, verifyOTP, signInWithGoogle } from '@/lib/supabase'
+import { useT } from '@/lib/i18n'
 
 type LoginStep = 'phone' | 'otp'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { t } = useT()
   const [step, setStep] = useState<LoginStep>('phone')
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
@@ -66,7 +68,6 @@ export default function LoginPage() {
     }
 
     if (data.session) {
-      // Redirect to dashboard or onboarding
       router.push('/dashboard')
     }
   }
@@ -90,18 +91,18 @@ export default function LoginPage() {
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">
           <Image src="/logo-icon.png" alt="" width={48} height={48} />
-          <span className="text-2xl font-semibold text-gray-900">HalaTuju</span>
+          <span className="text-2xl font-semibold text-gray-900">{t('common.appName')}</span>
         </Link>
 
         {/* Card */}
         <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">
           <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">
-            {step === 'phone' ? 'Welcome Back' : 'Enter Verification Code'}
+            {step === 'phone' ? t('login.welcomeBack') : t('login.enterOTP')}
           </h1>
           <p className="text-gray-600 text-center mb-8">
             {step === 'phone'
-              ? 'Sign in to continue to your recommendations'
-              : `We sent a code to ${phone}`}
+              ? t('login.signInSubtitle')
+              : `${t('login.sentTo')} ${phone}`}
           </p>
 
           {/* Error Message */}
@@ -117,7 +118,7 @@ export default function LoginPage() {
               <form onSubmit={handlePhoneSubmit} className="space-y-4 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
+                    {t('login.phoneNumber')}
                   </label>
                   <div className="flex">
                     <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
@@ -138,7 +139,7 @@ export default function LoginPage() {
                   disabled={loading || !phone}
                   className="btn-primary w-full disabled:opacity-50"
                 >
-                  {loading ? 'Sending...' : 'Send Verification Code'}
+                  {loading ? t('login.sending') : t('login.sendCode')}
                 </button>
               </form>
 
@@ -148,7 +149,7 @@ export default function LoginPage() {
                   <div className="w-full border-t border-gray-200" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">or</span>
+                  <span className="px-4 bg-white text-gray-500">{t('login.or')}</span>
                 </div>
               </div>
 
@@ -176,7 +177,7 @@ export default function LoginPage() {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                Continue with Google
+                {t('login.googleLogin')}
               </button>
             </>
           ) : (
@@ -184,13 +185,13 @@ export default function LoginPage() {
             <form onSubmit={handleOtpSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Verification Code
+                  {t('login.enterOTP')}
                 </label>
                 <input
                   type="text"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Enter 6-digit code"
+                  placeholder="000000"
                   maxLength={6}
                   className="input text-center text-2xl tracking-widest"
                   required
@@ -201,7 +202,7 @@ export default function LoginPage() {
                 disabled={loading || otp.length !== 6}
                 className="btn-primary w-full disabled:opacity-50"
               >
-                {loading ? 'Verifying...' : 'Verify & Continue'}
+                {loading ? t('login.verifying') : t('login.verifyCode')}
               </button>
               <button
                 type="button"
@@ -212,7 +213,7 @@ export default function LoginPage() {
                 }}
                 className="w-full text-gray-600 hover:text-gray-900 text-sm"
               >
-                Use a different phone number
+                {t('login.differentPhone')}
               </button>
             </form>
           )}
@@ -220,9 +221,9 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-sm text-gray-500 mt-6">
-          Don't have an account?{' '}
+          {t('login.noAccount')}{' '}
           <Link href="/onboarding/stream" className="text-primary-500 hover:underline">
-            Get started for free
+            {t('login.getStartedFree')}
           </Link>
         </p>
       </div>

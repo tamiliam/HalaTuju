@@ -1,21 +1,28 @@
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
+import { useT } from '@/lib/i18n'
+import LanguageSelector from '@/components/LanguageSelector'
 
 export default function LandingPage() {
+  const { t } = useT()
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
       {/* Navigation */}
       <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <Image src="/logo-icon.png" alt="" width={40} height={40} />
-          <span className="text-xl font-semibold text-gray-900">HalaTuju</span>
+          <span className="text-xl font-semibold text-gray-900">{t('common.appName')}</span>
         </div>
         <div className="flex items-center gap-4">
+          <LanguageSelector />
           <Link href="/about" className="text-gray-600 hover:text-gray-900">
-            About
+            {t('common.about')}
           </Link>
           <Link href="/login" className="btn-primary">
-            Get Started
+            {t('common.getStarted')}
           </Link>
         </div>
       </nav>
@@ -23,20 +30,17 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="container mx-auto px-6 py-20 text-center">
         <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-          Find Your Perfect
-          <span className="text-primary-500"> Course</span>
+          {t('landing.heroTitle')}
         </h1>
         <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
-          Discover the right path for your future based on your SPM results.
-          Get personalised recommendations from over 300 courses across
-          polytechnics, universities, and TVET institutions.
+          {t('landing.heroSubtitle')}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/onboarding/stream" className="btn-primary text-lg px-8 py-4">
-            Start Your Journey
+            {t('landing.startJourney')}
           </Link>
           <Link href="/about" className="btn-secondary text-lg px-8 py-4">
-            Learn More
+            {t('common.learnMore')}
           </Link>
         </div>
       </section>
@@ -44,23 +48,23 @@ export default function LandingPage() {
       {/* Features Section */}
       <section className="container mx-auto px-6 py-20">
         <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-          How It Works
+          {t('landing.howItWorks')}
         </h2>
         <div className="grid md:grid-cols-3 gap-8">
           <FeatureCard
             step="1"
-            title="Enter Your Grades"
-            description="Tell us your SPM results and we'll find courses you're eligible for."
+            title={t('landing.step1Title')}
+            description={t('landing.step1Desc')}
           />
           <FeatureCard
             step="2"
-            title="Share Your Interests"
-            description="Answer a few questions about what you enjoy to get personalised matches."
+            title={t('landing.step2Title')}
+            description={t('landing.step2Desc')}
           />
           <FeatureCard
             step="3"
-            title="Get Recommendations"
-            description="See courses ranked by how well they fit your profile and preferences."
+            title={t('landing.step3Title')}
+            description={t('landing.step3Desc')}
           />
         </div>
       </section>
@@ -69,10 +73,10 @@ export default function LandingPage() {
       <section className="bg-primary-500 py-16">
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-8 text-center text-white">
-            <StatCard number="310" label="Courses" />
-            <StatCard number="212" label="Institutions" />
-            <StatCard number="3" label="Languages" />
-            <StatCard number="100%" label="Free" />
+            <StatCard number="310" label={t('landing.courses')} />
+            <StatCard number="212" label={t('landing.institutions')} />
+            <StatCard number="3" label={t('landing.languages')} />
+            <StatCard number="100%" label={t('landing.free')} />
           </div>
         </div>
       </section>
@@ -80,13 +84,13 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section className="container mx-auto px-6 py-20 text-center">
         <h2 className="text-3xl font-bold text-gray-900 mb-6">
-          Ready to Find Your Path?
+          {t('landing.readyTitle')}
         </h2>
         <p className="text-lg text-gray-600 mb-8 max-w-xl mx-auto">
-          Join thousands of SPM leavers who have found their ideal course using HalaTuju.
+          {t('landing.readySubtitle')}
         </p>
         <Link href="/onboarding/stream" className="btn-primary text-lg px-8 py-4">
-          Get Started - It's Free
+          {t('landing.getStartedFree')}
         </Link>
       </section>
 
@@ -96,15 +100,15 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
               <Image src="/logo-icon.png" alt="" width={32} height={32} />
-              <span className="font-semibold text-gray-900">HalaTuju</span>
+              <span className="font-semibold text-gray-900">{t('common.appName')}</span>
             </div>
             <div className="flex gap-6 text-sm text-gray-600">
-              <Link href="/about">About</Link>
-              <Link href="/privacy">Privacy</Link>
-              <Link href="/terms">Terms</Link>
+              <Link href="/about">{t('common.about')}</Link>
+              <Link href="/privacy">{t('common.privacy')}</Link>
+              <Link href="/terms">{t('common.terms')}</Link>
             </div>
             <p className="text-sm text-gray-500">
-              2026 HalaTuju. All rights reserved.
+              {t('common.copyright')}
             </p>
           </div>
         </div>

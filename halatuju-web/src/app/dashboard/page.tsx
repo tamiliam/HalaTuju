@@ -18,8 +18,11 @@ import {
 } from '@/lib/api'
 import { getSession } from '@/lib/supabase'
 import CourseCard from '@/components/CourseCard'
+import { useT } from '@/lib/i18n'
+import LanguageSelector from '@/components/LanguageSelector'
 
 export default function DashboardPage() {
+  const { t } = useT()
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
@@ -28,7 +31,7 @@ export default function DashboardPage() {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [quizSignals, setQuizSignals] = useState<Record<string, Record<string, number>> | null>(null)
   const [reportLoading, setReportLoading] = useState(false)
-  const [reportError, setReportError] = useState<string | null>(null)
+  const [reportError, setReportError] = useState(false)
 
   // Load profile from localStorage + check auth session on mount
   useEffect(() => {
@@ -128,7 +131,7 @@ export default function DashboardPage() {
   const handleGenerateReport = async () => {
     if (!token || !eligibilityData) return
     setReportLoading(true)
-    setReportError(null)
+    setReportError(false)
     try {
       const result = await generateReport(
         eligibilityData.eligible_courses,
@@ -138,7 +141,7 @@ export default function DashboardPage() {
       )
       window.location.href = `/report/${result.report_id}`
     } catch {
-      setReportError('Failed to generate report. Please try again.')
+      setReportError(true)
       setReportLoading(false)
     }
   }
@@ -152,13 +155,13 @@ export default function DashboardPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            No profile found
+            {t('dashboard.noProfile')}
           </h1>
           <p className="text-gray-600 mb-6">
-            Please complete the onboarding to see your recommendations.
+            {t('dashboard.noProfileDesc')}
           </p>
           <Link href="/onboarding/stream" className="btn-primary">
-            Start Onboarding
+            {t('dashboard.startOnboarding')}
           </Link>
         </div>
       </div>
@@ -172,14 +175,15 @@ export default function DashboardPage() {
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Image src="/logo-icon.png" alt="" width={32} height={32} />
-            <span className="font-semibold text-gray-900">HalaTuju</span>
+            <span className="font-semibold text-gray-900">{t('common.appName')}</span>
           </Link>
           <div className="flex items-center gap-4">
+            <LanguageSelector />
             <Link href="/saved" className="text-gray-600 hover:text-gray-900">
-              Saved
+              {t('common.saved')}
             </Link>
             <Link href="/settings" className="text-gray-600 hover:text-gray-900">
-              Settings
+              {t('common.settings')}
             </Link>
           </div>
         </div>
@@ -192,12 +196,12 @@ export default function DashboardPage() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                Your Course Recommendations
+                {t('dashboard.title')}
               </h1>
               <p className="text-gray-600">
                 {quizSignals
-                  ? 'Ranked by how well they match your interests and preferences.'
-                  : 'Based on your SPM grades and profile, here are courses you qualify for.'}
+                  ? t('dashboard.rankedSubtitle')
+                  : t('dashboard.subtitle')}
               </p>
             </div>
             <div className="flex gap-2">
@@ -205,7 +209,7 @@ export default function DashboardPage() {
                 href="/onboarding/grades"
                 className="btn-secondary whitespace-nowrap"
               >
-                Edit Profile
+                {t('dashboard.editProfile')}
               </Link>
             </div>
           </div>
@@ -215,27 +219,27 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-6 pt-6 border-t">
               <StatCard
                 number={eligibilityData.eligible_courses.length}
-                label="Total Eligible"
+                label={t('dashboard.totalEligible')}
               />
               <StatCard
                 number={eligibilityData.stats.poly || 0}
-                label="Polytechnic"
+                label={t('dashboard.polytechnic')}
               />
               <StatCard
                 number={eligibilityData.stats.kkom || 0}
-                label="Kolej Komuniti"
+                label={t('dashboard.kolej')}
               />
               <StatCard
                 number={eligibilityData.stats.tvet || 0}
-                label="TVET"
+                label={t('dashboard.tvet')}
               />
               <StatCard
                 number={eligibilityData.stats.ua || 0}
-                label="University"
+                label={t('dashboard.university')}
               />
               <StatCard
                 number={eligibilityData.stats.pismp || 0}
-                label="Teacher Training"
+                label={t('dashboard.teacherTraining')}
               />
             </div>
           )}
@@ -252,11 +256,10 @@ export default function DashboardPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-1">
-                  AI Counsellor Report
+                  {t('dashboard.reportTitle')}
                 </h2>
                 <p className="text-gray-600 text-sm">
-                  Get a personalised career guidance report from our AI counsellor,
-                  based on your grades and {eligibilityData.eligible_courses.length} eligible courses.
+                  {t('dashboard.reportDesc')}
                 </p>
               </div>
               <div className="flex flex-col items-end gap-2">
@@ -265,10 +268,10 @@ export default function DashboardPage() {
                   disabled={reportLoading}
                   className="btn-primary whitespace-nowrap"
                 >
-                  {reportLoading ? 'Generating...' : 'Generate Report'}
+                  {reportLoading ? t('dashboard.generating') : t('dashboard.generateReport')}
                 </button>
                 {reportError && (
-                  <p className="text-red-500 text-sm">{reportError}</p>
+                  <p className="text-red-500 text-sm">{t('dashboard.reportError')}</p>
                 )}
               </div>
             </div>
@@ -281,19 +284,17 @@ export default function DashboardPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold mb-1">
-                  Get personalised rankings
+                  {t('dashboard.quizTitle')}
                 </h2>
                 <p className="text-primary-100 text-sm">
-                  Answer 6 quick questions about your interests and preferences.
-                  We'll rank your {eligibilityData.eligible_courses.length} eligible courses
-                  to show the best matches first.
+                  {t('dashboard.quizDesc')}
                 </p>
               </div>
               <Link
                 href="/quiz"
                 className="bg-white text-primary-600 px-6 py-3 rounded-lg font-medium hover:bg-primary-50 transition-colors whitespace-nowrap text-center"
               >
-                Take Quiz
+                {t('dashboard.takeQuiz')}
               </Link>
             </div>
           </div>
@@ -307,14 +308,14 @@ export default function DashboardPage() {
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               <span className="text-green-800 text-sm font-medium">
-                Quiz completed — courses ranked by your preferences
+                {t('dashboard.quizDone')}
               </span>
             </div>
             <button
               onClick={handleRetakeQuiz}
               className="text-green-600 hover:text-green-800 text-sm underline"
             >
-              Retake Quiz
+              {t('dashboard.retakeQuiz')}
             </button>
           </div>
         )}
@@ -324,7 +325,7 @@ export default function DashboardPage() {
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
             <p className="text-gray-600">
-              {rankingLoading ? 'Ranking your courses...' : 'Checking your eligibility...'}
+              {rankingLoading ? t('dashboard.rankingCourses') : t('dashboard.checkingEligibility')}
             </p>
           </div>
         )}
@@ -333,13 +334,13 @@ export default function DashboardPage() {
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
             <p className="text-red-600 mb-4">
-              Failed to load recommendations. Please try again.
+              {t('dashboard.failedToLoad')}
             </p>
             <button
               onClick={() => window.location.reload()}
               className="btn-primary"
             >
-              Retry
+              {t('common.retry')}
             </button>
           </div>
         )}
@@ -367,7 +368,7 @@ export default function DashboardPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Eligible Courses ({filteredCourses.length})
+                  {t('dashboard.eligibleCourses')} ({filteredCourses.length})
                 </h2>
                 <FilterDropdown filter={filter} setFilter={setFilter} setDisplayCount={setDisplayCount} />
               </div>
@@ -389,7 +390,7 @@ export default function DashboardPage() {
                     className="btn-secondary"
                     onClick={() => setDisplayCount(displayCount + 20)}
                   >
-                    Load More ({remaining} remaining)
+                    {t('dashboard.loadMore')} ({remaining} {t('dashboard.remaining')})
                   </button>
                 </div>
               )}
@@ -420,6 +421,7 @@ function RankedResults({
   savedIds: Set<string>
   onToggleSave?: (courseId: string) => void
 }) {
+  const { t } = useT()
   const filterCourses = (courses: RankedCourse[]) =>
     filter === 'all' ? courses : courses.filter(c => c.source_type === filter)
 
@@ -433,7 +435,7 @@ function RankedResults({
       {/* Filter */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">
-          Ranked Courses ({rankingData.total_ranked})
+          {t('dashboard.rankedCourses')} ({rankingData.total_ranked})
         </h2>
         <FilterDropdown filter={filter} setFilter={setFilter} setDisplayCount={setDisplayCount} />
       </div>
@@ -442,7 +444,7 @@ function RankedResults({
       {filteredTop5.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-primary-600 uppercase tracking-wide mb-3">
-            Top Matches
+            {t('dashboard.topMatches')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTop5.map((course, idx) => (
@@ -462,7 +464,7 @@ function RankedResults({
       {displayedRest.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            Other Eligible Courses
+            {t('dashboard.otherEligible')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {displayedRest.map((course) => (
@@ -481,7 +483,7 @@ function RankedResults({
                 className="btn-secondary"
                 onClick={() => setDisplayCount(displayCount + 20)}
               >
-                Load More ({remaining} remaining)
+                {t('dashboard.loadMore')} ({remaining} {t('dashboard.remaining')})
               </button>
             </div>
           )}
@@ -494,11 +496,12 @@ function RankedResults({
 // --- Small Components ---
 
 function LoadingScreen() {
+  const { t } = useT()
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary-50 to-white">
       <div className="text-center">
         <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent mb-4" />
-        <p className="text-gray-600">Loading your profile...</p>
+        <p className="text-gray-600">{t('common.loadingProfile')}</p>
       </div>
     </div>
   )
@@ -514,6 +517,7 @@ function StatCard({ number, label }: { number: number; label: string }) {
 }
 
 function InsightsPanel({ insights }: { insights: Insights }) {
+  const { t } = useT()
   const meritTotal = insights.merit_summary.high + insights.merit_summary.fair + insights.merit_summary.low
 
   return (
@@ -525,13 +529,13 @@ function InsightsPanel({ insights }: { insights: Insights }) {
         {/* Top Fields */}
         <div>
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            Bidang Teratas
+            {t('dashboard.insightsTopFields')}
           </h3>
           <ul className="space-y-2">
             {insights.top_fields.map((f) => (
               <li key={f.field} className="flex justify-between text-sm">
                 <span className="text-gray-700 truncate mr-2">{f.field}</span>
-                <span className="text-gray-500 font-medium whitespace-nowrap">{f.count} kursus</span>
+                <span className="text-gray-500 font-medium whitespace-nowrap">{f.count} {t('dashboard.courses')}</span>
               </li>
             ))}
           </ul>
@@ -540,7 +544,7 @@ function InsightsPanel({ insights }: { insights: Insights }) {
         {/* Level Distribution */}
         <div>
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            Tahap Pengajian
+            {t('dashboard.insightsLevels')}
           </h3>
           <ul className="space-y-2">
             {insights.level_distribution.map((l) => (
@@ -556,12 +560,12 @@ function InsightsPanel({ insights }: { insights: Insights }) {
         {meritTotal > 0 && (
           <div>
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-              Peluang Kemasukan
+              {t('dashboard.insightsMerit')}
             </h3>
             <div className="space-y-2">
-              <MeritBar label="Tinggi" count={insights.merit_summary.high} total={meritTotal} color="bg-green-500" />
-              <MeritBar label="Sederhana" count={insights.merit_summary.fair} total={meritTotal} color="bg-yellow-500" />
-              <MeritBar label="Rendah" count={insights.merit_summary.low} total={meritTotal} color="bg-red-500" />
+              <MeritBar label={t('dashboard.meritHigh')} count={insights.merit_summary.high} total={meritTotal} color="bg-green-500" />
+              <MeritBar label={t('dashboard.meritFair')} count={insights.merit_summary.fair} total={meritTotal} color="bg-yellow-500" />
+              <MeritBar label={t('dashboard.meritLow')} count={insights.merit_summary.low} total={meritTotal} color="bg-red-500" />
             </div>
           </div>
         )}
@@ -592,6 +596,7 @@ function FilterDropdown({
   setFilter: (f: string) => void
   setDisplayCount: (n: number) => void
 }) {
+  const { t } = useT()
   return (
     <select
       className="input w-auto"
@@ -601,12 +606,12 @@ function FilterDropdown({
         setDisplayCount(20)
       }}
     >
-      <option value="all">All Types</option>
-      <option value="poly">Polytechnic</option>
-      <option value="kkom">Kolej Komuniti</option>
-      <option value="tvet">TVET</option>
-      <option value="ua">University</option>
-      <option value="pismp">Teacher Training</option>
+      <option value="all">{t('dashboard.allTypes')}</option>
+      <option value="poly">{t('dashboard.polytechnic')}</option>
+      <option value="kkom">{t('dashboard.kolej')}</option>
+      <option value="tvet">{t('dashboard.tvet')}</option>
+      <option value="ua">{t('dashboard.university')}</option>
+      <option value="pismp">{t('dashboard.teacherTraining')}</option>
     </select>
   )
 }

@@ -4,15 +4,16 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useT } from '@/lib/i18n'
 
 const GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G']
 
 // Section 1: Teras — 4 compulsory subjects, grade each
 const CORE_SUBJECTS = [
-  { id: 'BM', name: 'Bahasa Melayu' },
-  { id: 'BI', name: 'Bahasa Inggeris' },
-  { id: 'MAT', name: 'Matematik' },
-  { id: 'SEJ', name: 'Sejarah' },
+  { id: 'BM' },
+  { id: 'BI' },
+  { id: 'MAT' },
+  { id: 'SEJ' },
 ]
 
 // Section 2: Aliran — pick best 2 from stream pool
@@ -99,6 +100,7 @@ const STREAM_LABELS: Record<string, string> = {
 
 export default function GradesInputPage() {
   const router = useRouter()
+  const { t } = useT()
   const [stream, setStream] = useState<string>('science')
   const [grades, setGrades] = useState<Record<string, string>>({})
 
@@ -173,7 +175,7 @@ export default function GradesInputPage() {
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <Image src="/logo-icon.png" alt="" width={32} height={32} />
-              <span className="font-semibold text-gray-900">HalaTuju</span>
+              <span className="font-semibold text-gray-900">{t('common.appName')}</span>
             </Link>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-bold">1</div>
@@ -190,25 +192,25 @@ export default function GradesInputPage() {
       <div className="container mx-auto px-6 py-12 max-w-3xl">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-gray-900 mb-3">
-            Keputusan SPM Anda
+            {t('onboarding.gradesTitle')}
           </h1>
           <p className="text-gray-600">
-            Masukkan gred SPM anda untuk semak kelayakan kursus.
+            {t('onboarding.gradesSubtitle')}
           </p>
         </div>
 
-        {/* Section 1: Subjek Teras */}
+        {/* Section 1: Core Subjects */}
         <div className="mb-10">
           <h2 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
             <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">1</span>
-            Subjek Teras
+            {t('onboarding.coreSubjects')}
           </h2>
-          <p className="text-sm text-gray-500 mb-4 ml-8">4 subjek wajib</p>
+          <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.coreSubjectsCount')}</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {CORE_SUBJECTS.map((subject) => (
               <GradeSelector
                 key={subject.id}
-                label={subject.name}
+                label={t('subjects.' + subject.id)}
                 required
                 value={grades[subject.id] || ''}
                 onChange={(grade) => handleGradeChange(subject.id, grade)}
@@ -217,16 +219,16 @@ export default function GradesInputPage() {
           </div>
         </div>
 
-        {/* Section 2: Subjek Aliran */}
+        {/* Section 2: Stream Subjects */}
         <div className="mb-10">
           <h2 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
             <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">2</span>
-            Subjek Aliran — {STREAM_LABELS[stream] || stream}
+            {t('onboarding.streamSubjects')} — {STREAM_LABELS[stream] || stream}
           </h2>
-          <p className="text-sm text-gray-500 mb-4 ml-8">Pilih 2 subjek terbaik anda</p>
+          <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.pickBest2Stream')}</p>
           <div className="space-y-4">
             <SubjectPicker
-              label="Subjek Aliran 1"
+              label={`${t('onboarding.streamSubjects')} 1`}
               pool={streamPool}
               excludeIds={aliranSubj2 ? [aliranSubj2] : []}
               selectedId={aliranSubj1}
@@ -235,7 +237,7 @@ export default function GradesInputPage() {
               onGradeChange={(grade) => { if (aliranSubj1) handleGradeChange(aliranSubj1, grade) }}
             />
             <SubjectPicker
-              label="Subjek Aliran 2"
+              label={`${t('onboarding.streamSubjects')} 2`}
               pool={streamPool}
               excludeIds={aliranSubj1 ? [aliranSubj1] : []}
               selectedId={aliranSubj2}
@@ -246,16 +248,16 @@ export default function GradesInputPage() {
           </div>
         </div>
 
-        {/* Section 3: Subjek Elektif */}
+        {/* Section 3: Elective Subjects */}
         <div className="mb-10">
           <h2 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
             <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">3</span>
-            Subjek Elektif
+            {t('onboarding.electiveSubjects')}
           </h2>
-          <p className="text-sm text-gray-500 mb-4 ml-8">Pilih 2 subjek lain yang terbaik</p>
+          <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.pickBest2Elective')}</p>
           <div className="space-y-4">
             <SubjectPicker
-              label="Subjek Elektif 1"
+              label={`${t('onboarding.electiveSubjects')} 1`}
               pool={elektifPool}
               excludeIds={elektifSubj2 ? [elektifSubj2] : []}
               selectedId={elektifSubj1}
@@ -264,7 +266,7 @@ export default function GradesInputPage() {
               onGradeChange={(grade) => { if (elektifSubj1) handleGradeChange(elektifSubj1, grade) }}
             />
             <SubjectPicker
-              label="Subjek Elektif 2"
+              label={`${t('onboarding.electiveSubjects')} 2`}
               pool={elektifPool}
               excludeIds={elektifSubj1 ? [elektifSubj1] : []}
               selectedId={elektifSubj2}
@@ -278,20 +280,20 @@ export default function GradesInputPage() {
         {/* Navigation */}
         <div className="flex justify-between">
           <Link href="/onboarding/stream" className="px-6 py-3 text-gray-600 hover:text-gray-900">
-            Kembali
+            {t('common.back')}
           </Link>
           <button
             onClick={handleContinue}
             disabled={!coreComplete}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Teruskan
+            {t('common.continue')}
           </button>
         </div>
 
         {!coreComplete && (
           <p className="text-center text-sm text-gray-500 mt-4">
-            Sila masukkan gred untuk semua subjek teras.
+            {t('onboarding.enterAllCore')}
           </p>
         )}
       </div>
@@ -352,6 +354,7 @@ function SubjectPicker({
   grade: string
   onGradeChange: (grade: string) => void
 }) {
+  const { t } = useT()
   const excludeSet = new Set(excludeIds)
   const options = pool.filter((s) => !excludeSet.has(s.id))
 
@@ -365,7 +368,7 @@ function SubjectPicker({
             onChange={(e) => onSubjectChange(e.target.value)}
             className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
           >
-            <option value="">— Pilih subjek —</option>
+            <option value="">{t('onboarding.selectSubject')}</option>
             {options.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
@@ -373,7 +376,7 @@ function SubjectPicker({
         </div>
         {selectedId && (
           <div className="sm:w-1/2">
-            <label className="block text-xs text-gray-500 mb-1">Gred</label>
+            <label className="block text-xs text-gray-500 mb-1">{t('onboarding.grade')}</label>
             <div className="flex flex-wrap gap-1.5">
               {GRADE_OPTIONS.map((g) => (
                 <button

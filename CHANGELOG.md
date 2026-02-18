@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-02-18 — Sprint 13: Localisation (EN/BM/TA)
+
+### Added
+- **i18n infrastructure** (`lib/i18n.tsx`): React context with `useT()` hook, localStorage-persisted locale preference, static JSON imports for zero-latency switching
+- **Language selector** (`components/LanguageSelector.tsx`): Dropdown in landing page nav and dashboard header — switches between English, Bahasa Melayu, and Tamil
+- **142 translation keys** per locale across 6 sections: common, landing, onboarding, dashboard, login, subjects
+- **i18n validation script** (`scripts/check-i18n.js`): Checks JSON parsing, key completeness across all 3 locales, and no empty values
+
+### Changed
+- **6 core pages localised**: Landing, stream selection, grades input, profile input, dashboard, and login — all hardcoded strings replaced with `t('key')` calls
+- **Landing page** converted from server component to client component to support `useT()` hook
+- **Grades page**: Core subject labels now use translated `t('subjects.XX')` keys; stream/elective subjects retain official Malay names
+- **Dashboard sub-components** (`InsightsPanel`, `FilterDropdown`, `RankedResults`, `LoadingScreen`) each call `useT()` for their own translated strings
+- **Tamil translations** quality-reviewed per style guide: brand name kept as "HalaTuju", compound words joined, sandhi rules applied
+
+### Technical Notes
+- Backend tests: 148 (unchanged) | Golden master: 8280 (unchanged)
+- Frontend-only sprint — no backend changes, no migrations
+- New files: `lib/i18n.tsx`, `components/LanguageSelector.tsx`, `scripts/check-i18n.js`
+- Modified: 3 JSON translation files + 6 page files + `providers.tsx`
+
 ## [1.13.0] - 2026-02-18 — Sprint 12: Report Frontend + PDF
 
 ### Added

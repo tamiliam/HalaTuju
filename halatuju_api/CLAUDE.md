@@ -184,10 +184,11 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 13 — Localisation (EN/BM/TA)**
-- Add language switching for UI text (English, Bahasa Melayu, Tamil)
+**Sprint 14 — UX Polish + Settings**
+- Settings page: language preference, clear profile data, about links
+- UX polish across onboarding flow and dashboard
 - Current tests: 148 | Golden master: 8280
-- Report frontend is live — `/report/[id]` page with markdown rendering, PDF download via `window.print()`
+- i18n is live: 3 languages (EN/BM/TA), 142 keys, language selector on landing + dashboard
 - `google.generativeai` deprecation warning — consider migrating to `google.genai` package
 
 ## Streamlit App (Legacy — migrating to Django API)

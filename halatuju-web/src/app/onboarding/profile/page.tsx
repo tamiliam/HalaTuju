@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useT } from '@/lib/i18n'
 
 export default function ProfileInputPage() {
   const router = useRouter()
+  const { t } = useT()
   const [gender, setGender] = useState<string>('')
   const [nationality, setNationality] = useState<string>('malaysian')
   const [colorblind, setColorblind] = useState<boolean>(false)
@@ -27,7 +29,6 @@ export default function ProfileInputPage() {
 
   const handleContinue = () => {
     if (isComplete) {
-      // Store profile
       const profile = {
         gender,
         nationality,
@@ -47,7 +48,7 @@ export default function ProfileInputPage() {
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <Image src="/logo-icon.png" alt="" width={32} height={32} />
-              <span className="font-semibold text-gray-900">HalaTuju</span>
+              <span className="font-semibold text-gray-900">{t('common.appName')}</span>
             </Link>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
@@ -70,10 +71,10 @@ export default function ProfileInputPage() {
       <div className="container mx-auto px-6 py-12 max-w-2xl">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-gray-900 mb-3">
-            A Few More Details
+            {t('onboarding.profileTitle')}
           </h1>
           <p className="text-gray-600">
-            Some courses have specific requirements. This helps us filter accurately.
+            {t('onboarding.profileSubtitle')}
           </p>
         </div>
 
@@ -81,7 +82,7 @@ export default function ProfileInputPage() {
           {/* Gender */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <label className="block text-lg font-medium text-gray-900 mb-4">
-              Gender <span className="text-red-500">*</span>
+              {t('onboarding.gender')} <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-4">
               <button
@@ -93,8 +94,8 @@ export default function ProfileInputPage() {
                 }`}
               >
                 <div className="text-3xl mb-2">👨</div>
-                <div className="font-medium">Male</div>
-                <div className="text-sm text-gray-500">Lelaki</div>
+                <div className="font-medium">{t('onboarding.male')}</div>
+                <div className="text-sm text-gray-500">{t('onboarding.maleLocal')}</div>
               </button>
               <button
                 onClick={() => setGender('female')}
@@ -105,8 +106,8 @@ export default function ProfileInputPage() {
                 }`}
               >
                 <div className="text-3xl mb-2">👩</div>
-                <div className="font-medium">Female</div>
-                <div className="text-sm text-gray-500">Perempuan</div>
+                <div className="font-medium">{t('onboarding.female')}</div>
+                <div className="text-sm text-gray-500">{t('onboarding.femaleLocal')}</div>
               </button>
             </div>
           </div>
@@ -114,7 +115,7 @@ export default function ProfileInputPage() {
           {/* Nationality */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <label className="block text-lg font-medium text-gray-900 mb-4">
-              Nationality
+              {t('onboarding.nationality')}
             </label>
             <div className="flex gap-4">
               <button
@@ -126,7 +127,7 @@ export default function ProfileInputPage() {
                 }`}
               >
                 <div className="text-3xl mb-2">🇲🇾</div>
-                <div className="font-medium">Malaysian</div>
+                <div className="font-medium">{t('onboarding.malaysian')}</div>
               </button>
               <button
                 onClick={() => setNationality('non_malaysian')}
@@ -137,7 +138,7 @@ export default function ProfileInputPage() {
                 }`}
               >
                 <div className="text-3xl mb-2">🌍</div>
-                <div className="font-medium">Non-Malaysian</div>
+                <div className="font-medium">{t('onboarding.nonMalaysian')}</div>
               </button>
             </div>
           </div>
@@ -145,10 +146,10 @@ export default function ProfileInputPage() {
           {/* Health Conditions */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <label className="block text-lg font-medium text-gray-900 mb-2">
-              Health Conditions
+              {t('onboarding.healthConditions')}
             </label>
             <p className="text-sm text-gray-500 mb-4">
-              Some courses have health requirements. Check if any apply to you.
+              {t('onboarding.healthNote')}
             </p>
             <div className="space-y-3">
               <label className="flex items-center gap-3 cursor-pointer">
@@ -159,8 +160,8 @@ export default function ProfileInputPage() {
                   className="w-5 h-5 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
                 />
                 <div>
-                  <span className="font-medium">Colour blindness</span>
-                  <span className="text-sm text-gray-500 ml-2">(Buta warna)</span>
+                  <span className="font-medium">{t('onboarding.colorBlindness')}</span>
+                  <span className="text-sm text-gray-500 ml-2">({t('onboarding.colorBlindnessLocal')})</span>
                 </div>
               </label>
               <label className="flex items-center gap-3 cursor-pointer">
@@ -171,8 +172,8 @@ export default function ProfileInputPage() {
                   className="w-5 h-5 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
                 />
                 <div>
-                  <span className="font-medium">Physical disability</span>
-                  <span className="text-sm text-gray-500 ml-2">(OKU)</span>
+                  <span className="font-medium">{t('onboarding.physicalDisability')}</span>
+                  <span className="text-sm text-gray-500 ml-2">({t('onboarding.physicalDisabilityLocal')})</span>
                 </div>
               </label>
             </div>
@@ -184,14 +185,14 @@ export default function ProfileInputPage() {
             href="/onboarding/grades"
             className="px-6 py-3 text-gray-600 hover:text-gray-900"
           >
-            Back
+            {t('common.back')}
           </Link>
           <button
             onClick={handleContinue}
             disabled={!isComplete}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            See My Recommendations
+            {t('onboarding.seeRecommendations')}
           </button>
         </div>
       </div>
