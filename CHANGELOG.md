@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-02-20 — Sprint 14: TVET Data Fix + UX Polish
+
+### Fixed
+- **TVET orphaned courses**: All 84 TVET courses had zero institution links because `load_course_details` used `.filter().update()` on non-existent `CourseInstitution` records. Changed to `update_or_create` so TVET rows in `details.csv` create links when none exist.
+- **Institution taxonomy**: 55 ILKBS/ILJTM institutions were incorrectly typed as `IPTA`. Changed to `ILKA` in `data/institutions.csv` and Supabase DB (157 IPTA + 55 ILKA).
+
+### Added
+- **181 TVET course-institution links** now loaded correctly — IKBN/IKTBN/IKSN courses linked to ILKBS institutions, ILP/ADTEC/JMTI courses linked to ILJTM institutions, with fees, allowances, and application hyperlinks.
+- **Settings page redesign** (`settings/page.tsx`): Language selector, clear profile data button, about section — fully localised (EN/BM/TA).
+- **Saved page i18n**: Localised with `useT()` hook across all 3 locales.
+- **Settings and saved i18n keys**: Added `settings.*` and `saved.*` translation keys to all 3 locale files.
+
+### Changed
+- **Gemini SDK migration**: `google-generativeai` (deprecated) replaced with `google-genai` v1.x Client API pattern in `report_engine.py`. Updated mocks in `test_report_engine.py`.
+- **`requirements.txt`**: `google-generativeai>=0.3,<1.0` → `google-genai>=1.0,<2.0`
+
+### Technical Notes
+- Backend tests: 148 (unchanged) | Golden master: 8280 (unchanged)
+- Both `halatuju-api` and `halatuju-web` deployed to Cloud Run
+- Data fix applied directly to Supabase DB (55 institution type updates + 181 link inserts)
+
 ## [1.14.0] - 2026-02-18 — Sprint 13: Localisation (EN/BM/TA)
 
 ### Added

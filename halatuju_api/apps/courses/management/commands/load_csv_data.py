@@ -413,12 +413,18 @@ class Command(BaseCommand):
                         pass
 
             if inst_id:
-                # TVET: update specific course+institution pair
-                updated = CourseInstitution.objects.filter(
-                    course__course_id=course_id,
-                    institution__institution_id=inst_id,
-                ).update(**defaults)
-                count += updated
+                # TVET: create or update specific course+institution pair
+                try:
+                    course = Course.objects.get(course_id=course_id)
+                    institution = Institution.objects.get(institution_id=inst_id)
+                    CourseInstitution.objects.update_or_create(
+                        course=course,
+                        institution=institution,
+                        defaults=defaults,
+                    )
+                    count += 1
+                except (Course.DoesNotExist, Institution.DoesNotExist):
+                    pass
             else:
                 # Poly/Univ: update ALL institutions for this course
                 updated = CourseInstitution.objects.filter(

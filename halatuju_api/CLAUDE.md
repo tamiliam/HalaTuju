@@ -184,12 +184,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 14 — UX Polish + Settings**
-- Settings page: language preference, clear profile data, about links
-- UX polish across onboarding flow and dashboard
+**Sprint 15 — UX Polish Phase 2**
+- Localise remaining pages: quiz, course detail, report, about, privacy, terms (7 pages)
+- Localise CourseCard component labels
 - Current tests: 148 | Golden master: 8280
-- i18n is live: 3 languages (EN/BM/TA), 142 keys, language selector on landing + dashboard
-- `google.generativeai` deprecation warning — consider migrating to `google.genai` package
+- i18n is live: 3 languages (EN/BM/TA), language selector on landing + dashboard + settings
+- Gemini SDK migrated to `google-genai` v1.x
+- TVET data fix complete: 181 institution links, 55 institutions retyped IPTA→ILKA
 
 ## Streamlit App (Legacy — migrating to Django API)
 

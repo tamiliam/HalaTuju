@@ -2,7 +2,7 @@
 
 > **Status**: ACTIVE
 > **Created**: 2026-02-16
-> **Total**: 15 sprints, 4 phases, ~50 hours
+> **Total**: 18 sprints, 4 phases (expanded from original 15)
 > **Plan file**: `.claude/plans/silly-zooming-kay.md`
 
 ## Phases
@@ -32,8 +32,11 @@
 | 11 | AI Report Backend | DONE (2026-02-18) | +12 | No |
 | 12 | Report Frontend + PDF | DONE (2026-02-18) | +4 | Yes |
 | 13 | Localisation (EN/BM/TA) | DONE (2026-02-18) | +0 | Yes |
-| 14 | UX Polish + Settings | NOT STARTED | +3 | Yes |
-| 15 | Cleanup + Documentation | NOT STARTED | 0 | Yes |
+| 14 | TVET Data Fix + UX Polish | DONE (2026-02-20) | +0 | Yes |
+| 15 | UX Polish Phase 2 (7 pages i18n) | NOT STARTED | 0 | TBD |
+| 16 | UX Polish Phase 3 (Accessibility + Mobile) | NOT STARTED | 0 | TBD |
+| 17 | TVET/ILKA Frontend Filters | NOT STARTED | 0 | TBD |
+| 18 | Cleanup + Documentation | NOT STARTED | 0 | Yes |
 
 ## Key Decisions Made
 
