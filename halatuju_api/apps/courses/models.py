@@ -7,6 +7,8 @@ These models mirror the CSV data structure from the Streamlit version:
 - course_tags.json → CourseTag
 - institutions.csv → Institution
 - links.csv → CourseInstitution
+- masco_details.csv → MascoOccupation
+- course_masco_link.csv → Course.career_occupations (M2M)
 """
 from django.db import models
 
@@ -27,12 +29,39 @@ class Course(models.Model):
     semesters = models.IntegerField(null=True, blank=True)
     description = models.TextField(blank=True)
 
+    # Career pathway: links to MASCO occupation codes
+    career_occupations = models.ManyToManyField(
+        'MascoOccupation',
+        related_name='courses',
+        blank=True,
+        help_text="MASCO occupation codes this course leads to"
+    )
+
     class Meta:
         db_table = 'courses'
         ordering = ['course_id']
 
     def __str__(self):
         return f"{self.course_id}: {self.course}"
+
+
+class MascoOccupation(models.Model):
+    """
+    MASCO (Malaysia Standard Classification of Occupations) job codes.
+
+    Source: masco_details.csv (274 entries)
+    Links to official eMASCO portal: emasco.mohr.gov.my
+    """
+    masco_code = models.CharField(max_length=20, primary_key=True)
+    job_title = models.CharField(max_length=255, help_text="Official Malay job title")
+    emasco_url = models.URLField(max_length=500, blank=True, help_text="Link to eMASCO portal page")
+
+    class Meta:
+        db_table = 'masco_occupations'
+        ordering = ['masco_code']
+
+    def __str__(self):
+        return f"{self.masco_code}: {self.job_title}"
 
 
 class CourseRequirement(models.Model):

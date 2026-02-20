@@ -17,7 +17,8 @@ import pandas as pd
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from apps.courses.models import (
-    Course, CourseRequirement, CourseTag, Institution, CourseInstitution
+    Course, CourseRequirement, CourseTag, Institution, CourseInstitution,
+    MascoOccupation,
 )
 
 
@@ -46,6 +47,8 @@ class Command(BaseCommand):
             self.load_course_institutions(data_dir)
             self.load_course_details(data_dir)
             self.load_course_tags(data_dir)
+            self.load_masco_occupations(data_dir)
+            self.load_course_masco_links(data_dir)
 
         self.stdout.write(self.style.SUCCESS('Data loaded successfully!'))
 
@@ -506,3 +509,68 @@ class Command(BaseCommand):
                 count += 1
 
         self.stdout.write(f'  Loaded {count} course tags')
+
+    def load_masco_occupations(self, data_dir):
+        """Load masco_details.csv into MascoOccupation model."""
+        csv_path = os.path.join(data_dir, 'masco_details.csv')
+        if not os.path.exists(csv_path):
+            self.stdout.write('  Skipping masco_details.csv (not found)')
+            return
+
+        import csv as csv_module
+        count = 0
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv_module.DictReader(f)
+            for row in reader:
+                code = row.get('masco_code', '').strip()
+                title = row.get('job_title', '').strip()
+                url = row.get('url', '').strip()
+
+                if not code or not title:
+                    continue
+
+                MascoOccupation.objects.update_or_create(
+                    masco_code=code,
+                    defaults={
+                        'job_title': title,
+                        'emasco_url': url,
+                    }
+                )
+                count += 1
+
+        self.stdout.write(f'  Loaded {count} MASCO occupations')
+
+    def load_course_masco_links(self, data_dir):
+        """Load course_masco_link.csv to create Course ↔ MascoOccupation M2M links."""
+        csv_path = os.path.join(data_dir, 'course_masco_link.csv')
+        if not os.path.exists(csv_path):
+            self.stdout.write('  Skipping course_masco_link.csv (not found)')
+            return
+
+        import csv as csv_module
+        count = 0
+        seen = set()  # Deduplicate (file has some duplicate rows)
+
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv_module.DictReader(f)
+            for row in reader:
+                course_id = row.get('course_id', '').strip()
+                masco_code = row.get('masco_code', '').strip()
+
+                if not course_id or not masco_code:
+                    continue
+
+                pair = (course_id, masco_code)
+                if pair in seen:
+                    continue
+                seen.add(pair)
+
+                try:
+                    course = Course.objects.get(course_id=course_id)
+                    occupation = MascoOccupation.objects.get(masco_code=masco_code)
+                    course.career_occupations.add(occupation)
+                    count += 1
+                except (Course.DoesNotExist, MascoOccupation.DoesNotExist):
+                    pass
+
+        self.stdout.write(f'  Linked {count} course-occupation pairs')

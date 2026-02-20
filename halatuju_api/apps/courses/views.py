@@ -30,6 +30,7 @@ from .engine import (
 from .serializers import (
     CourseSerializer,
     InstitutionSerializer,
+    MascoOccupationSerializer,
     EligibilityRequestSerializer,
     EligibilityResponseSerializer,
     RankingRequestSerializer,
@@ -352,9 +353,15 @@ class CourseDetailView(APIView):
                 inst_data['free_meals'] = link.free_meals
                 institutions.append(inst_data)
 
+            # Get career occupations linked to this course
+            career_occupations = MascoOccupationSerializer(
+                course.career_occupations.all(), many=True
+            ).data
+
             return Response({
                 'course': course_data,
                 'institutions': institutions,
+                'career_occupations': career_occupations,
             })
         except Course.DoesNotExist:
             return Response(

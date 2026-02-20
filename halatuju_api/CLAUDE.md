@@ -111,7 +111,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (148 tests)
+# Run ALL tests (156 tests)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8280 baseline)
@@ -120,7 +120,7 @@ python -m pytest apps/courses/tests/test_golden_master.py -v
 # Serializer tests (27 tests — grade mapping, normalization)
 python -m pytest apps/courses/tests/test_serializers.py -v
 
-# API endpoint tests (29 tests — eligibility, PISMP, course detail offerings, courses, institutions, merit)
+# API endpoint tests (32 tests — eligibility, PISMP, course detail offerings + career occupations, courses, institutions, merit)
 python -m pytest apps/courses/tests/test_api.py -v
 ```
 
@@ -130,12 +130,12 @@ python -m pytest apps/courses/tests/test_api.py -v
 |------|-------|----------------|
 | test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 8280 baseline |
 | test_serializers.py | 27 | Grade key mapping, gender/nationality normalization, bool→Ya/Tidak, validation |
-| test_api.py | 29 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration), course detail offerings (fees, hyperlink, allowances, badges, empty fields), course/institution CRUD |
+| test_api.py | 32 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD |
 | test_auth.py | 11 | Auth enforcement — protected endpoints reject 403, accept with JWT 200, public endpoints open |
 | test_saved_courses.py | 3 | Saved course CRUD — save (201), list (appears), delete (removed) |
 | test_quiz.py | 14 | Quiz endpoints (questions 3 langs, submit, validation), engine (accumulation, taxonomy, strength, lang parity) |
 | test_ranking.py | 34 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, top_5/rest split, API endpoint validation |
-| test_data_loading.py | 5 | TVET metadata enrichment, PISMP metadata enrichment, institution modifiers storage |
+| test_data_loading.py | 10 | TVET metadata enrichment, PISMP metadata enrichment, institution modifiers storage, MASCO occupation model (PK, M2M, reverse relation, idempotent load, __str__) |
 | test_insights.py | 8 | Insights engine: empty input, stream breakdown, labels, top fields, merit counts, level distribution, summary text |
 | test_report_engine.py | 12 | Report engine: format helpers (grades, signals, courses, insights), prompts (BM/EN), persona mapping, Gemini mock (success, cascade, missing key) |
 | test_views.py (reports) | 4 | Report views: list (own only), detail, cross-user 404 regression, validation |
@@ -143,7 +143,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (148 must pass, golden master = 8280)
+# 1. Run all tests (156 must pass, golden master = 8280)
 python manage.py test --verbosity=2
 
 # 2. After any migration that creates/alters tables:
@@ -155,7 +155,7 @@ python manage.py test --verbosity=2
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-All 148 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
+All 156 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -170,7 +170,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/quiz_data.py` | Quiz questions (6 Qs × 3 languages) | No |
 | `apps/courses/quiz_engine.py` | Stateless quiz signal accumulator | No |
 | `apps/courses/ranking_engine.py` | Fit score calculation + course ranking | No |
-| `apps/courses/management/commands/load_csv_data.py` | CSV → DB migration (9 loaders) | One-time |
+| `apps/courses/management/commands/load_csv_data.py` | CSV → DB migration (11 loaders) | One-time |
 | `apps/courses/insights_engine.py` | Deterministic insights from eligibility results | No |
 | `apps/courses/management/commands/audit_data.py` | Data completeness report | No |
 | `apps/reports/report_engine.py` | Gemini-powered narrative report generator | No |
@@ -184,13 +184,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 15 — UX Polish Phase 2**
+**Sprint 16 — UX Polish Phase 2**
 - Localise remaining pages: quiz, course detail, report, about, privacy, terms (7 pages)
 - Localise CourseCard component labels
-- Current tests: 148 | Golden master: 8280
+- Current tests: 156 | Golden master: 8280
+- Career pathways live: 272 MASCO occupations, 531 course-occupation links, clickable pills on course detail
 - i18n is live: 3 languages (EN/BM/TA), language selector on landing + dashboard + settings
-- Gemini SDK migrated to `google-genai` v1.x
-- TVET data fix complete: 181 institution links, 55 institutions retyped IPTA→ILKA
+- Migration 0005 applied: `masco_occupations` + `courses_course_career_occupations` tables with RLS
 
 ## Streamlit App (Legacy — migrating to Django API)
 

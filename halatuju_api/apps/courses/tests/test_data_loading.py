@@ -5,9 +5,10 @@ Covers:
 - TVET course metadata enrichment
 - PISMP course metadata enrichment
 - Institution modifiers loading from JSON into DB
+- MASCO occupation loading and course-occupation M2M linking
 """
 from django.test import TestCase
-from apps.courses.models import Course, CourseRequirement, Institution
+from apps.courses.models import Course, CourseRequirement, Institution, MascoOccupation
 
 
 class TestTvetCourseMetadata(TestCase):
@@ -133,3 +134,58 @@ class TestInstitutionModifiers(TestCase):
         self.assertTrue(self.institution.modifiers['urban'])
         self.assertEqual(self.institution.modifiers['cultural_safety_net'], 'high')
         self.assertFalse(self.institution.modifiers['subsistence_support'])
+
+
+class TestMascoOccupationModel(TestCase):
+    """Test MascoOccupation model and Course M2M relationship."""
+
+    def setUp(self):
+        self.occ = MascoOccupation.objects.create(
+            masco_code='3115-24',
+            job_title='Juruteknik Mekatronik',
+            emasco_url='https://emasco.mohr.gov.my/masco/3115-24',
+        )
+        self.course = Course.objects.create(
+            course_id='TEST-MASCO-001',
+            course='Test Diploma Mekatronik',
+            level='Diploma',
+            department='Engineering',
+            field='Mechatronics',
+        )
+
+    def test_masco_occupation_str(self):
+        """MascoOccupation __str__ shows code and title."""
+        self.assertIn('3115-24', str(self.occ))
+
+    def test_masco_primary_key_is_code(self):
+        """masco_code is the primary key."""
+        fetched = MascoOccupation.objects.get(pk='3115-24')
+        self.assertEqual(fetched.job_title, 'Juruteknik Mekatronik')
+
+    def test_course_career_occupations_m2m(self):
+        """Course can link to multiple MASCO occupations."""
+        occ2 = MascoOccupation.objects.create(
+            masco_code='3115-47',
+            job_title='Juruteknik Robotik',
+            emasco_url='https://emasco.mohr.gov.my/masco/3115-47',
+        )
+        self.course.career_occupations.add(self.occ, occ2)
+        self.assertEqual(self.course.career_occupations.count(), 2)
+
+    def test_reverse_relation_occupation_to_courses(self):
+        """MascoOccupation.courses shows linked courses."""
+        self.course.career_occupations.add(self.occ)
+        self.assertIn(self.course, self.occ.courses.all())
+
+    def test_update_or_create_idempotent(self):
+        """Loading the same MASCO code twice doesn't create duplicates."""
+        MascoOccupation.objects.update_or_create(
+            masco_code='3115-24',
+            defaults={
+                'job_title': 'Juruteknik Mekatronik (Updated)',
+                'emasco_url': 'https://emasco.mohr.gov.my/masco/3115-24',
+            },
+        )
+        self.assertEqual(MascoOccupation.objects.filter(masco_code='3115-24').count(), 1)
+        self.occ.refresh_from_db()
+        self.assertIn('Updated', self.occ.job_title)

@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { getCourse, saveCourse, unsaveCourse, type Course, type Institution } from '@/lib/api'
+import { getCourse, saveCourse, unsaveCourse, type Course, type Institution, type MascoOccupation } from '@/lib/api'
 import { useState } from 'react'
 
 export default function CourseDetailPage() {
@@ -63,7 +63,7 @@ export default function CourseDetailPage() {
     )
   }
 
-  const { course, institutions } = data
+  const { course, institutions, career_occupations } = data
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -168,6 +168,34 @@ export default function CourseDetailPage() {
                   `This ${course.level} programme in ${course.field} prepares students for careers in ${course.department}. The course combines theoretical knowledge with practical skills to ensure graduates are industry-ready.`}
               </p>
             </section>
+
+            {/* Career Pathways */}
+            {career_occupations && career_occupations.length > 0 && (
+              <section className="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Career Pathways
+                </h2>
+                <p className="text-sm text-gray-500 mb-4">
+                  Jobs this course can lead to (MASCO classified)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {career_occupations.map((occ) => (
+                    <a
+                      key={occ.masco_code}
+                      href={occ.emasco_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium hover:bg-indigo-100 transition-colors"
+                    >
+                      {occ.job_title}
+                      <svg className="w-3.5 h-3.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Institutions */}
             <section className="bg-white rounded-xl border border-gray-200 p-6">

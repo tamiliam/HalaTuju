@@ -86,6 +86,12 @@ export interface Institution {
   free_meals?: boolean
 }
 
+export interface MascoOccupation {
+  masco_code: string
+  job_title: string
+  emasco_url: string
+}
+
 // Insights from eligibility analysis
 export interface InsightsStreamItem {
   source_type: string
@@ -130,7 +136,7 @@ export async function getCourses(options?: ApiOptions): Promise<{ courses: Cours
 export async function getCourse(
   courseId: string,
   options?: ApiOptions
-): Promise<{ course: Course; institutions: Institution[] }> {
+): Promise<{ course: Course; institutions: Institution[]; career_occupations: MascoOccupation[] }> {
   return apiRequest(`/api/v1/courses/${courseId}/`, options)
 }
 

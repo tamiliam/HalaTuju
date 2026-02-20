@@ -563,6 +563,62 @@ class TestCourseDetailOfferings(TestCase):
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls')
+class TestCourseDetailCareerOccupations(TestCase):
+    """Test course detail endpoint returns career occupation data."""
+
+    def setUp(self):
+        self.client = APIClient()
+        from apps.courses.models import Course, MascoOccupation
+        self.course = Course.objects.create(
+            course_id='TEST-DIP-CAREER',
+            course='Test Diploma in IT',
+            level='Diploma',
+            department='IT',
+            field='Software Engineering',
+        )
+        self.occ1 = MascoOccupation.objects.create(
+            masco_code='2512-03',
+            job_title='Pembangun Perisian',
+            emasco_url='https://emasco.mohr.gov.my/masco/2512-03',
+        )
+        self.occ2 = MascoOccupation.objects.create(
+            masco_code='3512-06',
+            job_title='Penolong Pembangun Perisian',
+            emasco_url='https://emasco.mohr.gov.my/masco/3512-06',
+        )
+        self.course.career_occupations.add(self.occ1, self.occ2)
+
+    def test_course_detail_includes_career_occupations(self):
+        """Course detail should include career_occupations list."""
+        response = self.client.get(f'/api/v1/courses/{self.course.course_id}/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('career_occupations', data)
+        self.assertEqual(len(data['career_occupations']), 2)
+
+    def test_career_occupation_fields(self):
+        """Each career occupation should have masco_code, job_title, emasco_url."""
+        response = self.client.get(f'/api/v1/courses/{self.course.course_id}/')
+        data = response.json()
+        occ = data['career_occupations'][0]
+        self.assertIn('masco_code', occ)
+        self.assertIn('job_title', occ)
+        self.assertIn('emasco_url', occ)
+
+    def test_course_without_career_occupations(self):
+        """Course with no linked occupations should return empty list."""
+        from apps.courses.models import Course
+        course2 = Course.objects.create(
+            course_id='TEST-DIP-NOCAREER',
+            course='Test Diploma No Career',
+            level='Diploma', department='Art', field='Art',
+        )
+        response = self.client.get(f'/api/v1/courses/{course2.course_id}/')
+        data = response.json()
+        self.assertEqual(data['career_occupations'], [])
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls')
 class TestInstitutionEndpoints(TestCase):
     """Test institution endpoints."""
 

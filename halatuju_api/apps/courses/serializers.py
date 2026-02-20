@@ -2,7 +2,7 @@
 Serializers for the courses API.
 """
 from rest_framework import serializers
-from .models import Course, Institution, CourseRequirement, CourseTag
+from .models import Course, Institution, CourseRequirement, CourseTag, MascoOccupation
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -14,6 +14,14 @@ class CourseSerializer(serializers.ModelSerializer):
             'course_id', 'course', 'wbl', 'level', 'department',
             'field', 'frontend_label', 'semesters', 'description'
         ]
+
+
+class MascoOccupationSerializer(serializers.ModelSerializer):
+    """Serializer for MASCO occupation."""
+
+    class Meta:
+        model = MascoOccupation
+        fields = ['masco_code', 'job_title', 'emasco_url']
 
 
 class InstitutionSerializer(serializers.ModelSerializer):

@@ -2,7 +2,7 @@
 
 > **Status**: ACTIVE
 > **Created**: 2026-02-16
-> **Total**: 18 sprints, 4 phases (expanded from original 15)
+> **Total**: 19 sprints, 5 phases (expanded from original 15)
 > **Plan file**: `.claude/plans/silly-zooming-kay.md`
 
 ## Phases
@@ -13,7 +13,9 @@
 | 1: Intelligence | 3-6 | Quiz API, ranking engine, quiz frontend, dashboard redesign |
 | 2: Data | 7-9 | PISMP integration, course detail, data gaps |
 | 3: AI Reports | 10-12 | Insights, Gemini reports, PDF download |
-| 4: Polish | 13-15 | Localisation (EN/BM/TA), UX polish, cleanup |
+| 4: Polish | 13-14 | Localisation (EN/BM/TA), UX polish |
+| 5: Lentera | 15 | Career pathways (MASCO integration) |
+| 6: Polish 2 | 16-19 | Remaining i18n, accessibility, filters, cleanup |
 
 ## Sprint Tracker
 
@@ -33,10 +35,11 @@
 | 12 | Report Frontend + PDF | DONE (2026-02-18) | +4 | Yes |
 | 13 | Localisation (EN/BM/TA) | DONE (2026-02-18) | +0 | Yes |
 | 14 | TVET Data Fix + UX Polish | DONE (2026-02-20) | +0 | Yes |
-| 15 | UX Polish Phase 2 (7 pages i18n) | NOT STARTED | 0 | TBD |
-| 16 | UX Polish Phase 3 (Accessibility + Mobile) | NOT STARTED | 0 | TBD |
-| 17 | TVET/ILKA Frontend Filters | NOT STARTED | 0 | TBD |
-| 18 | Cleanup + Documentation | NOT STARTED | 0 | Yes |
+| 15 | Career Pathways (MASCO Integration) | DONE (2026-02-20) | +8 | No |
+| 16 | UX Polish Phase 2 (7 pages i18n) | NOT STARTED | 0 | TBD |
+| 17 | UX Polish Phase 3 (Accessibility + Mobile) | NOT STARTED | 0 | TBD |
+| 18 | TVET/ILKA Frontend Filters | NOT STARTED | 0 | TBD |
+| 19 | Cleanup + Documentation | NOT STARTED | 0 | Yes |
 
 ## Key Decisions Made
 
