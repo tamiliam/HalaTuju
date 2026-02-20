@@ -169,12 +169,12 @@ def generate_report(grades, eligible_courses, insights,
         return {'error': 'AI service not configured (missing API key)'}
 
     try:
-        import google.generativeai as genai
+        from google import genai
     except ImportError:
-        logger.error('google-generativeai not installed')
+        logger.error('google-genai not installed')
         return {'error': 'AI module not installed'}
 
-    genai.configure(api_key=api_key)
+    client = genai.Client(api_key=api_key)
 
     # Format data for prompt
     academic_context = _format_grades(grades)
@@ -206,9 +206,10 @@ def generate_report(grades, eligible_courses, insights,
             continue
 
         try:
-            model = genai.GenerativeModel(model_name)
             start_ms = time.time()
-            response = model.generate_content(full_prompt)
+            response = client.models.generate_content(
+                model=model_name, contents=full_prompt
+            )
             elapsed_ms = int((time.time() - start_ms) * 1000)
 
             text = response.text

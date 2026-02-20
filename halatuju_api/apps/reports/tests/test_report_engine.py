@@ -166,20 +166,18 @@ class TestGenerateReport(TestCase):
         self.assertIn('error', result)
         self.assertIn('API key', result['error'])
 
-    @patch('google.generativeai.GenerativeModel')
-    @patch('google.generativeai.configure')
+    @patch('google.genai.Client')
     @patch('apps.reports.report_engine.settings')
-    def test_successful_generation(self, mock_settings, mock_configure,
-                                   mock_model_cls):
+    def test_successful_generation(self, mock_settings, mock_client_cls):
         """Successful Gemini call returns markdown + metadata."""
         mock_settings.GEMINI_API_KEY = 'test-key'
 
         mock_response = MagicMock()
         mock_response.text = 'Salam sejahtera pelajar, saya Cikgu Gopal...'
 
-        mock_model = MagicMock()
-        mock_model.generate_content.return_value = mock_response
-        mock_model_cls.return_value = mock_model
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
+        mock_client_cls.return_value = mock_client
 
         result = generate_report(
             grades=SAMPLE_GRADES,
@@ -194,11 +192,9 @@ class TestGenerateReport(TestCase):
         self.assertIn('counsellor_name', result)
         self.assertNotIn('error', result)
 
-    @patch('google.generativeai.GenerativeModel')
-    @patch('google.generativeai.configure')
+    @patch('google.genai.Client')
     @patch('apps.reports.report_engine.settings')
-    def test_cascade_fallback_on_failure(self, mock_settings, mock_configure,
-                                         mock_model_cls):
+    def test_cascade_fallback_on_failure(self, mock_settings, mock_client_cls):
         """If first model fails, cascade tries the next one."""
         mock_settings.GEMINI_API_KEY = 'test-key'
 
@@ -207,18 +203,15 @@ class TestGenerateReport(TestCase):
 
         call_count = [0]
 
-        def side_effect(model_name):
-            model = MagicMock()
+        def side_effect(**kwargs):
             call_count[0] += 1
             if call_count[0] == 1:
-                # First model fails
-                model.generate_content.side_effect = Exception('Rate limited')
-            else:
-                # Second model succeeds
-                model.generate_content.return_value = mock_response
-            return model
+                raise Exception('Rate limited')
+            return mock_response
 
-        mock_model_cls.side_effect = side_effect
+        mock_client = MagicMock()
+        mock_client.models.generate_content.side_effect = side_effect
+        mock_client_cls.return_value = mock_client
 
         result = generate_report(
             grades=SAMPLE_GRADES,

@@ -152,5 +152,26 @@
     "PI": "Pendidikan Islam",
     "PM": "Pendidikan Moral",
     "SN": "Sains"
+  },
+  "settings": {
+    "language": "Bahasa",
+    "languageDesc": "Pilih bahasa pilihan anda untuk antara muka.",
+    "clearData": "Padam Data Profil",
+    "clearDataDesc": "Padam gred, pilihan aliran dan jawapan kuiz anda dari peranti ini. Akaun dan kursus yang disimpan tidak terjejas.",
+    "clearConfirm": "Adakah anda pasti mahu memadamkan semua data profil? Anda perlu memasukkan semula gred anda.",
+    "clearButton": "Padam Semua Data",
+    "dataCleared": "Semua data profil telah dipadam.",
+    "aboutTitle": "Tentang HalaTuju",
+    "version": "Versi",
+    "currentLanguage": "Bahasa Semasa",
+    "builtBy": "Dibina oleh Tamil Foundation untuk pelajar Malaysia."
+  },
+  "saved": {
+    "title": "Kursus Disimpan",
+    "signInPrompt": "Log masuk untuk menyimpan dan melihat kursus kegemaran anda.",
+    "signIn": "Log Masuk",
+    "empty": "Anda belum menyimpan sebarang kursus.",
+    "browseCourses": "Layari Kursus",
+    "remove": "Buang dari senarai"
   }
 }

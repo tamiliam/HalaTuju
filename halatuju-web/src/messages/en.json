@@ -152,5 +152,26 @@
     "PI": "Pendidikan Islam",
     "PM": "Pendidikan Moral",
     "SN": "Sains"
+  },
+  "settings": {
+    "language": "Language",
+    "languageDesc": "Choose your preferred language for the interface.",
+    "clearData": "Clear Profile Data",
+    "clearDataDesc": "Remove your saved grades, stream selection, and quiz answers from this device. Your account and saved courses are not affected.",
+    "clearConfirm": "Are you sure you want to clear all your profile data? You will need to re-enter your grades.",
+    "clearButton": "Clear All Data",
+    "dataCleared": "All profile data has been cleared.",
+    "aboutTitle": "About HalaTuju",
+    "version": "Version",
+    "currentLanguage": "Current Language",
+    "builtBy": "Built by the Tamil Foundation for Malaysian students."
+  },
+  "saved": {
+    "title": "Saved Courses",
+    "signInPrompt": "Sign in to save and view your favourite courses.",
+    "signIn": "Sign In",
+    "empty": "You haven't saved any courses yet.",
+    "browseCourses": "Browse Courses",
+    "remove": "Remove from saved"
   }
 }

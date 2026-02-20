@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { getSavedCourses, unsaveCourse, type Course } from '@/lib/api'
 import { getSession } from '@/lib/supabase'
+import { useT } from '@/lib/i18n'
 
 export default function SavedPage() {
+  const { t } = useT()
   const [token, setToken] = useState<string | null>(null)
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
@@ -30,7 +32,6 @@ export default function SavedPage() {
     try {
       await unsaveCourse(courseId, { token })
     } catch {
-      // Reload on failure
       const { saved_courses } = await getSavedCourses({ token })
       setCourses(saved_courses)
     }
@@ -45,7 +46,7 @@ export default function SavedPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </Link>
-          <h1 className="text-xl font-semibold text-gray-900">Saved Courses</h1>
+          <h1 className="text-xl font-semibold text-gray-900">{t('saved.title')}</h1>
         </div>
       </header>
 
@@ -58,15 +59,15 @@ export default function SavedPage() {
 
         {!loading && !token && (
           <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">Sign in to save and view your favourite courses.</p>
-            <Link href="/login" className="btn-primary">Sign In</Link>
+            <p className="text-gray-600 mb-4">{t('saved.signInPrompt')}</p>
+            <Link href="/login" className="btn-primary">{t('saved.signIn')}</Link>
           </div>
         )}
 
         {!loading && token && courses.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">You haven't saved any courses yet.</p>
-            <Link href="/dashboard" className="btn-primary">Browse Courses</Link>
+            <p className="text-gray-600 mb-4">{t('saved.empty')}</p>
+            <Link href="/dashboard" className="btn-primary">{t('saved.browseCourses')}</Link>
           </div>
         )}
 
@@ -81,7 +82,7 @@ export default function SavedPage() {
                 <button
                   onClick={() => handleRemove(course.course_id)}
                   className="ml-4 p-2 text-gray-400 hover:text-red-500 transition-colors"
-                  aria-label="Remove from saved"
+                  aria-label={t('saved.remove')}
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
