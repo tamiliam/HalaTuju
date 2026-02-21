@@ -140,6 +140,11 @@ export default function CourseDetailPage() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {course.course}
               </h1>
+              {course.headline && (
+                <p className="text-lg text-primary-600 font-medium mb-2">
+                  {course.headline}
+                </p>
+              )}
               <p className="text-gray-600 mb-4">
                 {course.frontend_label || course.field}
               </p>

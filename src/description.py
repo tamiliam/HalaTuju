@@ -87,7 +87,7 @@ course_info = {
     # --- BIOTECHNOLOGY ---
     "POLY-DIP-002": {
         "headline": "🧬 Bioteknologi: Sains Hayat Industri",
-        "synopsis": "Anda akan bekerja di makmal untuk menghasilkan produk berasaskan biologi—seperti makanan, ubat-ubatan, atau benih tanaman hibrid. Anda akan menguasai teknik Kultur Tisu, Mikrobiologi, dan Fermentasi. Ini adalah bidang untuk mereka yang teliti, suka eksperimen sains, dan berminat dengan inovasi makmal."
+        "synopsis": "Anda akan bekerja di makmal untuk menghasilkan produk berasaskan biologi—seperti makanan, ubat-ubatan, atau benih tanaman hibrid. Anda akan menguasai teknik Kultur Tisu, Mikrobiologi, dan Fermentasi. Sesuai untuk anda yang teliti, suka eksperimen sains, dan berminat dengan inovasi makmal."
     },
 
     # --- GEOMATICS ---
@@ -111,7 +111,7 @@ course_info = {
     # --- ENVIRONMENTAL ENGINEERING ---
     "POLY-DIP-006": {
         "headline": "♻️ Kejuruteraan Alam Sekitar: Wira Bumi",
-        "synopsis": "Anda adalah doktor kepada alam sekitar. Belajar cara merawat air sisa, mengurus sisa pepejal (sampah), dan memantau kualiti udara. Tugas anda memastikan pembangunan negara tidak memusnahkan bumi. Sesuai untuk mereka yang peka dengan isu hijau dan mahukan kerjaya teknikal yang memberi impak positif."
+        "synopsis": "Anda adalah doktor kepada alam sekitar. Belajar cara merawat air sisa, mengurus sisa pepejal (sampah), dan memantau kualiti udara. Tugas anda memastikan pembangunan negara tidak memusnahkan bumi. Sesuai untuk anda yang peka dengan isu hijau dan mahukan kerjaya teknikal yang memberi impak positif."
     },
 
     # --- CIVIL ENGINEERING ---
@@ -141,7 +141,7 @@ course_info = {
     # --- ELECTRICAL ENGINEERING (SPECIALIZATIONS) ---
     "POLY-DIP-011": {
         "headline": "⚡ Elektrik (Kecekapan Tenaga): Audit & Jimat",
-        "synopsis": "Tenaga adalah wang. Dalam kursus ini, anda belajar bukan sahaja cara *guna* elektrik, tapi cara *urus* elektrik supaya tidak membazir. Anda akan diajar tentang 'Energy Audit', Tenaga Boleh Diperbaharui (Solar/Angin), dan sistem kuasa cekap tenaga. Graduan kursus ini sangat dicari oleh kilang-kilang yang mahu kurangkan bil elektrik mereka."
+        "synopsis": "Tenaga adalah wang. Dalam kursus ini, anda belajar bukan sahaja cara *guna* elektrik, tapi cara *urus* elektrik supaya tidak membazir. Anda akan diajar tentang 'Energy Audit', Tenaga Boleh Diperbaharui (Solar/Angin), dan sistem kuasa cekap tenaga. Graduan kursus ini sangat dicari oleh kilang-kilang yang mahu kurangkan bil elektrik."
     },
     "POLY-DIP-012": {
         "headline": "🌱 Elektrik (Tenaga Hijau): Masa Depan Bumi",
@@ -279,7 +279,7 @@ course_info = {
     # --- PROCESS ENGINEERING (PETROCHEM) ---
     "POLY-DIP-036": {
         "headline": "🧪 Proses (Petrokimia): Kawalan Loji",
-        "synopsis": "Fokus kepada 'Proses'—bagaimana menukar bahan mentah menjadi produk kimia. Anda belajar mengawal suhu, tekanan, dan aliran dalam paip loji petrokimia. Anda akan berlatih menggunakan simulasi loji sebenar. Sesuai untuk mereka yang mahu bekerja di hab industri minyak & gas."
+        "synopsis": "Fokus kepada 'Proses'—bagaimana menukar bahan mentah menjadi produk kimia. Anda belajar mengawal suhu, tekanan, dan aliran dalam paip loji petrokimia. Anda akan berlatih menggunakan simulasi loji sebenar. Sesuai untuk anda yang mahu bekerja di hab industri minyak & gas."
     },
 
     # --- ENTREPRENEURSHIP ---
@@ -297,12 +297,12 @@ course_info = {
     # --- ISLAMIC FINANCE ---
     "POLY-DIP-039": {
         "headline": "☪️ Kewangan Islam: Perbankan Patuh Syariah",
-        "synopsis": "Malaysia adalah hab Kewangan Islam dunia. Kursus ini mengajar sistem perbankan tanpa riba, Takaful (insurans Islam), dan pengurusan harta (Zakat/Waqaf). Industri ini berkembang pesat dan sangat memerlukan tenaga kerja mahir yang faham hukum muamalat."
+        "synopsis": "Malaysia adalah hab Kewangan Islam dunia. Anda akan belajar sistem perbankan tanpa riba, Takaful (insurans Islam), dan pengurusan harta (Zakat/Waqaf). Industri ini berkembang pesat dan sangat memerlukan tenaga kerja mahir yang faham hukum muamalat."
     },
 
     # --- RECREATIONAL TOURISM ---
     "POLY-DIP-040": {
-        "headline": "rafting🚣 Pelancongan Rekreasi: Kerjaya Lasak",
+        "headline": "🚣 Pelancongan Rekreasi: Kerjaya Lasak",
         "synopsis": "Ubah hobi 'hiking' dan 'travel' menjadi kerjaya. Anda belajar mengurus taman tema, resort eko-pelancongan, dan aktiviti luar (outdoor). Anda akan diajar tentang keselamatan rekreasi, pemanduan pelancong alam semulajadi, dan pengurusan acara. Pejabat anda adalah hutan, sungai, dan pulau."
     },
 
@@ -398,7 +398,7 @@ course_info = {
 
     # --- SECRETARIAL SCIENCE ---
     "POLY-DIP-056": {
-        "headline": "u0025D8u0025A5 Sains Kesetiausahaan: Pengurusan Pejabat Profesional",
+        "headline": "💼 Sains Kesetiausahaan: Pengurusan Pejabat Profesional",
         "synopsis": "Setiausaha moden adalah 'Gatekeeper' kepada CEO. Anda belajar mengurus jadual bos, menulis surat rasmi korporat, dan menganjurkan mesyuarat protokol tinggi. Kursus ini melatih anda menjadi sangat teratur, cekap, dan berimej korporat. Anda adalah orang kanan yang paling dipercayai dalam ofis."
     },
 
@@ -458,7 +458,7 @@ course_info = {
 
     # --- CHEMICAL TECHNOLOGY (FAT & OIL) ---
     "POLY-DIP-066": {
-        "headline": "palmoil🌴 Teknologi Minyak & Lemak: Emas Sawit",
+        "headline": "🌴 Teknologi Minyak & Lemak: Emas Sawit",
         "synopsis": "Malaysia adalah raja minyak sawit dunia. Kursus unik ini mengajar anda kimia di sebalik minyak masak, sabun, dan kosmetik. Anda akan bekerja di makmal atau kilang oleokimia untuk memastikan produk sawit kita berkualiti tinggi dan selamat digunakan."
     },
 
@@ -507,7 +507,7 @@ course_info = {
     # --- IT: INFORMATION SECURITY ---
     "POLY-DIP-074": {
         "headline": "🔐 IT (Information Security): Cyber Warrior",
-        "synopsis": "Dunia siber penuh dengan hacker dan scammer. Tugas anda adalah menghalang mereka. Anda belajar tentang 'Ethical Hacking', penyulitan data (Encryption), dan forensik digital. Anda adalah polis siber yang melindungi data sulit bank, kerajaan, dan syarikat besar."
+        "synopsis": "Dunia siber penuh dengan hacker dan scammer. Tugas anda adalah menghalang ancaman ini. Anda belajar tentang 'Ethical Hacking', penyulitan data (Encryption), dan forensik digital. Anda adalah polis siber yang melindungi data sulit bank, kerajaan, dan syarikat besar."
     },
 
     # --- IT: GAME PROGRAMMING ---
@@ -543,7 +543,7 @@ course_info = {
     # --- BATIK FASHION DESIGN ---
     "POLY-DIP-080": {
         "headline": "👘 Reka Bentuk Fesyen Batik: Warisan Glamor",
-        "synopsis": "Gabungan tradisi dan fesyen moden. Anda belajar teknik mencanting batik asli DAN reka bentuk fesyen kontemporari. Anda bukan sekadar melukis kain, anda mencipta busana 'Haute Couture' berasaskan warisan negara. Sesuai untuk mereka yang berjiwa seni halus."
+        "synopsis": "Gabungan tradisi dan fesyen moden. Anda belajar teknik mencanting batik asli DAN reka bentuk fesyen kontemporari. Anda bukan sekadar melukis kain, anda mencipta busana 'Haute Couture' berasaskan warisan negara. Sesuai untuk anda yang berjiwa seni halus."
     },
 
     # --- CRAFT DESIGN ---
@@ -655,7 +655,7 @@ course_info = {
 
     # --- SOUND & LIGHTING ---
     "KKOM-DIP-012": {
-        "headline": "lighting💡 Bunyi & Cahaya: Krew Konsert Profesional",
+        "headline": "💡 Bunyi & Cahaya: Krew Konsert Profesional",
         "synopsis": "Impian bekerja di balik tabir konsert atau rancangan TV? Kursus ini mengajar anda 'setup' sistem bunyi (PA system) dan lampu pentas yang canggih. Anda akan belajar tentang akustik, pendawaian pentas, dan kesan khas. Suasana kerja yang seronok dan tidak membosankan.",
         "pathway": "Ijazah Sarjana Muda Penyiaran / Kejuruteraan Audio"
     },
@@ -677,7 +677,7 @@ course_info = {
     # --- SOLAR PHOTOVOLTAIC ---
     "KKOM-DIP-015": {
         "headline": "☀️ Teknologi Solar: Tenaga Hijau",
-        "synopsis": "Jadilah sebahagian daripada revolusi tenaga hijau. Anda belajar cara memasang panel solar di bumbung rumah dan bangunan, serta membuat pendawaian sistem solar (PV). Malaysia panas sepanjang tahun, jadi industri ini memang lubuk duit bagi mereka yang mahir.",
+        "synopsis": "Jadilah sebahagian daripada revolusi tenaga hijau. Anda belajar cara memasang panel solar di bumbung rumah dan bangunan, serta membuat pendawaian sistem solar (PV). Malaysia panas sepanjang tahun, jadi industri ini memang lubuk duit bagi anda yang mahir.",
         "pathway": "Ijazah Sarjana Muda Kejuruteraan Elektrik / Tenaga Boleh Baharu"
     },
 
@@ -695,7 +695,7 @@ course_info = {
     # --- CULINARY (CERT) ---
     "KKOM-CET-001": {
         "headline": "👨‍🍳 Sijil Kulinari: Langkah Mula Chef",
-        "synopsis": "Kursus pantas untuk masuk ke dapur profesional. Belajar asas memotong, memasak lauk Barat & Asia, dan disiplin dapur. Tamat belajar boleh terus kerja hotel, atau sambung Diploma untuk gaji lebih besar.",
+        "synopsis": "Kursus pantas untuk anda masuk ke dapur profesional. Belajar asas memotong, memasak lauk Barat & Asia, dan disiplin dapur. Tamat belajar, anda boleh terus kerja hotel, atau sambung Diploma untuk gaji lebih besar.",
         "pathway": "Diploma Seni Kulinari / Pengurusan Hotel (Politeknik/KK)"
     },
 
@@ -708,7 +708,7 @@ course_info = {
 
     # --- RECREATIONAL TOURISM (CERT) ---
     "KKOM-CET-003": {
-        "headline": "rafting🚣 Sijil Pelancongan Rekreasi: Kerjaya Outdoor",
+        "headline": "🚣 Sijil Pelancongan Rekreasi: Kerjaya Outdoor",
         "synopsis": "Suka aktiviti lasak? Kursus ini ajar anda jadi jurupandu (guide) untuk aktiviti seperti hiking, water rafting, dan kem rekreasi. Belajar teknik keselamatan (First Aid) dan cara melayan pelancong. Kerja sambil main!",
         "pathway": "Diploma Pelancongan Rekreasi / Pengurusan Acara (Politeknik/KK)"
     },
@@ -843,7 +843,7 @@ course_info = {
     # --- CREATIVE VISUAL ART (CERT) ---
     "KKOM-CET-022": {
         "headline": "🎨 Sijil Seni Visual Kreatif: Produk Kraf",
-        "synopsis": "Buat duit dengan seni. Belajar buat cenderamata, batik, dan seramik yang boleh dijual. Kursus ini fokus kepada keusahawanan seni—bukan sekadar buat cantik, tapi buat yang orang nak beli.",
+        "synopsis": "Buat duit dengan seni. Anda belajar buat cenderamata, batik, dan seramik yang boleh dijual. Kursus ini fokus kepada keusahawanan seni—bukan sekadar buat cantik, tapi buat yang orang nak beli.",
         "pathway": "Diploma Reka Bentuk Kraf / Fesyen"
     },
 
@@ -913,7 +913,7 @@ course_info = {
     # --- 4WD MAINTENANCE (CERT) ---
     "KKOM-CET-032": {
         "headline": "🚙 Sijil Penyelenggaraan 4WD: Mekanik Offroad",
-        "synopsis": "Bukan kereta biasa, ini kereta pacuan 4 roda (4x4). Anda belajar sistem transmisi 4WD, suspensi lasak, dan enjin diesel turbo. Peminat offroad sanggup bayar mahal untuk mekanik yang faham kereta mereka. Jadilah pakar dalam niche ini.",
+        "synopsis": "Bukan kereta biasa, ini kereta pacuan 4 roda (4x4). Anda belajar sistem transmisi 4WD, suspensi lasak, dan enjin diesel turbo. Peminat offroad sanggup bayar mahal untuk mekanik yang faham kenderaan 4WD. Jadilah pakar dalam niche ini.",
         "pathway": "Diploma Kejuruteraan Mekanikal (Automotif)"
     },
 
@@ -927,7 +927,7 @@ course_info = {
     # --- SUPERBIKE MAINTENANCE (CERT) ---
     "KKOM-CET-034": {
         "headline": "🏍️ Sijil Motosikal Berkuasa Tinggi: Mekanik Superbike",
-        "synopsis": "Minat motor besar? Belajar servis enjin superbike, setting suspensi, dan sistem suntikan bahan api (fuel injection). Mekanik kapcai biasa tak reti buat ni. Ini adalah kemahiran premium untuk kedai motor eksklusif.",
+        "synopsis": "Minat motor besar? Anda belajar servis enjin superbike, setting suspensi, dan sistem suntikan bahan api (fuel injection). Mekanik kapcai biasa tak reti buat ni. Ini adalah kemahiran premium untuk kedai motor eksklusif.",
         "pathway": "Diploma Kejuruteraan Mekanikal"
     },
 
@@ -955,7 +955,7 @@ course_info = {
     # --- BEAUTY & SPA THERAPY (CERT) ---
     "KKOM-CET-038": {
         "headline": "💅 Sijil Terapi Kecantikan & Spa: Bisnes Cantik",
-        "synopsis": "Ubah minat bersolek jadi kerjaya profesional. Belajar teknik rawatan muka (facial), urutan spa, dan solekan pengantin (MUA). Industri kecantikan adalah industri bernilai jutaan ringgit. Ramai graduan kursus ini berjaya buka spa sendiri atau jadi MUA terkenal.",
+        "synopsis": "Ubah minat bersolek jadi kerjaya profesional. Anda belajar teknik rawatan muka (facial), urutan spa, dan solekan pengantin (MUA). Industri kecantikan bernilai jutaan ringgit, dan ramai graduan kursus ini berjaya buka spa sendiri atau jadi MUA terkenal.",
         "pathway": "Diploma Terapi Kecantikan / Pengurusan Perniagaan"
     },
 
@@ -1255,7 +1255,7 @@ course_info = {
 
     "IJTM-CET-004": {
         "headline": "🔧 Teknologi Automotif: Mekanik Bertauliah",
-        "synopsis": "Sama seperti di atas, kursus ini memantapkan kemahiran anda dalam penyelenggaraan kenderaan. Dengan Sijil Kemahiran Malaysia (SKM) Tahap 3, anda diiktiraf sebagai mekanik profesional yang layak bekerja di mana-mana pusat servis bertauliah."
+        "synopsis": "Ingin jadi mekanik bertauliah? Kursus ini memantapkan kemahiran anda dalam penyelenggaraan kenderaan — dari enjin hingga sistem brek. Dengan Sijil Kemahiran Malaysia (SKM) Tahap 3, anda diiktiraf sebagai mekanik profesional yang layak bekerja di mana-mana pusat servis bertauliah."
     },
 
     # --- CIVIL (BINAAN) ---
@@ -1302,7 +1302,7 @@ course_info = {
 
     "IJTM-CET-012": {
         "headline": "🛢️ Fabrikasi Struktur (O&G): Pakar Besi Berat",
-        "synopsis": "Sama seperti di atas, fokus kursus ini adalah membina struktur besi gergasi. Anda akan mahir menggunakan mesin industri untuk membentuk logam mengikut spesifikasi ketat industri minyak dan gas."
+        "synopsis": "Bina struktur besi gergasi untuk industri minyak dan gas. Anda akan mahir menggunakan mesin industri berat untuk membentuk dan mengimpal logam mengikut spesifikasi ketat industri O&G. Gaji tinggi, kerja lasak — sesuai untuk anda yang suka kerja fizikal dan mencabar."
     },
 
     # --- INSTRUMEN ---
@@ -1424,7 +1424,7 @@ course_info = {
     # --- PENYELENGGARAAN MEKANIKAL ---
     "IJTM-CET-033": {
         "headline": "🔧 Penyelenggaraan Mekanikal: Jack of All Trades",
-        "synopsis": "Syarikat suka pekerja serba boleh. Anda belajar mengimpal, memesin, dan membaiki kerosakan mesin kilang. Kursus ini melatih anda menjadi juruteknik yang boleh 'turu padang' dan selesaikan masalah mekanikal on-the-spot."
+        "synopsis": "Syarikat suka pekerja serba boleh. Anda belajar mengimpal, memesin, dan membaiki kerosakan mesin kilang. Kursus ini melatih anda menjadi juruteknik yang boleh 'turun padang' dan selesaikan masalah mekanikal on-the-spot."
     },
 
     # --- POLIMER ---
@@ -1436,7 +1436,7 @@ course_info = {
     # --- PERABOT & REKABENTUK ---
     "IJTM-CET-035": {
         "headline": "🪑 Rekabentuk Perabot: Tukang Kayu Moden",
-        "synopsis": "Gabungan seni pertukangan dan teknologi. Anda bukan sekadar mengetam kayu, tapi merekabentuk perabot ergonomik dan moden. Sesuai untuk anda yang ingin menjadi pereka dalaman atau membuka kilang perabot sendiri."
+        "synopsis": "Gabungan seni pertukangan dan teknologi moden. Anda belajar menggunakan mesin CNC, perisian CAD, dan teknik kemasan untuk menghasilkan perabot ergonomik berkualiti tinggi. Sesuai untuk anda yang ingin menjadi pereka dalaman, bekerja di kilang perabot eksport, atau membuka bengkel sendiri."
     },
 
     "IJTM-CET-036": {
@@ -1446,7 +1446,7 @@ course_info = {
 
     "IJTM-CET-037": {
         "headline": "✏️ Rekabentuk Industri: Pencipta Gajet",
-        "synopsis": "Belajar mencipta rupa bentuk produk yang kita guna setiap hari. Dari lakaran tangan hingga ke model 3D komputer, anda akan dilatih untuk menjadikan produk berfungsi dan cantik dipandang."
+        "synopsis": "Belajar mencipta rupa bentuk produk yang anda guna setiap hari — dari telefon hingga perabot. Anda dilatih melukis lakaran tangan, membina model 3D menggunakan perisian CAD, dan menghasilkan prototaip sebenar. Graduan bidang ini bekerja di firma rekabentuk, syarikat pembuatan, atau sebagai pereka bebas."
     },
 
     # --- TELEKOMUNIKASI ---
@@ -1458,7 +1458,7 @@ course_info = {
     # --- ART & PERFORMANCE ---
     "UA4212003": {
         "headline": "🎭 Diploma Teater: Pentas, Produksi & Pengurusan",
-        "synopsis": "Bukan sekadar berlakon! Di UPSI, anda akan mendalami seluruh ekosistem teater—dari falsafah seni, penulisan skrip, hinggalah pengurusan pentas teknikal. Program ini melatih anda menjadi seniman yang bijak mengurus industri, sesuai untuk mereka yang berjiwa seni tetapi mahukan kemahiran organisasi yang profesional."
+        "synopsis": "Bukan sekadar berlakon! Di UPSI, anda akan mendalami seluruh ekosistem teater—dari falsafah seni, penulisan skrip, hinggalah pengurusan pentas teknikal. Program ini melatih anda menjadi seniman yang bijak mengurus industri, sesuai untuk anda yang berjiwa seni tetapi mahukan kemahiran organisasi yang profesional."
     },
 
     # --- FOUNDATION (MILITARY & TECH) ---
@@ -1494,7 +1494,7 @@ course_info = {
     # --- FOUNDATION (AGRICULTURE) ---
     "UP0000001": {
         "headline": "🌾 Asasi Sains Pertanian: Laluan ke UPM",
-        "synopsis": "Pintu gerbang utama ke Universiti Putra Malaysia (UPM). Fokus kukuh kepada biologi, kimia, dan fizik sebagai persediaan untuk ijazah berkaitan pertanian moden, veterinar, atau hortikultur. Ini tapak asas untuk menjadi pakar sekuriti makanan negara."
+        "synopsis": "Pintu gerbang utama ke Universiti Putra Malaysia (UPM). Anda akan membina asas kukuh dalam biologi, kimia, dan fizik sebagai persediaan untuk ijazah berkaitan pertanian moden, veterinar, atau hortikultur. Tapak asas untuk anda menjadi pakar sekuriti makanan negara."
     },
 
     # --- FOUNDATION (SOCIAL SCIENCE) ---
@@ -1512,7 +1512,7 @@ course_info = {
     # --- FOUNDATION (GIFTED) ---
     "UK0010001": {
         "headline": "🧠 ASASIPintar UKM: Program Minda Genius",
-        "synopsis": "Program elit untuk pelajar berpotensi tinggi (Top 1%). Pembelajaran di sini bukan sekadar menghafal buku, tetapi berasaskan penyelidikan (research-oriented) dan pemikiran kritis aras tinggi. Laluan pantas untuk menjadi pakar rujuk dan intelektual negara."
+        "synopsis": "Program elit untuk pelajar berpotensi tinggi (Top 1%). Anda bukan sekadar menghafal buku — pembelajaran berasaskan penyelidikan (research-oriented) dan pemikiran kritis aras tinggi. Laluan pantas untuk anda menjadi pakar rujuk dan intelektual negara."
     },
 
     # --- LANGUAGE & HERITAGE (NEW) ---
@@ -1560,7 +1560,7 @@ course_info = {
     # --- CIVIL ENGINEERING (UMPSA) ---
     "UJ4526001": {
         "headline": "🏗️ Diploma Kejuruteraan Awam (UMPSA): Teknologis Infrastruktur",
-        "synopsis": "Di UMPSA, pendekatannya lebih kepada teknologi kejuruteraan dan pengurusan projek. Selain simen dan bata, anda akan didedahkan kepada cara mengurus projek infrastruktur besar. Sesuai untuk mereka yang mahu gabungkan skil teknikal dengan skil pengurusan."
+        "synopsis": "Di UMPSA, pendekatannya lebih kepada teknologi kejuruteraan dan pengurusan projek. Selain simen dan bata, anda akan didedahkan kepada cara mengurus projek infrastruktur besar. Sesuai untuk anda yang mahu gabungkan skil teknikal dengan skil pengurusan."
     },
 
     # --- MATERIALS ENGINEERING ---
@@ -1590,7 +1590,7 @@ course_info = {
     # --- ELECTRICAL & ELECTRONIC (UMPSA) ---
     "UJ4523001": {
         "headline": "🔌 Dip. Kej. Elektrik & Elektronik: The Troubleshooter",
-        "synopsis": "Gabungan dua dunia—kuasa elektrik (high voltage) dan cip elektronik (low voltage). UMPSA melatih anda menjadi 'Penyelesai Masalah' yang pakar dalam PLC dan mikropengawal. Jika mesin kilang rosak, andalah orang pertama yang mereka cari."
+        "synopsis": "Gabungan dua dunia—kuasa elektrik (high voltage) dan cip elektronik (low voltage). UMPSA melatih anda menjadi 'Penyelesai Masalah' yang pakar dalam PLC dan mikropengawal. Jika mesin kilang rosak, andalah orang pertama yang dicari."
     },
 
     # --- ELECTRONIC ENGINEERING (UTeM) ---
@@ -1602,7 +1602,7 @@ course_info = {
     # --- ELECTRONIC ENGINEERING (UniMAP) ---
     "UR4523003": {
         "headline": "📡 Dip. Kej. Elektronik (UniMAP): Tech & Networking",
-        "synopsis": "Belajar elektronik dalam suasana makmal moden yang 'real'. UniMAP menekankan pembelajaran berasaskan pengalaman (experiential learning), terutamanya dalam sistem rangkaian (networking). Sesuai untuk 'tech-geek' yang suka gajet dan sistem komunikasi."
+        "synopsis": "Anda belajar elektronik dalam suasana makmal moden yang 'real'. UniMAP menekankan pembelajaran berasaskan pengalaman (experiential learning), terutamanya dalam sistem rangkaian (networking). Sesuai untuk anda yang suka gajet dan sistem komunikasi."
     },
 
     # --- CHEMICAL ENGINEERING (UMPSA) ---
@@ -1614,7 +1614,7 @@ course_info = {
     # --- CHEMICAL ENGINEERING (O&G) (UMS) ---
     "UH4520001": {
         "headline": "🛢️ Dip. Kej. Kimia (Minyak & Gas): Geng Offshore",
-        "synopsis": "Impian kerja 'Offshore' bermula di sini. Satu-satunya program diploma di senarai ini yang spesifik 'Minyak & Gas'. Anda akan belajar tentang pemprosesan hidrokarbon dan keselamatan industri yang ketat. Siapkan mental, gaji lumayan menanti mereka yang sanggup kerja keras."
+        "synopsis": "Impian kerja 'Offshore' bermula di sini. Satu-satunya program diploma di senarai ini yang spesifik 'Minyak & Gas'. Anda akan belajar tentang pemprosesan hidrokarbon dan keselamatan industri yang ketat. Siapkan mental, gaji lumayan menanti anda yang sanggup kerja keras."
     },
 
     # --- COMPUTER ENGINEERING (UniMAP) ---
@@ -1638,7 +1638,7 @@ course_info = {
     # --- MECHANICAL ENGINEERING (UMPSA) ---
     "UJ4521001": {
         "headline": "⚙️ Dip. Kej. Mekanikal (UMPSA): Projek Realiti",
-        "synopsis": "Di UMPSA, anda bukan sekadar hafal teori. Kekuatan program ini ialah 'Project-Based Learning'. Anda akan dibimbing untuk membina sistem mekanikal sebenar dari tahun pertama. Sesuai untuk pelajar yang lebih cepat faham bila tangan mereka kotor membuat kerja praktikal."
+        "synopsis": "Di UMPSA, anda bukan sekadar hafal teori. Kekuatan program ini ialah 'Project-Based Learning'. Anda akan dibimbing untuk membina sistem mekanikal sebenar dari tahun pertama. Sesuai untuk anda yang lebih cepat faham bila tangan kotor membuat kerja praktikal."
     },
 
     # --- MECHATRONICS ENGINEERING ---
@@ -1704,7 +1704,7 @@ course_info = {
     # --- HUMAN DEVELOPMENT (UPM BINTULU) ---
     "UP4310001": {
         "headline": "🤝 Dip. Pembangunan Manusia (Bintulu): Arkitek Sosial",
-        "synopsis": "Lokasi: Kampus Bintulu, Sarawak. Kursus unik yang menggabungkan sains sosial dengan komuniti pertanian. Anda belajar tentang psikologi keluarga, pembangunan belia, dan kerja sosial. Sangat sesuai untuk mereka yang mahu berkhidmat kepada masyarakat dan NGO, terutamanya di kawasan luar bandar."
+        "synopsis": "Lokasi: Kampus Bintulu, Sarawak. Kursus unik yang menggabungkan sains sosial dengan komuniti pertanian. Anda belajar tentang psikologi keluarga, pembangunan belia, dan kerja sosial. Sangat sesuai untuk anda yang mahu berkhidmat kepada masyarakat dan NGO, terutamanya di kawasan luar bandar."
     },
 
     # --- EARLY CHILDHOOD EDUCATION ---
@@ -1734,7 +1734,7 @@ course_info = {
     # --- LOGISTICS (DEFENSE) ---
     "UZ4345001": {
         "headline": "🚚 Diploma Pengurusan Logistik: Nadi Pertahanan",
-        "synopsis": "Logistik menangkan peperangan. Di UPNM, anda belajar mengurus rantaian bekalan (supply chain) bukan sahaja untuk syarikat komersial, tetapi juga untuk operasi ketenteraan. Graduan UPNM terkenal dengan disiplin tinggi, menjadikan mereka rebutan syarikat logistik antarabangsa."
+        "synopsis": "Logistik menangkan peperangan. Di UPNM, anda belajar mengurus rantaian bekalan (supply chain) bukan sahaja untuk syarikat komersial, tetapi juga untuk operasi ketenteraan. Graduan UPNM terkenal dengan disiplin tinggi dan menjadi rebutan syarikat logistik antarabangsa."
     },
 
     # --- FOOD PLANTATION (UPM BINTULU) ---
@@ -1788,7 +1788,7 @@ course_info = {
     # --- INTERNATIONAL BUSINESS ---
     "UD4340001": {
         "headline": "🌐 Dip. Perniagaan Antarabangsa: Global Trader",
-        "synopsis": "Dunia tanpa sempadan. Anda akan belajar selok-belok eksport-import, logistik global, dan cara berurusan dengan budaya asing. Sesuai untuk mereka yang bercita-cita bekerja dengan syarikat multinasional atau membawa produk tempatan ke pasaran dunia."
+        "synopsis": "Dunia tanpa sempadan. Anda akan belajar selok-belok eksport-import, logistik global, dan cara berurusan dengan budaya asing. Sesuai untuk anda yang bercita-cita bekerja dengan syarikat multinasional atau membawa produk tempatan ke pasaran dunia."
     },
 
     # --- AGRIBUSINESS (UPM BINTULU) ---
@@ -1812,13 +1812,13 @@ course_info = {
     # --- GAME DESIGN ---
     "UA4481002": {
         "headline": "🎮 Dip. Reka Bentuk & Pembangunan Permainan: Game Dev",
-        "synopsis": "Hobi main game? Tukar jadi kerjaya! Di UPSI, anda belajar coding DAN seni kreatif untuk membina video game sendiri. Dari mereka bentuk karakter hingga memprogram 'gameplay', ini adalah kursus impian untuk mereka yang mahu menyertai industri e-sukan dan pembangunan perisian kreatif."
+        "synopsis": "Hobi main game? Tukar jadi kerjaya! Di UPSI, anda belajar coding DAN seni kreatif untuk membina video game sendiri. Dari mereka bentuk karakter hingga memprogram 'gameplay', ini adalah kursus impian untuk anda yang mahu menyertai industri e-sukan dan pembangunan perisian kreatif."
     },
 
     # --- INDUSTRIAL DESIGN ---
     "UD4214001": {
         "headline": "🎨 Diploma Rekabentuk Perindustrian: Pencipta Produk",
-        "synopsis": "Gabungan seni dan kejuruteraan. Anda bukan melukis potret, tapi mereka bentuk kereta, perabot, dan gajet elektronik. Di UniSZA, anda belajar menjadikan sesuatu produk itu cantik DANN berfungsi. Kerjaya untuk orang kreatif yang mahu melihat rekaan mereka dijual di pasaran."
+        "synopsis": "Gabungan seni dan kejuruteraan. Anda bukan melukis potret, tapi mereka bentuk kereta, perabot, dan gajet elektronik. Di UniSZA, anda belajar menjadikan sesuatu produk itu cantik DAN berfungsi. Kerjaya untuk anda yang kreatif dan mahu melihat rekaan sendiri dijual di pasaran."
     },
 
     # --- SCIENCE (GENERAL/UPSI) ---
@@ -1878,7 +1878,7 @@ course_info = {
     # --- COMP SCIENCE (UPM BINTULU) ---
     "UP4481001": {
         "headline": "💻 Dip. Sains Komputer (Bintulu): Arkitek IT Borneo",
-        "synopsis": "Lokasi: Kampus Bintulu, Sarawak. Kursus menyeluruh yang merangkumi senibina komputer (hardware) dan pembangunan perisian (software). Graduan UPM Bintulu menjadi tulang belakang transformasi digital di Sarawak dan Sabah yang sedang pesat membangun."
+        "synopsis": "Lokasi: Kampus Bintulu, Sarawak. Anda belajar senibina komputer (hardware) dan pembangunan perisian (software) secara menyeluruh. Graduan UPM Bintulu menjadi tulang belakang transformasi digital di Sarawak dan Sabah yang sedang pesat membangun."
     },
 
     # --- SPORTS SCIENCE ---
@@ -1920,7 +1920,7 @@ course_info = {
     # --- MECH ENG TECH (UniMAP) ---
     "UR4521003": {
         "headline": "🛠️ Dip. Tek. Kej. Mekanikal (UniMAP): Pakar Mesin",
-        "synopsis": "Ini adalah untuk mereka yang suka membaiki dan mengendali mesin. UniMAP menekankan penggunaan teknologi mekanikal dalam situasi sebenar. Anda akan tamat belajar dengan skil praktikal yang membolehkan anda terus bekerja di mana-mana bengkel atau kilang pembuatan."
+        "synopsis": "Kursus ini sesuai untuk anda yang suka membaiki dan mengendali mesin. UniMAP menekankan penggunaan teknologi mekanikal dalam situasi sebenar. Anda akan tamat belajar dengan skil praktikal yang membolehkan anda terus bekerja di mana-mana bengkel atau kilang pembuatan."
     },
 
     # --- MANUFACTURING ENG TECH (UMPSA) ---
@@ -1974,7 +1974,335 @@ course_info = {
     # --- TAMHIDI (USIM) ---
     "UQ0440005": {
         "headline": "⚛️ Tamhidi Sains Fizikal & Teknologi: Saintis Berjiwa Al-Quran",
-        "synopsis": "Program Asasi unik USIM yang menggabungkan Sains Tulen (Fizik/Kimia) dengan ilmu Naqli (Wahyu). Matlamatnya melahirkan profesional STEM—seperti Arkitek atau Jurutera—yang bukan sahaja hebat teknikalnya tetapi kukuh jati diri Islamnya. Laluan ke pelbagai ijazah sains di USIM."
+        "synopsis": "Program Asasi unik USIM yang menggabungkan Sains Tulen (Fizik/Kimia) dengan ilmu Naqli (Wahyu). Anda dilatih menjadi profesional STEM — seperti Arkitek atau Jurutera — yang bukan sahaja hebat teknikalnya tetapi kukuh jati diri Islamnya. Laluan ke pelbagai ijazah sains di USIM."
+    },
+
+    # =============================================
+    # PISMP — TEACHER TRAINING (73 courses)
+    # =============================================
+
+    # --- BAHASA MELAYU PENDIDIKAN RENDAH ---
+    "50PD010M00P": {
+        "headline": "🇲🇾 Guru Bahasa Melayu: Pembentuk Jati Diri",
+        "synopsis": "Anda akan dilatih menjadi guru Bahasa Melayu sekolah rendah yang bukan sekadar mengajar tatabahasa, tetapi menanam cinta bahasa kebangsaan dalam hati murid. Belajar teknik pengajaran kreatif, sastera kanak-kanak, dan cara menjadikan BM subjek yang menyeronokkan di dalam kelas."
+    },
+    "50PD030M00P": {
+        "headline": "🇲🇾 Guru Bahasa Melayu: Pembentuk Jati Diri",
+        "synopsis": "Anda akan dilatih menjadi guru Bahasa Melayu sekolah rendah yang bukan sekadar mengajar tatabahasa, tetapi menanam cinta bahasa kebangsaan dalam hati murid. Belajar teknik pengajaran kreatif, sastera kanak-kanak, dan cara menjadikan BM subjek yang menyeronokkan di dalam kelas."
+    },
+    "50PD040M00P": {
+        "headline": "🇲🇾 Guru Bahasa Melayu: Pembentuk Jati Diri",
+        "synopsis": "Anda akan dilatih menjadi guru Bahasa Melayu sekolah rendah yang bukan sekadar mengajar tatabahasa, tetapi menanam cinta bahasa kebangsaan dalam hati murid. Belajar teknik pengajaran kreatif, sastera kanak-kanak, dan cara menjadikan BM subjek yang menyeronokkan di dalam kelas."
+    },
+    "50PD060M00P": {
+        "headline": "🇲🇾 Guru Bahasa Melayu: Pembentuk Jati Diri",
+        "synopsis": "Anda akan dilatih menjadi guru Bahasa Melayu sekolah rendah yang bukan sekadar mengajar tatabahasa, tetapi menanam cinta bahasa kebangsaan dalam hati murid. Belajar teknik pengajaran kreatif, sastera kanak-kanak, dan cara menjadikan BM subjek yang menyeronokkan di dalam kelas."
+    },
+    "50PD060M9MP": {
+        "headline": "🇲🇾 Guru Bahasa Melayu: Pembentuk Jati Diri",
+        "synopsis": "Anda akan dilatih menjadi guru Bahasa Melayu sekolah rendah yang bukan sekadar mengajar tatabahasa, tetapi menanam cinta bahasa kebangsaan dalam hati murid. Belajar teknik pengajaran kreatif, sastera kanak-kanak, dan cara menjadikan BM subjek yang menyeronokkan di dalam kelas."
+    },
+    "50PD010M9MP": {
+        "headline": "🇲🇾 Guru Bahasa Melayu: Pembentuk Jati Diri",
+        "synopsis": "Anda akan dilatih menjadi guru Bahasa Melayu sekolah rendah yang bukan sekadar mengajar tatabahasa, tetapi menanam cinta bahasa kebangsaan dalam hati murid. Belajar teknik pengajaran kreatif, sastera kanak-kanak, dan cara menjadikan BM subjek yang menyeronokkan di dalam kelas."
+    },
+    "50PD030M9MP": {
+        "headline": "🇲🇾 Guru Bahasa Melayu: Pembentuk Jati Diri",
+        "synopsis": "Anda akan dilatih menjadi guru Bahasa Melayu sekolah rendah yang bukan sekadar mengajar tatabahasa, tetapi menanam cinta bahasa kebangsaan dalam hati murid. Belajar teknik pengajaran kreatif, sastera kanak-kanak, dan cara menjadikan BM subjek yang menyeronokkan di dalam kelas."
+    },
+    "50PD040M9MP": {
+        "headline": "🇲🇾 Guru Bahasa Melayu: Pembentuk Jati Diri",
+        "synopsis": "Anda akan dilatih menjadi guru Bahasa Melayu sekolah rendah yang bukan sekadar mengajar tatabahasa, tetapi menanam cinta bahasa kebangsaan dalam hati murid. Belajar teknik pengajaran kreatif, sastera kanak-kanak, dan cara menjadikan BM subjek yang menyeronokkan di dalam kelas."
+    },
+    "50PD050M9MP": {
+        "headline": "🇲🇾 Guru Bahasa Melayu: Pembentuk Jati Diri",
+        "synopsis": "Anda akan dilatih menjadi guru Bahasa Melayu sekolah rendah yang bukan sekadar mengajar tatabahasa, tetapi menanam cinta bahasa kebangsaan dalam hati murid. Belajar teknik pengajaran kreatif, sastera kanak-kanak, dan cara menjadikan BM subjek yang menyeronokkan di dalam kelas."
+    },
+
+    # --- PENDIDIKAN MUZIK PENDIDIKAN RENDAH ---
+    "50PD017M00P": {
+        "headline": "🎵 Guru Muzik: Ajar Anak Menyanyi & Bermain",
+        "synopsis": "Suka muzik? Jadikan ia kerjaya anda. Anda belajar teori muzik, bermain alat muzik, dan yang paling penting — cara mengajar muzik kepada kanak-kanak sekolah rendah. Anda akan buat kelas yang penuh dengan nyanyian, tepukan, dan senyuman. Gaji guru tetap, hobi jadi kerja!"
+    },
+    "50PD037M00P": {
+        "headline": "🎵 Guru Muzik: Ajar Anak Menyanyi & Bermain",
+        "synopsis": "Suka muzik? Jadikan ia kerjaya anda. Anda belajar teori muzik, bermain alat muzik, dan yang paling penting — cara mengajar muzik kepada kanak-kanak sekolah rendah. Anda akan buat kelas yang penuh dengan nyanyian, tepukan, dan senyuman. Gaji guru tetap, hobi jadi kerja!"
+    },
+    "50PD047M00P": {
+        "headline": "🎵 Guru Muzik: Ajar Anak Menyanyi & Bermain",
+        "synopsis": "Suka muzik? Jadikan ia kerjaya anda. Anda belajar teori muzik, bermain alat muzik, dan yang paling penting — cara mengajar muzik kepada kanak-kanak sekolah rendah. Anda akan buat kelas yang penuh dengan nyanyian, tepukan, dan senyuman. Gaji guru tetap, hobi jadi kerja!"
+    },
+    "50PD067M00P": {
+        "headline": "🎵 Guru Muzik: Ajar Anak Menyanyi & Bermain",
+        "synopsis": "Suka muzik? Jadikan ia kerjaya anda. Anda belajar teori muzik, bermain alat muzik, dan yang paling penting — cara mengajar muzik kepada kanak-kanak sekolah rendah. Anda akan buat kelas yang penuh dengan nyanyian, tepukan, dan senyuman. Gaji guru tetap, hobi jadi kerja!"
+    },
+    "50PD017M8MP": {
+        "headline": "🎵 Guru Muzik: Ajar Anak Menyanyi & Bermain",
+        "synopsis": "Suka muzik? Jadikan ia kerjaya anda. Anda belajar teori muzik, bermain alat muzik, dan yang paling penting — cara mengajar muzik kepada kanak-kanak sekolah rendah. Anda akan buat kelas yang penuh dengan nyanyian, tepukan, dan senyuman. Gaji guru tetap, hobi jadi kerja!"
+    },
+    "50PD037M8MP": {
+        "headline": "🎵 Guru Muzik: Ajar Anak Menyanyi & Bermain",
+        "synopsis": "Suka muzik? Jadikan ia kerjaya anda. Anda belajar teori muzik, bermain alat muzik, dan yang paling penting — cara mengajar muzik kepada kanak-kanak sekolah rendah. Anda akan buat kelas yang penuh dengan nyanyian, tepukan, dan senyuman. Gaji guru tetap, hobi jadi kerja!"
+    },
+    "50PD047M8MP": {
+        "headline": "🎵 Guru Muzik: Ajar Anak Menyanyi & Bermain",
+        "synopsis": "Suka muzik? Jadikan ia kerjaya anda. Anda belajar teori muzik, bermain alat muzik, dan yang paling penting — cara mengajar muzik kepada kanak-kanak sekolah rendah. Anda akan buat kelas yang penuh dengan nyanyian, tepukan, dan senyuman. Gaji guru tetap, hobi jadi kerja!"
+    },
+
+    # --- PENDIDIKAN SENI VISUAL PENDIDIKAN RENDAH ---
+    "50PD016V00P": {
+        "headline": "🎨 Guru Seni Visual: Bakat Jadi Profesion",
+        "synopsis": "Anda suka melukis dan mencipta? Program ini melatih anda menjadi guru seni visual sekolah rendah. Anda belajar teknik lukisan, kraf tangan, dan reka bentuk — kemudian mengajar kanak-kanak meluahkan kreativiti. Kerja yang membahagiakan kerana anda melihat bakat murid berkembang setiap hari."
+    },
+    "50PD036V00P": {
+        "headline": "🎨 Guru Seni Visual: Bakat Jadi Profesion",
+        "synopsis": "Anda suka melukis dan mencipta? Program ini melatih anda menjadi guru seni visual sekolah rendah. Anda belajar teknik lukisan, kraf tangan, dan reka bentuk — kemudian mengajar kanak-kanak meluahkan kreativiti. Kerja yang membahagiakan kerana anda melihat bakat murid berkembang setiap hari."
+    },
+    "50PD046V00P": {
+        "headline": "🎨 Guru Seni Visual: Bakat Jadi Profesion",
+        "synopsis": "Anda suka melukis dan mencipta? Program ini melatih anda menjadi guru seni visual sekolah rendah. Anda belajar teknik lukisan, kraf tangan, dan reka bentuk — kemudian mengajar kanak-kanak meluahkan kreativiti. Kerja yang membahagiakan kerana anda melihat bakat murid berkembang setiap hari."
+    },
+    "50PD066V00P": {
+        "headline": "🎨 Guru Seni Visual: Bakat Jadi Profesion",
+        "synopsis": "Anda suka melukis dan mencipta? Program ini melatih anda menjadi guru seni visual sekolah rendah. Anda belajar teknik lukisan, kraf tangan, dan reka bentuk — kemudian mengajar kanak-kanak meluahkan kreativiti. Kerja yang membahagiakan kerana anda melihat bakat murid berkembang setiap hari."
+    },
+    "50PD016V8MP": {
+        "headline": "🎨 Guru Seni Visual: Bakat Jadi Profesion",
+        "synopsis": "Anda suka melukis dan mencipta? Program ini melatih anda menjadi guru seni visual sekolah rendah. Anda belajar teknik lukisan, kraf tangan, dan reka bentuk — kemudian mengajar kanak-kanak meluahkan kreativiti. Kerja yang membahagiakan kerana anda melihat bakat murid berkembang setiap hari."
+    },
+    "50PD036V8MP": {
+        "headline": "🎨 Guru Seni Visual: Bakat Jadi Profesion",
+        "synopsis": "Anda suka melukis dan mencipta? Program ini melatih anda menjadi guru seni visual sekolah rendah. Anda belajar teknik lukisan, kraf tangan, dan reka bentuk — kemudian mengajar kanak-kanak meluahkan kreativiti. Kerja yang membahagiakan kerana anda melihat bakat murid berkembang setiap hari."
+    },
+    "50PD046V8MP": {
+        "headline": "🎨 Guru Seni Visual: Bakat Jadi Profesion",
+        "synopsis": "Anda suka melukis dan mencipta? Program ini melatih anda menjadi guru seni visual sekolah rendah. Anda belajar teknik lukisan, kraf tangan, dan reka bentuk — kemudian mengajar kanak-kanak meluahkan kreativiti. Kerja yang membahagiakan kerana anda melihat bakat murid berkembang setiap hari."
+    },
+
+    # --- SAINS PENDIDIKAN RENDAH ---
+    "50PD011S00P": {
+        "headline": "🔬 Guru Sains: Cetusan Rasa Ingin Tahu",
+        "synopsis": "Anda akan dilatih menjadi guru yang membuat kanak-kanak jatuh cinta dengan sains. Bukan sekadar membaca buku teks — anda belajar cara menjalankan eksperimen menarik, membawa murid ke alam semulajadi, dan menjawab soalan 'kenapa?' yang tidak pernah habis. Guru sains yang baik mengubah hidup murid."
+    },
+    "50PD031S00P": {
+        "headline": "🔬 Guru Sains: Cetusan Rasa Ingin Tahu",
+        "synopsis": "Anda akan dilatih menjadi guru yang membuat kanak-kanak jatuh cinta dengan sains. Bukan sekadar membaca buku teks — anda belajar cara menjalankan eksperimen menarik, membawa murid ke alam semulajadi, dan menjawab soalan 'kenapa?' yang tidak pernah habis. Guru sains yang baik mengubah hidup murid."
+    },
+    "50PD041S00P": {
+        "headline": "🔬 Guru Sains: Cetusan Rasa Ingin Tahu",
+        "synopsis": "Anda akan dilatih menjadi guru yang membuat kanak-kanak jatuh cinta dengan sains. Bukan sekadar membaca buku teks — anda belajar cara menjalankan eksperimen menarik, membawa murid ke alam semulajadi, dan menjawab soalan 'kenapa?' yang tidak pernah habis. Guru sains yang baik mengubah hidup murid."
+    },
+    "50PD041S004": {
+        "headline": "🔬 Guru Sains: Cetusan Rasa Ingin Tahu",
+        "synopsis": "Anda akan dilatih menjadi guru yang membuat kanak-kanak jatuh cinta dengan sains. Bukan sekadar membaca buku teks — anda belajar cara menjalankan eksperimen menarik, membawa murid ke alam semulajadi, dan menjawab soalan 'kenapa?' yang tidak pernah habis. Guru sains yang baik mengubah hidup murid."
+    },
+    "50PD061S00P": {
+        "headline": "🔬 Guru Sains: Cetusan Rasa Ingin Tahu",
+        "synopsis": "Anda akan dilatih menjadi guru yang membuat kanak-kanak jatuh cinta dengan sains. Bukan sekadar membaca buku teks — anda belajar cara menjalankan eksperimen menarik, membawa murid ke alam semulajadi, dan menjawab soalan 'kenapa?' yang tidak pernah habis. Guru sains yang baik mengubah hidup murid."
+    },
+
+    # --- BIMBINGAN DAN KAUNSELING ---
+    "50PD017K00P": {
+        "headline": "💬 Guru Kaunseling: Penjaga Hati Murid",
+        "synopsis": "Bukan semua guru mengajar subjek — ada yang menjaga emosi dan kesejahteraan murid. Anda dilatih menjadi kaunselor sekolah rendah yang membantu kanak-kanak menghadapi tekanan, masalah keluarga, dan buli. Kerjaya ini sangat bermakna kerana anda jadi tempat murid mengadu dan mendapat sokongan."
+    },
+    "50PD037K00P": {
+        "headline": "💬 Guru Kaunseling: Penjaga Hati Murid",
+        "synopsis": "Bukan semua guru mengajar subjek — ada yang menjaga emosi dan kesejahteraan murid. Anda dilatih menjadi kaunselor sekolah rendah yang membantu kanak-kanak menghadapi tekanan, masalah keluarga, dan buli. Kerjaya ini sangat bermakna kerana anda jadi tempat murid mengadu dan mendapat sokongan."
+    },
+    "50PD047K00P": {
+        "headline": "💬 Guru Kaunseling: Penjaga Hati Murid",
+        "synopsis": "Bukan semua guru mengajar subjek — ada yang menjaga emosi dan kesejahteraan murid. Anda dilatih menjadi kaunselor sekolah rendah yang membantu kanak-kanak menghadapi tekanan, masalah keluarga, dan buli. Kerjaya ini sangat bermakna kerana anda jadi tempat murid mengadu dan mendapat sokongan."
+    },
+    "50PD067K00P": {
+        "headline": "💬 Guru Kaunseling: Penjaga Hati Murid",
+        "synopsis": "Bukan semua guru mengajar subjek — ada yang menjaga emosi dan kesejahteraan murid. Anda dilatih menjadi kaunselor sekolah rendah yang membantu kanak-kanak menghadapi tekanan, masalah keluarga, dan buli. Kerjaya ini sangat bermakna kerana anda jadi tempat murid mengadu dan mendapat sokongan."
+    },
+
+    # --- PENDIDIKAN AWAL KANAK-KANAK ---
+    "50PD017P00P": {
+        "headline": "👶 Guru Prasekolah: Pembina Asas Kehidupan",
+        "synopsis": "Tahun-tahun awal kanak-kanak (4-6 tahun) adalah yang paling kritikal. Anda dilatih mengajar melalui bermain, bercerita, dan aktiviti kreatif. Bukan akademik semata-mata — anda membentuk keyakinan diri, kemahiran sosial, dan asas literasi kanak-kanak. Setiap hari penuh warna dan tawa."
+    },
+    "50PD037P00P": {
+        "headline": "👶 Guru Prasekolah: Pembina Asas Kehidupan",
+        "synopsis": "Tahun-tahun awal kanak-kanak (4-6 tahun) adalah yang paling kritikal. Anda dilatih mengajar melalui bermain, bercerita, dan aktiviti kreatif. Bukan akademik semata-mata — anda membentuk keyakinan diri, kemahiran sosial, dan asas literasi kanak-kanak. Setiap hari penuh warna dan tawa."
+    },
+    "50PD047P00P": {
+        "headline": "👶 Guru Prasekolah: Pembina Asas Kehidupan",
+        "synopsis": "Tahun-tahun awal kanak-kanak (4-6 tahun) adalah yang paling kritikal. Anda dilatih mengajar melalui bermain, bercerita, dan aktiviti kreatif. Bukan akademik semata-mata — anda membentuk keyakinan diri, kemahiran sosial, dan asas literasi kanak-kanak. Setiap hari penuh warna dan tawa."
+    },
+    "50PD067P00P": {
+        "headline": "👶 Guru Prasekolah: Pembina Asas Kehidupan",
+        "synopsis": "Tahun-tahun awal kanak-kanak (4-6 tahun) adalah yang paling kritikal. Anda dilatih mengajar melalui bermain, bercerita, dan aktiviti kreatif. Bukan akademik semata-mata — anda membentuk keyakinan diri, kemahiran sosial, dan asas literasi kanak-kanak. Setiap hari penuh warna dan tawa."
+    },
+
+    # --- PENDIDIKAN ISLAM PENDIDIKAN RENDAH ---
+    "50PD015A00P": {
+        "headline": "🕌 Guru Pendidikan Islam: Pemandu Rohani Muda",
+        "synopsis": "Anda dilatih mengajar Pendidikan Islam kepada murid sekolah rendah — dari asas tilawah Al-Quran hingga akhlak dan sirah. Kursus ini menekankan pendekatan mesra kanak-kanak supaya murid bukan sekadar menghafal, tetapi memahami dan mengamalkan ajaran Islam dalam kehidupan seharian."
+    },
+    "50PD035A00P": {
+        "headline": "🕌 Guru Pendidikan Islam: Pemandu Rohani Muda",
+        "synopsis": "Anda dilatih mengajar Pendidikan Islam kepada murid sekolah rendah — dari asas tilawah Al-Quran hingga akhlak dan sirah. Kursus ini menekankan pendekatan mesra kanak-kanak supaya murid bukan sekadar menghafal, tetapi memahami dan mengamalkan ajaran Islam dalam kehidupan seharian."
+    },
+    "50PD045A00P": {
+        "headline": "🕌 Guru Pendidikan Islam: Pemandu Rohani Muda",
+        "synopsis": "Anda dilatih mengajar Pendidikan Islam kepada murid sekolah rendah — dari asas tilawah Al-Quran hingga akhlak dan sirah. Kursus ini menekankan pendekatan mesra kanak-kanak supaya murid bukan sekadar menghafal, tetapi memahami dan mengamalkan ajaran Islam dalam kehidupan seharian."
+    },
+    "50PD065A00P": {
+        "headline": "🕌 Guru Pendidikan Islam: Pemandu Rohani Muda",
+        "synopsis": "Anda dilatih mengajar Pendidikan Islam kepada murid sekolah rendah — dari asas tilawah Al-Quran hingga akhlak dan sirah. Kursus ini menekankan pendekatan mesra kanak-kanak supaya murid bukan sekadar menghafal, tetapi memahami dan mengamalkan ajaran Islam dalam kehidupan seharian."
+    },
+
+    # --- PENDIDIKAN JASMANI PENDIDIKAN RENDAH ---
+    "50PD016J00P": {
+        "headline": "⚽ Guru Pendidikan Jasmani: Jurulatih Generasi Sihat",
+        "synopsis": "Kalau anda seorang yang aktif dan suka sukan, inilah kerjaya impian anda. Anda dilatih mengajar PJ di sekolah rendah — merangka aktiviti fizikal yang seronok, mengurus acara sukan, dan memastikan murid membesar dengan tubuh badan yang sihat dan aktif. Pejabat anda adalah padang dan gimnasium!"
+    },
+    "50PD036J00P": {
+        "headline": "⚽ Guru Pendidikan Jasmani: Jurulatih Generasi Sihat",
+        "synopsis": "Kalau anda seorang yang aktif dan suka sukan, inilah kerjaya impian anda. Anda dilatih mengajar PJ di sekolah rendah — merangka aktiviti fizikal yang seronok, mengurus acara sukan, dan memastikan murid membesar dengan tubuh badan yang sihat dan aktif. Pejabat anda adalah padang dan gimnasium!"
+    },
+    "50PD046J00P": {
+        "headline": "⚽ Guru Pendidikan Jasmani: Jurulatih Generasi Sihat",
+        "synopsis": "Kalau anda seorang yang aktif dan suka sukan, inilah kerjaya impian anda. Anda dilatih mengajar PJ di sekolah rendah — merangka aktiviti fizikal yang seronok, mengurus acara sukan, dan memastikan murid membesar dengan tubuh badan yang sihat dan aktif. Pejabat anda adalah padang dan gimnasium!"
+    },
+    "50PD066J00P": {
+        "headline": "⚽ Guru Pendidikan Jasmani: Jurulatih Generasi Sihat",
+        "synopsis": "Kalau anda seorang yang aktif dan suka sukan, inilah kerjaya impian anda. Anda dilatih mengajar PJ di sekolah rendah — merangka aktiviti fizikal yang seronok, mengurus acara sukan, dan memastikan murid membesar dengan tubuh badan yang sihat dan aktif. Pejabat anda adalah padang dan gimnasium!"
+    },
+
+    # --- PENDIDIKAN KHAS MASALAH PEMBELAJARAN ---
+    "50PD017B00P": {
+        "headline": "🤝 Guru Pendidikan Khas (Pembelajaran): Wira Tanpa Nama",
+        "synopsis": "Anda dilatih mendidik murid berkeperluan khas — seperti autisme, disleksia, dan ADHD. Ini bukan pengajaran biasa; anda belajar teknik khas untuk menyesuaikan kurikulum mengikut keupayaan setiap murid. Kerja yang sangat mencabar tetapi sangat membanggakan kerana anda mengubah hidup kanak-kanak yang sering terpinggir."
+    },
+    "50PD037B00P": {
+        "headline": "🤝 Guru Pendidikan Khas (Pembelajaran): Wira Tanpa Nama",
+        "synopsis": "Anda dilatih mendidik murid berkeperluan khas — seperti autisme, disleksia, dan ADHD. Ini bukan pengajaran biasa; anda belajar teknik khas untuk menyesuaikan kurikulum mengikut keupayaan setiap murid. Kerja yang sangat mencabar tetapi sangat membanggakan kerana anda mengubah hidup kanak-kanak yang sering terpinggir."
+    },
+    "50PD047B00P": {
+        "headline": "🤝 Guru Pendidikan Khas (Pembelajaran): Wira Tanpa Nama",
+        "synopsis": "Anda dilatih mendidik murid berkeperluan khas — seperti autisme, disleksia, dan ADHD. Ini bukan pengajaran biasa; anda belajar teknik khas untuk menyesuaikan kurikulum mengikut keupayaan setiap murid. Kerja yang sangat mencabar tetapi sangat membanggakan kerana anda mengubah hidup kanak-kanak yang sering terpinggir."
+    },
+    "50PD067B00P": {
+        "headline": "🤝 Guru Pendidikan Khas (Pembelajaran): Wira Tanpa Nama",
+        "synopsis": "Anda dilatih mendidik murid berkeperluan khas — seperti autisme, disleksia, dan ADHD. Ini bukan pengajaran biasa; anda belajar teknik khas untuk menyesuaikan kurikulum mengikut keupayaan setiap murid. Kerja yang sangat mencabar tetapi sangat membanggakan kerana anda mengubah hidup kanak-kanak yang sering terpinggir."
+    },
+
+    # --- PENDIDIKAN KHAS MASALAH PENDENGARAN ---
+    "50PD017D00P": {
+        "headline": "🤟 Guru Pendidikan Khas (Pendengaran): Suara Untuk Semua",
+        "synopsis": "Anda dilatih mengajar murid pekak dan kurang pendengaran menggunakan Bahasa Isyarat Malaysia (BIM) dan teknologi pendengaran moden. Kursus ini sangat khusus dan pakarnya sangat diperlukan. Anda menjadi jambatan antara dunia senyap murid dengan dunia pembelajaran yang penuh makna."
+    },
+    "50PD037D00P": {
+        "headline": "🤟 Guru Pendidikan Khas (Pendengaran): Suara Untuk Semua",
+        "synopsis": "Anda dilatih mengajar murid pekak dan kurang pendengaran menggunakan Bahasa Isyarat Malaysia (BIM) dan teknologi pendengaran moden. Kursus ini sangat khusus dan pakarnya sangat diperlukan. Anda menjadi jambatan antara dunia senyap murid dengan dunia pembelajaran yang penuh makna."
+    },
+    "50PD067D00P": {
+        "headline": "🤟 Guru Pendidikan Khas (Pendengaran): Suara Untuk Semua",
+        "synopsis": "Anda dilatih mengajar murid pekak dan kurang pendengaran menggunakan Bahasa Isyarat Malaysia (BIM) dan teknologi pendengaran moden. Kursus ini sangat khusus dan pakarnya sangat diperlukan. Anda menjadi jambatan antara dunia senyap murid dengan dunia pembelajaran yang penuh makna."
+    },
+
+    # --- PENDIDIKAN KHAS MASALAH PENGLIHATAN ---
+    "50PD017L00P": {
+        "headline": "👁️ Guru Pendidikan Khas (Penglihatan): Cahaya Dalam Gelap",
+        "synopsis": "Anda dilatih mengajar murid buta dan rabun menggunakan Braille, teknologi bantuan, dan kaedah pengajaran khas. Pakar dalam bidang ini sangat kurang di Malaysia. Anda bukan sekadar guru — anda membuka pintu dunia untuk kanak-kanak yang tidak dapat melihat tetapi penuh potensi."
+    },
+    "50PD037L00P": {
+        "headline": "👁️ Guru Pendidikan Khas (Penglihatan): Cahaya Dalam Gelap",
+        "synopsis": "Anda dilatih mengajar murid buta dan rabun menggunakan Braille, teknologi bantuan, dan kaedah pengajaran khas. Pakar dalam bidang ini sangat kurang di Malaysia. Anda bukan sekadar guru — anda membuka pintu dunia untuk kanak-kanak yang tidak dapat melihat tetapi penuh potensi."
+    },
+
+    # --- MATEMATIK PENDIDIKAN RENDAH ---
+    "50PD011M00P": {
+        "headline": "🔢 Guru Matematik: Buat Nombor Jadi Seronok",
+        "synopsis": "Ramai murid takut Matematik — tugas anda ubah persepsi itu. Anda dilatih mengajar Math sekolah rendah menggunakan pendekatan hands-on, permainan nombor, dan manipulatif. Anda belajar cara membuat topik seperti pecahan dan geometri menjadi mudah difahami dan menyeronokkan."
+    },
+    "50PD031M00P": {
+        "headline": "🔢 Guru Matematik: Buat Nombor Jadi Seronok",
+        "synopsis": "Ramai murid takut Matematik — tugas anda ubah persepsi itu. Anda dilatih mengajar Math sekolah rendah menggunakan pendekatan hands-on, permainan nombor, dan manipulatif. Anda belajar cara membuat topik seperti pecahan dan geometri menjadi mudah difahami dan menyeronokkan."
+    },
+    "50PD041M00P": {
+        "headline": "🔢 Guru Matematik: Buat Nombor Jadi Seronok",
+        "synopsis": "Ramai murid takut Matematik — tugas anda ubah persepsi itu. Anda dilatih mengajar Math sekolah rendah menggunakan pendekatan hands-on, permainan nombor, dan manipulatif. Anda belajar cara membuat topik seperti pecahan dan geometri menjadi mudah difahami dan menyeronokkan."
+    },
+    "50PD061M00P": {
+        "headline": "🔢 Guru Matematik: Buat Nombor Jadi Seronok",
+        "synopsis": "Ramai murid takut Matematik — tugas anda ubah persepsi itu. Anda dilatih mengajar Math sekolah rendah menggunakan pendekatan hands-on, permainan nombor, dan manipulatif. Anda belajar cara membuat topik seperti pecahan dan geometri menjadi mudah difahami dan menyeronokkan."
+    },
+
+    # --- REKA BENTUK DAN TEKNOLOGI PENDIDIKAN ---
+    "50PD017R00P": {
+        "headline": "🛠️ Guru RBT: Tangan Kreatif, Minda Inovatif",
+        "synopsis": "Reka Bentuk dan Teknologi (RBT) adalah subjek paling hands-on di sekolah rendah. Anda dilatih mengajar murid membina projek kayu, elektronik asas, jahitan, dan masakan. Ini subjek kegemaran ramai murid kerana murid belajar sambil buat. Sesuai untuk anda yang suka kerja tangan dan berinovasi."
+    },
+    "50PD037R00P": {
+        "headline": "🛠️ Guru RBT: Tangan Kreatif, Minda Inovatif",
+        "synopsis": "Reka Bentuk dan Teknologi (RBT) adalah subjek paling hands-on di sekolah rendah. Anda dilatih mengajar murid membina projek kayu, elektronik asas, jahitan, dan masakan. Ini subjek kegemaran ramai murid kerana murid belajar sambil buat. Sesuai untuk anda yang suka kerja tangan dan berinovasi."
+    },
+    "50PD047R00P": {
+        "headline": "🛠️ Guru RBT: Tangan Kreatif, Minda Inovatif",
+        "synopsis": "Reka Bentuk dan Teknologi (RBT) adalah subjek paling hands-on di sekolah rendah. Anda dilatih mengajar murid membina projek kayu, elektronik asas, jahitan, dan masakan. Ini subjek kegemaran ramai murid kerana murid belajar sambil buat. Sesuai untuk anda yang suka kerja tangan dan berinovasi."
+    },
+    "50PD067R00P": {
+        "headline": "🛠️ Guru RBT: Tangan Kreatif, Minda Inovatif",
+        "synopsis": "Reka Bentuk dan Teknologi (RBT) adalah subjek paling hands-on di sekolah rendah. Anda dilatih mengajar murid membina projek kayu, elektronik asas, jahitan, dan masakan. Ini subjek kegemaran ramai murid kerana murid belajar sambil buat. Sesuai untuk anda yang suka kerja tangan dan berinovasi."
+    },
+
+    # --- SEJARAH PENDIDIKAN RENDAH ---
+    "50PD016S00P": {
+        "headline": "📜 Guru Sejarah: Kisah Negara Jadi Hidup",
+        "synopsis": "Sejarah bukan subjek yang membosankan kalau guru pandai bercerita. Anda dilatih mengajar sejarah Malaysia kepada murid sekolah rendah melalui penceritaan menarik, lawatan sejarah, dan aktiviti interaktif. Matlamatnya: murid faham dan bangga dengan asal usul negara kita."
+    },
+    "50PD036S00P": {
+        "headline": "📜 Guru Sejarah: Kisah Negara Jadi Hidup",
+        "synopsis": "Sejarah bukan subjek yang membosankan kalau guru pandai bercerita. Anda dilatih mengajar sejarah Malaysia kepada murid sekolah rendah melalui penceritaan menarik, lawatan sejarah, dan aktiviti interaktif. Matlamatnya: murid faham dan bangga dengan asal usul negara kita."
+    },
+    "50PD046S00P": {
+        "headline": "📜 Guru Sejarah: Kisah Negara Jadi Hidup",
+        "synopsis": "Sejarah bukan subjek yang membosankan kalau guru pandai bercerita. Anda dilatih mengajar sejarah Malaysia kepada murid sekolah rendah melalui penceritaan menarik, lawatan sejarah, dan aktiviti interaktif. Matlamatnya: murid faham dan bangga dengan asal usul negara kita."
+    },
+    "50PD066S00P": {
+        "headline": "📜 Guru Sejarah: Kisah Negara Jadi Hidup",
+        "synopsis": "Sejarah bukan subjek yang membosankan kalau guru pandai bercerita. Anda dilatih mengajar sejarah Malaysia kepada murid sekolah rendah melalui penceritaan menarik, lawatan sejarah, dan aktiviti interaktif. Matlamatnya: murid faham dan bangga dengan asal usul negara kita."
+    },
+
+    # --- PENGAJARAN BAHASA INGGERIS ---
+    "50PD010E00P": {
+        "headline": "🌍 Guru Bahasa Inggeris: Buka Pintu Dunia",
+        "synopsis": "English teacher yang hebat boleh mengubah masa depan murid. Anda dilatih mengajar BI di sekolah rendah dengan kaedah moden — phonics, storytelling, dan communicative approach. Anda belajar membuat kelas bahasa Inggeris yang menarik walaupun murid datang dari latar belakang yang pelbagai."
+    },
+    "50PD030E00P": {
+        "headline": "🌍 Guru Bahasa Inggeris: Buka Pintu Dunia",
+        "synopsis": "English teacher yang hebat boleh mengubah masa depan murid. Anda dilatih mengajar BI di sekolah rendah dengan kaedah moden — phonics, storytelling, dan communicative approach. Anda belajar membuat kelas bahasa Inggeris yang menarik walaupun murid datang dari latar belakang yang pelbagai."
+    },
+    "50PD040E00P": {
+        "headline": "🌍 Guru Bahasa Inggeris: Buka Pintu Dunia",
+        "synopsis": "English teacher yang hebat boleh mengubah masa depan murid. Anda dilatih mengajar BI di sekolah rendah dengan kaedah moden — phonics, storytelling, dan communicative approach. Anda belajar membuat kelas bahasa Inggeris yang menarik walaupun murid datang dari latar belakang yang pelbagai."
+    },
+
+    # --- OTHER LANGUAGES ---
+    "50PD010A00P": {
+        "headline": "🕋 Guru Bahasa Arab: Bahasa Al-Quran",
+        "synopsis": "Anda dilatih mengajar bahasa Arab kepada murid sekolah rendah. Bukan sekadar tatabahasa — anda belajar cara membuat murid berkomunikasi dalam bahasa Arab melalui lagu, permainan, dan dialog. Kemahiran yang sangat bernilai kerana bahasa Arab adalah kunci kepada kefahaman agama Islam."
+    },
+    "50PD010C00P": {
+        "headline": "🏮 Guru Bahasa Cina: Jambatan Budaya",
+        "synopsis": "Anda dilatih mengajar Bahasa Cina (Mandarin) di sekolah rendah — dari penulisan aksara hingga perbualan harian. Program ini menekankan pendekatan komunikatif dan penggunaan teknologi pendidikan. Sesuai untuk anda yang fasih dalam bahasa Cina dan mahu berkongsi budaya dengan generasi muda."
+    },
+    "50PD030C00P": {
+        "headline": "🏮 Guru Bahasa Cina: Jambatan Budaya",
+        "synopsis": "Anda dilatih mengajar Bahasa Cina (Mandarin) di sekolah rendah — dari penulisan aksara hingga perbualan harian. Program ini menekankan pendekatan komunikatif dan penggunaan teknologi pendidikan. Sesuai untuk anda yang fasih dalam bahasa Cina dan mahu berkongsi budaya dengan generasi muda."
+    },
+    "50PD010B00P": {
+        "headline": "🌿 Guru Bahasa Iban: Warisan Borneo",
+        "synopsis": "Program unik untuk memelihara bahasa Iban sebagai warisan budaya Sarawak. Anda dilatih mengajar bahasa Iban kepada murid sekolah rendah dengan pendekatan moden. Peluang kerjaya yang dijamin kerana guru bahasa Iban sangat diperlukan di Sarawak dan permintaannya melebihi penawaran."
+    },
+    "50PD040T00P": {
+        "headline": "🪷 Guru Bahasa Tamil: Warisan Tamadun Purba",
+        "synopsis": "Bahasa Tamil adalah salah satu bahasa tertua di dunia. Anda dilatih mengajar bahasa Tamil di sekolah rendah dengan teknik moden — memastikan murid bukan sahaja boleh membaca dan menulis, tetapi menghargai keindahan kesusasteraan Tamil. Peluang unik memelihara warisan budaya masyarakat India Malaysia."
     }
 
 }

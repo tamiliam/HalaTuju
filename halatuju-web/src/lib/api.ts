@@ -63,6 +63,7 @@ export interface Course {
   department: string
   field: string
   frontend_label: string
+  headline: string
   description: string
   wbl: boolean
   semesters: number
