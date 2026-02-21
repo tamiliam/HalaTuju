@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-02-22 — Sprint 16: Bilingual Descriptions Pipeline
+
+### Added
+- `headline_en` and `description_en` fields on Course model (migration 0007)
+- `load_course_descriptions()` method in data loader — reads `course_descriptions.json`, populates all 4 description fields
+- `data/course_descriptions.json` — 383 bilingual course descriptions extracted from `src/description.py`
+- Course detail page now shows locale-appropriate headline and description (BM for `ms`, EN for `en`/`ta`)
+- `courseDetail.*` i18n keys added to all 3 locale files (EN, BM, Tamil)
+- 6 new tests: bilingual API fields, empty defaults, description loading, TVET overwrite protection
+
+### Fixed
+- TVET metadata loader no longer overwrites rich descriptions with thin CSV text (conditional update)
+
+### Technical Notes
+- CourseSerializer now exposes `headline_en`, `description_en`
+- Frontend `Course` interface updated with new fields
+- Supabase migration applied: `ALTER TABLE courses ADD COLUMN headline_en/description_en`
+- Backend tests: 162 (was 156) | Golden master: 8280 (unchanged)
+
 ## [1.16.1] - 2026-02-21 — Description Sprint: Quality Audit + English Translations
 
 ### Added

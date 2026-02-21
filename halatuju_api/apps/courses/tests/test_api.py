@@ -619,6 +619,65 @@ class TestCourseDetailCareerOccupations(TestCase):
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls')
+class TestCourseDetailBilingualDescriptions(TestCase):
+    """Test course detail endpoint returns bilingual description fields."""
+
+    def setUp(self):
+        self.client = APIClient()
+        from apps.courses.models import Course
+        self.course = Course.objects.create(
+            course_id='TEST-BILINGUAL-001',
+            course='Diploma Kejuruteraan Mekanikal',
+            level='Diploma',
+            department='Kejuruteraan',
+            field='Mekanikal',
+            headline='Bina mesin, bina masa depan!',
+            headline_en='Build machines, build your future!',
+            description='Program ini melatih jurutera mekanikal yang mahir.',
+            description_en='This programme trains skilled mechanical engineers.',
+        )
+
+    def test_course_detail_returns_bilingual_headline(self):
+        """Course detail should include both headline and headline_en."""
+        response = self.client.get(f'/api/v1/courses/{self.course.course_id}/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['course']['headline'], 'Bina mesin, bina masa depan!')
+        self.assertEqual(data['course']['headline_en'], 'Build machines, build your future!')
+
+    def test_course_detail_returns_bilingual_description(self):
+        """Course detail should include both description and description_en."""
+        response = self.client.get(f'/api/v1/courses/{self.course.course_id}/')
+        data = response.json()
+        self.assertIn('melatih jurutera', data['course']['description'])
+        self.assertIn('skilled mechanical', data['course']['description_en'])
+
+    def test_course_detail_empty_bilingual_defaults(self):
+        """Course without descriptions should return empty strings for bilingual fields."""
+        from apps.courses.models import Course
+        bare_course = Course.objects.create(
+            course_id='TEST-BARE-001',
+            course='Bare Course',
+            level='Sijil',
+            department='Test',
+            field='Test',
+        )
+        response = self.client.get(f'/api/v1/courses/{bare_course.course_id}/')
+        data = response.json()
+        self.assertEqual(data['course']['headline_en'], '')
+        self.assertEqual(data['course']['description_en'], '')
+
+    def test_course_list_includes_bilingual_fields(self):
+        """Course list serializer should include bilingual fields."""
+        response = self.client.get('/api/v1/courses/')
+        data = response.json()
+        if data['count'] > 0:
+            course = data['courses'][0]
+            self.assertIn('headline_en', course)
+            self.assertIn('description_en', course)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls')
 class TestInstitutionEndpoints(TestCase):
     """Test institution endpoints."""
 

@@ -64,7 +64,9 @@ export interface Course {
   field: string
   frontend_label: string
   headline: string
+  headline_en: string
   description: string
+  description_en: string
   wbl: boolean
   semesters: number
 }

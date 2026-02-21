@@ -39,6 +39,7 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             self.load_courses(data_dir)
+            self.load_course_descriptions(data_dir)
             self.load_requirements(data_dir)
             self.load_tvet_course_metadata(data_dir)
             self.load_pismp_course_metadata(data_dir)
@@ -76,6 +77,32 @@ class Command(BaseCommand):
             count += 1
 
         self.stdout.write(f'  Loaded {count} courses')
+
+    def load_course_descriptions(self, data_dir):
+        """Load bilingual descriptions from course_descriptions.json into Course model.
+
+        Updates headline, headline_en, description (from synopsis), description_en
+        (from synopsis_en) for all 383 courses that have curated descriptions.
+        """
+        json_path = os.path.join(data_dir, 'course_descriptions.json')
+        if not os.path.exists(json_path):
+            self.stdout.write('  Skipping course_descriptions.json (not found)')
+            return
+
+        with open(json_path, 'r', encoding='utf-8') as f:
+            descriptions = json.load(f)
+
+        count = 0
+        for course_id, desc in descriptions.items():
+            updated = Course.objects.filter(course_id=course_id).update(
+                headline=desc.get('headline', ''),
+                headline_en=desc.get('headline_en', ''),
+                description=desc.get('synopsis', ''),
+                description_en=desc.get('synopsis_en', ''),
+            )
+            count += updated
+
+        self.stdout.write(f'  Loaded {count} course descriptions')
 
     def load_requirements(self, data_dir):
         """Load requirements CSVs into CourseRequirement model."""
@@ -206,9 +233,17 @@ class Command(BaseCommand):
                 'department': row.get('department', ''),
                 'field': row.get('department', ''),  # TVET uses department as field
                 'frontend_label': row.get('frontend_label', ''),
-                'description': row.get('description', ''),
                 'wbl': row.get('wbl', '').strip() in ('1', 'true', 'True'),
             }
+
+            # Only set description from CSV if no rich description was loaded
+            csv_desc = row.get('description', '')
+            try:
+                existing = Course.objects.get(course_id=course_id)
+                if not existing.description:
+                    defaults['description'] = csv_desc
+            except Course.DoesNotExist:
+                defaults['description'] = csv_desc
 
             # Convert months to semesters (6 months = 1 semester)
             months = row.get('months', '').strip()

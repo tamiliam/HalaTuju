@@ -12,7 +12,8 @@ class CourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = [
             'course_id', 'course', 'wbl', 'level', 'department',
-            'field', 'frontend_label', 'semesters', 'headline', 'description'
+            'field', 'frontend_label', 'semesters',
+            'headline', 'headline_en', 'description', 'description_en',
         ]
 
 

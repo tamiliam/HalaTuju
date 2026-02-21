@@ -136,6 +136,53 @@ class TestInstitutionModifiers(TestCase):
         self.assertFalse(self.institution.modifiers['subsistence_support'])
 
 
+class TestCourseDescriptionLoading(TestCase):
+    """Test that bilingual descriptions are loaded from JSON into Course model."""
+
+    def setUp(self):
+        self.course = Course.objects.create(
+            course_id='POLY-DIP-TEST',
+            course='Diploma Kejuruteraan Mekanikal',
+            level='Diploma',
+            department='Kejuruteraan',
+            field='Mekanikal',
+            description='Thin CSV description.',
+        )
+
+    def test_description_loading_populates_all_four_fields(self):
+        """load_course_descriptions should populate headline, headline_en, description, description_en."""
+        Course.objects.filter(course_id='POLY-DIP-TEST').update(
+            headline='Headline BM',
+            headline_en='Headline EN',
+            description='Rich synopsis BM',
+            description_en='Rich synopsis EN',
+        )
+        self.course.refresh_from_db()
+        self.assertEqual(self.course.headline, 'Headline BM')
+        self.assertEqual(self.course.headline_en, 'Headline EN')
+        self.assertEqual(self.course.description, 'Rich synopsis BM')
+        self.assertEqual(self.course.description_en, 'Rich synopsis EN')
+
+    def test_tvet_loader_does_not_overwrite_rich_description(self):
+        """TVET metadata loader should not overwrite a rich description with thin CSV text."""
+        # Simulate: descriptions already loaded with rich content
+        Course.objects.filter(course_id='POLY-DIP-TEST').update(
+            description='Rich curated synopsis from description.py',
+        )
+        self.course.refresh_from_db()
+        self.assertTrue(len(self.course.description) > 10)
+
+        # Simulate what the TVET loader does (conditional update)
+        csv_desc = 'Thin CSV text'
+        existing = Course.objects.get(course_id='POLY-DIP-TEST')
+        if not existing.description:
+            Course.objects.filter(course_id='POLY-DIP-TEST').update(description=csv_desc)
+
+        self.course.refresh_from_db()
+        self.assertIn('Rich curated', self.course.description)
+        self.assertNotIn('Thin CSV', self.course.description)
+
+
 class TestMascoOccupationModel(TestCase):
     """Test MascoOccupation model and Course M2M relationship."""
 

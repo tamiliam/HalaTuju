@@ -166,6 +166,19 @@
     "currentLanguage": "Bahasa Semasa",
     "builtBy": "Dibina oleh Tamil Foundation untuk pelajar Malaysia."
   },
+  "courseDetail": {
+    "aboutTitle": "Tentang Kursus Ini",
+    "careerPathways": "Laluan Kerjaya",
+    "careerPathwaysDesc": "Pekerjaan yang boleh dicapai melalui kursus ini (klasifikasi MASCO)",
+    "whereToStudy": "Tempat Pengajian",
+    "quickFacts": "Fakta Ringkas",
+    "actions": "Tindakan",
+    "saveCourse": "Simpan Kursus Ini",
+    "removeFromSaved": "Buang dari Simpanan",
+    "backToRecommendations": "Kembali ke Cadangan",
+    "notFound": "Kami tidak dapat mencari kursus yang anda cari.",
+    "noInstitutions": "Maklumat institusi tidak tersedia untuk kursus ini."
+  },
   "saved": {
     "title": "Kursus Disimpan",
     "signInPrompt": "Log masuk untuk menyimpan dan melihat kursus kegemaran anda.",

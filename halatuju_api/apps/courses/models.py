@@ -28,7 +28,9 @@ class Course(models.Model):
     frontend_label = models.CharField(max_length=100, help_text="UI category label")
     semesters = models.IntegerField(null=True, blank=True)
     headline = models.TextField(blank=True, default='', help_text="Catchy student-friendly headline")
+    headline_en = models.TextField(blank=True, default='', help_text="English headline")
     description = models.TextField(blank=True)
+    description_en = models.TextField(blank=True, default='', help_text="English description/synopsis")
 
     # Career pathway: links to MASCO occupation codes
     career_occupations = models.ManyToManyField(

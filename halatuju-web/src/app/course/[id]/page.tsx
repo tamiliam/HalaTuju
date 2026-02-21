@@ -5,12 +5,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { getCourse, saveCourse, unsaveCourse, type Course, type Institution, type MascoOccupation } from '@/lib/api'
+import { useT } from '@/lib/i18n'
 import { useState } from 'react'
 
 export default function CourseDetailPage() {
   const params = useParams()
   const router = useRouter()
   const courseId = params.id as string
+  const { locale, t } = useT()
   const [isSaved, setIsSaved] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -53,7 +55,7 @@ export default function CourseDetailPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Course not found</h1>
           <p className="text-gray-600 mb-6">
-            We couldn't find the course you're looking for.
+            {t('courseDetail.notFound')}
           </p>
           <Link href="/dashboard" className="btn-primary">
             Back to Dashboard
@@ -140,9 +142,9 @@ export default function CourseDetailPage() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {course.course}
               </h1>
-              {course.headline && (
+              {(course.headline || course.headline_en) && (
                 <p className="text-lg text-primary-600 font-medium mb-2">
-                  {course.headline}
+                  {locale === 'ms' ? (course.headline || course.headline_en) : (course.headline_en || course.headline)}
                 </p>
               )}
               <p className="text-gray-600 mb-4">
@@ -166,11 +168,12 @@ export default function CourseDetailPage() {
             {/* About */}
             <section className="bg-white rounded-xl border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                About This Course
+                {t('courseDetail.aboutTitle')}
               </h2>
               <p className="text-gray-600 leading-relaxed">
-                {course.description ||
-                  `This ${course.level} programme in ${course.field} prepares students for careers in ${course.department}. The course combines theoretical knowledge with practical skills to ensure graduates are industry-ready.`}
+                {locale === 'ms'
+                  ? (course.description || course.description_en || `Program ${course.level} dalam bidang ${course.field} menyediakan pelajar untuk kerjaya dalam ${course.department}.`)
+                  : (course.description_en || course.description || `This ${course.level} programme in ${course.field} prepares students for careers in ${course.department}. The course combines theoretical knowledge with practical skills to ensure graduates are industry-ready.`)}
               </p>
             </section>
 
@@ -178,10 +181,10 @@ export default function CourseDetailPage() {
             {career_occupations && career_occupations.length > 0 && (
               <section className="bg-white rounded-xl border border-gray-200 p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  Career Pathways
+                  {t('courseDetail.careerPathways')}
                 </h2>
                 <p className="text-sm text-gray-500 mb-4">
-                  Jobs this course can lead to (MASCO classified)
+                  {t('courseDetail.careerPathwaysDesc')}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {career_occupations.map((occ) => (
@@ -205,7 +208,7 @@ export default function CourseDetailPage() {
             {/* Institutions */}
             <section className="bg-white rounded-xl border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Where You Can Study
+                {t('courseDetail.whereToStudy')}
                 {institutions && (
                   <span className="text-gray-500 font-normal ml-2">
                     ({institutions.length} institutions)
@@ -220,7 +223,7 @@ export default function CourseDetailPage() {
                 </div>
               ) : (
                 <p className="text-gray-500">
-                  Institution information not available for this course.
+                  {t('courseDetail.noInstitutions')}
                 </p>
               )}
             </section>
@@ -231,7 +234,7 @@ export default function CourseDetailPage() {
             {/* Quick Facts */}
             <section className="bg-white rounded-xl border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Quick Facts
+                {t('courseDetail.quickFacts')}
               </h2>
               <div className="space-y-4">
                 <InfoRow label="Level" value={course.level} />
@@ -247,7 +250,7 @@ export default function CourseDetailPage() {
             {/* Actions */}
             <section className="bg-white rounded-xl border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Actions
+                {t('courseDetail.actions')}
               </h2>
               <div className="space-y-3">
                 <button
@@ -255,13 +258,13 @@ export default function CourseDetailPage() {
                   disabled={saving}
                   className="btn-primary w-full"
                 >
-                  {isSaved ? 'Remove from Saved' : 'Save This Course'}
+                  {isSaved ? t('courseDetail.removeFromSaved') : t('courseDetail.saveCourse')}
                 </button>
                 <Link
                   href="/dashboard"
                   className="btn-secondary w-full text-center block"
                 >
-                  Back to Recommendations
+                  {t('courseDetail.backToRecommendations')}
                 </Link>
               </div>
             </section>

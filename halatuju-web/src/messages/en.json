@@ -166,6 +166,19 @@
     "currentLanguage": "Current Language",
     "builtBy": "Built by the Tamil Foundation for Malaysian students."
   },
+  "courseDetail": {
+    "aboutTitle": "About This Course",
+    "careerPathways": "Career Pathways",
+    "careerPathwaysDesc": "Jobs this course can lead to (MASCO classified)",
+    "whereToStudy": "Where You Can Study",
+    "quickFacts": "Quick Facts",
+    "actions": "Actions",
+    "saveCourse": "Save This Course",
+    "removeFromSaved": "Remove from Saved",
+    "backToRecommendations": "Back to Recommendations",
+    "notFound": "We couldn't find the course you're looking for.",
+    "noInstitutions": "Institution information not available for this course."
+  },
   "saved": {
     "title": "Saved Courses",
     "signInPrompt": "Sign in to save and view your favourite courses.",
