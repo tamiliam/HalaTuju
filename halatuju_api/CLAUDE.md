@@ -191,6 +191,8 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Career pathways live: 272 MASCO occupations, 531 course-occupation links, clickable pills on course detail
 - i18n is live: 3 languages (EN/BM/TA), language selector on landing + dashboard + settings
 - Migration 0005 applied: `masco_occupations` + `courses_course_career_occupations` tables with RLS
+- All 383 course descriptions now bilingual: `headline_en` + `synopsis_en` in `src/description.py`
+- Description quality audit complete: 33 fixes applied (tone, typos, thin content)
 
 ## Streamlit App (Legacy — migrating to Django API)
 
