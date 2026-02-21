@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.1] - 2026-02-21 — Description Sprint: Quality Audit + English Translations
+
+### Added
+- English translations (`headline_en`, `synopsis_en`) for all 383 course descriptions in `src/description.py` — enables bilingual course cards
+- `headline` field added to all entries (previously only `synopsis` existed)
+- English fallback defaults in `get_course_details()` function
+
+### Fixed
+- 33 description quality issues across all 6 institution types:
+  - 25 "mereka" (third-person) pronoun fixes → "anda" (second-person, direct address)
+  - 2 typos: "DANN" → "DAN", "turu padang" → "turun padang"
+  - 2 thin descriptions expanded (IJTM-CET-035, IJTM-CET-037)
+  - 3 headline fixes ("Suara Untuk Mereka" → "Suara Untuk Semua")
+  - 1 "kita" → "anda" fix
+
+### Technical Notes
+- `src/description.py`: ~2,400 → ~3,090 lines
+- All 383 entries verified via AST parsing — 100% bilingual coverage
+- British English spelling throughout translations
+- Backend tests: 156 (unchanged) | Golden master: 8280 (unchanged)
+
 ## [1.16.0] - 2026-02-20 — Sprint 15: Career Pathways (MASCO Integration)
 
 ### Added
