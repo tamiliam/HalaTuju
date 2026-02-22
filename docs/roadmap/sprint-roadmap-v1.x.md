@@ -2,7 +2,7 @@
 
 > **Status**: ACTIVE
 > **Created**: 2026-02-16
-> **Total**: 19 sprints, 5 phases (expanded from original 15)
+> **Total**: 20 sprints, 7 phases (expanded from original 15)
 > **Plan file**: `.claude/plans/silly-zooming-kay.md`
 
 ## Phases
@@ -15,7 +15,8 @@
 | 3: AI Reports | 10-12 | Insights, Gemini reports, PDF download |
 | 4: Polish | 13-14 | Localisation (EN/BM/TA), UX polish |
 | 5: Lentera | 15 | Career pathways (MASCO integration) |
-| 6: Polish 2 | 16-19 | Remaining i18n, accessibility, filters, cleanup |
+| 6: Registration | 16 | Auth gate, profile sync, name+school |
+| 7: Outcomes + Polish | 17-20 | Outcome tracking, remaining i18n, filters, cleanup |
 
 ## Sprint Tracker
 
@@ -36,10 +37,11 @@
 | 13 | Localisation (EN/BM/TA) | DONE (2026-02-18) | +0 | Yes |
 | 14 | TVET Data Fix + UX Polish | DONE (2026-02-20) | +0 | Yes |
 | 15 | Career Pathways (MASCO Integration) | DONE (2026-02-20) | +8 | No |
-| 16 | UX Polish Phase 2 (7 pages i18n) | NOT STARTED | 0 | TBD |
-| 17 | UX Polish Phase 3 (Accessibility + Mobile) | NOT STARTED | 0 | TBD |
-| 18 | TVET/ILKA Frontend Filters | NOT STARTED | 0 | TBD |
-| 19 | Cleanup + Documentation | NOT STARTED | 0 | Yes |
+| 16 | Registration Gate (AuthGateModal, ProfileSync) | DONE (2026-02-22) | +10 | No |
+| 17 | Outcome Tracking (AdmissionOutcome CRUD) | NOT STARTED | 0 | TBD |
+| 18 | UX Polish Phase 2 (remaining i18n) | NOT STARTED | 0 | TBD |
+| 19 | TVET/ILKA Frontend Filters | NOT STARTED | 0 | TBD |
+| 20 | Cleanup + Documentation | NOT STARTED | 0 | Yes |
 
 ## Key Decisions Made
 

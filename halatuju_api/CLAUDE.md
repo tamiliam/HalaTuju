@@ -12,6 +12,7 @@ Django REST API for SPM course eligibility checking. Deployed on Cloud Run (asia
 │  halatuju-web                   │
 └──────────────┬──────────────────┘
                │ POST /api/v1/eligibility/check/
+               │ POST /api/v1/profile/sync/
                ▼
 ┌─────────────────────────────────┐
 │  Django API (Cloud Run)         │
@@ -111,7 +112,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (156 tests)
+# Run ALL tests (166 tests)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8280 baseline)
@@ -131,7 +132,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 8280 baseline |
 | test_serializers.py | 27 | Grade key mapping, gender/nationality normalization, bool→Ya/Tidak, validation |
 | test_api.py | 32 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD |
-| test_auth.py | 11 | Auth enforcement — protected endpoints reject 403, accept with JWT 200, public endpoints open |
+| test_auth.py | 15 | Auth enforcement — protected endpoints reject 403, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
 | test_saved_courses.py | 3 | Saved course CRUD — save (201), list (appears), delete (removed) |
 | test_quiz.py | 14 | Quiz endpoints (questions 3 langs, submit, validation), engine (accumulation, taxonomy, strength, lang parity) |
 | test_ranking.py | 34 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, top_5/rest split, API endpoint validation |
@@ -155,7 +156,7 @@ python manage.py test --verbosity=2
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-All 156 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
+All 166 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -184,15 +185,15 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 16 — UX Polish Phase 2**
-- Localise remaining pages: quiz, course detail, report, about, privacy, terms (7 pages)
-- Localise CourseCard component labels
-- Current tests: 156 | Golden master: 8280
-- Career pathways live: 272 MASCO occupations, 531 course-occupation links, clickable pills on course detail
-- i18n is live: 3 languages (EN/BM/TA), language selector on landing + dashboard + settings
-- Migration 0005 applied: `masco_occupations` + `courses_course_career_occupations` tables with RLS
-- All 383 course descriptions now bilingual: `headline_en` + `synopsis_en` in `src/description.py`
-- Description quality audit complete: 33 fixes applied (tone, typos, thin content)
+**Sprint 17 — Outcome Tracking**
+- `AdmissionOutcome` model (applied/offered/accepted/rejected/withdrawn)
+- CRUD endpoints (`/api/v1/outcomes/`) with auth-filtered access
+- "I applied!" / "I got an offer!" buttons on saved courses page
+- "My Applications" page with status badges
+- Current tests: 166 | Golden master: 8280
+- Sprint 16 (Registration Gate) complete: AuthGateModal, AuthContext, ProfileSyncView, name+school fields, 21 i18n keys × 3 locales
+- Migration 0008 applied: `name` + `school` columns on `student_profiles`
+- All 383 course descriptions bilingual, career pathways live (272 MASCO occupations, 531 links)
 
 ## Streamlit App (Legacy — migrating to Django API)
 
