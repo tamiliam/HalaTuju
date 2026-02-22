@@ -5,9 +5,13 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getQuizQuestions, submitQuiz, type QuizQuestion, type QuizAnswer } from '@/lib/api'
+import { useAuth } from '@/lib/auth-context'
+import { useT } from '@/lib/i18n'
 
 export default function QuizPage() {
   const router = useRouter()
+  const { isAuthenticated, isLoading: authLoading, showAuthGate } = useAuth()
+  const { t } = useT()
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [currentStep, setCurrentStep] = useState(0)
   const [answers, setAnswers] = useState<(number | null)[]>([])
@@ -15,8 +19,9 @@ export default function QuizPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Load questions on mount
+  // Load questions on mount (only if authenticated)
   useEffect(() => {
+    if (authLoading || !isAuthenticated) return
     const lang = localStorage.getItem('halatuju_lang') || 'en'
     getQuizQuestions(lang)
       .then(({ questions: qs }) => {
@@ -28,7 +33,7 @@ export default function QuizPage() {
         setError('Failed to load quiz questions. Please try again.')
         setLoading(false)
       })
-  }, [])
+  }, [authLoading, isAuthenticated])
 
   const handleSelect = (optionIndex: number) => {
     const updated = [...answers]
@@ -63,6 +68,31 @@ export default function QuizPage() {
 
   const allAnswered = answers.every((a) => a !== null)
   const question = questions[currentStep]
+
+  // Auth gate: show sign-in prompt if not authenticated
+  if (!authLoading && !isAuthenticated) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-primary-50 to-white flex items-center justify-center">
+        <div className="text-center max-w-md px-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            {t('authGate.title')}
+          </h1>
+          <p className="text-gray-600 mb-6">
+            {t('authGate.quizReason')}
+          </p>
+          <button
+            onClick={() => showAuthGate('quiz')}
+            className="btn-primary"
+          >
+            {t('saved.signIn')}
+          </button>
+          <Link href="/dashboard" className="block mt-4 text-gray-500 hover:text-gray-700 text-sm">
+            {t('authGate.continueBrowsing')}
+          </Link>
+        </div>
+      </main>
+    )
+  }
 
   if (loading) {
     return (

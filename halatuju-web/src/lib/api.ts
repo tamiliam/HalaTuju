@@ -42,6 +42,8 @@ export interface StudentProfile {
   disability?: boolean
   student_signals?: Record<string, number>
   preferred_state?: string
+  name?: string
+  school?: string
 }
 
 export interface EligibleCourse {
@@ -306,4 +308,28 @@ export async function getReports(
   options?: ApiOptions
 ): Promise<{ reports: ReportListItem[]; count: number }> {
   return apiRequest('/api/v1/reports/', options)
+}
+
+// Profile sync (after first login — pushes localStorage data to backend)
+export interface SyncProfileData {
+  grades?: Record<string, string>
+  gender?: string
+  nationality?: string
+  colorblind?: string
+  disability?: string
+  student_signals?: Record<string, Record<string, number>>
+  preferred_state?: string
+  name?: string
+  school?: string
+}
+
+export async function syncProfile(
+  data: SyncProfileData,
+  options?: ApiOptions
+): Promise<{ message: string; created: boolean }> {
+  return apiRequest('/api/v1/profile/sync/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    ...options,
+  })
 }

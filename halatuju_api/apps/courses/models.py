@@ -348,6 +348,12 @@ class StudentProfile(models.Model):
         help_text="SPM grades: {'bm': 'A+', 'math': 'B', ...}"
     )
 
+    # Identity (for follow-up tracking)
+    name = models.CharField(max_length=255, blank=True, default='',
+                            help_text="Student's full name")
+    school = models.CharField(max_length=255, blank=True, default='',
+                              help_text="SPM school name")
+
     # Demographics (for eligibility checking)
     gender = models.CharField(max_length=20, blank=True)
     nationality = models.CharField(max_length=50, default='Warganegara')

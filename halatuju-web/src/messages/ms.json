@@ -186,5 +186,30 @@
     "empty": "Anda belum menyimpan sebarang kursus.",
     "browseCourses": "Layari Kursus",
     "remove": "Buang dari senarai"
+  },
+  "authGate": {
+    "title": "Cipta Akaun Percuma Anda",
+    "quizReason": "Cipta akaun percuma untuk mendapatkan kedudukan kursus yang diperibadikan berdasarkan minat anda.",
+    "saveReason": "Cipta akaun percuma untuk menyimpan senarai pendek anda dan mengaksesnya dari mana-mana peranti.",
+    "reportReason": "Cipta akaun percuma untuk mendapatkan laporan kaunselor AI percuma anda.",
+    "benefit1": "Laporan bimbingan kerjaya percuma yang diperibadikan",
+    "benefit2": "Simpan dan bandingkan kursus dalam senarai pendek anda",
+    "benefit3": "Jejaki perjalanan permohonan anda",
+    "continueBrowsing": "Teruskan melayari",
+    "phoneNumber": "Nombor Telefon",
+    "sendCode": "Hantar Kod Pengesahan",
+    "sending": "Menghantar...",
+    "or": "atau",
+    "googleLogin": "Teruskan dengan Google",
+    "enterOTP": "Masukkan Kod Pengesahan",
+    "verifyCode": "Sahkan",
+    "verifying": "Mengesahkan...",
+    "differentPhone": "Gunakan nombor lain",
+    "almostDone": "Hampir siap! Beritahu kami sedikit tentang diri anda.",
+    "nameLabel": "Nama Penuh Anda",
+    "namePlaceholder": "cth. Siti Aminah",
+    "schoolLabel": "Sekolah Anda",
+    "schoolPlaceholder": "cth. SMK Damansara Jaya",
+    "completeProfile": "Lengkapkan & Teruskan"
   }
 }

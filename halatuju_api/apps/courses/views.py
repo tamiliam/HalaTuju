@@ -468,6 +468,8 @@ class ProfileView(APIView):
             'disability': profile.disability,
             'student_signals': profile.student_signals,
             'preferred_state': profile.preferred_state,
+            'name': profile.name,
+            'school': profile.school,
         })
 
     def put(self, request):
@@ -477,9 +479,41 @@ class ProfileView(APIView):
 
         # Update allowed fields
         for field in ['grades', 'gender', 'nationality', 'colorblind',
-                      'disability', 'student_signals', 'preferred_state']:
+                      'disability', 'student_signals', 'preferred_state',
+                      'name', 'school']:
             if field in request.data:
                 setattr(profile, field, request.data[field])
 
         profile.save()
         return Response({'message': 'Profile updated'})
+
+
+class ProfileSyncView(APIView):
+    """
+    POST /api/v1/profile/sync/
+
+    Sync localStorage data to backend profile after first login.
+    Accepts grades, demographics, quiz signals, name, and school in one call.
+    Creates the profile if it doesn't exist.
+    """
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request):
+        profile, created = StudentProfile.objects.get_or_create(
+            supabase_user_id=request.user_id
+        )
+
+        sync_fields = [
+            'grades', 'gender', 'nationality', 'colorblind', 'disability',
+            'student_signals', 'preferred_state', 'name', 'school',
+        ]
+
+        for field in sync_fields:
+            if field in request.data:
+                setattr(profile, field, request.data[field])
+
+        profile.save()
+        return Response({
+            'message': 'Profile synced',
+            'created': created,
+        })

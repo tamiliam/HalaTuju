@@ -60,6 +60,14 @@ class TestProtectedEndpointsRejectAnonymous(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+    def test_profile_sync_rejected(self):
+        response = self.client.post(
+            '/api/v1/profile/sync/',
+            {'name': 'Test'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 403)
+
 
 @override_settings(ROOT_URLCONF='halatuju.urls')
 class TestProtectedEndpointsAcceptAuth(TestCase):
@@ -99,6 +107,63 @@ class TestProtectedEndpointsAcceptAuth(TestCase):
             format='json',
         )
         self.assertEqual(response.status_code, 200)
+
+    def test_profile_sync_creates_profile(self):
+        response = self.client.post(
+            '/api/v1/profile/sync/',
+            {
+                'name': 'Siti Aminah',
+                'school': 'SMK Damansara Jaya',
+                'grades': {'bm': 'A', 'eng': 'B+'},
+                'gender': 'Perempuan',
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data['created'])
+        # Verify data persisted
+        get_resp = self.client.get('/api/v1/profile/')
+        self.assertEqual(get_resp.data['name'], 'Siti Aminah')
+        self.assertEqual(get_resp.data['school'], 'SMK Damansara Jaya')
+        self.assertEqual(get_resp.data['grades'], {'bm': 'A', 'eng': 'B+'})
+
+    def test_profile_sync_updates_existing(self):
+        # Create profile first
+        self.client.post(
+            '/api/v1/profile/sync/',
+            {'name': 'Original Name', 'school': 'Original School'},
+            format='json',
+        )
+        # Update with sync
+        response = self.client.post(
+            '/api/v1/profile/sync/',
+            {'name': 'Updated Name'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.data['created'])
+        # Verify name updated, school preserved
+        get_resp = self.client.get('/api/v1/profile/')
+        self.assertEqual(get_resp.data['name'], 'Updated Name')
+        self.assertEqual(get_resp.data['school'], 'Original School')
+
+    def test_profile_put_accepts_name_school(self):
+        # Create profile
+        self.client.post(
+            '/api/v1/profile/sync/',
+            {'name': 'Test'},
+            format='json',
+        )
+        # Update via PUT
+        response = self.client.put(
+            '/api/v1/profile/',
+            {'name': 'New Name', 'school': 'New School'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200)
+        get_resp = self.client.get('/api/v1/profile/')
+        self.assertEqual(get_resp.data['name'], 'New Name')
+        self.assertEqual(get_resp.data['school'], 'New School')
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls')

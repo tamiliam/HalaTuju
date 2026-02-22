@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import {
   checkEligibility,
@@ -16,24 +17,27 @@ import {
   type RankingResult,
   type Insights,
 } from '@/lib/api'
-import { getSession } from '@/lib/supabase'
+import { useAuth } from '@/lib/auth-context'
 import CourseCard from '@/components/CourseCard'
 import { useT } from '@/lib/i18n'
 import LanguageSelector from '@/components/LanguageSelector'
 
+const RESUME_ACTION_KEY = 'halatuju_resume_action'
+
 export default function DashboardPage() {
   const { t } = useT()
+  const router = useRouter()
+  const { isAuthenticated, token, showAuthGate } = useAuth()
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
   const [displayCount, setDisplayCount] = useState(20)
-  const [token, setToken] = useState<string | null>(null)
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [quizSignals, setQuizSignals] = useState<Record<string, Record<string, number>> | null>(null)
   const [reportLoading, setReportLoading] = useState(false)
   const [reportError, setReportError] = useState(false)
 
-  // Load profile from localStorage + check auth session on mount
+  // Load profile from localStorage on mount
   useEffect(() => {
     const grades = localStorage.getItem('halatuju_grades')
     const profileData = localStorage.getItem('halatuju_profile')
@@ -51,26 +55,24 @@ export default function DashboardPage() {
       })
     }
 
-    // Check for quiz signals
     const signals = localStorage.getItem('halatuju_quiz_signals')
     if (signals) {
       setQuizSignals(JSON.parse(signals))
     }
 
     setIsLoading(false)
-
-    // Check for Supabase session and load saved courses
-    getSession().then(({ session }) => {
-      if (session?.access_token) {
-        setToken(session.access_token)
-        getSavedCourses({ token: session.access_token })
-          .then(({ saved_courses }) => {
-            setSavedIds(new Set(saved_courses.map(c => c.course_id)))
-          })
-          .catch(() => {}) // Silently fail — saved state is non-critical
-      }
-    }).catch(() => {})
   }, [])
+
+  // Load saved courses when token becomes available
+  useEffect(() => {
+    if (token) {
+      getSavedCourses({ token })
+        .then(({ saved_courses }) => {
+          setSavedIds(new Set(saved_courses.map(c => c.course_id)))
+        })
+        .catch(() => {})
+    }
+  }, [token])
 
   const handleToggleSave = useCallback(async (courseId: string) => {
     if (!token) return
@@ -101,6 +103,15 @@ export default function DashboardPage() {
     }
   }, [token, savedIds])
 
+  // Save handler that gates on auth
+  const handleSaveOrGate = useCallback((courseId: string) => {
+    if (!isAuthenticated) {
+      showAuthGate('save', { courseId })
+      return
+    }
+    handleToggleSave(courseId)
+  }, [isAuthenticated, showAuthGate, handleToggleSave])
+
   // Query eligibility when profile is ready
   const {
     data: eligibilityData,
@@ -128,8 +139,12 @@ export default function DashboardPage() {
     setQuizSignals(null)
   }
 
-  const handleGenerateReport = async () => {
-    if (!token || !eligibilityData) return
+  const handleGenerateReport = useCallback(async () => {
+    if (!eligibilityData) return
+    if (!isAuthenticated || !token) {
+      showAuthGate('report')
+      return
+    }
     setReportLoading(true)
     setReportError(false)
     try {
@@ -144,7 +159,46 @@ export default function DashboardPage() {
       setReportError(true)
       setReportLoading(false)
     }
-  }
+  }, [eligibilityData, isAuthenticated, token, showAuthGate])
+
+  const handleQuizCta = useCallback(() => {
+    if (!isAuthenticated) {
+      showAuthGate('quiz')
+      return
+    }
+    router.push('/quiz')
+  }, [isAuthenticated, showAuthGate, router])
+
+  // Resume actions after auth completion (from auth gate modal)
+  const resumeHandledRef = useRef(false)
+  useEffect(() => {
+    if (!token || resumeHandledRef.current) return
+    const resumeStr = localStorage.getItem(RESUME_ACTION_KEY)
+    if (!resumeStr) return
+    localStorage.removeItem(RESUME_ACTION_KEY)
+    resumeHandledRef.current = true
+
+    try {
+      const { action, courseId } = JSON.parse(resumeStr)
+      if (action === 'save' && courseId) {
+        setSavedIds(prev => { const n = new Set(prev); n.add(courseId); return n })
+        saveCourse(courseId, { token }).catch(() => {
+          setSavedIds(prev => {
+            const n = new Set(prev)
+            n.delete(courseId)
+            return n
+          })
+        })
+      } else if (action === 'report' && eligibilityData) {
+        setReportLoading(true)
+        generateReport(eligibilityData.eligible_courses, eligibilityData.insights, 'bm', { token })
+          .then(result => { window.location.href = `/report/${result.report_id}` })
+          .catch(() => { setReportError(true); setReportLoading(false) })
+      }
+    } catch {
+      // Ignore malformed resume action
+    }
+  }, [token, eligibilityData])
 
   if (isLoading) {
     return <LoadingScreen />
@@ -249,8 +303,8 @@ export default function DashboardPage() {
           <InsightsPanel insights={eligibilityData.insights} />
         )}
 
-        {/* Generate Report CTA — show when logged in and eligibility loaded */}
-        {eligibilityData && token && (
+        {/* Generate Report CTA — always show when eligibility loaded */}
+        {eligibilityData && (
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
@@ -289,12 +343,12 @@ export default function DashboardPage() {
                   {t('dashboard.quizDesc')}
                 </p>
               </div>
-              <Link
-                href="/quiz"
+              <button
+                onClick={handleQuizCta}
                 className="bg-white text-primary-600 px-6 py-3 rounded-lg font-medium hover:bg-primary-50 transition-colors whitespace-nowrap text-center"
               >
                 {t('dashboard.takeQuiz')}
-              </Link>
+              </button>
             </div>
           </div>
         )}
@@ -352,7 +406,7 @@ export default function DashboardPage() {
           displayCount={displayCount}
           setDisplayCount={setDisplayCount}
           savedIds={savedIds}
-          onToggleSave={token ? handleToggleSave : undefined}
+          onToggleSave={handleSaveOrGate}
         />}
 
         {/* Flat Course List — when no quiz taken */}
@@ -378,7 +432,7 @@ export default function DashboardPage() {
                     key={course.course_id}
                     course={course}
                     isSaved={savedIds.has(course.course_id)}
-                    onToggleSave={token ? handleToggleSave : undefined}
+                    onToggleSave={handleSaveOrGate}
                   />
                 ))}
               </div>

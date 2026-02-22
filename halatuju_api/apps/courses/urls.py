@@ -29,4 +29,5 @@ urlpatterns = [
 
     # User profile
     path('profile/', views.ProfileView.as_view(), name='profile'),
+    path('profile/sync/', views.ProfileSyncView.as_view(), name='profile-sync'),
 ]

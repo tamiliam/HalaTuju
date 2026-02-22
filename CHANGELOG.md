@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2026-02-22 — Sprint 16: Registration Gate
+
+### Added
+- **AuthGateModal** (`components/AuthGateModal.tsx`): Multi-step registration modal with inline Phone OTP + Google OAuth sign-in, reason-specific messaging (quiz/save/report), benefit bullets, and name+school profile completion form
+- **AuthContext** (`lib/auth-context.tsx`): `AuthProvider` + `useAuth()` hook wrapping Supabase session state, providing `token`, `isAuthenticated`, `showAuthGate(reason)`, `hideAuthGate()`. Detects pending Google OAuth actions on mount.
+- **ProfileSyncView** (`POST /api/v1/profile/sync/`): New backend endpoint that bulk-pushes localStorage data (grades, gender, quiz signals, name, school) to backend after first login — creates or updates profile in one call
+- **`name` + `school` fields** on `StudentProfile` model (migration 0008) — for follow-up tracking
+- **Profile sync API** (`syncProfile()` in `api.ts`) + `SyncProfileData` type
+- **21 i18n keys** in `authGate.*` section across all 3 locales (EN, BM, Tamil)
+- 4 new backend tests: sync creates profile, sync updates existing, sync rejects anon, profile PUT accepts name/school
+
+### Changed
+- **Dashboard**: Save button always visible (gates on auth if not logged in), Report CTA always visible (was hidden for guests), Quiz CTA triggers auth gate instead of direct navigation. Actions auto-resume after auth completion via localStorage resume action.
+- **Quiz page**: Gated behind authentication — shows sign-in prompt with auth gate trigger for unauthenticated visitors
+- **Dashboard imports**: Replaced ad-hoc `getSession()` with `useAuth()` hook for consistent auth state
+
+### Technical Notes
+- Backend tests: 166 (+4) | Golden master: 8280 (unchanged)
+- Frontend build: passes clean
+- Google OAuth edge case handled: pending action stored in localStorage before redirect, AuthProvider restores it on mount, modal opens at profile step
+- New files: `components/AuthGateModal.tsx`, `lib/auth-context.tsx`
+- Modified: `providers.tsx`, `dashboard/page.tsx`, `quiz/page.tsx`, `api.ts`, `views.py`, `models.py`, `urls.py`, `en.json`, `ms.json`, `ta.json`
+
 ## [1.17.0] - 2026-02-22 — Sprint 16: Bilingual Descriptions Pipeline
 
 ### Added

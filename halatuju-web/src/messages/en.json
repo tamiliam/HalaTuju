@@ -186,5 +186,30 @@
     "empty": "You haven't saved any courses yet.",
     "browseCourses": "Browse Courses",
     "remove": "Remove from saved"
+  },
+  "authGate": {
+    "title": "Create Your Free Account",
+    "quizReason": "Create a free account to get personalised course rankings based on your interests.",
+    "saveReason": "Create a free account to save your shortlist and access it from any device.",
+    "reportReason": "Create a free account to get your free AI counsellor report.",
+    "benefit1": "Free personalised career guidance report",
+    "benefit2": "Save and compare your shortlisted courses",
+    "benefit3": "Track your application journey",
+    "continueBrowsing": "Continue browsing",
+    "phoneNumber": "Phone Number",
+    "sendCode": "Send Verification Code",
+    "sending": "Sending...",
+    "or": "or",
+    "googleLogin": "Continue with Google",
+    "enterOTP": "Enter Verification Code",
+    "verifyCode": "Verify",
+    "verifying": "Verifying...",
+    "differentPhone": "Use a different number",
+    "almostDone": "Almost done! Tell us a little about yourself.",
+    "nameLabel": "Your Full Name",
+    "namePlaceholder": "e.g. Siti Aminah",
+    "schoolLabel": "Your School",
+    "schoolPlaceholder": "e.g. SMK Damansara Jaya",
+    "completeProfile": "Complete & Continue"
   }
 }
