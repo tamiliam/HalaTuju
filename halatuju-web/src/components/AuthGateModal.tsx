@@ -21,6 +21,7 @@ export default function AuthGateModal() {
     hideAuthGate,
     isAuthenticated,
     token,
+    session,
   } = useAuth()
 
   const [step, setStep] = useState<ModalStep>('login')
@@ -48,10 +49,16 @@ export default function AuthGateModal() {
   // Advance to profile step when user authenticates mid-modal (OTP success)
   useEffect(() => {
     if (isAuthenticated && authGateReason && step !== 'profile') {
+      // Pre-fill name from Google profile if available
+      const googleName = session?.user?.user_metadata?.full_name
+        || session?.user?.user_metadata?.name
+      if (googleName && !name) {
+        setName(googleName)
+      }
       setStep('profile')
       setError(null)
     }
-  }, [isAuthenticated, authGateReason, step])
+  }, [isAuthenticated, authGateReason, step, session, name])
 
   if (!authGateReason) return null
 
