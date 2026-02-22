@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] - 2026-02-22 — Sprint 17: Outcome Tracking
+
+### Added
+- **AdmissionOutcome model** — tracks student application outcomes (applied/offered/accepted/rejected/withdrawn) per course+institution, with intake year, session, notes, and date fields
+- **CRUD endpoints** (`/api/v1/outcomes/` and `/api/v1/outcomes/<id>/`) — list, create, update status, delete. All auth-required, filtered to own outcomes.
+- **"I Applied!" / "I Got an Offer!" buttons** on saved courses page — inline outcome creation with optimistic UI
+- **Outcomes page** (`/outcomes`) — "My Applications" page listing all outcomes with colour-coded status badges, inline status editing, and delete
+- **Track Applications CTA** on saved courses page — links to outcomes page
+- **20 i18n keys** in `outcomes.*` section across all 3 locales (EN, BM, Tamil)
+- 10 new backend tests: CRUD, duplicate (409), auth enforcement (403), cross-user isolation
+
+### Technical Notes
+- Backend tests: 176 (+10) | Golden master: 8280 (unchanged)
+- Frontend build: passes clean
+- Migration 0009 applied: `admission_outcomes` table with RLS + 5 policies
+- Supabase security advisor: 0 errors (excluding known `django_migrations`)
+- Sprint 16 deployed: backend rev 21, frontend rev 17
+
 ## [1.18.0] - 2026-02-22 — Sprint 16: Registration Gate
 
 ### Added

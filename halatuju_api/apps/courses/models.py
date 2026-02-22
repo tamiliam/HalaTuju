@@ -405,3 +405,51 @@ class SavedCourse(models.Model):
 
     def __str__(self):
         return f"{self.student_id} saved {self.course_id}"
+
+
+class AdmissionOutcome(models.Model):
+    """
+    Tracks a student's application outcome for a specific course/institution.
+    Enables HalaTuju to measure real-world impact: did we help them get in?
+    """
+    STATUS_CHOICES = [
+        ('applied', 'Applied'),
+        ('offered', 'Offered'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('withdrawn', 'Withdrawn'),
+    ]
+
+    student = models.ForeignKey(
+        StudentProfile,
+        on_delete=models.CASCADE,
+        related_name='outcomes'
+    )
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name='outcomes'
+    )
+    institution = models.ForeignKey(
+        Institution,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='outcomes'
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='applied')
+    intake_year = models.IntegerField(null=True, blank=True)
+    intake_session = models.CharField(max_length=50, blank=True)
+    notes = models.TextField(blank=True)
+    applied_at = models.DateField(null=True, blank=True)
+    outcome_at = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'admission_outcomes'
+        unique_together = ['student', 'course', 'institution']
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.student_id} → {self.course_id} ({self.status})"

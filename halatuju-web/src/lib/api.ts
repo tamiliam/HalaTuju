@@ -310,6 +310,80 @@ export async function getReports(
   return apiRequest('/api/v1/reports/', options)
 }
 
+// Admission outcome types
+export type OutcomeStatus = 'applied' | 'offered' | 'accepted' | 'rejected' | 'withdrawn'
+
+export interface AdmissionOutcome {
+  id: number
+  course_id: string
+  course_name: string
+  institution_id: string | null
+  institution_name: string | null
+  status: OutcomeStatus
+  intake_year: number | null
+  intake_session: string
+  notes: string
+  applied_at: string | null
+  outcome_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+// Outcome API functions
+export async function getOutcomes(
+  options?: ApiOptions
+): Promise<{ outcomes: AdmissionOutcome[]; count: number }> {
+  return apiRequest('/api/v1/outcomes/', options)
+}
+
+export async function createOutcome(
+  data: {
+    course_id: string
+    institution_id?: string
+    status?: OutcomeStatus
+    intake_year?: number
+    intake_session?: string
+    notes?: string
+    applied_at?: string
+  },
+  options?: ApiOptions
+): Promise<{ id: number; message: string }> {
+  return apiRequest('/api/v1/outcomes/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    ...options,
+  })
+}
+
+export async function updateOutcome(
+  outcomeId: number,
+  data: Partial<{
+    status: OutcomeStatus
+    intake_year: number
+    intake_session: string
+    notes: string
+    applied_at: string
+    outcome_at: string
+  }>,
+  options?: ApiOptions
+): Promise<{ message: string }> {
+  return apiRequest(`/api/v1/outcomes/${outcomeId}/`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+    ...options,
+  })
+}
+
+export async function deleteOutcome(
+  outcomeId: number,
+  options?: ApiOptions
+): Promise<{ message: string }> {
+  return apiRequest(`/api/v1/outcomes/${outcomeId}/`, {
+    method: 'DELETE',
+    ...options,
+  })
+}
+
 // Profile sync (after first login — pushes localStorage data to backend)
 export interface SyncProfileData {
   grades?: Record<string, string>

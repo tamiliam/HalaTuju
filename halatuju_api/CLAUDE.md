@@ -13,6 +13,7 @@ Django REST API for SPM course eligibility checking. Deployed on Cloud Run (asia
 └──────────────┬──────────────────┘
                │ POST /api/v1/eligibility/check/
                │ POST /api/v1/profile/sync/
+               │ GET/POST/PUT/DELETE /api/v1/outcomes/
                ▼
 ┌─────────────────────────────────┐
 │  Django API (Cloud Run)         │
@@ -112,7 +113,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (166 tests)
+# Run ALL tests (176 tests)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8280 baseline)
@@ -140,11 +141,12 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_insights.py | 8 | Insights engine: empty input, stream breakdown, labels, top fields, merit counts, level distribution, summary text |
 | test_report_engine.py | 12 | Report engine: format helpers (grades, signals, courses, insights), prompts (BM/EN), persona mapping, Gemini mock (success, cascade, missing key) |
 | test_views.py (reports) | 4 | Report views: list (own only), detail, cross-user 404 regression, validation |
+| test_outcomes.py | 10 | Outcome CRUD (create, duplicate 409, with institution, missing course), list (own only), update status, cross-user 404, delete, auth enforcement (GET/POST 403) |
 
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (156 must pass, golden master = 8280)
+# 1. Run all tests (176 must pass, golden master = 8280)
 python manage.py test --verbosity=2
 
 # 2. After any migration that creates/alters tables:
@@ -156,7 +158,7 @@ python manage.py test --verbosity=2
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-All 166 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
+All 176 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -185,15 +187,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 17 — Outcome Tracking**
-- `AdmissionOutcome` model (applied/offered/accepted/rejected/withdrawn)
-- CRUD endpoints (`/api/v1/outcomes/`) with auth-filtered access
-- "I applied!" / "I got an offer!" buttons on saved courses page
-- "My Applications" page with status badges
-- Current tests: 166 | Golden master: 8280
-- Sprint 16 (Registration Gate) complete: AuthGateModal, AuthContext, ProfileSyncView, name+school fields, 21 i18n keys × 3 locales
-- Migration 0008 applied: `name` + `school` columns on `student_profiles`
-- All 383 course descriptions bilingual, career pathways live (272 MASCO occupations, 531 links)
+**Sprint 18 — UX Polish Phase 2 (remaining i18n)**
+- Localise remaining pages: quiz, course detail, report, about, privacy, terms
+- Localise CourseCard component labels
+- Current tests: 176 | Golden master: 8280
+- Sprint 17 (Outcome Tracking) complete: AdmissionOutcome CRUD, /outcomes page, "I Applied!" buttons
+- Sprint 16 (Registration Gate) deployed: backend rev 21, frontend rev 17
+- Migration 0009 applied: `admission_outcomes` table with RLS
 
 ## Streamlit App (Legacy — migrating to Django API)
 

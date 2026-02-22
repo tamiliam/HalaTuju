@@ -211,5 +211,26 @@
     "schoolLabel": "Your School",
     "schoolPlaceholder": "e.g. SMK Damansara Jaya",
     "completeProfile": "Complete & Continue"
+  },
+  "outcomes": {
+    "title": "My Applications",
+    "empty": "You haven't tracked any applications yet.",
+    "emptyHint": "Save a course and tap \"I Applied\" to start tracking.",
+    "backToDashboard": "Back to Dashboard",
+    "iApplied": "I Applied!",
+    "iGotOffer": "I Got an Offer!",
+    "statusApplied": "Applied",
+    "statusOffered": "Offered",
+    "statusAccepted": "Accepted",
+    "statusRejected": "Rejected",
+    "statusWithdrawn": "Withdrawn",
+    "updateStatus": "Update Status",
+    "deleteOutcome": "Remove",
+    "confirmDelete": "Are you sure you want to remove this application record?",
+    "trackApplications": "Track Your Applications",
+    "trackApplicationsDesc": "Record your offers and acceptances to help us improve HalaTuju.",
+    "appliedAt": "Applied",
+    "offeredAt": "Outcome date",
+    "noSavedCourses": "Save some courses first, then track your applications here."
   }
 }

@@ -30,4 +30,8 @@ urlpatterns = [
     # User profile
     path('profile/', views.ProfileView.as_view(), name='profile'),
     path('profile/sync/', views.ProfileSyncView.as_view(), name='profile-sync'),
+
+    # Admission outcomes
+    path('outcomes/', views.OutcomeListView.as_view(), name='outcome-list'),
+    path('outcomes/<int:outcome_id>/', views.OutcomeDetailView.as_view(), name='outcome-detail'),
 ]

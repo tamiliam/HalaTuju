@@ -211,5 +211,26 @@
     "schoolLabel": "Sekolah Anda",
     "schoolPlaceholder": "cth. SMK Damansara Jaya",
     "completeProfile": "Lengkapkan & Teruskan"
+  },
+  "outcomes": {
+    "title": "Permohonan Saya",
+    "empty": "Anda belum menjejaki sebarang permohonan.",
+    "emptyHint": "Simpan kursus dan tekan \"Saya Mohon\" untuk mula menjejaki.",
+    "backToDashboard": "Kembali ke Papan Pemuka",
+    "iApplied": "Saya Mohon!",
+    "iGotOffer": "Saya Dapat Tawaran!",
+    "statusApplied": "Dimohon",
+    "statusOffered": "Ditawarkan",
+    "statusAccepted": "Diterima",
+    "statusRejected": "Ditolak",
+    "statusWithdrawn": "Ditarik Balik",
+    "updateStatus": "Kemaskini Status",
+    "deleteOutcome": "Buang",
+    "confirmDelete": "Adakah anda pasti mahu membuang rekod permohonan ini?",
+    "trackApplications": "Jejaki Permohonan Anda",
+    "trackApplicationsDesc": "Rekodkan tawaran dan penerimaan anda untuk membantu kami menambah baik HalaTuju.",
+    "appliedAt": "Tarikh mohon",
+    "offeredAt": "Tarikh keputusan",
+    "noSavedCourses": "Simpan beberapa kursus dahulu, kemudian jejaki permohonan anda di sini."
   }
 }

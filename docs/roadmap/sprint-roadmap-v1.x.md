@@ -37,8 +37,8 @@
 | 13 | Localisation (EN/BM/TA) | DONE (2026-02-18) | +0 | Yes |
 | 14 | TVET Data Fix + UX Polish | DONE (2026-02-20) | +0 | Yes |
 | 15 | Career Pathways (MASCO Integration) | DONE (2026-02-20) | +8 | No |
-| 16 | Registration Gate (AuthGateModal, ProfileSync) | DONE (2026-02-22) | +10 | No |
-| 17 | Outcome Tracking (AdmissionOutcome CRUD) | NOT STARTED | 0 | TBD |
+| 16 | Registration Gate (AuthGateModal, ProfileSync) | DONE (2026-02-22) | +10 | Yes |
+| 17 | Outcome Tracking (AdmissionOutcome CRUD) | DONE (2026-02-22) | +10 | No |
 | 18 | UX Polish Phase 2 (remaining i18n) | NOT STARTED | 0 | TBD |
 | 19 | TVET/ILKA Frontend Filters | NOT STARTED | 0 | TBD |
 | 20 | Cleanup + Documentation | NOT STARTED | 0 | Yes |
