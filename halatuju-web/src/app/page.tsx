@@ -13,8 +13,7 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Image src="/logo-icon.png" alt="" width={40} height={40} />
-          <span className="text-xl font-semibold text-gray-900">{t('common.appName')}</span>
+          <Image src="/logo-icon.png" alt="HalaTuju" width={75} height={40} />
         </div>
         <div className="flex items-center gap-4">
           <LanguageSelector />
@@ -99,8 +98,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              <Image src="/logo-icon.png" alt="" width={32} height={32} />
-              <span className="font-semibold text-gray-900">{t('common.appName')}</span>
+              <Image src="/logo-icon.png" alt="HalaTuju" width={60} height={32} />
             </div>
             <div className="flex gap-6 text-sm text-gray-600">
               <Link href="/about">{t('common.about')}</Link>

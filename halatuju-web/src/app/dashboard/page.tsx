@@ -174,8 +174,7 @@ export default function DashboardPage() {
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo-icon.png" alt="" width={32} height={32} />
-            <span className="font-semibold text-gray-900">{t('common.appName')}</span>
+            <Image src="/logo-icon.png" alt="HalaTuju" width={60} height={32} />
           </Link>
           <div className="flex items-center gap-4">
             <LanguageSelector />

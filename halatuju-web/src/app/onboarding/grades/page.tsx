@@ -174,8 +174,7 @@ export default function GradesInputPage() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <Image src="/logo-icon.png" alt="" width={32} height={32} />
-              <span className="font-semibold text-gray-900">{t('common.appName')}</span>
+              <Image src="/logo-icon.png" alt="HalaTuju" width={60} height={32} />
             </Link>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-bold">1</div>

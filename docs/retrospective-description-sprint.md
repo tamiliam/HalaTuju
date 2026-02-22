@@ -1,7 +1,7 @@
 # Description Sprint Retrospective — Quality Audit + English Translations
 
 **Date**: 2026-02-21
-**Duration**: 2 sessions (first hit context limit, continued in second)
+**Duration**: 3 sessions (first hit context limit, second completed code + commit, third deployed after crash)
 
 ## What Was Built
 
@@ -22,6 +22,7 @@
 - **Context exhaustion in first session**: The audit + fix + translation pipeline was too much for one session. The first session crashed while 5 background translation agents were running, losing all their work.
 - **Orphaned background agent**: An agent from the previous session (a67b14a) continued running in the new session, directly editing description.py while new agents were also running. Could have caused file conflicts. Had to manually stop it.
 - **Initial grep count was wrong**: First grep for `headline_en` returned "9" when there were actually 22 entries — caused confusion about progress. Lesson: use precise regex patterns with quotes, not bare strings.
+- **Session crashed before deploying**: The second session committed the code (4c43ecc) but crashed before deploying. A third session was needed to fake-apply Django migrations 0006 + 0007, redeploy backend (rev 20) and frontend (rev 15).
 
 ## Design Decisions
 
@@ -42,3 +43,5 @@
 | Commits | 3 (quality fixes, translations, CLAUDE.md update) |
 | Tests | 156 (unchanged) |
 | Golden master | 8280 (unchanged) |
+| Backend deploy | rev 20 |
+| Frontend deploy | rev 15 |

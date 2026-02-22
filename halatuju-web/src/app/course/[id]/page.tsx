@@ -92,8 +92,7 @@ export default function CourseDetailPage() {
               </svg>
             </button>
             <Link href="/" className="flex items-center gap-2">
-              <Image src="/logo-icon.png" alt="" width={32} height={32} />
-              <span className="font-semibold text-gray-900">HalaTuju</span>
+              <Image src="/logo-icon.png" alt="HalaTuju" width={60} height={32} />
             </Link>
           </div>
           <button

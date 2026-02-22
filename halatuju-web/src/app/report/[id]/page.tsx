@@ -73,8 +73,7 @@ export default function ReportPage() {
       <header className="bg-white border-b sticky top-0 z-10 print:hidden">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Image src="/logo-icon.png" alt="" width={32} height={32} />
-            <span className="font-semibold text-gray-900">HalaTuju</span>
+            <Image src="/logo-icon.png" alt="HalaTuju" width={60} height={32} />
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/dashboard" className="text-gray-600 hover:text-gray-900 text-sm">
@@ -97,8 +96,8 @@ export default function ReportPage() {
           <div className="flex items-center gap-3 mb-4 print:mb-2">
             <Image
               src="/logo-icon.png"
-              alt=""
-              width={40}
+              alt="HalaTuju"
+              width={75}
               height={40}
               className="hidden print:block"
             />
