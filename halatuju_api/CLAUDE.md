@@ -103,7 +103,9 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 - `SECRET_KEY` — Django secret
 - `DJANGO_SETTINGS_MODULE=halatuju.settings.production`
 - `CORS_ALLOWED_ORIGINS`
-- `SUPABASE_JWT_SECRET`
+- `SUPABASE_JWT_SECRET` — HS256 secret for legacy anon/service key JWTs
+- `SUPABASE_URL` — e.g. `https://pbrrlyoyyiftckqvzvvo.supabase.co` (needed for ES256 JWKS verification)
+- `GEMINI_API_KEY` — Google Gemini API key for AI report generation
 
 **Frontend (halatuju-web)**:
 - `NEXT_PUBLIC_API_URL` — Backend API URL
@@ -190,10 +192,12 @@ Supabase Security Advisor must show 0 errors before deploy.
 **Sprint 18 — UX Polish Phase 2 (remaining i18n)**
 - Localise remaining pages: quiz, course detail, report, about, privacy, terms
 - Localise CourseCard component labels
+- Add loading/progress screen for report generation (10-15 sec delay)
+- Add logout button to UI (currently no way to log out)
 - Current tests: 176 | Golden master: 8280
-- Sprint 17 (Outcome Tracking) complete: AdmissionOutcome CRUD, /outcomes page, "I Applied!" buttons
-- Sprint 16 (Registration Gate) deployed: backend rev 21, frontend rev 17
-- Migration 0009 applied: `admission_outcomes` table with RLS
+- Post-Sprint 17 hotfixes deployed: ES256 JWT fix, "Read Report" button, Google name pre-fill
+- Backend rev 26, frontend rev 20
+- JWT auth supports both HS256 (legacy) and ES256 (JWKS) — see `middleware/supabase_auth.py`
 
 ## Streamlit App (Legacy — migrating to Django API)
 
