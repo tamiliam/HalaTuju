@@ -110,6 +110,7 @@
     "reportTitle": "AI Counsellor Report",
     "reportDesc": "Get a personalised career guidance report from our AI counsellor, based on your grades and eligible courses.",
     "generateReport": "Generate Report",
+    "readReport": "Read Report",
     "generating": "Generating...",
     "reportError": "Failed to generate report. Please try again.",
     "insightsTopFields": "Top Fields",

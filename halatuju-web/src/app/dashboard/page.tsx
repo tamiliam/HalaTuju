@@ -12,6 +12,7 @@ import {
   unsaveCourse,
   getRankedResults,
   generateReport,
+  getReports,
   type StudentProfile,
   type RankedCourse,
   type RankingResult,
@@ -36,6 +37,7 @@ export default function DashboardPage() {
   const [quizSignals, setQuizSignals] = useState<Record<string, Record<string, number>> | null>(null)
   const [reportLoading, setReportLoading] = useState(false)
   const [reportError, setReportError] = useState(false)
+  const [existingReportId, setExistingReportId] = useState<number | null>(null)
 
   // Load profile from localStorage on mount
   useEffect(() => {
@@ -72,6 +74,18 @@ export default function DashboardPage() {
         })
         .catch(() => {})
     }
+  }, [token])
+
+  // Check for existing reports when token becomes available
+  useEffect(() => {
+    if (!token) return
+    getReports({ token })
+      .then(({ reports }) => {
+        if (reports.length > 0) {
+          setExistingReportId(reports[0].report_id)
+        }
+      })
+      .catch(() => {})
   }, [token])
 
   const handleToggleSave = useCallback(async (courseId: string) => {
@@ -137,6 +151,7 @@ export default function DashboardPage() {
     localStorage.removeItem('halatuju_quiz_signals')
     localStorage.removeItem('halatuju_signal_strength')
     setQuizSignals(null)
+    setExistingReportId(null)
   }
 
   const handleGenerateReport = useCallback(async () => {
@@ -316,13 +331,22 @@ export default function DashboardPage() {
                 </p>
               </div>
               <div className="flex flex-col items-end gap-2">
-                <button
-                  onClick={handleGenerateReport}
-                  disabled={reportLoading}
-                  className="btn-primary whitespace-nowrap"
-                >
-                  {reportLoading ? t('dashboard.generating') : t('dashboard.generateReport')}
-                </button>
+                {existingReportId ? (
+                  <Link
+                    href={`/report/${existingReportId}`}
+                    className="btn-primary whitespace-nowrap text-center"
+                  >
+                    {t('dashboard.readReport')}
+                  </Link>
+                ) : (
+                  <button
+                    onClick={handleGenerateReport}
+                    disabled={reportLoading}
+                    className="btn-primary whitespace-nowrap disabled:opacity-50"
+                  >
+                    {reportLoading ? t('dashboard.generating') : t('dashboard.generateReport')}
+                  </button>
+                )}
                 {reportError && (
                   <p className="text-red-500 text-sm">{t('dashboard.reportError')}</p>
                 )}
