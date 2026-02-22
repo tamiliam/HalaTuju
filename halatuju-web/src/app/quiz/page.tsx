@@ -124,7 +124,7 @@ export default function QuizPage() {
       <header className="bg-white border-b">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Image src="/logo-icon.png" alt="HalaTuju" width={60} height={32} />
+            <Image src="/logo-icon.png" alt="HalaTuju" width={120} height={40} />
           </Link>
           <Link href="/dashboard" className="text-gray-500 hover:text-gray-700 text-sm">
             Skip Quiz

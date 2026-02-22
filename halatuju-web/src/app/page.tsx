@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import LanguageSelector from '@/components/LanguageSelector'
+import AppFooter from '@/components/AppFooter'
 
 export default function LandingPage() {
   const { t } = useT()
@@ -13,7 +14,7 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <Image src="/logo-icon.png" alt="HalaTuju" width={75} height={40} />
+          <Image src="/logo-icon.png" alt="HalaTuju" width={120} height={40} />
         </div>
         <div className="flex items-center gap-4">
           <LanguageSelector />
@@ -93,24 +94,7 @@ export default function LandingPage() {
         </Link>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-50 py-12">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Image src="/logo-icon.png" alt="HalaTuju" width={60} height={32} />
-            </div>
-            <div className="flex gap-6 text-sm text-gray-600">
-              <Link href="/about">{t('common.about')}</Link>
-              <Link href="/privacy">{t('common.privacy')}</Link>
-              <Link href="/terms">{t('common.terms')}</Link>
-            </div>
-            <p className="text-sm text-gray-500">
-              {t('common.copyright')}
-            </p>
-          </div>
-        </div>
-      </footer>
+      <AppFooter />
     </main>
   )
 }

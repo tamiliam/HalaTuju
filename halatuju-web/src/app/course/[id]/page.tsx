@@ -1,10 +1,11 @@
 'use client'
 
 import { useParams, useRouter } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { getCourse, saveCourse, unsaveCourse, type Course, type Institution, type MascoOccupation } from '@/lib/api'
+import AppHeader from '@/components/AppHeader'
+import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 import { useState } from 'react'
 
@@ -69,58 +70,7 @@ export default function CourseDetailPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <svg
-                className="w-5 h-5 text-gray-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-            <Link href="/" className="flex items-center gap-2">
-              <Image src="/logo-icon.png" alt="HalaTuju" width={60} height={32} />
-            </Link>
-          </div>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-              isSaved
-                ? 'bg-primary-100 text-primary-600'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <svg
-              className="w-5 h-5"
-              fill={isSaved ? 'currentColor' : 'none'}
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-              />
-            </svg>
-            {saving ? 'Saving...' : isSaved ? 'Saved' : 'Save'}
-          </button>
-        </div>
-      </header>
+      <AppHeader />
 
       {/* Course Header */}
       <section className="bg-white border-b">
@@ -270,6 +220,8 @@ export default function CourseDetailPage() {
           </div>
         </div>
       </div>
+
+      <AppFooter />
     </main>
   )
 }

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { getSavedCourses, unsaveCourse, createOutcome, type Course } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
+import AppHeader from '@/components/AppHeader'
+import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 
 export default function SavedPage() {
@@ -72,16 +74,7 @@ export default function SavedPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-6 py-4 flex items-center gap-4">
-          <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </Link>
-          <h1 className="text-xl font-semibold text-gray-900">{t('saved.title')}</h1>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="container mx-auto px-6 py-8">
         {loading && (
@@ -177,6 +170,8 @@ export default function SavedPage() {
           </>
         )}
       </div>
+
+      <AppFooter />
     </main>
   )
 }

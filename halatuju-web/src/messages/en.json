@@ -13,10 +13,23 @@
     "saved": "Saved",
     "settings": "Settings",
     "dashboard": "Dashboard",
-    "privacy": "Privacy",
-    "terms": "Terms",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Use",
+    "cookies": "Cookie Policy",
+    "contact": "Contact Us",
     "copyright": "2026 HalaTuju. All rights reserved.",
     "loadingProfile": "Loading your profile..."
+  },
+  "header": {
+    "myProfile": "My Profile",
+    "myApplications": "My Applications",
+    "logout": "Log Out"
+  },
+  "footer": {
+    "tagline": "Guiding Malaysian SPM students to the right course.",
+    "quickLinks": "Quick Links",
+    "legal": "Legal",
+    "startHere": "Start Here"
   },
   "landing": {
     "heroTitle": "Find Your Perfect Course",

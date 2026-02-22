@@ -13,10 +13,23 @@
     "saved": "Disimpan",
     "settings": "Tetapan",
     "dashboard": "Papan Pemuka",
-    "privacy": "Privasi",
-    "terms": "Terma",
+    "privacy": "Dasar Privasi",
+    "terms": "Terma Penggunaan",
+    "cookies": "Dasar Kuki",
+    "contact": "Hubungi Kami",
     "copyright": "2026 HalaTuju. Hak cipta terpelihara.",
     "loadingProfile": "Memuatkan profil anda..."
+  },
+  "header": {
+    "myProfile": "Profil Saya",
+    "myApplications": "Permohonan Saya",
+    "logout": "Log Keluar"
+  },
+  "footer": {
+    "tagline": "Membimbing pelajar SPM Malaysia ke kursus yang tepat.",
+    "quickLinks": "Pautan Pantas",
+    "legal": "Undang-undang",
+    "startHere": "Mula Di Sini"
   },
   "landing": {
     "heroTitle": "Cari Kursus Anda",

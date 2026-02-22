@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { useT, LOCALE_LABELS } from '@/lib/i18n'
 import LanguageSelector from '@/components/LanguageSelector'
+import AppHeader from '@/components/AppHeader'
+import AppFooter from '@/components/AppFooter'
 
 const VERSION = '1.15.0'
 
@@ -22,17 +23,7 @@ export default function SettingsPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-6 py-4 flex items-center gap-4">
-          <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </Link>
-          <h1 className="text-xl font-semibold text-gray-900">{t('common.settings')}</h1>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="container mx-auto px-6 py-8 max-w-lg space-y-6">
         {/* Language */}
@@ -77,6 +68,8 @@ export default function SettingsPage() {
           </div>
         </section>
       </div>
+
+      <AppFooter />
     </main>
   )
 }

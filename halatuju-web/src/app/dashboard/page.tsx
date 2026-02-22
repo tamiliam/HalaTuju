@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
@@ -20,8 +19,9 @@ import {
 } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import CourseCard from '@/components/CourseCard'
+import AppHeader from '@/components/AppHeader'
+import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
-import LanguageSelector from '@/components/LanguageSelector'
 
 const RESUME_ACTION_KEY = 'halatuju_resume_action'
 
@@ -239,23 +239,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo-icon.png" alt="HalaTuju" width={60} height={32} />
-          </Link>
-          <div className="flex items-center gap-4">
-            <LanguageSelector />
-            <Link href="/saved" className="text-gray-600 hover:text-gray-900">
-              {t('common.saved')}
-            </Link>
-            <Link href="/settings" className="text-gray-600 hover:text-gray-900">
-              {t('common.settings')}
-            </Link>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       {/* Main Content */}
       <div className="container mx-auto px-6 py-8">
@@ -475,6 +459,8 @@ export default function DashboardPage() {
           )
         })()}
       </div>
+
+      <AppFooter />
     </main>
   )
 }
