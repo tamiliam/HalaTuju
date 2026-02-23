@@ -189,14 +189,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 18 — UX Polish Phase 2 (remaining i18n)**
-- Localise remaining pages: quiz, course detail, report, about, privacy, terms
-- Localise CourseCard component labels
+**Sprint 20 — UX Polish Phase 2 (remaining i18n + report UX)**
+- Localise remaining pages: quiz, course detail, report
 - Add loading/progress screen for report generation (10-15 sec delay)
-- Add logout button to UI (currently no way to log out)
 - Current tests: 176 | Golden master: 8280
-- Post-Sprint 17 hotfixes deployed: ES256 JWT fix, "Read Report" button, Google name pre-fill
-- Backend rev 26, frontend rev 20
+- Sprint 18 shipped: Header/footer redesign, logo optimisation, logout, legal pages
+- Sprint 19 shipped: 37-category course image classification (was 9 broken images → 383/383 courses now have images)
+- Backend rev 26, frontend rev 22
 - JWT auth supports both HS256 (legacy) and ES256 (JWKS) — see `middleware/supabase_auth.py`
 
 ## Streamlit App (Legacy — migrating to Django API)
