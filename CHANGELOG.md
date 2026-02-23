@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.2] - 2026-02-23 — UI Polish: Grades Page
+
+### Changed
+- **Subject renames** — "Bahasa Tamil" → "Bahasa Cina/Tamil", "Bahasa Cina" → "Kesusasteraan Cina/Tamil" (combined options to shorten dropdown)
+- **Stream pills** — equal-width grid layout, less rounded (rounded-xl), two-tone SVG icons (flask/book/wrench)
+- **Shadow/depth treatment** — subtle shadows on core subject cards, stream pills, compact subject rows, merit panel, grade buttons (modern soft style)
+
+### Added
+- **Lukisan** — new subject in Arts stream pool and elective list (distinct from PSV)
+- **StreamIcon component** — two-tone SVG icons for science/arts/technical streams
+
 ## [1.22.1] - 2026-02-23 — Sprint 20: Merit Score & CoQ
 
 ### Added

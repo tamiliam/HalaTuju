@@ -18,12 +18,34 @@ const CORE_SUBJECTS = [
   { id: 'SEJ' },
 ]
 
-// Stream definitions
+// Stream definitions — icons are inline SVGs (two-tone: primary-500 + primary-200)
 const STREAMS = [
-  { id: 'science', icon: '🔬' },
-  { id: 'arts', icon: '📚' },
-  { id: 'technical', icon: '🔧' },
+  { id: 'science' },
+  { id: 'arts' },
+  { id: 'technical' },
 ]
+
+function StreamIcon({ stream, active }: { stream: string; active: boolean }) {
+  const stroke = active ? 'white' : '#3b82f6'
+  const fill = active ? 'rgba(255,255,255,0.3)' : '#bfdbfe'
+  if (stream === 'science') return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 3h6v6l4 8H5l4-8V3z" fill={fill} />
+      <path d="M9 3h6M5 17h14" />
+    </svg>
+  )
+  if (stream === 'arts') return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" fill={fill} />
+    </svg>
+  )
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" fill={fill} />
+    </svg>
+  )
+}
 
 // Section 2: Aliran — pick best 2 from stream pool
 // IDs MUST lowercase to engine keys (serializer fallback) or be in GRADE_KEY_MAP
@@ -39,8 +61,9 @@ const STREAM_POOLS: Record<string, { id: string; name: string }[]> = {
     { id: 'ACC', name: 'Prinsip Perakaunan' },
     { id: 'BUS', name: 'Perniagaan' },
     { id: 'GEO', name: 'Geografi' },
-    { id: 'B_CINA', name: 'Bahasa Cina' },
-    { id: 'B_TAMIL', name: 'Bahasa Tamil' },
+    { id: 'B_TAMIL', name: 'Bahasa Cina/Tamil' },
+    { id: 'B_CINA', name: 'Kesusasteraan Cina/Tamil' },
+    { id: 'LUKISAN', name: 'Lukisan' },
     { id: 'PSV', name: 'Pendidikan Seni Visual' },
     { id: 'KEUSAHAWANAN', name: 'Keusahawanan' },
   ],
@@ -77,8 +100,9 @@ const ALL_SUBJECTS = [
   { id: 'ACC', name: 'Prinsip Perakaunan' },
   { id: 'BUS', name: 'Perniagaan' },
   { id: 'GEO', name: 'Geografi' },
-  { id: 'B_CINA', name: 'Bahasa Cina' },
-  { id: 'B_TAMIL', name: 'Bahasa Tamil' },
+  { id: 'B_TAMIL', name: 'Bahasa Cina/Tamil' },
+  { id: 'B_CINA', name: 'Kesusasteraan Cina/Tamil' },
+  { id: 'LUKISAN', name: 'Lukisan' },
   { id: 'PSV', name: 'Pendidikan Seni Visual' },
   { id: 'KEUSAHAWANAN', name: 'Keusahawanan' },
   // Technical + IT
@@ -253,23 +277,24 @@ export default function GradesInputPage() {
           </p>
         </div>
 
-        {/* Stream Selection — compact pills */}
+        {/* Stream Selection — equal-width pills */}
         <div className="mb-8">
           <label className="block text-sm font-medium text-gray-700 mb-3">
             {t('onboarding.selectStream')}
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {STREAMS.map((s) => (
               <button
                 key={s.id}
                 onClick={() => handleStreamChange(s.id)}
-                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   stream === s.id
-                    ? 'bg-primary-500 text-white shadow-sm'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:border-gray-400'
+                    ? 'bg-primary-500 text-white shadow-md'
+                    : 'bg-white text-gray-700 border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300'
                 }`}
               >
-                {s.icon} {t('onboarding.' + s.id + 'Stream')}
+                <StreamIcon stream={s.id} active={stream === s.id} />
+                {t('onboarding.' + s.id + 'Stream')}
               </button>
             ))}
           </div>
@@ -349,7 +374,7 @@ export default function GradesInputPage() {
             {elektifSlots.length < 2 && (
               <button
                 onClick={addElektifSlot}
-                className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:border-primary-400 hover:text-primary-600 transition-all text-sm font-medium"
+                className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium"
               >
                 + {t('onboarding.addElective')}
               </button>
@@ -359,7 +384,7 @@ export default function GradesInputPage() {
 
         {/* Live Merit Score Panel */}
         {meritResult && (
-          <div className="mb-8 bg-white rounded-2xl border border-gray-200 p-5">
+          <div className="mb-8 bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
             <h2 className="text-sm font-semibold text-gray-700 mb-3">{t('onboarding.meritScore')}</h2>
             <div className="flex items-end gap-6">
               {/* Academic */}
@@ -446,7 +471,7 @@ function CoreSubjectGrade({
   onClear: () => void
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           {value ? (
@@ -475,8 +500,8 @@ function CoreSubjectGrade({
             onClick={() => onChange(grade)}
             className={`h-9 rounded-lg text-xs font-medium transition-all ${
               value === grade
-                ? 'bg-primary-500 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-primary-500 text-white shadow-md'
+                : 'bg-gray-50 text-gray-700 shadow-sm hover:bg-gray-100 hover:shadow-md border border-gray-100'
             }`}
           >
             {grade}
@@ -510,7 +535,7 @@ function CompactSubjectRow({
   const options = pool.filter((s) => !excludeSet.has(s.id))
 
   return (
-    <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 p-3">
+    <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-3">
       {/* Subject dropdown */}
       <select
         value={selectedId}
