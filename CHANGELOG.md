@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.0] - 2026-02-23 — Course Image Classification (37 Categories)
+
+### Added
+- **37 AI-generated course images** — replaced 9 generic field images with 37 category-specific images generated via Gemini 2.5 Flash Image, covering all 383 courses
+- **Keyword-based image matching** — `CourseCard.tsx` now uses a multi-level matcher (`getImageSlug`) that routes courses to images based on field name and course name keywords
+- **Sub-routing for large fields** — Pendidikan (73 courses) splits into 5 teaching-subject images; Mekanikal & Pembuatan (24) into 4; Elektrik & Elektronik (13) into 3; Teknologi Maklumat into 2
+- **"Umum" dissolution** — 17 miscategorised "Umum" courses now route to proper categories via course name matching (e.g. perikanan → pertanian, bank → perakaunan)
+- **Future STPM images** — pre-created images for Undang-undang and Farmasi categories
+
+### Changed
+- **Every course now has an image** — previous system had 97% of courses showing a grey placeholder (only 13/383 matched). Now 383/383 resolve to a relevant image
+- **`getFieldImageUrl` signature** — now takes `(field, courseName)` instead of just `(field)`, enabling course-name-based sub-routing
+- **Image generation script** — `tools/generate_field_images.py` rewritten with 37 categories, detailed Malaysian-context prompts, and `--skip-existing` flag
+
+### Technical Notes
+- 37 images uploaded to Supabase Storage `field-images` bucket (~1.5-2 MB each)
+- 15-max rule: no image category covers more than 15 courses
+- Next.js build: 20 routes compiled successfully
+- Modified files: `CourseCard.tsx`, `generate_field_images.py`, `CHANGELOG.md`
+
 ## [1.20.0] - 2026-02-23 — Sprint 18: Header & Footer Redesign
 
 ### Added
