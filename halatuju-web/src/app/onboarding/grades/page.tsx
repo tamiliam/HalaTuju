@@ -6,7 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import ProgressStepper from '@/components/ProgressStepper'
-import { computeMerit } from '@/lib/merit'
+import { calculateMeritScore } from '@/lib/merit'
 
 const GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G']
 
@@ -275,12 +275,20 @@ export default function GradesInputPage() {
     setElektifSlots((prev) => prev.map((s, i) => (i === index ? newSubjectId : s)))
   }
 
-  // Live merit calculation
+  // Live merit calculation — UPU formula with categorised grades
   const meritResult = useMemo(() => {
-    const hasAnyGrade = Object.keys(grades).length > 0
-    if (!hasAnyGrade) return null
-    return computeMerit(grades, coqScore)
-  }, [grades, coqScore])
+    const coreGrades = CORE_SUBJECTS.map(s => grades[s.id]).filter(Boolean)
+    if (coreGrades.length === 0) return null
+    const streamGrades = [aliranSubj1, aliranSubj2]
+      .filter(Boolean)
+      .map(id => grades[id])
+      .filter(Boolean)
+    const electiveGrades = elektifSlots
+      .filter(Boolean)
+      .map(id => grades[id])
+      .filter(Boolean)
+    return calculateMeritScore(coreGrades, streamGrades, electiveGrades, coqScore)
+  }, [grades, coqScore, aliranSubj1, aliranSubj2, elektifSlots])
 
   const coreComplete = CORE_SUBJECTS.every((s) => grades[s.id])
 
@@ -462,10 +470,7 @@ export default function GradesInputPage() {
                 <div className="text-right">
                   <div className="text-xs text-gray-500 mb-1">{t('onboarding.meritTotal')}</div>
                   <div className="flex items-baseline gap-1 justify-end">
-                    <span className={`text-3xl font-bold ${
-                      meritResult.finalMerit >= 70 ? 'text-green-600' :
-                      meritResult.finalMerit >= 50 ? 'text-yellow-600' : 'text-gray-900'
-                    }`}>
+                    <span className="text-3xl font-bold text-gray-900">
                       {meritResult.finalMerit.toFixed(2)}
                     </span>
                     <span className="text-sm text-gray-400">/ 100</span>
