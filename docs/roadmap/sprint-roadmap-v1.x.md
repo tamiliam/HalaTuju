@@ -39,9 +39,9 @@
 | 15 | Career Pathways (MASCO Integration) | DONE (2026-02-20) | +8 | No |
 | 16 | Registration Gate (AuthGateModal, ProfileSync) | DONE (2026-02-22) | +10 | Yes |
 | 17 | Outcome Tracking (AdmissionOutcome CRUD) | DONE (2026-02-22) | +10 | Yes |
-| 18 | UX Polish Phase 2 (remaining i18n) | NOT STARTED | 0 | TBD |
-| 19 | TVET/ILKA Frontend Filters | NOT STARTED | 0 | TBD |
-| 20 | Cleanup + Documentation | NOT STARTED | 0 | Yes |
+| 18 | Header/Footer Redesign + Legal Pages | DONE (2026-02-22) | +0 | Yes |
+| 19 | 37-Category Course Image Classification | DONE (2026-02-22) | +0 | Yes |
+| 20 | Onboarding Redesign + Merit Calculator | DONE (2026-02-23) | +0 | Yes |
 
 ## Key Decisions Made
 

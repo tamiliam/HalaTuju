@@ -189,14 +189,14 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 20 — UX Polish Phase 2 (remaining i18n + report UX)**
+**Sprint 21 — Remaining i18n + Report UX**
 - Localise remaining pages: quiz, course detail, report
 - Add loading/progress screen for report generation (10-15 sec delay)
 - Current tests: 176 | Golden master: 8280
-- Sprint 18 shipped: Header/footer redesign, logo optimisation, logout, legal pages
-- Sprint 19 shipped: 37-category course image classification (was 9 broken images → 383/383 courses now have images)
-- Backend rev 26, frontend rev 22
-- JWT auth supports both HS256 (legacy) and ES256 (JWKS) — see `middleware/supabase_auth.py`
+- Sprint 20 shipped: Onboarding redesign (exam type page, merged stream+grades, compact profile), CoQ input (0-10 decimal), live merit score panel, client-side merit calculator
+- Backend rev 26, frontend rev 23
+- CoQ now flows from frontend → backend (was hardcoded 5.0)
+- `lib/merit.ts` — client-side TypeScript port of merit formula. MUST stay in sync with `engine.py`
 
 ## Streamlit App (Legacy — migrating to Django API)
 
