@@ -176,15 +176,30 @@ export default function GradesInputPage() {
     setAliranSubj2(pool[1]?.id || '')
   }
 
-  // Read CoQ from saved profile (entered on step 3)
-  const [coqScore, setCoqScore] = useState<number>(0)
+  // CoQ score — editable on this page, persisted to profile localStorage
+  const [coqInput, setCoqInput] = useState<string>('')
   useEffect(() => {
     const savedProfile = localStorage.getItem('halatuju_profile')
     if (savedProfile) {
       const parsed = JSON.parse(savedProfile)
-      if (parsed.coqScore !== undefined) setCoqScore(parsed.coqScore)
+      if (parsed.coqScore !== undefined && parsed.coqScore > 0) {
+        setCoqInput(String(parsed.coqScore))
+      }
     }
   }, [])
+
+  const coqScore = coqInput ? parseFloat(coqInput) : 0
+
+  const handleCoqChange = (val: string) => {
+    if (val === '' || (parseFloat(val) >= 0 && parseFloat(val) <= 10)) {
+      setCoqInput(val)
+      // Persist to profile localStorage so dashboard can read it
+      const savedProfile = localStorage.getItem('halatuju_profile')
+      const profile = savedProfile ? JSON.parse(savedProfile) : {}
+      profile.coqScore = val ? parseFloat(val) : 0
+      localStorage.setItem('halatuju_profile', JSON.stringify(profile))
+    }
+  }
 
   const streamPool = STREAM_POOLS[stream] || []
   const selectedAliranIds = [aliranSubj1, aliranSubj2].filter(Boolean)
@@ -277,11 +292,12 @@ export default function GradesInputPage() {
           </p>
         </div>
 
-        {/* Stream Selection — equal-width pills */}
+        {/* Section 1: Select your Stream */}
         <div className="mb-8">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            {t('onboarding.selectStream')}
-          </label>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">1</span>
+            <h2 className="text-lg font-semibold text-gray-900">{t('onboarding.selectStream')}</h2>
+          </div>
           <div className="grid grid-cols-3 gap-2">
             {STREAMS.map((s) => (
               <button
@@ -300,10 +316,10 @@ export default function GradesInputPage() {
           </div>
         </div>
 
-        {/* Section 1: Core Subjects — button grid */}
+        {/* Section 2: Core Subjects — button grid */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">1</span>
+            <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">2</span>
             <h2 className="text-lg font-semibold text-gray-900">{t('onboarding.coreSubjects')}</h2>
           </div>
           <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.coreSubjectsCount')}</p>
@@ -320,10 +336,10 @@ export default function GradesInputPage() {
           </div>
         </div>
 
-        {/* Section 2: Stream Subjects — compact dropdown rows */}
+        {/* Section 3: Stream Subjects — compact dropdown rows */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">2</span>
+            <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">3</span>
             <h2 className="text-lg font-semibold text-gray-900">
               {t('onboarding.streamSubjects')}
             </h2>
@@ -351,10 +367,10 @@ export default function GradesInputPage() {
           </div>
         </div>
 
-        {/* Section 3: Elective Subjects — compact dropdown + add button */}
+        {/* Section 4: Elective Subjects — compact dropdown + add button */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">3</span>
+            <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">4</span>
             <h2 className="text-lg font-semibold text-gray-900">{t('onboarding.electiveSubjects')}</h2>
           </div>
           <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.pickBest2Elective')}</p>
@@ -382,57 +398,51 @@ export default function GradesInputPage() {
           </div>
         </div>
 
-        {/* Live Merit Score Panel */}
-        {meritResult && (
-          <div className="mb-8 bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">{t('onboarding.meritScore')}</h2>
-            <div className="flex items-end gap-6">
-              {/* Academic */}
+        {/* Section 5: Co-curricular + Total Merit */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-6 h-6 bg-primary-500 text-white rounded text-xs flex items-center justify-center font-bold">5</span>
+            <h2 className="text-lg font-semibold text-gray-900">{t('onboarding.coqScore')}</h2>
+          </div>
+          <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.coqHint')}</p>
+
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+            <div className="flex items-center gap-6">
+              {/* CoQ input — left */}
               <div className="flex-1">
-                <div className="text-xs text-gray-500 mb-1">{t('onboarding.academicMerit')}</div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-gray-900">
-                    {meritResult.academicMerit.toFixed(2)}
-                  </span>
-                  <span className="text-sm text-gray-400">/ 90</span>
-                </div>
-                <div className="mt-1.5 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary-500 rounded-full transition-all"
-                    style={{ width: `${Math.min((meritResult.academicMerit / 90) * 100, 100)}%` }}
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.01"
+                    value={coqInput}
+                    onChange={(e) => handleCoqChange(e.target.value)}
+                    placeholder="0.00"
+                    className="w-28 px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-center font-medium"
                   />
-                </div>
-              </div>
-              {/* + */}
-              <span className="text-gray-300 text-lg font-light pb-3">+</span>
-              {/* CoQ */}
-              <div className="w-24">
-                <div className="text-xs text-gray-500 mb-1">{t('onboarding.coqMerit')}</div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-gray-900">
-                    {coqScore > 0 ? coqScore.toFixed(2) : '—'}
-                  </span>
                   <span className="text-sm text-gray-400">/ 10</span>
                 </div>
               </div>
-              {/* = */}
-              <span className="text-gray-300 text-lg font-light pb-3">=</span>
-              {/* Total */}
-              <div className="w-28">
-                <div className="text-xs text-gray-500 mb-1">{t('onboarding.meritTotal')}</div>
-                <div className="flex items-baseline gap-1">
-                  <span className={`text-2xl font-bold ${
-                    meritResult.finalMerit >= 70 ? 'text-green-600' :
-                    meritResult.finalMerit >= 50 ? 'text-yellow-600' : 'text-gray-900'
-                  }`}>
-                    {meritResult.finalMerit.toFixed(2)}
-                  </span>
-                  <span className="text-sm text-gray-400">/ 100</span>
+
+              {/* Total Merit — right */}
+              {meritResult && (
+                <div className="text-right">
+                  <div className="text-xs text-gray-500 mb-1">{t('onboarding.meritTotal')}</div>
+                  <div className="flex items-baseline gap-1 justify-end">
+                    <span className={`text-3xl font-bold ${
+                      meritResult.finalMerit >= 70 ? 'text-green-600' :
+                      meritResult.finalMerit >= 50 ? 'text-yellow-600' : 'text-gray-900'
+                    }`}>
+                      {meritResult.finalMerit.toFixed(2)}
+                    </span>
+                    <span className="text-sm text-gray-400">/ 100</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
 
         {/* Navigation */}
         <div className="flex justify-between items-center">
