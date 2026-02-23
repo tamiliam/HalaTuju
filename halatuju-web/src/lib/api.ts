@@ -40,6 +40,7 @@ export interface StudentProfile {
   nationality: 'malaysian' | 'non_malaysian'
   colorblind?: boolean
   disability?: boolean
+  coq_score?: number
   student_signals?: Record<string, number>
   preferred_state?: string
   name?: string

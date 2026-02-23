@@ -103,7 +103,13 @@
     "profileSubtitleNew": "Beberapa butiran lagi untuk memperibadikan cadangan anda.",
     "state": "Negeri",
     "selectState": "Pilih negeri anda",
-    "specialNeeds": "Keperluan Khas"
+    "specialNeeds": "Keperluan Khas",
+    "coqScore": "Markah Kokurikulum",
+    "coqHint": "Masukkan markah kokurikulum anda (0 hingga 10) daripada sekolah.",
+    "meritScore": "Anggaran Skor Merit",
+    "academicMerit": "Akademik",
+    "coqMerit": "Kokurikulum",
+    "meritTotal": "Jumlah"
   },
   "dashboard": {
     "title": "Cadangan Kursus Anda",

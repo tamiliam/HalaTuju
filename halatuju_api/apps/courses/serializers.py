@@ -74,6 +74,13 @@ class EligibilityRequestSerializer(serializers.Serializer):
     disability = serializers.BooleanField(default=False, required=False)
     other_tech = serializers.BooleanField(default=False)
     other_voc = serializers.BooleanField(default=False)
+    coq_score = serializers.FloatField(default=5.0, required=False,
+        help_text="Co-curricular score (0-10). Defaults to 5.0 if not provided."
+    )
+
+    def validate_coq_score(self, value):
+        """Clamp CoQ to 0-10 range."""
+        return min(max(float(value), 0), 10.0)
 
     def validate_grades(self, value):
         """Map frontend subject IDs to engine internal keys."""

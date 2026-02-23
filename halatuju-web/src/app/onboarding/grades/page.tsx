@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import ProgressStepper from '@/components/ProgressStepper'
+import { computeMerit } from '@/lib/merit'
 
 const GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G']
 
@@ -117,6 +118,7 @@ export default function GradesInputPage() {
   // Load saved data
   useEffect(() => {
     const savedStream = localStorage.getItem('halatuju_stream')
+    const activeStream = savedStream || 'science'
     if (savedStream) setStream(savedStream)
 
     const savedGrades = localStorage.getItem('halatuju_grades')
@@ -127,6 +129,11 @@ export default function GradesInputPage() {
       const a = JSON.parse(savedAliran)
       if (a[0]) setAliranSubj1(a[0])
       if (a[1]) setAliranSubj2(a[1])
+    } else {
+      // Pre-populate from stream pool on first visit
+      const pool = STREAM_POOLS[activeStream] || []
+      setAliranSubj1(pool[0]?.id || '')
+      setAliranSubj2(pool[1]?.id || '')
     }
 
     const savedElektif = localStorage.getItem('halatuju_elektif')
@@ -144,6 +151,16 @@ export default function GradesInputPage() {
     setAliranSubj1(pool[0]?.id || '')
     setAliranSubj2(pool[1]?.id || '')
   }
+
+  // Read CoQ from saved profile (entered on step 3)
+  const [coqScore, setCoqScore] = useState<number>(0)
+  useEffect(() => {
+    const savedProfile = localStorage.getItem('halatuju_profile')
+    if (savedProfile) {
+      const parsed = JSON.parse(savedProfile)
+      if (parsed.coqScore !== undefined) setCoqScore(parsed.coqScore)
+    }
+  }, [])
 
   const streamPool = STREAM_POOLS[stream] || []
   const selectedAliranIds = [aliranSubj1, aliranSubj2].filter(Boolean)
@@ -186,6 +203,13 @@ export default function GradesInputPage() {
   const updateElektifSubject = (index: number, subjectId: string) => {
     setElektifSlots((prev) => prev.map((s, i) => (i === index ? subjectId : s)))
   }
+
+  // Live merit calculation
+  const meritResult = useMemo(() => {
+    const hasAnyGrade = Object.keys(grades).length > 0
+    if (!hasAnyGrade) return null
+    return computeMerit(grades, coqScore)
+  }, [grades, coqScore])
 
   const coreComplete = CORE_SUBJECTS.every((s) => grades[s.id])
 
@@ -332,6 +356,58 @@ export default function GradesInputPage() {
             )}
           </div>
         </div>
+
+        {/* Live Merit Score Panel */}
+        {meritResult && (
+          <div className="mb-8 bg-white rounded-2xl border border-gray-200 p-5">
+            <h2 className="text-sm font-semibold text-gray-700 mb-3">{t('onboarding.meritScore')}</h2>
+            <div className="flex items-end gap-6">
+              {/* Academic */}
+              <div className="flex-1">
+                <div className="text-xs text-gray-500 mb-1">{t('onboarding.academicMerit')}</div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-bold text-gray-900">
+                    {meritResult.academicMerit.toFixed(2)}
+                  </span>
+                  <span className="text-sm text-gray-400">/ 90</span>
+                </div>
+                <div className="mt-1.5 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary-500 rounded-full transition-all"
+                    style={{ width: `${Math.min((meritResult.academicMerit / 90) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+              {/* + */}
+              <span className="text-gray-300 text-lg font-light pb-3">+</span>
+              {/* CoQ */}
+              <div className="w-24">
+                <div className="text-xs text-gray-500 mb-1">{t('onboarding.coqMerit')}</div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-bold text-gray-900">
+                    {coqScore > 0 ? coqScore.toFixed(2) : '—'}
+                  </span>
+                  <span className="text-sm text-gray-400">/ 10</span>
+                </div>
+              </div>
+              {/* = */}
+              <span className="text-gray-300 text-lg font-light pb-3">=</span>
+              {/* Total */}
+              <div className="w-28">
+                <div className="text-xs text-gray-500 mb-1">{t('onboarding.meritTotal')}</div>
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-2xl font-bold ${
+                    meritResult.finalMerit >= 70 ? 'text-green-600' :
+                    meritResult.finalMerit >= 50 ? 'text-yellow-600' : 'text-gray-900'
+                  }`}>
+                    {meritResult.finalMerit.toFixed(2)}
+                  </span>
+                  <span className="text-sm text-gray-400">/ 100</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Navigation */}
         <div className="flex justify-between items-center">

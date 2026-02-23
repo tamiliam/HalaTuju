@@ -82,7 +82,8 @@ class EligibilityCheckView(APIView):
         if 'hist' in grades_for_merit:
             grades_for_merit['history'] = grades_for_merit.pop('hist')
         sec1, sec2, sec3 = prepare_merit_inputs(grades_for_merit)
-        merit_result = calculate_merit_score(sec1, sec2, sec3, coq_score=5.0)
+        coq_score = data.get('coq_score', 5.0)
+        merit_result = calculate_merit_score(sec1, sec2, sec3, coq_score=coq_score)
         student_merit = merit_result['final_merit']
 
         # Build StudentProfile for engine

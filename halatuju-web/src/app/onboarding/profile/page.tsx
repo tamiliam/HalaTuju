@@ -20,6 +20,7 @@ export default function ProfileInputPage() {
   const [gender, setGender] = useState<string>('')
   const [nationality, setNationality] = useState<string>('malaysian')
   const [state, setState] = useState<string>('')
+  const [coqScore, setCoqScore] = useState<string>('')
   const [colorblind, setColorblind] = useState<boolean>(false)
   const [disability, setDisability] = useState<boolean>(false)
 
@@ -30,6 +31,7 @@ export default function ProfileInputPage() {
       if (parsed.gender) setGender(parsed.gender)
       if (parsed.nationality) setNationality(parsed.nationality)
       if (parsed.state) setState(parsed.state)
+      if (parsed.coqScore !== undefined) setCoqScore(String(parsed.coqScore))
       if (parsed.colorblind !== undefined) setColorblind(parsed.colorblind)
       if (parsed.disability !== undefined) setDisability(parsed.disability)
     }
@@ -43,6 +45,7 @@ export default function ProfileInputPage() {
         gender,
         nationality,
         state,
+        coqScore: coqScore ? parseFloat(coqScore) : 0,
         colorblind,
         disability,
       }
@@ -127,7 +130,33 @@ export default function ProfileInputPage() {
             </div>
           </div>
 
-          {/* Row 2: Jantina */}
+          {/* Row 2: Co-curricular Score */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('onboarding.coqScore')}
+            </label>
+            <p className="text-xs text-gray-400 mb-2">{t('onboarding.coqHint')}</p>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min="0"
+                max="10"
+                step="0.01"
+                value={coqScore}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val === '' || (parseFloat(val) >= 0 && parseFloat(val) <= 10)) {
+                    setCoqScore(val)
+                  }
+                }}
+                placeholder="0.00"
+                className="w-32 px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none text-center font-medium"
+              />
+              <span className="text-sm text-gray-400">/ 10</span>
+            </div>
+          </div>
+
+          {/* Row 3: Jantina */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('onboarding.gender')} <span className="text-red-500">*</span>
@@ -158,7 +187,7 @@ export default function ProfileInputPage() {
             </div>
           </div>
 
-          {/* Row 3: Keperluan Khas */}
+          {/* Row 4: Keperluan Khas */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t('onboarding.specialNeeds')}

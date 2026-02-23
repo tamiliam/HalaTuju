@@ -54,6 +54,7 @@ export default function DashboardPage() {
         nationality: parsedProfile.nationality,
         colorblind: parsedProfile.colorblind || false,
         disability: parsedProfile.disability || false,
+        coq_score: parsedProfile.coqScore ?? 5.0,
       })
     }
 
