@@ -139,31 +139,49 @@ export default function GradesInputPage() {
   // Elektif: dynamic 0-2 slots
   const [elektifSlots, setElektifSlots] = useState<string[]>([])
 
-  // Load saved data
+  // Load saved data — filter grades to only currently-selected subjects
   useEffect(() => {
     const savedStream = localStorage.getItem('halatuju_stream')
     const activeStream = savedStream || 'science'
     if (savedStream) setStream(savedStream)
 
-    const savedGrades = localStorage.getItem('halatuju_grades')
-    if (savedGrades) setGrades(JSON.parse(savedGrades))
-
+    // Load aliran subjects
+    let aliran1 = '', aliran2 = ''
     const savedAliran = localStorage.getItem('halatuju_aliran')
     if (savedAliran) {
       const a = JSON.parse(savedAliran)
-      if (a[0]) setAliranSubj1(a[0])
-      if (a[1]) setAliranSubj2(a[1])
+      aliran1 = a[0] || ''
+      aliran2 = a[1] || ''
     } else {
-      // Pre-populate from stream pool on first visit
       const pool = STREAM_POOLS[activeStream] || []
-      setAliranSubj1(pool[0]?.id || '')
-      setAliranSubj2(pool[1]?.id || '')
+      aliran1 = pool[0]?.id || ''
+      aliran2 = pool[1]?.id || ''
     }
+    setAliranSubj1(aliran1)
+    setAliranSubj2(aliran2)
 
+    // Load elective subjects
+    let elektif: string[] = []
     const savedElektif = localStorage.getItem('halatuju_elektif')
     if (savedElektif) {
-      const e = JSON.parse(savedElektif)
-      setElektifSlots(e.filter(Boolean))
+      elektif = JSON.parse(savedElektif).filter(Boolean)
+    }
+    setElektifSlots(elektif)
+
+    // Load grades — only keep grades for valid (currently selected) subjects
+    const savedGrades = localStorage.getItem('halatuju_grades')
+    if (savedGrades) {
+      const allGrades = JSON.parse(savedGrades)
+      const validIds = new Set([
+        ...CORE_SUBJECTS.map(s => s.id),
+        ...[aliran1, aliran2].filter(Boolean),
+        ...elektif,
+      ])
+      const cleaned: Record<string, string> = {}
+      for (const [key, val] of Object.entries(allGrades)) {
+        if (validIds.has(key)) cleaned[key] = val as string
+      }
+      setGrades(cleaned)
     }
   }, [])
 
