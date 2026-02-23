@@ -167,13 +167,37 @@ export default function GradesInputPage() {
     }
   }, [])
 
-  // Pre-populate stream subjects when stream changes
+  const handleGradeChange = (subjectId: string, grade: string) => {
+    setGrades((prev) => ({ ...prev, [subjectId]: grade }))
+  }
+
+  const handleGradeClear = (subjectId: string) => {
+    setGrades((prev) => {
+      const next = { ...prev }
+      delete next[subjectId]
+      return next
+    })
+  }
+
+  // Pre-populate stream subjects when stream changes — clear old grades
   const handleStreamChange = (newStream: string) => {
+    if (aliranSubj1) handleGradeClear(aliranSubj1)
+    if (aliranSubj2) handleGradeClear(aliranSubj2)
     setStream(newStream)
     localStorage.setItem('halatuju_stream', newStream)
     const pool = STREAM_POOLS[newStream] || []
     setAliranSubj1(pool[0]?.id || '')
     setAliranSubj2(pool[1]?.id || '')
+  }
+
+  // When switching aliran subject, clear old subject's grade
+  const handleAliranSubj1Change = (newId: string) => {
+    if (aliranSubj1) handleGradeClear(aliranSubj1)
+    setAliranSubj1(newId)
+  }
+  const handleAliranSubj2Change = (newId: string) => {
+    if (aliranSubj2) handleGradeClear(aliranSubj2)
+    setAliranSubj2(newId)
   }
 
   // CoQ score — editable on this page, persisted to profile localStorage
@@ -213,18 +237,6 @@ export default function GradesInputPage() {
     )
   }, [selectedAliranIds])
 
-  const handleGradeChange = (subjectId: string, grade: string) => {
-    setGrades((prev) => ({ ...prev, [subjectId]: grade }))
-  }
-
-  const handleGradeClear = (subjectId: string) => {
-    setGrades((prev) => {
-      const next = { ...prev }
-      delete next[subjectId]
-      return next
-    })
-  }
-
   const addElektifSlot = () => {
     if (elektifSlots.length < 2) {
       setElektifSlots((prev) => [...prev, ''])
@@ -239,8 +251,10 @@ export default function GradesInputPage() {
     }
   }
 
-  const updateElektifSubject = (index: number, subjectId: string) => {
-    setElektifSlots((prev) => prev.map((s, i) => (i === index ? subjectId : s)))
+  const updateElektifSubject = (index: number, newSubjectId: string) => {
+    const oldSubjectId = elektifSlots[index]
+    if (oldSubjectId) handleGradeClear(oldSubjectId)
+    setElektifSlots((prev) => prev.map((s, i) => (i === index ? newSubjectId : s)))
   }
 
   // Live merit calculation
@@ -350,7 +364,7 @@ export default function GradesInputPage() {
               pool={streamPool}
               excludeIds={aliranSubj2 ? [aliranSubj2] : []}
               selectedId={aliranSubj1}
-              onSubjectChange={setAliranSubj1}
+              onSubjectChange={handleAliranSubj1Change}
               grade={aliranSubj1 ? grades[aliranSubj1] || '' : ''}
               onGradeChange={(grade) => { if (aliranSubj1) handleGradeChange(aliranSubj1, grade) }}
               onRemove={() => { if (aliranSubj1) handleGradeClear(aliranSubj1); setAliranSubj1('') }}
@@ -359,7 +373,7 @@ export default function GradesInputPage() {
               pool={streamPool}
               excludeIds={aliranSubj1 ? [aliranSubj1] : []}
               selectedId={aliranSubj2}
-              onSubjectChange={setAliranSubj2}
+              onSubjectChange={handleAliranSubj2Change}
               grade={aliranSubj2 ? grades[aliranSubj2] || '' : ''}
               onGradeChange={(grade) => { if (aliranSubj2) handleGradeChange(aliranSubj2, grade) }}
               onRemove={() => { if (aliranSubj2) handleGradeClear(aliranSubj2); setAliranSubj2('') }}
