@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.0] - 2026-02-23 — Sprint 20: Onboarding Redesign
+
+### Added
+- **SPM/STPM exam type selection** — new `/onboarding/exam-type` screen with SPM card (active) and STPM card (coming soon)
+- **Progress stepper** — shared `ProgressStepper` component shows "Step 1 of 3" with visual progress bars across all onboarding screens
+- **Negeri (state) dropdown** — 16 Malaysian states/territories added to profile page
+- **Elective subject add button** — "Tambah Subjek Elektif" dashed button to dynamically add 0-2 elective subjects
+- New translation keys in EN, BM, TA for all new UI elements
+
+### Changed
+- **Stream + grades merged** — stream selection (compact pill buttons) now lives on the grades page, removing one navigation step
+- **Core subjects redesign** — button grid with green checkmark on completion, clear icon, responsive 5+5 mobile layout
+- **Stream/elective subjects redesign** — compact dropdown + grade badge dropdown rows replacing full button grids
+- **Profile page compact layout** — single card with Negeri, Jantina toggle, Nationality toggle, Keperluan Khas checkboxes with accessibility icons
+- **Improved helper text** — contextual subtitles on each screen ("Enter your grades so we can find courses that match your results")
+- All `/onboarding/stream` links updated to `/onboarding/exam-type` across landing, dashboard, footer, login pages
+
+### Removed
+- `/onboarding/stream` page — stream selection moved into grades page
+
+### Technical Notes
+- Next.js build: 20 routes, 0 errors
+- Files: 10 modified/created, 1 deleted
+- Backend tests: 176 (unchanged — frontend-only sprint)
+- Golden master: 8280 (unchanged)
+
 ## [1.21.0] - 2026-02-23 — Course Image Classification (37 Categories)
 
 ### Added

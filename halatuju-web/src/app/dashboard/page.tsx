@@ -229,7 +229,7 @@ export default function DashboardPage() {
           <p className="text-gray-600 mb-6">
             {t('dashboard.noProfileDesc')}
           </p>
-          <Link href="/onboarding/stream" className="btn-primary">
+          <Link href="/onboarding/exam-type" className="btn-primary">
             {t('dashboard.startOnboarding')}
           </Link>
         </div>

@@ -89,7 +89,21 @@
     "colorBlindnessLocal": "Buta warna",
     "physicalDisability": "OKU",
     "physicalDisabilityLocal": "OKU",
-    "seeRecommendations": "Lihat Cadangan Saya"
+    "seeRecommendations": "Lihat Cadangan Saya",
+    "step": "Langkah",
+    "of": "daripada",
+    "examTypeTitle": "Pilih Peperiksaan Anda",
+    "examTypeSubtitle": "Pilih peperiksaan yang anda ambil untuk bermula.",
+    "spmDesc": "Sijil Pelajaran Malaysia",
+    "stpmDesc": "Sijil Tinggi Persekolahan Malaysia",
+    "comingSoon": "Akan Datang",
+    "selectStream": "Aliran apa yang anda ambil?",
+    "gradesSubtitleNew": "Masukkan gred anda supaya kami boleh cari kursus yang sesuai.",
+    "addElective": "Tambah Subjek Elektif",
+    "profileSubtitleNew": "Beberapa butiran lagi untuk memperibadikan cadangan anda.",
+    "state": "Negeri",
+    "selectState": "Pilih negeri anda",
+    "specialNeeds": "Keperluan Khas"
   },
   "dashboard": {
     "title": "Cadangan Kursus Anda",

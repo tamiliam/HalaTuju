@@ -31,7 +31,7 @@ export default function AppFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/onboarding/stream" className="text-sm text-gray-600 hover:text-gray-900">
+                <Link href="/onboarding/exam-type" className="text-sm text-gray-600 hover:text-gray-900">
                   {t('footer.startHere')}
                 </Link>
               </li>

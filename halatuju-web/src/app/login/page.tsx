@@ -221,7 +221,7 @@ export default function LoginPage() {
         {/* Footer */}
         <p className="text-center text-sm text-gray-500 mt-6">
           {t('login.noAccount')}{' '}
-          <Link href="/onboarding/stream" className="text-primary-500 hover:underline">
+          <Link href="/onboarding/exam-type" className="text-primary-500 hover:underline">
             {t('login.getStartedFree')}
           </Link>
         </p>

@@ -89,7 +89,21 @@
     "colorBlindnessLocal": "Buta warna",
     "physicalDisability": "Physical disability",
     "physicalDisabilityLocal": "OKU",
-    "seeRecommendations": "See My Recommendations"
+    "seeRecommendations": "See My Recommendations",
+    "step": "Step",
+    "of": "of",
+    "examTypeTitle": "Choose Your Exam",
+    "examTypeSubtitle": "Select the exam you took to get started.",
+    "spmDesc": "Sijil Pelajaran Malaysia",
+    "stpmDesc": "Sijil Tinggi Persekolahan Malaysia",
+    "comingSoon": "Coming Soon",
+    "selectStream": "What stream did you take?",
+    "gradesSubtitleNew": "Enter your grades so we can find courses that match your results.",
+    "addElective": "Add Elective Subject",
+    "profileSubtitleNew": "A few more details to personalise your recommendations.",
+    "state": "State",
+    "selectState": "Select your state",
+    "specialNeeds": "Special Needs"
   },
   "dashboard": {
     "title": "Your Course Recommendations",

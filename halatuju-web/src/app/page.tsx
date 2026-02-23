@@ -36,7 +36,7 @@ export default function LandingPage() {
           {t('landing.heroSubtitle')}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/onboarding/stream" className="btn-primary text-lg px-8 py-4">
+          <Link href="/onboarding/exam-type" className="btn-primary text-lg px-8 py-4">
             {t('landing.startJourney')}
           </Link>
           <Link href="/about" className="btn-secondary text-lg px-8 py-4">
@@ -89,7 +89,7 @@ export default function LandingPage() {
         <p className="text-lg text-gray-600 mb-8 max-w-xl mx-auto">
           {t('landing.readySubtitle')}
         </p>
-        <Link href="/onboarding/stream" className="btn-primary text-lg px-8 py-4">
+        <Link href="/onboarding/exam-type" className="btn-primary text-lg px-8 py-4">
           {t('landing.getStartedFree')}
         </Link>
       </section>

@@ -89,7 +89,21 @@
     "colorBlindnessLocal": "Buta warna",
     "physicalDisability": "உடல் ஊனம்",
     "physicalDisabilityLocal": "OKU",
-    "seeRecommendations": "எனது பரிந்துரைகளைப் பாருங்கள்"
+    "seeRecommendations": "எனது பரிந்துரைகளைப் பாருங்கள்",
+    "step": "படி",
+    "of": "/",
+    "examTypeTitle": "உங்கள் தேர்வைத் தேர்வுசெய்யுங்கள்",
+    "examTypeSubtitle": "தொடங்க நீங்கள் எடுத்த தேர்வைத் தேர்வுசெய்யுங்கள்.",
+    "spmDesc": "Sijil Pelajaran Malaysia",
+    "stpmDesc": "Sijil Tinggi Persekolahan Malaysia",
+    "comingSoon": "விரைவில்",
+    "selectStream": "நீங்கள் எந்தப் பிரிவை எடுத்தீர்கள்?",
+    "gradesSubtitleNew": "உங்கள் முடிவுகளுக்குப் பொருத்தமான படிப்புகளைக் கண்டறிய உங்கள் தரங்களை உள்ளிடவும்.",
+    "addElective": "விருப்பப் பாடத்தைச் சேர்க்கவும்",
+    "profileSubtitleNew": "உங்கள் பரிந்துரைகளைத் தனிப்பயனாக்க இன்னும் சில விவரங்கள்.",
+    "state": "மாநிலம்",
+    "selectState": "உங்கள் மாநிலத்தைத் தேர்வுசெய்யுங்கள்",
+    "specialNeeds": "சிறப்புத் தேவைகள்"
   },
   "dashboard": {
     "title": "உங்கள் படிப்புப் பரிந்துரைகள்",
