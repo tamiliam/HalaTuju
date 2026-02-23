@@ -189,14 +189,14 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 21 — Remaining i18n + Report UX**
+**Sprint 21 — Remaining i18n + Report UX + Backend Merit Fix**
 - Localise remaining pages: quiz, course detail, report
 - Add loading/progress screen for report generation (10-15 sec delay)
+- Update `engine.py` merit formula to match corrected UPU formula in `lib/merit.ts`
 - Current tests: 176 | Golden master: 8280
-- Sprint 20 shipped: Onboarding redesign (exam type page, merged stream+grades, compact profile), CoQ input (0-10 decimal), live merit score panel, client-side merit calculator
-- Backend rev 26, frontend rev 23
-- CoQ now flows from frontend → backend (was hardcoded 5.0)
-- `lib/merit.ts` — client-side TypeScript port of merit formula. MUST stay in sync with `engine.py`
+- Backend rev 27, frontend rev 30
+- Post-S20 hotfixes shipped: correct UPU merit formula, stale grades fix, RLS optimisation, merit colour removal
+- `lib/merit.ts` uses correct UPU formula: `(core/72×40 + stream/36×30 + elective/36×10) × 9/8`. engine.py MUST be updated to match
 
 ## Streamlit App (Legacy — migrating to Django API)
 
