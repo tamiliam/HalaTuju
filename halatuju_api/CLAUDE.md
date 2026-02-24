@@ -194,7 +194,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Add loading/progress screen for report generation (10-15 sec delay)
 - Update `engine.py` merit formula to match corrected UPU formula in `lib/merit.ts`
 - Current tests: 176 | Golden master: 8280
-- Backend rev 27, frontend rev 30
+- Backend rev 27, frontend rev 31
 - Post-S20 hotfixes shipped: correct UPU merit formula, stale grades fix, RLS optimisation, merit colour removal
 - `lib/merit.ts` uses correct UPU formula: `(core/72×40 + stream/36×30 + elective/36×10) × 9/8`. engine.py MUST be updated to match
 
