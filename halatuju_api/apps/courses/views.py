@@ -37,7 +37,7 @@ from .serializers import (
     EligibilityResponseSerializer,
     RankingRequestSerializer,
 )
-from .ranking_engine import get_ranked_results
+from .ranking_engine import get_ranked_results, get_credential_priority
 from .insights_engine import generate_insights
 from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
 from .quiz_engine import process_quiz_answers
@@ -158,6 +158,15 @@ class EligibilityCheckView(APIView):
 
                 # Update stats
                 stats[source_type] = stats.get(source_type, 0) + 1
+
+        # Default sort: credential > institution type > merit cutoff > name
+        SOURCE_TYPE_PRIORITY = {'ua': 4, 'pismp': 3, 'poly': 2, 'kkom': 1, 'tvet': 0}
+        eligible_courses.sort(key=lambda c: (
+            -get_credential_priority(c['course_name']),
+            -SOURCE_TYPE_PRIORITY.get(c['source_type'], 0),
+            -(c['merit_cutoff'] or 0),
+            c['course_name'],
+        ))
 
         logger.info(f"Eligibility check: {len(eligible_courses)} courses eligible")
 
