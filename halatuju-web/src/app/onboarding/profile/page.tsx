@@ -109,23 +109,32 @@ export default function ProfileInputPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setNationality('malaysian')}
-                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                     nationality === 'malaysian'
                       ? 'bg-primary-50 border-primary-500 text-primary-700'
                       : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
                   }`}
                 >
-                  🇲🇾 {t('onboarding.malaysian')}
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={nationality === 'malaysian' ? '#1d4ed8' : '#6b7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" fill={nationality === 'malaysian' ? '#bfdbfe' : '#e5e7eb'} />
+                    <polyline points="9 22 9 12 15 12 15 22" />
+                  </svg>
+                  {t('onboarding.malaysian')}
                 </button>
                 <button
                   onClick={() => setNationality('non_malaysian')}
-                  className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                     nationality === 'non_malaysian'
                       ? 'bg-primary-50 border-primary-500 text-primary-700'
                       : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
                   }`}
                 >
-                  🌍 {t('onboarding.nonMalaysian')}
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={nationality === 'non_malaysian' ? '#1d4ed8' : '#6b7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" fill={nationality === 'non_malaysian' ? '#bfdbfe' : '#e5e7eb'} />
+                    <line x1="2" y1="12" x2="22" y2="12" />
+                    <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+                  </svg>
+                  {t('onboarding.nonMalaysian')}
                 </button>
               </div>
             </div>
@@ -145,7 +154,10 @@ export default function ProfileInputPage() {
                     : 'border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
-                <span className="text-xl">👨</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={gender === 'male' ? '#1d4ed8' : '#6b7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                  <circle cx="12" cy="7" r="4" fill={gender === 'male' ? '#bfdbfe' : '#e5e7eb'} />
+                </svg>
                 {t('onboarding.male')}
               </button>
               <button
@@ -156,7 +168,10 @@ export default function ProfileInputPage() {
                     : 'border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
-                <span className="text-xl">👩</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={gender === 'female' ? '#1d4ed8' : '#6b7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                  <circle cx="12" cy="7" r="4" fill={gender === 'female' ? '#bfdbfe' : '#e5e7eb'} />
+                </svg>
                 {t('onboarding.female')}
               </button>
             </div>
@@ -180,7 +195,11 @@ export default function ProfileInputPage() {
                   onChange={(e) => setColorblind(e.target.checked)}
                   className="w-4 h-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
                 />
-                <span className="text-base">🎨</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colorblind ? '#1d4ed8' : '#6b7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" fill={colorblind ? '#bfdbfe' : '#e5e7eb'} />
+                  <circle cx="12" cy="12" r="3" />
+                  <line x1="2" y1="2" x2="22" y2="22" stroke={colorblind ? '#1d4ed8' : '#6b7280'} />
+                </svg>
                 <span className="text-sm text-gray-700">{t('onboarding.colorBlindness')}</span>
               </label>
               <label className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
@@ -194,7 +213,11 @@ export default function ProfileInputPage() {
                   onChange={(e) => setDisability(e.target.checked)}
                   className="w-4 h-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
                 />
-                <span className="text-base">♿</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={disability ? '#1d4ed8' : '#6b7280'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" fill={disability ? '#bfdbfe' : '#e5e7eb'} />
+                  <path d="M12 8a1 1 0 100-2 1 1 0 000 2z" fill={disability ? '#1d4ed8' : '#6b7280'} />
+                  <path d="M12 10v4M10 18l2-4 2 4" />
+                </svg>
                 <span className="text-sm text-gray-700">{t('onboarding.physicalDisability')}</span>
               </label>
             </div>
