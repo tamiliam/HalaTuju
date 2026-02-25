@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.4] - 2026-02-26 — Stitch Design Polish
+
+### Changed
+- **Pill labels shortened** — "All Institution Types" → "Institution Type", "All Levels" → "Course Level", etc. (EN, BM, TA)
+- **Pill background** — white → gray-100 fill matching Stitch design
+- **Search placeholder** — descriptive: "Search for courses, institutions, or fields (e.g. Computer Science, UM)..."
+- **Clear Filters always visible** — greyed out when no filters active, blue when filters applied
+
 ## [1.23.3] - 2026-02-26 — Filter Pill Dropdown Redesign
 
 ### Changed
