@@ -52,7 +52,7 @@ export default function FilterPill({
           'flex items-center gap-1.5 transition-colors',
           value
             ? 'border-primary-500 bg-primary-50 text-primary-700 hover:bg-primary-100'
-            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+            : 'border-gray-200 bg-gray-100 text-gray-700 hover:bg-gray-200'
         )}
       >
         <span className="max-w-[160px] truncate">{displayText}</span>
