@@ -696,3 +696,166 @@ class TestInstitutionEndpoints(TestCase):
         """Non-existent institution_id should return 404."""
         response = self.client.get('/api/v1/institutions/FAKE_INST/')
         self.assertEqual(response.status_code, 404)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls')
+class TestCourseSearchEndpoint(TestCase):
+    """Test the course search/browse API endpoint."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.courses.models import Course, CourseRequirement, Institution, CourseInstitution
+        # Create test courses
+        cls.course1 = Course.objects.create(
+            course_id='SRCH-DIP-001',
+            course='Diploma Kejuruteraan Mekanikal',
+            level='Diploma',
+            department='Engineering',
+            field='Mechanical',
+            frontend_label='Mekanikal & Pembuatan',
+        )
+        CourseRequirement.objects.create(
+            course=cls.course1,
+            source_type='poly',
+            merit_cutoff=45.0,
+        )
+
+        cls.course2 = Course.objects.create(
+            course_id='SRCH-SIJ-001',
+            course='Sijil Teknologi Maklumat',
+            level='Sijil',
+            department='IT',
+            field='IT',
+            frontend_label='Teknologi Maklumat',
+        )
+        CourseRequirement.objects.create(
+            course=cls.course2,
+            source_type='kkom',
+        )
+
+        cls.course3 = Course.objects.create(
+            course_id='SRCH-ASI-001',
+            course='Asasi Sains',
+            level='Asasi',
+            department='Science',
+            field='Science',
+            frontend_label='Sains',
+        )
+        CourseRequirement.objects.create(
+            course=cls.course3,
+            source_type='ua',
+            merit_cutoff=70.0,
+        )
+
+        # Institutions in different states
+        cls.inst_sel = Institution.objects.create(
+            institution_id='SRCH-INST-SEL',
+            institution_name='Politeknik Selangor',
+            type='Politeknik',
+            state='Selangor',
+        )
+        cls.inst_joh = Institution.objects.create(
+            institution_id='SRCH-INST-JOH',
+            institution_name='Kolej Komuniti Johor',
+            type='Kolej Komuniti',
+            state='Johor',
+        )
+
+        # Link courses to institutions
+        CourseInstitution.objects.create(course=cls.course1, institution=cls.inst_sel)
+        CourseInstitution.objects.create(course=cls.course1, institution=cls.inst_joh)
+        CourseInstitution.objects.create(course=cls.course2, institution=cls.inst_joh)
+
+    def setUp(self):
+        self.client = APIClient()
+        self.url = '/api/v1/courses/search/'
+
+    def test_search_returns_all_courses(self):
+        """GET /api/v1/courses/search/ returns courses and filters."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('courses', data)
+        self.assertIn('total_count', data)
+        self.assertIn('filters', data)
+        self.assertGreaterEqual(data['total_count'], 3)
+
+    def test_search_text_filter(self):
+        """?q=Mekanikal should filter to matching courses."""
+        response = self.client.get(self.url, {'q': 'Mekanikal'})
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['courses']
+        self.assertTrue(all('Mekanikal' in c['course_name'] for c in courses))
+
+    def test_search_level_filter(self):
+        """?level=Diploma should return only Diploma courses."""
+        response = self.client.get(self.url, {'level': 'Diploma'})
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['courses']
+        self.assertTrue(all(c['level'] == 'Diploma' for c in courses))
+
+    def test_search_source_type_filter(self):
+        """?source_type=poly should return only poly courses."""
+        response = self.client.get(self.url, {'source_type': 'poly'})
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['courses']
+        self.assertTrue(all(c['source_type'] == 'poly' for c in courses))
+
+    def test_search_state_filter(self):
+        """?state=Johor should return courses offered in Johor."""
+        response = self.client.get(self.url, {'state': 'Johor'})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        course_ids = [c['course_id'] for c in data['courses']]
+        # course1 and course2 are in Johor
+        self.assertIn('SRCH-DIP-001', course_ids)
+        self.assertIn('SRCH-SIJ-001', course_ids)
+        # course3 has no institution link
+        self.assertNotIn('SRCH-ASI-001', course_ids)
+
+    def test_search_field_filter(self):
+        """?field=Teknologi Maklumat should return only IT courses."""
+        response = self.client.get(self.url, {'field': 'Teknologi Maklumat'})
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['courses']
+        self.assertTrue(all(c['field'] == 'Teknologi Maklumat' for c in courses))
+
+    def test_search_pagination(self):
+        """?limit=1&offset=0 should return 1 course."""
+        response = self.client.get(self.url, {'limit': 1, 'offset': 0})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data['courses']), 1)
+        self.assertGreaterEqual(data['total_count'], 3)
+
+    def test_search_filters_populated(self):
+        """Filters object should contain dynamic options."""
+        response = self.client.get(self.url)
+        data = response.json()
+        filters = data['filters']
+        self.assertIn('levels', filters)
+        self.assertIn('fields', filters)
+        self.assertIn('source_types', filters)
+        self.assertIn('states', filters)
+        self.assertGreater(len(filters['levels']), 0)
+
+    def test_search_institution_count(self):
+        """Courses should include institution_count."""
+        response = self.client.get(self.url, {'q': 'Mekanikal'})
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['courses']
+        mech = next(c for c in courses if c['course_id'] == 'SRCH-DIP-001')
+        self.assertEqual(mech['institution_count'], 2)
+
+    def test_search_combined_filters(self):
+        """Multiple filters should be combined (AND logic)."""
+        response = self.client.get(self.url, {
+            'level': 'Diploma',
+            'state': 'Selangor',
+        })
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['courses']
+        # Only course1 is Diploma AND in Selangor
+        self.assertTrue(all(c['level'] == 'Diploma' for c in courses))
+        course_ids = [c['course_id'] for c in courses]
+        self.assertIn('SRCH-DIP-001', course_ids)

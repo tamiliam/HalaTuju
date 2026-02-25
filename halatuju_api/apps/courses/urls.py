@@ -16,6 +16,7 @@ urlpatterns = [
     path('quiz/submit/', views.QuizSubmitView.as_view(), name='quiz-submit'),
 
     # Course catalog
+    path('courses/search/', views.CourseSearchView.as_view(), name='course-search'),
     path('courses/', views.CourseListView.as_view(), name='course-list'),
     path('courses/<str:course_id>/', views.CourseDetailView.as_view(), name='course-detail'),
 

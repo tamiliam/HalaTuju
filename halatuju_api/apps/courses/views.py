@@ -6,6 +6,7 @@ Endpoints:
 - POST /api/v1/ranking/ - Calculate fit scores
 - GET /api/v1/courses/ - List courses
 - GET /api/v1/courses/<id>/ - Course detail
+- GET /api/v1/courses/search/ - Search/browse courses
 - GET /api/v1/institutions/ - List institutions
 - GET/POST/DELETE /api/v1/saved-courses/ - Saved courses
 - GET /api/v1/quiz/questions/ - Get quiz questions
@@ -21,7 +22,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.apps import apps
 
-from .models import Course, Institution, StudentProfile, SavedCourse, AdmissionOutcome
+from django.db.models import Count, Q
+
+from .models import Course, CourseInstitution, CourseRequirement, Institution, StudentProfile, SavedCourse, AdmissionOutcome
 from .engine import (
     StudentProfile as EngineStudentProfile,
     check_eligibility,
@@ -44,6 +47,126 @@ from .quiz_engine import process_quiz_answers
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 
 logger = logging.getLogger(__name__)
+
+
+class CourseSearchView(APIView):
+    """
+    GET /api/v1/courses/search/
+
+    Browse and search the full course catalogue with filters.
+    Public endpoint — no auth required.
+
+    Query params:
+      ?q=kejuruteraan          (text search on course name)
+      &level=Diploma           (Course.level)
+      &field=Teknologi Maklumat (Course.frontend_label)
+      &source_type=poly        (CourseRequirement.source_type)
+      &state=Selangor          (Institution.state via CourseInstitution)
+      &limit=24&offset=0       (pagination)
+    """
+
+    def get(self, request):
+        qs = Course.objects.select_related('requirement').all()
+
+        # Text search on course name
+        q = request.query_params.get('q', '').strip()
+        if q:
+            qs = qs.filter(course__icontains=q)
+
+        # Filter by level
+        level = request.query_params.get('level', '').strip()
+        if level:
+            qs = qs.filter(level__iexact=level)
+
+        # Filter by field (frontend_label)
+        field = request.query_params.get('field', '').strip()
+        if field:
+            qs = qs.filter(frontend_label__iexact=field)
+
+        # Filter by source_type (via CourseRequirement)
+        source_type = request.query_params.get('source_type', '').strip()
+        if source_type:
+            qs = qs.filter(requirement__source_type=source_type)
+
+        # Filter by state (via CourseInstitution → Institution)
+        state = request.query_params.get('state', '').strip()
+        if state:
+            qs = qs.filter(
+                offerings__institution__state__iexact=state
+            ).distinct()
+
+        # Get total before pagination
+        total_count = qs.count()
+
+        # Default sort: credential > source_type > merit > name
+        SOURCE_TYPE_ORDER = {'ua': 4, 'pismp': 3, 'poly': 2, 'kkom': 1, 'tvet': 0}
+
+        # Pagination
+        try:
+            limit = min(int(request.query_params.get('limit', 24)), 100)
+        except (ValueError, TypeError):
+            limit = 24
+        try:
+            offset = max(int(request.query_params.get('offset', 0)), 0)
+        except (ValueError, TypeError):
+            offset = 0
+
+        # Fetch and annotate with institution count
+        courses_list = list(qs.annotate(
+            institution_count=Count('offerings')
+        ).order_by('course')[offset:offset + limit])
+
+        # Build response with sort
+        results = []
+        for c in courses_list:
+            req = getattr(c, 'requirement', None)
+            st = req.source_type if req else 'poly'
+            merit_cutoff = req.merit_cutoff if req else None
+            results.append({
+                'course_id': c.course_id,
+                'course_name': c.course,
+                'level': c.level,
+                'field': c.frontend_label or c.field,
+                'source_type': st,
+                'merit_cutoff': merit_cutoff,
+                'institution_count': c.institution_count,
+            })
+
+        # Sort: credential > source_type > merit > name
+        results.sort(key=lambda r: (
+            -get_credential_priority(r['course_name']),
+            -SOURCE_TYPE_ORDER.get(r['source_type'], 0),
+            -(r['merit_cutoff'] or 0),
+            r['course_name'],
+        ))
+
+        # Build dynamic filter options from full DB (not filtered subset)
+        filters = {
+            'levels': sorted(
+                Course.objects.values_list('level', flat=True)
+                .distinct().order_by('level')
+            ),
+            'fields': sorted(
+                Course.objects.exclude(frontend_label='')
+                .values_list('frontend_label', flat=True)
+                .distinct().order_by('frontend_label')
+            ),
+            'source_types': sorted(
+                CourseRequirement.objects.values_list('source_type', flat=True)
+                .distinct().order_by('source_type')
+            ),
+            'states': sorted(
+                Institution.objects.exclude(state='')
+                .values_list('state', flat=True)
+                .distinct().order_by('state')
+            ),
+        }
+
+        return Response({
+            'courses': results,
+            'total_count': total_count,
+            'filters': filters,
+        })
 
 
 class EligibilityCheckView(APIView):

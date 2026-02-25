@@ -35,6 +35,7 @@ export default function AppHeader() {
 
   const navLinks = [
     { href: '/dashboard', label: t('common.dashboard') },
+    { href: '/search', label: t('search.nav') },
     { href: '/saved', label: t('common.saved') },
   ]
 

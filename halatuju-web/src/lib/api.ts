@@ -123,6 +123,50 @@ export interface Insights {
   summary_text: string
 }
 
+// Search/browse types
+export interface SearchCourse {
+  course_id: string
+  course_name: string
+  level: string
+  field: string
+  source_type: string
+  merit_cutoff: number | null
+  institution_count: number
+}
+
+export interface SearchFilters {
+  levels: string[]
+  fields: string[]
+  source_types: string[]
+  states: string[]
+}
+
+export interface SearchParams {
+  q?: string
+  level?: string
+  field?: string
+  source_type?: string
+  state?: string
+  limit?: number
+  offset?: number
+}
+
+export async function searchCourses(
+  params: SearchParams = {},
+  options?: ApiOptions
+): Promise<{ courses: SearchCourse[]; total_count: number; filters: SearchFilters }> {
+  const query = new URLSearchParams()
+  if (params.q) query.set('q', params.q)
+  if (params.level) query.set('level', params.level)
+  if (params.field) query.set('field', params.field)
+  if (params.source_type) query.set('source_type', params.source_type)
+  if (params.state) query.set('state', params.state)
+  if (params.limit) query.set('limit', String(params.limit))
+  if (params.offset) query.set('offset', String(params.offset))
+  const qs = query.toString()
+  return apiRequest(`/api/v1/courses/search/${qs ? `?${qs}` : ''}`, options)
+}
+
 // API Functions
 export async function checkEligibility(
   profile: StudentProfile,

@@ -154,6 +154,25 @@
     "meritLow": "Rendah",
     "courses": "kursus"
   },
+  "search": {
+    "title": "Terokai Kursus",
+    "subtitle": "Layari semua kursus di politeknik, universiti dan institusi TVET.",
+    "searchPlaceholder": "Cari kursus...",
+    "allLevels": "Semua Tahap",
+    "allFields": "Semua Bidang",
+    "allTypes": "Semua Jenis Institusi",
+    "allStates": "Semua Negeri",
+    "showing": "Menunjukkan",
+    "of": "daripada",
+    "courses": "kursus",
+    "loadMore": "Muat Lebih",
+    "remaining": "lagi",
+    "noCourses": "Tiada kursus ditemui mengikut kriteria anda.",
+    "tryDifferent": "Cuba tapis atau carian yang berbeza.",
+    "eligibleOnly": "Layak sahaja",
+    "institutions": "institusi",
+    "nav": "Terokai"
+  },
   "login": {
     "welcomeBack": "Selamat Kembali",
     "signInSubtitle": "Log masuk untuk teruskan ke cadangan anda",

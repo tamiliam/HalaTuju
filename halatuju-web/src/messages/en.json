@@ -154,6 +154,25 @@
     "meritLow": "Low",
     "courses": "courses"
   },
+  "search": {
+    "title": "Explore Courses",
+    "subtitle": "Browse all courses across polytechnics, universities, and TVET institutions.",
+    "searchPlaceholder": "Search courses...",
+    "allLevels": "All Levels",
+    "allFields": "All Fields",
+    "allTypes": "All Institution Types",
+    "allStates": "All States",
+    "showing": "Showing",
+    "of": "of",
+    "courses": "courses",
+    "loadMore": "Load More",
+    "remaining": "remaining",
+    "noCourses": "No courses found matching your criteria.",
+    "tryDifferent": "Try different filters or search terms.",
+    "eligibleOnly": "Eligible only",
+    "institutions": "institutions",
+    "nav": "Explore"
+  },
   "login": {
     "welcomeBack": "Welcome Back",
     "signInSubtitle": "Sign in to continue to your recommendations",

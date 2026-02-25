@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.0] - 2026-02-25 — Course Search / Explorer
+
+### Added
+- **Course search page** (`/search`) — browse the full course catalogue with text search and 4 filters (Institution Type, Course Level, State, Field)
+- **Search API** (`GET /api/v1/courses/search/`) — server-side filtering, pagination, dynamic filter options, institution count per course
+- **Eligible-only toggle** — if student has eligibility data, toggle to show only courses they qualify for
+- **"Explore" nav link** — added to header between Dashboard and Saved
+- **i18n** — full search page translations in EN, BM, TA
+- **10 backend tests** for the search endpoint (text, level, field, source_type, state, pagination, combined, institution count)
+
+### Changed
+- **Institution URLs** — corrected 7 broken/outdated institution website links in `data/institutions.csv`
+
 ## [1.22.4] - 2026-02-25 — Profile Page Polish
 
 ### Changed
