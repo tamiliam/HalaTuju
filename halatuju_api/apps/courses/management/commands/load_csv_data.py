@@ -325,12 +325,21 @@ class Command(BaseCommand):
                 'parliament': row.get('parliament', ''),
             }
 
-            # Float fields
-            for field in ['latitude', 'longitude', 'indian_population', 'indian_percentage', 'average_income']:
-                col = 'lat' if field == 'latitude' else ('lng' if field == 'longitude' else field)
-                if row.get(col):
+            # Float fields — map model field to CSV column name
+            FLOAT_COL_MAP = {
+                'latitude': 'latitude',
+                'longitude': 'longitude',
+                'indian_population': 'indians',
+                'indian_percentage': 'indian_%',
+                'average_income': 'average_income',
+            }
+            for field, col in FLOAT_COL_MAP.items():
+                val = row.get(col, '')
+                if val:
+                    # Strip "RM" prefix and commas (e.g. "RM13,081" → "13081")
+                    cleaned = str(val).replace('RM', '').replace(',', '').strip()
                     try:
-                        defaults[field] = float(row[col])
+                        defaults[field] = float(cleaned)
                     except (ValueError, TypeError):
                         pass
 

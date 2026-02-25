@@ -1,4 +1,4 @@
-institution_id,institution_name,acronym,type,category,subcategory,State,address,phone,url,latitude,longitude,DUN,Parliament,Indians,Indians %,Ave. Income
+institution_id,institution_name,acronym,type,category,subcategory,state,address,phone,url,latitude,longitude,dun,parliament,indians,indian_%,average_income
 POLY-001,Politeknik Ungku Omar,PUO,IPTA,Politeknik,Premier,Perak,"Jalan Raja Musa Mahadi, 31400 Ipoh, Perak",05-5457622,https://www.puo.edu.my,4.5950444,101.1200255,N25 Canning,P064 Ipoh Timor,4731,10.9,6989
 POLY-002,Politeknik Sultan Haji Ahmad Shah,POLISAS,IPTA,Politeknik,Konvensional,Pahang,"Semambu, 25350 Kuantan, Pahang",09-5655300,https://polisas.mypolycc.edu.my,3.8518849,103.3350445,N13 Semambu,P082 Indera Mahkota,7777,6.1,8573
 POLY-003,Politeknik Sultan Abdul Halim Muadzam Shah,POLIMAS,IPTA,Politeknik,Konvensional,Kedah,"Bandar Darulaman, 06000 Jitra, Kedah",04-9146100,https://polimas.mypolycc.edu.my,6.2436651,100.4203644,N06 Jitra,P006 Kubang Pasu,2963,3.2,7300

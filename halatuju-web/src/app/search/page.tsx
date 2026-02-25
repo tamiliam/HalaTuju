@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { searchCourses, type SearchCourse, type SearchFilters, type EligibleCourse } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
@@ -12,17 +13,19 @@ const PAGE_SIZE = 6
 
 export default function SearchPage() {
   const { t } = useT()
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [courses, setCourses] = useState<SearchCourse[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [filters, setFilters] = useState<SearchFilters | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Filter state
-  const [query, setQuery] = useState('')
-  const [level, setLevel] = useState('')
-  const [field, setField] = useState('')
-  const [sourceType, setSourceType] = useState('')
-  const [state, setState] = useState('')
+  // Initialise filter state from URL search params
+  const [query, setQuery] = useState(searchParams.get('q') || '')
+  const [level, setLevel] = useState(searchParams.get('level') || '')
+  const [field, setField] = useState(searchParams.get('field') || '')
+  const [sourceType, setSourceType] = useState(searchParams.get('type') || '')
+  const [state, setState] = useState(searchParams.get('state') || '')
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE)
 
   // Eligible toggle
@@ -42,8 +45,20 @@ export default function SearchPage() {
     }
   }, [])
 
+  // Sync filter state to URL search params (replace, not push, to avoid history spam)
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (query) params.set('q', query)
+    if (level) params.set('level', level)
+    if (field) params.set('field', field)
+    if (sourceType) params.set('type', sourceType)
+    if (state) params.set('state', state)
+    const qs = params.toString()
+    router.replace(qs ? `/search?${qs}` : '/search', { scroll: false })
+  }, [query, level, field, sourceType, state, router])
+
   // Debounced search query
-  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState(query)
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query), 300)
     return () => clearTimeout(timer)
