@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.3] - 2026-02-26 — Filter Pill Dropdown Redesign
+
+### Changed
+- **Filter dropdowns restyled as pill/chip buttons** — replaced 4 native HTML `<select>` elements with custom `FilterPill` component matching Stitch design (compact rounded pills, chevron icon, dropdown panels)
+- **Active filter state** — selected pills highlight with primary blue border/background
+- **Clear Filters button** — now has funnel icon and rounded-full styling to match pills
+- **Outside-click dismiss** — dropdown panels close when clicking outside
+
+### Technical Notes
+- New component: `src/components/FilterPill.tsx` (~100 lines, uses `clsx`)
+- No new dependencies, no backend changes, no i18n changes
+- Build passes cleanly
+
 ## [1.23.2] - 2026-02-25 — Search Page Stitch Alignment
 
 ### Added
