@@ -195,7 +195,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Update `engine.py` merit formula to match corrected UPU formula in `lib/merit.ts`
 - Fix 9 pre-existing JWT auth test failures (6 auth + 3 saved_courses — malformed test tokens, not production issue)
 - Current tests: 173 collected, 164 passing (9 failing — JWT) | Golden master: 8280
-- Backend rev 30, frontend rev 35
+- Backend rev 32, frontend rev 36
 - Search page Stitch alignment done (v1.23.2): Clear Filters, eligibility toggle, institution info on cards, book/pin icons
 - `lib/merit.ts` uses correct UPU formula: `(core/72×40 + stream/36×30 + elective/36×10) × 9/8`. engine.py MUST be updated to match
 - `/search` page uses `<Suspense>` boundary — any page using `useSearchParams()` needs the same pattern

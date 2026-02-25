@@ -6,6 +6,7 @@ import { searchCourses, type SearchCourse, type SearchFilters, type EligibleCour
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import CourseCard from '@/components/CourseCard'
+import FilterPill from '@/components/FilterPill'
 import { useT } from '@/lib/i18n'
 
 const PAGE_SIZE = 6
@@ -199,58 +200,44 @@ function SearchPageInner() {
 
         {/* Filter row */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          <select
-            className="input w-auto"
+          <FilterPill
+            label={t('search.allTypes')}
             value={sourceType}
-            onChange={(e) => setSourceType(e.target.value)}
-          >
-            <option value="">{t('search.allTypes')}</option>
-            {filters?.source_types.map((st) => (
-              <option key={st} value={st}>
-                {SOURCE_LABELS[st] || st}
-              </option>
-            ))}
-          </select>
+            options={filters?.source_types ?? []}
+            optionLabels={SOURCE_LABELS}
+            onChange={setSourceType}
+          />
 
-          <select
-            className="input w-auto"
+          <FilterPill
+            label={t('search.allLevels')}
             value={level}
-            onChange={(e) => setLevel(e.target.value)}
-          >
-            <option value="">{t('search.allLevels')}</option>
-            {filters?.levels.map((l) => (
-              <option key={l} value={l}>{l}</option>
-            ))}
-          </select>
+            options={filters?.levels ?? []}
+            onChange={setLevel}
+          />
 
-          <select
-            className="input w-auto"
+          <FilterPill
+            label={t('search.allStates')}
             value={state}
-            onChange={(e) => setState(e.target.value)}
-          >
-            <option value="">{t('search.allStates')}</option>
-            {filters?.states.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+            options={filters?.states ?? []}
+            onChange={setState}
+          />
 
-          <select
-            className="input w-auto"
+          <FilterPill
+            label={t('search.allFields')}
             value={field}
-            onChange={(e) => setField(e.target.value)}
-          >
-            <option value="">{t('search.allFields')}</option>
-            {filters?.fields.map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </select>
+            options={filters?.fields ?? []}
+            onChange={setField}
+          />
 
           {/* Clear Filters */}
           {hasActiveFilters && (
             <button
               onClick={clearAllFilters}
-              className="px-3 py-2 text-sm text-primary-500 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-sm text-primary-500 hover:text-primary-700 hover:bg-primary-50 rounded-full transition-colors flex items-center gap-1.5"
             >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
               {t('search.clearFilters')}
             </button>
           )}
