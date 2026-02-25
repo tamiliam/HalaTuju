@@ -195,7 +195,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Update `engine.py` merit formula to match corrected UPU formula in `lib/merit.ts`
 - Fix 9 pre-existing JWT auth test failures (6 auth + 3 saved_courses — malformed test tokens, not production issue)
 - Current tests: 173 collected, 164 passing (9 failing — JWT) | Golden master: 8280
-- Backend rev 32, frontend rev 37
+- Backend rev 32, frontend rev 38
 - Search page Stitch alignment done (v1.23.2→v1.23.3): Clear Filters, eligibility toggle, institution info on cards, book/pin icons, pill/chip filter dropdowns
 - `FilterPill` component at `src/components/FilterPill.tsx` — reusable pill dropdown (outside-click dismiss, active state styling)
 - `lib/merit.ts` uses correct UPU formula: `(core/72×40 + stream/36×30 + elective/36×10) × 9/8`. engine.py MUST be updated to match
