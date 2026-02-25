@@ -67,7 +67,9 @@ export default function AuthGateModal() {
       ? 'quizReason'
       : authGateReason === 'save'
         ? 'saveReason'
-        : 'reportReason'
+        : authGateReason === 'eligible'
+          ? 'eligibleReason'
+          : 'reportReason'
 
   const formatPhone = (raw: string) => {
     let formatted = raw.trim()
@@ -167,6 +169,8 @@ export default function AuthGateModal() {
       localStorage.setItem(RESUME_ACTION_KEY, JSON.stringify({ action: 'save', courseId }))
     } else if (reason === 'report') {
       localStorage.setItem(RESUME_ACTION_KEY, JSON.stringify({ action: 'report' }))
+    } else if (reason === 'eligible') {
+      localStorage.setItem(RESUME_ACTION_KEY, JSON.stringify({ action: 'eligible' }))
     }
 
     // Clear pending action (from Google OAuth flow)

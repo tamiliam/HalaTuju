@@ -11,7 +11,7 @@ import {
 import { getSession, getSupabase } from '@/lib/supabase'
 import type { Session } from '@supabase/supabase-js'
 
-export type AuthGateReason = 'quiz' | 'save' | 'report' | null
+export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | null
 
 interface AuthGateOptions {
   courseId?: string

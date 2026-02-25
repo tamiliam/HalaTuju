@@ -2,11 +2,12 @@
 
 import { Suspense, useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { searchCourses, type SearchCourse, type SearchFilters, type EligibleCourse } from '@/lib/api'
+import { searchCourses, checkEligibility, type SearchCourse, type SearchFilters, type EligibleCourse, type StudentProfile } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import CourseCard from '@/components/CourseCard'
 import FilterPill from '@/components/FilterPill'
+import { useAuth } from '@/lib/auth-context'
 import clsx from 'clsx'
 import { useT } from '@/lib/i18n'
 
@@ -32,6 +33,7 @@ function SearchPageInner() {
   const { t } = useT()
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { isAuthenticated, showAuthGate } = useAuth()
   const [courses, setCourses] = useState<SearchCourse[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [filters, setFilters] = useState<SearchFilters | null>(null)
@@ -48,19 +50,62 @@ function SearchPageInner() {
   // Eligible toggle
   const [eligibleOnly, setEligibleOnly] = useState(false)
   const [eligibleIds, setEligibleIds] = useState<Set<string> | null>(null)
+  const [eligibleLoading, setEligibleLoading] = useState(false)
 
-  // Load eligible course IDs from localStorage (if available)
-  useEffect(() => {
+  // Fetch eligible course IDs from the API
+  const fetchEligibleIds = useCallback(async () => {
     try {
-      const stored = localStorage.getItem('halatuju_eligible_courses')
-      if (stored) {
-        const ids: string[] = JSON.parse(stored)
-        setEligibleIds(new Set(ids))
-      }
+      const stored = localStorage.getItem('halatuju_profile')
+      if (!stored) return
+      const profile: StudentProfile = JSON.parse(stored)
+      setEligibleLoading(true)
+      const data = await checkEligibility(profile)
+      setEligibleIds(new Set(data.eligible_courses.map(c => c.course_id)))
     } catch {
-      // No eligible data available
+      // Eligibility check failed — toggle stays off
+    } finally {
+      setEligibleLoading(false)
     }
   }, [])
+
+  // Handle toggle click
+  const handleEligibleToggle = useCallback(() => {
+    if (eligibleOnly) {
+      // Turning off — always allowed
+      setEligibleOnly(false)
+      return
+    }
+    if (!isAuthenticated) {
+      showAuthGate('eligible')
+      return
+    }
+    if (eligibleIds) {
+      // Already fetched — just turn on
+      setEligibleOnly(true)
+    } else {
+      // Fetch then turn on
+      fetchEligibleIds().then(() => setEligibleOnly(true))
+    }
+  }, [eligibleOnly, isAuthenticated, eligibleIds, showAuthGate, fetchEligibleIds])
+
+  // Auto-activate toggle after login (user was trying to enable it)
+  useEffect(() => {
+    if (isAuthenticated && !eligibleOnly && !eligibleIds) {
+      // Check if user just came from auth gate for eligible reason
+      const resume = localStorage.getItem('halatuju_resume_action')
+      if (resume) {
+        try {
+          const { action } = JSON.parse(resume)
+          if (action === 'eligible') {
+            localStorage.removeItem('halatuju_resume_action')
+            fetchEligibleIds().then(() => setEligibleOnly(true))
+          }
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }, [isAuthenticated, eligibleOnly, eligibleIds, fetchEligibleIds])
 
   // Sync filter state to URL search params (replace, not push, to avoid history spam)
   useEffect(() => {
@@ -247,27 +292,28 @@ function SearchPageInner() {
           {/* Spacer — pushes eligibility toggle right on desktop */}
           <div className="flex-1 min-w-0" />
 
-          {/* Eligibility toggle — always visible, disabled when no match data */}
-          <label className={clsx(
-            'flex items-center gap-2 flex-shrink-0',
-            eligibleIds ? 'cursor-pointer' : 'cursor-default opacity-60'
-          )}>
+          {/* Eligibility toggle — prompts login if not authenticated */}
+          <button
+            type="button"
+            onClick={handleEligibleToggle}
+            disabled={eligibleLoading}
+            className="flex items-center gap-2 flex-shrink-0 cursor-pointer disabled:opacity-60"
+          >
             <div className="relative inline-flex items-center">
-              <input
-                type="checkbox"
-                checked={eligibleOnly}
-                onChange={(e) => eligibleIds && setEligibleOnly(e.target.checked)}
-                disabled={!eligibleIds}
-                className="sr-only peer"
-              />
-              <div className="w-10 h-5 bg-gray-200 rounded-full peer-checked:bg-primary-500 transition-colors" />
-              <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-5" />
+              <div className={clsx(
+                'w-10 h-5 rounded-full transition-colors',
+                eligibleOnly ? 'bg-primary-500' : 'bg-gray-200'
+              )} />
+              <div className={clsx(
+                'absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform',
+                eligibleOnly && 'translate-x-5'
+              )} />
             </div>
-            <div className="text-sm">
+            <div className="text-sm text-left">
               <span className="font-medium text-gray-700">{t('search.eligibleOnly')}</span>
               <span className="block text-xs text-gray-400">{t('search.eligibleToggleDesc')}</span>
             </div>
-          </label>
+          </button>
           </div>
         </div>
 
