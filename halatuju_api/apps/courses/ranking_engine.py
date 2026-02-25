@@ -447,8 +447,8 @@ def get_ranked_results(eligible_courses, student_profile,
 
     ranked_list = sort_courses(ranked_list, inst_subcategories)
 
-    top_5 = ranked_list[:5]
-    rest = ranked_list[5:]
+    top_5 = ranked_list[:6]
+    rest = ranked_list[6:]
 
     return {
         "top_5": top_5,

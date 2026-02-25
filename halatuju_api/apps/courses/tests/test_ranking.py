@@ -388,8 +388,8 @@ class TestGetCredentialPriority(TestCase):
 class TestGetRankedResults(TestCase):
     """Tests for the main get_ranked_results entry point."""
 
-    def test_top_5_rest_split(self):
-        """8 courses should yield 5 top + 3 rest."""
+    def test_top_6_rest_split(self):
+        """8 courses should yield 6 top + 2 rest."""
         courses = [
             {'course_id': f'C{i}', 'institution_id': 'I001',
              'course_name': f'Diploma {i}'}
@@ -400,10 +400,10 @@ class TestGetRankedResults(TestCase):
             {'student_signals': EMPTY_SIGNALS},
             {}, {}, {},
         )
-        self.assertEqual(len(result['top_5']), 5)
-        self.assertEqual(len(result['rest']), 3)
+        self.assertEqual(len(result['top_5']), 6)
+        self.assertEqual(len(result['rest']), 2)
 
-    def test_fewer_than_5_all_in_top(self):
+    def test_fewer_than_6_all_in_top(self):
         """3 courses → all in top_5, rest empty."""
         courses = [
             {'course_id': f'C{i}', 'institution_id': '',

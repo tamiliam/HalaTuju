@@ -32,7 +32,7 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
-  const [displayCount, setDisplayCount] = useState(20)
+  const [displayCount, setDisplayCount] = useState(6)
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [quizSignals, setQuizSignals] = useState<Record<string, Record<string, number>> | null>(null)
   const [reportLoading, setReportLoading] = useState(false)
@@ -450,7 +450,7 @@ export default function DashboardPage() {
                 <div className="text-center py-4">
                   <button
                     className="btn-secondary"
-                    onClick={() => setDisplayCount(displayCount + 20)}
+                    onClick={() => setDisplayCount(displayCount + 6)}
                   >
                     {t('dashboard.loadMore')} ({remaining} {t('dashboard.remaining')})
                   </button>
@@ -545,7 +545,7 @@ function RankedResults({
             <div className="text-center py-4">
               <button
                 className="btn-secondary"
-                onClick={() => setDisplayCount(displayCount + 20)}
+                onClick={() => setDisplayCount(displayCount + 6)}
               >
                 {t('dashboard.loadMore')} ({remaining} {t('dashboard.remaining')})
               </button>
