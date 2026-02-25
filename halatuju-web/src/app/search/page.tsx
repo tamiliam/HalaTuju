@@ -175,32 +175,34 @@ function SearchPageInner() {
           </p>
         </div>
 
-        {/* Search bar */}
-        <div className="relative mb-4">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        {/* Search + Filter container */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-4">
+          {/* Search bar */}
+          <div className="relative mb-3">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              className="w-full pl-10 px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder:text-gray-400"
+              placeholder={t('search.searchPlaceholder')}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
             />
-          </svg>
-          <input
-            type="text"
-            className="input w-full pl-10"
-            placeholder={t('search.searchPlaceholder')}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
+          </div>
 
-        {/* Filter row */}
-        <div className="flex flex-wrap items-center gap-2 mb-4">
+          {/* Filter row */}
+          <div className="flex flex-wrap items-center gap-2">
           <FilterPill
             label={t('search.allTypes')}
             value={sourceType}
@@ -230,16 +232,11 @@ function SearchPageInner() {
             onChange={setField}
           />
 
-          {/* Clear Filters — always visible, disabled when no filters active */}
+          {/* Clear Filters — always visible and blue */}
           <button
             onClick={clearAllFilters}
             disabled={!hasActiveFilters}
-            className={clsx(
-              'px-3 py-1.5 text-sm rounded-full transition-colors flex items-center gap-1.5',
-              hasActiveFilters
-                ? 'text-primary-500 hover:text-primary-700 hover:bg-primary-50 cursor-pointer'
-                : 'text-gray-400 cursor-default'
-            )}
+            className="px-3 py-1.5 text-sm font-medium text-primary-500 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-default"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -250,25 +247,28 @@ function SearchPageInner() {
           {/* Spacer — pushes eligibility toggle right on desktop */}
           <div className="flex-1 min-w-0" />
 
-          {/* Eligibility toggle */}
-          {eligibleIds && (
-            <label className="flex items-center gap-2 cursor-pointer flex-shrink-0">
-              <div className="relative inline-flex items-center">
-                <input
-                  type="checkbox"
-                  checked={eligibleOnly}
-                  onChange={(e) => setEligibleOnly(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-10 h-5 bg-gray-200 rounded-full peer-checked:bg-primary-500 transition-colors" />
-                <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-5" />
-              </div>
-              <div className="text-sm">
-                <span className="font-medium text-gray-700">{t('search.eligibleOnly')}</span>
-                <span className="block text-xs text-gray-400">{t('search.eligibleToggleDesc')}</span>
-              </div>
-            </label>
-          )}
+          {/* Eligibility toggle — always visible, disabled when no match data */}
+          <label className={clsx(
+            'flex items-center gap-2 flex-shrink-0',
+            eligibleIds ? 'cursor-pointer' : 'cursor-default opacity-60'
+          )}>
+            <div className="relative inline-flex items-center">
+              <input
+                type="checkbox"
+                checked={eligibleOnly}
+                onChange={(e) => eligibleIds && setEligibleOnly(e.target.checked)}
+                disabled={!eligibleIds}
+                className="sr-only peer"
+              />
+              <div className="w-10 h-5 bg-gray-200 rounded-full peer-checked:bg-primary-500 transition-colors" />
+              <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-5" />
+            </div>
+            <div className="text-sm">
+              <span className="font-medium text-gray-700">{t('search.eligibleOnly')}</span>
+              <span className="block text-xs text-gray-400">{t('search.eligibleToggleDesc')}</span>
+            </div>
+          </label>
+          </div>
         </div>
 
         {/* Results meta */}

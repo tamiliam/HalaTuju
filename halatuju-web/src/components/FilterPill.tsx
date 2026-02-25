@@ -48,7 +48,7 @@ export default function FilterPill({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={clsx(
-          'px-3 py-1.5 text-sm font-medium rounded-full border',
+          'px-3 py-1.5 text-sm font-medium rounded-lg border',
           'flex items-center gap-1.5 transition-colors',
           value
             ? 'border-primary-500 bg-primary-50 text-primary-700 hover:bg-primary-100'
