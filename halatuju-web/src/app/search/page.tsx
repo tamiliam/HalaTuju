@@ -2,7 +2,6 @@
 
 import { Suspense, useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { searchCourses, type SearchCourse, type SearchFilters, type EligibleCourse } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
@@ -139,6 +138,17 @@ function SearchPageInner() {
     merit_color: null,
   })
 
+  const hasActiveFilters = !!(query || level || field || sourceType || state)
+
+  const clearAllFilters = () => {
+    setQuery('')
+    setLevel('')
+    setField('')
+    setSourceType('')
+    setState('')
+    setEligibleOnly(false)
+  }
+
   // Source type labels for filter dropdown
   const SOURCE_LABELS: Record<string, string> = {
     poly: t('dashboard.polytechnic'),
@@ -188,7 +198,7 @@ function SearchPageInner() {
         </div>
 
         {/* Filter row */}
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
           <select
             className="input w-auto"
             value={sourceType}
@@ -234,10 +244,43 @@ function SearchPageInner() {
               <option key={f} value={f}>{f}</option>
             ))}
           </select>
+
+          {/* Clear Filters */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearAllFilters}
+              className="px-3 py-2 text-sm text-primary-500 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
+            >
+              {t('search.clearFilters')}
+            </button>
+          )}
+
+          {/* Spacer — pushes eligibility toggle right on desktop */}
+          <div className="flex-1 min-w-0" />
+
+          {/* Eligibility toggle */}
+          {eligibleIds && (
+            <label className="flex items-center gap-2 cursor-pointer flex-shrink-0">
+              <div className="relative inline-flex items-center">
+                <input
+                  type="checkbox"
+                  checked={eligibleOnly}
+                  onChange={(e) => setEligibleOnly(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-5 bg-gray-200 rounded-full peer-checked:bg-primary-500 transition-colors" />
+                <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-5" />
+              </div>
+              <div className="text-sm">
+                <span className="font-medium text-gray-700">{t('search.eligibleOnly')}</span>
+                <span className="block text-xs text-gray-400">{t('search.eligibleToggleDesc')}</span>
+              </div>
+            </label>
+          )}
         </div>
 
         {/* Results meta */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <p className="text-sm text-gray-600">
             {t('search.showing')}{' '}
             <span className="font-medium">{Math.min(displayCount, displayedCourses.length)}</span>
@@ -245,18 +288,6 @@ function SearchPageInner() {
             <span className="font-medium">{displayedCourses.length}</span>
             {' '}{t('search.courses')}
           </p>
-
-          {eligibleIds && (
-            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={eligibleOnly}
-                onChange={(e) => setEligibleOnly(e.target.checked)}
-                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              {t('search.eligibleOnly')}
-            </label>
-          )}
         </div>
 
         {/* Loading */}
@@ -280,17 +311,14 @@ function SearchPageInner() {
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {visibleCourses.map((course) => (
-                <div key={course.course_id} className="relative">
-                  <CourseCard
-                    course={toEligible(course)}
-                    isSaved={false}
-                  />
-                  {course.institution_count > 0 && (
-                    <div className="absolute bottom-3 right-3 px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">
-                      {course.institution_count} {t('search.institutions')}
-                    </div>
-                  )}
-                </div>
+                <CourseCard
+                  key={course.course_id}
+                  course={toEligible(course)}
+                  isSaved={false}
+                  institutionName={course.institution_name}
+                  institutionState={course.institution_state}
+                  institutionCount={course.institution_count}
+                />
               ))}
             </div>
 

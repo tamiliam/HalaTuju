@@ -859,3 +859,31 @@ class TestCourseSearchEndpoint(TestCase):
         self.assertTrue(all(c['level'] == 'Diploma' for c in courses))
         course_ids = [c['course_id'] for c in courses]
         self.assertIn('SRCH-DIP-001', course_ids)
+
+    def test_search_returns_institution_name(self):
+        """Search results include primary institution name (alphabetically first)."""
+        response = self.client.get(self.url, {'q': 'Mekanikal'})
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['courses']
+        mech = next(c for c in courses if c['course_id'] == 'SRCH-DIP-001')
+        self.assertIn('institution_name', mech)
+        # Alphabetically: Kolej Komuniti Johor < Politeknik Selangor
+        self.assertEqual(mech['institution_name'], 'Kolej Komuniti Johor')
+
+    def test_search_returns_institution_state(self):
+        """Search results include primary institution state."""
+        response = self.client.get(self.url, {'q': 'Mekanikal'})
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['courses']
+        mech = next(c for c in courses if c['course_id'] == 'SRCH-DIP-001')
+        self.assertIn('institution_state', mech)
+        self.assertEqual(mech['institution_state'], 'Johor')
+
+    def test_search_no_offering_returns_empty_institution(self):
+        """Courses with no offerings return empty institution fields."""
+        response = self.client.get(self.url, {'q': 'Asasi'})
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['courses']
+        asasi = next(c for c in courses if c['course_id'] == 'SRCH-ASI-001')
+        self.assertEqual(asasi['institution_name'], '')
+        self.assertEqual(asasi['institution_state'], '')

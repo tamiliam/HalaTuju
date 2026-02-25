@@ -115,7 +115,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (176 tests)
+# Run ALL tests (173 collected, 164 pass, 9 pre-existing JWT failures)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8280 baseline)
@@ -134,7 +134,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 |------|-------|----------------|
 | test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 8280 baseline |
 | test_serializers.py | 27 | Grade key mapping, gender/nationality normalization, bool→Ya/Tidak, validation |
-| test_api.py | 32 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD |
+| test_api.py | 49 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering) |
 | test_auth.py | 15 | Auth enforcement — protected endpoints reject 403, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
 | test_saved_courses.py | 3 | Saved course CRUD — save (201), list (appears), delete (removed) |
 | test_quiz.py | 14 | Quiz endpoints (questions 3 langs, submit, validation), engine (accumulation, taxonomy, strength, lang parity) |
@@ -148,8 +148,8 @@ python -m pytest apps/courses/tests/test_api.py -v
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (176 must pass, golden master = 8280)
-python manage.py test --verbosity=2
+# 1. Run all tests (173 collected, 164 must pass, golden master = 8280)
+python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
 #    Run Supabase Security Advisor and fix all errors
@@ -160,7 +160,7 @@ python manage.py test --verbosity=2
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-173 tests must pass (13 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8280, you broke eligibility logic.
+164 tests must pass out of 173 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8280, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -193,12 +193,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Localise remaining pages: quiz, course detail, report
 - Add loading/progress screen for report generation (10-15 sec delay)
 - Update `engine.py` merit formula to match corrected UPU formula in `lib/merit.ts`
-- Fix 13 pre-existing JWT auth test failures (malformed test tokens, not production issue)
-- Current tests: 173 passing (13 failing — JWT auth test tokens) | Golden master: 8280
+- Fix 9 pre-existing JWT auth test failures (6 auth + 3 saved_courses — malformed test tokens, not production issue)
+- Current tests: 173 collected, 164 passing (9 failing — JWT) | Golden master: 8280
 - Backend rev 30, frontend rev 35
-- Post-S20 polish shipped: emoji→SVG, sort fix, top 6, course search page, Suspense boundary fix
+- Search page Stitch alignment done (v1.23.2): Clear Filters, eligibility toggle, institution info on cards, book/pin icons
 - `lib/merit.ts` uses correct UPU formula: `(core/72×40 + stream/36×30 + elective/36×10) × 9/8`. engine.py MUST be updated to match
 - `/search` page uses `<Suspense>` boundary — any page using `useSearchParams()` needs the same pattern
+- CourseCard has optional `institutionName`, `institutionState`, `institutionCount` props — only used on search page
 
 ## Streamlit App (Legacy — migrating to Django API)
 

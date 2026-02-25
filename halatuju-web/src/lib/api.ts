@@ -132,6 +132,8 @@ export interface SearchCourse {
   source_type: string
   merit_cutoff: number | null
   institution_count: number
+  institution_name: string
+  institution_state: string
 }
 
 export interface SearchFilters {

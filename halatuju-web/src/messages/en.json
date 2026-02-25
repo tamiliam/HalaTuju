@@ -170,6 +170,9 @@
     "noCourses": "No courses found matching your criteria.",
     "tryDifferent": "Try different filters or search terms.",
     "eligibleOnly": "Eligible only",
+    "eligibleToggleDesc": "Only show courses I qualify for",
+    "clearFilters": "Clear Filters",
+    "moreInstitutions": "+{count} more",
     "institutions": "institutions",
     "nav": "Explore"
   },

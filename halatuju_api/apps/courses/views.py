@@ -22,7 +22,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.apps import apps
 
-from django.db.models import Count, Q
+from django.db.models import Count, OuterRef, Q, Subquery
 
 from .models import Course, CourseInstitution, CourseRequirement, Institution, StudentProfile, SavedCourse, AdmissionOutcome
 from .engine import (
@@ -111,9 +111,20 @@ class CourseSearchView(APIView):
         except (ValueError, TypeError):
             offset = 0
 
-        # Fetch and annotate with institution count
+        # Subquery: primary institution (alphabetically first offering)
+        first_offering = CourseInstitution.objects.filter(
+            course=OuterRef('pk')
+        ).order_by('institution__institution_name')
+
+        # Fetch and annotate with institution count + primary institution info
         courses_list = list(qs.annotate(
-            institution_count=Count('offerings')
+            institution_count=Count('offerings'),
+            primary_institution_name=Subquery(
+                first_offering.values('institution__institution_name')[:1]
+            ),
+            primary_institution_state=Subquery(
+                first_offering.values('institution__state')[:1]
+            ),
         ).order_by('course')[offset:offset + limit])
 
         # Build response with sort
@@ -130,6 +141,8 @@ class CourseSearchView(APIView):
                 'source_type': st,
                 'merit_cutoff': merit_cutoff,
                 'institution_count': c.institution_count,
+                'institution_name': c.primary_institution_name or '',
+                'institution_state': c.primary_institution_state or '',
             })
 
         # Sort: credential > source_type > merit > name

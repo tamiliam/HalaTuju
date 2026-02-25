@@ -205,9 +205,12 @@ interface CourseCardProps {
   rank?: number
   isSaved: boolean
   onToggleSave?: (courseId: string) => void
+  institutionName?: string
+  institutionState?: string
+  institutionCount?: number
 }
 
-export default function CourseCard({ course, rank, isSaved, onToggleSave }: CourseCardProps) {
+export default function CourseCard({ course, rank, isSaved, onToggleSave, institutionName, institutionState, institutionCount }: CourseCardProps) {
   const imageUrl = getFieldImageUrl(course.field, course.course_name || '')
   const isLowMerit = course.merit_label === 'Low'
 
@@ -290,9 +293,29 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave }: Cour
         </h3>
 
         {/* Field */}
-        <p className="text-gray-500 text-xs mb-2">
-          {course.field || 'View course details'}
-        </p>
+        <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+          <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+          </svg>
+          <span className="truncate">{course.field || 'View course details'}</span>
+        </div>
+
+        {/* Institution info (search context only) */}
+        {institutionName && (
+          <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+            </svg>
+            <span className="truncate">
+              {institutionName}
+              {institutionState && <span className="text-gray-400"> ({institutionState})</span>}
+              {(institutionCount ?? 0) > 1 && (
+                <span className="text-gray-400 ml-1">+{(institutionCount ?? 1) - 1}</span>
+              )}
+            </span>
+          </div>
+        )}
 
         {/* Merit traffic light */}
         <MeritIndicator label={course.merit_label} color={course.merit_color} />

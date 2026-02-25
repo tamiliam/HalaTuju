@@ -170,6 +170,9 @@
     "noCourses": "Tiada kursus ditemui mengikut kriteria anda.",
     "tryDifferent": "Cuba tapis atau carian yang berbeza.",
     "eligibleOnly": "Layak sahaja",
+    "eligibleToggleDesc": "Hanya tunjukkan kursus yang saya layak",
+    "clearFilters": "Padam Tapis",
+    "moreInstitutions": "+{count} lagi",
     "institutions": "institusi",
     "nav": "Terokai"
   },

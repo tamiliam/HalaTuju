@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.2] - 2026-02-25 — Search Page Stitch Alignment
+
+### Added
+- **Institution info on search cards** — each course card now shows the primary institution name, state (pin icon), and "+N more" count when offered at multiple institutions
+- **Book icon** on field text in course cards for visual consistency with Stitch design
+- **Clear Filters button** — appears in the filter row when any filter is active, resets all filters in one click
+- **Eligibility toggle redesign** — replaced plain checkbox with a styled pill toggle, moved into the filter row with descriptive subtitle text
+- **Search API: institution fields** — backend now returns `institution_name` and `institution_state` per course via Django Subquery (alphabetically first offering)
+- **3 new backend tests** for institution name, state, and empty-offering fallback
+- **3 new i18n keys** (`clearFilters`, `eligibleToggleDesc`, `moreInstitutions`) in EN, BM, TA
+
+### Technical Notes
+- Backend tests: 173 collected, 164 passing (9 pre-existing JWT failures — not production)
+- Golden master: 8280 (unchanged)
+- Files changed: 8 (1 backend view, 1 test, 1 API type, 3 i18n, 1 component, 1 page)
+
 ## [1.23.1] - 2026-02-25 — Deploy Fix: Suspense Boundary
 
 ### Fixed
