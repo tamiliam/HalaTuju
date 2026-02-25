@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Suspense, useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { searchCourses, type SearchCourse, type SearchFilters, type EligibleCourse } from '@/lib/api'
@@ -12,6 +12,22 @@ import { useT } from '@/lib/i18n'
 const PAGE_SIZE = 6
 
 export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-gray-50">
+        <AppHeader />
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent" />
+        </div>
+        <AppFooter />
+      </main>
+    }>
+      <SearchPageInner />
+    </Suspense>
+  )
+}
+
+function SearchPageInner() {
   const { t } = useT()
   const searchParams = useSearchParams()
   const router = useRouter()

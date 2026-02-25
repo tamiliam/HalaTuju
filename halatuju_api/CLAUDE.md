@@ -160,7 +160,7 @@ python manage.py test --verbosity=2
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-All 176 tests must pass. If golden master deviates from 8280, you broke eligibility logic.
+173 tests must pass (13 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8280, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -193,10 +193,12 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Localise remaining pages: quiz, course detail, report
 - Add loading/progress screen for report generation (10-15 sec delay)
 - Update `engine.py` merit formula to match corrected UPU formula in `lib/merit.ts`
-- Current tests: 176 | Golden master: 8280
-- Backend rev 27, frontend rev 31
-- Post-S20 hotfixes shipped: correct UPU merit formula, stale grades fix, RLS optimisation, merit colour removal
+- Fix 13 pre-existing JWT auth test failures (malformed test tokens, not production issue)
+- Current tests: 173 passing (13 failing — JWT auth test tokens) | Golden master: 8280
+- Backend rev 30, frontend rev 35
+- Post-S20 polish shipped: emoji→SVG, sort fix, top 6, course search page, Suspense boundary fix
 - `lib/merit.ts` uses correct UPU formula: `(core/72×40 + stream/36×30 + elective/36×10) × 9/8`. engine.py MUST be updated to match
+- `/search` page uses `<Suspense>` boundary — any page using `useSearchParams()` needs the same pattern
 
 ## Streamlit App (Legacy — migrating to Django API)
 

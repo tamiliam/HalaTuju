@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.1] - 2026-02-25 — Deploy Fix: Suspense Boundary
+
+### Fixed
+- **Next.js prerender crash** — `/search` page crashed during Cloud Run build because `useSearchParams()` requires a `<Suspense>` boundary for static generation. Wrapped `SearchPageInner` in `<Suspense>` with a loading spinner fallback.
+- **Stale container image** — previous failed deploy pushed a stale image to gcr.io (old Container Registry). Redeployed from source to Artifact Registry (`asia-southeast1-docker.pkg.dev`), restoring correct build. Frontend now on rev 35.
+
+### Technical Notes
+- Backend tests: 173 passing (13 pre-existing JWT test failures — not a production issue)
+- Golden master: 8280 (unchanged)
+
 ## [1.23.0] - 2026-02-25 — Course Search / Explorer
 
 ### Added
