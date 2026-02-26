@@ -298,9 +298,15 @@ class EligibilityCheckView(APIView):
         # Default sort: merit chance first, then delta within tier, then credential > type
         SOURCE_TYPE_PRIORITY = {'ua': 4, 'pismp': 3, 'poly': 2, 'kkom': 1, 'tvet': 0}
         MERIT_LABEL_PRIORITY = {'High': 3, 'Fair': 2, 'Low': 1}
+        def _merit_delta(c):
+            """Delta sort only for Fair/Low — High uses credential instead."""
+            if c.get('merit_label') in ('Fair', 'Low'):
+                return -(c.get('student_merit', 0) - (c['merit_cutoff'] or 0))
+            return 0  # High / no data: ignore delta, let credential decide
+
         eligible_courses.sort(key=lambda c: (
             -MERIT_LABEL_PRIORITY.get(c['merit_label'] or '', 2),  # no data = Fair (not penalised)
-            -(c.get('student_merit', 0) - (c['merit_cutoff'] or 0)),  # closer to cutoff = higher
+            _merit_delta(c),
             -get_credential_priority(c['course_name'], c.get('source_type', '')),
             -SOURCE_TYPE_PRIORITY.get(c['source_type'], 0),
             c['course_name'],
