@@ -332,16 +332,18 @@ class TestSortCourses(TestCase):
         result = sort_courses(courses, subcats)
         self.assertEqual(result[0]['institution_id'], 'I2')  # Premier = 10
 
-    def test_merit_tiebreak(self):
-        """Same score, credential, institution → higher merit first."""
+    def test_merit_delta_tiebreak(self):
+        """Same score, credential, institution → smaller gap to cutoff wins."""
         courses = [
             {'fit_score': 100, 'course_name': 'Diploma A',
-             'institution_id': '', 'merit_cutoff': 30},
+             'institution_id': '', 'merit_cutoff': 80, 'student_merit': 54,
+             'merit_label': 'Low'},  # delta = -26
             {'fit_score': 100, 'course_name': 'Diploma B',
-             'institution_id': '', 'merit_cutoff': 50},
+             'institution_id': '', 'merit_cutoff': 60, 'student_merit': 54,
+             'merit_label': 'Low'},  # delta = -6
         ]
         result = sort_courses(courses, {})
-        self.assertEqual(result[0]['course_name'], 'Diploma B')  # merit 50
+        self.assertEqual(result[0]['course_name'], 'Diploma B')  # closer to cutoff
 
     def test_name_alphabetical_tiebreak(self):
         """All else equal → alphabetical by name."""

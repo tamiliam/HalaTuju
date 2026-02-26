@@ -401,9 +401,11 @@ def sort_courses(course_list, inst_subcategories):
         s_type = str(item.get('source_type') or '')
         cred_priority = get_credential_priority(c_name, s_type)
 
-        merit = float(item.get('merit_cutoff', 0) or 0)
+        student_m = float(item.get('student_merit', 0) or 0)
+        cutoff = float(item.get('merit_cutoff', 0) or 0)
+        merit_delta = student_m - cutoff  # higher = closer to/above cutoff
 
-        return (-score, -merit_chance, -cred_priority, -inst_priority, -merit, c_name)
+        return (-score, -merit_chance, -merit_delta, -cred_priority, -inst_priority, c_name)
 
     return sorted(course_list, key=sort_key)
 
