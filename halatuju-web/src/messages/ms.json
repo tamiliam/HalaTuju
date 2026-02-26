@@ -114,6 +114,8 @@
   "dashboard": {
     "title": "Cadangan Kursus Anda",
     "subtitle": "Berdasarkan gred SPM dan profil anda, ini adalah kursus yang anda layak.",
+    "qualifyFor": "Anda layak memohon",
+    "qualifyCourses": "kursus",
     "rankedSubtitle": "Disusun mengikut kesesuaian dengan minat dan pilihan anda.",
     "editProfile": "Sunting Profil",
     "totalEligible": "Jumlah Layak",

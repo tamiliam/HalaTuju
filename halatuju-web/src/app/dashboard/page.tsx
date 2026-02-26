@@ -15,7 +15,6 @@ import {
   type StudentProfile,
   type RankedCourse,
   type RankingResult,
-  type Insights,
 } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import CourseCard from '@/components/CourseCard'
@@ -244,141 +243,68 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-6 py-8">
-        {/* Summary Card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                {t('dashboard.title')}
-              </h1>
-              <p className="text-gray-600">
-                {quizSignals
-                  ? t('dashboard.rankedSubtitle')
-                  : t('dashboard.subtitle')}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Link
-                href="/onboarding/grades"
-                className="btn-secondary whitespace-nowrap"
-              >
-                {t('dashboard.editProfile')}
-              </Link>
-            </div>
-          </div>
-
-          {/* Stats */}
-          {eligibilityData && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-6 pt-6 border-t">
-              <StatCard
-                number={eligibilityData.eligible_courses.length}
-                label={t('dashboard.totalEligible')}
-              />
-              <StatCard
-                number={eligibilityData.stats.poly || 0}
-                label={t('dashboard.polytechnic')}
-              />
-              <StatCard
-                number={eligibilityData.stats.kkom || 0}
-                label={t('dashboard.kolej')}
-              />
-              <StatCard
-                number={eligibilityData.stats.tvet || 0}
-                label={t('dashboard.tvet')}
-              />
-              <StatCard
-                number={eligibilityData.stats.ua || 0}
-                label={t('dashboard.university')}
-              />
-              <StatCard
-                number={eligibilityData.stats.pismp || 0}
-                label={t('dashboard.teacherTraining')}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Insights Panel */}
-        {eligibilityData?.insights && (
-          <InsightsPanel insights={eligibilityData.insights} />
-        )}
-
-        {/* Generate Report CTA — always show when eligibility loaded */}
+        {/* Compact Dashboard Header */}
         {eligibilityData && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="bg-white rounded-xl border border-gray-200 px-6 py-4 mb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              {/* Left: headline + chance pills */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-1">
-                  {t('dashboard.reportTitle')}
-                </h2>
-                <p className="text-gray-600 text-sm">
-                  {t('dashboard.reportDesc')}
-                </p>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <h1 className="text-xl font-bold text-gray-900">
+                    {t('dashboard.qualifyFor')} <span className="text-primary-500">{eligibilityData.eligible_courses.length}</span> {t('dashboard.qualifyCourses')}
+                  </h1>
+                  {eligibilityData.insights && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-green-500" />
+                        <span className="text-gray-600">{eligibilityData.insights.merit_summary.high} {t('dashboard.meritHigh')}</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-400" />
+                        <span className="text-gray-600">{eligibilityData.insights.merit_summary.fair} {t('dashboard.meritFair')}</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-red-500" />
+                        <span className="text-gray-600">{eligibilityData.insights.merit_summary.low} {t('dashboard.meritLow')}</span>
+                      </span>
+                      {eligibilityData.insights.merit_summary.no_data > 0 && (
+                        <span className="text-gray-400">&middot; {eligibilityData.insights.merit_summary.no_data} unrated</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <Link href="/onboarding/grades" className="text-xs text-gray-400 hover:text-primary-500 underline mt-1 inline-block">
+                  {t('dashboard.editProfile')}
+                </Link>
               </div>
-              <div className="flex flex-col items-end gap-2">
+
+              {/* Right: action buttons */}
+              <div className="flex items-center gap-2">
                 {existingReportId ? (
-                  <Link
-                    href={`/report/${existingReportId}`}
-                    className="btn-primary whitespace-nowrap text-center"
-                  >
+                  <Link href={`/report/${existingReportId}`} className="btn-secondary text-sm whitespace-nowrap">
                     {t('dashboard.readReport')}
                   </Link>
                 ) : (
                   <button
                     onClick={handleGenerateReport}
                     disabled={reportLoading}
-                    className="btn-primary whitespace-nowrap disabled:opacity-50"
+                    className="btn-secondary text-sm whitespace-nowrap disabled:opacity-50"
                   >
                     {reportLoading ? t('dashboard.generating') : t('dashboard.generateReport')}
                   </button>
                 )}
-                {reportError && (
-                  <p className="text-red-500 text-sm">{t('dashboard.reportError')}</p>
+                {quizSignals ? (
+                  <button onClick={handleRetakeQuiz} className="text-sm text-gray-400 hover:text-primary-500 underline whitespace-nowrap">
+                    {t('dashboard.retakeQuiz')}
+                  </button>
+                ) : (
+                  <button onClick={handleQuizCta} className="btn-primary text-sm whitespace-nowrap">
+                    {t('dashboard.takeQuiz')}
+                  </button>
                 )}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Quiz CTA — show when no quiz taken yet */}
-        {eligibilityData && !quizSignals && (
-          <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl p-6 mb-8 text-white">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold mb-1">
-                  {t('dashboard.quizTitle')}
-                </h2>
-                <p className="text-primary-100 text-sm">
-                  {t('dashboard.quizDesc')}
-                </p>
-              </div>
-              <button
-                onClick={handleQuizCta}
-                className="bg-white text-primary-600 px-6 py-3 rounded-lg font-medium hover:bg-primary-50 transition-colors whitespace-nowrap text-center"
-              >
-                {t('dashboard.takeQuiz')}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Quiz completed banner */}
-        {quizSignals && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-8 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="text-green-800 text-sm font-medium">
-                {t('dashboard.quizDone')}
-              </span>
-            </div>
-            <button
-              onClick={handleRetakeQuiz}
-              className="text-green-600 hover:text-green-800 text-sm underline"
-            >
-              {t('dashboard.retakeQuiz')}
-            </button>
+            {reportError && <p className="text-red-500 text-xs mt-2">{t('dashboard.reportError')}</p>}
           </div>
         )}
 
@@ -567,86 +493,6 @@ function LoadingScreen() {
         <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent mb-4" />
         <p className="text-gray-600">{t('common.loadingProfile')}</p>
       </div>
-    </div>
-  )
-}
-
-function StatCard({ number, label }: { number: number; label: string }) {
-  return (
-    <div className="text-center">
-      <div className="text-3xl font-bold text-primary-500">{number}</div>
-      <div className="text-sm text-gray-600">{label}</div>
-    </div>
-  )
-}
-
-function InsightsPanel({ insights }: { insights: Insights }) {
-  const { t } = useT()
-  const meritTotal = insights.merit_summary.high + insights.merit_summary.fair + insights.merit_summary.low
-
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
-      {/* Summary */}
-      <p className="text-gray-700 mb-6">{insights.summary_text}</p>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Top Fields */}
-        <div>
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            {t('dashboard.insightsTopFields')}
-          </h3>
-          <ul className="space-y-2">
-            {insights.top_fields.map((f) => (
-              <li key={f.field} className="flex justify-between text-sm">
-                <span className="text-gray-700 truncate mr-2">{f.field}</span>
-                <span className="text-gray-500 font-medium whitespace-nowrap">{f.count} {t('dashboard.courses')}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Level Distribution */}
-        <div>
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            {t('dashboard.insightsLevels')}
-          </h3>
-          <ul className="space-y-2">
-            {insights.level_distribution.map((l) => (
-              <li key={l.level} className="flex justify-between text-sm">
-                <span className="text-gray-700 truncate mr-2">{l.level}</span>
-                <span className="text-gray-500 font-medium whitespace-nowrap">{l.count}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Merit Summary */}
-        {meritTotal > 0 && (
-          <div>
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-              {t('dashboard.insightsMerit')}
-            </h3>
-            <div className="space-y-2">
-              <MeritBar label={t('dashboard.meritHigh')} count={insights.merit_summary.high} total={meritTotal} color="bg-green-500" />
-              <MeritBar label={t('dashboard.meritFair')} count={insights.merit_summary.fair} total={meritTotal} color="bg-yellow-500" />
-              <MeritBar label={t('dashboard.meritLow')} count={insights.merit_summary.low} total={meritTotal} color="bg-red-500" />
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function MeritBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
-  const pct = total > 0 ? Math.round((count / total) * 100) : 0
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <span className="w-20 text-gray-600">{label}</span>
-      <div className="flex-1 bg-gray-100 rounded-full h-2">
-        <div className={`${color} h-2 rounded-full`} style={{ width: `${pct}%` }} />
-      </div>
-      <span className="text-gray-500 w-8 text-right">{count}</span>
     </div>
   )
 }

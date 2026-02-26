@@ -114,6 +114,8 @@
   "dashboard": {
     "title": "Your Course Recommendations",
     "subtitle": "Based on your SPM grades and profile, here are courses you qualify for.",
+    "qualifyFor": "You qualify for",
+    "qualifyCourses": "courses",
     "rankedSubtitle": "Ranked by how well they match your interests and preferences.",
     "editProfile": "Edit Profile",
     "totalEligible": "Total Eligible",
