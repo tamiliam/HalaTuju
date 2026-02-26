@@ -50,9 +50,10 @@ function SearchPageInner() {
   // Eligible toggle
   const [eligibleOnly, setEligibleOnly] = useState(false)
   const [eligibleIds, setEligibleIds] = useState<Set<string> | null>(null)
+  const [eligibleMap, setEligibleMap] = useState<Map<string, EligibleCourse> | null>(null)
   const [eligibleLoading, setEligibleLoading] = useState(false)
 
-  // Fetch eligible course IDs from the API
+  // Fetch eligible course data from the API
   const fetchEligibleIds = useCallback(async () => {
     try {
       const stored = localStorage.getItem('halatuju_profile')
@@ -61,6 +62,7 @@ function SearchPageInner() {
       setEligibleLoading(true)
       const data = await checkEligibility(profile)
       setEligibleIds(new Set(data.eligible_courses.map(c => c.course_id)))
+      setEligibleMap(new Map(data.eligible_courses.map(c => [c.course_id, c])))
     } catch {
       // Eligibility check failed — toggle stays off
     } finally {
@@ -173,17 +175,20 @@ function SearchPageInner() {
   const remaining = displayedCourses.length - displayCount
 
   // Map SearchCourse to EligibleCourse for CourseCard compatibility
-  const toEligible = (c: SearchCourse): EligibleCourse => ({
-    course_id: c.course_id,
-    course_name: c.course_name,
-    level: c.level,
-    field: c.field,
-    source_type: c.source_type,
-    merit_cutoff: c.merit_cutoff,
-    student_merit: null,
-    merit_label: null,
-    merit_color: null,
-  })
+  const toEligible = (c: SearchCourse): EligibleCourse => {
+    const match = eligibleMap?.get(c.course_id)
+    return {
+      course_id: c.course_id,
+      course_name: c.course_name,
+      level: c.level,
+      field: c.field,
+      source_type: c.source_type,
+      merit_cutoff: c.merit_cutoff,
+      student_merit: match?.student_merit ?? null,
+      merit_label: match?.merit_label ?? null,
+      merit_color: match?.merit_color ?? null,
+    }
+  }
 
   const hasActiveFilters = !!(query || level || field || sourceType || state)
 

@@ -317,8 +317,12 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
           </div>
         )}
 
-        {/* Merit traffic light */}
-        <MeritIndicator label={course.merit_label} color={course.merit_color} />
+        {/* Merit score indicator */}
+        <MeritIndicator
+          label={course.merit_label}
+          studentMerit={course.student_merit}
+          meritCutoff={course.merit_cutoff}
+        />
 
         {/* Fit reasons (ranked courses only) */}
         {isRankedCourse(course) && course.fit_reasons && course.fit_reasons.length > 0 && (
@@ -338,8 +342,23 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
   )
 }
 
-function MeritIndicator({ label, color }: { label: string | null; color: string | null }) {
+function MeritIndicator({
+  label,
+  studentMerit,
+  meritCutoff,
+}: {
+  label: string | null
+  studentMerit: number | null
+  meritCutoff: number | null
+}) {
   if (!label) return null
+
+  const hasScores = studentMerit !== null && meritCutoff !== null
+
+  const barColor =
+    label === 'High' ? 'bg-green-500' :
+    label === 'Fair' ? 'bg-amber-400' :
+    'bg-red-500'
 
   const textClass =
     label === 'High' ? 'text-green-700' :
@@ -351,15 +370,47 @@ function MeritIndicator({ label, color }: { label: string | null; color: string 
     label === 'Fair' ? 'Fair Chance' :
     'Low Chance'
 
+  // Fallback: simple dot + label when numeric scores are unavailable
+  if (!hasScores) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className={`w-2 h-2 rounded-full inline-block flex-shrink-0 ${barColor}`} />
+        <span className={`text-xs font-medium ${textClass}`}>{displayLabel}</span>
+      </div>
+    )
+  }
+
+  const fillWidth = Math.min(Math.max(studentMerit, 0), 100)
+  const cutoffPos = Math.min(Math.max(meritCutoff, 0), 100)
+
   return (
-    <div className="flex items-center gap-1.5">
-      <span
-        className="w-2 h-2 rounded-full inline-block flex-shrink-0"
-        style={{ backgroundColor: color || '#95a5a6' }}
-      />
-      <span className={`text-xs font-medium ${textClass}`}>
-        {displayLabel}
-      </span>
+    <div className="mt-1">
+      {/* Bar track */}
+      <div className="relative h-3 bg-gray-100 rounded-full mb-1">
+        {/* Student score fill */}
+        <div
+          className={`h-full rounded-full relative ${barColor}`}
+          style={{ width: `${fillWidth}%` }}
+        >
+          {fillWidth >= 12 && (
+            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-white leading-none">
+              {studentMerit}
+            </span>
+          )}
+        </div>
+        {/* Cutoff dashed zone */}
+        <div
+          className="absolute top-0 h-full border-l-2 border-dashed border-gray-400"
+          style={{ left: `${cutoffPos}%` }}
+        />
+      </div>
+      {/* Label row */}
+      <div className="flex items-center justify-between">
+        <span className={`text-[11px] font-semibold ${textClass}`}>{displayLabel}</span>
+        <span className="text-[10px] text-gray-400">
+          You: {studentMerit} &nbsp;|&nbsp; Need: {meritCutoff}
+        </span>
+      </div>
     </div>
   )
 }
