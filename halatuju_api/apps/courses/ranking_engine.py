@@ -392,7 +392,7 @@ def sort_courses(course_list, inst_subcategories):
     """
     def sort_key(item):
         score = int(item.get('fit_score', 0))
-        merit_chance = MERIT_LABEL_PRIORITY.get(item.get('merit_label') or '', 0)
+        merit_chance = MERIT_LABEL_PRIORITY.get(item.get('merit_label') or '', 2)  # no data = Fair
         inst_id = str(item.get('institution_id', '')).strip()
         subcat = inst_subcategories.get(inst_id, '')
         inst_priority = INST_PRIORITY_MAP.get(subcat, 0)
