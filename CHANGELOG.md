@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.25.0] - 2026-02-26 — Eligible Toggle Auth Gate + Merit Progress Bar
+
+### Added
+- **Eligible toggle prompts login** — clicking the "Eligible Only" toggle on `/search` now opens the auth gate modal if the user is not logged in, encouraging account creation. Previously the toggle was permanently disabled because `halatuju_eligible_courses` was never written to localStorage.
+- **`eligible` auth gate reason** — new `AuthGateReason` type, i18n strings (EN, BM, TA), resume action so toggle auto-activates after login
+- **Merit progress bar indicator (Variation C)** — replaced simple traffic-light dot with a visual progress bar showing the student's score inside the bar, a dashed cutoff line, and "High/Fair/Low Chance" label with numeric scores (e.g. "You: 72 | Need: 65")
+- **`eligibleMap` state** on search page — stores full `EligibleCourse` data (not just IDs), enabling merit scores to flow into CourseCard on the search page
+
+### Changed
+- **Eligible toggle** — changed from disabled `<label>` to always-clickable `<button>` element
+- **MeritIndicator component** — now accepts `studentMerit` and `meritCutoff` props; falls back to simple dot+label when numeric scores are unavailable
+
+### Technical Notes
+- Frontend only — no backend changes, no migrations
+- Build passes cleanly
+- Deployed as frontend rev 40 (eligible toggle) and rev 41 (merit progress bar)
+- Backend rev remains 32
+
 ## [1.23.4] - 2026-02-26 — Stitch Design Polish
 
 ### Changed
