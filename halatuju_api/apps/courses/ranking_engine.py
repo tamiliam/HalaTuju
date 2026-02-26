@@ -50,14 +50,17 @@ INST_PRIORITY_MAP = {
 }
 
 
-def get_credential_priority(course_name):
+def get_credential_priority(course_name, source_type=''):
     """
     Returns credential priority for tie-breaking (higher is better).
-    Asasi/Foundation > Diploma > Sijil Lanjutan > Sijil.
+    Asasi/Foundation > PISMP (teaching degree) > Diploma > Sijil Lanjutan > Sijil.
     """
+    # PISMP leads to Ijazah Sarjana Muda Pendidikan (full degree) — ranks above Diploma
+    if source_type == 'pismp':
+        return 4
     name_lower = course_name.lower().strip()
     if name_lower.startswith("asasi") or "foundation" in name_lower:
-        return 4
+        return 5
     elif name_lower.startswith("diploma"):
         return 3
     elif "sijil lanjutan" in name_lower:
@@ -395,7 +398,8 @@ def sort_courses(course_list, inst_subcategories):
         inst_priority = INST_PRIORITY_MAP.get(subcat, 0)
 
         c_name = str(item.get('course_name') or '')
-        cred_priority = get_credential_priority(c_name)
+        s_type = str(item.get('source_type') or '')
+        cred_priority = get_credential_priority(c_name, s_type)
 
         merit = float(item.get('merit_cutoff', 0) or 0)
 

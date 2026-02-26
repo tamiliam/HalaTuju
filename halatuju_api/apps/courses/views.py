@@ -147,7 +147,7 @@ class CourseSearchView(APIView):
 
         # Sort: credential > source_type > merit > name
         results.sort(key=lambda r: (
-            -get_credential_priority(r['course_name']),
+            -get_credential_priority(r['course_name'], r.get('source_type', '')),
             -SOURCE_TYPE_ORDER.get(r['source_type'], 0),
             -(r['merit_cutoff'] or 0),
             r['course_name'],
@@ -300,7 +300,7 @@ class EligibilityCheckView(APIView):
         MERIT_LABEL_PRIORITY = {'High': 3, 'Fair': 2, 'Low': 1}
         eligible_courses.sort(key=lambda c: (
             -MERIT_LABEL_PRIORITY.get(c['merit_label'] or '', 0),
-            -get_credential_priority(c['course_name']),
+            -get_credential_priority(c['course_name'], c.get('source_type', '')),
             -SOURCE_TYPE_PRIORITY.get(c['source_type'], 0),
             -(c['merit_cutoff'] or 0),
             c['course_name'],

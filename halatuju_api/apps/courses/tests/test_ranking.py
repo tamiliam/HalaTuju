@@ -367,10 +367,19 @@ class TestGetCredentialPriority(TestCase):
     """Tests for credential priority ordering."""
 
     def test_asasi_highest(self):
-        self.assertEqual(get_credential_priority("Asasi Sains"), 4)
+        self.assertEqual(get_credential_priority("Asasi Sains"), 5)
 
     def test_foundation_highest(self):
-        self.assertEqual(get_credential_priority("Something Foundation"), 4)
+        self.assertEqual(get_credential_priority("Something Foundation"), 5)
+
+    def test_pismp_above_diploma(self):
+        self.assertEqual(get_credential_priority("Matematik Pendidikan Rendah", source_type='pismp'), 4)
+
+    def test_pismp_below_asasi(self):
+        self.assertGreater(
+            get_credential_priority("Asasi Sains"),
+            get_credential_priority("Matematik Pendidikan Rendah", source_type='pismp'),
+        )
 
     def test_diploma(self):
         self.assertEqual(get_credential_priority("Diploma Kejuruteraan"), 3)
