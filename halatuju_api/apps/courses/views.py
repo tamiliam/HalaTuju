@@ -295,9 +295,11 @@ class EligibilityCheckView(APIView):
                 # Update stats
                 stats[source_type] = stats.get(source_type, 0) + 1
 
-        # Default sort: credential > institution type > merit cutoff > name
+        # Default sort: merit chance first (safe bets on top), then credential > type > cutoff
         SOURCE_TYPE_PRIORITY = {'ua': 4, 'pismp': 3, 'poly': 2, 'kkom': 1, 'tvet': 0}
+        MERIT_LABEL_PRIORITY = {'High': 3, 'Fair': 2, 'Low': 1}
         eligible_courses.sort(key=lambda c: (
+            -MERIT_LABEL_PRIORITY.get(c['merit_label'] or '', 0),
             -get_credential_priority(c['course_name']),
             -SOURCE_TYPE_PRIORITY.get(c['source_type'], 0),
             -(c['merit_cutoff'] or 0),

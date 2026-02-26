@@ -24,6 +24,9 @@ MERIT_PENALTY = {
     "Low": -15,    # Significantly below cutoff
 }
 
+# Merit label sort priority (safe bets first, mirroring Streamlit quality_key)
+MERIT_LABEL_PRIORITY = {'High': 3, 'Fair': 2, 'Low': 1}
+
 # Institution tie-breaker priorities (higher is better)
 INST_PRIORITY_MAP = {
     # Universities (IPTA)
@@ -386,6 +389,7 @@ def sort_courses(course_list, inst_subcategories):
     """
     def sort_key(item):
         score = int(item.get('fit_score', 0))
+        merit_chance = MERIT_LABEL_PRIORITY.get(item.get('merit_label') or '', 0)
         inst_id = str(item.get('institution_id', '')).strip()
         subcat = inst_subcategories.get(inst_id, '')
         inst_priority = INST_PRIORITY_MAP.get(subcat, 0)
@@ -395,7 +399,7 @@ def sort_courses(course_list, inst_subcategories):
 
         merit = float(item.get('merit_cutoff', 0) or 0)
 
-        return (-score, -cred_priority, -inst_priority, -merit, c_name)
+        return (-score, -merit_chance, -cred_priority, -inst_priority, -merit, c_name)
 
     return sorted(course_list, key=sort_key)
 
