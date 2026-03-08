@@ -213,14 +213,16 @@ class EligibilityCheckView(APIView):
 
         data = serializer.validated_data
 
-        # Compute student merit score once (for traffic light indicators)
-        grades_for_merit = dict(data.get('grades', {}))
-        if 'hist' in grades_for_merit:
-            grades_for_merit['history'] = grades_for_merit.pop('hist')
-        sec1, sec2, sec3 = prepare_merit_inputs(grades_for_merit)
-        coq_score = data.get('coq_score', 5.0)
-        merit_result = calculate_merit_score(sec1, sec2, sec3, coq_score=coq_score)
-        student_merit = merit_result['final_merit']
+        # Use pre-computed merit from frontend if provided, otherwise recalculate
+        student_merit = data.get('student_merit')
+        if student_merit is None:
+            grades_for_merit = dict(data.get('grades', {}))
+            if 'hist' in grades_for_merit:
+                grades_for_merit['history'] = grades_for_merit.pop('hist')
+            sec1, sec2, sec3 = prepare_merit_inputs(grades_for_merit)
+            coq_score = data.get('coq_score', 5.0)
+            merit_result = calculate_merit_score(sec1, sec2, sec3, coq_score=coq_score)
+            student_merit = merit_result['final_merit']
 
         # Build StudentProfile for engine
         student = EngineStudentProfile(

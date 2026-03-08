@@ -77,6 +77,9 @@ class EligibilityRequestSerializer(serializers.Serializer):
     coq_score = serializers.FloatField(default=5.0, required=False,
         help_text="Co-curricular score (0-10). Defaults to 5.0 if not provided."
     )
+    student_merit = serializers.FloatField(required=False, default=None,
+        help_text="Pre-computed merit score from frontend (0-100). If provided, backend skips recalculation."
+    )
 
     def validate_coq_score(self, value):
         """Clamp CoQ to 0-10 range."""

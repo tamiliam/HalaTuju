@@ -41,6 +41,7 @@ export interface StudentProfile {
   colorblind?: boolean
   disability?: boolean
   coq_score?: number
+  student_merit?: number
   student_signals?: Record<string, number>
   preferred_state?: string
   name?: string

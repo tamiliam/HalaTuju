@@ -46,6 +46,7 @@ export default function DashboardPage() {
     if (grades && profileData) {
       const parsedGrades = JSON.parse(grades)
       const parsedProfile = JSON.parse(profileData)
+      const savedMerit = localStorage.getItem('halatuju_merit')
 
       setProfile({
         grades: parsedGrades,
@@ -54,6 +55,7 @@ export default function DashboardPage() {
         colorblind: parsedProfile.colorblind || false,
         disability: parsedProfile.disability || false,
         coq_score: parsedProfile.coqScore ?? 5.0,
+        ...(savedMerit && { student_merit: parseFloat(savedMerit) }),
       })
     }
 

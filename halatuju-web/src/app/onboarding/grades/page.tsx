@@ -303,6 +303,10 @@ export default function GradesInputPage() {
         'halatuju_elektif',
         JSON.stringify(elektifSlots.filter(Boolean))
       )
+      // Save computed merit so backend uses the same value
+      if (meritResult) {
+        localStorage.setItem('halatuju_merit', String(meritResult.finalMerit))
+      }
       router.push('/onboarding/profile')
     }
   }
