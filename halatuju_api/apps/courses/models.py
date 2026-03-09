@@ -413,6 +413,17 @@ class SavedCourse(models.Model):
     )
     saved_at = models.DateTimeField(auto_now_add=True)
     notes = models.TextField(blank=True)
+    interest_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('interested', 'Interested'),
+            ('planning', 'Planning to apply'),
+            ('applied', 'Applied'),
+            ('got_offer', 'Got offer'),
+        ],
+        default='interested',
+        help_text="Student's self-reported interest level"
+    )
 
     class Meta:
         db_table = 'saved_courses'

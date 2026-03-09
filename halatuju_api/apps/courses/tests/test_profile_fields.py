@@ -1,6 +1,6 @@
 """Tests for expanded StudentProfile fields."""
 import pytest
-from apps.courses.models import StudentProfile
+from apps.courses.models import StudentProfile, SavedCourse, Course
 
 
 @pytest.mark.django_db
@@ -54,3 +54,39 @@ class TestProfileNewFields:
         assert p.phone == ''
         assert p.family_income == ''
         assert p.siblings is None
+
+
+@pytest.mark.django_db
+class TestSavedCourseInterestStatus:
+
+    def _make_course(self):
+        return Course.objects.create(
+            course_id='TEST-001',
+            course='Test Course',
+            level='Diploma',
+        )
+
+    def test_default_status_is_interested(self):
+        profile = StudentProfile.objects.create(supabase_user_id='test-status')
+        course = self._make_course()
+        sc = SavedCourse.objects.create(student=profile, course=course)
+        sc.refresh_from_db()
+        assert sc.interest_status == 'interested'
+
+    def test_can_set_planning_status(self):
+        profile = StudentProfile.objects.create(supabase_user_id='test-planning')
+        course = Course.objects.create(course_id='TEST-002', course='Test 2', level='Diploma')
+        sc = SavedCourse.objects.create(
+            student=profile, course=course, interest_status='planning'
+        )
+        sc.refresh_from_db()
+        assert sc.interest_status == 'planning'
+
+    def test_can_set_got_offer_status(self):
+        profile = StudentProfile.objects.create(supabase_user_id='test-offer')
+        course = Course.objects.create(course_id='TEST-003', course='Test 3', level='Diploma')
+        sc = SavedCourse.objects.create(
+            student=profile, course=course, interest_status='got_offer'
+        )
+        sc.refresh_from_db()
+        assert sc.interest_status == 'got_offer'
