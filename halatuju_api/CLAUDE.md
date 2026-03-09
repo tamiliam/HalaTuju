@@ -189,18 +189,15 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 21 — Remaining i18n + Report UX + Backend Merit Fix**
+**Sprint 21 — Remaining i18n + Report UX**
 - Localise remaining pages: quiz, course detail, report
 - Add loading/progress screen for report generation (10-15 sec delay)
-- Update `engine.py` merit formula to match corrected UPU formula in `lib/merit.ts`
 - Fix 9 pre-existing JWT auth test failures (6 auth + 3 saved_courses — malformed test tokens, not production issue)
-- Current tests: 173 collected, 164 passing (9 failing — JWT) | Golden master: 8280
-- Backend rev 32, frontend rev 41
-- v1.25.0 (26 Feb): Eligible toggle now prompts login (auth gate), merit indicator replaced with progress bar (Variation C)
-- `MeritIndicator` in `CourseCard.tsx` accepts `studentMerit` + `meritCutoff` props, shows progress bar with score inside, dashed cutoff line, and chance label
-- Search page stores `eligibleMap` (Map<string, EligibleCourse>) to pass merit data into CourseCard
-- `FilterPill` component at `src/components/FilterPill.tsx` — reusable pill dropdown (outside-click dismiss, active state styling)
-- `lib/merit.ts` uses correct UPU formula: `(core/72×40 + stream/36×30 + elective/36×10) × 9/8`. engine.py MUST be updated to match
+- Current tests: 173 collected, 166 passing (9 failing — JWT) | Golden master: 8280
+- Backend rev 33, frontend rev 42
+- v1.25.1 (9 Mar): Merit score fix — frontend sends pre-computed merit to backend, no more mismatch
+- Merit mismatch is RESOLVED: frontend sends `student_merit` in eligibility payload, backend uses it directly
+- `engine.py` still has the old merit formula but it's only used as fallback (when `student_merit` not provided)
 - `/search` page uses `<Suspense>` boundary — any page using `useSearchParams()` needs the same pattern
 
 ## Streamlit App (Legacy — migrating to Django API)

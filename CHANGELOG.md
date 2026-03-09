@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.25.1] - 2026-03-09 — Merit Score Fix
+
+### Fixed
+- **Merit score mismatch** — grades page showed 68.88 but course cards showed 56.38 for the same student. The backend was recalculating merit using a different subject grouping (5/3/1) instead of the correct UPU formula (4/2/2). Now the frontend sends its pre-computed merit score to the backend, eliminating the duplicate calculation entirely.
+
+### Changed
+- **Eligibility endpoint** — accepts optional `student_merit` field. When provided, skips backend recalculation. Falls back to old calculation for backwards compatibility.
+
+### Technical Notes
+- Frontend: grades page saves `finalMerit` to localStorage; dashboard includes it in API payload
+- Backend: serializer accepts `student_merit`; view uses it directly when present
+- 166 tests pass (9 pre-existing JWT failures unchanged). Golden master: 8280
+- Deployed as backend rev 33, frontend rev 42
+
 ## [1.25.0] - 2026-02-26 — Eligible Toggle Auth Gate + Merit Progress Bar
 
 ### Added
