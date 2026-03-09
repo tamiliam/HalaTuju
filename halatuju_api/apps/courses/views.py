@@ -570,10 +570,15 @@ class SavedCoursesView(APIView):
     permission_classes = [SupabaseIsAuthenticated]
 
     def get(self, request):
-        saved = SavedCourse.objects.filter(student_id=request.user_id)
-        courses = [s.course for s in saved.select_related('course')]
-        serializer = CourseSerializer(courses, many=True)
-        return Response({'saved_courses': serializer.data})
+        saved = SavedCourse.objects.filter(
+            student_id=request.user_id
+        ).select_related('course')
+        data = []
+        for sc in saved:
+            course_data = CourseSerializer(sc.course).data
+            course_data['interest_status'] = sc.interest_status
+            data.append(course_data)
+        return Response({'saved_courses': data})
 
     def post(self, request):
         course_id = request.data.get('course_id')
@@ -592,7 +597,7 @@ class SavedCoursesView(APIView):
 
 
 class SavedCourseDetailView(APIView):
-    """DELETE /api/v1/saved-courses/<course_id>/"""
+    """DELETE/PATCH /api/v1/saved-courses/<course_id>/"""
     permission_classes = [SupabaseIsAuthenticated]
 
     def delete(self, request, course_id):
@@ -604,6 +609,23 @@ class SavedCourseDetailView(APIView):
         if deleted:
             return Response({'message': 'Course removed'}, status=200)
         return Response({'error': 'Not found'}, status=404)
+
+    def patch(self, request, course_id):
+        try:
+            sc = SavedCourse.objects.get(
+                student_id=request.user_id,
+                course_id=course_id,
+            )
+        except SavedCourse.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+
+        status_value = request.data.get('interest_status')
+        valid = ['interested', 'planning', 'applied', 'got_offer']
+        if status_value and status_value in valid:
+            sc.interest_status = status_value
+            sc.save(update_fields=['interest_status'])
+            return Response({'message': 'Status updated'})
+        return Response({'error': 'Invalid status'}, status=400)
 
 
 class ProfileView(APIView):
@@ -629,6 +651,11 @@ class ProfileView(APIView):
             'preferred_state': profile.preferred_state,
             'name': profile.name,
             'school': profile.school,
+            'nric': profile.nric,
+            'address': profile.address,
+            'phone': profile.phone,
+            'family_income': profile.family_income,
+            'siblings': profile.siblings,
         })
 
     def put(self, request):
@@ -639,7 +666,8 @@ class ProfileView(APIView):
         # Update allowed fields
         for field in ['grades', 'gender', 'nationality', 'colorblind',
                       'disability', 'student_signals', 'preferred_state',
-                      'name', 'school']:
+                      'name', 'school', 'nric', 'address', 'phone',
+                      'family_income', 'siblings']:
             if field in request.data:
                 setattr(profile, field, request.data[field])
 
@@ -665,6 +693,7 @@ class ProfileSyncView(APIView):
         sync_fields = [
             'grades', 'gender', 'nationality', 'colorblind', 'disability',
             'student_signals', 'preferred_state', 'name', 'school',
+            'nric', 'address', 'phone', 'family_income', 'siblings',
         ]
 
         for field in sync_fields:
