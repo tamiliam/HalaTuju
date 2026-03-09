@@ -46,6 +46,11 @@ export interface StudentProfile {
   preferred_state?: string
   name?: string
   school?: string
+  nric?: string
+  address?: string
+  phone?: string
+  family_income?: string
+  siblings?: number | null
 }
 
 export interface EligibleCourse {
@@ -197,7 +202,11 @@ export async function getInstitutions(options?: ApiOptions): Promise<{ instituti
   return apiRequest('/api/v1/institutions/', options)
 }
 
-export async function getSavedCourses(options?: ApiOptions): Promise<{ saved_courses: Course[] }> {
+export interface SavedCourseWithStatus extends Course {
+  interest_status: string
+}
+
+export async function getSavedCourses(options?: ApiOptions): Promise<{ saved_courses: SavedCourseWithStatus[] }> {
   return apiRequest('/api/v1/saved-courses/', options)
 }
 
@@ -218,6 +227,18 @@ export async function unsaveCourse(
 ): Promise<{ message: string }> {
   return apiRequest(`/api/v1/saved-courses/${courseId}/`, {
     method: 'DELETE',
+    ...options,
+  })
+}
+
+export async function updateSavedCourseStatus(
+  courseId: string,
+  interestStatus: string,
+  options?: ApiOptions
+): Promise<{ message: string }> {
+  return apiRequest(`/api/v1/saved-courses/${courseId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ interest_status: interestStatus }),
     ...options,
   })
 }
