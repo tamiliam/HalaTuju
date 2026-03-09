@@ -262,12 +262,16 @@ export async function updateProfile(
 export interface QuizQuestion {
   id: string
   prompt: string
-  options: { text: string; signals: Record<string, number> }[]
+  options: { text: string; icon: string; signals: Record<string, number>; not_sure?: boolean }[]
+  select_mode?: 'multi' | 'single'
+  max_select?: number
+  condition?: { requires: string; option_signal: string }
 }
 
 export interface QuizAnswer {
   question_id: string
-  option_index: number
+  option_index?: number
+  option_indices?: number[]
 }
 
 export interface QuizResult {

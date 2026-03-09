@@ -25,7 +25,7 @@ export const LOCALE_LABELS: Record<Locale, string> = {
 interface I18nContextValue {
   locale: Locale
   setLocale: (locale: Locale) => void
-  t: (key: string) => string
+  t: (key: string, params?: Record<string, string>) => string
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null)
@@ -59,7 +59,15 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const t = useCallback(
-    (key: string) => getNestedValue(messages[locale], key),
+    (key: string, params?: Record<string, string>) => {
+      let value = getNestedValue(messages[locale], key)
+      if (params) {
+        for (const [k, v] of Object.entries(params)) {
+          value = value.replace(new RegExp(`\\{${k}\\}`, 'g'), v)
+        }
+      }
+      return value
+    },
     [locale]
   )
 

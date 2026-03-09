@@ -295,6 +295,20 @@
       "got_offer": "Got offer"
     }
   },
+  "quiz": {
+    "pickUpTo": "Pick up to {count}",
+    "notSureYet": "Not Sure Yet",
+    "next": "Next",
+    "previous": "Previous",
+    "seeResults": "See My Results",
+    "submitting": "Submitting...",
+    "skipQuiz": "Skip Quiz",
+    "questionOf": "Question {current} of {total}",
+    "answered": "{count} answered",
+    "becauseYouPicked": "Because you picked Big Machines...",
+    "retry": "Retry",
+    "loadingQuiz": "Loading quiz..."
+  },
   "outcomes": {
     "title": "My Applications",
     "empty": "You haven't tracked any applications yet.",

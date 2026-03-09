@@ -295,6 +295,20 @@
       "got_offer": "Dapat tawaran"
     }
   },
+  "quiz": {
+    "pickUpTo": "Pilih sehingga {count}",
+    "notSureYet": "Belum Pasti",
+    "next": "Seterusnya",
+    "previous": "Sebelumnya",
+    "seeResults": "Lihat Keputusan",
+    "submitting": "Menghantar...",
+    "skipQuiz": "Langkau Kuiz",
+    "questionOf": "Soalan {current} daripada {total}",
+    "answered": "{count} dijawab",
+    "becauseYouPicked": "Kerana anda memilih Mesin Besar...",
+    "retry": "Cuba Lagi",
+    "loadingQuiz": "Memuatkan kuiz..."
+  },
   "outcomes": {
     "title": "Permohonan Saya",
     "empty": "Anda belum menjejaki sebarang permohonan.",
