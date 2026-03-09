@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
 import { getQuizQuestions, submitQuiz, type QuizQuestion, type QuizAnswer } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
@@ -121,13 +120,20 @@ export default function QuizPage() {
         // Deselect
         const newSel = filtered.filter(i => i !== optIdx)
         updated[origIdx] = newSel.length > 0 ? newSel : null
+        setAnswers(updated)
       } else {
         // Select (if under max)
-        if (filtered.length < (question.max_select || 2)) {
-          updated[origIdx] = [...filtered, optIdx]
+        const maxSel = question.max_select || 2
+        if (filtered.length < maxSel) {
+          const newSel = [...filtered, optIdx]
+          updated[origIdx] = newSel
+          setAnswers(updated)
+          // Auto-advance after reaching max selections
+          if (newSel.length >= maxSel) {
+            setTimeout(() => setCurrentStep(prev => Math.min(prev + 1, visibleQuestions.length - 1)), 400)
+          }
         }
       }
-      setAnswers(updated)
     } else {
       // Single select
       updated[origIdx] = optIdx
@@ -234,44 +240,41 @@ export default function QuizPage() {
   const notSureOption = question ? question.options.find(o => o.not_sure) : undefined
   const notSureIndex = notSureOption && question ? question.options.indexOf(notSureOption) : -1
 
-  // Check if multi-select has at least 1 selected
-  const hasMultiSelection = isMultiSelect && currentAnswer && (Array.isArray(currentAnswer) ? currentAnswer.length > 0 : true)
-
   return (
-    <main className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
-      {/* Header */}
-      <header className="bg-white border-b">
+    <main className="min-h-screen bg-[#f5f7f8]">
+      {/* Gradient header — matches Stitch design */}
+      <header className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <Image src="/logo-icon.png" alt="HalaTuju" width={120} height={40} />
+          <Link href="/dashboard" className="text-white/90 hover:text-white text-sm font-medium">
+            ← HalaTuju
           </Link>
-          <Link href="/dashboard" className="text-gray-500 hover:text-gray-700 text-sm">
+          <Link href="/dashboard" className="text-white/70 hover:text-white text-sm">
             {t('quiz.skipQuiz')}
           </Link>
         </div>
-      </header>
 
-      <div className="container mx-auto px-6 py-8 max-w-2xl">
-        {/* Progress bar */}
-        <div className="mb-8">
+        {/* Progress bar inside header */}
+        <div className="px-6 pb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-600">
+            <span className="text-sm font-medium text-white/90">
               {t('quiz.questionOf', { current: String(currentStep + 1), total: String(visibleQuestions.length) })}
             </span>
-            <span className="text-sm text-gray-400">
+            <span className="text-sm text-white/60">
               {t('quiz.answered', { count: String(answeredCount) })}
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-white/20 rounded-full h-1.5">
             <div
-              className="bg-primary-500 h-2 rounded-full transition-all duration-300"
+              className="bg-white h-1.5 rounded-full transition-all duration-300"
               style={{ width: `${((currentStep + 1) / visibleQuestions.length) * 100}%` }}
             />
           </div>
         </div>
+      </header>
 
+      <div className="container mx-auto px-6 py-6 max-w-md">
         {/* Step dots */}
-        <div className="flex justify-center gap-2 mb-8">
+        <div className="flex justify-center gap-2 mb-6">
           {visibleQuestions.map((q, i) => {
             const qOrigIdx = questions.indexOf(q)
             const a = answers[qOrigIdx]
@@ -280,11 +283,11 @@ export default function QuizPage() {
               <button
                 key={q.id}
                 onClick={() => setCurrentStep(i)}
-                className={`w-3 h-3 rounded-full transition-all ${
+                className={`w-2.5 h-2.5 rounded-full transition-all ${
                   i === currentStep
-                    ? 'bg-primary-500 scale-125'
+                    ? 'bg-blue-500 scale-125'
                     : hasAnswer
-                      ? 'bg-primary-300'
+                      ? 'bg-blue-300'
                       : 'bg-gray-300'
                 }`}
                 aria-label={`Go to question ${i + 1}`}
@@ -295,20 +298,28 @@ export default function QuizPage() {
 
         {/* Question */}
         {question && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2 text-center">
+          <div className="mb-6">
+            {/* Conditional Q2.5 context label */}
+            {question.condition && (
+              <p className="text-xs text-gray-400 text-center mb-1">
+                {t('quiz.becauseYouPicked')}
+              </p>
+            )}
+
+            <h2 className="text-2xl font-bold text-gray-900 mb-1 text-center">
               {question.prompt}
             </h2>
 
             {/* Multi-select subtitle */}
             {isMultiSelect && (
-              <p className="text-sm text-gray-500 mb-4 text-center">
+              <p className="text-sm text-blue-500 mb-4 text-center font-medium">
                 {t('quiz.pickUpTo', { count: String(question.max_select || 2) })}
               </p>
             )}
+            {!isMultiSelect && <div className="mb-4" />}
 
-            {/* 2x2 icon card grid */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            {/* 2×2 icon card grid — large cards with shadow, matching Stitch */}
+            <div className="grid grid-cols-2 gap-4 mb-5">
               {regularOptions.map((option) => {
                 const actualIdx = question.options.indexOf(option)
                 const selected = isOptionSelected(actualIdx)
@@ -319,17 +330,17 @@ export default function QuizPage() {
                     onClick={() => handleCardClick(actualIdx)}
                     disabled={disabled}
                     className={`
-                      aspect-square rounded-2xl border-2 p-4
+                      aspect-square rounded-2xl border-2 p-5
                       flex flex-col items-center justify-center gap-3
-                      transition-all duration-200
+                      transition-all duration-200 shadow-sm
                       ${selected
-                        ? 'border-primary-500 bg-primary-50 shadow-md scale-[1.03]'
-                        : 'border-gray-200 bg-white hover:border-primary-200 hover:shadow-sm'}
-                      ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
+                        ? 'border-blue-500 bg-blue-50 shadow-lg scale-[1.04]'
+                        : 'border-gray-100 bg-white hover:border-blue-200 hover:shadow-md'}
+                      ${disabled ? 'opacity-35 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
                     `}
                   >
-                    <span className="text-4xl">{ICON_EMOJI[option.icon] || '❓'}</span>
-                    <span className={`text-sm font-semibold text-center ${selected ? 'text-primary-700' : 'text-gray-700'}`}>
+                    <span className="text-5xl leading-none">{ICON_EMOJI[option.icon] || '❓'}</span>
+                    <span className={`text-sm font-bold text-center leading-tight ${selected ? 'text-blue-700' : 'text-gray-700'}`}>
                       {option.text}
                     </span>
                   </button>
@@ -337,7 +348,7 @@ export default function QuizPage() {
               })}
             </div>
 
-            {/* "Not Sure Yet" pill button */}
+            {/* "Not Sure Yet" pill button — subtle, below the grid */}
             {notSureOption && (
               <div className="flex justify-center">
                 <button
@@ -346,11 +357,11 @@ export default function QuizPage() {
                     flex items-center gap-2 px-6 py-2.5 rounded-full border-2
                     transition-all duration-200
                     ${isOptionSelected(notSureIndex)
-                      ? 'border-primary-500 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 bg-white text-gray-500 hover:border-primary-200'}
+                      ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
+                      : 'border-gray-200 bg-white text-gray-400 hover:border-blue-200 hover:text-gray-500'}
                   `}
                 >
-                  <span className="text-lg">✨</span>
+                  <span className="text-base">✨</span>
                   <span className="text-sm font-medium">{notSureOption.text}</span>
                 </button>
               </div>
@@ -358,45 +369,27 @@ export default function QuizPage() {
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between">
+        {/* Navigation — Previous + Submit only (no Next button, auto-advance handles it) */}
+        <div className="flex items-center justify-between mt-4">
           <button
             onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
             disabled={currentStep === 0}
-            className="text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed text-sm"
           >
             {t('quiz.previous')}
           </button>
 
-          {currentStep < visibleQuestions.length - 1 ? (
-            <>
-              {/* For multi-select: show Next button when at least 1 option selected */}
-              {isMultiSelect ? (
-                <button
-                  onClick={() => setCurrentStep(prev => Math.min(prev + 1, visibleQuestions.length - 1))}
-                  disabled={!hasMultiSelection}
-                  className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {t('quiz.next')}
-                </button>
-              ) : (
-                /* For single-select: show Next as fallback (auto-advance handles most cases) */
-                <button
-                  onClick={() => setCurrentStep(currentStep + 1)}
-                  className="btn-primary"
-                >
-                  {t('quiz.next')}
-                </button>
-              )}
-            </>
-          ) : (
+          {/* Submit button only on the last question */}
+          {currentStep === visibleQuestions.length - 1 ? (
             <button
               onClick={handleSubmit}
               disabled={!allAnswered || submitting}
-              className="btn-primary"
+              className="btn-primary disabled:opacity-40"
             >
               {submitting ? t('quiz.submitting') : t('quiz.seeResults')}
             </button>
+          ) : (
+            <div /> /* Spacer for flex alignment */
           )}
         </div>
       </div>
