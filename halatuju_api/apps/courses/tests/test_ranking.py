@@ -22,6 +22,7 @@ from apps.courses.ranking_engine import (
     GLOBAL_CAP,
     INSTITUTION_CAP,
     MERIT_PENALTY,
+    WORK_PREFERENCE_CAP,
     calculate_fit_score,
     get_credential_priority,
     get_ranked_results,
@@ -34,6 +35,7 @@ from apps.courses.ranking_engine import (
 def make_signals(**kwargs):
     """Build a student_signals dict with specified signal values."""
     base = {
+        'field_interest': {},
         'work_preference_signals': {},
         'learning_tolerance_signals': {},
         'environment_signals': {},
@@ -93,7 +95,7 @@ class TestCalculateFitScore(TestCase):
         self.assertEqual(reasons, [])
 
     def test_hands_on_match_boosts_score(self):
-        """Hands-on signal + hands_on tag → +5 work preference."""
+        """Hands-on signal + hands_on tag → +5 raw, capped at WORK_PREFERENCE_CAP (4)."""
         signals = make_signals(**{
             'work_preference_signals.hands_on': 2,
         })
@@ -103,7 +105,7 @@ class TestCalculateFitScore(TestCase):
             {'C001': {'work_modality': 'hands_on'}},
             {},
         )
-        self.assertEqual(score, BASE_SCORE + 5)
+        self.assertEqual(score, BASE_SCORE + WORK_PREFERENCE_CAP)
         self.assertIn("hands-on work preference", reasons[0])
 
     def test_environment_workshop_match(self):
@@ -134,9 +136,9 @@ class TestCalculateFitScore(TestCase):
         self.assertTrue(any("physically demanding" in r for r in reasons))
 
     def test_category_cap_enforced(self):
-        """Stacking many signals in one category should be capped at CATEGORY_CAP."""
+        """Stacking many signals in one category should be capped at its cap."""
         # Stack work_preference: hands_on(+5) + people_helping(+4) + creative project_based(+4)
-        # = 13, but should be capped at CATEGORY_CAP (6)
+        # = 13, but should be capped at WORK_PREFERENCE_CAP (4)
         signals = make_signals(**{
             'work_preference_signals.hands_on': 2,
             'work_preference_signals.people_helping': 2,
@@ -154,8 +156,8 @@ class TestCalculateFitScore(TestCase):
             {'C001': tags},
             {},
         )
-        # Category cap = 6, so max boost from work_preference is 6
-        self.assertEqual(score, BASE_SCORE + CATEGORY_CAP)
+        # Work preference cap = 4, so max boost from work_preference is 4
+        self.assertEqual(score, BASE_SCORE + WORK_PREFERENCE_CAP)
 
     def test_negative_category_cap(self):
         """Negative energy scores should be capped at -CATEGORY_CAP."""

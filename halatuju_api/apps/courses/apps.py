@@ -85,6 +85,15 @@ class CoursesConfig(AppConfig):
             }
             logger.info(f"Loaded {len(self.course_tags_df)} course tags")
 
+        # Enrich course_tags_map with frontend_label for field interest matching
+        from .models import Course
+        for course in Course.objects.only('course_id', 'frontend_label'):
+            cid = course.course_id
+            if cid in self.course_tags_map:
+                self.course_tags_map[cid]['frontend_label'] = course.frontend_label
+            else:
+                self.course_tags_map[cid] = {'frontend_label': course.frontend_label}
+
         # Load institution subcategories for ranking tie-breaking
         inst_qs = Institution.objects.all().values('institution_id', 'subcategory')
         self.inst_subcategories = {

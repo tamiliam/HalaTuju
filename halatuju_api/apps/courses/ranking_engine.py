@@ -17,6 +17,30 @@ GLOBAL_CAP = 20
 INSTITUTION_CAP = 5
 CATEGORY_CAP = 6  # Normalised cap per category
 
+# Category-specific caps (override CATEGORY_CAP for these)
+FIELD_INTEREST_CAP = 8
+WORK_PREFERENCE_CAP = 4
+
+# Field interest → course frontend_label mapping
+FIELD_LABEL_MAP = {
+    'field_mechanical': ['Mekanikal & Automotif'],
+    'field_digital': ['Komputer, IT & Multimedia'],
+    'field_business': ['Perniagaan & Perdagangan'],
+    'field_health': ['Pertanian & Bio-Industri'],
+    'field_creative': ['Seni Reka & Kreatif'],
+    'field_hospitality': ['Hospitaliti, Kulinari & Pelancongan'],
+    'field_agriculture': ['Pertanian & Bio-Industri'],
+    'field_heavy_industry': [
+        'Aero, Marin, Minyak & Gas',
+        'Elektrik & Elektronik',
+        'Sivil, Seni Bina & Pembinaan',
+    ],
+    'field_electrical': ['Elektrik & Elektronik'],
+    'field_civil': ['Sivil, Seni Bina & Pembinaan'],
+    'field_aero_marine': ['Aero, Marin, Minyak & Gas'],
+    'field_oil_gas': ['Aero, Marin, Minyak & Gas'],
+}
+
 # Merit-based ranking penalty (v1.4)
 MERIT_PENALTY = {
     "High": 0,     # Meets/exceeds cutoff — no penalty
@@ -101,6 +125,7 @@ def calculate_fit_score(student_profile, course_id, institution_id,
 
     # Initialise categorical buckets
     cat_scores = {
+        'field_interest': 0,
         'work_preference_signals': 0,
         'learning_tolerance_signals': 0,
         'environment_signals': 0,
@@ -110,6 +135,26 @@ def calculate_fit_score(student_profile, course_id, institution_id,
 
     def get_signal(category, key):
         return signals.get(category, {}).get(key, 0)
+
+    # --- Field Interest Matching ---
+    field_signals = signals.get('field_interest', {})
+    course_label = c_tags.get('frontend_label', '')
+
+    if field_signals and course_label:
+        # Find matching field signals, sorted by score (highest first)
+        matches = []
+        for sig_name, sig_score in sorted(field_signals.items(), key=lambda x: -x[1]):
+            labels = FIELD_LABEL_MAP.get(sig_name, [])
+            if course_label in labels:
+                matches.append(sig_score)
+
+        if matches:
+            # Primary match: +8 boost
+            cat_scores['field_interest'] += 8
+            match_reasons.append(f"strong interest in {course_label} field")
+            if len(matches) > 1:
+                # Secondary match: +4 additional
+                cat_scores['field_interest'] += 4
 
     # --- A. Fit Scoring (Course) ---
 
@@ -194,6 +239,12 @@ def calculate_fit_score(student_profile, course_id, institution_id,
         cat_scores['learning_tolerance_signals'] += 3
         match_reasons.append("preference for project-based assessment")
 
+    # Rote tolerant → assessment_heavy match (was dead signal, now wired)
+    sig_rote = get_signal('learning_tolerance_signals', 'rote_tolerant')
+    if sig_rote > 0 and 'assessment_heavy' in tag_styles:
+        cat_scores['learning_tolerance_signals'] += 3
+        match_reasons.append("comfort with structured assessment")
+
     # 4. Energy Sensitivity
     sig_low_people = get_signal('energy_sensitivity_signals', 'low_people_tolerance')
     sig_fatigue = get_signal('energy_sensitivity_signals', 'physical_fatigue_sensitive')
@@ -213,11 +264,16 @@ def calculate_fit_score(student_profile, course_id, institution_id,
         cat_scores['energy_sensitivity_signals'] -= 6
         caution_reasons.append("Caution: Course is mentally demanding.")
 
+    # High stamina: positive boost for demanding courses
+    sig_stamina = get_signal('energy_sensitivity_signals', 'high_stamina')
+    if sig_stamina > 0 and tag_load in ('physically_demanding', 'mentally_demanding'):
+        cat_scores['energy_sensitivity_signals'] += 2
+        match_reasons.append("high stamina for demanding programme")
+
     # 5. Values Alignment
     sig_risk = get_signal('value_tradeoff_signals', 'income_risk_tolerant')
     sig_stability = get_signal('value_tradeoff_signals', 'stability_priority')
     sig_pathway = get_signal('value_tradeoff_signals', 'pathway_priority')
-    sig_meaning = get_signal('value_tradeoff_signals', 'meaning_priority')
     tag_outcome = c_tags.get('outcome', '')
 
     if sig_risk > 0 and tag_outcome == 'entrepreneurial':
@@ -231,11 +287,6 @@ def calculate_fit_score(student_profile, course_id, institution_id,
     if sig_pathway > 0 and tag_outcome == 'pathway_friendly':
         cat_scores['value_tradeoff_signals'] += 4
         match_reasons.append("priority for degree pathways")
-
-    if sig_meaning > 0 and (c_tags.get('people_interaction') == 'high_people'
-                             or tag_outcome == 'regulated_profession'):
-        cat_scores['value_tradeoff_signals'] += 3
-        match_reasons.append("priority for meaningful/service-oriented work")
 
     # --- v1.3 Fast Employment & Pathway Conflict ---
     sig_fast_emp = get_signal('value_tradeoff_signals', 'fast_employment_priority')
@@ -259,23 +310,18 @@ def calculate_fit_score(student_profile, course_id, institution_id,
             cat_scores['value_tradeoff_signals'] -= 2
             caution_reasons.append("Pathway score dampened by fast employment priority.")
 
+    # Quality priority: small boost for pathway-friendly / regulated courses
+    sig_quality = get_signal('value_tradeoff_signals', 'quality_priority')
+    if sig_quality > 0 and tag_outcome in ('pathway_friendly', 'regulated_profession'):
+        cat_scores['value_tradeoff_signals'] += 1
+        match_reasons.append("preference for quality programme")
+
     # --- v1.2 Taxonomy Enhancements ---
     tag_service = c_tags.get('service_orientation', 'neutral')
     tag_interaction = c_tags.get('interaction_type', 'mixed')
     tag_structure = c_tags.get('career_structure', 'volatile')
     tag_credential = c_tags.get('credential_status', 'unregulated')
     tag_creative_out = c_tags.get('creative_output', 'none')
-
-    if sig_meaning > 0:
-        if tag_service == 'care':
-            cat_scores['value_tradeoff_signals'] += 4
-            match_reasons.append("desire for care-oriented roles")
-        elif tag_interaction == 'relational':
-            cat_scores['value_tradeoff_signals'] += 3
-            match_reasons.append("preference for relational work")
-        elif tag_service == 'service':
-            cat_scores['value_tradeoff_signals'] += 1
-            match_reasons.append("service orientation")
 
     if sig_low_people > 0:
         if tag_interaction == 'transactional':
@@ -310,9 +356,18 @@ def calculate_fit_score(student_profile, course_id, institution_id,
             match_reasons.append("design-oriented creative preference")
 
     # --- B. Normalisation & Aggregation ---
+    CAPS = {
+        'field_interest': FIELD_INTEREST_CAP,
+        'work_preference_signals': WORK_PREFERENCE_CAP,
+        'learning_tolerance_signals': CATEGORY_CAP,
+        'environment_signals': CATEGORY_CAP,
+        'value_tradeoff_signals': CATEGORY_CAP,
+        'energy_sensitivity_signals': CATEGORY_CAP,
+    }
     fit_score = 0
     for cat, score in cat_scores.items():
-        capped = max(min(score, CATEGORY_CAP), -CATEGORY_CAP)
+        cap = CAPS.get(cat, CATEGORY_CAP)
+        capped = max(min(score, cap), -cap)
         fit_score += capped
 
     # --- C. Institution Modifiers (Tie-breakers) ---
