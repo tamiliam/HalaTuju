@@ -354,6 +354,22 @@ class StudentProfile(models.Model):
     school = models.CharField(max_length=255, blank=True, default='',
                               help_text="SPM school name")
 
+    # Contact & location
+    address = models.TextField(blank=True, default='',
+                               help_text="Home address")
+    phone = models.CharField(max_length=20, blank=True, default='',
+                             help_text="Phone number")
+
+    # Identity (Lentera longitudinal tracking)
+    nric = models.CharField(max_length=14, blank=True, default='',
+                            help_text="NRIC: XXXXXX-XX-XXXX")
+
+    # Family background
+    family_income = models.CharField(max_length=30, blank=True, default='',
+                                     help_text="Family monthly income range")
+    siblings = models.IntegerField(null=True, blank=True,
+                                   help_text="Number of siblings")
+
     # Demographics (for eligibility checking)
     gender = models.CharField(max_length=20, blank=True)
     nationality = models.CharField(max_length=50, default='Warganegara')
