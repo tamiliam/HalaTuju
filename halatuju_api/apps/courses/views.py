@@ -420,10 +420,14 @@ class QuizSubmitView(APIView):
         "answers": [
             {"question_id": "q1_modality", "option_index": 0},
             {"question_id": "q2_environment", "option_index": 2},
+            {"question_id": "q3_multi", "option_indices": [0, 2]},
             ...
         ],
         "lang": "en"  // optional, defaults to "en"
     }
+
+    Single-select questions use "option_index" (int).
+    Multi-select questions use "option_indices" (list of ints).
 
     Response:
     {
@@ -452,9 +456,9 @@ class QuizSubmitView(APIView):
                     {'error': f'answers[{i}] missing question_id'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            if 'option_index' not in answer:
+            if 'option_index' not in answer and 'option_indices' not in answer:
                 return Response(
-                    {'error': f'answers[{i}] missing option_index'},
+                    {'error': f'answers[{i}] missing option_index or option_indices'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
