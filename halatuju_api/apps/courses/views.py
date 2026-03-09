@@ -311,6 +311,7 @@ class EligibilityCheckView(APIView):
             _merit_delta(c),
             -get_credential_priority(c['course_name'], c.get('source_type', '')),
             -SOURCE_TYPE_PRIORITY.get(c['source_type'], 0),
+            -float(c['merit_cutoff'] or 0),  # competitiveness: higher cutoff first
             c['course_name'],
         ))
 

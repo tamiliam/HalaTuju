@@ -378,10 +378,12 @@ def sort_courses(course_list, inst_subcategories):
     """
     Sorts courses by comprehensive hierarchy:
     1. Score (desc)
-    2. Credential priority (desc)
-    3. Institution priority (desc)
-    4. Merit points (desc)
-    5. Course name (asc)
+    2. Merit chance tier (desc)
+    3. Merit delta (Fair/Low only, desc)
+    4. Credential priority (desc)
+    5. Institution priority (desc)
+    6. Competitiveness — merit cutoff (desc)
+    7. Course name (asc)
 
     Args:
         course_list: List of course dicts with 'fit_score', 'course_name', etc.
@@ -410,7 +412,8 @@ def sort_courses(course_list, inst_subcategories):
         else:
             merit_delta = 0
 
-        return (-score, -merit_chance, -merit_delta, -cred_priority, -inst_priority, c_name)
+        competitiveness = float(item.get('merit_cutoff') or 0)
+        return (-score, -merit_chance, -merit_delta, -cred_priority, -inst_priority, -competitiveness, c_name)
 
     return sorted(course_list, key=sort_key)
 
