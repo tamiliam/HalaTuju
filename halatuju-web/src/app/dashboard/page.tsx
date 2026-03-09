@@ -282,19 +282,18 @@ export default function DashboardPage() {
 
               {/* Right: action buttons */}
               <div className="flex items-center gap-2">
-                {existingReportId ? (
+                {existingReportId && (
                   <Link href={`/report/${existingReportId}`} className="btn-secondary text-sm whitespace-nowrap">
                     {t('dashboard.readReport')}
                   </Link>
-                ) : (
-                  <button
-                    onClick={handleGenerateReport}
-                    disabled={reportLoading}
-                    className="btn-secondary text-sm whitespace-nowrap disabled:opacity-50"
-                  >
-                    {reportLoading ? t('dashboard.generating') : t('dashboard.generateReport')}
-                  </button>
                 )}
+                <button
+                  onClick={handleGenerateReport}
+                  disabled={reportLoading}
+                  className="btn-secondary text-sm whitespace-nowrap disabled:opacity-50"
+                >
+                  {reportLoading ? t('dashboard.generating') : existingReportId ? t('dashboard.regenerateReport') : t('dashboard.generateReport')}
+                </button>
                 {quizSignals ? (
                   <button onClick={handleRetakeQuiz} className="text-sm text-gray-400 hover:text-primary-500 underline whitespace-nowrap">
                     {t('dashboard.retakeQuiz')}

@@ -40,9 +40,9 @@ export default function QuizPage() {
     updated[currentStep] = optionIndex
     setAnswers(updated)
 
-    // Auto-advance after a brief pause
+    // Auto-advance after a brief pause (use functional updater to avoid stale closure)
     if (currentStep < questions.length - 1) {
-      setTimeout(() => setCurrentStep(currentStep + 1), 300)
+      setTimeout(() => setCurrentStep(prev => prev + 1), 300)
     }
   }
 

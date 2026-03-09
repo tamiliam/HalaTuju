@@ -145,6 +145,7 @@
     "reportTitle": "Laporan Kaunselor AI",
     "reportDesc": "Dapatkan laporan bimbingan kerjaya peribadi daripada kaunselor AI kami, berdasarkan gred dan kursus layak anda.",
     "generateReport": "Jana Laporan",
+    "regenerateReport": "Jana Semula",
     "readReport": "Baca Laporan",
     "generating": "Menjana...",
     "reportError": "Gagal menjana laporan. Sila cuba lagi.",
