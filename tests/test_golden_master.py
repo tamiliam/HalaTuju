@@ -375,7 +375,7 @@ class TestGoldenMaster(unittest.TestCase):
         print("   ------------------------------------------------")
 
         # --- THE MAGIC NUMBER ---
-        EXPECTED_BASELINE = 8280  # Updated 2026-02-04: Added 87 UA courses + 8 UA student profiles
+        EXPECTED_BASELINE = 8245  # Updated 2026-03-09: Removed IKBN-DIP-002 (requires SKM Tahap 3, not SPM-eligible)
 
         if total_eligible_matches != EXPECTED_BASELINE:
             # Create a clean error message

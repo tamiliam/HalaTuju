@@ -2,7 +2,6 @@ institution_id,course_id,min_credits,min_pass,pass_bm,pass_history,pass_math_add
 IKBN-004,IKBN-DIP-001,1,2,1,1,0,0,0,1,0,0,0,0,1,1
 IKBN-005,IKBN-DIP-001,1,2,1,1,0,0,0,1,0,0,0,0,1,1
 IKBN-020,IKBN-DIP-001,1,2,1,1,0,0,0,1,0,0,0,0,1,1
-IKBN-012,IKBN-DIP-002,0,0,0,0,0,0,0,0,0,0,1,0,0,1
 IKBN-010,IKBN-DIP-003,0,0,0,0,0,0,0,0,0,0,1,0,0,1
 IKBN-001,IKBN-DIP-006,0,0,0,0,0,0,0,0,0,0,1,0,0,1
 IKBN-012,IKBN-DIP-007,0,0,0,0,0,0,0,0,0,0,1,0,0,1

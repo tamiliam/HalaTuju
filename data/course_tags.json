@@ -2802,26 +2802,6 @@
     }
   },
   {
-    "course_id": "IKBN-DIP-002",
-    "course_name": "Diploma Teknologi Elektrik (Penyejukbekuan & Penyamanan Udara)",
-    "tags": {
-      "work_modality": "mixed",
-      "people_interaction": "moderate_people",
-      "cognitive_type": "problem_solving",
-      "learning_style": [
-        "project_based"
-      ],
-      "load": "balanced_load",
-      "outcome": "employment_first",
-      "environment": "mixed_environment",
-      "credential_status": "regulated",
-      "creative_output": "none",
-      "service_orientation": "neutral",
-      "interaction_type": "mixed",
-      "career_structure": "stable"
-    }
-  },
-  {
     "course_id": "IKBN-DIP-003",
     "course_name": "Diploma Teknologi Fesyen Dan Pakaian (Rekaan Fesyen)",
     "tags": {

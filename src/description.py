@@ -1249,14 +1249,6 @@ course_info = {
         "synopsis_en": "Imagine an entire factory going dark without you. This course trains you to become a 'Chargeman' — the most important person keeping the electricity running smoothly. The A1 licence you earn here is a 'golden passport' to a well-paid career in the energy sector."
     },
 
-    # --- HVAC (AIRCOND) ---
-    "IKBN-DIP-002": {
-        "headline": "❄️ Pakar Penyejukan: Kerjaya Sentiasa 'Cool'",
-        "headline_en": "❄️ Cooling Specialist: A Career That's Always 'Cool'",
-        "synopsis": "Di Malaysia yang panas, pakar aircond tidak akan pernah hilang kerja. Anda bukan sekadar servis aircond rumah; anda belajar merekabentuk sistem penyejukan gergasi untuk pasar raya dan kilang. Kerjaya teknikal yang sangat stabil dan sentiasa diperlukan.",
-        "synopsis_en": "In Malaysia's heat, aircond experts will never run out of work. You're not just servicing home aircond units; you'll learn to design massive cooling systems for shopping centres and factories. A highly stable technical career that's always in demand."
-    },
-
     # --- FESYEN ---
     "IKBN-DIP-003": {
         "headline": "👗 Rekaan Fesyen: Dari Lakaran ke 'Runway'",

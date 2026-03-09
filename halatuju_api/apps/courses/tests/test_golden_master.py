@@ -414,7 +414,7 @@ class TestGoldenMaster(unittest.TestCase):
         print("   ------------------------------------------------")
 
         # --- THE MAGIC NUMBER ---
-        EXPECTED_BASELINE = 8280
+        EXPECTED_BASELINE = 8245
 
         if total_eligible_matches != EXPECTED_BASELINE:
             diff = total_eligible_matches - EXPECTED_BASELINE
