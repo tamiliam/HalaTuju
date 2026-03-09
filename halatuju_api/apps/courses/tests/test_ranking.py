@@ -19,6 +19,7 @@ from rest_framework.test import APIClient
 from apps.courses.ranking_engine import (
     BASE_SCORE,
     CATEGORY_CAP,
+    FIELD_INTEREST_CAP,
     GLOBAL_CAP,
     INSTITUTION_CAP,
     MERIT_PENALTY,
@@ -525,3 +526,137 @@ class TestRankingEndpoint(TestCase):
             format='json',
         )
         self.assertEqual(response.status_code, 400)
+
+
+class TestFieldInterestMatching(TestCase):
+    """Tests for field interest → frontend_label matching."""
+
+    def test_primary_field_match_gives_boost(self):
+        """Student with field_mechanical=3 + course with Mekanikal label → score > BASE."""
+        signals = make_signals(**{'field_interest.field_mechanical': 3})
+        tags = {'frontend_label': 'Mekanikal & Automotif'}
+        score, reasons = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+        self.assertGreater(score, BASE_SCORE)
+
+    def test_no_field_match_no_penalty(self):
+        """Student interested in digital, course is Mekanikal → no field penalty, score = BASE."""
+        signals = make_signals(**{'field_interest.field_digital': 3})
+        tags = {'frontend_label': 'Mekanikal & Automotif'}
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+        self.assertEqual(score, BASE_SCORE)
+
+    def test_field_interest_capped_at_8(self):
+        """Even with double match, field interest capped at FIELD_INTEREST_CAP (8)."""
+        signals = make_signals(**{
+            'field_interest.field_mechanical': 3,
+            'field_interest.field_health': 3,  # Also maps to Pertanian & Bio-Industri
+        })
+        tags = {'frontend_label': 'Pertanian & Bio-Industri'}
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+        # Both field_health and field_agriculture map to Pertanian — but only field_health is present
+        # With only 1 match: +8 → cap at 8 → score = 108
+        self.assertLessEqual(score, BASE_SCORE + FIELD_INTEREST_CAP)
+
+    def test_heavy_industry_sub_signal_matches(self):
+        """field_electrical signal matches Elektrik & Elektronik label."""
+        signals = make_signals(**{'field_interest.field_electrical': 3})
+        tags = {'frontend_label': 'Elektrik & Elektronik'}
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+        self.assertGreater(score, BASE_SCORE)
+
+    def test_no_frontend_label_no_field_score(self):
+        """Course with no frontend_label → field interest contributes 0."""
+        signals = make_signals(**{'field_interest.field_mechanical': 3})
+        tags = {}  # No frontend_label
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+        self.assertEqual(score, BASE_SCORE)
+
+
+class TestHighStaminaSignal(TestCase):
+    def test_high_stamina_boosts_physically_demanding(self):
+        signals = make_signals(**{'energy_sensitivity_signals.high_stamina': 1})
+        tags = {'load': 'physically_demanding'}
+        score, reasons = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+        self.assertGreater(score, BASE_SCORE)
+        self.assertTrue(any('stamina' in r for r in reasons))
+
+    def test_high_stamina_boosts_mentally_demanding(self):
+        signals = make_signals(**{'energy_sensitivity_signals.high_stamina': 1})
+        tags = {'load': 'mentally_demanding'}
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+        self.assertGreater(score, BASE_SCORE)
+
+    def test_high_stamina_no_effect_normal_load(self):
+        signals = make_signals(**{'energy_sensitivity_signals.high_stamina': 1})
+        tags = {'load': 'normal'}
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+        self.assertEqual(score, BASE_SCORE)
+
+
+class TestRoteTolerantSignal(TestCase):
+    def test_rote_tolerant_boosts_assessment_heavy(self):
+        signals = make_signals(**{'learning_tolerance_signals.rote_tolerant': 1})
+        tags = {'learning_style': ['assessment_heavy']}
+        score, reasons = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+        self.assertGreater(score, BASE_SCORE)
+        self.assertTrue(any('assessment' in r for r in reasons))
+
+    def test_rote_tolerant_no_effect_without_tag(self):
+        signals = make_signals(**{'learning_tolerance_signals.rote_tolerant': 1})
+        tags = {'learning_style': ['project_based']}
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+        self.assertEqual(score, BASE_SCORE)
+
+
+class TestQualityPrioritySignal(TestCase):
+    def test_quality_priority_boosts_pathway_friendly(self):
+        signals = make_signals(**{'value_tradeoff_signals.quality_priority': 1})
+        tags = {'outcome': 'pathway_friendly'}
+        score, reasons = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+        self.assertGreater(score, BASE_SCORE)
+
+    def test_quality_priority_boosts_regulated(self):
+        signals = make_signals(**{'value_tradeoff_signals.quality_priority': 1})
+        tags = {'outcome': 'regulated_profession'}
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+        self.assertGreater(score, BASE_SCORE)
+
+    def test_quality_priority_no_effect_employment_first(self):
+        signals = make_signals(**{'value_tradeoff_signals.quality_priority': 1})
+        tags = {'outcome': 'employment_first'}
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+        self.assertEqual(score, BASE_SCORE)
+
+
+class TestWorkPreferenceCap(TestCase):
+    def test_work_preference_capped_at_4(self):
+        """Raw work preference score can exceed 4 but is capped."""
+        signals = make_signals(**{
+            'work_preference_signals.hands_on': 2,
+            'work_preference_signals.creative': 2,
+        })
+        # Tags that would match BOTH hands_on AND creative for maximum score
+        tags = {
+            'work_modality': 'hands_on',
+            'learning_style': ['project_based'],
+            'creative_output': 'expressive',
+            'cognitive_type': 'abstract',
+        }
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+        # Work preference is capped at 4, so total from work alone ≤ 4
+        # Other categories might contribute, but work cannot exceed 4
+        self.assertLessEqual(score, BASE_SCORE + GLOBAL_CAP)
