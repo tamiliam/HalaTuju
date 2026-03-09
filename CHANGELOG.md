@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.26.0] - 2026-03-09 — My Profile & Course Interests
+
+### Added
+- **My Profile page** (`/profile`) — new page with 4 sections: Personal Details, Contact & Location, Family & Background, My Course Interests
+- **Expanded student profile** — NRIC, address, phone number, family monthly income, number of siblings fields added to `StudentProfile` model (migrations 0010, 0011)
+- **Course interest status** — saved courses now have a student-set status tag: Interested / Planning to apply / Applied / Got offer. Stored in `SavedCourse.interest_status` field
+- **PATCH endpoint** — `PATCH /api/v1/saved-courses/<course_id>/` for updating interest status
+- **Nav bar integration** — "My Profile" link added to top nav, dropdown menu, and mobile menu (all point to `/profile`)
+- **i18n** — profile page translated in EN, BM, and TA (16 keys per language)
+- **Exam-type page redesign** — gradient icon boxes, decorative corners, left-aligned layout, hover effects
+- **Course detail page review** — documented 10 issues and prioritised fixes in `docs/Course Detail Page.pdf`
+
+### Changed
+- Profile API (`GET/PUT /api/v1/profile/`) returns and accepts new fields
+- Profile sync (`POST /api/v1/profile/sync/`) accepts new fields
+- Saved courses API (`GET /api/v1/saved-courses/`) returns `interest_status` per course
+- "My Profile" links in header dropdown and mobile menu now point to `/profile` (was `/onboarding/grades`)
+
+### Technical Notes
+- 13 new backend tests (6 model + 3 SavedCourse + 4 API). Total: 188 collected, 179 pass (9 pre-existing JWT failures). Golden master: 8280
+- Frontend build passes clean. `/profile` route: 4.3 kB (169 kB first load)
+- Deployed as backend rev 40, frontend rev 44
+- Design doc: `docs/plans/2026-03-09-my-profile-design.md`
+- Stitch mockup: `projects/13238979537238863747`
+
 ## [1.25.1] - 2026-03-09 — Merit Score Fix
 
 ### Fixed

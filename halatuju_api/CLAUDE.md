@@ -144,11 +144,12 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_report_engine.py | 12 | Report engine: format helpers (grades, signals, courses, insights), prompts (BM/EN), persona mapping, Gemini mock (success, cascade, missing key) |
 | test_views.py (reports) | 4 | Report views: list (own only), detail, cross-user 404 regression, validation |
 | test_outcomes.py | 10 | Outcome CRUD (create, duplicate 409, with institution, missing course), list (own only), update status, cross-user 404, delete, auth enforcement (GET/POST 403) |
+| test_profile_fields.py | 13 | Expanded profile fields (NRIC, address, phone, income, siblings defaults), SavedCourse interest_status (default, set, got_offer), profile API (GET new fields, PUT new fields), saved-courses API (GET includes status, PATCH updates status) |
 
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (173 collected, 164 must pass, golden master = 8280)
+# 1. Run all tests (188 collected, 179 must pass, golden master = 8280)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -160,7 +161,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-164 tests must pass out of 173 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8280, you broke eligibility logic.
+179 tests must pass out of 188 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8280, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -189,15 +190,14 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 21 — Remaining i18n + Report UX**
+**Sprint 21 — Course Detail Page Fixes + Remaining i18n**
+- Course detail page: fix 10 issues documented in `docs/Course Detail Page.pdf` (merit badge, hide empty About, strip Quick Facts, show address/website/allowance, restructure Apply button, persist save state, related courses)
 - Localise remaining pages: quiz, course detail, report
 - Add loading/progress screen for report generation (10-15 sec delay)
 - Fix 9 pre-existing JWT auth test failures (6 auth + 3 saved_courses — malformed test tokens, not production issue)
-- Current tests: 173 collected, 166 passing (9 failing — JWT) | Golden master: 8280
-- Backend rev 33, frontend rev 42
-- v1.25.1 (9 Mar): Merit score fix — frontend sends pre-computed merit to backend, no more mismatch
-- Merit mismatch is RESOLVED: frontend sends `student_merit` in eligibility payload, backend uses it directly
-- `engine.py` still has the old merit formula but it's only used as fallback (when `student_merit` not provided)
+- Current tests: 188 collected, 179 passing (9 failing — JWT) | Golden master: 8280
+- Backend rev 40, frontend rev 44
+- v1.26.0: My Profile page with expanded fields + course interests (NRIC, address, phone, income, siblings, interest_status)
 - `/search` page uses `<Suspense>` boundary — any page using `useSearchParams()` needs the same pattern
 
 ## Streamlit App (Legacy — migrating to Django API)
