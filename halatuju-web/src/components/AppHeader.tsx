@@ -37,6 +37,7 @@ export default function AppHeader() {
     { href: '/dashboard', label: t('common.dashboard') },
     { href: '/search', label: t('search.nav') },
     { href: '/saved', label: t('common.saved') },
+    { href: '/profile', label: t('header.myProfile') },
   ]
 
   // User display info from Supabase session metadata
@@ -118,7 +119,7 @@ export default function AppHeader() {
                     </div>
                   )}
                   <Link
-                    href="/onboarding/grades"
+                    href="/profile"
                     className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     onClick={() => setProfileOpen(false)}
                   >
@@ -213,7 +214,7 @@ export default function AppHeader() {
                     <p className="px-3 py-1 text-xs text-gray-400 font-medium">{userName}</p>
                   )}
                   <Link
-                    href="/onboarding/grades"
+                    href="/profile"
                     className="block px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
                     onClick={() => setMobileOpen(false)}
                   >
