@@ -271,6 +271,29 @@
     "schoolPlaceholder": "e.g. SMK Damansara Jaya",
     "completeProfile": "Complete & Continue"
   },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your personal information and course interests",
+    "personalDetails": "Personal Details",
+    "contactLocation": "Contact & Location",
+    "familyBackground": "Family & Background",
+    "courseInterests": "My Course Interests",
+    "nric": "NRIC",
+    "address": "Address",
+    "addressPlaceholder": "Your home address",
+    "phone": "Phone Number",
+    "familyIncome": "Family Monthly Income",
+    "siblings": "Number of Siblings",
+    "saveChanges": "Save Changes",
+    "lastSaved": "Last saved",
+    "noCourses": "Save courses from the dashboard to track them here",
+    "status": {
+      "interested": "Interested",
+      "planning": "Planning to apply",
+      "applied": "Applied",
+      "got_offer": "Got offer"
+    }
+  },
   "outcomes": {
     "title": "My Applications",
     "empty": "You haven't tracked any applications yet.",

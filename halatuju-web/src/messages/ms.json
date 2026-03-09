@@ -271,6 +271,29 @@
     "schoolPlaceholder": "cth. SMK Damansara Jaya",
     "completeProfile": "Lengkapkan & Teruskan"
   },
+  "profile": {
+    "title": "Profil Saya",
+    "subtitle": "Urus maklumat peribadi dan minat kursus anda",
+    "personalDetails": "Maklumat Peribadi",
+    "contactLocation": "Hubungan & Lokasi",
+    "familyBackground": "Keluarga & Latar Belakang",
+    "courseInterests": "Minat Kursus Saya",
+    "nric": "No. Kad Pengenalan",
+    "address": "Alamat",
+    "addressPlaceholder": "Alamat rumah anda",
+    "phone": "Nombor Telefon",
+    "familyIncome": "Pendapatan Bulanan Keluarga",
+    "siblings": "Bilangan Adik-beradik",
+    "saveChanges": "Simpan Perubahan",
+    "lastSaved": "Terakhir disimpan",
+    "noCourses": "Simpan kursus dari papan pemuka untuk menjejak di sini",
+    "status": {
+      "interested": "Berminat",
+      "planning": "Bercadang memohon",
+      "applied": "Telah memohon",
+      "got_offer": "Dapat tawaran"
+    }
+  },
   "outcomes": {
     "title": "Permohonan Saya",
     "empty": "Anda belum menjejaki sebarang permohonan.",
