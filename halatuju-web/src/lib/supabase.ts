@@ -16,11 +16,12 @@ export function getSupabase(): SupabaseClient {
 }
 
 // Auth helper functions
-export async function signInWithPhone(phone: string) {
-  const { data, error } = await getSupabase().auth.signInWithOtp({
-    phone,
-  })
-  return { data, error }
+export async function signInWithPhone(_phone: string) {
+  // Phone/OTP login is not yet implemented
+  return {
+    data: null,
+    error: { message: 'Phone login is coming soon. Please use Google sign-in for now.' },
+  }
 }
 
 export async function verifyOTP(phone: string, token: string) {
