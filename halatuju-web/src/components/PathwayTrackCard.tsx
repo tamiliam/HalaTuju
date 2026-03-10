@@ -101,19 +101,16 @@ export default function PathwayTrackCard({ track }: PathwayTrackCardProps) {
 
       {/* Card body */}
       <div className="flex-1 p-4 flex flex-col">
-        {/* Type + Track badges */}
+        {/* Pathway badge */}
         <div className="flex flex-wrap items-center gap-1.5 mb-2">
           <span className={`px-2 py-0.5 rounded text-xs font-medium ${pathwayBadgeColor}`}>
             {pathwayLabel}
           </span>
-          <span className={`px-2 py-0.5 rounded text-xs font-medium ${trackBadgeColor}`}>
-            {trackLabel}
-          </span>
         </div>
 
-        {/* Title */}
+        {/* Title — just the track name */}
         <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">
-          {title}
+          {trackLabel}
         </h3>
 
         {/* Duration + Fee */}

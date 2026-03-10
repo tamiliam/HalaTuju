@@ -374,52 +374,6 @@ function StpmContent() {
               </div>
             </section>
 
-            {/* Your Eligible Streams */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                {t('pathwayDetail.eligibleTracks')}
-              </h2>
-              <div className="space-y-3">
-                {stpmResults.map((r) => {
-                  const sid = r.trackId as StreamId
-                  const smeta = STREAM_META[sid]
-                  const isActive = sid === activeStream
-
-                  return (
-                    <Link
-                      key={r.trackId}
-                      href={`/pathway/stpm?stream=${sid}`}
-                      className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                        isActive
-                          ? 'border-primary-300 bg-primary-50'
-                          : 'border-gray-200 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${smeta.badgeColor}`}>
-                          {sid === 'sains' ? t('pathwayDetail.sains') : t('pathwayDetail.sainsSosial')}
-                        </span>
-                        {r.mataGred !== undefined && (
-                          <span className={`text-xs font-medium ${mataGredColor(r.mataGred)}`}>
-                            {r.mataGred}/{r.maxMataGred}
-                          </span>
-                        )}
-                      </div>
-                      {r.eligible ? (
-                        <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      )}
-                    </Link>
-                  )
-                })}
-              </div>
-            </section>
-
             {/* Caveat */}
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
               <p className="text-xs text-amber-700">
@@ -455,17 +409,11 @@ function SchoolCard({ school, activeStream }: { school: StpmSchool; activeStream
           <p className="text-sm text-gray-500 mb-2">
             {school.state} &middot; {school.ppd}
           </p>
-          <div className="flex flex-wrap gap-1.5">
-            <span
-              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                activeStream === 'Sains'
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-sky-100 text-sky-800'
-              }`}
-            >
-              {activeStream}
-            </span>
-          </div>
+          {school.subjects && (
+            <p className="text-xs text-gray-500 leading-relaxed">
+              {school.subjects}
+            </p>
+          )}
         </div>
         {school.phone && (
           <a
