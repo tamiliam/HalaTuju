@@ -190,14 +190,18 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Next — Matriculation & STPM Options**
-- Add matriculation and STPM pathway options to HalaTuju
+**v1.28.0 DONE — Matriculation & STPM Pathways**
+- Grades page: 4 stream subjects (best 2 → stream, weaker 2 → elective pool)
+- Pathway engine: `lib/pathways.ts` — 4 Matric tracks + 2 STPM bidang, frontend-only
+- Dashboard: PathwayCards above course list showing eligibility + merit/mata gred
+- i18n: 14 keys × 3 languages (EN/BM/TA)
+- No backend changes. Tests unchanged: 212 collected, 203 passing | Golden master: 8245
+- Backend rev 41, frontend rev 48
+
+**Next**
 - Deferred: Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Deferred: SVG icons to replace emoji on quiz cards
 - Course detail page: fix 10 issues documented in `docs/Course Detail Page.pdf`
-- Current tests: 212 collected, 203 passing (9 failing — JWT) | Golden master: 8245
-- Backend rev 41, frontend rev 47
-- v1.27.0: Visual quiz redesign (8+1 Qs, multi-select, field_interest, conditional branching)
 - `/search` page uses `<Suspense>` boundary — any page using `useSearchParams()` needs the same pattern
 
 ## Streamlit App (Legacy — migrating to Django API)

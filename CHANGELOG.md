@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.0] - 2026-03-10 — Matriculation & STPM Pathways
+
+### Added
+- **Matriculation eligibility** — 4 tracks (Sains, Kejuruteraan, Sains Komputer, Perakaunan) with subject requirements, minimum grade thresholds, and merit calculation (academic 90% + CoQ 10%)
+- **STPM eligibility** — 2 bidang (Sains, Sains Sosial) with mata gred scoring. Best 3 credits from different subject groups, thresholds 18/12
+- **Pathway engine** — pure TypeScript module (`lib/pathways.ts`) computing eligibility and scores entirely on the frontend
+- **PathwayCards component** — dashboard cards showing eligibility status, merit scores (Matric) or mata gred (STPM), with reasons for ineligibility
+- **4 stream subjects** — grades page expanded from 2 to 4 stream subject slots. Best 2 count as stream for UPU merit; weaker 2 compete with electives
+- **Pathway i18n** — 14 translation keys across EN/BM/TA for pathway cards and eligibility reasons
+
+### Changed
+- **Grades page** — `aliranSubj1`/`aliranSubj2` state replaced with `aliranSubjects` array. Generic `handleAliranChange(index, id)` handler
+- **UPU merit calculation** — sorts 4 stream grades, routes best 2 to stream section and weaker 2 to elective competition pool
+- **Dashboard** — pathway cards rendered above course list, computed via `useMemo` from localStorage grades
+
 ## [1.27.0] - 2026-03-10 — Visual Quiz Redesign
 
 ### Added
