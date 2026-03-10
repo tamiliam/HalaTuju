@@ -7,7 +7,7 @@ import { getCourse, saveCourse, unsaveCourse, type Course, type Institution, typ
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function CourseDetailPage() {
   const params = useParams()
@@ -16,6 +16,12 @@ export default function CourseDetailPage() {
   const { locale, t } = useT()
   const [isSaved, setIsSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [studentMerit, setStudentMerit] = useState<number | null>(null)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('halatuju_merit')
+    if (saved) setStudentMerit(parseFloat(saved))
+  }, [])
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['course', courseId],
@@ -94,14 +100,6 @@ export default function CourseDetailPage() {
               {(course.headline || course.headline_en) && (
                 <p className="text-lg text-primary-600 font-medium mb-2">
                   {locale === 'ms' ? (course.headline || course.headline_en) : (course.headline_en || course.headline)}
-                </p>
-              )}
-              <p className="text-gray-600 mb-4">
-                {course.frontend_label || course.field}
-              </p>
-              {course.semesters && (
-                <p className="text-sm text-gray-500">
-                  Duration: {course.semesters} semesters
                 </p>
               )}
             </div>
@@ -193,6 +191,18 @@ export default function CourseDetailPage() {
                   <InfoRow label="Duration" value={`${course.semesters} semesters`} />
                 )}
                 <InfoRow label="WBL" value={course.wbl ? 'Yes' : 'No'} />
+                {studentMerit != null && (
+                  <div className="pt-2 mt-2 border-t border-gray-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 text-sm">Your Merit</span>
+                      <span className={`font-medium text-sm ${
+                        studentMerit >= 80 ? 'text-green-600' : studentMerit >= 60 ? 'text-amber-600' : 'text-red-600'
+                      }`}>
+                        {studentMerit.toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
 
