@@ -61,6 +61,8 @@ export default function PathwayTrackCard({ track }: PathwayTrackCardProps) {
   const imageUrl = getTrackImageUrl(track.pathway, track.track)
   const isMatric = track.pathway === 'matric'
 
+  const badgeLabel = isMatric ? 'Matriculation' : 'Form 6'
+
   const pathwayLabel = isMatric
     ? t('pathwayDetail.matricTitle')
     : t('pathwayDetail.stpmTitle')
@@ -104,13 +106,13 @@ export default function PathwayTrackCard({ track }: PathwayTrackCardProps) {
         {/* Pathway badge */}
         <div className="flex flex-wrap items-center gap-1.5 mb-2">
           <span className={`px-2 py-0.5 rounded text-xs font-medium ${pathwayBadgeColor}`}>
-            {pathwayLabel}
+            {badgeLabel}
           </span>
         </div>
 
-        {/* Title — just the track name */}
+        {/* Title */}
         <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">
-          {trackLabel}
+          {title}
         </h3>
 
         {/* Duration + Fee */}
