@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
+  const [levelFilter, setLevelFilter] = useState<string>('all')
   const [displayCount, setDisplayCount] = useState(6)
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [quizSignals, setQuizSignals] = useState<Record<string, Record<string, number>> | null>(null)
@@ -409,6 +410,8 @@ export default function DashboardPage() {
           rankingData={rankingData}
           filter={filter}
           setFilter={setFilter}
+          levelFilter={levelFilter}
+          setLevelFilter={setLevelFilter}
           displayCount={displayCount}
           setDisplayCount={setDisplayCount}
           savedIds={savedIds}
@@ -417,19 +420,20 @@ export default function DashboardPage() {
 
         {/* Flat Course List — when no quiz taken */}
         {eligibilityData && !quizSignals && !eligibilityLoading && (() => {
-          const filteredCourses = filter === 'all'
-            ? eligibilityData.eligible_courses
-            : eligibilityData.eligible_courses.filter(c => c.source_type === filter)
+          const filteredCourses = eligibilityData.eligible_courses.filter(c =>
+            (filter === 'all' || c.source_type === filter) &&
+            (levelFilter === 'all' || c.level === levelFilter)
+          )
           const displayedCourses = filteredCourses.slice(0, displayCount)
           const remaining = filteredCourses.length - displayCount
 
           return (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <h2 className="text-lg font-semibold text-gray-900">
                   {t('dashboard.eligibleCourses')} ({filteredCourses.length})
                 </h2>
-                <FilterDropdown filter={filter} setFilter={setFilter} setDisplayCount={setDisplayCount} />
+                <FilterDropdowns filter={filter} setFilter={setFilter} levelFilter={levelFilter} setLevelFilter={setLevelFilter} setDisplayCount={setDisplayCount} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -469,6 +473,8 @@ function RankedResults({
   rankingData,
   filter,
   setFilter,
+  levelFilter,
+  setLevelFilter,
   displayCount,
   setDisplayCount,
   savedIds,
@@ -477,6 +483,8 @@ function RankedResults({
   rankingData: RankingResult
   filter: string
   setFilter: (f: string) => void
+  levelFilter: string
+  setLevelFilter: (f: string) => void
   displayCount: number
   setDisplayCount: (n: number) => void
   savedIds: Set<string>
@@ -484,7 +492,10 @@ function RankedResults({
 }) {
   const { t } = useT()
   const filterCourses = (courses: RankedCourse[]) =>
-    filter === 'all' ? courses : courses.filter(c => c.source_type === filter)
+    courses.filter(c =>
+      (filter === 'all' || c.source_type === filter) &&
+      (levelFilter === 'all' || c.level === levelFilter)
+    )
 
   const filteredTop5 = filterCourses(rankingData.top_5)
   const filteredRest = filterCourses(rankingData.rest)
@@ -494,11 +505,11 @@ function RankedResults({
   return (
     <div className="space-y-8">
       {/* Filter */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-semibold text-gray-900">
           {t('dashboard.rankedCourses')} ({rankingData.total_ranked})
         </h2>
-        <FilterDropdown filter={filter} setFilter={setFilter} setDisplayCount={setDisplayCount} />
+        <FilterDropdowns filter={filter} setFilter={setFilter} levelFilter={levelFilter} setLevelFilter={setLevelFilter} setDisplayCount={setDisplayCount} />
       </div>
 
       {/* Top 5 */}
@@ -568,31 +579,52 @@ function LoadingScreen() {
   )
 }
 
-function FilterDropdown({
+function FilterDropdowns({
   filter,
   setFilter,
+  levelFilter,
+  setLevelFilter,
   setDisplayCount,
 }: {
   filter: string
   setFilter: (f: string) => void
+  levelFilter: string
+  setLevelFilter: (f: string) => void
   setDisplayCount: (n: number) => void
 }) {
   const { t } = useT()
   return (
-    <select
-      className="input w-auto"
-      value={filter}
-      onChange={(e) => {
-        setFilter(e.target.value)
-        setDisplayCount(20)
-      }}
-    >
-      <option value="all">{t('dashboard.allTypes')}</option>
-      <option value="poly">{t('dashboard.polytechnic')}</option>
-      <option value="kkom">{t('dashboard.kolej')}</option>
-      <option value="tvet">{t('dashboard.tvet')}</option>
-      <option value="ua">{t('dashboard.university')}</option>
-      <option value="pismp">{t('dashboard.teacherTraining')}</option>
-    </select>
+    <div className="flex gap-2">
+      <select
+        className="input w-auto text-sm"
+        value={filter}
+        onChange={(e) => {
+          setFilter(e.target.value)
+          setDisplayCount(20)
+        }}
+      >
+        <option value="all">{t('dashboard.allInstitutions')}</option>
+        <option value="poly">{t('dashboard.polytechnic')}</option>
+        <option value="kkom">{t('dashboard.kolej')}</option>
+        <option value="tvet">{t('dashboard.tvet')}</option>
+        <option value="ua">{t('dashboard.university')}</option>
+        <option value="pismp">{t('dashboard.teacherTraining')}</option>
+      </select>
+      <select
+        className="input w-auto text-sm"
+        value={levelFilter}
+        onChange={(e) => {
+          setLevelFilter(e.target.value)
+          setDisplayCount(20)
+        }}
+      >
+        <option value="all">{t('dashboard.allLevels')}</option>
+        <option value="Asasi">{t('dashboard.levelAsasi')}</option>
+        <option value="Diploma">{t('dashboard.levelDiploma')}</option>
+        <option value="Sijil">{t('dashboard.levelSijil')}</option>
+        <option value="Sijil Lanjutan">{t('dashboard.levelSijilLanjutan')}</option>
+        <option value="Ijazah Sarjana Muda Pendidikan">{t('dashboard.levelIjazah')}</option>
+      </select>
+    </div>
   )
 }
