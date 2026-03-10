@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.27.0] - 2026-03-10 — Visual Quiz Redesign
+
+### Added
+- **Visual card quiz** — 8+1 questions with 2×2 icon card grids replacing old radio buttons. Each option has an emoji icon and short label
+- **Multi-select** — Q1 ("What catches your eye?") and Q2 ("And this?") allow picking up to 2 options with weight splitting (3→2 each)
+- **Conditional branching** — Q2.5 ("Which kind?") appears only when "Big Machines" is selected in Q2, splitting heavy industry into Electrical/Civil/Aero-Marine/Oil & Gas
+- **"Not Sure Yet" option** — Q1, Q2, Q4 have a 5th option for undecided students. Q1/Q2 distribute +1 evenly across fields; Q4 generates zero signal
+- **Field interest category** — new 6th signal category with 11 signals (`field_mechanical`, `field_digital`, `field_business`, `field_health`, `field_creative`, `field_hospitality`, `field_agriculture`, `field_electrical`, `field_civil`, `field_aero_marine`, `field_oil_gas`), capped at ±8
+- **Field interest matching** — courses matched against `frontend_label` via `FIELD_LABEL_MAP`. Primary match +8, secondary +4
+- **New signal wiring** — `rote_tolerant` (+3 for assessment-heavy courses), `high_stamina` (+2 for demanding courses), `quality_priority` (+1 for pathway-friendly/regulated courses)
+- **Quiz i18n** — 12 new translation keys across EN/BM/TA for quiz UI (pickUpTo, notSureYet, becauseYouPicked, etc.)
+- **Interpolation in i18n** — `t()` function now supports `{key}` parameter substitution
+
+### Changed
+- **Quiz data** — rewritten from 6 to 8+1 questions × 3 languages with `icon`, `select_mode`, `max_select`, `condition`, `not_sure` fields
+- **Quiz engine** — handles both `option_index` (single) and `option_indices` (multi), weight splitting, "Not Sure Yet" exclusivity validation
+- **Quiz submit API** — accepts either `option_index` or `option_indices` per answer
+- **Ranking engine** — work preference cap lowered from ±6 to ±4; field interest cap ±8 (new)
+- **Quiz page design** — gradient blue-purple header, progress bar, step dots, auto-advance on selection (no Next button), larger icons (text-5xl), mobile-first max-w-md layout
+
+### Removed
+- Dead signals: `organising`, `meaning_priority`, `exam_sensitive`, `time_pressure_sensitive`, `no_preference`
+- Next button — auto-advance handles all navigation (300ms single-select, 400ms multi-select)
+
+### Technical Notes
+- 24 quiz tests + 16 ranking tests added. Total: 212 collected, 203 pass (9 pre-existing JWT failures). Golden master: 8245
+- Stitch mockup: `projects/16660567457727755942` (10 screens)
+- Design doc: `docs/quiz-redesign-final.md`
+- Implementation plan: `docs/plans/2026-03-10-visual-quiz-redesign.md`
+- Deployed as backend rev 41, frontend rev 47
+
 ## [1.26.0] - 2026-03-09 — My Profile & Course Interests
 
 ### Added

@@ -137,8 +137,8 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_api.py | 49 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering) |
 | test_auth.py | 15 | Auth enforcement — protected endpoints reject 403, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
 | test_saved_courses.py | 3 | Saved course CRUD — save (201), list (appears), delete (removed) |
-| test_quiz.py | 14 | Quiz endpoints (questions 3 langs, submit, validation), engine (accumulation, taxonomy, strength, lang parity) |
-| test_ranking.py | 34 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, top_5/rest split, API endpoint validation |
+| test_quiz.py | 24 | Quiz endpoints (questions 3 langs, submit single+multi, validation), engine (multi-select, weight splitting, Not Sure Yet, conditional Q2.5, field_interest, signal strength, lang parity) |
+| test_ranking.py | 50 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, top_5/rest split, API endpoint validation, field interest matching (primary/secondary/no match/multi-field/cap), high_stamina, rote_tolerant, quality_priority, work preference cap |
 | test_data_loading.py | 10 | TVET metadata enrichment, PISMP metadata enrichment, institution modifiers storage, MASCO occupation model (PK, M2M, reverse relation, idempotent load, __str__) |
 | test_insights.py | 8 | Insights engine: empty input, stream breakdown, labels, top fields, merit counts, level distribution, summary text |
 | test_report_engine.py | 12 | Report engine: format helpers (grades, signals, courses, insights), prompts (BM/EN), persona mapping, Gemini mock (success, cascade, missing key) |
@@ -149,7 +149,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (188 collected, 179 must pass, golden master = 8280)
+# 1. Run all tests (212 collected, 203 must pass, golden master = 8245)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -161,7 +161,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-179 tests must pass out of 188 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8280, you broke eligibility logic.
+203 tests must pass out of 212 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8245, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -190,14 +190,14 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Sprint 21 — Course Detail Page Fixes + Remaining i18n**
-- Course detail page: fix 10 issues documented in `docs/Course Detail Page.pdf` (merit badge, hide empty About, strip Quick Facts, show address/website/allowance, restructure Apply button, persist save state, related courses)
-- Localise remaining pages: quiz, course detail, report
-- Add loading/progress screen for report generation (10-15 sec delay)
-- Fix 9 pre-existing JWT auth test failures (6 auth + 3 saved_courses — malformed test tokens, not production issue)
-- Current tests: 188 collected, 179 passing (9 failing — JWT) | Golden master: 8280
-- Backend rev 40, frontend rev 44
-- v1.26.0: My Profile page with expanded fields + course interests (NRIC, address, phone, income, siblings, interest_status)
+**Next — Matriculation & STPM Options**
+- Add matriculation and STPM pathway options to HalaTuju
+- Deferred: Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
+- Deferred: SVG icons to replace emoji on quiz cards
+- Course detail page: fix 10 issues documented in `docs/Course Detail Page.pdf`
+- Current tests: 212 collected, 203 passing (9 failing — JWT) | Golden master: 8245
+- Backend rev 41, frontend rev 47
+- v1.27.0: Visual quiz redesign (8+1 Qs, multi-select, field_interest, conditional branching)
 - `/search` page uses `<Suspense>` boundary — any page using `useSearchParams()` needs the same pattern
 
 ## Streamlit App (Legacy — migrating to Django API)
