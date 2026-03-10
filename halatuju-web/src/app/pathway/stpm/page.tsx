@@ -318,7 +318,7 @@ function StpmContent() {
               <div className="max-h-[600px] overflow-y-auto space-y-3">
                 {displayedSchools.length > 0 ? (
                   displayedSchools.map((school) => (
-                    <SchoolCard key={school.code} school={school} />
+                    <SchoolCard key={school.code} school={school} activeStream={meta.schoolStream} />
                   ))
                 ) : (
                   <p className="text-gray-400 text-center py-8">
@@ -444,7 +444,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function SchoolCard({ school }: { school: StpmSchool }) {
+function SchoolCard({ school, activeStream }: { school: StpmSchool; activeStream: string }) {
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
       <div className="flex items-start justify-between gap-3">
@@ -456,18 +456,15 @@ function SchoolCard({ school }: { school: StpmSchool }) {
             {school.state} &middot; {school.ppd}
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {school.streams.map((stream) => (
-              <span
-                key={stream}
-                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                  stream === 'SAINS'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-sky-100 text-sky-800'
-                }`}
-              >
-                {stream}
-              </span>
-            ))}
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                activeStream === 'SAINS'
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-sky-100 text-sky-800'
+              }`}
+            >
+              {activeStream}
+            </span>
           </div>
         </div>
         {school.phone && (

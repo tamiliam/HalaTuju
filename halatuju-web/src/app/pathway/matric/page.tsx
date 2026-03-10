@@ -399,20 +399,13 @@ function CollegeCard({
         {college.state}
       </div>
 
-      {/* Track badges */}
+      {/* Track badge — show only the active track */}
       <div className="flex flex-wrap gap-1.5 mb-3">
-        {college.tracks.map(track => (
-          <span
-            key={track}
-            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              track === currentTrackId
-                ? TRACK_COLOURS[track] + ' ring-2 ring-offset-1 ring-gray-300'
-                : TRACK_COLOURS[track]
-            }`}
-          >
-            {t(TRACK_I18N_KEYS[track])}
-          </span>
-        ))}
+        <span
+          className={`text-xs px-2 py-0.5 rounded-full font-medium ${TRACK_COLOURS[currentTrackId]}`}
+        >
+          {t(TRACK_I18N_KEYS[currentTrackId])}
+        </span>
       </div>
 
       {/* Phone */}

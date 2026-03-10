@@ -1,7 +1,6 @@
 'use client'
 
 import { useT } from '@/lib/i18n'
-import { useRouter } from 'next/navigation'
 
 export interface PathwaySummary {
   type: 'asasi' | 'matric' | 'stpm' | 'pismp' | 'poly' | 'university' | 'kkom' | 'iljtm' | 'ilkbs'
@@ -20,7 +19,6 @@ export default function PathwayCards({
   onFilterChange: (type: string) => void
 }) {
   const { t } = useT()
-  const router = useRouter()
 
   const eligible = pathways.filter(p => p.eligible)
 
@@ -35,11 +33,7 @@ export default function PathwayCards({
           return (
             <button
               key={p.type}
-              onClick={() => {
-                if (p.type === 'matric') { router.push('/pathway/matric'); return }
-                if (p.type === 'stpm') { router.push('/pathway/stpm'); return }
-                onFilterChange(isActive ? 'all' : p.type)
-              }}
+              onClick={() => onFilterChange(isActive ? 'all' : p.type)}
               className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors cursor-pointer ${
                 isActive
                   ? 'bg-primary-600 text-white border border-primary-600'
