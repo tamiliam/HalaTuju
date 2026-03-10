@@ -366,5 +366,34 @@
       "ilkbs": "ILKBS"
     },
     "courses": "courses"
+  },
+  "pathwayDetail": {
+    "backToDashboard": "Back to Dashboard",
+    "matricTitle": "Matriculation",
+    "stpmTitle": "Form 6 (STPM)",
+    "meritScore": "Merit Score",
+    "mataGred": "Mata Gred",
+    "eligibleTracks": "Eligible Tracks",
+    "colleges": "Colleges",
+    "schools": "Schools",
+    "allStates": "All States",
+    "allStreams": "All Streams",
+    "sains": "Science",
+    "sainsKomputer": "Computer Science",
+    "kejuruteraan": "Engineering",
+    "perakaunan": "Accounting",
+    "sainsSosial": "Social Science",
+    "phone": "Phone",
+    "website": "Website",
+    "tracks": "Tracks",
+    "state": "State",
+    "name": "Name",
+    "stream": "Stream",
+    "ppd": "District",
+    "high": "High",
+    "fair": "Fair",
+    "low": "Low",
+    "matricCaveat": "Track availability is based on MOE Soalan Lazim (Nov 2024) and may change. Students are assigned to colleges by MOE based on merit and availability.",
+    "stpmCaveat": "School data is from MOE SST6 portal. Offerings may change each intake."
   }
 }

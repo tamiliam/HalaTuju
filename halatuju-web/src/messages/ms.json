@@ -366,5 +366,34 @@
       "ilkbs": "ILKBS"
     },
     "courses": "kursus"
+  },
+  "pathwayDetail": {
+    "backToDashboard": "Kembali ke Papan Pemuka",
+    "matricTitle": "Matrikulasi",
+    "stpmTitle": "Tingkatan 6 (STPM)",
+    "meritScore": "Skor Merit",
+    "mataGred": "Mata Gred",
+    "eligibleTracks": "Jurusan Layak",
+    "colleges": "Kolej",
+    "schools": "Sekolah",
+    "allStates": "Semua Negeri",
+    "allStreams": "Semua Aliran",
+    "sains": "Sains",
+    "sainsKomputer": "Sains Komputer",
+    "kejuruteraan": "Kejuruteraan",
+    "perakaunan": "Perakaunan",
+    "sainsSosial": "Sains Sosial",
+    "phone": "Telefon",
+    "website": "Laman Web",
+    "tracks": "Jurusan",
+    "state": "Negeri",
+    "name": "Nama",
+    "stream": "Aliran",
+    "ppd": "PPD",
+    "high": "Tinggi",
+    "fair": "Sederhana",
+    "low": "Rendah",
+    "matricCaveat": "Ketersediaan jurusan berdasarkan Soalan Lazim KPM (Nov 2024) dan mungkin berubah. Pelajar ditempatkan oleh KPM berdasarkan merit dan kekosongan.",
+    "stpmCaveat": "Data sekolah daripada portal SST6 KPM. Tawaran mungkin berubah setiap pengambilan."
   }
 }
