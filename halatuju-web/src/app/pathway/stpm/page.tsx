@@ -374,6 +374,9 @@ function StpmContent() {
               </div>
             </section>
 
+            {/* Subject Legend */}
+            <SubjectLegend stream={meta.schoolStream} />
+
             {/* Caveat */}
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
               <p className="text-xs text-amber-700">
@@ -402,42 +405,105 @@ const COMMON_SUBJECTS = new Set(['BI (MUET)', 'PA', 'BM'])
 const SCIENCE_SUBJECTS = new Set(['BIO', 'CHE', 'PHY', 'MT', 'MM'])
 const SOCIAL_SUBJECTS = new Set(['EKO', 'SEJ', 'GEO', 'PP', 'PAKN', 'SS', 'SV'])
 
-function filterSubjects(raw: string, stream: string): string {
+const SUBJECT_COLORS: Record<string, string> = {
+  BIO: 'bg-green-100 text-green-700',
+  CHE: 'bg-amber-100 text-amber-700',
+  PHY: 'bg-blue-100 text-blue-700',
+  MT: 'bg-indigo-100 text-indigo-700',
+  MM: 'bg-indigo-100 text-indigo-700',
+  EKO: 'bg-emerald-100 text-emerald-700',
+  SEJ: 'bg-rose-100 text-rose-700',
+  GEO: 'bg-teal-100 text-teal-700',
+  PP: 'bg-orange-100 text-orange-700',
+  PAKN: 'bg-purple-100 text-purple-700',
+  SS: 'bg-pink-100 text-pink-700',
+  SV: 'bg-cyan-100 text-cyan-700',
+}
+
+const SUBJECT_NAMES: Record<string, string> = {
+  BIO: 'Biology',
+  CHE: 'Chemistry',
+  PHY: 'Physics',
+  MT: 'Mathematics (T)',
+  MM: 'Mathematics (M)',
+  EKO: 'Economics',
+  SEJ: 'History',
+  GEO: 'Geography',
+  PP: 'Business Studies',
+  PAKN: 'Accounting',
+  SS: 'Literature',
+  SV: 'Visual Arts',
+}
+
+function filterSubjects(raw: string, stream: string): string[] {
   const relevant = stream === 'Sains' ? SCIENCE_SUBJECTS : SOCIAL_SUBJECTS
   return raw
     .split('; ')
     .filter(s => !COMMON_SUBJECTS.has(s) && relevant.has(s))
-    .join(' · ')
+}
+
+function formatPhone(raw: string): string {
+  const d = raw.replace(/\D/g, '')
+  if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)} ${d.slice(6)}`
+  if (d.length === 9) return `${d.slice(0, 2)}-${d.slice(2, 5)} ${d.slice(5)}`
+  if (d.length === 11) return `${d.slice(0, 3)}-${d.slice(3, 7)} ${d.slice(7)}`
+  return raw
+}
+
+function SubjectLegend({ stream }: { stream: string }) {
+  const subjects = stream === 'Sains'
+    ? ['BIO', 'CHE', 'PHY', 'MT', 'MM']
+    : ['EKO', 'PP', 'PAKN', 'SEJ', 'GEO', 'SS', 'SV']
+
+  return (
+    <section className="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 className="text-lg font-semibold text-gray-900 mb-3">Subject Key</h2>
+      <div className="space-y-2">
+        {subjects.map(code => (
+          <div key={code} className="flex items-center gap-2">
+            <span className={`px-2 py-0.5 rounded text-xs font-medium ${SUBJECT_COLORS[code]}`}>
+              {code}
+            </span>
+            <span className="text-xs text-gray-600">{SUBJECT_NAMES[code]}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
 }
 
 function SchoolCard({ school, activeStream }: { school: StpmSchool; activeStream: string }) {
-  const subjects = school.subjects ? filterSubjects(school.subjects, activeStream) : ''
+  const subjects = school.subjects ? filterSubjects(school.subjects, activeStream) : []
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-      <div className="flex items-start justify-between gap-3">
+    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 sm:p-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 mb-1 truncate">
+          <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-1 truncate">
             {school.name}
           </h3>
-          <p className="text-sm text-gray-500 mb-2">
+          <p className="text-xs sm:text-sm text-gray-500 mb-2">
             {school.state} &middot; {school.ppd}
           </p>
-          {subjects && (
-            <p className="text-xs text-gray-500">
-              {subjects}
-            </p>
+          {subjects.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {subjects.map(s => (
+                <span key={s} className={`px-1.5 py-0.5 rounded text-[10px] sm:text-xs font-medium ${SUBJECT_COLORS[s] || 'bg-gray-100 text-gray-600'}`}>
+                  {s}
+                </span>
+              ))}
+            </div>
           )}
         </div>
         {school.phone && (
           <a
             href={`tel:${school.phone}`}
-            className="text-sm text-primary-600 hover:text-primary-800 whitespace-nowrap flex items-center gap-1"
+            className="text-xs sm:text-sm text-primary-600 hover:text-primary-800 whitespace-nowrap flex items-center gap-1"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
             </svg>
-            {school.phone}
+            {formatPhone(school.phone)}
           </a>
         )}
       </div>
