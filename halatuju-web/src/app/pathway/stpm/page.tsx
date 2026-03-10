@@ -21,12 +21,12 @@ const STREAM_META: Record<StreamId, {
   sains: {
     label: 'Science',
     badgeColor: 'bg-green-100 text-green-800',
-    schoolStream: 'SAINS',
+    schoolStream: 'Sains',
   },
   sains_sosial: {
     label: 'Social Science',
     badgeColor: 'bg-sky-100 text-sky-800',
-    schoolStream: 'SAINS SOSIAL',
+    schoolStream: 'Sains Sosial',
   },
 }
 
@@ -458,7 +458,7 @@ function SchoolCard({ school, activeStream }: { school: StpmSchool; activeStream
           <div className="flex flex-wrap gap-1.5">
             <span
               className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                activeStream === 'SAINS'
+                activeStream === 'Sains'
                   ? 'bg-green-100 text-green-800'
                   : 'bg-sky-100 text-sky-800'
               }`}

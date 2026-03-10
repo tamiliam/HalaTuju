@@ -234,7 +234,7 @@ export default function DashboardPage() {
           ).length
         } else {
           track.mataGred = r.mataGred
-          const streamName = r.trackId === 'sains' ? 'SAINS' : 'SAINS SOSIAL'
+          const streamName = r.trackId === 'sains' ? 'Sains' : 'Sains Sosial'
           track.schoolCount = STPM_SCHOOLS.filter(s =>
             s.streams.includes(streamName)
           ).length
