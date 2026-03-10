@@ -330,5 +330,21 @@
     "appliedAt": "Applied",
     "offeredAt": "Outcome date",
     "noSavedCourses": "Save some courses first, then track your applications here."
+  },
+  "pathways": {
+    "title": "Your Pathways",
+    "matriculation": "Matriculation (Matrikulasi)",
+    "stpm": "Form 6 (STPM)",
+    "eligible": "Eligible",
+    "notEligible": "Not Eligible",
+    "merit": "Merit",
+    "mataGred": "Mata Gred",
+    "noneEligible": "Based on your current grades, you may not meet the minimum requirements for these pathways. Focus on the courses shown below.",
+    "gradeTooLow": "Need at least {minGrade} in {subject}",
+    "subjectMissing": "{subject} not entered",
+    "notEnoughElectives": "Need more subjects with at least C",
+    "notEnoughCredits": "Need credits in {needed} subject groups (have {have})",
+    "mataGredTooHigh": "Mata gred {total} exceeds limit of {max}",
+    "bmCreditRequired": "Credit in Bahasa Melayu required"
   }
 }

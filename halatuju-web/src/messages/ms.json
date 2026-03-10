@@ -330,5 +330,21 @@
     "appliedAt": "Tarikh mohon",
     "offeredAt": "Tarikh keputusan",
     "noSavedCourses": "Simpan beberapa kursus dahulu, kemudian jejaki permohonan anda di sini."
+  },
+  "pathways": {
+    "title": "Laluan Anda",
+    "matriculation": "Matrikulasi",
+    "stpm": "Tingkatan 6 (STPM)",
+    "eligible": "Layak",
+    "notEligible": "Tidak Layak",
+    "merit": "Merit",
+    "mataGred": "Mata Gred",
+    "noneEligible": "Berdasarkan keputusan semasa anda, anda mungkin tidak memenuhi syarat minimum laluan ini. Fokus pada kursus yang ditunjukkan di bawah.",
+    "gradeTooLow": "Perlukan sekurang-kurangnya {minGrade} dalam {subject}",
+    "subjectMissing": "{subject} tidak dimasukkan",
+    "notEnoughElectives": "Perlukan lebih banyak subjek dengan sekurang-kurangnya C",
+    "notEnoughCredits": "Perlukan kepujian dalam {needed} kumpulan subjek (ada {have})",
+    "mataGredTooHigh": "Mata gred {total} melebihi had {max}",
+    "bmCreditRequired": "Kepujian Bahasa Melayu diperlukan"
   }
 }
