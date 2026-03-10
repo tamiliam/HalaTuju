@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, Suspense } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useT } from '@/lib/i18n'
-import { checkAllPathways, type PathwayResult } from '@/lib/pathways'
+import { checkAllPathways, MATRIC_TRACKS, type PathwayResult } from '@/lib/pathways'
 import { MATRIC_COLLEGES, type MatricCollege } from '@/data/matric-colleges'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
@@ -24,8 +25,25 @@ const TRACK_I18N_KEYS: Record<TrackId, string> = {
   perakaunan: 'pathwayDetail.perakaunan',
 }
 
-export default function MatricPathwayPage() {
+const TRACK_SUBTITLES: Record<TrackId, string> = {
+  sains: 'Pre-university science programme covering Physics, Chemistry, Biology, and Mathematics',
+  sains_komputer: 'Pre-university programme in Computer Science and Information Technology',
+  kejuruteraan: 'Pre-university engineering programme covering technical and applied sciences',
+  perakaunan: 'Pre-university accounting programme covering business and financial studies',
+}
+
+const TRACK_DESCRIPTIONS: Record<TrackId, string> = {
+  sains: 'The Matriculation Science track (Jurusan Sains) is a one-year pre-university programme under the Ministry of Education (KPM). Students study Physics, Chemistry, Biology, Mathematics, Computer Science, and Soft Skills. Graduates can apply for science-based degree programmes at public universities.',
+  sains_komputer: 'The Computer Science track (Jurusan Sains Komputer) focuses on programming, data structures, and IT fundamentals alongside Mathematics and core science subjects. Available at 4 selected colleges only.',
+  kejuruteraan: 'The Engineering track (Jurusan Kejuruteraan) is offered at 3 dedicated engineering colleges (Kolej Matrikulasi Kejuruteraan). Students study Engineering Mathematics, Physics, Chemistry, and Engineering Technology.',
+  perakaunan: 'The Accounting track (Jurusan Perakaunan) covers Accounting, Economics, Business Management, and Mathematics. Graduates can pursue accounting and business degree programmes.',
+}
+
+const ALL_TRACK_IDS: TrackId[] = ['sains', 'sains_komputer', 'kejuruteraan', 'perakaunan']
+
+function MatricPageContent() {
   const { t } = useT()
+  const searchParams = useSearchParams()
   const [grades, setGrades] = useState<Record<string, string> | null>(null)
   const [coq, setCoq] = useState<number>(0)
   const [stateFilter, setStateFilter] = useState<string>('all')
@@ -50,50 +68,57 @@ export default function MatricPathwayPage() {
     )
   }, [grades, coq])
 
-  const eligibleTracks = useMemo(
-    () => matricResults.filter(r => r.eligible),
-    [matricResults]
+  // Determine current track from URL param or first eligible
+  const currentTrackId = useMemo((): TrackId => {
+    const param = searchParams.get('track') as TrackId | null
+    if (param && ALL_TRACK_IDS.includes(param)) return param
+    // Fall back to first eligible track
+    const firstEligible = matricResults.find(r => r.eligible)
+    if (firstEligible) return firstEligible.trackId as TrackId
+    return 'sains'
+  }, [searchParams, matricResults])
+
+  // Current track result
+  const currentResult = useMemo(
+    () => matricResults.find(r => r.trackId === currentTrackId),
+    [matricResults, currentTrackId]
   )
 
-  // Merit score: take the highest from eligible tracks (they can differ per track)
-  const bestMerit = useMemo(() => {
-    if (eligibleTracks.length === 0) return null
-    return Math.max(...eligibleTracks.map(r => r.merit ?? 0))
-  }, [eligibleTracks])
+  // Current track info from MATRIC_TRACKS
+  const currentTrack = useMemo(
+    () => MATRIC_TRACKS.find(t => t.id === currentTrackId),
+    [currentTrackId]
+  )
+
+  // Merit score for current track
+  const meritScore = currentResult?.merit ?? null
 
   // Merit band
   const meritBand = useMemo(() => {
-    if (bestMerit === null) return null
-    if (bestMerit >= 94) return { label: t('pathwayDetail.high'), colour: 'bg-green-100 text-green-800' }
-    if (bestMerit >= 89) return { label: t('pathwayDetail.fair'), colour: 'bg-amber-100 text-amber-800' }
-    return { label: t('pathwayDetail.low'), colour: 'bg-red-100 text-red-800' }
-  }, [bestMerit, t])
+    if (meritScore === null) return null
+    if (meritScore >= 94) return { label: t('pathwayDetail.high'), colour: 'text-green-700' }
+    if (meritScore >= 89) return { label: t('pathwayDetail.fair'), colour: 'text-amber-700' }
+    return { label: t('pathwayDetail.low'), colour: 'text-red-700' }
+  }, [meritScore, t])
 
-  // Eligible track IDs for filtering colleges
-  const eligibleTrackIds = useMemo(
-    () => new Set(eligibleTracks.map(r => r.trackId)),
-    [eligibleTracks]
-  )
-
-  // Filter colleges: must offer at least one eligible track
-  const filteredColleges = useMemo(() => {
+  // Filter colleges: must offer THIS specific track
+  const trackColleges = useMemo(() => {
     let colleges = MATRIC_COLLEGES.filter(c =>
-      c.tracks.some(track => eligibleTrackIds.has(track))
+      c.tracks.includes(currentTrackId)
     )
     if (stateFilter !== 'all') {
       colleges = colleges.filter(c => c.state === stateFilter)
     }
     return colleges
-  }, [eligibleTrackIds, stateFilter])
+  }, [currentTrackId, stateFilter])
 
-  // Unique states from filtered-by-track colleges (before state filter)
+  // Available states from track-filtered colleges (before state filter)
   const availableStates = useMemo(() => {
     const trackFilteredColleges = MATRIC_COLLEGES.filter(c =>
-      c.tracks.some(track => eligibleTrackIds.has(track))
+      c.tracks.includes(currentTrackId)
     )
-    const states = Array.from(new Set(trackFilteredColleges.map(c => c.state))).sort()
-    return states
-  }, [eligibleTrackIds])
+    return Array.from(new Set(trackFilteredColleges.map(c => c.state))).sort()
+  }, [currentTrackId])
 
   // Loading / no profile state
   if (!grades) {
@@ -111,126 +136,213 @@ export default function MatricPathwayPage() {
     )
   }
 
+  const trackName = currentTrack?.name ?? currentTrackId
+
   return (
     <main className="min-h-screen bg-gray-50">
       <AppHeader />
 
-      <div className="container mx-auto px-4 sm:px-6 py-8 max-w-5xl">
-        {/* Back link */}
+      {/* Back link */}
+      <div className="container mx-auto px-4 sm:px-6 pt-6">
         <Link
           href="/dashboard"
-          className="inline-flex items-center text-sm text-gray-500 hover:text-primary-600 mb-6"
+          className="inline-flex items-center text-sm text-gray-500 hover:text-primary-600"
         >
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           {t('pathwayDetail.backToDashboard')}
         </Link>
+      </div>
 
-        {/* Header card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+      {/* Header section */}
+      <section className="bg-white border-b mt-4">
+        <div className="container mx-auto px-4 sm:px-6 py-8">
+          <div className="flex-1">
+            {/* Badges */}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-700">
                 {t('pathwayDetail.matricTitle')}
-              </h1>
-              {bestMerit !== null && meritBand && (
-                <div className="flex items-center gap-3 mt-2">
-                  <span className="text-sm text-gray-500">{t('pathwayDetail.meritScore')}</span>
-                  <span className="text-xl font-semibold text-gray-900">{bestMerit}</span>
-                  <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${meritBand.colour}`}>
-                    {meritBand.label}
+              </span>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${TRACK_COLOURS[currentTrackId]}`}>
+                {t(TRACK_I18N_KEYS[currentTrackId])}
+              </span>
+            </div>
+
+            {/* Title */}
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {t('pathwayDetail.matricTitle')} &mdash; {t(TRACK_I18N_KEYS[currentTrackId])}
+            </h1>
+
+            {/* Subtitle */}
+            <p className="text-lg text-primary-600 font-medium mb-4">
+              {TRACK_SUBTITLES[currentTrackId]}
+            </p>
+
+            {/* Duration + Fee */}
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+              <span className="flex items-center gap-1.5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                2 Semesters
+              </span>
+              <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
+                Free
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content — Two-column layout */}
+      <div className="container mx-auto px-4 sm:px-6 py-8">
+        <div className="grid md:grid-cols-3 gap-6">
+
+          {/* Left column */}
+          <div className="md:col-span-2 space-y-6">
+
+            {/* About This Track */}
+            <section className="bg-white rounded-xl border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                About This Track
+              </h2>
+              <p className="text-gray-600 leading-relaxed">
+                {TRACK_DESCRIPTIONS[currentTrackId]}
+              </p>
+            </section>
+
+            {/* Where to Study */}
+            <section className="bg-white rounded-xl border border-gray-200 p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {t('pathwayDetail.colleges')}
+                  <span className="text-gray-400 font-normal ml-2 text-base">
+                    ({trackColleges.length})
+                  </span>
+                </h2>
+
+                {/* State filter */}
+                <select
+                  value={stateFilter}
+                  onChange={e => setStateFilter(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="all">{t('pathwayDetail.allStates')}</option>
+                  {availableStates.map(state => (
+                    <option key={state} value={state}>{state}</option>
+                  ))}
+                </select>
+              </div>
+
+              {trackColleges.length > 0 ? (
+                <div className="space-y-3">
+                  {trackColleges.map(college => (
+                    <CollegeCard
+                      key={college.id}
+                      college={college}
+                      currentTrackId={currentTrackId}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 text-center py-8">
+                  No colleges found for the selected filters.
+                </p>
+              )}
+            </section>
+          </div>
+
+          {/* Right column */}
+          <div className="space-y-6">
+
+            {/* Quick Facts */}
+            <section className="bg-white rounded-xl border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Quick Facts
+              </h2>
+              <div className="space-y-4">
+                <InfoRow label="Programme" value={t('pathwayDetail.matricTitle')} />
+                <InfoRow label="Track" value={t(TRACK_I18N_KEYS[currentTrackId])} />
+                <InfoRow label="Duration" value="2 Semesters" />
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 text-sm">Fee</span>
+                  <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
+                    Free
                   </span>
                 </div>
-              )}
-            </div>
-          </div>
+                <InfoRow label="Intake" value="March (yearly)" />
+                {meritScore !== null && meritBand && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500 text-sm">{t('pathwayDetail.meritScore')}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-900 text-sm">{meritScore}</span>
+                      <span className={`text-xs font-medium ${meritBand.colour}`}>
+                        ({meritBand.label})
+                      </span>
+                    </span>
+                  </div>
+                )}
+              </div>
+            </section>
 
-          {/* Eligible tracks */}
-          {eligibleTracks.length > 0 && (
-            <div className="mt-4">
-              <p className="text-sm text-gray-500 mb-2">{t('pathwayDetail.eligibleTracks')}</p>
-              <div className="flex flex-wrap gap-2">
-                {eligibleTracks.map(track => (
-                  <span
-                    key={track.trackId}
-                    className={`text-sm font-medium px-3 py-1 rounded-full ${TRACK_COLOURS[track.trackId as TrackId]}`}
-                  >
-                    {t(TRACK_I18N_KEYS[track.trackId as TrackId])}
-                  </span>
-                ))}
+            {/* Your Eligible Tracks */}
+            <section className="bg-white rounded-xl border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                {t('pathwayDetail.eligibleTracks')}
+              </h2>
+              <div className="space-y-3">
+                {ALL_TRACK_IDS.map(trackId => {
+                  const result = matricResults.find(r => r.trackId === trackId)
+                  const isEligible = result?.eligible ?? false
+                  const isActive = trackId === currentTrackId
+
+                  return (
+                    <Link
+                      key={trackId}
+                      href={`/pathway/matric?track=${trackId}`}
+                      className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
+                        isActive ? 'bg-gray-100' : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      {/* Check / Cross icon */}
+                      {isEligible ? (
+                        <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      )}
+                      <span
+                        className={`text-sm font-medium px-2.5 py-0.5 rounded-full ${
+                          isEligible
+                            ? TRACK_COLOURS[trackId]
+                            : 'bg-gray-100 text-gray-400'
+                        }`}
+                      >
+                        {t(TRACK_I18N_KEYS[trackId])}
+                      </span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </section>
+
+            {/* Caveat card */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <div className="flex gap-3">
+                <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <p className="text-sm text-amber-800">
+                  {t('pathwayDetail.matricCaveat')}
+                </p>
               </div>
             </div>
-          )}
-
-          {eligibleTracks.length === 0 && (
-            <p className="mt-4 text-sm text-red-600">
-              {t('pathwayDetail.eligibleTracks')}: 0
-            </p>
-          )}
+          </div>
         </div>
-
-        {/* Colleges section */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {t('pathwayDetail.colleges')}
-              <span className="text-gray-400 font-normal ml-2 text-sm">
-                ({filteredColleges.length})
-              </span>
-            </h2>
-
-            {/* State filter */}
-            <select
-              value={stateFilter}
-              onChange={e => setStateFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            >
-              <option value="all">{t('pathwayDetail.allStates')}</option>
-              {availableStates.map(state => (
-                <option key={state} value={state}>{state}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Desktop table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-left">
-                  <th className="py-3 pr-4 font-medium text-gray-500">{t('pathwayDetail.name')}</th>
-                  <th className="py-3 pr-4 font-medium text-gray-500">{t('pathwayDetail.state')}</th>
-                  <th className="py-3 pr-4 font-medium text-gray-500">{t('pathwayDetail.tracks')}</th>
-                  <th className="py-3 pr-4 font-medium text-gray-500">{t('pathwayDetail.phone')}</th>
-                  <th className="py-3 font-medium text-gray-500">{t('pathwayDetail.website')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredColleges.map(college => (
-                  <CollegeRow key={college.id} college={college} eligibleTrackIds={eligibleTrackIds} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="md:hidden space-y-3">
-            {filteredColleges.map(college => (
-              <CollegeCard key={college.id} college={college} eligibleTrackIds={eligibleTrackIds} />
-            ))}
-          </div>
-
-          {filteredColleges.length === 0 && (
-            <p className="text-sm text-gray-500 text-center py-8">
-              No colleges found for the selected filters.
-            </p>
-          )}
-        </div>
-
-        {/* Caveat */}
-        <p className="text-xs text-gray-400 text-center px-4 mb-8">
-          {t('pathwayDetail.matricCaveat')}
-        </p>
       </div>
 
       <AppFooter />
@@ -238,74 +350,64 @@ export default function MatricPathwayPage() {
   )
 }
 
+export default function MatricPathwayPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </main>
+    }>
+      <MatricPageContent />
+    </Suspense>
+  )
+}
+
 // --- Sub-components ---
 
-function CollegeRow({
-  college,
-  eligibleTrackIds,
-}: {
-  college: MatricCollege
-  eligibleTrackIds: Set<string>
-}) {
-  const { t } = useT()
-
+function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <tr className="border-b border-gray-100 hover:bg-gray-50">
-      <td className="py-3 pr-4 font-medium text-gray-900">{college.name}</td>
-      <td className="py-3 pr-4 text-gray-600">{college.state}</td>
-      <td className="py-3 pr-4">
-        <div className="flex flex-wrap gap-1">
-          {college.tracks.map(track => (
-            <span
-              key={track}
-              className={`text-xs px-2 py-0.5 rounded-full ${
-                eligibleTrackIds.has(track)
-                  ? TRACK_COLOURS[track]
-                  : 'bg-gray-100 text-gray-400'
-              }`}
-            >
-              {t(TRACK_I18N_KEYS[track])}
-            </span>
-          ))}
-        </div>
-      </td>
-      <td className="py-3 pr-4 text-gray-600 whitespace-nowrap">{college.phone}</td>
-      <td className="py-3">
-        <a
-          href={`https://${college.website}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary-600 hover:text-primary-700 hover:underline"
-        >
-          {college.website}
-        </a>
-      </td>
-    </tr>
+    <div className="flex justify-between items-center">
+      <span className="text-gray-500 text-sm">{label}</span>
+      <span className="font-medium text-gray-900 text-sm">{value}</span>
+    </div>
   )
 }
 
 function CollegeCard({
   college,
-  eligibleTrackIds,
+  currentTrackId,
 }: {
   college: MatricCollege
-  eligibleTrackIds: Set<string>
+  currentTrackId: TrackId
 }) {
   const { t } = useT()
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4">
-      <h3 className="font-medium text-gray-900 mb-1">{college.name}</h3>
-      <p className="text-sm text-gray-500 mb-2">{college.state}</p>
+    <div className="bg-gray-50 rounded-lg p-4">
+      {/* College name */}
+      <h3 className="font-semibold text-gray-900 mb-2">{college.name}</h3>
 
-      <div className="flex flex-wrap gap-1 mb-3">
+      {/* State */}
+      <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-3">
+        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        {college.state}
+      </div>
+
+      {/* Track badges */}
+      <div className="flex flex-wrap gap-1.5 mb-3">
         {college.tracks.map(track => (
           <span
             key={track}
-            className={`text-xs px-2 py-0.5 rounded-full ${
-              eligibleTrackIds.has(track)
-                ? TRACK_COLOURS[track]
-                : 'bg-gray-100 text-gray-400'
+            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+              track === currentTrackId
+                ? TRACK_COLOURS[track] + ' ring-2 ring-offset-1 ring-gray-300'
+                : TRACK_COLOURS[track]
             }`}
           >
             {t(TRACK_I18N_KEYS[track])}
@@ -313,25 +415,26 @@ function CollegeCard({
         ))}
       </div>
 
-      <div className="flex flex-col gap-1 text-sm">
-        <div className="flex items-center gap-2 text-gray-600">
-          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-          </svg>
-          {college.phone}
-        </div>
-        <a
-          href={`https://${college.website}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 text-primary-600 hover:underline"
-        >
-          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-          {college.website}
-        </a>
+      {/* Phone */}
+      <div className="flex items-center gap-2 text-sm text-gray-600 mb-1.5">
+        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+        </svg>
+        {college.phone}
       </div>
+
+      {/* Website */}
+      <a
+        href={`https://${college.website}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 hover:underline"
+      >
+        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+        {college.website}
+      </a>
     </div>
   )
 }

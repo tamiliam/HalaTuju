@@ -23,6 +23,9 @@ import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 import { checkAllPathways } from '@/lib/pathways'
 import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
+import PathwayTrackCard, { type PathwayTrack } from '@/components/PathwayTrackCard'
+import { MATRIC_COLLEGES } from '@/data/matric-colleges'
+import { STPM_SCHOOLS } from '@/data/stpm-schools'
 
 const RESUME_ACTION_KEY = 'halatuju_resume_action'
 
@@ -205,6 +208,40 @@ export default function DashboardPage() {
 
     return summaries
   }, [eligibilityData, pathwayResults, t])
+
+  // Build pathway track cards for matric/stpm filters
+  const pathwayTracks = useMemo((): PathwayTrack[] => {
+    if (!pathwayResults || (filter !== 'matric' && filter !== 'stpm')) return []
+
+    const meritScore = profile?.student_merit
+    const meritLabel: 'High' | 'Fair' | 'Low' | undefined = meritScore
+      ? meritScore >= 94 ? 'High' : meritScore >= 89 ? 'Fair' : 'Low'
+      : undefined
+
+    return pathwayResults
+      .filter(r => r.pathway === filter && r.eligible)
+      .map(r => {
+        const track: PathwayTrack = {
+          id: `${r.pathway}-${r.trackId}`,
+          pathway: r.pathway,
+          track: r.trackId,
+        }
+        if (r.pathway === 'matric') {
+          track.meritScore = r.merit ?? meritScore
+          track.meritLabel = meritLabel
+          track.collegeCount = MATRIC_COLLEGES.filter(c =>
+            c.tracks.includes(r.trackId as 'sains' | 'sains_komputer' | 'kejuruteraan' | 'perakaunan')
+          ).length
+        } else {
+          track.mataGred = r.mataGred
+          const streamName = r.trackId === 'sains' ? 'SAINS' : 'SAINS SOSIAL'
+          track.schoolCount = STPM_SCHOOLS.filter(s =>
+            s.streams.includes(streamName)
+          ).length
+        }
+        return track
+      })
+  }, [pathwayResults, filter, profile])
 
   const handleRetakeQuiz = () => {
     localStorage.removeItem('halatuju_quiz_signals')
@@ -397,6 +434,15 @@ export default function DashboardPage() {
             >
               {t('common.retry')}
             </button>
+          </div>
+        )}
+
+        {/* Pathway Track Cards — when matric or stpm filter is active */}
+        {pathwayTracks.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            {pathwayTracks.map(track => (
+              <PathwayTrackCard key={track.id} track={track} />
+            ))}
           </div>
         )}
 
