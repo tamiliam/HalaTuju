@@ -7,10 +7,17 @@ export interface PathwaySummary {
   label: string
   count?: number
   eligible: boolean
-  detail?: string
 }
 
-export default function PathwayCards({ pathways }: { pathways: PathwaySummary[] }) {
+export default function PathwayCards({
+  pathways,
+  activeFilter,
+  onFilterChange,
+}: {
+  pathways: PathwaySummary[]
+  activeFilter: string
+  onFilterChange: (type: string) => void
+}) {
   const { t } = useT()
 
   const eligible = pathways.filter(p => p.eligible)
@@ -21,20 +28,33 @@ export default function PathwayCards({ pathways }: { pathways: PathwaySummary[] 
     <div className="mb-4">
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm font-semibold text-gray-700">{t('pathways.title')}:</span>
-        {eligible.map(p => (
-          <span
-            key={p.type}
-            className="inline-flex items-center gap-1 rounded-full bg-primary-50 border border-primary-200 px-2.5 py-0.5 text-xs font-medium text-primary-700"
+        {eligible.map(p => {
+          const isActive = activeFilter === p.type
+          return (
+            <button
+              key={p.type}
+              onClick={() => onFilterChange(isActive ? 'all' : p.type)}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors cursor-pointer ${
+                isActive
+                  ? 'bg-primary-600 text-white border border-primary-600'
+                  : 'bg-primary-50 text-primary-700 border border-primary-200 hover:bg-primary-100'
+              }`}
+            >
+              {p.label}
+              {p.count != null && (
+                <span className={isActive ? 'text-primary-200' : 'text-primary-400'}>{p.count}</span>
+              )}
+            </button>
+          )
+        })}
+        {activeFilter !== 'all' && (
+          <button
+            onClick={() => onFilterChange('all')}
+            className="text-xs text-gray-400 hover:text-gray-600 ml-1"
           >
-            {p.label}
-            {p.count != null && (
-              <span className="text-primary-400">{p.count}</span>
-            )}
-            {p.detail && (
-              <span className="text-primary-400">{p.detail}</span>
-            )}
-          </span>
-        ))}
+            {t('dashboard.clearFilter')}
+          </button>
+        )}
       </div>
     </div>
   )

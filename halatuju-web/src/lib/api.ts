@@ -59,6 +59,7 @@ export interface EligibleCourse {
   level: string
   field: string
   source_type: string
+  pathway_type?: string
   merit_cutoff: number | null
   student_merit: number | null
   merit_label: string | null
