@@ -345,6 +345,18 @@
     "notEnoughElectives": "குறைந்தபட்சம் C உடன் மேலும் பாடங்கள் தேவை",
     "notEnoughCredits": "{needed} பாடக் குழுக்களில் கிரெடிட் தேவை ({have} உள்ளது)",
     "mataGredTooHigh": "மாட்டா கிரெட் {total} வரம்பு {max} ஐ மீறுகிறது",
-    "bmCreditRequired": "பஹாசா மலாயு கிரெடிட் தேவை"
+    "bmCreditRequired": "பஹாசா மலாயு கிரெடிட் தேவை",
+    "types": {
+      "asasi": "அசாசி",
+      "matric": "மெட்ரிக்",
+      "stpm": "படிவம் 6",
+      "pismp": "PISMP",
+      "poly": "பொலிடெக்னிக்",
+      "university": "பல்கலைக்கழகம்",
+      "kkom": "கொலேஜ் கொமுனிட்டி",
+      "iljtm": "ILJTM",
+      "ilkbs": "ILKBS"
+    },
+    "courses": "படிப்புகள்"
   }
 }

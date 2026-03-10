@@ -282,12 +282,18 @@ class EligibilityCheckView(APIView):
                         student_merit, merit_cutoff
                     )
 
+                # Get pathway_type from startup map
+                pathway_type = courses_config.course_pathway_map.get(
+                    course_id, source_type
+                )
+
                 eligible_courses.append({
                     'course_id': course_id,
                     'course_name': course_name,
                     'level': course_level,
                     'field': course_field,
                     'source_type': source_type,
+                    'pathway_type': pathway_type,
                     'merit_cutoff': merit_cutoff,
                     'student_merit': student_merit,
                     'merit_label': merit_label,
@@ -317,6 +323,12 @@ class EligibilityCheckView(APIView):
 
         logger.info(f"Eligibility check: {len(eligible_courses)} courses eligible")
 
+        # Build pathway stats from eligible courses
+        pathway_stats = {}
+        for c in eligible_courses:
+            pt = c.get('pathway_type', c['source_type'])
+            pathway_stats[pt] = pathway_stats.get(pt, 0) + 1
+
         # Generate deterministic insights from results
         insights = generate_insights(eligible_courses)
 
@@ -324,6 +336,7 @@ class EligibilityCheckView(APIView):
             'eligible_courses': eligible_courses,
             'total_count': len(eligible_courses),
             'stats': stats,
+            'pathway_stats': pathway_stats,
             'insights': insights,
         })
 

@@ -345,6 +345,18 @@
     "notEnoughElectives": "Need more subjects with at least C",
     "notEnoughCredits": "Need credits in {needed} subject groups (have {have})",
     "mataGredTooHigh": "Mata gred {total} exceeds limit of {max}",
-    "bmCreditRequired": "Credit in Bahasa Melayu required"
+    "bmCreditRequired": "Credit in Bahasa Melayu required",
+    "types": {
+      "asasi": "Asasi",
+      "matric": "Matriculation",
+      "stpm": "Form 6",
+      "pismp": "PISMP",
+      "poly": "Polytechnic",
+      "university": "University",
+      "kkom": "Kolej Komuniti",
+      "iljtm": "ILJTM",
+      "ilkbs": "ILKBS"
+    },
+    "courses": "courses"
   }
 }

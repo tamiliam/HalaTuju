@@ -345,6 +345,18 @@
     "notEnoughElectives": "Perlukan lebih banyak subjek dengan sekurang-kurangnya C",
     "notEnoughCredits": "Perlukan kepujian dalam {needed} kumpulan subjek (ada {have})",
     "mataGredTooHigh": "Mata gred {total} melebihi had {max}",
-    "bmCreditRequired": "Kepujian Bahasa Melayu diperlukan"
+    "bmCreditRequired": "Kepujian Bahasa Melayu diperlukan",
+    "types": {
+      "asasi": "Asasi",
+      "matric": "Matrikulasi",
+      "stpm": "Tingkatan 6",
+      "pismp": "PISMP",
+      "poly": "Politeknik",
+      "university": "Universiti",
+      "kkom": "Kolej Komuniti",
+      "iljtm": "ILJTM",
+      "ilkbs": "ILKBS"
+    },
+    "courses": "kursus"
   }
 }

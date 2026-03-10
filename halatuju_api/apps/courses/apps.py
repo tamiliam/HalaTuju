@@ -25,6 +25,7 @@ class CoursesConfig(AppConfig):
     course_tags_map = {}       # {course_id: tags_dict}
     inst_modifiers_map = {}    # {inst_id: modifiers_dict}
     inst_subcategories = {}    # {inst_id: subcategory_string}
+    course_pathway_map = {}    # {course_id: pathway_type}
 
     def ready(self):
         """
@@ -112,5 +113,58 @@ class CoursesConfig(AppConfig):
             for row in inst_mod_qs
         }
         logger.info(f"Loaded {len(self.inst_modifiers_map)} institution modifiers")
+
+        # Build course → pathway_type map for frontend pathway summary
+        from .models import Course, CourseInstitution
+        course_pathway_map = {}
+
+        # Map institution_id → category for TVET lookups
+        inst_cat_qs = Institution.objects.filter(
+            category__in=['ILJTM', 'ILKBS']
+        ).values('institution_id', 'category')
+        inst_categories = {
+            row['institution_id']: row['category'].lower()
+            for row in inst_cat_qs
+        }
+
+        # Build TVET course → pathway_type via CourseInstitution
+        tvet_course_ids = set(
+            CourseRequirement.objects.filter(
+                source_type='tvet'
+            ).values_list('course_id', flat=True)
+        )
+        for ci in CourseInstitution.objects.filter(
+            course_id__in=tvet_course_ids
+        ).values('course_id', 'institution_id'):
+            cid = ci['course_id']
+            iid = ci['institution_id']
+            if iid in inst_categories and cid not in course_pathway_map:
+                course_pathway_map[cid] = inst_categories[iid]
+
+        # Default remaining TVET to 'tvet'
+        for cid in tvet_course_ids:
+            if cid not in course_pathway_map:
+                course_pathway_map[cid] = 'tvet'
+
+        # Non-TVET courses
+        for req in CourseRequirement.objects.exclude(
+            source_type='tvet'
+        ).select_related('course').values(
+            'course_id', 'source_type', 'course__level'
+        ):
+            cid = req['course_id']
+            st = req['source_type']
+            level = req['course__level'] or ''
+            if st == 'ua':
+                course_pathway_map[cid] = (
+                    'asasi' if level.lower() == 'asasi' else 'university'
+                )
+            else:
+                course_pathway_map[cid] = st  # poly, kkom, pismp
+
+        self.course_pathway_map = course_pathway_map
+        logger.info(
+            f"Loaded {len(course_pathway_map)} course pathway mappings"
+        )
 
         logger.info("Course data loading complete")

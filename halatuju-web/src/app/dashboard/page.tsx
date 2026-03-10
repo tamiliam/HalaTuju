@@ -22,7 +22,7 @@ import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 import { checkAllPathways } from '@/lib/pathways'
-import PathwayCards from '@/components/PathwayCards'
+import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
 
 const RESUME_ACTION_KEY = 'halatuju_resume_action'
 
@@ -157,6 +157,62 @@ export default function DashboardPage() {
     queryFn: () => getRankedResults(eligibilityData!.eligible_courses, quizSignals!),
     enabled: !!eligibilityData && !!quizSignals,
   })
+
+  // Build pathway summary badges from eligibility data + pathway engine
+  const pathwaySummaries = useMemo((): PathwaySummary[] => {
+    const summaries: PathwaySummary[] = []
+
+    // Course-based pathways from API response (uses pathway_type from backend)
+    if (eligibilityData?.eligible_courses) {
+      const counts: Record<string, number> = {}
+      eligibilityData.eligible_courses.forEach((c: { pathway_type?: string; source_type: string }) => {
+        const pt = c.pathway_type || c.source_type
+        counts[pt] = (counts[pt] || 0) + 1
+      })
+
+      const coursePathways: PathwaySummary['type'][] = [
+        'asasi', 'pismp', 'poly', 'university', 'kkom', 'iljtm', 'ilkbs',
+      ]
+
+      for (const type of coursePathways) {
+        if (counts[type]) {
+          summaries.push({
+            type,
+            label: t(`pathways.types.${type}`),
+            count: counts[type],
+            eligible: true,
+          })
+        }
+      }
+    }
+
+    // Matric/STPM from pathway engine
+    if (pathwayResults) {
+      const matricEligible = pathwayResults.filter(r => r.pathway === 'matric' && r.eligible)
+      if (matricEligible.length > 0) {
+        const bestMerit = Math.max(...matricEligible.map(r => r.merit || 0))
+        summaries.push({
+          type: 'matric',
+          label: t('pathways.types.matric'),
+          eligible: true,
+          detail: `${t('pathways.merit')}: ${bestMerit.toFixed(1)}`,
+        })
+      }
+
+      const stpmEligible = pathwayResults.filter(r => r.pathway === 'stpm' && r.eligible)
+      if (stpmEligible.length > 0) {
+        const bestGred = Math.min(...stpmEligible.map(r => r.mataGred || 99))
+        summaries.push({
+          type: 'stpm',
+          label: t('pathways.types.stpm'),
+          eligible: true,
+          detail: `${t('pathways.mataGred')}: ${bestGred}`,
+        })
+      }
+    }
+
+    return summaries
+  }, [eligibilityData, pathwayResults, t])
 
   const handleRetakeQuiz = () => {
     localStorage.removeItem('halatuju_quiz_signals')
@@ -318,9 +374,9 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Pathway Cards — Matric & STPM */}
-        {pathwayResults.length > 0 && !eligibilityLoading && (
-          <PathwayCards results={pathwayResults} />
+        {/* Pathway Cards — all pathway types */}
+        {pathwaySummaries.length > 0 && !eligibilityLoading && (
+          <PathwayCards pathways={pathwaySummaries} />
         )}
 
         {/* Loading State */}
