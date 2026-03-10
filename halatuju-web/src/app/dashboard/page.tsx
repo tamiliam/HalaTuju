@@ -163,51 +163,43 @@ export default function DashboardPage() {
   const pathwaySummaries = useMemo((): PathwaySummary[] => {
     const summaries: PathwaySummary[] = []
 
-    // Course-based pathways from API response (uses pathway_type from backend)
+    // Course counts from API response (uses pathway_type from backend)
+    const courseCounts: Record<string, number> = {}
     if (eligibilityData?.eligible_courses) {
-      const counts: Record<string, number> = {}
       eligibilityData.eligible_courses.forEach((c: { pathway_type?: string; source_type: string }) => {
         const pt = c.pathway_type || c.source_type
-        counts[pt] = (counts[pt] || 0) + 1
+        courseCounts[pt] = (courseCounts[pt] || 0) + 1
       })
-
-      const coursePathways: PathwaySummary['type'][] = [
-        'asasi', 'pismp', 'poly', 'university', 'kkom', 'iljtm', 'ilkbs',
-      ]
-
-      for (const type of coursePathways) {
-        if (counts[type]) {
-          summaries.push({
-            type,
-            label: t(`pathways.types.${type}`),
-            count: counts[type],
-            eligible: true,
-          })
-        }
-      }
     }
 
-    // Matric/STPM from pathway engine
+    // Matric/STPM counts from pathway engine
+    let matricCount = 0
+    let stpmCount = 0
     if (pathwayResults) {
-      const matricEligible = pathwayResults.filter(r => r.pathway === 'matric' && r.eligible)
-      if (matricEligible.length > 0) {
-        const bestMerit = Math.max(...matricEligible.map(r => r.merit || 0))
-        summaries.push({
-          type: 'matric',
-          label: t('pathways.types.matric'),
-          eligible: true,
-          detail: `${t('pathways.merit')}: ${bestMerit.toFixed(1)}`,
-        })
-      }
+      matricCount = pathwayResults.filter(r => r.pathway === 'matric' && r.eligible).length
+      stpmCount = pathwayResults.filter(r => r.pathway === 'stpm' && r.eligible).length
+    }
 
-      const stpmEligible = pathwayResults.filter(r => r.pathway === 'stpm' && r.eligible)
-      if (stpmEligible.length > 0) {
-        const bestGred = Math.min(...stpmEligible.map(r => r.mataGred || 99))
+    // Fixed order: Asasi, Matriculation, Form 6 first, then the rest
+    const orderedPathways: { type: PathwaySummary['type']; count: number }[] = [
+      { type: 'asasi', count: courseCounts['asasi'] || 0 },
+      { type: 'matric', count: matricCount },
+      { type: 'stpm', count: stpmCount },
+      { type: 'pismp', count: courseCounts['pismp'] || 0 },
+      { type: 'poly', count: courseCounts['poly'] || 0 },
+      { type: 'university', count: courseCounts['university'] || 0 },
+      { type: 'kkom', count: courseCounts['kkom'] || 0 },
+      { type: 'iljtm', count: courseCounts['iljtm'] || 0 },
+      { type: 'ilkbs', count: courseCounts['ilkbs'] || 0 },
+    ]
+
+    for (const { type, count } of orderedPathways) {
+      if (count > 0) {
         summaries.push({
-          type: 'stpm',
-          label: t('pathways.types.stpm'),
+          type,
+          label: t(`pathways.types.${type}`),
+          count,
           eligible: true,
-          detail: `${t('pathways.mataGred')}: ${bestGred}`,
         })
       }
     }
