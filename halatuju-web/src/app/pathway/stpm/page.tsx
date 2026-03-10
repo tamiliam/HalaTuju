@@ -211,12 +211,12 @@ function StpmContent() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 overflow-x-hidden">
       <AppHeader />
 
       {/* Header Section */}
       <section className="bg-white border-b">
-        <div className="container mx-auto px-6 py-8">
+        <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Back link */}
           <Link
             href="/dashboard"
@@ -235,11 +235,11 @@ function StpmContent() {
               </span>
             </div>
 
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               Form 6 (STPM) — {streamName}
             </h1>
 
-            <p className="text-lg text-primary-600 font-medium mb-4">
+            <p className="text-sm sm:text-lg text-primary-600 font-medium mb-4">
               {subtitleText}
             </p>
 
@@ -259,22 +259,22 @@ function StpmContent() {
       </section>
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="grid md:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="md:col-span-2 space-y-6">
             {/* About This Stream */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6">
+            <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
                 About This Stream
               </h2>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-600 leading-relaxed break-words">
                 {aboutText}
               </p>
             </section>
 
             {/* Where to Study */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6">
+            <section className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
                 {t('courseDetail.whereToStudy')}
                 <span className="text-gray-500 font-normal ml-2">
