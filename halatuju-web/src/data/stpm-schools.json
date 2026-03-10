@@ -1,17 +1,5 @@
 [
   {
-    "code": "JEB0015",
-    "name": "Sekolah Tinggi Batu Pahat",
-    "state": "Johor",
-    "ppd": "Batu Pahat",
-    "streams": [
-      "Sains",
-      "Sains Sosial"
-    ],
-    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ; SS; SV",
-    "phone": "074341097"
-  },
-  {
     "code": "JEB0016",
     "name": "SMK ( P ) Temenggong Ibrahim",
     "state": "Johor",
@@ -178,6 +166,18 @@
     ],
     "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
     "phone": "074671885"
+  },
+  {
+    "code": "JEB0015",
+    "name": "Sekolah Tinggi Batu Pahat",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "074341097"
   },
   {
     "code": "JEB1001",
@@ -465,18 +465,6 @@
     "phone": "077943234"
   },
   {
-    "code": "JEB5021",
-    "name": "Sekolah Tinggi Muar",
-    "state": "Johor",
-    "ppd": "Muar",
-    "streams": [
-      "Sains",
-      "Sains Sosial"
-    ],
-    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
-    "phone": "069521360"
-  },
-  {
     "code": "JEB5025",
     "name": "SMK (P) Sultan Abu Bakar",
     "state": "Johor",
@@ -565,6 +553,18 @@
     ],
     "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
     "phone": "069521771"
+  },
+  {
+    "code": "JEB5021",
+    "name": "Sekolah Tinggi Muar",
+    "state": "Johor",
+    "ppd": "Muar",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "069521360"
   },
   {
     "code": "JEE1005",
@@ -671,18 +671,6 @@
     "phone": "076960219"
   },
   {
-    "code": "JEB7029",
-    "name": "Sekolah Tinggi Segamat",
-    "state": "Johor",
-    "ppd": "Segamat",
-    "streams": [
-      "Sains",
-      "Sains Sosial"
-    ],
-    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PHY; PP; SEJ; SV",
-    "phone": "079312472"
-  },
-  {
     "code": "JEE7037",
     "name": "SMK Chaah",
     "state": "Johor",
@@ -748,6 +736,18 @@
     ],
     "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
     "phone": "079311235"
+  },
+  {
+    "code": "JEB7029",
+    "name": "Sekolah Tinggi Segamat",
+    "state": "Johor",
+    "ppd": "Segamat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "079312472"
   },
   {
     "code": "JEA9010",
@@ -6423,6 +6423,196 @@
     ],
     "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
     "phone": "096092323"
+  },
+  {
+    "code": "WEA0198",
+    "name": "KTE Pudu Jaya",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "0392212494"
+  },
+  {
+    "code": "WEB0219",
+    "name": "SMK (L) Methodist",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0320782293"
+  },
+  {
+    "code": "WEB0225",
+    "name": "SMK (P) Methodist",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0326926010"
+  },
+  {
+    "code": "WEB0211",
+    "name": "SMK Cochrane",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0392857387"
+  },
+  {
+    "code": "WEB0229",
+    "name": "SMK Seri Pantai",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "0379567409"
+  },
+  {
+    "code": "WEB0230",
+    "name": "SMK Seri Sentosa",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0379831764"
+  },
+  {
+    "code": "WEA0212",
+    "name": "SMK Taman Desa",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0379823058"
+  },
+  {
+    "code": "WEB0226",
+    "name": "SMK Victoria",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0320782489"
+  },
+  {
+    "code": "WEB0213",
+    "name": "SMK Convent Bukit Nanas",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Keramat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0320780559"
+  },
+  {
+    "code": "WEB0206",
+    "name": "SMK Seri Ampang",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Keramat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0321487065"
+  },
+  {
+    "code": "WEB0223",
+    "name": "SMK St. John",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Keramat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0320782846"
+  },
+  {
+    "code": "WEB0216",
+    "name": "SMK Tinggi Setapak",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Keramat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0340236191"
+  },
+  {
+    "code": "WEA0256",
+    "name": "KTE Desa Mahkota",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Sentul",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PAKN; PHY; PP; SEJ; SS",
+    "phone": "0362701480"
+  },
+  {
+    "code": "WEB0228",
+    "name": "SMK (P) Jalan Ipoh",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Sentul",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0362581664"
+  },
+  {
+    "code": "WEB0247",
+    "name": "SMK Chong Hwa",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Sentul",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; MT; PA; PHY",
+    "phone": "0340232411"
+  },
+  {
+    "code": "WEB0218",
+    "name": "SMK Maxwell",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Sentul",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0340412895"
   },
   {
     "code": "WEE1011",
