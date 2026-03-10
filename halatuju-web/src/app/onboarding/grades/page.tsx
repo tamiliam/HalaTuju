@@ -47,7 +47,7 @@ function StreamIcon({ stream, active }: { stream: string; active: boolean }) {
   )
 }
 
-// Section 2: Aliran — pick best 2 from stream pool
+// Section 2: Aliran — 4 stream subjects from stream pool
 // IDs MUST lowercase to engine keys (serializer fallback) or be in GRADE_KEY_MAP
 const STREAM_POOLS: Record<string, { id: string; name: string }[]> = {
   science: [
@@ -132,9 +132,8 @@ export default function GradesInputPage() {
   const [stream, setStream] = useState<string>('science')
   const [grades, setGrades] = useState<Record<string, string>>({})
 
-  // Aliran: 2 dropdown slots (pre-populated from stream)
-  const [aliranSubj1, setAliranSubj1] = useState<string>('')
-  const [aliranSubj2, setAliranSubj2] = useState<string>('')
+  // Aliran: 4 dropdown slots (pre-populated from stream)
+  const [aliranSubjects, setAliranSubjects] = useState<string[]>(['', '', '', ''])
 
   // Elektif: dynamic 0-2 slots
   const [elektifSlots, setElektifSlots] = useState<string[]>([])
@@ -145,20 +144,17 @@ export default function GradesInputPage() {
     const activeStream = savedStream || 'science'
     if (savedStream) setStream(savedStream)
 
-    // Load aliran subjects
-    let aliran1 = '', aliran2 = ''
+    // Load aliran subjects (4 slots)
+    let aliranLoaded = ['', '', '', '']
     const savedAliran = localStorage.getItem('halatuju_aliran')
     if (savedAliran) {
       const a = JSON.parse(savedAliran)
-      aliran1 = a[0] || ''
-      aliran2 = a[1] || ''
+      aliranLoaded = [a[0] || '', a[1] || '', a[2] || '', a[3] || '']
     } else {
       const pool = STREAM_POOLS[activeStream] || []
-      aliran1 = pool[0]?.id || ''
-      aliran2 = pool[1]?.id || ''
+      aliranLoaded = [pool[0]?.id || '', pool[1]?.id || '', pool[2]?.id || '', pool[3]?.id || '']
     }
-    setAliranSubj1(aliran1)
-    setAliranSubj2(aliran2)
+    setAliranSubjects(aliranLoaded)
 
     // Load elective subjects
     let elektif: string[] = []
@@ -174,7 +170,7 @@ export default function GradesInputPage() {
       const allGrades = JSON.parse(savedGrades)
       const validIds = new Set([
         ...CORE_SUBJECTS.map(s => s.id),
-        ...[aliran1, aliran2].filter(Boolean),
+        ...aliranLoaded.filter(Boolean),
         ...elektif,
       ])
       const cleaned: Record<string, string> = {}
@@ -199,23 +195,23 @@ export default function GradesInputPage() {
 
   // Pre-populate stream subjects when stream changes — clear old grades
   const handleStreamChange = (newStream: string) => {
-    if (aliranSubj1) handleGradeClear(aliranSubj1)
-    if (aliranSubj2) handleGradeClear(aliranSubj2)
+    aliranSubjects.forEach(id => { if (id) handleGradeClear(id) })
     setStream(newStream)
     localStorage.setItem('halatuju_stream', newStream)
     const pool = STREAM_POOLS[newStream] || []
-    setAliranSubj1(pool[0]?.id || '')
-    setAliranSubj2(pool[1]?.id || '')
+    setAliranSubjects([
+      pool[0]?.id || '',
+      pool[1]?.id || '',
+      pool[2]?.id || '',
+      pool[3]?.id || '',
+    ])
   }
 
-  // When switching aliran subject, clear old subject's grade
-  const handleAliranSubj1Change = (newId: string) => {
-    if (aliranSubj1) handleGradeClear(aliranSubj1)
-    setAliranSubj1(newId)
-  }
-  const handleAliranSubj2Change = (newId: string) => {
-    if (aliranSubj2) handleGradeClear(aliranSubj2)
-    setAliranSubj2(newId)
+  // Generic handler for any aliran slot
+  const handleAliranChange = (index: number, newId: string) => {
+    const oldId = aliranSubjects[index]
+    if (oldId) handleGradeClear(oldId)
+    setAliranSubjects(prev => prev.map((s, i) => i === index ? newId : s))
   }
 
   // CoQ score — editable on this page, persisted to profile localStorage
@@ -244,7 +240,7 @@ export default function GradesInputPage() {
   }
 
   const streamPool = STREAM_POOLS[stream] || []
-  const selectedAliranIds = [aliranSubj1, aliranSubj2].filter(Boolean)
+  const selectedAliranIds = aliranSubjects.filter(Boolean)
   const coreIdsList = CORE_SUBJECTS.map((s) => s.id)
 
   // Elektif pool = all subjects minus core minus selected aliran
@@ -276,19 +272,38 @@ export default function GradesInputPage() {
   }
 
   // Live merit calculation — UPU formula with categorised grades
+  // Best 2 stream grades count as "stream", weaker 2 compete with electives
   const meritResult = useMemo(() => {
     const coreGrades = CORE_SUBJECTS.map(s => grades[s.id]).filter(Boolean)
     if (coreGrades.length === 0) return null
-    const streamGrades = [aliranSubj1, aliranSubj2]
+
+    // Merit points for sorting stream grades (best first)
+    const MERIT_PTS: Record<string, number> = {
+      'A+': 18, 'A': 16, 'A-': 14, 'B+': 12, 'B': 10,
+      'C+': 8, 'C': 6, 'D': 4, 'E': 2, 'G': 0,
+    }
+    const allStreamGrades = aliranSubjects
       .filter(Boolean)
       .map(id => grades[id])
       .filter(Boolean)
-    const electiveGrades = elektifSlots
+      .sort((a, b) => (MERIT_PTS[b] || 0) - (MERIT_PTS[a] || 0))
+
+    // Best 2 stream grades count as "stream"
+    const streamGrades = allStreamGrades.slice(0, 2)
+    // Weaker stream grades compete with electives
+    const weakerStream = allStreamGrades.slice(2)
+    const pureElectives = elektifSlots
       .filter(Boolean)
       .map(id => grades[id])
       .filter(Boolean)
-    return calculateMeritScore(coreGrades, streamGrades, electiveGrades, coqScore)
-  }, [grades, coqScore, aliranSubj1, aliranSubj2, elektifSlots])
+
+    // Combine weaker stream + electives, sort, take best 2
+    const allElective = [...weakerStream, ...pureElectives]
+      .sort((a, b) => (MERIT_PTS[b] || 0) - (MERIT_PTS[a] || 0))
+      .slice(0, 2)
+
+    return calculateMeritScore(coreGrades, streamGrades, allElective, coqScore)
+  }, [grades, coqScore, aliranSubjects, elektifSlots])
 
   const coreComplete = CORE_SUBJECTS.every((s) => grades[s.id])
 
@@ -297,7 +312,7 @@ export default function GradesInputPage() {
       localStorage.setItem('halatuju_grades', JSON.stringify(grades))
       localStorage.setItem(
         'halatuju_aliran',
-        JSON.stringify([aliranSubj1, aliranSubj2].filter(Boolean))
+        JSON.stringify(aliranSubjects.filter(Boolean))
       )
       localStorage.setItem(
         'halatuju_elektif',
@@ -388,26 +403,20 @@ export default function GradesInputPage() {
               {t('onboarding.streamSubjects')}
             </h2>
           </div>
-          <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.pickBest2Stream')}</p>
+          <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.pick4Stream')}</p>
           <div className="space-y-3">
-            <CompactSubjectRow
-              pool={streamPool}
-              excludeIds={aliranSubj2 ? [aliranSubj2] : []}
-              selectedId={aliranSubj1}
-              onSubjectChange={handleAliranSubj1Change}
-              grade={aliranSubj1 ? grades[aliranSubj1] || '' : ''}
-              onGradeChange={(grade) => { if (aliranSubj1) handleGradeChange(aliranSubj1, grade) }}
-              onRemove={() => { if (aliranSubj1) handleGradeClear(aliranSubj1); setAliranSubj1('') }}
-            />
-            <CompactSubjectRow
-              pool={streamPool}
-              excludeIds={aliranSubj1 ? [aliranSubj1] : []}
-              selectedId={aliranSubj2}
-              onSubjectChange={handleAliranSubj2Change}
-              grade={aliranSubj2 ? grades[aliranSubj2] || '' : ''}
-              onGradeChange={(grade) => { if (aliranSubj2) handleGradeChange(aliranSubj2, grade) }}
-              onRemove={() => { if (aliranSubj2) handleGradeClear(aliranSubj2); setAliranSubj2('') }}
-            />
+            {aliranSubjects.map((subjectId, index) => (
+              <CompactSubjectRow
+                key={index}
+                pool={streamPool}
+                excludeIds={aliranSubjects.filter((_, i) => i !== index && aliranSubjects[i]).filter(Boolean)}
+                selectedId={subjectId}
+                onSubjectChange={(id) => handleAliranChange(index, id)}
+                grade={subjectId ? grades[subjectId] || '' : ''}
+                onGradeChange={(grade) => { if (subjectId) handleGradeChange(subjectId, grade) }}
+                onRemove={() => { if (subjectId) handleGradeClear(subjectId); handleAliranChange(index, '') }}
+              />
+            ))}
           </div>
         </div>
 
