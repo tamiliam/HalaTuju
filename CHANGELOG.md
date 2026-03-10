@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.29.0] - 2026-03-10 — 9 Post-SPM Pathway Summary
+
+### Added
+- **Expanded pathways** — dashboard now shows 9 post-SPM options: Asasi, Matriculation, Form 6, PISMP, Polytechnic, University, Kolej Komuniti, ILJTM, ILKBS
+- **Backend pathway_type** — eligibility API returns `pathway_type` field distinguishing Asasi from University (within UA), and ILJTM from ILKBS (within TVET) via institution category lookup
+- **Course pathway map** — built at startup from CourseRequirement source_type, Course level, and Institution category
+- **Compact badge layout** — PathwayCards redesigned as compact flex-wrap badges with unique SVG icons per pathway type
+- **Pathway i18n** — 9 pathway type labels in EN/BM/TA plus "courses" count label
+
+### Changed
+- **PathwayCards component** — rewritten from individual track cards to compact summary badges showing eligible pathway types with course counts
+- **Dashboard** — merges pathway engine results (Matric/STPM) with API eligibility counts by pathway_type
+
 ## [1.28.0] - 2026-03-10 — Matriculation & STPM Pathways
 
 ### Added
