@@ -534,11 +534,24 @@ class CourseDetailView(APIView):
                 course.career_occupations.all(), many=True
             ).data
 
-            return Response({
+            # Get merit cutoff from CourseRequirement
+            merit_cutoff = None
+            try:
+                req = CourseRequirement.objects.get(course_id=course_id)
+                if req.merit_cutoff:
+                    merit_cutoff = req.merit_cutoff
+            except CourseRequirement.DoesNotExist:
+                pass
+
+            response_data = {
                 'course': course_data,
                 'institutions': institutions,
                 'career_occupations': career_occupations,
-            })
+            }
+            if merit_cutoff is not None:
+                response_data['merit_cutoff'] = merit_cutoff
+
+            return Response(response_data)
         except Course.DoesNotExist:
             return Response(
                 {'error': 'Course not found'},

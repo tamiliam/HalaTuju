@@ -195,7 +195,7 @@ export async function getCourses(options?: ApiOptions): Promise<{ courses: Cours
 export async function getCourse(
   courseId: string,
   options?: ApiOptions
-): Promise<{ course: Course; institutions: Institution[]; career_occupations: MascoOccupation[] }> {
+): Promise<{ course: Course; institutions: Institution[]; career_occupations: MascoOccupation[]; merit_cutoff?: number }> {
   return apiRequest(`/api/v1/courses/${courseId}/`, options)
 }
 

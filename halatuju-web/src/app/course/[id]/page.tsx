@@ -1,27 +1,20 @@
 'use client'
 
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { getCourse, saveCourse, unsaveCourse, type Course, type Institution, type MascoOccupation } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 export default function CourseDetailPage() {
   const params = useParams()
-  const router = useRouter()
   const courseId = params.id as string
   const { locale, t } = useT()
   const [isSaved, setIsSaved] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [studentMerit, setStudentMerit] = useState<number | null>(null)
-
-  useEffect(() => {
-    const saved = localStorage.getItem('halatuju_merit')
-    if (saved) setStudentMerit(parseFloat(saved))
-  }, [])
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['course', courseId],
@@ -72,7 +65,7 @@ export default function CourseDetailPage() {
     )
   }
 
-  const { course, institutions, career_occupations } = data
+  const { course, institutions, career_occupations, merit_cutoff } = data
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -191,14 +184,14 @@ export default function CourseDetailPage() {
                   <InfoRow label="Duration" value={`${course.semesters} semesters`} />
                 )}
                 <InfoRow label="WBL" value={course.wbl ? 'Yes' : 'No'} />
-                {studentMerit != null && (
+                {merit_cutoff != null && (
                   <div className="pt-2 mt-2 border-t border-gray-100">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-500 text-sm">Your Merit</span>
+                      <span className="text-gray-500 text-sm">Avg. Merit</span>
                       <span className={`font-medium text-sm ${
-                        studentMerit >= 80 ? 'text-green-600' : studentMerit >= 60 ? 'text-amber-600' : 'text-red-600'
+                        merit_cutoff >= 80 ? 'text-green-600' : merit_cutoff >= 60 ? 'text-amber-600' : 'text-red-600'
                       }`}>
-                        {studentMerit.toFixed(1)}
+                        {merit_cutoff.toFixed(1)}
                       </span>
                     </div>
                   </div>
