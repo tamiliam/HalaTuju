@@ -190,13 +190,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**v1.28.0 DONE — Matriculation & STPM Pathways**
-- Grades page: 4 stream subjects (best 2 → stream, weaker 2 → elective pool)
-- Pathway engine: `lib/pathways.ts` — 4 Matric tracks + 2 STPM bidang, frontend-only
-- Dashboard: PathwayCards above course list showing eligibility + merit/mata gred
-- i18n: 14 keys × 3 languages (EN/BM/TA)
-- No backend changes. Tests unchanged: 212 collected, 203 passing | Golden master: 8245
-- Backend rev 41, frontend rev 48
+**v1.29.0 DONE — 9 Post-SPM Pathway Summary**
+- Backend: `pathway_type` field on eligibility response (asasi/university/iljtm/ilkbs from parent source_types)
+- Backend: `course_pathway_map` built at startup from CourseRequirement + Institution category
+- Frontend: PathwayCards redesigned as compact badges with 9 SVG icons
+- Dashboard: merges pathway engine (Matric/STPM) with API eligibility counts by pathway_type
+- i18n: 9 pathway type labels × 3 languages
+- Tests unchanged: 212 collected, 203 passing | Golden master: 8245
 
 **Next**
 - Deferred: Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
