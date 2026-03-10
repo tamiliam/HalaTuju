@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
@@ -21,6 +21,8 @@ import CourseCard from '@/components/CourseCard'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
+import { checkAllPathways } from '@/lib/pathways'
+import PathwayCards from '@/components/PathwayCards'
 
 const RESUME_ACTION_KEY = 'halatuju_resume_action'
 
@@ -66,6 +68,13 @@ export default function DashboardPage() {
 
     setIsLoading(false)
   }, [])
+
+  // Compute pathway eligibility from grades
+  const pathwayResults = useMemo(() => {
+    if (!profile) return []
+    const coq = profile.coq_score ?? 0
+    return checkAllPathways(profile.grades, coq)
+  }, [profile])
 
   // Load saved courses when token becomes available
   useEffect(() => {
@@ -307,6 +316,11 @@ export default function DashboardPage() {
             </div>
             {reportError && <p className="text-red-500 text-xs mt-2">{t('dashboard.reportError')}</p>}
           </div>
+        )}
+
+        {/* Pathway Cards — Matric & STPM */}
+        {pathwayResults.length > 0 && !eligibilityLoading && (
+          <PathwayCards results={pathwayResults} />
         )}
 
         {/* Loading State */}
