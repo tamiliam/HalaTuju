@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.30.0] - 2026-03-10 — Matric/STPM Detail Pages, About Page, UX Fixes
+
+### Added
+- **Matriculation detail page** (`/pathway/matric`) — course-detail-style layout with header card, About This Track, Where to Study (15 KPM colleges), Quick Facts, Eligible Tracks sidebar, merit score with traffic light
+- **STPM detail page** (`/pathway/stpm`) — same layout with 568 schools, state + PPD filters, stream badges, load-more pagination
+- **Pathway track cards** — dashboard shows cards for each eligible matric track and STPM bidang when pills are active, with images, duration, fee, and institution count
+- **Static data files** — `matric-colleges.ts` (15 colleges with track assignments from MOE Soalan Lazim Nov 2024) and `stpm-schools.json` (568 schools from MOE SST6 portal)
+- **PathwayTrackCard component** — card component for matric tracks and STPM bidang with Supabase field images
+- **About page content** — full mission statement: problem, what it does, who's behind it, how to help
+- **About page i18n** — all content localised in EN, BM, and Tamil
+- **Pathway detail i18n** — 30 keys across EN/BM/TA for matric/STPM detail pages
+- **Student merit in Quick Facts** — course detail sidebar now shows student's merit score with colour coding
+
+### Changed
+- **Pathway pills** — matric and STPM pills now navigate to detail pages instead of filtering courses
+- **Pathway pills as clickable filters** — all other pills toggle dashboard course filter; Clear button resets
+- **Pathway pill order** — Asasi, Matric, Form 6 shown first; count shows eligible tracks (not scores)
+- **Course detail header** — removed duplicate field name and duration (already in Quick Facts)
+- **Institution link** — "Apply" button renamed to "More Info"
+- **Phone login** — gracefully blocked with "coming soon" message directing users to Google sign-in
+
+### Removed
+- **Filter dropdowns** — removed institution type and course level dropdowns from dashboard (replaced by clickable pills)
+- **"Ranked Courses" heading** — removed as redundant with Top Matches section
+
 ## [1.29.0] - 2026-03-10 — 9 Post-SPM Pathway Summary
 
 ### Added

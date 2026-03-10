@@ -190,19 +190,20 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**v1.29.0 DONE — 9 Post-SPM Pathway Summary**
-- Backend: `pathway_type` field on eligibility response (asasi/university/iljtm/ilkbs from parent source_types)
-- Backend: `course_pathway_map` built at startup from CourseRequirement + Institution category
-- Frontend: PathwayCards redesigned as compact badges with 9 SVG icons
-- Dashboard: merges pathway engine (Matric/STPM) with API eligibility counts by pathway_type
-- i18n: 9 pathway type labels × 3 languages
+**v1.30.0 DONE — Matric/STPM Detail Pages, About Page, UX Fixes**
+- Frontend: Matric detail page (`/pathway/matric`) + STPM detail page (`/pathway/stpm`) with course-detail layout
+- Frontend: PathwayTrackCard cards on dashboard for matric tracks and STPM bidang
+- Frontend: About page rewritten with mission statement, localised in EN/BM/TA
+- Frontend: "Apply" → "More Info", phone login gracefully blocked, duplicate field/duration removed from course header
+- Static data: 15 matric colleges (matric-colleges.ts), 568 STPM schools (stpm-schools.json)
+- Frontend rev 58, Backend rev 42
 - Tests unchanged: 212 collected, 203 passing | Golden master: 8245
 
 **Next**
-- Deferred: Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
-- Deferred: SVG icons to replace emoji on quiz cards
-- Course detail page: fix 10 issues documented in `docs/Course Detail Page.pdf`
-- `/search` page uses `<Suspense>` boundary — any page using `useSearchParams()` needs the same pattern
+- Phone/OTP login implementation (currently blocked with "coming soon" message)
+- Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
+- Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
+- Delete accidental `halatuju-web` service from SJKTConnect GCP project
 
 ## Streamlit App (Legacy — migrating to Django API)
 
