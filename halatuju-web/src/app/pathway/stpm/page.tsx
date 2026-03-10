@@ -398,7 +398,21 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   )
 }
 
+const COMMON_SUBJECTS = new Set(['BI (MUET)', 'PA', 'BM'])
+const SCIENCE_SUBJECTS = new Set(['BIO', 'CHE', 'PHY', 'MT', 'MM'])
+const SOCIAL_SUBJECTS = new Set(['EKO', 'SEJ', 'GEO', 'PP', 'PAKN', 'SS', 'SV'])
+
+function filterSubjects(raw: string, stream: string): string {
+  const relevant = stream === 'Sains' ? SCIENCE_SUBJECTS : SOCIAL_SUBJECTS
+  return raw
+    .split('; ')
+    .filter(s => !COMMON_SUBJECTS.has(s) && relevant.has(s))
+    .join(' · ')
+}
+
 function SchoolCard({ school, activeStream }: { school: StpmSchool; activeStream: string }) {
+  const subjects = school.subjects ? filterSubjects(school.subjects, activeStream) : ''
+
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
       <div className="flex items-start justify-between gap-3">
@@ -409,9 +423,9 @@ function SchoolCard({ school, activeStream }: { school: StpmSchool; activeStream
           <p className="text-sm text-gray-500 mb-2">
             {school.state} &middot; {school.ppd}
           </p>
-          {school.subjects && (
-            <p className="text-xs text-gray-500 leading-relaxed">
-              {school.subjects}
+          {subjects && (
+            <p className="text-xs text-gray-500">
+              {subjects}
             </p>
           )}
         </div>
