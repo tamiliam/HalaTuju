@@ -3475,7 +3475,7 @@
     "code": "REE0059",
     "name": "SMK Derma",
     "state": "Perlis",
-    "ppd": "Jpn Perlis",
+    "ppd": "JPN Perlis",
     "streams": [
       "Sains Sosial"
     ],
@@ -3486,7 +3486,7 @@
     "code": "REB0058",
     "name": "SMK Perlis",
     "state": "Perlis",
-    "ppd": "Jpn Perlis",
+    "ppd": "JPN Perlis",
     "streams": [
       "Sains",
       "Sains Sosial"
@@ -3498,7 +3498,7 @@
     "code": "REB0057",
     "name": "SMK Putra",
     "state": "Perlis",
-    "ppd": "Jpn Perlis",
+    "ppd": "JPN Perlis",
     "streams": [
       "Sains Sosial"
     ],
@@ -3509,7 +3509,7 @@
     "code": "REE0060",
     "name": "SMK Syed Alwi",
     "state": "Perlis",
-    "ppd": "Jpn Perlis",
+    "ppd": "JPN Perlis",
     "streams": [
       "Sains Sosial"
     ],
@@ -3520,7 +3520,7 @@
     "code": "REA0056",
     "name": "SMK Syed Hassan",
     "state": "Perlis",
-    "ppd": "Jpn Perlis",
+    "ppd": "JPN Perlis",
     "streams": [
       "Sains Sosial"
     ],
@@ -3531,7 +3531,7 @@
     "code": "REE0063",
     "name": "SMK Tengku Suleiman",
     "state": "Perlis",
-    "ppd": "Jpn Perlis",
+    "ppd": "JPN Perlis",
     "streams": [
       "Sains Sosial"
     ],
@@ -6427,8 +6427,8 @@
   {
     "code": "WEE1011",
     "name": "SMK Labuan",
-    "state": "Wp Labuan",
-    "ppd": "Jpn Wp Labuan",
+    "state": "WP Labuan",
+    "ppd": "JPN WP Labuan",
     "streams": [
       "Sains Sosial"
     ],
@@ -6438,8 +6438,8 @@
   {
     "code": "WEA2010",
     "name": "SMK Putrajaya Presint 5(1)",
-    "state": "Wp Putrajaya",
-    "ppd": "Jpn Wp Putrajaya",
+    "state": "WP Putrajaya",
+    "ppd": "JPN WP Putrajaya",
     "streams": [
       "Sains",
       "Sains Sosial"
