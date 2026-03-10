@@ -395,5 +395,25 @@
     "low": "Rendah",
     "matricCaveat": "Ketersediaan jurusan berdasarkan Soalan Lazim KPM (Nov 2024) dan mungkin berubah. Pelajar ditempatkan oleh KPM berdasarkan merit dan kekosongan.",
     "stpmCaveat": "Data sekolah daripada portal SST6 KPM. Tawaran mungkin berubah setiap pengambilan."
+  },
+  "about": {
+    "problemTitle": "Masalah Yang Kami Selesaikan",
+    "problemP1": "Setiap tahun, ribuan pelajar India Malaysia meninggalkan SPM dan mendaftar di kolej swasta yang mahal — sering kali menanggung pinjaman pelajaran yang berat untuk kelayakan yang tidak selalu sepadan dengan apa yang tersedia secara percuma atau pada kadar bersubsidi tinggi dalam sistem awam.",
+    "problemP2": "Pada 2024, lebih 137,000 tempat tersedia di politeknik, kolej komuniti, institusi TVET, dan universiti awam — tidak termasuk UiTM. Ini adalah program yang dibiayai kerajaan dan diiktiraf industri. Tetapi terlalu ramai pelajar dan keluarga tidak menemuinya, kerana maklumat bertaburan dan sukar dinavigasi.",
+    "problemTagline": "HalaTuju wujud untuk menyelesaikan masalah ini.",
+    "whatTitle": "Apa Yang Dilakukan",
+    "whatDesc": "Masukkan keputusan SPM anda, dan enjin kelayakan kami menyemaknya terhadap syarat kemasukan lebih 800 kursus di institusi awam Malaysia. Kami membantu anda mencari program yang anda benar-benar layak — disesuaikan dengan gred, minat, dan matlamat anda.",
+    "whatTagline": "Tiada pendaftaran. Tiada bayaran. Tiada syarat tersembunyi.",
+    "whoTitle": "Siapa Di Sebalik Ini",
+    "whoP1": "HalaTuju dibina di bawah Projek Lentera, sebuah inisiatif komuniti yang berfokus pada peningkatan akses kepada pendidikan tinggi awam untuk pelajar Malaysia.",
+    "whoP2": "Ini adalah usaha sukarelawan — tiada seorang pun yang memilikinya. Guru, kaunselor, ibu bapa, alumni, dan organisasi masyarakat semuanya memainkan peranan. Kami percaya setiap pelajar layak membuat pilihan yang bermaklumat, bukan pilihan lalai yang didorong oleh kekurangan maklumat.",
+    "helpTitle": "Bagaimana Anda Boleh Membantu",
+    "helpParents": "Ibu bapa:",
+    "helpParentsDesc": "Gunakan HalaTuju bersama anak anda selepas keputusan SPM. Pilihannya mungkin mengejutkan anda.",
+    "helpTeachers": "Guru dan kaunselor:",
+    "helpTeachersDesc": "Kongsikan dengan pelajar anda. Lima minit boleh menyelamatkan sebuah keluarga daripada hutang bertahun-tahun.",
+    "helpEveryone": "Semua orang:",
+    "helpEveryoneDesc": "Sebarkan berita ini. Semakin ramai keluarga yang tahu tentang pilihan awam, semakin sedikit yang memilih swasta hanya kerana mereka tidak tahu.",
+    "helpClosing": "HalaTuju adalah platform yang berkembang — kami terus menambah kursus dan memperbaiki cadangan. Jika anda mempunyai maklum balas atau ingin menyumbang, kami ingin mendengar daripada anda."
   }
 }

@@ -395,5 +395,25 @@
     "low": "Low",
     "matricCaveat": "Track availability is based on MOE Soalan Lazim (Nov 2024) and may change. Students are assigned to colleges by MOE based on merit and availability.",
     "stpmCaveat": "School data is from MOE SST6 portal. Offerings may change each intake."
+  },
+  "about": {
+    "problemTitle": "The Problem We're Solving",
+    "problemP1": "Every year, thousands of Malaysian Indian students leave SPM and enrol in expensive private colleges — often taking on heavy student loans for qualifications that don't always match what's available for free or at heavily subsidised rates in the public system.",
+    "problemP2": "In 2024, over 137,000 places were available across polytechnics, community colleges, TVET institutions, and public universities — not including UiTM. These are government-funded, industry-recognised programmes. But too many students and families never find them, because the information is scattered and hard to navigate.",
+    "problemTagline": "HalaTuju exists to fix that.",
+    "whatTitle": "What It Does",
+    "whatDesc": "Enter your SPM results, and our eligibility engine checks them against the entry requirements of over 800 courses across Malaysia's public institutions. We help you find the programmes you're actually eligible for — matched to your grades, your interests, and your goals.",
+    "whatTagline": "No sign-ups. No fees. No catch.",
+    "whoTitle": "Who's Behind This",
+    "whoP1": "HalaTuju is built under Project Lentera, a community-driven initiative focused on improving access to public tertiary education for Malaysian students.",
+    "whoP2": "This is a volunteer effort — no single person owns it. Teachers, counsellors, parents, alumni, and community organisations all play a part. We believe every student deserves to make an informed choice, not a default one driven by lack of information.",
+    "helpTitle": "How You Can Help",
+    "helpParents": "Parents:",
+    "helpParentsDesc": "Use HalaTuju with your child after SPM results. The options may surprise you.",
+    "helpTeachers": "Teachers and counsellors:",
+    "helpTeachersDesc": "Share it with your students. Five minutes could save a family years of debt.",
+    "helpEveryone": "Everyone else:",
+    "helpEveryoneDesc": "Spread the word. The more families who know about public options, the fewer who choose private ones simply because they didn't know better.",
+    "helpClosing": "HalaTuju is a growing platform — we're continuously adding courses and improving recommendations. If you have feedback or want to contribute, we want to hear from you."
   }
 }
