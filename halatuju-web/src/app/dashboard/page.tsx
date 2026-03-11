@@ -170,7 +170,7 @@ export default function DashboardPage() {
     if (pathwayResults) {
       for (const r of pathwayResults) {
         if (!r.eligible) continue
-        const fitScore = getPathwayFitScore(r)
+        const fitScore = getPathwayFitScore(r, quizSignals)
         const isMatric = r.pathway === 'matric'
 
         syntheticEntries.push({
@@ -205,7 +205,7 @@ export default function DashboardPage() {
       rest: all.slice(6),
       total_ranked: all.length,
     }
-  }, [rankingData, pathwayResults])
+  }, [rankingData, pathwayResults, quizSignals])
 
   // Build pathway summary badges from eligibility data + pathway engine
   const pathwaySummaries = useMemo((): PathwaySummary[] => {

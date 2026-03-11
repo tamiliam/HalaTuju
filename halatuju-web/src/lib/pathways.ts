@@ -352,15 +352,115 @@ function stpmAcademicBonus(mataGred: number, bidangId: string): number {
   return 0
 }
 
-export function getPathwayFitScore(result: PathwayResult): number {
+// Signal cap per category (mirrors backend CATEGORY_CAP)
+const SIGNAL_CAP = 6
+
+function getSignal(
+  signals: Record<string, Record<string, number>> | null,
+  category: string,
+  key: string
+): number {
+  return signals?.[category]?.[key] ?? 0
+}
+
+/**
+ * Calculate quiz signal adjustment for pre-u pathways.
+ *
+ * Matric/STPM are academic gateways — they don't match to specific fields,
+ * but learning style, values, and energy signals still apply.
+ */
+function pathwaySignalAdjustment(
+  result: PathwayResult,
+  signals: Record<string, Record<string, number>> | null
+): number {
+  if (!signals) return 0
+
+  const isMatric = result.pathway === 'matric'
+  const isStpmSocSci = result.pathway === 'stpm' && result.trackId === 'sains_sosial'
+
+  let adj = 0
+
+  // Q3 — Work style
+  if (getSignal(signals, 'work_preference_signals', 'problem_solving') > 0 && !isStpmSocSci) {
+    adj += 2 // Matric + STPM Science are analytically demanding
+  }
+  if (getSignal(signals, 'work_preference_signals', 'creative') > 0 && isStpmSocSci) {
+    adj += 1 // Arts/humanities pathway
+  }
+  if (getSignal(signals, 'work_preference_signals', 'hands_on') > 0) {
+    adj -= 1 // Pre-u is academic, not practical
+  }
+
+  // Q4 — Environment
+  if (getSignal(signals, 'environment_signals', 'workshop_environment') > 0) {
+    adj -= 1 // Pre-u is classroom-based
+  }
+  if (getSignal(signals, 'environment_signals', 'field_environment') > 0) {
+    adj -= 1 // Pre-u is classroom-based
+  }
+
+  // Q5 — Learning style
+  if (getSignal(signals, 'learning_tolerance_signals', 'concept_first') > 0) {
+    adj += 2 // Matric/STPM is theory-heavy
+  }
+  if (getSignal(signals, 'learning_tolerance_signals', 'rote_tolerant') > 0) {
+    adj += 1 // STPM especially is exam-heavy
+  }
+  if (getSignal(signals, 'learning_tolerance_signals', 'learning_by_doing') > 0) {
+    adj -= 1 // Pre-u is lecture/exam, not practical
+  }
+
+  // Q6 — Values
+  if (getSignal(signals, 'value_tradeoff_signals', 'pathway_priority') > 0) {
+    adj += 3 // This is exactly what pre-u is for
+  }
+  if (getSignal(signals, 'value_tradeoff_signals', 'fast_employment_priority') > 0) {
+    adj -= 2 // Pre-u adds 1.5-2 years before a degree
+  }
+
+  // Q7 — Energy
+  if (getSignal(signals, 'energy_sensitivity_signals', 'mental_fatigue_sensitive') > 0) {
+    adj -= 2 // STPM/Matric is academically demanding
+  }
+  if (getSignal(signals, 'energy_sensitivity_signals', 'high_stamina') > 0) {
+    adj += 1 // Can handle the academic load
+  }
+
+  // Q8 — Practical needs
+  if (getSignal(signals, 'value_tradeoff_signals', 'quality_priority') > 0) {
+    adj += 2 // Pre-u is the prestigious academic route
+  }
+  if (getSignal(signals, 'value_tradeoff_signals', 'allowance_priority') > 0 && isMatric) {
+    adj += 2 // Matric students get government allowance
+  }
+  if (getSignal(signals, 'value_tradeoff_signals', 'proximity_priority') > 0 && !isMatric) {
+    adj += 1 // Form 6 schools are everywhere, near home
+  }
+  if (getSignal(signals, 'value_tradeoff_signals', 'employment_guarantee') > 0) {
+    adj -= 1 // No job guarantee — still need a degree after
+  }
+
+  // Cap the signal adjustment
+  return Math.max(Math.min(adj, SIGNAL_CAP), -SIGNAL_CAP)
+}
+
+export function getPathwayFitScore(
+  result: PathwayResult,
+  signals?: Record<string, Record<string, number>> | null
+): number {
   if (!result.eligible) return 0
+
+  let score = BASE_SCORE + PRESTIGE_BONUS
+
   if (result.pathway === 'matric' && result.merit !== undefined) {
-    return BASE_SCORE + PRESTIGE_BONUS + matricAcademicBonus(result.merit)
+    score += matricAcademicBonus(result.merit)
+  } else if (result.pathway === 'stpm' && result.mataGred !== undefined) {
+    score += stpmAcademicBonus(result.mataGred, result.trackId)
   }
-  if (result.pathway === 'stpm' && result.mataGred !== undefined) {
-    return BASE_SCORE + PRESTIGE_BONUS + stpmAcademicBonus(result.mataGred, result.trackId)
-  }
-  return BASE_SCORE + PRESTIGE_BONUS
+
+  score += pathwaySignalAdjustment(result, signals ?? null)
+
+  return score
 }
 
 // --- Public API ---
