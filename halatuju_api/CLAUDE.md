@@ -190,13 +190,11 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**v1.30.0 DONE — Matric/STPM Detail Pages, About Page, UX Fixes**
-- Frontend: Matric detail page (`/pathway/matric`) + STPM detail page (`/pathway/stpm`) with course-detail layout
-- Frontend: PathwayTrackCard cards on dashboard for matric tracks and STPM bidang
-- Frontend: About page rewritten with mission statement, localised in EN/BM/TA
-- Frontend: "Apply" → "More Info", phone login gracefully blocked, duplicate field/duration removed from course header
-- Static data: 15 matric colleges (matric-colleges.ts), 568 STPM schools (stpm-schools.json)
-- Frontend rev 58, Backend rev 42
+**v1.32.0 DONE — Pathway Ranking, Quiz Flow, Data Persistence**
+- Frontend: Matric/STPM injected as synthetic entries into ranked course list with prestige + academic + signal scoring
+- Frontend: Quiz-then-report flow enforced (one report per quiz run, retake navigates to /quiz)
+- Frontend: localStorage wiped on logout, profile restored from Supabase on login
+- Frontend: STPM subject data fixes (duplicates, missing subjects BT/BC/KMK/ICT/L.ENG)
 - Tests unchanged: 212 collected, 203 passing | Golden master: 8245
 
 **Next**
@@ -204,6 +202,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
 - Delete accidental `halatuju-web` service from SJKTConnect GCP project
+- Store `signal_strength` in Supabase (currently only `student_signals` synced)
 
 ## Streamlit App (Legacy — migrating to Django API)
 

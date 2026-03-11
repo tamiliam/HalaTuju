@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.32.0] - 2026-03-11 — Pathway Ranking, Quiz Flow, Data Persistence
+
+### Added
+- **Matric/STPM in ranked results** — pre-university pathways now compete in the ranked course list as synthetic entries with prestige + academic + quiz signal scoring (fit score range ~103-122)
+- **Prestige scoring system** — `getPathwayFitScore()` in pathways.ts combines base score, prestige bonus (+8), academic bonus (merit/mata gred thresholds), and quiz signal adjustments
+- **Supabase profile restore on login** — returning users get grades, demographics, and quiz signals restored from Supabase into localStorage automatically
+- **localStorage cleanup on logout** — all `halatuju_*` keys wiped when signing out (multi-user device safety)
+
+### Changed
+- **Quiz signal adjustments for pathways** — 8 quiz questions now boost or penalise Matric/STPM scoring (e.g. concept-first learners +2, hands-on preference -1, pathway priority +3)
+- **Report generation gated** — report can only be generated once per quiz run; retaking quiz resets the gate
+- **Retake quiz navigation** — "Retake Quiz" button now navigates to `/quiz` instead of staying on dashboard
+
+### Fixed
+- **STPM subject data** — removed duplicate `pp` from 2 schools, fixed `PK`→`PAKN` mapping, removed redundant `MM/PP` from Kolej T6 Tun Fatimah
+- **Missing STPM subjects** — added BT, BC, KMK, ICT, L.ENG to subject key legend with colours and full names
+
 ## [1.31.0] - 2026-03-11 — STPM UX Polish, WP Schools, MASCO Backfill
 
 ### Added
