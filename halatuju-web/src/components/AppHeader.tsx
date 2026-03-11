@@ -29,6 +29,10 @@ export default function AppHeader() {
   }, [])
 
   const handleSignOut = async () => {
+    // Wipe all student data from localStorage before signing out
+    const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('halatuju_'))
+    keysToRemove.forEach(k => localStorage.removeItem(k))
+
     await signOut()
     window.location.href = '/'
   }
