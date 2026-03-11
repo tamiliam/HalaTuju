@@ -42,6 +42,7 @@ export default function DashboardPage() {
   const [reportLoading, setReportLoading] = useState(false)
   const [reportError, setReportError] = useState(false)
   const [existingReportId, setExistingReportId] = useState<number | null>(null)
+  const [reportGenerated, setReportGenerated] = useState(false)
 
   // Load profile from localStorage on mount
   useEffect(() => {
@@ -68,6 +69,8 @@ export default function DashboardPage() {
     if (signals) {
       setQuizSignals(JSON.parse(signals))
     }
+
+    setReportGenerated(localStorage.getItem('halatuju_report_generated') === 'true')
 
     setIsLoading(false)
   }, [])
@@ -290,10 +293,8 @@ export default function DashboardPage() {
   }, [pathwayResults, filter, profile])
 
   const handleRetakeQuiz = () => {
-    localStorage.removeItem('halatuju_quiz_signals')
-    localStorage.removeItem('halatuju_signal_strength')
-    setQuizSignals(null)
-    setExistingReportId(null)
+    // Navigate to quiz — old signals stay in force until new quiz completes
+    router.push('/quiz')
   }
 
   const handleGenerateReport = useCallback(async () => {
@@ -311,6 +312,8 @@ export default function DashboardPage() {
         'bm',
         { token }
       )
+      localStorage.setItem('halatuju_report_generated', 'true')
+      setReportGenerated(true)
       window.location.href = `/report/${result.report_id}`
     } catch {
       setReportError(true)
@@ -349,7 +352,11 @@ export default function DashboardPage() {
       } else if (action === 'report' && eligibilityData) {
         setReportLoading(true)
         generateReport(eligibilityData.eligible_courses, eligibilityData.insights, 'bm', { token })
-          .then(result => { window.location.href = `/report/${result.report_id}` })
+          .then(result => {
+            localStorage.setItem('halatuju_report_generated', 'true')
+            setReportGenerated(true)
+            window.location.href = `/report/${result.report_id}`
+          })
           .catch(() => { setReportError(true); setReportLoading(false) })
       }
     } catch {
@@ -427,13 +434,15 @@ export default function DashboardPage() {
                     {t('dashboard.readReport')}
                   </Link>
                 )}
-                <button
-                  onClick={handleGenerateReport}
-                  disabled={reportLoading}
-                  className="btn-secondary text-sm whitespace-nowrap disabled:opacity-50"
-                >
-                  {reportLoading ? t('dashboard.generating') : existingReportId ? t('dashboard.regenerateReport') : t('dashboard.generateReport')}
-                </button>
+                {quizSignals && !reportGenerated && (
+                  <button
+                    onClick={handleGenerateReport}
+                    disabled={reportLoading}
+                    className="btn-secondary text-sm whitespace-nowrap disabled:opacity-50"
+                  >
+                    {reportLoading ? t('dashboard.generating') : t('dashboard.generateReport')}
+                  </button>
+                )}
                 {quizSignals ? (
                   <button onClick={handleRetakeQuiz} className="text-sm text-gray-400 hover:text-primary-500 underline whitespace-nowrap">
                     {t('dashboard.retakeQuiz')}

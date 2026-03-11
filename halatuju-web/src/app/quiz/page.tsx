@@ -162,6 +162,8 @@ export default function QuizPage() {
       // Store signals in localStorage for dashboard to pick up
       localStorage.setItem('halatuju_quiz_signals', JSON.stringify(result.student_signals))
       localStorage.setItem('halatuju_signal_strength', JSON.stringify(result.signal_strength))
+      // Reset report gate — new quiz unlocks report generation
+      localStorage.removeItem('halatuju_report_generated')
       router.push('/dashboard')
     } catch {
       setError('Failed to submit quiz. Please try again.')
