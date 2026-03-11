@@ -190,10 +190,11 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**v1.32.1 DONE — Pathway Chance Indicator**
-- Frontend: Merit chance bar (High/Fair/Low) on Matric/STPM cards matching regular course cards
-- Frontend: STPM Social Science maxMataGred raised 12→18 (13-18 shows as Low instead of excluded)
-- Matric thresholds: >=94 High, 89-93 Fair, <89 Low. STPM Science: always High. STPM SocSci: <=12 High, 13-18 Low
+**v1.32.2 DONE — Unified Pre-U Scoring & Pathway Fixes**
+- Unified pre-U scoring: Asasi(+12) > Matric(+8) > STPM(+5) with academic, field preference, and signal bonuses
+- Asasi scoring in ranking_engine.py replaces generic course-tag matching
+- STPM progress bar uses raw mata gred (3-27 range), SocSci 13-18 now "Fair" (appeal zone)
+- Pathway card links pass track/stream query params, cards appear without quiz/sign-in
 - Tests unchanged: 212 collected, 203 passing | Golden master: 8245
 
 **Next**

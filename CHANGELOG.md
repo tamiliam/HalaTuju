@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.32.2] - 2026-03-11 — Unified Pre-U Scoring & Pathway Fixes
+
+### Added
+- **Unified pre-U scoring system** — Asasi, Matric, and STPM all use consistent prestige + academic + field preference + signal adjustment scoring
+  - Prestige order: Asasi (+12) > Matric (+8) > STPM (+5)
+  - Academic bonus: Matric >=94:+8, >=89:+4; STPM <=4:+8, <=10:+4; Asasi >=90:+8, >=84:+4
+  - Field preference bonus (+3) when quiz field interest matches pathway variant
+- **Asasi-specific scoring in ranking engine** — replaces generic course-tag matching for pathway_type == 'asasi'
+- **Matric/STPM cards for non-authenticated users** — synthetic pathway entries now appear in flat course list (without quiz)
+- **Pre-U scoring design document** — `docs/plans/2026-03-11-pre-u-scoring-design.md`
+
+### Changed
+- **STPM progress bar scale** — uses full 3-27 mata gred range; shows raw values ("You: 4 | Need: 18") instead of converted 0-100
+- **STPM Social Science 13-18 label** — changed from "Low" to "Fair" (appeal zone via Autonomi Pengetua)
+- **Pathway card links** — now pass track/stream query params (was defaulting to Science)
+- **MeritIndicator component** — accepts `displayStudent`/`displayCutoff` props for raw value display
+
+### Removed
+- **"Your Eligible Tracks" section** from Matric detail page (redundant with card grid)
+
 ## [1.32.1] - 2026-03-11 — Pathway Chance Indicator
 
 ### Added
