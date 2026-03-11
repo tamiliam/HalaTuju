@@ -594,7 +594,40 @@ export default function DashboardPage() {
               }
             })
 
+          // Sort using a composite score: base from credential + source type,
+          // then apply merit penalty (same as ranked path: Fair -5, Low -15)
+          const MERIT_PENALTY: Record<string, number> = { High: 0, Fair: -5, Low: -15 }
+          const SOURCE_TYPE_PRI: Record<string, number> = { asasi: 5, matric: 4, stpm: 3, ua: 4, pismp: 3, poly: 2, kkom: 1, tvet: 0 }
+
+          function credentialPriority(name: string, sourceType: string): number {
+            if (sourceType === 'pismp') return 4
+            const lower = name.toLowerCase().trim()
+            if (lower.startsWith('asasi') || lower.includes('foundation') || lower.startsWith('matriculation') || lower.startsWith('form 6')) return 5
+            if (lower.startsWith('diploma')) return 3
+            if (lower.includes('sijil lanjutan')) return 2
+            if (lower.startsWith('sijil')) return 1
+            return 0
+          }
+
+          function flatSortScore(c: EligibleCourse): number {
+            // Base: credential (0-5) * 10 + source type (0-5) = 0-55
+            const base = credentialPriority(c.course_name, c.source_type) * 10
+              + (SOURCE_TYPE_PRI[c.source_type] ?? 0)
+            // Merit penalty: High 0, Fair -5, Low -15, no data 0
+            const penalty = MERIT_PENALTY[c.merit_label || ''] ?? 0
+            return base + penalty
+          }
+
           const allCourses = [...syntheticFlat, ...eligibilityData.eligible_courses]
+          allCourses.sort((a, b) => {
+            const diff = flatSortScore(b) - flatSortScore(a)
+            if (diff !== 0) return diff
+            // Tiebreak: higher cutoff (more competitive) first, then name
+            const cutDiff = (b.merit_cutoff ?? 0) - (a.merit_cutoff ?? 0)
+            if (cutDiff !== 0) return cutDiff
+            return a.course_name.localeCompare(b.course_name)
+          })
+
           const filteredCourses = filter === 'all'
             ? allCourses
             : allCourses.filter((c: { pathway_type?: string; source_type: string }) =>
