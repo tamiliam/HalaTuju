@@ -403,7 +403,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 const COMMON_SUBJECTS = new Set(['BI (MUET)', 'PA', 'BM'])
 const SCIENCE_SUBJECTS = new Set(['BIO', 'CHE', 'PHY', 'MT', 'MM'])
-const SOCIAL_SUBJECTS = new Set(['EKO', 'SEJ', 'GEO', 'PP', 'PAKN', 'SS', 'SV'])
+const SOCIAL_SUBJECTS = new Set(['EKO', 'SEJ', 'GEO', 'PP', 'PAKN', 'SS', 'SV', 'BT', 'BC', 'KMK', 'ICT', 'L.ENG'])
 
 const SUBJECT_COLORS: Record<string, string> = {
   BIO: 'bg-green-100 text-green-700',
@@ -418,6 +418,11 @@ const SUBJECT_COLORS: Record<string, string> = {
   PAKN: 'bg-purple-100 text-purple-700',
   SS: 'bg-pink-100 text-pink-700',
   SV: 'bg-cyan-100 text-cyan-700',
+  BT: 'bg-red-100 text-red-700',
+  BC: 'bg-yellow-100 text-yellow-700',
+  KMK: 'bg-fuchsia-100 text-fuchsia-700',
+  ICT: 'bg-sky-100 text-sky-700',
+  'L.ENG': 'bg-lime-100 text-lime-700',
 }
 
 const SUBJECT_NAMES: Record<string, string> = {
@@ -433,6 +438,11 @@ const SUBJECT_NAMES: Record<string, string> = {
   PAKN: 'Accounting',
   SS: 'Literature',
   SV: 'Visual Arts',
+  BT: 'Bahasa Tamil',
+  BC: 'Bahasa Cina',
+  KMK: 'Kesusasteraan Melayu Komunikatif',
+  ICT: 'Information & Communication Technology',
+  'L.ENG': 'Literature in English',
 }
 
 function filterSubjects(raw: string, stream: string): string[] {
@@ -453,7 +463,7 @@ function formatPhone(raw: string): string {
 function SubjectLegend({ stream }: { stream: string }) {
   const subjects = stream === 'Sains'
     ? ['BIO', 'CHE', 'PHY', 'MT', 'MM']
-    : ['EKO', 'PP', 'PAKN', 'SEJ', 'GEO', 'SS', 'SV']
+    : ['EKO', 'PP', 'PAKN', 'SEJ', 'GEO', 'SS', 'SV', 'BT', 'BC', 'KMK', 'ICT', 'L.ENG']
 
   return (
     <section className="bg-white rounded-xl border border-gray-200 p-6">
