@@ -19,6 +19,15 @@ function getImageSlug(field: string, courseName: string): string {
   const f = field.toLowerCase()
   const c = courseName.toLowerCase()
 
+  // ── SYNTHETIC PATHWAY ENTRIES — route by track name in course name ──
+  if (f === 'foundation studies' || f === 'form 6') {
+    if (matchAny(c, ['engineering', 'kejuruteraan'])) return 'kejuruteraan-am'
+    if (matchAny(c, ['computer science', 'sains komputer'])) return 'it-perisian'
+    if (matchAny(c, ['accounting', 'perakaunan'])) return 'perakaunan-kewangan'
+    if (matchAny(c, ['social science', 'sains sosial'])) return 'umum-kemanusiaan'
+    return 'sains-stem'  // Science track default
+  }
+
   // ── PENDIDIKAN — sub-route by course name ──
   if (f === 'pendidikan') {
     if (matchAny(c, ['bahasa', 'pengajaran'])) return 'pendidikan-bahasa'

@@ -24,9 +24,6 @@ import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 import { checkAllPathways, getPathwayFitScore } from '@/lib/pathways'
 import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
-import PathwayTrackCard, { type PathwayTrack } from '@/components/PathwayTrackCard'
-import { MATRIC_COLLEGES } from '@/data/matric-colleges'
-import { STPM_SCHOOLS } from '@/data/stpm-schools'
 
 const RESUME_ACTION_KEY = 'halatuju_resume_action'
 
@@ -174,7 +171,7 @@ export default function DashboardPage() {
     if (pathwayResults) {
       for (const r of pathwayResults) {
         if (!r.eligible) continue
-        const fitScore = getPathwayFitScore(r, quizSignals)
+        let fitScore = getPathwayFitScore(r, quizSignals)
         const isMatric = r.pathway === 'matric'
 
         // Compute merit label for the chance indicator
@@ -206,6 +203,10 @@ export default function DashboardPage() {
             meritDisplayCutoff = '12'
           }
         }
+
+        // Apply merit penalty (same as backend: Fair -5, Low -15)
+        const MERIT_PENALTY: Record<string, number> = { High: 0, Fair: -5, Low: -15 }
+        fitScore += MERIT_PENALTY[meritLabel || ''] ?? 0
 
         syntheticEntries.push({
           course_id: `pathway-${r.pathway}-${r.trackId}`,
@@ -290,40 +291,6 @@ export default function DashboardPage() {
 
     return summaries
   }, [eligibilityData, pathwayResults, t])
-
-  // Build pathway track cards for matric/stpm filters
-  const pathwayTracks = useMemo((): PathwayTrack[] => {
-    if (!pathwayResults || (filter !== 'matric' && filter !== 'stpm')) return []
-
-    const meritScore = profile?.student_merit
-    const meritLabel: 'High' | 'Fair' | 'Low' | undefined = meritScore
-      ? meritScore >= 94 ? 'High' : meritScore >= 89 ? 'Fair' : 'Low'
-      : undefined
-
-    return pathwayResults
-      .filter(r => r.pathway === filter && r.eligible)
-      .map(r => {
-        const track: PathwayTrack = {
-          id: `${r.pathway}-${r.trackId}`,
-          pathway: r.pathway,
-          track: r.trackId,
-        }
-        if (r.pathway === 'matric') {
-          track.meritScore = r.merit ?? meritScore
-          track.meritLabel = meritLabel
-          track.collegeCount = MATRIC_COLLEGES.filter(c =>
-            c.tracks.includes(r.trackId as 'sains' | 'sains_komputer' | 'kejuruteraan' | 'perakaunan')
-          ).length
-        } else {
-          track.mataGred = r.mataGred
-          const streamName = r.trackId === 'sains' ? 'Sains' : 'Sains Sosial'
-          track.schoolCount = STPM_SCHOOLS.filter(s =>
-            s.streams.includes(streamName)
-          ).length
-        }
-        return track
-      })
-  }, [pathwayResults, filter, profile])
 
   const handleRetakeQuiz = () => {
     // Navigate to quiz — old signals stay in force until new quiz completes
@@ -525,14 +492,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Pathway Track Cards — when matric or stpm filter is active */}
-        {pathwayTracks.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {pathwayTracks.map(track => (
-              <PathwayTrackCard key={track.id} track={track} />
-            ))}
-          </div>
-        )}
 
         {/* Ranked Results — when quiz is completed */}
         {mergedRankingData && <RankedResults
@@ -594,10 +553,17 @@ export default function DashboardPage() {
               }
             })
 
-          // Sort using a composite score: base from credential + source type,
-          // then apply merit penalty (same as ranked path: Fair -5, Low -15)
-          const MERIT_PENALTY: Record<string, number> = { High: 0, Fair: -5, Low: -15 }
-          const SOURCE_TYPE_PRI: Record<string, number> = { asasi: 5, matric: 4, stpm: 3, ua: 4, pismp: 3, poly: 2, kkom: 1, tvet: 0 }
+          // Sort all courses using the same logic as the backend:
+          // 1. Merit label (High > Fair > Low > no data)
+          // 2. Credential priority (Asasi/Pre-U > PISMP > Diploma > Sijil)
+          // 3. Source type priority (asasi > matric > stpm > ua > pismp > poly > kkom > tvet)
+          // 4. Merit cutoff (higher = more competitive, first)
+          // 5. Name (alphabetical)
+          const MERIT_LABEL_PRI: Record<string, number> = { High: 3, Fair: 2, Low: 1 }
+          const PATHWAY_PRI: Record<string, number> = {
+            asasi: 8, matric: 7, stpm: 6,
+            pismp: 5, university: 4, poly: 3, kkom: 2, iljtm: 1, ilkbs: 1, tvet: 0,
+          }
 
           function credentialPriority(name: string, sourceType: string): number {
             if (sourceType === 'pismp') return 4
@@ -609,22 +575,30 @@ export default function DashboardPage() {
             return 0
           }
 
-          function flatSortScore(c: EligibleCourse): number {
-            // Base: credential (0-5) * 10 + source type (0-5) = 0-55
-            const base = credentialPriority(c.course_name, c.source_type) * 10
-              + (SOURCE_TYPE_PRI[c.source_type] ?? 0)
-            // Merit penalty: High 0, Fair -5, Low -15, no data 0
-            const penalty = MERIT_PENALTY[c.merit_label || ''] ?? 0
-            return base + penalty
-          }
-
           const allCourses = [...syntheticFlat, ...eligibilityData.eligible_courses]
           allCourses.sort((a, b) => {
-            const diff = flatSortScore(b) - flatSortScore(a)
-            if (diff !== 0) return diff
-            // Tiebreak: higher cutoff (more competitive) first, then name
+            // 1. Merit label: High first, then Fair, then Low, no data treated as Fair
+            const ma = MERIT_LABEL_PRI[a.merit_label || ''] ?? 2
+            const mb = MERIT_LABEL_PRI[b.merit_label || ''] ?? 2
+            if (mb !== ma) return mb - ma
+
+            // 2. Credential priority
+            const ca = credentialPriority(a.course_name, a.source_type)
+            const cb = credentialPriority(b.course_name, b.source_type)
+            if (cb !== ca) return cb - ca
+
+            // 3. Pathway/source type priority
+            const pta = (a as { pathway_type?: string }).pathway_type || a.source_type
+            const ptb = (b as { pathway_type?: string }).pathway_type || b.source_type
+            const pa = PATHWAY_PRI[pta] ?? 0
+            const pb = PATHWAY_PRI[ptb] ?? 0
+            if (pb !== pa) return pb - pa
+
+            // 4. Merit cutoff (more competitive first)
             const cutDiff = (b.merit_cutoff ?? 0) - (a.merit_cutoff ?? 0)
             if (cutDiff !== 0) return cutDiff
+
+            // 5. Name
             return a.course_name.localeCompare(b.course_name)
           })
 
