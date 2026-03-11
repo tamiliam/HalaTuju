@@ -322,37 +322,66 @@ function checkStpmBidang(
   }
 }
 
-// --- Prestige Scoring ---
-// Pre-university pathways get a prestige bonus + academic bonus
-// so they compete fairly with quiz-boosted courses (max 120).
+// --- Pre-University Unified Scoring ---
+// See docs/plans/2026-03-11-pre-u-scoring-design.md
 
-const PRESTIGE_BONUS = 8
 const BASE_SCORE = 100
 
-function matricAcademicBonus(merit: number): number {
-  if (merit >= 92) return 8
-  if (merit >= 87) return 5
-  if (merit >= 82) return 3
-  return 0 // below 82 = not eligible (shouldn't reach here)
+// Prestige bonus reflects real-world selectivity
+const PRESTIGE: Record<string, number> = {
+  matric: 8,
+  stpm: 5,
 }
 
-function stpmAcademicBonus(mataGred: number, bidangId: string): number {
-  if (bidangId === 'sains') {
-    if (mataGred <= 6) return 8
-    if (mataGred <= 10) return 5
-    if (mataGred <= 14) return 3
-    if (mataGred <= 18) return 1
-    return 0
-  }
-  // sains_sosial
-  if (mataGred <= 4) return 8
-  if (mataGred <= 7) return 5
-  if (mataGred <= 10) return 3
-  if (mataGred <= 12) return 1
+function matricAcademicBonus(merit: number): number {
+  if (merit >= 94) return 8
+  if (merit >= 89) return 4
   return 0
 }
 
-// Signal cap per category (mirrors backend CATEGORY_CAP)
+function stpmAcademicBonus(mataGred: number): number {
+  if (mataGred <= 4) return 8
+  if (mataGred <= 10) return 4
+  return 0
+}
+
+// Field preference: +3 if student's quiz field interest matches the pathway variant
+const TRACK_FIELD_MAP: Record<string, string[]> = {
+  // Matric
+  'matric:kejuruteraan': ['field_mechanical', 'field_electrical', 'field_civil', 'field_heavy_industry'],
+  'matric:sains_komputer': ['field_digital'],
+  'matric:perakaunan': ['field_business'],
+  // STPM
+  'stpm:sains_sosial': [],  // uses creative signal instead
+}
+
+function fieldPreferenceBonus(
+  result: PathwayResult,
+  signals: Record<string, Record<string, number>> | null
+): number {
+  if (!signals) return 0
+
+  const key = `${result.pathway}:${result.trackId}`
+  const mappedFields = TRACK_FIELD_MAP[key]
+
+  // SocSci variants: boost if creative work preference
+  const isSocSci = result.trackId === 'sains_sosial'
+  if (isSocSci) {
+    return (signals?.work_preference_signals?.creative ?? 0) > 0 ? 3 : 0
+  }
+
+  // Check field interest signals
+  if (mappedFields && mappedFields.length > 0) {
+    const fieldSignals = signals?.field_interest ?? {}
+    for (const f of mappedFields) {
+      if ((fieldSignals[f] ?? 0) > 0) return 3
+    }
+  }
+
+  return 0
+}
+
+// Signal cap (mirrors backend CATEGORY_CAP)
 const SIGNAL_CAP = 6
 
 function getSignal(
@@ -364,10 +393,8 @@ function getSignal(
 }
 
 /**
- * Calculate quiz signal adjustment for pre-u pathways.
- *
- * Matric/STPM are academic gateways — they don't match to specific fields,
- * but learning style, values, and energy signals still apply.
+ * Unified signal adjustment for all pre-u pathways (Matric + STPM).
+ * Academic gateways — not professions. Learning style, values, and energy apply.
  */
 function pathwaySignalAdjustment(
   result: PathwayResult,
@@ -376,71 +403,68 @@ function pathwaySignalAdjustment(
   if (!signals) return 0
 
   const isMatric = result.pathway === 'matric'
-  const isStpmSocSci = result.pathway === 'stpm' && result.trackId === 'sains_sosial'
+  const isSocSci = result.trackId === 'sains_sosial'
 
   let adj = 0
 
-  // Q3 — Work style
-  if (getSignal(signals, 'work_preference_signals', 'problem_solving') > 0 && !isStpmSocSci) {
-    adj += 2 // Matric + STPM Science are analytically demanding
+  // Work style
+  if (getSignal(signals, 'work_preference_signals', 'problem_solving') > 0 && !isSocSci) {
+    adj += 2
   }
-  if (getSignal(signals, 'work_preference_signals', 'creative') > 0 && isStpmSocSci) {
-    adj += 1 // Arts/humanities pathway
+  if (getSignal(signals, 'work_preference_signals', 'creative') > 0 && isSocSci) {
+    adj += 1
   }
   if (getSignal(signals, 'work_preference_signals', 'hands_on') > 0) {
-    adj -= 1 // Pre-u is academic, not practical
+    adj -= 1
   }
 
-  // Q4 — Environment
+  // Environment
   if (getSignal(signals, 'environment_signals', 'workshop_environment') > 0) {
-    adj -= 1 // Pre-u is classroom-based
+    adj -= 1
   }
   if (getSignal(signals, 'environment_signals', 'field_environment') > 0) {
-    adj -= 1 // Pre-u is classroom-based
+    adj -= 1
   }
 
-  // Q5 — Learning style
+  // Learning style
   if (getSignal(signals, 'learning_tolerance_signals', 'concept_first') > 0) {
-    adj += 2 // Matric/STPM is theory-heavy
+    adj += 2
   }
   if (getSignal(signals, 'learning_tolerance_signals', 'rote_tolerant') > 0) {
-    adj += 1 // STPM especially is exam-heavy
+    adj += 1
   }
   if (getSignal(signals, 'learning_tolerance_signals', 'learning_by_doing') > 0) {
-    adj -= 1 // Pre-u is lecture/exam, not practical
+    adj -= 1
   }
 
-  // Q6 — Values
+  // Values
   if (getSignal(signals, 'value_tradeoff_signals', 'pathway_priority') > 0) {
-    adj += 3 // This is exactly what pre-u is for
+    adj += 3
   }
   if (getSignal(signals, 'value_tradeoff_signals', 'fast_employment_priority') > 0) {
-    adj -= 2 // Pre-u adds 1.5-2 years before a degree
+    adj -= 2
   }
-
-  // Q7 — Energy
-  if (getSignal(signals, 'energy_sensitivity_signals', 'mental_fatigue_sensitive') > 0) {
-    adj -= 2 // STPM/Matric is academically demanding
-  }
-  if (getSignal(signals, 'energy_sensitivity_signals', 'high_stamina') > 0) {
-    adj += 1 // Can handle the academic load
-  }
-
-  // Q8 — Practical needs
   if (getSignal(signals, 'value_tradeoff_signals', 'quality_priority') > 0) {
-    adj += 2 // Pre-u is the prestigious academic route
+    adj += 2
   }
   if (getSignal(signals, 'value_tradeoff_signals', 'allowance_priority') > 0 && isMatric) {
-    adj += 2 // Matric students get government allowance
+    adj += 2
   }
   if (getSignal(signals, 'value_tradeoff_signals', 'proximity_priority') > 0 && !isMatric) {
-    adj += 1 // Form 6 schools are everywhere, near home
+    adj += 1
   }
   if (getSignal(signals, 'value_tradeoff_signals', 'employment_guarantee') > 0) {
-    adj -= 1 // No job guarantee — still need a degree after
+    adj -= 1
   }
 
-  // Cap the signal adjustment
+  // Energy
+  if (getSignal(signals, 'energy_sensitivity_signals', 'mental_fatigue_sensitive') > 0) {
+    adj -= 2
+  }
+  if (getSignal(signals, 'energy_sensitivity_signals', 'high_stamina') > 0) {
+    adj += 1
+  }
+
   return Math.max(Math.min(adj, SIGNAL_CAP), -SIGNAL_CAP)
 }
 
@@ -450,15 +474,17 @@ export function getPathwayFitScore(
 ): number {
   if (!result.eligible) return 0
 
-  let score = BASE_SCORE + PRESTIGE_BONUS
+  let score = BASE_SCORE + (PRESTIGE[result.pathway] ?? 0)
 
   if (result.pathway === 'matric' && result.merit !== undefined) {
     score += matricAcademicBonus(result.merit)
   } else if (result.pathway === 'stpm' && result.mataGred !== undefined) {
-    score += stpmAcademicBonus(result.mataGred, result.trackId)
+    score += stpmAcademicBonus(result.mataGred)
   }
 
-  score += pathwaySignalAdjustment(result, signals ?? null)
+  const sigs = signals ?? null
+  score += fieldPreferenceBonus(result, sigs)
+  score += pathwaySignalAdjustment(result, sigs)
 
   return score
 }

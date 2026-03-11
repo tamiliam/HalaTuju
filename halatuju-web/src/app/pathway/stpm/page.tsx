@@ -30,6 +30,13 @@ const STREAM_META: Record<StreamId, {
   },
 }
 
+function mataGredColor(mg: number | undefined): string {
+  if (mg === undefined) return 'text-gray-500'
+  if (mg <= 6) return 'text-green-600'
+  if (mg <= 12) return 'text-amber-600'
+  return 'text-red-600'
+}
+
 export default function StpmDetailPage() {
   return (
     <Suspense fallback={
@@ -172,14 +179,6 @@ function StpmContent() {
     setPpdFilter('')
     setDisplayCount(PAGE_SIZE)
   }, [stateFilter])
-
-  // Mata gred colour
-  function mataGredColor(mg: number | undefined): string {
-    if (mg === undefined) return 'text-gray-500'
-    if (mg <= 6) return 'text-green-600'
-    if (mg <= 12) return 'text-amber-600'
-    return 'text-red-600'
-  }
 
   if (isLoading) {
     return (

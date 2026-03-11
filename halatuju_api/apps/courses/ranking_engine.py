@@ -48,6 +48,124 @@ MERIT_PENALTY = {
     "Low": -15,    # Significantly below cutoff
 }
 
+# --- Pre-University Unified Scoring (Asasi) ---
+# See docs/plans/2026-03-11-pre-u-scoring-design.md
+# Asasi is the most prestigious pre-u pathway.
+ASASI_PRESTIGE_BONUS = 12
+ASASI_SIGNAL_CAP = 6
+
+# Asasi field → quiz field signal mapping
+ASASI_FIELD_MAP = {
+    'Kejuruteraan': ['field_mechanical', 'field_electrical', 'field_civil', 'field_heavy_industry'],
+    'Pengurusan Dan Strategi': ['field_business'],
+    'Perubatan': ['field_health'],
+    'Sains Sosial': [],  # uses creative signal instead
+}
+
+
+def asasi_academic_bonus(student_merit):
+    """Academic bonus for Asasi based on student merit (0-100)."""
+    try:
+        m = float(student_merit or 0)
+    except (TypeError, ValueError):
+        return 0
+    if m >= 90:
+        return 8
+    if m >= 84:
+        return 4
+    return 0
+
+
+def asasi_field_preference(course_field, signals):
+    """Field preference bonus (+3) if quiz field interest matches Asasi variant."""
+    if not signals:
+        return 0
+    field_interest = signals.get('field_interest', {})
+
+    # Social science: boost if creative work preference
+    if course_field == 'Sains Sosial':
+        creative = signals.get('work_preference_signals', {}).get('creative', 0)
+        return 3 if creative > 0 else 0
+
+    mapped = ASASI_FIELD_MAP.get(course_field, [])
+    for f in mapped:
+        if field_interest.get(f, 0) > 0:
+            return 3
+    return 0
+
+
+def asasi_signal_adjustment(course_field, signals):
+    """Unified signal adjustment for Asasi (same logic as frontend Matric/STPM)."""
+    if not signals:
+        return 0
+
+    def get_sig(cat, key):
+        return signals.get(cat, {}).get(key, 0)
+
+    is_socsci = course_field == 'Sains Sosial'
+    adj = 0
+
+    # Work style
+    if get_sig('work_preference_signals', 'problem_solving') > 0 and not is_socsci:
+        adj += 2
+    if get_sig('work_preference_signals', 'creative') > 0 and is_socsci:
+        adj += 1
+    if get_sig('work_preference_signals', 'hands_on') > 0:
+        adj -= 1
+
+    # Environment
+    if get_sig('environment_signals', 'workshop_environment') > 0:
+        adj -= 1
+    if get_sig('environment_signals', 'field_environment') > 0:
+        adj -= 1
+
+    # Learning style
+    if get_sig('learning_tolerance_signals', 'concept_first') > 0:
+        adj += 2
+    if get_sig('learning_tolerance_signals', 'rote_tolerant') > 0:
+        adj += 1
+    if get_sig('learning_tolerance_signals', 'learning_by_doing') > 0:
+        adj -= 1
+
+    # Values (Asasi doesn't get allowance or proximity bonuses — those are Matric/STPM only)
+    if get_sig('value_tradeoff_signals', 'pathway_priority') > 0:
+        adj += 3
+    if get_sig('value_tradeoff_signals', 'fast_employment_priority') > 0:
+        adj -= 2
+    if get_sig('value_tradeoff_signals', 'quality_priority') > 0:
+        adj += 2
+    if get_sig('value_tradeoff_signals', 'employment_guarantee') > 0:
+        adj -= 1
+
+    # Energy
+    if get_sig('energy_sensitivity_signals', 'mental_fatigue_sensitive') > 0:
+        adj -= 2
+    if get_sig('energy_sensitivity_signals', 'high_stamina') > 0:
+        adj += 1
+
+    return max(min(adj, ASASI_SIGNAL_CAP), -ASASI_SIGNAL_CAP)
+
+
+def calculate_asasi_fit_score(item, student_profile):
+    """
+    Calculate fit score for Asasi courses using the unified pre-u scoring.
+    Replaces generic course-tag matching for pathway_type == 'asasi'.
+    """
+    signals = student_profile.get('student_signals', student_profile)
+    course_field = item.get('field', '')
+    student_merit = item.get('student_merit', 0)
+
+    score = BASE_SCORE + ASASI_PRESTIGE_BONUS
+    score += asasi_academic_bonus(student_merit)
+    score += asasi_field_preference(course_field, signals)
+    score += asasi_signal_adjustment(course_field, signals)
+
+    reasons = ["Pre-university pathway to degree programmes"]
+    if asasi_field_preference(course_field, signals) > 0:
+        reasons.append(f"matches your interest in {course_field}")
+
+    return score, reasons
+
 # Merit label sort priority (safe bets first, mirroring Streamlit quality_key)
 MERIT_LABEL_PRIORITY = {'High': 3, 'Fair': 2, 'Low': 1}
 
@@ -498,10 +616,14 @@ def get_ranked_results(eligible_courses, student_profile,
         c_id = item.get('course_id')
         i_id = item.get('institution_id', '')
 
-        score, reasons = calculate_fit_score(
-            student_profile, c_id, i_id,
-            course_tags_map, inst_modifiers_map,
-        )
+        # Asasi uses unified pre-u scoring instead of generic course-tag matching
+        if item.get('pathway_type') == 'asasi':
+            score, reasons = calculate_asasi_fit_score(item, student_profile)
+        else:
+            score, reasons = calculate_fit_score(
+                student_profile, c_id, i_id,
+                course_tags_map, inst_modifiers_map,
+            )
 
         # v1.4: Apply merit-based penalty as "reality check"
         merit_cutoff = item.get('merit_cutoff', 0)

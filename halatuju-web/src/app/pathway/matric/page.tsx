@@ -286,50 +286,6 @@ function MatricPageContent() {
               </div>
             </section>
 
-            {/* Your Eligible Tracks */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                {t('pathwayDetail.eligibleTracks')}
-              </h2>
-              <div className="space-y-3">
-                {ALL_TRACK_IDS.map(trackId => {
-                  const result = matricResults.find(r => r.trackId === trackId)
-                  const isEligible = result?.eligible ?? false
-                  const isActive = trackId === currentTrackId
-
-                  return (
-                    <Link
-                      key={trackId}
-                      href={`/pathway/matric?track=${trackId}`}
-                      className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
-                        isActive ? 'bg-gray-100' : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      {/* Check / Cross icon */}
-                      {isEligible ? (
-                        <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5 text-gray-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      )}
-                      <span
-                        className={`text-sm font-medium px-2.5 py-0.5 rounded-full ${
-                          isEligible
-                            ? TRACK_COLOURS[trackId]
-                            : 'bg-gray-100 text-gray-400'
-                        }`}
-                      >
-                        {t(TRACK_I18N_KEYS[trackId])}
-                      </span>
-                    </Link>
-                  )
-                })}
-              </div>
-            </section>
-
             {/* Caveat card */}
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
               <div className="flex gap-3">

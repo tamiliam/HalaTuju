@@ -63,15 +63,13 @@ export default function PathwayTrackCard({ track }: PathwayTrackCardProps) {
 
   const badgeLabel = isMatric ? 'Matriculation' : 'Form 6'
 
-  const pathwayLabel = isMatric
+  const trackLabel = t(TRACK_I18N_KEYS[track.track] || track.track)
+
+  const pathwayTitle = isMatric
     ? t('pathwayDetail.matricTitle')
     : t('pathwayDetail.stpmTitle')
 
-  const trackLabel = t(TRACK_I18N_KEYS[track.track] || track.track)
-
-  const title = isMatric
-    ? `${t('pathwayDetail.matricTitle')} \u2014 ${trackLabel}`
-    : `${t('pathwayDetail.stpmTitle')} \u2014 ${trackLabel}`
+  const title = `${pathwayTitle} \u2014 ${trackLabel}`
 
   const duration = isMatric ? '2 Semesters' : '3 Semesters'
 

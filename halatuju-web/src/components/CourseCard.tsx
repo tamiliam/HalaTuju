@@ -200,6 +200,17 @@ const LEVEL_COLORS: Record<string, string> = {
   'Asasi': 'bg-orange-50 text-orange-600',
 }
 
+/** Build the detail page URL for a course or synthetic pathway entry. */
+function getCourseHref(courseId: string): string {
+  if (courseId.startsWith('pathway-matric')) {
+    return `/pathway/matric?track=${courseId.replace('pathway-matric-', '')}`
+  }
+  if (courseId.startsWith('pathway-stpm')) {
+    return `/pathway/stpm?stream=${courseId.replace('pathway-stpm-', '')}`
+  }
+  return `/course/${courseId}`
+}
+
 function isRankedCourse(course: EligibleCourse | RankedCourse): course is RankedCourse {
   return 'fit_score' in course
 }
@@ -270,11 +281,7 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
       </div>
 
       {/* Card body */}
-      <Link href={
-        course.course_id.startsWith('pathway-matric') ? '/pathway/matric'
-        : course.course_id.startsWith('pathway-stpm') ? '/pathway/stpm'
-        : `/course/${course.course_id}`
-      } className="flex-1 p-4 flex flex-col">
+      <Link href={getCourseHref(course.course_id)} className="flex-1 p-4 flex flex-col">
         {/* Type + Level badges */}
         <div className="flex flex-wrap items-center gap-1.5 mb-2">
           <span
@@ -330,6 +337,8 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
           label={course.merit_label}
           studentMerit={course.student_merit}
           meritCutoff={course.merit_cutoff}
+          displayStudent={course.merit_display_student}
+          displayCutoff={course.merit_display_cutoff}
         />
 
         {/* Fit reasons (ranked courses only) */}
@@ -354,10 +363,14 @@ function MeritIndicator({
   label,
   studentMerit,
   meritCutoff,
+  displayStudent,
+  displayCutoff,
 }: {
   label: string | null
   studentMerit: number | null
   meritCutoff: number | null
+  displayStudent?: string
+  displayCutoff?: string
 }) {
   if (!label) return null
 
@@ -402,7 +415,7 @@ function MeritIndicator({
         >
           {fillWidth >= 12 && (
             <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-white leading-none">
-              {studentMerit}
+              {displayStudent ?? studentMerit}
             </span>
           )}
         </div>
@@ -416,7 +429,7 @@ function MeritIndicator({
       <div className="flex items-center justify-between">
         <span className={`text-[11px] font-semibold ${textClass}`}>{displayLabel}</span>
         <span className="text-[10px] text-gray-400">
-          You: {studentMerit} &nbsp;|&nbsp; Need: {meritCutoff}
+          You: {displayStudent ?? studentMerit} &nbsp;|&nbsp; Need: {displayCutoff ?? meritCutoff}
         </span>
       </div>
     </div>

@@ -13,6 +13,7 @@ import {
   generateReport,
   getReports,
   type StudentProfile,
+  type EligibleCourse,
   type RankedCourse,
   type RankingResult,
 } from '@/lib/api'
@@ -180,23 +181,29 @@ export default function DashboardPage() {
         let meritLabel: string | null = null
         let studentMerit: number | null = null
         let meritCutoff: number | null = null
+        let meritDisplayStudent: string | undefined
+        let meritDisplayCutoff: string | undefined
 
         if (isMatric && r.merit !== undefined) {
           studentMerit = Math.round(r.merit * 10) / 10
           meritCutoff = 94 // High/Fair boundary as the "need" line
           meritLabel = r.merit >= 94 ? 'High' : r.merit >= 89 ? 'Fair' : 'Low'
-        } else if (!isMatric && r.mataGred !== undefined && r.maxMataGred) {
-          // Invert mata gred to 0-100 scale (lower gred = higher score)
-          const maxGred = r.maxMataGred
-          studentMerit = Math.round((1 - r.mataGred / maxGred) * 100)
+        } else if (!isMatric && r.mataGred !== undefined) {
+          // STPM: full range is 3 (best) to 27 (worst)
+          // Invert to 0-100 scale: (27 - gred) / 24 * 100
+          studentMerit = Math.round((27 - r.mataGred) / 24 * 100)
+          // Display raw mata gred values (lower is better)
+          meritDisplayStudent = `${r.mataGred}`
           if (r.trackId === 'sains') {
-            // Science: guaranteed place if eligible (max 18), always High
-            meritCutoff = 0
+            // Science cutoff at 18: (27-18)/24*100 = 37.5%
+            meritCutoff = Math.round((27 - 18) / 24 * 100)
             meritLabel = 'High'
+            meritDisplayCutoff = '18'
           } else {
-            // Social Science: 12 or below = High, 13-18 = Low
-            meritCutoff = Math.round((1 - 12 / maxGred) * 100)
-            meritLabel = r.mataGred <= 12 ? 'High' : 'Low'
+            // Social Science cutoff at 12: (27-12)/24*100 = 62.5%
+            meritCutoff = Math.round((27 - 12) / 24 * 100)
+            meritLabel = r.mataGred <= 12 ? 'High' : 'Fair'
+            meritDisplayCutoff = '12'
           }
         }
 
@@ -208,11 +215,13 @@ export default function DashboardPage() {
           level: 'Pre-University',
           field: isMatric ? 'Foundation Studies' : 'Form 6',
           source_type: r.pathway,
-          pathway_type: r.pathway === 'matric' ? 'matric' : 'stpm',
+          pathway_type: r.pathway,
           merit_cutoff: meritCutoff,
           student_merit: studentMerit,
           merit_label: meritLabel,
           merit_color: null,
+          merit_display_student: meritDisplayStudent,
+          merit_display_cutoff: meritDisplayCutoff,
           fit_score: fitScore,
           fit_reasons: isMatric
             ? [`Matric merit: ${r.merit?.toFixed(1)}`]
@@ -537,9 +546,58 @@ export default function DashboardPage() {
 
         {/* Flat Course List — when no quiz taken */}
         {eligibilityData && !quizSignals && !eligibilityLoading && (() => {
+          // Inject synthetic Matric/STPM entries into the flat list
+          const syntheticFlat: EligibleCourse[] = pathwayResults
+            .filter(r => r.eligible)
+            .map(r => {
+              const isMatric = r.pathway === 'matric'
+
+              let meritLabel: string | null = null
+              let studentMerit: number | null = null
+              let meritCutoff: number | null = null
+              let meritDisplayStudent: string | undefined
+              let meritDisplayCutoff: string | undefined
+
+              if (isMatric && r.merit !== undefined) {
+                studentMerit = Math.round(r.merit * 10) / 10
+                meritCutoff = 94
+                meritLabel = r.merit >= 94 ? 'High' : r.merit >= 89 ? 'Fair' : 'Low'
+              } else if (!isMatric && r.mataGred !== undefined) {
+                studentMerit = Math.round((27 - r.mataGred) / 24 * 100)
+                meritDisplayStudent = `${r.mataGred}`
+                if (r.trackId === 'sains') {
+                  meritCutoff = Math.round((27 - 18) / 24 * 100)
+                  meritLabel = 'High'
+                  meritDisplayCutoff = '18'
+                } else {
+                  meritCutoff = Math.round((27 - 12) / 24 * 100)
+                  meritLabel = r.mataGred <= 12 ? 'High' : 'Fair'
+                  meritDisplayCutoff = '12'
+                }
+              }
+
+              return {
+                course_id: `pathway-${r.pathway}-${r.trackId}`,
+                course_name: isMatric
+                  ? `Matriculation — ${r.trackName}`
+                  : `Form 6 (STPM) — ${r.trackName}`,
+                level: 'Pre-University',
+                field: isMatric ? 'Foundation Studies' : 'Form 6',
+                source_type: r.pathway,
+                pathway_type: r.pathway,
+                merit_cutoff: meritCutoff,
+                student_merit: studentMerit,
+                merit_label: meritLabel,
+                merit_color: null,
+                merit_display_student: meritDisplayStudent,
+                merit_display_cutoff: meritDisplayCutoff,
+              }
+            })
+
+          const allCourses = [...syntheticFlat, ...eligibilityData.eligible_courses]
           const filteredCourses = filter === 'all'
-            ? eligibilityData.eligible_courses
-            : eligibilityData.eligible_courses.filter((c: { pathway_type?: string; source_type: string }) =>
+            ? allCourses
+            : allCourses.filter((c: { pathway_type?: string; source_type: string }) =>
                 (c.pathway_type || c.source_type) === filter
               )
           const displayedCourses = filteredCourses.slice(0, displayCount)
