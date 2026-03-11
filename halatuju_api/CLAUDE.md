@@ -149,7 +149,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (212 collected, 203 must pass, golden master = 8245)
+# 1. Run all tests (212 collected, 203 must pass, golden master = 8251)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -161,7 +161,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-203 tests must pass out of 212 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8245, you broke eligibility logic.
+203 tests must pass out of 212 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8251, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -195,7 +195,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Asasi scoring in ranking_engine.py replaces generic course-tag matching
 - STPM progress bar uses raw mata gred (3-27 range), SocSci 13-18 now "Fair" (appeal zone)
 - Pathway card links pass track/stream query params, cards appear without quiz/sign-in
-- Tests unchanged: 212 collected, 203 passing | Golden master: 8245
+- Tests unchanged: 212 collected, 203 passing | Golden master: 8251
 
 **Next**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
