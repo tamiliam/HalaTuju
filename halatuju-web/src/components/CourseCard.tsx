@@ -180,6 +180,8 @@ const TYPE_LABELS: Record<string, string> = {
   tvet: 'TVET',
   ua: 'University',
   pismp: 'Teacher Training',
+  matric: 'Matriculation',
+  stpm: 'Form 6',
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -187,6 +189,8 @@ const TYPE_COLORS: Record<string, string> = {
   tvet: 'bg-green-100 text-green-700',
   ua: 'bg-purple-100 text-purple-700',
   pismp: 'bg-amber-100 text-amber-700',
+  matric: 'bg-orange-100 text-orange-700',
+  stpm: 'bg-indigo-100 text-indigo-700',
 }
 
 const LEVEL_COLORS: Record<string, string> = {
@@ -237,8 +241,8 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
           </div>
         )}
 
-        {/* Save button overlay */}
-        {onToggleSave && (
+        {/* Save button overlay — not for pathway entries */}
+        {onToggleSave && !course.course_id.startsWith('pathway-') && (
           <button
             onClick={(e) => {
               e.preventDefault()
@@ -266,7 +270,11 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
       </div>
 
       {/* Card body */}
-      <Link href={`/course/${course.course_id}`} className="flex-1 p-4 flex flex-col">
+      <Link href={
+        course.course_id.startsWith('pathway-matric') ? '/pathway/matric'
+        : course.course_id.startsWith('pathway-stpm') ? '/pathway/stpm'
+        : `/course/${course.course_id}`
+      } className="flex-1 p-4 flex flex-col">
         {/* Type + Level badges */}
         <div className="flex flex-wrap items-center gap-1.5 mb-2">
           <span

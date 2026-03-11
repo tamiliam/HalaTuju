@@ -322,6 +322,47 @@ function checkStpmBidang(
   }
 }
 
+// --- Prestige Scoring ---
+// Pre-university pathways get a prestige bonus + academic bonus
+// so they compete fairly with quiz-boosted courses (max 120).
+
+const PRESTIGE_BONUS = 8
+const BASE_SCORE = 100
+
+function matricAcademicBonus(merit: number): number {
+  if (merit >= 92) return 8
+  if (merit >= 87) return 5
+  if (merit >= 82) return 3
+  return 0 // below 82 = not eligible (shouldn't reach here)
+}
+
+function stpmAcademicBonus(mataGred: number, bidangId: string): number {
+  if (bidangId === 'sains') {
+    if (mataGred <= 6) return 8
+    if (mataGred <= 10) return 5
+    if (mataGred <= 14) return 3
+    if (mataGred <= 18) return 1
+    return 0
+  }
+  // sains_sosial
+  if (mataGred <= 4) return 8
+  if (mataGred <= 7) return 5
+  if (mataGred <= 10) return 3
+  if (mataGred <= 12) return 1
+  return 0
+}
+
+export function getPathwayFitScore(result: PathwayResult): number {
+  if (!result.eligible) return 0
+  if (result.pathway === 'matric' && result.merit !== undefined) {
+    return BASE_SCORE + PRESTIGE_BONUS + matricAcademicBonus(result.merit)
+  }
+  if (result.pathway === 'stpm' && result.mataGred !== undefined) {
+    return BASE_SCORE + PRESTIGE_BONUS + stpmAcademicBonus(result.mataGred, result.trackId)
+  }
+  return BASE_SCORE + PRESTIGE_BONUS
+}
+
 // --- Public API ---
 
 export function checkAllPathways(

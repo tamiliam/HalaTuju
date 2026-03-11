@@ -21,7 +21,7 @@ import CourseCard from '@/components/CourseCard'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
-import { checkAllPathways } from '@/lib/pathways'
+import { checkAllPathways, getPathwayFitScore } from '@/lib/pathways'
 import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
 import PathwayTrackCard, { type PathwayTrack } from '@/components/PathwayTrackCard'
 import { MATRIC_COLLEGES } from '@/data/matric-colleges'
@@ -160,6 +160,52 @@ export default function DashboardPage() {
     queryFn: () => getRankedResults(eligibilityData!.eligible_courses, quizSignals!),
     enabled: !!eligibilityData && !!quizSignals,
   })
+
+  // Merge Matric/STPM into ranked results so they compete on score
+  const mergedRankingData = useMemo((): RankingResult | undefined => {
+    if (!rankingData) return undefined
+
+    // Build synthetic ranked entries from eligible pathway results
+    const syntheticEntries: RankedCourse[] = []
+    if (pathwayResults) {
+      for (const r of pathwayResults) {
+        if (!r.eligible) continue
+        const fitScore = getPathwayFitScore(r)
+        const isMatric = r.pathway === 'matric'
+
+        syntheticEntries.push({
+          course_id: `pathway-${r.pathway}-${r.trackId}`,
+          course_name: isMatric
+            ? `Matriculation — ${r.trackName}`
+            : `Form 6 (STPM) — ${r.trackName}`,
+          level: 'Pre-University',
+          field: isMatric ? 'Foundation Studies' : 'Form 6',
+          source_type: r.pathway,
+          pathway_type: r.pathway === 'matric' ? 'matric' : 'stpm',
+          merit_cutoff: null,
+          student_merit: isMatric ? (r.merit ?? null) : null,
+          merit_label: null,
+          merit_color: null,
+          fit_score: fitScore,
+          fit_reasons: isMatric
+            ? [`Matric merit: ${r.merit?.toFixed(1)}`]
+            : [`Mata gred: ${r.mataGred}/${r.maxMataGred}`],
+        })
+      }
+    }
+
+    if (syntheticEntries.length === 0) return rankingData
+
+    // Merge all courses, re-sort by fit_score desc, split into top 6 + rest
+    const all = [...rankingData.top_5, ...rankingData.rest, ...syntheticEntries]
+    all.sort((a, b) => b.fit_score - a.fit_score)
+
+    return {
+      top_5: all.slice(0, 6),
+      rest: all.slice(6),
+      total_ranked: all.length,
+    }
+  }, [rankingData, pathwayResults])
 
   // Build pathway summary badges from eligibility data + pathway engine
   const pathwaySummaries = useMemo((): PathwaySummary[] => {
@@ -447,8 +493,8 @@ export default function DashboardPage() {
         )}
 
         {/* Ranked Results — when quiz is completed */}
-        {rankingData && <RankedResults
-          rankingData={rankingData}
+        {mergedRankingData && <RankedResults
+          rankingData={mergedRankingData}
           filter={filter}
           displayCount={displayCount}
           setDisplayCount={setDisplayCount}
