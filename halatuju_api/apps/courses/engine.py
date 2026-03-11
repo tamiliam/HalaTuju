@@ -265,23 +265,30 @@ def check_complex_requirements(student_grades, complex_req_json_str):
 
     Logic: Each OR group must be satisfied (AND logic between groups).
     Within each group, need 'count' subjects with at least 'grade' (OR logic).
-    """
-    if not complex_req_json_str or not isinstance(complex_req_json_str, str) or complex_req_json_str.strip() == "":
-        return True, None
 
-    if isinstance(complex_req_json_str, float):
-        import math
-        if math.isnan(complex_req_json_str):
+    Accepts either a JSON string (from CSV) or a dict (from Django JSONField).
+    """
+    # Already a dict (from Django JSONField / DB load)
+    if isinstance(complex_req_json_str, dict):
+        data = complex_req_json_str
+    else:
+        # String path (from CSV)
+        if not complex_req_json_str or not isinstance(complex_req_json_str, str) or complex_req_json_str.strip() == "":
             return True, None
 
-    complex_req_str = str(complex_req_json_str).strip()
-    if not complex_req_str or complex_req_str.lower() == "nan":
-        return True, None
+        if isinstance(complex_req_json_str, float):
+            import math
+            if math.isnan(complex_req_json_str):
+                return True, None
 
-    try:
-        data = json.loads(complex_req_str)
-    except json.JSONDecodeError:
-        return False, "Invalid Complex Requirement Format"
+        complex_req_str = str(complex_req_json_str).strip()
+        if not complex_req_str or complex_req_str.lower() == "nan":
+            return True, None
+
+        try:
+            data = json.loads(complex_req_str)
+        except json.JSONDecodeError:
+            return False, "Invalid Complex Requirement Format"
 
     or_groups = data.get('or_groups', [])
     if not or_groups:
