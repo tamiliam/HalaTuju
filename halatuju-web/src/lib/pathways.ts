@@ -231,7 +231,7 @@ export interface StpmBidang {
 
 export const STPM_BIDANGS: StpmBidang[] = [
   { id: 'sains', name: 'Science', nameMs: 'Sains', nameTa: 'அறிவியல்', maxMataGred: 18 },
-  { id: 'sains_sosial', name: 'Social Science', nameMs: 'Sains Sosial', nameTa: 'சமூக அறிவியல்', maxMataGred: 12 },
+  { id: 'sains_sosial', name: 'Social Science', nameMs: 'Sains Sosial', nameTa: 'சமூக அறிவியல்', maxMataGred: 18 },
 ]
 
 function checkStpmBidang(

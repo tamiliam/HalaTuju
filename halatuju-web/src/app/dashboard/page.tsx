@@ -176,6 +176,30 @@ export default function DashboardPage() {
         const fitScore = getPathwayFitScore(r, quizSignals)
         const isMatric = r.pathway === 'matric'
 
+        // Compute merit label for the chance indicator
+        let meritLabel: string | null = null
+        let studentMerit: number | null = null
+        let meritCutoff: number | null = null
+
+        if (isMatric && r.merit !== undefined) {
+          studentMerit = Math.round(r.merit * 10) / 10
+          meritCutoff = 94 // High/Fair boundary as the "need" line
+          meritLabel = r.merit >= 94 ? 'High' : r.merit >= 89 ? 'Fair' : 'Low'
+        } else if (!isMatric && r.mataGred !== undefined && r.maxMataGred) {
+          // Invert mata gred to 0-100 scale (lower gred = higher score)
+          const maxGred = r.maxMataGred
+          studentMerit = Math.round((1 - r.mataGred / maxGred) * 100)
+          if (r.trackId === 'sains') {
+            // Science: guaranteed place if eligible (max 18), always High
+            meritCutoff = 0
+            meritLabel = 'High'
+          } else {
+            // Social Science: 12 or below = High, 13-18 = Low
+            meritCutoff = Math.round((1 - 12 / maxGred) * 100)
+            meritLabel = r.mataGred <= 12 ? 'High' : 'Low'
+          }
+        }
+
         syntheticEntries.push({
           course_id: `pathway-${r.pathway}-${r.trackId}`,
           course_name: isMatric
@@ -185,9 +209,9 @@ export default function DashboardPage() {
           field: isMatric ? 'Foundation Studies' : 'Form 6',
           source_type: r.pathway,
           pathway_type: r.pathway === 'matric' ? 'matric' : 'stpm',
-          merit_cutoff: null,
-          student_merit: isMatric ? (r.merit ?? null) : null,
-          merit_label: null,
+          merit_cutoff: meritCutoff,
+          student_merit: studentMerit,
+          merit_label: meritLabel,
           merit_color: null,
           fit_score: fitScore,
           fit_reasons: isMatric
