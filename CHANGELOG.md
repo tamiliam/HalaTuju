@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.31.0] - 2026-03-11 — STPM UX Polish, WP Schools, MASCO Backfill
+
+### Added
+- **16 WP Kuala Lumpur Form 6 schools** — added to STPM school dataset from MOE SST6 portal
+- **MASCO backfill management command** — `backfill_masco` command populates MASCO codes for 62 courses missing them, using Supabase lookup
+- **Stream-filtered subjects** — STPM detail page filters school subjects by selected stream (Sains/Sastera)
+
+### Changed
+- **Average merit cutoff** — Quick Facts now shows average merit cutoff across all institutions offering the course, instead of student's own merit score
+- **Pathway track cards on dashboard** — pills now show track cards inline when selected, with stream badge filtering
+- **Card badge vs title** — pathway card badge shows short label (e.g. "Matric") while title keeps the full pathway name
+- **STPM school data** — converted to title case at source for consistency
+- **Mobile layout** — shorter labels, better spacing for pathway cards and course detail on small screens
+- **Subject badges** — coloured by stream, phone number formatting improved, legend added to STPM detail page
+
+### Fixed
+- **WP and JPN preserved as uppercase** — title-case conversion no longer lowercases state abbreviations
+- **School acronyms preserved** — e.g. "SMK" stays uppercase in school names
+
 ## [1.30.0] - 2026-03-10 — Matric/STPM Detail Pages, About Page, UX Fixes
 
 ### Added
