@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.32.1] - 2026-03-11 — Pathway Chance Indicator
+
+### Added
+- **Merit chance bar on Matric/STPM cards** — same High/Fair/Low indicator as regular courses
+  - Matric: >= 94 High, 89-93 Fair, < 89 Low
+  - STPM Science: always High (guaranteed place if eligible)
+  - STPM Social Science: <= 12 High, 13-18 Low
+
+### Changed
+- **STPM Social Science eligibility expanded** — maxMataGred raised from 12 to 18; students with 13-18 now appear as Low chance instead of being excluded
+
 ## [1.32.0] - 2026-03-11 — Pathway Ranking, Quiz Flow, Data Persistence
 
 ### Added

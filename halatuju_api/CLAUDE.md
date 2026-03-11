@@ -190,11 +190,10 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**v1.32.0 DONE — Pathway Ranking, Quiz Flow, Data Persistence**
-- Frontend: Matric/STPM injected as synthetic entries into ranked course list with prestige + academic + signal scoring
-- Frontend: Quiz-then-report flow enforced (one report per quiz run, retake navigates to /quiz)
-- Frontend: localStorage wiped on logout, profile restored from Supabase on login
-- Frontend: STPM subject data fixes (duplicates, missing subjects BT/BC/KMK/ICT/L.ENG)
+**v1.32.1 DONE — Pathway Chance Indicator**
+- Frontend: Merit chance bar (High/Fair/Low) on Matric/STPM cards matching regular course cards
+- Frontend: STPM Social Science maxMataGred raised 12→18 (13-18 shows as Low instead of excluded)
+- Matric thresholds: >=94 High, 89-93 Fair, <89 Low. STPM Science: always High. STPM SocSci: <=12 High, 13-18 Low
 - Tests unchanged: 212 collected, 203 passing | Golden master: 8245
 
 **Next**
