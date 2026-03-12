@@ -25,4 +25,7 @@ node_modules/
 # Django
 *.sqlite3
 halatuju_api/staticfiles/
-halatuju_api/db.sqlite3_archive/streamlit/.streamlit/secrets.toml
+halatuju_api/db.sqlite3
+
+# Archived secrets
+**/secrets.toml
