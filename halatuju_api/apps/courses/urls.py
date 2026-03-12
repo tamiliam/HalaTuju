@@ -39,4 +39,5 @@ urlpatterns = [
     # STPM eligibility
     path('stpm/eligibility/check/', views.StpmEligibilityCheckView.as_view(), name='stpm-eligibility-check'),
     path('stpm/ranking/', views.StpmRankingView.as_view(), name='stpm-ranking'),
+    path('stpm/search/', views.StpmSearchView.as_view(), name='stpm-search'),
 ]

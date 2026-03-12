@@ -24,7 +24,7 @@ from django.apps import apps
 
 from django.db.models import Count, OuterRef, Q, Subquery
 
-from .models import Course, CourseInstitution, CourseRequirement, Institution, StudentProfile, SavedCourse, AdmissionOutcome
+from .models import Course, CourseInstitution, CourseRequirement, Institution, StudentProfile, SavedCourse, AdmissionOutcome, StpmCourse
 from .engine import (
     StudentProfile as EngineStudentProfile,
     check_eligibility,
@@ -1154,4 +1154,74 @@ class StpmRankingView(APIView):
         return Response({
             'ranked_programmes': ranked,
             'total': len(ranked),
+        })
+
+
+class StpmSearchView(APIView):
+    """
+    GET /api/v1/stpm/search/
+    Browse and search STPM degree programmes with filters.
+    Public endpoint — no auth required.
+    """
+
+    def get(self, request):
+        qs = StpmCourse.objects.select_related('requirement').all()
+
+        q = request.query_params.get('q', '').strip()
+        if q:
+            qs = qs.filter(program_name__icontains=q)
+
+        university = request.query_params.get('university', '').strip()
+        if university:
+            qs = qs.filter(university=university)
+
+        stream = request.query_params.get('stream', '').strip()
+        if stream:
+            if stream in ('science', 'arts'):
+                qs = qs.filter(stream__in=[stream, 'both'])
+            else:
+                qs = qs.filter(stream=stream)
+
+        total_count = qs.count()
+
+        try:
+            limit = min(int(request.query_params.get('limit', 24)), 100)
+        except (ValueError, TypeError):
+            limit = 24
+        try:
+            offset = max(int(request.query_params.get('offset', 0)), 0)
+        except (ValueError, TypeError):
+            offset = 0
+
+        programmes = qs.order_by('university', 'program_name')[offset:offset + limit]
+
+        results = []
+        for prog in programmes:
+            req = getattr(prog, 'requirement', None)
+            results.append({
+                'program_id': prog.program_id,
+                'program_name': prog.program_name,
+                'university': prog.university,
+                'stream': prog.stream,
+                'min_cgpa': req.min_cgpa if req else 2.0,
+                'min_muet_band': req.min_muet_band if req else 1,
+                'req_interview': req.req_interview if req else False,
+                'no_colorblind': req.no_colorblind if req else False,
+            })
+
+        filters = {
+            'universities': sorted(
+                StpmCourse.objects.values_list('university', flat=True)
+                .distinct().order_by('university')
+            ),
+            'streams': sorted(
+                StpmCourse.objects.values_list('stream', flat=True)
+                .distinct().order_by('stream')
+            ),
+        }
+
+        return Response({
+            'programmes': results,
+            'total_count': total_count,
+            'filters': filters,
         })
