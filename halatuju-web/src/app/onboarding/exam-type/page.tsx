@@ -15,6 +15,11 @@ export default function ExamTypePage() {
     router.push('/onboarding/grades')
   }
 
+  const handleSelectSTPM = () => {
+    localStorage.setItem('halatuju_exam_type', 'stpm')
+    router.push('/onboarding/stpm-grades')
+  }
+
   return (
     <main className="min-h-screen bg-[#f8fafc]">
       {/* Header */}
@@ -65,28 +70,28 @@ export default function ExamTypePage() {
             </div>
           </button>
 
-          {/* STPM Card — Coming Soon */}
-          <div className="relative overflow-hidden p-8 rounded-xl bg-white border-2 border-gray-100 shadow-sm text-left opacity-60 cursor-not-allowed">
-            {/* Decorative gradient corner */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-gray-50 to-transparent rounded-bl-[80px]" />
+          {/* STPM Card */}
+          <button
+            onClick={handleSelectSTPM}
+            className="group relative overflow-hidden p-8 rounded-xl bg-white border-2 border-primary-100 shadow-sm hover:border-primary-500 hover:shadow-lg transition-all duration-200 text-left"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-primary-50 to-transparent rounded-bl-[80px] group-hover:from-primary-100 transition-colors" />
             <div className="relative">
-              <div className="flex items-center justify-between mb-5">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center">
-                  <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
-                  </svg>
-                </div>
-                <span className="px-3 py-1 bg-gray-100 text-gray-500 text-xs font-medium rounded-full">
-                  {t('onboarding.comingSoon')}
-                </span>
+              <div className="w-14 h-14 mb-5 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-md shadow-primary-500/20">
+                <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                </svg>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-1">STPM</h3>
               <p className="text-gray-500 text-sm mb-4">{t('onboarding.stpmDesc')}</p>
-              <span className="inline-flex items-center gap-1.5 text-gray-400 text-sm font-medium">
-                Coming soon
+              <span className="inline-flex items-center gap-1.5 text-primary-500 text-sm font-medium group-hover:gap-2.5 transition-all">
+                {t('onboarding.stpmGetStarted')}
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
               </span>
             </div>
-          </div>
+          </button>
         </div>
 
         <div className="flex justify-start">

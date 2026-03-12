@@ -110,7 +110,8 @@
     "meritScore": "Estimated Merit Score",
     "academicMerit": "Academic",
     "coqMerit": "Co-curricular",
-    "meritTotal": "Total"
+    "meritTotal": "Total",
+    "stpmGetStarted": "Get started"
   },
   "dashboard": {
     "title": "Your Course Recommendations",

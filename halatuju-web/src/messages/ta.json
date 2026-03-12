@@ -110,7 +110,8 @@
     "meritScore": "மதிப்பீட்டு தகுதி மதிப்பெண்",
     "academicMerit": "கல்வி",
     "coqMerit": "இணைப் பாடச்செயல்பாடு",
-    "meritTotal": "மொத்தம்"
+    "meritTotal": "மொத்தம்",
+    "stpmGetStarted": "தொடங்கவும்"
   },
   "dashboard": {
     "title": "உங்கள் படிப்புப் பரிந்துரைகள்",

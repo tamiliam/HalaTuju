@@ -110,7 +110,8 @@
     "meritScore": "Anggaran Skor Merit",
     "academicMerit": "Akademik",
     "coqMerit": "Kokurikulum",
-    "meritTotal": "Jumlah"
+    "meritTotal": "Jumlah",
+    "stpmGetStarted": "Mulakan"
   },
   "dashboard": {
     "title": "Cadangan Kursus Anda",
