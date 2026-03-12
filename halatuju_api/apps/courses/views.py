@@ -42,6 +42,7 @@ from .serializers import (
     RankingRequestSerializer,
 )
 from .ranking_engine import get_ranked_results, get_credential_priority
+from .stpm_engine import check_stpm_eligibility
 from .insights_engine import generate_insights
 from .pathways import check_all_pathways
 from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
@@ -1086,3 +1087,34 @@ class OutcomeDetailView(APIView):
 
         outcome.delete()
         return Response({'message': 'Outcome deleted'})
+
+
+class StpmEligibilityCheckView(APIView):
+    """POST /api/v1/stpm/eligibility/check/ — check STPM degree eligibility."""
+
+    def post(self, request):
+        stpm_grades = request.data.get('stpm_grades')
+        spm_grades = request.data.get('spm_grades', {})
+        cgpa = request.data.get('cgpa')
+        muet_band = request.data.get('muet_band')
+
+        if not stpm_grades or cgpa is None or muet_band is None:
+            return Response(
+                {'error': 'stpm_grades, cgpa, and muet_band are required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        results = check_stpm_eligibility(
+            stpm_grades=stpm_grades,
+            spm_grades=spm_grades,
+            cgpa=float(cgpa),
+            muet_band=int(muet_band),
+            gender=request.data.get('gender', ''),
+            nationality=request.data.get('nationality', 'Warganegara'),
+            colorblind=request.data.get('colorblind', 'Tidak'),
+        )
+
+        return Response({
+            'eligible_programmes': results,
+            'total_eligible': len(results),
+        })

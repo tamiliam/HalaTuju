@@ -35,4 +35,7 @@ urlpatterns = [
     # Admission outcomes
     path('outcomes/', views.OutcomeListView.as_view(), name='outcome-list'),
     path('outcomes/<int:outcome_id>/', views.OutcomeDetailView.as_view(), name='outcome-detail'),
+
+    # STPM eligibility
+    path('stpm/eligibility/check/', views.StpmEligibilityCheckView.as_view(), name='stpm-eligibility-check'),
 ]
