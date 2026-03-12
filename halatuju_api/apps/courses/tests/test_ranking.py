@@ -25,6 +25,7 @@ from apps.courses.ranking_engine import (
     MERIT_PENALTY,
     WORK_PREFERENCE_CAP,
     calculate_fit_score,
+    calculate_matric_stpm_fit_score,
     get_credential_priority,
     get_ranked_results,
     sort_courses,
@@ -665,3 +666,115 @@ class TestWorkPreferenceCap(TestCase):
         # Work preference is capped at 4, so total from work alone ≤ 4
         # Other categories might contribute, but work cannot exceed 4
         self.assertLessEqual(score, BASE_SCORE + GLOBAL_CAP)
+
+
+class TestPreUScoring(TestCase):
+    """Tests for Matric/STPM unified pre-U scoring."""
+
+    def test_matric_base_plus_prestige(self):
+        """Matric gets base(100) + prestige(8) = 108."""
+        item = {'pathway_type': 'matric', 'source_type': 'matric',
+                'field': 'Foundation Studies', 'student_merit': 80,
+                'track_id': 'sains'}
+        score, _ = calculate_matric_stpm_fit_score(item, {})
+        self.assertEqual(score, 108)  # 100 + 8 + 0(academic) + 0(field) + 0(signal)
+
+    def test_stpm_base_plus_prestige(self):
+        """STPM gets base(100) + prestige(5) = 105."""
+        item = {'pathway_type': 'stpm', 'source_type': 'stpm',
+                'field': 'Form 6', 'track_id': 'sains', 'mata_gred': 15}
+        score, _ = calculate_matric_stpm_fit_score(item, {})
+        self.assertEqual(score, 105)
+
+    def test_matric_academic_bonus_high(self):
+        """Matric merit >= 94 → +8 academic bonus."""
+        item = {'pathway_type': 'matric', 'source_type': 'matric',
+                'field': 'Foundation Studies', 'student_merit': 95,
+                'track_id': 'sains'}
+        score, _ = calculate_matric_stpm_fit_score(item, {})
+        self.assertEqual(score, 116)  # 100 + 8 + 8
+
+    def test_matric_academic_bonus_mid(self):
+        """Matric merit >= 89 → +4 academic bonus."""
+        item = {'pathway_type': 'matric', 'source_type': 'matric',
+                'field': 'Foundation Studies', 'student_merit': 90,
+                'track_id': 'sains'}
+        score, _ = calculate_matric_stpm_fit_score(item, {})
+        self.assertEqual(score, 112)  # 100 + 8 + 4
+
+    def test_stpm_academic_bonus_high(self):
+        """STPM mata gred <= 4 → +8 academic bonus."""
+        item = {'pathway_type': 'stpm', 'source_type': 'stpm',
+                'field': 'Form 6', 'track_id': 'sains', 'mata_gred': 3}
+        score, _ = calculate_matric_stpm_fit_score(item, {})
+        self.assertEqual(score, 113)  # 100 + 5 + 8
+
+    def test_stpm_academic_bonus_mid(self):
+        """STPM mata gred <= 10 → +4 academic bonus."""
+        item = {'pathway_type': 'stpm', 'source_type': 'stpm',
+                'field': 'Form 6', 'track_id': 'sains', 'mata_gred': 8}
+        score, _ = calculate_matric_stpm_fit_score(item, {})
+        self.assertEqual(score, 109)  # 100 + 5 + 4
+
+    def test_matric_field_preference_engineering(self):
+        """Matric Engineering + field_mechanical signal → +3."""
+        item = {'pathway_type': 'matric', 'source_type': 'matric',
+                'field': 'Foundation Studies', 'student_merit': 80,
+                'track_id': 'kejuruteraan'}
+        signals = {'field_interest': {'field_mechanical': 2}}
+        score, _ = calculate_matric_stpm_fit_score(item, {'student_signals': signals})
+        self.assertEqual(score, 111)  # 100 + 8 + 0 + 3
+
+    def test_stpm_socsci_creative_boost(self):
+        """STPM Social Science + creative signal → +3 field preference."""
+        item = {'pathway_type': 'stpm', 'source_type': 'stpm',
+                'field': 'Form 6', 'track_id': 'sains_sosial', 'mata_gred': 10}
+        signals = {'work_preference_signals': {'creative': 2}}
+        score, _ = calculate_matric_stpm_fit_score(item, {'student_signals': signals})
+        # 100 + 5 + 4(acad) + 3(field) + 1(creative socsci signal adj) = 113
+        self.assertEqual(score, 113)
+
+    def test_signal_pathway_priority(self):
+        """pathway_priority signal → +3 adjustment."""
+        item = {'pathway_type': 'matric', 'source_type': 'matric',
+                'field': 'Foundation Studies', 'student_merit': 80,
+                'track_id': 'sains'}
+        signals = {'value_tradeoff_signals': {'pathway_priority': 2}}
+        score, _ = calculate_matric_stpm_fit_score(item, {'student_signals': signals})
+        self.assertEqual(score, 111)  # 100 + 8 + 0 + 0 + 3
+
+    def test_signal_cap(self):
+        """Signal adjustment capped at ±6."""
+        item = {'pathway_type': 'matric', 'source_type': 'matric',
+                'field': 'Foundation Studies', 'student_merit': 80,
+                'track_id': 'sains'}
+        # Stack many positive signals to exceed cap
+        signals = {
+            'work_preference_signals': {'problem_solving': 2},  # +2
+            'learning_tolerance_signals': {'concept_first': 2, 'rote_tolerant': 2},  # +2+1
+            'value_tradeoff_signals': {'pathway_priority': 2, 'quality_priority': 2},  # +3+2
+        }
+        score, _ = calculate_matric_stpm_fit_score(item, {'student_signals': signals})
+        # Raw: 2+2+1+3+2 = 10, capped at 6
+        self.assertEqual(score, 114)  # 100 + 8 + 0 + 0 + 6
+
+    def test_ranking_routes_matric(self):
+        """get_ranked_results routes matric to pre-U scorer."""
+        courses = [{'course_id': 'pathway-matric-sains', 'pathway_type': 'matric',
+                     'source_type': 'matric', 'field': 'Foundation Studies',
+                     'student_merit': 95, 'course_name': 'Matriculation — Science',
+                     'track_id': 'sains', 'merit_cutoff': 94, 'merit_label': 'High'}]
+        result = get_ranked_results(courses, {'student_signals': {}}, {}, {}, {})
+        self.assertEqual(len(result['top_5']), 1)
+        self.assertGreaterEqual(result['top_5'][0]['fit_score'], 108)
+
+    def test_ranking_routes_stpm(self):
+        """get_ranked_results routes stpm to pre-U scorer."""
+        courses = [{'course_id': 'pathway-stpm-sains', 'pathway_type': 'stpm',
+                     'source_type': 'stpm', 'field': 'Form 6',
+                     'student_merit': 50, 'course_name': 'Form 6 (STPM) — Science',
+                     'track_id': 'sains', 'mata_gred': 6, 'merit_cutoff': 38,
+                     'merit_label': 'High'}]
+        result = get_ranked_results(courses, {'student_signals': {}}, {}, {}, {})
+        self.assertEqual(len(result['top_5']), 1)
+        self.assertGreaterEqual(result['top_5'][0]['fit_score'], 105)
