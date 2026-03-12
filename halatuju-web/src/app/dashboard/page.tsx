@@ -22,7 +22,6 @@ import CourseCard from '@/components/CourseCard'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
-import { checkAllPathways, getPathwayFitScore } from '@/lib/pathways'
 import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
 
 const RESUME_ACTION_KEY = 'halatuju_resume_action'
@@ -72,13 +71,6 @@ export default function DashboardPage() {
 
     setIsLoading(false)
   }, [])
-
-  // Compute pathway eligibility from grades
-  const pathwayResults = useMemo(() => {
-    if (!profile) return []
-    const coq = profile.coq_score ?? 0
-    return checkAllPathways(profile.grades, coq)
-  }, [profile])
 
   // Load saved courses when token becomes available
   useEffect(() => {
@@ -162,89 +154,7 @@ export default function DashboardPage() {
     enabled: !!eligibilityData && !!quizSignals,
   })
 
-  // Merge Matric/STPM into ranked results so they compete on score
-  const mergedRankingData = useMemo((): RankingResult | undefined => {
-    if (!rankingData) return undefined
-
-    // Build synthetic ranked entries from eligible pathway results
-    const syntheticEntries: RankedCourse[] = []
-    if (pathwayResults) {
-      for (const r of pathwayResults) {
-        if (!r.eligible) continue
-        let fitScore = getPathwayFitScore(r, quizSignals)
-        const isMatric = r.pathway === 'matric'
-
-        // Compute merit label for the chance indicator
-        let meritLabel: string | null = null
-        let studentMerit: number | null = null
-        let meritCutoff: number | null = null
-        let meritDisplayStudent: string | undefined
-        let meritDisplayCutoff: string | undefined
-
-        if (isMatric && r.merit !== undefined) {
-          studentMerit = Math.round(r.merit * 10) / 10
-          meritCutoff = 94 // High/Fair boundary as the "need" line
-          meritLabel = r.merit >= 94 ? 'High' : r.merit >= 89 ? 'Fair' : 'Low'
-        } else if (!isMatric && r.mataGred !== undefined) {
-          // STPM: full range is 3 (best) to 27 (worst)
-          // Invert to 0-100 scale: (27 - gred) / 24 * 100
-          studentMerit = Math.round((27 - r.mataGred) / 24 * 100)
-          // Display raw mata gred values (lower is better)
-          meritDisplayStudent = `${r.mataGred}`
-          if (r.trackId === 'sains') {
-            // Science cutoff at 18: (27-18)/24*100 = 37.5%
-            meritCutoff = Math.round((27 - 18) / 24 * 100)
-            meritLabel = 'High'
-            meritDisplayCutoff = '18'
-          } else {
-            // Social Science cutoff at 12: (27-12)/24*100 = 62.5%
-            meritCutoff = Math.round((27 - 12) / 24 * 100)
-            meritLabel = r.mataGred <= 12 ? 'High' : 'Fair'
-            meritDisplayCutoff = '12'
-          }
-        }
-
-        // Apply merit penalty (same as backend: Fair -5, Low -15)
-        const MERIT_PENALTY: Record<string, number> = { High: 0, Fair: -5, Low: -15 }
-        fitScore += MERIT_PENALTY[meritLabel || ''] ?? 0
-
-        syntheticEntries.push({
-          course_id: `pathway-${r.pathway}-${r.trackId}`,
-          course_name: isMatric
-            ? `Matriculation — ${r.trackName}`
-            : `Form 6 (STPM) — ${r.trackName}`,
-          level: 'Pre-University',
-          field: isMatric ? 'Foundation Studies' : 'Form 6',
-          source_type: r.pathway,
-          pathway_type: r.pathway,
-          merit_cutoff: meritCutoff,
-          student_merit: studentMerit,
-          merit_label: meritLabel,
-          merit_color: null,
-          merit_display_student: meritDisplayStudent,
-          merit_display_cutoff: meritDisplayCutoff,
-          fit_score: fitScore,
-          fit_reasons: isMatric
-            ? [`Matric merit: ${r.merit?.toFixed(1)}`]
-            : [`Mata gred: ${r.mataGred}/${r.maxMataGred}`],
-        })
-      }
-    }
-
-    if (syntheticEntries.length === 0) return rankingData
-
-    // Merge all courses, re-sort by fit_score desc, split into top 6 + rest
-    const all = [...rankingData.top_5, ...rankingData.rest, ...syntheticEntries]
-    all.sort((a, b) => b.fit_score - a.fit_score)
-
-    return {
-      top_5: all.slice(0, 6),
-      rest: all.slice(6),
-      total_ranked: all.length,
-    }
-  }, [rankingData, pathwayResults, quizSignals])
-
-  // Build pathway summary badges from eligibility data + pathway engine
+  // Build pathway summary badges from eligibility data
   const pathwaySummaries = useMemo((): PathwaySummary[] => {
     const summaries: PathwaySummary[] = []
 
@@ -257,19 +167,11 @@ export default function DashboardPage() {
       })
     }
 
-    // Matric/STPM counts from pathway engine
-    let matricCount = 0
-    let stpmCount = 0
-    if (pathwayResults) {
-      matricCount = pathwayResults.filter(r => r.pathway === 'matric' && r.eligible).length
-      stpmCount = pathwayResults.filter(r => r.pathway === 'stpm' && r.eligible).length
-    }
-
     // Fixed order: Asasi, Matriculation, Form 6 first, then the rest
     const orderedPathways: { type: PathwaySummary['type']; count: number }[] = [
       { type: 'asasi', count: courseCounts['asasi'] || 0 },
-      { type: 'matric', count: matricCount },
-      { type: 'stpm', count: stpmCount },
+      { type: 'matric', count: courseCounts['matric'] || 0 },
+      { type: 'stpm', count: courseCounts['stpm'] || 0 },
       { type: 'pismp', count: courseCounts['pismp'] || 0 },
       { type: 'poly', count: courseCounts['poly'] || 0 },
       { type: 'university', count: courseCounts['university'] || 0 },
@@ -290,7 +192,7 @@ export default function DashboardPage() {
     }
 
     return summaries
-  }, [eligibilityData, pathwayResults, t])
+  }, [eligibilityData, t])
 
   const handleRetakeQuiz = () => {
     // Navigate to quiz — old signals stay in force until new quiz completes
@@ -494,8 +396,8 @@ export default function DashboardPage() {
 
 
         {/* Ranked Results — when quiz is completed */}
-        {mergedRankingData && <RankedResults
-          rankingData={mergedRankingData}
+        {rankingData && <RankedResults
+          rankingData={rankingData}
           filter={filter}
           displayCount={displayCount}
           setDisplayCount={setDisplayCount}
@@ -505,103 +407,9 @@ export default function DashboardPage() {
 
         {/* Flat Course List — when no quiz taken */}
         {eligibilityData && !quizSignals && !eligibilityLoading && (() => {
-          // Inject synthetic Matric/STPM entries into the flat list
-          const syntheticFlat: EligibleCourse[] = pathwayResults
-            .filter(r => r.eligible)
-            .map(r => {
-              const isMatric = r.pathway === 'matric'
-
-              let meritLabel: string | null = null
-              let studentMerit: number | null = null
-              let meritCutoff: number | null = null
-              let meritDisplayStudent: string | undefined
-              let meritDisplayCutoff: string | undefined
-
-              if (isMatric && r.merit !== undefined) {
-                studentMerit = Math.round(r.merit * 10) / 10
-                meritCutoff = 94
-                meritLabel = r.merit >= 94 ? 'High' : r.merit >= 89 ? 'Fair' : 'Low'
-              } else if (!isMatric && r.mataGred !== undefined) {
-                studentMerit = Math.round((27 - r.mataGred) / 24 * 100)
-                meritDisplayStudent = `${r.mataGred}`
-                if (r.trackId === 'sains') {
-                  meritCutoff = Math.round((27 - 18) / 24 * 100)
-                  meritLabel = 'High'
-                  meritDisplayCutoff = '18'
-                } else {
-                  meritCutoff = Math.round((27 - 12) / 24 * 100)
-                  meritLabel = r.mataGred <= 12 ? 'High' : 'Fair'
-                  meritDisplayCutoff = '12'
-                }
-              }
-
-              return {
-                course_id: `pathway-${r.pathway}-${r.trackId}`,
-                course_name: isMatric
-                  ? `Matriculation — ${r.trackName}`
-                  : `Form 6 (STPM) — ${r.trackName}`,
-                level: 'Pre-University',
-                field: isMatric ? 'Foundation Studies' : 'Form 6',
-                source_type: r.pathway,
-                pathway_type: r.pathway,
-                merit_cutoff: meritCutoff,
-                student_merit: studentMerit,
-                merit_label: meritLabel,
-                merit_color: null,
-                merit_display_student: meritDisplayStudent,
-                merit_display_cutoff: meritDisplayCutoff,
-              }
-            })
-
-          // Sort all courses:
-          // Asasi high > Matric high > STPM high > UA Dip high > Poly high > PISMP > KKOM high > Any fair > ILJTM > ILKBS > Any low
-          // Tiebreakers: merit label → credential → pathway → cutoff → name
-          const MERIT_LABEL_PRI: Record<string, number> = { High: 3, Fair: 2, Low: 1 }
-          const PATHWAY_PRI: Record<string, number> = {
-            asasi: 8, matric: 7, stpm: 6,
-            university: 5, poly: 4, pismp: 3, kkom: 2, iljtm: 1, ilkbs: 1, tvet: 0,
-          }
-
-          function credentialPriority(name: string, sourceType: string): number {
-            // PISMP is a degree but sorts below Diploma so Poly High appears first
-            if (sourceType === 'pismp') return 2.5
-            const lower = name.toLowerCase().trim()
-            if (lower.startsWith('asasi') || lower.includes('foundation') || lower.startsWith('matriculation') || lower.startsWith('form 6')) return 5
-            if (lower.startsWith('diploma')) return 3
-            if (lower.includes('sijil lanjutan')) return 2
-            if (lower.startsWith('sijil')) return 1
-            return 0
-          }
-
-          const allCourses = [...syntheticFlat, ...eligibilityData.eligible_courses]
-          allCourses.sort((a, b) => {
-            // 1. Merit label: High first, then Fair, then Low
-            // PISMP has no merit data — treat as High so it sits just above KKOM High
-            const aPt = (a as { pathway_type?: string }).pathway_type || a.source_type
-            const bPt = (b as { pathway_type?: string }).pathway_type || b.source_type
-            const meritFallback = (pt: string, st: string) =>
-              st === 'pismp' ? 3 : (pt === 'iljtm' || pt === 'ilkbs') ? 1.5 : 2
-            const ma = MERIT_LABEL_PRI[a.merit_label || ''] ?? meritFallback(aPt, a.source_type)
-            const mb = MERIT_LABEL_PRI[b.merit_label || ''] ?? meritFallback(bPt, b.source_type)
-            if (mb !== ma) return mb - ma
-
-            // 2. Credential priority
-            const ca = credentialPriority(a.course_name, a.source_type)
-            const cb = credentialPriority(b.course_name, b.source_type)
-            if (cb !== ca) return cb - ca
-
-            // 3. Pathway/source type priority
-            const pa = PATHWAY_PRI[aPt] ?? 0
-            const pb = PATHWAY_PRI[bPt] ?? 0
-            if (pb !== pa) return pb - pa
-
-            // 4. Merit cutoff (more competitive first)
-            const cutDiff = (b.merit_cutoff ?? 0) - (a.merit_cutoff ?? 0)
-            if (cutDiff !== 0) return cutDiff
-
-            // 5. Name
-            return a.course_name.localeCompare(b.course_name)
-          })
+          // All courses (including Matric/STPM) come from the backend now
+          // Backend already sorts by: merit label → credential → pathway → cutoff → name
+          const allCourses = eligibilityData.eligible_courses
 
           const filteredCourses = filter === 'all'
             ? allCourses
