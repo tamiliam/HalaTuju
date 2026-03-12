@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import {
   checkEligibility,
+  checkStpmEligibility,
   getSavedCourses,
   saveCourse,
   unsaveCourse,
@@ -16,6 +17,7 @@ import {
   type EligibleCourse,
   type RankedCourse,
   type RankingResult,
+  type StpmEligibleProgramme,
 } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import CourseCard from '@/components/CourseCard'
@@ -40,37 +42,97 @@ export default function DashboardPage() {
   const [reportError, setReportError] = useState(false)
   const [existingReportId, setExistingReportId] = useState<number | null>(null)
   const [reportGenerated, setReportGenerated] = useState(false)
+  const [examType, setExamType] = useState<'spm' | 'stpm'>('spm')
+  const [stpmData, setStpmData] = useState<{
+    stpmGrades: Record<string, string>
+    cgpa: number
+    muetBand: number
+    spmGrades: Record<string, string>
+  } | null>(null)
+  const [stpmResults, setStpmResults] = useState<StpmEligibleProgramme[] | null>(null)
 
   // Load profile from localStorage on mount
   useEffect(() => {
-    const grades = localStorage.getItem('halatuju_grades')
-    const profileData = localStorage.getItem('halatuju_profile')
+    const examTypeStr = localStorage.getItem('halatuju_exam_type') || 'spm'
+    setExamType(examTypeStr as 'spm' | 'stpm')
 
-    if (grades && profileData) {
-      const parsedGrades = JSON.parse(grades)
-      const parsedProfile = JSON.parse(profileData)
-      const savedMerit = localStorage.getItem('halatuju_merit')
+    if (examTypeStr === 'stpm') {
+      // Load STPM-specific data
+      const stpmGradesStr = localStorage.getItem('halatuju_stpm_grades')
+      const stpmCgpaStr = localStorage.getItem('halatuju_stpm_cgpa')
+      const muetBandStr = localStorage.getItem('halatuju_muet_band')
+      const spmPrereqStr = localStorage.getItem('halatuju_spm_prereq')
+      const profileData = localStorage.getItem('halatuju_profile')
 
-      setProfile({
-        grades: parsedGrades,
-        gender: parsedProfile.gender,
-        nationality: parsedProfile.nationality,
-        colorblind: parsedProfile.colorblind || false,
-        disability: parsedProfile.disability || false,
-        coq_score: parsedProfile.coqScore ?? 5.0,
-        ...(savedMerit && { student_merit: parseFloat(savedMerit) }),
-      })
+      if (stpmGradesStr && stpmCgpaStr && muetBandStr) {
+        const parsedProfile = profileData ? JSON.parse(profileData) : {}
+        setProfile({
+          grades: {},
+          gender: parsedProfile.gender || 'male',
+          nationality: parsedProfile.nationality || 'malaysian',
+          colorblind: parsedProfile.colorblind || false,
+          disability: parsedProfile.disability || false,
+        })
+        setStpmData({
+          stpmGrades: JSON.parse(stpmGradesStr),
+          cgpa: parseFloat(stpmCgpaStr),
+          muetBand: parseInt(muetBandStr),
+          spmGrades: spmPrereqStr ? JSON.parse(spmPrereqStr) : {},
+        })
+      }
+      setIsLoading(false)
+    } else {
+      // Existing SPM logic
+      const grades = localStorage.getItem('halatuju_grades')
+      const profileData = localStorage.getItem('halatuju_profile')
+
+      if (grades && profileData) {
+        const parsedGrades = JSON.parse(grades)
+        const parsedProfile = JSON.parse(profileData)
+        const savedMerit = localStorage.getItem('halatuju_merit')
+
+        setProfile({
+          grades: parsedGrades,
+          gender: parsedProfile.gender,
+          nationality: parsedProfile.nationality,
+          colorblind: parsedProfile.colorblind || false,
+          disability: parsedProfile.disability || false,
+          coq_score: parsedProfile.coqScore ?? 5.0,
+          ...(savedMerit && { student_merit: parseFloat(savedMerit) }),
+        })
+      }
+
+      const signals = localStorage.getItem('halatuju_quiz_signals')
+      if (signals) {
+        setQuizSignals(JSON.parse(signals))
+      }
+
+      setReportGenerated(localStorage.getItem('halatuju_report_generated') === 'true')
+      setIsLoading(false)
     }
-
-    const signals = localStorage.getItem('halatuju_quiz_signals')
-    if (signals) {
-      setQuizSignals(JSON.parse(signals))
-    }
-
-    setReportGenerated(localStorage.getItem('halatuju_report_generated') === 'true')
-
-    setIsLoading(false)
   }, [])
+
+  // Check STPM eligibility when stpmData is available
+  useEffect(() => {
+    if (examType !== 'stpm' || !stpmData || !profile) return
+
+    const genderMap: Record<string, string> = { male: 'Lelaki', female: 'Perempuan' }
+    const nationalityMap: Record<string, string> = { malaysian: 'Warganegara', non_malaysian: 'Bukan Warganegara' }
+
+    checkStpmEligibility({
+      stpm_grades: stpmData.stpmGrades,
+      spm_grades: stpmData.spmGrades,
+      cgpa: stpmData.cgpa,
+      muet_band: stpmData.muetBand,
+      gender: genderMap[profile.gender] || '',
+      nationality: nationalityMap[profile.nationality] || 'Warganegara',
+      colorblind: profile.colorblind ? 'Ya' : 'Tidak',
+    }).then(data => {
+      setStpmResults(data.eligible_programmes)
+    }).catch(err => {
+      console.error('STPM eligibility check failed:', err)
+    })
+  }, [examType, stpmData, profile])
 
   // Load saved courses when token becomes available
   useEffect(() => {
@@ -294,8 +356,72 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-6 py-8">
+        {/* STPM Results */}
+        {examType === 'stpm' && (
+          <>
+            {isLoading ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">{t('common.loading')}</p>
+              </div>
+            ) : !stpmData ? (
+              <div className="text-center py-12">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('dashboard.noProfile')}</h2>
+                <p className="text-gray-500 mb-4">{t('dashboard.noProfileDesc')}</p>
+                <Link href="/onboarding/exam-type" className="btn-primary">
+                  {t('dashboard.startOnboarding')}
+                </Link>
+              </div>
+            ) : stpmResults === null ? (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
+                <p className="text-gray-500">{t('dashboard.checkingEligibility')}</p>
+              </div>
+            ) : (
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {t('dashboard.qualifyFor')} <span className="text-primary-500">{stpmResults.length}</span> degree programmes
+                  </h2>
+                  <Link href="/onboarding/exam-type" className="text-xs text-gray-400 hover:text-primary-500 underline mt-1 inline-block">
+                    {t('dashboard.editProfile')}
+                  </Link>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {stpmResults.slice(0, displayCount).map(prog => (
+                    <div key={prog.program_id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+                      <h3 className="font-semibold text-gray-900 text-sm mb-2 line-clamp-2">{prog.program_name}</h3>
+                      <p className="text-xs text-gray-500 mb-3">{prog.university}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">
+                          CGPA ≥ {prog.min_cgpa.toFixed(2)}
+                        </span>
+                        <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">
+                          MUET ≥ Band {prog.min_muet_band}
+                        </span>
+                        {prog.req_interview && (
+                          <span className="px-2 py-0.5 bg-amber-50 text-amber-700 text-xs rounded-full">
+                            Interview
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {stpmResults.length > displayCount && (
+                  <button
+                    onClick={() => setDisplayCount(prev => prev + 6)}
+                    className="mt-4 w-full py-3 text-primary-600 hover:text-primary-700 text-sm font-medium"
+                  >
+                    {t('dashboard.loadMore')} ({stpmResults.length - displayCount} {t('dashboard.remaining')})
+                  </button>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
         {/* Compact Dashboard Header */}
-        {eligibilityData && (
+        {examType === 'spm' && eligibilityData && (
           <div className="bg-white rounded-xl border border-gray-200 px-6 py-4 mb-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               {/* Left: headline + chance pills */}
@@ -361,7 +487,7 @@ export default function DashboardPage() {
         )}
 
         {/* Pathway Cards — clickable filter pills */}
-        {pathwaySummaries.length > 0 && !eligibilityLoading && (
+        {examType === 'spm' && pathwaySummaries.length > 0 && !eligibilityLoading && (
           <PathwayCards
             pathways={pathwaySummaries}
             activeFilter={filter}
@@ -370,7 +496,7 @@ export default function DashboardPage() {
         )}
 
         {/* Loading State */}
-        {(eligibilityLoading || rankingLoading) && (
+        {examType === 'spm' && (eligibilityLoading || rankingLoading) && (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
             <p className="text-gray-600">
@@ -380,7 +506,7 @@ export default function DashboardPage() {
         )}
 
         {/* Error State */}
-        {error && (
+        {examType === 'spm' && error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
             <p className="text-red-600 mb-4">
               {t('dashboard.failedToLoad')}
@@ -396,7 +522,7 @@ export default function DashboardPage() {
 
 
         {/* Ranked Results — when quiz is completed */}
-        {rankingData && <RankedResults
+        {examType === 'spm' && rankingData && <RankedResults
           rankingData={rankingData}
           filter={filter}
           displayCount={displayCount}
@@ -406,7 +532,7 @@ export default function DashboardPage() {
         />}
 
         {/* Flat Course List — when no quiz taken */}
-        {eligibilityData && !quizSignals && !eligibilityLoading && (() => {
+        {examType === 'spm' && eligibilityData && !quizSignals && !eligibilityLoading && (() => {
           // All courses (including Matric/STPM) come from the backend now
           // Backend already sorts by: merit label → credential → pathway → cutoff → name
           const allCourses = eligibilityData.eligible_courses
