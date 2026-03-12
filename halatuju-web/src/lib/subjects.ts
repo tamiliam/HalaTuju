@@ -136,3 +136,52 @@ export function getSubjectName(code: string, locale: string): string {
   }
   return locale === 'en' ? entry.en : entry.bm
 }
+
+// ---------------------------------------------------------------------------
+// STPM subject definitions (keys match backend stpm_engine.py)
+// ---------------------------------------------------------------------------
+
+export interface StpmSubject {
+  id: string
+  name: string
+  stream: 'science' | 'arts' | 'both' | 'compulsory'
+}
+
+export const STPM_SUBJECTS: StpmSubject[] = [
+  { id: 'PA', name: 'Pengajian Am', stream: 'compulsory' },
+  { id: 'MATH_T', name: 'Matematik T', stream: 'science' },
+  { id: 'PHYSICS', name: 'Fizik', stream: 'science' },
+  { id: 'CHEMISTRY', name: 'Kimia', stream: 'science' },
+  { id: 'BIOLOGY', name: 'Biologi', stream: 'science' },
+  { id: 'FURTHER_MATH', name: 'Matematik Lanjutan T', stream: 'science' },
+  { id: 'ECONOMICS', name: 'Ekonomi', stream: 'arts' },
+  { id: 'ACCOUNTING', name: 'Perakaunan', stream: 'arts' },
+  { id: 'BUSINESS', name: 'Pengajian Perniagaan', stream: 'arts' },
+  { id: 'GEOGRAFI', name: 'Geografi', stream: 'arts' },
+  { id: 'SEJARAH', name: 'Sejarah', stream: 'arts' },
+  { id: 'KESUSASTERAAN_MELAYU', name: 'Kesusasteraan Melayu', stream: 'arts' },
+  { id: 'BAHASA_MELAYU', name: 'Bahasa Melayu', stream: 'arts' },
+  { id: 'BAHASA_CINA', name: 'Bahasa Cina', stream: 'arts' },
+  { id: 'BAHASA_TAMIL', name: 'Bahasa Tamil', stream: 'arts' },
+  { id: 'SENI_VISUAL', name: 'Seni Visual', stream: 'arts' },
+  { id: 'SYARIAH', name: 'Syariah Islamiah', stream: 'arts' },
+  { id: 'USULUDDIN', name: 'Usuluddin', stream: 'arts' },
+  { id: 'ICT', name: 'Sains Komputer / ICT', stream: 'both' },
+  { id: 'MATH_M', name: 'Matematik M', stream: 'arts' },
+]
+
+export const STPM_GRADES = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'E', 'F']
+
+export const MUET_BANDS = [1, 2, 3, 4, 5, 6]
+
+// SPM prerequisite subjects for STPM students (6 subjects)
+export const SPM_PREREQ_SUBJECTS = [
+  { id: 'bm', name: 'Bahasa Melayu' },
+  { id: 'eng', name: 'Bahasa Inggeris' },
+  { id: 'hist', name: 'Sejarah' },
+  { id: 'math', name: 'Matematik' },
+  { id: 'addmath', name: 'Matematik Tambahan' },
+  { id: 'sci', name: 'Sains' },
+]
+
+export const SPM_GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G']
