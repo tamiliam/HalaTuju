@@ -66,6 +66,7 @@ export interface EligibleCourse {
   merit_color: string | null
   merit_display_student?: string
   merit_display_cutoff?: string
+  pismp_languages?: string[]
 }
 
 export interface Course {
@@ -105,6 +106,17 @@ export interface MascoOccupation {
   masco_code: string
   job_title: string
   emasco_url: string
+}
+
+export interface CourseRequirements {
+  source_type: string
+  general: { key: string; label: string; value?: number }[]
+  special: { key: string; label: string }[]
+  complex_requirements: { or_groups?: { count: number; grade: string; subjects: string[] }[] } | null
+  subject_group_req: { min_grade: string; min_count: number; subjects: string[] }[] | null
+  merit_cutoff: number | null
+  remarks: string
+  pismp_languages?: string[]
 }
 
 // Insights from eligibility analysis
@@ -197,7 +209,7 @@ export async function getCourses(options?: ApiOptions): Promise<{ courses: Cours
 export async function getCourse(
   courseId: string,
   options?: ApiOptions
-): Promise<{ course: Course; institutions: Institution[]; career_occupations: MascoOccupation[]; merit_cutoff?: number }> {
+): Promise<{ course: Course; institutions: Institution[]; career_occupations: MascoOccupation[]; requirements: CourseRequirements | null; merit_cutoff?: number }> {
   return apiRequest(`/api/v1/courses/${courseId}/`, options)
 }
 

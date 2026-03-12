@@ -245,7 +245,12 @@
     "removeFromSaved": "Remove from Saved",
     "backToRecommendations": "Back to Recommendations",
     "notFound": "We couldn't find the course you're looking for.",
-    "noInstitutions": "Institution information not available for this course."
+    "noInstitutions": "Institution information not available for this course.",
+    "requirements": "Entry Requirements",
+    "generalReq": "General Requirements",
+    "specialReq": "Academic Requirements",
+    "subjectReq": "Subject Requirements",
+    "languageReq": "Language Requirements"
   },
   "saved": {
     "title": "Saved Courses",

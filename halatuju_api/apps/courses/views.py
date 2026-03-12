@@ -36,6 +36,7 @@ from .serializers import (
     CourseSerializer,
     InstitutionSerializer,
     MascoOccupationSerializer,
+    CourseRequirementSerializer,
     EligibilityRequestSerializer,
     EligibilityResponseSerializer,
     RankingRequestSerializer,
@@ -303,6 +304,90 @@ class EligibilityCheckView(APIView):
                 # Update stats
                 stats[source_type] = stats.get(source_type, 0) + 1
 
+        # Deduplicate PISMP zone variants.
+        # Zone code in course_id[4:6]: 01/06=National, 03=Chinese, 04=Tamil, 05=Special
+        # Rules:
+        #   1. Collapse entries with identical subject_group_req (regardless of zone)
+        #   2. Chinese/Tamil with DIFFERENT requirements from National →
+        #      merge into one card "(Aliran Cina/Tamil)" with pismp_languages
+        import json as _json
+        from collections import defaultdict as _dd
+
+        def _pismp_zone(cid):
+            z = cid[4:6] if len(cid) >= 6 else ''
+            if z == '03':
+                return 'cn'
+            if z == '04':
+                return 'ta'
+            if z == '05':
+                return 'sn'
+            return 'nat'
+
+        # Build a requirements hash per course_id from the DataFrame
+        _req_hash = {}
+        for _, row in df.iterrows():
+            cid = row.get('course_id', '')
+            if row.get('source_type') == 'pismp':
+                sgr = row.get('subject_group_req')
+                if sgr is not None:
+                    try:
+                        h = _json.dumps(sgr, sort_keys=True) if not isinstance(sgr, str) else sgr
+                    except (TypeError, ValueError):
+                        h = str(sgr)
+                else:
+                    h = 'null'
+                _req_hash[cid] = h
+
+        # Group PISMP by course name
+        pismp_groups = _dd(lambda: {'nat': [], 'cn': [], 'ta': [], 'sn': []})
+        non_pismp = []
+        for c in eligible_courses:
+            if c['source_type'] == 'pismp':
+                zone = _pismp_zone(c['course_id'])
+                pismp_groups[c['course_name']][zone].append(c)
+            else:
+                non_pismp.append(c)
+
+        _lang_labels = {'cn': 'Bahasa Cina', 'ta': 'Bahasa Tamil'}
+
+        deduped_pismp = []
+        for name, zones in pismp_groups.items():
+            # National + Special Needs → keep one
+            nat_entries = zones['nat'] + zones['sn']
+            nat_hash = _req_hash.get(nat_entries[0]['course_id']) if nat_entries else None
+
+            if nat_entries:
+                deduped_pismp.append(nat_entries[0])
+
+            # Chinese/Tamil: check if requirements differ from National
+            diff_langs = []  # languages with genuinely different requirements
+            for lang_zone in ('cn', 'ta'):
+                lang_entries = zones[lang_zone]
+                if not lang_entries:
+                    continue
+                lang_hash = _req_hash.get(lang_entries[0]['course_id'])
+                if lang_hash == nat_hash:
+                    # Identical to National → already covered, skip
+                    continue
+                diff_langs.append((lang_zone, lang_entries[0]))
+
+            if diff_langs:
+                # Merge all different-requirement language variants into one card
+                base = diff_langs[0][1].copy()
+                langs = [_lang_labels[lz] for lz, _ in diff_langs]
+                suffix = '/'.join(langs)
+                base['course_name'] = f"{name} (Aliran {suffix})"
+                base['pismp_languages'] = langs
+                deduped_pismp.append(base)
+
+        eligible_courses = non_pismp + deduped_pismp
+
+        # Update stats after dedup
+        stats = {}
+        for c in eligible_courses:
+            st = c['source_type']
+            stats[st] = stats.get(st, 0) + 1
+
         # Default sort: merit chance first, then delta within tier, then credential > type
         SOURCE_TYPE_PRIORITY = {'ua': 4, 'pismp': 3, 'poly': 2, 'kkom': 1, 'tvet': 0}
         MERIT_LABEL_PRIORITY = {'High': 3, 'Fair': 2, 'Low': 1}
@@ -534,12 +619,58 @@ class CourseDetailView(APIView):
                 course.career_occupations.all(), many=True
             ).data
 
-            # Get merit cutoff from CourseRequirement
+            # Get requirements from CourseRequirement
+            requirements = None
             merit_cutoff = None
             try:
                 req = CourseRequirement.objects.get(course_id=course_id)
+                requirements = CourseRequirementSerializer(req).data
                 if req.merit_cutoff:
                     merit_cutoff = req.merit_cutoff
+
+                # PISMP: find paired language variants for this programme
+                # e.g. if viewing Chinese-medium (03), also check Tamil-medium (04)
+                if req.source_type == 'pismp':
+                    import json as _json
+                    zone = course_id[4:6] if len(course_id) >= 6 else ''
+                    if zone in ('03', '04'):
+                        # Find all zone variants of the same programme name
+                        nat_req = CourseRequirement.objects.filter(
+                            source_type='pismp',
+                            course__course=course.course,
+                        ).exclude(course_id=course_id)
+                        # Get National hash to compare
+                        nat_hash = None
+                        for nr in nat_req:
+                            nz = nr.course_id[4:6] if len(nr.course_id) >= 6 else ''
+                            if nz in ('01', '06'):
+                                nat_hash = _json.dumps(
+                                    nr.subject_group_req, sort_keys=True
+                                ) if nr.subject_group_req else 'null'
+                                break
+                        my_hash = _json.dumps(
+                            req.subject_group_req, sort_keys=True
+                        ) if req.subject_group_req else 'null'
+                        # Only add languages if this variant differs from National
+                        if my_hash != nat_hash:
+                            langs = []
+                            # Check all zone variants for language differences
+                            for nr in nat_req:
+                                nz = nr.course_id[4:6] if len(nr.course_id) >= 6 else ''
+                                nr_hash = _json.dumps(
+                                    nr.subject_group_req, sort_keys=True
+                                ) if nr.subject_group_req else 'null'
+                                if nz == '03' and nr_hash != nat_hash:
+                                    langs.append('Bahasa Cina')
+                                elif nz == '04' and nr_hash != nat_hash:
+                                    langs.append('Bahasa Tamil')
+                            # Include self
+                            if zone == '03' and 'Bahasa Cina' not in langs:
+                                langs.append('Bahasa Cina')
+                            if zone == '04' and 'Bahasa Tamil' not in langs:
+                                langs.append('Bahasa Tamil')
+                            if langs:
+                                requirements['pismp_languages'] = sorted(langs)
             except CourseRequirement.DoesNotExist:
                 pass
 
@@ -547,6 +678,7 @@ class CourseDetailView(APIView):
                 'course': course_data,
                 'institutions': institutions,
                 'career_occupations': career_occupations,
+                'requirements': requirements,
             }
             if merit_cutoff is not None:
                 response_data['merit_cutoff'] = merit_cutoff

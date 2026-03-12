@@ -245,7 +245,12 @@
     "removeFromSaved": "Buang dari Simpanan",
     "backToRecommendations": "Kembali ke Cadangan",
     "notFound": "Kami tidak dapat mencari kursus yang anda cari.",
-    "noInstitutions": "Maklumat institusi tidak tersedia untuk kursus ini."
+    "noInstitutions": "Maklumat institusi tidak tersedia untuk kursus ini.",
+    "requirements": "Syarat Kemasukan",
+    "generalReq": "Syarat Am",
+    "specialReq": "Syarat Khas",
+    "subjectReq": "Syarat Subjek",
+    "languageReq": "Syarat Bahasa"
   },
   "saved": {
     "title": "Kursus Disimpan",

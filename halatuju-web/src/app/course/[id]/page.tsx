@@ -3,9 +3,10 @@
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { getCourse, saveCourse, unsaveCourse, type Course, type Institution, type MascoOccupation } from '@/lib/api'
+import { getCourse, saveCourse, unsaveCourse, type Course, type Institution, type MascoOccupation, type CourseRequirements } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
+import RequirementsCard from '@/components/RequirementsCard'
 import { useT } from '@/lib/i18n'
 import { useState } from 'react'
 
@@ -65,7 +66,7 @@ export default function CourseDetailPage() {
     )
   }
 
-  const { course, institutions, career_occupations, merit_cutoff } = data
+  const { course, institutions, career_occupations, requirements, merit_cutoff } = data
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -198,6 +199,9 @@ export default function CourseDetailPage() {
                 )}
               </div>
             </section>
+
+            {/* Requirements */}
+            {requirements && <RequirementsCard requirements={requirements} />}
 
             {/* Actions */}
             <section className="bg-white rounded-xl border border-gray-200 p-6">
