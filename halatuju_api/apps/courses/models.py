@@ -480,3 +480,89 @@ class AdmissionOutcome(models.Model):
 
     def __str__(self):
         return f"{self.student_id} → {self.course_id} ({self.status})"
+
+
+class StpmCourse(models.Model):
+    """STPM degree programme offered by a public university."""
+
+    STREAM_CHOICES = [
+        ('science', 'Science'),
+        ('arts', 'Arts'),
+        ('both', 'Both'),
+    ]
+
+    program_id = models.CharField(max_length=50, primary_key=True)
+    program_name = models.CharField(max_length=500)
+    university = models.CharField(max_length=255)
+    stream = models.CharField(
+        max_length=20, choices=STREAM_CHOICES, default='both'
+    )
+
+    class Meta:
+        db_table = 'stpm_courses'
+        ordering = ['university', 'program_name']
+
+    def __str__(self):
+        return f"{self.program_id}: {self.program_name}"
+
+
+class StpmRequirement(models.Model):
+    """Admission requirements for an STPM degree programme."""
+
+    course = models.OneToOneField(
+        StpmCourse,
+        on_delete=models.CASCADE,
+        primary_key=True,
+        related_name='requirement',
+    )
+
+    # STPM academic requirements
+    min_cgpa = models.FloatField(default=2.0)
+    stpm_min_subjects = models.IntegerField(default=2)
+    stpm_min_grade = models.CharField(max_length=5, default='C')
+
+    # Individual STPM subject requirements
+    stpm_req_pa = models.BooleanField(default=False)
+    stpm_req_math_t = models.BooleanField(default=False)
+    stpm_req_math_m = models.BooleanField(default=False)
+    stpm_req_physics = models.BooleanField(default=False)
+    stpm_req_chemistry = models.BooleanField(default=False)
+    stpm_req_biology = models.BooleanField(default=False)
+    stpm_req_economics = models.BooleanField(default=False)
+    stpm_req_accounting = models.BooleanField(default=False)
+    stpm_req_business = models.BooleanField(default=False)
+
+    # Flexible subject group requirement (JSON)
+    stpm_subject_group = models.JSONField(null=True, blank=True)
+
+    # SPM prerequisite subjects
+    spm_credit_bm = models.BooleanField(default=False)
+    spm_pass_sejarah = models.BooleanField(default=False)
+    spm_credit_bi = models.BooleanField(default=False)
+    spm_pass_bi = models.BooleanField(default=False)
+    spm_credit_math = models.BooleanField(default=False)
+    spm_pass_math = models.BooleanField(default=False)
+    spm_credit_addmath = models.BooleanField(default=False)
+    spm_credit_science = models.BooleanField(default=False)
+
+    # Flexible SPM subject group requirement (JSON)
+    spm_subject_group = models.JSONField(null=True, blank=True)
+
+    # MUET requirement
+    min_muet_band = models.IntegerField(default=1)
+
+    # Demographic / fitness requirements
+    req_interview = models.BooleanField(default=False)
+    no_colorblind = models.BooleanField(default=False)
+    req_medical_fitness = models.BooleanField(default=False)
+    req_malaysian = models.BooleanField(default=False)
+    req_bumiputera = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'stpm_requirements'
+        indexes = [
+            models.Index(fields=['min_cgpa'], name='idx_stpm_req_min_cgpa'),
+        ]
+
+    def __str__(self):
+        return f"STPM Requirements for {self.course_id}"
