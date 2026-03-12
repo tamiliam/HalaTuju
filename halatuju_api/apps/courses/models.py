@@ -387,6 +387,23 @@ class StudentProfile(models.Model):
     financial_pressure = models.CharField(max_length=20, blank=True)
     travel_willingness = models.CharField(max_length=50, blank=True)
 
+    # STPM / exam type fields
+    exam_type = models.CharField(
+        max_length=10,
+        choices=[('spm', 'SPM'), ('stpm', 'STPM')],
+        default='spm',
+    )
+    stpm_grades = models.JSONField(
+        default=dict, blank=True,
+        help_text="STPM grades: {'PA': 'A', 'MATH_T': 'B+', ...}"
+    )
+    stpm_cgpa = models.FloatField(null=True, blank=True)
+    muet_band = models.IntegerField(null=True, blank=True)
+    spm_prereq_grades = models.JSONField(
+        default=dict, blank=True,
+        help_text="SPM prerequisite grades for STPM students: {'bm': 'A', 'eng': 'B+', ...}"
+    )
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

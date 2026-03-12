@@ -905,6 +905,11 @@ class ProfileView(APIView):
             'phone': profile.phone,
             'family_income': profile.family_income,
             'siblings': profile.siblings,
+            'exam_type': profile.exam_type,
+            'stpm_grades': profile.stpm_grades,
+            'stpm_cgpa': profile.stpm_cgpa,
+            'muet_band': profile.muet_band,
+            'spm_prereq_grades': profile.spm_prereq_grades,
         })
 
     def put(self, request):
@@ -916,7 +921,9 @@ class ProfileView(APIView):
         for field in ['grades', 'gender', 'nationality', 'colorblind',
                       'disability', 'student_signals', 'preferred_state',
                       'name', 'school', 'nric', 'address', 'phone',
-                      'family_income', 'siblings']:
+                      'family_income', 'siblings', 'exam_type',
+                      'stpm_grades', 'stpm_cgpa', 'muet_band',
+                      'spm_prereq_grades']:
             if field in request.data:
                 setattr(profile, field, request.data[field])
 
@@ -943,11 +950,20 @@ class ProfileSyncView(APIView):
             'grades', 'gender', 'nationality', 'colorblind', 'disability',
             'student_signals', 'preferred_state', 'name', 'school',
             'nric', 'address', 'phone', 'family_income', 'siblings',
+            'exam_type', 'stpm_grades', 'spm_prereq_grades',
         ]
 
         for field in sync_fields:
             if field in request.data:
                 setattr(profile, field, request.data[field])
+
+        # Numeric STPM fields need type coercion
+        stpm_cgpa = request.data.get('stpm_cgpa')
+        if stpm_cgpa is not None:
+            profile.stpm_cgpa = float(stpm_cgpa)
+        muet_band = request.data.get('muet_band')
+        if muet_band is not None:
+            profile.muet_band = int(muet_band)
 
         profile.save()
         return Response({

@@ -2,7 +2,7 @@
 import pytest
 from django.test import RequestFactory
 from apps.courses.models import StudentProfile, SavedCourse, Course
-from apps.courses.views import ProfileView, SavedCoursesView, SavedCourseDetailView
+from apps.courses.views import ProfileView, ProfileSyncView, SavedCoursesView, SavedCourseDetailView
 
 
 @pytest.mark.django_db
@@ -182,3 +182,121 @@ class TestSavedCoursesAPIInterestStatus:
         assert response.status_code == 200
         sc = SavedCourse.objects.get(student_id='patch-user', course_id='TEST-API-001')
         assert sc.interest_status == 'planning'
+
+
+@pytest.mark.django_db
+class TestStpmProfileFields:
+    """Tests for STPM-related fields on StudentProfile."""
+
+    def test_exam_type_default(self):
+        """StudentProfile defaults to exam_type='spm'."""
+        profile = StudentProfile.objects.create(
+            supabase_user_id='test-stpm-default',
+            gender='Lelaki',
+            nationality='Warganegara',
+        )
+        assert profile.exam_type == 'spm'
+
+    def test_stpm_fields_stored(self):
+        """STPM-specific fields should be stored on profile."""
+        profile = StudentProfile.objects.create(
+            supabase_user_id='test-stpm-fields',
+            gender='Lelaki',
+            nationality='Warganegara',
+            exam_type='stpm',
+            stpm_grades={'PA': 'A', 'MATH_T': 'B+'},
+            stpm_cgpa=3.67,
+            muet_band=4,
+            spm_prereq_grades={'bm': 'A', 'eng': 'B+'},
+        )
+        assert profile.exam_type == 'stpm'
+        assert profile.stpm_grades == {'PA': 'A', 'MATH_T': 'B+'}
+        assert profile.stpm_cgpa == 3.67
+        assert profile.muet_band == 4
+        assert profile.spm_prereq_grades == {'bm': 'A', 'eng': 'B+'}
+
+    def test_stpm_fields_default_empty(self):
+        """STPM fields default to empty/null when not set."""
+        profile = StudentProfile.objects.create(
+            supabase_user_id='test-stpm-empty',
+        )
+        profile.refresh_from_db()
+        assert profile.exam_type == 'spm'
+        assert profile.stpm_grades == {}
+        assert profile.stpm_cgpa is None
+        assert profile.muet_band is None
+        assert profile.spm_prereq_grades == {}
+
+
+@pytest.mark.django_db
+class TestProfileSyncStpmFields:
+    """Tests for STPM fields via ProfileSyncView."""
+
+    def _sync_request(self, data, user_id='sync-stpm-user'):
+        factory = RequestFactory()
+        request = factory.post(
+            '/api/v1/profile/sync/',
+            data=data,
+            content_type='application/json',
+        )
+        request.user_id = user_id
+        request.data = data
+        return request
+
+    def test_sync_creates_profile_with_stpm_fields(self):
+        request = self._sync_request({
+            'exam_type': 'stpm',
+            'stpm_grades': {'PA': 'A', 'MATH_T': 'B+'},
+            'stpm_cgpa': 3.67,
+            'muet_band': 4,
+            'spm_prereq_grades': {'bm': 'A'},
+        })
+        response = ProfileSyncView().post(request)
+        assert response.status_code == 200
+        assert response.data['created'] is True
+
+        profile = StudentProfile.objects.get(supabase_user_id='sync-stpm-user')
+        assert profile.exam_type == 'stpm'
+        assert profile.stpm_grades == {'PA': 'A', 'MATH_T': 'B+'}
+        assert profile.stpm_cgpa == 3.67
+        assert profile.muet_band == 4
+        assert profile.spm_prereq_grades == {'bm': 'A'}
+
+    def test_sync_updates_existing_profile_stpm_fields(self):
+        StudentProfile.objects.create(
+            supabase_user_id='sync-stpm-update',
+            exam_type='spm',
+        )
+        request = self._sync_request({
+            'exam_type': 'stpm',
+            'stpm_cgpa': 3.50,
+            'muet_band': 3,
+        }, user_id='sync-stpm-update')
+        response = ProfileSyncView().post(request)
+        assert response.status_code == 200
+        assert response.data['created'] is False
+
+        profile = StudentProfile.objects.get(supabase_user_id='sync-stpm-update')
+        assert profile.exam_type == 'stpm'
+        assert profile.stpm_cgpa == 3.50
+        assert profile.muet_band == 3
+
+    def test_get_profile_returns_stpm_fields(self):
+        StudentProfile.objects.create(
+            supabase_user_id='get-stpm-user',
+            exam_type='stpm',
+            stpm_grades={'PA': 'A-'},
+            stpm_cgpa=3.33,
+            muet_band=5,
+            spm_prereq_grades={'bm': 'B+'},
+        )
+        factory = RequestFactory()
+        request = factory.get('/api/v1/profile/')
+        request.user_id = 'get-stpm-user'
+        response = ProfileView().get(request)
+        assert response.status_code == 200
+        assert response.data['exam_type'] == 'stpm'
+        assert response.data['stpm_grades'] == {'PA': 'A-'}
+        assert response.data['stpm_cgpa'] == 3.33
+        assert response.data['muet_band'] == 5
+        assert response.data['spm_prereq_grades'] == {'bm': 'B+'}
