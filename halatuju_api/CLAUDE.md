@@ -115,16 +115,16 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (173 collected, 164 pass, 9 pre-existing JWT failures)
+# Run ALL tests (259 collected, 250 pass, 9 pre-existing JWT failures)
 python -m pytest apps/courses/tests/ -v
 
-# Golden master only (8280 baseline)
+# Golden master only (8283 baseline)
 python -m pytest apps/courses/tests/test_golden_master.py -v
 
 # Serializer tests (27 tests — grade mapping, normalization)
 python -m pytest apps/courses/tests/test_serializers.py -v
 
-# API endpoint tests (32 tests — eligibility, PISMP, course detail offerings + career occupations, courses, institutions, merit)
+# API endpoint tests (52 tests — eligibility incl. Matric/STPM, PISMP, course detail, search)
 python -m pytest apps/courses/tests/test_api.py -v
 ```
 
@@ -132,24 +132,25 @@ python -m pytest apps/courses/tests/test_api.py -v
 
 | File | Tests | What's Covered |
 |------|-------|----------------|
-| test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 8280 baseline |
+| test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 8283 baseline |
 | test_serializers.py | 27 | Grade key mapping, gender/nationality normalization, bool→Ya/Tidak, validation |
-| test_api.py | 49 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering) |
+| test_api.py | 52 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration, Matric/STPM integration, pathway_stats), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering) |
 | test_auth.py | 15 | Auth enforcement — protected endpoints reject 403, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
 | test_saved_courses.py | 3 | Saved course CRUD — save (201), list (appears), delete (removed) |
 | test_quiz.py | 24 | Quiz endpoints (questions 3 langs, submit single+multi, validation), engine (multi-select, weight splitting, Not Sure Yet, conditional Q2.5, field_interest, signal strength, lang parity) |
-| test_ranking.py | 50 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, top_5/rest split, API endpoint validation, field interest matching (primary/secondary/no match/multi-field/cap), high_stamina, rote_tolerant, quality_priority, work preference cap |
+| test_ranking.py | 62 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, top_5/rest split, API endpoint validation, field interest matching (primary/secondary/no match/multi-field/cap), high_stamina, rote_tolerant, quality_priority, work preference cap, pre-U scoring (Matric/STPM prestige, academic bonus, field preference, signal adjustment, signal cap, routing) |
 | test_data_loading.py | 10 | TVET metadata enrichment, PISMP metadata enrichment, institution modifiers storage, MASCO occupation model (PK, M2M, reverse relation, idempotent load, __str__) |
 | test_insights.py | 8 | Insights engine: empty input, stream breakdown, labels, top fields, merit counts, level distribution, summary text |
 | test_report_engine.py | 12 | Report engine: format helpers (grades, signals, courses, insights), prompts (BM/EN), persona mapping, Gemini mock (success, cascade, missing key) |
 | test_views.py (reports) | 4 | Report views: list (own only), detail, cross-user 404 regression, validation |
 | test_outcomes.py | 10 | Outcome CRUD (create, duplicate 409, with institution, missing course), list (own only), update status, cross-user 404, delete, auth enforcement (GET/POST 403) |
+| test_pathways.py | 32 | Matric/STPM eligibility: grade helpers (is_credit, meets_min, find_best_elective), all 4 Matric tracks (sains, kejuruteraan, sains_komputer, perakaunan), both STPM bidangs (sains, sains_sosial), merit calculation, mata gred threshold, check_all_pathways integration |
 | test_profile_fields.py | 13 | Expanded profile fields (NRIC, address, phone, income, siblings defaults), SavedCourse interest_status (default, set, got_offer), profile API (GET new fields, PUT new fields), saved-courses API (GET includes status, PATCH updates status) |
 
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (212 collected, 203 must pass, golden master = 8247)
+# 1. Run all tests (259 collected, 250 must pass, golden master = 8283)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -161,7 +162,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-203 tests must pass out of 212 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8247, you broke eligibility logic.
+250 tests must pass out of 259 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -169,6 +170,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 | File | Role | Sacred? |
 |------|------|---------|
 | `apps/courses/engine.py` | Eligibility logic | YES — Golden Master |
+| `apps/courses/pathways.py` | Matric/STPM eligibility (virtual courses) | No |
 | `apps/courses/serializers.py` | Request normalization (grade keys, gender, booleans) | No |
 | `apps/courses/views.py` | API endpoints | No |
 | `apps/courses/apps.py` | Startup data loading (DB → DataFrame) | Careful |
@@ -190,12 +192,16 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**v1.32.2 DONE — Unified Pre-U Scoring & Pathway Fixes**
-- Unified pre-U scoring: Asasi(+12) > Matric(+8) > STPM(+5) with academic, field preference, and signal bonuses
-- Asasi scoring in ranking_engine.py replaces generic course-tag matching
-- STPM progress bar uses raw mata gred (3-27 range), SocSci 13-18 now "Fair" (appeal zone)
-- Pathway card links pass track/stream query params, cards appear without quiz/sign-in
-- Tests unchanged: 212 collected, 203 passing | Golden master: 8247
+**v1.33.0 DONE — Unified Pre-U Backend**
+- All pre-U pathways (Matric 4 tracks, STPM 2 bidangs) now computed on backend
+- New `pathways.py`: pure Python port of frontend eligibility logic (32 tests)
+- Matric/STPM returned in `eligible_courses` with merit labels + display fields
+- Ranking engine routes matric/stpm to unified pre-U scorer (12 new tests)
+- Frontend stripped of 201 lines of synthetic entry logic
+- PISMP ranking fixed: below Poly High, above KKOM High
+- ILJTM/ILKBS placed between Fair and Low in sort order
+- Sort order: Asasi > Matric > STPM > UA Dip > Poly > PISMP > KKOM > Fair > ILJTM > ILKBS > Low
+- Tests: 259 collected, 250 passing | Golden master: 8283
 
 **Next**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
