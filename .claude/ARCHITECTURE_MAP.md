@@ -33,25 +33,34 @@ halatuju_api/
 │   ├── courses/                       # Core app — eligibility, ranking, quiz
 │   │   ├── models.py                  # Course, CourseRequirement, Institution,
 │   │   │                              #   StudentProfile, SavedCourse, AdmissionOutcome,
-│   │   │                              #   MascoOccupation, CourseInstitution
-│   │   ├── engine.py                  # SACRED — eligibility checker (golden master: 8283)
+│   │   │                              #   MascoOccupation, CourseInstitution,
+│   │   │                              #   StpmCourse, StpmRequirement
+│   │   ├── engine.py                  # SACRED — SPM eligibility checker (golden master: 8283)
+│   │   ├── stpm_engine.py             # SACRED — STPM eligibility checker (golden master: 1811)
 │   │   ├── pathways.py                # Matric/STPM virtual course eligibility
 │   │   ├── ranking_engine.py          # Fit scores, credential priority, pre-U scoring
 │   │   ├── insights_engine.py         # Deterministic insights from eligibility results
 │   │   ├── quiz_engine.py             # Stateless quiz signal accumulator
 │   │   ├── quiz_data.py               # 6 questions x 3 languages
 │   │   ├── views.py                   # All API endpoints (eligibility, ranking, search,
-│   │   │                              #   quiz, profile, saved courses, outcomes)
+│   │   │                              #   quiz, profile, saved courses, outcomes, STPM)
 │   │   ├── serializers.py             # Grade key mapping (BM→bm, BI→eng, etc.)
 │   │   ├── urls.py                    # /api/v1/ routes
 │   │   ├── apps.py                    # Startup: DB → DataFrame cache
 │   │   ├── management/commands/
 │   │   │   ├── load_csv_data.py       # CSV → DB migration (11 loaders, one-time)
+│   │   │   ├── load_stpm_data.py      # STPM CSV → DB migration (1,113 programmes)
 │   │   │   ├── audit_data.py          # Data completeness report
 │   │   │   └── backfill_masco.py      # MASCO occupation mappings
-│   │   ├── migrations/                # 11 migrations (0001–0011)
-│   │   └── tests/                     # 13 test files, 259 tests (250 pass)
+│   │   ├── data/stpm/                 # STPM parsed CSV data files
+│   │   ├── migrations/                # 12 migrations (0001–0012)
+│   │   └── tests/                     # 18 test files, 288 tests (255 pass)
 │   │       ├── test_golden_master.py  # 1 test — 50 students x all courses = 8283
+│   │       ├── test_stpm_golden_master.py # 1 — 5 students x STPM = 1811
+│   │       ├── test_stpm_engine.py    # 15 — CGPA, grade comparison, eligibility
+│   │       ├── test_stpm_models.py    # 3 — StpmCourse/StpmRequirement CRUD
+│   │       ├── test_stpm_data_loading.py # 6 — CSV loader
+│   │       ├── test_stpm_api.py       # 4 — STPM eligibility endpoint
 │   │       ├── test_api.py            # 52 — eligibility, search, CRUD
 │   │       ├── test_ranking.py        # 62 — fit scores, caps, pre-U scoring
 │   │       ├── test_pathways.py       # 32 — Matric/STPM eligibility
@@ -185,9 +194,10 @@ docs/
 
 **Project**: `pbrrlyoyyiftckqvzvvo` (Singapore)
 
-Key tables: `courses`, `course_requirements`, `course_institutions`, `institutions`, `course_tags`, `student_profiles`, `saved_courses`, `admission_outcomes`, `masco_occupations`, `course_masco_link`, `reports`
+Key tables: `courses`, `course_requirements`, `course_institutions`, `institutions`, `course_tags`, `student_profiles`, `saved_courses`, `admission_outcomes`, `masco_occupations`, `course_masco_link`, `reports`, `stpm_courses`, `stpm_requirements`
 
-- 383 courses, 239 institutions (212 original + 27 IPG)
+- 383 SPM courses, 239 institutions (212 original + 27 IPG)
+- 1,113 STPM degree programmes (162 bumiputera-only excluded at runtime)
 - RLS enabled on all tables, 0 security errors
 - Course `#` suffix = "typically has interview" (data marker, not display)
 
