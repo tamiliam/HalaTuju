@@ -145,7 +145,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_views.py (reports) | 4 | Report views: list (own only), detail, cross-user 404 regression, validation |
 | test_outcomes.py | 10 | Outcome CRUD (create, duplicate 409, with institution, missing course), list (own only), update status, cross-user 404, delete, auth enforcement (GET/POST 403) |
 | test_pathways.py | 32 | Matric/STPM eligibility: grade helpers (is_credit, meets_min, find_best_elective), all 4 Matric tracks (sains, kejuruteraan, sains_komputer, perakaunan), both STPM bidangs (sains, sains_sosial), merit calculation, mata gred threshold, check_all_pathways integration |
-| test_profile_fields.py | 13 | Expanded profile fields (NRIC, address, phone, income, siblings defaults), SavedCourse interest_status (default, set, got_offer), profile API (GET new fields, PUT new fields), saved-courses API (GET includes status, PATCH updates status) |
+| test_profile_fields.py | 19 | Expanded profile fields (NRIC, address, phone, income, siblings defaults), SavedCourse interest_status (default, set, got_offer), profile API (GET new fields, PUT new fields), saved-courses API (GET includes status, PATCH updates status), STPM profile fields (exam_type default, STPM fields stored, defaults empty/null), profile sync STPM (create, update, GET returns fields) |
 | test_stpm_models.py | 3 | StpmCourse creation + __str__, StpmRequirement creation + defaults, JSON field round-trip |
 | test_stpm_data_loading.py | 6 | CSV loader: creates courses, creates requirements, correct count (~1113), idempotent, JSON parsing, boolean fields |
 | test_stpm_engine.py | 15 | CGPA calculator (5), grade comparison (4), eligibility integration (6: strong science, CGPA filter, MUET filter, subject req, result shape, colorblind) |
@@ -155,7 +155,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (288 collected, 255 must pass, SPM golden master = 8283, STPM golden master = 1811)
+# 1. Run all tests (294 collected, 261 must pass, SPM golden master = 8283, STPM golden master = 1811)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -167,7 +167,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-250 tests must pass out of 259 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
+261 tests must pass out of 294 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -201,17 +201,22 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 **STPM Entrance Sprint 1 DONE — Data Models + Engine**
 - `StpmCourse` and `StpmRequirement` models for 1,113 unique degree programmes
-- `load_stpm_data` management command (science 1,003 + arts 677 CSVs, 567 overlapping)
-- `stpm_engine.py`: CGPA calculator, grade comparison, full eligibility checker (CGPA, MUET, demographics, STPM subjects, subject groups, SPM prerequisites)
+- `stpm_engine.py`: CGPA calculator, grade comparison, full eligibility checker
 - `POST /api/v1/stpm/eligibility/check/` API endpoint
 - STPM golden master baseline: 1811 across 5 test students
-- Tests: 288 collected, 255 passing (29 new) | SPM golden master: 8283 | STPM golden master: 1811
 
-**STPM Entrance Sprint 2 (next)**
+**STPM Entrance Sprint 2 DONE — Frontend Onboarding + Grade Entry**
+- Exam type selection activated (was "Coming Soon"), routes to `/onboarding/stpm-grades`
+- STPM grade entry page: PA compulsory + 4 optional subjects, MUET band, auto CGPA, SPM prerequisites
+- STPM API client (`checkStpmEligibility()`) + dashboard conditional rendering
+- Backend: `StudentProfile` gains exam_type, stpm_grades, stpm_cgpa, muet_band, spm_prereq_grades fields
+- Tests: 294 collected, 261 passing (6 new) | SPM golden master: 8283 | STPM golden master: 1811
+
+**STPM Entrance Sprint 3 (next)**
 - Supabase migration: create stpm_courses/stpm_requirements tables + RLS policies
 - STPM programme search/browse API endpoint
-- Frontend: exam type selection, STPM grade entry page, profile sync with exam_type/stpm_grades/muet_band
-- See `docs/plans/2026-03-12-stpm-entrance.md` for full plan (Tasks 9-14)
+- Dashboard polish: STPM ranking engine, programme detail cards, search/filter
+- See `docs/plans/2026-03-12-stpm-sprint2-frontend.md` for Sprint 2 retrospective
 
 **Other pending**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)

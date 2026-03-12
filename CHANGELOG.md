@@ -5,9 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — STPM Entrance (Sprint 1: Data + Engine)
+## [Unreleased] — STPM Entrance (Sprint 1: Data + Engine, Sprint 2: Frontend Onboarding)
 
-### Added
+### Added (Sprint 1)
 - **StpmCourse & StpmRequirement models** — Django models for ~1,113 unique STPM degree programmes across ~20 public universities
 - **STPM CSV data loader** — `load_stpm_data` management command loads science (1,003) + arts (677) CSVs with idempotent update_or_create
 - **STPM eligibility engine** — `stpm_engine.py` with CGPA calculator, grade comparison, SPM prerequisite checks, STPM subject/group requirements, demographic filters
@@ -15,8 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **STPM golden master** — baseline 1811 across 5 test student profiles
 - **Implementation plan** — `docs/plans/2026-03-12-stpm-entrance.md` (5 sprints, 22 tasks)
 
+### Added (Sprint 2)
+- **STPM subject definitions** — `lib/subjects.ts` constants (20 subjects, grade scale, MUET bands, SPM prereqs) aligned with backend engine keys
+- **Frontend CGPA calculator** — `lib/stpm.ts` mirrors backend `stpm_engine.py` grade-point mapping
+- **Exam type activation** — `/onboarding/exam-type` page now enables STPM selection (was "Coming Soon"), sets `halatuju_exam_type` in localStorage
+- **STPM grade entry page** — `/onboarding/stpm-grades` single combined page with STPM subjects (PA compulsory + 4 optional), MUET band pills, auto-calculated CGPA, SPM prerequisites (6 subjects)
+- **STPM API client** — `checkStpmEligibility()` in `lib/api.ts` with typed request/response interfaces
+- **Dashboard STPM routing** — `dashboard/page.tsx` conditionally renders STPM programme cards or SPM course cards based on `exam_type`
+- **Backend STPM profile fields** — `StudentProfile` gains `exam_type`, `stpm_grades`, `stpm_cgpa`, `muet_band`, `spm_prereq_grades` fields with profile sync + API support
+- **i18n support** — 14 new translation keys across EN/MS/TA for STPM onboarding flow
+
 ### Stats
-- Tests: 288 collected, 255 passing (29 new) | SPM golden master: 8283 | STPM golden master: 1811
+- Tests: 294 collected, 261 passing (6 new in Sprint 2) | SPM golden master: 8283 | STPM golden master: 1811
 - STPM programmes: 1,113 unique (from 1,680 CSV rows with 567 overlapping)
 
 ## [1.33.0] - 2026-03-12 — Unified Pre-U Backend & IPGM Integration
