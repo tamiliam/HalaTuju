@@ -1,105 +1,104 @@
-# 🎓 HalaTuju: SPM Leaver Course Recommender
+# HalaTuju — SPM Course Recommendation Platform
 
-HalaTuju is an AI-powered analytics and recommendation platform designed to help SPM (Sijil Pelajaran Malaysia) leavers navigate their post-secondary education options. It aggregates data from Polytechnics, Community Colleges, TVET institutions (ILKBS, ILJTM), and Public Universities (IPTA) to provide personalized course matching based on academic results, interests, and career aspirations.
+HalaTuju helps Malaysian SPM leavers find the right post-secondary course. It checks eligibility across 383 courses at 239 institutions, ranks matches by academic fit and personal interests, and generates AI-powered counselor reports — in English, Bahasa Melayu, and Tamil.
 
-## 📊 Course Coverage
+## Coverage
 
-- **814+ Courses** across multiple pathways:
-  - Polytechnics (Diploma programs)
-  - Community Colleges (Certificate & Diploma programs)
-  - TVET Institutions (ILKBS, ILJTM vocational training)
-  - **Public Universities (87 Asasi/Foundation programs from 20 IPTA)**
+| Pathway | Courses | Institutions |
+|---------|---------|-------------|
+| Polytechnics | Diploma programmes | 36 Politeknik |
+| Public Universities (IPTA) | Asasi, Diploma | 20 UA |
+| Community Colleges (KKOM) | Sijil, Diploma | 100+ Kolej Komuniti |
+| TVET — ILJTM | Sijil, Diploma | 22 ILP/ADTEC |
+| TVET — ILKBS | Sijil Lanjutan, Diploma | 30+ ILKBS |
+| PISMP (Teacher Training) | Ijazah Sarjana Muda Pendidikan | 27 IPG Campuses |
+| Matriculation | 4 tracks (virtual) | Computed from grades |
+| STPM (Form 6) | 2 bidangs (virtual) | Computed from grades |
 
-## 🚀 Key Features
-
--   **Smart Eligibility Engine**: Automatically checks student grades against thousands of course requirements:
-    -   Polytechnic/KK/TVET: General & Specific rules
-    -   **University (IPTA): Grade B requirements, Distinction requirements (A-), Complex OR-group logic**
--   **Holistic Ranking System**: Ranks eligible courses using a weighted scoring model that considers:
-    -   Academic Fit
-    -   Interest Alignment (based on RIASEC/Holland Code)
-    -   Work & Learning Preferences (Hands-on vs. Theory)
-    -   Physical & Environmental Constraints
--   **Interactive Dashboard**: Visualizes top matches, providing deep insights into why a course is a good fit.
--   **AI-Powered Reports**: Generates personalized PDF reports using Google Gemini (with OpenAI fallback) to explain career pathways.
--   **Multi-Language Support**: Fully localized interface in English, Bahasa Melayu, and Tamil.
--   **Robust Auth & Persistence**: Secure user accounts and profile storage via Supabase.
-
-## 📂 Project Structure
+## Architecture
 
 ```
-HalaTuju/
-├── assets/                 # Static assets (CSS, Images)
-├── data/                   # Data sources (Courses, Requirements CSVs)
-├── docs/                   # Documentation files
-├── scripts/                # Utility scripts
-├── src/                    # Source Code
-│   ├── auth.py             # User Authentication logic
-│   ├── dashboard.py        # Streamlit Dashboard UI logic
-│   ├── engine.py           # Core Eligibility Engine
-│   ├── ranking_engine.py   # Course Ranking & Scoring Algorithm
-│   ├── quiz_manager.py     # Personality/Interest Quiz Logic
-│   ├── translations.py     # Localization/Translation Strings
-│   └── reports/            # AI & PDF Reporting Modules
-├── tests/                  # Unit & Regression Tests
-├── main.py                 # Application Entry Point
-└── requirements.txt        # Python Dependencies
+Next.js Frontend (Cloud Run)          Django API (Cloud Run)
+halatuju-web                          halatuju-api
+        |                                    |
+        +--- POST /api/v1/eligibility/check/ |
+        +--- POST /api/v1/ranking/           |
+        +--- GET  /api/v1/courses/search/    |
+        +--- POST /api/v1/quiz/submit/       |
+                                             |
+                                    Supabase PostgreSQL
+                                    (Singapore)
 ```
 
-## 🛠️ Prerequisites
+- **Backend**: Django REST API — eligibility engine loads DB into Pandas DataFrame at startup
+- **Frontend**: Next.js 14 — dashboard with merit traffic lights, pathway cards, course search
+- **Database**: Supabase (PostgreSQL with RLS)
+- **AI Reports**: Google Gemini — bilingual counselor report generation
+- **Deployment**: Google Cloud Run (asia-southeast1)
 
--   **Python 3.10+** (Recommended)
--   **Supabase Account**: For authentication and database.
--   **Google Gemini API Key**: For the primary AI features.
--   **OpenAI API Key** (Optional): For fallback AI support.
+## Quick Start
 
-## 📥 Installation & Setup
+### Backend
 
-1.  **Clone the Repository**
-    ```bash
-    git clone https://github.com/tamiliam/HalaTuju.git
-    cd HalaTuju
-    ```
-
-2.  **Create a Virtual Environment**
-    ```bash
-    python -m venv venv
-    # Windows
-    venv\Scripts\activate
-    # Mac/Linux
-    source venv/bin/activate
-    ```
-
-3.  **Install Dependencies**
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-4.  **Configure Secrets**
-    Create a `.streamlit/secrets.toml` file in the project root:
-    ```toml
-    # .streamlit/secrets.toml
-
-    SUPABASE_URL = "your_supabase_url"
-    SUPABASE_KEY = "your_supabase_anon_key"
-    GEMINI_API_KEY = "your_gemini_api_key"
-    OPENAI_API_KEY = "your_openai_key"  # Optional
-    ```
-
-5.  **Run the Application**
-    ```bash
-    streamlit run main.py
-    ```
-
-## 🧪 Testing
-
-The project maintains a **Golden Master** test suite to ensure the integrity of the eligibility engine.
-
-Run the tests using:
 ```bash
-python -m unittest tests/test_golden_master.py
+cd halatuju_api
+pip install -r requirements.txt
+cp .env.example .env  # Configure DATABASE_URL, SECRET_KEY, etc.
+python manage.py runserver
 ```
 
-## 📝 License
+### Frontend
+
+```bash
+cd halatuju-web
+npm install
+cp .env.example .env.local  # Configure NEXT_PUBLIC_API_URL
+npm run dev
+```
+
+### Deploy
+
+```bash
+# Backend
+gcloud run deploy halatuju-api --source halatuju_api/ \
+  --region asia-southeast1 --project gen-lang-client-0871147736 \
+  --allow-unauthenticated
+
+# Frontend
+gcloud run deploy halatuju-web --source halatuju-web/ \
+  --region asia-southeast1 --project gen-lang-client-0871147736 \
+  --allow-unauthenticated
+```
+
+## Testing
+
+```bash
+cd halatuju_api
+
+# Full suite (259 tests, 250 passing)
+python -m pytest apps/courses/tests/ -v
+
+# Golden master only (baseline: 8283)
+python -m pytest apps/courses/tests/test_golden_master.py -v
+```
+
+## Key Features
+
+- **Eligibility Engine** — checks SPM grades against course requirements (general rules, subject groups, distinctions, complex OR-logic)
+- **Merit Traffic Lights** — High / Fair / Low chance indicator per course based on merit cutoff
+- **Matric/STPM Virtual Courses** — computed at runtime from student grades, not stored in DB
+- **Quiz-Based Ranking** — 6-question interest quiz feeds into fit score calculation
+- **PISMP Deduplication** — groups 73 PISMP courses by name, merges language variants
+- **AI Counselor Reports** — Gemini-generated bilingual reports with career pathway analysis
+- **Multi-Language** — full UI in English, Bahasa Melayu, and Tamil
+
+## Documentation
+
+- `halatuju_api/CLAUDE.md` — detailed architecture, deployment, and testing guide
+- `docs/roadmap.md` — planned features (STPM entrance, admin dashboard)
+- `docs/release-notes-v1.33.0.md` — latest release notes
+- `CHANGELOG.md` — full version history
+
+## License
 
 Internal / Proprietary.
