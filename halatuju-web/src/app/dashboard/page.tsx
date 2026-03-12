@@ -396,6 +396,9 @@ export default function DashboardPage() {
                   <Link href="/onboarding/exam-type" className="text-xs text-gray-400 hover:text-primary-500 underline mt-1 inline-block">
                     {t('dashboard.editProfile')}
                   </Link>
+                  <Link href="/stpm/search" className="text-xs text-primary-500 hover:text-primary-600 underline ml-3">
+                    {t('stpm.browseAll')}
+                  </Link>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {stpmResults.slice(0, displayCount).map(prog => (
