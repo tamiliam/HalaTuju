@@ -323,15 +323,20 @@ def check_complex_requirements(student_grades, complex_req_json_str):
 
 def check_subject_group_logic(student_grades, rule_json_str, max_agg_units, check_diversity=False):
     """
-    Evaluates complex subject group rules from a JSON string.
-    """
-    if not rule_json_str or not isinstance(rule_json_str, str) or rule_json_str.strip() == "":
-        return True, None
+    Evaluates complex subject group rules from a JSON string or list.
 
-    try:
-        rules = json.loads(rule_json_str)
-    except json.JSONDecodeError:
-        return False, "Invalid Requirement Format"
+    Accepts either a JSON string (from CSV) or a list (from Django JSONField).
+    """
+    # Already a list (from Django JSONField / DB load)
+    if isinstance(rule_json_str, list):
+        rules = rule_json_str
+    elif not rule_json_str or not isinstance(rule_json_str, str) or rule_json_str.strip() == "":
+        return True, None
+    else:
+        try:
+            rules = json.loads(rule_json_str)
+        except json.JSONDecodeError:
+            return False, "Invalid Requirement Format"
 
     if isinstance(rules, list):
         for rule in rules:
