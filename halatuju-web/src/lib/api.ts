@@ -561,3 +561,68 @@ export async function rankStpmProgrammes(
     ...options,
   })
 }
+
+// STPM search + detail types
+export interface StpmSearchParams {
+  q?: string
+  university?: string
+  stream?: string
+  limit?: number
+  offset?: number
+}
+
+export interface StpmSearchFilters {
+  universities: string[]
+  streams: string[]
+}
+
+export interface StpmSearchResponse {
+  programmes: StpmEligibleProgramme[]
+  total_count: number
+  filters: StpmSearchFilters
+}
+
+export interface StpmRequirements {
+  min_cgpa: number
+  min_muet_band: number
+  stpm_min_subjects: number
+  stpm_min_grade: string
+  stpm_subjects: string[]
+  stpm_subject_group: Record<string, unknown> | null
+  spm_prerequisites: string[]
+  spm_subject_group: Record<string, unknown> | null
+  req_interview: boolean
+  no_colorblind: boolean
+  req_medical_fitness: boolean
+  req_malaysian: boolean
+  req_bumiputera: boolean
+}
+
+export interface StpmProgrammeDetail {
+  program_id: string
+  program_name: string
+  university: string
+  stream: string
+  requirements: StpmRequirements
+}
+
+export async function searchStpmProgrammes(
+  params: StpmSearchParams = {},
+  options?: ApiOptions
+): Promise<StpmSearchResponse> {
+  const searchParams = new URLSearchParams()
+  if (params.q) searchParams.set('q', params.q)
+  if (params.university) searchParams.set('university', params.university)
+  if (params.stream) searchParams.set('stream', params.stream)
+  if (params.limit) searchParams.set('limit', String(params.limit))
+  if (params.offset) searchParams.set('offset', String(params.offset))
+  const qs = searchParams.toString()
+  return apiRequest(`/api/v1/stpm/search/${qs ? `?${qs}` : ''}`, options)
+}
+
+export async function getStpmProgrammeDetail(
+  programId: string,
+  options?: ApiOptions
+): Promise<StpmProgrammeDetail> {
+  return apiRequest(`/api/v1/stpm/programmes/${programId}/`, options)
+}
