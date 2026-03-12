@@ -352,8 +352,12 @@ def get_credential_priority(course_name, source_type=''):
     # below Diploma in sort so Poly High appears before PISMP on dashboard
     if source_type == 'pismp':
         return 2.5
+    if source_type in ('matric', 'stpm'):
+        return 5
     name_lower = course_name.lower().strip()
     if name_lower.startswith("asasi") or "foundation" in name_lower:
+        return 5
+    elif name_lower.startswith("matriculation") or name_lower.startswith("form 6"):
         return 5
     elif name_lower.startswith("diploma"):
         return 3
