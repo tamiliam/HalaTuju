@@ -43,6 +43,7 @@ from .serializers import (
 )
 from .ranking_engine import get_ranked_results, get_credential_priority
 from .insights_engine import generate_insights
+from .pathways import check_all_pathways
 from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
 from .quiz_engine import process_quiz_answers
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
@@ -304,6 +305,74 @@ class EligibilityCheckView(APIView):
                 # Update stats
                 stats[source_type] = stats.get(source_type, 0) + 1
 
+        # --- Matric/STPM virtual courses ---
+        coq_score = data.get('coq_score', 5.0)
+        pathway_results = check_all_pathways(student.grades, coq_score)
+
+        for r in pathway_results:
+            if not r['eligible']:
+                continue
+
+            is_matric = r['pathway'] == 'matric'
+            course_id = f"pathway-{r['pathway']}-{r['track_id']}"
+
+            # Build merit fields
+            merit_label = None
+            student_merit_val = None
+            merit_cutoff_val = None
+            merit_display_student = None
+            merit_display_cutoff = None
+
+            if is_matric and r.get('merit') is not None:
+                merit = r['merit']
+                student_merit_val = round(merit, 1)
+                merit_cutoff_val = 94
+                if merit >= 94:
+                    merit_label = 'High'
+                elif merit >= 89:
+                    merit_label = 'Fair'
+                else:
+                    merit_label = 'Low'
+            elif not is_matric and r.get('mata_gred') is not None:
+                mg = r['mata_gred']
+                student_merit_val = round((27 - mg) / 24 * 100)
+                merit_display_student = str(mg)
+                if r['track_id'] == 'sains':
+                    merit_cutoff_val = round((27 - 18) / 24 * 100)
+                    merit_label = 'High'
+                    merit_display_cutoff = '18'
+                else:
+                    merit_cutoff_val = round((27 - 12) / 24 * 100)
+                    merit_label = 'High' if mg <= 12 else 'Fair'
+                    merit_display_cutoff = '12'
+
+            course_entry = {
+                'course_id': course_id,
+                'course_name': f"Matriculation — {r['track_name']}"
+                    if is_matric else f"Form 6 (STPM) — {r['track_name']}",
+                'level': 'Pre-University',
+                'field': 'Foundation Studies' if is_matric else 'Form 6',
+                'source_type': r['pathway'],
+                'pathway_type': r['pathway'],
+                'merit_cutoff': merit_cutoff_val,
+                'student_merit': student_merit_val,
+                'merit_label': merit_label,
+                'merit_color': None,
+            }
+
+            # STPM display fields
+            if merit_display_student is not None:
+                course_entry['merit_display_student'] = merit_display_student
+            if merit_display_cutoff is not None:
+                course_entry['merit_display_cutoff'] = merit_display_cutoff
+
+            # Pass through track_id and mata_gred for ranking engine
+            course_entry['track_id'] = r['track_id']
+            if r.get('mata_gred') is not None:
+                course_entry['mata_gred'] = r['mata_gred']
+
+            eligible_courses.append(course_entry)
+
         # Deduplicate PISMP zone variants.
         # Zone code in course_id[4:6]: 01/06=National, 03=Chinese, 04=Tamil, 05=Special
         # Rules:
@@ -389,7 +458,7 @@ class EligibilityCheckView(APIView):
             stats[st] = stats.get(st, 0) + 1
 
         # Default sort: merit chance first, then delta within tier, then credential > type
-        SOURCE_TYPE_PRIORITY = {'ua': 4, 'pismp': 3, 'poly': 2, 'kkom': 1, 'tvet': 0}
+        SOURCE_TYPE_PRIORITY = {'ua': 4, 'matric': 4, 'stpm': 4, 'pismp': 3, 'poly': 2, 'kkom': 1, 'tvet': 0}
         MERIT_LABEL_PRIORITY = {'High': 3, 'Fair': 2, 'Low': 1}
         def _merit_delta(c):
             """Delta sort only for Fair/Low — High uses credential instead."""

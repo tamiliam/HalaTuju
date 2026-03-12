@@ -280,6 +280,10 @@ class TestEligibilityEndpoint(TestCase):
                 # TVET has no merit data
                 self.assertIsNone(course['merit_label'])
                 self.assertIsNone(course['merit_color'])
+            elif course['source_type'] in ('matric', 'stpm'):
+                # Matric/STPM use their own merit system (no merit_color)
+                if course['merit_cutoff']:
+                    self.assertIn(course['merit_label'], ['High', 'Fair', 'Low'])
             elif course['merit_cutoff']:
                 # Poly/UA with cutoff should have a label
                 self.assertIn(course['merit_label'], ['High', 'Fair', 'Low'])
@@ -423,6 +427,61 @@ class TestEligibilityEndpoint(TestCase):
         for course in pismp:
             self.assertIsNone(course['merit_label'], f"PISMP {course['course_id']} should have no merit label")
             self.assertIsNone(course['merit_color'])
+
+    # --- Matric/STPM Pathway Integration Tests ---
+
+    def test_eligibility_includes_matric_tracks(self):
+        """Eligible matric tracks appear in eligible_courses."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
+                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+', 'BIO': 'A+',
+                'AMT': 'A+',
+            },
+            'gender': 'male',
+        }, format='json')
+        self.assertEqual(response.status_code, 200)
+        courses = response.data['eligible_courses']
+        matric_courses = [c for c in courses if c['source_type'] == 'matric']
+        self.assertGreater(len(matric_courses), 0)
+        mc = matric_courses[0]
+        self.assertIn('merit_label', mc)
+        self.assertIn('student_merit', mc)
+        self.assertEqual(mc['level'], 'Pre-University')
+        self.assertEqual(mc['pathway_type'], 'matric')
+
+    def test_eligibility_includes_stpm_bidangs(self):
+        """Eligible STPM bidangs appear in eligible_courses."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
+                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+', 'BIO': 'A+',
+                'AMT': 'A+',
+            },
+            'gender': 'male',
+        }, format='json')
+        self.assertEqual(response.status_code, 200)
+        courses = response.data['eligible_courses']
+        stpm_courses = [c for c in courses if c['source_type'] == 'stpm']
+        self.assertGreater(len(stpm_courses), 0)
+        sc = stpm_courses[0]
+        self.assertEqual(sc['pathway_type'], 'stpm')
+        self.assertEqual(sc['level'], 'Pre-University')
+
+    def test_pathway_stats_include_matric_stpm(self):
+        """pathway_stats should count matric and stpm entries."""
+        response = self.client.post(self.url, {
+            'grades': {
+                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
+                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+', 'BIO': 'A+',
+                'AMT': 'A+',
+            },
+            'gender': 'male',
+        }, format='json')
+        self.assertEqual(response.status_code, 200)
+        stats = response.data['pathway_stats']
+        self.assertIn('matric', stats)
+        self.assertIn('stpm', stats)
 
     def test_pismp_subject_specific_requirement(self):
         """PISMP Matematik requires A in MATH+ADDMATH. Student without ADDMATH should not qualify."""
