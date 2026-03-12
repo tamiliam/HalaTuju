@@ -554,11 +554,8 @@ export default function DashboardPage() {
             })
 
           // Sort all courses:
-          // 1. Merit label (High > PISMP (no data) > Fair > Low)
-          // 2. Credential priority (Asasi/Pre-U > Diploma > PISMP > Sijil)
-          // 3. Source type priority (asasi > matric > stpm > university > poly > pismp > kkom > tvet)
-          // 4. Merit cutoff (higher = more competitive, first)
-          // 5. Name (alphabetical)
+          // Asasi high > Matric high > STPM high > UA Dip high > Poly high > PISMP > KKOM high > Any fair > ILJTM > ILKBS > Any low
+          // Tiebreakers: merit label → credential → pathway → cutoff → name
           const MERIT_LABEL_PRI: Record<string, number> = { High: 3, Fair: 2, Low: 1 }
           const PATHWAY_PRI: Record<string, number> = {
             asasi: 8, matric: 7, stpm: 6,
@@ -580,8 +577,12 @@ export default function DashboardPage() {
           allCourses.sort((a, b) => {
             // 1. Merit label: High first, then Fair, then Low
             // PISMP has no merit data — treat as High so it sits just above KKOM High
-            const ma = MERIT_LABEL_PRI[a.merit_label || ''] ?? (a.source_type === 'pismp' ? 3 : 2)
-            const mb = MERIT_LABEL_PRI[b.merit_label || ''] ?? (b.source_type === 'pismp' ? 3 : 2)
+            const aPt = (a as { pathway_type?: string }).pathway_type || a.source_type
+            const bPt = (b as { pathway_type?: string }).pathway_type || b.source_type
+            const meritFallback = (pt: string, st: string) =>
+              st === 'pismp' ? 3 : (pt === 'iljtm' || pt === 'ilkbs') ? 1.5 : 2
+            const ma = MERIT_LABEL_PRI[a.merit_label || ''] ?? meritFallback(aPt, a.source_type)
+            const mb = MERIT_LABEL_PRI[b.merit_label || ''] ?? meritFallback(bPt, b.source_type)
             if (mb !== ma) return mb - ma
 
             // 2. Credential priority
@@ -590,10 +591,8 @@ export default function DashboardPage() {
             if (cb !== ca) return cb - ca
 
             // 3. Pathway/source type priority
-            const pta = (a as { pathway_type?: string }).pathway_type || a.source_type
-            const ptb = (b as { pathway_type?: string }).pathway_type || b.source_type
-            const pa = PATHWAY_PRI[pta] ?? 0
-            const pb = PATHWAY_PRI[ptb] ?? 0
+            const pa = PATHWAY_PRI[aPt] ?? 0
+            const pb = PATHWAY_PRI[bPt] ?? 0
             if (pb !== pa) return pb - pa
 
             // 4. Merit cutoff (more competitive first)

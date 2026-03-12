@@ -401,10 +401,13 @@ class EligibilityCheckView(APIView):
             label = c.get('merit_label') or ''
             if label:
                 return -MERIT_LABEL_PRIORITY[label]
-            # PISMP has no merit data — place in High tier and let credential
-            # priority handle position (below Poly Diploma, above KKOM Sijil)
+            # PISMP has no merit data — place in High tier
             if c.get('source_type') == 'pismp':
                 return -MERIT_LABEL_PRIORITY['High']
+            # ILJTM/ILKBS sit between Fair and Low
+            pt = c.get('pathway_type', c.get('source_type', ''))
+            if pt in ('iljtm', 'ilkbs'):
+                return -1.5
             return -2  # others without data = Fair
 
         eligible_courses.sort(key=lambda c: (
