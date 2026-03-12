@@ -131,7 +131,7 @@ export default function DashboardPage() {
       colorblind: profile.colorblind ? 'Ya' : 'Tidak',
     }).then(data => {
       // Chain ranking after eligibility
-      const signalsStr = localStorage.getItem('halatuju_student_signals')
+      const signalsStr = localStorage.getItem('halatuju_quiz_signals')
       const signals = signalsStr ? JSON.parse(signalsStr) : {}
       return rankStpmProgrammes({
         eligible_programmes: data.eligible_programmes,

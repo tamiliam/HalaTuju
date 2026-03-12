@@ -49,6 +49,21 @@ class TestStpmFitScore:
         score_no, _ = calculate_stpm_fit_score(programme, student_cgpa=3.5, signals=signals_no_match)
         assert score_match > score_no
 
+    def test_field_interest_match_dict_format(self):
+        """Field interest works with dict format from quiz engine."""
+        programme = {
+            'program_id': 'TEST001', 'program_name': 'BACELOR KEJURUTERAAN', 'university': 'UTM',
+            'stream': 'science', 'min_cgpa': 3.0, 'min_muet_band': 3,
+            'req_interview': False, 'no_colorblind': False,
+        }
+        # Quiz engine returns dicts: {signal_name: score}
+        signals_match = {'field_interest': {'field_mechanical': 3, 'field_electrical': 2}}
+        signals_no_match = {'field_interest': {'field_arts': 3}}
+        score_match, reasons = calculate_stpm_fit_score(programme, student_cgpa=3.5, signals=signals_match)
+        score_no, _ = calculate_stpm_fit_score(programme, student_cgpa=3.5, signals=signals_no_match)
+        assert score_match > score_no
+        assert any('Field' in r for r in reasons)
+
     def test_interview_penalty(self):
         """Interview requirement adds slight penalty."""
         base = {

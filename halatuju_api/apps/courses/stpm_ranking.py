@@ -50,7 +50,7 @@ PROGRAMME_FIELD_MAP = {
 
 def _match_field_interest(program_name: str, signals: Dict) -> bool:
     """Check if programme name keywords match student's field interests."""
-    field_interests = signals.get('field_interest', [])
+    field_interests = signals.get('field_interest', {})
     if not field_interests:
         return False
     name_lower = program_name.lower()
