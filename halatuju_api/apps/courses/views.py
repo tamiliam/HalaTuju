@@ -457,8 +457,12 @@ class EligibilityCheckView(APIView):
             st = c['source_type']
             stats[st] = stats.get(st, 0) + 1
 
-        # Default sort: merit chance first, then delta within tier, then credential > type
-        SOURCE_TYPE_PRIORITY = {'ua': 4, 'matric': 4, 'stpm': 4, 'pismp': 3, 'poly': 2, 'kkom': 1, 'tvet': 0}
+        # Default sort: merit chance first, then delta within tier, then credential > pathway > cutoff
+        PATHWAY_PRIORITY = {
+            'asasi': 8, 'matric': 7, 'stpm': 6,
+            'university': 5, 'poly': 4, 'pismp': 3, 'kkom': 2,
+            'iljtm': 1, 'ilkbs': 1, 'tvet': 0,
+        }
         MERIT_LABEL_PRIORITY = {'High': 3, 'Fair': 2, 'Low': 1}
         def _merit_delta(c):
             """Delta sort only for Fair/Low — High uses credential instead."""
@@ -483,7 +487,7 @@ class EligibilityCheckView(APIView):
             _merit_sort_key(c),
             _merit_delta(c),
             -get_credential_priority(c['course_name'], c.get('source_type', '')),
-            -SOURCE_TYPE_PRIORITY.get(c['source_type'], 0),
+            -PATHWAY_PRIORITY.get(c.get('pathway_type', c.get('source_type', '')), 0),
             -float(c['merit_cutoff'] or 0),  # competitiveness: higher cutoff first
             c['course_name'],
         ))
