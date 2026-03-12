@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.33.0] - 2026-03-12 — Unified Pre-U Backend & IPGM Integration
+
+### Added
+- **Backend Matric/STPM eligibility** — `pathways.py` port of all frontend eligibility logic (4 Matric tracks, 2 STPM bidangs, 32 tests)
+- **Matric/STPM in API response** — eligible tracks returned in `eligible_courses` with merit labels, display fields, mata_gred
+- **Unified pre-U ranking** — `calculate_matric_stpm_fit_score()` routes matric/stpm through prestige + academic + field preference + signal scoring (12 tests)
+- **27 IPG campuses** — all Institut Pendidikan Guru campuses added as institutions, linked to 73 PISMP courses (1,971 offerings)
+- **Pathway-based sort priority** — `PATHWAY_PRIORITY` dict replaces `SOURCE_TYPE_PRIORITY` for correct Asasi > Matric > STPM > UA > Poly > PISMP > KKOM ordering
+
+### Fixed
+- **PISMP ranking** — credential priority changed from 4 to 2.5; pathway priority from 5 to 3. Now sorts below Poly High, above KKOM High
+- **ILJTM/ILKBS sort placement** — merit fallback 1.5 places them between Fair and Low tiers
+- **Matric/STPM credential priority** — was returning 0 (fell through all checks); now returns 5 via source_type and name-based fallback
+- **Course name capitalisation** — fixed BAHASA MELAYU → Bahasa Melayu, SAINS PENDIDIKAN → Sains Pendidikan, Ukm → UKM
+
+### Removed
+- **Frontend synthetic pre-U entries** — 201 lines removed from `dashboard/page.tsx` (pathwayResults, mergedRankingData, syntheticFlat useMemos)
+
+### Stats
+- Tests: 259 collected, 250 passing | Golden master: 8283
+- Institutions: 239 (212 existing + 27 IPG)
+- Course offerings: +1,971 PISMP-IPG links
+
 ## [1.32.2] - 2026-03-11 — Unified Pre-U Scoring & Pathway Fixes
 
 ### Added
