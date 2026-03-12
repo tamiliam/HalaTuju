@@ -43,6 +43,7 @@ from .serializers import (
 )
 from .ranking_engine import get_ranked_results, get_credential_priority
 from .stpm_engine import check_stpm_eligibility
+from .stpm_ranking import get_stpm_ranked_results
 from .insights_engine import generate_insights
 from .pathways import check_all_pathways
 from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
@@ -1133,4 +1134,24 @@ class StpmEligibilityCheckView(APIView):
         return Response({
             'eligible_programmes': results,
             'total_eligible': len(results),
+        })
+
+
+class StpmRankingView(APIView):
+    """POST /api/v1/stpm/ranking/ — rank eligible STPM programmes by fit score."""
+
+    def post(self, request):
+        programmes = request.data.get('eligible_programmes')
+        if programmes is None:
+            return Response(
+                {'error': 'eligible_programmes is required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        student_cgpa = float(request.data.get('student_cgpa', 0))
+        signals = request.data.get('student_signals', {})
+
+        ranked = get_stpm_ranked_results(programmes, student_cgpa, signals)
+        return Response({
+            'ranked_programmes': ranked,
+            'total': len(ranked),
         })
