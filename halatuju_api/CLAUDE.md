@@ -146,11 +146,16 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_outcomes.py | 10 | Outcome CRUD (create, duplicate 409, with institution, missing course), list (own only), update status, cross-user 404, delete, auth enforcement (GET/POST 403) |
 | test_pathways.py | 32 | Matric/STPM eligibility: grade helpers (is_credit, meets_min, find_best_elective), all 4 Matric tracks (sains, kejuruteraan, sains_komputer, perakaunan), both STPM bidangs (sains, sains_sosial), merit calculation, mata gred threshold, check_all_pathways integration |
 | test_profile_fields.py | 13 | Expanded profile fields (NRIC, address, phone, income, siblings defaults), SavedCourse interest_status (default, set, got_offer), profile API (GET new fields, PUT new fields), saved-courses API (GET includes status, PATCH updates status) |
+| test_stpm_models.py | 3 | StpmCourse creation + __str__, StpmRequirement creation + defaults, JSON field round-trip |
+| test_stpm_data_loading.py | 6 | CSV loader: creates courses, creates requirements, correct count (~1113), idempotent, JSON parsing, boolean fields |
+| test_stpm_engine.py | 15 | CGPA calculator (5), grade comparison (4), eligibility integration (6: strong science, CGPA filter, MUET filter, subject req, result shape, colorblind) |
+| test_stpm_golden_master.py | 1 | 5 students × all programmes = 1811 baseline |
+| test_stpm_api.py | 4 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency) |
 
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (259 collected, 250 must pass, golden master = 8283)
+# 1. Run all tests (288 collected, 255 must pass, SPM golden master = 8283, STPM golden master = 1811)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -178,7 +183,9 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/quiz_data.py` | Quiz questions (6 Qs × 3 languages) | No |
 | `apps/courses/quiz_engine.py` | Stateless quiz signal accumulator | No |
 | `apps/courses/ranking_engine.py` | Fit score calculation + course ranking | No |
+| `apps/courses/stpm_engine.py` | STPM eligibility logic | YES — STPM Golden Master |
 | `apps/courses/management/commands/load_csv_data.py` | CSV → DB migration (11 loaders) | One-time |
+| `apps/courses/management/commands/load_stpm_data.py` | STPM CSV → DB migration | One-time |
 | `apps/courses/insights_engine.py` | Deterministic insights from eligibility results | No |
 | `apps/courses/management/commands/audit_data.py` | Data completeness report | No |
 | `apps/reports/report_engine.py` | Gemini-powered narrative report generator | No |
@@ -192,18 +199,21 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**v1.33.0 DONE — Unified Pre-U Backend**
-- All pre-U pathways (Matric 4 tracks, STPM 2 bidangs) now computed on backend
-- New `pathways.py`: pure Python port of frontend eligibility logic (32 tests)
-- Matric/STPM returned in `eligible_courses` with merit labels + display fields
-- Ranking engine routes matric/stpm to unified pre-U scorer (12 new tests)
-- Frontend stripped of 201 lines of synthetic entry logic
-- PISMP ranking fixed: below Poly High, above KKOM High
-- ILJTM/ILKBS placed between Fair and Low in sort order
-- Sort order: Asasi > Matric > STPM > UA Dip > Poly > PISMP > KKOM > Fair > ILJTM > ILKBS > Low
-- Tests: 259 collected, 250 passing | Golden master: 8283
+**STPM Entrance Sprint 1 DONE — Data Models + Engine**
+- `StpmCourse` and `StpmRequirement` models for 1,113 unique degree programmes
+- `load_stpm_data` management command (science 1,003 + arts 677 CSVs, 567 overlapping)
+- `stpm_engine.py`: CGPA calculator, grade comparison, full eligibility checker (CGPA, MUET, demographics, STPM subjects, subject groups, SPM prerequisites)
+- `POST /api/v1/stpm/eligibility/check/` API endpoint
+- STPM golden master baseline: 1811 across 5 test students
+- Tests: 288 collected, 255 passing (29 new) | SPM golden master: 8283 | STPM golden master: 1811
 
-**Next**
+**STPM Entrance Sprint 2 (next)**
+- Supabase migration: create stpm_courses/stpm_requirements tables + RLS policies
+- STPM programme search/browse API endpoint
+- Frontend: exam type selection, STPM grade entry page, profile sync with exam_type/stpm_grades/muet_band
+- See `docs/plans/2026-03-12-stpm-entrance.md` for full plan (Tasks 9-14)
+
+**Other pending**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
