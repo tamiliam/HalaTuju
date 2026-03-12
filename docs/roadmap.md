@@ -16,39 +16,25 @@ Last updated: 2026-03-12
 - Supabase auth (ES256 + HS256 JWT)
 - Multi-language support (EN/BM/TA)
 
-## Planned — STPM Entrance
+## In Progress — STPM Entrance (Sprints 1-4 DONE, Sprint 5 remaining)
 
 **Priority:** High
-**Scope:** Multi-sprint feature
-**Data available:** ~1,680 programmes (1,003 science + 677 arts) with STPM-specific requirements parsed
+**Status:** Core feature complete. Sprint 5 (polish) remaining.
 
-### What It Is
-Currently HalaTuju only accepts SPM grades as input. STPM entrance allows students who have completed Form 6 to input their STPM subjects, grades, CGPA, and MUET band. The engine then recommends degree programmes based on STPM-specific requirements.
+### Completed (Sprints 1-4)
+- 1,113 STPM degree programmes loaded into Supabase (StpmCourse + StpmRequirement models)
+- STPM eligibility engine with CGPA calculator, grade comparison, SPM prerequisites
+- STPM ranking engine (CGPA margin, field match, interview penalty)
+- Frontend: exam type selection, STPM grade entry, dashboard with fit scores
+- Search API + programme detail API with human-readable labels
+- Frontend search page with filters + programme detail page
+- 33 i18n keys × 3 languages (EN/BM/TA)
+- STPM golden master: 1811 across 5 test students
 
-### Why It Matters
-STPM is the second-largest pathway into Malaysian universities after Matriculation. Without STPM entrance support, Form 6 leavers cannot use HalaTuju at all.
-
-### Key Differences from SPM Flow
-- **Input**: STPM subjects + grades (A, A-, B+, B, B-, C+, C, C-, D+, D, F) instead of SPM grades
-- **CGPA**: Calculated from STPM grades, used as primary eligibility filter
-- **MUET**: Malaysian University English Test band (1-6), required by most programmes
-- **Pengajian Am (PA)**: Compulsory STPM subject, required by almost all programmes
-- **Subject groups**: Complex JSON-based requirements (min count + min grade from a set of subjects)
-- **SPM prerequisites**: Most STPM programmes still require SPM credits in BM, pass Sejarah, and sometimes specific SPM subjects
-
-### Data Source
-- `Archived/Random/data/stpm_science_requirements_parsed.csv` — 1,003 science programmes
-- `Archived/Random/data/stpm_arts_requirements_parsed.csv` — 677 arts programmes
-- Fields: program_id, program_name, university, stream, min_cgpa, stpm requirements, spm prerequisites, min_muet_band, interview/colorblind/fitness flags
-
-### High-Level Tasks
-1. **Data modelling** — New models or extend existing for STPM requirements (CGPA, MUET, subject groups)
-2. **Data import** — Load ~1,680 programmes into DB, map to existing courses where possible
-3. **Eligibility engine** — New STPM eligibility checker (CGPA threshold, subject matching, SPM prerequisites)
-4. **Onboarding flow** — STPM-specific grade input UI (subjects, grades, MUET band)
-5. **Dashboard integration** — STPM results displayed alongside SPM results (or separate view)
-6. **Ranking** — Adapt fit score calculation for degree-level programmes
-7. **Testing** — Golden master for STPM pathway
+### Remaining (Sprint 5)
+- i18n completion audit (run `check-i18n.js`)
+- STPM quiz signal refinement
+- Full integration test + release tag
 
 ---
 
