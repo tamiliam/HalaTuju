@@ -553,20 +553,21 @@ export default function DashboardPage() {
               }
             })
 
-          // Sort all courses using the same logic as the backend:
-          // 1. Merit label (High > Fair > Low > no data)
-          // 2. Credential priority (Asasi/Pre-U > PISMP > Diploma > Sijil)
-          // 3. Source type priority (asasi > matric > stpm > ua > pismp > poly > kkom > tvet)
+          // Sort all courses:
+          // 1. Merit label (High > PISMP (no data) > Fair > Low)
+          // 2. Credential priority (Asasi/Pre-U > Diploma > PISMP > Sijil)
+          // 3. Source type priority (asasi > matric > stpm > university > poly > pismp > kkom > tvet)
           // 4. Merit cutoff (higher = more competitive, first)
           // 5. Name (alphabetical)
           const MERIT_LABEL_PRI: Record<string, number> = { High: 3, Fair: 2, Low: 1 }
           const PATHWAY_PRI: Record<string, number> = {
             asasi: 8, matric: 7, stpm: 6,
-            pismp: 5, university: 4, poly: 3, kkom: 2, iljtm: 1, ilkbs: 1, tvet: 0,
+            university: 5, poly: 4, pismp: 3, kkom: 2, iljtm: 1, ilkbs: 1, tvet: 0,
           }
 
           function credentialPriority(name: string, sourceType: string): number {
-            if (sourceType === 'pismp') return 4
+            // PISMP is a degree but sorts below Diploma so Poly High appears first
+            if (sourceType === 'pismp') return 2.5
             const lower = name.toLowerCase().trim()
             if (lower.startsWith('asasi') || lower.includes('foundation') || lower.startsWith('matriculation') || lower.startsWith('form 6')) return 5
             if (lower.startsWith('diploma')) return 3
@@ -577,9 +578,10 @@ export default function DashboardPage() {
 
           const allCourses = [...syntheticFlat, ...eligibilityData.eligible_courses]
           allCourses.sort((a, b) => {
-            // 1. Merit label: High first, then Fair, then Low, no data treated as Fair
-            const ma = MERIT_LABEL_PRI[a.merit_label || ''] ?? 2
-            const mb = MERIT_LABEL_PRI[b.merit_label || ''] ?? 2
+            // 1. Merit label: High first, then Fair, then Low
+            // PISMP has no merit data — treat as High so it sits just above KKOM High
+            const ma = MERIT_LABEL_PRI[a.merit_label || ''] ?? (a.source_type === 'pismp' ? 3 : 2)
+            const mb = MERIT_LABEL_PRI[b.merit_label || ''] ?? (b.source_type === 'pismp' ? 3 : 2)
             if (mb !== ma) return mb - ma
 
             // 2. Credential priority

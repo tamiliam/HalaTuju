@@ -397,8 +397,18 @@ class EligibilityCheckView(APIView):
                 return -(c.get('student_merit', 0) - (c['merit_cutoff'] or 0))
             return 0  # High / no data: ignore delta, let credential decide
 
+        def _merit_sort_key(c):
+            label = c.get('merit_label') or ''
+            if label:
+                return -MERIT_LABEL_PRIORITY[label]
+            # PISMP has no merit data — place in High tier and let credential
+            # priority handle position (below Poly Diploma, above KKOM Sijil)
+            if c.get('source_type') == 'pismp':
+                return -MERIT_LABEL_PRIORITY['High']
+            return -2  # others without data = Fair
+
         eligible_courses.sort(key=lambda c: (
-            -MERIT_LABEL_PRIORITY.get(c['merit_label'] or '', 2),  # no data = Fair (not penalised)
+            _merit_sort_key(c),
             _merit_delta(c),
             -get_credential_priority(c['course_name'], c.get('source_type', '')),
             -SOURCE_TYPE_PRIORITY.get(c['source_type'], 0),

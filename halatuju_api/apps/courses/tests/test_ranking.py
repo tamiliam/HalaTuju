@@ -377,8 +377,13 @@ class TestGetCredentialPriority(TestCase):
     def test_foundation_highest(self):
         self.assertEqual(get_credential_priority("Something Foundation"), 5)
 
-    def test_pismp_above_diploma(self):
-        self.assertEqual(get_credential_priority("Matematik Pendidikan Rendah", source_type='pismp'), 4)
+    def test_pismp_below_diploma_above_sijil(self):
+        """PISMP sorts below Poly Diploma but above KKOM Sijil."""
+        pismp = get_credential_priority("Matematik Pendidikan Rendah", source_type='pismp')
+        diploma = get_credential_priority("Diploma Kejuruteraan")
+        sijil = get_credential_priority("Sijil Kemahiran")
+        self.assertLess(pismp, diploma)
+        self.assertGreater(pismp, sijil)
 
     def test_pismp_below_asasi(self):
         self.assertGreater(

@@ -195,11 +195,12 @@ INST_PRIORITY_MAP = {
 def get_credential_priority(course_name, source_type=''):
     """
     Returns credential priority for tie-breaking (higher is better).
-    Asasi/Foundation > PISMP (teaching degree) > Diploma > Sijil Lanjutan > Sijil.
+    Asasi/Foundation > Diploma > PISMP > Sijil Lanjutan > Sijil.
     """
-    # PISMP leads to Ijazah Sarjana Muda Pendidikan (full degree) — ranks above Diploma
+    # PISMP leads to Ijazah Sarjana Muda Pendidikan (full degree) but ranks
+    # below Diploma in sort so Poly High appears before PISMP on dashboard
     if source_type == 'pismp':
-        return 4
+        return 2.5
     name_lower = course_name.lower().strip()
     if name_lower.startswith("asasi") or "foundation" in name_lower:
         return 5
