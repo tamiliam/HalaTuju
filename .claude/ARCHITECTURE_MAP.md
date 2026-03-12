@@ -1,6 +1,6 @@
 # HalaTuju Architecture Map
 
-Last updated: STPM Sprint 2 (2026-03-12)
+Last updated: STPM Sprint 3 (2026-03-13)
 
 ## Root
 
@@ -39,6 +39,7 @@ halatuju_api/
 │   │   ├── stpm_engine.py             # SACRED — STPM eligibility checker (golden master: 1811)
 │   │   ├── pathways.py                # Matric/STPM virtual course eligibility
 │   │   ├── ranking_engine.py          # Fit scores, credential priority, pre-U scoring
+│   │   ├── stpm_ranking.py            # STPM fit scores (CGPA margin, field match, interview)
 │   │   ├── insights_engine.py         # Deterministic insights from eligibility results
 │   │   ├── quiz_engine.py             # Stateless quiz signal accumulator
 │   │   ├── quiz_data.py               # 6 questions x 3 languages
@@ -54,13 +55,14 @@ halatuju_api/
 │   │   │   └── backfill_masco.py      # MASCO occupation mappings
 │   │   ├── data/stpm/                 # STPM parsed CSV data files
 │   │   ├── migrations/                # 13 migrations (0001–0013)
-│   │   └── tests/                     # 18 test files, 294 tests (261 pass)
+│   │   └── tests/                     # 20 test files, 307 tests (274 pass)
 │   │       ├── test_golden_master.py  # 1 test — 50 students x all courses = 8283
 │   │       ├── test_stpm_golden_master.py # 1 — 5 students x STPM = 1811
 │   │       ├── test_stpm_engine.py    # 15 — CGPA, grade comparison, eligibility
 │   │       ├── test_stpm_models.py    # 3 — StpmCourse/StpmRequirement CRUD
 │   │       ├── test_stpm_data_loading.py # 6 — CSV loader
-│   │       ├── test_stpm_api.py       # 4 — STPM eligibility endpoint
+│   │       ├── test_stpm_api.py       # 9 — STPM eligibility + ranking endpoints
+│   │       ├── test_stpm_ranking.py   # 8 — STPM fit score + ranked results
 │   │       ├── test_api.py            # 52 — eligibility, search, CRUD
 │   │       ├── test_ranking.py        # 62 — fit scores, caps, pre-U scoring
 │   │       ├── test_pathways.py       # 32 — Matric/STPM eligibility
@@ -185,7 +187,8 @@ docs/
 ├── plans/
 │   ├── 2026-03-09-whatsapp-otp-plan.md  # Active — not yet built
 │   ├── 2026-03-12-stpm-entrance.md      # STPM master plan (5 sprints, 22 tasks)
-│   └── 2026-03-12-stpm-sprint2-frontend.md # Sprint 2 plan (7 tasks, DONE)
+│   ├── 2026-03-12-stpm-sprint2-frontend.md # Sprint 2 plan (7 tasks, DONE)
+│   └── 2026-03-13-stpm-sprint3-ranking.md # Sprint 3 plan (5 tasks, DONE)
 └── archive/                           # Completed plans, old roadmaps, design docs
     ├── 2026-02-completed/             # February completion reports
     ├── audits/                        # Data audit reports
