@@ -495,3 +495,42 @@ export async function syncProfile(
     ...options,
   })
 }
+
+// STPM types
+export interface StpmEligibleProgramme {
+  program_id: string
+  program_name: string
+  university: string
+  stream: string
+  min_cgpa: number
+  min_muet_band: number
+  stpm_req_physics: boolean
+  req_interview: boolean
+  no_colorblind: boolean
+}
+
+export interface StpmEligibilityRequest {
+  stpm_grades: Record<string, string>
+  spm_grades: Record<string, string>
+  cgpa: number
+  muet_band: number
+  gender?: string
+  nationality?: string
+  colorblind?: string
+}
+
+export interface StpmEligibilityResponse {
+  eligible_programmes: StpmEligibleProgramme[]
+  total_eligible: number
+}
+
+export async function checkStpmEligibility(
+  data: StpmEligibilityRequest,
+  options?: ApiOptions
+): Promise<StpmEligibilityResponse> {
+  return apiRequest('/api/v1/stpm/eligibility/check/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    ...options,
+  })
+}
