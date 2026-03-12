@@ -69,3 +69,46 @@ class TestStpmSearchAPI:
         assert 'min_cgpa' in prog
         assert 'min_muet_band' in prog
         assert 'req_interview' in prog
+
+
+@pytest.mark.django_db
+class TestStpmProgrammeDetailAPI:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        from django.core.management import call_command
+        from io import StringIO
+        call_command('load_stpm_data', stdout=StringIO())
+        self.client = APIClient()
+
+    def test_detail_returns_200(self):
+        resp = self.client.get('/api/v1/stpm/search/?limit=1')
+        prog_id = resp.json()['programmes'][0]['program_id']
+        resp = self.client.get(f'/api/v1/stpm/programmes/{prog_id}/')
+        assert resp.status_code == 200
+
+    def test_detail_returns_programme_data(self):
+        resp = self.client.get('/api/v1/stpm/search/?limit=1')
+        prog_id = resp.json()['programmes'][0]['program_id']
+        resp = self.client.get(f'/api/v1/stpm/programmes/{prog_id}/')
+        data = resp.json()
+        assert data['program_id'] == prog_id
+        assert 'program_name' in data
+        assert 'university' in data
+        assert 'stream' in data
+        assert 'requirements' in data
+        req = data['requirements']
+        assert 'min_cgpa' in req
+        assert 'min_muet_band' in req
+        assert 'stpm_subjects' in req
+        assert 'spm_prerequisites' in req
+
+    def test_detail_404_for_missing(self):
+        resp = self.client.get('/api/v1/stpm/programmes/NONEXISTENT/')
+        assert resp.status_code == 404
+
+    def test_detail_stpm_subjects_list(self):
+        resp = self.client.get('/api/v1/stpm/search/?limit=1')
+        prog_id = resp.json()['programmes'][0]['program_id']
+        resp = self.client.get(f'/api/v1/stpm/programmes/{prog_id}/')
+        subjects = resp.json()['requirements']['stpm_subjects']
+        assert isinstance(subjects, list)

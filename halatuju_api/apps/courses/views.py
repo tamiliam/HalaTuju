@@ -1225,3 +1225,81 @@ class StpmSearchView(APIView):
             'total_count': total_count,
             'filters': filters,
         })
+
+
+class StpmProgrammeDetailView(APIView):
+    """GET /api/v1/stpm/programmes/<program_id>/ — single programme detail."""
+
+    STPM_SUBJECT_FIELDS = [
+        ('stpm_req_pa', 'Pengajian Am'),
+        ('stpm_req_math_t', 'Mathematics (T)'),
+        ('stpm_req_math_m', 'Mathematics (M)'),
+        ('stpm_req_physics', 'Physics'),
+        ('stpm_req_chemistry', 'Chemistry'),
+        ('stpm_req_biology', 'Biology'),
+        ('stpm_req_economics', 'Economics'),
+        ('stpm_req_accounting', 'Accounting'),
+        ('stpm_req_business', 'Business Studies'),
+    ]
+
+    SPM_PREREQ_FIELDS = [
+        ('spm_credit_bm', 'Bahasa Melayu (credit)'),
+        ('spm_pass_sejarah', 'Sejarah (pass)'),
+        ('spm_credit_bi', 'Bahasa Inggeris (credit)'),
+        ('spm_pass_bi', 'Bahasa Inggeris (pass)'),
+        ('spm_credit_math', 'Matematik (credit)'),
+        ('spm_pass_math', 'Matematik (pass)'),
+        ('spm_credit_addmath', 'Matematik Tambahan (credit)'),
+        ('spm_credit_science', 'Sains (credit)'),
+    ]
+
+    def get(self, request, program_id):
+        try:
+            prog = StpmCourse.objects.select_related('requirement').get(
+                program_id=program_id
+            )
+        except StpmCourse.DoesNotExist:
+            return Response(
+                {'error': 'Programme not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        req = getattr(prog, 'requirement', None)
+
+        stpm_subjects = []
+        if req:
+            for field_name, label in self.STPM_SUBJECT_FIELDS:
+                if getattr(req, field_name, False):
+                    stpm_subjects.append(label)
+
+        spm_prerequisites = []
+        if req:
+            for field_name, label in self.SPM_PREREQ_FIELDS:
+                if getattr(req, field_name, False):
+                    spm_prerequisites.append(label)
+
+        requirements = {}
+        if req:
+            requirements = {
+                'min_cgpa': req.min_cgpa,
+                'min_muet_band': req.min_muet_band,
+                'stpm_min_subjects': req.stpm_min_subjects,
+                'stpm_min_grade': req.stpm_min_grade,
+                'stpm_subjects': stpm_subjects,
+                'stpm_subject_group': req.stpm_subject_group,
+                'spm_prerequisites': spm_prerequisites,
+                'spm_subject_group': req.spm_subject_group,
+                'req_interview': req.req_interview,
+                'no_colorblind': req.no_colorblind,
+                'req_medical_fitness': req.req_medical_fitness,
+                'req_malaysian': req.req_malaysian,
+                'req_bumiputera': req.req_bumiputera,
+            }
+
+        return Response({
+            'program_id': prog.program_id,
+            'program_name': prog.program_name,
+            'university': prog.university,
+            'stream': prog.stream,
+            'requirements': requirements,
+        })
