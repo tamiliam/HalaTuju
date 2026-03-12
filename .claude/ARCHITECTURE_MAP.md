@@ -1,6 +1,6 @@
 # HalaTuju Architecture Map
 
-Last updated: v1.33.0 (2026-03-12)
+Last updated: STPM Sprint 2 (2026-03-12)
 
 ## Root
 
@@ -53,8 +53,8 @@ halatuju_api/
 │   │   │   ├── audit_data.py          # Data completeness report
 │   │   │   └── backfill_masco.py      # MASCO occupation mappings
 │   │   ├── data/stpm/                 # STPM parsed CSV data files
-│   │   ├── migrations/                # 12 migrations (0001–0012)
-│   │   └── tests/                     # 18 test files, 288 tests (255 pass)
+│   │   ├── migrations/                # 13 migrations (0001–0013)
+│   │   └── tests/                     # 18 test files, 294 tests (261 pass)
 │   │       ├── test_golden_master.py  # 1 test — 50 students x all courses = 8283
 │   │       ├── test_stpm_golden_master.py # 1 — 5 students x STPM = 1811
 │   │       ├── test_stpm_engine.py    # 15 — CGPA, grade comparison, eligibility
@@ -67,7 +67,7 @@ halatuju_api/
 │   │       ├── test_serializers.py    # 27 — grade mapping, normalization
 │   │       ├── test_quiz.py           # 24 — quiz endpoints + engine
 │   │       ├── test_auth.py           # 15 — JWT enforcement (9 pre-existing failures)
-│   │       ├── test_profile_fields.py # 13 — expanded profile + saved course status
+│   │       ├── test_profile_fields.py # 19 — expanded profile + saved course + STPM fields
 │   │       ├── test_report_engine.py  # 12 — report generation + Gemini mock
 │   │       ├── test_data_loading.py   # 10 — TVET/PISMP enrichment, MASCO
 │   │       ├── test_outcomes.py       # 10 — admission outcome CRUD
@@ -107,7 +107,8 @@ halatuju-web/
 │   │   ├── auth/callback/page.tsx     # OAuth callback
 │   │   ├── onboarding/
 │   │   │   ├── exam-type/page.tsx     # Select entrance exam
-│   │   │   ├── grades/page.tsx        # Enter grades + CoQ
+│   │   │   ├── grades/page.tsx        # Enter SPM grades + CoQ
+│   │   │   ├── stpm-grades/page.tsx   # Enter STPM grades, MUET, SPM prereqs
 │   │   │   └── profile/page.tsx       # Student demographics
 │   │   ├── dashboard/page.tsx         # Main dashboard — course cards + merit lights
 │   │   ├── quiz/page.tsx              # Career interest quiz
@@ -144,7 +145,8 @@ halatuju-web/
 │   │   ├── supabase.ts                # Supabase client init
 │   │   ├── auth-context.tsx           # Auth React Context
 │   │   ├── i18n.tsx                   # i18n helper
-│   │   ├── subjects.ts               # Subject mappings
+│   │   ├── subjects.ts               # Subject mappings (SPM + STPM constants)
+│   │   ├── stpm.ts                   # STPM CGPA calculator (mirrors backend)
 │   │   ├── pathways.ts               # Pathway definitions (still used by detail pages)
 │   │   └── merit.ts                   # Merit formula (UPU)
 │   │
@@ -181,7 +183,9 @@ docs/
 ├── incident-001-rls-disabled.md       # RLS incident + templates
 ├── retrospective-*.md                 # 30+ sprint/release retrospectives
 ├── plans/
-│   └── 2026-03-09-whatsapp-otp-plan.md  # Active — not yet built
+│   ├── 2026-03-09-whatsapp-otp-plan.md  # Active — not yet built
+│   ├── 2026-03-12-stpm-entrance.md      # STPM master plan (5 sprints, 22 tasks)
+│   └── 2026-03-12-stpm-sprint2-frontend.md # Sprint 2 plan (7 tasks, DONE)
 └── archive/                           # Completed plans, old roadmaps, design docs
     ├── 2026-02-completed/             # February completion reports
     ├── audits/                        # Data audit reports
