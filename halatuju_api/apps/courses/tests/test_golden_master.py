@@ -5,7 +5,7 @@ GOLDEN MASTER TEST — Eligibility Engine Verification
 This test verifies that the ported engine.py produces identical results
 to the original Streamlit version.
 
-BASELINE: 8310 total eligible matches (50 students × all courses incl. PISMP)
+BASELINE: 8283 total eligible matches (50 students × all courses incl. PISMP)
 
 To run:
     cd halatuju_api
@@ -87,7 +87,7 @@ def load_and_clean_data(filepath):
 
 class TestGoldenMaster(unittest.TestCase):
     """
-    Golden Master Test: Verify engine produces expected baseline of 8310 matches.
+    Golden Master Test: Verify engine produces expected baseline of 8283 matches.
     """
 
     @classmethod
@@ -102,16 +102,24 @@ class TestGoldenMaster(unittest.TestCase):
         if not os.path.exists(data_folder):
             raise unittest.SkipTest(f"Data folder not found: {data_folder}")
 
-        files_to_load = ['requirements.csv', 'kkom_requirements.csv', 'tvet_requirements.csv', 'university_requirements.csv', 'pismp_requirements.csv']
+        # Map CSV filenames to source_type (must match DB source_type values)
+        files_to_load = [
+            ('requirements.csv', 'poly'),
+            ('kkom_requirements.csv', 'kkom'),
+            ('tvet_requirements.csv', 'tvet'),
+            ('university_requirements.csv', 'ua'),
+            ('pismp_requirements.csv', 'pismp'),
+        ]
         dfs = []
 
         print(f"\n[*] Loading and Cleaning Data from: {data_folder}")
-        for filename in files_to_load:
+        for filename, source_type in files_to_load:
             full_path = os.path.join(data_folder, filename)
 
             if os.path.exists(full_path):
                 try:
                     df = load_and_clean_data(full_path)
+                    df['source_type'] = source_type
                     dfs.append(df)
                     print(f"   Found {filename}: {len(df)} rows")
                 except Exception as e:
@@ -414,7 +422,7 @@ class TestGoldenMaster(unittest.TestCase):
         print("   ------------------------------------------------")
 
         # --- THE MAGIC NUMBER ---
-        EXPECTED_BASELINE = 8310
+        EXPECTED_BASELINE = 8283
 
         if total_eligible_matches != EXPECTED_BASELINE:
             diff = total_eligible_matches - EXPECTED_BASELINE

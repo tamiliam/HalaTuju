@@ -506,6 +506,19 @@ def check_eligibility(student, req):
 
     g = student.grades
 
+    # PISMP medium-of-instruction gate: Chinese-stream (zone 03) requires
+    # credit in Bahasa Cina, Tamil-stream (zone 04) requires credit in
+    # Bahasa Tamil. This is a universal rule regardless of CSV data.
+    course_id = str(req.get('course_id', ''))
+    if req.get('source_type') == 'pismp' and len(course_id) >= 6:
+        zone = course_id[4:6]
+        if zone == '03':
+            if not check("chk_pismp_lang_bc", is_credit(g.get('b_cina')), "fail_pismp_lang_bc"):
+                return False, audit
+        elif zone == '04':
+            if not check("chk_pismp_lang_bt", is_credit(g.get('b_tamil')), "fail_pismp_lang_bt"):
+                return False, audit
+
     # --- TVET SPECIAL: 3M ONLY ---
     if to_int(req.get('3m_only')) == 1:
         cond = is_attempted(g.get('bm')) and is_attempted(g.get('math'))
