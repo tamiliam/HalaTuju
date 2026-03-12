@@ -115,7 +115,7 @@ class TestStpmEligibility:
         assert len(results) > 0
         r = results[0]
         for key in ['program_id', 'program_name', 'university', 'stream',
-                     'min_cgpa', 'min_muet_band']:
+                     'min_cgpa', 'min_muet_band', 'req_interview', 'no_colorblind']:
             assert key in r, f"Missing key: {key}"
 
     def test_colorblind_filter(self):
