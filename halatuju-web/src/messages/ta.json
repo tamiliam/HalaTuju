@@ -111,7 +111,20 @@
     "academicMerit": "கல்வி",
     "coqMerit": "இணைப் பாடச்செயல்பாடு",
     "meritTotal": "மொத்தம்",
-    "stpmGetStarted": "தொடங்கவும்"
+    "stpmGetStarted": "தொடங்கவும்",
+    "stpmGradesTitle": "உங்கள் STPM முடிவுகள்",
+    "stpmGradesSubtitle": "நீங்கள் தகுதி பெறும் பட்டப்படிப்புகளைக் கண்டறிய உங்கள் STPM மற்றும் SPM முடிவுகளை உள்ளிடவும்.",
+    "stpmSubjects": "STPM பாடங்கள்",
+    "stpmSubjectsHint": "Pengajian Am கட்டாயம். நீங்கள் எடுத்த மற்ற 3-4 பாடங்களைத் தேர்ந்தெடுக்கவும்.",
+    "stpmSelectSubject": "— பாடம் தேர்ந்தெடுக்கவும் —",
+    "stpmGrade": "தரம்",
+    "muetBand": "MUET பேண்ட்",
+    "muetHint": "Malaysian University English Test முடிவு",
+    "cgpaLabel": "CGPA",
+    "cgpaAutoCalc": "உங்கள் STPM தரங்களிலிருந்து தானாகக் கணக்கிடப்படுகிறது",
+    "spmPrerequisites": "SPM முடிவுகள்",
+    "spmPrereqHint": "சில பட்டப்படிப்புகளுக்கு குறைந்தபட்ச SPM தரங்கள் தேவை.",
+    "enterStpmSubjects": "குறைந்தது Pengajian Am + 2 பாடங்களைத் தேர்ந்தெடுத்து தரமிடவும்."
   },
   "dashboard": {
     "title": "உங்கள் படிப்புப் பரிந்துரைகள்",

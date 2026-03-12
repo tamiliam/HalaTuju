@@ -111,7 +111,20 @@
     "academicMerit": "Academic",
     "coqMerit": "Co-curricular",
     "meritTotal": "Total",
-    "stpmGetStarted": "Get started"
+    "stpmGetStarted": "Get started",
+    "stpmGradesTitle": "Your STPM Results",
+    "stpmGradesSubtitle": "Enter your STPM and SPM results so we can find degree programmes you qualify for.",
+    "stpmSubjects": "STPM Subjects",
+    "stpmSubjectsHint": "Pengajian Am is compulsory. Select 3-4 more subjects you took.",
+    "stpmSelectSubject": "— Select subject —",
+    "stpmGrade": "Grade",
+    "muetBand": "MUET Band",
+    "muetHint": "Malaysian University English Test result",
+    "cgpaLabel": "CGPA",
+    "cgpaAutoCalc": "Auto-calculated from your STPM grades",
+    "spmPrerequisites": "SPM Results",
+    "spmPrereqHint": "Some degree programmes require minimum SPM grades.",
+    "enterStpmSubjects": "Please select and grade at least Pengajian Am + 2 other subjects."
   },
   "dashboard": {
     "title": "Your Course Recommendations",
