@@ -1,6 +1,6 @@
 # HalaTuju Architecture Map
 
-Last updated: STPM Sprint 3 (2026-03-13)
+Last updated: STPM Sprint 4 (2026-03-13)
 
 ## Root
 
@@ -55,7 +55,7 @@ halatuju_api/
 │   │   │   └── backfill_masco.py      # MASCO occupation mappings
 │   │   ├── data/stpm/                 # STPM parsed CSV data files
 │   │   ├── migrations/                # 13 migrations (0001–0013)
-│   │   └── tests/                     # 20 test files, 307 tests (274 pass)
+│   │   └── tests/                     # 21 test files, 319 tests (286 pass)
 │   │       ├── test_golden_master.py  # 1 test — 50 students x all courses = 8283
 │   │       ├── test_stpm_golden_master.py # 1 — 5 students x STPM = 1811
 │   │       ├── test_stpm_engine.py    # 15 — CGPA, grade comparison, eligibility
@@ -63,6 +63,7 @@ halatuju_api/
 │   │       ├── test_stpm_data_loading.py # 6 — CSV loader
 │   │       ├── test_stpm_api.py       # 9 — STPM eligibility + ranking endpoints
 │   │       ├── test_stpm_ranking.py   # 8 — STPM fit score + ranked results
+│   │       ├── test_stpm_search.py    # 12 — STPM search + detail endpoints
 │   │       ├── test_api.py            # 52 — eligibility, search, CRUD
 │   │       ├── test_ranking.py        # 62 — fit scores, caps, pre-U scoring
 │   │       ├── test_pathways.py       # 32 — Matric/STPM eligibility
@@ -188,7 +189,8 @@ docs/
 │   ├── 2026-03-09-whatsapp-otp-plan.md  # Active — not yet built
 │   ├── 2026-03-12-stpm-entrance.md      # STPM master plan (5 sprints, 22 tasks)
 │   ├── 2026-03-12-stpm-sprint2-frontend.md # Sprint 2 plan (7 tasks, DONE)
-│   └── 2026-03-13-stpm-sprint3-ranking.md # Sprint 3 plan (5 tasks, DONE)
+│   ├── 2026-03-13-stpm-sprint3-ranking.md # Sprint 3 plan (5 tasks, DONE)
+│   └── 2026-03-13-stpm-sprint4-search-detail.md # Sprint 4 plan (6 tasks, DONE)
 └── archive/                           # Completed plans, old roadmaps, design docs
     ├── 2026-02-completed/             # February completion reports
     ├── audits/                        # Data audit reports

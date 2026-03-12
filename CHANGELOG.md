@@ -5,7 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — STPM Entrance (Sprint 1: Data + Engine, Sprint 2: Frontend Onboarding)
+## [Unreleased] — STPM Entrance (Sprints 1–4)
+
+### Added (Sprint 4)
+- **STPM search API** — `GET /api/v1/stpm/search/` with text, university, stream filters + cursor pagination (20/page)
+- **STPM programme detail API** — `GET /api/v1/stpm/programmes/<id>/` with human-readable subject labels, SPM prereqs, flags
+- **STPM search page** — `/stpm/search` with debounced text input, dropdown filters, responsive card grid, load-more
+- **STPM detail page** — `/stpm/[id]` with breadcrumb, stream badge, subject pills, quick facts sidebar, requirement flags
+- **i18n** — 33 new `stpm.*` keys in EN/BM/TA for search and detail pages
+- **Dashboard link** — "Browse All Programmes" button linking to STPM search
+
+### Added (Sprint 3)
+- **Supabase migration** — `stpm_courses` + `stpm_requirements` tables with RLS policies, 2,226 rows loaded
+- **STPM ranking engine** — `stpm_ranking.py` (BASE=50, CGPA margin +20, field match +10, interview -3)
+- **STPM ranking API** — `POST /api/v1/stpm/ranking/` endpoint
+- **Frontend fit scores** — `rankStpmProgrammes()` API client, colour-coded badges (green ≥70, amber ≥55, grey <55)
 
 ### Added (Sprint 1)
 - **StpmCourse & StpmRequirement models** — Django models for ~1,113 unique STPM degree programmes across ~20 public universities
@@ -26,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **i18n support** — 14 new translation keys across EN/MS/TA for STPM onboarding flow
 
 ### Stats
-- Tests: 294 collected, 261 passing (6 new in Sprint 2) | SPM golden master: 8283 | STPM golden master: 1811
+- Tests: 319 collected, 286 passing (12 new in Sprint 4, 13 in Sprint 3, 6 in Sprint 2) | SPM golden master: 8283 | STPM golden master: 1811
 - STPM programmes: 1,113 unique (from 1,680 CSV rows with 567 overlapping)
 
 ## [1.33.0] - 2026-03-12 — Unified Pre-U Backend & IPGM Integration
