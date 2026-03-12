@@ -106,9 +106,7 @@ def check_spm_prerequisites(req, spm_grades):
         ('spm_credit_bm', 'bm', SPM_CREDIT_GRADES),
         ('spm_pass_sejarah', 'hist', SPM_PASS_GRADES),
         ('spm_credit_bi', 'eng', SPM_CREDIT_GRADES),
-        ('spm_pass_bi', 'eng', SPM_PASS_GRADES),
         ('spm_credit_math', 'math', SPM_CREDIT_GRADES),
-        ('spm_pass_math', 'math', SPM_PASS_GRADES),
         ('spm_credit_addmath', 'addmath', SPM_CREDIT_GRADES),
         ('spm_credit_science', 'sci', SPM_CREDIT_GRADES),
     ]
@@ -218,7 +216,8 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
             continue
         if req.no_colorblind and colorblind == 'Ya':
             continue
-        if req.req_bumiputera and nationality != 'Bumiputera':
+        # Bumiputera-only programmes (e.g. UiTM) are out of scope
+        if req.req_bumiputera:
             continue
 
         # 4. Individual STPM subject requirements
