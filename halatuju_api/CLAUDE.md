@@ -115,7 +115,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (259 collected, 250 pass, 9 pre-existing JWT failures)
+# Run ALL tests (307 collected, 274 pass, 9 pre-existing JWT failures)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8283 baseline)
@@ -150,12 +150,13 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_data_loading.py | 6 | CSV loader: creates courses, creates requirements, correct count (~1113), idempotent, JSON parsing, boolean fields |
 | test_stpm_engine.py | 15 | CGPA calculator (5), grade comparison (4), eligibility integration (6: strong science, CGPA filter, MUET filter, subject req, result shape, colorblind) |
 | test_stpm_golden_master.py | 1 | 5 students × all programmes = 1811 baseline |
-| test_stpm_api.py | 4 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency) |
+| test_stpm_api.py | 9 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency), STPM ranking API (returns 200, scored programmes, sorted desc, missing 400, empty list) |
+| test_stpm_ranking.py | 8 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest match, interview penalty), ranked results (sorted desc, empty list, output shape) |
 
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (294 collected, 261 must pass, SPM golden master = 8283, STPM golden master = 1811)
+# 1. Run all tests (307 collected, 274 must pass, SPM golden master = 8283, STPM golden master = 1811)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -167,7 +168,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-261 tests must pass out of 294 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
+274 tests must pass out of 307 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -184,6 +185,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/quiz_engine.py` | Stateless quiz signal accumulator | No |
 | `apps/courses/ranking_engine.py` | Fit score calculation + course ranking | No |
 | `apps/courses/stpm_engine.py` | STPM eligibility logic | YES — STPM Golden Master |
+| `apps/courses/stpm_ranking.py` | STPM fit score calculation + ranking | No |
 | `apps/courses/management/commands/load_csv_data.py` | CSV → DB migration (11 loaders) | One-time |
 | `apps/courses/management/commands/load_stpm_data.py` | STPM CSV → DB migration | One-time |
 | `apps/courses/insights_engine.py` | Deterministic insights from eligibility results | No |
@@ -212,11 +214,18 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Backend: `StudentProfile` gains exam_type, stpm_grades, stpm_cgpa, muet_band, spm_prereq_grades fields
 - Tests: 294 collected, 261 passing (6 new) | SPM golden master: 8283 | STPM golden master: 1811
 
-**STPM Entrance Sprint 3 (next)**
-- Supabase migration: create stpm_courses/stpm_requirements tables + RLS policies
+**STPM Entrance Sprint 3 DONE — Ranking Engine + Supabase Migration**
+- Supabase migration: stpm_courses + stpm_requirements tables with RLS policies, 1,113 courses + 1,113 requirements loaded
+- `stpm_ranking.py`: fit score engine (CGPA margin +20 max, field match +10, interview -3)
+- `POST /api/v1/stpm/ranking/` endpoint (accepts eligible programmes, returns ranked list)
+- Frontend: `rankStpmProgrammes()` API client, dashboard chains ranking after eligibility, colour-coded fit score badges
+- Tests: 307 collected, 274 passing (13 new) | SPM golden master: 8283 | STPM golden master: 1811
+
+**STPM Entrance Sprint 4 (next)**
 - STPM programme search/browse API endpoint
-- Dashboard polish: STPM ranking engine, programme detail cards, search/filter
-- See `docs/plans/2026-03-12-stpm-sprint2-frontend.md` for Sprint 2 retrospective
+- Programme detail page for STPM courses
+- STPM-specific quiz signal refinement
+- See `docs/plans/2026-03-13-stpm-sprint3-ranking.md` for Sprint 3 plan
 
 **Other pending**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
