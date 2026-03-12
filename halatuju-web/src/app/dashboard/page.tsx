@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   checkEligibility,
   checkStpmEligibility,
+  rankStpmProgrammes,
   getSavedCourses,
   saveCourse,
   unsaveCourse,
@@ -18,6 +19,7 @@ import {
   type RankedCourse,
   type RankingResult,
   type StpmEligibleProgramme,
+  type StpmRankedProgramme,
 } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import CourseCard from '@/components/CourseCard'
@@ -49,7 +51,7 @@ export default function DashboardPage() {
     muetBand: number
     spmGrades: Record<string, string>
   } | null>(null)
-  const [stpmResults, setStpmResults] = useState<StpmEligibleProgramme[] | null>(null)
+  const [stpmResults, setStpmResults] = useState<StpmRankedProgramme[] | null>(null)
 
   // Load profile from localStorage on mount
   useEffect(() => {
@@ -128,9 +130,18 @@ export default function DashboardPage() {
       nationality: nationalityMap[profile.nationality] || 'Warganegara',
       colorblind: profile.colorblind ? 'Ya' : 'Tidak',
     }).then(data => {
-      setStpmResults(data.eligible_programmes)
+      // Chain ranking after eligibility
+      const signalsStr = localStorage.getItem('halatuju_student_signals')
+      const signals = signalsStr ? JSON.parse(signalsStr) : {}
+      return rankStpmProgrammes({
+        eligible_programmes: data.eligible_programmes,
+        student_cgpa: stpmData.cgpa,
+        student_signals: signals,
+      })
+    }).then(ranked => {
+      setStpmResults(ranked.ranked_programmes)
     }).catch(err => {
-      console.error('STPM eligibility check failed:', err)
+      console.error('STPM eligibility/ranking failed:', err)
     })
   }, [examType, stpmData, profile])
 
@@ -389,8 +400,20 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {stpmResults.slice(0, displayCount).map(prog => (
                     <div key={prog.program_id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
-                      <h3 className="font-semibold text-gray-900 text-sm mb-2 line-clamp-2">{prog.program_name}</h3>
-                      <p className="text-xs text-gray-500 mb-3">{prog.university}</p>
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 flex-1 mr-2">{prog.program_name}</h3>
+                        <span className={`shrink-0 px-2 py-0.5 text-xs font-bold rounded-full ${
+                          prog.fit_score >= 70 ? 'bg-green-100 text-green-800' :
+                          prog.fit_score >= 55 ? 'bg-amber-100 text-amber-800' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>
+                          Fit: {Math.round(prog.fit_score)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mb-1">{prog.university}</p>
+                      {prog.fit_reasons && prog.fit_reasons.length > 0 && (
+                        <p className="text-xs text-gray-400 mb-3">{prog.fit_reasons.join(' · ')}</p>
+                      )}
                       <div className="flex flex-wrap gap-1.5">
                         <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">
                           CGPA ≥ {prog.min_cgpa.toFixed(2)}

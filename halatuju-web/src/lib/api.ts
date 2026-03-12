@@ -534,3 +534,30 @@ export async function checkStpmEligibility(
     ...options,
   })
 }
+
+export interface StpmRankedProgramme extends StpmEligibleProgramme {
+  fit_score: number
+  fit_reasons: string[]
+}
+
+export interface StpmRankingRequest {
+  eligible_programmes: StpmEligibleProgramme[]
+  student_cgpa: number
+  student_signals: Record<string, unknown>
+}
+
+export interface StpmRankingResponse {
+  ranked_programmes: StpmRankedProgramme[]
+  total: number
+}
+
+export async function rankStpmProgrammes(
+  data: StpmRankingRequest,
+  options?: ApiOptions
+): Promise<StpmRankingResponse> {
+  return apiRequest('/api/v1/stpm/ranking/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    ...options,
+  })
+}
