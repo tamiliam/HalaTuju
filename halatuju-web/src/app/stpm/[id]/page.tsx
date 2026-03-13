@@ -3,121 +3,208 @@
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { getStpmProgrammeDetail } from '@/lib/api'
+import { getStpmProgrammeDetail, saveCourse, unsaveCourse } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
+import { useState } from 'react'
 
 export default function StpmProgrammeDetailPage() {
   const params = useParams()
   const id = params.id as string
   const { t } = useT()
+  const [isSaved, setIsSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['stpm_programme', id],
     queryFn: () => getStpmProgrammeDetail(id),
   })
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <AppHeader />
-      <div className="container mx-auto px-6 py-8 flex-1">
-        {/* Breadcrumb */}
-        <div className="mb-6 flex items-center gap-2 text-sm text-gray-500">
-          <Link href="/dashboard" className="hover:text-primary-500">Dashboard</Link>
-          <span>&rsaquo;</span>
-          <Link href="/stpm/search" className="hover:text-primary-500">{t('stpm.searchTitle')}</Link>
-          <span>&rsaquo;</span>
-          <span className="text-gray-900">{t('stpm.programmeDetail')}</span>
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      if (isSaved) {
+        await unsaveCourse(id)
+        setIsSaved(false)
+      } else {
+        await saveCourse(id)
+        setIsSaved(true)
+      }
+    } catch (err) {
+      console.error('Failed to save course:', err)
+    }
+    setSaving(false)
+  }
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
+          <p className="text-gray-600">Loading programme details...</p>
         </div>
+      </main>
+    )
+  }
 
-        {isLoading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent" />
-          </div>
-        ) : error || !data ? (
-          <div className="text-center py-12">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Programme not found</h2>
-            <Link href="/stpm/search" className="text-primary-500 hover:text-primary-600">
-              &larr; {t('stpm.backToResults')}
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Main content */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Header */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <div className="flex items-start gap-3 mb-3">
-                  <span className="px-2 py-0.5 bg-purple-50 text-purple-700 text-xs font-medium rounded-full">
-                    {t(`stpm.${data.stream}`)}
-                  </span>
-                </div>
-                <h1 className="text-xl font-bold text-gray-900 mb-2">{data.program_name}</h1>
-                <p className="text-gray-500">{data.university}</p>
+  if (error || !data) {
+    return (
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Programme not found</h1>
+          <p className="text-gray-600 mb-6">{t('courseDetail.notFound')}</p>
+          <Link href="/dashboard" className="btn-primary">
+            Back to Dashboard
+          </Link>
+        </div>
+      </main>
+    )
+  }
+
+  const streamLabel = data.stream === 'science' ? 'Science' : data.stream === 'arts' ? 'Arts' : 'Science / Arts'
+
+  return (
+    <main className="min-h-screen bg-gray-50">
+      <AppHeader />
+
+      {/* Programme Header */}
+      <section className="bg-white border-b">
+        <div className="container mx-auto px-6 py-8">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-700">
+                  Ijazah Sarjana Muda
+                </span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  data.stream === 'science' ? 'bg-green-100 text-green-700' : 'bg-sky-100 text-sky-700'
+                }`}>
+                  {streamLabel}
+                </span>
               </div>
-
-              {/* STPM Subject Requirements */}
-              {data.requirements.stpm_subjects.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h2 className="font-semibold text-gray-900 mb-3">{t('stpm.stpmSubjects')}</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {data.requirements.stpm_subjects.map(subj => (
-                      <span key={subj} className="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full">
-                        {subj}
-                      </span>
-                    ))}
-                  </div>
-                  {data.requirements.stpm_subject_group && (
-                    <p className="text-xs text-gray-400 mt-2">
-                      + flexible subject group requirement
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* SPM Prerequisites */}
-              {data.requirements.spm_prerequisites.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h2 className="font-semibold text-gray-900 mb-3">{t('stpm.spmPrerequisites')}</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {data.requirements.spm_prerequisites.map(prereq => (
-                      <span key={prereq} className="px-3 py-1 bg-green-50 text-green-700 text-sm rounded-full">
-                        {prereq}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {data.program_name}
+              </h1>
+              <p className="text-lg text-primary-600 font-medium">
+                {data.university}
+              </p>
             </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Quick Facts */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="font-semibold text-gray-900 mb-4">{t('stpm.requirements')}</h2>
-                <dl className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <dt className="text-gray-500">{t('stpm.minimumCGPA')}</dt>
-                    <dd className="font-medium text-gray-900">{data.requirements.min_cgpa.toFixed(2)}</dd>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <dt className="text-gray-500">{t('stpm.minimumMUET')}</dt>
-                    <dd className="font-medium text-gray-900">Band {data.requirements.min_muet_band}</dd>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <dt className="text-gray-500">{t('stpm.minimumSubjects')}</dt>
-                    <dd className="font-medium text-gray-900">{data.requirements.stpm_min_subjects}</dd>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <dt className="text-gray-500">{t('stpm.minimumGrade')}</dt>
-                    <dd className="font-medium text-gray-900">{data.requirements.stpm_min_grade}</dd>
-                  </div>
-                </dl>
+      {/* Main Content */}
+      <div className="container mx-auto px-6 py-8">
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Left Column */}
+          <div className="md:col-span-2 space-y-8">
+            {/* About */}
+            {data.description && (
+              <section className="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  {t('courseDetail.aboutTitle')}
+                </h2>
+                <p className="text-gray-600 leading-relaxed">
+                  {data.description}
+                </p>
+              </section>
+            )}
+
+            {/* STPM Subject Requirements */}
+            {data.requirements.stpm_subjects.length > 0 && (
+              <section className="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-3">{t('stpm.stpmSubjects')}</h2>
+                <div className="flex flex-wrap gap-2">
+                  {data.requirements.stpm_subjects.map(subj => (
+                    <span key={subj} className="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full font-medium">
+                      {subj}
+                    </span>
+                  ))}
+                </div>
+                {data.requirements.stpm_subject_group && (
+                  <p className="text-xs text-gray-400 mt-2">
+                    + flexible subject group requirement
+                  </p>
+                )}
+              </section>
+            )}
+
+            {/* SPM Prerequisites */}
+            {data.requirements.spm_prerequisites.length > 0 && (
+              <section className="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-3">{t('stpm.spmPrerequisites')}</h2>
+                <div className="flex flex-wrap gap-2">
+                  {data.requirements.spm_prerequisites.map(prereq => (
+                    <span key={prereq} className="px-3 py-1 bg-green-50 text-green-700 text-sm rounded-full font-medium">
+                      {prereq}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Institution */}
+            <section className="bg-white rounded-xl border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                {t('courseDetail.whereToStudy')}
+              </h2>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h3 className="font-semibold text-gray-900 mb-1">
+                  {data.university}
+                </h3>
+                <p className="text-sm text-gray-500">Universiti Awam</p>
               </div>
+            </section>
+          </div>
 
-              {/* Flags */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
+          {/* Right Column - Quick Info */}
+          <div className="space-y-6">
+            {/* Quick Facts */}
+            <section className="bg-white rounded-xl border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                {t('courseDetail.quickFacts')}
+              </h2>
+              <div className="space-y-4">
+                <InfoRow label="Level" value="Ijazah Sarjana Muda" />
+                {data.field && <InfoRow label="Field" value={data.field} />}
+                {data.category && <InfoRow label="Category" value={data.category} />}
+                <InfoRow label="Stream" value={streamLabel} />
+                {data.merit_score != null && (
+                  <div className="pt-2 mt-2 border-t border-gray-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 text-sm">Avg. Merit</span>
+                      <span className={`font-medium text-sm ${
+                        data.merit_score >= 80 ? 'text-green-600' : data.merit_score >= 60 ? 'text-amber-600' : 'text-red-600'
+                      }`}>
+                        {data.merit_score.toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Entry Requirements */}
+            <section className="bg-white rounded-xl border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                {t('stpm.requirements')}
+              </h2>
+              <div className="space-y-3">
+                <InfoRow label={t('stpm.minimumCGPA')} value={data.requirements.min_cgpa.toFixed(2)} />
+                <InfoRow label={t('stpm.minimumMUET')} value={`Band ${data.requirements.min_muet_band}`} />
+                <InfoRow label={t('stpm.minimumSubjects')} value={String(data.requirements.stpm_min_subjects)} />
+                <InfoRow label={t('stpm.minimumGrade')} value={data.requirements.stpm_min_grade} />
+              </div>
+            </section>
+
+            {/* Flags */}
+            {(data.requirements.req_interview ||
+              data.requirements.no_colorblind ||
+              data.requirements.req_medical_fitness ||
+              data.requirements.req_malaysian ||
+              data.requirements.req_bumiputera) && (
+              <section className="bg-white rounded-xl border border-gray-200 p-6">
                 <div className="space-y-2">
                   {data.requirements.req_interview && (
                     <div className="flex items-center gap-2 text-sm text-amber-700">
@@ -149,28 +236,45 @@ export default function StpmProgrammeDetailPage() {
                       {t('stpm.bumiputeraOnly')}
                     </div>
                   )}
-                  {!data.requirements.req_interview &&
-                   !data.requirements.no_colorblind &&
-                   !data.requirements.req_medical_fitness &&
-                   !data.requirements.req_malaysian &&
-                   !data.requirements.req_bumiputera && (
-                    <p className="text-sm text-gray-400">No special requirements</p>
-                  )}
                 </div>
-              </div>
+              </section>
+            )}
 
-              {/* Back link */}
-              <Link
-                href="/stpm/search"
-                className="block text-center py-3 text-primary-600 hover:text-primary-700 text-sm font-medium"
-              >
-                &larr; {t('stpm.backToResults')}
-              </Link>
-            </div>
+            {/* Actions */}
+            <section className="bg-white rounded-xl border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                {t('courseDetail.actions')}
+              </h2>
+              <div className="space-y-3">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="btn-primary w-full"
+                >
+                  {isSaved ? t('courseDetail.removeFromSaved') : t('courseDetail.saveCourse')}
+                </button>
+                <Link
+                  href="/dashboard"
+                  className="btn-secondary w-full text-center block"
+                >
+                  {t('courseDetail.backToRecommendations')}
+                </Link>
+              </div>
+            </section>
           </div>
-        )}
+        </div>
       </div>
+
       <AppFooter />
+    </main>
+  )
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between items-center">
+      <span className="text-gray-500 text-sm">{label}</span>
+      <span className="font-medium text-gray-900 text-sm">{value}</span>
     </div>
   )
 }

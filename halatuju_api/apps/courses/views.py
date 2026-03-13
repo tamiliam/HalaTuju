@@ -1382,5 +1382,9 @@ class StpmProgrammeDetailView(APIView):
             'program_name': prog.program_name,
             'university': prog.university,
             'stream': prog.stream,
+            'field': prog.field,
+            'category': prog.category,
+            'description': prog.description,
+            'merit_score': prog.merit_score,
             'requirements': requirements,
         })

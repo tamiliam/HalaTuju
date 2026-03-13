@@ -259,12 +259,14 @@ function SearchPageInner() {
 
   // Source type labels for filter dropdown
   const SOURCE_LABELS: Record<string, string> = {
-    ua: t('dashboard.university'),
-    pismp: t('dashboard.teacherTraining'),
-    poly: t('dashboard.polytechnic'),
-    ILJTM: 'ILJTM',
-    ILKBS: 'ILKBS',
-    kkom: t('dashboard.kolej'),
+    ua: 'Universiti',
+    pismp: 'IPGM',
+    poly: 'Politeknik',
+    iljtm: 'ILJTM',
+    ilkbs: 'ILKBS',
+    kkom: 'Kolej Komuniti',
+    matric: 'Kolej Matrikulasi',
+    stpm: 'Tingkatan 6',
   }
 
   return (
@@ -337,7 +339,7 @@ function SearchPageInner() {
           <FilterPill
             label={t('search.allTypes')}
             value={sourceType}
-            options={filters?.source_types ?? []}
+            options={(filters?.source_types ?? []).filter(t => t !== 'tvet')}
             optionLabels={SOURCE_LABELS}
             onChange={setSourceType}
           />

@@ -613,6 +613,10 @@ export interface StpmProgrammeDetail {
   program_name: string
   university: string
   stream: string
+  field: string
+  category: string
+  description: string
+  merit_score: number | null
   requirements: StpmRequirements
 }
 
