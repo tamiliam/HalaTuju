@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { searchCourses, checkEligibility, type SearchCourse, type SearchFilters, type EligibleCourse, type StudentProfile } from '@/lib/api'
+import { searchCourses, checkEligibility, checkStpmEligibility, type SearchCourse, type SearchFilters, type EligibleCourse, type StudentProfile } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import CourseCard from '@/components/CourseCard'
@@ -54,16 +54,68 @@ function SearchPageInner() {
   const [eligibleMap, setEligibleMap] = useState<Map<string, EligibleCourse> | null>(null)
   const [eligibleLoading, setEligibleLoading] = useState(false)
 
-  // Fetch eligible course data from the API
+  // Fetch eligible course data from the API (SPM + STPM)
   const fetchEligibleIds = useCallback(async () => {
     try {
-      const stored = localStorage.getItem('halatuju_profile')
-      if (!stored) return
-      const profile: StudentProfile = JSON.parse(stored)
       setEligibleLoading(true)
-      const data = await checkEligibility(profile)
-      setEligibleIds(new Set(data.eligible_courses.map(c => c.course_id)))
-      setEligibleMap(new Map(data.eligible_courses.map(c => [c.course_id, c])))
+      const allIds = new Set<string>()
+      const allMap = new Map<string, EligibleCourse>()
+
+      // SPM eligibility — always check if profile exists
+      const stored = localStorage.getItem('halatuju_profile')
+      if (stored) {
+        const profile: StudentProfile = JSON.parse(stored)
+        // Only call SPM if profile has grades
+        if (profile.grades && Object.keys(profile.grades).length > 0) {
+          const data = await checkEligibility(profile)
+          for (const c of data.eligible_courses) {
+            allIds.add(c.course_id)
+            allMap.set(c.course_id, c)
+          }
+        }
+      }
+
+      // STPM eligibility — check if STPM grades exist
+      const examType = localStorage.getItem('halatuju_exam_type')
+      const stpmGradesStr = localStorage.getItem('halatuju_stpm_grades')
+      const stpmCgpaStr = localStorage.getItem('halatuju_stpm_cgpa')
+      const muetBandStr = localStorage.getItem('halatuju_muet_band')
+      const spmPrereqStr = localStorage.getItem('halatuju_spm_prereq')
+
+      if (examType === 'stpm' && stpmGradesStr && stpmCgpaStr && muetBandStr) {
+        const profileData = stored ? JSON.parse(stored) : {}
+        const genderMap: Record<string, string> = { male: 'Lelaki', female: 'Perempuan' }
+        const nationalityMap: Record<string, string> = { malaysian: 'Warganegara', non_malaysian: 'Bukan Warganegara' }
+
+        const stpmData = await checkStpmEligibility({
+          stpm_grades: JSON.parse(stpmGradesStr),
+          spm_grades: spmPrereqStr ? JSON.parse(spmPrereqStr) : {},
+          cgpa: parseFloat(stpmCgpaStr),
+          muet_band: parseInt(muetBandStr),
+          gender: genderMap[profileData.gender] || '',
+          nationality: nationalityMap[profileData.nationality] || 'Warganegara',
+          colorblind: profileData.colorblind ? 'Ya' : 'Tidak',
+        })
+
+        // Map STPM eligible programmes to EligibleCourse format
+        for (const prog of stpmData.eligible_programmes) {
+          allIds.add(prog.program_id)
+          allMap.set(prog.program_id, {
+            course_id: prog.program_id,
+            course_name: prog.program_name,
+            level: 'Ijazah Sarjana Muda',
+            field: '',
+            source_type: 'University',
+            merit_cutoff: prog.merit_score,
+            student_merit: null,
+            merit_label: null,
+            merit_color: null,
+          })
+        }
+      }
+
+      setEligibleIds(allIds)
+      setEligibleMap(allMap)
     } catch {
       // Eligibility check failed — toggle stays off
     } finally {
