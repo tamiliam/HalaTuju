@@ -32,6 +32,7 @@ from .engine import (
     calculate_merit_score,
     check_merit_probability,
 )
+from .pathways import check_matric_track, check_stpm_bidang
 from .serializers import (
     CourseSerializer,
     InstitutionSerializer,
@@ -79,7 +80,7 @@ class CourseSearchView(APIView):
 
         # Sort order: credential > source_type > merit > name
         SOURCE_TYPE_ORDER = {
-            'ua': 5, 'pismp': 3, 'poly': 2, 'kkom': 1,
+            'ua': 5, 'matric': 4, 'stpm': 4, 'pismp': 3, 'poly': 2, 'kkom': 1,
         }
 
         # Pagination
@@ -349,10 +350,65 @@ class EligibilityCheckView(APIView):
                 # Compute merit traffic light for this course
                 merit_label = None
                 merit_color = None
-                if merit_cutoff and source_type != 'tvet':
-                    merit_label, merit_color = check_merit_probability(
-                        student_merit, merit_cutoff
-                    )
+                merit_display_student = None
+                merit_display_cutoff = None
+                student_merit_for_course = student_merit
+                merit_type = req.get('merit_type', 'standard')
+
+                if merit_type == 'matric':
+                    # Matric: use pathways.py grade-point formula
+                    track_id_map = {
+                        'matric-sains': 'sains',
+                        'matric-kejuruteraan': 'kejuruteraan',
+                        'matric-sains-komputer': 'sains_komputer',
+                        'matric-perakaunan': 'perakaunan',
+                    }
+                    track_id = track_id_map.get(course_id)
+                    if track_id:
+                        coq = data.get('coq_score', 5.0)
+                        matric_result = check_matric_track(track_id, student.grades, coq)
+                        if matric_result['eligible'] and matric_result['merit'] is not None:
+                            student_merit_for_course = matric_result['merit']
+                            if student_merit_for_course >= 94:
+                                merit_label, merit_color = "High", "#2ecc71"
+                            elif student_merit_for_course >= 89:
+                                merit_label, merit_color = "Fair", "#f1c40f"
+                            else:
+                                merit_label, merit_color = "Low", "#e74c3c"
+                        else:
+                            # Pathways formula says not eligible — skip
+                            continue
+
+                elif merit_type == 'stpm_mata_gred':
+                    # STPM: use pathways.py mata gred formula
+                    bidang_id_map = {
+                        'stpm-sains': 'sains',
+                        'stpm-sains-sosial': 'sains_sosial',
+                    }
+                    bidang_id = bidang_id_map.get(course_id)
+                    if bidang_id:
+                        stpm_result = check_stpm_bidang(bidang_id, student.grades)
+                        if stpm_result['eligible'] and stpm_result['mata_gred'] is not None:
+                            mata_gred = stpm_result['mata_gred']
+                            max_mg = stpm_result['max_mata_gred']
+                            if mata_gred <= 12:
+                                merit_label, merit_color = "High", "#2ecc71"
+                            elif mata_gred <= max_mg:
+                                merit_label, merit_color = "Fair", "#f1c40f"
+                            else:
+                                merit_label, merit_color = "Low", "#e74c3c"
+                            merit_display_student = str(mata_gred)
+                            merit_display_cutoff = str(max_mg)
+                            student_merit_for_course = (27 - mata_gred) / 24 * 100
+                        else:
+                            continue
+
+                else:
+                    # Standard SPM merit
+                    if merit_cutoff and source_type != 'tvet':
+                        merit_label, merit_color = check_merit_probability(
+                            student_merit, merit_cutoff
+                        )
 
                 # Get pathway_type from startup map
                 pathway_type = courses_config.course_pathway_map.get(
@@ -367,9 +423,11 @@ class EligibilityCheckView(APIView):
                     'source_type': source_type,
                     'pathway_type': pathway_type,
                     'merit_cutoff': merit_cutoff,
-                    'student_merit': student_merit,
+                    'student_merit': student_merit_for_course,
                     'merit_label': merit_label,
                     'merit_color': merit_color,
+                    'merit_display_student': merit_display_student,
+                    'merit_display_cutoff': merit_display_cutoff,
                 })
 
                 # Update stats

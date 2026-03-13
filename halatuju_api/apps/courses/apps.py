@@ -159,6 +159,8 @@ class CoursesConfig(AppConfig):
                 course_pathway_map[cid] = (
                     'asasi' if level.lower() == 'asasi' else 'university'
                 )
+            elif st in ('matric', 'stpm'):
+                course_pathway_map[cid] = st
             else:
                 course_pathway_map[cid] = st  # poly, kkom, pismp
 

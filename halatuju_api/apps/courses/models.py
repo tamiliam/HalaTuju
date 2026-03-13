@@ -92,6 +92,8 @@ class CourseRequirement(models.Model):
             ('tvet', 'TVET/ILKBS/ILJTM'),
             ('ua', 'University/Asasi'),
             ('pismp', 'PISMP/Teacher Training'),
+            ('matric', 'Matriculation'),
+            ('stpm', 'STPM/Form 6'),
         ],
         default='poly'
     )
@@ -101,6 +103,16 @@ class CourseRequirement(models.Model):
     min_pass = models.IntegerField(default=0)
     max_aggregate_units = models.IntegerField(default=100)
     merit_cutoff = models.FloatField(null=True, blank=True)
+    merit_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('standard', 'Standard SPM merit'),
+            ('matric', 'Matriculation grade points'),
+            ('stpm_mata_gred', 'STPM mata gred'),
+        ],
+        default='standard',
+        help_text="Merit calculation formula to use"
+    )
 
     # ===== DEMOGRAPHIC REQUIREMENTS =====
     req_malaysian = models.BooleanField(default=False, help_text="Must be Malaysian citizen")
