@@ -209,7 +209,9 @@
     "clearFilters": "Clear Filters",
     "moreInstitutions": "+{count} more",
     "institutions": "institutions",
-    "nav": "Explore"
+    "nav": "Explore",
+    "qualification": "Qualification",
+    "allQualifications": "All Qualifications"
   },
   "login": {
     "welcomeBack": "Welcome Back",

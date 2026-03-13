@@ -209,7 +209,9 @@
     "clearFilters": "Padam Tapis",
     "moreInstitutions": "+{count} lagi",
     "institutions": "institusi",
-    "nav": "Terokai"
+    "nav": "Terokai",
+    "qualification": "Kelayakan",
+    "allQualifications": "Semua Kelayakan"
   },
   "login": {
     "welcomeBack": "Selamat Kembali",

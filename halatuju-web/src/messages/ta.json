@@ -209,7 +209,9 @@
     "clearFilters": "வடிப்பான்களை நீக்கு",
     "moreInstitutions": "+{count} மேலும்",
     "institutions": "நிறுவனங்கள்",
-    "nav": "ஆராயுங்கள்"
+    "nav": "ஆராயுங்கள்",
+    "qualification": "தகுதி",
+    "allQualifications": "அனைத்து தகுதிகள்"
   },
   "login": {
     "welcomeBack": "மீண்டும் வரவேற்கிறோம்",
