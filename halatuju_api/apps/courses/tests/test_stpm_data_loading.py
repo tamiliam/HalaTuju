@@ -50,3 +50,17 @@ class TestStpmDataLoading:
         """PA required for most courses (count > 100)."""
         pa_count = StpmRequirement.objects.filter(stpm_req_pa=True).count()
         assert pa_count > 100, f'Expected >100 PA-required courses, got {pa_count}'
+
+    def test_merit_score_loaded(self):
+        """Merit scores are loaded from source CSVs."""
+        courses_with_merit = StpmCourse.objects.filter(
+            merit_score__isnull=False
+        )
+        assert courses_with_merit.count() > 0
+
+    def test_merit_score_tiada_is_null(self):
+        """Programmes with 'Tiada' merit have null merit_score."""
+        courses_without_merit = StpmCourse.objects.filter(
+            merit_score__isnull=True
+        )
+        assert courses_without_merit.exists()

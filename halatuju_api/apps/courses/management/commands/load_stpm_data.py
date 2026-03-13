@@ -120,6 +120,43 @@ class Command(BaseCommand):
             )
         )
 
+        # Load merit scores
+        self._load_merit_data(data_dir)
+
+    def _load_merit_data(self, data_dir):
+        """Load UPU merit percentages from slim merit CSVs."""
+        merit_files = [
+            os.path.join(data_dir, 'stpm_science_merit.csv'),
+            os.path.join(data_dir, 'stpm_arts_merit.csv'),
+        ]
+        updated = 0
+        for filepath in merit_files:
+            if not os.path.exists(filepath):
+                self.stdout.write(
+                    self.style.WARNING(f'Merit file not found: {filepath}')
+                )
+                continue
+            with open(filepath, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    program_id = row.get('program_id', '').strip()
+                    merit_raw = row.get('merit', '').strip()
+                    if not program_id:
+                        continue
+                    merit_val = None
+                    if merit_raw and merit_raw != 'Tiada':
+                        try:
+                            merit_val = float(merit_raw.replace('%', ''))
+                        except ValueError:
+                            pass
+                    StpmCourse.objects.filter(
+                        program_id=program_id
+                    ).update(merit_score=merit_val)
+                    updated += 1
+        self.stdout.write(
+            self.style.SUCCESS(f'Updated {updated} merit scores')
+        )
+
     def _load_csv(self, csv_path):
         """Load a single CSV file. Returns (created_count, updated_count)."""
         created = 0
