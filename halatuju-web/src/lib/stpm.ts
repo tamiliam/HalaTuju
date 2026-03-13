@@ -16,3 +16,7 @@ export function calculateStpmCgpa(grades: Record<string, string>): number {
   const total = entries.reduce((sum, g) => sum + STPM_CGPA_POINTS[g], 0)
   return Math.round((total / entries.length) * 100) / 100
 }
+
+export function cgpaToMeritPercent(cgpa: number): number {
+  return Math.round((cgpa / 4.0) * 10000) / 100  // 2 decimal places
+}

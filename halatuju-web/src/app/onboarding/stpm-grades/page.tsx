@@ -113,7 +113,7 @@ export default function StpmGradesPage() {
   // Overall CGPA = 90% academic + 10% co-curriculum
   const koko = parseFloat(kokoScore) || 0
   const overallCgpa = academicCgpa > 0
-    ? Math.round((academicCgpa * 0.9 + Math.min(koko, 4.0) * 0.1) * 100) / 100
+    ? Math.round((academicCgpa * 0.9 + Math.min(koko, 10) * 0.04) * 100) / 100
     : 0
 
   const gradedSubjects = Object.entries(stpmGrades).filter(([, v]) => v !== '')
@@ -337,11 +337,11 @@ export default function StpmGradesPage() {
               <input
                 type="number"
                 min="0"
-                max="4"
+                max="10"
                 step="0.01"
                 value={kokoScore}
                 onChange={(e) => setKokoScore(e.target.value)}
-                placeholder="0.00 – 4.00"
+                placeholder="0.00 – 10.00"
                 className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
               />
               <p className="text-xs text-gray-400 mt-1">{t('onboarding.kokoHint')}</p>

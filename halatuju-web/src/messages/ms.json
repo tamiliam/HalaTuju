@@ -125,7 +125,7 @@
     "muetBand": "Band MUET",
     "muetHint": "Keputusan Malaysian University English Test",
     "kokoScore": "Markah kokurikulum",
-    "kokoHint": "10% daripada PNGK keseluruhan (0.00 – 4.00)",
+    "kokoHint": "Markah kokurikulum daripada 10 (menyumbang 10% PNGK keseluruhan)",
     "cgpaLabel": "PNGK Keseluruhan",
     "cgpaFormula": "90% akademik + 10% kokurikulum",
     "cgpaAutoCalc": "Dikira secara automatik",

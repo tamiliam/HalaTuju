@@ -125,7 +125,7 @@
     "muetBand": "MUET Band",
     "muetHint": "Malaysian University English Test result",
     "kokoScore": "Co-curriculum score",
-    "kokoHint": "10% of your overall CGPA (0.00 – 4.00)",
+    "kokoHint": "Co-curriculum marks out of 10 (contributes 10% of overall CGPA)",
     "cgpaLabel": "Overall CGPA",
     "cgpaFormula": "90% academic + 10% co-curriculum",
     "cgpaAutoCalc": "Auto-calculated",

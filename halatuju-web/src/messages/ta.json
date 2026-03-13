@@ -125,7 +125,7 @@
     "muetBand": "MUET பேண்ட்",
     "muetHint": "Malaysian University English Test முடிவு",
     "kokoScore": "கூட்டுப் பாடநெறி மதிப்பெண்",
-    "kokoHint": "உங்கள் ஒட்டுமொத்த CGPA-இன் 10% (0.00 – 4.00)",
+    "kokoHint": "இணைப்பாடவிதான மதிப்பெண் 10-இல் (ஒட்டுமொத்த CGPA-இன் 10% பங்களிப்பு)",
     "cgpaLabel": "ஒட்டுமொத்த CGPA",
     "cgpaFormula": "90% கல்வி + 10% கூட்டுப் பாடநெறி",
     "cgpaAutoCalc": "தானாகக் கணக்கிடப்படுகிறது",
