@@ -257,14 +257,11 @@ export default function DashboardPage() {
       })
     }
 
-    // Fixed order: Asasi, Matriculation, Form 6 first, then the rest
     const orderedPathways: { type: PathwaySummary['type']; count: number }[] = [
       { type: 'asasi', count: courseCounts['asasi'] || 0 },
-      { type: 'matric', count: courseCounts['matric'] || 0 },
-      { type: 'stpm', count: courseCounts['stpm'] || 0 },
       { type: 'pismp', count: courseCounts['pismp'] || 0 },
       { type: 'poly', count: courseCounts['poly'] || 0 },
-      { type: 'university', count: courseCounts['university'] || 0 },
+      { type: 'ua', count: courseCounts['ua'] || 0 },
       { type: 'kkom', count: courseCounts['kkom'] || 0 },
       { type: 'iljtm', count: courseCounts['iljtm'] || 0 },
       { type: 'ilkbs', count: courseCounts['ilkbs'] || 0 },
@@ -622,7 +619,8 @@ function StpmDashboardCards({
         course_name: prog.program_name,
         level: 'Ijazah Sarjana Muda',
         field: prog.field || '',
-        source_type: 'University',
+        source_type: 'ua',
+        qualification: 'STPM' as const,
         merit_cutoff: prog.merit_score,
         student_merit: studentMerit,
         merit_label: meritLabel,

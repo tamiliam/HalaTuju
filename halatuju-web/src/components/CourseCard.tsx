@@ -19,15 +19,6 @@ function getImageSlug(field: string, courseName: string): string {
   const f = field.toLowerCase()
   const c = courseName.toLowerCase()
 
-  // ── SYNTHETIC PATHWAY ENTRIES — route by track name in course name ──
-  if (f === 'foundation studies' || f === 'form 6') {
-    if (matchAny(c, ['engineering', 'kejuruteraan'])) return 'kejuruteraan-am'
-    if (matchAny(c, ['computer science', 'sains komputer'])) return 'it-perisian'
-    if (matchAny(c, ['accounting', 'perakaunan'])) return 'perakaunan-kewangan'
-    if (matchAny(c, ['social science', 'sains sosial'])) return 'umum-kemanusiaan'
-    return 'sains-stem'  // Science track default
-  }
-
   // ── PENDIDIKAN — sub-route by course name ──
   if (f === 'pendidikan') {
     if (matchAny(c, ['bahasa', 'pengajaran'])) return 'pendidikan-bahasa'
@@ -185,21 +176,23 @@ function getFieldImageUrl(field: string, courseName: string): string {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  poly: 'Polytechnic',
-  tvet: 'TVET',
-  ua: 'University',
-  University: 'University',
-  pismp: 'Teacher Training',
-  matric: 'Matriculation',
-  stpm: 'Form 6',
+  ua: 'Universiti',
+  pismp: 'PISMP',
+  poly: 'Politeknik',
+  ILJTM: 'ILJTM',
+  ILKBS: 'ILKBS',
+  kkom: 'Kolej Komuniti',
+  matric: 'Matrikulasi',
+  stpm: 'Tingkatan 6',
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  poly: 'bg-blue-100 text-blue-700',
-  tvet: 'bg-green-100 text-green-700',
   ua: 'bg-purple-100 text-purple-700',
-  University: 'bg-purple-100 text-purple-700',
   pismp: 'bg-amber-100 text-amber-700',
+  poly: 'bg-blue-100 text-blue-700',
+  ILJTM: 'bg-green-100 text-green-700',
+  ILKBS: 'bg-lime-100 text-lime-700',
+  kkom: 'bg-teal-100 text-teal-700',
   matric: 'bg-orange-100 text-orange-700',
   stpm: 'bg-indigo-100 text-indigo-700',
 }
@@ -207,20 +200,17 @@ const TYPE_COLORS: Record<string, string> = {
 const LEVEL_COLORS: Record<string, string> = {
   'Diploma': 'bg-blue-50 text-blue-600',
   'Sijil': 'bg-green-50 text-green-600',
-  'Sarjana Muda': 'bg-purple-50 text-purple-600',
   'Ijazah Sarjana Muda': 'bg-purple-50 text-purple-600',
+  'Ijazah Sarjana Muda Pendidikan': 'bg-purple-50 text-purple-600',
   'Asasi': 'bg-orange-50 text-orange-600',
+  'Sijil Lanjutan': 'bg-emerald-50 text-emerald-600',
+  'Pra-U': 'bg-orange-50 text-orange-600',
+  'Pre-University': 'bg-orange-50 text-orange-600',
 }
 
-/** Build the detail page URL for a course or synthetic pathway entry. */
-function getCourseHref(courseId: string, sourceType?: string): string {
-  if (courseId.startsWith('pathway-matric')) {
-    return `/pathway/matric?track=${courseId.replace('pathway-matric-', '')}`
-  }
-  if (courseId.startsWith('pathway-stpm')) {
-    return `/pathway/stpm?stream=${courseId.replace('pathway-stpm-', '')}`
-  }
-  if (sourceType === 'University') {
+/** Build the detail page URL for a course. */
+function getCourseHref(courseId: string, sourceType?: string, qualification?: string): string {
+  if (qualification === 'STPM') {
     return `/stpm/${courseId}`
   }
   return `/course/${courseId}`
@@ -296,15 +286,15 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
       </div>
 
       {/* Card body */}
-      <Link href={getCourseHref(course.course_id, course.source_type)} className="flex-1 p-4 flex flex-col">
+      <Link href={getCourseHref(course.course_id, course.source_type, course.qualification)} className="flex-1 p-4 flex flex-col">
         {/* Type + Level badges */}
         <div className="flex flex-wrap items-center gap-1.5 mb-2">
           <span
             className={`px-2 py-0.5 rounded text-xs font-medium ${
-              TYPE_COLORS[course.source_type] || 'bg-gray-100 text-gray-700'
+              TYPE_COLORS[course.pathway_type || course.source_type] || 'bg-gray-100 text-gray-700'
             }`}
           >
-            {TYPE_LABELS[course.source_type] || course.source_type}
+            {TYPE_LABELS[course.pathway_type || course.source_type] || course.source_type}
           </span>
           {course.level && (
             <span

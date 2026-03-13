@@ -60,6 +60,7 @@ export interface EligibleCourse {
   field: string
   source_type: string
   pathway_type?: string
+  qualification?: 'SPM' | 'STPM'
   merit_cutoff: number | null
   student_merit: number | null
   merit_label: string | null

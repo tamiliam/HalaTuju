@@ -105,7 +105,7 @@ function SearchPageInner() {
             course_name: prog.program_name,
             level: 'Ijazah Sarjana Muda',
             field: '',
-            source_type: 'University',
+            source_type: 'ua',
             merit_cutoff: prog.merit_score,
             student_merit: null,
             merit_label: null,
@@ -259,11 +259,12 @@ function SearchPageInner() {
 
   // Source type labels for filter dropdown
   const SOURCE_LABELS: Record<string, string> = {
-    poly: t('dashboard.polytechnic'),
-    kkom: t('dashboard.kolej'),
-    tvet: t('dashboard.tvet'),
     ua: t('dashboard.university'),
     pismp: t('dashboard.teacherTraining'),
+    poly: t('dashboard.polytechnic'),
+    ILJTM: 'ILJTM',
+    ILKBS: 'ILKBS',
+    kkom: t('dashboard.kolej'),
   }
 
   return (

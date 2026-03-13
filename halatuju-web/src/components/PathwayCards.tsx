@@ -3,7 +3,7 @@
 import { useT } from '@/lib/i18n'
 
 export interface PathwaySummary {
-  type: 'asasi' | 'matric' | 'stpm' | 'pismp' | 'poly' | 'university' | 'kkom' | 'iljtm' | 'ilkbs'
+  type: 'asasi' | 'pismp' | 'poly' | 'ua' | 'kkom' | 'iljtm' | 'ilkbs'
   label: string
   count?: number
   eligible: boolean

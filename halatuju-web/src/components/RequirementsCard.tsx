@@ -76,11 +76,12 @@ function requirementDesc(
 
 // Source type display labels
 const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
-  ua: { label: 'University', color: 'bg-blue-100 text-blue-700' },
+  ua: { label: 'Universiti', color: 'bg-purple-100 text-purple-700' },
   poly: { label: 'Polytechnic', color: 'bg-emerald-100 text-emerald-700' },
   kkom: { label: 'Community College', color: 'bg-teal-100 text-teal-700' },
-  tvet: { label: 'TVET', color: 'bg-amber-100 text-amber-700' },
   pismp: { label: 'PISMP', color: 'bg-purple-100 text-purple-700' },
+  ILJTM: { label: 'ILJTM', color: 'bg-green-100 text-green-700' },
+  ILKBS: { label: 'ILKBS', color: 'bg-lime-100 text-lime-700' },
 }
 
 // Language codes that indicate medium-of-instruction variants (PISMP)

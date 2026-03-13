@@ -45,7 +45,6 @@ from .ranking_engine import get_ranked_results, get_credential_priority
 from .stpm_engine import check_stpm_eligibility
 from .stpm_ranking import get_stpm_ranked_results
 from .insights_engine import generate_insights
-from .pathways import check_all_pathways
 from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
 from .quiz_engine import process_quiz_answers
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
@@ -64,7 +63,7 @@ class CourseSearchView(APIView):
       ?q=kejuruteraan          (text search on course name)
       &level=Diploma           (Course.level)
       &field=Teknologi Maklumat (Course.frontend_label / StpmCourse.field)
-      &source_type=poly        (CourseRequirement.source_type or 'University')
+      &source_type=poly        (CourseRequirement.source_type)
       &state=Selangor          (Institution.state via CourseInstitution)
       &qualification=SPM|STPM  (filter by qualification; empty = both)
       &limit=24&offset=0       (pagination)
@@ -80,7 +79,7 @@ class CourseSearchView(APIView):
 
         # Sort order: credential > source_type > merit > name
         SOURCE_TYPE_ORDER = {
-            'University': 5, 'ua': 4, 'pismp': 3, 'poly': 2, 'kkom': 1, 'tvet': 0,
+            'ua': 5, 'pismp': 3, 'poly': 2, 'kkom': 1,
         }
 
         # Pagination
@@ -100,8 +99,6 @@ class CourseSearchView(APIView):
 
         # Skip SPM if level/source_type filter is STPM-only
         if include_spm and level and level.lower() == 'ijazah sarjana muda':
-            include_spm = False
-        if include_spm and source_type and source_type.lower() == 'university':
             include_spm = False
 
         if include_spm:
@@ -163,7 +160,7 @@ class CourseSearchView(APIView):
         if include_stpm and level and level.lower() != 'ijazah sarjana muda':
             include_stpm = False
         # Skip STPM if source_type filter doesn't match
-        if include_stpm and source_type and source_type.lower() != 'university':
+        if include_stpm and source_type and source_type.lower() != 'ua':
             include_stpm = False
         # State filter doesn't apply to STPM (no state data)
         if include_stpm and state:
@@ -188,7 +185,7 @@ class CourseSearchView(APIView):
                     'course_name': sc.program_name,
                     'level': 'Ijazah Sarjana Muda',
                     'field': sc.field or '',
-                    'source_type': 'University',
+                    'source_type': 'ua',
                     'merit_cutoff': sc.merit_score,
                     'institution_count': 1,
                     'institution_name': sc.university,
@@ -235,7 +232,7 @@ class CourseSearchView(APIView):
             CourseRequirement.objects.values_list('source_type', flat=True)
             .distinct().order_by('source_type')
         )
-        stpm_source_types = ['University'] if StpmCourse.objects.exists() else []
+        stpm_source_types = []
         all_source_types = sorted(set(spm_source_types + stpm_source_types))
 
         filters = {
@@ -378,74 +375,6 @@ class EligibilityCheckView(APIView):
                 # Update stats
                 stats[source_type] = stats.get(source_type, 0) + 1
 
-        # --- Matric/STPM virtual courses ---
-        coq_score = data.get('coq_score', 5.0)
-        pathway_results = check_all_pathways(student.grades, coq_score)
-
-        for r in pathway_results:
-            if not r['eligible']:
-                continue
-
-            is_matric = r['pathway'] == 'matric'
-            course_id = f"pathway-{r['pathway']}-{r['track_id']}"
-
-            # Build merit fields
-            merit_label = None
-            student_merit_val = None
-            merit_cutoff_val = None
-            merit_display_student = None
-            merit_display_cutoff = None
-
-            if is_matric and r.get('merit') is not None:
-                merit = r['merit']
-                student_merit_val = round(merit, 1)
-                merit_cutoff_val = 94
-                if merit >= 94:
-                    merit_label = 'High'
-                elif merit >= 89:
-                    merit_label = 'Fair'
-                else:
-                    merit_label = 'Low'
-            elif not is_matric and r.get('mata_gred') is not None:
-                mg = r['mata_gred']
-                student_merit_val = round((27 - mg) / 24 * 100)
-                merit_display_student = str(mg)
-                if r['track_id'] == 'sains':
-                    merit_cutoff_val = round((27 - 18) / 24 * 100)
-                    merit_label = 'High'
-                    merit_display_cutoff = '18'
-                else:
-                    merit_cutoff_val = round((27 - 12) / 24 * 100)
-                    merit_label = 'High' if mg <= 12 else 'Fair'
-                    merit_display_cutoff = '12'
-
-            course_entry = {
-                'course_id': course_id,
-                'course_name': f"Matriculation — {r['track_name']}"
-                    if is_matric else f"Form 6 (STPM) — {r['track_name']}",
-                'level': 'Pre-University',
-                'field': 'Foundation Studies' if is_matric else 'Form 6',
-                'source_type': r['pathway'],
-                'pathway_type': r['pathway'],
-                'merit_cutoff': merit_cutoff_val,
-                'student_merit': student_merit_val,
-                'merit_label': merit_label,
-                'merit_color': None,
-            }
-
-            # STPM display fields
-            if merit_display_student is not None:
-                course_entry['merit_display_student'] = merit_display_student
-            if merit_display_cutoff is not None:
-                course_entry['merit_display_cutoff'] = merit_display_cutoff
-
-            # Pass through track_id and mata_gred for ranking engine
-            course_entry['track_id'] = r['track_id']
-            if r.get('mata_gred') is not None:
-                course_entry['mata_gred'] = r['mata_gred']
-
-            eligible_courses.append(course_entry)
-
         # Deduplicate PISMP zone variants.
         # Zone code in course_id[4:6]: 01/06=National, 03=Chinese, 04=Tamil, 05=Special
         # Rules:
@@ -532,9 +461,9 @@ class EligibilityCheckView(APIView):
 
         # Default sort: merit chance first, then delta within tier, then credential > pathway > cutoff
         PATHWAY_PRIORITY = {
-            'asasi': 8, 'matric': 7, 'stpm': 6,
-            'university': 5, 'poly': 4, 'pismp': 3, 'kkom': 2,
-            'iljtm': 1, 'ilkbs': 1, 'tvet': 0,
+            'asasi': 8,
+            'ua': 5, 'poly': 4, 'pismp': 3, 'kkom': 2,
+            'iljtm': 1, 'ilkbs': 1,
         }
         MERIT_LABEL_PRIORITY = {'High': 3, 'Fair': 2, 'Low': 1}
         def _merit_delta(c):

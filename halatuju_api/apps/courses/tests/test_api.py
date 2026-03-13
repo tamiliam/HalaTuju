@@ -1042,7 +1042,7 @@ class TestUnifiedSearchEndpoint(TestCase):
                         'institution_name', 'qualification'):
                 self.assertIn(key, course)
             self.assertEqual(course['level'], 'Ijazah Sarjana Muda')
-            self.assertEqual(course['source_type'], 'University')
+            self.assertEqual(course['source_type'], 'ua')
             self.assertEqual(course['institution_count'], 1)
 
     def test_search_stpm_maps_fields_correctly(self):
@@ -1095,8 +1095,8 @@ class TestUnifiedSearchEndpoint(TestCase):
             self.assertEqual(course['qualification'], 'STPM')
 
     def test_search_source_type_university(self):
-        """Source type filter 'University' returns only STPM courses."""
-        response = self.client.get(self.url, {'source_type': 'University'})
+        """Source type filter 'ua' returns only STPM courses."""
+        response = self.client.get(self.url, {'source_type': 'ua'})
         self.assertEqual(response.status_code, 200)
         for course in response.data['courses']:
             self.assertEqual(course['qualification'], 'STPM')

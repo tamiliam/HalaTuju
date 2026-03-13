@@ -214,7 +214,6 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
-- Delete accidental `halatuju-web` service from SJKTConnect GCP project
 - Store `signal_strength` in Supabase (currently only `student_signals` synced)
 - STPM field metadata refinement: 207 unique field values from Gemini (expected ~30) — consider normalisation pass
 - Fix 13 pre-existing auth/JWT test failures (test_auth, test_saved_courses, test_views)
