@@ -106,3 +106,34 @@ class TestStpmCourseMeritScore:
         )
         course.refresh_from_db()
         assert course.merit_score is None
+
+
+@pytest.mark.django_db
+class TestStpmCourseMetadata:
+
+    def test_stpm_course_metadata_fields(self):
+        """StpmCourse has field, category, and description columns."""
+        course = StpmCourse.objects.create(
+            program_id='TEST-META-001',
+            program_name='Test Programme',
+            university='Test University',
+            stream='science',
+            field='Engineering',
+            category='Kejuruteraan',
+            description='A test programme in engineering.',
+        )
+        course.refresh_from_db()
+        assert course.field == 'Engineering'
+        assert course.category == 'Kejuruteraan'
+        assert course.description == 'A test programme in engineering.'
+
+    def test_stpm_course_metadata_defaults_blank(self):
+        """Metadata fields default to empty string."""
+        course = StpmCourse.objects.create(
+            program_id='TEST-META-002',
+            program_name='Test Programme 2',
+            university='Test University',
+        )
+        assert course.field == ''
+        assert course.category == ''
+        assert course.description == ''

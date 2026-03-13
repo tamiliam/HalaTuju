@@ -515,6 +515,9 @@ class StpmCourse(models.Model):
         max_length=20, choices=STREAM_CHOICES, default='both'
     )
     merit_score = models.FloatField(null=True, blank=True, help_text='UPU average merit percentage (0-100)')
+    field = models.CharField(max_length=255, blank=True, default='', help_text='AI-assigned field category')
+    category = models.CharField(max_length=255, blank=True, default='', help_text='AI-assigned category (Malay)')
+    description = models.TextField(blank=True, default='', help_text='AI-generated programme description')
 
     class Meta:
         db_table = 'stpm_courses'
