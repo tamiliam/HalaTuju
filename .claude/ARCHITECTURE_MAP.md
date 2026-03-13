@@ -1,6 +1,6 @@
 # HalaTuju Architecture Map
 
-Last updated: STPM Sprint 5 (2026-03-13)
+Last updated: Pre-U Courses Sprint (2026-03-13)
 
 ## Root
 
@@ -37,7 +37,7 @@ halatuju_api/
 │   │   │                              #   StpmCourse, StpmRequirement
 │   │   ├── engine.py                  # SACRED — SPM eligibility checker (golden master: 8283)
 │   │   ├── stpm_engine.py             # SACRED — STPM eligibility checker (golden master: 1811)
-│   │   ├── pathways.py                # Matric/STPM virtual course eligibility
+│   │   ├── pathways.py                # Matric/STPM eligibility formulas (used by views.py for merit_type branching)
 │   │   ├── ranking_engine.py          # Fit scores, credential priority, pre-U scoring
 │   │   ├── stpm_ranking.py            # STPM fit scores (CGPA margin, field match, interview)
 │   │   ├── insights_engine.py         # Deterministic insights from eligibility results
@@ -54,8 +54,8 @@ halatuju_api/
 │   │   │   ├── audit_data.py          # Data completeness report
 │   │   │   └── backfill_masco.py      # MASCO occupation mappings
 │   │   ├── data/stpm/                 # STPM parsed CSV data files
-│   │   ├── migrations/                # 13 migrations (0001–0013)
-│   │   └── tests/                     # 21 test files, 320 tests (287 pass)
+│   │   ├── migrations/                # 17 migrations (0001–0017)
+│   │   └── tests/                     # 22 test files, 359 collected (320 pass)
 │   │       ├── test_golden_master.py  # 1 test — 50 students x all courses = 8283
 │   │       ├── test_stpm_golden_master.py # 1 — 5 students x STPM = 1811
 │   │       ├── test_stpm_engine.py    # 15 — CGPA, grade comparison, eligibility
@@ -205,7 +205,7 @@ docs/
 
 Key tables: `courses`, `course_requirements`, `course_institutions`, `institutions`, `course_tags`, `student_profiles`, `saved_courses`, `admission_outcomes`, `masco_occupations`, `course_masco_link`, `reports`, `stpm_courses`, `stpm_requirements`
 
-- 383 SPM courses, 239 institutions (212 original + 27 IPG)
+- 389 SPM courses (383 original + 6 pre-U), 239 institutions (212 original + 27 IPG)
 - 1,113 STPM degree programmes (162 bumiputera-only excluded at runtime)
 - RLS enabled on all tables, 0 security errors
 - Course `#` suffix = "typically has interview" (data marker, not display)
@@ -214,7 +214,7 @@ Key tables: `courses`, `course_requirements`, `course_institutions`, `institutio
 
 ```
 Student enters grades → Serializer maps keys → Engine checks DataFrame
-    → Pathways module adds Matric/STPM → PISMP deduplication
+    → merit_type branching (standard/matric/stpm_mata_gred) → PISMP deduplication
     → Sort by merit tier → credential → pathway → cutoff
     → Ranking engine adds fit scores from quiz signals
     → Response: eligible_courses[] + pathway_stats{}
