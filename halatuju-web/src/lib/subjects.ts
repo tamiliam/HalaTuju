@@ -166,7 +166,7 @@ export const STPM_SUBJECTS: StpmSubject[] = [
   { id: 'SENI_VISUAL', name: 'Seni Visual', stream: 'arts' },
   { id: 'SYARIAH', name: 'Syariah Islamiah', stream: 'arts' },
   { id: 'USULUDDIN', name: 'Usuluddin', stream: 'arts' },
-  { id: 'ICT', name: 'Sains Komputer / ICT', stream: 'both' },
+  { id: 'ICT', name: 'Sains Komputer / ICT', stream: 'arts' },
   { id: 'MATH_M', name: 'Matematik M', stream: 'arts' },
 ]
 
