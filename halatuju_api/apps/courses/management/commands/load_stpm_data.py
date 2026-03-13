@@ -41,6 +41,85 @@ CSV_FILES = [
     'stpm_arts_requirements_parsed.csv',
 ]
 
+# Words that should remain lowercase (unless they are the first word)
+_LOWERCASE_WORDS = {
+    # Malay connectors
+    'dan', 'dengan', 'atau', 'di', 'ke', 'untuk', 'dalam', 'bagi', 'oleh', 'yang',
+    # English connectors
+    'and', 'of', 'with', 'in', 'for', 'at', 'the', 'or', 'by',
+}
+
+
+def _case_token(token: str, is_first: bool) -> str:
+    """Title-case a single word token, lowercasing connectors (unless first).
+
+    Also handles hyphenated words (e.g. LAIN-LAIN -> Lain-Lain).
+    """
+    if not token:
+        return token
+    lower = token.lower()
+    if not is_first and lower in _LOWERCASE_WORDS:
+        return lower
+    # Capitalise each hyphen-separated segment
+    return '-'.join(part.capitalize() for part in lower.split('-'))
+
+
+def proper_case_name(name: str) -> str:
+    """Convert an all-caps programme name to proper title case.
+
+    Rules:
+    - Every word is title-cased by default.
+    - Malay/English connector words are lowercased (except the first word).
+    - Parenthesised campus suffixes are cased with the same rules.
+    - The trailing '#' marker is preserved as-is.
+    """
+    if not name:
+        return name
+
+    import re
+
+    # Strip and split trailing '#' marker
+    suffix = ''
+    stripped = name.strip()
+    if stripped.endswith('#'):
+        suffix = ' #'
+        stripped = stripped[:-1].rstrip()
+
+    # Split into: plain text segments and parenthesised segments
+    # e.g. 'FOO BAR (BAZ QUX) DAN X' -> ['FOO BAR ', '(BAZ QUX)', ' DAN X']
+    segment_re = re.compile(r'(\([^)]*\))')
+    segments = segment_re.split(stripped)
+
+    result_parts = []
+    first_word_seen = False
+
+    for seg in segments:
+        if seg.startswith('(') and seg.endswith(')'):
+            # Bracketed segment — case the inside independently
+            inner = seg[1:-1]
+            inner_tokens = re.split(r'(\s+)', inner)
+            cased_inner = []
+            inner_first = True
+            for it in inner_tokens:
+                if not it.strip():
+                    cased_inner.append(it)
+                else:
+                    cased_inner.append(_case_token(it, inner_first))
+                    inner_first = False
+            result_parts.append('(' + ''.join(cased_inner) + ')')
+            first_word_seen = True
+        else:
+            # Plain text segment — tokenise on whitespace
+            tokens = re.split(r'(\s+)', seg)
+            for tok in tokens:
+                if not tok.strip():
+                    result_parts.append(tok)
+                else:
+                    result_parts.append(_case_token(tok, not first_word_seen))
+                    first_word_seen = True
+
+    return ''.join(result_parts) + suffix
+
 
 def parse_bool(value):
     """Parse a boolean from 0/1/empty string."""
@@ -171,7 +250,7 @@ class Command(BaseCommand):
 
                 # --- StpmCourse fields ---
                 course_defaults = {
-                    'program_name': row.get('program_name', '').strip(),
+                    'program_name': proper_case_name(row.get('program_name', '').strip()),
                     'university': row.get('university', '').strip(),
                     'stream': row.get('stream', 'both').strip() or 'both',
                 }
