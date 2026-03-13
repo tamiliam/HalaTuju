@@ -109,3 +109,15 @@ class TestStpmRankedResults:
         assert 'fit_reasons' in result[0]
         assert isinstance(result[0]['fit_score'], (int, float))
         assert isinstance(result[0]['fit_reasons'], list)
+
+    def test_merit_score_survives_ranking(self):
+        """merit_score passes through ranking pipeline."""
+        programmes = [
+            {'program_id': 'X', 'program_name': 'Test', 'university': 'UM',
+             'stream': 'science', 'min_cgpa': 2.0, 'min_muet_band': 3,
+             'req_interview': False, 'no_colorblind': False,
+             'merit_score': 95.5},
+        ]
+        ranked = get_stpm_ranked_results(programmes, student_cgpa=3.5, signals={})
+        assert 'merit_score' in ranked[0]
+        assert ranked[0]['merit_score'] == 95.5
