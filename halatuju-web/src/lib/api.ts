@@ -506,6 +506,7 @@ export interface StpmEligibleProgramme {
   program_name: string
   university: string
   stream: string
+  field: string
   min_cgpa: number
   min_muet_band: number
   stpm_req_physics: boolean
