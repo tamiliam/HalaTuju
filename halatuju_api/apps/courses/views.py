@@ -24,7 +24,7 @@ from django.apps import apps
 
 from django.db.models import Count, OuterRef, Q, Subquery
 
-from .models import Course, CourseInstitution, CourseRequirement, Institution, StudentProfile, SavedCourse, AdmissionOutcome, StpmCourse
+from .models import Course, CourseInstitution, CourseRequirement, Institution, StudentProfile, SavedCourse, AdmissionOutcome, StpmCourse, StpmRequirement
 from .engine import (
     StudentProfile as EngineStudentProfile,
     check_eligibility,
@@ -63,47 +63,25 @@ class CourseSearchView(APIView):
     Query params:
       ?q=kejuruteraan          (text search on course name)
       &level=Diploma           (Course.level)
-      &field=Teknologi Maklumat (Course.frontend_label)
-      &source_type=poly        (CourseRequirement.source_type)
+      &field=Teknologi Maklumat (Course.frontend_label / StpmCourse.field)
+      &source_type=poly        (CourseRequirement.source_type or 'University')
       &state=Selangor          (Institution.state via CourseInstitution)
+      &qualification=SPM|STPM  (filter by qualification; empty = both)
       &limit=24&offset=0       (pagination)
     """
 
     def get(self, request):
-        qs = Course.objects.select_related('requirement').all()
-
-        # Text search on course name
         q = request.query_params.get('q', '').strip()
-        if q:
-            qs = qs.filter(course__icontains=q)
-
-        # Filter by level
         level = request.query_params.get('level', '').strip()
-        if level:
-            qs = qs.filter(level__iexact=level)
-
-        # Filter by field (frontend_label)
         field = request.query_params.get('field', '').strip()
-        if field:
-            qs = qs.filter(frontend_label__iexact=field)
-
-        # Filter by source_type (via CourseRequirement)
         source_type = request.query_params.get('source_type', '').strip()
-        if source_type:
-            qs = qs.filter(requirement__source_type=source_type)
-
-        # Filter by state (via CourseInstitution → Institution)
         state = request.query_params.get('state', '').strip()
-        if state:
-            qs = qs.filter(
-                offerings__institution__state__iexact=state
-            ).distinct()
+        qualification = request.query_params.get('qualification', '').strip().upper()
 
-        # Get total before pagination
-        total_count = qs.count()
-
-        # Default sort: credential > source_type > merit > name
-        SOURCE_TYPE_ORDER = {'ua': 4, 'pismp': 3, 'poly': 2, 'kkom': 1, 'tvet': 0}
+        # Sort order: credential > source_type > merit > name
+        SOURCE_TYPE_ORDER = {
+            'University': 5, 'ua': 4, 'pismp': 3, 'poly': 2, 'kkom': 1, 'tvet': 0,
+        }
 
         # Pagination
         try:
@@ -115,72 +93,165 @@ class CourseSearchView(APIView):
         except (ValueError, TypeError):
             offset = 0
 
-        # Subquery: primary institution (alphabetically first offering)
-        first_offering = CourseInstitution.objects.filter(
-            course=OuterRef('pk')
-        ).order_by('institution__institution_name')
+        # ── SPM courses ──────────────────────────────────────────────
+        include_spm = qualification in ('', 'SPM')
+        spm_results = []
+        spm_count = 0
 
-        # Fetch and annotate with institution count + primary institution info
-        courses_list = list(qs.annotate(
-            institution_count=Count('offerings'),
-            primary_institution_name=Subquery(
-                first_offering.values('institution__institution_name')[:1]
-            ),
-            primary_institution_state=Subquery(
-                first_offering.values('institution__state')[:1]
-            ),
-        ).order_by('course')[offset:offset + limit])
+        # Skip SPM if level/source_type filter is STPM-only
+        if include_spm and level and level.lower() == 'ijazah sarjana muda':
+            include_spm = False
+        if include_spm and source_type and source_type.lower() == 'university':
+            include_spm = False
 
-        # Build response with sort
-        results = []
-        for c in courses_list:
-            req = getattr(c, 'requirement', None)
-            st = req.source_type if req else 'poly'
-            merit_cutoff = req.merit_cutoff if req else None
-            results.append({
-                'course_id': c.course_id,
-                'course_name': c.course,
-                'level': c.level,
-                'field': c.frontend_label or c.field,
-                'source_type': st,
-                'merit_cutoff': merit_cutoff,
-                'institution_count': c.institution_count,
-                'institution_name': c.primary_institution_name or '',
-                'institution_state': c.primary_institution_state or '',
-            })
+        if include_spm:
+            qs = Course.objects.select_related('requirement').all()
+
+            if q:
+                qs = qs.filter(course__icontains=q)
+            if level:
+                qs = qs.filter(level__iexact=level)
+            if field:
+                qs = qs.filter(frontend_label__iexact=field)
+            if source_type:
+                qs = qs.filter(requirement__source_type=source_type)
+            if state:
+                qs = qs.filter(
+                    offerings__institution__state__iexact=state
+                ).distinct()
+
+            spm_count = qs.count()
+
+            # Subquery: primary institution (alphabetically first offering)
+            first_offering = CourseInstitution.objects.filter(
+                course=OuterRef('pk')
+            ).order_by('institution__institution_name')
+
+            courses_list = list(qs.annotate(
+                institution_count=Count('offerings'),
+                primary_institution_name=Subquery(
+                    first_offering.values('institution__institution_name')[:1]
+                ),
+                primary_institution_state=Subquery(
+                    first_offering.values('institution__state')[:1]
+                ),
+            ).order_by('course'))
+
+            for c in courses_list:
+                req = getattr(c, 'requirement', None)
+                st = req.source_type if req else 'poly'
+                merit_cutoff = req.merit_cutoff if req else None
+                spm_results.append({
+                    'course_id': c.course_id,
+                    'course_name': c.course,
+                    'level': c.level,
+                    'field': c.frontend_label or c.field,
+                    'source_type': st,
+                    'merit_cutoff': merit_cutoff,
+                    'institution_count': c.institution_count,
+                    'institution_name': c.primary_institution_name or '',
+                    'institution_state': c.primary_institution_state or '',
+                    'qualification': 'SPM',
+                })
+
+        # ── STPM courses ─────────────────────────────────────────────
+        include_stpm = qualification in ('', 'STPM')
+        stpm_results = []
+        stpm_count = 0
+
+        # Skip STPM if level filter doesn't match
+        if include_stpm and level and level.lower() != 'ijazah sarjana muda':
+            include_stpm = False
+        # Skip STPM if source_type filter doesn't match
+        if include_stpm and source_type and source_type.lower() != 'university':
+            include_stpm = False
+        # State filter doesn't apply to STPM (no state data)
+        if include_stpm and state:
+            include_stpm = False
+
+        if include_stpm:
+            stpm_qs = StpmCourse.objects.select_related('requirement').all()
+
+            # Exclude bumiputera-only courses
+            stpm_qs = stpm_qs.exclude(requirement__req_bumiputera=True)
+
+            if q:
+                stpm_qs = stpm_qs.filter(program_name__icontains=q)
+            if field:
+                stpm_qs = stpm_qs.filter(field__iexact=field)
+
+            stpm_count = stpm_qs.count()
+
+            for sc in stpm_qs.order_by('program_name'):
+                stpm_results.append({
+                    'course_id': sc.program_id,
+                    'course_name': sc.program_name,
+                    'level': 'Ijazah Sarjana Muda',
+                    'field': sc.field or '',
+                    'source_type': 'University',
+                    'merit_cutoff': sc.merit_score,
+                    'institution_count': 1,
+                    'institution_name': sc.university,
+                    'institution_state': '',
+                    'qualification': 'STPM',
+                })
+
+        # ── Merge, sort, paginate ─────────────────────────────────────
+        total_count = spm_count + stpm_count
+        all_results = spm_results + stpm_results
 
         # Sort: credential > source_type > merit > name
-        results.sort(key=lambda r: (
+        all_results.sort(key=lambda r: (
             -get_credential_priority(r['course_name'], r.get('source_type', '')),
             -SOURCE_TYPE_ORDER.get(r['source_type'], 0),
             -(r['merit_cutoff'] or 0),
             r['course_name'],
         ))
 
-        # Build dynamic filter options from full DB (not filtered subset)
+        # Paginate the merged, sorted list
+        paginated = all_results[offset:offset + limit]
+
+        # ── Build dynamic filter options from full DB ─────────────────
+        spm_levels = list(
+            Course.objects.values_list('level', flat=True)
+            .distinct().order_by('level')
+        )
+        stpm_levels = ['Ijazah Sarjana Muda'] if StpmCourse.objects.exists() else []
+        all_levels = sorted(set(spm_levels + stpm_levels))
+
+        spm_fields = list(
+            Course.objects.exclude(frontend_label='')
+            .values_list('frontend_label', flat=True)
+            .distinct().order_by('frontend_label')
+        )
+        stpm_fields = list(
+            StpmCourse.objects.exclude(field='')
+            .values_list('field', flat=True)
+            .distinct().order_by('field')
+        )
+        all_fields = sorted(set(spm_fields + stpm_fields))
+
+        spm_source_types = list(
+            CourseRequirement.objects.values_list('source_type', flat=True)
+            .distinct().order_by('source_type')
+        )
+        stpm_source_types = ['University'] if StpmCourse.objects.exists() else []
+        all_source_types = sorted(set(spm_source_types + stpm_source_types))
+
         filters = {
-            'levels': sorted(
-                Course.objects.values_list('level', flat=True)
-                .distinct().order_by('level')
-            ),
-            'fields': sorted(
-                Course.objects.exclude(frontend_label='')
-                .values_list('frontend_label', flat=True)
-                .distinct().order_by('frontend_label')
-            ),
-            'source_types': sorted(
-                CourseRequirement.objects.values_list('source_type', flat=True)
-                .distinct().order_by('source_type')
-            ),
+            'levels': all_levels,
+            'fields': all_fields,
+            'source_types': all_source_types,
             'states': sorted(
                 Institution.objects.exclude(state='')
                 .values_list('state', flat=True)
                 .distinct().order_by('state')
             ),
+            'qualifications': ['SPM', 'STPM'],
         }
 
         return Response({
-            'courses': results,
+            'courses': paginated,
             'total_count': total_count,
             'filters': filters,
         })

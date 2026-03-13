@@ -946,3 +946,165 @@ class TestCourseSearchEndpoint(TestCase):
         asasi = next(c for c in courses if c['course_id'] == 'SRCH-ASI-001')
         self.assertEqual(asasi['institution_name'], '')
         self.assertEqual(asasi['institution_state'], '')
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls')
+class TestUnifiedSearchEndpoint(TestCase):
+    """Test the unified search endpoint returning both SPM and STPM courses."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from apps.courses.models import Course, CourseRequirement, Institution, CourseInstitution, StpmCourse, StpmRequirement
+
+        # SPM test course
+        cls.spm_course = Course.objects.create(
+            course_id='UNI-SPM-001',
+            course='Diploma Kejuruteraan Mekanikal',
+            level='Diploma',
+            department='Engineering',
+            field='Mechanical',
+            frontend_label='Mekanikal & Pembuatan',
+        )
+        CourseRequirement.objects.create(
+            course=cls.spm_course,
+            source_type='poly',
+            merit_cutoff=45.0,
+        )
+        inst = Institution.objects.create(
+            institution_id='UNI-INST-001',
+            institution_name='Politeknik Test',
+            type='Politeknik',
+            state='Selangor',
+        )
+        CourseInstitution.objects.create(course=cls.spm_course, institution=inst)
+
+        # STPM test course
+        cls.stpm_course = StpmCourse.objects.create(
+            program_id='UNI-STPM-001',
+            program_name='Ijazah Sarjana Muda Kejuruteraan Mekanikal',
+            university='Universiti Malaya',
+            stream='science',
+            merit_score=85.0,
+            field='Mekanikal & Pembuatan',
+        )
+        StpmRequirement.objects.create(
+            course=cls.stpm_course,
+            min_cgpa=3.0,
+        )
+
+        # STPM bumiputera-only course (should be excluded)
+        cls.stpm_bumi = StpmCourse.objects.create(
+            program_id='UNI-STPM-BUMI',
+            program_name='Ijazah Sarjana Muda Seni Bina',
+            university='UiTM',
+            stream='arts',
+            field='Seni Bina',
+        )
+        StpmRequirement.objects.create(
+            course=cls.stpm_bumi,
+            req_bumiputera=True,
+        )
+
+    def setUp(self):
+        self.client = APIClient()
+        self.url = '/api/v1/courses/search/'
+
+    def test_search_returns_both_spm_and_stpm(self):
+        """Search with no qualification filter returns both SPM and STPM courses."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        qualifications = {c['qualification'] for c in response.data['courses']}
+        self.assertIn('SPM', qualifications)
+        self.assertIn('STPM', qualifications)
+
+    def test_search_qualification_filter_spm(self):
+        """qualification=SPM returns only SPM courses."""
+        response = self.client.get(self.url, {'qualification': 'SPM'})
+        self.assertEqual(response.status_code, 200)
+        for course in response.data['courses']:
+            self.assertEqual(course['qualification'], 'SPM')
+
+    def test_search_qualification_filter_stpm(self):
+        """qualification=STPM returns only STPM courses."""
+        response = self.client.get(self.url, {'qualification': 'STPM'})
+        self.assertEqual(response.status_code, 200)
+        for course in response.data['courses']:
+            self.assertEqual(course['qualification'], 'STPM')
+
+    def test_search_stpm_has_course_card_fields(self):
+        """STPM courses in unified search have all CourseCard fields."""
+        response = self.client.get(self.url, {'qualification': 'STPM'})
+        self.assertEqual(response.status_code, 200)
+        if response.data['courses']:
+            course = response.data['courses'][0]
+            for key in ('course_id', 'course_name', 'level', 'field',
+                        'source_type', 'merit_cutoff', 'institution_count',
+                        'institution_name', 'qualification'):
+                self.assertIn(key, course)
+            self.assertEqual(course['level'], 'Ijazah Sarjana Muda')
+            self.assertEqual(course['source_type'], 'University')
+            self.assertEqual(course['institution_count'], 1)
+
+    def test_search_stpm_maps_fields_correctly(self):
+        """STPM course fields are mapped to CourseCard format."""
+        response = self.client.get(self.url, {'qualification': 'STPM', 'q': 'Mekanikal'})
+        self.assertEqual(response.status_code, 200)
+        courses = response.data['courses']
+        stpm = next((c for c in courses if c['course_id'] == 'UNI-STPM-001'), None)
+        self.assertIsNotNone(stpm)
+        self.assertEqual(stpm['course_name'], 'Ijazah Sarjana Muda Kejuruteraan Mekanikal')
+        self.assertEqual(stpm['institution_name'], 'Universiti Malaya')
+        self.assertEqual(stpm['merit_cutoff'], 85.0)
+        self.assertEqual(stpm['field'], 'Mekanikal & Pembuatan')
+
+    def test_search_excludes_bumiputera_only(self):
+        """Bumiputera-only STPM courses are excluded from results."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        course_ids = [c['course_id'] for c in response.data['courses']]
+        self.assertNotIn('UNI-STPM-BUMI', course_ids)
+
+    def test_search_filters_include_qualification(self):
+        """Filter metadata includes qualification options."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('qualifications', response.data['filters'])
+        self.assertIn('SPM', response.data['filters']['qualifications'])
+        self.assertIn('STPM', response.data['filters']['qualifications'])
+
+    def test_search_text_filter_across_qualifications(self):
+        """Text search finds matches in both SPM and STPM."""
+        response = self.client.get(self.url, {'q': 'Mekanikal'})
+        self.assertEqual(response.status_code, 200)
+        qualifications = {c['qualification'] for c in response.data['courses']}
+        self.assertEqual(qualifications, {'SPM', 'STPM'})
+
+    def test_search_field_filter_works_for_stpm(self):
+        """Field filter works for STPM courses."""
+        response = self.client.get(self.url, {'field': 'Mekanikal & Pembuatan'})
+        self.assertEqual(response.status_code, 200)
+        course_ids = [c['course_id'] for c in response.data['courses']]
+        self.assertIn('UNI-STPM-001', course_ids)
+        self.assertIn('UNI-SPM-001', course_ids)
+
+    def test_search_level_filter_ijazah(self):
+        """Level filter 'Ijazah Sarjana Muda' returns only STPM courses."""
+        response = self.client.get(self.url, {'level': 'Ijazah Sarjana Muda'})
+        self.assertEqual(response.status_code, 200)
+        for course in response.data['courses']:
+            self.assertEqual(course['qualification'], 'STPM')
+
+    def test_search_source_type_university(self):
+        """Source type filter 'University' returns only STPM courses."""
+        response = self.client.get(self.url, {'source_type': 'University'})
+        self.assertEqual(response.status_code, 200)
+        for course in response.data['courses']:
+            self.assertEqual(course['qualification'], 'STPM')
+
+    def test_search_stpm_all_have_qualification_field(self):
+        """Every course in response has a qualification field."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        for course in response.data['courses']:
+            self.assertIn('qualification', course)
+            self.assertIn(course['qualification'], ('SPM', 'STPM'))
