@@ -27,6 +27,7 @@ import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
+import { cgpaToMeritPercent } from '@/lib/stpm'
 
 const RESUME_ACTION_KEY = 'halatuju_resume_action'
 
@@ -417,7 +418,7 @@ export default function DashboardPage() {
             ) : (
               <div>
                 {(() => {
-                  const studentMerit = stpmData ? (stpmData.cgpa / 4.0) * 100 : 0
+                  const studentMerit = stpmData ? cgpaToMeritPercent(stpmData.cgpa) : 0
                   const highCount = stpmResults.filter(p => getMeritLevel(studentMerit, p.merit_score) === 'high').length
                   const fairCount = stpmResults.filter(p => getMeritLevel(studentMerit, p.merit_score) === 'fair').length
                   const lowCount = stpmResults.filter(p => getMeritLevel(studentMerit, p.merit_score) === 'low').length
@@ -426,7 +427,7 @@ export default function DashboardPage() {
                       <div className="mb-6">
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                           <h2 className="text-2xl font-bold text-gray-900">
-                            {t('dashboard.qualifyFor')} <span className="text-primary-500">{stpmResults.length}</span> degree programmes
+                            {t('dashboard.qualifyFor')} <span className="text-primary-500">{stpmResults.length}</span> {t('dashboard.qualifyCourses')}
                           </h2>
                           <div className="flex items-center gap-3 text-sm">
                             <span className="flex items-center gap-1.5">
