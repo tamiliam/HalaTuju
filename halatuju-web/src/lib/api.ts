@@ -67,6 +67,9 @@ export interface EligibleCourse {
   merit_color: string | null
   merit_display_student?: string
   merit_display_cutoff?: string
+  institution_name?: string
+  institution_count?: number
+  institution_state?: string
   pismp_languages?: string[]
 }
 

@@ -328,6 +328,23 @@ class EligibilityCheckView(APIView):
             c.course_id: c for c in Course.objects.all()
         }
 
+        # Pre-fetch institution data per course (count + primary name/state)
+        from django.db.models import Count, Subquery, OuterRef
+        first_offering = CourseInstitution.objects.filter(
+            course=OuterRef('pk')
+        ).order_by('institution__institution_name')
+        course_inst_data = {
+            c['course_id']: c for c in Course.objects.annotate(
+                inst_count=Count('offerings'),
+                inst_name=Subquery(
+                    first_offering.values('institution__institution_name')[:1]
+                ),
+                inst_state=Subquery(
+                    first_offering.values('institution__state')[:1]
+                ),
+            ).values('course_id', 'inst_count', 'inst_name', 'inst_state')
+        }
+
         for _, row in df.iterrows():
             req = row.to_dict()
             is_eligible, audit = check_eligibility(student, req)
@@ -415,6 +432,9 @@ class EligibilityCheckView(APIView):
                     course_id, source_type
                 )
 
+                # Institution data
+                inst = course_inst_data.get(course_id, {})
+
                 eligible_courses.append({
                     'course_id': course_id,
                     'course_name': course_name,
@@ -428,6 +448,9 @@ class EligibilityCheckView(APIView):
                     'merit_color': merit_color,
                     'merit_display_student': merit_display_student,
                     'merit_display_cutoff': merit_display_cutoff,
+                    'institution_name': inst.get('inst_name') or '',
+                    'institution_count': inst.get('inst_count') or 0,
+                    'institution_state': inst.get('inst_state') or '',
                 })
 
                 # Update stats

@@ -560,6 +560,9 @@ export default function DashboardPage() {
                     course={course}
                     isSaved={savedIds.has(course.course_id)}
                     onToggleSave={handleSaveOrGate}
+                    institutionName={course.institution_name}
+                    institutionState={course.institution_state}
+                    institutionCount={course.institution_count}
                   />
                 ))}
               </div>
@@ -770,6 +773,9 @@ function RankedResults({
                 rank={idx + 1}
                 isSaved={savedIds.has(course.course_id)}
                 onToggleSave={onToggleSave}
+                institutionName={course.institution_name}
+                institutionState={course.institution_state}
+                institutionCount={course.institution_count}
               />
             ))}
           </div>
@@ -789,6 +795,9 @@ function RankedResults({
                 course={course}
                 isSaved={savedIds.has(course.course_id)}
                 onToggleSave={onToggleSave}
+                institutionName={course.institution_name}
+                institutionState={course.institution_state}
+                institutionCount={course.institution_count}
               />
             ))}
           </div>
