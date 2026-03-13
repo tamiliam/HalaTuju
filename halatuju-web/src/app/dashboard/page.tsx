@@ -142,6 +142,7 @@ export default function DashboardPage() {
       setStpmResults(ranked.ranked_programmes)
     }).catch(err => {
       console.error('STPM eligibility/ranking failed:', err)
+      setStpmResults([])
     })
   }, [examType, stpmData, profile])
 
@@ -386,6 +387,17 @@ export default function DashboardPage() {
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
                 <p className="text-gray-500">{t('dashboard.checkingEligibility')}</p>
+              </div>
+            ) : stpmResults.length === 0 ? (
+              <div className="text-center py-12">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('stpm.noResults')}</h2>
+                <p className="text-gray-500 mb-4">{t('stpm.noResultsDesc')}</p>
+                <Link href="/onboarding/stpm-grades" className="btn-primary">
+                  {t('dashboard.editProfile')}
+                </Link>
+                <Link href="/stpm/search" className="text-sm text-primary-500 hover:text-primary-600 underline ml-4">
+                  {t('stpm.browseAll')}
+                </Link>
               </div>
             ) : (
               <div>
