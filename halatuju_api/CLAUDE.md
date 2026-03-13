@@ -115,7 +115,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (338 collected, 307 pass, 9 pre-existing JWT failures)
+# Run ALL tests (359 collected, 320 pass, 9 pre-existing JWT failures)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8283 baseline)
@@ -153,11 +153,12 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_api.py | 9 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency), STPM ranking API (returns 200, scored programmes, sorted desc, missing 400, empty list) |
 | test_stpm_search.py | 12 | STPM search API (200, programmes shape, text/university/stream filters, pagination, filter metadata), STPM detail API (200, programme data, 404, subjects list) |
 | test_stpm_ranking.py | 9 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest match dict format, interview penalty), ranked results (sorted desc, empty list, output shape) |
+| test_preu_courses.py | 9 | Pre-U eligibility (matric sains eligible, merit values, STPM sains eligible, mata gred values, bad grades excluded, stats), search (level Pra-U, text Matrikulasi, source_type matric) |
 
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (320 collected, 287 must pass, SPM golden master = 8283, STPM golden master = 1811)
+# 1. Run all tests (359 collected, 320 must pass, SPM golden master = 8283, STPM golden master = 1811)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -169,7 +170,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-307 tests must pass out of 338 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
+320 tests must pass out of 359 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -208,7 +209,11 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Unified `/search` page: SPM + STPM with qualification filter
 - STPM dashboard uses same CourseCard as SPM (images, badges, merit bars)
 - All names proper-cased in Supabase. `feature/stpm-entrance` branch deleted.
-- Tests: 218 collected, 205 passing (13 pre-existing auth failures)
+
+**Pre-U Courses Sprint COMPLETE — merged to main, Supabase migrated**
+- 6 pre-university courses (4 matric + 2 STPM) as real Course rows with `merit_type` branching
+- Badge consistency: TVET → ILJTM/ILKBS, University → ua, labels in Malay, Pra-U level badge
+- Tests: 359 collected, 320 passing (9 pre-existing auth failures)
 
 **Pending work**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)

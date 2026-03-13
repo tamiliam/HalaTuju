@@ -1,5 +1,26 @@
 # Changelog — HalaTuju
 
+## Pre-U Courses Sprint (2026-03-13)
+
+### Added
+- 6 pre-university courses as real database entries: 4 matric tracks (Sains, Kejuruteraan, Sains Komputer, Perakaunan) + 2 STPM bidangs (Sains, Sains Sosial)
+- `merit_type` field on `CourseRequirement` — drives matric grade-point and STPM mata gred formulas
+- Merit calculation branching in eligibility endpoint: matric uses `pathways.py` grade-point formula, STPM uses mata gred formula
+- `merit_display_student`/`merit_display_cutoff` fields in API response for STPM raw mata gred display
+- 9 new tests for pre-U eligibility and search (`test_preu_courses.py`)
+
+### Changed
+- Badge consistency: TVET renamed to ILJTM/ILKBS (distinct colours), STPM → Tingkatan 6, University → ua, all labels in Malay
+- Matric/STPM level badges → Pra-U (orange)
+- `SOURCE_TYPE_ORDER` updated: matric/stpm ranked at priority 4
+
+### Removed
+- Synthetic matric/STPM pathway entries from eligibility endpoint (now real DB courses)
+
+### Stats
+- Tests: 320 passing, 9 pre-existing auth failures, 30 skipped | Supabase: 0 security errors
+- Supabase migration applied: `merit_type` column + 6 courses + 6 requirements
+
 ## STPM Sprint 8 — Polish & Dashboard Upgrade (2026-03-13)
 
 ### Added
