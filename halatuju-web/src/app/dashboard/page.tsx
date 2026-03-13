@@ -258,6 +258,8 @@ export default function DashboardPage() {
     }
 
     const orderedPathways: { type: PathwaySummary['type']; count: number }[] = [
+      { type: 'matric', count: courseCounts['matric'] || 0 },
+      { type: 'stpm', count: courseCounts['stpm'] || 0 },
       { type: 'asasi', count: courseCounts['asasi'] || 0 },
       { type: 'pismp', count: courseCounts['pismp'] || 0 },
       { type: 'poly', count: courseCounts['poly'] || 0 },
