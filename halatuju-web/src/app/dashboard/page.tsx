@@ -263,7 +263,7 @@ export default function DashboardPage() {
       { type: 'asasi', count: courseCounts['asasi'] || 0 },
       { type: 'pismp', count: courseCounts['pismp'] || 0 },
       { type: 'poly', count: courseCounts['poly'] || 0 },
-      { type: 'ua', count: courseCounts['ua'] || 0 },
+      { type: 'university', count: courseCounts['university'] || 0 },
       { type: 'kkom', count: courseCounts['kkom'] || 0 },
       { type: 'iljtm', count: courseCounts['iljtm'] || 0 },
       { type: 'ilkbs', count: courseCounts['ilkbs'] || 0 },
