@@ -115,7 +115,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (319 collected, 286 pass, 9 pre-existing JWT failures)
+# Run ALL tests (320 collected, 287 pass, 9 pre-existing JWT failures)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8283 baseline)
@@ -148,16 +148,16 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_profile_fields.py | 19 | Expanded profile fields (NRIC, address, phone, income, siblings defaults), SavedCourse interest_status (default, set, got_offer), profile API (GET new fields, PUT new fields), saved-courses API (GET includes status, PATCH updates status), STPM profile fields (exam_type default, STPM fields stored, defaults empty/null), profile sync STPM (create, update, GET returns fields) |
 | test_stpm_models.py | 3 | StpmCourse creation + __str__, StpmRequirement creation + defaults, JSON field round-trip |
 | test_stpm_data_loading.py | 6 | CSV loader: creates courses, creates requirements, correct count (~1113), idempotent, JSON parsing, boolean fields |
-| test_stpm_engine.py | 15 | CGPA calculator (5), grade comparison (4), eligibility integration (6: strong science, CGPA filter, MUET filter, subject req, result shape, colorblind) |
+| test_stpm_engine.py | 15 | CGPA calculator (5), grade comparison (4), eligibility integration (6: strong science, CGPA filter, MUET filter, subject req, result shape, colorblind). Grade scale: A→F with D+(1.33), C-(1.67), E/G legacy aliases |
 | test_stpm_golden_master.py | 1 | 5 students × all programmes = 1811 baseline |
 | test_stpm_api.py | 9 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency), STPM ranking API (returns 200, scored programmes, sorted desc, missing 400, empty list) |
 | test_stpm_search.py | 12 | STPM search API (200, programmes shape, text/university/stream filters, pagination, filter metadata), STPM detail API (200, programme data, 404, subjects list) |
-| test_stpm_ranking.py | 8 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest match, interview penalty), ranked results (sorted desc, empty list, output shape) |
+| test_stpm_ranking.py | 9 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest match dict format, interview penalty), ranked results (sorted desc, empty list, output shape) |
 
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (319 collected, 286 must pass, SPM golden master = 8283, STPM golden master = 1811)
+# 1. Run all tests (320 collected, 287 must pass, SPM golden master = 8283, STPM golden master = 1811)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -169,7 +169,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-286 tests must pass out of 319 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
+286 tests must pass out of 320 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -227,13 +227,17 @@ Supabase Security Advisor must show 0 errors before deploy.
 - `GET /api/v1/stpm/programmes/<id>/` detail endpoint (full requirements)
 - Frontend: `/stpm/search` browse page with filters + `/stpm/[id]` detail page
 - i18n: 33 new keys in EN/BM/TA for search and detail pages
-- Tests: 319 collected, 286 passing (12 new) | SPM golden master: 8283 | STPM golden master: 1811
+- Tests: 320 collected, 287 passing (12 new) | SPM golden master: 8283 | STPM golden master: 1811
 
-**STPM Entrance Sprint 5 (next)**
-- i18n completion audit (run check-i18n.js)
-- STPM quiz signal refinement
-- Full integration test + release tag
-- See `docs/plans/2026-03-13-stpm-sprint4-search-detail.md` for Sprint 4 plan
+**STPM Entrance Sprint 5 DONE — Grade Scale Fix + UX Redesign**
+- Fixed STPM grade scale: D+(1.33), C-(1.67), removed E, kept E/G as legacy aliases
+- Fixed quiz signal localStorage key mismatch (dashboard → ranking)
+- Fixed stpm_ranking field_interest default ([] → {})
+- Redesigned grade entry page: stream selector, 3+1 subject slots, co-curriculum 90/10 CGPA, MUET plain numbers, SPM prereqs split 4+2
+- i18n: 9 new keys × 3 locales, audit passed (433 keys complete)
+- Tests: 320 collected, 287 passing (1 new) | SPM: 8283 | STPM: 1811
+
+**Next: Deploy feature branch with revision tag for E2E testing, then merge to main**
 
 **Other pending**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)

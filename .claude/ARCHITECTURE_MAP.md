@@ -1,6 +1,6 @@
 # HalaTuju Architecture Map
 
-Last updated: STPM Sprint 4 (2026-03-13)
+Last updated: STPM Sprint 5 (2026-03-13)
 
 ## Root
 
@@ -55,14 +55,14 @@ halatuju_api/
 │   │   │   └── backfill_masco.py      # MASCO occupation mappings
 │   │   ├── data/stpm/                 # STPM parsed CSV data files
 │   │   ├── migrations/                # 13 migrations (0001–0013)
-│   │   └── tests/                     # 21 test files, 319 tests (286 pass)
+│   │   └── tests/                     # 21 test files, 320 tests (287 pass)
 │   │       ├── test_golden_master.py  # 1 test — 50 students x all courses = 8283
 │   │       ├── test_stpm_golden_master.py # 1 — 5 students x STPM = 1811
 │   │       ├── test_stpm_engine.py    # 15 — CGPA, grade comparison, eligibility
 │   │       ├── test_stpm_models.py    # 3 — StpmCourse/StpmRequirement CRUD
 │   │       ├── test_stpm_data_loading.py # 6 — CSV loader
 │   │       ├── test_stpm_api.py       # 9 — STPM eligibility + ranking endpoints
-│   │       ├── test_stpm_ranking.py   # 8 — STPM fit score + ranked results
+│   │       ├── test_stpm_ranking.py   # 9 — STPM fit score + ranked results
 │   │       ├── test_stpm_search.py    # 12 — STPM search + detail endpoints
 │   │       ├── test_api.py            # 52 — eligibility, search, CRUD
 │   │       ├── test_ranking.py        # 62 — fit scores, caps, pre-U scoring
@@ -111,7 +111,7 @@ halatuju-web/
 │   │   ├── onboarding/
 │   │   │   ├── exam-type/page.tsx     # Select entrance exam
 │   │   │   ├── grades/page.tsx        # Enter SPM grades + CoQ
-│   │   │   ├── stpm-grades/page.tsx   # Enter STPM grades, MUET, SPM prereqs
+│   │   │   ├── stpm-grades/page.tsx   # STPM grades (stream selector, 3+1 subjects, koko 90/10), MUET, SPM prereqs (4 compulsory + 2 optional)
 │   │   │   └── profile/page.tsx       # Student demographics
 │   │   ├── dashboard/page.tsx         # Main dashboard — course cards + merit lights
 │   │   ├── quiz/page.tsx              # Career interest quiz

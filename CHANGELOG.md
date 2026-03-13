@@ -5,7 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — STPM Entrance (Sprints 1–4)
+## [Unreleased] — STPM Entrance (Sprints 1–5)
+
+### Fixed (Sprint 5)
+- **STPM grade scale** — Replaced E with D+(1.33), corrected C- from 2.00→1.67, kept E/G as legacy aliases in GRADE_ORDER for backward compatibility with parsed requirement data
+- **Quiz signal localStorage key** — Dashboard STPM path read `halatuju_student_signals` (nonexistent) instead of `halatuju_quiz_signals`; quiz signals now reach STPM ranking correctly
+- **STPM ranking field_interest format** — Fixed default value from `[]` to `{}` to match quiz engine's dict format
+
+### Changed (Sprint 5)
+- **STPM grade entry page redesign** — Stream selector (Science/Arts) as Section 1; 3 stream-filtered subject slots + 1 open elective; co-curriculum score input (0.00–4.00); overall CGPA = 90% academic + 10% co-curriculum; MUET as plain numbers; SPM prereqs split into 4 compulsory + 2 optional
+- **Frontend CGPA points** — `lib/stpm.ts` updated to match backend (C-=1.67, D+=1.33, removed E)
+- **SPM prereq constants** — Split `SPM_PREREQ_SUBJECTS` into `SPM_PREREQ_COMPULSORY` (4) + `SPM_PREREQ_OPTIONAL` (2)
+- **i18n** — 9 new keys × 3 locales (stream, koko, formula labels)
 
 ### Added (Sprint 4)
 - **STPM search API** — `GET /api/v1/stpm/search/` with text, university, stream filters + cursor pagination (20/page)
@@ -40,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **i18n support** — 14 new translation keys across EN/MS/TA for STPM onboarding flow
 
 ### Stats
-- Tests: 319 collected, 286 passing (12 new in Sprint 4, 13 in Sprint 3, 6 in Sprint 2) | SPM golden master: 8283 | STPM golden master: 1811
+- Tests: 320 collected, 287 passing (1 new in Sprint 5, 12 in Sprint 4, 13 in Sprint 3, 6 in Sprint 2) | SPM golden master: 8283 | STPM golden master: 1811
 - STPM programmes: 1,113 unique (from 1,680 CSV rows with 567 overlapping)
 
 ## [1.33.0] - 2026-03-12 — Unified Pre-U Backend & IPGM Integration

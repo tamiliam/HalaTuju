@@ -1,6 +1,6 @@
 # HalaTuju — Long-term Roadmap
 
-Last updated: 2026-03-12
+Last updated: 2026-03-13
 
 ## Completed (v1.0–v1.33.0)
 
@@ -16,25 +16,18 @@ Last updated: 2026-03-12
 - Supabase auth (ES256 + HS256 JWT)
 - Multi-language support (EN/BM/TA)
 
-## In Progress — STPM Entrance (Sprints 1-4 DONE, Sprint 5 remaining)
+## Completed — STPM Entrance (5 Sprints, feature/stpm-entrance branch)
 
-**Priority:** High
-**Status:** Core feature complete. Sprint 5 (polish) remaining.
-
-### Completed (Sprints 1-4)
-- 1,113 STPM degree programmes loaded into Supabase (StpmCourse + StpmRequirement models)
+- 1,113 STPM degree programmes loaded into Supabase
 - STPM eligibility engine with CGPA calculator, grade comparison, SPM prerequisites
 - STPM ranking engine (CGPA margin, field match, interview penalty)
-- Frontend: exam type selection, STPM grade entry, dashboard with fit scores
-- Search API + programme detail API with human-readable labels
-- Frontend search page with filters + programme detail page
-- 33 i18n keys × 3 languages (EN/BM/TA)
-- STPM golden master: 1811 across 5 test students
-
-### Remaining (Sprint 5)
-- i18n completion audit (run `check-i18n.js`)
-- STPM quiz signal refinement
-- Full integration test + release tag
+- Frontend: exam type selection, STPM grade entry (stream selector, 3+1 subjects, 90/10 CGPA), dashboard with fit scores
+- Search API + programme detail API, frontend search + detail pages
+- Grade scale corrected: D+(1.33), C-(1.67), E/G legacy aliases
+- Quiz signal localStorage fix + ranking field_interest format fix
+- 42 i18n keys × 3 languages (EN/BM/TA), 433 total keys
+- Tests: 320 collected, 287 passing | SPM: 8283 | STPM: 1811
+- **Next:** Deploy with revision tag for E2E testing, then merge to main
 
 ---
 
