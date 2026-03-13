@@ -26,7 +26,8 @@ class Command(BaseCommand):
         parser.add_argument('--only-empty', action='store_true', help='Skip courses with existing field')
 
     def handle(self, *args, **options):
-        api_key = os.environ.get('GEMINI_API_KEY')
+        from django.conf import settings
+        api_key = settings.GEMINI_API_KEY or os.environ.get('GEMINI_API_KEY')
         if not api_key:
             self.stderr.write('GEMINI_API_KEY not set')
             return
