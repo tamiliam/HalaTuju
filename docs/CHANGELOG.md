@@ -1,5 +1,25 @@
 # Changelog — HalaTuju
 
+## STPM Sprint 8 — Polish & Dashboard Upgrade (2026-03-13)
+
+### Added
+- STPM dashboard upgraded to use shared `CourseCard` component — field images, source type/level badges, merit progress bars, bookmark icons, institution names
+- Merit-based ranking on STPM dashboard: High Chance (highest merit desc) → Fair (smallest gap first, no-rating in middle) → Low (smallest gap first)
+- "Take Quiz" button on STPM dashboard header
+- `field` added to STPM eligibility API response for frontend image matching
+
+### Fixed
+- STPM detail page crash (React error #438) — replaced `use(params)` with `useParams()` to avoid Suspense requirement
+- 1,080 STPM programme names proper-cased in Supabase (was ALL CAPS) — Malay/English connector words correctly lowercased
+
+### Removed
+- "Browse All Programmes" link from STPM dashboard
+- Inline custom STPM card rendering (replaced by CourseCard)
+
+### Stats
+- Tests: 218 collected, 205 passing (13 pre-existing auth/JWT failures) | SPM golden master: 8283 | STPM golden master: 1811
+- Deploys: 4 (2 API, 2 web)
+
 ## STPM Sprint 7 — Unified Explore Page (2026-03-13)
 
 ### Added

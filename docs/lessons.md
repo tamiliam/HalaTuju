@@ -10,3 +10,5 @@ Cross-cutting lessons from sprint retrospectives. Only items that affect future 
 - Cloud Run `NEXT_PUBLIC_*` env vars are baked at build time — tagged revisions still call the main API URL unless the frontend is rebuilt with the tagged URL. (STPM Sprint 6)
 - Django management commands must read config from `django.conf.settings` first, not `os.environ.get()` — Django doesn't auto-load `.env` into the environment. (STPM Sprint 7)
 - For AI taxonomy classification, use a closed set of categories (no "add new if none fits") or include a two-pass approach — open-ended prompts produce hyper-specific values that defeat the purpose of a taxonomy. (STPM Sprint 7)
+- Django management commands that modify data must verify the target database before running — print the database host at startup and abort if it's SQLite when production was intended. (STPM Sprint 8)
+- When debugging hydration issues with Playwright, always wait for network idle before taking snapshots — pre-hydration snapshots produce misleading "not working" results. (STPM Sprint 8)

@@ -203,21 +203,21 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**STPM Entrance — All 7 Sprints DONE**
-- 1,113 STPM degree programmes with eligibility engine, ranking, search, detail pages
-- Unified `/search` page: SPM + STPM courses in one browse experience with qualification filter
-- AI metadata: all 1,113 STPM courses classified with field/category/description via Gemini 2.0 Flash
-- Merit scoring: 1,080 courses with UPU purata markah merit, traffic light badges
-- Tests: 338 collected, 307 passing | SPM: 8283 | STPM: 1811
-- **Next: Merge feature/stpm-entrance to main, full production deploy**
+**STPM Sprints 1-8 COMPLETE — merged to main, deployed**
+- 1,113 STPM degree programmes: eligibility, ranking, search, detail, dashboard cards
+- Unified `/search` page: SPM + STPM with qualification filter
+- STPM dashboard uses same CourseCard as SPM (images, badges, merit bars)
+- All names proper-cased in Supabase. `feature/stpm-entrance` branch deleted.
+- Tests: 218 collected, 205 passing (13 pre-existing auth failures)
 
-**Other pending**
+**Pending work**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
 - Delete accidental `halatuju-web` service from SJKTConnect GCP project
 - Store `signal_strength` in Supabase (currently only `student_signals` synced)
 - STPM field metadata refinement: 207 unique field values from Gemini (expected ~30) — consider normalisation pass
+- Fix 13 pre-existing auth/JWT test failures (test_auth, test_saved_courses, test_views)
 
 ## Streamlit App (Legacy — migrating to Django API)
 
