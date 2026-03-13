@@ -26,6 +26,7 @@ export default function StpmGradesPage() {
   const [stpmGrades, setStpmGrades] = useState<Record<string, string>>({ PA: '' })
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>(['', '', ''])
   const [electiveSubject, setElectiveSubject] = useState('')
+  const [showElective, setShowElective] = useState(false)
   const [muetBand, setMuetBand] = useState<number | null>(null)
   const [kokoScore, setKokoScore] = useState<string>('')
   const [spmGrades, setSpmGrades] = useState<Record<string, string>>({})
@@ -40,7 +41,7 @@ export default function StpmGradesPage() {
       const subjects = Object.keys(parsed).filter(k => k !== 'PA')
       if (subjects.length >= 3) {
         setSelectedSubjects(subjects.slice(0, 3))
-        if (subjects.length > 3) setElectiveSubject(subjects[3])
+        if (subjects.length > 3) { setElectiveSubject(subjects[3]); setShowElective(true) }
       }
     }
     const savedMuet = localStorage.getItem('halatuju_muet_band')
@@ -258,35 +259,35 @@ export default function StpmGradesPage() {
                 </div>
               ))}
 
-              {/* Elective slot — any subject */}
-              <div className="flex items-center gap-2 bg-white rounded-xl border border-dashed border-gray-300 hover:shadow-md transition-shadow p-3">
-                <select
-                  value={electiveSubject}
-                  onChange={(e) => handleElectiveChange(e.target.value)}
-                  className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                >
-                  <option value="">{t('onboarding.stpmElective')}</option>
-                  {allOptionalSubjects
-                    .filter(s => !allSelected.includes(s.id) || s.id === electiveSubject)
-                    .map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-                {electiveSubject && (
+              {/* Elective slot — click to add */}
+              {showElective ? (
+                <div className="flex items-center gap-2 bg-white rounded-xl border border-dashed border-gray-300 hover:shadow-md transition-shadow p-3">
                   <select
-                    value={stpmGrades[electiveSubject] || ''}
-                    onChange={(e) => handleStpmGradeChange(electiveSubject, e.target.value)}
-                    className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
-                      stpmGrades[electiveSubject]
-                        ? 'bg-primary-50 border-primary-200 text-primary-700'
-                        : 'bg-gray-50 border-gray-300 text-gray-500'
-                    }`}
+                    value={electiveSubject}
+                    onChange={(e) => handleElectiveChange(e.target.value)}
+                    className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                   >
-                    <option value="">{t('onboarding.stpmGrade')}</option>
-                    {STPM_GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                    <option value="">{t('onboarding.stpmElective')}</option>
+                    {allOptionalSubjects
+                      .filter(s => !allSelected.includes(s.id) || s.id === electiveSubject)
+                      .map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
-                )}
-                {electiveSubject && (
+                  {electiveSubject && (
+                    <select
+                      value={stpmGrades[electiveSubject] || ''}
+                      onChange={(e) => handleStpmGradeChange(electiveSubject, e.target.value)}
+                      className={`w-20 flex-shrink-0 px-2 py-2 rounded-lg text-sm font-medium border outline-none transition-all ${
+                        stpmGrades[electiveSubject]
+                          ? 'bg-primary-50 border-primary-200 text-primary-700'
+                          : 'bg-gray-50 border-gray-300 text-gray-500'
+                      }`}
+                    >
+                      <option value="">{t('onboarding.stpmGrade')}</option>
+                      {STPM_GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  )}
                   <button
-                    onClick={() => handleElectiveChange('')}
+                    onClick={() => { handleElectiveChange(''); setShowElective(false) }}
                     className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"
                     aria-label="Remove"
                   >
@@ -294,8 +295,15 @@ export default function StpmGradesPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
-                )}
-              </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowElective(true)}
+                  className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium"
+                >
+                  + {t('onboarding.addElective')}
+                </button>
+              )}
             </div>
           </div>
         )}
