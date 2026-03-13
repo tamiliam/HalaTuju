@@ -30,6 +30,21 @@ import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
 
 const RESUME_ACTION_KEY = 'halatuju_resume_action'
 
+function getMeritLevel(studentMerit: number, courseMerit: number | null | undefined): 'high' | 'fair' | 'low' | 'none' {
+  if (courseMerit === null || courseMerit === undefined) return 'none'
+  if (studentMerit >= courseMerit) return 'high'
+  if (studentMerit >= courseMerit - 5) return 'fair'
+  return 'low'
+}
+
+const MERIT_STYLES = {
+  high: 'bg-green-100 text-green-800',
+  fair: 'bg-amber-100 text-amber-800',
+  low: 'bg-red-100 text-red-800',
+  none: 'bg-gray-100 text-gray-600',
+}
+const MERIT_LABELS = { high: 'High', fair: 'Fair', low: 'Low', none: '—' }
+
 export default function DashboardPage() {
   const { t } = useT()
   const router = useRouter()
@@ -401,50 +416,78 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div>
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    {t('dashboard.qualifyFor')} <span className="text-primary-500">{stpmResults.length}</span> degree programmes
-                  </h2>
-                  <Link href="/onboarding/exam-type" className="text-xs text-gray-400 hover:text-primary-500 underline mt-1 inline-block">
-                    {t('dashboard.editProfile')}
-                  </Link>
-                  <Link href="/stpm/search" className="text-xs text-primary-500 hover:text-primary-600 underline ml-3">
-                    {t('stpm.browseAll')}
-                  </Link>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {stpmResults.slice(0, displayCount).map(prog => (
-                    <div key={prog.program_id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 flex-1 mr-2">{prog.program_name}</h3>
-                        <span className={`shrink-0 px-2 py-0.5 text-xs font-bold rounded-full ${
-                          prog.fit_score >= 70 ? 'bg-green-100 text-green-800' :
-                          prog.fit_score >= 55 ? 'bg-amber-100 text-amber-800' :
-                          'bg-gray-100 text-gray-600'
-                        }`}>
-                          Fit: {Math.round(prog.fit_score)}
-                        </span>
+                {(() => {
+                  const studentMerit = stpmData ? (stpmData.cgpa / 4.0) * 100 : 0
+                  const highCount = stpmResults.filter(p => getMeritLevel(studentMerit, p.merit_score) === 'high').length
+                  const fairCount = stpmResults.filter(p => getMeritLevel(studentMerit, p.merit_score) === 'fair').length
+                  const lowCount = stpmResults.filter(p => getMeritLevel(studentMerit, p.merit_score) === 'low').length
+                  return (
+                    <>
+                      <div className="mb-6">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                          <h2 className="text-2xl font-bold text-gray-900">
+                            {t('dashboard.qualifyFor')} <span className="text-primary-500">{stpmResults.length}</span> degree programmes
+                          </h2>
+                          <div className="flex items-center gap-3 text-sm">
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-green-500" />
+                              <span className="text-gray-600">{highCount} {t('dashboard.meritHigh')}</span>
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-amber-400" />
+                              <span className="text-gray-600">{fairCount} {t('dashboard.meritFair')}</span>
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-red-500" />
+                              <span className="text-gray-600">{lowCount} {t('dashboard.meritLow')}</span>
+                            </span>
+                          </div>
+                        </div>
+                        <Link href="/onboarding/stpm-grades" className="text-xs text-gray-400 hover:text-primary-500 underline mt-1 inline-block">
+                          {t('dashboard.editProfile')}
+                        </Link>
+                        <Link href="/stpm/search" className="text-xs text-primary-500 hover:text-primary-600 underline ml-3">
+                          {t('stpm.browseAll')}
+                        </Link>
                       </div>
-                      <p className="text-xs text-gray-500 mb-1">{prog.university}</p>
-                      {prog.fit_reasons && prog.fit_reasons.length > 0 && (
-                        <p className="text-xs text-gray-400 mb-3">{prog.fit_reasons.join(' · ')}</p>
-                      )}
-                      <div className="flex flex-wrap gap-1.5">
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">
-                          CGPA ≥ {prog.min_cgpa.toFixed(2)}
-                        </span>
-                        <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">
-                          MUET ≥ Band {prog.min_muet_band}
-                        </span>
-                        {prog.req_interview && (
-                          <span className="px-2 py-0.5 bg-amber-50 text-amber-700 text-xs rounded-full">
-                            Interview
-                          </span>
-                        )}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {stpmResults.slice(0, displayCount).map(prog => {
+                          const level = getMeritLevel(studentMerit, prog.merit_score)
+                          return (
+                            <div key={prog.program_id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-5">
+                              <div className="flex items-start justify-between mb-2">
+                                <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 flex-1 mr-2">{prog.program_name}</h3>
+                                <span className={`shrink-0 px-2 py-0.5 text-xs font-bold rounded-full ${MERIT_STYLES[level]}`}>
+                                  {MERIT_LABELS[level]}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 mb-1">{prog.university}</p>
+                              {prog.merit_score && (
+                                <p className="text-xs text-gray-400 mb-1">Merit: {prog.merit_score.toFixed(2)}%</p>
+                              )}
+                              {prog.fit_reasons && prog.fit_reasons.length > 0 && (
+                                <p className="text-xs text-gray-400 mb-3">{prog.fit_reasons.join(' · ')}</p>
+                              )}
+                              <div className="flex flex-wrap gap-1.5">
+                                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">
+                                  CGPA ≥ {prog.min_cgpa.toFixed(2)}
+                                </span>
+                                <span className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">
+                                  MUET ≥ Band {prog.min_muet_band}
+                                </span>
+                                {prog.req_interview && (
+                                  <span className="px-2 py-0.5 bg-amber-50 text-amber-700 text-xs rounded-full">
+                                    Interview
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    </>
+                  )
+                })()}
                 {stpmResults.length > displayCount && (
                   <button
                     onClick={() => setDisplayCount(prev => prev + 6)}

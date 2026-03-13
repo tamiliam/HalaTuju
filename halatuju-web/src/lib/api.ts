@@ -507,6 +507,7 @@ export interface StpmEligibleProgramme {
   stpm_req_physics: boolean
   req_interview: boolean
   no_colorblind: boolean
+  merit_score: number | null
 }
 
 export interface StpmEligibilityRequest {
