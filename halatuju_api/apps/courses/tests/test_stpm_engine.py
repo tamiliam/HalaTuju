@@ -131,3 +131,13 @@ class TestStpmEligibility:
             cgpa=3.8, muet_band=4, colorblind='Ya',
         )
         assert len(all_results) >= len(cb_results)
+
+    def test_eligible_programme_includes_merit(self):
+        """Eligible programmes include merit_score field."""
+        results = check_stpm_eligibility(
+            stpm_grades={'PA': 'A', 'MATH_T': 'A', 'PHYSICS': 'A', 'CHEMISTRY': 'A'},
+            spm_grades={'bm': 'A', 'eng': 'A', 'hist': 'A', 'math': 'A'},
+            cgpa=3.8, muet_band=5,
+        )
+        assert len(results) > 0
+        assert 'merit_score' in results[0]

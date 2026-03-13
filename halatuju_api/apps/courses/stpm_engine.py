@@ -248,6 +248,7 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
             'min_muet_band': req.min_muet_band,
             'req_interview': req.req_interview,
             'no_colorblind': req.no_colorblind,
+            'merit_score': course.merit_score,
         })
 
     return eligible
