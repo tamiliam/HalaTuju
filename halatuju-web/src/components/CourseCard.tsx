@@ -188,6 +188,7 @@ const TYPE_LABELS: Record<string, string> = {
   poly: 'Polytechnic',
   tvet: 'TVET',
   ua: 'University',
+  University: 'University',
   pismp: 'Teacher Training',
   matric: 'Matriculation',
   stpm: 'Form 6',
@@ -197,6 +198,7 @@ const TYPE_COLORS: Record<string, string> = {
   poly: 'bg-blue-100 text-blue-700',
   tvet: 'bg-green-100 text-green-700',
   ua: 'bg-purple-100 text-purple-700',
+  University: 'bg-purple-100 text-purple-700',
   pismp: 'bg-amber-100 text-amber-700',
   matric: 'bg-orange-100 text-orange-700',
   stpm: 'bg-indigo-100 text-indigo-700',
@@ -206,16 +208,20 @@ const LEVEL_COLORS: Record<string, string> = {
   'Diploma': 'bg-blue-50 text-blue-600',
   'Sijil': 'bg-green-50 text-green-600',
   'Sarjana Muda': 'bg-purple-50 text-purple-600',
+  'Ijazah Sarjana Muda': 'bg-purple-50 text-purple-600',
   'Asasi': 'bg-orange-50 text-orange-600',
 }
 
 /** Build the detail page URL for a course or synthetic pathway entry. */
-function getCourseHref(courseId: string): string {
+function getCourseHref(courseId: string, sourceType?: string): string {
   if (courseId.startsWith('pathway-matric')) {
     return `/pathway/matric?track=${courseId.replace('pathway-matric-', '')}`
   }
   if (courseId.startsWith('pathway-stpm')) {
     return `/pathway/stpm?stream=${courseId.replace('pathway-stpm-', '')}`
+  }
+  if (sourceType === 'University') {
+    return `/stpm/${courseId}`
   }
   return `/course/${courseId}`
 }
@@ -290,7 +296,7 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
       </div>
 
       {/* Card body */}
-      <Link href={getCourseHref(course.course_id)} className="flex-1 p-4 flex flex-col">
+      <Link href={getCourseHref(course.course_id, course.source_type)} className="flex-1 p-4 flex flex-col">
         {/* Type + Level badges */}
         <div className="flex flex-wrap items-center gap-1.5 mb-2">
           <span

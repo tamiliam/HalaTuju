@@ -155,6 +155,7 @@ export interface SearchCourse {
   institution_count: number
   institution_name: string
   institution_state: string
+  qualification: 'SPM' | 'STPM'
 }
 
 export interface SearchFilters {
@@ -162,6 +163,7 @@ export interface SearchFilters {
   fields: string[]
   source_types: string[]
   states: string[]
+  qualifications: string[]
 }
 
 export interface SearchParams {
@@ -170,6 +172,7 @@ export interface SearchParams {
   field?: string
   source_type?: string
   state?: string
+  qualification?: string
   limit?: number
   offset?: number
 }
@@ -184,6 +187,7 @@ export async function searchCourses(
   if (params.field) query.set('field', params.field)
   if (params.source_type) query.set('source_type', params.source_type)
   if (params.state) query.set('state', params.state)
+  if (params.qualification) query.set('qualification', params.qualification)
   if (params.limit) query.set('limit', String(params.limit))
   if (params.offset) query.set('offset', String(params.offset))
   const qs = query.toString()

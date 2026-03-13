@@ -45,6 +45,7 @@ function SearchPageInner() {
   const [field, setField] = useState(searchParams.get('field') || '')
   const [sourceType, setSourceType] = useState(searchParams.get('type') || '')
   const [state, setState] = useState(searchParams.get('state') || '')
+  const [qualification, setQualification] = useState(searchParams.get('qualification') || '')
   const [displayCount, setDisplayCount] = useState(PAGE_SIZE)
 
   // Eligible toggle
@@ -117,9 +118,10 @@ function SearchPageInner() {
     if (field) params.set('field', field)
     if (sourceType) params.set('type', sourceType)
     if (state) params.set('state', state)
+    if (qualification) params.set('qualification', qualification)
     const qs = params.toString()
     router.replace(qs ? `/search?${qs}` : '/search', { scroll: false })
-  }, [query, level, field, sourceType, state, router])
+  }, [query, level, field, sourceType, state, qualification, router])
 
   // Debounced search query
   const [debouncedQuery, setDebouncedQuery] = useState(query)
@@ -138,6 +140,7 @@ function SearchPageInner() {
         field: field || undefined,
         source_type: sourceType || undefined,
         state: state || undefined,
+        qualification: qualification || undefined,
         limit: 200,
       })
       setCourses(data.courses)
@@ -151,7 +154,7 @@ function SearchPageInner() {
     } finally {
       setIsLoading(false)
     }
-  }, [debouncedQuery, level, field, sourceType, state, filters])
+  }, [debouncedQuery, level, field, sourceType, state, qualification, filters])
 
   useEffect(() => {
     fetchCourses()
@@ -160,7 +163,7 @@ function SearchPageInner() {
   // Reset display count when filters change
   useEffect(() => {
     setDisplayCount(PAGE_SIZE)
-  }, [debouncedQuery, level, field, sourceType, state, eligibleOnly])
+  }, [debouncedQuery, level, field, sourceType, state, qualification, eligibleOnly])
 
   // Apply eligible filter client-side
   const displayedCourses = useMemo(() => {
@@ -190,7 +193,7 @@ function SearchPageInner() {
     }
   }
 
-  const hasActiveFilters = !!(query || level || field || sourceType || state)
+  const hasActiveFilters = !!(query || level || field || sourceType || state || qualification)
 
   const clearAllFilters = () => {
     setQuery('')
@@ -198,6 +201,7 @@ function SearchPageInner() {
     setField('')
     setSourceType('')
     setState('')
+    setQualification('')
     setEligibleOnly(false)
   }
 
@@ -253,6 +257,30 @@ function SearchPageInner() {
 
           {/* Filter row */}
           <div className="flex flex-wrap items-center gap-2">
+          {/* Qualification filter — toggle buttons */}
+          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setQualification(qualification === 'SPM' ? '' : 'SPM')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                qualification === 'SPM'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              SPM
+            </button>
+            <button
+              onClick={() => setQualification(qualification === 'STPM' ? '' : 'STPM')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors border-l border-gray-200 ${
+                qualification === 'STPM'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              STPM
+            </button>
+          </div>
+
           <FilterPill
             label={t('search.allTypes')}
             value={sourceType}
