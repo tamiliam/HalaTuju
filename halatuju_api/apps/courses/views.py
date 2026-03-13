@@ -542,8 +542,7 @@ class EligibilityCheckView(APIView):
 
         # Default sort: merit chance first, then delta within tier, then credential > pathway > cutoff
         PATHWAY_PRIORITY = {
-            'matric': 9, 'stpm': 9,
-            'asasi': 8,
+            'asasi': 8, 'matric': 7, 'stpm': 6,
             'university': 5, 'ua': 5, 'poly': 4, 'pismp': 3, 'kkom': 2,
             'iljtm': 1, 'ilkbs': 1,
         }
