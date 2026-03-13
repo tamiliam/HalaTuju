@@ -514,6 +514,7 @@ class StpmCourse(models.Model):
     stream = models.CharField(
         max_length=20, choices=STREAM_CHOICES, default='both'
     )
+    merit_score = models.FloatField(null=True, blank=True, help_text='UPU average merit percentage (0-100)')
 
     class Meta:
         db_table = 'stpm_courses'

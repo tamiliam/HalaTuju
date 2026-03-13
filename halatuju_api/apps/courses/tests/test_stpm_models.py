@@ -79,3 +79,30 @@ class TestStpmRequirementCreation:
         assert req.stpm_subject_group['min_count'] == 2
         assert 'chemistry' in req.stpm_subject_group['subjects']
         assert req.spm_subject_group['min_count'] == 1
+
+
+@pytest.mark.django_db
+class TestStpmCourseMeritScore:
+
+    def test_stpm_course_merit_score(self):
+        """StpmCourse stores merit_score as nullable float."""
+        course = StpmCourse.objects.create(
+            program_id='MERIT001',
+            program_name='Test Merit Programme',
+            university='Test University',
+            stream='science',
+            merit_score=96.04,
+        )
+        course.refresh_from_db()
+        assert course.merit_score == 96.04
+
+    def test_stpm_course_merit_score_null(self):
+        """StpmCourse merit_score can be null (Tiada)."""
+        course = StpmCourse.objects.create(
+            program_id='MERIT002',
+            program_name='No Merit Programme',
+            university='Test University',
+            stream='arts',
+        )
+        course.refresh_from_db()
+        assert course.merit_score is None
