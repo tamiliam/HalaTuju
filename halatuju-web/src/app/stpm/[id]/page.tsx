@@ -1,6 +1,6 @@
 'use client'
 
-import { use } from 'react'
+import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { getStpmProgrammeDetail } from '@/lib/api'
@@ -8,12 +8,9 @@ import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 
-export default function StpmProgrammeDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = use(params)
+export default function StpmProgrammeDetailPage() {
+  const params = useParams()
+  const id = params.id as string
   const { t } = useT()
 
   const { data, isLoading, error } = useQuery({
