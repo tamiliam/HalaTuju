@@ -16,7 +16,7 @@ Last updated: 2026-03-13
 - Supabase auth (ES256 + HS256 JWT)
 - Multi-language support (EN/BM/TA)
 
-## Completed — STPM Entrance (6 Sprints, feature/stpm-entrance branch)
+## Completed — STPM Entrance (7 Sprints, feature/stpm-entrance branch)
 
 - 1,113 STPM degree programmes loaded into Supabase
 - STPM eligibility engine with CGPA calculator, grade comparison, SPM prerequisites
@@ -28,8 +28,11 @@ Last updated: 2026-03-13
 - Merit scoring: 1,080 courses with UPU purata markah merit (59.33%–100%), traffic light badges (High/Fair/Low)
 - Koko score corrected to 0–10 scale, CGPA formula: (academic × 0.9) + (koko × 0.04)
 - Elective add-button UX, zero-courses empty state, ICT stream fix
-- Tests: 326 collected, 293 passing | SPM: 8283 | STPM: 1811
-- **Deployed** with revision tag for E2E testing — merit traffic lights verified working
+- Unified `/search` page: SPM + STPM courses in single browse, qualification filter, bumiputera exclusion
+- AI metadata enrichment: 1,113 courses classified with field/category/description via Gemini 2.0 Flash
+- `/stpm/search` redirects to `/search?qualification=STPM`
+- Eligible toggle dual-check: merges SPM + STPM eligible IDs
+- Tests: 338 collected, 307 passing | SPM: 8283 | STPM: 1811
 - **Next:** Merge to main, full production deploy
 
 ---

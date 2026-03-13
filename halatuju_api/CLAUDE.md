@@ -115,7 +115,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (320 collected, 287 pass, 9 pre-existing JWT failures)
+# Run ALL tests (338 collected, 307 pass, 9 pre-existing JWT failures)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8283 baseline)
@@ -134,7 +134,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 |------|-------|----------------|
 | test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 8283 baseline |
 | test_serializers.py | 27 | Grade key mapping, gender/nationality normalization, bool→Ya/Tidak, validation |
-| test_api.py | 52 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration, Matric/STPM integration, pathway_stats), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering) |
+| test_api.py | 64 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration, Matric/STPM integration, pathway_stats), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering), unified search (both qualifications, qualification filter, STPM field mapping, bumiputera exclusion, filters include qualifications, cross-qualification text search, field filter STPM, level/source_type filter skipping) |
 | test_auth.py | 15 | Auth enforcement — protected endpoints reject 403, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
 | test_saved_courses.py | 3 | Saved course CRUD — save (201), list (appears), delete (removed) |
 | test_quiz.py | 24 | Quiz endpoints (questions 3 langs, submit single+multi, validation), engine (multi-select, weight splitting, Not Sure Yet, conditional Q2.5, field_interest, signal strength, lang parity) |
@@ -146,7 +146,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_outcomes.py | 10 | Outcome CRUD (create, duplicate 409, with institution, missing course), list (own only), update status, cross-user 404, delete, auth enforcement (GET/POST 403) |
 | test_pathways.py | 32 | Matric/STPM eligibility: grade helpers (is_credit, meets_min, find_best_elective), all 4 Matric tracks (sains, kejuruteraan, sains_komputer, perakaunan), both STPM bidangs (sains, sains_sosial), merit calculation, mata gred threshold, check_all_pathways integration |
 | test_profile_fields.py | 19 | Expanded profile fields (NRIC, address, phone, income, siblings defaults), SavedCourse interest_status (default, set, got_offer), profile API (GET new fields, PUT new fields), saved-courses API (GET includes status, PATCH updates status), STPM profile fields (exam_type default, STPM fields stored, defaults empty/null), profile sync STPM (create, update, GET returns fields) |
-| test_stpm_models.py | 3 | StpmCourse creation + __str__, StpmRequirement creation + defaults, JSON field round-trip |
+| test_stpm_models.py | 5 | StpmCourse creation + __str__, StpmRequirement creation + defaults, JSON field round-trip, metadata fields (explicit values + defaults) |
 | test_stpm_data_loading.py | 6 | CSV loader: creates courses, creates requirements, correct count (~1113), idempotent, JSON parsing, boolean fields |
 | test_stpm_engine.py | 15 | CGPA calculator (5), grade comparison (4), eligibility integration (6: strong science, CGPA filter, MUET filter, subject req, result shape, colorblind). Grade scale: A→F with D+(1.33), C-(1.67), E/G legacy aliases |
 | test_stpm_golden_master.py | 1 | 5 students × all programmes = 1811 baseline |
@@ -169,7 +169,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-293 tests must pass out of 326 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
+307 tests must pass out of 338 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -189,6 +189,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/stpm_ranking.py` | STPM fit score calculation + ranking | No |
 | `apps/courses/management/commands/load_csv_data.py` | CSV → DB migration (11 loaders) | One-time |
 | `apps/courses/management/commands/load_stpm_data.py` | STPM CSV → DB migration | One-time |
+| `apps/courses/management/commands/enrich_stpm_metadata.py` | Gemini STPM field/category/description enrichment | One-time |
 | `apps/courses/insights_engine.py` | Deterministic insights from eligibility results | No |
 | `apps/courses/management/commands/audit_data.py` | Data completeness report | No |
 | `apps/reports/report_engine.py` | Gemini-powered narrative report generator | No |
@@ -202,12 +203,12 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**STPM Entrance — All 6 Sprints DONE**
+**STPM Entrance — All 7 Sprints DONE**
 - 1,113 STPM degree programmes with eligibility engine, ranking, search, detail pages
-- Merit scoring: 1,080 courses with UPU purata markah merit, traffic light badges (High/Fair/Low)
-- Koko 0–10 scale, CGPA formula: (academic × 0.9) + (koko × 0.04)
-- Deployed with `--tag stpm` for E2E testing — merit traffic lights verified working
-- Tests: 326 collected, 293 passing | SPM: 8283 | STPM: 1811
+- Unified `/search` page: SPM + STPM courses in one browse experience with qualification filter
+- AI metadata: all 1,113 STPM courses classified with field/category/description via Gemini 2.0 Flash
+- Merit scoring: 1,080 courses with UPU purata markah merit, traffic light badges
+- Tests: 338 collected, 307 passing | SPM: 8283 | STPM: 1811
 - **Next: Merge feature/stpm-entrance to main, full production deploy**
 
 **Other pending**
@@ -216,6 +217,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
 - Delete accidental `halatuju-web` service from SJKTConnect GCP project
 - Store `signal_strength` in Supabase (currently only `student_signals` synced)
+- STPM field metadata refinement: 207 unique field values from Gemini (expected ~30) — consider normalisation pass
 
 ## Streamlit App (Legacy — migrating to Django API)
 

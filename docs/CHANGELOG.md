@@ -1,5 +1,30 @@
 # Changelog — HalaTuju
 
+## STPM Sprint 7 — Unified Explore Page (2026-03-13)
+
+### Added
+- Unified `/search` page serving both SPM and STPM courses in a single browse experience
+- `qualification` filter (SPM / STPM / All) — toggle buttons with blue/purple colour coding
+- STPM courses mapped to `CourseCard` shape: program_id→course_id, program_name→course_name, university→institution_name, merit_score→merit_cutoff
+- Bumiputera-only programmes (UiTM) excluded at runtime from STPM search results
+- Eligible toggle dual-check: calls both `checkEligibility` (SPM) and `checkStpmEligibility` (STPM) from localStorage data, merging ID sets
+- `field`, `category`, `description` columns on `StpmCourse` model — AI-generated metadata via Gemini 2.0 Flash
+- `enrich_stpm_metadata` management command for one-time Gemini batch classification (1,113 courses classified)
+- `University` source type in CourseCard with purple styling
+- `Ijazah Sarjana Muda` level badge with purple styling
+- i18n keys for qualification filter in EN/BM/TA
+- 12 new tests for unified search endpoint (`TestUnifiedSearchEndpoint`)
+
+### Changed
+- `/stpm/search` now redirects to `/search?qualification=STPM` (5-line redirect replaces 177-line page)
+- `CourseSearchView` rewritten to query both `Course` (SPM) and `StpmCourse` (STPM) tables
+- Smart filter skipping: level/source_type/state filters only apply to relevant qualification
+- `SOURCE_TYPE_ORDER` updated with University priority (5)
+- Filters response merges SPM+STPM values and includes `qualifications` array
+
+### Fixed
+- Gemini API key lookup: uses `settings.GEMINI_API_KEY` instead of bare `os.environ.get()` (Django settings loads from .env)
+
 ## STPM Sprint 6 — Merit Scoring + UX Polish (2026-03-13)
 
 ### Added

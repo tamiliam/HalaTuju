@@ -47,3 +47,15 @@
 **Trade-offs:** None significant. This corrects a factual error.
 
 **Revisit if:** The STPM grading system changes its koko weight or scale.
+
+## Unified search endpoint for SPM + STPM — STPM Sprint 7, 2026-03-13
+
+**Decision:** Extended the existing `CourseSearchView` to query both `Course` (SPM) and `StpmCourse` (STPM) tables with a `?qualification=SPM|STPM` filter, rather than maintaining separate endpoints.
+
+**Alternatives considered:** (1) Keep `/api/v1/courses/search/` and `/api/v1/stpm/search/` as separate endpoints, with frontend merging results client-side. (2) Create a unified `UnifiedCourse` model/view that duplicates data.
+
+**Rationale:** Single endpoint means one fetch, one set of filters, one pagination mechanism. STPM results are mapped to the same `CourseCard` shape at the view level, so the frontend doesn't need to handle two different response formats. Smart filter skipping (e.g. state filter skips STPM since STPM courses don't have state data) keeps results sensible.
+
+**Trade-offs:** The view is more complex (~200 lines) with conditional query building. STPM courses lack some SPM fields (state, pathway_type), so some filters silently skip one qualification. If a third qualification is added (e.g. UEC), the view will need refactoring.
+
+**Revisit if:** A third qualification pathway is added, or if the unified view becomes too complex to maintain.
