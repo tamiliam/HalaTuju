@@ -170,18 +170,25 @@ export const STPM_SUBJECTS: StpmSubject[] = [
   { id: 'MATH_M', name: 'Matematik M', stream: 'arts' },
 ]
 
-export const STPM_GRADES = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'E', 'F']
+export const STPM_GRADES = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'F']
 
 export const MUET_BANDS = [1, 2, 3, 4, 5, 6]
 
-// SPM prerequisite subjects for STPM students (6 subjects)
-export const SPM_PREREQ_SUBJECTS = [
+// SPM prerequisite subjects for STPM students
+// 4 compulsory (all streams), 2 optional (stream-specific)
+export const SPM_PREREQ_COMPULSORY = [
   { id: 'bm', name: 'Bahasa Melayu' },
   { id: 'eng', name: 'Bahasa Inggeris' },
   { id: 'hist', name: 'Sejarah' },
   { id: 'math', name: 'Matematik' },
+]
+
+export const SPM_PREREQ_OPTIONAL = [
   { id: 'addmath', name: 'Matematik Tambahan' },
   { id: 'sci', name: 'Sains' },
 ]
+
+// Combined for backward compatibility
+export const SPM_PREREQ_SUBJECTS = [...SPM_PREREQ_COMPULSORY, ...SPM_PREREQ_OPTIONAL]
 
 export const SPM_GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G']

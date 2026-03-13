@@ -6,13 +6,14 @@ STPM eligibility engine — checks STPM student grades against degree programme 
 STPM_CGPA_POINTS = {
     'A': 4.00, 'A-': 3.67,
     'B+': 3.33, 'B': 3.00, 'B-': 2.67,
-    'C+': 2.33, 'C': 2.00, 'C-': 2.00,
-    'D': 1.67, 'E': 1.00,
-    'F': 0.00, 'G': 0.00,
+    'C+': 2.33, 'C': 2.00, 'C-': 1.67,
+    'D+': 1.33, 'D': 1.00,
+    'F': 0.00,
 }
 
 # Grade hierarchy for "meets minimum grade" checks
-STPM_GRADE_ORDER = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'E', 'F', 'G']
+# E and G kept as legacy aliases (parsed data uses them, real STPM scale does not)
+STPM_GRADE_ORDER = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'E', 'F', 'G']
 
 
 def calculate_stpm_cgpa(grades):

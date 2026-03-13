@@ -19,7 +19,7 @@ class TestStpmCgpa:
     def test_minimum_pass(self):
         grades = {'PA': 'C-', 'MATH_T': 'C-', 'PHYSICS': 'C-'}
         cgpa = calculate_stpm_cgpa(grades)
-        assert cgpa == 2.0  # C- = 2.00
+        assert cgpa == 1.67  # C- = 1.67
 
     def test_with_fail(self):
         grades = {'PA': 'A', 'MATH_T': 'F', 'PHYSICS': 'B'}
