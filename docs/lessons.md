@@ -13,3 +13,5 @@ Cross-cutting lessons from sprint retrospectives. Only items that affect future 
 - Django management commands that modify data must verify the target database before running — print the database host at startup and abort if it's SQLite when production was intended. (STPM Sprint 8)
 - When debugging hydration issues with Playwright, always wait for network idle before taking snapshots — pre-hydration snapshots produce misleading "not working" results. (STPM Sprint 8)
 - Do not generate data on-the-fly in API responses when it should be a database entry — synthetic entries cause search gaps, badge inconsistency, and separate code paths that diverge over time. (Pre-U Sprint)
+- Before inserting data into the DB, check how downstream pages render it — adding bare records can degrade rich UIs that used a different data source. (UI Polish Sprint)
+- Always verify key/value mappings against actual API responses, not visual references — uppercase/lowercase mismatches cause silent display failures. (UI Polish Sprint)

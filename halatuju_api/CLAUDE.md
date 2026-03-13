@@ -213,7 +213,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 **Pre-U Courses Sprint COMPLETE — merged to main, Supabase migrated**
 - 6 pre-university courses (4 matric + 2 STPM) as real Course rows with `merit_type` branching
 - Badge consistency: TVET → ILJTM/ILKBS, University → ua, labels in Malay, Pra-U level badge
-- Tests: 359 collected, 320 passing (9 pre-existing auth failures)
+
+**UI Polish & Consistency Sprint COMPLETE — merged to main, deployed**
+- Rich institution cards for pre-U course detail pages (STPM schools with PPD/subjects/phone, matric colleges with tracks/phone/website)
+- STPM programme detail page redesigned to match SPM format (header, about, quick facts, institution card, save actions)
+- Search filter labels standardised to Malay, TVET removed, Kolej Matrikulasi and Tingkatan 6 added
+- DB state normalisation (WP Kuala Lumpur, WP Labuan)
+- STPM detail API enriched with field, category, description, merit_score
 
 **Pending work**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)

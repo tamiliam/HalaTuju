@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — UI Polish & Consistency Sprint
+
+### Added
+- **Rich institution cards for pre-U courses** — STPM course detail (`/course/stpm-*`) now shows schools with PPD, subjects (colour-coded badges), phone numbers from frontend JSON data; matric courses show colleges with tracks, phone, website
+- **Subject Key legend** — STPM course detail pages include a sidebar legend explaining subject abbreviations (BT, L.ENG, etc.)
+- **STPM programme detail redesign** — `/stpm/[id]` now matches SPM course detail format: header with level+stream badges, About section with AI description, Quick Facts sidebar (field, category, merit), institution card, save/actions buttons
+- **STPM API enrichment** — Detail endpoint now returns `field`, `category`, `description`, `merit_score`
+
+### Changed
+- **Search filter labels standardised to Malay** — Universiti, IPGM, Politeknik, Kolej Komuniti, Kolej Matrikulasi, Tingkatan 6, ILJTM, ILKBS
+- **TVET removed from search filter** — ILJTM and ILKBS appear separately; redundant "tvet" option hidden
+
+### Fixed
+- **Dashboard pathway pills** — matric/stpm pills now appear; university pill fixed (`'ua'` → `'university'` key)
+- **Badge key case** — TYPE_LABELS/TYPE_COLORS changed from uppercase to lowercase keys to match API response
+- **University ranking** — Added `'university'` key to PATHWAY_PRIORITY (was only `'ua'`)
+- **Pathway priority** — Corrected order: asasi(8) > matric(7) > stpm(6) > university(5) > poly(4) > pismp(3) > kkom(2) > iljtm/ilkbs(1)
+- **Institution name on SPM cards** — Dashboard course cards now show institution name, state, and count
+- **DB state normalisation** — "Kuala Lumpur" → "WP Kuala Lumpur" (3 IPG campuses), "Labuan" → "WP Labuan" (1 matric college)
+- **Level rename** — "Ijazah Sarjana Muda Pendidikan" → "Ijazah Sarjana Muda" (73 rows in Supabase)
+
 ## [Unreleased] — STPM Entrance (Sprints 1–5)
 
 ### Fixed (Sprint 5)
