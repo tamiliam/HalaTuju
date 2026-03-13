@@ -25,5 +25,5 @@ COPY . .
 # Collect static files (dummy DB + secret for build step only)
 RUN DATABASE_URL=sqlite:///tmp/db.sqlite3 SECRET_KEY=build-only-key python manage.py collectstatic --noinput --settings=halatuju.settings.production
 
-# Run gunicorn
-CMD exec gunicorn --bind :$PORT --workers 2 --threads 4 --timeout 120 halatuju.wsgi:application
+# Run migrations then start gunicorn
+CMD python manage.py migrate --noinput && exec gunicorn --bind :$PORT --workers 2 --threads 4 --timeout 120 halatuju.wsgi:application

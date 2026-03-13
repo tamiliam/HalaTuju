@@ -1,0 +1,6640 @@
+[
+  {
+    "code": "JEB0016",
+    "name": "SMK ( P ) Temenggong Ibrahim",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "074342161"
+  },
+  {
+    "code": "JEA0019",
+    "name": "SMK Datin Onn",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "074343497"
+  },
+  {
+    "code": "JEA0010",
+    "name": "SMK Dato Bentara Luar",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SV",
+    "phone": "074341640"
+  },
+  {
+    "code": "JEA0020",
+    "name": "SMK Dato Seth",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SS; SV",
+    "phone": "074671044"
+  },
+  {
+    "code": "JEA0015",
+    "name": "SMK Dato Sulaiman",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ; SV",
+    "phone": "074186214"
+  },
+  {
+    "code": "JEA0016",
+    "name": "SMK Dato'' Onn",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "074138453"
+  },
+  {
+    "code": "JEE0034",
+    "name": "SMK Datuk Menteri",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "077581134"
+  },
+  {
+    "code": "JEB0018",
+    "name": "SMK Munsyi Sulaiman",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PP; SEJ; SV",
+    "phone": "074341949"
+  },
+  {
+    "code": "JEE0020",
+    "name": "SMK Semerah",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "074161014"
+  },
+  {
+    "code": "JEA0013",
+    "name": "SMK Senggarang",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "074291675"
+  },
+  {
+    "code": "JEA0014",
+    "name": "SMK Seri Medan",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; KMK; PA; PP; SEJ",
+    "phone": "074850243"
+  },
+  {
+    "code": "JEE0019",
+    "name": "SMK Tun Ismail",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "074541232"
+  },
+  {
+    "code": "JEE0018",
+    "name": "SMK Tun Sardon",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "074241020"
+  },
+  {
+    "code": "JEE0041",
+    "name": "SMK Tunku Putra",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; SEJ",
+    "phone": "074151030"
+  },
+  {
+    "code": "JEE0040",
+    "name": "SMK Yong Peng",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "074671885"
+  },
+  {
+    "code": "JEB0015",
+    "name": "Sekolah Tinggi Batu Pahat",
+    "state": "Johor",
+    "ppd": "Batu Pahat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "074341097"
+  },
+  {
+    "code": "JEB1001",
+    "name": "Maktab Sultan Abu Bakar",
+    "state": "Johor",
+    "ppd": "Johor Bahru",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "072222651"
+  },
+  {
+    "code": "JEB1003",
+    "name": "SMK Aminudin Baki",
+    "state": "Johor",
+    "ppd": "Johor Bahru",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "072221293"
+  },
+  {
+    "code": "JEB1002",
+    "name": "SMK Dato Jaafar",
+    "state": "Johor",
+    "ppd": "Johor Bahru",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; EKO; GEO; MM; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "072221071"
+  },
+  {
+    "code": "JEE1004",
+    "name": "SMK Gelang Patah",
+    "state": "Johor",
+    "ppd": "Johor Bahru",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SV",
+    "phone": "075101213"
+  },
+  {
+    "code": "JEA1059",
+    "name": "SMK Mutiara Rini",
+    "state": "Johor",
+    "ppd": "Johor Bahru",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "075569845"
+  },
+  {
+    "code": "JEA1006",
+    "name": "SMK Skudai",
+    "state": "Johor",
+    "ppd": "Johor Bahru",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "075563890"
+  },
+  {
+    "code": "JEA1001",
+    "name": "SMK Sultan Ismail",
+    "state": "Johor",
+    "ppd": "Johor Bahru",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; SEJ",
+    "phone": "072216316"
+  },
+  {
+    "code": "JEA1002",
+    "name": "SMK Tasek Utara",
+    "state": "Johor",
+    "ppd": "Johor Bahru",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "072361806"
+  },
+  {
+    "code": "JEB2037",
+    "name": "SM Tinggi Kluang",
+    "state": "Johor",
+    "ppd": "Kluang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "077711037"
+  },
+  {
+    "code": "JEE2042",
+    "name": "SMK Dato Hj Hasan Yunus",
+    "state": "Johor",
+    "ppd": "Kluang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "077535264"
+  },
+  {
+    "code": "JEA2033",
+    "name": "SMK Sultan Abdul Jalil",
+    "state": "Johor",
+    "ppd": "Kluang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SS; SV",
+    "phone": "077712734"
+  },
+  {
+    "code": "JEA2036",
+    "name": "SMK Taman Kluang Barat",
+    "state": "Johor",
+    "ppd": "Kluang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; MM; PA; PP; SEJ",
+    "phone": "077727427"
+  },
+  {
+    "code": "JEA3045",
+    "name": "SMK Adela",
+    "state": "Johor",
+    "ppd": "Kota Tinggi",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ",
+    "phone": "078278340"
+  },
+  {
+    "code": "JEA3036",
+    "name": "SMK Bandar Easter",
+    "state": "Johor",
+    "ppd": "Kota Tinggi",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SV",
+    "phone": "078925822"
+  },
+  {
+    "code": "JEA3038",
+    "name": "SMK Bandar Kota Tinggi",
+    "state": "Johor",
+    "ppd": "Kota Tinggi",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ; SV",
+    "phone": "078832055"
+  },
+  {
+    "code": "JEA3043",
+    "name": "SMK Bandar Mas",
+    "state": "Johor",
+    "ppd": "Kota Tinggi",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "078236500"
+  },
+  {
+    "code": "JEB3043",
+    "name": "SMK Laksmana",
+    "state": "Johor",
+    "ppd": "Kota Tinggi",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "078831303"
+  },
+  {
+    "code": "JEA3060",
+    "name": "SMK Pengerang Utama",
+    "state": "Johor",
+    "ppd": "Kota Tinggi",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; SEJ; SV",
+    "phone": "078263213"
+  },
+  {
+    "code": "JEA3039",
+    "name": "SMK Tan Sri Jaafar Albar",
+    "state": "Johor",
+    "ppd": "Kota Tinggi",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SV",
+    "phone": "078918224"
+  },
+  {
+    "code": "JEA3037",
+    "name": "SMK Tun Habab",
+    "state": "Johor",
+    "ppd": "Kota Tinggi",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; MT; PA; PHY; PP; SEJ",
+    "phone": "078831026"
+  },
+  {
+    "code": "JEA3057",
+    "name": "SMK Bandar Tenggara Mod 3",
+    "state": "Johor",
+    "ppd": "Kulai",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV; SYA",
+    "phone": "078961037"
+  },
+  {
+    "code": "JEE8001",
+    "name": "SMK Sultan Ibrahim",
+    "state": "Johor",
+    "ppd": "Kulai",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; SEJ",
+    "phone": "076631303"
+  },
+  {
+    "code": "JEB4044",
+    "name": "SMK Seri Mersing",
+    "state": "Johor",
+    "ppd": "Mersing",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; CHE; EKO; GEO; MT; PA; PP; SEJ; SS; SV",
+    "phone": "077991150"
+  },
+  {
+    "code": "JEA4034",
+    "name": "SMK Tenggaroh",
+    "state": "Johor",
+    "ppd": "Mersing",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SS; SV",
+    "phone": "077911272"
+  },
+  {
+    "code": "JEE4036",
+    "name": "SMK Ungku Husin",
+    "state": "Johor",
+    "ppd": "Mersing",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ; SV",
+    "phone": "077943234"
+  },
+  {
+    "code": "JEB5025",
+    "name": "SMK (P) Sultan Abu Bakar",
+    "state": "Johor",
+    "ppd": "Muar",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; SEJ",
+    "phone": "069521261"
+  },
+  {
+    "code": "JEA5022",
+    "name": "SMK Dato Seri Amar Diraja",
+    "state": "Johor",
+    "ppd": "Muar",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ",
+    "phone": "069521472"
+  },
+  {
+    "code": "JEA5032",
+    "name": "SMK Pekan Baru",
+    "state": "Johor",
+    "ppd": "Muar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SV",
+    "phone": "074161221"
+  },
+  {
+    "code": "JEA5024",
+    "name": "SMK Raja Muda",
+    "state": "Johor",
+    "ppd": "Muar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ; SV",
+    "phone": "069874242"
+  },
+  {
+    "code": "JEE5027",
+    "name": "SMK Sultan Alauddin Riayat Shah 1",
+    "state": "Johor",
+    "ppd": "Muar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ; SV",
+    "phone": "069746228"
+  },
+  {
+    "code": "JEE5023",
+    "name": "SMK Tengku Mahkota",
+    "state": "Johor",
+    "ppd": "Muar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "069812781"
+  },
+  {
+    "code": "JEA5035",
+    "name": "SMK Tun Dr Ismail",
+    "state": "Johor",
+    "ppd": "Muar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "069866260"
+  },
+  {
+    "code": "JEA5023",
+    "name": "SMK Tun Perak",
+    "state": "Johor",
+    "ppd": "Muar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "069521771"
+  },
+  {
+    "code": "JEB5021",
+    "name": "Sekolah Tinggi Muar",
+    "state": "Johor",
+    "ppd": "Muar",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "069521360"
+  },
+  {
+    "code": "JEE1005",
+    "name": "SMK Dato Penggawa Timur",
+    "state": "Johor",
+    "ppd": "Pasir Gudang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; EKO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "072511035"
+  },
+  {
+    "code": "JEA1047",
+    "name": "SMK Pasir Gudang 2",
+    "state": "Johor",
+    "ppd": "Pasir Gudang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PAKN; PP; SEJ; SV; SYA",
+    "phone": "072523955"
+  },
+  {
+    "code": "JEA1053",
+    "name": "SMK Taman Daya",
+    "state": "Johor",
+    "ppd": "Pasir Gudang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; MT; PA; PHY; PP; SS; SV",
+    "phone": "073514378"
+  },
+  {
+    "code": "JEA1045",
+    "name": "SMK Taman Johor Jaya 1",
+    "state": "Johor",
+    "ppd": "Pasir Gudang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "073546651"
+  },
+  {
+    "code": "JEE1011",
+    "name": "SMK Ulu Tiram",
+    "state": "Johor",
+    "ppd": "Pasir Gudang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ",
+    "phone": "078611178"
+  },
+  {
+    "code": "JEA6013",
+    "name": "Kolej Tingkatan Enam Pontian",
+    "state": "Johor",
+    "ppd": "Pontian",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "076860159"
+  },
+  {
+    "code": "JEE6017",
+    "name": "SMK Benut",
+    "state": "Johor",
+    "ppd": "Pontian",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; GEO; KMK; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "076903254"
+  },
+  {
+    "code": "JEA6010",
+    "name": "SMK Dato Mohd Yunos Sulaiman",
+    "state": "Johor",
+    "ppd": "Pontian",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ; SV",
+    "phone": "076991831"
+  },
+  {
+    "code": "JEA6007",
+    "name": "SMK Sri Kukup",
+    "state": "Johor",
+    "ppd": "Pontian",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SV",
+    "phone": "076960219"
+  },
+  {
+    "code": "JEE7037",
+    "name": "SMK Chaah",
+    "state": "Johor",
+    "ppd": "Segamat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ",
+    "phone": "079261133"
+  },
+  {
+    "code": "JEA7032",
+    "name": "SMK Dato' Bentara Dalam",
+    "state": "Johor",
+    "ppd": "Segamat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; MM; PA; PP; SEJ; SV",
+    "phone": "079433250"
+  },
+  {
+    "code": "JEB7032",
+    "name": "SMK Labis",
+    "state": "Johor",
+    "ppd": "Segamat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ",
+    "phone": "079251306"
+  },
+  {
+    "code": "JEE7033",
+    "name": "SMK Munshi Ibrahim",
+    "state": "Johor",
+    "ppd": "Segamat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "079251600"
+  },
+  {
+    "code": "JEA7035",
+    "name": "SMK Palong Timur",
+    "state": "Johor",
+    "ppd": "Segamat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP",
+    "phone": "064668203"
+  },
+  {
+    "code": "JEB7030",
+    "name": "SMK Seg Hwa",
+    "state": "Johor",
+    "ppd": "Segamat",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "079311235"
+  },
+  {
+    "code": "JEB7029",
+    "name": "Sekolah Tinggi Segamat",
+    "state": "Johor",
+    "ppd": "Segamat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "079312472"
+  },
+  {
+    "code": "JEA9010",
+    "name": "SMK Bukit Gambir Mod 3",
+    "state": "Johor",
+    "ppd": "Tangkak",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "069761050"
+  },
+  {
+    "code": "JEA9009",
+    "name": "SMK Ledang",
+    "state": "Johor",
+    "ppd": "Tangkak",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "069781266"
+  },
+  {
+    "code": "JEA9005",
+    "name": "SMK Parit Bunga",
+    "state": "Johor",
+    "ppd": "Tangkak",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ",
+    "phone": "069522957"
+  },
+  {
+    "code": "JEA9001",
+    "name": "SMK Tengku Mahmud Iskandar",
+    "state": "Johor",
+    "ppd": "Tangkak",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SV",
+    "phone": "069751066"
+  },
+  {
+    "code": "JEA9002",
+    "name": "SMK Tengku Temenggong Ahmad",
+    "state": "Johor",
+    "ppd": "Tangkak",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; SEJ; SV",
+    "phone": "069728488"
+  },
+  {
+    "code": "KEA0035",
+    "name": "SMK Baling",
+    "state": "Kedah",
+    "ppd": "Baling",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; KMK; MT; PA; PHY; PP; SEJ; SV; SYA",
+    "phone": "044701218"
+  },
+  {
+    "code": "KEE0038",
+    "name": "SMK Kuala Ketil",
+    "state": "Kedah",
+    "ppd": "Baling",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "044434251"
+  },
+  {
+    "code": "KEE0039",
+    "name": "SMK Kuala Pegang",
+    "state": "Kedah",
+    "ppd": "Baling",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ; SS; SV; SYA",
+    "phone": "044765230"
+  },
+  {
+    "code": "KEB2096",
+    "name": "Kolej Sultan Abdul Hamid",
+    "state": "Kedah",
+    "ppd": "Kota Setar",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "047332300"
+  },
+  {
+    "code": "KEA2186",
+    "name": "Kolej Tingkatan Enam Sultan Sallehuddin",
+    "state": "Kedah",
+    "ppd": "Kota Setar",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MM; MT; PA; PAKN; PHY; PP; SEJ; SS; SV",
+    "phone": "047203381"
+  },
+  {
+    "code": "KEB2094",
+    "name": "SMJK Keat Hwa",
+    "state": "Kedah",
+    "ppd": "Kota Setar",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "047722053"
+  },
+  {
+    "code": "KEEB001",
+    "name": "SMK Pokok Sena",
+    "state": "Kedah",
+    "ppd": "Kota Setar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "047821237"
+  },
+  {
+    "code": "KEA2094",
+    "name": "SMK Seberang Perak",
+    "state": "Kedah",
+    "ppd": "Kota Setar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); PA; PP; SEJ; SV",
+    "phone": "047771709"
+  },
+  {
+    "code": "KEE2108",
+    "name": "SMK Tengku Laksamana",
+    "state": "Kedah",
+    "ppd": "Kota Setar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "047716482"
+  },
+  {
+    "code": "KEE2107",
+    "name": "SMK Tun Sharifah Rodziah",
+    "state": "Kedah",
+    "ppd": "Kota Setar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ; SV",
+    "phone": "047711102"
+  },
+  {
+    "code": "KEE2100",
+    "name": "SMK Tunku Abdul Malik",
+    "state": "Kedah",
+    "ppd": "Kota Setar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; SEJ; SV",
+    "phone": "047319358"
+  },
+  {
+    "code": "KEE2104",
+    "name": "Smk. Tunku Abd. Aziz",
+    "state": "Kedah",
+    "ppd": "Kota Setar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ",
+    "phone": "047641213"
+  },
+  {
+    "code": "KEA3111",
+    "name": "SMK Aman Jaya",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "044581996"
+  },
+  {
+    "code": "KEA3109",
+    "name": "SMK Bandar Sungai Petani",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; BT; EKO; KMK; PA; PAKN; SEJ",
+    "phone": "044216257"
+  },
+  {
+    "code": "KEE3052",
+    "name": "SMK Bedong",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "044581272"
+  },
+  {
+    "code": "KEE3053",
+    "name": "SMK Che Tom",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP",
+    "phone": "044252182"
+  },
+  {
+    "code": "KEB3047",
+    "name": "SMK Dato Bijaya Setia",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; CHE; EKO; MM; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "044212308"
+  },
+  {
+    "code": "KEB3049",
+    "name": "SMK Ibrahim",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; SEJ",
+    "phone": "044212633"
+  },
+  {
+    "code": "KEA3046",
+    "name": "SMK Khir Johari",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PAKN; PP; SEJ",
+    "phone": "044212648"
+  },
+  {
+    "code": "KEA3107",
+    "name": "SMK Kota Kuala Muda",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ",
+    "phone": "044374224"
+  },
+  {
+    "code": "KEE3055",
+    "name": "SMK Merbok",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "044572078"
+  },
+  {
+    "code": "KEB3051",
+    "name": "SMK Sin Min",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "044212623"
+  },
+  {
+    "code": "KEB3050",
+    "name": "SMK St Theresa",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "044212266"
+  },
+  {
+    "code": "KEA9001",
+    "name": "SMK Sungai Limau",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ; SV",
+    "phone": "047691759"
+  },
+  {
+    "code": "KEA3106",
+    "name": "SMK Sungai Pasir",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ",
+    "phone": "044311764"
+  },
+  {
+    "code": "KEA3105",
+    "name": "SMK Tunku Ismail",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ",
+    "phone": "044225508"
+  },
+  {
+    "code": "KEE3057",
+    "name": "SMK Tunku Sulong",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ",
+    "phone": "044644236"
+  },
+  {
+    "code": "KEE8018",
+    "name": "SMK Yan",
+    "state": "Kedah",
+    "ppd": "Kuala Muda/yan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "044695278"
+  },
+  {
+    "code": "KEE4041",
+    "name": "SMK Ayer Hitam",
+    "state": "Kedah",
+    "ppd": "Kubang Pasu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ; SV",
+    "phone": "047940226"
+  },
+  {
+    "code": "KEA4058",
+    "name": "SMK Changlun",
+    "state": "Kedah",
+    "ppd": "Kubang Pasu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP",
+    "phone": "049241293"
+  },
+  {
+    "code": "KEA4062",
+    "name": "SMK Hosba",
+    "state": "Kedah",
+    "ppd": "Kubang Pasu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ",
+    "phone": "049243128"
+  },
+  {
+    "code": "KEE4037",
+    "name": "SMK Jitra",
+    "state": "Kedah",
+    "ppd": "Kubang Pasu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "049171260"
+  },
+  {
+    "code": "KEA4060",
+    "name": "SMK Megat Dewa",
+    "state": "Kedah",
+    "ppd": "Kubang Pasu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ",
+    "phone": "049251948"
+  },
+  {
+    "code": "KEE4040",
+    "name": "SMK Pulau Nyior",
+    "state": "Kedah",
+    "ppd": "Kubang Pasu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SS; SV",
+    "phone": "049291288"
+  },
+  {
+    "code": "KEE4038",
+    "name": "SMK Seri Mahawangsa",
+    "state": "Kedah",
+    "ppd": "Kubang Pasu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PAKN; PP; SEJ",
+    "phone": "049171548"
+  },
+  {
+    "code": "KEA4061",
+    "name": "SMK Tunku Anum Tunku Abdul Rahman",
+    "state": "Kedah",
+    "ppd": "Kubang Pasu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SS; SV",
+    "phone": "047144960"
+  },
+  {
+    "code": "KEE4039",
+    "name": "SMK Tunku Bendahara",
+    "state": "Kedah",
+    "ppd": "Kubang Pasu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ; SV",
+    "phone": "049251344"
+  },
+  {
+    "code": "KEA5078",
+    "name": "Kolej Tingkatan Enam Kulim",
+    "state": "Kedah",
+    "ppd": "Kulim/bandar Baru",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; BT; CHE; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "044855370"
+  },
+  {
+    "code": "KEB5025",
+    "name": "SMK Chio Min",
+    "state": "Kedah",
+    "ppd": "Kulim/bandar Baru",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "044907552"
+  },
+  {
+    "code": "KEA5070",
+    "name": "SMK Junjung",
+    "state": "Kedah",
+    "ppd": "Kulim/bandar Baru",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; SEJ; SV",
+    "phone": "044871659"
+  },
+  {
+    "code": "KEA5026",
+    "name": "SMK Keladi",
+    "state": "Kedah",
+    "ppd": "Kulim/bandar Baru",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ",
+    "phone": "044953497"
+  },
+  {
+    "code": "KEA5067",
+    "name": "SMK Labu Besar",
+    "state": "Kedah",
+    "ppd": "Kulim/bandar Baru",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ",
+    "phone": "044031693"
+  },
+  {
+    "code": "KEE1018",
+    "name": "SMK Serdang",
+    "state": "Kedah",
+    "ppd": "Kulim/bandar Baru",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ",
+    "phone": "044077223"
+  },
+  {
+    "code": "KEE1017",
+    "name": "SMK Sultan Ahmad Tajuddin",
+    "state": "Kedah",
+    "ppd": "Kulim/bandar Baru",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ",
+    "phone": "057161055"
+  },
+  {
+    "code": "KEA5023",
+    "name": "SMK Sungai Kob",
+    "state": "Kedah",
+    "ppd": "Kulim/bandar Baru",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "044023555"
+  },
+  {
+    "code": "KEE6016",
+    "name": "SMK Mahsuri",
+    "state": "Kedah",
+    "ppd": "Langkawi",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ",
+    "phone": "049666245"
+  },
+  {
+    "code": "KEA6015",
+    "name": "SMK Tunku Putra",
+    "state": "Kedah",
+    "ppd": "Langkawi",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ",
+    "phone": "049551384"
+  },
+  {
+    "code": "KEE7017",
+    "name": "SMK Datuk Syed Ahmad",
+    "state": "Kedah",
+    "ppd": "Padang Terap",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ",
+    "phone": "047866217"
+  },
+  {
+    "code": "KEA7018",
+    "name": "SMK Lubok Merbau",
+    "state": "Kedah",
+    "ppd": "Padang Terap",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ",
+    "phone": "047520933"
+  },
+  {
+    "code": "KEA7019",
+    "name": "SMK Naka",
+    "state": "Kedah",
+    "ppd": "Padang Terap",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ; SV",
+    "phone": "047851517"
+  },
+  {
+    "code": "KEAA092",
+    "name": "SMK Kubor Panjang",
+    "state": "Kedah",
+    "ppd": "Pendang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ; SV",
+    "phone": "047846076"
+  },
+  {
+    "code": "KEEA103",
+    "name": "SMK Pendang",
+    "state": "Kedah",
+    "ppd": "Pendang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "047596249"
+  },
+  {
+    "code": "KEAA181",
+    "name": "SMK Syed Ibrahim",
+    "state": "Kedah",
+    "ppd": "Pendang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ; SS; SV",
+    "phone": "047596273"
+  },
+  {
+    "code": "KEAA183",
+    "name": "SMK Tunku Temenggung",
+    "state": "Kedah",
+    "ppd": "Pendang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ; SS",
+    "phone": "047599269"
+  },
+  {
+    "code": "DEE0039",
+    "name": "SMK Bachok",
+    "state": "Kelantan",
+    "ppd": "Bachok",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "097788255"
+  },
+  {
+    "code": "DEA0033",
+    "name": "SMK Badak",
+    "state": "Kelantan",
+    "ppd": "Bachok",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "097787411"
+  },
+  {
+    "code": "DEA0040",
+    "name": "SMK Dato' Perdana",
+    "state": "Kelantan",
+    "ppd": "Bachok",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; EKO; MT; PA; PHY; SS",
+    "phone": "097530021"
+  },
+  {
+    "code": "DEA0034",
+    "name": "SMK Long Yunus",
+    "state": "Kelantan",
+    "ppd": "Bachok",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "097788358"
+  },
+  {
+    "code": "DEA0038",
+    "name": "SMK Sri Gunung",
+    "state": "Kelantan",
+    "ppd": "Bachok",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "097825225"
+  },
+  {
+    "code": "DRA0001",
+    "name": "SMKA Tok Bachok",
+    "state": "Kelantan",
+    "ppd": "Bachok",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BA; BI (MUET); PA; SYA; TAH",
+    "phone": "097780085"
+  },
+  {
+    "code": "DEA8002",
+    "name": "SMK Bandar Chiku",
+    "state": "Kelantan",
+    "ppd": "Gua Musang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "099285335"
+  },
+  {
+    "code": "DEA8001",
+    "name": "SMK Tengku Indera Petra (1)",
+    "state": "Kelantan",
+    "ppd": "Gua Musang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "099121663"
+  },
+  {
+    "code": "DEA9001",
+    "name": "SMK Ayer Lanas",
+    "state": "Kelantan",
+    "ppd": "Jeli",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "099468234"
+  },
+  {
+    "code": "DEB1137",
+    "name": "Maktab Sultan Ismail",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; ICT; MM; MT; PA; PHY; SS; SV",
+    "phone": "097418772"
+  },
+  {
+    "code": "DEB1139",
+    "name": "SMJK Chung Hwa (Kemanusiaan)",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; BM; CHE; EKO; GEO; MM; MT; PA; PHY; PP; SEJ",
+    "phone": "097442086"
+  },
+  {
+    "code": "DEA1126",
+    "name": "SMK Dato' Ahmad Maher",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ",
+    "phone": "097418250"
+  },
+  {
+    "code": "DEA1123",
+    "name": "SMK Ismail Petra",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; ICT; MT; PA; PHY; PP; SS",
+    "phone": "097481848"
+  },
+  {
+    "code": "DEE1126",
+    "name": "SMK Ketereh",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "097886875"
+  },
+  {
+    "code": "DEE1127",
+    "name": "SMK Kota",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "097483312"
+  },
+  {
+    "code": "DEE1140",
+    "name": "SMK Kota Bharu",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "097482320"
+  },
+  {
+    "code": "DEA1129",
+    "name": "SMK Kubang Kerian (1)",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "097652046"
+  },
+  {
+    "code": "DEA1141",
+    "name": "SMK Kubang Kerian (2)",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; KMK; PA; PP; SEJ",
+    "phone": "097654726"
+  },
+  {
+    "code": "DEE1130",
+    "name": "SMK Melor",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "097835320"
+  },
+  {
+    "code": "DEA1131",
+    "name": "SMK Mulong",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "097126232"
+  },
+  {
+    "code": "DEE1133",
+    "name": "SMK Pengkalan Chepa (1)",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ",
+    "phone": "097713840"
+  },
+  {
+    "code": "DEA1135",
+    "name": "SMK Puteri",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "097419712"
+  },
+  {
+    "code": "DEA1125",
+    "name": "SMK Raja Sakti",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; SEJ; SV",
+    "phone": "097652359"
+  },
+  {
+    "code": "DEE1141",
+    "name": "SMK Sultan Ismail",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "097481245"
+  },
+  {
+    "code": "DEB1142",
+    "name": "SMK Zainab (1)",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ",
+    "phone": "097418643"
+  },
+  {
+    "code": "DEA1144",
+    "name": "SMK Zainab (2)",
+    "state": "Kelantan",
+    "ppd": "Kota Bharu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SS; SV",
+    "phone": "097486178"
+  },
+  {
+    "code": "DEA7418",
+    "name": "SMK Dabong",
+    "state": "Kelantan",
+    "ppd": "Kuala Krai",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SV",
+    "phone": "099607927"
+  },
+  {
+    "code": "DEA7407",
+    "name": "SMK Kuala Krai",
+    "state": "Kelantan",
+    "ppd": "Kuala Krai",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "099602291"
+  },
+  {
+    "code": "DEA7419",
+    "name": "SMK Pahi",
+    "state": "Kelantan",
+    "ppd": "Kuala Krai",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY; SS",
+    "phone": "099609600"
+  },
+  {
+    "code": "DEE7409",
+    "name": "SMK Sultan Yahya Petra (1)",
+    "state": "Kelantan",
+    "ppd": "Kuala Krai",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "099666077"
+  },
+  {
+    "code": "DEA7422",
+    "name": "SMK Sultan Yahya Petra (2)",
+    "state": "Kelantan",
+    "ppd": "Kuala Krai",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SV",
+    "phone": "099662201"
+  },
+  {
+    "code": "DEE2191",
+    "name": "SMK Hamzah (1)",
+    "state": "Kelantan",
+    "ppd": "Machang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "099751300"
+  },
+  {
+    "code": "DEA2189",
+    "name": "SMK Machang",
+    "state": "Kelantan",
+    "ppd": "Machang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "099751235"
+  },
+  {
+    "code": "DEA2188",
+    "name": "SMK Seri Intan",
+    "state": "Kelantan",
+    "ppd": "Machang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; SEJ; SV",
+    "phone": "099770179"
+  },
+  {
+    "code": "DEA3240",
+    "name": "SMK Kangkong",
+    "state": "Kelantan",
+    "ppd": "Pasir Mas",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "097962330"
+  },
+  {
+    "code": "DEA3428",
+    "name": "SMK Kubang Bemban",
+    "state": "Kelantan",
+    "ppd": "Pasir Mas",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; EKO; MT; PA; PHY; PP; SEJ; SS",
+    "phone": "097922650"
+  },
+  {
+    "code": "DEA3243",
+    "name": "SMK Pasir Mas",
+    "state": "Kelantan",
+    "ppd": "Pasir Mas",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "097909095"
+  },
+  {
+    "code": "DEE3244",
+    "name": "SMK Rantau Panjang",
+    "state": "Kelantan",
+    "ppd": "Pasir Mas",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "097950450"
+  },
+  {
+    "code": "DEE3247",
+    "name": "SMK Sultan Ibrahim (1)",
+    "state": "Kelantan",
+    "ppd": "Pasir Mas",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "097909214"
+  },
+  {
+    "code": "DEA3425",
+    "name": "SMK Sultan Ibrahim (2)",
+    "state": "Kelantan",
+    "ppd": "Pasir Mas",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "097909311"
+  },
+  {
+    "code": "DEA3245",
+    "name": "SMK Tendong",
+    "state": "Kelantan",
+    "ppd": "Pasir Mas",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "097198429"
+  },
+  {
+    "code": "DEA3241",
+    "name": "SMK Tengku Panglima Raja",
+    "state": "Kelantan",
+    "ppd": "Pasir Mas",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "097922440"
+  },
+  {
+    "code": "DEA4286",
+    "name": "SMK Bukit Jawa",
+    "state": "Kelantan",
+    "ppd": "Pasir Puteh",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "097891212"
+  },
+  {
+    "code": "DEA4294",
+    "name": "SMK Cherang Ruku",
+    "state": "Kelantan",
+    "ppd": "Pasir Puteh",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SS; SV",
+    "phone": "096912275"
+  },
+  {
+    "code": "DEE4289",
+    "name": "SMK Kamil",
+    "state": "Kelantan",
+    "ppd": "Pasir Puteh",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; EKO; GEO; MT; PA; PHY; SS",
+    "phone": "097855300"
+  },
+  {
+    "code": "DEA4297",
+    "name": "SMK Seri Aman",
+    "state": "Kelantan",
+    "ppd": "Pasir Puteh",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "097855200"
+  },
+  {
+    "code": "DEA4287",
+    "name": "SMK Tok Janggut",
+    "state": "Kelantan",
+    "ppd": "Pasir Puteh",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "097866334"
+  },
+  {
+    "code": "DEE5324",
+    "name": "SMK Dato' Mahmud Paduka Raja (1)",
+    "state": "Kelantan",
+    "ppd": "Tanah Merah",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "099503300"
+  },
+  {
+    "code": "DEA5416",
+    "name": "SMK Tan Sri Mohamed Yaacob",
+    "state": "Kelantan",
+    "ppd": "Tanah Merah",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "099581373"
+  },
+  {
+    "code": "DEA5417",
+    "name": "SMK Tanah Merah (1)",
+    "state": "Kelantan",
+    "ppd": "Tanah Merah",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY; SS; SV",
+    "phone": "099556167"
+  },
+  {
+    "code": "DEA5421",
+    "name": "SMK Tanah Merah (2)",
+    "state": "Kelantan",
+    "ppd": "Tanah Merah",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SS; SV",
+    "phone": "099558701"
+  },
+  {
+    "code": "DEA6357",
+    "name": "SMK Chabang Empat",
+    "state": "Kelantan",
+    "ppd": "Tumpat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "097190615"
+  },
+  {
+    "code": "DEA6358",
+    "name": "SMK Dato' Biji Wangsa",
+    "state": "Kelantan",
+    "ppd": "Tumpat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; SEJ",
+    "phone": "097257280"
+  },
+  {
+    "code": "DEA6359",
+    "name": "SMK Kampong Laut",
+    "state": "Kelantan",
+    "ppd": "Tumpat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "097196217"
+  },
+  {
+    "code": "DEA6360",
+    "name": "SMK Mahmud Mahyidin",
+    "state": "Kelantan",
+    "ppd": "Tumpat",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY; SS",
+    "phone": "097196864"
+  },
+  {
+    "code": "DEE6362",
+    "name": "SMK Tumpat",
+    "state": "Kelantan",
+    "ppd": "Tumpat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "097257251"
+  },
+  {
+    "code": "DEA6362",
+    "name": "SMK Wakaf Bharu",
+    "state": "Kelantan",
+    "ppd": "Tumpat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SV",
+    "phone": "097196168"
+  },
+  {
+    "code": "MEB0078",
+    "name": "SMJK Pulau Sebang",
+    "state": "Melaka",
+    "ppd": "Alor Gajah",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; MM; PA; PP; SEJ; SV",
+    "phone": "064411346"
+  },
+  {
+    "code": "MEE0075",
+    "name": "SMK Dato' Dol Said",
+    "state": "Melaka",
+    "ppd": "Alor Gajah",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "065561286"
+  },
+  {
+    "code": "MEA0072",
+    "name": "SMK Datuk Haji Talib Karim",
+    "state": "Melaka",
+    "ppd": "Alor Gajah",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SS; SV",
+    "phone": "065561285"
+  },
+  {
+    "code": "MEA0071",
+    "name": "SMK Ghafar Baba",
+    "state": "Melaka",
+    "ppd": "Alor Gajah",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "063841257"
+  },
+  {
+    "code": "MEA0095",
+    "name": "SMK Lubok China",
+    "state": "Melaka",
+    "ppd": "Alor Gajah",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; SEJ; SV",
+    "phone": "066966375"
+  },
+  {
+    "code": "MEB0079",
+    "name": "SMK Sultan Alauddin",
+    "state": "Melaka",
+    "ppd": "Alor Gajah",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SV",
+    "phone": "063841249"
+  },
+  {
+    "code": "MEB1063",
+    "name": "SMK Datuk Bendahara",
+    "state": "Melaka",
+    "ppd": "Jasin",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "065291278"
+  },
+  {
+    "code": "MEA1060",
+    "name": "SMK Iskandar Shah",
+    "state": "Melaka",
+    "ppd": "Jasin",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; SEJ",
+    "phone": "065291266"
+  },
+  {
+    "code": "MEA1081",
+    "name": "SMK Tun Syed Zahiruddin",
+    "state": "Melaka",
+    "ppd": "Jasin",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "062633492"
+  },
+  {
+    "code": "MEB2103",
+    "name": "Kolej T6 Tun Fatimah",
+    "state": "Melaka",
+    "ppd": "Melaka Tengah",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; KMK; MM; MT; PAKN; PHY; PP; SEJ; SS; SV",
+    "phone": "062831803"
+  },
+  {
+    "code": "MEB2091",
+    "name": "SMK Gajah Berang",
+    "state": "Melaka",
+    "ppd": "Melaka Tengah",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "062831476"
+  },
+  {
+    "code": "MEA2087",
+    "name": "SMK Munshi Abdullah",
+    "state": "Melaka",
+    "ppd": "Melaka Tengah",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PAKN; PHY; PP; SEJ; SS; SV",
+    "phone": "063175320"
+  },
+  {
+    "code": "MEA2089",
+    "name": "SMK Seri Tanjong",
+    "state": "Melaka",
+    "ppd": "Melaka Tengah",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SS; SV",
+    "phone": "063511539"
+  },
+  {
+    "code": "MEB2090",
+    "name": "SMK Tinggi Melaka",
+    "state": "Melaka",
+    "ppd": "Melaka Tengah",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; ICT; MM; MT; PA; PAKN; PHY; PP; SEJ; SS; SV",
+    "phone": "062824466"
+  },
+  {
+    "code": "MEA2094",
+    "name": "SMK Tun Haji Abdul Malek",
+    "state": "Melaka",
+    "ppd": "Melaka Tengah",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ; SS; SV",
+    "phone": "063357473"
+  },
+  {
+    "code": "MEB2102",
+    "name": "SMK Tun Tuah",
+    "state": "Melaka",
+    "ppd": "Melaka Tengah",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PAKN; PP; SEJ; SV",
+    "phone": "063355945"
+  },
+  {
+    "code": "NEE6002",
+    "name": "SMK Batu Kikir",
+    "state": "Negeri Sembilan",
+    "ppd": "Jempol/jelebu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SV",
+    "phone": "064981393"
+  },
+  {
+    "code": "NEE6001",
+    "name": "SMK Datuk Mansor",
+    "state": "Negeri Sembilan",
+    "ppd": "Jempol/jelebu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; BT; CHE; EKO; GEO; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "064541121"
+  },
+  {
+    "code": "NEA0025",
+    "name": "SMK Duma",
+    "state": "Negeri Sembilan",
+    "ppd": "Jempol/jelebu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ; SV",
+    "phone": "066136225"
+  },
+  {
+    "code": "NEA6003",
+    "name": "SMK Seri Perpatih",
+    "state": "Negeri Sembilan",
+    "ppd": "Jempol/jelebu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "064666362"
+  },
+  {
+    "code": "NEB1081",
+    "name": "SMK Tuanku Muhammad",
+    "state": "Negeri Sembilan",
+    "ppd": "Kuala Pilah",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PAKN; PP; SEJ; SS; SV",
+    "phone": "064811030"
+  },
+  {
+    "code": "NEB2054",
+    "name": "SMK Tinggi Port Dickson",
+    "state": "Negeri Sembilan",
+    "ppd": "Port Dickson",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; BT; CHE; EKO; GEO; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "066471295"
+  },
+  {
+    "code": "NRA3001",
+    "name": "SMK Agama Dato' Haji Abu Hassan Haji Sail",
+    "state": "Negeri Sembilan",
+    "ppd": "Rembau",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BA; BI (MUET); PA; SYA; TAH",
+    "phone": "066857162"
+  },
+  {
+    "code": "NEA3035",
+    "name": "SMK Dato Sedia Raja",
+    "state": "Negeri Sembilan",
+    "ppd": "Rembau",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "066851214"
+  },
+  {
+    "code": "NFT4003",
+    "name": "SM Agama Dato' Klana Petra Maamor",
+    "state": "Negeri Sembilan",
+    "ppd": "Seremban",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BA; BI (MUET); PA; SEJ; SYA; USUL",
+    "phone": "067639361"
+  },
+  {
+    "code": "NRA4002",
+    "name": "SM Agama Persekutuan Labu",
+    "state": "Negeri Sembilan",
+    "ppd": "Seremban",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BA; BI (MUET); BM; EKO; PA; SEJ",
+    "phone": "067912245"
+  },
+  {
+    "code": "NRA4001",
+    "name": "SMK Agama Sheikh Hj Mohd Said",
+    "state": "Negeri Sembilan",
+    "ppd": "Seremban",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BA; BI (MUET); BM; PA; SEJ; SYA; USUL",
+    "phone": "067623778"
+  },
+  {
+    "code": "NEE4100",
+    "name": "SMK Dato' Mohd Said.",
+    "state": "Negeri Sembilan",
+    "ppd": "Seremban",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; BT; CHE; EKO; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "067991213"
+  },
+  {
+    "code": "NEE4101",
+    "name": "SMK Mantin",
+    "state": "Negeri Sembilan",
+    "ppd": "Seremban",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "067581251"
+  },
+  {
+    "code": "NEE4099",
+    "name": "SMK Rantau",
+    "state": "Negeri Sembilan",
+    "ppd": "Seremban",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "066941269"
+  },
+  {
+    "code": "NEA4114",
+    "name": "SMK Taman Forest Height",
+    "state": "Negeri Sembilan",
+    "ppd": "Seremban",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; BT; CHE; EKO; GEO; ICT; MM; MT; PA; PAKN; PHY; PP; SEJ; SS; SV; SYA",
+    "phone": "067633951"
+  },
+  {
+    "code": "NEA4088",
+    "name": "SMK Tunku Ampuan Durah",
+    "state": "Negeri Sembilan",
+    "ppd": "Seremban",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; MM; PA; PAKN; PP; SEJ; SV",
+    "phone": "067625590"
+  },
+  {
+    "code": "NEE5040",
+    "name": "SMK Dato'mohd Taha",
+    "state": "Negeri Sembilan",
+    "ppd": "Tampin",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; BT; EKO; GEO; PA; PP; SEJ",
+    "phone": "064316544"
+  },
+  {
+    "code": "NEE5038",
+    "name": "SMK Tuanku Abdul Rahman",
+    "state": "Negeri Sembilan",
+    "ppd": "Tampin",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ",
+    "phone": "079481055"
+  },
+  {
+    "code": "NEE5037",
+    "name": "SMK Tunku Besar",
+    "state": "Negeri Sembilan",
+    "ppd": "Tampin",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; BT; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "064415425"
+  },
+  {
+    "code": "CEB0019",
+    "name": "SMK Ketari",
+    "state": "Pahang",
+    "ppd": "Bentong",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PAKN; PHY; PP; SEJ; SS; SV",
+    "phone": "092221278"
+  },
+  {
+    "code": "CEAA062",
+    "name": "SMK Mengkarak",
+    "state": "Pahang",
+    "ppd": "Bera",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PP; SEJ; SS; SV",
+    "phone": "092552215"
+  },
+  {
+    "code": "CEAA156",
+    "name": "SMK Purun",
+    "state": "Pahang",
+    "ppd": "Bera",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ",
+    "phone": "092481997"
+  },
+  {
+    "code": "CEBA072",
+    "name": "SMK Triang",
+    "state": "Pahang",
+    "ppd": "Bera",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; EKO; MM; MT; PA; PAKN; PHY; PP",
+    "phone": "092507351"
+  },
+  {
+    "code": "CEB1003",
+    "name": "SMK Sultan Ahmad Shah",
+    "state": "Pahang",
+    "ppd": "Cameron Highlands",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "054911018"
+  },
+  {
+    "code": "CEE2032",
+    "name": "SMK Jerantut",
+    "state": "Pahang",
+    "ppd": "Jerantut",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "092662255"
+  },
+  {
+    "code": "CEA2046",
+    "name": "SMK Padang Saujana Jerantut",
+    "state": "Pahang",
+    "ppd": "Jerantut",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PP; SEJ; SS",
+    "phone": "092601310"
+  },
+  {
+    "code": "CEA2048",
+    "name": "SMK Temin",
+    "state": "Pahang",
+    "ppd": "Jerantut",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "092662722"
+  },
+  {
+    "code": "CRA2001",
+    "name": "SMKA Tengku Ampuan Hajjah Afzan Pahang",
+    "state": "Pahang",
+    "ppd": "Jerantut",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BA; BI (MUET); EKO; GEO; PA; SEJ; SYA; USUL",
+    "phone": "092663330"
+  },
+  {
+    "code": "CEA4022",
+    "name": "SMK Abdul Rahman Talib",
+    "state": "Pahang",
+    "ppd": "Kuantan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "095602244"
+  },
+  {
+    "code": "CEA4088",
+    "name": "SMK Astana",
+    "state": "Pahang",
+    "ppd": "Kuantan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; MM; PA; PAKN; PP; SEJ; SS; SV",
+    "phone": "095721522"
+  },
+  {
+    "code": "CEA4096",
+    "name": "SMK Padang Garuda",
+    "state": "Pahang",
+    "ppd": "Kuantan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SS; SV",
+    "phone": "095381016"
+  },
+  {
+    "code": "CEB4032",
+    "name": "SMK Sultan Abu Bakar",
+    "state": "Pahang",
+    "ppd": "Kuantan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MM; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "095665759"
+  },
+  {
+    "code": "CEA4079",
+    "name": "SMK Tok Sera",
+    "state": "Pahang",
+    "ppd": "Kuantan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; MM; PA; PAKN; PP; SEJ; SV",
+    "phone": "095686810"
+  },
+  {
+    "code": "CEE3037",
+    "name": "SMK Clifford",
+    "state": "Pahang",
+    "ppd": "Lipis",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "093101242"
+  },
+  {
+    "code": "CEA3057",
+    "name": "SMK Seri Lipis",
+    "state": "Pahang",
+    "ppd": "Lipis",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "093101321"
+  },
+  {
+    "code": "CEA9165",
+    "name": "SMK Jengka 16",
+    "state": "Pahang",
+    "ppd": "Maran",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ; SS; SV",
+    "phone": "094663789"
+  },
+  {
+    "code": "CEA9114",
+    "name": "SMK Jengka 2",
+    "state": "Pahang",
+    "ppd": "Maran",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "094674325"
+  },
+  {
+    "code": "CEA9157",
+    "name": "SMK Jengka Pusat",
+    "state": "Pahang",
+    "ppd": "Maran",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; CHE; GEO; KMK; MT; PA; PP; SS; SV",
+    "phone": "094677581"
+  },
+  {
+    "code": "CEA9059",
+    "name": "SMK Maran",
+    "state": "Pahang",
+    "ppd": "Maran",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; PP; SEJ; SS; SV",
+    "phone": "094771243"
+  },
+  {
+    "code": "CEA9163",
+    "name": "SMK Seri Jengka",
+    "state": "Pahang",
+    "ppd": "Maran",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; SS; SV",
+    "phone": "094771671"
+  },
+  {
+    "code": "CEA9060",
+    "name": "Smktaa Chenor",
+    "state": "Pahang",
+    "ppd": "Maran",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); GEO; KMK; PA; PP; SS; SV",
+    "phone": "092995373"
+  },
+  {
+    "code": "CEA5053",
+    "name": "SMK Dato Mahmud Mat",
+    "state": "Pahang",
+    "ppd": "Pekan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ; SS; SV",
+    "phone": "094269145"
+  },
+  {
+    "code": "CEE5062",
+    "name": "SMK Sultan Ahmad",
+    "state": "Pahang",
+    "ppd": "Pekan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "094221252"
+  },
+  {
+    "code": "CEA5054",
+    "name": "SMK Tengku Abdullah",
+    "state": "Pahang",
+    "ppd": "Pekan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ; SS; SV",
+    "phone": "094221261"
+  },
+  {
+    "code": "CEA5061",
+    "name": "Smk(lktp) Chini",
+    "state": "Pahang",
+    "ppd": "Pekan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ; SS; SV",
+    "phone": "094566163"
+  },
+  {
+    "code": "CEA6023",
+    "name": "SMK Dong",
+    "state": "Pahang",
+    "ppd": "Raub",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SV",
+    "phone": "093658225"
+  },
+  {
+    "code": "CEA6024",
+    "name": "SMK Lktp Tersang",
+    "state": "Pahang",
+    "ppd": "Raub",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SV",
+    "phone": "093403931"
+  },
+  {
+    "code": "CEB6026",
+    "name": "SMK Mahmud",
+    "state": "Pahang",
+    "ppd": "Raub",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "093551046"
+  },
+  {
+    "code": "CEA6025",
+    "name": "SMK Seri Raub",
+    "state": "Pahang",
+    "ppd": "Raub",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP",
+    "phone": "093501111"
+  },
+  {
+    "code": "CRA8001",
+    "name": "SMK Agama Pahang",
+    "state": "Pahang",
+    "ppd": "Rompin",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BA; BI (MUET); BM; EKO; PA; SEJ; SYA",
+    "phone": "094523901"
+  },
+  {
+    "code": "CEA8017",
+    "name": "SMK Rompin",
+    "state": "Pahang",
+    "ppd": "Rompin",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "094145228"
+  },
+  {
+    "code": "CEA8027",
+    "name": "SMK Selancar",
+    "state": "Pahang",
+    "ppd": "Rompin",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ",
+    "phone": "094371357"
+  },
+  {
+    "code": "CEA8025",
+    "name": "SMK Seri Rompin",
+    "state": "Pahang",
+    "ppd": "Rompin",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; GEO; MT; PA; PP; SV",
+    "phone": "TIADA"
+  },
+  {
+    "code": "CEA8019",
+    "name": "SMK Tg Gemok",
+    "state": "Pahang",
+    "ppd": "Rompin",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "094132640"
+  },
+  {
+    "code": "CEB7068",
+    "name": "SMK Abu Bakar",
+    "state": "Pahang",
+    "ppd": "Temerloh",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ; SS; SV",
+    "phone": "092961260"
+  },
+  {
+    "code": "CEA7065",
+    "name": "SMK Datuk Bahaman",
+    "state": "Pahang",
+    "ppd": "Temerloh",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SS",
+    "phone": "092803252"
+  },
+  {
+    "code": "CEE7070",
+    "name": "SMK Mentakab",
+    "state": "Pahang",
+    "ppd": "Temerloh",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PAKN; PHY; PP; SEJ; SS; SV",
+    "phone": "092771155"
+  },
+  {
+    "code": "CEA7063",
+    "name": "SMK Temerloh",
+    "state": "Pahang",
+    "ppd": "Temerloh",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "092961316"
+  },
+  {
+    "code": "AEEB001",
+    "name": "SMK Khir Johari",
+    "state": "Perak",
+    "ppd": "Bagan Datuk",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "056489218"
+  },
+  {
+    "code": "AEEB002",
+    "name": "SMK Tun Abdul Razak",
+    "state": "Perak",
+    "ppd": "Bagan Datuk",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "056489235"
+  },
+  {
+    "code": "AEA0041",
+    "name": "Kolej Tingkatan Enam Tapah",
+    "state": "Perak",
+    "ppd": "Batang Padang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "054013677"
+  },
+  {
+    "code": "AEEA001",
+    "name": "SMK Dato' Zulkifli Mohamad",
+    "state": "Perak",
+    "ppd": "Batang Padang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "054528275"
+  },
+  {
+    "code": "AEAA004",
+    "name": "SMK Proton City",
+    "state": "Perak",
+    "ppd": "Batang Padang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "05-4581431"
+  },
+  {
+    "code": "AEE0040",
+    "name": "SMK Sungkai",
+    "state": "Perak",
+    "ppd": "Batang Padang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "054386609"
+  },
+  {
+    "code": "AEB5168",
+    "name": "SMK Horley Methodist",
+    "state": "Perak",
+    "ppd": "Hilir Perak",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "056221215"
+  },
+  {
+    "code": "AEB5170",
+    "name": "SMK San Min",
+    "state": "Perak",
+    "ppd": "Hilir Perak",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "056221216"
+  },
+  {
+    "code": "AEA5073",
+    "name": "SMK Seri Perak",
+    "state": "Perak",
+    "ppd": "Hilir Perak",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "056221707"
+  },
+  {
+    "code": "AEB5167",
+    "name": "SMK St Anthony",
+    "state": "Perak",
+    "ppd": "Hilir Perak",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; BT; CHE; EKO; MM; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "056221914"
+  },
+  {
+    "code": "AEB5165",
+    "name": "SMK Sultan Abdul Aziz",
+    "state": "Perak",
+    "ppd": "Hilir Perak",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "056221159"
+  },
+  {
+    "code": "AEA5074",
+    "name": "SMK Sultan Abdullah",
+    "state": "Perak",
+    "ppd": "Hilir Perak",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ; SV",
+    "phone": "056511835"
+  },
+  {
+    "code": "AEE7031",
+    "name": "SMK Dato' Ahmad",
+    "state": "Perak",
+    "ppd": "Hulu Perak",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ",
+    "phone": "057691260"
+  },
+  {
+    "code": "AEE7033",
+    "name": "SMK Tun Saban",
+    "state": "Perak",
+    "ppd": "Hulu Perak",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; KMK; PA; PP; SEJ; SV; SYA",
+    "phone": "044778245"
+  },
+  {
+    "code": "AEB2063",
+    "name": "SMK Sultan Yussuf",
+    "state": "Perak",
+    "ppd": "Kinta Selatan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; ICT; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "053633203"
+  },
+  {
+    "code": "AEB2061",
+    "name": "Kte Seri Ipoh",
+    "state": "Perak",
+    "ppd": "Kinta Utara",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; BT; EKO; MM; PA; PAKN; PP; SEJ; SV",
+    "phone": "052549207"
+  },
+  {
+    "code": "AEB2059",
+    "name": "Kte Seri Putera",
+    "state": "Perak",
+    "ppd": "Kinta Utara",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PAKN; PHY; PP; SEJ; SS; SV",
+    "phone": "055450902"
+  },
+  {
+    "code": "AEB2043",
+    "name": "SMK Anderson",
+    "state": "Perak",
+    "ppd": "Kinta Utara",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; EKO; GEO; MM; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "052494900"
+  },
+  {
+    "code": "AEA2046",
+    "name": "SMK Dato' Haji Mohd Taib",
+    "state": "Perak",
+    "ppd": "Kinta Utara",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "052011808"
+  },
+  {
+    "code": "AEA2051",
+    "name": "SMK Jalan Tasek",
+    "state": "Perak",
+    "ppd": "Kinta Utara",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "055497606"
+  },
+  {
+    "code": "AEA2049",
+    "name": "SMK Kg Pasir Puteh",
+    "state": "Perak",
+    "ppd": "Kinta Utara",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ",
+    "phone": "053225150"
+  },
+  {
+    "code": "AEB2062",
+    "name": "SMK Menglembu",
+    "state": "Perak",
+    "ppd": "Kinta Utara",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); EKO; PA; PAKN; PP; SV",
+    "phone": "052812559"
+  },
+  {
+    "code": "AEB2045",
+    "name": "SMK Methodist Acs",
+    "state": "Perak",
+    "ppd": "Kinta Utara",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "052549336"
+  },
+  {
+    "code": "AEA2041",
+    "name": "SMK Raja Chulan",
+    "state": "Perak",
+    "ppd": "Kinta Utara",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; SEJ",
+    "phone": "055457082"
+  },
+  {
+    "code": "AEB2046",
+    "name": "SMK Raja Perempuan",
+    "state": "Perak",
+    "ppd": "Kinta Utara",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; EKO; MM; MT; PA; PAKN; PHY; PP",
+    "phone": "052494830"
+  },
+  {
+    "code": "AEB2053",
+    "name": "SMK Sam Tet",
+    "state": "Perak",
+    "ppd": "Kinta Utara",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "052545457"
+  },
+  {
+    "code": "AEA2047",
+    "name": "SMK Seri Keledang",
+    "state": "Perak",
+    "ppd": "Kinta Utara",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "052813240"
+  },
+  {
+    "code": "AEB2044",
+    "name": "SMK St Michael",
+    "state": "Perak",
+    "ppd": "Kinta Utara",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; ICT; MM; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "052540418"
+  },
+  {
+    "code": "AEA3040",
+    "name": "SMK Alang Iskandar",
+    "state": "Perak",
+    "ppd": "Krian",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PAKN; PP; SEJ; SS; SV",
+    "phone": "057210346"
+  },
+  {
+    "code": "AEA3038",
+    "name": "SMK Panglima Bukit Gantang",
+    "state": "Perak",
+    "ppd": "Krian",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ",
+    "phone": "057161161"
+  },
+  {
+    "code": "AEE4070",
+    "name": "SMK Clifford",
+    "state": "Perak",
+    "ppd": "Kuala Kangsar",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; KMK; MM; MT; PA; PHY; SEJ; SV",
+    "phone": "057731313"
+  },
+  {
+    "code": "AEB4072",
+    "name": "SMK Raja Muda Musa",
+    "state": "Perak",
+    "ppd": "Kuala Kangsar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; ICT; KMK; PA; PP; SEJ; SV",
+    "phone": "057733112"
+  },
+  {
+    "code": "AEB4076",
+    "name": "SMK Shing Chung",
+    "state": "Perak",
+    "ppd": "Kuala Kangsar",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "055981353"
+  },
+  {
+    "code": "AEA4085",
+    "name": "SMK Toh Muda Abdul Aziz",
+    "state": "Perak",
+    "ppd": "Kuala Kangsar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PAKN; PP; SEJ; SV",
+    "phone": "055951370"
+  },
+  {
+    "code": "AEB4073",
+    "name": "SMK Tsung Wah",
+    "state": "Perak",
+    "ppd": "Kuala Kangsar",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "057777644"
+  },
+  {
+    "code": "AEE6059",
+    "name": "SMK Dato' Haji Hussein",
+    "state": "Perak",
+    "ppd": "Larut/matang/selama",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ",
+    "phone": "058394048"
+  },
+  {
+    "code": "AEE6058",
+    "name": "SMK Dato' Kamaruddin",
+    "state": "Perak",
+    "ppd": "Larut/matang/selama",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "058880346"
+  },
+  {
+    "code": "AEA6048",
+    "name": "SMK Doktor Burhanuddin",
+    "state": "Perak",
+    "ppd": "Larut/matang/selama",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PAKN; PP; SEJ",
+    "phone": "058072213"
+  },
+  {
+    "code": "AEB6054",
+    "name": "SMK Hua Lian",
+    "state": "Perak",
+    "ppd": "Larut/matang/selama",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "058073472"
+  },
+  {
+    "code": "AEA6052",
+    "name": "SMK Kamunting",
+    "state": "Perak",
+    "ppd": "Larut/matang/selama",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SV",
+    "phone": "058913723"
+  },
+  {
+    "code": "AEE6050",
+    "name": "SMK King Edward Vii",
+    "state": "Perak",
+    "ppd": "Larut/matang/selama",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "058073191"
+  },
+  {
+    "code": "AEA6051",
+    "name": "SMK Simpang",
+    "state": "Perak",
+    "ppd": "Larut/matang/selama",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PHY; PP; SEJ",
+    "phone": "058471144"
+  },
+  {
+    "code": "AEB6051",
+    "name": "SMK St George",
+    "state": "Perak",
+    "ppd": "Larut/matang/selama",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "058072408"
+  },
+  {
+    "code": "AEE6060",
+    "name": "SMK Tat Beng",
+    "state": "Perak",
+    "ppd": "Larut/matang/selama",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ",
+    "phone": "058544220"
+  },
+  {
+    "code": "AEA1110",
+    "name": "SMK Ahmad Boestamam",
+    "state": "Perak",
+    "ppd": "Manjung",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ",
+    "phone": "056911552"
+  },
+  {
+    "code": "AEE1036",
+    "name": "SMK Ambrose",
+    "state": "Perak",
+    "ppd": "Manjung",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "056722373"
+  },
+  {
+    "code": "AEB1034",
+    "name": "SMK Ayer Tawar",
+    "state": "Perak",
+    "ppd": "Manjung",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "056722042"
+  },
+  {
+    "code": "AEE1026",
+    "name": "SMK Methodist Acs",
+    "state": "Perak",
+    "ppd": "Manjung",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "056911071"
+  },
+  {
+    "code": "AEB1031",
+    "name": "SMK Nan Hwa",
+    "state": "Perak",
+    "ppd": "Manjung",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "056911077"
+  },
+  {
+    "code": "AEE1032",
+    "name": "SMK Raja Shahriman",
+    "state": "Perak",
+    "ppd": "Manjung",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "056749237"
+  },
+  {
+    "code": "AEE8701",
+    "name": "SMK Iskandar Shah",
+    "state": "Perak",
+    "ppd": "Perak Tengah",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "053771228"
+  },
+  {
+    "code": "AEA8003",
+    "name": "SMK Sultan Abdul Jalil Shah",
+    "state": "Perak",
+    "ppd": "Perak Tengah",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "056553954"
+  },
+  {
+    "code": "REE0059",
+    "name": "SMK Derma",
+    "state": "Perlis",
+    "ppd": "JPN Perlis",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ; SV",
+    "phone": "049761202"
+  },
+  {
+    "code": "REB0058",
+    "name": "SMK Perlis",
+    "state": "Perlis",
+    "ppd": "JPN Perlis",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; PP",
+    "phone": "049761024"
+  },
+  {
+    "code": "REB0057",
+    "name": "SMK Putra",
+    "state": "Perlis",
+    "ppd": "JPN Perlis",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "049761150"
+  },
+  {
+    "code": "REE0060",
+    "name": "SMK Syed Alwi",
+    "state": "Perlis",
+    "ppd": "JPN Perlis",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "049762539"
+  },
+  {
+    "code": "REA0056",
+    "name": "SMK Syed Hassan",
+    "state": "Perlis",
+    "ppd": "JPN Perlis",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SS",
+    "phone": "049766217"
+  },
+  {
+    "code": "REE0063",
+    "name": "SMK Tengku Suleiman",
+    "state": "Perlis",
+    "ppd": "JPN Perlis",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "049381367"
+  },
+  {
+    "code": "PEA3034",
+    "name": "SMK Seri Balik Pulau",
+    "state": "Pulau Pinang",
+    "ppd": "Barat Daya",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; CHE; EKO; KMK; MM; MT; PA; PHY; SEJ",
+    "phone": "048668262"
+  },
+  {
+    "code": "PEB3038",
+    "name": "SMK Sungai Ara",
+    "state": "Pulau Pinang",
+    "ppd": "Barat Daya",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "046434557"
+  },
+  {
+    "code": "PEA4004",
+    "name": "SMK Mutiara Impian",
+    "state": "Pulau Pinang",
+    "ppd": "Seberang Perai Selatan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; SEJ; SS",
+    "phone": "045873660"
+  },
+  {
+    "code": "PEE4035",
+    "name": "SMK Simpang Empat",
+    "state": "Pulau Pinang",
+    "ppd": "Seberang Perai Selatan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "045887255"
+  },
+  {
+    "code": "PEE4036",
+    "name": "SMK Tun Syed Sheh Barakbah",
+    "state": "Pulau Pinang",
+    "ppd": "Seberang Perai Selatan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ",
+    "phone": "045824476"
+  },
+  {
+    "code": "PEE4037",
+    "name": "SMK Tunku Abdul Rahman",
+    "state": "Pulau Pinang",
+    "ppd": "Seberang Perai Selatan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MM; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "045935030"
+  },
+  {
+    "code": "PEB0045",
+    "name": "SMJK Jit Sin",
+    "state": "Pulau Pinang",
+    "ppd": "Seberang Perai Tengah",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; CHE; EKO; ICT; MM; MT; PA; PAKN; PHY; PP",
+    "phone": "045391036"
+  },
+  {
+    "code": "PEE0041",
+    "name": "SMK Penanti",
+    "state": "Pulau Pinang",
+    "ppd": "Seberang Perai Tengah",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ",
+    "phone": "045213215"
+  },
+  {
+    "code": "PEA0004",
+    "name": "SMK Seberang Jaya",
+    "state": "Pulau Pinang",
+    "ppd": "Seberang Perai Tengah",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; KMK; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "043996601"
+  },
+  {
+    "code": "PEB0042",
+    "name": "SMK Tinggi Bukit Mertajam",
+    "state": "Pulau Pinang",
+    "ppd": "Seberang Perai Tengah",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; ICT; KMK; MM; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "045393420"
+  },
+  {
+    "code": "PEA2089",
+    "name": "Kte Desa Murni",
+    "state": "Pulau Pinang",
+    "ppd": "Seberang Perai Utara",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; KMK; MM; MT; PA; PAKN; PHY; PP; SEJ; SS; SV; SYA; USUL",
+    "phone": "043567569"
+  },
+  {
+    "code": "PEA2056",
+    "name": "SMJK Chung Ling Butterworth",
+    "state": "Pulau Pinang",
+    "ppd": "Seberang Perai Utara",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; CHE; EKO; MM; MT; PA; PAKN; PHY; PP",
+    "phone": "043316480"
+  },
+  {
+    "code": "PEA2054",
+    "name": "SMK Datuk Hj Ahmad Badawi",
+    "state": "Pulau Pinang",
+    "ppd": "Seberang Perai Utara",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ",
+    "phone": "045751142"
+  },
+  {
+    "code": "PEA2057",
+    "name": "SMK Teluk Air Tawar",
+    "state": "Pulau Pinang",
+    "ppd": "Seberang Perai Utara",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PAKN; PHY; PP; SEJ; SYA",
+    "phone": "043512320"
+  },
+  {
+    "code": "PEE1111",
+    "name": "Kolej Tingkatan Enam Hj Zainul Abidin",
+    "state": "Pulau Pinang",
+    "ppd": "Timur Laut",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; KMK; MM; MT; PA; PAKN; PHY; PP; SEJ; SS; SV; SYA",
+    "phone": "042827933"
+  },
+  {
+    "code": "PEB1096",
+    "name": "SMJK Chung Ling Pulau Pinang",
+    "state": "Pulau Pinang",
+    "ppd": "Timur Laut",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; EKO; MT; PA; PAKN; PHY; PP",
+    "phone": "048282435"
+  },
+  {
+    "code": "PEB1093",
+    "name": "SMJK Perempuan China",
+    "state": "Pulau Pinang",
+    "ppd": "Timur Laut",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; CHE; EKO; MM; MT; PA; PAKN; PHY; PP",
+    "phone": "042277124"
+  },
+  {
+    "code": "PEB1106",
+    "name": "SMK (L) Methodist",
+    "state": "Pulau Pinang",
+    "ppd": "Timur Laut",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "042293986"
+  },
+  {
+    "code": "PEB1095",
+    "name": "SMK Chung Hwa",
+    "state": "Pulau Pinang",
+    "ppd": "Timur Laut",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "046583414"
+  },
+  {
+    "code": "PEB1103",
+    "name": "SMK Heng Ee",
+    "state": "Pulau Pinang",
+    "ppd": "Timur Laut",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PAKN; PHY; PP; SV",
+    "phone": "042824402"
+  },
+  {
+    "code": "PEA1092",
+    "name": "SMK Hutchings",
+    "state": "Pulau Pinang",
+    "ppd": "Timur Laut",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; KMK; MM; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": ""
+  },
+  {
+    "code": "PEB1094",
+    "name": "SMK Penang Free",
+    "state": "Pulau Pinang",
+    "ppd": "Timur Laut",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; L.ENG; MM; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "042815814"
+  },
+  {
+    "code": "PEB1110",
+    "name": "SMK St. Xavier",
+    "state": "Pulau Pinang",
+    "ppd": "Timur Laut",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "042610411"
+  },
+  {
+    "code": "XEA6065",
+    "name": "SMK Beaufort",
+    "state": "Sabah",
+    "ppd": "Beaufort",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MM; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "087211125"
+  },
+  {
+    "code": "XEA6066",
+    "name": "SMK Beaufort Ii",
+    "state": "Sabah",
+    "ppd": "Beaufort",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SS; SV",
+    "phone": "087214599"
+  },
+  {
+    "code": "XEE6011",
+    "name": "SMK Gadong",
+    "state": "Sabah",
+    "ppd": "Beaufort",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SS; SV",
+    "phone": "087221602"
+  },
+  {
+    "code": "XEE6021",
+    "name": "SMK Kota Klias",
+    "state": "Sabah",
+    "ppd": "Beaufort",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ; SV",
+    "phone": "087881168"
+  },
+  {
+    "code": "XEA6100",
+    "name": "SMK Membakut Ii",
+    "state": "Sabah",
+    "ppd": "Beaufort",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ",
+    "phone": "087889854"
+  },
+  {
+    "code": "XEE6061",
+    "name": "SMK Weston",
+    "state": "Sabah",
+    "ppd": "Beaufort",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ; SS; SV",
+    "phone": "087871454"
+  },
+  {
+    "code": "XEE2103",
+    "name": "SMK Beluran",
+    "state": "Sabah",
+    "ppd": "Beluran",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV; SYA",
+    "phone": "089511259"
+  },
+  {
+    "code": "XEA2143",
+    "name": "SMK Pamol",
+    "state": "Sabah",
+    "ppd": "Beluran",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; SEJ; SV",
+    "phone": "089515575"
+  },
+  {
+    "code": "XFE1021",
+    "name": "SM Ken Hwa Keningau",
+    "state": "Sabah",
+    "ppd": "Keningau",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; BM; CHE; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "087331561"
+  },
+  {
+    "code": "XEE1023",
+    "name": "SMK Gunsanad",
+    "state": "Sabah",
+    "ppd": "Keningau",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "087331587"
+  },
+  {
+    "code": "XEA1058",
+    "name": "SMK Keningau",
+    "state": "Sabah",
+    "ppd": "Keningau",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SS; SV",
+    "phone": "087333107"
+  },
+  {
+    "code": "XEA1059",
+    "name": "SMK Keningau Dua",
+    "state": "Sabah",
+    "ppd": "Keningau",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; ICT; KMK; PA; PP; SEJ; SS; SV",
+    "phone": "087391280"
+  },
+  {
+    "code": "XEA1060",
+    "name": "SMK Sook",
+    "state": "Sabah",
+    "ppd": "Keningau",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SS; SV",
+    "phone": "087365464"
+  },
+  {
+    "code": "XEA2220",
+    "name": "SMK Bukit Garam",
+    "state": "Sabah",
+    "ppd": "Kinabatangan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ",
+    "phone": "089561909"
+  },
+  {
+    "code": "XEE5318",
+    "name": "SMK Arshad",
+    "state": "Sabah",
+    "ppd": "Kota Belud",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PAKN; PP; SEJ",
+    "phone": "088976530"
+  },
+  {
+    "code": "XEA5353",
+    "name": "SMK Pekan Kota Belud",
+    "state": "Sabah",
+    "ppd": "Kota Belud",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; ICT; PA; PP; SEJ; SS",
+    "phone": "088977279"
+  },
+  {
+    "code": "XEA5351",
+    "name": "SMK Taun Gusi",
+    "state": "Sabah",
+    "ppd": "Kota Belud",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; ICT; KMK; PA; PP; SEJ; SS; SV",
+    "phone": "088976116"
+  },
+  {
+    "code": "XEA4048",
+    "name": "Kolej Tingkatan Enam Kota Kinabalu",
+    "state": "Sabah",
+    "ppd": "Kota Kinabalu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PAKN; PHY; PP; SEJ; SS; SV",
+    "phone": "088470761"
+  },
+  {
+    "code": "XEE4038",
+    "name": "Maktab Sabah",
+    "state": "Sabah",
+    "ppd": "Kota Kinabalu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; MM; MT; PA; PHY; PP; SEJ; SS; SV; SYA",
+    "phone": "088225201"
+  },
+  {
+    "code": "XFE4001",
+    "name": "SM All Saints",
+    "state": "Sabah",
+    "ppd": "Kota Kinabalu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MM; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "088428610"
+  },
+  {
+    "code": "XFE4022",
+    "name": "SM La Salle",
+    "state": "Sabah",
+    "ppd": "Kota Kinabalu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "088224326"
+  },
+  {
+    "code": "XFE4027",
+    "name": "SM Lok Yuk",
+    "state": "Sabah",
+    "ppd": "Kota Kinabalu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; MM; PA; PAKN; PP; SEJ; SS; SV",
+    "phone": "088426737"
+  },
+  {
+    "code": "XFE4021",
+    "name": "SM Tinggi",
+    "state": "Sabah",
+    "ppd": "Kota Kinabalu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; BM; CHE; EKO; GEO; MM; MT; PA; PAKN; PHY; PP; SV",
+    "phone": "088211788"
+  },
+  {
+    "code": "XEE4020",
+    "name": "SMK Likas",
+    "state": "Sabah",
+    "ppd": "Kota Kinabalu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "088239595"
+  },
+  {
+    "code": "XEA4040",
+    "name": "SMK Sanzac",
+    "state": "Sabah",
+    "ppd": "Kota Kinabalu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ",
+    "phone": "088210360"
+  },
+  {
+    "code": "XRA4003",
+    "name": "SMKA Kota Kinabalu",
+    "state": "Sabah",
+    "ppd": "Kota Kinabalu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BA; BI (MUET); PA; SEJ; SYA; TAH; USUL",
+    "phone": "088243548"
+  },
+  {
+    "code": "XEA5102",
+    "name": "SMK Bengkongan",
+    "state": "Sabah",
+    "ppd": "Kota Marudu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; SEJ; SS; SV",
+    "phone": "088667521"
+  },
+  {
+    "code": "XEE5118",
+    "name": "SMK Kota Marudu",
+    "state": "Sabah",
+    "ppd": "Kota Marudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PP; SEJ; SS; SV",
+    "phone": "088661346"
+  },
+  {
+    "code": "XEA5105",
+    "name": "SMK Kota Marudu Ii",
+    "state": "Sabah",
+    "ppd": "Kota Marudu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SS",
+    "phone": "088661319"
+  },
+  {
+    "code": "XEA5101",
+    "name": "SMK Tandek",
+    "state": "Sabah",
+    "ppd": "Kota Marudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; EKO; GEO; MT; PA; PP; SEJ; SS; SV",
+    "phone": "088661173"
+  },
+  {
+    "code": "XEE6310",
+    "name": "SMK Kuala Penyu",
+    "state": "Sabah",
+    "ppd": "Kuala Penyu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SV",
+    "phone": "087884275"
+  },
+  {
+    "code": "XEA6314",
+    "name": "SMK Menumbok",
+    "state": "Sabah",
+    "ppd": "Kuala Penyu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ; SV",
+    "phone": "087831282"
+  },
+  {
+    "code": "XEA6315",
+    "name": "SMK Pekan Kuala Penyu",
+    "state": "Sabah",
+    "ppd": "Kuala Penyu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SV",
+    "phone": "087885851"
+  },
+  {
+    "code": "XEE5019",
+    "name": "SMK Abdul Rahim",
+    "state": "Sabah",
+    "ppd": "Kudat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PP; SEJ; SS; SV",
+    "phone": "088612092"
+  },
+  {
+    "code": "XEA5001",
+    "name": "SMK Kudat",
+    "state": "Sabah",
+    "ppd": "Kudat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; PA; PP; SEJ; SS; SV",
+    "phone": "088611316"
+  },
+  {
+    "code": "XEA5023",
+    "name": "SMK Kudat Ii",
+    "state": "Sabah",
+    "ppd": "Kudat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; PP; SEJ; SS; SV",
+    "phone": "088621381"
+  },
+  {
+    "code": "XEA5022",
+    "name": "SMK Pinawantai",
+    "state": "Sabah",
+    "ppd": "Kudat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP",
+    "phone": "088615730"
+  },
+  {
+    "code": "XEA5004",
+    "name": "SMK Sikuati",
+    "state": "Sabah",
+    "ppd": "Kudat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; KMK; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "088613498"
+  },
+  {
+    "code": "XEA3201",
+    "name": "SMK Kunak Jaya",
+    "state": "Sabah",
+    "ppd": "Kunak",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ",
+    "phone": "089851667"
+  },
+  {
+    "code": "XEE3117",
+    "name": "SMK Agaseh",
+    "state": "Sabah",
+    "ppd": "Lahad Datu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; KMK; MT; PA; PAKN; PP; SEJ",
+    "phone": "089881836"
+  },
+  {
+    "code": "XEA3106",
+    "name": "SMK Segama",
+    "state": "Sabah",
+    "ppd": "Lahad Datu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ",
+    "phone": "089888679"
+  },
+  {
+    "code": "XEA3104",
+    "name": "SMK Sepagaya",
+    "state": "Sabah",
+    "ppd": "Lahad Datu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "089884554"
+  },
+  {
+    "code": "XEA3101",
+    "name": "SMK Tungku",
+    "state": "Sabah",
+    "ppd": "Lahad Datu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; KMK; PA; PP; SEJ",
+    "phone": "089871101"
+  },
+  {
+    "code": "XEA1111",
+    "name": "SMK Nabawan",
+    "state": "Sabah",
+    "ppd": "Nabawan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; SEJ; SS; SV",
+    "phone": "087366215"
+  },
+  {
+    "code": "XEA4262",
+    "name": "SMK Benoni",
+    "state": "Sabah",
+    "ppd": "Papar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "088912337"
+  },
+  {
+    "code": "XEE6102",
+    "name": "SMK Bongawan",
+    "state": "Sabah",
+    "ppd": "Papar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SS; SV",
+    "phone": "087861990"
+  },
+  {
+    "code": "XEA4261",
+    "name": "SMK Kinarut",
+    "state": "Sabah",
+    "ppd": "Papar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "088750181"
+  },
+  {
+    "code": "XEE4239",
+    "name": "SMK Majakir",
+    "state": "Sabah",
+    "ppd": "Papar",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "088913554"
+  },
+  {
+    "code": "XEA4263",
+    "name": "SMK Takis",
+    "state": "Sabah",
+    "ppd": "Papar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "088915251"
+  },
+  {
+    "code": "XRA4201",
+    "name": "SMKA Tun Datu Mustapha",
+    "state": "Sabah",
+    "ppd": "Papar",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BA; BI (MUET); PA; SEJ; SYA; USUL",
+    "phone": "088752955"
+  },
+  {
+    "code": "XEA4130",
+    "name": "SMK Limbanak",
+    "state": "Sabah",
+    "ppd": "Penampang",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "088728264"
+  },
+  {
+    "code": "XEE4110",
+    "name": "SMK Putatan",
+    "state": "Sabah",
+    "ppd": "Penampang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SS; SV; SYA",
+    "phone": "088764368"
+  },
+  {
+    "code": "XEA5217",
+    "name": "SMK Pinggan-pinggan",
+    "state": "Sabah",
+    "ppd": "Pitas",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ",
+    "phone": "088662872"
+  },
+  {
+    "code": "XEA5216",
+    "name": "SMK Pitas",
+    "state": "Sabah",
+    "ppd": "Pitas",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "088613244"
+  },
+  {
+    "code": "XEA5221",
+    "name": "SMK Pitas Ii",
+    "state": "Sabah",
+    "ppd": "Pitas",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ",
+    "phone": "088687091"
+  },
+  {
+    "code": "XEA5403",
+    "name": "SMK Kundasang",
+    "state": "Sabah",
+    "ppd": "Ranau",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; EKO; GEO; MT; PA; PHY; PP; SEJ; SS; SV; SYA",
+    "phone": "088878433"
+  },
+  {
+    "code": "XEA5404",
+    "name": "SMK Lohan",
+    "state": "Sabah",
+    "ppd": "Ranau",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PP; SEJ; SS; SV",
+    "phone": "088875241"
+  },
+  {
+    "code": "XEE5435",
+    "name": "SMK Mat Salleh, Ranau",
+    "state": "Sabah",
+    "ppd": "Ranau",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "088875445"
+  },
+  {
+    "code": "XEA5407",
+    "name": "SMK Ranau",
+    "state": "Sabah",
+    "ppd": "Ranau",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SS",
+    "phone": "088879861"
+  },
+  {
+    "code": "XRA5401",
+    "name": "SMKA Mohamad Ali Ranau",
+    "state": "Sabah",
+    "ppd": "Ranau",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BA; BI (MUET); BM; PA; SEJ; SYA; USUL",
+    "phone": "088876215"
+  },
+  {
+    "code": "XEA2073",
+    "name": "Kolej Tingkatan Enam Datuk Pengiran Galpam",
+    "state": "Sabah",
+    "ppd": "Sandakan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BA; BC; BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; KMK; MM; MT; PA; PAKN; PHY; PP; SEJ; SS; SV; SYA; USUL",
+    "phone": "089211604"
+  },
+  {
+    "code": "XEA2072",
+    "name": "SMK Batu Sapi",
+    "state": "Sabah",
+    "ppd": "Sandakan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SS; SV",
+    "phone": "089612954"
+  },
+  {
+    "code": "XEA2071",
+    "name": "SMK Elopura",
+    "state": "Sabah",
+    "ppd": "Sandakan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; KMK; MT; PA; PHY; PP; SEJ; SS",
+    "phone": "089533960"
+  },
+  {
+    "code": "XEA2083",
+    "name": "SMK Elopura 2",
+    "state": "Sabah",
+    "ppd": "Sandakan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; SEJ; SS",
+    "phone": "089632601"
+  },
+  {
+    "code": "XEA2075",
+    "name": "SMK Muhibbah",
+    "state": "Sabah",
+    "ppd": "Sandakan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MM; MT; PA; PP; SEJ; SS; SV",
+    "phone": "089214491"
+  },
+  {
+    "code": "XEA2084",
+    "name": "SMK Sandakan 2",
+    "state": "Sabah",
+    "ppd": "Sandakan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ; SV",
+    "phone": "089632810"
+  },
+  {
+    "code": "XEA2081",
+    "name": "SMK Segaliud",
+    "state": "Sabah",
+    "ppd": "Sandakan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ",
+    "phone": "TIADA"
+  },
+  {
+    "code": "XEA3329",
+    "name": "SMK Bugaya",
+    "state": "Sabah",
+    "ppd": "Semporna",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "089781591"
+  },
+  {
+    "code": "XEA3330",
+    "name": "SMK Bum-bum",
+    "state": "Sabah",
+    "ppd": "Semporna",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ; SV",
+    "phone": "089786710"
+  },
+  {
+    "code": "XEE3318",
+    "name": "SMK Dtk Pg. Abdullah",
+    "state": "Sabah",
+    "ppd": "Semporna",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PP; SEJ; SS; SV",
+    "phone": "089781657"
+  },
+  {
+    "code": "XEA3331",
+    "name": "SMK Tagasan",
+    "state": "Sabah",
+    "ppd": "Semporna",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "089784164"
+  },
+  {
+    "code": "XEE6221",
+    "name": "SMK Pengiran Omar, Sipitang",
+    "state": "Sabah",
+    "ppd": "Sipitang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "087821439"
+  },
+  {
+    "code": "XEA6203",
+    "name": "SMK Sindumin",
+    "state": "Sabah",
+    "ppd": "Sipitang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); GEO; PA; SEJ; SS",
+    "phone": "087811766"
+  },
+  {
+    "code": "XEA1219",
+    "name": "SMK Tambunan",
+    "state": "Sabah",
+    "ppd": "Tambunan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "087774097"
+  },
+  {
+    "code": "XFE3002",
+    "name": "SMK Abaka",
+    "state": "Sabah",
+    "ppd": "Tawau",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); EKO; PA; PP; SEJ",
+    "phone": "089768871"
+  },
+  {
+    "code": "XEA3053",
+    "name": "SMK Balung",
+    "state": "Sabah",
+    "ppd": "Tawau",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SS",
+    "phone": "089951032"
+  },
+  {
+    "code": "XEA3062",
+    "name": "SMK Kinabutan",
+    "state": "Sabah",
+    "ppd": "Tawau",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); EKO; PA; PP; SEJ",
+    "phone": "089912161"
+  },
+  {
+    "code": "XEA3064",
+    "name": "SMK Kinabutan",
+    "state": "Sabah",
+    "ppd": "Tawau",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SV",
+    "phone": "089902773"
+  },
+  {
+    "code": "XEA3067",
+    "name": "SMK Kinabutan",
+    "state": "Sabah",
+    "ppd": "Tawau",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SV",
+    "phone": "089927017"
+  },
+  {
+    "code": "XEA1345",
+    "name": "SMK Kemabong",
+    "state": "Sabah",
+    "ppd": "Tenom",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; PP; SEJ; SS",
+    "phone": "087737299"
+  },
+  {
+    "code": "XEE1338",
+    "name": "SMK Tenom",
+    "state": "Sabah",
+    "ppd": "Tenom",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "087735242"
+  },
+  {
+    "code": "XEA2224",
+    "name": "SMK Penangah",
+    "state": "Sabah",
+    "ppd": "Tongod",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); EKO; GEO; PA; SEJ",
+    "phone": "087307445"
+  },
+  {
+    "code": "XEA2141",
+    "name": "SMK Telupid",
+    "state": "Sabah",
+    "ppd": "Tongod",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SS",
+    "phone": "089521734"
+  },
+  {
+    "code": "XEA4302",
+    "name": "SMK Sri Nangka",
+    "state": "Sabah",
+    "ppd": "Tuaran",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; PP; SEJ",
+    "phone": "088793779"
+  },
+  {
+    "code": "XEE4401",
+    "name": "SMK Tamparuli",
+    "state": "Sabah",
+    "ppd": "Tuaran",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; KMK; MT; PA; PP; SEJ; SS; SV",
+    "phone": "088782345"
+  },
+  {
+    "code": "XEA4401",
+    "name": "SMK Tenghilan",
+    "state": "Sabah",
+    "ppd": "Tuaran",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; KMK; PA; PP; SEJ; SV",
+    "phone": "088981197"
+  },
+  {
+    "code": "XEE4322",
+    "name": "SMK Tun Fuad Stephens",
+    "state": "Sabah",
+    "ppd": "Tuaran",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "088782835"
+  },
+  {
+    "code": "YEB4302",
+    "name": "SMK Long Lama",
+    "state": "Sarawak",
+    "ppd": "Baram",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ; SV",
+    "phone": "085771278"
+  },
+  {
+    "code": "YEB4301",
+    "name": "SMK Marudi",
+    "state": "Sarawak",
+    "ppd": "Baram",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BM; CHE; GEO; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "085755435"
+  },
+  {
+    "code": "YEE1101",
+    "name": "SMK Bau",
+    "state": "Sarawak",
+    "ppd": "Bau",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MM; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "082763117"
+  },
+  {
+    "code": "YEE7201",
+    "name": "SMK Belaga",
+    "state": "Sarawak",
+    "ppd": "Belaga",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "086461445"
+  },
+  {
+    "code": "YEE2402",
+    "name": "SMK Datuk Patinggi Kedit",
+    "state": "Sarawak",
+    "ppd": "Betong",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ",
+    "phone": "083472018"
+  },
+  {
+    "code": "YEA2401",
+    "name": "SMK Pusa",
+    "state": "Sarawak",
+    "ppd": "Betong",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ; SV",
+    "phone": "083465133"
+  },
+  {
+    "code": "YEE2401",
+    "name": "SMK Saribas",
+    "state": "Sarawak",
+    "ppd": "Betong",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ",
+    "phone": "083464109"
+  },
+  {
+    "code": "YEA2402",
+    "name": "SMK Spaoh",
+    "state": "Sarawak",
+    "ppd": "Betong",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; SEJ; SV",
+    "phone": "083473399"
+  },
+  {
+    "code": "YFB2401",
+    "name": "SMK St Augustine",
+    "state": "Sarawak",
+    "ppd": "Betong",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ; SV",
+    "phone": "083472122"
+  },
+  {
+    "code": "YEA9104",
+    "name": "SMK Asyakirin",
+    "state": "Sarawak",
+    "ppd": "Bintulu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SV",
+    "phone": "086255592"
+  },
+  {
+    "code": "YEA9101",
+    "name": "SMK Bandar Bintulu",
+    "state": "Sarawak",
+    "ppd": "Bintulu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; SV",
+    "phone": "086332615"
+  },
+  {
+    "code": "YEE9103",
+    "name": "SMK Bintulu",
+    "state": "Sarawak",
+    "ppd": "Bintulu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "086331217"
+  },
+  {
+    "code": "YEA9103",
+    "name": "SMK Kidurong",
+    "state": "Sarawak",
+    "ppd": "Bintulu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SV",
+    "phone": "086254225"
+  },
+  {
+    "code": "YEA3501",
+    "name": "SMK Oya",
+    "state": "Sarawak",
+    "ppd": "Dalat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "084867885"
+  },
+  {
+    "code": "YEE6402",
+    "name": "SMK Toh Puan Datuk Patinggi Hajah Normah",
+    "state": "Sarawak",
+    "ppd": "Daro",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "084823262"
+  },
+  {
+    "code": "YEA3302",
+    "name": "SMK Kanowit",
+    "state": "Sarawak",
+    "ppd": "Kanowit",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ; SV",
+    "phone": "084752152"
+  },
+  {
+    "code": "YEA7103",
+    "name": "SMK Kapit No.2",
+    "state": "Sarawak",
+    "ppd": "Kapit",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; GEO; KMK; MT; PA; PP; SEJ; SV",
+    "phone": "084796071"
+  },
+  {
+    "code": "YEA1205",
+    "name": "SMK Bako",
+    "state": "Sarawak",
+    "ppd": "Kuching",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "082432251"
+  },
+  {
+    "code": "YEE1204",
+    "name": "SMK Batu Lintang",
+    "state": "Sarawak",
+    "ppd": "Kuching",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "082254579"
+  },
+  {
+    "code": "YEA1201",
+    "name": "SMK D.p.h.a. Gapor",
+    "state": "Sarawak",
+    "ppd": "Kuching",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "082451130"
+  },
+  {
+    "code": "YEB1201",
+    "name": "SMK Green Road",
+    "state": "Sarawak",
+    "ppd": "Kuching",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "082243541"
+  },
+  {
+    "code": "YEE1201",
+    "name": "SMK Pending",
+    "state": "Sarawak",
+    "ppd": "Kuching",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PAKN; PHY; PP; SEJ; SS; SV",
+    "phone": "082331210"
+  },
+  {
+    "code": "YEA1301",
+    "name": "SMK Petra Jaya",
+    "state": "Sarawak",
+    "ppd": "Kuching",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; SEJ; SV",
+    "phone": "082254824"
+  },
+  {
+    "code": "YFB1202",
+    "name": "SMK St Joseph",
+    "state": "Sarawak",
+    "ppd": "Kuching",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "082240885"
+  },
+  {
+    "code": "YFB1204",
+    "name": "SMK St Joseph",
+    "state": "Sarawak",
+    "ppd": "Kuching",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; L.ENG; MT; PA; PHY; PP; SEJ",
+    "phone": "082242539"
+  },
+  {
+    "code": "YEE1301",
+    "name": "SMK Tun Abang Haji Openg",
+    "state": "Sarawak",
+    "ppd": "Kuching",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; ICT; KMK; PA; PP; SEJ; SV",
+    "phone": "082447540"
+  },
+  {
+    "code": "YEA5202",
+    "name": "SMK Merapok",
+    "state": "Sarawak",
+    "ppd": "Lawas",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; SEJ; SV",
+    "phone": "TIADA"
+  },
+  {
+    "code": "YEA5102",
+    "name": "SMK Kubong",
+    "state": "Sarawak",
+    "ppd": "Limbang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "085216602"
+  },
+  {
+    "code": "YEE2301",
+    "name": "SMK Engkilili",
+    "state": "Sarawak",
+    "ppd": "Lubok Antu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "083563020"
+  },
+  {
+    "code": "YEE1401",
+    "name": "SMK Lundu",
+    "state": "Sarawak",
+    "ppd": "Lundu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ",
+    "phone": "082735252"
+  },
+  {
+    "code": "YEE6301",
+    "name": "SMK Meradong",
+    "state": "Sarawak",
+    "ppd": "Maradong",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "084691911"
+  },
+  {
+    "code": "YEB4101",
+    "name": "Kolej Tun Datu Tuanku Haji Bujang",
+    "state": "Sarawak",
+    "ppd": "Miri",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "085411795"
+  },
+  {
+    "code": "YEA4102",
+    "name": "SMK Baru",
+    "state": "Sarawak",
+    "ppd": "Miri",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "085431707"
+  },
+  {
+    "code": "YFB4101",
+    "name": "SMK Chung Hua",
+    "state": "Sarawak",
+    "ppd": "Miri",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "085433517"
+  },
+  {
+    "code": "YEE4101",
+    "name": "SMK Lutong",
+    "state": "Sarawak",
+    "ppd": "Miri",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "085655205"
+  },
+  {
+    "code": "YEA4107",
+    "name": "SMK Merbau",
+    "state": "Sarawak",
+    "ppd": "Miri",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; PP; SEJ; SV",
+    "phone": "085665159"
+  },
+  {
+    "code": "YEE3401",
+    "name": "SMK Three Rivers",
+    "state": "Sarawak",
+    "ppd": "Mukah",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; SEJ; SV",
+    "phone": "084871240"
+  },
+  {
+    "code": "YEA1304",
+    "name": "SMK Batu Kawa",
+    "state": "Sarawak",
+    "ppd": "Padawan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; SEJ; SS; SV",
+    "phone": "082688140"
+  },
+  {
+    "code": "YEA1208",
+    "name": "SMK Matang Jaya",
+    "state": "Sarawak",
+    "ppd": "Padawan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PP; SEJ; SS; SV",
+    "phone": "082647560"
+  },
+  {
+    "code": "YEB1301",
+    "name": "SMK Tun Abdul Razak",
+    "state": "Sarawak",
+    "ppd": "Padawan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "082895226"
+  },
+  {
+    "code": "YEA8101",
+    "name": "SMK Asajaya",
+    "state": "Sarawak",
+    "ppd": "Samarahan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "082824010"
+  },
+  {
+    "code": "YEA8102",
+    "name": "SMK Kota Samarahan",
+    "state": "Sarawak",
+    "ppd": "Samarahan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "082672353"
+  },
+  {
+    "code": "YEE8101",
+    "name": "SMK Muara Tuang",
+    "state": "Sarawak",
+    "ppd": "Samarahan",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; KMK; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "082617362"
+  },
+  {
+    "code": "YEA1302",
+    "name": "SMK Wira Penrissen",
+    "state": "Sarawak",
+    "ppd": "Samarahan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ; SV",
+    "phone": "082612740"
+  },
+  {
+    "code": "YEAA201",
+    "name": "Kolej Tingkatan Enam Saratok",
+    "state": "Sarawak",
+    "ppd": "Saratok",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; SEJ; SV",
+    "phone": "083436317"
+  },
+  {
+    "code": "YEB6101",
+    "name": "SMK Bandar Sarikei",
+    "state": "Sarawak",
+    "ppd": "Sarikei",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ; SV",
+    "phone": "084651210"
+  },
+  {
+    "code": "YEE6101",
+    "name": "SMK Sg Paoh",
+    "state": "Sarawak",
+    "ppd": "Sarikei",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; KMK; PA; SEJ; SV",
+    "phone": "084671020"
+  },
+  {
+    "code": "YFB6102",
+    "name": "SMK St Anthony",
+    "state": "Sarawak",
+    "ppd": "Sarikei",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ",
+    "phone": "084651363"
+  },
+  {
+    "code": "YEB8204",
+    "name": "SMK Balai Ringin",
+    "state": "Sarawak",
+    "ppd": "Serian",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "082877510"
+  },
+  {
+    "code": "YEB8205",
+    "name": "SMK Serian",
+    "state": "Sarawak",
+    "ppd": "Serian",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; SEJ; SV",
+    "phone": "082874001"
+  },
+  {
+    "code": "YEA8201",
+    "name": "SMK Taee",
+    "state": "Sarawak",
+    "ppd": "Serian",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "TIADA"
+  },
+  {
+    "code": "YEB8203",
+    "name": "SMK Tarat",
+    "state": "Sarawak",
+    "ppd": "Serian",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; SEJ; SV",
+    "phone": "082874128"
+  },
+  {
+    "code": "YEA3106",
+    "name": "SMK Bandar Sibu",
+    "state": "Sarawak",
+    "ppd": "Sibu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; BM; CHE; EKO; GEO; MM; MT; PA; PHY; SEJ; SV",
+    "phone": "084336601"
+  },
+  {
+    "code": "YFB3106",
+    "name": "SMK Chung Hua",
+    "state": "Sarawak",
+    "ppd": "Sibu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; SEJ; SV",
+    "phone": "084211035"
+  },
+  {
+    "code": "YEE3201",
+    "name": "SMK Durin",
+    "state": "Sarawak",
+    "ppd": "Sibu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ; SV",
+    "phone": "084736386"
+  },
+  {
+    "code": "YEE3202",
+    "name": "SMK Jalan Oya",
+    "state": "Sarawak",
+    "ppd": "Sibu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ",
+    "phone": "084217610"
+  },
+  {
+    "code": "YEE3102",
+    "name": "SMK Kampung Nangka",
+    "state": "Sarawak",
+    "ppd": "Sibu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SV",
+    "phone": "084334988"
+  },
+  {
+    "code": "YEA3104",
+    "name": "SMK Lanang",
+    "state": "Sarawak",
+    "ppd": "Sibu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "084215540"
+  },
+  {
+    "code": "YEB3201",
+    "name": "SMK Luar Bandar Sibu No.1",
+    "state": "Sarawak",
+    "ppd": "Sibu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ; SV",
+    "phone": "084894363"
+  },
+  {
+    "code": "YFB3101",
+    "name": "SMK Methodist",
+    "state": "Sarawak",
+    "ppd": "Sibu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SV",
+    "phone": "084330414"
+  },
+  {
+    "code": "YEE3101",
+    "name": "SMK Rosli Dhoby",
+    "state": "Sarawak",
+    "ppd": "Sibu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "084323419"
+  },
+  {
+    "code": "YFB3102",
+    "name": "SMK Sacred Heart",
+    "state": "Sarawak",
+    "ppd": "Sibu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; BM; CHE; EKO; GEO; MM; MT; PA; PAKN; PHY; SV",
+    "phone": "084322619"
+  },
+  {
+    "code": "YEA3105",
+    "name": "SMK Sg Merah",
+    "state": "Sarawak",
+    "ppd": "Sibu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ",
+    "phone": "084311302"
+  },
+  {
+    "code": "YEA3103",
+    "name": "SMK Sibu Jaya",
+    "state": "Sarawak",
+    "ppd": "Sibu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; KMK; PA; PP; SEJ",
+    "phone": "1165728009"
+  },
+  {
+    "code": "YFB3105",
+    "name": "SMK Tung Hua",
+    "state": "Sarawak",
+    "ppd": "Sibu",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; MT; PA; PHY",
+    "phone": "084330299"
+  },
+  {
+    "code": "YEE8304",
+    "name": "SMK Simunjan No.1",
+    "state": "Sarawak",
+    "ppd": "Simunjan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "082805122"
+  },
+  {
+    "code": "YEE7301",
+    "name": "SMK Song",
+    "state": "Sarawak",
+    "ppd": "Song",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; KMK; PA; SEJ; SS; SV",
+    "phone": "084777255"
+  },
+  {
+    "code": "YEE2101",
+    "name": "SMK Simanggang",
+    "state": "Sarawak",
+    "ppd": "Sri Aman",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "083322232"
+  },
+  {
+    "code": "YEA2101",
+    "name": "SMK Sri Aman",
+    "state": "Sarawak",
+    "ppd": "Sri Aman",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "083326985"
+  },
+  {
+    "code": "YEE4401",
+    "name": "SMK Luar Bandar Miri",
+    "state": "Sarawak",
+    "ppd": "Subis",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; KMK; PA; PP; SEJ",
+    "phone": "085710260"
+  },
+  {
+    "code": "YEA4401",
+    "name": "SMK Suai",
+    "state": "Sarawak",
+    "ppd": "Subis",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ",
+    "phone": "085738373"
+  },
+  {
+    "code": "YEA9201",
+    "name": "SMK Tatau",
+    "state": "Sarawak",
+    "ppd": "Tatau/sebauh",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ",
+    "phone": "086584616"
+  },
+  {
+    "code": "BEA8605",
+    "name": "Sekolah Menengah Kebangsaan Bukit Gading",
+    "state": "Selangor",
+    "ppd": "Gombak",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PAKN; PP; SEJ; SV",
+    "phone": "0360383258"
+  },
+  {
+    "code": "BEA7615",
+    "name": "Sekolah Menengah Kebangsaan Darul Ehsan",
+    "state": "Selangor",
+    "ppd": "Gombak",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PAKN; PHY; PP; SEJ; SS; SV",
+    "phone": "0361364877"
+  },
+  {
+    "code": "BEA7601",
+    "name": "Sekolah Menengah Kebangsaan Gombak Setia",
+    "state": "Selangor",
+    "ppd": "Gombak",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; MT; PA; PP; SEJ",
+    "phone": "0361896329"
+  },
+  {
+    "code": "BEB7652",
+    "name": "Sekolah Menengah Kebangsaan Hulu Kelang",
+    "state": "Selangor",
+    "ppd": "Gombak",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ; SV",
+    "phone": "0342565159"
+  },
+  {
+    "code": "BEB7651",
+    "name": "Sekolah Menengah Kebangsaan Kepong",
+    "state": "Selangor",
+    "ppd": "Gombak",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; EKO; GEO; MT; PA; PAKN; PHY; PP; SV",
+    "phone": "0362740080"
+  },
+  {
+    "code": "BEB7654",
+    "name": "Sekolah Menengah Kebangsaan Seri Garing",
+    "state": "Selangor",
+    "ppd": "Gombak",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "0360916491"
+  },
+  {
+    "code": "BEA7617",
+    "name": "Sekolah Menengah Kebangsaan Taman Desa",
+    "state": "Selangor",
+    "ppd": "Gombak",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PAKN; PP; SEJ; SV",
+    "phone": "0360917935"
+  },
+  {
+    "code": "BEA7604",
+    "name": "Sekolah Menengah Kebangsaan Taman Ehsan",
+    "state": "Selangor",
+    "ppd": "Gombak",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; CHE; EKO; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "0362762618"
+  },
+  {
+    "code": "BEA4628",
+    "name": "Sekolah Menengah Kebangsaan Bandar Tasik Kesuma",
+    "state": "Selangor",
+    "ppd": "Hulu Langat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ; SS",
+    "phone": "0387667599"
+  },
+  {
+    "code": "BEA4630",
+    "name": "Sekolah Menengah Kebangsaan Bandar Tun Hussein Onn 2",
+    "state": "Selangor",
+    "ppd": "Hulu Langat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PAKN; PP; SEJ",
+    "phone": "0390766753"
+  },
+  {
+    "code": "BEA4631",
+    "name": "Sekolah Menengah Kebangsaan Pandan Mewah",
+    "state": "Selangor",
+    "ppd": "Hulu Langat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PAKN; PP; SEJ",
+    "phone": "0342954210"
+  },
+  {
+    "code": "BEA4611",
+    "name": "Sekolah Menengah Kebangsaan Perimbun",
+    "state": "Selangor",
+    "ppd": "Hulu Langat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "0390745828"
+  },
+  {
+    "code": "BEA4604",
+    "name": "Sekolah Menengah Kebangsaan Sultan Abdul Aziz Shah",
+    "state": "Selangor",
+    "ppd": "Hulu Langat",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; SEJ; SV",
+    "phone": "0387376387"
+  },
+  {
+    "code": "BEA4601",
+    "name": "Sekolah Menengah Kebangsaan Taman Tasik",
+    "state": "Selangor",
+    "ppd": "Hulu Langat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0342912049"
+  },
+  {
+    "code": "BEB4069",
+    "name": "Sekolah Menengah Kebangsaan Tinggi Kajang",
+    "state": "Selangor",
+    "ppd": "Hulu Langat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; BT; CHE; EKO; GEO; KMK; MT; PA; PAKN; PHY; PP; SEJ; SS; SV; SYA",
+    "phone": "0387363044"
+  },
+  {
+    "code": "BEB4070",
+    "name": "Sekolah Menengah Kebangsaan Yu Hua",
+    "state": "Selangor",
+    "ppd": "Hulu Langat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; CHE; EKO; MT; PA; PAKN; PHY; PP",
+    "phone": "0387367514"
+  },
+  {
+    "code": "BEA5061",
+    "name": "Sekolah Menengah Kebangsaan Kuala Kubu Bharu",
+    "state": "Selangor",
+    "ppd": "Hulu Selangor",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; CHE; EKO; GEO; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "0360641162"
+  },
+  {
+    "code": "BEA5063",
+    "name": "Sekolah Menengah Kebangsaan Sungai Choh",
+    "state": "Selangor",
+    "ppd": "Hulu Selangor",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PAKN; PP; SEJ; SV",
+    "phone": "0360916081"
+  },
+  {
+    "code": "BEA0099",
+    "name": "Kolej Tingkatan Enam Sri Istana",
+    "state": "Selangor",
+    "ppd": "Klang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; BT; CHE; EKO; GEO; ICT; MM; MT; PA; PAKN; PHY; PP; SEJ; SS; SV",
+    "phone": "0333724846"
+  },
+  {
+    "code": "BEA0110",
+    "name": "Sekolah Menengah Kebangsaan Sungai Kapar Indah",
+    "state": "Selangor",
+    "ppd": "Klang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PAKN; PP; SEJ; SS; SV",
+    "phone": "0332903121"
+  },
+  {
+    "code": "BEB0102",
+    "name": "Sekolah Menengah Kebangsaan Tinggi Klang",
+    "state": "Selangor",
+    "ppd": "Klang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PAKN; PHY; SEJ; SV; SYA",
+    "phone": "0333412340"
+  },
+  {
+    "code": "BEA1066",
+    "name": "Sekolah Menengah Kebangsaan Telok Datok",
+    "state": "Selangor",
+    "ppd": "Kuala Langat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; BT; CHE; EKO; GEO; KMK; MT; PA; PAKN; PHY; PP; SEJ; SV",
+    "phone": "0331871303"
+  },
+  {
+    "code": "BEA1069",
+    "name": "Sekolah Menengah Kebangsaan Telok Panglima Garang",
+    "state": "Selangor",
+    "ppd": "Kuala Langat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PP; SEJ; SV",
+    "phone": "0331227914"
+  },
+  {
+    "code": "BEB3078",
+    "name": "Kolej Tingkatan Enam Sultan Abdul Aziz",
+    "state": "Selangor",
+    "ppd": "Kuala Selangor",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BA; BI (MUET); BIO; BM; CHE; EKO; GEO; KMK; MT; PA; PHY; PP; SEJ; SV; SYA; USUL",
+    "phone": "0332891380"
+  },
+  {
+    "code": "BEA8609",
+    "name": "Kolej Tingkatan Enam Puchong",
+    "state": "Selangor",
+    "ppd": "Petaling Perdana",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; BT; CHE; EKO; MT; PA; PAKN; PHY; PP; SEJ; SS; SV",
+    "phone": "0380702830"
+  },
+  {
+    "code": "BEA8619",
+    "name": "Kolej Tingkatan Enam Shah Alam",
+    "state": "Selangor",
+    "ppd": "Petaling Perdana",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PHY; PP; SEJ; SS; SV",
+    "phone": "0355414172"
+  },
+  {
+    "code": "BEA8606",
+    "name": "Sekolah Menengah Kebangsaan Seri Serdang",
+    "state": "Selangor",
+    "ppd": "Petaling Perdana",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PHY; PP; SEJ",
+    "phone": "0389489199"
+  },
+  {
+    "code": "BEA8631",
+    "name": "Kolej Tingkatan Enam Bandar Utama",
+    "state": "Selangor",
+    "ppd": "Petaling Utama",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MM; MT; PA; PAKN; PHY; PP; SEJ; SS",
+    "phone": "0377252829"
+  },
+  {
+    "code": "BEA8669",
+    "name": "Kolej Tingkatan Enam Petaling Jaya",
+    "state": "Selangor",
+    "ppd": "Petaling Utama",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; KMK; L.ENG; MM; MT; PA; PAKN; PHY; PP; SEJ; SS; SV",
+    "phone": "0377726570"
+  },
+  {
+    "code": "BEB8653",
+    "name": "Sekolah Menengah Kebangsaan Katholik",
+    "state": "Selangor",
+    "ppd": "Petaling Utama",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BC; BI (MUET); BIO; CHE; EKO; MT; PA; PAKN; PHY",
+    "phone": "0379565484"
+  },
+  {
+    "code": "BEB6044",
+    "name": "Kolej Tingkatan Enam Tunku Abdul Rahman Putra",
+    "state": "Selangor",
+    "ppd": "Sabak Bernam",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; KMK; MM; MT; PA; PHY; PP; SEJ; SS; SV; SYA",
+    "phone": "0332161394"
+  },
+  {
+    "code": "BEA9604",
+    "name": "Sekolah Menengah Kebangsaan Bandar Baru Salak Tinggi",
+    "state": "Selangor",
+    "ppd": "Sepang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; CHE; MT; PA; PHY; PP; SEJ",
+    "phone": "0387068849"
+  },
+  {
+    "code": "BEA9609",
+    "name": "Sekolah Menengah Kebangsaan Cyberjaya",
+    "state": "Selangor",
+    "ppd": "Sepang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; PP; SEJ",
+    "phone": "0383188088"
+  },
+  {
+    "code": "BEB9651",
+    "name": "Sekolah Menengah Kebangsaan Sungai Pelek",
+    "state": "Selangor",
+    "ppd": "Sepang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PP; SEJ",
+    "phone": "0331411245"
+  },
+  {
+    "code": "TEA0069",
+    "name": "SMK Bukit Payong",
+    "state": "Terengganu",
+    "ppd": "Besut",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; SEJ; SV",
+    "phone": "096061262"
+  },
+  {
+    "code": "TEA0070",
+    "name": "SMK Bukit Payong",
+    "state": "Terengganu",
+    "ppd": "Besut",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "096974037"
+  },
+  {
+    "code": "TEA0058",
+    "name": "SMK Kuala Besut",
+    "state": "Terengganu",
+    "ppd": "Besut",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "096902851"
+  },
+  {
+    "code": "TEA0060",
+    "name": "SMK Nasiruddin Shah",
+    "state": "Terengganu",
+    "ppd": "Besut",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "096956050"
+  },
+  {
+    "code": "TEA0073",
+    "name": "SMK Putra",
+    "state": "Terengganu",
+    "ppd": "Besut",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "096973590"
+  },
+  {
+    "code": "TEA0059",
+    "name": "SMK Seri Nering",
+    "state": "Terengganu",
+    "ppd": "Besut",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA",
+    "phone": "096971355"
+  },
+  {
+    "code": "TEB0062",
+    "name": "SMK Tengku Mahmud",
+    "state": "Terengganu",
+    "ppd": "Besut",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; SEJ; SS; SV",
+    "phone": "096956144"
+  },
+  {
+    "code": "TEA1032",
+    "name": "SMK Durian Mas",
+    "state": "Terengganu",
+    "ppd": "Dungun",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ",
+    "phone": "098223500"
+  },
+  {
+    "code": "TEA1037",
+    "name": "SMK Ketengah Jaya",
+    "state": "Terengganu",
+    "ppd": "Dungun",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "098200150"
+  },
+  {
+    "code": "TEA1030",
+    "name": "SMK Paka",
+    "state": "Terengganu",
+    "ppd": "Dungun",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ",
+    "phone": "098271662"
+  },
+  {
+    "code": "TEA1029",
+    "name": "SMK Tengku Intan Zaharah",
+    "state": "Terengganu",
+    "ppd": "Dungun",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MM; MT; PA; PP; SEJ; SV",
+    "phone": "098481834"
+  },
+  {
+    "code": "TEA5047",
+    "name": "Kolej Tingkatan Enam Hulu Terengganu",
+    "state": "Terengganu",
+    "ppd": "Hulu Terengganu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; CHE; EKO; GEO; MT; PA; PHY; SEJ; SS; SV",
+    "phone": "096813145"
+  },
+  {
+    "code": "TEA5040",
+    "name": "SMK Kuala Telemong",
+    "state": "Terengganu",
+    "ppd": "Hulu Terengganu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ",
+    "phone": "096142446"
+  },
+  {
+    "code": "TEA5037",
+    "name": "SMK Landas",
+    "state": "Terengganu",
+    "ppd": "Hulu Terengganu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ; SV",
+    "phone": "1165752502"
+  },
+  {
+    "code": "TEA5038",
+    "name": "SMK Menerong",
+    "state": "Terengganu",
+    "ppd": "Hulu Terengganu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ; SV",
+    "phone": "096122582"
+  },
+  {
+    "code": "TEA2023",
+    "name": "SMK Badrul Alam Shah",
+    "state": "Terengganu",
+    "ppd": "Kemaman",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ",
+    "phone": "098662220"
+  },
+  {
+    "code": "TEA2021",
+    "name": "SMK Cheneh Baru",
+    "state": "Terengganu",
+    "ppd": "Kemaman",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; PP; SEJ; SV",
+    "phone": "098730223"
+  },
+  {
+    "code": "TEA2022",
+    "name": "SMK Chukai",
+    "state": "Terengganu",
+    "ppd": "Kemaman",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; KMK; PA; SEJ; SV",
+    "phone": "098591301"
+  },
+  {
+    "code": "TEB2025",
+    "name": "SMK Sultan Ismail",
+    "state": "Terengganu",
+    "ppd": "Kemaman",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PHY; SEJ; SV",
+    "phone": "098591955"
+  },
+  {
+    "code": "TEA3110",
+    "name": "SMK Belara",
+    "state": "Terengganu",
+    "ppd": "Kuala Terengganu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "096152080"
+  },
+  {
+    "code": "TEA3088",
+    "name": "SMK Manir",
+    "state": "Terengganu",
+    "ppd": "Kuala Terengganu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "096152315"
+  },
+  {
+    "code": "TEA3083",
+    "name": "SMK Padang Midin",
+    "state": "Terengganu",
+    "ppd": "Kuala Terengganu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; SEJ; SV",
+    "phone": "096220833"
+  },
+  {
+    "code": "TEA3123",
+    "name": "SMK Seri Nilam",
+    "state": "Terengganu",
+    "ppd": "Kuala Terengganu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ; SV",
+    "phone": "096301700"
+  },
+  {
+    "code": "TEA3112",
+    "name": "SMK Sultan Ahmad",
+    "state": "Terengganu",
+    "ppd": "Kuala Terengganu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "096222272"
+  },
+  {
+    "code": "TEB3091",
+    "name": "SMK Sultan Sulaiman",
+    "state": "Terengganu",
+    "ppd": "Kuala Terengganu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; ICT; MT; PA; PHY; PP; SEJ; SV",
+    "phone": "096175315"
+  },
+  {
+    "code": "TEA4013",
+    "name": "SMK Bukit Sawa",
+    "state": "Terengganu",
+    "ppd": "Marang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ; SV",
+    "phone": "096191379"
+  },
+  {
+    "code": "TEA4011",
+    "name": "SMK Merchang",
+    "state": "Terengganu",
+    "ppd": "Marang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "098321187"
+  },
+  {
+    "code": "TEA4015",
+    "name": "SMK Pengkalan Berangan",
+    "state": "Terengganu",
+    "ppd": "Marang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ",
+    "phone": "096805150"
+  },
+  {
+    "code": "TEA4014",
+    "name": "SMK Tengku Lela Segara",
+    "state": "Terengganu",
+    "ppd": "Marang",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; EKO; GEO; MT; PA; PP; SEJ; SS; SV",
+    "phone": "096182227"
+  },
+  {
+    "code": "TEA4012",
+    "name": "SMK Tun Telanai",
+    "state": "Terengganu",
+    "ppd": "Marang",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; SEJ; SV",
+    "phone": "096191375"
+  },
+  {
+    "code": "TEA6089",
+    "name": "SMK Bukit Nenas",
+    "state": "Terengganu",
+    "ppd": "Setiu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; PA; SEJ; SS",
+    "phone": "098248532"
+  },
+  {
+    "code": "TEA6083",
+    "name": "SMK Chalok Model Khas",
+    "state": "Terengganu",
+    "ppd": "Setiu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ",
+    "phone": "096576013"
+  },
+  {
+    "code": "TEA6081",
+    "name": "SMK Penarek",
+    "state": "Terengganu",
+    "ppd": "Setiu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; ICT; PA; PP; SEJ",
+    "phone": "098247139"
+  },
+  {
+    "code": "TEA6082",
+    "name": "SMK Saujana",
+    "state": "Terengganu",
+    "ppd": "Setiu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; GEO; PA; PP; SEJ; SV",
+    "phone": "1165752004"
+  },
+  {
+    "code": "TEA6080",
+    "name": "SMK Sungai Tong",
+    "state": "Terengganu",
+    "ppd": "Setiu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PP; SEJ; SV",
+    "phone": "096571776"
+  },
+  {
+    "code": "TEA6057",
+    "name": "SMK Tengku Ibrahim",
+    "state": "Terengganu",
+    "ppd": "Setiu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; GEO; PA; PP; SEJ; SV",
+    "phone": "096092323"
+  },
+  {
+    "code": "WEA0198",
+    "name": "KTE Pudu Jaya",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PAKN; PHY; PP; SEJ",
+    "phone": "0392212494"
+  },
+  {
+    "code": "WEB0219",
+    "name": "SMK (L) Methodist",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0320782293"
+  },
+  {
+    "code": "WEB0225",
+    "name": "SMK (P) Methodist",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0326926010"
+  },
+  {
+    "code": "WEB0211",
+    "name": "SMK Cochrane",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0392857387"
+  },
+  {
+    "code": "WEB0229",
+    "name": "SMK Seri Pantai",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BM; EKO; PA; PP; SEJ",
+    "phone": "0379567409"
+  },
+  {
+    "code": "WEB0230",
+    "name": "SMK Seri Sentosa",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0379831764"
+  },
+  {
+    "code": "WEA0212",
+    "name": "SMK Taman Desa",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0379823058"
+  },
+  {
+    "code": "WEB0226",
+    "name": "SMK Victoria",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Bangsar Pudu",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0320782489"
+  },
+  {
+    "code": "WEB0213",
+    "name": "SMK Convent Bukit Nanas",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Keramat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0320780559"
+  },
+  {
+    "code": "WEB0206",
+    "name": "SMK Seri Ampang",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Keramat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0321487065"
+  },
+  {
+    "code": "WEB0223",
+    "name": "SMK St. John",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Keramat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0320782846"
+  },
+  {
+    "code": "WEB0216",
+    "name": "SMK Tinggi Setapak",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Keramat",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0340236191"
+  },
+  {
+    "code": "WEA0256",
+    "name": "KTE Desa Mahkota",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Sentul",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; GEO; MT; PA; PAKN; PHY; PP; SEJ; SS",
+    "phone": "0362701480"
+  },
+  {
+    "code": "WEB0228",
+    "name": "SMK (P) Jalan Ipoh",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Sentul",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0362581664"
+  },
+  {
+    "code": "WEB0247",
+    "name": "SMK Chong Hwa",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Sentul",
+    "streams": [
+      "Sains"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; MT; PA; PHY",
+    "phone": "0340232411"
+  },
+  {
+    "code": "WEB0218",
+    "name": "SMK Maxwell",
+    "state": "WP Kuala Lumpur",
+    "ppd": "PPW Sentul",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BI (MUET); BIO; BM; CHE; EKO; MT; PA; PHY; PP; SEJ",
+    "phone": "0340412895"
+  },
+  {
+    "code": "WEE1011",
+    "name": "SMK Labuan",
+    "state": "WP Labuan",
+    "ppd": "JPN WP Labuan",
+    "streams": [
+      "Sains Sosial"
+    ],
+    "subjects": "BA; BI (MUET); BM; EKO; GEO; ICT; KMK; PA; PP; SEJ; SV; USUL",
+    "phone": "087412450"
+  },
+  {
+    "code": "WEA2010",
+    "name": "SMK Putrajaya Presint 5(1)",
+    "state": "WP Putrajaya",
+    "ppd": "JPN WP Putrajaya",
+    "streams": [
+      "Sains",
+      "Sains Sosial"
+    ],
+    "subjects": "BA; BI (MUET); BIO; BM; CHE; EKO; MT; PA; PP; SEJ; SV; SYA",
+    "phone": "0388610565"
+  }
+]
