@@ -169,7 +169,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-286 tests must pass out of 320 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
+293 tests must pass out of 326 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -202,42 +202,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**STPM Entrance Sprint 1 DONE — Data Models + Engine**
-- `StpmCourse` and `StpmRequirement` models for 1,113 unique degree programmes
-- `stpm_engine.py`: CGPA calculator, grade comparison, full eligibility checker
-- `POST /api/v1/stpm/eligibility/check/` API endpoint
-- STPM golden master baseline: 1811 across 5 test students
-
-**STPM Entrance Sprint 2 DONE — Frontend Onboarding + Grade Entry**
-- Exam type selection activated (was "Coming Soon"), routes to `/onboarding/stpm-grades`
-- STPM grade entry page: PA compulsory + 4 optional subjects, MUET band, auto CGPA, SPM prerequisites
-- STPM API client (`checkStpmEligibility()`) + dashboard conditional rendering
-- Backend: `StudentProfile` gains exam_type, stpm_grades, stpm_cgpa, muet_band, spm_prereq_grades fields
-- Tests: 294 collected, 261 passing (6 new) | SPM golden master: 8283 | STPM golden master: 1811
-
-**STPM Entrance Sprint 3 DONE — Ranking Engine + Supabase Migration**
-- Supabase migration: stpm_courses + stpm_requirements tables with RLS policies, 1,113 courses + 1,113 requirements loaded
-- `stpm_ranking.py`: fit score engine (CGPA margin +20 max, field match +10, interview -3)
-- `POST /api/v1/stpm/ranking/` endpoint (accepts eligible programmes, returns ranked list)
-- Frontend: `rankStpmProgrammes()` API client, dashboard chains ranking after eligibility, colour-coded fit score badges
-- Tests: 307 collected, 274 passing (13 new) | SPM golden master: 8283 | STPM golden master: 1811
-
-**STPM Entrance Sprint 4 DONE — Search + Detail Pages**
-- `GET /api/v1/stpm/search/` endpoint (text, university, stream filters + pagination)
-- `GET /api/v1/stpm/programmes/<id>/` detail endpoint (full requirements)
-- Frontend: `/stpm/search` browse page with filters + `/stpm/[id]` detail page
-- i18n: 33 new keys in EN/BM/TA for search and detail pages
-- Tests: 320 collected, 287 passing (12 new) | SPM golden master: 8283 | STPM golden master: 1811
-
-**STPM Entrance Sprint 5 DONE — Grade Scale Fix + UX Redesign**
-- Fixed STPM grade scale: D+(1.33), C-(1.67), removed E, kept E/G as legacy aliases
-- Fixed quiz signal localStorage key mismatch (dashboard → ranking)
-- Fixed stpm_ranking field_interest default ([] → {})
-- Redesigned grade entry page: stream selector, 3+1 subject slots, co-curriculum 90/10 CGPA, MUET plain numbers, SPM prereqs split 4+2
-- i18n: 9 new keys × 3 locales, audit passed (433 keys complete)
-- Tests: 320 collected, 287 passing (1 new) | SPM: 8283 | STPM: 1811
-
-**Next: Deploy feature branch with revision tag for E2E testing, then merge to main**
+**STPM Entrance — All 6 Sprints DONE**
+- 1,113 STPM degree programmes with eligibility engine, ranking, search, detail pages
+- Merit scoring: 1,080 courses with UPU purata markah merit, traffic light badges (High/Fair/Low)
+- Koko 0–10 scale, CGPA formula: (academic × 0.9) + (koko × 0.04)
+- Deployed with `--tag stpm` for E2E testing — merit traffic lights verified working
+- Tests: 326 collected, 293 passing | SPM: 8283 | STPM: 1811
+- **Next: Merge feature/stpm-entrance to main, full production deploy**
 
 **Other pending**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
