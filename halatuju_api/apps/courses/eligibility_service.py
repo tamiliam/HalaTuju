@@ -107,7 +107,7 @@ def compute_course_merit(merit_type, source_type, merit_cutoff, student_merit,
                 else:
                     merit_label, merit_color = MERIT_LOW
                 merit_display_student = str(mata_gred)
-                merit_display_cutoff = str(max_mg)
+                merit_display_cutoff = str(high_mg)
                 student_merit_for_course = (27 - mata_gred) / 24 * 100
             else:
                 return None  # Skip — pathway says not eligible
