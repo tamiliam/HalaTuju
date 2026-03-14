@@ -68,7 +68,10 @@ export default function CourseDetailPage() {
     )
   }
 
-  const { course, institutions, career_occupations, requirements, merit_cutoff } = data
+  const { course, institutions, career_occupations, requirements, merit_cutoff, merit_type } = data
+  const isMatGred = merit_type === 'stpm_mata_gred'
+  const isPreU = courseId.startsWith('stpm-') || courseId.startsWith('matric-')
+  const isArtsStream = courseId === 'stpm-sains-sosial'
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -188,17 +191,23 @@ export default function CourseDetailPage() {
               <div className="space-y-4">
                 <InfoRow label="Level" value={course.level} />
                 <InfoRow label="Field" value={course.field} />
-                <InfoRow label="Department" value={course.department} />
+                {!isPreU && <InfoRow label="Department" value={course.department} />}
                 {course.semesters && (
                   <InfoRow label="Duration" value={`${course.semesters} semesters`} />
                 )}
-                <InfoRow label="WBL" value={course.wbl ? 'Yes' : 'No'} />
+                {!isPreU && <InfoRow label="WBL" value={course.wbl ? 'Yes' : 'No'} />}
                 {merit_cutoff != null && (
                   <div className="pt-2 mt-2 border-t border-gray-100">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-500 text-sm">Avg. Merit</span>
+                      <span className="text-gray-500 text-sm">
+                        {isMatGred ? t('courseDetail.maxGradePoints') : 'Avg. Merit'}
+                      </span>
                       <span className={`font-medium text-sm ${
-                        merit_cutoff >= 80 ? 'text-green-600' : merit_cutoff >= 60 ? 'text-amber-600' : 'text-red-600'
+                        isMatGred
+                          ? (isArtsStream
+                              ? (merit_cutoff <= 12 ? 'text-green-600' : merit_cutoff <= 18 ? 'text-amber-600' : 'text-red-600')
+                              : (merit_cutoff <= 18 ? 'text-green-600' : 'text-amber-600'))
+                          : (merit_cutoff >= 80 ? 'text-green-600' : merit_cutoff >= 60 ? 'text-amber-600' : 'text-red-600')
                       }`}>
                         {merit_cutoff.toFixed(1)}
                       </span>

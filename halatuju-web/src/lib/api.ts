@@ -155,6 +155,7 @@ export interface SearchCourse {
   level: string
   field: string
   source_type: string
+  pathway_type?: string
   merit_cutoff: number | null
   institution_count: number
   institution_name: string
@@ -217,7 +218,7 @@ export async function getCourses(options?: ApiOptions): Promise<{ courses: Cours
 export async function getCourse(
   courseId: string,
   options?: ApiOptions
-): Promise<{ course: Course; institutions: Institution[]; career_occupations: MascoOccupation[]; requirements: CourseRequirements | null; merit_cutoff?: number }> {
+): Promise<{ course: Course; institutions: Institution[]; career_occupations: MascoOccupation[]; requirements: CourseRequirements | null; merit_cutoff?: number; merit_type?: string }> {
   return apiRequest(`/api/v1/courses/${courseId}/`, options)
 }
 
@@ -608,6 +609,16 @@ export interface StpmRequirements {
   req_bumiputera: boolean
 }
 
+export interface StpmInstitutionDetail {
+  institution_id: string
+  institution_name: string
+  acronym: string
+  type: string
+  category: string
+  state: string
+  url: string
+}
+
 export interface StpmProgrammeDetail {
   program_id: string
   program_name: string
@@ -618,6 +629,7 @@ export interface StpmProgrammeDetail {
   description: string
   merit_score: number | null
   requirements: StpmRequirements
+  institution: StpmInstitutionDetail | null
 }
 
 export async function searchStpmProgrammes(

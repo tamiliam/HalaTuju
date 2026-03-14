@@ -148,13 +148,52 @@ export default function StpmProgrammeDetailPage() {
             <section className="bg-white rounded-xl border border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
                 {t('courseDetail.whereToStudy')}
+                <span className="text-gray-500 font-normal ml-2">(1 institution)</span>
               </h2>
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <h3 className="font-semibold text-gray-900 mb-1">
-                  {data.university}
-                </h3>
-                <p className="text-sm text-gray-500">Universiti Awam</p>
-              </div>
+              {data.institution ? (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">
+                        {data.institution.institution_name}
+                      </h3>
+                      <p className="text-sm text-gray-500 mb-2">
+                        {data.institution.acronym && `(${data.institution.acronym}) · `}
+                        {data.institution.type}
+                      </p>
+                      {data.institution.state && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {data.institution.state}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700">
+                        {data.institution.category}
+                      </span>
+                      {data.institution.url && (
+                        <a
+                          href={data.institution.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 bg-primary-500 text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors"
+                        >
+                          More Info
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <h3 className="font-semibold text-gray-900 mb-1">{data.university}</h3>
+                  <p className="text-sm text-gray-500">Universiti Awam</p>
+                </div>
+              )}
             </section>
           </div>
 

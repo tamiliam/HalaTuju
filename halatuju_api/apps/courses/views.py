@@ -85,7 +85,7 @@ class CourseSearchView(APIView):
 
         # Pagination
         try:
-            limit = min(int(request.query_params.get('limit', 24)), 100)
+            limit = int(request.query_params.get('limit', 0)) or 10000
         except (ValueError, TypeError):
             limit = 24
         try:
@@ -102,6 +102,10 @@ class CourseSearchView(APIView):
         if include_spm and level and level.lower() == 'ijazah sarjana muda':
             include_spm = False
 
+        # Get pathway map for TVET → iljtm/ilkbs resolution
+        courses_config = apps.get_app_config('courses')
+        pathway_map = getattr(courses_config, 'course_pathway_map', {})
+
         if include_spm:
             qs = Course.objects.select_related('requirement').all()
 
@@ -112,7 +116,11 @@ class CourseSearchView(APIView):
             if field:
                 qs = qs.filter(frontend_label__iexact=field)
             if source_type:
-                qs = qs.filter(requirement__source_type=source_type)
+                # Map iljtm/ilkbs filter to tvet source_type + post-filter
+                if source_type in ('iljtm', 'ilkbs'):
+                    qs = qs.filter(requirement__source_type='tvet')
+                else:
+                    qs = qs.filter(requirement__source_type=source_type)
             if state:
                 qs = qs.filter(
                     offerings__institution__state__iexact=state
@@ -139,18 +147,28 @@ class CourseSearchView(APIView):
                 req = getattr(c, 'requirement', None)
                 st = req.source_type if req else 'poly'
                 merit_cutoff = req.merit_cutoff if req else None
+                # Resolve TVET → iljtm/ilkbs using pathway map
+                pt = pathway_map.get(c.course_id, st)
+                # If filtering by iljtm/ilkbs, skip courses that don't match
+                if source_type in ('iljtm', 'ilkbs') and pt != source_type:
+                    continue
                 spm_results.append({
                     'course_id': c.course_id,
                     'course_name': c.course,
                     'level': c.level,
                     'field': c.frontend_label or c.field,
                     'source_type': st,
+                    'pathway_type': pt,
                     'merit_cutoff': merit_cutoff,
                     'institution_count': c.institution_count,
                     'institution_name': c.primary_institution_name or '',
                     'institution_state': c.primary_institution_state or '',
                     'qualification': 'SPM',
                 })
+
+            # Adjust count if iljtm/ilkbs filter removed some courses
+            if source_type in ('iljtm', 'ilkbs'):
+                spm_count = len(spm_results)
 
         # ── STPM courses ─────────────────────────────────────────────
         include_stpm = qualification in ('', 'STPM')
@@ -233,6 +251,10 @@ class CourseSearchView(APIView):
             CourseRequirement.objects.values_list('source_type', flat=True)
             .distinct().order_by('source_type')
         )
+        # Replace 'tvet' with 'iljtm' + 'ilkbs' for filter display
+        if 'tvet' in spm_source_types:
+            spm_source_types.remove('tvet')
+            spm_source_types.extend(['iljtm', 'ilkbs'])
         stpm_source_types = []
         all_source_types = sorted(set(spm_source_types + stpm_source_types))
 
@@ -791,11 +813,13 @@ class CourseDetailView(APIView):
             # Get requirements from CourseRequirement
             requirements = None
             merit_cutoff = None
+            merit_type = 'standard'
             try:
                 req = CourseRequirement.objects.get(course_id=course_id)
                 requirements = CourseRequirementSerializer(req).data
                 if req.merit_cutoff:
                     merit_cutoff = req.merit_cutoff
+                merit_type = req.merit_type or 'standard'
 
                 # PISMP: find paired language variants for this programme
                 # e.g. if viewing Chinese-medium (03), also check Tamil-medium (04)
@@ -851,6 +875,8 @@ class CourseDetailView(APIView):
             }
             if merit_cutoff is not None:
                 response_data['merit_cutoff'] = merit_cutoff
+            if merit_type != 'standard':
+                response_data['merit_type'] = merit_type
 
             return Response(response_data)
         except Course.DoesNotExist:
@@ -1266,7 +1292,7 @@ class StpmSearchView(APIView):
         total_count = qs.count()
 
         try:
-            limit = min(int(request.query_params.get('limit', 24)), 100)
+            limit = int(request.query_params.get('limit', 0)) or 10000
         except (ValueError, TypeError):
             limit = 24
         try:
@@ -1377,6 +1403,24 @@ class StpmProgrammeDetailView(APIView):
                 'req_bumiputera': req.req_bumiputera,
             }
 
+        # Look up full institution data by university name
+        institution_data = None
+        try:
+            inst = Institution.objects.get(
+                institution_name=prog.university
+            )
+            institution_data = {
+                'institution_id': inst.institution_id,
+                'institution_name': inst.institution_name,
+                'acronym': inst.acronym or '',
+                'type': inst.type or '',
+                'category': inst.category or '',
+                'state': inst.state or '',
+                'url': inst.url or '',
+            }
+        except Institution.DoesNotExist:
+            pass
+
         return Response({
             'program_id': prog.program_id,
             'program_name': prog.program_name,
@@ -1387,4 +1431,5 @@ class StpmProgrammeDetailView(APIView):
             'description': prog.description,
             'merit_score': prog.merit_score,
             'requirements': requirements,
+            'institution': institution_data,
         })

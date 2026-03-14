@@ -193,7 +193,7 @@ function SearchPageInner() {
         source_type: sourceType || undefined,
         state: state || undefined,
         qualification: qualification || undefined,
-        limit: 200,
+        limit: 10000,
       })
       setCourses(data.courses)
       setTotalCount(data.total_count)
@@ -238,6 +238,8 @@ function SearchPageInner() {
       level: c.level,
       field: c.field,
       source_type: c.source_type,
+      pathway_type: c.pathway_type,
+      qualification: c.qualification,
       merit_cutoff: c.merit_cutoff,
       student_merit: match?.student_merit ?? null,
       merit_label: match?.merit_label ?? null,
