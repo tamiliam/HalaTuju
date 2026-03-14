@@ -6,7 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import ProgressStepper from '@/components/ProgressStepper'
-import { calculateMeritScore } from '@/lib/merit'
+import { calculateMerit } from '@/lib/api'
 
 const GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G']
 
@@ -271,39 +271,34 @@ export default function GradesInputPage() {
     setElektifSlots((prev) => prev.map((s, i) => (i === index ? newSubjectId : s)))
   }
 
-  // Live merit calculation — UPU formula with categorised grades
-  // Best 2 stream grades count as "stream", weaker 2 compete with electives
-  const meritResult = useMemo(() => {
-    const coreGrades = CORE_SUBJECTS.map(s => grades[s.id]).filter(Boolean)
-    if (coreGrades.length === 0) return null
+  // Live merit calculation — calls backend API with debounce
+  const [meritResult, setMeritResult] = useState<{ academicMerit: number; finalMerit: number } | null>(null)
+  const [meritLoading, setMeritLoading] = useState(false)
 
-    // Merit points for sorting stream grades (best first)
-    const MERIT_PTS: Record<string, number> = {
-      'A+': 18, 'A': 16, 'A-': 14, 'B+': 12, 'B': 10,
-      'C+': 8, 'C': 6, 'D': 4, 'E': 2, 'G': 0,
+  useEffect(() => {
+    const hasGrades = Object.values(grades).some(g => g !== '')
+    if (!hasGrades) {
+      setMeritResult(null)
+      return
     }
-    const allStreamGrades = aliranSubjects
-      .filter(Boolean)
-      .map(id => grades[id])
-      .filter(Boolean)
-      .sort((a, b) => (MERIT_PTS[b] || 0) - (MERIT_PTS[a] || 0))
 
-    // Best 2 stream grades count as "stream"
-    const streamGrades = allStreamGrades.slice(0, 2)
-    // Weaker stream grades compete with electives
-    const weakerStream = allStreamGrades.slice(2)
-    const pureElectives = elektifSlots
-      .filter(Boolean)
-      .map(id => grades[id])
-      .filter(Boolean)
+    const timer = setTimeout(async () => {
+      setMeritLoading(true)
+      try {
+        const result = await calculateMerit(grades, coqScore)
+        setMeritResult({
+          academicMerit: result.academic_merit,
+          finalMerit: result.final_merit,
+        })
+      } catch {
+        // Silently fail — merit display is informational
+      } finally {
+        setMeritLoading(false)
+      }
+    }, 400)
 
-    // Combine weaker stream + electives, sort, take best 2
-    const allElective = [...weakerStream, ...pureElectives]
-      .sort((a, b) => (MERIT_PTS[b] || 0) - (MERIT_PTS[a] || 0))
-      .slice(0, 2)
-
-    return calculateMeritScore(coreGrades, streamGrades, allElective, coqScore)
-  }, [grades, coqScore, aliranSubjects, elektifSlots])
+    return () => clearTimeout(timer)
+  }, [grades, coqScore])
 
   const coreComplete = CORE_SUBJECTS.every((s) => grades[s.id])
 
