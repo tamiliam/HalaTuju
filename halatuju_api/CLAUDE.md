@@ -155,6 +155,29 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_ranking.py | 9 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest match dict format, interview penalty), ranked results (sorted desc, empty list, output shape) |
 | test_preu_courses.py | 4 | Pre-U eligibility (stats include matric/stpm), search (level Pra-U, text Matrikulasi, source_type matric) |
 
+### Annual STPM Data Refresh (before UPU application season)
+
+```bash
+# 1. Scrape latest data from MOHE ePanduan
+python manage.py scrape_mohe_stpm --output data/stpm/mohe_2027.csv
+
+# 2. Review diff report (dry run — no changes applied)
+python manage.py sync_stpm_mohe --csv data/stpm/mohe_2027.csv
+
+# 3. Apply URL updates
+python manage.py sync_stpm_mohe --csv data/stpm/mohe_2027.csv --apply
+
+# 4. Validate URLs
+python manage.py validate_stpm_urls
+
+# 5. For new programmes: parse requirements manually, add to DB
+# 6. For removed programmes: consider marking inactive
+# 7. Run golden master
+python -m pytest apps/courses/tests/test_stpm_golden_master.py -v
+```
+
+Requires: `pip install playwright && playwright install chromium` (local admin tool, not deployed)
+
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
@@ -191,6 +214,10 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/management/commands/load_csv_data.py` | CSV → DB migration (11 loaders) | One-time |
 | `apps/courses/management/commands/load_stpm_data.py` | STPM CSV → DB migration | One-time |
 | `apps/courses/management/commands/enrich_stpm_metadata.py` | Gemini STPM field/category/description enrichment | One-time |
+| `apps/courses/management/commands/scrape_mohe_stpm.py` | MOHE ePanduan scraper (annual) | No |
+| `apps/courses/management/commands/sync_stpm_mohe.py` | STPM data sync with diff report | No |
+| `apps/courses/management/commands/validate_stpm_urls.py` | Dead link checker | No |
+| `apps/courses/management/commands/populate_stpm_urls.py` | One-time MOHE URL backfill | One-time |
 | `apps/courses/insights_engine.py` | Deterministic insights from eligibility results | No |
 | `apps/courses/management/commands/audit_data.py` | Data completeness report | No |
 | `apps/reports/report_engine.py` | Gemini-powered narrative report generator | No |
@@ -270,6 +297,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Store `signal_strength` in Supabase (currently only `student_signals` synced)
 - STPM field metadata refinement: 207 unique field values from Gemini (expected ~30) — consider normalisation pass
 - Continue tech debt remediation from `docs/technical-debt.md` (39 items remaining)
+- MOHE ePanduan data sync pipeline built (scrape → sync → validate). Annual refresh takes ~15 min.
 
 ## Streamlit App (Legacy — migrating to Django API)
 
