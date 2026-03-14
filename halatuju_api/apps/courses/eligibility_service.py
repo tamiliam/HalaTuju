@@ -74,6 +74,7 @@ def compute_course_merit(merit_type, source_type, merit_cutoff, student_merit,
     merit_color = None
     merit_display_student = None
     merit_display_cutoff = None
+    cutoff_for_bar = merit_cutoff  # Progress bar cutoff (0-100 scale)
     student_merit_for_course = student_merit
 
     if merit_type == 'matric':
@@ -83,6 +84,7 @@ def compute_course_merit(merit_type, source_type, merit_cutoff, student_merit,
             matric_result = check_matric_track(track_id, grades, coq)
             if matric_result['eligible'] and matric_result['merit'] is not None:
                 student_merit_for_course = matric_result['merit']
+                cutoff_for_bar = MATRIC_HIGH_THRESHOLD
                 if student_merit_for_course >= MATRIC_HIGH_THRESHOLD:
                     merit_label, merit_color = MERIT_HIGH
                 elif student_merit_for_course >= MATRIC_FAIR_THRESHOLD:
@@ -109,6 +111,7 @@ def compute_course_merit(merit_type, source_type, merit_cutoff, student_merit,
                 merit_display_student = str(mata_gred)
                 merit_display_cutoff = str(high_mg)
                 student_merit_for_course = (27 - mata_gred) / 24 * 100
+                cutoff_for_bar = (27 - high_mg) / 24 * 100
             else:
                 return None  # Skip — pathway says not eligible
 
@@ -124,6 +127,7 @@ def compute_course_merit(merit_type, source_type, merit_cutoff, student_merit,
         'merit_color': merit_color,
         'merit_display_student': merit_display_student,
         'merit_display_cutoff': merit_display_cutoff,
+        'merit_cutoff': cutoff_for_bar,
         'student_merit': student_merit_for_course,
     }
 

@@ -185,6 +185,8 @@ class TestComputeCourseMerit(TestCase):
         self.assertEqual(result['merit_label'], 'High')
         self.assertEqual(result['merit_display_student'], '18')
         self.assertEqual(result['merit_display_cutoff'], '18')
+        # Science: (27-18)/24*100 = 37.5%
+        self.assertAlmostEqual(result['merit_cutoff'], 37.5)
 
     def test_stpm_socsci_at_12_is_high(self):
         """Sains Sosial mata_gred exactly 12 → High."""
@@ -205,6 +207,8 @@ class TestComputeCourseMerit(TestCase):
         self.assertIsNotNone(result)
         self.assertEqual(result['merit_label'], 'High')
         self.assertEqual(result['merit_display_cutoff'], '12')
+        # Sains Sosial: (27-12)/24*100 = 62.5%
+        self.assertAlmostEqual(result['merit_cutoff'], 62.5)
 
     def test_stpm_socsci_at_15_is_fair(self):
         """Sains Sosial mata_gred 15 (between 12 and 18) → Fair (appealable)."""

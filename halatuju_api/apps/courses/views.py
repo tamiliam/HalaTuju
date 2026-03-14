@@ -420,7 +420,7 @@ class EligibilityCheckView(APIView):
                 'field': (course.frontend_label or course.field) if course else '',
                 'source_type': source_type,
                 'pathway_type': pathway_type,
-                'merit_cutoff': merit_cutoff,
+                'merit_cutoff': merit_result['merit_cutoff'],
                 'student_merit': merit_result['student_merit'],
                 'merit_label': merit_result['merit_label'],
                 'merit_color': merit_result['merit_color'],
