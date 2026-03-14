@@ -313,3 +313,136 @@ def check_all_pathways(grades, coq_score):
         results.append(check_stpm_bidang(bidang['id'], grades))
 
     return results
+
+
+# ── Pre-University Unified Scoring ──────────────────────────────────────
+# Ported from halatuju-web/src/lib/pathways.ts getPathwayFitScore()
+
+BASE_SCORE = 100
+PRESTIGE = {'matric': 8, 'stpm': 5}
+SIGNAL_CAP = 6
+
+TRACK_FIELD_MAP = {
+    'matric:kejuruteraan': ['field_mechanical', 'field_electrical', 'field_civil', 'field_heavy_industry'],
+    'matric:sains_komputer': ['field_digital'],
+    'matric:perakaunan': ['field_business'],
+    'stpm:sains_sosial': [],
+}
+
+
+def _matric_academic_bonus(merit):
+    if merit >= 94:
+        return 8
+    if merit >= 89:
+        return 4
+    return 0
+
+
+def _stpm_academic_bonus(mata_gred):
+    if mata_gred <= 4:
+        return 8
+    if mata_gred <= 10:
+        return 4
+    return 0
+
+
+def _field_preference_bonus(result, signals):
+    if not signals:
+        return 0
+    key = f"{result['pathway']}:{result['track_id']}"
+    mapped_fields = TRACK_FIELD_MAP.get(key)
+
+    if result['track_id'] == 'sains_sosial':
+        return 3 if (signals.get('work_preference_signals', {}).get('creative', 0) > 0) else 0
+
+    if mapped_fields:
+        field_signals = signals.get('field_interest', {})
+        for f in mapped_fields:
+            if field_signals.get(f, 0) > 0:
+                return 3
+    return 0
+
+
+def _get_signal(signals, category, key):
+    if not signals:
+        return 0
+    return signals.get(category, {}).get(key, 0)
+
+
+def _pathway_signal_adjustment(result, signals):
+    if not signals:
+        return 0
+
+    is_matric = result['pathway'] == 'matric'
+    is_socsci = result['track_id'] == 'sains_sosial'
+    adj = 0
+
+    # Work style
+    if _get_signal(signals, 'work_preference_signals', 'problem_solving') > 0 and not is_socsci:
+        adj += 2
+    if _get_signal(signals, 'work_preference_signals', 'creative') > 0 and is_socsci:
+        adj += 1
+    if _get_signal(signals, 'work_preference_signals', 'hands_on') > 0:
+        adj -= 1
+
+    # Environment
+    if _get_signal(signals, 'environment_signals', 'workshop_environment') > 0:
+        adj -= 1
+    if _get_signal(signals, 'environment_signals', 'field_environment') > 0:
+        adj -= 1
+
+    # Learning style
+    if _get_signal(signals, 'learning_tolerance_signals', 'concept_first') > 0:
+        adj += 2
+    if _get_signal(signals, 'learning_tolerance_signals', 'rote_tolerant') > 0:
+        adj += 1
+    if _get_signal(signals, 'learning_tolerance_signals', 'learning_by_doing') > 0:
+        adj -= 1
+
+    # Values
+    if _get_signal(signals, 'value_tradeoff_signals', 'pathway_priority') > 0:
+        adj += 3
+    if _get_signal(signals, 'value_tradeoff_signals', 'fast_employment_priority') > 0:
+        adj -= 2
+    if _get_signal(signals, 'value_tradeoff_signals', 'quality_priority') > 0:
+        adj += 2
+    if _get_signal(signals, 'value_tradeoff_signals', 'allowance_priority') > 0 and is_matric:
+        adj += 2
+    if _get_signal(signals, 'value_tradeoff_signals', 'proximity_priority') > 0 and not is_matric:
+        adj += 1
+    if _get_signal(signals, 'value_tradeoff_signals', 'employment_guarantee') > 0:
+        adj -= 1
+
+    # Energy
+    if _get_signal(signals, 'energy_sensitivity_signals', 'mental_fatigue_sensitive') > 0:
+        adj -= 2
+    if _get_signal(signals, 'energy_sensitivity_signals', 'high_stamina') > 0:
+        adj += 1
+
+    return max(min(adj, SIGNAL_CAP), -SIGNAL_CAP)
+
+
+def get_pathway_fit_score(result, signals=None):
+    """Calculate unified fit score for a pre-U pathway result.
+
+    Args:
+        result: Dict from check_matric_track() or check_stpm_bidang().
+        signals: Optional student quiz signals dict.
+
+    Returns:
+        Integer fit score (0 if not eligible, ~95-120 if eligible).
+    """
+    if not result.get('eligible'):
+        return 0
+
+    score = BASE_SCORE + PRESTIGE.get(result['pathway'], 0)
+
+    if result['pathway'] == 'matric' and result.get('merit') is not None:
+        score += _matric_academic_bonus(result['merit'])
+    elif result['pathway'] == 'stpm' and result.get('mata_gred') is not None:
+        score += _stpm_academic_bonus(result['mata_gred'])
+
+    score += _field_preference_bonus(result, signals)
+    score += _pathway_signal_adjustment(result, signals)
+
+    return score

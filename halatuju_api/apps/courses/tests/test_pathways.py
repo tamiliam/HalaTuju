@@ -5,6 +5,7 @@ Covers Matriculation (4 tracks) and STPM (2 bidangs).
 Uses backend grade keys (math, addmath, chem, etc.) not frontend keys.
 """
 import pytest
+from django.test import TestCase
 from apps.courses.pathways import (
     is_credit,
     meets_min,
@@ -12,6 +13,7 @@ from apps.courses.pathways import (
     check_matric_track,
     check_stpm_bidang,
     check_all_pathways,
+    get_pathway_fit_score,
     MATRIC_GRADE_POINTS,
     STPM_MATA_GRED,
 )
@@ -291,3 +293,70 @@ class TestCheckAllPathways:
         }
         for r in results:
             assert required_keys.issubset(r.keys()), f"Missing keys in {r}"
+
+
+class TestPathwayFitScore(TestCase):
+    """Tests for get_pathway_fit_score() — ported from frontend pathways.ts."""
+
+    def test_eligible_matric_base_score(self):
+        """Eligible matric track gets base + prestige."""
+        result = {
+            'pathway': 'matric', 'track_id': 'sains',
+            'eligible': True, 'merit': 85.0,
+            'mata_gred': None, 'max_mata_gred': None,
+        }
+        score = get_pathway_fit_score(result)
+        # BASE_SCORE (100) + prestige (8) + academic bonus (0, merit < 89)
+        self.assertEqual(score, 108)
+
+    def test_eligible_matric_high_merit(self):
+        """High merit matric gets academic bonus."""
+        result = {
+            'pathway': 'matric', 'track_id': 'sains',
+            'eligible': True, 'merit': 95.0,
+            'mata_gred': None, 'max_mata_gred': None,
+        }
+        score = get_pathway_fit_score(result)
+        # 100 + 8 (prestige) + 8 (academic, merit >= 94)
+        self.assertEqual(score, 116)
+
+    def test_eligible_stpm_low_mata_gred(self):
+        """Low mata gred (good) gets academic bonus."""
+        result = {
+            'pathway': 'stpm', 'track_id': 'sains',
+            'eligible': True, 'merit': None,
+            'mata_gred': 4, 'max_mata_gred': 18,
+        }
+        score = get_pathway_fit_score(result)
+        # 100 + 5 (prestige) + 8 (academic, mata_gred <= 4)
+        self.assertEqual(score, 113)
+
+    def test_not_eligible_returns_zero(self):
+        """Not eligible → score 0."""
+        result = {
+            'pathway': 'matric', 'track_id': 'sains',
+            'eligible': False, 'merit': None,
+            'mata_gred': None, 'max_mata_gred': None,
+        }
+        score = get_pathway_fit_score(result)
+        self.assertEqual(score, 0)
+
+    def test_signal_adjustment_capped(self):
+        """Signal adjustment is capped at ±6."""
+        result = {
+            'pathway': 'matric', 'track_id': 'sains',
+            'eligible': True, 'merit': 85.0,
+            'mata_gred': None, 'max_mata_gred': None,
+        }
+        # Extreme positive signals
+        signals = {
+            'work_preference_signals': {'problem_solving': 1},
+            'learning_tolerance_signals': {'concept_first': 1, 'rote_tolerant': 1},
+            'value_tradeoff_signals': {
+                'pathway_priority': 1, 'quality_priority': 1, 'allowance_priority': 1,
+            },
+            'energy_sensitivity_signals': {'high_stamina': 1},
+        }
+        score = get_pathway_fit_score(result, signals)
+        # 100 + 8 + 0 + 6 (capped) = 114
+        self.assertEqual(score, 114)
