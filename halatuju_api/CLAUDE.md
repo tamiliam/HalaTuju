@@ -167,8 +167,9 @@ python manage.py sync_stpm_mohe --csv data/stpm/mohe_2027.csv
 # 3. Apply URL updates
 python manage.py sync_stpm_mohe --csv data/stpm/mohe_2027.csv --apply
 
-# 4. Validate URLs
+# 4. Validate URLs (uses Selenium — checks rendered page, not HTTP status)
 python manage.py validate_stpm_urls
+# --fix flag clears dead URLs; --limit N checks first N only
 
 # 5. For new programmes: parse requirements manually, add to DB
 # 6. For removed programmes: consider marking inactive
@@ -176,7 +177,7 @@ python manage.py validate_stpm_urls
 python -m pytest apps/courses/tests/test_stpm_golden_master.py -v
 ```
 
-Requires: `pip install playwright && playwright install chromium` (local admin tool, not deployed)
+Requires: `pip install selenium` (URL validation) + `pip install playwright && playwright install chromium` (scraper). Local admin tools, not deployed.
 
 ### CRITICAL: Pre-Deploy Checklist
 
