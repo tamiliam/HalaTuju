@@ -19,3 +19,5 @@ Cross-cutting lessons from sprint retrospectives. Only items that affect future 
 - When matching courses across systems with different ID schemes, use name-based matching as fallback — institution types may use entirely different code conventions (FB/FC vs POLY-DIP/KKOM-CET). (Data Integrity Sprint)
 - Tech debt audits must include test execution analysis — check pytest output for skipped/xfailed tests, not just code and docs. A test that silently skips is worse than a missing test because it creates false confidence. (Test Health Sprint)
 - When migrating data sources (e.g. CSV → DB), immediately update or delete all tests that depend on the old source — `skipIf` guards on file existence mask the problem indefinitely. (Test Health Sprint)
+- For server-rendered portals (MOHE, polycc, etc.), HTTP status codes are useless for link validation — always check rendered page content with a headless browser. (External Links Sprint)
+- Never guess institution URLs from naming patterns — scrape the authoritative listing page instead. Even within a single system (e.g. IPG), URL conventions are inconsistent. (External Links Sprint)

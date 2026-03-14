@@ -84,12 +84,9 @@
 
 ## Frontend-Backend Implicit Contracts
 
-### [TD-001] STPM SPM prerequisite fields not checked (HIGH RISK)
-**File(s):** `halatuju_api/apps/courses/stpm_engine.py` (lines 106-113), `halatuju_api/apps/courses/models.py` (lines 575, 577)
-**What it is:** `StpmRequirement` model has `spm_pass_bi` (line 575) and `spm_pass_math` (line 577) boolean fields. But `check_spm_prerequisites()` only checks: `spm_credit_bm`, `spm_pass_sejarah`, `spm_credit_bi`, `spm_credit_math`, `spm_credit_addmath`, `spm_credit_science`. The `spm_pass_bi` and `spm_pass_math` fields are loaded from CSV, stored in DB, but NEVER evaluated.
-**What consistent looks like:** Add `('spm_pass_bi', 'eng', SPM_PASS_GRADES)` and `('spm_pass_math', 'math', SPM_PASS_GRADES)` to `SIMPLE_CHECKS`.
-**Risk if left:** HIGH — students may be shown as eligible for programmes that actually require a pass in BI or Math at SPM level. This is a correctness bug, not just tech debt.
-**Dependencies:** STPM golden master will change. Must update baseline after fix.
+### [TD-001] STPM SPM prerequisite fields not checked ✅ RESOLVED (Tech Debt Sprint 4, 2026-03-14)
+**File(s):** `halatuju_api/apps/courses/stpm_engine.py`
+**Resolution:** Added `spm_pass_bi` and `spm_pass_math` to `SIMPLE_CHECKS`. Zero programmes currently set these flags to true, so no eligibility results changed. STPM golden master baseline unchanged at 1,811.
 
 ### [TD-002] Client-side eligibility logic duplicated (HIGH RISK) — RESOLVED
 **Resolved:** TD-002 Sprint (2026-03-14). Frontend calculation files (`merit.ts`, `stpm.ts`, `pathways.ts` — 596 lines) deleted. Three new backend API endpoints added: `/calculate/merit/`, `/calculate/cgpa/`, `/calculate/pathways/`. Frontend now calls backend for all calculations. `getPathwayFitScore()` ported to `pathways.py`. Backend is the single source of truth.
@@ -339,19 +336,13 @@
 
 ## Performance and Architecture
 
-### [TD-044] EligibilityCheckView iterates entire DataFrame on every request
-**File(s):** `halatuju_api/apps/courses/views.py` (lines 370-476)
-**What it is:** Every eligibility check iterates ALL rows of the requirements DataFrame (389 courses), runs the full engine check for each, then sorts. For the PISMP deduplication, it iterates the DataFrame AGAIN (line 502).
-**What consistent looks like:** Pre-filter DataFrame by obvious exclusions (nationality, gender) before full check. Cache deduplication hashes at startup.
-**Risk if left:** Low — 389 rows is fast enough (~200ms), but doubles unnecessarily with the second iteration.
-**Dependencies:** Golden master test must still pass.
+### [TD-044] EligibilityCheckView iterates entire DataFrame on every request ✅ RESOLVED (Refactoring Sprint, 2026-03-14)
+**File(s):** `halatuju_api/apps/courses/eligibility_service.py`
+**Resolution:** Double DataFrame iteration eliminated during extraction to eligibility_service.py. PISMP deduplication now operates on the result list, not the DataFrame.
 
-### [TD-045] EligibilityCheckView.post() is 300+ lines
-**File(s):** `halatuju_api/apps/courses/views.py` (lines 303-617)
-**What it is:** The main eligibility endpoint method is over 300 lines long, handling: validation, merit calculation, engine loop, matric/STPM merit branching, PISMP deduplication, stats computation, sorting, pathway stats, and insights generation.
-**What consistent looks like:** Extract sub-functions: `_compute_merit()`, `_build_eligible_list()`, `_deduplicate_pismp()`, `_sort_results()`.
-**Risk if left:** Medium — hard to modify or debug any single aspect without reading the entire method.
-**Dependencies:** None.
+### [TD-045] EligibilityCheckView.post() is 300+ lines ✅ RESOLVED (Refactoring Sprint, 2026-03-14)
+**File(s):** `halatuju_api/apps/courses/eligibility_service.py`, `halatuju_api/apps/courses/views.py`
+**Resolution:** Extracted 5 pure functions into `eligibility_service.py`: `compute_student_merit()`, `compute_course_merit()`, `deduplicate_pismp()`, `sort_eligible_courses()`, `compute_stats()`. View reduced from ~310 lines to ~100 lines. 19 unit tests added for the service module.
 
 ### [TD-046] CourseListView returns all 389 courses with no pagination
 **File(s):** `halatuju_api/apps/courses/views.py` (lines 765-774)
@@ -437,7 +428,7 @@
 | TD-015 | Frontend/backend merit calculation may disagree | Resolved (TD-002 Sprint) |
 | TD-016 | StpmProgrammeDetailView institution lookup by name | Open |
 | TD-017 | Pre-U fit scoring exists only on frontend | Resolved (TD-002 Sprint) |
-| TD-021 | PISMP deduplication logic inline and complex | Open |
+| TD-021 | PISMP deduplication logic inline and complex | Resolved (Refactoring Sprint) |
 | TD-033 | Auth test failures not triaged | Resolved (TD-010 Sprint) |
 | TD-034 | No integration test for full flow | Open |
 | TD-035 | Golden master count discrepancy in docs | Resolved (Test Health Sprint) |
@@ -447,7 +438,7 @@
 | TD-046 | CourseListView returns all courses unpaginated | Open |
 | TD-048 | console.error in production with no user feedback | Open |
 | TD-051 | STPM field metadata has 207 unique values | Open |
-| TD-052 | Hardcoded merit thresholds duplicated across layers | Open |
+| TD-052 | Hardcoded merit thresholds duplicated across layers | Partially resolved (Cleanup Sprint) |
 
 ### LOW (22 items)
 | ID | Title | Status |
@@ -477,6 +468,7 @@
 | TD-042 | No custom error/loading/404 pages | Open |
 | TD-047 | Startup data load is all-or-nothing | Open |
 | TD-049 | `as any` type assertion | Open |
+| TD-052 | Search limit hardcoded to 10000, no pagination | Open |
 
 ---
 

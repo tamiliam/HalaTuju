@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — External Links & MOHE Sprint (2026-03-14)
+
+### Added
+- **MOHE ePanduan integration** — `mohe_url` field on StpmCourse, auto-generated URL pattern for 1,113 STPM courses, validated with Selenium-based page content checker
+- **MOHE scraper + sync** — `scrape_mohe_courses` and `sync_stpm_mohe` management commands for auditing MOHE catalogue against DB
+- **STPM URL validator** — Selenium-based validator (not HTTP status — MOHE always returns 200). Checks rendered page content for "daripada 0 carian" to detect dead links
+- **Course-level "More Info" pill** — About section on course detail pages now shows a contextual "More Info" link: MOHE ePanduan for UA/poly/kkom, polycc for poly (TBD), MOE sites for matric/form 6/PISMP, institution hyperlink for TVET
+- **Institution website links** — Institution cards now link to the institution's own website URL instead of the course-level hyperlink
+- **STPM institution cards** — Rich institution card on STPM detail page with acronym, type, category, state, and website link (looked up from Institution table)
+- **ILJTM/ILKBS filter split** — Search API resolves `tvet` source_type into `iljtm`/`ilkbs` using `course_pathway_map`; filter dropdown shows them separately
+- **IPG campus URLs** — 27 IPG campuses populated with correct website URLs
+- **Annual STPM data refresh procedure** — Documented in `docs/stpm-annual-refresh.md`
+
+### Changed
+- **Search limit** — Backend limit bumped from 100 to 10000 for full result sets
+- **Merit colour logic** — STPM mata gred courses use inverted colours (low = green/good); arts stream ≤12 green, science ≤18 green
+- **Pre-U course detail** — Department and WBL fields hidden for pre-U courses (not meaningful)
+- **"More Info" pill style** — STPM detail page changed from "View on ePanduan (MOHE)" text link to compact pill button
+
+### Fixed
+- **1 dead MOHE URL** — UJ6521004 cleared after Selenium validation confirmed "daripada 0 carian"
+- **Kolej Komuniti URL** — 1 missing institution URL fixed
+- **Search pathway_type** — Search results now include `pathway_type` and `qualification` fields for correct badge rendering
+
+---
+
+## [Unreleased] — Security, API Consistency & Refactoring Sprints (2026-03-14)
+
+### Changed
+- **Default permissions flipped** — `DEFAULT_PERMISSION_CLASSES` changed from `AllowAny` to `SupabaseIsAuthenticated` (TD-012). 16 public views explicitly marked.
+- **401 for unauthenticated** — Added `SupabaseAuthentication` DRF class; unauthenticated requests now return 401 with `WWW-Authenticate: Bearer` instead of 403 (TD-011)
+- **DRF status constants** — All raw integer status codes replaced with DRF constants (TD-004)
+- **EligibilityCheckView refactored** — Extracted 5 pure functions into `eligibility_service.py`, view reduced from 310 → 100 lines (TD-045)
+- **Double DataFrame iteration eliminated** — `_apply_pismp_dedup()` no longer iterates twice (TD-044)
+
+### Fixed
+- **ProfileUpdateSerializer** — PUT/PATCH profile now validates via serializer instead of accepting arbitrary fields (TD-008)
+- **SECRET_KEY guard** — Production raises ValueError if SECRET_KEY equals insecure dev default (TD-036)
+- **CORS wildcard guard** — Production raises ValueError if CORS_ALLOWED_ORIGINS=* (TD-038)
+
+---
+
 ## [Unreleased] — Tech Debt Sprint 4 (2026-03-14)
 
 ### Fixed

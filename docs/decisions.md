@@ -203,6 +203,30 @@
 
 **Revisit if:** A second view needs the same eligibility logic (e.g., batch eligibility API), at which point the service module pays for itself immediately.
 
+## Selenium-based URL validation for MOHE — External Links Sprint, 2026-03-14
+
+**Decision:** Use Selenium with headless Chrome to validate MOHE ePanduan URLs by checking rendered page content, not HTTP status codes.
+
+**Alternatives considered:** (1) httpx/requests HTTP status check. (2) Playwright MCP browser automation. (3) Selenium headless Chrome (chosen).
+
+**Rationale:** MOHE's ePanduan portal always returns HTTP 302→200 regardless of whether the course exists. The rendered page shows "daripada 0 carian" for dead links and "1 daripada 1 carian" for valid links. HTTP clients cannot detect dead links. Playwright MCP failed because Chrome was already running. Selenium with headless Chrome works as a CLI tool without conflicts.
+
+**Trade-offs:** Selenium is slower (~2-3 sec per URL with render wait) and requires Chrome + chromedriver installed locally. But it's a local admin tool, not deployed code.
+
+**Revisit if:** MOHE changes their page structure (rendering detection would break), or if a public API becomes available.
+
+## Course-level vs institution-level external links — External Links Sprint, 2026-03-14
+
+**Decision:** Course detail pages have two distinct link types: (1) "More Info" pill in About section links to the external course portal (MOHE, MOE, polycc), (2) "More Info" button on institution cards links to the institution's own website.
+
+**Alternatives considered:** (1) Single link per institution card combining both. (2) Link everything to MOHE. (3) Separate course-level and institution-level links (chosen).
+
+**Rationale:** Course-level portals (MOHE ePanduan, MOE matric page, PISMP portal) describe the programme itself. Institution websites describe the institution — facilities, contact, admission. These serve different user needs. The separation also handles TVET correctly: TVET courses have per-institution hyperlinks (course-level), while the institution URL is the institution's general website.
+
+**Trade-offs:** More complex frontend logic to determine which URL to show in the About pill (different logic per source_type). But the pattern is consistent once established.
+
+**Revisit if:** A unified course information portal emerges that covers all institution types, or if polycc/MOE links become course-specific rather than portal-level.
+
 ## Default-deny permissions (SupabaseIsAuthenticated) — Security Sprint, 2026-03-14
 
 **Decision:** Changed `REST_FRAMEWORK.DEFAULT_PERMISSION_CLASSES` from `AllowAny` to `SupabaseIsAuthenticated`. All 16 public endpoints explicitly marked with `permission_classes = [AllowAny]`.
