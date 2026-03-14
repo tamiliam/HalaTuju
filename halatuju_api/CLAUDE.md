@@ -115,7 +115,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (382 collected, 382 pass, 0 failures, 0 skipped)
+# Run ALL tests (387 collected, 387 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -135,7 +135,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 5319 baseline (DB fixtures) |
 | test_serializers.py | 27 | Grade key mapping, gender/nationality normalization, bool→Ya/Tidak, validation |
 | test_api.py | 71 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration, Matric/STPM integration, pathway_stats), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering), unified search (both qualifications, qualification filter, STPM field mapping, bumiputera exclusion, filters include qualifications, cross-qualification text search, field filter STPM, level/source_type filter skipping), calculate endpoints (merit, cgpa, pathways with signals) |
-| test_auth.py | 15 | Auth enforcement — protected endpoints reject 403, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
+| test_auth.py | 15 | Auth enforcement — protected endpoints reject 401, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
 | test_saved_courses.py | 3 | Saved course CRUD — save (201), list (appears), delete (removed) |
 | test_quiz.py | 24 | Quiz endpoints (questions 3 langs, submit single+multi, validation), engine (multi-select, weight splitting, Not Sure Yet, conditional Q2.5, field_interest, signal strength, lang parity) |
 | test_ranking.py | 62 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, top_5/rest split, API endpoint validation, field interest matching (primary/secondary/no match/multi-field/cap), high_stamina, rote_tolerant, quality_priority, work preference cap, pre-U scoring (Matric/STPM prestige, academic bonus, field preference, signal adjustment, signal cap, routing) |
@@ -143,7 +143,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_insights.py | 8 | Insights engine: empty input, stream breakdown, labels, top fields, merit counts, level distribution, summary text |
 | test_report_engine.py | 12 | Report engine: format helpers (grades, signals, courses, insights), prompts (BM/EN), persona mapping, Gemini mock (success, cascade, missing key) |
 | test_views.py (reports) | 4 | Report views: list (own only), detail, cross-user 404 regression, validation |
-| test_outcomes.py | 10 | Outcome CRUD (create, duplicate 409, with institution, missing course), list (own only), update status, cross-user 404, delete, auth enforcement (GET/POST 403) |
+| test_outcomes.py | 10 | Outcome CRUD (create, duplicate 409, with institution, missing course), list (own only), update status, cross-user 404, delete, auth enforcement (GET/POST 401) |
 | test_pathways.py | 37 | Matric/STPM eligibility: grade helpers (is_credit, meets_min, find_best_elective), all 4 Matric tracks (sains, kejuruteraan, sains_komputer, perakaunan), both STPM bidangs (sains, sains_sosial), merit calculation, mata gred threshold, check_all_pathways integration, pathway fit score (base, academic bonus, signal cap) |
 | test_profile_fields.py | 19 | Expanded profile fields (NRIC, address, phone, income, siblings defaults), SavedCourse interest_status (default, set, got_offer), profile API (GET new fields, PUT new fields), saved-courses API (GET includes status, PATCH updates status), STPM profile fields (exam_type default, STPM fields stored, defaults empty/null), profile sync STPM (create, update, GET returns fields) |
 | test_stpm_models.py | 5 | StpmCourse creation + __str__, StpmRequirement creation + defaults, JSON field round-trip, metadata fields (explicit values + defaults) |
@@ -181,7 +181,7 @@ Requires: `pip install playwright && playwright install chromium` (local admin t
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (382 collected, 382 must pass, SPM golden master = 5319, STPM golden master = 1811)
+# 1. Run all tests (387 collected, 387 must pass, SPM golden master = 5319, STPM golden master = 1811)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -193,7 +193,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-382 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
+387 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -289,6 +289,12 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Profile update validated: `ProfileUpdateSerializer` replaces raw `setattr` loops (TD-008).
 - Production guards: `SECRET_KEY` insecure default rejected (TD-036), `CORS_ALLOWED_ORIGINS=*` rejected (TD-038).
 - Tech debt resolved: TD-008, TD-012, TD-036, TD-038.
+
+**API Consistency Sprint COMPLETE (2026-03-14)**
+- Raw status codes → DRF constants in SavedCoursesView/SavedCourseDetailView (TD-004).
+- 403→401 for unauthenticated requests: `SupabaseAuthentication` DRF class provides `WWW-Authenticate: Bearer` header (TD-011).
+- Tech debt resolved: TD-004, TD-011. Total: 15/52 resolved.
+- Tests: 387 pass, 0 fail, 0 skip.
 
 **Pending work**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)

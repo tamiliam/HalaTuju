@@ -6,7 +6,7 @@ Covers:
 - List own outcomes only
 - Update outcome status
 - Delete outcome
-- Auth enforcement (403 without token)
+- Auth enforcement (401 without token)
 - Cross-user isolation (can't see/edit other user's outcomes)
 """
 import jwt
@@ -181,10 +181,10 @@ class TestOutcomeEndpoints(TestCase):
 
     def test_outcomes_reject_anonymous(self):
         resp = self.client.get('/api/v1/outcomes/')
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 401)
 
     def test_outcomes_post_reject_anonymous(self):
         resp = self.client.post('/api/v1/outcomes/', {
             'course_id': 'TEST001',
         }, format='json')
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 401)

@@ -9,6 +9,8 @@ import jwt
 from jwt import PyJWKClient
 from django.conf import settings
 from django.http import JsonResponse
+from rest_framework.authentication import BaseAuthentication
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import BasePermission
 
 logger = logging.getLogger(__name__)
@@ -122,13 +124,33 @@ def require_auth(view_func):
     return wrapper
 
 
+class SupabaseAuthentication(BaseAuthentication):
+    """
+    DRF authentication class that provides WWW-Authenticate header.
+
+    Does not perform actual authentication (the middleware handles that).
+    Its purpose is to make DRF return 401 instead of 403 for unauthenticated
+    requests by providing the authenticate_header() method.
+    """
+
+    def authenticate(self, request):
+        # Authentication is handled by SupabaseAuthMiddleware.
+        # Return None to indicate this authenticator doesn't handle the request
+        # (allows other authenticators or permission classes to decide).
+        return None
+
+    def authenticate_header(self, request):
+        return 'Bearer'
+
+
 class SupabaseIsAuthenticated(BasePermission):
     """
     DRF permission class for class-based views that require Supabase auth.
 
-    Returns 403 Forbidden if request.user_id is not set by the middleware.
-    (DRF standard: 403 when no WWW-Authenticate header is configured.)
+    Raises 401 Unauthorized if request.user_id is not set by the middleware.
     """
 
     def has_permission(self, request, view):
-        return request.user_id is not None
+        if request.user_id is None:
+            raise NotAuthenticated('Authentication required.')
+        return True

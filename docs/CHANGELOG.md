@@ -1,5 +1,21 @@
 # Changelog — HalaTuju
 
+## API Consistency Sprint (2026-03-14)
+
+### Changed
+- All HTTP status codes in `SavedCoursesView` and `SavedCourseDetailView` now use DRF constants (`status.HTTP_400_BAD_REQUEST`, etc.) instead of raw integers (TD-004)
+- Unauthenticated requests now return 401 Unauthorized instead of 403 Forbidden (TD-011) — correct per RFC 7235
+
+### Added
+- `SupabaseAuthentication` DRF authentication class in `supabase_auth.py` — provides `WWW-Authenticate: Bearer` header so DRF returns 401 for unauthenticated requests
+- `DEFAULT_AUTHENTICATION_CLASSES` in REST_FRAMEWORK settings
+
+### Stats
+- Tests: 387 collected, 387 pass, 0 failures, 0 skipped
+- Tech debt resolved: TD-004, TD-011
+
+---
+
 ## Security Hardening Sprint (2026-03-14)
 
 ### Changed

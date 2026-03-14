@@ -948,7 +948,7 @@ class SavedCoursesView(APIView):
     def post(self, request):
         course_id = request.data.get('course_id')
         if not course_id:
-            return Response({'error': 'course_id required'}, status=400)
+            return Response({'error': 'course_id required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             course = Course.objects.get(course_id=course_id)
@@ -956,9 +956,9 @@ class SavedCoursesView(APIView):
                 supabase_user_id=request.user_id
             )
             SavedCourse.objects.get_or_create(student=profile, course=course)
-            return Response({'message': 'Course saved'}, status=201)
+            return Response({'message': 'Course saved'}, status=status.HTTP_201_CREATED)
         except Course.DoesNotExist:
-            return Response({'error': 'Course not found'}, status=404)
+            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class SavedCourseDetailView(APIView):
@@ -972,8 +972,8 @@ class SavedCourseDetailView(APIView):
         ).delete()
 
         if deleted:
-            return Response({'message': 'Course removed'}, status=200)
-        return Response({'error': 'Not found'}, status=404)
+            return Response({'message': 'Course removed'})
+        return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
 
     def patch(self, request, course_id):
         try:
@@ -982,7 +982,7 @@ class SavedCourseDetailView(APIView):
                 course_id=course_id,
             )
         except SavedCourse.DoesNotExist:
-            return Response({'error': 'Not found'}, status=404)
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
 
         status_value = request.data.get('interest_status')
         valid = ['interested', 'planning', 'applied', 'got_offer']
@@ -990,7 +990,7 @@ class SavedCourseDetailView(APIView):
             sc.interest_status = status_value
             sc.save(update_fields=['interest_status'])
             return Response({'message': 'Status updated'})
-        return Response({'error': 'Invalid status'}, status=400)
+        return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ProfileView(APIView):

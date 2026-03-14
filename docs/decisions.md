@@ -179,6 +179,18 @@
 
 **Revisit if:** Never — forward baselines should be set against the current DB state.
 
+## SupabaseAuthentication class for 401 responses — API Consistency Sprint, 2026-03-14
+
+**Decision:** Added a lightweight `SupabaseAuthentication` DRF authentication class that returns `None` from `authenticate()` and `'Bearer'` from `authenticate_header()`. Registered as `DEFAULT_AUTHENTICATION_CLASSES`.
+
+**Alternatives considered:** (1) Custom DRF exception handler to map `NotAuthenticated` → 401. (2) Override `APIView.permission_denied()` in a base view class. (3) DRF authentication class (chosen).
+
+**Rationale:** DRF only returns 401 when at least one authenticator provides a `WWW-Authenticate` header. Our auth runs in Django middleware, not DRF's auth pipeline. Rather than fighting the framework (custom exception handlers, view overrides), the authentication class is the canonical mechanism. It's how DRF's own `TokenAuthentication` works.
+
+**Trade-offs:** The class doesn't perform actual authentication (that's the middleware's job). This separation is slightly unintuitive — the "authenticator" is just a header provider. But it follows DRF conventions exactly.
+
+**Revisit if:** The auth architecture changes to move JWT verification into DRF's authentication pipeline (e.g., replacing middleware with a proper DRF authenticator that also verifies tokens).
+
 ## Default-deny permissions (SupabaseIsAuthenticated) — Security Sprint, 2026-03-14
 
 **Decision:** Changed `REST_FRAMEWORK.DEFAULT_PERMISSION_CLASSES` from `AllowAny` to `SupabaseIsAuthenticated`. All 16 public endpoints explicitly marked with `permission_classes = [AllowAny]`.

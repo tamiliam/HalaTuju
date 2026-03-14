@@ -2,8 +2,7 @@
 Tests for authentication enforcement on protected endpoints.
 
 Covers:
-- Protected endpoints return 403 without auth token
-  (DRF returns 403 instead of 401 when no WWW-Authenticate header is configured)
+- Protected endpoints return 401 without auth token
 - Protected endpoints work with valid Supabase JWT
 - Public endpoints remain accessible without auth
 """
@@ -34,7 +33,7 @@ class TestProtectedEndpointsRejectAnonymous(TestCase):
 
     def test_saved_courses_get_rejected(self):
         response = self.client.get('/api/v1/saved-courses/')
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_saved_courses_post_rejected(self):
         response = self.client.post(
@@ -42,15 +41,15 @@ class TestProtectedEndpointsRejectAnonymous(TestCase):
             {'course_id': 'FAKE'},
             format='json',
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_saved_course_delete_rejected(self):
         response = self.client.delete('/api/v1/saved-courses/FAKE/')
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_profile_get_rejected(self):
         response = self.client.get('/api/v1/profile/')
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_profile_put_rejected(self):
         response = self.client.put(
@@ -58,7 +57,7 @@ class TestProtectedEndpointsRejectAnonymous(TestCase):
             {'gender': 'Lelaki'},
             format='json',
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_profile_sync_rejected(self):
         response = self.client.post(
@@ -66,7 +65,7 @@ class TestProtectedEndpointsRejectAnonymous(TestCase):
             {'name': 'Test'},
             format='json',
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls')

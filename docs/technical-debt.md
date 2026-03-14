@@ -23,12 +23,9 @@
 
 ## API Response Format Consistency
 
-### [TD-004] Mixed HTTP status code style
-**File(s):** `halatuju_api/apps/courses/views.py` (lines 943, 951, 953, 967, 968, 977, 985)
-**What it is:** Some endpoints use DRF constants (`status.HTTP_400_BAD_REQUEST`), others use raw integers (`status=400`, `status=404`, `status=201`). The SavedCoursesView and SavedCourseDetailView use raw integers while OutcomeListView and OutcomeDetailView use DRF constants.
-**What consistent looks like:** All endpoints use `status.HTTP_*` constants from `rest_framework.status`.
-**Risk if left:** Low — functionally identical, but makes code review harder and introduces inconsistency risk on new endpoints.
-**Dependencies:** None.
+### [TD-004] Mixed HTTP status code style ✅ RESOLVED (API Consistency Sprint, 2026-03-14)
+**File(s):** `halatuju_api/apps/courses/views.py`
+**Resolution:** All raw integer status codes in `SavedCoursesView` and `SavedCourseDetailView` replaced with DRF constants (`status.HTTP_400_BAD_REQUEST`, `status.HTTP_201_CREATED`, `status.HTTP_404_NOT_FOUND`). Default 200 responses use no explicit status (DRF default).
 
 ### [TD-005] No standard error response envelope
 **File(s):** `halatuju_api/apps/courses/views.py` (throughout), `halatuju_api/apps/reports/views.py`
@@ -75,12 +72,9 @@
 **What it was:** 13 tests (not 9 — count was wrong in original audit) failed because they mocked `jwt.decode` but not `jwt.get_unverified_header`, which the middleware calls first. Fixed by adding the missing mock.
 **Resolution:** Simple mock fix. Proper auth test infrastructure deferred to admin layer design — see `docs/decisions.md`.
 
-### [TD-011] SupabaseIsAuthenticated returns 403 instead of 401
-**File(s):** `halatuju_api/halatuju/middleware/supabase_auth.py` (line 132)
-**What it is:** The permission class returns 403 Forbidden for unauthenticated requests. RFC 7235 says 401 should be used when authentication is required but not provided; 403 is for "authenticated but not authorised". The docstring even acknowledges this is DRF's default behaviour.
-**What consistent looks like:** Return 401 with a `WWW-Authenticate` header.
-**Risk if left:** Low — frontend handles both 401 and 403 the same way, but API semantics are wrong.
-**Dependencies:** Frontend error handling, auth test expectations.
+### [TD-011] SupabaseIsAuthenticated returns 403 instead of 401 ✅ RESOLVED (API Consistency Sprint, 2026-03-14)
+**File(s):** `halatuju_api/halatuju/middleware/supabase_auth.py`, `halatuju_api/halatuju/settings/base.py`
+**Resolution:** Added `SupabaseAuthentication` DRF authentication class with `authenticate_header()` returning `'Bearer'`. Registered as `DEFAULT_AUTHENTICATION_CLASSES`. DRF now returns 401 with `WWW-Authenticate: Bearer` header for unauthenticated requests, per RFC 7235. All auth tests updated from 403→401.
 
 ### [TD-012] DEFAULT_PERMISSION_CLASSES is AllowAny ✅ RESOLVED (Security Sprint, 2026-03-14)
 **File(s):** `halatuju_api/halatuju/settings/base.py`
@@ -437,7 +431,7 @@
 |----|-------|--------|
 | TD-008 | ProfileView accepts arbitrary fields without validation | Resolved (Security Sprint) |
 | TD-009 | No rate limiting on Gemini API calls | Open |
-| TD-011 | SupabaseIsAuthenticated returns 403 instead of 401 | Open |
+| TD-011 | SupabaseIsAuthenticated returns 403 instead of 401 | Resolved (API Consistency Sprint) |
 | TD-013 | Subject key naming split (5+ files to change) | Open |
 | TD-014 | localStorage sprawl (20+ keys, no typing) | Open |
 | TD-015 | Frontend/backend merit calculation may disagree | Resolved (TD-002 Sprint) |
@@ -458,7 +452,7 @@
 ### LOW (22 items)
 | ID | Title | Status |
 |----|-------|--------|
-| TD-004 | Mixed HTTP status code style | Open |
+| TD-004 | Mixed HTTP status code style | Resolved (API Consistency Sprint) |
 | TD-005 | No standard error response envelope | Open |
 | TD-006 | Inconsistent success response keys (count vs total_count) | Open |
 | TD-018 | Duplicate import of Count, Subquery, OuterRef | Resolved (Sprint 4) |
