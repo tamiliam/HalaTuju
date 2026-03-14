@@ -115,7 +115,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (387 collected, 357 pass, 0 failures, 30 skipped)
+# Run ALL tests (382 collected, 382 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8283 baseline)
@@ -132,7 +132,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 
 | File | Tests | What's Covered |
 |------|-------|----------------|
-| test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 8283 baseline |
+| test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 5319 baseline (DB fixtures) |
 | test_serializers.py | 27 | Grade key mapping, gender/nationality normalization, bool→Ya/Tidak, validation |
 | test_api.py | 71 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration, Matric/STPM integration, pathway_stats), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering), unified search (both qualifications, qualification filter, STPM field mapping, bumiputera exclusion, filters include qualifications, cross-qualification text search, field filter STPM, level/source_type filter skipping), calculate endpoints (merit, cgpa, pathways with signals) |
 | test_auth.py | 15 | Auth enforcement — protected endpoints reject 403, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
@@ -153,12 +153,12 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_api.py | 9 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency), STPM ranking API (returns 200, scored programmes, sorted desc, missing 400, empty list) |
 | test_stpm_search.py | 12 | STPM search API (200, programmes shape, text/university/stream filters, pagination, filter metadata), STPM detail API (200, programme data, 404, subjects list) |
 | test_stpm_ranking.py | 9 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest match dict format, interview penalty), ranked results (sorted desc, empty list, output shape) |
-| test_preu_courses.py | 9 | Pre-U eligibility (matric sains eligible, merit values, STPM sains eligible, mata gred values, bad grades excluded, stats), search (level Pra-U, text Matrikulasi, source_type matric) |
+| test_preu_courses.py | 4 | Pre-U eligibility (stats include matric/stpm), search (level Pra-U, text Matrikulasi, source_type matric) |
 
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (387 collected, 357 must pass, SPM golden master = 8283, STPM golden master = 1811)
+# 1. Run all tests (382 collected, 382 must pass, SPM golden master = 5319, STPM golden master = 1811)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -170,7 +170,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-357 tests must pass out of 387 collected (30 skipped — conditional skip markers, not failures). If golden master deviates from 8283, you broke eligibility logic.
+382 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -247,7 +247,8 @@ Supabase Security Advisor must show 0 errors before deploy.
 - 3 new calculation endpoints: `/calculate/merit/`, `/calculate/cgpa/`, `/calculate/pathways/`
 - `getPathwayFitScore()` ported to backend `pathways.py`
 - Frontend pages call API instead of local functions. Backend is single source of truth.
-- Tech debt resolved: TD-002, TD-015, TD-017. Tests: 357 pass (0 failures) after TD-010 fix.
+- Tech debt resolved: TD-002, TD-015, TD-017.
+- Auth test fix (TD-010, TD-033): 0 failures. Skipped tests eliminated: 30 CSV-dependent tests converted to DB fixtures or deleted (5 redundant). 382 pass, 0 skip.
 
 **Pending work**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)

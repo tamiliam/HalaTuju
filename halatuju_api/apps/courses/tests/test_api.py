@@ -6,97 +6,22 @@ Covers:
 - GET /api/v1/courses/ — course listing
 - GET /api/v1/courses/<id>/ — course detail
 - GET /api/v1/institutions/ — institution listing
-
-Note: Eligibility tests load CSV data directly into the app config's DataFrame
-(bypassing DB) to match the hybrid engine approach used in production.
 """
-import os
-import unittest
-import pandas as pd
 from django.test import TestCase, override_settings
-from django.apps import apps
 from rest_framework.test import APIClient
-
-
-def _load_and_clean_csv(filepath):
-    """Load CSV and enforce strict integer types for flag columns."""
-    REQ_FLAG_COLUMNS = [
-        'req_malaysian', 'req_male', 'req_female', 'no_colorblind', 'no_disability',
-        '3m_only', 'pass_bm', 'credit_bm', 'pass_history',
-        'pass_eng', 'credit_english', 'pass_math', 'credit_math', 'pass_math_addmath',
-        'pass_math_science', 'pass_science_tech', 'credit_math_sci',
-        'credit_math_sci_tech', 'pass_stv', 'credit_sf', 'credit_sfmt',
-        'credit_bmbi', 'credit_stv',
-        'req_interview', 'single', 'req_group_diversity',
-        'credit_bm_b', 'credit_eng_b', 'credit_math_b', 'credit_addmath_b',
-        'distinction_bm', 'distinction_eng', 'distinction_math', 'distinction_addmath',
-        'distinction_bio', 'distinction_phy', 'distinction_chem', 'distinction_sci',
-        'credit_science_group', 'credit_math_or_addmath',
-        'pass_islam', 'credit_islam', 'pass_moral', 'credit_moral',
-        'pass_sci', 'credit_sci', 'credit_addmath',
-    ]
-    REQ_COUNT_COLUMNS = ['min_credits', 'min_pass', 'max_aggregate_units']
-    ALL_REQ_COLUMNS = REQ_FLAG_COLUMNS + REQ_COUNT_COLUMNS
-
-    df = pd.read_csv(filepath, encoding='utf-8')
-
-    for col in ALL_REQ_COLUMNS:
-        if col not in df.columns:
-            df[col] = 0
-
-    for col in REQ_FLAG_COLUMNS:
-        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
-
-    for col in REQ_COUNT_COLUMNS:
-        if col == 'max_aggregate_units':
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(100).astype(int)
-            df.loc[df[col] == 0, col] = 100
-        else:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0).astype(int)
-
-    return df
-
-
-def _get_data_dir():
-    """Get the path to HalaTuju data directory."""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    halatuju_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_dir))))
-    return os.path.join(halatuju_root, 'data')
+from apps.courses.tests.conftest import load_requirements_df
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls')
 class TestEligibilityEndpoint(TestCase):
     """Test the eligibility check API endpoint."""
+    fixtures = ['courses', 'requirements']
 
     @classmethod
     def setUpClass(cls):
-        """Load CSV data into the app config's DataFrame."""
+        """Load DB fixtures into the app config's DataFrame."""
         super().setUpClass()
-        data_dir = _get_data_dir()
-        if not os.path.exists(data_dir):
-            raise unittest.SkipTest(f"Data folder not found: {data_dir}")
-
-        # source_type matches what load_csv_data management command sets
-        file_source_map = [
-            ('requirements.csv', 'poly'),
-            ('tvet_requirements.csv', 'tvet'),
-            ('university_requirements.csv', 'ua'),
-            ('pismp_requirements.csv', 'pismp'),
-        ]
-        dfs = []
-        for filename, source_type in file_source_map:
-            path = os.path.join(data_dir, filename)
-            if os.path.exists(path):
-                df = _load_and_clean_csv(path)
-                df['source_type'] = source_type
-                dfs.append(df)
-
-        if not dfs:
-            raise unittest.SkipTest("No requirements CSV files found")
-
-        # Inject DataFrame into app config (same as hybrid engine startup)
-        courses_config = apps.get_app_config('courses')
-        courses_config.requirements_df = pd.concat(dfs, ignore_index=True)
+        load_requirements_df()
 
     def setUp(self):
         self.client = APIClient()
@@ -447,7 +372,7 @@ class TestEligibilityEndpoint(TestCase):
         mc = matric_courses[0]
         self.assertIn('merit_label', mc)
         self.assertIn('student_merit', mc)
-        self.assertEqual(mc['level'], 'Pre-University')
+        self.assertEqual(mc['level'], 'Pra-U')
         self.assertEqual(mc['pathway_type'], 'matric')
 
     def test_eligibility_includes_stpm_bidangs(self):
@@ -466,7 +391,7 @@ class TestEligibilityEndpoint(TestCase):
         self.assertGreater(len(stpm_courses), 0)
         sc = stpm_courses[0]
         self.assertEqual(sc['pathway_type'], 'stpm')
-        self.assertEqual(sc['level'], 'Pre-University')
+        self.assertEqual(sc['level'], 'Pra-U')
 
     def test_pathway_stats_include_matric_stpm(self):
         """pathway_stats should count matric and stpm entries."""
