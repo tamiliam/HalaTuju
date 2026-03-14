@@ -1,5 +1,30 @@
 # Changelog — HalaTuju
 
+## Test Health Sprint — Eliminate Skipped Tests & Auth Failures (2026-03-14)
+
+### Fixed
+- 13 auth/JWT test failures: added `jwt.get_unverified_header` mock alongside `jwt.decode` (TD-010, TD-033)
+- 30 skipped tests: CSV data files no longer existed, tests silently skipped for months
+- 2 stale assertions: `'Pre-University'` → `'Pra-U'` in matric/STPM eligibility tests
+- Golden master count discrepancy in docs (TD-035): old CSV baseline 8283 was stale, correct DB baseline is 5319
+
+### Changed
+- Golden master test (`test_golden_master.py`): rewritten from CSV-loading unittest to pytest with DB fixtures, baseline 5319
+- API endpoint tests (`test_api.py`): eligibility tests converted from CSV to DB fixtures via `conftest.load_requirements_df()`
+- Pre-U tests (`test_preu_courses.py`): 5 redundant tests deleted (covered by test_pathways.py), 4 remain
+
+### Added
+- `apps/courses/fixtures/courses.json` — 389 Course records from production Supabase
+- `apps/courses/fixtures/requirements.json` — 389 CourseRequirement records from production Supabase
+- `apps/courses/tests/conftest.py` — shared helper to load DB data into DataFrame for tests
+
+### Stats
+- Tests: 382 collected, 382 pass, 0 failures, 0 skipped
+- Tech debt resolved: TD-010, TD-033, TD-035
+- SPM golden master: 5319 (DB fixtures) | STPM golden master: 1811
+
+---
+
 ## TD-002 Sprint — Eliminate Frontend Calculation Duplication (2026-03-14)
 
 ### Added

@@ -17,3 +17,5 @@ Cross-cutting lessons from sprint retrospectives. Only items that affect future 
 - Always verify key/value mappings against actual API responses, not visual references — uppercase/lowercase mismatches cause silent display failures. (UI Polish Sprint)
 - When cross-referencing CSV data with database records, never trust a single column for critical filters (e.g. bumiputera) — verify against a second source file or the institution itself. (Data Integrity Sprint)
 - When matching courses across systems with different ID schemes, use name-based matching as fallback — institution types may use entirely different code conventions (FB/FC vs POLY-DIP/KKOM-CET). (Data Integrity Sprint)
+- Tech debt audits must include test execution analysis — check pytest output for skipped/xfailed tests, not just code and docs. A test that silently skips is worse than a missing test because it creates false confidence. (Test Health Sprint)
+- When migrating data sources (e.g. CSV → DB), immediately update or delete all tests that depend on the old source — `skipIf` guards on file existence mask the problem indefinitely. (Test Health Sprint)

@@ -154,3 +154,27 @@
 **Trade-offs:** Three test files have near-identical mock boilerplate (header patcher + decode patcher). This is a code smell, but extracting a shared helper for 3 files would be premature — wait until the auth model is designed.
 
 **Revisit if:** Admin layer work begins, or if a fourth test file needs the same auth mocking pattern.
+
+## DB fixtures over CSV files for tests — Test Health Sprint, 2026-03-14
+
+**Decision:** Created JSON fixtures (`courses.json`, `requirements.json`) dumped from production Supabase and use Django's `loaddata` in tests. Deleted all CSV-dependent test logic.
+
+**Alternatives considered:** (1) Regenerate the old CSV files from Supabase. (2) Mock the DataFrame directly in each test. (3) DB fixtures via Django's `loaddata` (chosen).
+
+**Rationale:** CSV files were deleted months ago and the data was subsequently modified across multiple sprints. Regenerating CSVs would create a second source of truth. Mocking DataFrames is fragile and wouldn't test the DB→DataFrame pipeline. Django fixtures are the standard approach, load into the test DB, and the shared `conftest.py` helper converts them to a DataFrame — replicating the production startup flow exactly.
+
+**Trade-offs:** Fixture files are large (~33K lines combined). They must be regenerated when production data changes materially. But they're authoritative and testable.
+
+**Revisit if:** Production data changes significantly (new courses, schema changes) — regenerate fixtures from Supabase.
+
+## Golden master rebaseline: 8283 → 5319 — Test Health Sprint, 2026-03-14
+
+**Decision:** Accepted 5319 as the correct SPM golden master baseline, replacing the stale 8283.
+
+**Alternatives considered:** (1) Investigate and reverse the data changes that caused the drop. (2) Accept the new baseline after verification (chosen).
+
+**Rationale:** The 8283 baseline was from CSV data that was migrated to Supabase and then modified across 3+ sprints (data integrity, MOHE audit, field corrections). The golden master test was silently skipping during all of these changes. Verified by comparing per-student eligibility counts between production DataFrame and fixture DataFrame — identical results. The data changes were intentional improvements, not regressions.
+
+**Trade-offs:** None — this is a correction. The old baseline was never validated against the current data.
+
+**Revisit if:** Never — forward baselines should be set against the current DB state.

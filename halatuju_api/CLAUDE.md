@@ -29,7 +29,7 @@ Django REST API for SPM course eligibility checking. Deployed on Cloud Run (asia
 │  ┌─ Hybrid Engine ───────────┐  │
 │  │ DB → Pandas at startup    │  │
 │  │ engine.py (GOLDEN MASTER) │  │
-│  │ 8280 baseline matches     │  │
+│  │ 5319 baseline matches     │  │
 │  └───────────────────────────┘  │
 └──────────────┬──────────────────┘
                │ Django ORM (startup only)
@@ -118,7 +118,7 @@ cd halatuju_api
 # Run ALL tests (382 collected, 382 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ -v
 
-# Golden master only (8283 baseline)
+# Golden master only (5319 baseline)
 python -m pytest apps/courses/tests/test_golden_master.py -v
 
 # Serializer tests (27 tests — grade mapping, normalization)
@@ -248,7 +248,14 @@ Supabase Security Advisor must show 0 errors before deploy.
 - `getPathwayFitScore()` ported to backend `pathways.py`
 - Frontend pages call API instead of local functions. Backend is single source of truth.
 - Tech debt resolved: TD-002, TD-015, TD-017.
-- Auth test fix (TD-010, TD-033): 0 failures. Skipped tests eliminated: 30 CSV-dependent tests converted to DB fixtures or deleted (5 redundant). 382 pass, 0 skip.
+
+**Test Health Sprint COMPLETE (2026-03-14)**
+- Auth test fix (TD-010, TD-033): mocked `jwt.get_unverified_header` alongside `jwt.decode`
+- 30 skipped tests eliminated: CSV-dependent tests converted to DB fixtures (25 converted, 5 redundant deleted)
+- Golden master rebaselined: 8283 (stale CSV) → 5319 (current DB). TD-035 resolved.
+- JSON fixtures created: `courses.json` (389 records), `requirements.json` (389 records)
+- Shared test helper: `conftest.py` with `load_requirements_df()`
+- Final: 382 pass, 0 fail, 0 skip
 
 **Pending work**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)

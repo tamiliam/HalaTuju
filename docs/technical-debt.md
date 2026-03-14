@@ -283,11 +283,10 @@
 **Risk if left:** Medium — individual units could pass while the integrated flow breaks.
 **Dependencies:** None.
 
-### [TD-035] Golden master count discrepancy
+### [TD-035] Golden master count discrepancy ✅ RESOLVED (Test Health Sprint, 2026-03-14)
 **File(s):** `halatuju_api/CLAUDE.md`, `.claude/ARCHITECTURE_MAP.md`
-**What it is:** CLAUDE.md references golden master baselines as both "8280" and "8283" in different places. The architecture map says 8283. The actual current count should be verified.
-**What consistent looks like:** One canonical baseline number, documented in one place.
-**Risk if left:** Low — confusing documentation, but the test file has the authoritative number.
+**What it was:** CLAUDE.md referenced golden master baselines as both "8280" and "8283" in different places. The architecture map said 8283.
+**Resolution:** Old baseline (8283) was from stale CSV data. Golden master test was silently skipping for months because CSV files were deleted. Converted to DB fixtures, verified baseline is 5319 (matches production Supabase data). All references now say 5319.
 **Dependencies:** None.
 
 ---
@@ -459,7 +458,7 @@
 | TD-021 | PISMP deduplication logic inline and complex | Open |
 | TD-033 | Auth test failures not triaged | Resolved (TD-010 Sprint) |
 | TD-034 | No integration test for full flow | Open |
-| TD-035 | Golden master count discrepancy in docs | Open |
+| TD-035 | Golden master count discrepancy in docs | Resolved (Test Health Sprint) |
 | TD-038 | CORS_ALLOW_ALL_ORIGINS possible in production | Open |
 | TD-043 | Phone/OTP login blocked | Open |
 | TD-044 | EligibilityCheckView iterates DataFrame twice | Open |
