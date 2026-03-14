@@ -134,7 +134,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 |------|-------|----------------|
 | test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 8283 baseline |
 | test_serializers.py | 27 | Grade key mapping, gender/nationality normalization, bool→Ya/Tidak, validation |
-| test_api.py | 64 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration, Matric/STPM integration, pathway_stats), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering), unified search (both qualifications, qualification filter, STPM field mapping, bumiputera exclusion, filters include qualifications, cross-qualification text search, field filter STPM, level/source_type filter skipping) |
+| test_api.py | 71 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration, Matric/STPM integration, pathway_stats), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering), unified search (both qualifications, qualification filter, STPM field mapping, bumiputera exclusion, filters include qualifications, cross-qualification text search, field filter STPM, level/source_type filter skipping), calculate endpoints (merit, cgpa, pathways with signals) |
 | test_auth.py | 15 | Auth enforcement — protected endpoints reject 403, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
 | test_saved_courses.py | 3 | Saved course CRUD — save (201), list (appears), delete (removed) |
 | test_quiz.py | 24 | Quiz endpoints (questions 3 langs, submit single+multi, validation), engine (multi-select, weight splitting, Not Sure Yet, conditional Q2.5, field_interest, signal strength, lang parity) |
@@ -144,7 +144,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_report_engine.py | 12 | Report engine: format helpers (grades, signals, courses, insights), prompts (BM/EN), persona mapping, Gemini mock (success, cascade, missing key) |
 | test_views.py (reports) | 4 | Report views: list (own only), detail, cross-user 404 regression, validation |
 | test_outcomes.py | 10 | Outcome CRUD (create, duplicate 409, with institution, missing course), list (own only), update status, cross-user 404, delete, auth enforcement (GET/POST 403) |
-| test_pathways.py | 32 | Matric/STPM eligibility: grade helpers (is_credit, meets_min, find_best_elective), all 4 Matric tracks (sains, kejuruteraan, sains_komputer, perakaunan), both STPM bidangs (sains, sains_sosial), merit calculation, mata gred threshold, check_all_pathways integration |
+| test_pathways.py | 37 | Matric/STPM eligibility: grade helpers (is_credit, meets_min, find_best_elective), all 4 Matric tracks (sains, kejuruteraan, sains_komputer, perakaunan), both STPM bidangs (sains, sains_sosial), merit calculation, mata gred threshold, check_all_pathways integration, pathway fit score (base, academic bonus, signal cap) |
 | test_profile_fields.py | 19 | Expanded profile fields (NRIC, address, phone, income, siblings defaults), SavedCourse interest_status (default, set, got_offer), profile API (GET new fields, PUT new fields), saved-courses API (GET includes status, PATCH updates status), STPM profile fields (exam_type default, STPM fields stored, defaults empty/null), profile sync STPM (create, update, GET returns fields) |
 | test_stpm_models.py | 5 | StpmCourse creation + __str__, StpmRequirement creation + defaults, JSON field round-trip, metadata fields (explicit values + defaults) |
 | test_stpm_data_loading.py | 6 | CSV loader: creates courses, creates requirements, correct count (~1113), idempotent, JSON parsing, boolean fields |
@@ -158,7 +158,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (359 collected, 320 must pass, SPM golden master = 8283, STPM golden master = 1811)
+# 1. Run all tests (387 collected, 344 must pass, SPM golden master = 8283, STPM golden master = 1811)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -170,7 +170,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-332 tests must pass out of 375 collected (13 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
+344 tests must pass out of 387 collected (13 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -178,7 +178,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 | File | Role | Sacred? |
 |------|------|---------|
 | `apps/courses/engine.py` | Eligibility logic | YES — Golden Master |
-| `apps/courses/pathways.py` | Matric/STPM eligibility (virtual courses) | No |
+| `apps/courses/pathways.py` | Matric/STPM eligibility + fit scoring (virtual courses) | No |
 | `apps/courses/serializers.py` | Request normalization (grade keys, gender, booleans) | No |
 | `apps/courses/views.py` | API endpoints | No |
 | `apps/courses/apps.py` | Startup data loading (DB → DataFrame) | Careful |
@@ -242,15 +242,21 @@ Supabase Security Advisor must show 0 errors before deploy.
 - MOHE course audit: 363 CSV courses verified, 2 new courses added, 2 name fixes
 - Database: 390 SPM courses, 1,113 STPM courses, 838 institutions
 
+**TD-002 Sprint COMPLETE (2026-03-14)**
+- Frontend calculation files deleted: `merit.ts`, `stpm.ts`, `pathways.ts` (596 lines)
+- 3 new calculation endpoints: `/calculate/merit/`, `/calculate/cgpa/`, `/calculate/pathways/`
+- `getPathwayFitScore()` ported to backend `pathways.py`
+- Frontend pages call API instead of local functions. Backend is single source of truth.
+- Tech debt resolved: TD-002, TD-015, TD-017. Tests: 344 pass.
+
 **Pending work**
-- TD-002: Frontend-backend eligibility logic duplication (next priority)
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
 - Store `signal_strength` in Supabase (currently only `student_signals` synced)
 - STPM field metadata refinement: 207 unique field values from Gemini (expected ~30) — consider normalisation pass
 - Fix 13 pre-existing auth/JWT test failures (test_auth, test_saved_courses, test_views)
-- Continue tech debt remediation from `docs/technical-debt.md` (46 items remaining)
+- Continue tech debt remediation from `docs/technical-debt.md` (43 items remaining)
 
 ## Streamlit App (Legacy — migrating to Django API)
 

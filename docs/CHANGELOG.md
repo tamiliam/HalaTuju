@@ -1,5 +1,34 @@
 # Changelog — HalaTuju
 
+## TD-002 Sprint — Eliminate Frontend Calculation Duplication (2026-03-14)
+
+### Added
+- `/api/v1/calculate/merit/` — POST endpoint for UPU merit calculation
+- `/api/v1/calculate/cgpa/` — POST endpoint for STPM CGPA calculation
+- `/api/v1/calculate/pathways/` — POST endpoint for pre-U pathway eligibility + fit scores
+- `get_pathway_fit_score()` in `pathways.py` — ported from frontend `pathways.ts`
+- `calculateMerit()`, `calculateCgpa()`, `calculatePathways()` API client functions in `api.ts`
+- 12 new backend tests (5 pathway fit score, 7 calculate endpoints)
+
+### Changed
+- Grades page calls `/calculate/merit/` API with 400ms debounce instead of local `calculateMeritScore()`
+- STPM grades page calls `/calculate/cgpa/` API with 400ms debounce instead of local `calculateStpmCgpa()`
+- Matric/STPM pathway pages call `/calculate/pathways/` API instead of local `checkAllPathways()`
+- Dashboard inlines CGPA-to-percent formula (one-liner) instead of importing from `stpm.ts`
+
+### Removed
+- `halatuju-web/src/lib/merit.ts` (63 lines) — deleted
+- `halatuju-web/src/lib/stpm.ts` (22 lines) — deleted
+- `halatuju-web/src/lib/pathways.ts` (511 lines) — deleted
+- Total: 596 lines of duplicated frontend calculation logic removed
+
+### Stats
+- Tests: 344 passing (+12 new), 13 pre-existing auth failures, 30 skipped
+- Tech debt resolved: TD-002, TD-015, TD-017
+- Backend is now single source of truth for all eligibility formulas
+
+---
+
 ## Data Integrity Sprint (2026-03-14)
 
 ### Changed
