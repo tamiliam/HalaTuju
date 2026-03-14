@@ -1,6 +1,6 @@
 # HalaTuju Architecture Map
 
-Last updated: 2026-03-14 (comprehensive audit prep)
+Last updated: 2026-03-14 (system audit — all counts verified)
 
 ## Root
 
@@ -42,15 +42,15 @@ apps/courses/
 ├── models.py                      # 11 models (see model registry below)
 ├── admin.py                       # Admin registration (Course, Institution, StudentProfile, etc.)
 ├── apps.py                        # Startup: loads Course + CourseRequirement → Pandas DataFrame cache
-├── views.py                       # 19 API endpoint classes (see endpoint registry below)
+├── views.py                       # 22 API endpoint classes (see endpoint registry below)
 ├── serializers.py                 # Grade key mapping (BM→bm, BI→eng, etc.), request/response serializers
-├── urls.py                        # 18 URL patterns → /api/v1/
+├── urls.py                        # 21 URL patterns → /api/v1/
 │
 ├── engine.py                      # SACRED — SPM eligibility checker (743 lines, golden master: 8283)
 ├── stpm_engine.py                 # SACRED — STPM eligibility checker (255 lines, golden master: 1811)
 ├── ranking_engine.py              # Fit scores, category/institution caps, credential priority (809 lines)
 ├── stpm_ranking.py                # STPM fit scores: CGPA margin, field match, interview penalty (127 lines)
-├── pathways.py                    # Matric track + STPM bidang eligibility formulas (315 lines)
+├── pathways.py                    # Matric track + STPM bidang eligibility + fit scores (315 lines)
 ├── quiz_engine.py                 # Stateless quiz signal accumulator, 6 questions (176 lines)
 ├── quiz_data.py                   # Quiz questions in 3 languages: BM/EN/TA (331 lines)
 ├── insights_engine.py             # Deterministic insights from eligibility results (121 lines)
@@ -69,7 +69,7 @@ apps/courses/
 │   ├── stpm_science_merit.csv
 │   └── stpm_arts_merit.csv
 │
-├── migrations/                    # 18 migrations (0001–0018)
+├── migrations/                    # 20 migrations (0001–0020)
 │   ├── 0001_initial                     # Course, StudentProfile, CourseTag, Institution, CourseRequirement, CourseInstitution
 │   ├── 0002–0007                        # SPM refinements (credit fields, PISMP, institution modifiers, MASCO, bilingual, headline)
 │   ├── 0008_add_name_school             # StudentProfile.name_school
@@ -82,20 +82,22 @@ apps/courses/
 │   ├── 0015_stpm_metadata_columns       # STPM field/category/description enrichment
 │   ├── 0016_merit_type_preu_sources     # Course.merit_type branching + matric/stpm source_types
 │   ├── 0017_insert_preu_courses         # 6 pre-U courses as Course rows
-│   └── 0018_insert_preu_institutions    # Pre-U institution records
+│   ├── 0018_insert_preu_institutions    # Pre-U institution records
+│   ├── 0019_rename_stpm_program_to_course # STPM "programme" → "course" rename
+│   └── 0020_remove_stpm_db_column_workaround # Clean up db_column overrides
 │
-└── tests/                         # 20 test files, ~336 tests (320 collected in last run)
+└── tests/                         # 21 test files, 387 tests collected
     ├── test_golden_master.py      # 1 — 50 students × all courses = 8283 baseline
     ├── test_stpm_golden_master.py # 1 — 5 students × all STPM = 1811 baseline
-    ├── test_api.py                # 64 — eligibility, ranking, course detail, search, STPM integration
+    ├── test_api.py                # 71 — eligibility, ranking, course detail, search, STPM integration, calculate endpoints
     ├── test_ranking.py            # 62 — fit scores, caps, pre-U scoring, tie-breaking
-    ├── test_pathways.py           # 32 — matric tracks, STPM bidangs, grade helpers
+    ├── test_pathways.py           # 37 — matric tracks, STPM bidangs, grade helpers, fit scores
     ├── test_serializers.py        # 27 — grade mapping, normalisation, validation
     ├── test_quiz.py               # 24 — quiz endpoints + engine, multi-select, weights
     ├── test_profile_fields.py     # 19 — expanded profile, saved course, STPM fields
-    ├── test_stpm_data_loading.py  # 18 — STPM CSV loader, 1,113 programmes
+    ├── test_stpm_data_loading.py  # 18 — STPM CSV loader, 1,113 courses
     ├── test_stpm_engine.py        # 16 — CGPA calculator, grade comparison, eligibility
-    ├── test_auth.py               # 15 — JWT enforcement (9 pre-existing failures)
+    ├── test_auth.py               # 15 — JWT enforcement (pre-existing failures)
     ├── test_stpm_search.py        # 12 — STPM search filters, pagination, detail
     ├── test_data_loading.py       # 12 — CSV loaders, idempotency, JSON round-trip
     ├── test_report_engine.py      # 12 — report generation + Gemini mock
@@ -113,9 +115,9 @@ apps/courses/
 
 | Model | Table | Purpose | Key Fields |
 |-------|-------|---------|------------|
-| `Course` | `courses` | Master course catalogue (389 rows: 383 SPM + 6 pre-U) | name, level, field, source_type, merit_type, headline, description |
+| `Course` | `courses` | Master course catalogue (390 SPM + 6 pre-U = 396 rows) | name, level, field, source_type, merit_type, headline, description |
 | `CourseRequirement` | `course_requirements` | Eligibility rules per course | 70+ boolean fields mapping SPM subject requirements |
-| `Institution` | `institutions` | Training providers (239 rows) | name, state, district, category, indian_population |
+| `Institution` | `institutions` | Training providers (838 rows) | name, state, district, category, indian_population |
 | `CourseInstitution` | `course_institutions` | Course ↔ Institution junction | fees, duration, intake_month, hyperlink |
 | `CourseTag` | `course_tags` | Personality profile per course | work_modality, cognitive_type, people_interaction, learning_style, environment |
 | `StudentProfile` | `student_profiles` | User eligibility data | SPM grades, gender, nationality, exam_type, muet_band, STPM fields, income, siblings |
@@ -133,7 +135,7 @@ apps/courses/
 | `/api/v1/ranking/` | POST | RankingView | Calculate fit scores + rank eligible courses |
 | `/api/v1/courses/` | GET | CourseListView | List all courses (paginated) |
 | `/api/v1/courses/<id>/` | GET | CourseDetailView | Single course with tags, occupations, offerings |
-| `/api/v1/courses/search/` | GET | CourseSearchView | Search with filters (text, level, field, source_type, state) |
+| `/api/v1/courses/search/` | GET | CourseSearchView | Search with filters (text, level, field, source_type, state, qualification) |
 | `/api/v1/institutions/` | GET | InstitutionListView | List all institutions |
 | `/api/v1/institutions/<id>/` | GET | InstitutionDetailView | Single institution detail |
 | `/api/v1/quiz/questions/` | GET | QuizQuestionsView | 6 quiz questions (BM/EN/TA) |
@@ -144,10 +146,13 @@ apps/courses/
 | `/api/v1/saved-courses/<id>/` | GET/PUT/DEL | SavedCourseDetailView | Update interest status |
 | `/api/v1/outcomes/` | GET/POST | OutcomeListView | Admission outcome tracking |
 | `/api/v1/outcomes/<id>/` | PUT/DEL | OutcomeDetailView | Update/delete outcome |
+| `/api/v1/calculate/merit/` | POST | CalculateMeritView | Server-side UPU merit calculation |
+| `/api/v1/calculate/cgpa/` | POST | CalculateCgpaView | Server-side STPM CGPA calculation |
+| `/api/v1/calculate/pathways/` | POST | CalculatePathwaysView | Server-side pathway eligibility + fit scores |
 | `/api/v1/stpm/eligibility/check/` | POST | StpmEligibilityCheckView | STPM eligibility check |
 | `/api/v1/stpm/ranking/` | POST | StpmRankingView | STPM fit scores + ranking |
-| `/api/v1/stpm/search/` | GET | StpmSearchView | STPM programme search (university, stream, text) |
-| `/api/v1/stpm/<id>/` | GET | StpmProgrammeDetailView | STPM programme detail |
+| `/api/v1/stpm/search/` | GET | StpmSearchView | STPM course search (university, stream, text) |
+| `/api/v1/stpm/courses/<id>/` | GET | StpmCourseDetailView | STPM course detail |
 
 ### App: reports (AI narrative generation)
 
@@ -189,6 +194,10 @@ halatuju_api/
 
 ## Frontend — halatuju-web/
 
+### Design Principle: Thin Client
+
+All calculation logic (merit, CGPA, pathway eligibility) lives on the backend. The frontend calls `/calculate/*` endpoints and renders results. No eligibility or scoring formulas exist in the frontend.
+
 ### Pages (Next.js App Router)
 
 ```
@@ -202,26 +211,26 @@ src/app/
 │
 ├── onboarding/
 │   ├── exam-type/page.tsx         # Select SPM or STPM qualification
-│   ├── grades/page.tsx            # Enter SPM grades + co-curricular score
-│   ├── stpm-grades/page.tsx       # STPM: stream selector, PA + 4 subjects, MUET, SPM prereqs
+│   ├── grades/page.tsx            # Enter SPM grades + co-curricular score (calls /calculate/merit/)
+│   ├── stpm-grades/page.tsx       # STPM: stream, PA + 4 subjects, MUET, SPM prereqs (calls /calculate/cgpa/)
 │   └── profile/page.tsx           # Demographics (gender, nationality, state, etc.)
 │
 ├── dashboard/page.tsx             # Main dashboard — course cards, merit lights, exam_type branching
 ├── quiz/page.tsx                  # 6-question career interest quiz
-├── search/page.tsx                # Course search + filters (field, level, pathway, state)
+├── search/page.tsx                # Unified course search + filters (field, level, pathway, state, qualification)
 ├── course/[id]/page.tsx           # SPM course detail (requirements, institutions, save/apply)
 │
 ├── stpm/
-│   ├── [id]/page.tsx              # STPM programme detail (stream badge, subjects, requirements)
+│   ├── [id]/page.tsx              # STPM course detail (stream badge, subjects, requirements)
 │   └── search/page.tsx            # Redirects to /search?qualification=STPM
 │
 ├── pathway/
-│   ├── matric/page.tsx            # Matriculation eligibility by track + college listings
-│   └── stpm/page.tsx              # STPM (Form 6) pathway detail
+│   ├── matric/page.tsx            # Matriculation eligibility by track + college listings (calls /calculate/pathways/)
+│   └── stpm/page.tsx              # STPM (Form 6) pathway detail (calls /calculate/pathways/)
 │
 ├── saved/page.tsx                 # Saved courses list
 ├── profile/page.tsx               # Student profile view/edit
-├── settings/page.tsx              # Account settings
+├── settings/page.tsx              # Account settings (stub)
 ├── outcomes/page.tsx              # Admission outcomes tracker
 ├── report/[id]/page.tsx           # AI counselor report (markdown rendering)
 │
@@ -232,7 +241,7 @@ src/app/
 └── cookies/page.tsx               # Cookie policy
 ```
 
-**27 page files total. No error.tsx, loading.tsx, or not-found.tsx (using Next.js defaults).**
+**25 page files total. No error.tsx, loading.tsx, or not-found.tsx (using Next.js defaults).**
 
 ### Components
 
@@ -256,17 +265,14 @@ src/components/
 
 ```
 src/lib/
-├── api.ts                         # HTTP client for Django backend (all endpoint wrappers)
+├── api.ts                         # HTTP client for Django backend (all endpoint wrappers incl. calculateMerit/Cgpa/Pathways)
 ├── supabase.ts                    # Supabase client init (auth, Google OAuth, OTP)
 ├── auth-context.tsx               # Auth React Context (session, token, profile hydration, localStorage)
 ├── i18n.tsx                       # Custom i18n context: t() function, locale switcher, localStorage
-├── subjects.ts                    # Subject code → name mapping (60+ SPM + STPM codes)
-├── stpm.ts                        # STPM CGPA calculator (4.0 scale, mirrors backend)
-├── pathways.ts                    # Matric/STPM eligibility (frontend-only, no backend calls)
-└── merit.ts                       # UPU merit formula: (core/72×40)+(stream/36×30)+(elective/36×10)×9/8+CoQ
+└── subjects.ts                    # Subject code → name mapping (60+ SPM + STPM codes)
 ```
 
-**8 lib files. Note: pathways.ts and merit.ts run eligibility on the client side.**
+**5 lib files. All calculation logic is server-side — no merit.ts, stpm.ts, or pathways.ts.**
 
 ### Static Data
 
@@ -320,33 +326,33 @@ docs/
 ├── roadmap.md                     # Master roadmap (STPM ✓, WhatsApp OTP active, admin dashboard future)
 ├── decisions.md                   # Architectural decisions log
 ├── lessons.md                     # Cross-cutting engineering lessons
+├── technical-debt.md              # Living doc: 52 items catalogued, 9 resolved (TD-001/002/007/015/017/018/019/020/050)
 ├── release-notes-v1.33.0.md      # Latest stable release notes
 ├── Course Detail Page.pdf         # UI design spec
-├── incident-001-rls-disabled.md   # RLS incident report + remediation templates
 │
-├── retrospective-*.md             # 30+ retrospectives:
-│   ├── retrospective-sprint{1-20}.md        # SPM flow sprints
-│   ├── retrospective-stpm-sprint{1-8}.md    # STPM entrance sprints
-│   ├── retrospective-v1.{25-33}.0.md        # Release retrospectives
-│   ├── retrospective-post-s20-polish.md     # UI polish
-│   ├── retrospective-preu-courses.md        # Pre-U integration
-│   ├── retrospective-visual-quiz.md         # Quiz redesign
-│   └── retrospective-ui-polish.md           # UI polish release
+├── retrospective-*.md             # 45 retrospectives:
+│   ├── retrospective-sprint{1-20}.md          # SPM flow sprints (18 files)
+│   ├── retrospective-stpm-sprint{1-8}.md      # STPM entrance sprints
+│   ├── retrospective-v1.{25-33}.0.md          # Release retrospectives
+│   ├── retrospective-post-s20-*.md            # Post-Sprint 20 polish
+│   ├── retrospective-preu-courses.md          # Pre-U integration
+│   ├── retrospective-visual-quiz.md           # Quiz redesign
+│   ├── retrospective-ui-polish.md             # UI polish release
+│   ├── retrospective-data-integrity.md        # Data integrity sprint
+│   ├── retrospective-tech-debt-sprint4.md     # Tech debt sprint 4
+│   └── retrospective-description-sprint.md    # Description sprint
 │
 ├── plans/                         # Active & completed plans
-│   ├── 2026-03-09-whatsapp-otp-plan.md         # ACTIVE — Twilio WhatsApp OTP, ~RM12/month
-│   └── 2026-03-12-stpm-entrance.md             # COMPLETED — 5 sprints, 22 tasks, all done
+│   ├── 2026-03-09-whatsapp-otp-plan.md                            # ACTIVE — Twilio WhatsApp OTP
+│   ├── 2026-03-12-stpm-entrance.md                                # COMPLETED — 5 sprints
+│   ├── 2026-03-14-td002-eliminate-frontend-duplication-design.md  # COMPLETED — design doc
+│   └── 2026-03-14-td002-implementation-plan.md                    # COMPLETED — 12 tasks
 │
 └── archive/                       # Historical documentation
     ├── 2026-02-completed/         # 9 files: consolidation, institution sync, merit integration, etc.
-    ├── audits/                    # 10 files: data audits, subject analysis, integration plans
+    ├── audits/                    # 8 files: data audits, subject analysis, integration plans
     ├── ranking_logic.md           # Live reference — v1.5 ranking algorithm
-    ├── pismp_integration_plan.md  # Done
-    ├── stpm_implementation_plan.md # Superseded by 2026-03-12 version
-    ├── quiz-redesign-*.md         # 4 files: iteration history
-    ├── sprint-roadmap-v1.x.md     # Old roadmap
-    ├── ui_ux_improvement_plan.md  # Deferred
-    └── DATA_FOLDER_POLICY.md      # Data management rules
+    └── (+ quiz redesign iterations, old roadmaps, deferred plans)
 ```
 
 ---
@@ -354,8 +360,6 @@ docs/
 ## _archive/streamlit/ (Legacy)
 
 Previous Streamlit prototype. **246 files, not actively developed.** Preserved for reference on data structures, original ranking logic, and historical decisions.
-
-Key contents: `.streamlit/` config, `data/` (course descriptions, institutions JSON, subject mappings), `scripts/analysis/` (SPM analysis, overlap checks), `src/` (auth, dashboard, engine, quiz_manager, ranking_engine), `tests/`, `DATA_DICTIONARY.md`, `ROADMAP.md`.
 
 ---
 
@@ -365,9 +369,9 @@ Key contents: `.streamlit/` config, `data/` (course descriptions, institutions J
 
 | Table | Rows | Purpose |
 |-------|------|---------|
-| `courses` | 389 | Master catalogue (383 SPM + 6 pre-U) |
-| `course_requirements` | 389 | Eligibility rules (70+ boolean fields per course) |
-| `institutions` | 239 | Training providers (212 original + 27 IPG) |
+| `courses` | 396 | Master catalogue (390 SPM + 6 pre-U) |
+| `course_requirements` | 396 | Eligibility rules (70+ boolean fields per course) |
+| `institutions` | 838 | Training providers (212 original + 27 IPG + 15 matric + 584 STPM schools) |
 | `course_institutions` | ~800 | Course ↔ Institution offerings (fees, duration, intake) |
 | `course_tags` | ~389 | Personality profiles per course |
 | `student_profiles` | dynamic | User eligibility data (grades, demographics, STPM fields) |
@@ -391,6 +395,7 @@ Key contents: `.streamlit/` config, `data/` (course descriptions, institutions J
 │  halatuju-web (Cloud Run)        │
 │  Next.js 14 — standalone Docker  │
 │  Region: asia-southeast1         │
+│  Thin client — no calculations   │
 └──────────────┬───────────────────┘
                │ /api/v1/* (all API calls)
                ▼
@@ -400,6 +405,7 @@ Key contents: `.streamlit/` config, `data/` (course descriptions, institutions J
 │  Region: asia-southeast1         │
 │                                  │
 │  Startup: Course+Req → DataFrame │
+│  /calculate/* → merit/CGPA/paths │
 │  Gemini API → report generation  │
 └──────────────┬───────────────────┘
                │ ORM / psycopg2
@@ -420,6 +426,7 @@ Key contents: `.streamlit/` config, `data/` (course descriptions, institutions J
 ### SPM Flow
 ```
 Student enters SPM grades
+  → Frontend calls /calculate/merit/ → backend returns student_merit
   → Serializer maps keys (BM→bm, BI→eng, etc.)
   → engine.py checks DataFrame (grade classification, merit calc, subject matching)
   → merit_type branching (standard / matric / stpm_mata_gred)
@@ -433,10 +440,18 @@ Student enters SPM grades
 ### STPM Flow
 ```
 Student enters STPM grades (PA + 4 subjects + MUET + SPM prereqs)
-  → stpm.ts calculates CGPA on frontend
+  → Frontend calls /calculate/cgpa/ → backend returns CGPA
   → stpm_engine.py checks eligibility (CGPA threshold, subjects, MUET band, mata gred)
   → stpm_ranking.py adds fit scores (base + CGPA margin + field interest - interview penalty)
-  → Response: eligible_programmes[] + ranked[]
+  → Response: eligible_courses[] + ranked[]
+```
+
+### Pathway Flow
+```
+Student clicks pathway (Matric/STPM)
+  → Frontend calls /calculate/pathways/ with grades + quiz signals
+  → Backend calculates track eligibility + fit scores
+  → Response: tracks[] with eligible flag + fit_score per track
 ```
 
 ### Quiz Flow
@@ -454,31 +469,30 @@ Student enters STPM grades (PA + 4 subjects + MUET + SPM prereqs)
 | Category | Files | Tests | Notes |
 |----------|-------|-------|-------|
 | Golden Masters | 2 | 2 | SPM: 8,283 cases, STPM: 1,811 cases — run before any engine change |
-| API Endpoints | 3 | 73 | Eligibility, ranking, search, STPM integration |
+| API Endpoints | 3 | 80 | Eligibility, ranking, search, calculate, STPM integration |
 | Engine Logic | 3 | 88 | Ranking, STPM engine, STPM ranking |
-| Pathways | 1 | 32 | Matric tracks, STPM bidangs |
+| Pathways | 1 | 37 | Matric tracks, STPM bidangs, fit scores |
 | Data Loading | 3 | 39 | CSV loaders, STPM data, pre-U courses |
 | Quiz | 1 | 24 | Endpoints, engine, multi-select |
 | Serializers | 1 | 27 | Grade mapping, normalisation |
-| User Features | 4 | 47 | Auth (9 failures), profile, saved courses, outcomes |
+| User Features | 4 | 47 | Auth (pre-existing failures), profile, saved courses, outcomes |
 | Reports | 2 | 16 | Engine + views |
 | Insights | 1 | 8 | Insights generation |
-| **Total** | **20** | **~336** | **9 known auth test failures** |
+| **Total** | **21** | **387** | **Pre-existing auth test failures in test_auth.py** |
 
 **Frontend: 0 tests.**
 
 ---
 
-## Key Technical Debt Indicators (for audit)
+## Technical Debt
 
-This section flags areas to investigate — not fixes, just pointers:
+Tracked in `docs/technical-debt.md` — a living document with 52 items catalogued.
 
-- **9 pre-existing auth test failures** in test_auth.py
-- **Frontend has zero tests** — all logic in pathways.ts, merit.ts, stpm.ts is untested
-- **Client-side eligibility duplication** — pathways.ts mirrors backend pathways.py
-- **STPM CGPA calculator duplicated** — stpm.ts (frontend) mirrors stpm_engine.py (backend)
-- **No error/loading/not-found pages** — using Next.js defaults
-- **settings/page.tsx** — appears to be a stub (TBD)
-- **Legacy archive** — 246 files in _archive/streamlit/, status unclear
-- **Management commands** — enrich_stpm_metadata.py and fix_stpm_names.py are one-time scripts still in codebase
-- **db.sqlite3** — local dev database present in project folder
+**Resolved (9):** TD-001 (STPM prereqs), TD-002 (frontend duplication), TD-007 (quiz lang bug), TD-015 (merit.ts), TD-017 (pathways.ts), TD-018 (bare except), TD-019 (duplicate imports), TD-020 (duplicate i18n keys), TD-050 (hardcoded debug)
+
+**Remaining (43):** See `docs/technical-debt.md` for full list with priorities and dependencies.
+
+**Top 3 remaining risks:**
+1. TD-003: Zero frontend tests
+2. TD-005: No standard API error response envelope
+3. Auth test failures (15 tests, pre-existing JWT issues)
