@@ -64,6 +64,12 @@ export default function StpmProgrammeDetailPage() {
 
   const streamLabel = data.stream === 'science' ? 'Science' : data.stream === 'arts' ? 'Arts' : 'Science / Arts'
 
+  const hasFlags = data.requirements.req_interview ||
+    data.requirements.no_colorblind ||
+    data.requirements.req_medical_fitness ||
+    data.requirements.req_malaysian ||
+    data.requirements.req_bumiputera
+
   return (
     <main className="min-h-screen bg-gray-50">
       <AppHeader />
@@ -108,39 +114,6 @@ export default function StpmProgrammeDetailPage() {
                 <p className="text-gray-600 leading-relaxed">
                   {data.description}
                 </p>
-              </section>
-            )}
-
-            {/* STPM Subject Requirements */}
-            {data.requirements.stpm_subjects.length > 0 && (
-              <section className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-3">{t('stpm.stpmSubjects')}</h2>
-                <div className="flex flex-wrap gap-2">
-                  {data.requirements.stpm_subjects.map(subj => (
-                    <span key={subj} className="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full font-medium">
-                      {subj}
-                    </span>
-                  ))}
-                </div>
-                {data.requirements.stpm_subject_group && (
-                  <p className="text-xs text-gray-400 mt-2">
-                    + flexible subject group requirement
-                  </p>
-                )}
-              </section>
-            )}
-
-            {/* SPM Prerequisites */}
-            {data.requirements.spm_prerequisites.length > 0 && (
-              <section className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-3">{t('stpm.spmPrerequisites')}</h2>
-                <div className="flex flex-wrap gap-2">
-                  {data.requirements.spm_prerequisites.map(prereq => (
-                    <span key={prereq} className="px-3 py-1 bg-green-50 text-green-700 text-sm rounded-full font-medium">
-                      {prereq}
-                    </span>
-                  ))}
-                </div>
               </section>
             )}
 
@@ -197,7 +170,7 @@ export default function StpmProgrammeDetailPage() {
             </section>
           </div>
 
-          {/* Right Column - Quick Info */}
+          {/* Right Column - Sidebar */}
           <div className="space-y-6">
             {/* Quick Facts */}
             <section className="bg-white rounded-xl border border-gray-200 p-6">
@@ -224,55 +197,135 @@ export default function StpmProgrammeDetailPage() {
               </div>
             </section>
 
-            {/* Entry Requirements */}
-            <section className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                {t('stpm.requirements')}
-              </h2>
-              <div className="space-y-3">
-                <InfoRow label={t('stpm.minimumCGPA')} value={data.requirements.min_cgpa.toFixed(2)} />
-                <InfoRow label={t('stpm.minimumMUET')} value={`Band ${data.requirements.min_muet_band}`} />
-                <InfoRow label={t('stpm.minimumSubjects')} value={String(data.requirements.stpm_min_subjects)} />
-                <InfoRow label={t('stpm.minimumGrade')} value={data.requirements.stpm_min_grade} />
+            {/* Entry Requirements — unified card */}
+            <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              {/* Header */}
+              <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+                <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                  <svg className="w-[18px] h-[18px] text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {t('courseDetail.requirements')}
+                </h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-700">
+                  Universiti
+                </span>
+              </div>
+
+              <div className="px-5 pb-5 space-y-4">
+                {/* General Requirements */}
+                {(data.requirements.req_malaysian || data.requirements.req_bumiputera) && (
+                  <div>
+                    <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                      {t('courseDetail.generalReq')}
+                    </h3>
+                    <div className="space-y-2">
+                      {data.requirements.req_malaysian && (
+                        <div className="flex items-start gap-2.5">
+                          <CheckIcon color="gray" />
+                          <span className="text-[13px] text-gray-700 leading-snug">{t('stpm.malaysianOnly')}</span>
+                        </div>
+                      )}
+                      {data.requirements.req_bumiputera && (
+                        <div className="flex items-start gap-2.5">
+                          <CheckIcon color="gray" />
+                          <span className="text-[13px] text-gray-700 leading-snug">{t('stpm.bumiputeraOnly')}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* STPM Requirements — key-value table */}
+                <div>
+                  <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                    {t('stpm.requirements')}
+                  </h3>
+                  <div className="rounded-lg border border-gray-100 divide-y divide-gray-100">
+                    <div className="flex justify-between items-center px-3 py-2">
+                      <span className="text-xs text-gray-500">{t('stpm.minimumCGPA')}</span>
+                      <span className="text-xs font-medium text-gray-800">{data.requirements.min_cgpa.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center px-3 py-2">
+                      <span className="text-xs text-gray-500">{t('stpm.minimumMUET')}</span>
+                      <span className="text-xs font-medium text-gray-800">Band {data.requirements.min_muet_band}</span>
+                    </div>
+                    <div className="flex justify-between items-center px-3 py-2">
+                      <span className="text-xs text-gray-500">{t('stpm.minimumSubjects')}</span>
+                      <span className="text-xs font-medium text-gray-800">{data.requirements.stpm_min_subjects}</span>
+                    </div>
+                    <div className="flex justify-between items-center px-3 py-2">
+                      <span className="text-xs text-gray-500">{t('stpm.minimumGrade')}</span>
+                      <span className="text-xs font-medium text-gray-800">{data.requirements.stpm_min_grade}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* STPM Subjects */}
+                {data.requirements.stpm_subjects.length > 0 && (
+                  <div>
+                    <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                      {t('stpm.stpmSubjects')}
+                    </h3>
+                    <div className="flex flex-wrap gap-1.5">
+                      {data.requirements.stpm_subjects.map(subj => (
+                        <span key={subj} className="px-2.5 py-1 bg-blue-50 border border-blue-100 rounded-full text-xs font-medium text-blue-700">
+                          {subj}
+                        </span>
+                      ))}
+                    </div>
+                    {data.requirements.stpm_subject_group && (
+                      <p className="text-[11px] text-gray-400 mt-1.5">
+                        + flexible subject group requirement
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* SPM Prerequisites */}
+                {data.requirements.spm_prerequisites.length > 0 && (
+                  <div>
+                    <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                      {t('stpm.spmPrerequisites')}
+                    </h3>
+                    <div className="flex flex-wrap gap-1.5">
+                      {data.requirements.spm_prerequisites.map(prereq => (
+                        <span key={prereq} className="px-2.5 py-1 bg-green-50 border border-green-100 rounded-full text-xs font-medium text-green-700">
+                          {prereq}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
 
-            {/* Flags */}
-            {(data.requirements.req_interview ||
-              data.requirements.no_colorblind ||
-              data.requirements.req_medical_fitness ||
-              data.requirements.req_malaysian ||
-              data.requirements.req_bumiputera) && (
+            {/* Special Conditions */}
+            {hasFlags && (
               <section className="bg-white rounded-xl border border-gray-200 p-6">
+                <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2 mb-3">
+                  <svg className="w-[18px] h-[18px] text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.832c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  Special Conditions
+                </h2>
                 <div className="space-y-2">
                   {data.requirements.req_interview && (
                     <div className="flex items-center gap-2 text-sm text-amber-700">
-                      <span className="w-2 h-2 bg-amber-500 rounded-full" />
+                      <span className="w-2 h-2 bg-amber-500 rounded-full flex-shrink-0" />
                       {t('stpm.interviewRequired')}
                     </div>
                   )}
                   {data.requirements.no_colorblind && (
                     <div className="flex items-center gap-2 text-sm text-red-700">
-                      <span className="w-2 h-2 bg-red-500 rounded-full" />
+                      <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
                       {t('stpm.noColorblind')}
                     </div>
                   )}
                   {data.requirements.req_medical_fitness && (
                     <div className="flex items-center gap-2 text-sm text-orange-700">
-                      <span className="w-2 h-2 bg-orange-500 rounded-full" />
+                      <span className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0" />
                       {t('stpm.medicalFitness')}
-                    </div>
-                  )}
-                  {data.requirements.req_malaysian && (
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <span className="w-2 h-2 bg-gray-500 rounded-full" />
-                      {t('stpm.malaysianOnly')}
-                    </div>
-                  )}
-                  {data.requirements.req_bumiputera && (
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <span className="w-2 h-2 bg-gray-500 rounded-full" />
-                      {t('stpm.bumiputeraOnly')}
                     </div>
                   )}
                 </div>
@@ -315,5 +368,20 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <span className="text-gray-500 text-sm">{label}</span>
       <span className="font-medium text-gray-900 text-sm">{value}</span>
     </div>
+  )
+}
+
+function CheckIcon({ color }: { color: 'gray' | 'blue' | 'green' }) {
+  const styles = {
+    gray: 'bg-gray-100 text-gray-500',
+    blue: 'bg-blue-50 text-blue-500',
+    green: 'bg-green-50 text-green-500',
+  }
+  return (
+    <span className={`mt-0.5 flex-shrink-0 w-[18px] h-[18px] rounded-full ${styles[color]} flex items-center justify-center`}>
+      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+      </svg>
+    </span>
   )
 }
