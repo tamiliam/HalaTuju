@@ -9,6 +9,10 @@ from .base import *
 
 DEBUG = False
 
+# Ensure SECRET_KEY is explicitly set in production (no insecure fallback)
+if SECRET_KEY == 'django-insecure-dev-key-change-in-production':
+    raise ValueError("SECRET_KEY environment variable must be set in production")
+
 # Security settings
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS if h.strip()]
@@ -16,12 +20,14 @@ ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS if h.strip()]
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in CSRF_TRUSTED_ORIGINS if o.strip()]
 
-# CORS settings
+# CORS settings — wildcard not allowed in production
 _cors_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
 if _cors_origins == '*':
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
-    CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',') if o.strip()]
+    raise ValueError(
+        "CORS_ALLOWED_ORIGINS='*' is not allowed in production. "
+        "Set explicit origins, e.g. 'https://halatuju.web.app,https://halatuju-web-xxxxx.run.app'"
+    )
+CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',') if o.strip()]
 
 # Cloud Run terminates SSL
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

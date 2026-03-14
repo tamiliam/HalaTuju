@@ -1,5 +1,22 @@
 # Changelog — HalaTuju
 
+## Security Hardening Sprint (2026-03-14)
+
+### Changed
+- Default REST Framework permission changed from `AllowAny` to `SupabaseIsAuthenticated` (TD-012) — new endpoints are now auth-required by default; 16 public endpoints explicitly marked with `AllowAny`
+- `ProfileView.put()` and `ProfileSyncView.post()` now use `ProfileUpdateSerializer` with field-level validation instead of raw `setattr` loops (TD-008) — malformed input returns 400 instead of 500
+
+### Added
+- `ProfileUpdateSerializer` in `serializers.py` — ModelSerializer for `StudentProfile` with all 19 updatable fields, partial update support
+- Production guard: `ValueError` raised if `SECRET_KEY` is the insecure default (TD-036)
+- Production guard: `ValueError` raised if `CORS_ALLOWED_ORIGINS=*` (TD-038)
+
+### Stats
+- Tests: 382 collected, 382 pass, 0 failures, 0 skipped
+- Tech debt resolved: TD-008, TD-012, TD-036, TD-038
+
+---
+
 ## Test Health Sprint — Eliminate Skipped Tests & Auth Failures (2026-03-14)
 
 ### Fixed

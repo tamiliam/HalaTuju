@@ -55,12 +55,9 @@
 **Risk if left:** Medium — could mask real bugs in merit calculation silently returning "Unknown".
 **Dependencies:** Golden master tests would not catch this since they don't test merit labels.
 
-### [TD-008] ProfileView accepts arbitrary fields without validation
-**File(s):** `halatuju_api/apps/courses/views.py` (lines 1029-1038)
-**What it is:** `ProfileView.put()` and `ProfileSyncView.post()` iterate over allowed field names and call `setattr(profile, field, request.data[field])` with no type validation. A string sent for `siblings` (int field) or invalid JSON for `grades` (JSONField) would cause a 500.
-**What consistent looks like:** Use a DRF serializer for profile updates with proper field-level validation.
-**Risk if left:** Medium — any malformed request to `/profile/` could cause an unhandled 500 error.
-**Dependencies:** None.
+### [TD-008] ProfileView accepts arbitrary fields without validation ✅ RESOLVED (Security Sprint, 2026-03-14)
+**File(s):** `halatuju_api/apps/courses/views.py`, `halatuju_api/apps/courses/serializers.py`
+**Resolution:** Created `ProfileUpdateSerializer` (ModelSerializer for StudentProfile, 19 fields, partial=True). Both `ProfileView.put()` and `ProfileSyncView.post()` now validate via serializer — malformed input returns 400 instead of 500.
 
 ### [TD-009] No rate limiting on Gemini API calls
 **File(s):** `halatuju_api/apps/reports/views.py`, `halatuju_api/apps/reports/report_engine.py`
@@ -85,12 +82,9 @@
 **Risk if left:** Low — frontend handles both 401 and 403 the same way, but API semantics are wrong.
 **Dependencies:** Frontend error handling, auth test expectations.
 
-### [TD-012] DEFAULT_PERMISSION_CLASSES is AllowAny
-**File(s):** `halatuju_api/halatuju/settings/base.py` (line 94-96)
-**What it is:** REST_FRAMEWORK default permission is `AllowAny`. Each protected endpoint must explicitly set `permission_classes = [SupabaseIsAuthenticated]`. If a developer forgets, the endpoint is silently public.
-**What consistent looks like:** Default to `IsAuthenticated` and explicitly mark public endpoints with `permission_classes = [AllowAny]`.
-**Risk if left:** Medium — new endpoints default to public unless developer remembers to add auth.
-**Dependencies:** Would need to audit all views and add explicit AllowAny to public endpoints.
+### [TD-012] DEFAULT_PERMISSION_CLASSES is AllowAny ✅ RESOLVED (Security Sprint, 2026-03-14)
+**File(s):** `halatuju_api/halatuju/settings/base.py`
+**Resolution:** Default changed to `SupabaseIsAuthenticated`. 16 public views explicitly marked with `permission_classes = [AllowAny]`. All 382 tests pass.
 
 ---
 
@@ -293,12 +287,9 @@
 
 ## Configuration and Environment Handling
 
-### [TD-036] Hardcoded fallback SECRET_KEY in base.py
-**File(s):** `halatuju_api/halatuju/settings/base.py` (line 13)
-**What it is:** `SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key-change-in-production')`. The fallback is a known insecure key. If production somehow starts without SECRET_KEY set, it would use this.
-**What consistent looks like:** No fallback in production settings. `production.py` should raise if SECRET_KEY is not set (like it does for DATABASE_URL).
-**Risk if left:** Low — production.py doesn't override this, but Cloud Run always sets env vars.
-**Dependencies:** None.
+### [TD-036] Hardcoded fallback SECRET_KEY in base.py ✅ RESOLVED (Security Sprint, 2026-03-14)
+**File(s):** `halatuju_api/halatuju/settings/production.py`
+**Resolution:** `production.py` now raises `ValueError` if `SECRET_KEY` equals the insecure dev default. Dev/test environments still use the fallback for convenience.
 
 ### [TD-037] db.sqlite3 in project folder
 **File(s):** `halatuju_api/db.sqlite3`
@@ -307,12 +298,9 @@
 **Risk if left:** Low — just clutter.
 **Dependencies:** development.py database config.
 
-### [TD-038] CORS_ALLOW_ALL_ORIGINS possible in production
-**File(s):** `halatuju_api/halatuju/settings/production.py` (lines 20-24)
-**What it is:** Production settings check if `CORS_ALLOWED_ORIGINS` env var is `*`, and if so, sets `CORS_ALLOW_ALL_ORIGINS = True`. This means production CAN be configured to accept requests from any origin.
-**What consistent looks like:** Never allow `*` in production. Raise or log a warning if `CORS_ALLOWED_ORIGINS=*` is set.
-**Risk if left:** Medium — depends on the actual env var value in Cloud Run. If it's set correctly, no issue.
-**Dependencies:** Cloud Run environment variables.
+### [TD-038] CORS_ALLOW_ALL_ORIGINS possible in production ✅ RESOLVED (Security Sprint, 2026-03-14)
+**File(s):** `halatuju_api/halatuju/settings/production.py`
+**Resolution:** `production.py` now raises `ValueError` if `CORS_ALLOWED_ORIGINS=*`. Must set explicit origin list.
 
 ### [TD-039] sentry-sdk pinned to <2.0
 **File(s):** `halatuju_api/requirements.txt` (line 22)
@@ -440,14 +428,14 @@
 | TD-003 | Zero frontend tests | Test coverage | Downgraded to LOW (TD-002 Sprint removed all frontend business logic) |
 | TD-007 | Bare except in engine.py | Error handling | Resolved (Sprint 4) |
 | TD-010 | 9 pre-existing auth test failures | Test coverage | Resolved (TD-010 Sprint) |
-| TD-012 | DEFAULT_PERMISSION_CLASSES is AllowAny | Security | Open |
+| TD-012 | DEFAULT_PERMISSION_CLASSES is AllowAny | Security | Resolved (Security Sprint) |
 | TD-045 | EligibilityCheckView.post() is 300+ lines | Maintainability | Open |
 | TD-050 | i18n locale key inconsistency (quiz language bug) | Correctness bug | Resolved (Sprint 4) |
 
 ### MEDIUM (22 items)
 | ID | Title | Status |
 |----|-------|--------|
-| TD-008 | ProfileView accepts arbitrary fields without validation | Open |
+| TD-008 | ProfileView accepts arbitrary fields without validation | Resolved (Security Sprint) |
 | TD-009 | No rate limiting on Gemini API calls | Open |
 | TD-011 | SupabaseIsAuthenticated returns 403 instead of 401 | Open |
 | TD-013 | Subject key naming split (5+ files to change) | Open |
@@ -459,7 +447,7 @@
 | TD-033 | Auth test failures not triaged | Resolved (TD-010 Sprint) |
 | TD-034 | No integration test for full flow | Open |
 | TD-035 | Golden master count discrepancy in docs | Resolved (Test Health Sprint) |
-| TD-038 | CORS_ALLOW_ALL_ORIGINS possible in production | Open |
+| TD-038 | CORS_ALLOW_ALL_ORIGINS possible in production | Resolved (Security Sprint) |
 | TD-043 | Phone/OTP login blocked | Open |
 | TD-044 | EligibilityCheckView iterates DataFrame twice | Open |
 | TD-046 | CourseListView returns all courses unpaginated | Open |
@@ -487,7 +475,7 @@
 | TD-030 | Model docstring row counts are stale | Open |
 | TD-031 | One-time scripts still in management commands | Open |
 | TD-032 | load_csv_data.py references Streamlit paths | Open |
-| TD-036 | Hardcoded fallback SECRET_KEY | Open |
+| TD-036 | Hardcoded fallback SECRET_KEY | Resolved (Security Sprint) |
 | TD-037 | db.sqlite3 in project folder | Open |
 | TD-039 | sentry-sdk pinned to <2.0 | Open |
 | TD-040 | numpy pinned to <2.0 | Open |
@@ -513,10 +501,7 @@
 - TD-034: Add one integration test for full eligibility → ranking flow
 
 **Sprint 3 — Security & error handling (1 session)**
-- TD-012: Change DEFAULT_PERMISSION_CLASSES to IsAuthenticated
-- TD-008: Add profile update serializer with validation
-- TD-038: Reject CORS_ALLOW_ALL_ORIGINS in production
-- TD-036: Raise on missing SECRET_KEY in production
+- ~~TD-012, TD-008, TD-038, TD-036~~: RESOLVED — Security Hardening Sprint (2026-03-14)
 
 **Sprint 4 — API consistency (1 session)**
 - TD-004, TD-005, TD-006, TD-026: Standardise error/success response format

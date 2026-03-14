@@ -178,3 +178,15 @@
 **Trade-offs:** None — this is a correction. The old baseline was never validated against the current data.
 
 **Revisit if:** Never — forward baselines should be set against the current DB state.
+
+## Default-deny permissions (SupabaseIsAuthenticated) — Security Sprint, 2026-03-14
+
+**Decision:** Changed `REST_FRAMEWORK.DEFAULT_PERMISSION_CLASSES` from `AllowAny` to `SupabaseIsAuthenticated`. All 16 public endpoints explicitly marked with `permission_classes = [AllowAny]`.
+
+**Alternatives considered:** (1) Keep AllowAny default and rely on developers remembering to add auth. (2) Use Django's built-in `IsAuthenticated` instead of custom class.
+
+**Rationale:** Default-deny is a security best practice. A forgotten `permission_classes` line now results in 403 (safe) instead of public access (dangerous). Custom `SupabaseIsAuthenticated` is used because auth flows through Supabase JWT middleware, not Django's session auth.
+
+**Trade-offs:** Every new public endpoint requires an explicit `permission_classes = [AllowAny]` line. This is intentional friction — forces the developer to consciously decide that an endpoint should be public.
+
+**Revisit if:** Django's auth backend is changed from Supabase JWT to something else, or if a more granular RBAC system is introduced.

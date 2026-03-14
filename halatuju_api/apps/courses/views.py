@@ -43,6 +43,7 @@ from .serializers import (
     EligibilityRequestSerializer,
     EligibilityResponseSerializer,
     RankingRequestSerializer,
+    ProfileUpdateSerializer,
 )
 from .ranking_engine import get_ranked_results, get_credential_priority
 from .stpm_engine import calculate_stpm_cgpa, check_stpm_eligibility
@@ -50,6 +51,7 @@ from .stpm_ranking import get_stpm_ranked_results
 from .insights_engine import generate_insights
 from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
 from .quiz_engine import process_quiz_answers
+from rest_framework.permissions import AllowAny
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 
 logger = logging.getLogger(__name__)
@@ -71,6 +73,7 @@ class CourseSearchView(APIView):
       &qualification=SPM|STPM  (filter by qualification; empty = both)
       &limit=24&offset=0       (pagination)
     """
+    permission_classes = [AllowAny]
 
     def get(self, request):
         q = request.query_params.get('q', '').strip()
@@ -301,6 +304,7 @@ class EligibilityCheckView(APIView):
         "stats": {"poly": 50, "kkom": 30, ...}
     }
     """
+    permission_classes = [AllowAny]
 
     def post(self, request):
         # Validate request
@@ -643,6 +647,7 @@ class RankingView(APIView):
         "total_ranked": 123
     }
     """
+    permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = RankingRequestSerializer(data=request.data)
@@ -681,6 +686,7 @@ class QuizQuestionsView(APIView):
     Returns the 6 quiz questions in the requested language.
     Public endpoint — no auth required.
     """
+    permission_classes = [AllowAny]
 
     def get(self, request):
         lang = request.query_params.get('lang', 'en')
@@ -725,6 +731,7 @@ class QuizSubmitView(APIView):
         "signal_strength": {"hands_on": "strong", ...}
     }
     """
+    permission_classes = [AllowAny]
 
     def post(self, request):
         answers = request.data.get('answers')
@@ -762,6 +769,7 @@ class QuizSubmitView(APIView):
 
 class CourseListView(APIView):
     """GET /api/v1/courses/ - List all courses with pagination."""
+    permission_classes = [AllowAny]
 
     def get(self, request):
         courses = Course.objects.all()
@@ -774,6 +782,7 @@ class CourseListView(APIView):
 
 class CourseDetailView(APIView):
     """GET /api/v1/courses/<course_id>/ - Course detail with institutions."""
+    permission_classes = [AllowAny]
 
     def get(self, request, course_id):
         from .models import CourseInstitution
@@ -885,6 +894,7 @@ class CourseDetailView(APIView):
 
 class InstitutionListView(APIView):
     """GET /api/v1/institutions/ - List all institutions."""
+    permission_classes = [AllowAny]
 
     def get(self, request):
         # Filter by state if provided
@@ -902,6 +912,7 @@ class InstitutionListView(APIView):
 
 class InstitutionDetailView(APIView):
     """GET /api/v1/institutions/<id>/ - Institution detail."""
+    permission_classes = [AllowAny]
 
     def get(self, request, institution_id):
         try:
@@ -1022,17 +1033,11 @@ class ProfileView(APIView):
             supabase_user_id=request.user_id
         )
 
-        # Update allowed fields
-        for field in ['grades', 'gender', 'nationality', 'colorblind',
-                      'disability', 'student_signals', 'preferred_state',
-                      'name', 'school', 'nric', 'address', 'phone',
-                      'family_income', 'siblings', 'exam_type',
-                      'stpm_grades', 'stpm_cgpa', 'muet_band',
-                      'spm_prereq_grades']:
-            if field in request.data:
-                setattr(profile, field, request.data[field])
+        serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        profile.save()
+        serializer.save()
         return Response({'message': 'Profile updated'})
 
 
@@ -1051,26 +1056,11 @@ class ProfileSyncView(APIView):
             supabase_user_id=request.user_id
         )
 
-        sync_fields = [
-            'grades', 'gender', 'nationality', 'colorblind', 'disability',
-            'student_signals', 'preferred_state', 'name', 'school',
-            'nric', 'address', 'phone', 'family_income', 'siblings',
-            'exam_type', 'stpm_grades', 'spm_prereq_grades',
-        ]
+        serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        for field in sync_fields:
-            if field in request.data:
-                setattr(profile, field, request.data[field])
-
-        # Numeric STPM fields need type coercion
-        stpm_cgpa = request.data.get('stpm_cgpa')
-        if stpm_cgpa is not None:
-            profile.stpm_cgpa = float(stpm_cgpa)
-        muet_band = request.data.get('muet_band')
-        if muet_band is not None:
-            profile.muet_band = int(muet_band)
-
-        profile.save()
+        serializer.save()
         return Response({
             'message': 'Profile synced',
             'created': created,
@@ -1212,6 +1202,7 @@ class OutcomeDetailView(APIView):
 
 class StpmEligibilityCheckView(APIView):
     """POST /api/v1/stpm/eligibility/check/ — check STPM degree eligibility."""
+    permission_classes = [AllowAny]
 
     def post(self, request):
         stpm_grades = request.data.get('stpm_grades')
@@ -1243,6 +1234,7 @@ class StpmEligibilityCheckView(APIView):
 
 class StpmRankingView(APIView):
     """POST /api/v1/stpm/ranking/ — rank eligible STPM courses by fit score."""
+    permission_classes = [AllowAny]
 
     def post(self, request):
         courses = request.data.get('eligible_courses')
@@ -1267,6 +1259,7 @@ class StpmSearchView(APIView):
     Browse and search STPM degree courses with filters.
     Public endpoint — no auth required.
     """
+    permission_classes = [AllowAny]
 
     def get(self, request):
         qs = StpmCourse.objects.select_related('requirement').all()
@@ -1333,6 +1326,7 @@ class StpmSearchView(APIView):
 
 class StpmCourseDetailView(APIView):
     """GET /api/v1/stpm/courses/<course_id>/ — single STPM course detail."""
+    permission_classes = [AllowAny]
 
     STPM_SUBJECT_FIELDS = [
         ('stpm_req_pa', 'Pengajian Am'),
@@ -1442,6 +1436,7 @@ class CalculateMeritView(APIView):
     Request:  {"grades": {"BM": "A", "BI": "B+", ...}, "coq_score": 8.0}
     Response: {"academic_merit": 85.5, "final_merit": 93.5}
     """
+    permission_classes = [AllowAny]
 
     def post(self, request):
         data = request.data
@@ -1484,6 +1479,7 @@ class CalculateCgpaView(APIView):
     Request:  {"stpm_grades": {"PA": "A", "MATH_T": "B+", ...}, "koko_score": 8}
     Response: {"cgpa": 3.42, "academic_cgpa": 3.44, "merit_percent": 85.5}
     """
+    permission_classes = [AllowAny]
 
     def post(self, request):
         data = request.data
@@ -1513,6 +1509,7 @@ class CalculatePathwaysView(APIView):
     Body: { grades: {BM: "A", ...}, coq_score: 8.0, signals?: {...} }
     Response: { pathways: [{track_id, eligible, merit, mata_gred, fit_score, ...}] }
     """
+    permission_classes = [AllowAny]
 
     def post(self, request):
         grades_raw = request.data.get('grades')

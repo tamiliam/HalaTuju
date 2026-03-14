@@ -2,7 +2,7 @@
 Serializers for the courses API.
 """
 from rest_framework import serializers
-from .models import Course, Institution, CourseRequirement, CourseTag, MascoOccupation
+from .models import Course, Institution, CourseRequirement, CourseTag, MascoOccupation, StudentProfile
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -267,3 +267,22 @@ class RankingRequestSerializer(serializers.Serializer):
                     f"eligible_courses[{i}] missing course_id."
                 )
         return value
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for profile update (PUT /profile/ and POST /profile/sync/).
+
+    Validates field types and constrains values to prevent 500 errors
+    from malformed input (e.g. string for siblings, invalid JSON for grades).
+    """
+
+    class Meta:
+        model = StudentProfile
+        fields = [
+            'grades', 'gender', 'nationality', 'colorblind', 'disability',
+            'student_signals', 'preferred_state', 'name', 'school',
+            'nric', 'address', 'phone', 'family_income', 'siblings',
+            'exam_type', 'stpm_grades', 'stpm_cgpa', 'muet_band',
+            'spm_prereq_grades',
+        ]
+        extra_kwargs = {f: {'required': False} for f in fields}

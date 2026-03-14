@@ -257,14 +257,19 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Shared test helper: `conftest.py` with `load_requirements_df()`
 - Final: 382 pass, 0 fail, 0 skip
 
+**Security Hardening Sprint COMPLETE (2026-03-14)**
+- Default permission flipped: `AllowAny` → `SupabaseIsAuthenticated` (TD-012). 16 public views explicitly marked `AllowAny`.
+- Profile update validated: `ProfileUpdateSerializer` replaces raw `setattr` loops (TD-008).
+- Production guards: `SECRET_KEY` insecure default rejected (TD-036), `CORS_ALLOWED_ORIGINS=*` rejected (TD-038).
+- Tech debt resolved: TD-008, TD-012, TD-036, TD-038.
+
 **Pending work**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
 - Store `signal_strength` in Supabase (currently only `student_signals` synced)
 - STPM field metadata refinement: 207 unique field values from Gemini (expected ~30) — consider normalisation pass
-- ~~Fix 13 pre-existing auth/JWT test failures~~ — RESOLVED (TD-010 Sprint, mock fix). Build proper auth test infra when admin layer is designed.
-- Continue tech debt remediation from `docs/technical-debt.md` (43 items remaining)
+- Continue tech debt remediation from `docs/technical-debt.md` (39 items remaining)
 
 ## Streamlit App (Legacy — migrating to Django API)
 
