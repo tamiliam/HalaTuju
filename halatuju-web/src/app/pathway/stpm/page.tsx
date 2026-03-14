@@ -6,7 +6,7 @@ import Link from 'next/link'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
-import { checkAllPathways, type PathwayResult } from '@/lib/pathways'
+import { calculatePathways, type PathwayResult } from '@/lib/api'
 import { STPM_SCHOOLS, type StpmSchool } from '@/data/stpm-schools'
 
 const PAGE_SIZE = 50
@@ -80,11 +80,30 @@ function StpmContent() {
     setIsLoading(false)
   }, [])
 
-  // Run pathway engine
-  const stpmResults = useMemo(() => {
-    if (!profile) return []
-    const all = checkAllPathways(profile.grades, profile.coqScore)
-    return all.filter((r) => r.pathway === 'stpm')
+  // Run pathway engine via API
+  const [stpmResults, setStpmResults] = useState<PathwayResult[]>([])
+  const [pathwayLoading, setPathwayLoading] = useState(true)
+
+  useEffect(() => {
+    if (!profile) {
+      setPathwayLoading(false)
+      return
+    }
+
+    const fetchPathways = async () => {
+      setPathwayLoading(true)
+      try {
+        const signals = JSON.parse(localStorage.getItem('halatuju_quiz_signals') || 'null')
+        const { pathways } = await calculatePathways(profile.grades, profile.coqScore, signals)
+        setStpmResults(pathways.filter(p => p.pathway === 'stpm'))
+      } catch {
+        setStpmResults([])
+      } finally {
+        setPathwayLoading(false)
+      }
+    }
+
+    fetchPathways()
   }, [profile])
 
   const eligibleResults = useMemo(

@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useT } from '@/lib/i18n'
-import { checkAllPathways, MATRIC_TRACKS, type PathwayResult } from '@/lib/pathways'
+import { calculatePathways, type PathwayResult } from '@/lib/api'
 import { MATRIC_COLLEGES, type MatricCollege } from '@/data/matric-colleges'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
@@ -60,12 +60,30 @@ function MatricPageContent() {
     }
   }, [])
 
-  // Run pathway engine
-  const matricResults = useMemo(() => {
-    if (!grades) return []
-    return checkAllPathways(grades, coq).filter(
-      (r): r is PathwayResult & { pathway: 'matric' } => r.pathway === 'matric'
-    )
+  // Run pathway engine via API
+  const [matricResults, setMatricResults] = useState<PathwayResult[]>([])
+  const [pathwayLoading, setPathwayLoading] = useState(true)
+
+  useEffect(() => {
+    if (!grades || Object.keys(grades).length === 0) {
+      setPathwayLoading(false)
+      return
+    }
+
+    const fetchPathways = async () => {
+      setPathwayLoading(true)
+      try {
+        const signals = JSON.parse(localStorage.getItem('halatuju_quiz_signals') || 'null')
+        const { pathways } = await calculatePathways(grades, coq, signals)
+        setMatricResults(pathways.filter(p => p.pathway === 'matric'))
+      } catch {
+        setMatricResults([])
+      } finally {
+        setPathwayLoading(false)
+      }
+    }
+
+    fetchPathways()
   }, [grades, coq])
 
   // Determine current track from URL param or first eligible
@@ -84,11 +102,12 @@ function MatricPageContent() {
     [matricResults, currentTrackId]
   )
 
-  // Current track info from MATRIC_TRACKS
-  const currentTrack = useMemo(
-    () => MATRIC_TRACKS.find(t => t.id === currentTrackId),
-    [currentTrackId]
-  )
+  // Current track info from API results
+  const currentTrack = useMemo(() => {
+    const r = matricResults.find(r => r.trackId === currentTrackId)
+    if (!r) return null
+    return { id: r.trackId, name: r.trackName, name_ms: r.trackNameMs, name_ta: r.trackNameTa }
+  }, [matricResults, currentTrackId])
 
   // Merit score for current track
   const meritScore = currentResult?.merit ?? null
