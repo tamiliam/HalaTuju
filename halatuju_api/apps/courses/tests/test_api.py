@@ -1108,3 +1108,39 @@ class TestUnifiedSearchEndpoint(TestCase):
         for course in response.data['courses']:
             self.assertIn('qualification', course)
             self.assertIn(course['qualification'], ('SPM', 'STPM'))
+
+
+class TestCalculateEndpoints(TestCase):
+    """Tests for /calculate/merit/ endpoint."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.url = '/api/v1/calculate/merit/'
+
+    def test_merit_calculation(self):
+        """POST all-A grades + coq_score=8 returns expected merit values."""
+        payload = {
+            'grades': {
+                'BM': 'A',
+                'BI': 'A',
+                'SEJ': 'A',
+                'MAT': 'A',
+                'PHY': 'A',
+                'CHE': 'A',
+                'BIO': 'A',
+                'AMT': 'A',
+                'PM': 'A',
+            },
+            'coq_score': 8.0,
+        }
+        response = self.client.post(self.url, payload, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('academic_merit', response.data)
+        self.assertIn('final_merit', response.data)
+        self.assertAlmostEqual(response.data['academic_merit'], 90.0, places=1)
+        self.assertAlmostEqual(response.data['final_merit'], 98.0, places=1)
+
+    def test_merit_missing_grades(self):
+        """POST empty body returns 400."""
+        response = self.client.post(self.url, {}, format='json')
+        self.assertEqual(response.status_code, 400)

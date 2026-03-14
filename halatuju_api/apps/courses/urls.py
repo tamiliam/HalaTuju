@@ -36,6 +36,9 @@ urlpatterns = [
     path('outcomes/', views.OutcomeListView.as_view(), name='outcome-list'),
     path('outcomes/<int:outcome_id>/', views.OutcomeDetailView.as_view(), name='outcome-detail'),
 
+    # Calculate endpoints (TD-002: server-side calculations)
+    path('calculate/merit/', views.CalculateMeritView.as_view(), name='calculate-merit'),
+
     # STPM eligibility
     path('stpm/eligibility/check/', views.StpmEligibilityCheckView.as_view(), name='stpm-eligibility-check'),
     path('stpm/ranking/', views.StpmRankingView.as_view(), name='stpm-ranking'),

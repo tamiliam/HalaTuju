@@ -1430,3 +1430,45 @@ class StpmCourseDetailView(APIView):
             'requirements': requirements,
             'institution': institution_data,
         })
+
+
+class CalculateMeritView(APIView):
+    """
+    POST /api/v1/calculate/merit/
+
+    Accepts frontend grade keys + coq_score, returns academic_merit and final_merit.
+    No authentication required.
+
+    Request:  {"grades": {"BM": "A", "BI": "B+", ...}, "coq_score": 8.0}
+    Response: {"academic_merit": 85.5, "final_merit": 93.5}
+    """
+
+    def post(self, request):
+        data = request.data
+        raw_grades = data.get('grades')
+        if not raw_grades or not isinstance(raw_grades, dict):
+            return Response(
+                {'error': 'grades field is required and must be a dict'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Map frontend keys (BM, BI, MAT...) to engine keys (bm, eng, math...)
+        key_map = EligibilityRequestSerializer.GRADE_KEY_MAP
+        mapped_grades = {}
+        for key, grade in raw_grades.items():
+            engine_key = key_map.get(key, key.lower())
+            mapped_grades[engine_key] = grade
+
+        # Engine expects 'history' not 'hist'
+        if 'hist' in mapped_grades:
+            mapped_grades['history'] = mapped_grades.pop('hist')
+
+        coq_score = float(data.get('coq_score', 5.0))
+
+        sec1, sec2, sec3 = prepare_merit_inputs(mapped_grades)
+        result = calculate_merit_score(sec1, sec2, sec3, coq_score=coq_score)
+
+        return Response({
+            'academic_merit': result['academic_merit'],
+            'final_merit': result['final_merit'],
+        })
