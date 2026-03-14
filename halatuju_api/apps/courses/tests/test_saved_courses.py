@@ -29,8 +29,12 @@ class TestSavedCourseCRUD(TestCase):
             field='Mekanikal & Automotif',
             frontend_label='Mekanikal & Automotif',
         )
-        # Patch JWT decode to simulate authenticated user
-        self._patcher = patch(
+        # Patch both jwt.get_unverified_header and jwt.decode in middleware
+        self._header_patcher = patch(
+            'halatuju.middleware.supabase_auth.jwt.get_unverified_header',
+            return_value={'alg': 'HS256'},
+        )
+        self._decode_patcher = patch(
             'halatuju.middleware.supabase_auth.jwt.decode',
             return_value={
                 'sub': TEST_USER_ID,
@@ -38,11 +42,13 @@ class TestSavedCourseCRUD(TestCase):
                 'role': 'authenticated',
             },
         )
-        self._patcher.start()
+        self._header_patcher.start()
+        self._decode_patcher.start()
         self.client.credentials(HTTP_AUTHORIZATION='Bearer fake-but-patched')
 
     def tearDown(self):
-        self._patcher.stop()
+        self._decode_patcher.stop()
+        self._header_patcher.stop()
 
     def test_save_course_returns_201(self):
         response = self.client.post(

@@ -55,8 +55,12 @@ class TestReportViews(TestCase):
             eligible_courses_snapshot=[],
             model_used='gemini-2.0-flash',
         )
-        # Patch JWT decode
-        self._patcher = patch(
+        # Patch both jwt.get_unverified_header and jwt.decode in middleware
+        self._header_patcher = patch(
+            'halatuju.middleware.supabase_auth.jwt.get_unverified_header',
+            return_value={'alg': 'HS256'},
+        )
+        self._decode_patcher = patch(
             'halatuju.middleware.supabase_auth.jwt.decode',
             return_value={
                 'sub': TEST_USER_ID,
@@ -64,11 +68,13 @@ class TestReportViews(TestCase):
                 'role': 'authenticated',
             },
         )
-        self._patcher.start()
+        self._header_patcher.start()
+        self._decode_patcher.start()
         self.client.credentials(HTTP_AUTHORIZATION='Bearer fake-but-patched')
 
     def tearDown(self):
-        self._patcher.stop()
+        self._decode_patcher.stop()
+        self._header_patcher.stop()
 
     def test_list_reports_returns_own_reports_only(self):
         """GET /api/v1/reports/ returns only the authenticated user's reports."""

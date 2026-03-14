@@ -13,7 +13,7 @@
 **Top 3 highest-risk items:**
 1. **[TD-001] STPM SPM prerequisite fields not checked** — `spm_pass_bi` and `spm_pass_math` exist in the model but are silently ignored by the eligibility engine. Students may qualify for programmes they shouldn't.
 2. **[TD-002] Client-side eligibility logic duplicated** — pathways.ts, merit.ts, and stpm.ts mirror backend logic using different subject key conventions. Any formula change must be made in two places with no automated cross-check.
-3. **[TD-003] Zero frontend tests** — All client-side eligibility, merit calculation, CGPA calculation, and pathway logic is completely untested.
+3. **[TD-003] Zero frontend tests** — No test files in halatuju-web. LOW risk after TD-002 Sprint removed all frontend business logic.
 
 **Category with most inconsistency:** Frontend-backend implicit contracts (11 items)
 
@@ -73,12 +73,10 @@
 
 ## Authentication and Permission Handling
 
-### [TD-010] 9 pre-existing auth test failures
-**File(s):** `halatuju_api/apps/courses/tests/test_auth.py`
-**What it is:** 9 tests fail because they use malformed JWT tokens that the middleware correctly rejects. The tests were written before JWKS support was added but never updated.
-**What consistent looks like:** Tests generate properly signed JWTs for the test environment.
-**Risk if left:** Medium — broken tests mask real auth regressions. If a genuine auth bug is introduced, it would be invisible among the 9 known failures.
-**Dependencies:** Need a test JWT signing helper using HS256 with the dev secret.
+### [TD-010] ~~9 pre-existing auth test failures~~ **RESOLVED (TD-010 Sprint, 2026-03-14)**
+**File(s):** `halatuju_api/apps/courses/tests/test_auth.py`, `test_saved_courses.py`, `test_views.py`
+**What it was:** 13 tests (not 9 — count was wrong in original audit) failed because they mocked `jwt.decode` but not `jwt.get_unverified_header`, which the middleware calls first. Fixed by adding the missing mock.
+**Resolution:** Simple mock fix. Proper auth test infrastructure deferred to admin layer design — see `docs/decisions.md`.
 
 ### [TD-011] SupabaseIsAuthenticated returns 403 instead of 401
 **File(s):** `halatuju_api/halatuju/middleware/supabase_auth.py` (line 132)
@@ -266,19 +264,17 @@
 
 ## Test Patterns and Coverage Gaps
 
-### [TD-003] Zero frontend tests (HIGH RISK)
+### [TD-003] Zero frontend tests (LOW RISK)
 **File(s):** `halatuju-web/` (entire frontend)
-**What it is:** The Next.js frontend has zero test files. All client-side logic — pathways.ts (512 lines), merit.ts (63 lines), stpm.ts (22 lines), subjects.ts, i18n.tsx, auth-context.tsx — is untested.
-**What consistent looks like:** At minimum, unit tests for pathways.ts, merit.ts, and stpm.ts (pure functions, easy to test). Ideally component tests for critical flows.
-**Risk if left:** HIGH — the three duplicated calculation modules have no safety net. A refactor or bug fix could silently break eligibility calculations shown to students.
+**What it is:** The Next.js frontend has zero test files. Remaining client-side logic is UI rendering and API calls — no business logic after TD-002 Sprint deleted `pathways.ts`, `merit.ts`, and `stpm.ts`.
+**What consistent looks like:** Component tests for critical flows (onboarding, dashboard). Nice-to-have, not urgent.
+**Risk if left:** LOW — all calculation logic now lives in the backend with 344 tests. Frontend is display-only.
 **Dependencies:** Would need Jest/Vitest setup in halatuju-web.
 
-### [TD-033] Auth test failures not triaged
+### [TD-033] ~~Auth test failures not triaged~~ **RESOLVED (TD-010 Sprint, 2026-03-14)**
 **File(s):** `halatuju_api/apps/courses/tests/test_auth.py`
-**What it is:** 9 auth tests have been failing since JWKS support was added. They're documented as "pre-existing failures" and excluded from pass criteria. But nobody has investigated whether they test real security requirements.
-**What consistent looks like:** Either fix the tests (generate valid test JWTs) or delete tests for requirements that don't exist.
-**Risk if left:** Medium — normalises test failures, making real regressions harder to spot.
-**Dependencies:** JWT test helper utility.
+**What it was:** Auth tests were failing due to incomplete mocking — triaged and fixed as part of TD-010.
+**Resolution:** See TD-010 resolution.
 
 ### [TD-034] No integration test for full eligibility → ranking → report flow
 **File(s):** `halatuju_api/apps/courses/tests/`
@@ -442,9 +438,9 @@
 |----|-------|----------|--------|
 | TD-001 | STPM SPM prerequisite fields not checked | Correctness bug | Resolved (Sprint 4) |
 | TD-002 | Client-side eligibility logic duplicated | Duplication | Resolved (TD-002 Sprint) |
-| TD-003 | Zero frontend tests | Test coverage | Open |
+| TD-003 | Zero frontend tests | Test coverage | Downgraded to LOW (TD-002 Sprint removed all frontend business logic) |
 | TD-007 | Bare except in engine.py | Error handling | Resolved (Sprint 4) |
-| TD-010 | 9 pre-existing auth test failures | Test coverage | Open |
+| TD-010 | 9 pre-existing auth test failures | Test coverage | Resolved (TD-010 Sprint) |
 | TD-012 | DEFAULT_PERMISSION_CLASSES is AllowAny | Security | Open |
 | TD-045 | EligibilityCheckView.post() is 300+ lines | Maintainability | Open |
 | TD-050 | i18n locale key inconsistency (quiz language bug) | Correctness bug | Resolved (Sprint 4) |
@@ -461,7 +457,7 @@
 | TD-016 | StpmProgrammeDetailView institution lookup by name | Open |
 | TD-017 | Pre-U fit scoring exists only on frontend | Resolved (TD-002 Sprint) |
 | TD-021 | PISMP deduplication logic inline and complex | Open |
-| TD-033 | Auth test failures not triaged | Open |
+| TD-033 | Auth test failures not triaged | Resolved (TD-010 Sprint) |
 | TD-034 | No integration test for full flow | Open |
 | TD-035 | Golden master count discrepancy in docs | Open |
 | TD-038 | CORS_ALLOW_ALL_ORIGINS possible in production | Open |
@@ -513,8 +509,8 @@
 - TD-018, TD-019: Clean up duplicate/inline imports
 
 **Sprint 2 — Test foundation (1 session)**
-- TD-010, TD-033: Fix or remove the 9 auth test failures
-- TD-003: Set up frontend test framework + test pathways.ts, merit.ts, stpm.ts
+- ~~TD-010, TD-033~~: Fixed — mock patch for `jwt.get_unverified_header`. See `docs/decisions.md`
+- ~~TD-003~~: Downgraded to LOW — frontend has no business logic to test after TD-002
 - TD-034: Add one integration test for full eligibility → ranking flow
 
 **Sprint 3 — Security & error handling (1 session)**

@@ -115,7 +115,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (375 collected, 332 pass, 13 pre-existing JWT failures)
+# Run ALL tests (387 collected, 357 pass, 0 failures, 30 skipped)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8283 baseline)
@@ -158,7 +158,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (387 collected, 344 must pass, SPM golden master = 8283, STPM golden master = 1811)
+# 1. Run all tests (387 collected, 357 must pass, SPM golden master = 8283, STPM golden master = 1811)
 python -m pytest apps/courses/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -170,7 +170,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-344 tests must pass out of 387 collected (13 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
+357 tests must pass out of 387 collected (30 skipped — conditional skip markers, not failures). If golden master deviates from 8283, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -247,7 +247,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - 3 new calculation endpoints: `/calculate/merit/`, `/calculate/cgpa/`, `/calculate/pathways/`
 - `getPathwayFitScore()` ported to backend `pathways.py`
 - Frontend pages call API instead of local functions. Backend is single source of truth.
-- Tech debt resolved: TD-002, TD-015, TD-017. Tests: 344 pass.
+- Tech debt resolved: TD-002, TD-015, TD-017. Tests: 357 pass (0 failures) after TD-010 fix.
 
 **Pending work**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
@@ -255,7 +255,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
 - Store `signal_strength` in Supabase (currently only `student_signals` synced)
 - STPM field metadata refinement: 207 unique field values from Gemini (expected ~30) — consider normalisation pass
-- Fix 13 pre-existing auth/JWT test failures (test_auth, test_saved_courses, test_views)
+- ~~Fix 13 pre-existing auth/JWT test failures~~ — RESOLVED (TD-010 Sprint, mock fix). Build proper auth test infra when admin layer is designed.
 - Continue tech debt remediation from `docs/technical-debt.md` (43 items remaining)
 
 ## Streamlit App (Legacy — migrating to Django API)

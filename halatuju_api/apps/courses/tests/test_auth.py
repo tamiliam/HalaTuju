@@ -75,10 +75,13 @@ class TestProtectedEndpointsAcceptAuth(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        # Patch jwt.decode in the middleware module to return a valid payload
-        # (The middleware instance's jwt_secret is set at startup, before
-        # override_settings takes effect, so we mock the decode call instead.)
-        self._patcher = patch(
+        # Patch both jwt.get_unverified_header (called first to detect algorithm)
+        # and jwt.decode (called second to verify token) in the middleware.
+        self._header_patcher = patch(
+            'halatuju.middleware.supabase_auth.jwt.get_unverified_header',
+            return_value={'alg': 'HS256'},
+        )
+        self._decode_patcher = patch(
             'halatuju.middleware.supabase_auth.jwt.decode',
             return_value={
                 'sub': TEST_USER_ID,
@@ -86,11 +89,13 @@ class TestProtectedEndpointsAcceptAuth(TestCase):
                 'role': 'authenticated',
             },
         )
-        self._patcher.start()
+        self._header_patcher.start()
+        self._decode_patcher.start()
         self.client.credentials(HTTP_AUTHORIZATION='Bearer fake-but-patched')
 
     def tearDown(self):
-        self._patcher.stop()
+        self._decode_patcher.stop()
+        self._header_patcher.stop()
 
     def test_saved_courses_get_accepted(self):
         response = self.client.get('/api/v1/saved-courses/')

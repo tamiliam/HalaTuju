@@ -133,3 +133,24 @@
 **Trade-offs:** Grade pages now need network for merit/CGPA display (previously instant). Mitigated with 400ms debounce. Dashboard CGPA-to-percent was inlined as a trivial one-liner (no API call needed).
 
 **Revisit if:** Offline support becomes a requirement, or if API latency degrades user experience on grade entry pages.
+
+## Auth test mock fix over test infrastructure — TD-010 Sprint, 2026-03-14
+
+**Decision:** Fixed 13 failing auth tests by adding a `jwt.get_unverified_header` mock alongside the existing `jwt.decode` mock in all test setUp methods. Did NOT build a reusable auth test infrastructure or JWT signing helper.
+
+**Root cause:** The Supabase auth middleware calls `jwt.get_unverified_header(token)` before `jwt.decode()`. Tests were mocking only `jwt.decode`, but `get_unverified_header('fake-but-patched')` raised `InvalidTokenError` before `jwt.decode` was ever reached.
+
+**Alternatives considered:** (1) Build a proper auth test infrastructure — a `TestAuthMixin` with real JWT signing using a test secret, role-based token generation (student, admin, anonymous), and shared helpers. (2) Simple mock fix (chosen).
+
+**Rationale:** The proper infrastructure (option 1) is the right long-term answer, but it should be built when the admin layer is designed — not now. We don't yet know what roles, permissions, or auth flows the admin layer will need. Building test auth infrastructure now risks designing for requirements that don't exist yet (YAGNI). The mock fix is correct, minimal, and makes all 357 tests pass with 0 failures.
+
+**What a future developer should do:** When building the admin/login tracking layer:
+1. Design the role-based permission model first (student, counsellor, admin, etc.)
+2. Build a `TestAuthMixin` or fixture that generates real signed JWTs with configurable roles
+3. Replace the mock-based approach in `test_auth.py`, `test_saved_courses.py`, and `test_views.py` (reports) with the new mixin
+4. Add tests for role-based access (e.g., admin can see all reports, student can only see own)
+5. The middleware at `halatuju/middleware/supabase_auth.py` will also need updating for role extraction
+
+**Trade-offs:** Three test files have near-identical mock boilerplate (header patcher + decode patcher). This is a code smell, but extracting a shared helper for 3 files would be premature — wait until the auth model is designed.
+
+**Revisit if:** Admin layer work begins, or if a fourth test file needs the same auth mocking pattern.
