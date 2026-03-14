@@ -227,6 +227,18 @@
 
 **Revisit if:** A unified course information portal emerges that covers all institution types, or if polycc/MOE links become course-specific rather than portal-level.
 
+## Engine keys as canonical subject format — Subject Key Unification Sprint, 2026-03-15
+
+**Decision:** All SPM subject keys use lowercase engine format (`bm`, `eng`, `math`, `phy`) everywhere — frontend, backend, localStorage, API payloads. `subjects.ts` is the single source of truth with structured category metadata.
+
+**Alternatives considered:** (1) Keep uppercase frontend keys with serializer mapping. (2) Use display names as keys. (3) Unify on engine keys (chosen).
+
+**Rationale:** Engine keys were already used by 90% of the codebase (subjects.ts SUBJECT_NAMES, engine.py, pathways.py, eligibility_service.py, SPM prereqs). Only the grades page used uppercase. Aligning to the majority eliminates the serializer mapping layer entirely — one fewer place to maintain when subjects change.
+
+**Trade-offs:** Beta testers must re-enter SPM grades (localStorage keys changed). Acceptable given small beta user base.
+
+**Revisit if:** A new data source (e.g. MOE API) provides grades in a different key format — would need a mapping layer at the ingestion boundary, not the serializer.
+
 ## Default-deny permissions (SupabaseIsAuthenticated) — Security Sprint, 2026-03-14
 
 **Decision:** Changed `REST_FRAMEWORK.DEFAULT_PERMISSION_CLASSES` from `AllowAny` to `SupabaseIsAuthenticated`. All 16 public endpoints explicitly marked with `permission_classes = [AllowAny]`.

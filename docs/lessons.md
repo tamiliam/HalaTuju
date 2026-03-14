@@ -21,3 +21,4 @@ Cross-cutting lessons from sprint retrospectives. Only items that affect future 
 - When migrating data sources (e.g. CSV → DB), immediately update or delete all tests that depend on the old source — `skipIf` guards on file existence mask the problem indefinitely. (Test Health Sprint)
 - For server-rendered portals (MOHE, polycc, etc.), HTTP status codes are useless for link validation — always check rendered page content with a headless browser. (External Links Sprint)
 - Never guess institution URLs from naming patterns — scrape the authoritative listing page instead. Even within a single system (e.g. IPG), URL conventions are inconsistent. (External Links Sprint)
+- Design docs for rename/removal tasks must include a mechanical `grep` for all references before finalising the file list — manual estimates undercount because symbols propagate into tests, views, and utility code. (Subject Key Unification Sprint)

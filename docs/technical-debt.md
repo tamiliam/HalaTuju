@@ -423,7 +423,7 @@
 | TD-008 | ProfileView accepts arbitrary fields without validation | Resolved (Security Sprint) |
 | TD-009 | No rate limiting on Gemini API calls | Open |
 | TD-011 | SupabaseIsAuthenticated returns 403 instead of 401 | Resolved (API Consistency Sprint) |
-| TD-013 | Subject key naming split (5+ files to change) | Open |
+| TD-013 | Subject key naming split (5+ files to change) | Resolved (Subject Key Unification Sprint) |
 | TD-014 | localStorage sprawl (20+ keys, no typing) | Open |
 | TD-015 | Frontend/backend merit calculation may disagree | Resolved (TD-002 Sprint) |
 | TD-016 | StpmProgrammeDetailView institution lookup by name | Open |
@@ -500,7 +500,7 @@
 
 **Sprint 6 — Architecture (1-2 sessions)**
 - ~~TD-002, TD-015, TD-017~~: RESOLVED — backend is single source of truth, frontend files deleted
-- TD-013: Subject key naming split (still open, lower risk)
+- ~~TD-013~~: RESOLVED — subject keys unified, GRADE_KEY_MAP removed, subjects.ts is single source of truth
 - ~~TD-045~~: RESOLVED — EligibilityCheckView refactored, business logic extracted to eligibility_service.py
 - TD-021: Refactor EligibilityCheckView into smaller functions (remaining cleanup if needed)
 

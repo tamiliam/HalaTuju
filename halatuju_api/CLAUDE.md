@@ -95,7 +95,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (406 collected, 406 pass, 0 failures, 0 skipped)
+# Run ALL tests (411 collected, 411 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -113,7 +113,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | File | Tests | What's Covered |
 |------|-------|----------------|
 | test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 5319 baseline (DB fixtures) |
-| test_serializers.py | 27 | Grade key mapping, gender/nationality normalization, bool→Ya/Tidak, validation |
+| test_serializers.py | 27 | Grade key passthrough, gender/nationality normalization, bool→Ya/Tidak, validation |
 | test_api.py | 71 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration, Matric/STPM integration, pathway_stats), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering), unified search (both qualifications, qualification filter, STPM field mapping, bumiputera exclusion, filters include qualifications, cross-qualification text search, field filter STPM, level/source_type filter skipping), calculate endpoints (merit, cgpa, pathways with signals) |
 | test_auth.py | 15 | Auth enforcement — protected endpoints reject 401, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
 | test_saved_courses.py | 3 | Saved course CRUD — save (201), list (appears), delete (removed) |
@@ -175,7 +175,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-407 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
+411 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -285,13 +285,19 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Tech debt resolved: TD-044, TD-045. Total: 17/52 resolved.
 - Tests: 406 pass, 0 fail, 0 skip.
 
+**Subject Key Unification Sprint COMPLETE (2026-03-15)**
+- TD-013 resolved: frontend sends engine keys directly, `GRADE_KEY_MAP` and `validate_grades` removed from serializer
+- `subjects.ts` is single source of truth: `SPM_SUBJECTS` array with category metadata, derived exports
+- Report engine `SUBJECT_LABELS` fixed (5 wrong keys corrected, 15 subjects added)
+- Tests: 411 pass, 0 fail, 0 skip
+
 **Pending work**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
 - Store `signal_strength` in Supabase (currently only `student_signals` synced)
 - STPM field metadata refinement: 207 unique field values from Gemini (expected ~30) — consider normalisation pass
-- Continue tech debt remediation from `docs/technical-debt.md` (37 items remaining)
+- Continue tech debt remediation from `docs/technical-debt.md` (31 items remaining)
 - MOHE ePanduan data sync pipeline built (scrape → sync → validate). Annual refresh takes ~15 min.
 
 ## Streamlit App (Legacy — migrating to Django API)

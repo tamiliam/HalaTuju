@@ -1,5 +1,27 @@
 # Changelog — HalaTuju
 
+## Subject Key Unification — TD-013 (2026-03-15)
+
+### Changed
+- SPM grades page (`grades/page.tsx`) now uses engine keys (`bm`, `eng`, `math`) instead of uppercase frontend keys (`BM`, `BI`, `MAT`)
+- Subject arrays removed from grades page — imports `SPM_CORE_SUBJECTS`, `SPM_STREAM_POOLS`, `SPM_ALL_ELECTIVE_SUBJECTS` from `subjects.ts`
+- Subject display names use `getSubjectName()` from `subjects.ts` instead of inline `name` fields or i18n keys
+- `GRADE_KEY_MAP` and `validate_grades` removed from `EligibilityRequestSerializer` — keys pass through as-is
+- Report engine `SUBJECT_LABELS` fixed to use correct engine keys (`sci` not `sc`, `phy` not `phys`, `addmath` not `add_math`, `poa` not `acc`, `ekonomi` not `econ`) and expanded with missing subjects
+- Calculate endpoints (`/calculate/merit/`, `/calculate/pathways/`) no longer reference `GRADE_KEY_MAP`
+- All test files updated to send lowercase engine keys
+
+### Added
+- `SpmSubject` interface and `SPM_SUBJECTS` array in `subjects.ts` — single source of truth with category metadata
+- Derived exports: `SPM_CORE_SUBJECTS`, `SPM_STREAM_POOLS`, `SPM_ALL_ELECTIVE_SUBJECTS`
+- Missing vocational subjects added to `SUBJECT_NAMES` dict (`voc_construct`, `voc_weld`, `voc_auto`, `voc_elec_serv`, `voc_catering`, `voc_tailoring`)
+
+### Stats
+- Tests: 411 collected, 411 pass, 0 failures, 0 skipped
+- Tech debt resolved: TD-013
+
+---
+
 ## Refactoring Sprint — TD-045, TD-044 (2026-03-14)
 
 ### Changed

@@ -11,6 +11,7 @@ These models mirror the CSV data structure from the Streamlit version:
 - course_masco_link.csv → Course.career_occupations (M2M)
 """
 from django.db import models
+from django.db.models import Q
 
 
 class Course(models.Model):
@@ -430,6 +431,9 @@ class StudentProfile(models.Model):
 class SavedCourse(models.Model):
     """
     Courses saved/bookmarked by students.
+
+    Supports both SPM (Course) and STPM (StpmCourse) via two nullable FKs.
+    Exactly one FK must be set per row (enforced by DB check constraint).
     """
     student = models.ForeignKey(
         StudentProfile,
@@ -438,7 +442,15 @@ class SavedCourse(models.Model):
     )
     course = models.ForeignKey(
         Course,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    stpm_course = models.ForeignKey(
+        'StpmCourse',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
     )
     saved_at = models.DateTimeField(auto_now_add=True)
     notes = models.TextField(blank=True)
@@ -456,11 +468,29 @@ class SavedCourse(models.Model):
 
     class Meta:
         db_table = 'saved_courses'
-        unique_together = ['student', 'course']
         ordering = ['-saved_at']
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    Q(course__isnull=False, stpm_course__isnull=True) |
+                    Q(course__isnull=True, stpm_course__isnull=False)
+                ),
+                name='exactly_one_course_type',
+            ),
+        ]
+
+    @property
+    def course_id_value(self):
+        """Return whichever course ID is set."""
+        return self.course_id if self.course_id else self.stpm_course_id
+
+    @property
+    def course_type(self):
+        """Return 'stpm' or 'spm' based on which FK is set."""
+        return 'stpm' if self.stpm_course_id else 'spm'
 
     def __str__(self):
-        return f"{self.student_id} saved {self.course_id}"
+        return f"{self.student_id} saved {self.course_id_value}"
 
 
 class AdmissionOutcome(models.Model):
