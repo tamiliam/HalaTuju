@@ -27,7 +27,6 @@ import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
-import { cgpaToMeritPercent } from '@/lib/stpm'
 
 const RESUME_ACTION_KEY = 'halatuju_resume_action'
 
@@ -609,7 +608,7 @@ function StpmDashboardCards({
   onQuizCta: () => void
 }) {
   const { t } = useT()
-  const studentMerit = cgpaToMeritPercent(stpmData.cgpa)
+  const studentMerit = Math.round((stpmData.cgpa / 4.0) * 10000) / 100
 
   // Map StpmRankedCourse → EligibleCourse and sort
   const sortedCourses = useMemo(() => {
