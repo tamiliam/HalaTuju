@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Tech Debt Sprint 4 (2026-03-14)
+
+### Fixed
+- **TD-001: STPM SPM prerequisite check** — Added `spm_pass_bi` and `spm_pass_math` to `SIMPLE_CHECKS` in `stpm_engine.py`. Zero programmes currently set these flags, so no eligibility results changed. STPM golden master baseline unchanged at 1,811.
+- **TD-050: Quiz language bug** — Quiz page now reads locale from i18n context (`useT()`) instead of non-existent `halatuju_lang` localStorage key. Quiz loads in the user's selected language (EN/BM/TA).
+- **TD-007: Bare except in engine.py** — `check_merit_probability()` now catches `(ValueError, TypeError)` instead of bare `except:`.
+- **TD-020: Duplicate serializer key** — Removed duplicate `credit_stv` entry in `SPECIAL_FIELDS` dict.
+- **TD-018: Duplicate import** — Removed redundant `from django.db.models import Count, Subquery, OuterRef` inside `EligibilityCheckView.post()`.
+- **TD-019: Inline imports** — Moved `json` and `defaultdict` imports from inline method bodies to top of `views.py`.
+
+---
+
 ## [Unreleased] — Hotfix Sprint (2026-03-14)
 
 ### Added

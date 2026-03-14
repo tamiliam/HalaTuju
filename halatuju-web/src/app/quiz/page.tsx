@@ -26,7 +26,7 @@ const ICON_EMOJI: Record<string, string> = {
 export default function QuizPage() {
   const router = useRouter()
   const { isAuthenticated, isLoading: authLoading, showAuthGate } = useAuth()
-  const { t } = useT()
+  const { t, locale } = useT()
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [currentStep, setCurrentStep] = useState(0)
   const [answers, setAnswers] = useState<(number | number[] | null)[]>([])
@@ -37,7 +37,7 @@ export default function QuizPage() {
   // Load questions on mount (only if authenticated)
   useEffect(() => {
     if (authLoading || !isAuthenticated) return
-    const lang = localStorage.getItem('halatuju_lang') || 'en'
+    const lang = locale === 'ms' ? 'bm' : locale
     getQuizQuestions(lang)
       .then(({ questions: qs }) => {
         setQuestions(qs)
@@ -48,7 +48,7 @@ export default function QuizPage() {
         setError('Failed to load quiz questions. Please try again.')
         setLoading(false)
       })
-  }, [authLoading, isAuthenticated])
+  }, [authLoading, isAuthenticated, locale])
 
   // Compute visible questions (filter out conditional questions whose condition is not met)
   const visibleQuestions = useMemo(() => {
@@ -146,7 +146,7 @@ export default function QuizPage() {
   }
 
   const handleSubmit = async () => {
-    const lang = localStorage.getItem('halatuju_lang') || 'en'
+    const lang = locale === 'ms' ? 'bm' : locale
     const quizAnswers: QuizAnswer[] = visibleQuestions.map((q) => {
       const qOrigIdx = questions.indexOf(q)
       const answer = answers[qOrigIdx]

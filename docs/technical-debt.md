@@ -458,14 +458,14 @@
 ### HIGH (8 items)
 | ID | Title | Category | Status |
 |----|-------|----------|--------|
-| TD-001 | STPM SPM prerequisite fields not checked | Correctness bug | Open |
+| TD-001 | STPM SPM prerequisite fields not checked | Correctness bug | Resolved (Sprint 4) |
 | TD-002 | Client-side eligibility logic duplicated | Duplication | Open |
 | TD-003 | Zero frontend tests | Test coverage | Open |
-| TD-007 | Bare except in engine.py | Error handling | Open |
+| TD-007 | Bare except in engine.py | Error handling | Resolved (Sprint 4) |
 | TD-010 | 9 pre-existing auth test failures | Test coverage | Open |
 | TD-012 | DEFAULT_PERMISSION_CLASSES is AllowAny | Security | Open |
 | TD-045 | EligibilityCheckView.post() is 300+ lines | Maintainability | Open |
-| TD-050 | i18n locale key inconsistency (quiz language bug) | Correctness bug | Open |
+| TD-050 | i18n locale key inconsistency (quiz language bug) | Correctness bug | Resolved (Sprint 4) |
 
 ### MEDIUM (22 items)
 | ID | Title | Status |
@@ -496,9 +496,9 @@
 | TD-004 | Mixed HTTP status code style | Open |
 | TD-005 | No standard error response envelope | Open |
 | TD-006 | Inconsistent success response keys (count vs total_count) | Open |
-| TD-018 | Duplicate import of Count, Subquery, OuterRef | Open |
-| TD-019 | Inline json import in views.py | Open |
-| TD-020 | Duplicate credit_stv key in serializer | Open |
+| TD-018 | Duplicate import of Count, Subquery, OuterRef | Resolved (Sprint 4) |
+| TD-019 | Inline json import in views.py | Resolved (Sprint 4) |
+| TD-020 | Duplicate credit_stv key in serializer | Resolved (Sprint 4) |
 | TD-022 | Sort logic duplicated between search and eligibility | Open |
 | TD-023 | Model field name vs engine key inconsistencies | Open |
 | TD-024 | Course name field is just 'course' | Open |

@@ -188,7 +188,7 @@ def check_merit_probability(student_merit, course_cutoff):
     try:
         cutoff = float(course_cutoff)
         merit = float(student_merit)
-    except:
+    except (ValueError, TypeError):
         return "Unknown", "#95a5a6"
 
     gap = merit - cutoff

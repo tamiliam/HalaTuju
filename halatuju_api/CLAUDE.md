@@ -115,7 +115,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (359 collected, 320 pass, 9 pre-existing JWT failures)
+# Run ALL tests (375 collected, 332 pass, 13 pre-existing JWT failures)
 python -m pytest apps/courses/tests/ -v
 
 # Golden master only (8283 baseline)
@@ -170,7 +170,7 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-320 tests must pass out of 359 collected (9 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
+332 tests must pass out of 375 collected (13 JWT auth tests have pre-existing failures — malformed test tokens, not production issue). If golden master deviates from 8283, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -229,6 +229,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 - "Avg. Mata Gred" → "Max Grade Points" with i18n + stream-aware colour logic
 - Arts cutoff corrected to 12 (was 18); 100-course search cap removed
 
+**Tech Debt Sprint 4 COMPLETE (2026-03-14)**
+- 6 items resolved from `docs/technical-debt.md`: TD-001, TD-007, TD-018, TD-019, TD-020, TD-050
+- STPM prerequisite check hardened (spm_pass_bi/spm_pass_math — zero programmes affected, defensive fix)
+- Quiz language bug fixed (was always loading English)
+- Code quality: bare except narrowed, duplicate imports/keys removed
+- Tests: 332 pass / 13 pre-existing JWT failures / 30 skipped
+
 **Pending work**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
@@ -236,6 +243,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Store `signal_strength` in Supabase (currently only `student_signals` synced)
 - STPM field metadata refinement: 207 unique field values from Gemini (expected ~30) — consider normalisation pass
 - Fix 13 pre-existing auth/JWT test failures (test_auth, test_saved_courses, test_views)
+- Continue tech debt remediation from `docs/technical-debt.md` (46 items remaining)
 
 ## Streamlit App (Legacy — migrating to Django API)
 

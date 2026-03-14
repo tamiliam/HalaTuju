@@ -15,8 +15,10 @@ Endpoints:
 - GET/POST /api/v1/outcomes/ - Admission outcomes
 - PUT/DELETE /api/v1/outcomes/<id>/ - Outcome detail
 """
+import json
 import logging
 import math
+from collections import defaultdict
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -351,7 +353,6 @@ class EligibilityCheckView(APIView):
         }
 
         # Pre-fetch institution data per course (count + primary name/state)
-        from django.db.models import Count, Subquery, OuterRef
         first_offering = CourseInstitution.objects.filter(
             course=OuterRef('pk')
         ).order_by('institution__institution_name')
@@ -484,9 +485,6 @@ class EligibilityCheckView(APIView):
         #   1. Collapse entries with identical subject_group_req (regardless of zone)
         #   2. Chinese/Tamil with DIFFERENT requirements from National →
         #      merge into one card "(Aliran Cina/Tamil)" with pismp_languages
-        import json as _json
-        from collections import defaultdict as _dd
-
         def _pismp_zone(cid):
             z = cid[4:6] if len(cid) >= 6 else ''
             if z == '03':
@@ -505,7 +503,7 @@ class EligibilityCheckView(APIView):
                 sgr = row.get('subject_group_req')
                 if sgr is not None:
                     try:
-                        h = _json.dumps(sgr, sort_keys=True) if not isinstance(sgr, str) else sgr
+                        h = json.dumps(sgr, sort_keys=True) if not isinstance(sgr, str) else sgr
                     except (TypeError, ValueError):
                         h = str(sgr)
                 else:
@@ -513,7 +511,7 @@ class EligibilityCheckView(APIView):
                 _req_hash[cid] = h
 
         # Group PISMP by course name
-        pismp_groups = _dd(lambda: {'nat': [], 'cn': [], 'ta': [], 'sn': []})
+        pismp_groups = defaultdict(lambda: {'nat': [], 'cn': [], 'ta': [], 'sn': []})
         non_pismp = []
         for c in eligible_courses:
             if c['source_type'] == 'pismp':
@@ -824,7 +822,6 @@ class CourseDetailView(APIView):
                 # PISMP: find paired language variants for this programme
                 # e.g. if viewing Chinese-medium (03), also check Tamil-medium (04)
                 if req.source_type == 'pismp':
-                    import json as _json
                     zone = course_id[4:6] if len(course_id) >= 6 else ''
                     if zone in ('03', '04'):
                         # Find all zone variants of the same programme name
@@ -837,11 +834,11 @@ class CourseDetailView(APIView):
                         for nr in nat_req:
                             nz = nr.course_id[4:6] if len(nr.course_id) >= 6 else ''
                             if nz in ('01', '06'):
-                                nat_hash = _json.dumps(
+                                nat_hash = json.dumps(
                                     nr.subject_group_req, sort_keys=True
                                 ) if nr.subject_group_req else 'null'
                                 break
-                        my_hash = _json.dumps(
+                        my_hash = json.dumps(
                             req.subject_group_req, sort_keys=True
                         ) if req.subject_group_req else 'null'
                         # Only add languages if this variant differs from National
@@ -850,7 +847,7 @@ class CourseDetailView(APIView):
                             # Check all zone variants for language differences
                             for nr in nat_req:
                                 nz = nr.course_id[4:6] if len(nr.course_id) >= 6 else ''
-                                nr_hash = _json.dumps(
+                                nr_hash = json.dumps(
                                     nr.subject_group_req, sort_keys=True
                                 ) if nr.subject_group_req else 'null'
                                 if nz == '03' and nr_hash != nat_hash:

@@ -85,7 +85,6 @@ class CourseRequirementSerializer(serializers.Serializer):
         'credit_math_sci': 'Kredit Matematik atau Sains',
         'credit_math_sci_tech': 'Kredit Matematik/Sains/Teknikal',
         'pass_stv': 'Lulus Sains/Teknikal/Vokasional',
-        'credit_stv': 'Kredit Sains/Teknikal/Vokasional',
         'three_m_only': 'Boleh membaca, menulis dan mengira (3M)',
         # Grade B
         'credit_bm_b': 'Gred B+ Bahasa Melayu',
