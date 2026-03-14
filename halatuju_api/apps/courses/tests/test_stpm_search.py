@@ -112,3 +112,25 @@ class TestStpmCourseDetailAPI:
         resp = self.client.get(f'/api/v1/stpm/courses/{prog_id}/')
         subjects = resp.json()['requirements']['stpm_subjects']
         assert isinstance(subjects, list)
+
+    def test_stpm_detail_includes_mohe_url(self):
+        """STPM detail endpoint returns mohe_url when set."""
+        from apps.courses.models import StpmCourse
+        course = StpmCourse.objects.first()
+        course.mohe_url = 'https://online.mohe.gov.my/epanduan/test'
+        course.save(update_fields=['mohe_url'])
+
+        resp = self.client.get(f'/api/v1/stpm/courses/{course.course_id}/')
+        assert resp.status_code == 200
+        assert resp.json()['mohe_url'] == 'https://online.mohe.gov.my/epanduan/test'
+
+    def test_stpm_detail_mohe_url_empty_when_not_set(self):
+        """STPM detail endpoint returns empty string when mohe_url not set."""
+        from apps.courses.models import StpmCourse
+        course = StpmCourse.objects.first()
+        course.mohe_url = ''
+        course.save(update_fields=['mohe_url'])
+
+        resp = self.client.get(f'/api/v1/stpm/courses/{course.course_id}/')
+        assert resp.status_code == 200
+        assert resp.json()['mohe_url'] == ''
