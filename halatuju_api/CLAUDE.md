@@ -95,7 +95,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (411 collected, 411 pass, 0 failures, 0 skipped)
+# Run ALL tests (425 collected, 425 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -116,7 +116,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_serializers.py | 27 | Grade key passthrough, gender/nationality normalization, bool→Ya/Tidak, validation |
 | test_api.py | 71 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration, Matric/STPM integration, pathway_stats), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering), unified search (both qualifications, qualification filter, STPM field mapping, bumiputera exclusion, filters include qualifications, cross-qualification text search, field filter STPM, level/source_type filter skipping), calculate endpoints (merit, cgpa, pathways with signals) |
 | test_auth.py | 15 | Auth enforcement — protected endpoints reject 401, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
-| test_saved_courses.py | 3 | Saved course CRUD — save (201), list (appears), delete (removed) |
+| test_saved_courses.py | 17 | SPM save/list/delete/idempotent/course_type, STPM save (auto-detect prefix + explicit type)/list/filter/delete/patch/404, both types list, qualification filter (SPM/STPM), check constraint (both-null/both-set rejected) |
 | test_quiz.py | 24 | Quiz endpoints (questions 3 langs, submit single+multi, validation), engine (multi-select, weight splitting, Not Sure Yet, conditional Q2.5, field_interest, signal strength, lang parity) |
 | test_ranking.py | 62 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, top_5/rest split, API endpoint validation, field interest matching (primary/secondary/no match/multi-field/cap), high_stamina, rote_tolerant, quality_priority, work preference cap, pre-U scoring (Matric/STPM prestige, academic bonus, field preference, signal adjustment, signal cap, routing) |
 | test_data_loading.py | 10 | TVET metadata enrichment, PISMP metadata enrichment, institution modifiers storage, MASCO occupation model (PK, M2M, reverse relation, idempotent load, __str__) |
@@ -175,7 +175,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-411 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
+425 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files

@@ -229,19 +229,26 @@ export async function getInstitutions(options?: ApiOptions): Promise<{ instituti
 
 export interface SavedCourseWithStatus extends Course {
   interest_status: string
+  course_type: 'spm' | 'stpm'
 }
 
-export async function getSavedCourses(options?: ApiOptions): Promise<{ saved_courses: SavedCourseWithStatus[] }> {
-  return apiRequest('/api/v1/saved-courses/', options)
+export async function getSavedCourses(options?: ApiOptions & { qualification?: 'SPM' | 'STPM' }): Promise<{ saved_courses: SavedCourseWithStatus[] }> {
+  const qualification = options?.qualification
+  const url = qualification
+    ? `/api/v1/saved-courses/?qualification=${qualification}`
+    : '/api/v1/saved-courses/'
+  return apiRequest(url, options)
 }
 
 export async function saveCourse(
   courseId: string,
-  options?: ApiOptions
+  options?: ApiOptions & { courseType?: 'spm' | 'stpm' }
 ): Promise<{ message: string }> {
+  const body: Record<string, string> = { course_id: courseId }
+  if (options?.courseType) body.course_type = options.courseType
   return apiRequest('/api/v1/saved-courses/', {
     method: 'POST',
-    body: JSON.stringify({ course_id: courseId }),
+    body: JSON.stringify(body),
     ...options,
   })
 }

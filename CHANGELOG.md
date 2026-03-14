@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Saved Courses Sprint 1 (2026-03-15)
+
+### Added
+- **STPM course saving** — SavedCourse model supports both SPM and STPM courses via dual nullable FKs with DB check constraint
+- **Qualification filter** — `GET /saved-courses/?qualification=SPM|STPM` filters saved courses by type
+- **Auto-detect STPM** — POST with `stpm-*` prefix or explicit `course_type` saves to correct FK
+- **`course_type` in response** — GET /saved-courses/ returns `course_type: 'spm' | 'stpm'` per entry
+- **Frontend types** — `SavedCourseWithStatus.course_type`, `saveCourse` accepts optional `courseType`, `getSavedCourses` accepts optional `qualification` filter
+
+### Changed
+- **SavedCourse model** — `course` FK now nullable, `stpm_course` FK added, `unique_together` replaced with partial unique indexes
+- **SavedCourseDetailView** — DELETE/PATCH check both FKs when looking up saved course
+
+### Database
+- Supabase migration: `stpm_course_id` column, nullable `course_id`, check constraint, partial unique indexes
+
+### Tests
+- Saved courses tests expanded from 3 to 17 (SPM CRUD, STPM CRUD, qualification filter, idempotent save, check constraint enforcement)
+- Full suite: 425 pass, 0 fail, 0 skip
+
+---
+
 ## [Unreleased] — External Links & MOHE Sprint (2026-03-14)
 
 ### Added
