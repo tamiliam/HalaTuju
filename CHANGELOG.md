@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **STPM programme institution enrichment** — Detail API now looks up university in `institutions` table, returning acronym, type, category, state, URL; frontend renders rich institution card matching SPM style
 - **i18n: Max Grade Points** — New key `courseDetail.maxGradePoints` in EN ("Max Grade Points"), BM ("Mata Gred Maksimum"), TA ("அதிகபட்ச தர புள்ளிகள்")
 
+- **STPM sidebar redesign** — Entry Requirements consolidated into unified card matching SPM route: General Requirements (checkmarks), STPM Requirements (key-value table), STPM Subjects (blue pills), SPM Prerequisites (green pills), Special Conditions (separate card with warning icon). STPM Subjects and SPM Prerequisites moved from left column to sidebar.
+
 ### Changed
 - **Search: ILJTM/ILKBS resolution** — Search API now resolves `tvet` → `iljtm`/`ilkbs` using `course_pathway_map`; filter options show ILJTM and ILKBS separately instead of hidden `tvet`
 - **Search: course limit removed** — Backend no longer caps at 100 courses; explore page shows all results

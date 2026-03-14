@@ -225,6 +225,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - ILJTM/ILKBS badges fixed on explore page (search API resolves tvet → iljtm/ilkbs)
 - ILJTM/ILKBS added as separate search filter options
 - STPM programme detail: rich institution cards (acronym, state, category, More Info)
+- STPM sidebar redesign: unified Entry Requirements card (General, STPM Reqs, STPM Subjects, SPM Prerequisites, Special Conditions) matching SPM route pattern
 - "Avg. Mata Gred" → "Max Grade Points" with i18n + stream-aware colour logic
 - Arts cutoff corrected to 12 (was 18); 100-course search cap removed
 
