@@ -30,8 +30,8 @@ const STREAM_META: Record<StreamId, {
   },
 }
 
-function mataGredColor(mg: number | undefined): string {
-  if (mg === undefined) return 'text-gray-500'
+function mataGredColor(mg: number | undefined | null): string {
+  if (mg === undefined || mg === null) return 'text-gray-500'
   if (mg <= 6) return 'text-green-600'
   if (mg <= 12) return 'text-amber-600'
   return 'text-red-600'
@@ -376,12 +376,12 @@ function StpmContent() {
                     Free
                   </span>
                 </div>
-                {currentResult?.mataGred !== undefined && (
+                {currentResult?.mataGred != null && (
                   <div className="flex justify-between items-center">
                     <span className="text-gray-500 text-sm">{t('pathwayDetail.mataGred')}</span>
                     <span className={`font-bold ${mataGredColor(currentResult.mataGred)}`}>
                       {currentResult.mataGred}
-                      {currentResult.maxMataGred !== undefined && (
+                      {currentResult.maxMataGred != null && (
                         <span className="text-gray-400 font-normal text-xs ml-1">
                           / {currentResult.maxMataGred}
                         </span>
