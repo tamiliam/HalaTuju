@@ -14,7 +14,7 @@ import {
   SPM_PREREQ_OPTIONAL,
   SPM_GRADE_OPTIONS,
 } from '@/lib/subjects'
-import { calculateStpmCgpa } from '@/lib/stpm'
+import { calculateCgpa } from '@/lib/api'
 
 type Stream = 'science' | 'arts'
 
@@ -104,18 +104,33 @@ export default function StpmGradesPage() {
     setSpmGrades(prev => ({ ...prev, [subjectId]: grade }))
   }
 
-  const academicCgpa = useMemo(() => {
+  const [academicCgpa, setAcademicCgpa] = useState(0)
+  const [overallCgpa, setOverallCgpa] = useState(0)
+
+  const koko = parseFloat(kokoScore) || 0
+
+  useEffect(() => {
     const gradesWithValues = Object.fromEntries(
       Object.entries(stpmGrades).filter(([, v]) => v !== '')
     )
-    return calculateStpmCgpa(gradesWithValues)
-  }, [stpmGrades])
+    if (Object.keys(gradesWithValues).length === 0) {
+      setAcademicCgpa(0)
+      setOverallCgpa(0)
+      return
+    }
 
-  // Overall CGPA = 90% academic + 10% co-curriculum
-  const koko = parseFloat(kokoScore) || 0
-  const overallCgpa = academicCgpa > 0
-    ? Math.round((academicCgpa * 0.9 + Math.min(koko, 10) * 0.04) * 100) / 100
-    : 0
+    const timer = setTimeout(async () => {
+      try {
+        const result = await calculateCgpa(gradesWithValues, koko)
+        setAcademicCgpa(result.academic_cgpa)
+        setOverallCgpa(result.cgpa)
+      } catch {
+        // Silently fail
+      }
+    }, 400)
+
+    return () => clearTimeout(timer)
+  }, [stpmGrades, koko])
 
   const gradedSubjects = Object.entries(stpmGrades).filter(([, v]) => v !== '')
   const isComplete = stpmGrades.PA !== '' && stpmGrades.PA !== undefined
