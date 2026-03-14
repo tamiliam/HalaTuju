@@ -165,6 +165,65 @@ class TestComputeCourseMerit(TestCase):
             self.assertIsNotNone(result['merit_display_student'])
             self.assertIsNotNone(result['merit_display_cutoff'])
 
+    def test_stpm_science_at_threshold_is_high(self):
+        """Science mata_gred 18 (exactly at max) → High, not Fair."""
+        from apps.courses.eligibility_service import compute_course_merit
+        # C grades give mata_gred=6 each, 3 subjects = 18
+        grades = {
+            'bm': 'C', 'math': 'C', 'phy': 'C', 'chem': 'C',
+        }
+        result = compute_course_merit(
+            merit_type='stpm_mata_gred',
+            source_type='stpm',
+            merit_cutoff=None,
+            student_merit=90.0,
+            course_id='stpm-sains',
+            data={},
+            grades=grades,
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result['merit_label'], 'High')
+        self.assertEqual(result['merit_display_student'], '18')
+
+    def test_stpm_socsci_at_12_is_high(self):
+        """Sains Sosial mata_gred exactly 12 → High."""
+        from apps.courses.eligibility_service import compute_course_merit
+        # B=4 for 3 subjects, bm=C(6) as 4th candidate → best 3 = 4+4+4 = 12
+        grades = {
+            'bm': 'C', 'hist': 'B', 'geo': 'B', 'ekonomi': 'B',
+        }
+        result = compute_course_merit(
+            merit_type='stpm_mata_gred',
+            source_type='stpm',
+            merit_cutoff=None,
+            student_merit=90.0,
+            course_id='stpm-sains-sosial',
+            data={},
+            grades=grades,
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result['merit_label'], 'High')
+
+    def test_stpm_socsci_at_15_is_fair(self):
+        """Sains Sosial mata_gred 15 (between 12 and 18) → Fair (appealable)."""
+        from apps.courses.eligibility_service import compute_course_merit
+        # C+=5 for three non-bm subjects → best 3 = 5+5+5 = 15
+        # bm=C (mg=6) is 4th candidate, not in best 3
+        grades = {
+            'bm': 'C', 'hist': 'C+', 'geo': 'C+', 'ekonomi': 'C+',
+        }
+        result = compute_course_merit(
+            merit_type='stpm_mata_gred',
+            source_type='stpm',
+            merit_cutoff=None,
+            student_merit=90.0,
+            course_id='stpm-sains-sosial',
+            data={},
+            grades=grades,
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result['merit_label'], 'Fair')
+
 
 class TestDeduplicatePismp(TestCase):
     """Test PISMP zone variant deduplication."""

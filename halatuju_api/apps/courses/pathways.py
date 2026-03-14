@@ -211,9 +211,9 @@ STPM_SOCSCI_GROUPS = [
 
 STPM_BIDANGS = [
     {'id': 'sains', 'name': 'Science', 'name_ms': 'Sains',
-     'name_ta': 'அறிவியல்', 'max_mata_gred': 18},
+     'name_ta': 'அறிவியல்', 'max_mata_gred': 18, 'high_mata_gred': 18},
     {'id': 'sains_sosial', 'name': 'Social Science', 'name_ms': 'Sains Sosial',
-     'name_ta': 'சமூக அறிவியல்', 'max_mata_gred': 18},
+     'name_ta': 'சமூக அறிவியல்', 'max_mata_gred': 18, 'high_mata_gred': 12},
 ]
 
 _STPM_BIDANG_MAP = {b['id']: b for b in STPM_BIDANGS}
@@ -288,6 +288,7 @@ def check_stpm_bidang(bidang_id, grades):
         'merit': None,
         'mata_gred': total_mata_gred,
         'max_mata_gred': bidang['max_mata_gred'],
+        'high_mata_gred': bidang['high_mata_gred'],
         'reason': None,
     }
 

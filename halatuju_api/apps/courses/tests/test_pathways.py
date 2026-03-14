@@ -243,6 +243,18 @@ class TestStpmMataGred:
         assert result['eligible'] is True
         assert result['mata_gred'] == 18
 
+    def test_high_mata_gred_returned_for_science(self):
+        grades = {'bm': 'A', 'math': 'A', 'phy': 'A', 'chem': 'A'}
+        result = check_stpm_bidang('sains', grades)
+        assert result['eligible'] is True
+        assert result['high_mata_gred'] == 18  # Science: ≤18 = High
+
+    def test_high_mata_gred_returned_for_socsci(self):
+        grades = {'bm': 'A', 'hist': 'A', 'geo': 'A', 'ekonomi': 'A'}
+        result = check_stpm_bidang('sains_sosial', grades)
+        assert result['eligible'] is True
+        assert result['high_mata_gred'] == 12  # Sains Sosial: ≤12 = High
+
     def test_exceeds_threshold(self):
         # Need credits from 3 different groups, all D = mg 7 each → 21 > 18
         # But D is not a credit (mg=7 > 6), so they won't even qualify

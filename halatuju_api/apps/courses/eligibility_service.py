@@ -18,6 +18,16 @@ from .engine import (
 from .pathways import check_matric_track, check_stpm_bidang
 from .ranking_engine import get_credential_priority
 
+# Merit label/colour constants — single source of truth for all merit types
+MERIT_HIGH = ("High", "#2ecc71")
+MERIT_FAIR = ("Fair", "#f1c40f")
+MERIT_LOW = ("Low", "#e74c3c")
+
+# Matric merit thresholds (grade-point scale, higher = better)
+MATRIC_HIGH_THRESHOLD = 94
+MATRIC_FAIR_THRESHOLD = 89
+
+
 
 def compute_student_merit(data):
     """
@@ -73,12 +83,12 @@ def compute_course_merit(merit_type, source_type, merit_cutoff, student_merit,
             matric_result = check_matric_track(track_id, grades, coq)
             if matric_result['eligible'] and matric_result['merit'] is not None:
                 student_merit_for_course = matric_result['merit']
-                if student_merit_for_course >= 94:
-                    merit_label, merit_color = "High", "#2ecc71"
-                elif student_merit_for_course >= 89:
-                    merit_label, merit_color = "Fair", "#f1c40f"
+                if student_merit_for_course >= MATRIC_HIGH_THRESHOLD:
+                    merit_label, merit_color = MERIT_HIGH
+                elif student_merit_for_course >= MATRIC_FAIR_THRESHOLD:
+                    merit_label, merit_color = MERIT_FAIR
                 else:
-                    merit_label, merit_color = "Low", "#e74c3c"
+                    merit_label, merit_color = MERIT_LOW
             else:
                 return None  # Skip — pathway says not eligible
 
@@ -89,12 +99,13 @@ def compute_course_merit(merit_type, source_type, merit_cutoff, student_merit,
             if stpm_result['eligible'] and stpm_result['mata_gred'] is not None:
                 mata_gred = stpm_result['mata_gred']
                 max_mg = stpm_result['max_mata_gred']
-                if mata_gred <= 12:
-                    merit_label, merit_color = "High", "#2ecc71"
+                high_mg = stpm_result['high_mata_gred']
+                if mata_gred <= high_mg:
+                    merit_label, merit_color = MERIT_HIGH
                 elif mata_gred <= max_mg:
-                    merit_label, merit_color = "Fair", "#f1c40f"
+                    merit_label, merit_color = MERIT_FAIR
                 else:
-                    merit_label, merit_color = "Low", "#e74c3c"
+                    merit_label, merit_color = MERIT_LOW
                 merit_display_student = str(mata_gred)
                 merit_display_cutoff = str(max_mg)
                 student_merit_for_course = (27 - mata_gred) / 24 * 100
