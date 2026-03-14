@@ -43,10 +43,10 @@ class Command(BaseCommand):
         self.stdout.write(f'SPM field taxonomy ({len(spm_fields)} categories): {spm_fields}')
 
         # Get STPM courses to classify
-        qs = StpmCourse.objects.all().order_by('program_id')
+        qs = StpmCourse.objects.all().order_by('course_id')
         if options['only_empty']:
             qs = qs.filter(field='')
-        courses = list(qs.values_list('program_id', 'program_name', 'university', 'stream'))
+        courses = list(qs.values_list('course_id', 'course_name', 'university', 'stream'))
         self.stdout.write(f'Courses to classify: {len(courses)}')
 
         batch_size = options['batch_size']
@@ -88,7 +88,7 @@ Return ONLY valid JSON array, no markdown fences."""
                 for item in results:
                     pid = item.get('program_id', '')
                     if options['save']:
-                        StpmCourse.objects.filter(program_id=pid).update(
+                        StpmCourse.objects.filter(course_id=pid).update(
                             field=item.get('field', ''),
                             category=item.get('category', ''),
                             description=item.get('description', ''),

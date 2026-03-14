@@ -506,9 +506,9 @@ export async function syncProfile(
 }
 
 // STPM types
-export interface StpmEligibleProgramme {
-  program_id: string
-  program_name: string
+export interface StpmEligibleCourse {
+  course_id: string
+  course_name: string
   university: string
   stream: string
   field: string
@@ -531,7 +531,7 @@ export interface StpmEligibilityRequest {
 }
 
 export interface StpmEligibilityResponse {
-  eligible_programmes: StpmEligibleProgramme[]
+  eligible_courses: StpmEligibleCourse[]
   total_eligible: number
 }
 
@@ -546,23 +546,23 @@ export async function checkStpmEligibility(
   })
 }
 
-export interface StpmRankedProgramme extends StpmEligibleProgramme {
+export interface StpmRankedCourse extends StpmEligibleCourse {
   fit_score: number
   fit_reasons: string[]
 }
 
 export interface StpmRankingRequest {
-  eligible_programmes: StpmEligibleProgramme[]
+  eligible_courses: StpmEligibleCourse[]
   student_cgpa: number
   student_signals: Record<string, unknown>
 }
 
 export interface StpmRankingResponse {
-  ranked_programmes: StpmRankedProgramme[]
+  ranked_courses: StpmRankedCourse[]
   total: number
 }
 
-export async function rankStpmProgrammes(
+export async function rankStpmCourses(
   data: StpmRankingRequest,
   options?: ApiOptions
 ): Promise<StpmRankingResponse> {
@@ -588,7 +588,7 @@ export interface StpmSearchFilters {
 }
 
 export interface StpmSearchResponse {
-  programmes: StpmEligibleProgramme[]
+  courses: StpmEligibleCourse[]
   total_count: number
   filters: StpmSearchFilters
 }
@@ -619,9 +619,9 @@ export interface StpmInstitutionDetail {
   url: string
 }
 
-export interface StpmProgrammeDetail {
-  program_id: string
-  program_name: string
+export interface StpmCourseDetail {
+  course_id: string
+  course_name: string
   university: string
   stream: string
   field: string
@@ -632,7 +632,7 @@ export interface StpmProgrammeDetail {
   institution: StpmInstitutionDetail | null
 }
 
-export async function searchStpmProgrammes(
+export async function searchStpmCourses(
   params: StpmSearchParams = {},
   options?: ApiOptions
 ): Promise<StpmSearchResponse> {
@@ -646,9 +646,9 @@ export async function searchStpmProgrammes(
   return apiRequest(`/api/v1/stpm/search/${qs ? `?${qs}` : ''}`, options)
 }
 
-export async function getStpmProgrammeDetail(
-  programId: string,
+export async function getStpmCourseDetail(
+  courseId: string,
   options?: ApiOptions
-): Promise<StpmProgrammeDetail> {
-  return apiRequest(`/api/v1/stpm/programmes/${programId}/`, options)
+): Promise<StpmCourseDetail> {
+  return apiRequest(`/api/v1/stpm/courses/${courseId}/`, options)
 }

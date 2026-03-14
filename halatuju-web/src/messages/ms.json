@@ -449,8 +449,8 @@
     "helpClosing": "HalaTuju adalah platform yang berkembang — kami terus menambah kursus dan memperbaiki cadangan. Jika anda mempunyai maklum balas atau ingin menyumbang, kami ingin mendengar daripada anda."
   },
   "stpm": {
-    "searchTitle": "Layari Program Ijazah STPM",
-    "searchPlaceholder": "Cari program...",
+    "searchTitle": "Layari Kursus Ijazah STPM",
+    "searchPlaceholder": "Cari kursus...",
     "universityFilter": "Universiti",
     "streamFilter": "Aliran",
     "allUniversities": "Semua Universiti",
@@ -458,12 +458,12 @@
     "science": "Sains",
     "arts": "Sastera",
     "both": "Kedua-dua",
-    "programmesFound": "program dijumpai",
+    "programmesFound": "kursus dijumpai",
     "loadMore": "Muat Lagi",
     "remaining": "lagi",
     "backToResults": "Kembali ke Hasil",
     "backToDashboard": "Kembali ke Papan Pemuka",
-    "programmeDetail": "Butiran Program",
+    "programmeDetail": "Butiran Kursus",
     "requirements": "Syarat Kemasukan",
     "stpmSubjects": "Mata Pelajaran STPM Diperlukan",
     "spmPrerequisites": "Prasyarat SPM",
@@ -476,8 +476,8 @@
     "medicalFitness": "Kecergasan Perubatan Diperlukan",
     "malaysianOnly": "Warganegara Malaysia Sahaja",
     "bumiputeraOnly": "Bumiputera Sahaja",
-    "noResults": "Tiada program dijumpai",
+    "noResults": "Tiada kursus dijumpai",
     "noResultsDesc": "Cuba laraskan carian atau penapis anda",
-    "browseAll": "Layari Semua Program"
+    "browseAll": "Layari Semua Kursus"
   }
 }

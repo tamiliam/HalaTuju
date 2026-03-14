@@ -3,13 +3,13 @@
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { getStpmProgrammeDetail, saveCourse, unsaveCourse } from '@/lib/api'
+import { getStpmCourseDetail, saveCourse, unsaveCourse } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 import { useState } from 'react'
 
-export default function StpmProgrammeDetailPage() {
+export default function StpmCourseDetailPage() {
   const params = useParams()
   const id = params.id as string
   const { t } = useT()
@@ -17,8 +17,8 @@ export default function StpmProgrammeDetailPage() {
   const [saving, setSaving] = useState(false)
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['stpm_programme', id],
-    queryFn: () => getStpmProgrammeDetail(id),
+    queryKey: ['stpm_course', id],
+    queryFn: () => getStpmCourseDetail(id),
   })
 
   const handleSave = async () => {
@@ -42,7 +42,7 @@ export default function StpmProgrammeDetailPage() {
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent mb-4" />
-          <p className="text-gray-600">Loading programme details...</p>
+          <p className="text-gray-600">Loading course details...</p>
         </div>
       </main>
     )
@@ -52,7 +52,7 @@ export default function StpmProgrammeDetailPage() {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Programme not found</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Course not found</h1>
           <p className="text-gray-600 mb-6">{t('courseDetail.notFound')}</p>
           <Link href="/dashboard" className="btn-primary">
             Back to Dashboard
@@ -72,7 +72,7 @@ export default function StpmProgrammeDetailPage() {
     <main className="min-h-screen bg-gray-50">
       <AppHeader />
 
-      {/* Programme Header */}
+      {/* Course Header */}
       <section className="bg-white border-b">
         <div className="container mx-auto px-6 py-8">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
@@ -88,7 +88,7 @@ export default function StpmProgrammeDetailPage() {
                 </span>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {data.program_name}
+                {data.course_name}
               </h1>
               <p className="text-lg text-primary-600 font-medium">
                 {data.university}

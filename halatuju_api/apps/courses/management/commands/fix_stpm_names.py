@@ -1,5 +1,5 @@
 """
-One-shot management command to reformat existing StpmCourse.program_name
+One-shot management command to reformat existing StpmCourse.course_name
 values to proper title case.
 
 Usage:
@@ -35,18 +35,18 @@ class Command(BaseCommand):
         changed = 0
 
         for course in courses.iterator():
-            new_name = proper_case_name(course.program_name)
-            if new_name != course.program_name:
+            new_name = proper_case_name(course.course_name)
+            if new_name != course.course_name:
                 if dry_run:
-                    self.stdout.write(f'  {course.program_name!r}')
+                    self.stdout.write(f'  {course.course_name!r}')
                     self.stdout.write(f'    -> {new_name!r}')
                 else:
-                    course.program_name = new_name
+                    course.course_name = new_name
                     to_update.append(course)
                 changed += 1
 
         if not dry_run and to_update:
-            StpmCourse.objects.bulk_update(to_update, ['program_name'])
+            StpmCourse.objects.bulk_update(to_update, ['course_name'])
             self.stdout.write(
                 self.style.SUCCESS(
                     f'Done: updated {changed} of {total} programme names.'

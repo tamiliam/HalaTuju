@@ -25,7 +25,7 @@ class TestStpmDataLoading:
         assert courses == requirements
 
     def test_load_correct_count(self):
-        """Should load ~1,113 unique programmes from two CSVs with overlap."""
+        """Should load ~1,113 unique courses from two CSVs with overlap."""
         count = StpmCourse.objects.count()
         assert 1000 < count < 1300, f'Expected ~1113, got {count}'
 
@@ -60,19 +60,19 @@ class TestStpmDataLoading:
         assert courses_with_merit.count() > 0
 
     def test_merit_score_tiada_is_null(self):
-        """Programmes with 'Tiada' merit have null merit_score."""
+        """Courses with 'Tiada' merit have null merit_score."""
         courses_without_merit = StpmCourse.objects.filter(
             merit_score__isnull=True
         )
         assert courses_without_merit.exists()
 
-    def test_program_names_are_proper_case(self):
-        """After loading, no program_name should contain a plain all-caps word > 2 chars."""
+    def test_course_names_are_proper_case(self):
+        """After loading, no course_name should contain a plain all-caps word > 2 chars."""
         import re
         bad = [
-            c.program_name
+            c.course_name
             for c in StpmCourse.objects.all()
-            if re.search(r'\b[A-Z]{3,}\b', c.program_name)
+            if re.search(r'\b[A-Z]{3,}\b', c.course_name)
         ]
         assert bad == [], f'Found {len(bad)} names still in all-caps: {bad[:5]}'
 

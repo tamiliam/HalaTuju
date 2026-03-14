@@ -512,7 +512,7 @@ class AdmissionOutcome(models.Model):
 
 
 class StpmCourse(models.Model):
-    """STPM degree programme offered by a public university."""
+    """STPM degree course offered by a public university."""
 
     STREAM_CHOICES = [
         ('science', 'Science'),
@@ -520,8 +520,8 @@ class StpmCourse(models.Model):
         ('both', 'Both'),
     ]
 
-    program_id = models.CharField(max_length=50, primary_key=True)
-    program_name = models.CharField(max_length=500)
+    course_id = models.CharField(max_length=50, primary_key=True, db_column='program_id')
+    course_name = models.CharField(max_length=500, db_column='program_name')
     university = models.CharField(max_length=255)
     stream = models.CharField(
         max_length=20, choices=STREAM_CHOICES, default='both'
@@ -529,18 +529,18 @@ class StpmCourse(models.Model):
     merit_score = models.FloatField(null=True, blank=True, help_text='UPU average merit percentage (0-100)')
     field = models.CharField(max_length=255, blank=True, default='', help_text='AI-assigned field category')
     category = models.CharField(max_length=255, blank=True, default='', help_text='AI-assigned category (Malay)')
-    description = models.TextField(blank=True, default='', help_text='AI-generated programme description')
+    description = models.TextField(blank=True, default='', help_text='AI-generated course description')
 
     class Meta:
         db_table = 'stpm_courses'
-        ordering = ['university', 'program_name']
+        ordering = ['university', 'course_name']
 
     def __str__(self):
-        return f"{self.program_id}: {self.program_name}"
+        return f"{self.course_id}: {self.course_name}"
 
 
 class StpmRequirement(models.Model):
-    """Admission requirements for an STPM degree programme."""
+    """Admission requirements for an STPM degree course."""
 
     course = models.OneToOneField(
         StpmCourse,

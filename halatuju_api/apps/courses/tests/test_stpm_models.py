@@ -8,14 +8,14 @@ class TestStpmCourseCreation:
 
     def test_stpm_course_creation(self):
         course = StpmCourse.objects.create(
-            program_id='UM-CS-001',
-            program_name='Bachelor of Computer Science',
+            course_id='UM-CS-001',
+            course_name='Bachelor of Computer Science',
             university='Universiti Malaya',
             stream='science',
         )
         course.refresh_from_db()
-        assert course.program_id == 'UM-CS-001'
-        assert course.program_name == 'Bachelor of Computer Science'
+        assert course.course_id == 'UM-CS-001'
+        assert course.course_name == 'Bachelor of Computer Science'
         assert course.university == 'Universiti Malaya'
         assert course.stream == 'science'
         assert str(course) == 'UM-CS-001: Bachelor of Computer Science'
@@ -26,8 +26,8 @@ class TestStpmRequirementCreation:
 
     def test_stpm_requirement_creation(self):
         course = StpmCourse.objects.create(
-            program_id='USM-ENG-010',
-            program_name='Bachelor of Engineering',
+            course_id='USM-ENG-010',
+            course_name='Bachelor of Engineering',
             university='Universiti Sains Malaysia',
             stream='science',
         )
@@ -60,8 +60,8 @@ class TestStpmRequirementCreation:
 
     def test_stpm_requirement_subject_group_json(self):
         course = StpmCourse.objects.create(
-            program_id='UKM-SCI-005',
-            program_name='Bachelor of Science',
+            course_id='UKM-SCI-005',
+            course_name='Bachelor of Science',
             university='Universiti Kebangsaan Malaysia',
         )
         group_data = {
@@ -87,8 +87,8 @@ class TestStpmCourseMeritScore:
     def test_stpm_course_merit_score(self):
         """StpmCourse stores merit_score as nullable float."""
         course = StpmCourse.objects.create(
-            program_id='MERIT001',
-            program_name='Test Merit Programme',
+            course_id='MERIT001',
+            course_name='Test Merit Programme',
             university='Test University',
             stream='science',
             merit_score=96.04,
@@ -99,8 +99,8 @@ class TestStpmCourseMeritScore:
     def test_stpm_course_merit_score_null(self):
         """StpmCourse merit_score can be null (Tiada)."""
         course = StpmCourse.objects.create(
-            program_id='MERIT002',
-            program_name='No Merit Programme',
+            course_id='MERIT002',
+            course_name='No Merit Programme',
             university='Test University',
             stream='arts',
         )
@@ -114,8 +114,8 @@ class TestStpmCourseMetadata:
     def test_stpm_course_metadata_fields(self):
         """StpmCourse has field, category, and description columns."""
         course = StpmCourse.objects.create(
-            program_id='TEST-META-001',
-            program_name='Test Programme',
+            course_id='TEST-META-001',
+            course_name='Test Programme',
             university='Test University',
             stream='science',
             field='Engineering',
@@ -130,8 +130,8 @@ class TestStpmCourseMetadata:
     def test_stpm_course_metadata_defaults_blank(self):
         """Metadata fields default to empty string."""
         course = StpmCourse.objects.create(
-            program_id='TEST-META-002',
-            program_name='Test Programme 2',
+            course_id='TEST-META-002',
+            course_name='Test Programme 2',
             university='Test University',
         )
         assert course.field == ''

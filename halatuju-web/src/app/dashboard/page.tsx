@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   checkEligibility,
   checkStpmEligibility,
-  rankStpmProgrammes,
+  rankStpmCourses,
   getSavedCourses,
   saveCourse,
   unsaveCourse,
@@ -18,8 +18,8 @@ import {
   type EligibleCourse,
   type RankedCourse,
   type RankingResult,
-  type StpmEligibleProgramme,
-  type StpmRankedProgramme,
+  type StpmEligibleCourse,
+  type StpmRankedCourse,
 } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import CourseCard from '@/components/CourseCard'
@@ -67,7 +67,7 @@ export default function DashboardPage() {
     muetBand: number
     spmGrades: Record<string, string>
   } | null>(null)
-  const [stpmResults, setStpmResults] = useState<StpmRankedProgramme[] | null>(null)
+  const [stpmResults, setStpmResults] = useState<StpmRankedCourse[] | null>(null)
 
   // Load profile from localStorage on mount
   useEffect(() => {
@@ -149,13 +149,13 @@ export default function DashboardPage() {
       // Chain ranking after eligibility
       const signalsStr = localStorage.getItem('halatuju_quiz_signals')
       const signals = signalsStr ? JSON.parse(signalsStr) : {}
-      return rankStpmProgrammes({
-        eligible_programmes: data.eligible_programmes,
+      return rankStpmCourses({
+        eligible_courses: data.eligible_courses,
         student_cgpa: stpmData.cgpa,
         student_signals: signals,
       })
     }).then(ranked => {
-      setStpmResults(ranked.ranked_programmes)
+      setStpmResults(ranked.ranked_courses)
     }).catch(err => {
       console.error('STPM eligibility/ranking failed:', err)
       setStpmResults([])
@@ -599,7 +599,7 @@ function StpmDashboardCards({
   quizSignals,
   onQuizCta,
 }: {
-  stpmResults: StpmRankedProgramme[]
+  stpmResults: StpmRankedCourse[]
   stpmData: { cgpa: number }
   displayCount: number
   setDisplayCount: (n: number | ((prev: number) => number)) => void
@@ -611,7 +611,7 @@ function StpmDashboardCards({
   const { t } = useT()
   const studentMerit = cgpaToMeritPercent(stpmData.cgpa)
 
-  // Map StpmRankedProgramme → EligibleCourse and sort
+  // Map StpmRankedCourse → EligibleCourse and sort
   const sortedCourses = useMemo(() => {
     const mapped = stpmResults.map(prog => {
       const level = getMeritLevel(studentMerit, prog.merit_score)
@@ -620,8 +620,8 @@ function StpmDashboardCards({
       const meritColor = level === 'high' ? 'green' : level === 'fair' ? 'amber' : level === 'low' ? 'red' : null
 
       const course: EligibleCourse = {
-        course_id: prog.program_id,
-        course_name: prog.program_name,
+        course_id: prog.course_id,
+        course_name: prog.course_name,
         level: 'Ijazah Sarjana Muda',
         field: prog.field || '',
         source_type: 'ua',

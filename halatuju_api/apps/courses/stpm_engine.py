@@ -1,5 +1,5 @@
 """
-STPM eligibility engine — checks STPM student grades against degree programme requirements.
+STPM eligibility engine — checks STPM student grades against degree course requirements.
 """
 
 # STPM CGPA scale (official MQA scale)
@@ -186,7 +186,7 @@ def check_stpm_subject_group(req, stpm_grades):
 def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
                             gender='', nationality='Warganegara',
                             colorblind='Tidak', disability='Tidak'):
-    """Check which STPM degree programmes a student qualifies for.
+    """Check which STPM degree courses a student qualifies for.
 
     Args:
         stpm_grades: {'PA': 'A', 'MATH_T': 'B+', ...}
@@ -196,7 +196,7 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
         gender, nationality, colorblind, disability: demographic strings
 
     Returns:
-        List of dicts, each with: program_id, program_name, university, stream,
+        List of dicts, each with: course_id, course_name, university, stream,
         min_cgpa, min_muet_band, req_interview, no_colorblind
     """
     # Import inside function to avoid circular imports and keep pure functions testable
@@ -219,7 +219,7 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
             continue
         if req.no_colorblind and colorblind == 'Ya':
             continue
-        # Bumiputera-only programmes (e.g. UiTM) are out of scope
+        # Bumiputera-only courses (e.g. UiTM) are out of scope
         if req.req_bumiputera:
             continue
 
@@ -242,8 +242,8 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
         # All checks passed — add to eligible list
         course = req.course
         eligible.append({
-            'program_id': course.program_id,
-            'program_name': course.program_name,
+            'course_id': course.course_id,
+            'course_name': course.course_name,
             'university': course.university,
             'stream': course.stream,
             'field': course.field or '',

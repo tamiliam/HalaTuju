@@ -229,7 +229,7 @@ class Command(BaseCommand):
                         except ValueError:
                             pass
                     StpmCourse.objects.filter(
-                        program_id=program_id
+                        course_id=program_id
                     ).update(merit_score=merit_val)
                     updated += 1
         self.stdout.write(
@@ -250,13 +250,13 @@ class Command(BaseCommand):
 
                 # --- StpmCourse fields ---
                 course_defaults = {
-                    'program_name': proper_case_name(row.get('program_name', '').strip()),
+                    'course_name': proper_case_name(row.get('program_name', '').strip()),
                     'university': row.get('university', '').strip(),
                     'stream': row.get('stream', 'both').strip() or 'both',
                 }
 
                 course, _ = StpmCourse.objects.update_or_create(
-                    program_id=program_id,
+                    course_id=program_id,
                     defaults=course_defaults,
                 )
 

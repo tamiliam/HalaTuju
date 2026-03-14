@@ -54,7 +54,7 @@ class TestStpmEligibility:
         call_command('load_stpm_data', stdout=StringIO())
 
     def test_strong_science_student_gets_results(self):
-        """Perfect science student should qualify for many programmes."""
+        """Perfect science student should qualify for many courses."""
         results = check_stpm_eligibility(
             stpm_grades={'PA': 'A', 'MATH_T': 'A', 'PHYSICS': 'A-', 'CHEMISTRY': 'A'},
             spm_grades={'bm': 'A', 'eng': 'A', 'hist': 'A', 'math': 'A+', 'addmath': 'A', 'sci': 'A'},
@@ -87,7 +87,7 @@ class TestStpmEligibility:
             assert r['min_muet_band'] <= 2
 
     def test_subject_requirement_check(self):
-        """Arts-only student should not see programmes requiring Physics."""
+        """Arts-only student should not see courses requiring Physics."""
         results = check_stpm_eligibility(
             stpm_grades={'PA': 'A', 'ECONOMICS': 'A', 'ACCOUNTING': 'A'},
             spm_grades={'bm': 'A', 'eng': 'A', 'hist': 'A', 'math': 'A'},
@@ -101,8 +101,8 @@ class TestStpmEligibility:
             .values_list('course_id', flat=True)
         )
         for r in results:
-            assert r['program_id'] not in physics_ids, (
-                f"{r['program_name']} requires Physics but student has none"
+            assert r['course_id'] not in physics_ids, (
+                f"{r['course_name']} requires Physics but student has none"
             )
 
     def test_result_shape(self):
@@ -114,7 +114,7 @@ class TestStpmEligibility:
         )
         assert len(results) > 0
         r = results[0]
-        for key in ['program_id', 'program_name', 'university', 'stream',
+        for key in ['course_id', 'course_name', 'university', 'stream',
                      'min_cgpa', 'min_muet_band', 'req_interview', 'no_colorblind']:
             assert key in r, f"Missing key: {key}"
 
@@ -132,8 +132,8 @@ class TestStpmEligibility:
         )
         assert len(all_results) >= len(cb_results)
 
-    def test_eligible_programme_includes_merit(self):
-        """Eligible programmes include merit_score field."""
+    def test_eligible_course_includes_merit(self):
+        """Eligible courses include merit_score field."""
         results = check_stpm_eligibility(
             stpm_grades={'PA': 'A', 'MATH_T': 'A', 'PHYSICS': 'A', 'CHEMISTRY': 'A'},
             spm_grades={'bm': 'A', 'eng': 'A', 'hist': 'A', 'math': 'A'},

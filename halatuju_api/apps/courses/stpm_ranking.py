@@ -1,10 +1,10 @@
 """
-STPM programme ranking engine.
+STPM course ranking engine.
 
-Scores eligible STPM programmes based on:
+Scores eligible STPM courses based on:
 1. CGPA margin (student CGPA - min_cgpa) — higher margin = safer admission
-2. Field interest match (programme name keywords vs quiz signals)
-3. Interview penalty (slight discount for programmes requiring interview)
+2. Field interest match (course name keywords vs quiz signals)
+3. Interview penalty (slight discount for courses requiring interview)
 
 Scoring:
   BASE = 50
@@ -20,8 +20,8 @@ CGPA_MARGIN_MULTIPLIER = 20  # points per 1.0 CGPA margin
 FIELD_MATCH_BONUS = 10
 INTERVIEW_PENALTY = 3
 
-# Programme name keywords → field interest signals
-PROGRAMME_FIELD_MAP = {
+# Course name keywords → field interest signals
+COURSE_FIELD_MAP = {
     'kejuruteraan': ['field_mechanical', 'field_electrical', 'field_civil', 'field_heavy_industry'],
     'engineering': ['field_mechanical', 'field_electrical', 'field_civil', 'field_heavy_industry'],
     'sains komputer': ['field_digital'],
@@ -48,13 +48,13 @@ PROGRAMME_FIELD_MAP = {
 }
 
 
-def _match_field_interest(program_name: str, signals: Dict) -> bool:
-    """Check if programme name keywords match student's field interests."""
+def _match_field_interest(course_name: str, signals: Dict) -> bool:
+    """Check if course name keywords match student's field interests."""
     field_interests = signals.get('field_interest', {})
     if not field_interests:
         return False
-    name_lower = program_name.lower()
-    for keyword, fields in PROGRAMME_FIELD_MAP.items():
+    name_lower = course_name.lower()
+    for keyword, fields in COURSE_FIELD_MAP.items():
         if keyword in name_lower:
             if any(f in field_interests for f in fields):
                 return True
@@ -62,14 +62,14 @@ def _match_field_interest(program_name: str, signals: Dict) -> bool:
 
 
 def calculate_stpm_fit_score(
-    programme: Dict,
+    course: Dict,
     student_cgpa: float,
     signals: Dict,
 ) -> Tuple[float, List[str]]:
-    """Calculate fit score for a single STPM programme.
+    """Calculate fit score for a single STPM course.
 
     Args:
-        programme: Eligible programme dict from stpm_engine
+        course: Eligible course dict from stpm_engine
         student_cgpa: Student's calculated STPM CGPA
         signals: Quiz signals dict (field_interest, work_preference, etc.)
 
@@ -80,7 +80,7 @@ def calculate_stpm_fit_score(
     reasons = []
 
     # 1. CGPA margin bonus
-    margin = student_cgpa - programme['min_cgpa']
+    margin = student_cgpa - course['min_cgpa']
     capped_margin = min(margin, CGPA_MARGIN_CAP)
     cgpa_bonus = round(capped_margin * CGPA_MARGIN_MULTIPLIER, 1)
     if cgpa_bonus > 0:
@@ -88,12 +88,12 @@ def calculate_stpm_fit_score(
         reasons.append(f'CGPA margin: +{margin:.2f}')
 
     # 2. Field interest match
-    if _match_field_interest(programme['program_name'], signals):
+    if _match_field_interest(course['course_name'], signals):
         score += FIELD_MATCH_BONUS
         reasons.append('Field match')
 
     # 3. Interview penalty
-    if programme.get('req_interview', False):
+    if course.get('req_interview', False):
         score -= INTERVIEW_PENALTY
         reasons.append('Interview required: -3')
 
@@ -101,27 +101,27 @@ def calculate_stpm_fit_score(
 
 
 def get_stpm_ranked_results(
-    programmes: List[Dict],
+    courses: List[Dict],
     student_cgpa: float,
     signals: Dict,
 ) -> List[Dict]:
-    """Rank eligible STPM programmes by fit score.
+    """Rank eligible STPM courses by fit score.
 
     Args:
-        programmes: List of eligible programme dicts
+        courses: List of eligible course dicts
         student_cgpa: Student's STPM CGPA
         signals: Quiz signals
 
     Returns:
-        Programmes sorted by fit_score descending, each with fit_score and fit_reasons added
+        Courses sorted by fit_score descending, each with fit_score and fit_reasons added
     """
-    if not programmes:
+    if not courses:
         return []
 
     scored = []
-    for prog in programmes:
-        fit_score, fit_reasons = calculate_stpm_fit_score(prog, student_cgpa, signals)
-        scored.append({**prog, 'fit_score': fit_score, 'fit_reasons': fit_reasons})
+    for course in courses:
+        fit_score, fit_reasons = calculate_stpm_fit_score(course, student_cgpa, signals)
+        scored.append({**course, 'fit_score': fit_score, 'fit_reasons': fit_reasons})
 
-    scored.sort(key=lambda p: (-p['fit_score'], p['program_name']))
+    scored.sort(key=lambda c: (-c['fit_score'], c['course_name']))
     return scored

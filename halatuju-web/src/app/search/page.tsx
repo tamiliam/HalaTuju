@@ -97,12 +97,12 @@ function SearchPageInner() {
           colorblind: profileData.colorblind ? 'Ya' : 'Tidak',
         })
 
-        // Map STPM eligible programmes to EligibleCourse format
-        for (const prog of stpmData.eligible_programmes) {
-          allIds.add(prog.program_id)
-          allMap.set(prog.program_id, {
-            course_id: prog.program_id,
-            course_name: prog.program_name,
+        // Map STPM eligible courses to EligibleCourse format
+        for (const prog of stpmData.eligible_courses) {
+          allIds.add(prog.course_id)
+          allMap.set(prog.course_id, {
+            course_id: prog.course_id,
+            course_name: prog.course_name,
             level: 'Ijazah Sarjana Muda',
             field: '',
             source_type: 'ua',

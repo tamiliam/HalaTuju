@@ -980,8 +980,8 @@ class TestUnifiedSearchEndpoint(TestCase):
 
         # STPM test course
         cls.stpm_course = StpmCourse.objects.create(
-            program_id='UNI-STPM-001',
-            program_name='Ijazah Sarjana Muda Kejuruteraan Mekanikal',
+            course_id='UNI-STPM-001',
+            course_name='Ijazah Sarjana Muda Kejuruteraan Mekanikal',
             university='Universiti Malaya',
             stream='science',
             merit_score=85.0,
@@ -994,8 +994,8 @@ class TestUnifiedSearchEndpoint(TestCase):
 
         # STPM bumiputera-only course (should be excluded)
         cls.stpm_bumi = StpmCourse.objects.create(
-            program_id='UNI-STPM-BUMI',
-            program_name='Ijazah Sarjana Muda Seni Bina',
+            course_id='UNI-STPM-BUMI',
+            course_name='Ijazah Sarjana Muda Seni Bina',
             university='UiTM',
             stream='arts',
             field='Seni Bina',

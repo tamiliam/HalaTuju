@@ -194,16 +194,16 @@ class CourseSearchView(APIView):
             stpm_qs = stpm_qs.exclude(requirement__req_bumiputera=True)
 
             if q:
-                stpm_qs = stpm_qs.filter(program_name__icontains=q)
+                stpm_qs = stpm_qs.filter(course_name__icontains=q)
             if field:
                 stpm_qs = stpm_qs.filter(field__iexact=field)
 
             stpm_count = stpm_qs.count()
 
-            for sc in stpm_qs.order_by('program_name'):
+            for sc in stpm_qs.order_by('course_name'):
                 stpm_results.append({
-                    'course_id': sc.program_id,
-                    'course_name': sc.program_name,
+                    'course_id': sc.course_id,
+                    'course_name': sc.course_name,
                     'level': 'Ijazah Sarjana Muda',
                     'field': sc.field or '',
                     'source_type': 'ua',
@@ -1236,27 +1236,27 @@ class StpmEligibilityCheckView(APIView):
         )
 
         return Response({
-            'eligible_programmes': results,
+            'eligible_courses': results,
             'total_eligible': len(results),
         })
 
 
 class StpmRankingView(APIView):
-    """POST /api/v1/stpm/ranking/ — rank eligible STPM programmes by fit score."""
+    """POST /api/v1/stpm/ranking/ — rank eligible STPM courses by fit score."""
 
     def post(self, request):
-        programmes = request.data.get('eligible_programmes')
-        if programmes is None:
+        courses = request.data.get('eligible_courses')
+        if courses is None:
             return Response(
-                {'error': 'eligible_programmes is required'},
+                {'error': 'eligible_courses is required'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         student_cgpa = float(request.data.get('student_cgpa', 0))
         signals = request.data.get('student_signals', {})
 
-        ranked = get_stpm_ranked_results(programmes, student_cgpa, signals)
+        ranked = get_stpm_ranked_results(courses, student_cgpa, signals)
         return Response({
-            'ranked_programmes': ranked,
+            'ranked_courses': ranked,
             'total': len(ranked),
         })
 
@@ -1264,7 +1264,7 @@ class StpmRankingView(APIView):
 class StpmSearchView(APIView):
     """
     GET /api/v1/stpm/search/
-    Browse and search STPM degree programmes with filters.
+    Browse and search STPM degree courses with filters.
     Public endpoint — no auth required.
     """
 
@@ -1273,7 +1273,7 @@ class StpmSearchView(APIView):
 
         q = request.query_params.get('q', '').strip()
         if q:
-            qs = qs.filter(program_name__icontains=q)
+            qs = qs.filter(course_name__icontains=q)
 
         university = request.query_params.get('university', '').strip()
         if university:
@@ -1297,14 +1297,14 @@ class StpmSearchView(APIView):
         except (ValueError, TypeError):
             offset = 0
 
-        programmes = qs.order_by('university', 'program_name')[offset:offset + limit]
+        courses = qs.order_by('university', 'course_name')[offset:offset + limit]
 
         results = []
-        for prog in programmes:
+        for prog in courses:
             req = getattr(prog, 'requirement', None)
             results.append({
-                'program_id': prog.program_id,
-                'program_name': prog.program_name,
+                'course_id': prog.course_id,
+                'course_name': prog.course_name,
                 'university': prog.university,
                 'stream': prog.stream,
                 'min_cgpa': req.min_cgpa if req else 2.0,
@@ -1325,14 +1325,14 @@ class StpmSearchView(APIView):
         }
 
         return Response({
-            'programmes': results,
+            'courses': results,
             'total_count': total_count,
             'filters': filters,
         })
 
 
-class StpmProgrammeDetailView(APIView):
-    """GET /api/v1/stpm/programmes/<program_id>/ — single programme detail."""
+class StpmCourseDetailView(APIView):
+    """GET /api/v1/stpm/courses/<course_id>/ — single STPM course detail."""
 
     STPM_SUBJECT_FIELDS = [
         ('stpm_req_pa', 'Pengajian Am'),
@@ -1357,14 +1357,14 @@ class StpmProgrammeDetailView(APIView):
         ('spm_credit_science', 'Sains (credit)'),
     ]
 
-    def get(self, request, program_id):
+    def get(self, request, course_id):
         try:
             prog = StpmCourse.objects.select_related('requirement').get(
-                program_id=program_id
+                course_id=course_id
             )
         except StpmCourse.DoesNotExist:
             return Response(
-                {'error': 'Programme not found'},
+                {'error': 'Course not found'},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -1419,8 +1419,8 @@ class StpmProgrammeDetailView(APIView):
             pass
 
         return Response({
-            'program_id': prog.program_id,
-            'program_name': prog.program_name,
+            'course_id': prog.course_id,
+            'course_name': prog.course_name,
             'university': prog.university,
             'stream': prog.stream,
             'field': prog.field,

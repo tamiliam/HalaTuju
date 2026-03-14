@@ -449,8 +449,8 @@
     "helpClosing": "HalaTuju is a growing platform — we're continuously adding courses and improving recommendations. If you have feedback or want to contribute, we want to hear from you."
   },
   "stpm": {
-    "searchTitle": "Browse STPM Degree Programmes",
-    "searchPlaceholder": "Search programmes...",
+    "searchTitle": "Browse STPM Degree Courses",
+    "searchPlaceholder": "Search courses...",
     "universityFilter": "University",
     "streamFilter": "Stream",
     "allUniversities": "All Universities",
@@ -458,12 +458,12 @@
     "science": "Science",
     "arts": "Arts",
     "both": "Both",
-    "programmesFound": "programmes found",
+    "programmesFound": "courses found",
     "loadMore": "Load More",
     "remaining": "remaining",
     "backToResults": "Back to Results",
     "backToDashboard": "Back to Dashboard",
-    "programmeDetail": "Programme Detail",
+    "programmeDetail": "Course Detail",
     "requirements": "Requirements",
     "stpmSubjects": "Required STPM Subjects",
     "spmPrerequisites": "SPM Prerequisites",
@@ -476,8 +476,8 @@
     "medicalFitness": "Medical Fitness Required",
     "malaysianOnly": "Malaysian Citizens Only",
     "bumiputeraOnly": "Bumiputera Only",
-    "noResults": "No programmes found",
+    "noResults": "No courses found",
     "noResultsDesc": "Try adjusting your search or filters",
-    "browseAll": "Browse All Programmes"
+    "browseAll": "Browse All Courses"
   }
 }
