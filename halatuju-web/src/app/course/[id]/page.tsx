@@ -217,13 +217,13 @@ export default function CourseDetailPage() {
               </div>
             </section>
 
+            {/* Requirements */}
+            {requirements && <RequirementsCard requirements={requirements} />}
+
             {/* Subject Key for STPM courses */}
             {courseId.startsWith('stpm-') && (
               <SubjectLegend stream={courseId === 'stpm-sains' ? 'Sains' : 'Sains Sosial'} />
             )}
-
-            {/* Requirements */}
-            {requirements && <RequirementsCard requirements={requirements} />}
 
             {/* Actions */}
             <section className="bg-white rounded-xl border border-gray-200 p-6">
