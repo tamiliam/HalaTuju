@@ -105,18 +105,8 @@
 **Risk if left:** HIGH — students may be shown as eligible for programmes that actually require a pass in BI or Math at SPM level. This is a correctness bug, not just tech debt.
 **Dependencies:** STPM golden master will change. Must update baseline after fix.
 
-### [TD-002] Client-side eligibility logic duplicated (HIGH RISK)
-**File(s):**
-- Frontend: `halatuju-web/src/lib/pathways.ts` (512 lines)
-- Backend: `halatuju_api/apps/courses/pathways.py` (315 lines)
-- Frontend: `halatuju-web/src/lib/merit.ts` (63 lines)
-- Backend: `halatuju_api/apps/courses/engine.py` (lines 159-253)
-- Frontend: `halatuju-web/src/lib/stpm.ts` (22 lines)
-- Backend: `halatuju_api/apps/courses/stpm_engine.py` (lines 6-40)
-**What it is:** Three separate pieces of eligibility/calculation logic are independently implemented in both frontend (TypeScript) and backend (Python). They use different subject key conventions (frontend: MAT, AMT, CHE; backend: math, addmath, chem). The frontend pathways.ts also includes pre-U fit scoring logic (lines 326-490) that has no backend equivalent.
-**What consistent looks like:** Either (a) frontend calls backend for all calculations, or (b) a shared specification defines the formulas and both implementations are tested against the same test vectors.
-**Risk if left:** HIGH — a formula change in one place but not the other causes silent divergence. The matric merit and STPM mata gred calculations run independently and could disagree.
-**Dependencies:** Dashboard, pathway pages, onboarding pages all use frontend calculations.
+### [TD-002] Client-side eligibility logic duplicated (HIGH RISK) — RESOLVED
+**Resolved:** TD-002 Sprint (2026-03-14). Frontend calculation files (`merit.ts`, `stpm.ts`, `pathways.ts` — 596 lines) deleted. Three new backend API endpoints added: `/calculate/merit/`, `/calculate/cgpa/`, `/calculate/pathways/`. Frontend now calls backend for all calculations. `getPathwayFitScore()` ported to `pathways.py`. Backend is the single source of truth.
 
 ### [TD-013] Subject key naming split
 **File(s):**
@@ -136,12 +126,8 @@
 **Risk if left:** Medium — easy to introduce bugs by reading/writing wrong key or wrong shape. Hard to reason about data flow.
 **Dependencies:** Every page that reads/writes student data.
 
-### [TD-015] Frontend merit calculation sent to backend, backend may recalculate
-**File(s):** `halatuju-web/src/app/onboarding/grades/page.tsx` (line 305), `halatuju_api/apps/courses/views.py` (lines 312-320), `halatuju-web/src/lib/api.ts` (line 44 `student_merit`)
-**What it is:** The frontend calculates merit in `merit.ts` and stores it. The eligibility API accepts an optional `student_merit` field — if provided, the backend skips recalculation. But the backend's `prepare_merit_inputs()` splits grades differently (using science stream detection) than the frontend's fixed core/stream/elective split from the UI. They may disagree on which subjects go into which section.
-**What consistent looks like:** Backend is the single source of truth for merit. Frontend should either always send grades and let backend compute, or the section split logic must be identical.
-**Risk if left:** Medium — could produce different merit scores for the same student depending on whether the frontend pre-computed or the backend recalculated.
-**Dependencies:** Onboarding flow, dashboard, eligibility endpoint.
+### [TD-015] Frontend merit calculation sent to backend, backend may recalculate — RESOLVED
+**Resolved:** TD-002 Sprint (2026-03-14). Frontend no longer calculates merit locally — it calls `/calculate/merit/` API. Backend is the single source of truth. `merit.ts` deleted.
 
 ### [TD-016] StpmProgrammeDetailView looks up institution by name
 **File(s):** `halatuju_api/apps/courses/views.py` (lines 1409-1411)
@@ -150,12 +136,8 @@
 **Risk if left:** Medium — any name mismatch means STPM programme detail page shows no institution card.
 **Dependencies:** STPM programme detail page.
 
-### [TD-017] Pre-U fit scoring exists only on frontend
-**File(s):** `halatuju-web/src/lib/pathways.ts` (lines 326-490)
-**What it is:** The `getPathwayFitScore()` function and all its helpers (prestige bonus, academic bonus, field preference, signal adjustment) exist only in the frontend. The backend has no equivalent. This means pre-U course ranking on the dashboard is entirely client-side and cannot be verified by tests.
-**What consistent looks like:** Either move fit scoring to backend (like SPM/STPM ranking), or accept this as a design decision and add frontend tests.
-**Risk if left:** Medium — untested scoring logic that could silently break.
-**Dependencies:** Dashboard pre-U course cards.
+### [TD-017] Pre-U fit scoring exists only on frontend — RESOLVED
+**Resolved:** TD-002 Sprint (2026-03-14). `getPathwayFitScore()` ported to `pathways.py` with 5 tests. `/calculate/pathways/` endpoint returns fit scores. Frontend `pathways.ts` deleted.
 
 ---
 
@@ -459,7 +441,7 @@
 | ID | Title | Category | Status |
 |----|-------|----------|--------|
 | TD-001 | STPM SPM prerequisite fields not checked | Correctness bug | Resolved (Sprint 4) |
-| TD-002 | Client-side eligibility logic duplicated | Duplication | Open |
+| TD-002 | Client-side eligibility logic duplicated | Duplication | Resolved (TD-002 Sprint) |
 | TD-003 | Zero frontend tests | Test coverage | Open |
 | TD-007 | Bare except in engine.py | Error handling | Resolved (Sprint 4) |
 | TD-010 | 9 pre-existing auth test failures | Test coverage | Open |
@@ -475,9 +457,9 @@
 | TD-011 | SupabaseIsAuthenticated returns 403 instead of 401 | Open |
 | TD-013 | Subject key naming split (5+ files to change) | Open |
 | TD-014 | localStorage sprawl (20+ keys, no typing) | Open |
-| TD-015 | Frontend/backend merit calculation may disagree | Open |
+| TD-015 | Frontend/backend merit calculation may disagree | Resolved (TD-002 Sprint) |
 | TD-016 | StpmProgrammeDetailView institution lookup by name | Open |
-| TD-017 | Pre-U fit scoring exists only on frontend | Open |
+| TD-017 | Pre-U fit scoring exists only on frontend | Resolved (TD-002 Sprint) |
 | TD-021 | PISMP deduplication logic inline and complex | Open |
 | TD-033 | Auth test failures not triaged | Open |
 | TD-034 | No integration test for full flow | Open |
@@ -551,9 +533,9 @@
 - TD-041, TD-042: Add custom error/404 pages, flesh out settings
 
 **Sprint 6 — Architecture (1-2 sessions)**
-- TD-002, TD-013, TD-015: Address frontend-backend duplication (decide: backend-only or shared spec)
+- ~~TD-002, TD-015, TD-017~~: RESOLVED — backend is single source of truth, frontend files deleted
+- TD-013: Subject key naming split (still open, lower risk)
 - TD-045, TD-021: Refactor EligibilityCheckView into smaller functions
-- TD-017: Decide on pre-U scoring architecture
 
 **Sprint 7-8 — Cleanup (1-2 sessions)**
 - TD-028, TD-029, TD-031, TD-032: Archive/remove legacy files
