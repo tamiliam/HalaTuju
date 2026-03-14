@@ -628,6 +628,7 @@ export interface StpmCourseDetail {
   category: string
   description: string
   merit_score: number | null
+  mohe_url?: string
   requirements: StpmRequirements
   institution: StpmInstitutionDetail | null
 }
