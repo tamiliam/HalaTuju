@@ -520,8 +520,8 @@ class StpmCourse(models.Model):
         ('both', 'Both'),
     ]
 
-    course_id = models.CharField(max_length=50, primary_key=True, db_column='program_id')
-    course_name = models.CharField(max_length=500, db_column='program_name')
+    course_id = models.CharField(max_length=50, primary_key=True)
+    course_name = models.CharField(max_length=500)
     university = models.CharField(max_length=255)
     stream = models.CharField(
         max_length=20, choices=STREAM_CHOICES, default='both'
