@@ -523,6 +523,11 @@ class StpmCourse(models.Model):
     course_id = models.CharField(max_length=50, primary_key=True)
     course_name = models.CharField(max_length=500)
     university = models.CharField(max_length=255)
+    institution = models.ForeignKey(
+        'Institution', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='stpm_courses',
+        help_text='Linked institution (resolved from university name)'
+    )
     stream = models.CharField(
         max_length=20, choices=STREAM_CHOICES, default='both'
     )

@@ -65,7 +65,7 @@ class Command(BaseCommand):
                 course_id=row['course_id'],
                 defaults={
                     'course': row.get('course', ''),
-                    'wbl': row.get('wbl', '').lower() == 'true',
+                    'wbl': str(row.get('wbl', '')).strip() in ('1', 'true', 'True'),
                     'level': row.get('level', ''),
                     'department': row.get('department', ''),
                     'field': row.get('field', ''),

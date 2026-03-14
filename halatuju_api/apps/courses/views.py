@@ -191,12 +191,8 @@ class CourseSearchView(APIView):
         # Skip STPM if source_type filter doesn't match
         if include_stpm and source_type and source_type.lower() != 'ua':
             include_stpm = False
-        # State filter doesn't apply to STPM (no state data)
-        if include_stpm and state:
-            include_stpm = False
-
         if include_stpm:
-            stpm_qs = StpmCourse.objects.select_related('requirement').all()
+            stpm_qs = StpmCourse.objects.select_related('requirement', 'institution').all()
 
             # Exclude bumiputera-only courses
             stpm_qs = stpm_qs.exclude(requirement__req_bumiputera=True)
@@ -205,6 +201,8 @@ class CourseSearchView(APIView):
                 stpm_qs = stpm_qs.filter(course_name__icontains=q)
             if field:
                 stpm_qs = stpm_qs.filter(field__iexact=field)
+            if state:
+                stpm_qs = stpm_qs.filter(institution__state__iexact=state)
 
             stpm_count = stpm_qs.count()
 
@@ -218,7 +216,7 @@ class CourseSearchView(APIView):
                     'merit_cutoff': sc.merit_score,
                     'institution_count': 1,
                     'institution_name': sc.university,
-                    'institution_state': '',
+                    'institution_state': sc.institution.state if sc.institution else '',
                     'qualification': 'STPM',
                 })
 
@@ -1181,7 +1179,7 @@ class StpmCourseDetailView(APIView):
 
     def get(self, request, course_id):
         try:
-            prog = StpmCourse.objects.select_related('requirement').get(
+            prog = StpmCourse.objects.select_related('requirement', 'institution').get(
                 course_id=course_id
             )
         except StpmCourse.DoesNotExist:
@@ -1222,12 +1220,10 @@ class StpmCourseDetailView(APIView):
                 'req_bumiputera': req.req_bumiputera,
             }
 
-        # Look up full institution data by university name
+        # Use FK to get institution data (no extra query thanks to select_related)
         institution_data = None
-        try:
-            inst = Institution.objects.get(
-                institution_name=prog.university
-            )
+        inst = prog.institution
+        if inst:
             institution_data = {
                 'institution_id': inst.institution_id,
                 'institution_name': inst.institution_name,
@@ -1237,8 +1233,6 @@ class StpmCourseDetailView(APIView):
                 'state': inst.state or '',
                 'url': inst.url or '',
             }
-        except Institution.DoesNotExist:
-            pass
 
         return Response({
             'course_id': prog.course_id,
