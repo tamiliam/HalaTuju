@@ -106,11 +106,14 @@ export default function StpmCourseDetailPage() {
             {/* About */}
             {data.description && (
               <section className="bg-white rounded-xl border border-gray-200 p-6">
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    {t('courseDetail.aboutTitle')}
-                  </h2>
-                  {data.mohe_url && (
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                  {t('courseDetail.aboutTitle')}
+                </h2>
+                <p className="text-gray-600 leading-relaxed">
+                  {data.description}
+                </p>
+                {data.mohe_url && (
+                  <div className="flex justify-end mt-4">
                     <a
                       href={data.mohe_url}
                       target="_blank"
@@ -119,11 +122,8 @@ export default function StpmCourseDetailPage() {
                     >
                       More Info
                     </a>
-                  )}
-                </div>
-                <p className="text-gray-600 leading-relaxed">
-                  {data.description}
-                </p>
+                  </div>
+                )}
               </section>
             )}
 

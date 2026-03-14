@@ -123,11 +123,16 @@ export default function CourseDetailPage() {
           <div className="md:col-span-2 space-y-8">
             {/* About */}
             <section className="bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {t('courseDetail.aboutTitle')}
-                </h2>
-                {courseInfoUrl && (
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                {t('courseDetail.aboutTitle')}
+              </h2>
+              <p className="text-gray-600 leading-relaxed">
+                {locale === 'ms'
+                  ? (course.description || course.description_en || `Program ${course.level} dalam bidang ${course.field} menyediakan pelajar untuk kerjaya dalam ${course.department}.`)
+                  : (course.description_en || course.description || `This ${course.level} programme in ${course.field} prepares students for careers in ${course.department}. The course combines theoretical knowledge with practical skills to ensure graduates are industry-ready.`)}
+              </p>
+              {courseInfoUrl && (
+                <div className="flex justify-end mt-4">
                   <a
                     href={courseInfoUrl}
                     target="_blank"
@@ -136,13 +141,8 @@ export default function CourseDetailPage() {
                   >
                     More Info
                   </a>
-                )}
-              </div>
-              <p className="text-gray-600 leading-relaxed">
-                {locale === 'ms'
-                  ? (course.description || course.description_en || `Program ${course.level} dalam bidang ${course.field} menyediakan pelajar untuk kerjaya dalam ${course.department}.`)
-                  : (course.description_en || course.description || `This ${course.level} programme in ${course.field} prepares students for careers in ${course.department}. The course combines theoretical knowledge with practical skills to ensure graduates are industry-ready.`)}
-              </p>
+                </div>
+              )}
             </section>
 
             {/* Career Pathways */}
