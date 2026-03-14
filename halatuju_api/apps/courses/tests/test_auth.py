@@ -180,7 +180,7 @@ class TestPublicEndpointsRemainOpen(TestCase):
     def test_eligibility_no_auth_required(self):
         response = self.client.post(
             '/api/v1/eligibility/check/',
-            {'grades': {'BM': 'A'}, 'gender': 'male'},
+            {'grades': {'bm': 'A'}, 'gender': 'male'},
             format='json',
         )
         self.assertNotIn(response.status_code, [401, 403])

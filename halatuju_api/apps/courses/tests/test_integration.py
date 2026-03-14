@@ -31,8 +31,8 @@ class TestEligibilityToRankingFlow(TestCase):
         # Step 1: Eligibility check
         eligibility_response = self.client.post('/api/v1/eligibility/check/', {
             'grades': {
-                'BM': 'A', 'BI': 'A', 'SEJ': 'B+', 'MAT': 'A',
-                'SN': 'A', 'PHY': 'B+', 'CHE': 'B+',
+                'bm': 'A', 'eng': 'A', 'hist': 'B+', 'math': 'A',
+                'sci': 'A', 'phy': 'B+', 'chem': 'B+',
             },
             'gender': 'male',
             'nationality': 'malaysian',

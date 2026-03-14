@@ -152,29 +152,10 @@ class EligibilityRequestSerializer(serializers.Serializer):
     Validates the student profile data sent to the eligibility endpoint.
     Accepts multiple input formats and normalizes to engine-expected values.
     """
-    # Frontend subject IDs → engine internal keys
-    GRADE_KEY_MAP = {
-        'BM': 'bm',
-        'BI': 'eng',
-        'SEJ': 'hist',
-        'MAT': 'math',
-        'PHY': 'phy',
-        'CHE': 'chem',
-        'BIO': 'bio',
-        'AMT': 'addmath',
-        'PI': 'islam',
-        'PM': 'moral',
-        'SN': 'sci',
-        'ECO': 'ekonomi',
-        'ACC': 'poa',
-        'BUS': 'business',
-        'GEO': 'geo',
-    }
-
     grades = serializers.DictField(
         child=serializers.CharField(),
         required=True,
-        help_text="SPM grades: {'BM': 'A+', 'MAT': 'B', ...}"
+        help_text="SPM grades: {'bm': 'A+', 'math': 'B', ...}"
     )
     gender = serializers.CharField(default='Lelaki')
     nationality = serializers.CharField(default='Warganegara')
@@ -192,14 +173,6 @@ class EligibilityRequestSerializer(serializers.Serializer):
     def validate_coq_score(self, value):
         """Clamp CoQ to 0-10 range."""
         return min(max(float(value), 0), 10.0)
-
-    def validate_grades(self, value):
-        """Map frontend subject IDs to engine internal keys."""
-        mapped = {}
-        for key, grade in value.items():
-            engine_key = self.GRADE_KEY_MAP.get(key, key.lower())
-            mapped[engine_key] = grade
-        return mapped
 
     def validate_gender(self, value):
         """Normalize gender to engine format."""

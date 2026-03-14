@@ -2,7 +2,7 @@
 Tests for course serializers.
 
 Covers:
-- Grade key mapping (frontend IDs → engine internal keys)
+- Grade key passthrough (frontend sends engine keys directly)
 - Gender normalization (English/Malay/Tamil → engine format)
 - Nationality normalization
 - Boolean → Ya/Tidak conversion for colorblind/disability
@@ -11,8 +11,8 @@ from django.test import TestCase
 from apps.courses.serializers import EligibilityRequestSerializer
 
 
-class TestGradeKeyMapping(TestCase):
-    """Test that frontend subject IDs are correctly mapped to engine keys."""
+class TestGradeKeyPassthrough(TestCase):
+    """Test that engine keys pass through the serializer unchanged."""
 
     def _validate(self, grades_input):
         """Helper: run serializer and return validated grades dict."""
@@ -21,65 +21,59 @@ class TestGradeKeyMapping(TestCase):
         self.assertTrue(s.is_valid(), s.errors)
         return s.validated_data['grades']
 
-    def test_core_subjects_mapped(self):
-        """BM→bm, BI→eng, SEJ→hist, MAT→math."""
+    def test_core_subjects(self):
+        """Core subjects pass through as engine keys."""
         grades = self._validate({
-            'BM': 'A', 'BI': 'B+', 'SEJ': 'C', 'MAT': 'A-'
+            'bm': 'A', 'eng': 'B+', 'hist': 'C', 'math': 'A-'
         })
         self.assertEqual(grades['bm'], 'A')
         self.assertEqual(grades['eng'], 'B+')
         self.assertEqual(grades['hist'], 'C')
         self.assertEqual(grades['math'], 'A-')
 
-    def test_science_subjects_mapped(self):
-        """PHY→phy, CHE→chem, BIO→bio, AMT→addmath."""
+    def test_science_subjects(self):
+        """Science subjects pass through as engine keys."""
         grades = self._validate({
-            'PHY': 'A', 'CHE': 'B', 'BIO': 'C', 'AMT': 'A+'
+            'phy': 'A', 'chem': 'B', 'bio': 'C', 'addmath': 'A+'
         })
         self.assertEqual(grades['phy'], 'A')
         self.assertEqual(grades['chem'], 'B')
         self.assertEqual(grades['bio'], 'C')
         self.assertEqual(grades['addmath'], 'A+')
 
-    def test_arts_subjects_mapped(self):
-        """ECO→ekonomi, ACC→poa, BUS→business, GEO→geo."""
+    def test_arts_subjects(self):
+        """Arts subjects pass through as engine keys."""
         grades = self._validate({
-            'ECO': 'B', 'ACC': 'A', 'BUS': 'C', 'GEO': 'B+'
+            'ekonomi': 'B', 'poa': 'A', 'business': 'C', 'geo': 'B+'
         })
         self.assertEqual(grades['ekonomi'], 'B')
         self.assertEqual(grades['poa'], 'A')
         self.assertEqual(grades['business'], 'C')
         self.assertEqual(grades['geo'], 'B+')
 
-    def test_religious_moral_mapped(self):
-        """PI→islam, PM→moral."""
-        grades = self._validate({'PI': 'A', 'PM': 'B'})
+    def test_religious_moral(self):
+        """Religious and moral subjects pass through."""
+        grades = self._validate({'islam': 'A', 'moral': 'B'})
         self.assertEqual(grades['islam'], 'A')
         self.assertEqual(grades['moral'], 'B')
 
-    def test_science_general_mapped(self):
-        """SN→sci."""
-        grades = self._validate({'SN': 'C'})
+    def test_science_general(self):
+        """General science passes through."""
+        grades = self._validate({'sci': 'C'})
         self.assertEqual(grades['sci'], 'C')
 
-    def test_unmapped_keys_lowercase(self):
-        """Unknown keys should lowercase as fallback."""
-        grades = self._validate({'COMP_SCI': 'B', 'PSV': 'A'})
+    def test_technical_subjects(self):
+        """Technical subjects pass through."""
+        grades = self._validate({'comp_sci': 'B', 'psv': 'A'})
         self.assertEqual(grades['comp_sci'], 'B')
         self.assertEqual(grades['psv'], 'A')
 
-    def test_already_lowercase_passthrough(self):
-        """Keys already in engine format pass through unchanged."""
-        grades = self._validate({'bm': 'A', 'math': 'B'})
-        self.assertEqual(grades['bm'], 'A')
-        self.assertEqual(grades['math'], 'B')
-
     def test_full_student_profile(self):
-        """A complete 8-subject profile (Teras + Aliran + Elektif) maps correctly."""
+        """A complete 8-subject profile passes through correctly."""
         grades = self._validate({
-            'BM': 'A', 'BI': 'B+', 'MAT': 'A', 'SEJ': 'C',
-            'PHY': 'A-', 'CHE': 'B',
-            'AMT': 'B+', 'PM': 'A'
+            'bm': 'A', 'eng': 'B+', 'math': 'A', 'hist': 'C',
+            'phy': 'A-', 'chem': 'B',
+            'addmath': 'B+', 'moral': 'A'
         })
         self.assertEqual(len(grades), 8)
         self.assertIn('bm', grades)
@@ -96,7 +90,7 @@ class TestGenderNormalization(TestCase):
     """Test gender values are normalized to engine format (Lelaki/Perempuan)."""
 
     def _validate_gender(self, gender_input):
-        data = {'grades': {'BM': 'A'}, 'gender': gender_input}
+        data = {'grades': {'bm': 'A'}, 'gender': gender_input}
         s = EligibilityRequestSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
         return s.validated_data['gender']
@@ -128,7 +122,7 @@ class TestNationalityNormalization(TestCase):
     """Test nationality values are normalized to engine format."""
 
     def _validate_nationality(self, nat_input):
-        data = {'grades': {'BM': 'A'}, 'gender': 'male', 'nationality': nat_input}
+        data = {'grades': {'bm': 'A'}, 'gender': 'male', 'nationality': nat_input}
         s = EligibilityRequestSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
         return s.validated_data['nationality']
@@ -150,32 +144,32 @@ class TestBooleanConversion(TestCase):
     """Test colorblind and disability are converted from bool to Ya/Tidak."""
 
     def test_colorblind_true(self):
-        data = {'grades': {'BM': 'A'}, 'gender': 'male', 'colorblind': True}
+        data = {'grades': {'bm': 'A'}, 'gender': 'male', 'colorblind': True}
         s = EligibilityRequestSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
         self.assertEqual(s.validated_data['colorblind'], 'Ya')
 
     def test_colorblind_false(self):
-        data = {'grades': {'BM': 'A'}, 'gender': 'male', 'colorblind': False}
+        data = {'grades': {'bm': 'A'}, 'gender': 'male', 'colorblind': False}
         s = EligibilityRequestSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
         self.assertEqual(s.validated_data['colorblind'], 'Tidak')
 
     def test_disability_true(self):
-        data = {'grades': {'BM': 'A'}, 'gender': 'male', 'disability': True}
+        data = {'grades': {'bm': 'A'}, 'gender': 'male', 'disability': True}
         s = EligibilityRequestSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
         self.assertEqual(s.validated_data['disability'], 'Ya')
 
     def test_disability_false(self):
-        data = {'grades': {'BM': 'A'}, 'gender': 'male', 'disability': False}
+        data = {'grades': {'bm': 'A'}, 'gender': 'male', 'disability': False}
         s = EligibilityRequestSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
         self.assertEqual(s.validated_data['disability'], 'Tidak')
 
     def test_defaults_when_omitted(self):
         """Colorblind and disability default to Tidak when not sent."""
-        data = {'grades': {'BM': 'A'}, 'gender': 'male'}
+        data = {'grades': {'bm': 'A'}, 'gender': 'male'}
         s = EligibilityRequestSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
         self.assertEqual(s.validated_data['colorblind'], 'Tidak')
@@ -199,7 +193,7 @@ class TestValidation(TestCase):
 
     def test_gender_default(self):
         """Gender defaults to Lelaki if not provided."""
-        data = {'grades': {'BM': 'A'}}
+        data = {'grades': {'bm': 'A'}}
         s = EligibilityRequestSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
         self.assertEqual(s.validated_data['gender'], 'Lelaki')

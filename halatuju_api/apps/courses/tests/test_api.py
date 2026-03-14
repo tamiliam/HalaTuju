@@ -31,8 +31,8 @@ class TestEligibilityEndpoint(TestCase):
         """A student with all A+ grades should get many eligible courses."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
-                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+'
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'sci': 'A+', 'phy': 'A+', 'chem': 'A+'
             },
             'gender': 'male',
             'nationality': 'malaysian',
@@ -61,9 +61,9 @@ class TestEligibilityEndpoint(TestCase):
         self.assertLess(data['total_count'], 50)
 
     def test_frontend_grade_keys_accepted(self):
-        """Frontend-format keys (BM, BI, MAT) should work correctly."""
+        """Frontend sends engine keys (bm, eng, math) now."""
         response = self.client.post(self.url, {
-            'grades': {'BM': 'A', 'BI': 'A', 'SEJ': 'A', 'MAT': 'A'},
+            'grades': {'bm': 'A', 'eng': 'A', 'hist': 'A', 'math': 'A'},
             'gender': 'male',
         }, format='json')
 
@@ -83,7 +83,7 @@ class TestEligibilityEndpoint(TestCase):
     def test_frontend_and_engine_keys_return_same_count(self):
         """Same grades via frontend or engine keys should return identical results."""
         frontend_response = self.client.post(self.url, {
-            'grades': {'BM': 'A', 'BI': 'B+', 'SEJ': 'C', 'MAT': 'A'},
+            'grades': {'bm': 'A', 'eng': 'B+', 'hist': 'C', 'math': 'A'},
             'gender': 'male',
         }, format='json')
 
@@ -102,7 +102,7 @@ class TestEligibilityEndpoint(TestCase):
     def test_response_has_course_details(self):
         """Each eligible course should have expected fields."""
         response = self.client.post(self.url, {
-            'grades': {'BM': 'A', 'MAT': 'A'},
+            'grades': {'bm': 'A', 'math': 'A'},
             'gender': 'male',
         }, format='json')
 
@@ -118,8 +118,8 @@ class TestEligibilityEndpoint(TestCase):
         """Stats should break down by source_type (poly, tvet, ua)."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
-                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+'
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'sci': 'A+', 'phy': 'A+', 'chem': 'A+'
             },
             'gender': 'male',
         }, format='json')
@@ -141,13 +141,13 @@ class TestEligibilityEndpoint(TestCase):
     def test_non_citizen_gets_fewer_courses(self):
         """Non-Malaysian should be excluded from Malaysian-only courses."""
         citizen_response = self.client.post(self.url, {
-            'grades': {'BM': 'A', 'MAT': 'A'},
+            'grades': {'bm': 'A', 'math': 'A'},
             'gender': 'male',
             'nationality': 'malaysian',
         }, format='json')
 
         non_citizen_response = self.client.post(self.url, {
-            'grades': {'BM': 'A', 'MAT': 'A'},
+            'grades': {'bm': 'A', 'math': 'A'},
             'gender': 'male',
             'nationality': 'non_malaysian',
         }, format='json')
@@ -162,13 +162,13 @@ class TestEligibilityEndpoint(TestCase):
     def test_colorblind_gets_fewer_courses(self):
         """Colorblind student excluded from no_colorblind courses."""
         normal_response = self.client.post(self.url, {
-            'grades': {'BM': 'A', 'MAT': 'A', 'SN': 'A'},
+            'grades': {'bm': 'A', 'math': 'A', 'sci': 'A'},
             'gender': 'male',
             'colorblind': False,
         }, format='json')
 
         colorblind_response = self.client.post(self.url, {
-            'grades': {'BM': 'A', 'MAT': 'A', 'SN': 'A'},
+            'grades': {'bm': 'A', 'math': 'A', 'sci': 'A'},
             'gender': 'male',
             'colorblind': True,
         }, format='json')
@@ -184,8 +184,8 @@ class TestEligibilityEndpoint(TestCase):
         """Each eligible course should include merit traffic light fields."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
-                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+'
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'sci': 'A+', 'phy': 'A+', 'chem': 'A+'
             },
             'gender': 'male',
         }, format='json')
@@ -218,9 +218,9 @@ class TestEligibilityEndpoint(TestCase):
         """Perfect student (all A+) should get 'High' merit for all poly courses with cutoffs."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
-                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+', 'BIO': 'A+',
-                'AMT': 'A+',
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'sci': 'A+', 'phy': 'A+', 'chem': 'A+', 'bio': 'A+',
+                'addmath': 'A+',
             },
             'gender': 'male',
         }, format='json')
@@ -248,8 +248,8 @@ class TestEligibilityEndpoint(TestCase):
         """Perfect student (all A+) should qualify for PISMP courses."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
-                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+', 'BIO': 'A+',
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'sci': 'A+', 'phy': 'A+', 'chem': 'A+', 'bio': 'A+',
             },
             'gender': 'male',
         }, format='json')
@@ -263,8 +263,8 @@ class TestEligibilityEndpoint(TestCase):
         """Student with no A grades should NOT qualify for any PISMP courses."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'C', 'BI': 'C', 'SEJ': 'C', 'MAT': 'C',
-                'SN': 'C',
+                'bm': 'C', 'eng': 'C', 'hist': 'C', 'math': 'C',
+                'sci': 'C',
             },
             'gender': 'male',
         }, format='json')
@@ -278,8 +278,8 @@ class TestEligibilityEndpoint(TestCase):
         """Student with exactly 5 A- grades should qualify for generic PISMP (5 Cemerlang)."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A-', 'BI': 'A-', 'SEJ': 'A-', 'MAT': 'A-',
-                'SN': 'A-', 'PHY': 'C', 'CHE': 'C',
+                'bm': 'A-', 'eng': 'A-', 'hist': 'A-', 'math': 'A-',
+                'sci': 'A-', 'phy': 'C', 'chem': 'C',
             },
             'gender': 'male',
         }, format='json')
@@ -293,8 +293,8 @@ class TestEligibilityEndpoint(TestCase):
         """Student with only 4 A grades should NOT qualify for PISMP (need 5 Cemerlang)."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A', 'BI': 'A', 'SEJ': 'A', 'MAT': 'A',
-                'SN': 'C', 'PHY': 'C', 'CHE': 'C',
+                'bm': 'A', 'eng': 'A', 'hist': 'A', 'math': 'A',
+                'sci': 'C', 'phy': 'C', 'chem': 'C',
             },
             'gender': 'male',
         }, format='json')
@@ -308,8 +308,8 @@ class TestEligibilityEndpoint(TestCase):
         """Non-Malaysian should NOT qualify for PISMP (req_malaysian=1)."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
-                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+',
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'sci': 'A+', 'phy': 'A+', 'chem': 'A+',
             },
             'gender': 'male',
             'nationality': 'Bukan Warganegara',
@@ -324,8 +324,8 @@ class TestEligibilityEndpoint(TestCase):
         """Stats should include 'pismp' count for eligible perfect student."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
-                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+', 'BIO': 'A+',
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'sci': 'A+', 'phy': 'A+', 'chem': 'A+', 'bio': 'A+',
             },
             'gender': 'male',
         }, format='json')
@@ -339,8 +339,8 @@ class TestEligibilityEndpoint(TestCase):
         """PISMP courses should have no merit_label (no cutoff data, like TVET)."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
-                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+',
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'sci': 'A+', 'phy': 'A+', 'chem': 'A+',
             },
             'gender': 'male',
         }, format='json')
@@ -359,9 +359,9 @@ class TestEligibilityEndpoint(TestCase):
         """Eligible matric tracks appear in eligible_courses."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
-                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+', 'BIO': 'A+',
-                'AMT': 'A+',
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'sci': 'A+', 'phy': 'A+', 'chem': 'A+', 'bio': 'A+',
+                'addmath': 'A+',
             },
             'gender': 'male',
         }, format='json')
@@ -379,9 +379,9 @@ class TestEligibilityEndpoint(TestCase):
         """Eligible STPM bidangs appear in eligible_courses."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
-                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+', 'BIO': 'A+',
-                'AMT': 'A+',
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'sci': 'A+', 'phy': 'A+', 'chem': 'A+', 'bio': 'A+',
+                'addmath': 'A+',
             },
             'gender': 'male',
         }, format='json')
@@ -397,9 +397,9 @@ class TestEligibilityEndpoint(TestCase):
         """pathway_stats should count matric and stpm entries."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
-                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+', 'BIO': 'A+',
-                'AMT': 'A+',
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'sci': 'A+', 'phy': 'A+', 'chem': 'A+', 'bio': 'A+',
+                'addmath': 'A+',
             },
             'gender': 'male',
         }, format='json')
@@ -412,9 +412,9 @@ class TestEligibilityEndpoint(TestCase):
         """PISMP Matematik requires A in MATH+ADDMATH. Student without ADDMATH should not qualify."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
-                'SN': 'A+', 'PHY': 'A+', 'CHE': 'A+',
-                # No AMT (Add Math) — Matematik PISMP requires A in MATH + ADDMATH
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'sci': 'A+', 'phy': 'A+', 'chem': 'A+',
+                # No addmath — Matematik PISMP requires A in math + addmath
             },
             'gender': 'male',
         }, format='json')
@@ -1046,15 +1046,15 @@ class TestCalculateEndpoints(TestCase):
         """POST all-A grades + coq_score=8 returns expected merit values."""
         payload = {
             'grades': {
-                'BM': 'A',
-                'BI': 'A',
-                'SEJ': 'A',
-                'MAT': 'A',
-                'PHY': 'A',
-                'CHE': 'A',
-                'BIO': 'A',
-                'AMT': 'A',
-                'PM': 'A',
+                'bm': 'A',
+                'eng': 'A',
+                'hist': 'A',
+                'math': 'A',
+                'phy': 'A',
+                'chem': 'A',
+                'bio': 'A',
+                'addmath': 'A',
+                'moral': 'A',
             },
             'coq_score': 8.0,
         }
@@ -1099,8 +1099,8 @@ class TestCalculateEndpoints(TestCase):
             '/api/v1/calculate/pathways/',
             data={
                 'grades': {
-                    'BM': 'A', 'BI': 'A', 'MAT': 'A', 'SEJ': 'A',
-                    'PHY': 'A', 'CHE': 'A', 'AMT': 'A', 'BIO': 'A',
+                    'bm': 'A', 'eng': 'A', 'math': 'A', 'hist': 'A',
+                    'phy': 'A', 'chem': 'A', 'addmath': 'A', 'bio': 'A',
                 },
                 'coq_score': 8.0,
             },
@@ -1123,8 +1123,8 @@ class TestCalculateEndpoints(TestCase):
             '/api/v1/calculate/pathways/',
             data={
                 'grades': {
-                    'BM': 'A', 'BI': 'A', 'MAT': 'A', 'SEJ': 'A',
-                    'PHY': 'A', 'CHE': 'A', 'AMT': 'A', 'BIO': 'A',
+                    'bm': 'A', 'eng': 'A', 'math': 'A', 'hist': 'A',
+                    'phy': 'A', 'chem': 'A', 'addmath': 'A', 'bio': 'A',
                 },
                 'coq_score': 8.0,
                 'signals': {

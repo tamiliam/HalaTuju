@@ -7,16 +7,14 @@ import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import ProgressStepper from '@/components/ProgressStepper'
 import { calculateMerit } from '@/lib/api'
+import {
+  getSubjectName,
+  SPM_CORE_SUBJECTS,
+  SPM_STREAM_POOLS,
+  SPM_ALL_ELECTIVE_SUBJECTS,
+} from '@/lib/subjects'
 
 const GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G']
-
-// Section 1: Teras — 4 compulsory subjects
-const CORE_SUBJECTS = [
-  { id: 'BM' },
-  { id: 'BI' },
-  { id: 'MAT' },
-  { id: 'SEJ' },
-]
 
 // Stream definitions — icons are inline SVGs (two-tone: primary-500 + primary-200)
 const STREAMS = [
@@ -47,86 +45,9 @@ function StreamIcon({ stream, active }: { stream: string; active: boolean }) {
   )
 }
 
-// Section 2: Aliran — 4 stream subjects from stream pool
-// IDs MUST lowercase to engine keys (serializer fallback) or be in GRADE_KEY_MAP
-const STREAM_POOLS: Record<string, { id: string; name: string }[]> = {
-  science: [
-    { id: 'PHY', name: 'Fizik' },
-    { id: 'CHE', name: 'Kimia' },
-    { id: 'BIO', name: 'Biologi' },
-    { id: 'AMT', name: 'Matematik Tambahan' },
-  ],
-  arts: [
-    { id: 'ECO', name: 'Ekonomi' },
-    { id: 'ACC', name: 'Prinsip Perakaunan' },
-    { id: 'BUS', name: 'Perniagaan' },
-    { id: 'GEO', name: 'Geografi' },
-    { id: 'B_TAMIL', name: 'Bahasa Cina/Tamil' },
-    { id: 'B_CINA', name: 'Kesusasteraan Cina/Tamil' },
-    { id: 'LUKISAN', name: 'Lukisan' },
-    { id: 'PSV', name: 'Pendidikan Seni Visual' },
-    { id: 'KEUSAHAWANAN', name: 'Keusahawanan' },
-  ],
-  technical: [
-    { id: 'ENG_CIVIL', name: 'Kejuruteraan Awam' },
-    { id: 'ENG_MECH', name: 'Kejuruteraan Mekanikal' },
-    { id: 'ENG_ELEC', name: 'Kejuruteraan Elektrik' },
-    { id: 'ENG_DRAW', name: 'Lukisan Kejuruteraan' },
-    { id: 'GKT', name: 'Grafik Komunikasi Teknikal' },
-    { id: 'COMP_SCI', name: 'Sains Komputer' },
-    { id: 'MULTIMEDIA', name: 'Multimedia' },
-    { id: 'REKA_CIPTA', name: 'Reka Cipta' },
-  ],
-}
-
-// Section 3: Elektif — pick best 2 from everything remaining
-const ALL_SUBJECTS = [
-  // Science
-  { id: 'PHY', name: 'Fizik' },
-  { id: 'CHE', name: 'Kimia' },
-  { id: 'BIO', name: 'Biologi' },
-  { id: 'AMT', name: 'Matematik Tambahan' },
-  // Compulsory electives
-  { id: 'PI', name: 'Pendidikan Islam' },
-  { id: 'PM', name: 'Pendidikan Moral' },
-  { id: 'SN', name: 'Sains' },
-  { id: 'ADDSCI', name: 'Sains Tambahan' },
-  { id: 'PERTANIAN', name: 'Pertanian' },
-  { id: 'SRT', name: 'Sains Rumah Tangga' },
-  { id: 'SPORTS_SCI', name: 'Sains Sukan' },
-  { id: 'MUSIC', name: 'Pendidikan Muzik' },
-  // Arts
-  { id: 'ECO', name: 'Ekonomi' },
-  { id: 'ACC', name: 'Prinsip Perakaunan' },
-  { id: 'BUS', name: 'Perniagaan' },
-  { id: 'GEO', name: 'Geografi' },
-  { id: 'B_TAMIL', name: 'Bahasa Cina/Tamil' },
-  { id: 'B_CINA', name: 'Kesusasteraan Cina/Tamil' },
-  { id: 'LUKISAN', name: 'Lukisan' },
-  { id: 'PSV', name: 'Pendidikan Seni Visual' },
-  { id: 'KEUSAHAWANAN', name: 'Keusahawanan' },
-  // Technical + IT
-  { id: 'ENG_CIVIL', name: 'Kejuruteraan Awam' },
-  { id: 'ENG_MECH', name: 'Kejuruteraan Mekanikal' },
-  { id: 'ENG_ELEC', name: 'Kejuruteraan Elektrik' },
-  { id: 'ENG_DRAW', name: 'Lukisan Kejuruteraan' },
-  { id: 'GKT', name: 'Grafik Komunikasi Teknikal' },
-  { id: 'COMP_SCI', name: 'Sains Komputer' },
-  { id: 'MULTIMEDIA', name: 'Multimedia' },
-  { id: 'REKA_CIPTA', name: 'Reka Cipta' },
-  // Vocational (MPV)
-  { id: 'VOC_CONSTRUCT', name: 'MPV Binaan Bangunan' },
-  { id: 'VOC_WELD', name: 'MPV Kimpalan & Fabrikasi' },
-  { id: 'VOC_AUTO', name: 'MPV Automotif' },
-  { id: 'VOC_ELEC_SERV', name: 'MPV Elektrik & Elektronik' },
-  { id: 'VOC_FOOD', name: 'MPV Pemprosesan Makanan' },
-  { id: 'VOC_CATERING', name: 'MPV Katering & Penyajian' },
-  { id: 'VOC_TAILORING', name: 'MPV Jahitan & Pakaian' },
-]
-
 export default function GradesInputPage() {
   const router = useRouter()
-  const { t } = useT()
+  const { t, locale } = useT()
 
   // Stream selection (merged into this page)
   const [stream, setStream] = useState<string>('science')
@@ -151,7 +72,7 @@ export default function GradesInputPage() {
       const a = JSON.parse(savedAliran)
       aliranLoaded = [a[0] || '', a[1] || '', a[2] || '', a[3] || '']
     } else {
-      const pool = STREAM_POOLS[activeStream] || []
+      const pool = SPM_STREAM_POOLS[activeStream] || []
       aliranLoaded = [pool[0]?.id || '', pool[1]?.id || '', pool[2]?.id || '', pool[3]?.id || '']
     }
     setAliranSubjects(aliranLoaded)
@@ -169,7 +90,7 @@ export default function GradesInputPage() {
     if (savedGrades) {
       const allGrades = JSON.parse(savedGrades)
       const validIds = new Set([
-        ...CORE_SUBJECTS.map(s => s.id),
+        ...SPM_CORE_SUBJECTS.map(s => s.id),
         ...aliranLoaded.filter(Boolean),
         ...elektif,
       ])
@@ -198,7 +119,7 @@ export default function GradesInputPage() {
     aliranSubjects.forEach(id => { if (id) handleGradeClear(id) })
     setStream(newStream)
     localStorage.setItem('halatuju_stream', newStream)
-    const pool = STREAM_POOLS[newStream] || []
+    const pool = SPM_STREAM_POOLS[newStream] || []
     setAliranSubjects([
       pool[0]?.id || '',
       pool[1]?.id || '',
@@ -239,17 +160,17 @@ export default function GradesInputPage() {
     }
   }
 
-  const streamPool = STREAM_POOLS[stream] || []
+  const streamPool = SPM_STREAM_POOLS[stream] || []
   const selectedAliranIds = aliranSubjects.filter(Boolean)
-  const coreIdsList = CORE_SUBJECTS.map((s) => s.id)
+  const coreIdsList = SPM_CORE_SUBJECTS.map((s) => s.id)
 
-  // Elektif pool = all subjects minus core minus selected aliran
+  // Elektif pool = all non-core subjects minus selected aliran
   const elektifPool = useMemo(() => {
     const excluded = new Set([...coreIdsList, ...selectedAliranIds])
-    return ALL_SUBJECTS.filter((s) => !excluded.has(s.id)).sort((a, b) =>
-      a.name.localeCompare(b.name)
+    return SPM_ALL_ELECTIVE_SUBJECTS.filter((s) => !excluded.has(s.id)).sort((a, b) =>
+      getSubjectName(a.id, locale).localeCompare(getSubjectName(b.id, locale))
     )
-  }, [selectedAliranIds])
+  }, [selectedAliranIds, locale])
 
   const addElektifSlot = () => {
     if (elektifSlots.length < 2) {
@@ -300,7 +221,7 @@ export default function GradesInputPage() {
     return () => clearTimeout(timer)
   }, [grades, coqScore])
 
-  const coreComplete = CORE_SUBJECTS.every((s) => grades[s.id])
+  const coreComplete = SPM_CORE_SUBJECTS.every((s) => grades[s.id])
 
   const handleContinue = () => {
     if (coreComplete) {
@@ -378,10 +299,10 @@ export default function GradesInputPage() {
           </div>
           <p className="text-sm text-gray-500 mb-4 ml-8">{t('onboarding.coreSubjectsCount')}</p>
           <div className="space-y-3">
-            {CORE_SUBJECTS.map((subject) => (
+            {SPM_CORE_SUBJECTS.map((subject) => (
               <CoreSubjectGrade
                 key={subject.id}
-                label={t('subjects.' + subject.id)}
+                label={getSubjectName(subject.id, locale)}
                 value={grades[subject.id] || ''}
                 onChange={(grade) => handleGradeChange(subject.id, grade)}
                 onClear={() => handleGradeClear(subject.id)}
@@ -577,7 +498,7 @@ function CompactSubjectRow({
   onGradeChange,
   onRemove,
 }: {
-  pool: { id: string; name: string }[]
+  pool: { id: string }[]
   excludeIds: string[]
   selectedId: string
   onSubjectChange: (id: string) => void
@@ -585,7 +506,7 @@ function CompactSubjectRow({
   onGradeChange: (grade: string) => void
   onRemove: () => void
 }) {
-  const { t } = useT()
+  const { t, locale } = useT()
   const excludeSet = new Set(excludeIds)
   const options = pool.filter((s) => !excludeSet.has(s.id))
 
@@ -599,7 +520,7 @@ function CompactSubjectRow({
       >
         <option value="">{t('onboarding.selectSubject')}</option>
         {options.map((s) => (
-          <option key={s.id} value={s.id}>{s.name}</option>
+          <option key={s.id} value={s.id}>{getSubjectName(s.id, locale)}</option>
         ))}
       </select>
 

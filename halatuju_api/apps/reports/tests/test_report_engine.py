@@ -24,12 +24,12 @@ from apps.reports.report_engine import (
 from apps.reports.prompts import get_prompt, get_persona_for_model
 
 
-# Sample data matching real eligibility output
+# Sample data matching real eligibility output (engine keys)
 SAMPLE_GRADES = {
     'bm': 'A',
     'eng': 'B+',
     'math': 'B',
-    'sc': 'A-',
+    'sci': 'A-',
     'hist': 'B+',
 }
 

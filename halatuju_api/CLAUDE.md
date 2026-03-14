@@ -48,29 +48,9 @@ Django REST API for SPM course eligibility checking. Deployed on Cloud Run (asia
 - **Why**: Avoids cold start CSV loading (5-10s). DB is source of truth, DataFrame is runtime cache.
 - **Trade-off**: ~1GB RAM per container. Acceptable for correctness.
 
-### Grade Key Mapping (Serializer)
+### Subject Keys (Unified)
 
-Frontend sends UI subject IDs → serializer maps to engine internal keys:
-
-| Frontend | Engine | Subject |
-|----------|--------|---------|
-| BM | bm | Bahasa Melayu |
-| BI | eng | English |
-| SEJ | hist | Sejarah |
-| MAT | math | Matematik |
-| PHY | phy | Fizik |
-| CHE | chem | Kimia |
-| BIO | bio | Biologi |
-| AMT | addmath | Matematik Tambahan |
-| PI | islam | Pendidikan Islam |
-| PM | moral | Pendidikan Moral |
-| SN | sci | Sains |
-| ECO | ekonomi | Ekonomi |
-| ACC | poa | Prinsip Perakaunan |
-| BUS | business | Perniagaan |
-| GEO | geo | Geografi |
-
-Unmapped keys (e.g. `COMP_SCI`) fall back to `.lower()`.
+Frontend and backend both use the same lowercase engine keys (`bm`, `eng`, `math`, `phy`, etc.). The single source of truth is `halatuju-web/src/lib/subjects.ts` which exports `SPM_SUBJECTS`, `SPM_CORE_SUBJECTS`, `SPM_STREAM_POOLS`, and `SPM_ALL_ELECTIVE_SUBJECTS`. No serializer mapping is needed — keys pass through as-is.
 
 ## Deployment
 

@@ -1270,12 +1270,8 @@ class CalculateMeritView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Map frontend keys (BM, BI, MAT...) to engine keys (bm, eng, math...)
-        key_map = EligibilityRequestSerializer.GRADE_KEY_MAP
-        mapped_grades = {}
-        for key, grade in raw_grades.items():
-            engine_key = key_map.get(key, key.lower())
-            mapped_grades[engine_key] = grade
+        # Keys arrive as engine keys (bm, eng, math...) — pass through
+        mapped_grades = dict(raw_grades)
 
         # Engine expects 'history' not 'hist'
         if 'hist' in mapped_grades:
@@ -1344,11 +1340,8 @@ class CalculatePathwaysView(APIView):
         coq_score = float(request.data.get('coq_score', 0))
         signals = request.data.get('signals')
 
-        # Map frontend keys to engine keys
-        grades = {}
-        for key, value in grades_raw.items():
-            engine_key = EligibilityRequestSerializer.GRADE_KEY_MAP.get(key, key.lower())
-            grades[engine_key] = value
+        # Keys arrive as engine keys — pass through
+        grades = dict(grades_raw)
 
         results = check_all_pathways(grades, coq_score)
 

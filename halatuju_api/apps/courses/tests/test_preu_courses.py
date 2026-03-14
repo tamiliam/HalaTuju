@@ -170,9 +170,9 @@ class TestPreUEligibility(TestCase):
         """Strong student should have 'matric' and 'stpm' in pathway stats."""
         response = self.client.post(self.url, {
             'grades': {
-                'BM': 'A+', 'BI': 'A+', 'SEJ': 'A+', 'MAT': 'A+',
-                'AMT': 'A+', 'CHE': 'A+', 'PHY': 'A+', 'BIO': 'A+',
-                'SN': 'A+',
+                'bm': 'A+', 'eng': 'A+', 'hist': 'A+', 'math': 'A+',
+                'addmath': 'A+', 'chem': 'A+', 'phy': 'A+', 'bio': 'A+',
+                'sci': 'A+',
             },
             'gender': 'male',
         }, format='json')

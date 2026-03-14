@@ -126,6 +126,12 @@ const SUBJECT_NAMES: Record<string, { bm: string; en: string }> = {
   menservis_elektrik: { bm: 'Menservis Peralatan Elektrik', en: 'Electrical Servicing' },
   voc_food: { bm: 'Vokasional Makanan', en: 'Vocational Food' },
   voc_landscape: { bm: 'Vokasional Landskap', en: 'Vocational Landscaping' },
+  voc_construct: { bm: 'MPV Binaan Bangunan', en: 'Construction' },
+  voc_weld: { bm: 'MPV Kimpalan & Fabrikasi', en: 'Welding & Fabrication' },
+  voc_auto: { bm: 'MPV Automotif', en: 'Automotive' },
+  voc_elec_serv: { bm: 'MPV Elektrik & Elektronik', en: 'Electrical & Electronics' },
+  voc_catering: { bm: 'MPV Katering & Penyajian', en: 'Catering & Service' },
+  voc_tailoring: { bm: 'MPV Jahitan & Pakaian', en: 'Fashion & Sewing' },
 }
 
 export function getSubjectName(code: string, locale: string): string {
@@ -136,6 +142,72 @@ export function getSubjectName(code: string, locale: string): string {
   }
   return locale === 'en' ? entry.en : entry.bm
 }
+
+// ---------------------------------------------------------------------------
+// SPM subject definitions — single source of truth for grades page
+// IDs are engine keys (lowercase), matching backend engine.py
+// ---------------------------------------------------------------------------
+
+export interface SpmSubject {
+  id: string  // Engine key: 'math', 'eng', 'phy', etc.
+  category: 'core' | 'science' | 'arts' | 'technical' | 'elective'
+}
+
+export const SPM_SUBJECTS: SpmSubject[] = [
+  // Core (4 compulsory)
+  { id: 'bm', category: 'core' },
+  { id: 'eng', category: 'core' },
+  { id: 'math', category: 'core' },
+  { id: 'hist', category: 'core' },
+  // Science stream
+  { id: 'phy', category: 'science' },
+  { id: 'chem', category: 'science' },
+  { id: 'bio', category: 'science' },
+  { id: 'addmath', category: 'science' },
+  // Arts stream
+  { id: 'ekonomi', category: 'arts' },
+  { id: 'poa', category: 'arts' },
+  { id: 'business', category: 'arts' },
+  { id: 'geo', category: 'arts' },
+  { id: 'b_tamil', category: 'arts' },
+  { id: 'b_cina', category: 'arts' },
+  { id: 'lukisan', category: 'arts' },
+  { id: 'psv', category: 'arts' },
+  { id: 'keusahawanan', category: 'arts' },
+  // Technical stream
+  { id: 'eng_civil', category: 'technical' },
+  { id: 'eng_mech', category: 'technical' },
+  { id: 'eng_elec', category: 'technical' },
+  { id: 'eng_draw', category: 'technical' },
+  { id: 'gkt', category: 'technical' },
+  { id: 'comp_sci', category: 'technical' },
+  { id: 'multimedia', category: 'technical' },
+  { id: 'reka_cipta', category: 'technical' },
+  // Elective (not in any stream pool)
+  { id: 'islam', category: 'elective' },
+  { id: 'moral', category: 'elective' },
+  { id: 'sci', category: 'elective' },
+  { id: 'addsci', category: 'elective' },
+  { id: 'pertanian', category: 'elective' },
+  { id: 'srt', category: 'elective' },
+  { id: 'sports_sci', category: 'elective' },
+  { id: 'music', category: 'elective' },
+  { id: 'voc_construct', category: 'elective' },
+  { id: 'voc_weld', category: 'elective' },
+  { id: 'voc_auto', category: 'elective' },
+  { id: 'voc_elec_serv', category: 'elective' },
+  { id: 'voc_food', category: 'elective' },
+  { id: 'voc_catering', category: 'elective' },
+  { id: 'voc_tailoring', category: 'elective' },
+]
+
+export const SPM_CORE_SUBJECTS = SPM_SUBJECTS.filter(s => s.category === 'core')
+export const SPM_STREAM_POOLS: Record<string, SpmSubject[]> = {
+  science: SPM_SUBJECTS.filter(s => s.category === 'science'),
+  arts: SPM_SUBJECTS.filter(s => s.category === 'arts'),
+  technical: SPM_SUBJECTS.filter(s => s.category === 'technical'),
+}
+export const SPM_ALL_ELECTIVE_SUBJECTS = SPM_SUBJECTS.filter(s => s.category !== 'core')
 
 // ---------------------------------------------------------------------------
 // STPM subject definitions (keys match backend stpm_engine.py)
