@@ -456,68 +456,68 @@
 ## Summary by Risk Level
 
 ### HIGH (8 items)
-| ID | Title | Category |
-|----|-------|----------|
-| TD-001 | STPM SPM prerequisite fields not checked | Correctness bug |
-| TD-002 | Client-side eligibility logic duplicated | Duplication |
-| TD-003 | Zero frontend tests | Test coverage |
-| TD-007 | Bare except in engine.py | Error handling |
-| TD-010 | 9 pre-existing auth test failures | Test coverage |
-| TD-012 | DEFAULT_PERMISSION_CLASSES is AllowAny | Security |
-| TD-045 | EligibilityCheckView.post() is 300+ lines | Maintainability |
-| TD-050 | i18n locale key inconsistency (quiz language bug) | Correctness bug |
+| ID | Title | Category | Status |
+|----|-------|----------|--------|
+| TD-001 | STPM SPM prerequisite fields not checked | Correctness bug | Open |
+| TD-002 | Client-side eligibility logic duplicated | Duplication | Open |
+| TD-003 | Zero frontend tests | Test coverage | Open |
+| TD-007 | Bare except in engine.py | Error handling | Open |
+| TD-010 | 9 pre-existing auth test failures | Test coverage | Open |
+| TD-012 | DEFAULT_PERMISSION_CLASSES is AllowAny | Security | Open |
+| TD-045 | EligibilityCheckView.post() is 300+ lines | Maintainability | Open |
+| TD-050 | i18n locale key inconsistency (quiz language bug) | Correctness bug | Open |
 
 ### MEDIUM (22 items)
-| ID | Title |
-|----|-------|
-| TD-008 | ProfileView accepts arbitrary fields without validation |
-| TD-009 | No rate limiting on Gemini API calls |
-| TD-011 | SupabaseIsAuthenticated returns 403 instead of 401 |
-| TD-013 | Subject key naming split (5+ files to change) |
-| TD-014 | localStorage sprawl (20+ keys, no typing) |
-| TD-015 | Frontend/backend merit calculation may disagree |
-| TD-016 | StpmProgrammeDetailView institution lookup by name |
-| TD-017 | Pre-U fit scoring exists only on frontend |
-| TD-021 | PISMP deduplication logic inline and complex |
-| TD-033 | Auth test failures not triaged |
-| TD-034 | No integration test for full flow |
-| TD-035 | Golden master count discrepancy in docs |
-| TD-038 | CORS_ALLOW_ALL_ORIGINS possible in production |
-| TD-043 | Phone/OTP login blocked |
-| TD-044 | EligibilityCheckView iterates DataFrame twice |
-| TD-046 | CourseListView returns all courses unpaginated |
-| TD-048 | console.error in production with no user feedback |
-| TD-051 | STPM field metadata has 207 unique values |
-| TD-052 | Hardcoded merit thresholds duplicated across layers |
+| ID | Title | Status |
+|----|-------|--------|
+| TD-008 | ProfileView accepts arbitrary fields without validation | Open |
+| TD-009 | No rate limiting on Gemini API calls | Open |
+| TD-011 | SupabaseIsAuthenticated returns 403 instead of 401 | Open |
+| TD-013 | Subject key naming split (5+ files to change) | Open |
+| TD-014 | localStorage sprawl (20+ keys, no typing) | Open |
+| TD-015 | Frontend/backend merit calculation may disagree | Open |
+| TD-016 | StpmProgrammeDetailView institution lookup by name | Open |
+| TD-017 | Pre-U fit scoring exists only on frontend | Open |
+| TD-021 | PISMP deduplication logic inline and complex | Open |
+| TD-033 | Auth test failures not triaged | Open |
+| TD-034 | No integration test for full flow | Open |
+| TD-035 | Golden master count discrepancy in docs | Open |
+| TD-038 | CORS_ALLOW_ALL_ORIGINS possible in production | Open |
+| TD-043 | Phone/OTP login blocked | Open |
+| TD-044 | EligibilityCheckView iterates DataFrame twice | Open |
+| TD-046 | CourseListView returns all courses unpaginated | Open |
+| TD-048 | console.error in production with no user feedback | Open |
+| TD-051 | STPM field metadata has 207 unique values | Open |
+| TD-052 | Hardcoded merit thresholds duplicated across layers | Open |
 
 ### LOW (22 items)
-| ID | Title |
-|----|-------|
-| TD-004 | Mixed HTTP status code style |
-| TD-005 | No standard error response envelope |
-| TD-006 | Inconsistent success response keys (count vs total_count) |
-| TD-018 | Duplicate import of Count, Subquery, OuterRef |
-| TD-019 | Inline json import in views.py |
-| TD-020 | Duplicate credit_stv key in serializer |
-| TD-022 | Sort logic duplicated between search and eligibility |
-| TD-023 | Model field name vs engine key inconsistencies |
-| TD-024 | Course name field is just 'course' |
-| TD-025 | StudentProfile table name uses 'api_' prefix |
-| TD-026 | Inconsistent response field names for course name |
-| TD-027 | Legacy key mapping in engine.py |
-| TD-028 | CSV data files still in codebase |
-| TD-029 | Legacy Streamlit archive (246 files) |
-| TD-030 | Model docstring row counts are stale |
-| TD-031 | One-time scripts still in management commands |
-| TD-032 | load_csv_data.py references Streamlit paths |
-| TD-036 | Hardcoded fallback SECRET_KEY |
-| TD-037 | db.sqlite3 in project folder |
-| TD-039 | sentry-sdk pinned to <2.0 |
-| TD-040 | numpy pinned to <2.0 |
-| TD-041 | settings/page.tsx is a stub |
-| TD-042 | No custom error/loading/404 pages |
-| TD-047 | Startup data load is all-or-nothing |
-| TD-049 | `as any` type assertion |
+| ID | Title | Status |
+|----|-------|--------|
+| TD-004 | Mixed HTTP status code style | Open |
+| TD-005 | No standard error response envelope | Open |
+| TD-006 | Inconsistent success response keys (count vs total_count) | Open |
+| TD-018 | Duplicate import of Count, Subquery, OuterRef | Open |
+| TD-019 | Inline json import in views.py | Open |
+| TD-020 | Duplicate credit_stv key in serializer | Open |
+| TD-022 | Sort logic duplicated between search and eligibility | Open |
+| TD-023 | Model field name vs engine key inconsistencies | Open |
+| TD-024 | Course name field is just 'course' | Open |
+| TD-025 | StudentProfile table name uses 'api_' prefix | Open |
+| TD-026 | Inconsistent response field names for course name | Open |
+| TD-027 | Legacy key mapping in engine.py | Open |
+| TD-028 | CSV data files still in codebase | Open |
+| TD-029 | Legacy Streamlit archive (246 files) | Open |
+| TD-030 | Model docstring row counts are stale | Open |
+| TD-031 | One-time scripts still in management commands | Open |
+| TD-032 | load_csv_data.py references Streamlit paths | Open |
+| TD-036 | Hardcoded fallback SECRET_KEY | Open |
+| TD-037 | db.sqlite3 in project folder | Open |
+| TD-039 | sentry-sdk pinned to <2.0 | Open |
+| TD-040 | numpy pinned to <2.0 | Open |
+| TD-041 | settings/page.tsx is a stub | Open |
+| TD-042 | No custom error/loading/404 pages | Open |
+| TD-047 | Startup data load is all-or-nothing | Open |
+| TD-049 | `as any` type assertion | Open |
 
 ---
 
