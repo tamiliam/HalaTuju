@@ -1,5 +1,23 @@
 # Changelog — HalaTuju
 
+## Refactoring Sprint — TD-045, TD-044 (2026-03-14)
+
+### Changed
+- `EligibilityCheckView.post()` reduced from ~310 lines to ~100 lines — business logic extracted to `eligibility_service.py` (TD-045)
+- PISMP req hash collection merged into the main eligibility loop, eliminating double DataFrame iteration (TD-044)
+- Unused imports removed from `views.py` (`defaultdict`, `check_merit_probability`, `check_matric_track`, `check_stpm_bidang`)
+- TVET `source_type != 'tvet'` guard removed from merit calculation — confirmed 0/84 TVET courses have merit data
+
+### Added
+- `eligibility_service.py` — 5 pure functions: `compute_student_merit`, `compute_course_merit`, `deduplicate_pismp`, `sort_eligible_courses`, `compute_stats`
+- `test_eligibility_service.py` — 19 unit tests covering all service functions
+
+### Stats
+- Tests: 406 collected, 406 pass, 0 failures, 0 skipped
+- Tech debt resolved: TD-044, TD-045
+
+---
+
 ## API Consistency Sprint (2026-03-14)
 
 ### Changed

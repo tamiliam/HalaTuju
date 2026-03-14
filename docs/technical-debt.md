@@ -423,7 +423,7 @@
 | TD-007 | Bare except in engine.py | Error handling | Resolved (Sprint 4) |
 | TD-010 | 9 pre-existing auth test failures | Test coverage | Resolved (TD-010 Sprint) |
 | TD-012 | DEFAULT_PERMISSION_CLASSES is AllowAny | Security | Resolved (Security Sprint) |
-| TD-045 | EligibilityCheckView.post() is 300+ lines | Maintainability | Open |
+| TD-045 | EligibilityCheckView.post() is 300+ lines | Maintainability | Resolved (Refactoring Sprint) |
 | TD-050 | i18n locale key inconsistency (quiz language bug) | Correctness bug | Resolved (Sprint 4) |
 
 ### MEDIUM (22 items)
@@ -443,7 +443,7 @@
 | TD-035 | Golden master count discrepancy in docs | Resolved (Test Health Sprint) |
 | TD-038 | CORS_ALLOW_ALL_ORIGINS possible in production | Resolved (Security Sprint) |
 | TD-043 | Phone/OTP login blocked | Open |
-| TD-044 | EligibilityCheckView iterates DataFrame twice | Open |
+| TD-044 | EligibilityCheckView iterates DataFrame twice | Resolved (Refactoring Sprint) |
 | TD-046 | CourseListView returns all courses unpaginated | Open |
 | TD-048 | console.error in production with no user feedback | Open |
 | TD-051 | STPM field metadata has 207 unique values | Open |
@@ -509,7 +509,8 @@
 **Sprint 6 — Architecture (1-2 sessions)**
 - ~~TD-002, TD-015, TD-017~~: RESOLVED — backend is single source of truth, frontend files deleted
 - TD-013: Subject key naming split (still open, lower risk)
-- TD-045, TD-021: Refactor EligibilityCheckView into smaller functions
+- ~~TD-045~~: RESOLVED — EligibilityCheckView refactored, business logic extracted to eligibility_service.py
+- TD-021: Refactor EligibilityCheckView into smaller functions (remaining cleanup if needed)
 
 **Sprint 7-8 — Cleanup (1-2 sessions)**
 - TD-028, TD-029, TD-031, TD-032: Archive/remove legacy files

@@ -191,6 +191,18 @@
 
 **Revisit if:** The auth architecture changes to move JWT verification into DRF's authentication pipeline (e.g., replacing middleware with a proper DRF authenticator that also verifies tokens).
 
+## Service module extraction for EligibilityCheckView — Refactoring Sprint, 2026-03-14
+
+**Decision:** Extracted business logic from `EligibilityCheckView.post()` into a standalone `eligibility_service.py` module with 5 pure functions, reducing the view from ~310 lines to ~100 lines.
+
+**Alternatives considered:** (1) Private methods on the view class (`_compute_merit()`, `_sort_results()`). (2) A service class with state (`EligibilityService(data, grades)`). (3) Pure module-level functions (chosen).
+
+**Rationale:** Pure functions are the simplest option — no instantiation, no state, no DRF dependencies. Each function takes explicit parameters and returns plain dicts. This makes testing trivial (no request objects, no setUp) and the functions are reusable outside the view if needed. The view becomes a thin orchestrator that handles HTTP concerns only.
+
+**Trade-offs:** The view must pass several parameters to each service function rather than relying on `self`. This is intentional — explicit parameters make data flow visible.
+
+**Revisit if:** A second view needs the same eligibility logic (e.g., batch eligibility API), at which point the service module pays for itself immediately.
+
 ## Default-deny permissions (SupabaseIsAuthenticated) — Security Sprint, 2026-03-14
 
 **Decision:** Changed `REST_FRAMEWORK.DEFAULT_PERMISSION_CLASSES` from `AllowAny` to `SupabaseIsAuthenticated`. All 16 public endpoints explicitly marked with `permission_classes = [AllowAny]`.

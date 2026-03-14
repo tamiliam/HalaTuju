@@ -18,7 +18,6 @@ Endpoints:
 import json
 import logging
 import math
-from collections import defaultdict
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -27,14 +26,20 @@ from django.apps import apps
 from django.db.models import Count, OuterRef, Q, Subquery
 
 from .models import Course, CourseInstitution, CourseRequirement, Institution, StudentProfile, SavedCourse, AdmissionOutcome, StpmCourse, StpmRequirement
+from .eligibility_service import (
+    compute_student_merit,
+    compute_course_merit,
+    deduplicate_pismp,
+    sort_eligible_courses,
+    compute_stats,
+)
 from .engine import (
     StudentProfile as EngineStudentProfile,
     check_eligibility,
     prepare_merit_inputs,
     calculate_merit_score,
-    check_merit_probability,
 )
-from .pathways import check_matric_track, check_stpm_bidang, check_all_pathways, get_pathway_fit_score
+from .pathways import check_all_pathways, get_pathway_fit_score
 from .serializers import (
     CourseSerializer,
     InstitutionSerializer,
@@ -307,25 +312,13 @@ class EligibilityCheckView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # Validate request
         serializer = EligibilityRequestSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         data = serializer.validated_data
+        student_merit = compute_student_merit(data)
 
-        # Use pre-computed merit from frontend if provided, otherwise recalculate
-        student_merit = data.get('student_merit')
-        if student_merit is None:
-            grades_for_merit = dict(data.get('grades', {}))
-            if 'hist' in grades_for_merit:
-                grades_for_merit['history'] = grades_for_merit.pop('hist')
-            sec1, sec2, sec3 = prepare_merit_inputs(grades_for_merit)
-            coq_score = data.get('coq_score', 5.0)
-            merit_result = calculate_merit_score(sec1, sec2, sec3, coq_score=coq_score)
-            student_merit = merit_result['final_merit']
-
-        # Build StudentProfile for engine
         student = EngineStudentProfile(
             grades=data.get('grades', {}),
             gender=data.get('gender', 'Lelaki'),
@@ -336,7 +329,6 @@ class EligibilityCheckView(APIView):
             other_voc=data.get('other_voc', False),
         )
 
-        # Get requirements DataFrame from app config (hybrid approach)
         courses_config = apps.get_app_config('courses')
         df = courses_config.requirements_df
 
@@ -347,16 +339,10 @@ class EligibilityCheckView(APIView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
 
-        # Run eligibility check for each course
-        eligible_courses = []
-        stats = {}
-
-        # Pre-fetch course details for efficient lookups
+        # Pre-fetch lookups
         course_details = {
             c.course_id: c for c in Course.objects.all()
         }
-
-        # Pre-fetch institution data per course (count + primary name/state)
         first_offering = CourseInstitution.objects.filter(
             course=OuterRef('pk')
         ).order_by('institution__institution_name')
@@ -372,243 +358,85 @@ class EligibilityCheckView(APIView):
             ).values('course_id', 'inst_count', 'inst_name', 'inst_state')
         }
 
+        # Single pass: eligibility check + PISMP req hash collection
+        eligible_courses = []
+        pismp_req_hashes = {}
+
         for _, row in df.iterrows():
             req = row.to_dict()
-            is_eligible, audit = check_eligibility(student, req)
 
-            if is_eligible:
-                course_id = req.get('course_id')
-                source_type = req.get('source_type', 'poly')
-
-                # Handle NaN values for JSON serialization
-                merit_cutoff = req.get('merit_cutoff')
-                if merit_cutoff is not None and (math.isnan(merit_cutoff) or math.isinf(merit_cutoff)):
-                    merit_cutoff = None
-
-                # Get course details
-                course = course_details.get(course_id)
-                course_name = course.course if course else course_id
-                course_level = course.level if course else ''
-                course_field = (course.frontend_label or course.field) if course else ''
-
-                # Compute merit traffic light for this course
-                merit_label = None
-                merit_color = None
-                merit_display_student = None
-                merit_display_cutoff = None
-                student_merit_for_course = student_merit
-                merit_type = req.get('merit_type', 'standard')
-
-                if merit_type == 'matric':
-                    # Matric: use pathways.py grade-point formula
-                    track_id_map = {
-                        'matric-sains': 'sains',
-                        'matric-kejuruteraan': 'kejuruteraan',
-                        'matric-sains-komputer': 'sains_komputer',
-                        'matric-perakaunan': 'perakaunan',
-                    }
-                    track_id = track_id_map.get(course_id)
-                    if track_id:
-                        coq = data.get('coq_score', 5.0)
-                        matric_result = check_matric_track(track_id, student.grades, coq)
-                        if matric_result['eligible'] and matric_result['merit'] is not None:
-                            student_merit_for_course = matric_result['merit']
-                            if student_merit_for_course >= 94:
-                                merit_label, merit_color = "High", "#2ecc71"
-                            elif student_merit_for_course >= 89:
-                                merit_label, merit_color = "Fair", "#f1c40f"
-                            else:
-                                merit_label, merit_color = "Low", "#e74c3c"
-                        else:
-                            # Pathways formula says not eligible — skip
-                            continue
-
-                elif merit_type == 'stpm_mata_gred':
-                    # STPM: use pathways.py mata gred formula
-                    bidang_id_map = {
-                        'stpm-sains': 'sains',
-                        'stpm-sains-sosial': 'sains_sosial',
-                    }
-                    bidang_id = bidang_id_map.get(course_id)
-                    if bidang_id:
-                        stpm_result = check_stpm_bidang(bidang_id, student.grades)
-                        if stpm_result['eligible'] and stpm_result['mata_gred'] is not None:
-                            mata_gred = stpm_result['mata_gred']
-                            max_mg = stpm_result['max_mata_gred']
-                            if mata_gred <= 12:
-                                merit_label, merit_color = "High", "#2ecc71"
-                            elif mata_gred <= max_mg:
-                                merit_label, merit_color = "Fair", "#f1c40f"
-                            else:
-                                merit_label, merit_color = "Low", "#e74c3c"
-                            merit_display_student = str(mata_gred)
-                            merit_display_cutoff = str(max_mg)
-                            student_merit_for_course = (27 - mata_gred) / 24 * 100
-                        else:
-                            continue
-
-                else:
-                    # Standard SPM merit
-                    if merit_cutoff and source_type != 'tvet':
-                        merit_label, merit_color = check_merit_probability(
-                            student_merit, merit_cutoff
-                        )
-
-                # Get pathway_type from startup map
-                pathway_type = courses_config.course_pathway_map.get(
-                    course_id, source_type
-                )
-
-                # Institution data
-                inst = course_inst_data.get(course_id, {})
-
-                eligible_courses.append({
-                    'course_id': course_id,
-                    'course_name': course_name,
-                    'level': course_level,
-                    'field': course_field,
-                    'source_type': source_type,
-                    'pathway_type': pathway_type,
-                    'merit_cutoff': merit_cutoff,
-                    'student_merit': student_merit_for_course,
-                    'merit_label': merit_label,
-                    'merit_color': merit_color,
-                    'merit_display_student': merit_display_student,
-                    'merit_display_cutoff': merit_display_cutoff,
-                    'institution_name': inst.get('inst_name') or '',
-                    'institution_count': inst.get('inst_count') or 0,
-                    'institution_state': inst.get('inst_state') or '',
-                })
-
-                # Update stats
-                stats[source_type] = stats.get(source_type, 0) + 1
-
-        # Deduplicate PISMP zone variants.
-        # Zone code in course_id[4:6]: 01/06=National, 03=Chinese, 04=Tamil, 05=Special
-        # Rules:
-        #   1. Collapse entries with identical subject_group_req (regardless of zone)
-        #   2. Chinese/Tamil with DIFFERENT requirements from National →
-        #      merge into one card "(Aliran Cina/Tamil)" with pismp_languages
-        def _pismp_zone(cid):
-            z = cid[4:6] if len(cid) >= 6 else ''
-            if z == '03':
-                return 'cn'
-            if z == '04':
-                return 'ta'
-            if z == '05':
-                return 'sn'
-            return 'nat'
-
-        # Build a requirements hash per course_id from the DataFrame
-        _req_hash = {}
-        for _, row in df.iterrows():
-            cid = row.get('course_id', '')
-            if row.get('source_type') == 'pismp':
-                sgr = row.get('subject_group_req')
+            # Collect PISMP requirement hashes in same pass (fixes TD-044)
+            course_id = req.get('course_id', '')
+            if req.get('source_type') == 'pismp':
+                sgr = req.get('subject_group_req')
                 if sgr is not None:
                     try:
-                        h = json.dumps(sgr, sort_keys=True) if not isinstance(sgr, str) else sgr
+                        pismp_req_hashes[course_id] = (
+                            json.dumps(sgr, sort_keys=True)
+                            if not isinstance(sgr, str) else sgr
+                        )
                     except (TypeError, ValueError):
-                        h = str(sgr)
+                        pismp_req_hashes[course_id] = str(sgr)
                 else:
-                    h = 'null'
-                _req_hash[cid] = h
+                    pismp_req_hashes[course_id] = 'null'
 
-        # Group PISMP by course name
-        pismp_groups = defaultdict(lambda: {'nat': [], 'cn': [], 'ta': [], 'sn': []})
-        non_pismp = []
-        for c in eligible_courses:
-            if c['source_type'] == 'pismp':
-                zone = _pismp_zone(c['course_id'])
-                pismp_groups[c['course_name']][zone].append(c)
-            else:
-                non_pismp.append(c)
+            is_eligible, audit = check_eligibility(student, req)
+            if not is_eligible:
+                continue
 
-        _lang_labels = {'cn': 'Bahasa Cina', 'ta': 'Bahasa Tamil'}
+            source_type = req.get('source_type', 'poly')
 
-        deduped_pismp = []
-        for name, zones in pismp_groups.items():
-            # National + Special Needs → keep one
-            nat_entries = zones['nat'] + zones['sn']
-            nat_hash = _req_hash.get(nat_entries[0]['course_id']) if nat_entries else None
+            # Handle NaN for JSON serialization
+            merit_cutoff = req.get('merit_cutoff')
+            if merit_cutoff is not None and (math.isnan(merit_cutoff) or math.isinf(merit_cutoff)):
+                merit_cutoff = None
 
-            if nat_entries:
-                deduped_pismp.append(nat_entries[0])
+            # Per-course merit calculation
+            merit_type = req.get('merit_type', 'standard')
+            merit_result = compute_course_merit(
+                merit_type=merit_type,
+                source_type=source_type,
+                merit_cutoff=merit_cutoff,
+                student_merit=student_merit,
+                course_id=course_id,
+                data=data,
+                grades=student.grades,
+            )
+            if merit_result is None:
+                continue  # Pathway says not eligible
 
-            # Chinese/Tamil: check if requirements differ from National
-            diff_langs = []  # languages with genuinely different requirements
-            for lang_zone in ('cn', 'ta'):
-                lang_entries = zones[lang_zone]
-                if not lang_entries:
-                    continue
-                lang_hash = _req_hash.get(lang_entries[0]['course_id'])
-                if lang_hash == nat_hash:
-                    # Identical to National → already covered, skip
-                    continue
-                diff_langs.append((lang_zone, lang_entries[0]))
+            # Course details
+            course = course_details.get(course_id)
+            course_name = course.course if course else course_id
+            pathway_type = courses_config.course_pathway_map.get(
+                course_id, source_type
+            )
+            inst = course_inst_data.get(course_id, {})
 
-            if diff_langs:
-                # Merge all different-requirement language variants into one card
-                base = diff_langs[0][1].copy()
-                langs = [_lang_labels[lz] for lz, _ in diff_langs]
-                suffix = '/'.join(langs)
-                base['course_name'] = f"{name} (Aliran {suffix})"
-                base['pismp_languages'] = langs
-                deduped_pismp.append(base)
+            eligible_courses.append({
+                'course_id': course_id,
+                'course_name': course_name,
+                'level': course.level if course else '',
+                'field': (course.frontend_label or course.field) if course else '',
+                'source_type': source_type,
+                'pathway_type': pathway_type,
+                'merit_cutoff': merit_cutoff,
+                'student_merit': merit_result['student_merit'],
+                'merit_label': merit_result['merit_label'],
+                'merit_color': merit_result['merit_color'],
+                'merit_display_student': merit_result['merit_display_student'],
+                'merit_display_cutoff': merit_result['merit_display_cutoff'],
+                'institution_name': inst.get('inst_name') or '',
+                'institution_count': inst.get('inst_count') or 0,
+                'institution_state': inst.get('inst_state') or '',
+            })
 
-        eligible_courses = non_pismp + deduped_pismp
-
-        # Update stats after dedup
-        stats = {}
-        for c in eligible_courses:
-            st = c['source_type']
-            stats[st] = stats.get(st, 0) + 1
-
-        # Default sort: merit chance first, then delta within tier, then credential > pathway > cutoff
-        PATHWAY_PRIORITY = {
-            'asasi': 8, 'matric': 7, 'stpm': 6,
-            'university': 5, 'ua': 5, 'poly': 4, 'pismp': 3, 'kkom': 2,
-            'iljtm': 1, 'ilkbs': 1,
-        }
-        MERIT_LABEL_PRIORITY = {'High': 3, 'Fair': 2, 'Low': 1}
-        def _merit_delta(c):
-            """Delta sort only for Fair/Low — High uses credential instead."""
-            if c.get('merit_label') in ('Fair', 'Low'):
-                return -(c.get('student_merit', 0) - (c['merit_cutoff'] or 0))
-            return 0  # High / no data: ignore delta, let credential decide
-
-        def _merit_sort_key(c):
-            label = c.get('merit_label') or ''
-            if label:
-                return -MERIT_LABEL_PRIORITY[label]
-            # PISMP has no merit data — place in High tier
-            if c.get('source_type') == 'pismp':
-                return -MERIT_LABEL_PRIORITY['High']
-            # ILJTM/ILKBS sit between Fair and Low
-            pt = c.get('pathway_type', c.get('source_type', ''))
-            if pt in ('iljtm', 'ilkbs'):
-                return -1.5
-            return -2  # others without data = Fair
-
-        eligible_courses.sort(key=lambda c: (
-            _merit_sort_key(c),
-            _merit_delta(c),
-            -get_credential_priority(c['course_name'], c.get('source_type', '')),
-            -PATHWAY_PRIORITY.get(c.get('pathway_type', c.get('source_type', '')), 0),
-            -float(c['merit_cutoff'] or 0),  # competitiveness: higher cutoff first
-            c['course_name'],
-        ))
+        eligible_courses = deduplicate_pismp(eligible_courses, pismp_req_hashes)
+        eligible_courses = sort_eligible_courses(eligible_courses)
+        stats, pathway_stats = compute_stats(eligible_courses)
+        insights = generate_insights(eligible_courses)
 
         logger.info(f"Eligibility check: {len(eligible_courses)} courses eligible")
-
-        # Build pathway stats from eligible courses
-        pathway_stats = {}
-        for c in eligible_courses:
-            pt = c.get('pathway_type', c['source_type'])
-            pathway_stats[pt] = pathway_stats.get(pt, 0) + 1
-
-        # Generate deterministic insights from results
-        insights = generate_insights(eligible_courses)
 
         return Response({
             'eligible_courses': eligible_courses,

@@ -115,8 +115,8 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (387 collected, 387 pass, 0 failures, 0 skipped)
-python -m pytest apps/courses/tests/ -v
+# Run ALL tests (406 collected, 406 pass, 0 failures, 0 skipped)
+python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
 python -m pytest apps/courses/tests/test_golden_master.py -v
@@ -153,6 +153,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_api.py | 9 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency), STPM ranking API (returns 200, scored programmes, sorted desc, missing 400, empty list) |
 | test_stpm_search.py | 12 | STPM search API (200, programmes shape, text/university/stream filters, pagination, filter metadata), STPM detail API (200, programme data, 404, subjects list) |
 | test_stpm_ranking.py | 9 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest match dict format, interview penalty), ranked results (sorted desc, empty list, output shape) |
+| test_eligibility_service.py | 19 | Service module: compute_student_merit (precomputed/grades/hist rename/default coq), compute_course_merit (standard/no cutoff/tvet/matric/stpm), deduplicate_pismp (passthrough/identical collapse/language merge), sort_eligible_courses (merit order/pismp/iljtm), compute_stats (source_type/pathway_type) |
 | test_preu_courses.py | 4 | Pre-U eligibility (stats include matric/stpm), search (level Pra-U, text Matrikulasi, source_type matric) |
 
 ### Annual STPM Data Refresh (before UPU application season)
@@ -182,8 +183,8 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (387 collected, 387 must pass, SPM golden master = 5319, STPM golden master = 1811)
-python -m pytest apps/courses/tests/ -v
+# 1. Run all tests (406 collected, 406 must pass, SPM golden master = 5319, STPM golden master = 1811)
+python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
 #    Run Supabase Security Advisor and fix all errors
@@ -194,13 +195,14 @@ python -m pytest apps/courses/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-387 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
+406 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
 
 | File | Role | Sacred? |
 |------|------|---------|
+| `apps/courses/eligibility_service.py` | Extracted business logic (merit, PISMP dedup, sort, stats) | No |
 | `apps/courses/engine.py` | Eligibility logic | YES — Golden Master |
 | `apps/courses/pathways.py` | Matric/STPM eligibility + fit scoring (virtual courses) | No |
 | `apps/courses/serializers.py` | Request normalization (grade keys, gender, booleans) | No |
@@ -294,8 +296,14 @@ Supabase Security Advisor must show 0 errors before deploy.
 **API Consistency Sprint COMPLETE (2026-03-14)**
 - Raw status codes → DRF constants in SavedCoursesView/SavedCourseDetailView (TD-004).
 - 403→401 for unauthenticated requests: `SupabaseAuthentication` DRF class provides `WWW-Authenticate: Bearer` header (TD-011).
-- Tech debt resolved: TD-004, TD-011. Total: 15/52 resolved.
-- Tests: 387 pass, 0 fail, 0 skip.
+- Tech debt resolved: TD-004, TD-011.
+
+**Refactoring Sprint COMPLETE (2026-03-14)**
+- `EligibilityCheckView.post()` reduced from ~310 lines to ~100 lines — business logic extracted to `eligibility_service.py` (TD-045)
+- Double DataFrame iteration eliminated — PISMP req hashes collected in main loop (TD-044)
+- TVET merit guard removed (confirmed 0/84 TVET courses have merit data)
+- Tech debt resolved: TD-044, TD-045. Total: 17/52 resolved.
+- Tests: 406 pass, 0 fail, 0 skip.
 
 **Pending work**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
@@ -303,7 +311,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
 - Store `signal_strength` in Supabase (currently only `student_signals` synced)
 - STPM field metadata refinement: 207 unique field values from Gemini (expected ~30) — consider normalisation pass
-- Continue tech debt remediation from `docs/technical-debt.md` (39 items remaining)
+- Continue tech debt remediation from `docs/technical-debt.md` (37 items remaining)
 - MOHE ePanduan data sync pipeline built (scrape → sync → validate). Annual refresh takes ~15 min.
 
 ## Streamlit App (Legacy — migrating to Django API)
