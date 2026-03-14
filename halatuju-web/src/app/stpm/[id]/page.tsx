@@ -64,11 +64,9 @@ export default function StpmProgrammeDetailPage() {
 
   const streamLabel = data.stream === 'science' ? 'Science' : data.stream === 'arts' ? 'Arts' : 'Science / Arts'
 
-  const hasFlags = data.requirements.req_interview ||
+  const hasSpecialConditions = data.requirements.req_interview ||
     data.requirements.no_colorblind ||
-    data.requirements.req_medical_fitness ||
-    data.requirements.req_malaysian ||
-    data.requirements.req_bumiputera
+    data.requirements.req_medical_fitness
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -301,7 +299,7 @@ export default function StpmProgrammeDetailPage() {
             </section>
 
             {/* Special Conditions */}
-            {hasFlags && (
+            {hasSpecialConditions && (
               <section className="bg-white rounded-xl border border-gray-200 p-6">
                 <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2 mb-3">
                   <svg className="w-[18px] h-[18px] text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
