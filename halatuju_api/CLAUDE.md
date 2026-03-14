@@ -236,7 +236,14 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Code quality: bare except narrowed, duplicate imports/keys removed
 - Tests: 332 pass / 13 pre-existing JWT failures / 30 skipped
 
+**Data Integrity Sprint COMPLETE (2026-03-14)**
+- STPM "programmes" → "courses" rename (codebase + Supabase columns + i18n)
+- `db_column` workaround eliminated (real Supabase column rename)
+- MOHE course audit: 363 CSV courses verified, 2 new courses added, 2 name fixes
+- Database: 390 SPM courses, 1,113 STPM courses, 838 institutions
+
 **Pending work**
+- TD-002: Frontend-backend eligibility logic duplication (next priority)
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`

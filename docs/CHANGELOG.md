@@ -1,5 +1,25 @@
 # Changelog — HalaTuju
 
+## Data Integrity Sprint (2026-03-14)
+
+### Changed
+- STPM "programmes" renamed to "courses" across entire codebase (23 files: models, views, serializers, tests, URLs, i18n)
+- i18n strings updated (EN/BM/TA) — "programmes" → "courses" / "kursus" / "படிப்புகள்"
+- Supabase `stpm_courses` columns renamed: `program_id` → `course_id`, `program_name` → `course_name`
+- Django `db_column` workaround removed from `StpmCourse` model (real column rename eliminates technical debt)
+- 2 course names fixed in Supabase: "Rekabentuk Industri" → "Reka Bentuk Industri", "Food & Beverage" → "Food and Beverage"
+
+### Added
+- 2 new courses from MOHE ePanduan audit:
+  - FB0500001 Asasi Teknologi Kejuruteraan (Asasi TVET) — 10 polytechnics, merit 75.14%
+  - UL0481001 Asasi Teknologi Maklumat Huffaz — UMK, merit 70.70%
+- Full requirements and institution links for both new courses
+
+### Stats
+- MOHE audit: 363 CSV courses → 208 eligible (after UiTM/bumi/Islamic filters) → 196 matched, 2 added, 2 name-fixed
+- Tests: 332 passing, 13 pre-existing auth failures, 30 skipped
+- Database: 390 SPM courses, 1,113 STPM courses, 838 institutions
+
 ## Pre-U Courses Sprint (2026-03-13)
 
 ### Added

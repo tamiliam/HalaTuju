@@ -15,3 +15,5 @@ Cross-cutting lessons from sprint retrospectives. Only items that affect future 
 - Do not generate data on-the-fly in API responses when it should be a database entry — synthetic entries cause search gaps, badge inconsistency, and separate code paths that diverge over time. (Pre-U Sprint)
 - Before inserting data into the DB, check how downstream pages render it — adding bare records can degrade rich UIs that used a different data source. (UI Polish Sprint)
 - Always verify key/value mappings against actual API responses, not visual references — uppercase/lowercase mismatches cause silent display failures. (UI Polish Sprint)
+- When cross-referencing CSV data with database records, never trust a single column for critical filters (e.g. bumiputera) — verify against a second source file or the institution itself. (Data Integrity Sprint)
+- When matching courses across systems with different ID schemes, use name-based matching as fallback — institution types may use entirely different code conventions (FB/FC vs POLY-DIP/KKOM-CET). (Data Integrity Sprint)
