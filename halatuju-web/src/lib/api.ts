@@ -95,6 +95,7 @@ export interface Institution {
   type: string
   category: string
   state: string
+  url?: string
   // Per-offering details (from CourseInstitution)
   hyperlink?: string
   tuition_fee_semester?: string

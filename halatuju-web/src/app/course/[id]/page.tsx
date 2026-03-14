@@ -73,6 +73,16 @@ export default function CourseDetailPage() {
   const isPreU = courseId.startsWith('stpm-') || courseId.startsWith('matric-')
   const isArtsStream = courseId === 'stpm-sains-sosial'
 
+  // Course-level "More Info" link
+  const sourceType = requirements?.source_type
+  const courseInfoUrl = courseId.startsWith('matric-')
+    ? 'https://www.moe.gov.my/pengenalan-matrikulasi'
+    : courseId.startsWith('stpm-')
+      ? 'https://sst6.moe.gov.my/index.cfm'
+      : sourceType === 'pismp'
+        ? 'https://pismp.moe.gov.my/iklan_permohonan.cfm'
+        : institutions?.[0]?.hyperlink || null
+
   return (
     <main className="min-h-screen bg-gray-50">
       <AppHeader />
@@ -113,9 +123,21 @@ export default function CourseDetailPage() {
           <div className="md:col-span-2 space-y-8">
             {/* About */}
             <section className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                {t('courseDetail.aboutTitle')}
-              </h2>
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {t('courseDetail.aboutTitle')}
+                </h2>
+                {courseInfoUrl && (
+                  <a
+                    href={courseInfoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 bg-primary-500 text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors whitespace-nowrap"
+                  >
+                    More Info
+                  </a>
+                )}
+              </div>
               <p className="text-gray-600 leading-relaxed">
                 {locale === 'ms'
                   ? (course.description || course.description_en || `Program ${course.level} dalam bidang ${course.field} menyediakan pelajar untuk kerjaya dalam ${course.department}.`)
@@ -388,9 +410,9 @@ function InstitutionCard({ institution }: { institution: Institution }) {
           >
             {institution.category}
           </span>
-          {institution.hyperlink && (
+          {institution.url && (
             <a
-              href={institution.hyperlink}
+              href={institution.url}
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 py-1.5 bg-primary-500 text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors"

@@ -106,25 +106,24 @@ export default function StpmCourseDetailPage() {
             {/* About */}
             {data.description && (
               <section className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                  {t('courseDetail.aboutTitle')}
-                </h2>
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {t('courseDetail.aboutTitle')}
+                  </h2>
+                  {data.mohe_url && (
+                    <a
+                      href={data.mohe_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-primary-500 text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors whitespace-nowrap"
+                    >
+                      More Info
+                    </a>
+                  )}
+                </div>
                 <p className="text-gray-600 leading-relaxed">
                   {data.description}
                 </p>
-                {data.mohe_url && (
-                  <a
-                    href={data.mohe_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    {t('courseDetail.viewOnEpanduan')}
-                  </a>
-                )}
               </section>
             )}
 
