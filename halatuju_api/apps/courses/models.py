@@ -530,6 +530,10 @@ class StpmCourse(models.Model):
     field = models.CharField(max_length=255, blank=True, default='', help_text='AI-assigned field category')
     category = models.CharField(max_length=255, blank=True, default='', help_text='AI-assigned category (Malay)')
     description = models.TextField(blank=True, default='', help_text='AI-generated course description')
+    mohe_url = models.URLField(
+        max_length=500, blank=True, default='',
+        help_text='Link to MOHE ePanduan programme page'
+    )
 
     class Meta:
         db_table = 'stpm_courses'
