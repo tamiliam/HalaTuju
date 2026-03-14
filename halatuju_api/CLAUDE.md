@@ -221,6 +221,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 - DB state normalisation (WP Kuala Lumpur, WP Labuan)
 - STPM detail API enriched with field, category, description, merit_score
 
+**Hotfix Sprint (2026-03-14) COMPLETE — deployed**
+- ILJTM/ILKBS badges fixed on explore page (search API resolves tvet → iljtm/ilkbs)
+- ILJTM/ILKBS added as separate search filter options
+- STPM programme detail: rich institution cards (acronym, state, category, More Info)
+- "Avg. Mata Gred" → "Max Grade Points" with i18n + stream-aware colour logic
+- Arts cutoff corrected to 12 (was 18); 100-course search cap removed
+
 **Pending work**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Hotfix Sprint (2026-03-14)
+
+### Added
+- **STPM programme institution enrichment** — Detail API now looks up university in `institutions` table, returning acronym, type, category, state, URL; frontend renders rich institution card matching SPM style
+- **i18n: Max Grade Points** — New key `courseDetail.maxGradePoints` in EN ("Max Grade Points"), BM ("Mata Gred Maksimum"), TA ("அதிகபட்ச தர புள்ளிகள்")
+
+### Changed
+- **Search: ILJTM/ILKBS resolution** — Search API now resolves `tvet` → `iljtm`/`ilkbs` using `course_pathway_map`; filter options show ILJTM and ILKBS separately instead of hidden `tvet`
+- **Search: course limit removed** — Backend no longer caps at 100 courses; explore page shows all results
+- **Course detail: merit label** — "Avg. Mata Gred" → "Max Grade Points" (i18n) for `stpm_mata_gred` merit type
+- **Course detail: merit colour logic** — Arts stream: ≤12 green, 13-18 amber, >18 red; Science stream: ≤18 green, >18 amber
+
+### Fixed
+- **ILJTM/ILKBS badges on explore page** — CourseCard now receives `pathway_type` from search API, showing correct ILJTM/ILKBS badges instead of undefined
+- **DB: Arts merit cutoff** — `stpm-sains-sosial` cutoff updated from 18 → 12 in Supabase
+
+---
+
 ## [Unreleased] — UI Polish & Consistency Sprint
 
 ### Added
