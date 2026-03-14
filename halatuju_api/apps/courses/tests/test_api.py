@@ -1165,3 +1165,60 @@ class TestCalculateEndpoints(TestCase):
         url = '/api/v1/calculate/cgpa/'
         response = self.client.post(url, {}, format='json')
         self.assertEqual(response.status_code, 400)
+
+    # --- Pathways endpoint tests ---
+
+    def test_pathways_calculation(self):
+        """POST /calculate/pathways/ returns all 6 pathway results with fit scores."""
+        response = self.client.post(
+            '/api/v1/calculate/pathways/',
+            data={
+                'grades': {
+                    'BM': 'A', 'BI': 'A', 'MAT': 'A', 'SEJ': 'A',
+                    'PHY': 'A', 'CHE': 'A', 'AMT': 'A', 'BIO': 'A',
+                },
+                'coq_score': 8.0,
+            },
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('pathways', data)
+        self.assertEqual(len(data['pathways']), 6)  # 4 matric + 2 stpm
+        # First result should be matric sains
+        sains = data['pathways'][0]
+        self.assertEqual(sains['track_id'], 'sains')
+        self.assertTrue(sains['eligible'])
+        self.assertIn('merit', sains)
+        self.assertIn('fit_score', sains)
+
+    def test_pathways_with_signals(self):
+        """POST /calculate/pathways/ accepts optional signals for fit scoring."""
+        response = self.client.post(
+            '/api/v1/calculate/pathways/',
+            data={
+                'grades': {
+                    'BM': 'A', 'BI': 'A', 'MAT': 'A', 'SEJ': 'A',
+                    'PHY': 'A', 'CHE': 'A', 'AMT': 'A', 'BIO': 'A',
+                },
+                'coq_score': 8.0,
+                'signals': {
+                    'work_preference_signals': {'problem_solving': 1},
+                },
+            },
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        sains = data['pathways'][0]
+        # With problem_solving signal, fit_score should be higher than base
+        self.assertGreater(sains['fit_score'], 108)
+
+    def test_pathways_missing_grades(self):
+        """POST /calculate/pathways/ with no grades returns 400."""
+        response = self.client.post(
+            '/api/v1/calculate/pathways/',
+            data={},
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 400)

@@ -39,6 +39,7 @@ urlpatterns = [
     # Calculate endpoints (TD-002: server-side calculations)
     path('calculate/merit/', views.CalculateMeritView.as_view(), name='calculate-merit'),
     path('calculate/cgpa/', views.CalculateCgpaView.as_view(), name='calculate-cgpa'),
+    path('calculate/pathways/', views.CalculatePathwaysView.as_view(), name='calculate-pathways'),
 
     # STPM eligibility
     path('stpm/eligibility/check/', views.StpmEligibilityCheckView.as_view(), name='stpm-eligibility-check'),

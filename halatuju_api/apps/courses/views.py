@@ -34,7 +34,7 @@ from .engine import (
     calculate_merit_score,
     check_merit_probability,
 )
-from .pathways import check_matric_track, check_stpm_bidang
+from .pathways import check_matric_track, check_stpm_bidang, check_all_pathways, get_pathway_fit_score
 from .serializers import (
     CourseSerializer,
     InstitutionSerializer,
@@ -1504,3 +1504,36 @@ class CalculateCgpaView(APIView):
             'academic_cgpa': academic_cgpa,
             'merit_percent': merit_percent,
         })
+
+
+class CalculatePathwaysView(APIView):
+    """Check all pre-U pathway eligibility and fit scores.
+
+    POST /api/v1/calculate/pathways/
+    Body: { grades: {BM: "A", ...}, coq_score: 8.0, signals?: {...} }
+    Response: { pathways: [{track_id, eligible, merit, mata_gred, fit_score, ...}] }
+    """
+
+    def post(self, request):
+        grades_raw = request.data.get('grades')
+        if not grades_raw:
+            return Response(
+                {'error': 'grades is required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        coq_score = float(request.data.get('coq_score', 0))
+        signals = request.data.get('signals')
+
+        # Map frontend keys to engine keys
+        grades = {}
+        for key, value in grades_raw.items():
+            engine_key = EligibilityRequestSerializer.GRADE_KEY_MAP.get(key, key.lower())
+            grades[engine_key] = value
+
+        results = check_all_pathways(grades, coq_score)
+
+        # Add fit scores
+        for r in results:
+            r['fit_score'] = get_pathway_fit_score(r, signals)
+
+        return Response({'pathways': results})
