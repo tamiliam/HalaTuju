@@ -1144,3 +1144,24 @@ class TestCalculateEndpoints(TestCase):
         """POST empty body returns 400."""
         response = self.client.post(self.url, {}, format='json')
         self.assertEqual(response.status_code, 400)
+
+    # --- CGPA endpoint tests ---
+
+    def test_cgpa_calculation(self):
+        """POST STPM grades A, B+, B with koko_score=8 returns expected CGPA values."""
+        url = '/api/v1/calculate/cgpa/'
+        payload = {
+            'stpm_grades': {'PA': 'A', 'MATH_T': 'B+', 'PHYSICS': 'B'},
+            'koko_score': 8,
+        }
+        response = self.client.post(url, payload, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertAlmostEqual(response.data['academic_cgpa'], 3.44, places=2)
+        self.assertAlmostEqual(response.data['cgpa'], 3.42, places=2)
+        self.assertAlmostEqual(response.data['merit_percent'], 85.5, places=1)
+
+    def test_cgpa_missing_grades(self):
+        """POST empty body returns 400."""
+        url = '/api/v1/calculate/cgpa/'
+        response = self.client.post(url, {}, format='json')
+        self.assertEqual(response.status_code, 400)

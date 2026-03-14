@@ -45,7 +45,7 @@ from .serializers import (
     RankingRequestSerializer,
 )
 from .ranking_engine import get_ranked_results, get_credential_priority
-from .stpm_engine import check_stpm_eligibility
+from .stpm_engine import calculate_stpm_cgpa, check_stpm_eligibility
 from .stpm_ranking import get_stpm_ranked_results
 from .insights_engine import generate_insights
 from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
@@ -1471,4 +1471,36 @@ class CalculateMeritView(APIView):
         return Response({
             'academic_merit': result['academic_merit'],
             'final_merit': result['final_merit'],
+        })
+
+
+class CalculateCgpaView(APIView):
+    """
+    POST /api/v1/calculate/cgpa/
+
+    Accepts STPM grades + koko_score, returns CGPA and merit percentage.
+    No authentication required.
+
+    Request:  {"stpm_grades": {"PA": "A", "MATH_T": "B+", ...}, "koko_score": 8}
+    Response: {"cgpa": 3.42, "academic_cgpa": 3.44, "merit_percent": 85.5}
+    """
+
+    def post(self, request):
+        data = request.data
+        stpm_grades = data.get('stpm_grades')
+        if not stpm_grades or not isinstance(stpm_grades, dict):
+            return Response(
+                {'error': 'stpm_grades field is required and must be a dict'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        academic_cgpa = calculate_stpm_cgpa(stpm_grades)
+        koko_score = float(data.get('koko_score', 0))
+        overall_cgpa = round(academic_cgpa * 0.9 + min(koko_score, 10) * 0.04, 2)
+        merit_percent = round((overall_cgpa / 4.0) * 100, 2)
+
+        return Response({
+            'cgpa': overall_cgpa,
+            'academic_cgpa': academic_cgpa,
+            'merit_percent': merit_percent,
         })
