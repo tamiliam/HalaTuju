@@ -18,7 +18,11 @@
     "cookies": "Cookie Policy",
     "contact": "Contact Us",
     "copyright": "2026 HalaTuju. All rights reserved.",
-    "loadingProfile": "Loading your profile..."
+    "loadingProfile": "Loading your profile...",
+    "specialConditions": "Special Conditions",
+    "interviewRequired": "Interview Required",
+    "noColorblind": "No Colourblindness",
+    "medicalFitness": "Medical Fitness Required"
   },
   "header": {
     "myProfile": "My Profile",

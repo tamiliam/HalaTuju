@@ -211,19 +211,14 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Bug Fixes & Auth Gating COMPLETE (2026-03-15)**
-- Auth gating for anon users (My Profile, Load More, profile page)
-- Saved courses UX (status toggle, institution names, course IDs)
-- Centralised localStorage keys (`storage.ts`, 19 constants, 15 files)
-- Error/loading/404 pages with trilingual i18n
-- Removed "No sign-ups" tagline (sign-up now required for key features)
+**IC Gate + Profile Redesign COMPLETE (2026-03-15)**
+- IC number gate after Gmail/phone auth (replaces school input, validates DOB/state, 17 tests)
+- Profile page redesigned: view mode by default, per-section Edit/Save/Cancel, masked IC
+- Incompleteness badge in nav (counts 8 unfilled profile fields)
+- Returning user skip logic (already has NRIC → skip IC gate)
+- 16 new i18n keys × 3 languages (EN/MS/TA)
 
-**Tech Debt Quick Wins 2 COMPLETE (2026-03-15)**
-- Gemini rate limiting (3/user/day), engine field naming fix, CourseListView pagination
-- Trilingual pre-U descriptions via i18n (not DB fields)
-- Dependency pins relaxed (sentry-sdk, numpy)
-- Bug 4 reclassified (not a bug), Bug 5 resolved
-- 48/52 tech debt items now resolved. 424 tests, 0 failures.
+**Current state:** 293 backend tests, 17 frontend tests, 0 failures. 48/52 tech debt.
 
 **Remaining tech debt (4 items)**
 - TD-024: Course name field is `course` (too risky to rename)

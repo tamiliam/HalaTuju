@@ -18,7 +18,11 @@
     "cookies": "Dasar Kuki",
     "contact": "Hubungi Kami",
     "copyright": "2026 HalaTuju. Hak cipta terpelihara.",
-    "loadingProfile": "Memuatkan profil anda..."
+    "loadingProfile": "Memuatkan profil anda...",
+    "specialConditions": "Syarat Khas",
+    "interviewRequired": "Temuduga Diperlukan",
+    "noColorblind": "Tiada Buta Warna",
+    "medicalFitness": "Kecergasan Perubatan Diperlukan"
   },
   "header": {
     "myProfile": "Profil Saya",

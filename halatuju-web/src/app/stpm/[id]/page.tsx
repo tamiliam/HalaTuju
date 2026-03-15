@@ -7,6 +7,7 @@ import { getStpmCourseDetail } from '@/lib/api'
 import { useSavedCourses } from '@/hooks/useSavedCourses'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
+import SpecialConditions from '@/components/SpecialConditions'
 import { useT } from '@/lib/i18n'
 import { useState, useCallback } from 'react'
 
@@ -54,9 +55,7 @@ export default function StpmCourseDetailPage() {
 
   const streamLabel = data.stream === 'science' ? 'Science' : data.stream === 'arts' ? 'Arts' : 'Science / Arts'
 
-  const hasSpecialConditions = data.requirements.req_interview ||
-    data.requirements.no_colorblind ||
-    data.requirements.req_medical_fitness
+  const { req_interview, no_colorblind, req_medical_fitness } = data.requirements
 
   return (
     <main className="min-h-screen bg-gray-50">

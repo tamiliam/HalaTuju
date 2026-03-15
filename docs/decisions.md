@@ -263,6 +263,30 @@
 
 **Revisit if:** All course descriptions need trilingual support — at that point, either add `description_ta`/`headline_ta` to the model, or build a course content CMS.
 
+## IC gate replaces school input in auth flow — IC Gate Sprint, 2026-03-15
+
+**Decision:** Replaced the optional school name input in AuthGateModal with a compulsory IC number (NRIC) step. IC is validated (DOB age 15–23, valid state code), stored in `StudentProfile.nric`, and displayed masked (`****-**-1234`) on the profile page. IC is immutable after initial entry.
+
+**Alternatives considered:** (1) Keep school input and add IC as an additional field on profile page. (2) Collect IC later when needed (e.g., at application time). (3) Replace school with IC at auth time (chosen).
+
+**Rationale:** User identified that school name was collected but unused, while IC provides verifiable student identity needed for tracking students through graduation. Making it compulsory at auth time ensures all authenticated users have an IC on record. Simple validation (DOB range + state code) catches typos without over-validating.
+
+**Trade-offs:** Students must enter their IC to proceed — some may abandon. Mitigated by privacy reassurance message. IC is not editable after entry, preventing students from gaming eligibility. School field remains in the model but is not collected during auth.
+
+**Revisit if:** User testing shows significant drop-off at the IC step, or if a less intrusive verification method becomes available.
+
+## Profile view/edit per-section pattern — IC Gate Sprint, 2026-03-15
+
+**Decision:** Profile page defaults to read-only view mode. Each section (Identity, Contact, Family) has an Edit button. Only one section can be in edit mode at a time, with Save/Cancel buttons.
+
+**Alternatives considered:** (1) Keep all fields always editable with a single save button. (2) Inline edit on individual fields (click to edit each field). (3) Per-section view/edit (chosen).
+
+**Rationale:** Always-editable forms invite accidental changes. Inline edit adds complexity for mobile. Per-section grouping matches the existing visual sections and gives users clear intent signals — "I want to change my contact info" vs accidental keystrokes.
+
+**Trade-offs:** More state management (editingSection, snapshot for cancel). Slightly more code in the profile page. But UX is cleaner and prevents accidental data loss.
+
+**Revisit if:** User testing reveals the Edit button is too many clicks, or if a more complex profile structure (e.g., education history, multiple addresses) requires a different pattern.
+
 ## Dual nullable FKs for SavedCourse — Saved Courses Sprint 1, 2026-03-15
 
 **Decision:** SavedCourse has two nullable FKs (`course` → Course, `stpm_course` → StpmCourse) with a DB check constraint ensuring exactly one is set. Partial unique indexes enforce uniqueness per type.
