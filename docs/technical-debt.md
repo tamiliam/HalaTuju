@@ -9,7 +9,7 @@
 ## Executive Summary
 
 **Total issues found: 52** (High: 8, Medium: 22, Low: 22)
-**Resolved: 48/52** (as of 2026-03-15)
+**Resolved: 49/52** (as of 2026-03-16)
 
 **Top 3 highest-risk items:**
 1. **[TD-001] STPM SPM prerequisite fields not checked** — `spm_pass_bi` and `spm_pass_math` exist in the model but are silently ignored by the eligibility engine. Students may qualify for programmes they shouldn't.
@@ -307,12 +307,9 @@
 **Risk if left:** Medium — quiz may always load in English regardless of the user's language setting.
 **Dependencies:** Quiz page, i18n context.
 
-### [TD-051] STPM field metadata has 207 unique values
-**File(s):** Database (stpm_courses.field column)
-**What it is:** Gemini-generated field categories produced 207 unique values where ~30 were expected. This means field-based filtering and grouping on the search page returns overly specific categories.
-**What consistent looks like:** Normalisation pass to map the 207 values to ~30 canonical categories.
-**Risk if left:** Medium — search filters show too many field options, degrading UX.
-**Dependencies:** Data migration needed.
+### [TD-051] STPM field metadata has 207 unique values ✅ RESOLVED (Field Taxonomy Sprint 2, 2026-03-16)
+**File(s):** Database (stpm_courses.field_key_id column)
+**Resolution:** Deterministic classifier maps all 1,113 STPM courses to 29 of 37 canonical taxonomy keys via `classify_stpm_course()`. The 207 raw `field` values are superseded by `field_key_id` FK to `field_taxonomy`. Search/detail APIs now return `field_key` and support `?field_key=` filtering.
 
 ### [TD-052] Hardcoded merit colour thresholds duplicated ✅ RESOLVED (API Consistency Sprint, 2026-03-15)
 **File(s):** `halatuju_api/apps/courses/engine.py`, `halatuju_api/apps/courses/eligibility_service.py`
@@ -354,7 +351,7 @@
 | TD-044 | EligibilityCheckView iterates DataFrame twice | Resolved (Refactoring Sprint) |
 | TD-046 | CourseListView returns all courses unpaginated | ✅ Resolved (Quick Wins Sprint 2) |
 | TD-048 | console.error in production with no user feedback | Resolved (Frontend Cleanup Sprint) |
-| TD-051 | STPM field metadata has 207 unique values | Open |
+| TD-051 | STPM field metadata has 207 unique values | Resolved (Field Taxonomy Sprint 2) |
 | TD-052 | Hardcoded merit thresholds duplicated across layers | Resolved (API Consistency Sprint) |
 
 ### LOW (22 items)
@@ -424,5 +421,4 @@
 **Sprint 7-8 — Cleanup (1-2 sessions)**
 - TD-028, TD-029, TD-031, TD-032: Archive/remove legacy files
 - TD-030: Update stale docstrings
-- TD-051: Normalise STPM field metadata
 - TD-039, TD-040: Update dependency pins

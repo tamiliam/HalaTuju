@@ -310,3 +310,15 @@
 **Trade-offs:** Check constraint makes bulk inserts slightly more complex (must ensure exactly one FK). Two partial unique indexes instead of one simple unique_together. But both are handled transparently by Django ORM.
 
 **Revisit if:** A third qualification pathway (e.g. UEC) is added — at that point, consider whether the pattern still scales or if a polymorphic approach is warranted.
+
+## Deterministic STPM classifier over Gemini AI — Field Taxonomy Sprint 2, 2026-03-16
+
+**Decision:** Used deterministic keyword matching (`classify_stpm_course()`) instead of Gemini AI to classify 1,113 STPM courses into taxonomy keys.
+
+**Alternatives considered:** (1) Gemini classification with structured output (original plan). (2) Manual classification spreadsheet. (3) Deterministic keyword matching on `category` column (chosen).
+
+**Rationale:** STPM `category` values are consistent BM labels (~170 unique values) unlike the messy Gemini-generated `field` values (207 mixed-language). The category data is clean enough for deterministic matching. Benefits: $0 cost, reproducible, testable without API mocking, no rate limits, instant execution.
+
+**Trade-offs:** New STPM categories added in future data refreshes require manual additions to the classifier. But this is a small maintenance cost vs. ongoing API costs and non-determinism.
+
+**Revisit if:** A new data source with thousands of unpredictable category values is added, where keyword matching becomes impractical.
