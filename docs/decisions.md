@@ -251,6 +251,18 @@
 
 **Revisit if:** Django's auth backend is changed from Supabase JWT to something else, or if a more granular RBAC system is introduced.
 
+## i18n message files for course descriptions — Tech Debt Quick Wins 2, 2026-03-15
+
+**Decision:** Pre-U course descriptions and headlines are stored in i18n message files (`en.json`, `ms.json`, `ta.json`) under a `courses.{course_id}` key, not in DB fields.
+
+**Alternatives considered:** (1) Add `description_ta` and `headline_ta` fields to the Course model — requires migration, only solves Tamil. (2) Populate existing `description`/`description_en` DB fields — quick but excludes Tamil. (3) i18n message files (chosen).
+
+**Rationale:** The project has a trilingual i18n system (EN/MS/TA) but the Course model only has 2 description fields (MS/EN). For a fixed set of 6 courses, i18n keys are the correct approach — all 3 languages, versioned with the codebase, no migration needed. The detail page checks i18n keys first, falls back to DB fields for the 390+ other courses.
+
+**Trade-offs:** Two rendering paths for descriptions (i18n → DB → fallback template). But this is explicit and the fallback template itself is now an i18n key too.
+
+**Revisit if:** All course descriptions need trilingual support — at that point, either add `description_ta`/`headline_ta` to the model, or build a course content CMS.
+
 ## Dual nullable FKs for SavedCourse — Saved Courses Sprint 1, 2026-03-15
 
 **Decision:** SavedCourse has two nullable FKs (`course` → Course, `stpm_course` → StpmCourse) with a DB check constraint ensuring exactly one is set. Partial unique indexes enforce uniqueness per type.

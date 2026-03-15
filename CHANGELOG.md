@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Tech Debt Quick Wins 2 (2026-03-15)
+
+### Added
+- **Trilingual pre-U descriptions** — i18n keys (EN/MS/TA) for all 6 pre-U course headlines and descriptions in message files, replacing empty DB fields
+- **Gemini API rate limiting** — max 3 reports per user per 24 hours via Django cache, returns 429 when exceeded (TD-009)
+- **CourseListView pagination** — optional `?page=1&page_size=50` query params, backwards-compatible (TD-046)
+- **Fallback description template** — `courses.descriptionFallback` i18n key replaces hardcoded fallback strings in course detail page
+
+### Fixed
+- **Engine field naming** — `three_m_only` used directly instead of runtime column rename hack in `apps.py` (TD-023)
+- **Bug 4** — reclassified as "not a bug" (pre-U entry requirements are genuinely broad, not generic)
+- **Bug 5** — pre-U description content added via i18n system (proper trilingual approach)
+
+### Changed
+- **Dependency pins relaxed** — `sentry-sdk>=1.39,<3.0` (was `<2.0`), `numpy>=1.24,<3.0` (was `<2.0`) (TD-039, TD-040)
+- **Tech debt doc** — updated 10 items to reflect resolved status (5 from earlier sprints not marked, 5 new). Now 48/52 resolved.
+
+---
+
 ## [Unreleased] — Bug Fixes & Auth Gating (2026-03-15)
 
 ### Added

@@ -218,17 +218,24 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Error/loading/404 pages with trilingual i18n
 - Removed "No sign-ups" tagline (sign-up now required for key features)
 
-**Tech debt review pass (2026-03-15)** — TD-014, TD-042, TD-048 resolved
-- Error pages fixed: hardcoded English → i18n, brand colour corrected
-- Dead code removed: `getJSON`/`setJSON` from storage.ts, `createOutcome` from api.ts
-- 38/52 tech debt items now resolved
+**Tech Debt Quick Wins 2 COMPLETE (2026-03-15)**
+- Gemini rate limiting (3/user/day), engine field naming fix, CourseListView pagination
+- Trilingual pre-U descriptions via i18n (not DB fields)
+- Dependency pins relaxed (sentry-sdk, numpy)
+- Bug 4 reclassified (not a bug), Bug 5 resolved
+- 48/52 tech debt items now resolved. 424 tests, 0 failures.
+
+**Remaining tech debt (4 items)**
+- TD-024: Course name field is `course` (too risky to rename)
+- TD-025: StudentProfile table `api_` prefix (needs migration + RLS)
+- TD-043: Phone/OTP login blocked (needs Twilio, ~RM12/mo)
+- TD-051: STPM field metadata 207 values (field taxonomy plan approved, 5 sprints)
 
 **Pending work**
-- Field taxonomy normalisation (plan in memory, needs implementation plan)
+- Field taxonomy normalisation (plan approved, needs implementation — see `halatuju_field_taxonomy.md`)
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
-- Continue tech debt remediation from `docs/technical-debt.md` (14 items remaining)
 
 ## Streamlit App (Legacy — migrating to Django API)
 
