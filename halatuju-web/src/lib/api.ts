@@ -38,8 +38,8 @@ export interface StudentProfile {
   grades: Record<string, string>
   gender: 'male' | 'female'
   nationality: 'malaysian' | 'non_malaysian'
-  colorblind?: boolean
-  disability?: boolean
+  colorblind?: boolean | 'Ya' | 'Tidak'
+  disability?: boolean | 'Ya' | 'Tidak'
   coq_score?: number
   student_merit?: number
   student_signals?: Record<string, number>
