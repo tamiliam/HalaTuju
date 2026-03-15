@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Bug Fixes & Auth Gating (2026-03-15)
+
+### Added
+- **Centralised localStorage keys** — `storage.ts` with 22 key constants + typed helpers (`getJSON`, `setJSON`, `clearAll`), all 12 pages updated
+- **Auth gating** — My Profile nav link, Load More buttons (dashboard SPM/STPM/ranked + search), and profile page now show sign-up modal for anon users
+- **Saved courses UX** — institution name + course ID on saved cards, unified status toggle with correct state transitions (un-toggle "Got Offer" falls back to "Applied")
+- **Error boundary pages** — `error.tsx`, `loading.tsx`, `not-found.tsx` for graceful error handling
+- **Backend** — `institution_name` returned for both SPM and STPM saved courses
+- **i18n** — `profileReason`, `loadmoreReason` auth gate messages in EN/MS/TA; error/loading/not-found page keys
+
+### Changed
+- About page tagline: removed "No sign-ups" (all 3 languages) since sign-up is now required for key features
+
+---
+
 ## [Unreleased] — Saved Courses Sprint 2 (2026-03-15)
 
 ### Added
