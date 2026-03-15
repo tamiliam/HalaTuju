@@ -316,7 +316,12 @@
     "namePlaceholder": "e.g. Siti Aminah",
     "schoolLabel": "Your School",
     "schoolPlaceholder": "e.g. SMK Damansara Jaya",
-    "completeProfile": "Complete & Continue"
+    "completeProfile": "Complete & Continue",
+    "icTitle": "Enter Your IC Number",
+    "icSubtitle": "We need your IC number to personalise your experience. Your data is kept private.",
+    "icLabel": "IC Number (MyKad)",
+    "icContinue": "Continue",
+    "icPrivacy": "Your IC is encrypted and never shared with third parties."
   },
   "profile": {
     "title": "My Profile",
@@ -339,7 +344,18 @@
       "planning": "Planning to apply",
       "applied": "Applied",
       "got_offer": "Got offer"
-    }
+    },
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "identity": "Identity",
+    "demographics": "Demographics",
+    "education": "Education",
+    "family": "Family",
+    "icMasked": "IC Number",
+    "incompleteFields": "{count} fields to complete",
+    "profileComplete": "Profile complete",
+    "school": "School"
   },
   "quiz": {
     "pickUpTo": "Pick up to {count}",

@@ -316,7 +316,12 @@
     "namePlaceholder": "எ.கா. சிவகுமார்",
     "schoolLabel": "உங்கள் பள்ளி",
     "schoolPlaceholder": "எ.கா. SJKT Ladang North Hummock",
-    "completeProfile": "நிறைவு செய்து தொடரவும்"
+    "completeProfile": "நிறைவு செய்து தொடரவும்",
+    "icTitle": "உங்கள் IC எண்ணை உள்ளிடவும்",
+    "icSubtitle": "உங்கள் அனுபவத்தை தனிப்பயனாக்க உங்கள் IC எண் தேவை. உங்கள் தரவு ரகசியமாக பாதுகாக்கப்படும்.",
+    "icLabel": "IC எண் (MyKad)",
+    "icContinue": "தொடரவும்",
+    "icPrivacy": "உங்கள் IC குறியாக்கம் செய்யப்பட்டு மூன்றாம் தரப்பினருடன் பகிரப்படாது."
   },
   "profile": {
     "title": "என் சுயவிவரம்",
@@ -339,7 +344,18 @@
       "planning": "விண்ணப்பிக்கத் திட்டமிடுகிறேன்",
       "applied": "விண்ணப்பித்தேன்",
       "got_offer": "தேர்வானேன்"
-    }
+    },
+    "edit": "திருத்து",
+    "save": "சேமி",
+    "cancel": "ரத்துசெய்",
+    "identity": "அடையாளம்",
+    "demographics": "மக்கள்தொகை",
+    "education": "கல்வி",
+    "family": "குடும்பம்",
+    "icMasked": "IC எண்",
+    "incompleteFields": "{count} புலங்கள் நிரப்பப்படவில்லை",
+    "profileComplete": "சுயவிவரம் முழுமை",
+    "school": "பள்ளி"
   },
   "quiz": {
     "pickUpTo": "{count} வரை தேர்ந்தெடுக்கவும்",

@@ -316,7 +316,12 @@
     "namePlaceholder": "cth. Siti Aminah",
     "schoolLabel": "Sekolah Anda",
     "schoolPlaceholder": "cth. SMK Damansara Jaya",
-    "completeProfile": "Lengkapkan & Teruskan"
+    "completeProfile": "Lengkapkan & Teruskan",
+    "icTitle": "Masukkan Nombor IC Anda",
+    "icSubtitle": "Kami memerlukan nombor IC anda untuk menyesuaikan pengalaman anda. Data anda dirahsiakan.",
+    "icLabel": "Nombor IC (MyKad)",
+    "icContinue": "Teruskan",
+    "icPrivacy": "IC anda dienkripsi dan tidak dikongsi dengan pihak ketiga."
   },
   "profile": {
     "title": "Profil Saya",
@@ -339,7 +344,18 @@
       "planning": "Bercadang memohon",
       "applied": "Telah memohon",
       "got_offer": "Dapat tawaran"
-    }
+    },
+    "edit": "Sunting",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "identity": "Identiti",
+    "demographics": "Demografi",
+    "education": "Pendidikan",
+    "family": "Keluarga",
+    "icMasked": "Nombor IC",
+    "incompleteFields": "{count} medan belum diisi",
+    "profileComplete": "Profil lengkap",
+    "school": "Sekolah"
   },
   "quiz": {
     "pickUpTo": "Pilih sehingga {count}",
