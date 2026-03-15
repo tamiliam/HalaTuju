@@ -42,8 +42,8 @@ export default function AppHeader() {
   const navLinks = [
     { href: '/dashboard', label: t('common.dashboard') },
     { href: '/search', label: t('search.nav') },
-    { href: '/saved', label: t('common.saved') },
-    { href: '/profile', label: t('header.myProfile'), authRequired: true as const },
+    { href: '/saved', label: t('common.saved'), authRequired: true as const, authReason: 'save' as const },
+    { href: '/profile', label: t('header.myProfile'), authRequired: true as const, authReason: 'profile' as const },
   ]
 
   // User display info from Supabase session metadata
@@ -75,7 +75,7 @@ export default function AppHeader() {
             link.authRequired && !isAuthenticated ? (
               <button
                 key={link.href}
-                onClick={() => showAuthGate('profile')}
+                onClick={() => showAuthGate(link.authReason || 'profile')}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-50`}
               >
                 {link.label}
@@ -224,7 +224,7 @@ export default function AppHeader() {
               link.authRequired && !isAuthenticated ? (
                 <button
                   key={link.href}
-                  onClick={() => { setMobileOpen(false); showAuthGate('profile') }}
+                  onClick={() => { setMobileOpen(false); showAuthGate(link.authReason || 'profile') }}
                   className="block w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50"
                 >
                   {link.label}
