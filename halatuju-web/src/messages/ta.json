@@ -360,7 +360,20 @@
     "icMasked": "IC எண்",
     "incompleteFields": "{count} புலங்கள் நிரப்பப்படவில்லை",
     "profileComplete": "சுயவிவரம் முழுமை",
-    "school": "பள்ளி"
+    "school": "பள்ளி",
+    "email": "மின்னஞ்சல் முகவரி",
+    "emailVerified": "சரிபார்க்கப்பட்டது",
+    "emailVerifyNote": "உங்கள் புதிய மின்னஞ்சலுக்கு சரிபார்ப்பு இணைப்பு அனுப்பப்படும்",
+    "phoneVerifyNote": "உங்கள் புதிய எண்ணுக்கு சரிபார்ப்புக் குறியீடு அனுப்பப்படும்",
+    "angkaGiliran": "அங்க கிலிரான்",
+    "angkaGiliranHelper": "உங்கள் பல்கலைக்கழக விண்ணப்ப குறிப்பு எண் (எ.கா. AB1234567)",
+    "applicationTracking": "விண்ணப்ப கண்காணிப்பு",
+    "notSet": "நிரப்பப்படவில்லை — சேர்க்க தட்டவும்",
+    "incomplete": "முழுமையடையாதவை",
+    "colorBlindness": "நிறக்குருடு",
+    "physicalDisability": "உடல் ஊனம்",
+    "yes": "ஆம்",
+    "no": "இல்லை"
   },
   "quiz": {
     "pickUpTo": "{count} வரை தேர்ந்தெடுக்கவும்",

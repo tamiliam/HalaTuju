@@ -360,7 +360,20 @@
     "icMasked": "Nombor IC",
     "incompleteFields": "{count} medan belum diisi",
     "profileComplete": "Profil lengkap",
-    "school": "Sekolah"
+    "school": "Sekolah",
+    "email": "Alamat Emel",
+    "emailVerified": "Disahkan",
+    "emailVerifyNote": "Pautan pengesahan akan dihantar ke emel baharu anda",
+    "phoneVerifyNote": "Kod pengesahan akan dihantar ke nombor baharu anda",
+    "angkaGiliran": "Angka Giliran",
+    "angkaGiliranHelper": "Nombor rujukan permohonan universiti anda (cth. AB1234567)",
+    "applicationTracking": "Penjejakan Permohonan",
+    "notSet": "Belum diisi — ketik untuk tambah",
+    "incomplete": "belum lengkap",
+    "colorBlindness": "Buta Warna",
+    "physicalDisability": "Kurang Upaya Fizikal",
+    "yes": "Ya",
+    "no": "Tidak"
   },
   "quiz": {
     "pickUpTo": "Pilih sehingga {count}",

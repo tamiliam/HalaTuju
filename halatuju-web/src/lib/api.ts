@@ -49,8 +49,10 @@ export interface StudentProfile {
   nric?: string
   address?: string
   phone?: string
+  email?: string
   family_income?: string
   siblings?: number | null
+  angka_giliran?: string
 }
 
 export interface EligibleCourse {

@@ -360,7 +360,20 @@
     "icMasked": "IC Number",
     "incompleteFields": "{count} fields to complete",
     "profileComplete": "Profile complete",
-    "school": "School"
+    "school": "School",
+    "email": "Email Address",
+    "emailVerified": "Verified",
+    "emailVerifyNote": "A verification link will be sent to your new email",
+    "phoneVerifyNote": "A verification code will be sent to your new number",
+    "angkaGiliran": "Angka Giliran",
+    "angkaGiliranHelper": "Your university application reference number (e.g. AB1234567)",
+    "applicationTracking": "Application Tracking",
+    "notSet": "Not set — tap to add",
+    "incomplete": "incomplete",
+    "colorBlindness": "Colour Blindness",
+    "physicalDisability": "Physical Disability",
+    "yes": "Yes",
+    "no": "No"
   },
   "quiz": {
     "pickUpTo": "Pick up to {count}",

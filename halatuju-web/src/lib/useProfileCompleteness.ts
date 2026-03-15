@@ -4,7 +4,7 @@ import { getProfile } from '@/lib/api'
 
 const COMPLETENESS_FIELDS = [
   'name', 'nric', 'gender', 'preferred_state',
-  'phone', 'family_income', 'siblings', 'address',
+  'phone', 'email', 'family_income', 'siblings', 'address',
 ] as const
 
 export function useProfileCompleteness() {
