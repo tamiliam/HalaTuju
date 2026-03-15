@@ -9,11 +9,13 @@ import { signOut } from '@/lib/supabase'
 import { clearAll } from '@/lib/storage'
 import { useT } from '@/lib/i18n'
 import LanguageSelector from './LanguageSelector'
+import { useProfileCompleteness } from '@/lib/useProfileCompleteness'
 
 export default function AppHeader() {
   const { t } = useT()
   const pathname = usePathname()
   const { session, isAuthenticated, showAuthGate } = useAuth()
+  const { incompleteCount } = useProfileCompleteness()
   const [profileOpen, setProfileOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
@@ -86,9 +88,14 @@ export default function AppHeader() {
                   pathname === link.href
                     ? 'text-primary-600 bg-primary-50'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
+                } ${link.href === '/profile' ? 'relative' : ''}`}
               >
                 {link.label}
+                {link.href === '/profile' && isAuthenticated && incompleteCount > 0 && (
+                  <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                    {incompleteCount}
+                  </span>
+                )}
               </Link>
             )
           ))}
@@ -107,8 +114,15 @@ export default function AppHeader() {
                 onClick={() => setProfileOpen(!profileOpen)}
                 className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-sm font-semibold">
-                  {initials}
+                <div className="relative">
+                  <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-sm font-semibold">
+                    {initials}
+                  </div>
+                  {incompleteCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] font-bold text-white bg-red-500 rounded-full flex items-center justify-center">
+                      {incompleteCount}
+                    </span>
+                  )}
                 </div>
                 <svg
                   className={`w-4 h-4 text-gray-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`}
@@ -227,6 +241,11 @@ export default function AppHeader() {
                   onClick={() => setMobileOpen(false)}
                 >
                   {link.label}
+                  {link.href === '/profile' && isAuthenticated && incompleteCount > 0 && (
+                    <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                      {incompleteCount}
+                    </span>
+                  )}
                 </Link>
               )
             ))}
