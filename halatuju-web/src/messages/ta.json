@@ -356,6 +356,7 @@
     "demographics": "மக்கள்தொகை",
     "education": "கல்வி",
     "family": "குடும்பம்",
+    "name": "பெயர்",
     "icMasked": "IC எண்",
     "incompleteFields": "{count} புலங்கள் நிரப்பப்படவில்லை",
     "profileComplete": "சுயவிவரம் முழுமை",

@@ -356,6 +356,7 @@
     "demographics": "Demografi",
     "education": "Pendidikan",
     "family": "Keluarga",
+    "name": "Nama",
     "icMasked": "Nombor IC",
     "incompleteFields": "{count} medan belum diisi",
     "profileComplete": "Profil lengkap",

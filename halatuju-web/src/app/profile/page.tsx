@@ -236,7 +236,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.name') || 'Name'} <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.name')} <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={name}
@@ -298,7 +298,7 @@ export default function ProfilePage() {
                   <span className="text-sm text-gray-900 font-mono">{nric ? maskIc(nric) : '—'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">{t('onboarding.name')}</span>
+                  <span className="text-sm text-gray-500">{t('profile.name')}</span>
                   <span className="text-sm text-gray-900">{name || '—'}</span>
                 </div>
                 <div className="flex justify-between">

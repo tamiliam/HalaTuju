@@ -356,6 +356,7 @@
     "demographics": "Demographics",
     "education": "Education",
     "family": "Family",
+    "name": "Name",
     "icMasked": "IC Number",
     "incompleteFields": "{count} fields to complete",
     "profileComplete": "Profile complete",
