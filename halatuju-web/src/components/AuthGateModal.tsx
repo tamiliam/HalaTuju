@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { signInWithPhone, verifyOTP, signInWithGoogle } from '@/lib/supabase'
-import { syncProfile, type SyncProfileData } from '@/lib/api'
+import { syncProfile, getProfile, type SyncProfileData } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
@@ -33,10 +33,9 @@ export default function AuthGateModal() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Reset when modal opens; if already authenticated, jump to profile
+  // Reset when modal opens; if already authenticated, check NRIC to decide step
   useEffect(() => {
     if (authGateReason) {
-      setStep(isAuthenticated ? 'profile' : 'login')
       setPhone('')
       setOtp('')
       setName('')
@@ -44,11 +43,26 @@ export default function AuthGateModal() {
       setIcValid(false)
       setError(null)
       setLoading(false)
+
+      if (isAuthenticated && token) {
+        // Check if returning user already has NRIC → skip IC gate
+        getProfile({ token }).then(profile => {
+          if (profile.nric) {
+            setIc(profile.nric)
+            setIcValid(true)
+            setStep('profile')
+          } else {
+            setStep('ic')
+          }
+        }).catch(() => setStep('ic'))
+      } else {
+        setStep('login')
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authGateReason])
 
-  // Advance to profile step when user authenticates mid-modal (OTP success)
+  // Advance when user authenticates mid-modal (OTP/Google success)
   useEffect(() => {
     if (isAuthenticated && authGateReason && step !== 'ic' && step !== 'profile') {
       // Pre-fill name from Google profile if available
@@ -57,10 +71,24 @@ export default function AuthGateModal() {
       if (googleName && !name) {
         setName(googleName)
       }
-      setStep('ic')
       setError(null)
+
+      // Check if returning user already has NRIC → skip IC gate
+      if (token) {
+        getProfile({ token }).then(profile => {
+          if (profile.nric) {
+            setIc(profile.nric)
+            setIcValid(true)
+            setStep('profile')
+          } else {
+            setStep('ic')
+          }
+        }).catch(() => setStep('ic'))
+      } else {
+        setStep('ic')
+      }
     }
-  }, [isAuthenticated, authGateReason, step, session, name])
+  }, [isAuthenticated, authGateReason, step, session, name, token])
 
   if (!authGateReason) return null
 
