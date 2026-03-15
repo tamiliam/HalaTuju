@@ -250,7 +250,7 @@ export default function GradesInputPage() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <Image src="/logo-icon.png" alt="HalaTuju" width={60} height={32} />
+              <Image src="/logo-icon.png" alt="HalaTuju" width={120} height={40} />
             </Link>
             <ProgressStepper currentStep={2} />
           </div>
