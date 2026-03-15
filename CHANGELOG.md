@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Special Conditions, Report Guard & Search Fix (2026-03-15)
+
+### Added
+- **Special Conditions expansion** — SpecialConditions component now shows gender restrictions (male/female only), unmarried requirement, and no-disability condition with colour-coded dots (blue/pink/purple/red)
+- **i18n keys** — `maleOnly`, `femaleOnly`, `unmarriedOnly`, `noDisability` in EN/MS/TA
+- **Contact form** — Supabase-backed contact form replaces raw email on contact page (name, email/phone, category, message)
+- **Onboarding guard** — `useOnboardingGuard` hook protects dashboard/saved/profile/outcomes from users without grades
+- **IC gate** — post-login IC + name collection page for users without NRIC
+- **Smart auth routing** — Google OAuth and OTP login check NRIC → grades → route appropriately
+- **Profile redesign** — two-column layout, amber incomplete indicators, email/phone/angka giliran fields, Yes/No toggles
+
+### Fixed
+- **Search "Eligible only" broken** — grades stored in `KEY_GRADES` but search page only read `KEY_PROFILE`; now merges both (root cause of 0 results)
+- **"Generate Report" shown alongside "Read Report"** — syncs `reportGenerated` state from DB when localStorage flag missing (cross-device/cache clear)
+- **Profile i18n bug** — `onboarding.name` key replaced with `profile.name` in all 3 languages
+- **Mobile nav auth gate** — uses `link.authReason` instead of hardcoded `'profile'`
+
+### Database
+- Set `single = true` for 4 courses (IKBN-CET-005, UZ0520001, UZ0345001, UZ0721001) — recovered from deleted `details.csv`
+- Created `contact_submissions` table with RLS (anon insert, service_role manage)
+
+---
+
 ## [Unreleased] — Tech Debt Quick Wins 2 (2026-03-15)
 
 ### Added
