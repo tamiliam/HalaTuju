@@ -214,91 +214,26 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**STPM Sprints 1-8 COMPLETE — merged to main, deployed**
-- 1,113 STPM degree programmes: eligibility, ranking, search, detail, dashboard cards
-- Unified `/search` page: SPM + STPM with qualification filter
-- STPM dashboard uses same CourseCard as SPM (images, badges, merit bars)
-- All names proper-cased in Supabase. `feature/stpm-entrance` branch deleted.
+**Saved Courses Sprint 1 COMPLETE (2026-03-15)** — Backend dual-FK model + API
+- SavedCourse supports both SPM and STPM via `course` + `stpm_course` nullable FKs with check constraint
+- API: POST auto-detects STPM, GET returns `course_type` + `?qualification=` filter, DELETE/PATCH check both FKs
+- Supabase migration applied, RLS unchanged (filters by student_id)
+- Tests: 425 pass, 0 fail, 0 skip
 
-**Pre-U Courses Sprint COMPLETE — merged to main, Supabase migrated**
-- 6 pre-university courses (4 matric + 2 STPM) as real Course rows with `merit_type` branching
-- Badge consistency: TVET → ILJTM/ILKBS, University → ua, labels in Malay, Pra-U level badge
-
-**UI Polish & Consistency Sprint COMPLETE — merged to main, deployed**
-- Rich institution cards for pre-U course detail pages (STPM schools with PPD/subjects/phone, matric colleges with tracks/phone/website)
-- STPM programme detail page redesigned to match SPM format (header, about, quick facts, institution card, save actions)
-- Search filter labels standardised to Malay, TVET removed, Kolej Matrikulasi and Tingkatan 6 added
-- DB state normalisation (WP Kuala Lumpur, WP Labuan)
-- STPM detail API enriched with field, category, description, merit_score
-
-**Hotfix Sprint (2026-03-14) COMPLETE — deployed**
-- ILJTM/ILKBS badges fixed on explore page (search API resolves tvet → iljtm/ilkbs)
-- ILJTM/ILKBS added as separate search filter options
-- STPM programme detail: rich institution cards (acronym, state, category, More Info)
-- STPM sidebar redesign: unified Entry Requirements card (General, STPM Reqs, STPM Subjects, SPM Prerequisites, Special Conditions) matching SPM route pattern
-- "Avg. Mata Gred" → "Max Grade Points" with i18n + stream-aware colour logic
-- Arts cutoff corrected to 12 (was 18); 100-course search cap removed
-
-**Tech Debt Sprint 4 COMPLETE (2026-03-14)**
-- 6 items resolved from `docs/technical-debt.md`: TD-001, TD-007, TD-018, TD-019, TD-020, TD-050
-- STPM prerequisite check hardened (spm_pass_bi/spm_pass_math — zero programmes affected, defensive fix)
-- Quiz language bug fixed (was always loading English)
-- Code quality: bare except narrowed, duplicate imports/keys removed
-- Tests: 332 pass / 13 pre-existing JWT failures / 30 skipped
-
-**Data Integrity Sprint COMPLETE (2026-03-14)**
-- STPM "programmes" → "courses" rename (codebase + Supabase columns + i18n)
-- `db_column` workaround eliminated (real Supabase column rename)
-- MOHE course audit: 363 CSV courses verified, 2 new courses added, 2 name fixes
-- Database: 390 SPM courses, 1,113 STPM courses, 838 institutions
-
-**TD-002 Sprint COMPLETE (2026-03-14)**
-- Frontend calculation files deleted: `merit.ts`, `stpm.ts`, `pathways.ts` (596 lines)
-- 3 new calculation endpoints: `/calculate/merit/`, `/calculate/cgpa/`, `/calculate/pathways/`
-- `getPathwayFitScore()` ported to backend `pathways.py`
-- Frontend pages call API instead of local functions. Backend is single source of truth.
-- Tech debt resolved: TD-002, TD-015, TD-017.
-
-**Test Health Sprint COMPLETE (2026-03-14)**
-- Auth test fix (TD-010, TD-033): mocked `jwt.get_unverified_header` alongside `jwt.decode`
-- 30 skipped tests eliminated: CSV-dependent tests converted to DB fixtures (25 converted, 5 redundant deleted)
-- Golden master rebaselined: 8283 (stale CSV) → 5319 (current DB). TD-035 resolved.
-- JSON fixtures created: `courses.json` (389 records), `requirements.json` (389 records)
-- Shared test helper: `conftest.py` with `load_requirements_df()`
-- Final: 382 pass, 0 fail, 0 skip
-
-**Security Hardening Sprint COMPLETE (2026-03-14)**
-- Default permission flipped: `AllowAny` → `SupabaseIsAuthenticated` (TD-012). 16 public views explicitly marked `AllowAny`.
-- Profile update validated: `ProfileUpdateSerializer` replaces raw `setattr` loops (TD-008).
-- Production guards: `SECRET_KEY` insecure default rejected (TD-036), `CORS_ALLOWED_ORIGINS=*` rejected (TD-038).
-- Tech debt resolved: TD-008, TD-012, TD-036, TD-038.
-
-**API Consistency Sprint COMPLETE (2026-03-14)**
-- Raw status codes → DRF constants in SavedCoursesView/SavedCourseDetailView (TD-004).
-- 403→401 for unauthenticated requests: `SupabaseAuthentication` DRF class provides `WWW-Authenticate: Bearer` header (TD-011).
-- Tech debt resolved: TD-004, TD-011.
-
-**Refactoring Sprint COMPLETE (2026-03-14)**
-- `EligibilityCheckView.post()` reduced from ~310 lines to ~100 lines — business logic extracted to `eligibility_service.py` (TD-045)
-- Double DataFrame iteration eliminated — PISMP req hashes collected in main loop (TD-044)
-- TVET merit guard removed (confirmed 0/84 TVET courses have merit data)
-- Tech debt resolved: TD-044, TD-045. Total: 17/52 resolved.
-- Tests: 406 pass, 0 fail, 0 skip.
-
-**Subject Key Unification Sprint COMPLETE (2026-03-15)**
-- TD-013 resolved: frontend sends engine keys directly, `GRADE_KEY_MAP` and `validate_grades` removed from serializer
-- `subjects.ts` is single source of truth: `SPM_SUBJECTS` array with category metadata, derived exports
-- Report engine `SUBJECT_LABELS` fixed (5 wrong keys corrected, 15 subjects added)
-- Tests: 411 pass, 0 fail, 0 skip
+**Next: Saved Courses Sprint 2 (Frontend)**
+- Create `useSavedCourses()` shared hook (load savedIds, toggleSave with auth gate + optimistic update + toast)
+- Create Toast notification component
+- Fix dashboard, search, SPM detail, STPM detail pages to use shared hook
+- Tabbed saved page (SPM/STPM tabs with qualification filter)
+- Design doc: `docs/plans/2026-03-15-saved-courses-design.md`, roadmap: `docs/plans/2026-03-15-saved-courses-roadmap.md`
+- ~10 frontend files, no backend changes needed
 
 **Pending work**
+- Field taxonomy normalisation (plan in memory, needs implementation plan)
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
-- Store `signal_strength` in Supabase (currently only `student_signals` synced)
-- STPM field metadata refinement: 207 unique field values from Gemini (expected ~30) — consider normalisation pass
 - Continue tech debt remediation from `docs/technical-debt.md` (31 items remaining)
-- MOHE ePanduan data sync pipeline built (scrape → sync → validate). Annual refresh takes ~15 min.
 
 ## Streamlit App (Legacy — migrating to Django API)
 

@@ -250,3 +250,15 @@
 **Trade-offs:** Every new public endpoint requires an explicit `permission_classes = [AllowAny]` line. This is intentional friction — forces the developer to consciously decide that an endpoint should be public.
 
 **Revisit if:** Django's auth backend is changed from Supabase JWT to something else, or if a more granular RBAC system is introduced.
+
+## Dual nullable FKs for SavedCourse — Saved Courses Sprint 1, 2026-03-15
+
+**Decision:** SavedCourse has two nullable FKs (`course` → Course, `stpm_course` → StpmCourse) with a DB check constraint ensuring exactly one is set. Partial unique indexes enforce uniqueness per type.
+
+**Alternatives considered:** (1) Generic string field (`course_id` + `course_type` varchar) — simpler model but no referential integrity. (2) Single polymorphic FK with content type — Django's ContentType framework adds complexity. (3) Dual nullable FKs (chosen).
+
+**Rationale:** Referential integrity is non-negotiable for analytics (which courses are popular, applied, offered). Cascading deletes prevent orphan rows. Direct JOINs work without intermediary tables. The tabbed saved page (SPM/STPM) maps naturally to `WHERE course IS NOT NULL` / `WHERE stpm_course IS NOT NULL`. Pattern extends cleanly for a third qualification type (add another nullable FK + update check constraint).
+
+**Trade-offs:** Check constraint makes bulk inserts slightly more complex (must ensure exactly one FK). Two partial unique indexes instead of one simple unique_together. But both are handled transparently by Django ORM.
+
+**Revisit if:** A third qualification pathway (e.g. UEC) is added — at that point, consider whether the pattern still scales or if a polymorphic approach is warranted.
