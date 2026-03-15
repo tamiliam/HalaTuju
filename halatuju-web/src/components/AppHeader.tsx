@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { signOut } from '@/lib/supabase'
+import { clearAll } from '@/lib/storage'
 import { useT } from '@/lib/i18n'
 import LanguageSelector from './LanguageSelector'
 
@@ -30,8 +31,7 @@ export default function AppHeader() {
 
   const handleSignOut = async () => {
     // Wipe all student data from localStorage before signing out
-    const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('halatuju_'))
-    keysToRemove.forEach(k => localStorage.removeItem(k))
+    clearAll()
 
     await signOut()
     window.location.href = '/'

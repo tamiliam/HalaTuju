@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getSavedCourses, unsaveCourse, createOutcome, type SavedCourseWithStatus } from '@/lib/api'
+import { getSavedCourses, unsaveCourse, updateSavedCourseStatus, type SavedCourseWithStatus } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/components/Toast'
 import AppHeader from '@/components/AppHeader'
@@ -18,8 +18,7 @@ export default function SavedPage() {
   const [courses, setCourses] = useState<SavedCourseWithStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<QualificationTab>('SPM')
-  const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set())
-  const [applyingId, setApplyingId] = useState<string | null>(null)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (authLoading) return
@@ -53,28 +52,34 @@ export default function SavedPage() {
     }
   }
 
-  const handleApplied = async (courseId: string) => {
+  const handleStatusUpdate = async (courseId: string, newStatus: string) => {
     if (!token) return
-    setApplyingId(courseId)
-    try {
-      await createOutcome({ course_id: courseId, status: 'applied' }, { token })
-      setAppliedIds(prev => { const n = new Set(prev); n.add(courseId); return n })
-    } catch {
-      setAppliedIds(prev => { const n = new Set(prev); n.add(courseId); return n })
-    }
-    setApplyingId(null)
-  }
+    setUpdatingId(courseId)
 
-  const handleGotOffer = async (courseId: string) => {
-    if (!token) return
-    setApplyingId(courseId)
-    try {
-      await createOutcome({ course_id: courseId, status: 'offered' }, { token })
-      setAppliedIds(prev => { const n = new Set(prev); n.add(courseId); return n })
-    } catch {
-      setAppliedIds(prev => { const n = new Set(prev); n.add(courseId); return n })
+    // Toggle logic:
+    // - Un-toggle 'got_offer' → fall back to 'applied' (you still applied)
+    // - Un-toggle 'applied' → fall back to 'interested'
+    const course = courses.find(c => c.course_id === courseId)
+    let targetStatus = newStatus
+    if (course?.interest_status === newStatus) {
+      targetStatus = newStatus === 'got_offer' ? 'applied' : 'interested'
     }
-    setApplyingId(null)
+
+    // Optimistic update
+    setCourses(prev => prev.map(c =>
+      c.course_id === courseId ? { ...c, interest_status: targetStatus } : c
+    ))
+
+    try {
+      await updateSavedCourseStatus(courseId, targetStatus, { token })
+    } catch {
+      // Revert on failure
+      setCourses(prev => prev.map(c =>
+        c.course_id === courseId ? { ...c, interest_status: course?.interest_status || 'interested' } : c
+      ))
+      showToast('Failed to update status', 'error')
+    }
+    setUpdatingId(null)
   }
 
   /** Returns the correct detail page path based on course type */
@@ -163,54 +168,72 @@ export default function SavedPage() {
               </div>
             ) : (
               <div className="grid gap-4">
-                {filteredCourses.map(course => (
-                  <div key={course.course_id} className="bg-white rounded-xl border border-gray-200 p-5">
-                    <div className="flex items-center justify-between">
-                      <Link href={detailHref(course)} className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{course.course || course.course_id}</h3>
-                        <p className="text-sm text-gray-500">{course.level} &middot; {course.field}</p>
-                      </Link>
-                      <button
-                        onClick={() => handleRemove(course.course_id)}
-                        className="ml-4 p-2 text-gray-400 hover:text-red-500 transition-colors"
-                        aria-label={t('saved.remove')}
-                      >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
+                {filteredCourses.map(course => {
+                  const isApplied = course.interest_status === 'applied' || course.interest_status === 'got_offer'
+                  const hasOffer = course.interest_status === 'got_offer'
 
-                    {/* Outcome action buttons */}
-                    <div className="mt-3 flex gap-2">
-                      {appliedIds.has(course.course_id) ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-green-50 text-green-700 text-sm font-medium">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  return (
+                    <div key={course.course_id} className="bg-white rounded-xl border border-gray-200 p-5">
+                      <div className="flex items-start justify-between">
+                        <Link href={detailHref(course)} className="flex-1">
+                          <h3 className="font-semibold text-gray-900">{course.course || course.course_id}</h3>
+                          <p className="text-sm text-gray-500 mt-0.5">
+                            {course.institution_name && (
+                              <>{course.institution_name} &middot; </>
+                            )}
+                            {course.level} &middot; {course.field}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5 font-mono">{course.course_id}</p>
+                        </Link>
+                        <button
+                          onClick={() => handleRemove(course.course_id)}
+                          className="ml-4 p-2 text-gray-400 hover:text-red-500 transition-colors"
+                          aria-label={t('saved.remove')}
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
-                          {t('outcomes.statusApplied')}
-                        </span>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => handleApplied(course.course_id)}
-                            disabled={applyingId === course.course_id}
-                            className="px-3 py-1.5 rounded-full border border-primary-300 text-primary-700 text-sm font-medium hover:bg-primary-50 transition-colors disabled:opacity-50"
-                          >
-                            {t('outcomes.iApplied')}
-                          </button>
-                          <button
-                            onClick={() => handleGotOffer(course.course_id)}
-                            disabled={applyingId === course.course_id}
-                            className="px-3 py-1.5 rounded-full border border-green-300 text-green-700 text-sm font-medium hover:bg-green-50 transition-colors disabled:opacity-50"
-                          >
-                            {t('outcomes.iGotOffer')}
-                          </button>
-                        </>
-                      )}
+                        </button>
+                      </div>
+
+                      {/* Status buttons — both always visible, toggle on/off */}
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          onClick={() => handleStatusUpdate(course.course_id, 'applied')}
+                          disabled={updatingId === course.course_id}
+                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors disabled:opacity-50 ${
+                            isApplied
+                              ? 'bg-primary-100 text-primary-700 border border-primary-300'
+                              : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          {isApplied && (
+                            <svg className="w-3.5 h-3.5 inline mr-1 -mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          {t('outcomes.iApplied')}
+                        </button>
+                        <button
+                          onClick={() => handleStatusUpdate(course.course_id, 'got_offer')}
+                          disabled={updatingId === course.course_id}
+                          className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors disabled:opacity-50 ${
+                            hasOffer
+                              ? 'bg-green-100 text-green-700 border border-green-300'
+                              : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          {hasOffer && (
+                            <svg className="w-3.5 h-3.5 inline mr-1 -mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          {t('outcomes.iGotOffer')}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </>

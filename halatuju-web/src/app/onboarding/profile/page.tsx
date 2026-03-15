@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import ProgressStepper from '@/components/ProgressStepper'
+import { KEY_PROFILE } from '@/lib/storage'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -24,7 +25,7 @@ export default function ProfileInputPage() {
   const [disability, setDisability] = useState<boolean>(false)
 
   useEffect(() => {
-    const savedProfile = localStorage.getItem('halatuju_profile')
+    const savedProfile = localStorage.getItem(KEY_PROFILE)
     if (savedProfile) {
       const parsed = JSON.parse(savedProfile)
       if (parsed.gender) setGender(parsed.gender)
@@ -40,7 +41,7 @@ export default function ProfileInputPage() {
   const handleContinue = () => {
     if (isComplete) {
       // Preserve CoQ score set on grades page
-      const existing = localStorage.getItem('halatuju_profile')
+      const existing = localStorage.getItem(KEY_PROFILE)
       const prev = existing ? JSON.parse(existing) : {}
       const profile = {
         ...prev,
@@ -50,7 +51,7 @@ export default function ProfileInputPage() {
         colorblind,
         disability,
       }
-      localStorage.setItem('halatuju_profile', JSON.stringify(profile))
+      localStorage.setItem(KEY_PROFILE, JSON.stringify(profile))
       router.push('/dashboard')
     }
   }

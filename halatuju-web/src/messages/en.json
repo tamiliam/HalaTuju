@@ -452,6 +452,15 @@
     "helpEveryoneDesc": "Spread the word. The more families who know about public options, the fewer who choose private ones simply because they didn't know better.",
     "helpClosing": "HalaTuju is a growing platform — we're continuously adding courses and improving recommendations. If you have feedback or want to contribute, we want to hear from you."
   },
+  "errors": {
+    "oops": "Oops",
+    "somethingWentWrong": "Something went wrong",
+    "unexpectedError": "An unexpected error occurred. Please try again.",
+    "tryAgain": "Try Again",
+    "pageNotFound": "Page Not Found",
+    "pageNotFoundDesc": "The page you are looking for does not exist or has been moved.",
+    "backToHome": "Back to Home"
+  },
   "stpm": {
     "searchTitle": "Browse STPM Degree Courses",
     "searchPlaceholder": "Search courses...",

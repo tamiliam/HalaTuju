@@ -11,6 +11,7 @@ import {
 import { getSession, getSupabase } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
+import { KEY_PENDING_AUTH_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
 
 export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | null
 
@@ -31,8 +32,6 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-const PENDING_ACTION_KEY = 'halatuju_pending_auth_action'
-
 /**
  * Restore student data from Supabase into localStorage for a returning user.
  * Only writes keys that are missing locally (avoids overwriting fresh data).
@@ -43,25 +42,25 @@ async function restoreProfileToLocalStorage(token: string) {
     if (!profile.grades || Object.keys(profile.grades).length === 0) return
 
     // Grades
-    if (!localStorage.getItem('halatuju_grades')) {
-      localStorage.setItem('halatuju_grades', JSON.stringify(profile.grades))
+    if (!localStorage.getItem(KEY_GRADES)) {
+      localStorage.setItem(KEY_GRADES, JSON.stringify(profile.grades))
     }
 
     // Demographics (gender, nationality, colorblind, disability)
-    if (!localStorage.getItem('halatuju_profile')) {
+    if (!localStorage.getItem(KEY_PROFILE)) {
       const demo: Record<string, unknown> = {}
       if (profile.gender) demo.gender = profile.gender
       if (profile.nationality) demo.nationality = profile.nationality
       if (profile.colorblind != null) demo.colorblind = profile.colorblind
       if (profile.disability != null) demo.disability = profile.disability
       if (Object.keys(demo).length > 0) {
-        localStorage.setItem('halatuju_profile', JSON.stringify(demo))
+        localStorage.setItem(KEY_PROFILE, JSON.stringify(demo))
       }
     }
 
     // Quiz signals
-    if (!localStorage.getItem('halatuju_quiz_signals') && profile.student_signals) {
-      localStorage.setItem('halatuju_quiz_signals', JSON.stringify(profile.student_signals))
+    if (!localStorage.getItem(KEY_QUIZ_SIGNALS) && profile.student_signals) {
+      localStorage.setItem(KEY_QUIZ_SIGNALS, JSON.stringify(profile.student_signals))
     }
   } catch {
     // Non-critical — user can still use the app without restored data
@@ -81,13 +80,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false)
 
         // Restore profile from Supabase if localStorage is empty (e.g. cache cleared)
-        if (session?.access_token && !localStorage.getItem('halatuju_grades')) {
+        if (session?.access_token && !localStorage.getItem(KEY_GRADES)) {
           restoreProfileToLocalStorage(session.access_token)
         }
 
         // Check for pending auth action (from Google OAuth redirect)
         if (session) {
-          const pending = localStorage.getItem(PENDING_ACTION_KEY)
+          const pending = localStorage.getItem(KEY_PENDING_AUTH_ACTION)
           if (pending) {
             try {
               const { reason, courseId } = JSON.parse(pending)
@@ -96,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 if (courseId) setAuthGateCourseId(courseId)
               }
             } catch {
-              localStorage.removeItem(PENDING_ACTION_KEY)
+              localStorage.removeItem(KEY_PENDING_AUTH_ACTION)
             }
           }
         }

@@ -14,6 +14,7 @@ import {
 } from '@/lib/api'
 import type { SavedCourseWithStatus } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
+import { useToast } from '@/components/Toast'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -41,6 +42,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const { t } = useT()
   const { token, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { showToast } = useToast()
 
   // Profile form state
   const [name, setName] = useState('')
@@ -85,7 +87,7 @@ export default function ProfilePage() {
 
       setSavedCourses(coursesData.saved_courses || [])
     } catch (err) {
-      console.error('Failed to load profile:', err)
+      showToast('Failed to load profile. Please try again.', 'error')
     } finally {
       setLoading(false)
     }
@@ -118,7 +120,7 @@ export default function ProfilePage() {
       }, { token })
       setLastSaved(new Date())
     } catch (err) {
-      console.error('Failed to save profile:', err)
+      showToast('Failed to save profile. Please try again.', 'error')
     } finally {
       setSaving(false)
     }
@@ -132,7 +134,7 @@ export default function ProfilePage() {
         prev.map(c => c.course_id === courseId ? { ...c, interest_status: newStatus } : c)
       )
     } catch (err) {
-      console.error('Failed to update status:', err)
+      showToast('Failed to update course status.', 'error')
     }
   }
 
@@ -142,7 +144,7 @@ export default function ProfilePage() {
       await unsaveCourse(courseId, { token })
       setSavedCourses(prev => prev.filter(c => c.course_id !== courseId))
     } catch (err) {
-      console.error('Failed to remove course:', err)
+      showToast('Failed to remove course.', 'error')
     }
   }
 

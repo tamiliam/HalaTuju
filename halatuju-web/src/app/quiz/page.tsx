@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { getQuizQuestions, submitQuiz, type QuizQuestion, type QuizAnswer } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
+import { KEY_QUIZ_SIGNALS, KEY_SIGNAL_STRENGTH, KEY_REPORT_GENERATED } from '@/lib/storage'
 
 const ICON_EMOJI: Record<string, string> = {
   wrench_gears: '🔧', laptop_code: '💻', handshake_chart: '🤝',
@@ -160,10 +161,10 @@ export default function QuizPage() {
     try {
       const result = await submitQuiz(quizAnswers, lang)
       // Store signals in localStorage for dashboard to pick up
-      localStorage.setItem('halatuju_quiz_signals', JSON.stringify(result.student_signals))
-      localStorage.setItem('halatuju_signal_strength', JSON.stringify(result.signal_strength))
+      localStorage.setItem(KEY_QUIZ_SIGNALS, JSON.stringify(result.student_signals))
+      localStorage.setItem(KEY_SIGNAL_STRENGTH, JSON.stringify(result.signal_strength))
       // Reset report gate — new quiz unlocks report generation
-      localStorage.removeItem('halatuju_report_generated')
+      localStorage.removeItem(KEY_REPORT_GENERATED)
       router.push('/dashboard')
     } catch {
       setError('Failed to submit quiz. Please try again.')

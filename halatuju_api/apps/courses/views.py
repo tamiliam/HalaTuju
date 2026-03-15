@@ -776,6 +776,11 @@ class SavedCoursesView(APIView):
         for sc in saved:
             if sc.course_id:
                 course_data = CourseSerializer(sc.course).data
+                # Get primary institution name from offerings
+                offering = sc.course.offerings.select_related('institution').first()
+                course_data['institution_name'] = (
+                    offering.institution.institution_name if offering and offering.institution else ''
+                )
             else:
                 stpm = sc.stpm_course
                 course_data = {
@@ -783,6 +788,7 @@ class SavedCoursesView(APIView):
                     'course': stpm.course_name,
                     'level': 'Ijazah Sarjana Muda',
                     'field': stpm.field or '',
+                    'institution_name': stpm.university or '',
                 }
             course_data['course_type'] = sc.course_type
             course_data['interest_status'] = sc.interest_status

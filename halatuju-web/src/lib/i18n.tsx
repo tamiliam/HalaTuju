@@ -11,6 +11,7 @@ import {
 import en from '@/messages/en.json'
 import ms from '@/messages/ms.json'
 import ta from '@/messages/ta.json'
+import { KEY_LOCALE } from '@/lib/storage'
 
 export type Locale = 'en' | 'ms' | 'ta'
 
@@ -45,7 +46,7 @@ function getNestedValue(obj: Record<string, unknown>, path: string): string {
 
 function getInitialLocale(): Locale {
   if (typeof window === 'undefined') return 'en'
-  const stored = localStorage.getItem('halatuju_locale')
+  const stored = localStorage.getItem(KEY_LOCALE)
   if (stored === 'en' || stored === 'ms' || stored === 'ta') return stored
   return 'en'
 }
@@ -55,7 +56,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale)
-    localStorage.setItem('halatuju_locale', newLocale)
+    localStorage.setItem(KEY_LOCALE, newLocale)
   }, [])
 
   const t = useCallback(

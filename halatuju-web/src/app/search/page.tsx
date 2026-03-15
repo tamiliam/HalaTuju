@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useSavedCourses } from '@/hooks/useSavedCourses'
 import clsx from 'clsx'
 import { useT } from '@/lib/i18n'
+import { KEY_PROFILE, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_RESUME_ACTION } from '@/lib/storage'
 
 const PAGE_SIZE = 6
 
@@ -64,7 +65,7 @@ function SearchPageInner() {
       const allMap = new Map<string, EligibleCourse>()
 
       // SPM eligibility — always check if profile exists
-      const stored = localStorage.getItem('halatuju_profile')
+      const stored = localStorage.getItem(KEY_PROFILE)
       if (stored) {
         const profile: StudentProfile = JSON.parse(stored)
         // Only call SPM if profile has grades
@@ -78,11 +79,11 @@ function SearchPageInner() {
       }
 
       // STPM eligibility — check if STPM grades exist
-      const examType = localStorage.getItem('halatuju_exam_type')
-      const stpmGradesStr = localStorage.getItem('halatuju_stpm_grades')
-      const stpmCgpaStr = localStorage.getItem('halatuju_stpm_cgpa')
-      const muetBandStr = localStorage.getItem('halatuju_muet_band')
-      const spmPrereqStr = localStorage.getItem('halatuju_spm_prereq')
+      const examType = localStorage.getItem(KEY_EXAM_TYPE)
+      const stpmGradesStr = localStorage.getItem(KEY_STPM_GRADES)
+      const stpmCgpaStr = localStorage.getItem(KEY_STPM_CGPA)
+      const muetBandStr = localStorage.getItem(KEY_MUET_BAND)
+      const spmPrereqStr = localStorage.getItem(KEY_SPM_PREREQ)
 
       if (examType === 'stpm' && stpmGradesStr && stpmCgpaStr && muetBandStr) {
         const profileData = stored ? JSON.parse(stored) : {}
@@ -149,12 +150,12 @@ function SearchPageInner() {
   useEffect(() => {
     if (isAuthenticated && !eligibleOnly && !eligibleIds) {
       // Check if user just came from auth gate for eligible reason
-      const resume = localStorage.getItem('halatuju_resume_action')
+      const resume = localStorage.getItem(KEY_RESUME_ACTION)
       if (resume) {
         try {
           const { action } = JSON.parse(resume)
           if (action === 'eligible') {
-            localStorage.removeItem('halatuju_resume_action')
+            localStorage.removeItem(KEY_RESUME_ACTION)
             fetchEligibleIds().then(() => setEligibleOnly(true))
           }
         } catch {

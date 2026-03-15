@@ -15,6 +15,7 @@ import {
   SPM_GRADE_OPTIONS,
 } from '@/lib/subjects'
 import { calculateCgpa } from '@/lib/api'
+import { KEY_STPM_STREAM, KEY_STPM_GRADES, KEY_MUET_BAND, KEY_KOKO_SCORE, KEY_SPM_PREREQ, KEY_STPM_CGPA, KEY_EXAM_TYPE } from '@/lib/storage'
 
 type Stream = 'science' | 'arts'
 
@@ -32,9 +33,9 @@ export default function StpmGradesPage() {
   const [spmGrades, setSpmGrades] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    const savedStream = localStorage.getItem('halatuju_stpm_stream')
+    const savedStream = localStorage.getItem(KEY_STPM_STREAM)
     if (savedStream === 'science' || savedStream === 'arts') setStream(savedStream)
-    const savedStpm = localStorage.getItem('halatuju_stpm_grades')
+    const savedStpm = localStorage.getItem(KEY_STPM_GRADES)
     if (savedStpm) {
       const parsed = JSON.parse(savedStpm)
       setStpmGrades(prev => ({ ...prev, ...parsed }))
@@ -44,11 +45,11 @@ export default function StpmGradesPage() {
         if (subjects.length > 3) { setElectiveSubject(subjects[3]); setShowElective(true) }
       }
     }
-    const savedMuet = localStorage.getItem('halatuju_muet_band')
+    const savedMuet = localStorage.getItem(KEY_MUET_BAND)
     if (savedMuet) setMuetBand(parseInt(savedMuet))
-    const savedKoko = localStorage.getItem('halatuju_koko_score')
+    const savedKoko = localStorage.getItem(KEY_KOKO_SCORE)
     if (savedKoko) setKokoScore(savedKoko)
-    const savedSpm = localStorage.getItem('halatuju_spm_prereq')
+    const savedSpm = localStorage.getItem(KEY_SPM_PREREQ)
     if (savedSpm) setSpmGrades(JSON.parse(savedSpm))
   }, [])
 
@@ -143,13 +144,13 @@ export default function StpmGradesPage() {
     const cleanGrades = Object.fromEntries(
       Object.entries(stpmGrades).filter(([, v]) => v !== '')
     )
-    localStorage.setItem('halatuju_stpm_stream', stream!)
-    localStorage.setItem('halatuju_stpm_grades', JSON.stringify(cleanGrades))
-    localStorage.setItem('halatuju_stpm_cgpa', String(overallCgpa))
-    localStorage.setItem('halatuju_muet_band', String(muetBand))
-    localStorage.setItem('halatuju_koko_score', kokoScore)
-    localStorage.setItem('halatuju_spm_prereq', JSON.stringify(spmGrades))
-    localStorage.setItem('halatuju_exam_type', 'stpm')
+    localStorage.setItem(KEY_STPM_STREAM, stream!)
+    localStorage.setItem(KEY_STPM_GRADES, JSON.stringify(cleanGrades))
+    localStorage.setItem(KEY_STPM_CGPA, String(overallCgpa))
+    localStorage.setItem(KEY_MUET_BAND, String(muetBand))
+    localStorage.setItem(KEY_KOKO_SCORE, kokoScore)
+    localStorage.setItem(KEY_SPM_PREREQ, JSON.stringify(spmGrades))
+    localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
     router.push('/onboarding/profile')
   }
 

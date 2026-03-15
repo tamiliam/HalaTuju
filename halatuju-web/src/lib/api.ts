@@ -230,6 +230,7 @@ export async function getInstitutions(options?: ApiOptions): Promise<{ instituti
 export interface SavedCourseWithStatus extends Course {
   interest_status: string
   course_type: 'spm' | 'stpm'
+  institution_name?: string
 }
 
 export async function getSavedCourses(options?: ApiOptions & { qualification?: 'SPM' | 'STPM' }): Promise<{ saved_courses: SavedCourseWithStatus[] }> {

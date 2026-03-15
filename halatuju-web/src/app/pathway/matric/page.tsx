@@ -8,6 +8,7 @@ import { calculatePathways, type PathwayResult } from '@/lib/api'
 import { MATRIC_COLLEGES, type MatricCollege } from '@/data/matric-colleges'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
+import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
 
 type TrackId = 'sains' | 'sains_komputer' | 'kejuruteraan' | 'perakaunan'
 
@@ -50,8 +51,8 @@ function MatricPageContent() {
 
   // Load profile from localStorage
   useEffect(() => {
-    const gradesRaw = localStorage.getItem('halatuju_grades')
-    const profileRaw = localStorage.getItem('halatuju_profile')
+    const gradesRaw = localStorage.getItem(KEY_GRADES)
+    const profileRaw = localStorage.getItem(KEY_PROFILE)
 
     if (gradesRaw && profileRaw) {
       setGrades(JSON.parse(gradesRaw))
@@ -73,7 +74,7 @@ function MatricPageContent() {
     const fetchPathways = async () => {
       setPathwayLoading(true)
       try {
-        const signals = JSON.parse(localStorage.getItem('halatuju_quiz_signals') || 'null')
+        const signals = JSON.parse(localStorage.getItem(KEY_QUIZ_SIGNALS) || 'null')
         const { pathways } = await calculatePathways(grades, coq, signals)
         setMatricResults(pathways.filter(p => p.pathway === 'matric'))
       } catch {

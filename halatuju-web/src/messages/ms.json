@@ -452,6 +452,15 @@
     "helpEveryoneDesc": "Sebarkan berita ini. Semakin ramai keluarga yang tahu tentang pilihan awam, semakin sedikit yang memilih swasta hanya kerana mereka tidak tahu.",
     "helpClosing": "HalaTuju adalah platform yang berkembang — kami terus menambah kursus dan memperbaiki cadangan. Jika anda mempunyai maklum balas atau ingin menyumbang, kami ingin mendengar daripada anda."
   },
+  "errors": {
+    "oops": "Alamak",
+    "somethingWentWrong": "Sesuatu tidak kena",
+    "unexpectedError": "Ralat tidak dijangka berlaku. Sila cuba lagi.",
+    "tryAgain": "Cuba Lagi",
+    "pageNotFound": "Halaman Tidak Dijumpai",
+    "pageNotFoundDesc": "Halaman yang anda cari tidak wujud atau telah dipindahkan.",
+    "backToHome": "Kembali ke Laman Utama"
+  },
   "stpm": {
     "searchTitle": "Layari Kursus Ijazah STPM",
     "searchPlaceholder": "Cari kursus...",

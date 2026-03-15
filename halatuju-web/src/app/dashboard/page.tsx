@@ -24,8 +24,8 @@ import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
-
-const RESUME_ACTION_KEY = 'halatuju_resume_action'
+import { useToast } from '@/components/Toast'
+import { KEY_RESUME_ACTION, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_PROFILE, KEY_GRADES, KEY_MERIT, KEY_QUIZ_SIGNALS, KEY_REPORT_GENERATED } from '@/lib/storage'
 
 function getMeritLevel(studentMerit: number, courseMerit: number | null | undefined): 'high' | 'fair' | 'low' | 'none' {
   if (courseMerit === null || courseMerit === undefined) return 'none'
@@ -47,6 +47,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const { isAuthenticated, token, showAuthGate } = useAuth()
   const { savedIds, toggleSave: handleSaveOrGate } = useSavedCourses()
+  const { showToast } = useToast()
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
@@ -67,16 +68,16 @@ export default function DashboardPage() {
 
   // Load profile from localStorage on mount
   useEffect(() => {
-    const examTypeStr = localStorage.getItem('halatuju_exam_type') || 'spm'
+    const examTypeStr = localStorage.getItem(KEY_EXAM_TYPE) || 'spm'
     setExamType(examTypeStr as 'spm' | 'stpm')
 
     if (examTypeStr === 'stpm') {
       // Load STPM-specific data
-      const stpmGradesStr = localStorage.getItem('halatuju_stpm_grades')
-      const stpmCgpaStr = localStorage.getItem('halatuju_stpm_cgpa')
-      const muetBandStr = localStorage.getItem('halatuju_muet_band')
-      const spmPrereqStr = localStorage.getItem('halatuju_spm_prereq')
-      const profileData = localStorage.getItem('halatuju_profile')
+      const stpmGradesStr = localStorage.getItem(KEY_STPM_GRADES)
+      const stpmCgpaStr = localStorage.getItem(KEY_STPM_CGPA)
+      const muetBandStr = localStorage.getItem(KEY_MUET_BAND)
+      const spmPrereqStr = localStorage.getItem(KEY_SPM_PREREQ)
+      const profileData = localStorage.getItem(KEY_PROFILE)
 
       if (stpmGradesStr && stpmCgpaStr && muetBandStr) {
         const parsedProfile = profileData ? JSON.parse(profileData) : {}
@@ -97,13 +98,13 @@ export default function DashboardPage() {
       setIsLoading(false)
     } else {
       // Existing SPM logic
-      const grades = localStorage.getItem('halatuju_grades')
-      const profileData = localStorage.getItem('halatuju_profile')
+      const grades = localStorage.getItem(KEY_GRADES)
+      const profileData = localStorage.getItem(KEY_PROFILE)
 
       if (grades && profileData) {
         const parsedGrades = JSON.parse(grades)
         const parsedProfile = JSON.parse(profileData)
-        const savedMerit = localStorage.getItem('halatuju_merit')
+        const savedMerit = localStorage.getItem(KEY_MERIT)
 
         setProfile({
           grades: parsedGrades,
@@ -116,12 +117,12 @@ export default function DashboardPage() {
         })
       }
 
-      const signals = localStorage.getItem('halatuju_quiz_signals')
+      const signals = localStorage.getItem(KEY_QUIZ_SIGNALS)
       if (signals) {
         setQuizSignals(JSON.parse(signals))
       }
 
-      setReportGenerated(localStorage.getItem('halatuju_report_generated') === 'true')
+      setReportGenerated(localStorage.getItem(KEY_REPORT_GENERATED) === 'true')
       setIsLoading(false)
     }
   }, [])
@@ -143,7 +144,7 @@ export default function DashboardPage() {
       colorblind: profile.colorblind ? 'Ya' : 'Tidak',
     }).then(data => {
       // Chain ranking after eligibility
-      const signalsStr = localStorage.getItem('halatuju_quiz_signals')
+      const signalsStr = localStorage.getItem(KEY_QUIZ_SIGNALS)
       const signals = signalsStr ? JSON.parse(signalsStr) : {}
       return rankStpmCourses({
         eligible_courses: data.eligible_courses,
@@ -153,7 +154,7 @@ export default function DashboardPage() {
     }).then(ranked => {
       setStpmResults(ranked.ranked_courses)
     }).catch(err => {
-      console.error('STPM eligibility/ranking failed:', err)
+      showToast('Failed to load STPM results. Please try again.', 'error')
       setStpmResults([])
     })
   }, [examType, stpmData, profile])
@@ -250,7 +251,7 @@ export default function DashboardPage() {
         'bm',
         { token }
       )
-      localStorage.setItem('halatuju_report_generated', 'true')
+      localStorage.setItem(KEY_REPORT_GENERATED, 'true')
       setReportGenerated(true)
       window.location.href = `/report/${result.report_id}`
     } catch {
@@ -271,20 +272,20 @@ export default function DashboardPage() {
   const resumeHandledRef = useRef(false)
   useEffect(() => {
     if (!token || resumeHandledRef.current) return
-    const resumeStr = localStorage.getItem(RESUME_ACTION_KEY)
+    const resumeStr = localStorage.getItem(KEY_RESUME_ACTION)
     if (!resumeStr) return
 
     try {
       const { action } = JSON.parse(resumeStr)
       if (action === 'save') return // handled by useSavedCourses hook
-      localStorage.removeItem(RESUME_ACTION_KEY)
+      localStorage.removeItem(KEY_RESUME_ACTION)
       resumeHandledRef.current = true
 
       if (action === 'report' && eligibilityData) {
         setReportLoading(true)
         generateReport(eligibilityData.eligible_courses, eligibilityData.insights, 'bm', { token })
           .then(result => {
-            localStorage.setItem('halatuju_report_generated', 'true')
+            localStorage.setItem(KEY_REPORT_GENERATED, 'true')
             setReportGenerated(true)
             window.location.href = `/report/${result.report_id}`
           })

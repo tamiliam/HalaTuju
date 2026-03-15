@@ -5,18 +5,19 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import ProgressStepper from '@/components/ProgressStepper'
+import { KEY_EXAM_TYPE } from '@/lib/storage'
 
 export default function ExamTypePage() {
   const router = useRouter()
   const { t } = useT()
 
   const handleSelectSPM = () => {
-    localStorage.setItem('halatuju_exam_type', 'spm')
+    localStorage.setItem(KEY_EXAM_TYPE, 'spm')
     router.push('/onboarding/grades')
   }
 
   const handleSelectSTPM = () => {
-    localStorage.setItem('halatuju_exam_type', 'stpm')
+    localStorage.setItem(KEY_EXAM_TYPE, 'stpm')
     router.push('/onboarding/stpm-grades')
   }
 

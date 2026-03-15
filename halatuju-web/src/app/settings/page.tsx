@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import { useT, LOCALE_LABELS } from '@/lib/i18n'
+import { clearAll } from '@/lib/storage'
 import LanguageSelector from '@/components/LanguageSelector'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 
-const VERSION = '1.15.0'
+const VERSION = '1.33.0'
 
 export default function SettingsPage() {
   const { t, locale } = useT()
@@ -14,10 +15,7 @@ export default function SettingsPage() {
 
   const handleClearData = () => {
     if (!window.confirm(t('settings.clearConfirm'))) return
-    localStorage.removeItem('halatuju_stream')
-    localStorage.removeItem('halatuju_grades')
-    localStorage.removeItem('halatuju_profile')
-    localStorage.removeItem('halatuju_quiz_signals')
+    clearAll()
     setCleared(true)
   }
 

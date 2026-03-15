@@ -13,6 +13,7 @@ import {
   SPM_STREAM_POOLS,
   SPM_ALL_ELECTIVE_SUBJECTS,
 } from '@/lib/subjects'
+import { KEY_STREAM, KEY_ALIRAN, KEY_ELEKTIF, KEY_GRADES, KEY_PROFILE, KEY_MERIT } from '@/lib/storage'
 
 const GRADE_OPTIONS = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G']
 
@@ -61,13 +62,13 @@ export default function GradesInputPage() {
 
   // Load saved data — filter grades to only currently-selected subjects
   useEffect(() => {
-    const savedStream = localStorage.getItem('halatuju_stream')
+    const savedStream = localStorage.getItem(KEY_STREAM)
     const activeStream = savedStream || 'science'
     if (savedStream) setStream(savedStream)
 
     // Load aliran subjects (4 slots)
     let aliranLoaded = ['', '', '', '']
-    const savedAliran = localStorage.getItem('halatuju_aliran')
+    const savedAliran = localStorage.getItem(KEY_ALIRAN)
     if (savedAliran) {
       const a = JSON.parse(savedAliran)
       aliranLoaded = [a[0] || '', a[1] || '', a[2] || '', a[3] || '']
@@ -79,14 +80,14 @@ export default function GradesInputPage() {
 
     // Load elective subjects
     let elektif: string[] = []
-    const savedElektif = localStorage.getItem('halatuju_elektif')
+    const savedElektif = localStorage.getItem(KEY_ELEKTIF)
     if (savedElektif) {
       elektif = JSON.parse(savedElektif).filter(Boolean)
     }
     setElektifSlots(elektif)
 
     // Load grades — only keep grades for valid (currently selected) subjects
-    const savedGrades = localStorage.getItem('halatuju_grades')
+    const savedGrades = localStorage.getItem(KEY_GRADES)
     if (savedGrades) {
       const allGrades = JSON.parse(savedGrades)
       const validIds = new Set([
@@ -118,7 +119,7 @@ export default function GradesInputPage() {
   const handleStreamChange = (newStream: string) => {
     aliranSubjects.forEach(id => { if (id) handleGradeClear(id) })
     setStream(newStream)
-    localStorage.setItem('halatuju_stream', newStream)
+    localStorage.setItem(KEY_STREAM, newStream)
     const pool = SPM_STREAM_POOLS[newStream] || []
     setAliranSubjects([
       pool[0]?.id || '',
@@ -138,7 +139,7 @@ export default function GradesInputPage() {
   // CoQ score — editable on this page, persisted to profile localStorage
   const [coqInput, setCoqInput] = useState<string>('')
   useEffect(() => {
-    const savedProfile = localStorage.getItem('halatuju_profile')
+    const savedProfile = localStorage.getItem(KEY_PROFILE)
     if (savedProfile) {
       const parsed = JSON.parse(savedProfile)
       if (parsed.coqScore !== undefined && parsed.coqScore > 0) {
@@ -153,10 +154,10 @@ export default function GradesInputPage() {
     if (val === '' || (parseFloat(val) >= 0 && parseFloat(val) <= 10)) {
       setCoqInput(val)
       // Persist to profile localStorage so dashboard can read it
-      const savedProfile = localStorage.getItem('halatuju_profile')
+      const savedProfile = localStorage.getItem(KEY_PROFILE)
       const profile = savedProfile ? JSON.parse(savedProfile) : {}
       profile.coqScore = val ? parseFloat(val) : 0
-      localStorage.setItem('halatuju_profile', JSON.stringify(profile))
+      localStorage.setItem(KEY_PROFILE, JSON.stringify(profile))
     }
   }
 
@@ -225,18 +226,18 @@ export default function GradesInputPage() {
 
   const handleContinue = () => {
     if (coreComplete) {
-      localStorage.setItem('halatuju_grades', JSON.stringify(grades))
+      localStorage.setItem(KEY_GRADES, JSON.stringify(grades))
       localStorage.setItem(
-        'halatuju_aliran',
+        KEY_ALIRAN,
         JSON.stringify(aliranSubjects.filter(Boolean))
       )
       localStorage.setItem(
-        'halatuju_elektif',
+        KEY_ELEKTIF,
         JSON.stringify(elektifSlots.filter(Boolean))
       )
       // Save computed merit so backend uses the same value
       if (meritResult) {
-        localStorage.setItem('halatuju_merit', String(meritResult.finalMerit))
+        localStorage.setItem(KEY_MERIT, String(meritResult.finalMerit))
       }
       router.push('/onboarding/profile')
     }

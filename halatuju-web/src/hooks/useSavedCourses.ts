@@ -4,8 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { getSavedCourses, saveCourse, unsaveCourse } from '@/lib/api'
 import { useToast } from '@/components/Toast'
-
-const RESUME_ACTION_KEY = 'halatuju_resume_action'
+import { KEY_RESUME_ACTION } from '@/lib/storage'
 
 /**
  * Shared hook for saved course state across all pages.
@@ -30,9 +29,9 @@ export function useSavedCourses() {
   // Resume save action after auth completion (from auth gate → Google OAuth redirect)
   useEffect(() => {
     if (!token || resumeHandledRef.current) return
-    const resumeStr = localStorage.getItem(RESUME_ACTION_KEY)
+    const resumeStr = localStorage.getItem(KEY_RESUME_ACTION)
     if (!resumeStr) return
-    localStorage.removeItem(RESUME_ACTION_KEY)
+    localStorage.removeItem(KEY_RESUME_ACTION)
     resumeHandledRef.current = true
 
     try {

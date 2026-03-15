@@ -6,11 +6,9 @@ import { signInWithPhone, verifyOTP, signInWithGoogle } from '@/lib/supabase'
 import { syncProfile, type SyncProfileData } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
+import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
 
 type ModalStep = 'login' | 'otp' | 'profile'
-
-const PENDING_ACTION_KEY = 'halatuju_pending_auth_action'
-const RESUME_ACTION_KEY = 'halatuju_resume_action'
 
 export default function AuthGateModal() {
   const router = useRouter()
@@ -114,7 +112,7 @@ export default function AuthGateModal() {
   const handleGoogleLogin = async () => {
     // Store pending action before redirect (page will remount after OAuth)
     localStorage.setItem(
-      PENDING_ACTION_KEY,
+      KEY_PENDING_AUTH_ACTION,
       JSON.stringify({ reason: authGateReason, courseId: authGateCourseId })
     )
     setLoading(true)
@@ -137,9 +135,9 @@ export default function AuthGateModal() {
     // Collect localStorage data for sync
     const syncData: SyncProfileData = {}
     try {
-      const grades = localStorage.getItem('halatuju_grades')
+      const grades = localStorage.getItem(KEY_GRADES)
       if (grades) syncData.grades = JSON.parse(grades)
-      const prof = localStorage.getItem('halatuju_profile')
+      const prof = localStorage.getItem(KEY_PROFILE)
       if (prof) {
         const p = JSON.parse(prof)
         if (p.gender) syncData.gender = p.gender
@@ -147,7 +145,7 @@ export default function AuthGateModal() {
         if (p.colorblind) syncData.colorblind = p.colorblind
         if (p.disability) syncData.disability = p.disability
       }
-      const signals = localStorage.getItem('halatuju_quiz_signals')
+      const signals = localStorage.getItem(KEY_QUIZ_SIGNALS)
       if (signals) syncData.student_signals = JSON.parse(signals)
     } catch {
       // Ignore parse errors — sync what we can
@@ -166,15 +164,15 @@ export default function AuthGateModal() {
     const reason = authGateReason
     const courseId = authGateCourseId
     if (reason === 'save' && courseId) {
-      localStorage.setItem(RESUME_ACTION_KEY, JSON.stringify({ action: 'save', courseId }))
+      localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'save', courseId }))
     } else if (reason === 'report') {
-      localStorage.setItem(RESUME_ACTION_KEY, JSON.stringify({ action: 'report' }))
+      localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'report' }))
     } else if (reason === 'eligible') {
-      localStorage.setItem(RESUME_ACTION_KEY, JSON.stringify({ action: 'eligible' }))
+      localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'eligible' }))
     }
 
     // Clear pending action (from Google OAuth flow)
-    localStorage.removeItem(PENDING_ACTION_KEY)
+    localStorage.removeItem(KEY_PENDING_AUTH_ACTION)
 
     // Close modal
     hideAuthGate()
@@ -187,7 +185,7 @@ export default function AuthGateModal() {
   }
 
   const handleDismiss = () => {
-    localStorage.removeItem(PENDING_ACTION_KEY)
+    localStorage.removeItem(KEY_PENDING_AUTH_ACTION)
     hideAuthGate()
   }
 

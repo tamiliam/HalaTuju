@@ -8,6 +8,7 @@ import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 import { calculatePathways, type PathwayResult } from '@/lib/api'
 import { STPM_SCHOOLS, type StpmSchool } from '@/data/stpm-schools'
+import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
 
 const PAGE_SIZE = 50
 
@@ -65,8 +66,8 @@ function StpmContent() {
 
   // Load profile from localStorage
   useEffect(() => {
-    const gradesStr = localStorage.getItem('halatuju_grades')
-    const profileStr = localStorage.getItem('halatuju_profile')
+    const gradesStr = localStorage.getItem(KEY_GRADES)
+    const profileStr = localStorage.getItem(KEY_PROFILE)
 
     if (gradesStr && profileStr) {
       const grades = JSON.parse(gradesStr)
@@ -93,7 +94,7 @@ function StpmContent() {
     const fetchPathways = async () => {
       setPathwayLoading(true)
       try {
-        const signals = JSON.parse(localStorage.getItem('halatuju_quiz_signals') || 'null')
+        const signals = JSON.parse(localStorage.getItem(KEY_QUIZ_SIGNALS) || 'null')
         const { pathways } = await calculatePathways(profile.grades, profile.coqScore, signals)
         setStpmResults(pathways.filter(p => p.pathway === 'stpm'))
       } catch {
