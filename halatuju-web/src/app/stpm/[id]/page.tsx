@@ -44,7 +44,7 @@ export default function StpmCourseDetailPage() {
         sourceType="university"
         level="Ijazah Sarjana Muda"
         title={data.course_name}
-        subtitle={data.university}
+        subtitle={data.headline || data.university}
       />
 
       {/* Main Content */}
