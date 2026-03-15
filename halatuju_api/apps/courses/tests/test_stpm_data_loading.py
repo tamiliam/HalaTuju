@@ -1,44 +1,34 @@
-"""Tests for the load_stpm_data management command."""
+"""Tests for STPM fixture data integrity and proper_case_name utility."""
+import re
 import pytest
 from django.core.management import call_command
+from io import StringIO
 
-from apps.courses.management.commands.load_stpm_data import proper_case_name
+from apps.courses.utils import proper_case_name
 from apps.courses.models import StpmCourse, StpmRequirement
 
 
 @pytest.mark.django_db
-class TestStpmDataLoading:
+class TestStpmFixtureIntegrity:
+    """Verify STPM fixture data is complete and well-formed."""
 
     @pytest.fixture(autouse=True)
     def load_data(self):
-        """Run the loader once for the whole class."""
-        call_command('load_stpm_data')
+        call_command('loaddata', 'stpm_courses', 'stpm_requirements', stdout=StringIO(), verbosity=0)
 
-    def test_load_creates_courses(self):
-        """Loader should create StpmCourse records."""
+    def test_courses_loaded(self):
         assert StpmCourse.objects.count() > 0
 
-    def test_load_creates_requirements(self):
-        """Every course should have a requirement."""
+    def test_every_course_has_requirement(self):
         courses = StpmCourse.objects.count()
         requirements = StpmRequirement.objects.count()
         assert courses == requirements
 
-    def test_load_correct_count(self):
-        """Should load ~1,113 unique courses from two CSVs with overlap."""
+    def test_correct_count(self):
         count = StpmCourse.objects.count()
         assert 1000 < count < 1300, f'Expected ~1113, got {count}'
 
-    def test_load_idempotent(self):
-        """Running twice should not duplicate."""
-        count_before = StpmCourse.objects.count()
-        call_command('load_stpm_data')
-        count_after = StpmCourse.objects.count()
-        assert count_before == count_after
-
-    def test_load_parses_subject_group_json(self):
-        """JSON subject group should be parsed correctly."""
-        # Find any requirement with a non-null stpm_subject_group
+    def test_subject_group_json_parsed(self):
         req = StpmRequirement.objects.filter(
             stpm_subject_group__isnull=False,
         ).first()
@@ -47,28 +37,17 @@ class TestStpmDataLoading:
         assert isinstance(group, dict), f'Expected dict, got {type(group)}'
         assert 'subjects' in group or 'min_count' in group
 
-    def test_load_boolean_fields(self):
-        """PA required for most courses (count > 100)."""
+    def test_boolean_fields(self):
         pa_count = StpmRequirement.objects.filter(stpm_req_pa=True).count()
         assert pa_count > 100, f'Expected >100 PA-required courses, got {pa_count}'
 
-    def test_merit_score_loaded(self):
-        """Merit scores are loaded from source CSVs."""
-        courses_with_merit = StpmCourse.objects.filter(
-            merit_score__isnull=False
-        )
-        assert courses_with_merit.count() > 0
+    def test_merit_scores_present(self):
+        assert StpmCourse.objects.filter(merit_score__isnull=False).count() > 0
 
-    def test_merit_score_tiada_is_null(self):
-        """Courses with 'Tiada' merit have null merit_score."""
-        courses_without_merit = StpmCourse.objects.filter(
-            merit_score__isnull=True
-        )
-        assert courses_without_merit.exists()
+    def test_merit_score_null_for_tiada(self):
+        assert StpmCourse.objects.filter(merit_score__isnull=True).exists()
 
     def test_course_names_are_proper_case(self):
-        """After loading, no course_name should contain a plain all-caps word > 2 chars."""
-        import re
         bad = [
             c.course_name
             for c in StpmCourse.objects.all()

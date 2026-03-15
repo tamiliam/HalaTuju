@@ -201,19 +201,13 @@
 **File(s):** `halatuju_api/apps/courses/engine.py`
 **Resolution:** `LEGACY_KEY_MAP` removed. Grep confirmed it was never referenced anywhere in the codebase — dead code from the Streamlit migration.
 
-### [TD-028] CSV data files still in codebase
-**File(s):** `halatuju_api/data/stpm/` (4 CSV files)
-**What it is:** STPM CSV data files remain in the repo even though data has been migrated to Supabase. They're only used by the `load_stpm_data.py` management command (one-time migration).
-**What consistent looks like:** Move to `_archive/` or delete if migration is confirmed complete.
-**Risk if left:** Low — just clutter, but 4 files × ~500 lines each.
-**Dependencies:** load_stpm_data.py command.
+### [TD-028] CSV data files still in codebase ✅ RESOLVED (Legacy Cleanup Sprint, 2026-03-15)
+**File(s):** `halatuju_api/data/stpm/`
+**Resolution:** Deleted 4 CSV files. Data lives in Supabase. Created `stpm_courses.json` + `stpm_requirements.json` Django fixtures for tests.
 
-### [TD-029] Legacy Streamlit archive still in repo
-**File(s):** `_archive/streamlit/` (246 files)
-**What it is:** The complete Streamlit prototype is preserved. While documented, it inflates repo size and could confuse contributors.
-**What consistent looks like:** If valuable for reference, keep. If not, move to a separate branch or archive repo.
-**Risk if left:** Low — clearly marked as archive.
-**Dependencies:** None.
+### [TD-029] Legacy Streamlit archive still in repo ✅ RESOLVED (Legacy Cleanup Sprint, 2026-03-15)
+**File(s):** `_archive/streamlit/`
+**Resolution:** Deleted 246 files (80MB). Git history serves as the archive.
 
 ### [TD-030] Model docstring row counts are stale ✅ RESOLVED (Quick Wins Sprint, 2026-03-15)
 **File(s):** `halatuju_api/apps/courses/models.py`
@@ -223,21 +217,14 @@
 
 ## Management Commands and Data Integrity Scripts
 
-### [TD-031] One-time scripts still in management commands
-**File(s):**
-- `halatuju_api/apps/courses/management/commands/enrich_stpm_metadata.py`
-- `halatuju_api/apps/courses/management/commands/fix_stpm_names.py`
-**What it is:** These were one-time data enrichment/fix scripts that called the Gemini API and fixed name casing. They're still importable as management commands and could be accidentally run again.
-**What consistent looks like:** Move to `scripts/` directory (not management commands) or delete if work is confirmed done.
-**Risk if left:** Low — running `enrich_stpm_metadata.py` again would make unnecessary Gemini API calls (costs money).
+### [TD-031] One-time scripts still in management commands ✅ RESOLVED (Legacy Cleanup Sprint, 2026-03-15)
+**File(s):** 6 commands deleted
+**Resolution:** Deleted `load_csv_data`, `load_stpm_data`, `enrich_stpm_metadata`, `populate_stpm_urls`, `fix_stpm_names`, `backfill_masco`. Extracted `proper_case_name` and `build_mohe_url` to `apps/courses/utils.py`. 4 recurring commands preserved.
 **Dependencies:** None.
 
-### [TD-032] load_csv_data.py references original Streamlit data paths
+### [TD-032] load_csv_data.py references original Streamlit data paths ✅ RESOLVED (Legacy Cleanup Sprint, 2026-03-15)
 **File(s):** `halatuju_api/apps/courses/management/commands/load_csv_data.py`
-**What it is:** The CSV loader references data paths relative to the Streamlit app structure. It was used for the initial migration and shouldn't need to run again, but it's still a live management command.
-**What consistent looks like:** Document as deprecated or move to scripts/.
-**Risk if left:** Low — confusing but not dangerous.
-**Dependencies:** None.
+**Resolution:** File deleted (TD-031).
 
 ---
 
@@ -443,11 +430,11 @@
 | TD-025 | StudentProfile table name uses 'api_' prefix | Open |
 | TD-026 | Inconsistent response field names for course name | Open |
 | TD-027 | Legacy key mapping in engine.py | Resolved (Quick Wins Sprint) |
-| TD-028 | CSV data files still in codebase | Open |
-| TD-029 | Legacy Streamlit archive (246 files) | Open |
+| TD-028 | CSV data files still in codebase | Resolved (Legacy Cleanup Sprint) |
+| TD-029 | Legacy Streamlit archive (246 files) | Resolved (Legacy Cleanup Sprint) |
 | TD-030 | Model docstring row counts are stale | Resolved (Quick Wins Sprint) |
-| TD-031 | One-time scripts still in management commands | Open |
-| TD-032 | load_csv_data.py references Streamlit paths | Open |
+| TD-031 | One-time scripts still in management commands | Resolved (Legacy Cleanup Sprint) |
+| TD-032 | load_csv_data.py references Streamlit paths | Resolved (Legacy Cleanup Sprint) |
 | TD-036 | Hardcoded fallback SECRET_KEY | Resolved (Security Sprint) |
 | TD-037 | db.sqlite3 in project folder | Resolved (Quick Wins Sprint) |
 | TD-039 | sentry-sdk pinned to <2.0 | Open |

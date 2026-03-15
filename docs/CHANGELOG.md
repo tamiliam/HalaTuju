@@ -1,5 +1,27 @@
 # Changelog — HalaTuju
 
+## Legacy Cleanup — TD-028, TD-029, TD-031, TD-032 (2026-03-15)
+
+### Removed
+- `_archive/streamlit/` — 246 files, 80MB legacy Streamlit app (TD-029)
+- `data/stpm/` — 4 CSV source files, data now lives in Supabase + test fixtures (TD-028)
+- 6 one-time management commands: `load_csv_data`, `load_stpm_data`, `enrich_stpm_metadata`, `populate_stpm_urls`, `fix_stpm_names`, `backfill_masco` (TD-031)
+- Streamlit path references resolved by deleting `load_csv_data.py` (TD-032)
+
+### Added
+- `apps/courses/utils.py` — extracted `proper_case_name` and `build_mohe_url` from deleted commands
+- `apps/courses/fixtures/stpm_courses.json` + `stpm_requirements.json` — 1,113 STPM courses as Django fixtures
+
+### Changed
+- 6 STPM test files migrated from `call_command('load_stpm_data')` to `loaddata` fixtures
+- 4 recurring commands preserved: `audit_data`, `scrape_mohe_stpm`, `sync_stpm_mohe`, `validate_stpm_urls`
+
+### Stats
+- Tests: 424 pass, 0 failures (was 425 — removed loader idempotency test)
+- Tech debt resolved: TD-028, TD-029, TD-031, TD-032 (29/52 total resolved)
+
+---
+
 ## Tech Debt Quick Wins — TD-027, TD-030, TD-037, TD-049 (2026-03-15)
 
 ### Fixed

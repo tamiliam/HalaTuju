@@ -95,7 +95,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (425 collected, 425 pass, 0 failures, 0 skipped)
+# Run ALL tests (424 collected, 424 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -127,7 +127,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_pathways.py | 37 | Matric/STPM eligibility: grade helpers (is_credit, meets_min, find_best_elective), all 4 Matric tracks (sains, kejuruteraan, sains_komputer, perakaunan), both STPM bidangs (sains, sains_sosial), merit calculation, mata gred threshold, check_all_pathways integration, pathway fit score (base, academic bonus, signal cap) |
 | test_profile_fields.py | 19 | Expanded profile fields (NRIC, address, phone, income, siblings defaults), SavedCourse interest_status (default, set, got_offer), profile API (GET new fields, PUT new fields), saved-courses API (GET includes status, PATCH updates status), STPM profile fields (exam_type default, STPM fields stored, defaults empty/null), profile sync STPM (create, update, GET returns fields) |
 | test_stpm_models.py | 5 | StpmCourse creation + __str__, StpmRequirement creation + defaults, JSON field round-trip, metadata fields (explicit values + defaults) |
-| test_stpm_data_loading.py | 6 | CSV loader: creates courses, creates requirements, correct count (~1113), idempotent, JSON parsing, boolean fields |
+| test_stpm_data_loading.py | 17 | Fixture integrity (courses loaded, 1:1 requirements, count ~1113, JSON parsing, booleans, merit scores, proper case) + proper_case_name utility (9 unit tests) |
 | test_stpm_engine.py | 15 | CGPA calculator (5), grade comparison (4), eligibility integration (6: strong science, CGPA filter, MUET filter, subject req, result shape, colorblind). Grade scale: A→F with D+(1.33), C-(1.67), E/G legacy aliases |
 | test_stpm_golden_master.py | 1 | 5 students × all programmes = 1811 baseline |
 | test_stpm_api.py | 9 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency), STPM ranking API (returns 200, scored programmes, sorted desc, missing 400, empty list) |
@@ -163,7 +163,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (407 collected, 407 must pass, SPM golden master = 5319, STPM golden master = 1811)
+# 1. Run all tests (424 collected, 424 must pass, SPM golden master = 5319, STPM golden master = 1811)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -175,7 +175,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-425 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
+424 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -194,15 +194,12 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/ranking_engine.py` | Fit score calculation + course ranking | No |
 | `apps/courses/stpm_engine.py` | STPM eligibility logic | YES — STPM Golden Master |
 | `apps/courses/stpm_ranking.py` | STPM fit score calculation + ranking | No |
-| `apps/courses/management/commands/load_csv_data.py` | CSV → DB migration (11 loaders) | One-time |
-| `apps/courses/management/commands/load_stpm_data.py` | STPM CSV → DB migration | One-time |
-| `apps/courses/management/commands/enrich_stpm_metadata.py` | Gemini STPM field/category/description enrichment | One-time |
+| `apps/courses/utils.py` | Shared utilities (proper_case_name, build_mohe_url) | No |
 | `apps/courses/management/commands/scrape_mohe_stpm.py` | MOHE ePanduan scraper (annual) | No |
 | `apps/courses/management/commands/sync_stpm_mohe.py` | STPM data sync with diff report | No |
 | `apps/courses/management/commands/validate_stpm_urls.py` | Dead link checker | No |
-| `apps/courses/management/commands/populate_stpm_urls.py` | One-time MOHE URL backfill | One-time |
-| `apps/courses/insights_engine.py` | Deterministic insights from eligibility results | No |
 | `apps/courses/management/commands/audit_data.py` | Data completeness report | No |
+| `apps/courses/insights_engine.py` | Deterministic insights from eligibility results | No |
 | `apps/reports/report_engine.py` | Gemini-powered narrative report generator | No |
 | `apps/reports/prompts.py` | BM/EN counselor report prompt templates | No |
 | `apps/reports/views.py` | Report API endpoints (generate, detail, list) | No |
@@ -226,7 +223,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
-- Continue tech debt remediation from `docs/technical-debt.md` (27 items remaining)
+- Continue tech debt remediation from `docs/technical-debt.md` (23 items remaining)
 
 ## Streamlit App (Legacy — migrating to Django API)
 

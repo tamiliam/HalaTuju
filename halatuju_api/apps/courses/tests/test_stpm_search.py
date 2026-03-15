@@ -8,7 +8,7 @@ class TestStpmSearchAPI:
     def setup(self):
         from django.core.management import call_command
         from io import StringIO
-        call_command('load_stpm_data', stdout=StringIO())
+        call_command('loaddata', 'stpm_courses', 'stpm_requirements', stdout=StringIO(), verbosity=0)
         self.client = APIClient()
 
     def test_search_returns_200(self):
@@ -77,7 +77,7 @@ class TestStpmCourseDetailAPI:
     def setup(self):
         from django.core.management import call_command
         from io import StringIO
-        call_command('load_stpm_data', stdout=StringIO())
+        call_command('loaddata', 'stpm_courses', 'stpm_requirements', stdout=StringIO(), verbosity=0)
         self.client = APIClient()
 
     def test_detail_returns_200(self):

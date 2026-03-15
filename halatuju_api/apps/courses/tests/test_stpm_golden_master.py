@@ -55,7 +55,7 @@ class TestStpmGoldenMaster:
     def load_data(self):
         from django.core.management import call_command
         from io import StringIO
-        call_command('load_stpm_data', stdout=StringIO())
+        call_command('loaddata', 'stpm_courses', 'stpm_requirements', stdout=StringIO(), verbosity=0)
 
     def test_golden_master(self):
         """Total eligible count across all students must match baseline."""

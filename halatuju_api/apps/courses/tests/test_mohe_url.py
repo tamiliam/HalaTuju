@@ -1,5 +1,5 @@
 import pytest
-from apps.courses.management.commands.populate_stpm_urls import build_mohe_url
+from apps.courses.utils import build_mohe_url
 
 
 class TestBuildMoheUrl:

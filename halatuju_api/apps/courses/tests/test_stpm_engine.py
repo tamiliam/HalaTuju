@@ -51,7 +51,7 @@ class TestStpmEligibility:
     def load_data(self):
         from django.core.management import call_command
         from io import StringIO
-        call_command('load_stpm_data', stdout=StringIO())
+        call_command('loaddata', 'stpm_courses', 'stpm_requirements', stdout=StringIO(), verbosity=0)
 
     def test_strong_science_student_gets_results(self):
         """Perfect science student should qualify for many courses."""
