@@ -16,6 +16,7 @@ import {
 import type { SavedCourseWithStatus } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
 import { useToast } from '@/components/Toast'
+import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -44,6 +45,7 @@ type EditingSection = 'identity' | 'contact' | 'family' | null
 export default function ProfilePage() {
   const router = useRouter()
   const { t } = useT()
+  const { ready: onboarded } = useOnboardingGuard()
   const { token, isAuthenticated, isLoading: authLoading, showAuthGate } = useAuth()
   const { showToast } = useToast()
 
@@ -178,7 +180,7 @@ export default function ProfilePage() {
   const getStatusColor = (status: string) =>
     STATUS_OPTIONS.find(s => s.value === status)?.color || 'bg-gray-100 text-gray-600'
 
-  if (authLoading || loading) {
+  if (authLoading || loading || !onboarded) {
     return (
       <>
         <AppHeader />

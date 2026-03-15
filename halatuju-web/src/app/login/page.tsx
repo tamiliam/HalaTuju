@@ -68,7 +68,23 @@ export default function LoginPage() {
     }
 
     if (data.session) {
-      router.push('/dashboard')
+      // Check profile for NRIC, then route appropriately
+      try {
+        const { getProfile } = await import('@/lib/api')
+        const profile = await getProfile({ token: data.session.access_token })
+        if (!profile.nric) {
+          router.push('/onboarding/ic')
+          return
+        }
+      } catch {
+        // No profile — needs IC
+        router.push('/onboarding/ic')
+        return
+      }
+      // Has NRIC — check onboarding
+      const { KEY_GRADES, KEY_STPM_GRADES } = await import('@/lib/storage')
+      const hasGrades = localStorage.getItem(KEY_GRADES) || localStorage.getItem(KEY_STPM_GRADES)
+      router.push(hasGrades ? '/dashboard' : '/onboarding/exam-type')
     }
   }
 

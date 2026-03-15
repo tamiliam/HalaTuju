@@ -541,5 +541,24 @@
       "description": "STPM aliran sains sosial adalah program 1½ tahun (3 penggal) di Tingkatan 6 merangkumi mata pelajaran seperti Ekonomi, Pengajian Perniagaan, Sejarah, Geografi, dan Kesusasteraan. Kelayakan setaraf A-Level yang membuka pintu ke ijazah dalam undang-undang, pentadbiran awam, komunikasi, dan banyak lagi. Sesuai untuk pelajar yang suka menganalisis isu sosial dan berfikir secara kritis."
     },
     "descriptionFallback": "Program {level} dalam bidang {field} menyediakan pelajar untuk kerjaya dalam {department}."
+  },
+  "contactForm": {
+    "title": "Hubungi Kami",
+    "subtitle": "Ada soalan, jumpa pepijat, atau perlukan bantuan? Hantar mesej kepada kami dan kami akan menghubungi anda semula.",
+    "name": "Nama Anda",
+    "namePlaceholder": "Masukkan nama anda",
+    "contact": "Emel atau Telefon",
+    "contactPlaceholder": "Bagaimana kami boleh menghubungi anda?",
+    "category": "Kategori",
+    "categoryGeneral": "Pertanyaan Umum",
+    "categoryBug": "Laporan Pepijat",
+    "categoryDeletion": "Permintaan Hapus Data",
+    "categoryFeedback": "Maklum Balas",
+    "message": "Mesej",
+    "messagePlaceholder": "Beritahu kami lebih lanjut...",
+    "submit": "Hantar Mesej",
+    "sending": "Menghantar...",
+    "success": "Mesej dihantar! Kami akan menghubungi anda tidak lama lagi.",
+    "error": "Sesuatu tidak kena. Sila cuba lagi."
   }
 }

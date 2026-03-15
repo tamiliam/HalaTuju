@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSession } from '@/lib/supabase'
+import { getProfile } from '@/lib/api'
+import { KEY_GRADES, KEY_STPM_GRADES } from '@/lib/storage'
 
 export default function AuthCallbackPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Supabase handles the OAuth callback automatically via the URL hash.
-    // We just need to wait for the session to be available, then redirect.
     const checkSession = async () => {
       // Small delay to let Supabase process the callback
       await new Promise(resolve => setTimeout(resolve, 500))
@@ -20,11 +20,37 @@ export default function AuthCallbackPage() {
         setError(error.message)
         return
       }
-      if (session) {
-        router.replace('/dashboard')
-      } else {
+      if (!session) {
         setError('Authentication failed. Please try again.')
+        return
       }
+
+      // Check if user has a backend profile with NRIC
+      const token = session.access_token
+      let hasNric = false
+      try {
+        const profile = await getProfile({ token })
+        hasNric = !!profile.nric
+      } catch {
+        // No profile yet — treat as new user
+      }
+
+      if (!hasNric) {
+        // New user or missing NRIC → collect IC first
+        router.replace('/onboarding/ic')
+        return
+      }
+
+      // Returning user with NRIC — check if they have onboarding data
+      const hasGrades =
+        localStorage.getItem(KEY_GRADES) || localStorage.getItem(KEY_STPM_GRADES)
+      if (!hasGrades) {
+        router.replace('/onboarding/exam-type')
+        return
+      }
+
+      // Fully set up — go to dashboard
+      router.replace('/dashboard')
     }
 
     checkSession()

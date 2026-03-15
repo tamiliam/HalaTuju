@@ -46,9 +46,9 @@ export default function PrivacyPage() {
 
           <h2 className="text-lg font-semibold text-gray-900">Contact</h2>
           <p className="text-gray-600">
-            For privacy-related enquiries, please contact us at{' '}
-            <a href="mailto:halatuju@tamilfoundation.org" className="text-primary-500 hover:underline">
-              halatuju@tamilfoundation.org
+            For privacy-related enquiries, please{' '}
+            <a href="/contact" className="text-primary-500 hover:underline">
+              contact us
             </a>.
           </p>
         </div>

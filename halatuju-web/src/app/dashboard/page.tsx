@@ -26,6 +26,7 @@ import { useT } from '@/lib/i18n'
 import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
 import { useToast } from '@/components/Toast'
 import { KEY_RESUME_ACTION, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_PROFILE, KEY_GRADES, KEY_MERIT, KEY_QUIZ_SIGNALS, KEY_REPORT_GENERATED } from '@/lib/storage'
+import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 
 function getMeritLevel(studentMerit: number, courseMerit: number | null | undefined): 'high' | 'fair' | 'low' | 'none' {
   if (courseMerit === null || courseMerit === undefined) return 'none'
@@ -45,6 +46,7 @@ const MERIT_LABELS = { high: 'High', fair: 'Fair', low: 'Low', none: '—' }
 export default function DashboardPage() {
   const { t } = useT()
   const router = useRouter()
+  const { ready: onboarded } = useOnboardingGuard()
   const { isAuthenticated, token, showAuthGate } = useAuth()
   const { savedIds, toggleSave: handleSaveOrGate } = useSavedCourses()
   const { showToast } = useToast()
@@ -296,7 +298,7 @@ export default function DashboardPage() {
     }
   }, [token, eligibilityData])
 
-  if (isLoading) {
+  if (isLoading || !onboarded) {
     return <LoadingScreen />
   }
 

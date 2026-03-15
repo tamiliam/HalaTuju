@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/auth-context'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
+import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 
 const STATUS_COLOURS: Record<OutcomeStatus, string> = {
   applied: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -26,6 +27,7 @@ const STATUS_OPTIONS: OutcomeStatus[] = ['applied', 'offered', 'accepted', 'reje
 
 export default function OutcomesPage() {
   const { t } = useT()
+  const { ready: onboarded } = useOnboardingGuard()
   const { token, isAuthenticated, isLoading: authLoading } = useAuth()
   const [outcomes, setOutcomes] = useState<AdmissionOutcome[]>([])
   const [loading, setLoading] = useState(true)
@@ -74,13 +76,13 @@ export default function OutcomesPage() {
       <AppHeader />
 
       <div className="container mx-auto px-6 py-8 max-w-2xl">
-        {loading && (
+        {(loading || !onboarded) && (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent" />
           </div>
         )}
 
-        {!loading && !isAuthenticated && (
+        {!loading && onboarded && !isAuthenticated && (
           <div className="text-center py-12">
             <p className="text-gray-600 mb-4">{t('saved.signInPrompt')}</p>
             <Link href="/login" className="btn-primary">{t('saved.signIn')}</Link>
