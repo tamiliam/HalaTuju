@@ -22,7 +22,11 @@
     "specialConditions": "Syarat Khas",
     "interviewRequired": "Temuduga Diperlukan",
     "noColorblind": "Tiada Buta Warna",
-    "medicalFitness": "Kecergasan Perubatan Diperlukan"
+    "medicalFitness": "Kecergasan Perubatan Diperlukan",
+    "maleOnly": "Lelaki Sahaja",
+    "femaleOnly": "Perempuan Sahaja",
+    "unmarriedOnly": "Belum Berkahwin",
+    "noDisability": "Tiada Kecacatan Fizikal"
   },
   "header": {
     "myProfile": "Profil Saya",

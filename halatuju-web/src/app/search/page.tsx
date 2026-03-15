@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useSavedCourses } from '@/hooks/useSavedCourses'
 import clsx from 'clsx'
 import { useT } from '@/lib/i18n'
-import { KEY_PROFILE, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_RESUME_ACTION } from '@/lib/storage'
+import { KEY_PROFILE, KEY_GRADES, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_RESUME_ACTION } from '@/lib/storage'
 
 const PAGE_SIZE = 6
 
@@ -64,12 +64,14 @@ function SearchPageInner() {
       const allIds = new Set<string>()
       const allMap = new Map<string, EligibleCourse>()
 
-      // SPM eligibility — always check if profile exists
+      // SPM eligibility — merge grades (stored separately) into profile
       const stored = localStorage.getItem(KEY_PROFILE)
-      if (stored) {
-        const profile: StudentProfile = JSON.parse(stored)
-        // Only call SPM if profile has grades
-        if (profile.grades && Object.keys(profile.grades).length > 0) {
+      const gradesStr = localStorage.getItem(KEY_GRADES)
+      if (stored && gradesStr) {
+        const parsedProfile = JSON.parse(stored)
+        const parsedGrades = JSON.parse(gradesStr)
+        const profile: StudentProfile = { ...parsedProfile, grades: parsedGrades }
+        if (Object.keys(profile.grades).length > 0) {
           const data = await checkEligibility(profile)
           for (const c of data.eligible_courses) {
             allIds.add(c.course_id)

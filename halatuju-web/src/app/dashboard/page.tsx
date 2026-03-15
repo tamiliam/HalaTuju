@@ -168,6 +168,18 @@ export default function DashboardPage() {
       .then(({ reports }) => {
         if (reports.length > 0) {
           setExistingReportId(reports[0].report_id)
+          // Sync reportGenerated with DB: if report exists and localStorage
+          // doesn't say otherwise (quiz retake clears KEY_REPORT_GENERATED),
+          // mark as generated so the button stays hidden
+          const localFlag = localStorage.getItem(KEY_REPORT_GENERATED)
+          if (localFlag === null) {
+            // No local flag — either fresh device or quiz retake cleared it.
+            // Quiz retake also stores fresh quiz signals, so if signals are
+            // absent we know this is a fresh device → hide Generate button.
+            if (!localStorage.getItem(KEY_QUIZ_SIGNALS)) {
+              setReportGenerated(true)
+            }
+          }
         }
       })
       .catch(() => {})

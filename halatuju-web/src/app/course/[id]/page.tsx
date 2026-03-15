@@ -206,6 +206,10 @@ export default function CourseDetailPage() {
                 reqInterview={requirements.special?.some((s: { key: string }) => s.key === 'req_interview')}
                 noColorblind={requirements.special?.some((s: { key: string }) => s.key === 'no_colorblind')}
                 reqMedicalFitness={requirements.special?.some((s: { key: string }) => s.key === 'req_medical_fitness')}
+                reqMale={requirements.general?.some((s: { key: string }) => s.key === 'req_male')}
+                reqFemale={requirements.general?.some((s: { key: string }) => s.key === 'req_female')}
+                single={requirements.general?.some((s: { key: string }) => s.key === 'single')}
+                noDisability={requirements.general?.some((s: { key: string }) => s.key === 'no_disability')}
               />
             )}
 

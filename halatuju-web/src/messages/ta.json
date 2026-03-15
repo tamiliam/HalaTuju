@@ -22,7 +22,11 @@
     "specialConditions": "சிறப்பு நிபந்தனைகள்",
     "interviewRequired": "நேர்காணல் தேவை",
     "noColorblind": "நிறக்குருடு இல்லாமை",
-    "medicalFitness": "மருத்துவ தகுதி தேவை"
+    "medicalFitness": "மருத்துவ தகுதி தேவை",
+    "maleOnly": "ஆண் விண்ணப்பதாரர்கள் மட்டும்",
+    "femaleOnly": "பெண் விண்ணப்பதாரர்கள் மட்டும்",
+    "unmarriedOnly": "திருமணமாகாதவர்கள் மட்டும்",
+    "noDisability": "உடல் ஊனமின்மை"
   },
   "header": {
     "myProfile": "எனது சுயவிவரம்",

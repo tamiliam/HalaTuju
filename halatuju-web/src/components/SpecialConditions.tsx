@@ -6,12 +6,24 @@ interface SpecialConditionsProps {
   reqInterview?: boolean
   noColorblind?: boolean
   reqMedicalFitness?: boolean
+  reqMale?: boolean
+  reqFemale?: boolean
+  single?: boolean
+  noDisability?: boolean
 }
 
-export default function SpecialConditions({ reqInterview, noColorblind, reqMedicalFitness }: SpecialConditionsProps) {
+export default function SpecialConditions({
+  reqInterview,
+  noColorblind,
+  reqMedicalFitness,
+  reqMale,
+  reqFemale,
+  single,
+  noDisability,
+}: SpecialConditionsProps) {
   const { t } = useT()
 
-  const hasAny = reqInterview || noColorblind || reqMedicalFitness
+  const hasAny = reqInterview || noColorblind || reqMedicalFitness || reqMale || reqFemale || single || noDisability
   if (!hasAny) return null
 
   return (
@@ -23,6 +35,24 @@ export default function SpecialConditions({ reqInterview, noColorblind, reqMedic
         {t('common.specialConditions')}
       </h2>
       <div className="space-y-2">
+        {reqMale && (
+          <div className="flex items-center gap-2 text-sm text-blue-700">
+            <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
+            {t('common.maleOnly')}
+          </div>
+        )}
+        {reqFemale && (
+          <div className="flex items-center gap-2 text-sm text-pink-700">
+            <span className="w-2 h-2 bg-pink-500 rounded-full flex-shrink-0" />
+            {t('common.femaleOnly')}
+          </div>
+        )}
+        {single && (
+          <div className="flex items-center gap-2 text-sm text-purple-700">
+            <span className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0" />
+            {t('common.unmarriedOnly')}
+          </div>
+        )}
         {reqInterview && (
           <div className="flex items-center gap-2 text-sm text-amber-700">
             <span className="w-2 h-2 bg-amber-500 rounded-full flex-shrink-0" />
@@ -33,6 +63,12 @@ export default function SpecialConditions({ reqInterview, noColorblind, reqMedic
           <div className="flex items-center gap-2 text-sm text-red-700">
             <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
             {t('common.noColorblind')}
+          </div>
+        )}
+        {noDisability && (
+          <div className="flex items-center gap-2 text-sm text-red-700">
+            <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+            {t('common.noDisability')}
           </div>
         )}
         {reqMedicalFitness && (

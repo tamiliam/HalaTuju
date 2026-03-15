@@ -22,7 +22,11 @@
     "specialConditions": "Special Conditions",
     "interviewRequired": "Interview Required",
     "noColorblind": "No Colourblindness",
-    "medicalFitness": "Medical Fitness Required"
+    "medicalFitness": "Medical Fitness Required",
+    "maleOnly": "Male Applicants Only",
+    "femaleOnly": "Female Applicants Only",
+    "unmarriedOnly": "Unmarried Applicants Only",
+    "noDisability": "No Physical Disability"
   },
   "header": {
     "myProfile": "My Profile",
