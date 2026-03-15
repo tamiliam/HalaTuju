@@ -15,6 +15,9 @@ urlpatterns = [
     path('quiz/questions/', views.QuizQuestionsView.as_view(), name='quiz-questions'),
     path('quiz/submit/', views.QuizSubmitView.as_view(), name='quiz-submit'),
 
+    # Field taxonomy
+    path('fields/', views.FieldListView.as_view(), name='field-list'),
+
     # Course catalog
     path('courses/search/', views.CourseSearchView.as_view(), name='course-search'),
     path('courses/', views.CourseListView.as_view(), name='course-list'),

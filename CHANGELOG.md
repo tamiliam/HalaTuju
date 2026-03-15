@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Field Taxonomy Sprint 2: STPM Classification + API Integration (2026-03-16)
+
+### Added
+- **STPM deterministic classifier** — `classify_stpm_course()` maps `category + field + course_name` to taxonomy key; handles ~170 category values across 29 taxonomy keys
+- **`_classify_spm_matching()` helper** — sub-classifies 10 SPM-matching STPM categories using `course_name` (STPM field == category aggregate, not specific sub-discipline)
+- **`FieldTaxonomySerializer`** — recursive serializer with `children` field for nested group→leaf structure
+- **`GET /api/v1/fields/`** — returns 10 field groups with nested children (37 leaf fields)
+- **`?field_key=` filter** — backwards-compatible query parameter on search endpoints (alongside existing `?field=`)
+- **`field_key` in API responses** — added to SPM search, STPM search, and STPM course detail
+- **`classify_stpm_fields` management command** — dry-run/save modes, distribution summary, safety checks
+- **57 new STPM classifier tests** + 4 API endpoint tests (total 118 in test_field_taxonomy.py)
+- **SQL reference script** — `scripts/stpm_backfill_field_key.sql` for documentation
+
+### Database
+- Backfilled all 1,113/1,113 STPM courses with `field_key_id` (0 unclassified)
+- Distribution: 29 of 37 taxonomy keys used (top: pertanian=100, pendidikan=97, umum=77, sains-hayat=65, it-perisian=65)
+
+---
+
 ## [Unreleased] — Field Taxonomy Sprint 1: Model + Migration + SPM Backfill (2026-03-16)
 
 ### Added

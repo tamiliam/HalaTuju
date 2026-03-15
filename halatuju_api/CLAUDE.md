@@ -95,7 +95,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (424 collected, 424 pass, 0 failures, 0 skipped)
+# Run ALL tests (542 collected, 542 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -135,7 +135,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_ranking.py | 9 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest match dict format, interview penalty), ranked results (sorted desc, empty list, output shape) |
 | test_eligibility_service.py | 19 | Service module: compute_student_merit (precomputed/grades/hist rename/default coq), compute_course_merit (standard/no cutoff/tvet/matric/stpm), deduplicate_pismp (passthrough/identical collapse/language merge), sort_eligible_courses (merit order/pismp/iljtm), compute_stats (source_type/pathway_type) |
 | test_preu_courses.py | 4 | Pre-U eligibility (stats include matric/stpm), search (level Pra-U, text Matrikulasi, source_type matric) |
-| test_field_taxonomy.py | 55 | FieldTaxonomy model integrity (total/leaf/group counts, trilingual names, image slugs, known keys, sort orders), classify_course deterministic mapping (48 tests: all frontend_label variants incl. 24 production labels, field keyword matching, umum catch-all) |
+| test_field_taxonomy.py | 118 | FieldTaxonomy model integrity (7), SPM classify_course (48: all frontend_label variants incl. 24 production labels), STPM classify_stpm_course (57: 10 SPM-matching categories with course_name sub-classification, ~40 STPM-specific categories, edge cases), FieldListView API (4: groups structure, children count) |
 
 ### Annual STPM Data Refresh (before UPU application season)
 
@@ -164,7 +164,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (479 collected, 479 must pass, SPM golden master = 5319, STPM golden master = 1811)
+# 1. Run all tests (542 collected, 542 must pass, SPM golden master = 5319, STPM golden master = 1811)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -176,7 +176,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-479 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
+542 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -202,6 +202,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/management/commands/audit_data.py` | Data completeness report | No |
 | `apps/courses/management/commands/generate_stpm_headlines.py` | Gemini-powered STPM headline generator | No |
 | `apps/courses/management/commands/backfill_spm_field_key.py` | Deterministic SPM field_key classifier + backfill | No |
+| `apps/courses/management/commands/classify_stpm_fields.py` | Deterministic STPM field_key classifier + backfill | No |
 | `apps/courses/insights_engine.py` | Deterministic insights from eligibility results | No |
 | `apps/reports/report_engine.py` | Gemini-powered narrative report generator | No |
 | `apps/reports/prompts.py` | BM/EN counselor report prompt templates | No |
@@ -214,26 +215,23 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Field Taxonomy Sprint 1 COMPLETE (2026-03-16)**
-- FieldTaxonomy model: 37 leaf fields + 10 parent groups, trilingual, image slugs
-- field_key FK on Course + StpmCourse (nullable, will be non-nullable Sprint 5)
-- Deterministic classifier handles 16 production frontend_label variants
-- 390/390 SPM courses backfilled (0 unmapped)
-- 55 new tests (7 model + 48 classifier)
+**Field Taxonomy Sprint 2 COMPLETE (2026-03-16)**
+- STPM deterministic classifier: 1,113/1,113 courses classified (29 of 37 taxonomy keys used)
+- FieldTaxonomySerializer with recursive children, GET /api/v1/fields/ endpoint
+- field_key in search results + detail APIs, ?field_key= backwards-compatible filter
+- 61 new tests (57 STPM classifier + 4 API)
 
-**Current state:** 479 backend tests, 17 frontend tests, 0 failures. 48/52 tech debt.
+**Current state:** 542 backend tests, 17 frontend tests, 0 failures. 48/52 tech debt. TD-051 RESOLVED.
 
 **Field Taxonomy Remaining Sprints**
-- Sprint 2: STPM Gemini classification + API integration
 - Sprint 3: Ranking engine field_key integration
 - Sprint 4: Frontend (field filter dropdown, image slug from taxonomy)
 - Sprint 5: Cleanup (make field_key non-nullable, remove legacy fields, new images)
 
-**Remaining tech debt (4 items)**
+**Remaining tech debt (3 items)**
 - TD-024: Course name field is `course` (too risky to rename)
 - TD-025: StudentProfile table `api_` prefix (needs migration + RLS)
 - TD-043: Phone/OTP login blocked (needs Twilio, ~RM12/mo)
-- TD-051: STPM field metadata 207 values (Sprint 2 of field taxonomy)
 
 **Pending work**
 - Phone/OTP login implementation (currently blocked with "coming soon" message)

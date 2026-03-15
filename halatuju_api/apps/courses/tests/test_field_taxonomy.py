@@ -1,11 +1,12 @@
 """
-Tests for FieldTaxonomy model and SPM backfill logic.
+Tests for FieldTaxonomy model, SPM backfill logic, and STPM classification.
 """
 import pytest
 from django.test import TestCase
 
 from apps.courses.models import FieldTaxonomy, Course
 from apps.courses.management.commands.backfill_spm_field_key import classify_course
+from apps.courses.management.commands.classify_stpm_fields import classify_stpm_course
 
 
 class FieldTaxonomyModelTest(TestCase):
@@ -356,3 +357,411 @@ class ClassifyCourseTest(TestCase):
             classify_course('', 'Mekanikal & Pembuatan', 'Diploma Mekanikal'),
             'mekanikal'
         )
+
+
+class ClassifyStpmCourseTest(TestCase):
+    """Test the STPM deterministic classification function."""
+
+    # ── SPM-matching categories (delegated) ──
+
+    def test_stpm_pendidikan(self):
+        self.assertEqual(
+            classify_stpm_course('Pendidikan', 'Pendidikan', 'Sarjana Muda Pendidikan'),
+            'pendidikan'
+        )
+
+    def test_stpm_perniagaan_perdagangan(self):
+        self.assertEqual(
+            classify_stpm_course('Perniagaan & Perdagangan', 'Perniagaan & Perdagangan', 'Sarjana Muda Perniagaan'),
+            'perniagaan'
+        )
+
+    def test_stpm_perniagaan_perakaunan(self):
+        self.assertEqual(
+            classify_stpm_course('Perniagaan & Perdagangan', 'Perniagaan & Perdagangan', 'Sarjana Muda Perakaunan'),
+            'perakaunan'
+        )
+
+    def test_stpm_komputer_it_multimedia(self):
+        self.assertEqual(
+            classify_stpm_course('Komputer, IT & Multimedia', 'Komputer, IT & Multimedia', 'Sarjana Muda Sains Komputer'),
+            'it-perisian'
+        )
+
+    def test_stpm_komputer_it_multimedia_rangkaian(self):
+        self.assertEqual(
+            classify_stpm_course('Komputer, IT & Multimedia', 'Komputer, IT & Multimedia',
+                                 'Sarjana Muda Sains Komputer (Rangkaian Komputer)'),
+            'it-rangkaian'
+        )
+
+    def test_stpm_komputer_it_multimedia_animasi(self):
+        self.assertEqual(
+            classify_stpm_course('Komputer, IT & Multimedia', 'Komputer, IT & Multimedia',
+                                 'Sarjana Muda Reka Bentuk (Animasi)'),
+            'multimedia'
+        )
+
+    def test_stpm_elektrik_elektronik(self):
+        self.assertEqual(
+            classify_stpm_course('Elektrik & Elektronik', 'Elektrik & Elektronik', 'Sarjana Muda Kejuruteraan Elektrik'),
+            'elektrik'
+        )
+
+    def test_stpm_mekanikal_automotif(self):
+        self.assertEqual(
+            classify_stpm_course('Mekanikal & Automotif', 'Mekanikal & Automotif', 'Sarjana Muda Kejuruteraan Mekanikal'),
+            'mekanikal'
+        )
+
+    def test_stpm_pertanian_bio_industri(self):
+        self.assertEqual(
+            classify_stpm_course('Pertanian & Bio-Industri', 'Pertanian & Bio-Industri', 'Sarjana Muda Sains Pertanian'),
+            'pertanian'
+        )
+
+    def test_stpm_sivil_senibina(self):
+        """Sivil default — course name has no architecture keywords."""
+        self.assertEqual(
+            classify_stpm_course('Sivil, Seni Bina & Pembinaan', 'Sivil, Seni Bina & Pembinaan', 'Sarjana Muda Kejuruteraan Sivil'),
+            'sivil'
+        )
+
+    def test_stpm_sivil_senibina_architecture(self):
+        """Seni Bina in course name → senibina."""
+        self.assertEqual(
+            classify_stpm_course('Sivil, Seni Bina & Pembinaan', 'Sivil, Seni Bina & Pembinaan', 'Sarjana Muda Seni Bina'),
+            'senibina'
+        )
+
+    def test_stpm_aero_marin_minyak_gas(self):
+        self.assertEqual(
+            classify_stpm_course('Aero, Marin, Minyak & Gas', 'Aero, Marin, Minyak & Gas', 'Sarjana Muda Kejuruteraan Aeroangkasa'),
+            'aero'
+        )
+
+    def test_stpm_aero_marin_marin(self):
+        self.assertEqual(
+            classify_stpm_course('Aero, Marin, Minyak & Gas', 'Aero, Marin, Minyak & Gas', 'Sarjana Muda Kejuruteraan Marin'),
+            'marin'
+        )
+
+    def test_stpm_hospitaliti_kulinari(self):
+        self.assertEqual(
+            classify_stpm_course('Hospitaliti, Kulinari & Pelancongan', 'Hospitaliti, Kulinari & Pelancongan', 'Sarjana Muda Pengurusan Hotel'),
+            'hospitaliti'
+        )
+
+    def test_stpm_hospitaliti_kulinari_food(self):
+        self.assertEqual(
+            classify_stpm_course('Hospitaliti, Kulinari & Pelancongan', 'Hospitaliti, Kulinari & Pelancongan', 'Sarjana Muda Seni Kulinari'),
+            'kulinari'
+        )
+
+    def test_stpm_seni_reka_kreatif(self):
+        self.assertEqual(
+            classify_stpm_course('Seni Reka & Kreatif', 'Seni Reka & Kreatif', 'Sarjana Muda Seni Reka Grafik'),
+            'senireka'
+        )
+
+    # ── STPM-specific categories ──
+
+    def test_stpm_sains_sosial(self):
+        self.assertEqual(
+            classify_stpm_course('Sains Sosial', 'Sains Sosial', 'Sarjana Muda Sains Sosial'),
+            'sains-sosial'
+        )
+
+    def test_stpm_kejuruteraan_kimia(self):
+        self.assertEqual(
+            classify_stpm_course('Kejuruteraan Kimia', 'Kejuruteraan Kimia', 'Sarjana Muda Kejuruteraan Kimia'),
+            'kimia-proses'
+        )
+
+    def test_stpm_kimia(self):
+        self.assertEqual(
+            classify_stpm_course('Kimia', 'Kimia', 'Sarjana Muda Kimia'),
+            'kimia-proses'
+        )
+
+    def test_stpm_kimia_forensik(self):
+        self.assertEqual(
+            classify_stpm_course('Kimia Forensik', 'Kimia', 'Sarjana Muda Kimia Forensik'),
+            'kimia-proses'
+        )
+
+    def test_stpm_matematik(self):
+        self.assertEqual(
+            classify_stpm_course('Matematik', 'Matematik', 'Sarjana Muda Matematik'),
+            'sains-hayat'
+        )
+
+    def test_stpm_matematik_kewangan(self):
+        self.assertEqual(
+            classify_stpm_course('Matematik Kewangan', 'Matematik', 'Sarjana Muda Matematik Kewangan'),
+            'perakaunan'
+        )
+
+    def test_stpm_fizik(self):
+        self.assertEqual(
+            classify_stpm_course('Fizik', 'Fizik', 'Sarjana Muda Fizik'),
+            'sains-hayat'
+        )
+
+    def test_stpm_fizik_perubatan(self):
+        self.assertEqual(
+            classify_stpm_course('Fizik Perubatan', 'Sains Perubatan', 'Sarjana Muda Fizik Perubatan'),
+            'perubatan'
+        )
+
+    def test_stpm_perubatan(self):
+        self.assertEqual(
+            classify_stpm_course('Perubatan', 'Perubatan', 'Sarjana Muda Perubatan'),
+            'perubatan'
+        )
+
+    def test_stpm_kejururawatan(self):
+        self.assertEqual(
+            classify_stpm_course('Kejururawatan', 'Kejururawatan', 'Sarjana Muda Sains Kejururawatan'),
+            'perubatan'
+        )
+
+    def test_stpm_farmasi(self):
+        self.assertEqual(
+            classify_stpm_course('Farmasi', 'Farmasi', 'Sarjana Muda Farmasi'),
+            'farmasi'
+        )
+
+    def test_stpm_undang_undang(self):
+        self.assertEqual(
+            classify_stpm_course('Undang-Undang', 'Undang-Undang', 'Sarjana Muda Undang-Undang'),
+            'undang-undang'
+        )
+
+    def test_stpm_pengajian_islam(self):
+        self.assertEqual(
+            classify_stpm_course('Pengajian Islam', 'Pengajian Islam', 'Sarjana Muda Pengajian Islam'),
+            'pengajian-islam'
+        )
+
+    def test_stpm_pengajian_agama(self):
+        self.assertEqual(
+            classify_stpm_course('Pengajian Agama', 'Pengajian Agama', 'Sarjana Muda Pengajian Agama'),
+            'pengajian-islam'
+        )
+
+    def test_stpm_bahasa_linguistik(self):
+        self.assertEqual(
+            classify_stpm_course('Bahasa & Linguistik', 'Bahasa', 'Sarjana Muda Linguistik'),
+            'umum'
+        )
+
+    def test_stpm_ekonomi(self):
+        self.assertEqual(
+            classify_stpm_course('Ekonomi', 'Ekonomi', 'Sarjana Muda Ekonomi'),
+            'perniagaan'
+        )
+
+    def test_stpm_kewangan(self):
+        self.assertEqual(
+            classify_stpm_course('Kewangan', 'Kewangan', 'Sarjana Muda Kewangan'),
+            'perakaunan'
+        )
+
+    def test_stpm_perakaunan(self):
+        self.assertEqual(
+            classify_stpm_course('Perakaunan', 'Perakaunan', 'Sarjana Muda Perakaunan'),
+            'perakaunan'
+        )
+
+    def test_stpm_sains_alam_sekitar(self):
+        self.assertEqual(
+            classify_stpm_course('Sains Alam Sekitar', 'Sains Alam Sekitar', 'Sarjana Muda Sains Alam Sekitar'),
+            'alam-sekitar'
+        )
+
+    def test_stpm_komunikasi_media(self):
+        self.assertEqual(
+            classify_stpm_course('Komunikasi & Media', 'Komunikasi', 'Sarjana Muda Komunikasi'),
+            'multimedia'
+        )
+
+    def test_stpm_sains_kemasyarakatan(self):
+        self.assertEqual(
+            classify_stpm_course('Sains Kemasyarakatan', 'Sosiologi', 'Sarjana Muda Sains Kemasyarakatan'),
+            'sains-sosial'
+        )
+
+    def test_stpm_psikologi(self):
+        self.assertEqual(
+            classify_stpm_course('Psikologi', 'Psikologi', 'Sarjana Muda Psikologi'),
+            'sains-sosial'
+        )
+
+    def test_stpm_biologi(self):
+        self.assertEqual(
+            classify_stpm_course('Biologi', 'Biologi', 'Sarjana Muda Biologi'),
+            'sains-hayat'
+        )
+
+    def test_stpm_bioteknologi(self):
+        self.assertEqual(
+            classify_stpm_course('Bio-Teknologi', 'Bioteknologi', 'Sarjana Muda Bioteknologi'),
+            'sains-hayat'
+        )
+
+    def test_stpm_geologi(self):
+        self.assertEqual(
+            classify_stpm_course('Geologi', 'Geologi', 'Sarjana Muda Geologi'),
+            'sains-hayat'
+        )
+
+    def test_stpm_sains_makanan(self):
+        self.assertEqual(
+            classify_stpm_course('Sains Makanan', 'Sains Makanan', 'Sarjana Muda Sains Makanan'),
+            'kulinari'
+        )
+
+    def test_stpm_teknologi_maritim(self):
+        self.assertEqual(
+            classify_stpm_course('Teknologi Maritim', 'Teknologi Maritim', 'Sarjana Muda Teknologi Maritim'),
+            'marin'
+        )
+
+    def test_stpm_sains_sukan(self):
+        self.assertEqual(
+            classify_stpm_course('Sains Sukan', 'Sains Sukan', 'Sarjana Muda Sains Sukan'),
+            'sains-sosial'
+        )
+
+    def test_stpm_sains_data(self):
+        self.assertEqual(
+            classify_stpm_course('Sains Data', 'Sains Data', 'Sarjana Muda Sains Data'),
+            'it-rangkaian'
+        )
+
+    def test_stpm_veterinar(self):
+        self.assertEqual(
+            classify_stpm_course('Veterinar', 'Veterinar', 'Doktor Perubatan Veterinar'),
+            'pertanian'
+        )
+
+    def test_stpm_tekstil_fesyen(self):
+        self.assertEqual(
+            classify_stpm_course('Tekstil & Fesyen', 'Seni Reka', 'Sarjana Muda Seni Reka Tekstil'),
+            'senireka'
+        )
+
+    def test_stpm_seni_persembahan(self):
+        self.assertEqual(
+            classify_stpm_course('Seni Persembahan', 'Muzik', 'Sarjana Muda Muzik'),
+            'multimedia'
+        )
+
+    def test_stpm_lain_lain_catch_all(self):
+        self.assertEqual(
+            classify_stpm_course('Lain-lain', 'Lain-lain', 'Sarjana Muda Umum'),
+            'umum'
+        )
+
+    def test_stpm_lain_lain_kejururawatan(self):
+        """Lain-lain (Kejururawatan) → perubatan via keyword matching."""
+        self.assertEqual(
+            classify_stpm_course('Lain-lain (Kejururawatan)', 'Kejururawatan', 'Sarjana Muda Kejururawatan'),
+            'perubatan'
+        )
+
+    def test_stpm_lain_lain_kimia_gunaan(self):
+        """Lain-lain (Kimia Gunaan) → kimia-proses via keyword matching."""
+        self.assertEqual(
+            classify_stpm_course('Lain-lain (Kimia Gunaan)', 'Kimia', 'Sarjana Muda Kimia Gunaan'),
+            'kimia-proses'
+        )
+
+    def test_stpm_kejuruteraan_bahan(self):
+        self.assertEqual(
+            classify_stpm_course('Kejuruteraan Bahan', 'Kejuruteraan', 'Sarjana Muda Kejuruteraan Bahan'),
+            'mekanikal'
+        )
+
+    def test_stpm_teknologi_tenaga(self):
+        self.assertEqual(
+            classify_stpm_course('Teknologi Tenaga', 'Kejuruteraan', 'Sarjana Muda Teknologi Tenaga'),
+            'elektrik'
+        )
+
+    def test_stpm_minyak_gas(self):
+        self.assertEqual(
+            classify_stpm_course('Minyak & Gas', 'Kejuruteraan', 'Sarjana Muda Teknologi Minyak & Gas'),
+            'minyak-gas'
+        )
+
+    def test_stpm_landskap(self):
+        self.assertEqual(
+            classify_stpm_course('Landskap', 'Seni Bina Landskap', 'Sarjana Muda Seni Bina Landskap'),
+            'senibina'
+        )
+
+    def test_stpm_ukur_bahan(self):
+        self.assertEqual(
+            classify_stpm_course('Ukur Bahan', 'Ukur Bahan', 'Sarjana Muda Ukur Bahan'),
+            'sivil'
+        )
+
+    def test_stpm_keusahawanan(self):
+        self.assertEqual(
+            classify_stpm_course('Keusahawanan Kesejahteraan', 'Keusahawanan', 'Sarjana Muda Keusahawanan'),
+            'perniagaan'
+        )
+
+    def test_stpm_undang_undang_islam(self):
+        self.assertEqual(
+            classify_stpm_course('Undang-Undang Islam', 'Syariah', 'Sarjana Muda Syariah'),
+            'pengajian-islam'
+        )
+
+    def test_stpm_sains_bahan(self):
+        self.assertEqual(
+            classify_stpm_course('Sains Bahan', 'Sains Bahan', 'Sarjana Muda Sains Bahan'),
+            'sains-hayat'
+        )
+
+
+class FieldListAPITest(TestCase):
+    """Test the GET /api/v1/fields/ endpoint."""
+
+    def test_fields_endpoint_returns_200(self):
+        from django.test import Client
+        client = Client()
+        response = client.get('/api/v1/fields/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_fields_endpoint_returns_groups(self):
+        from django.test import Client
+        client = Client()
+        response = client.get('/api/v1/fields/')
+        data = response.json()
+        self.assertIn('groups', data)
+        # 10 parent groups
+        self.assertEqual(len(data['groups']), 10)
+
+    def test_fields_endpoint_groups_have_children(self):
+        from django.test import Client
+        client = Client()
+        response = client.get('/api/v1/fields/')
+        data = response.json()
+        # Each group should have children
+        for group in data['groups']:
+            self.assertIn('children', group)
+            self.assertIn('key', group)
+            self.assertIn('name_en', group)
+            self.assertIn('name_ms', group)
+            self.assertIn('name_ta', group)
+
+    def test_fields_endpoint_total_children(self):
+        from django.test import Client
+        client = Client()
+        response = client.get('/api/v1/fields/')
+        data = response.json()
+        total_children = sum(len(g['children']) for g in data['groups'])
+        self.assertEqual(total_children, 37)

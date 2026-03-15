@@ -2,7 +2,26 @@
 Serializers for the courses API.
 """
 from rest_framework import serializers
-from .models import Course, Institution, CourseRequirement, CourseTag, MascoOccupation, StudentProfile
+from .models import Course, FieldTaxonomy, Institution, CourseRequirement, CourseTag, MascoOccupation, StudentProfile
+
+
+class FieldTaxonomySerializer(serializers.ModelSerializer):
+    """Serializer for FieldTaxonomy entries."""
+    children = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FieldTaxonomy
+        fields = [
+            'key', 'name_en', 'name_ms', 'name_ta',
+            'image_slug', 'parent_key', 'sort_order', 'children',
+        ]
+
+    def get_children(self, obj):
+        """Return child entries for parent groups."""
+        if obj.parent_key is not None:
+            return []
+        children = FieldTaxonomy.objects.filter(parent_key=obj.key).order_by('sort_order')
+        return FieldTaxonomySerializer(children, many=True).data
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -13,7 +32,7 @@ class CourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = [
             'course_id', 'course', 'course_name', 'wbl', 'level', 'department',
-            'field', 'frontend_label', 'semesters',
+            'field', 'frontend_label', 'field_key', 'semesters',
             'headline', 'headline_en', 'description', 'description_en',
         ]
 

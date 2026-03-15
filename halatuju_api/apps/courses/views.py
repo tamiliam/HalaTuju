@@ -25,7 +25,7 @@ from django.apps import apps
 
 from django.db.models import Count, OuterRef, Q, Subquery
 
-from .models import Course, CourseInstitution, CourseRequirement, Institution, StudentProfile, SavedCourse, AdmissionOutcome, StpmCourse, StpmRequirement
+from .models import Course, CourseInstitution, CourseRequirement, FieldTaxonomy, Institution, StudentProfile, SavedCourse, AdmissionOutcome, StpmCourse, StpmRequirement
 from .eligibility_service import (
     compute_student_merit,
     compute_course_merit,
@@ -42,6 +42,7 @@ from .engine import (
 from .pathways import check_all_pathways, get_pathway_fit_score
 from .serializers import (
     CourseSerializer,
+    FieldTaxonomySerializer,
     InstitutionSerializer,
     MascoOccupationSerializer,
     CourseRequirementSerializer,
@@ -67,6 +68,25 @@ SOURCE_TYPE_ORDER = {
 }
 
 
+class FieldListView(APIView):
+    """
+    GET /api/v1/fields/
+
+    Returns the field taxonomy tree: 10 parent groups, each with child fields.
+    Public endpoint for search filter dropdowns.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        groups = FieldTaxonomy.objects.filter(
+            parent_key__isnull=True
+        ).order_by('sort_order')
+        serializer = FieldTaxonomySerializer(groups, many=True)
+        return Response({
+            'groups': serializer.data,
+        })
+
+
 class CourseSearchView(APIView):
     """
     GET /api/v1/courses/search/
@@ -78,6 +98,7 @@ class CourseSearchView(APIView):
       ?q=kejuruteraan          (text search on course name)
       &level=Diploma           (Course.level)
       &field=Teknologi Maklumat (Course.frontend_label / StpmCourse.field)
+      &field_key=it-perisian   (FieldTaxonomy key — preferred over field)
       &source_type=poly        (CourseRequirement.source_type)
       &state=Selangor          (Institution.state via CourseInstitution)
       &qualification=SPM|STPM  (filter by qualification; empty = both)
@@ -89,6 +110,7 @@ class CourseSearchView(APIView):
         q = request.query_params.get('q', '').strip()
         level = request.query_params.get('level', '').strip()
         field = request.query_params.get('field', '').strip()
+        field_key = request.query_params.get('field_key', '').strip()
         source_type = request.query_params.get('source_type', '').strip()
         state = request.query_params.get('state', '').strip()
         qualification = request.query_params.get('qualification', '').strip().upper()
@@ -123,7 +145,9 @@ class CourseSearchView(APIView):
                 qs = qs.filter(course__icontains=q)
             if level:
                 qs = qs.filter(level__iexact=level)
-            if field:
+            if field_key:
+                qs = qs.filter(field_key=field_key)
+            elif field:
                 qs = qs.filter(frontend_label__iexact=field)
             if source_type:
                 # Map iljtm/ilkbs filter to tvet source_type + post-filter
@@ -167,6 +191,7 @@ class CourseSearchView(APIView):
                     'course_name': c.course,
                     'level': c.level,
                     'field': c.frontend_label or c.field,
+                    'field_key': c.field_key_id or '',
                     'source_type': st,
                     'pathway_type': pt,
                     'merit_cutoff': merit_cutoff,
@@ -199,7 +224,9 @@ class CourseSearchView(APIView):
 
             if q:
                 stpm_qs = stpm_qs.filter(course_name__icontains=q)
-            if field:
+            if field_key:
+                stpm_qs = stpm_qs.filter(field_key=field_key)
+            elif field:
                 stpm_qs = stpm_qs.filter(field__iexact=field)
             if state:
                 stpm_qs = stpm_qs.filter(institution__state__iexact=state)
@@ -212,6 +239,7 @@ class CourseSearchView(APIView):
                     'course_name': sc.course_name,
                     'level': 'Ijazah Sarjana Muda',
                     'field': sc.field or '',
+                    'field_key': sc.field_key_id or '',
                     'source_type': 'ua',
                     'merit_cutoff': sc.merit_score,
                     'institution_count': 1,
@@ -1300,6 +1328,7 @@ class StpmCourseDetailView(APIView):
             'university': prog.university,
             'stream': prog.stream,
             'field': prog.field,
+            'field_key': prog.field_key_id or '',
             'category': prog.category,
             'description': prog.description,
             'headline': prog.headline,
