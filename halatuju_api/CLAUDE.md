@@ -211,12 +211,16 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Frontend Cleanup Sprint COMPLETE (2026-03-15)** — Tech debt group D
-- TD-014: Centralised localStorage keys (`storage.ts`, 19 constants, 15 files updated)
-- TD-042: Error/loading/404 pages with trilingual i18n
-- TD-048: All console.error replaced with user-facing toast notifications
+**Bug Fixes & Auth Gating COMPLETE (2026-03-15)**
 - Auth gating for anon users (My Profile, Load More, profile page)
-- Saved courses UX improvements (status toggle, institution names)
+- Saved courses UX (status toggle, institution names, course IDs)
+- Centralised localStorage keys (`storage.ts`, 19 constants, 15 files)
+- Error/loading/404 pages with trilingual i18n
+- Removed "No sign-ups" tagline (sign-up now required for key features)
+
+**Tech debt review pass (2026-03-15)** — TD-014, TD-042, TD-048 resolved
+- Error pages fixed: hardcoded English → i18n, brand colour corrected
+- Dead code removed: `getJSON`/`setJSON` from storage.ts, `createOutcome` from api.ts
 - 38/52 tech debt items now resolved
 
 **Pending work**

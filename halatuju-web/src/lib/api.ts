@@ -442,25 +442,6 @@ export async function getOutcomes(
   return apiRequest('/api/v1/outcomes/', options)
 }
 
-export async function createOutcome(
-  data: {
-    course_id: string
-    institution_id?: string
-    status?: OutcomeStatus
-    intake_year?: number
-    intake_session?: string
-    notes?: string
-    applied_at?: string
-  },
-  options?: ApiOptions
-): Promise<{ id: number; message: string }> {
-  return apiRequest('/api/v1/outcomes/', {
-    method: 'POST',
-    body: JSON.stringify(data),
-    ...options,
-  })
-}
-
 export async function updateOutcome(
   outcomeId: number,
   data: Partial<{
