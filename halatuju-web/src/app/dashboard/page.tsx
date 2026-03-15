@@ -442,7 +442,10 @@ export default function DashboardPage() {
           <PathwayCards
             pathways={pathwaySummaries}
             activeFilter={filter}
-            onFilterChange={(type) => { setFilter(type); setDisplayCount(20) }}
+            onFilterChange={(type) => {
+              setFilter(type)
+              setDisplayCount(isAuthenticated ? 20 : 6)
+            }}
           />
         )}
 

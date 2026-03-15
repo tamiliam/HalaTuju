@@ -14,20 +14,29 @@ export default function TermsPage() {
       <div className="container mx-auto px-6 py-8 max-w-2xl">
         <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('common.terms')}</h1>
-          <p className="text-sm text-gray-500">Last updated: February 2026</p>
+          <p className="text-sm text-gray-500">Last updated: March 2026</p>
 
           <h2 className="text-lg font-semibold text-gray-900">Acceptance of Terms</h2>
           <p className="text-gray-600">
             By using HalaTuju, you agree to these terms of service. HalaTuju is
-            provided free of charge as a public service tool.
+            provided free of charge as a public service tool for Malaysian students
+            exploring SPM and STPM course options.
+          </p>
+
+          <h2 className="text-lg font-semibold text-gray-900">Account and IC Number</h2>
+          <p className="text-gray-600">
+            To access personalised features, you must create an account and provide
+            your IC number (NRIC). You are responsible for providing accurate
+            information. Misrepresenting your identity or IC number may result in
+            incorrect recommendations and account suspension.
           </p>
 
           <h2 className="text-lg font-semibold text-gray-900">Recommendations Disclaimer</h2>
           <p className="text-gray-600">
             Course recommendations are generated based on publicly available entry
-            requirements. HalaTuju does not guarantee admission to any course or
-            institution. Always verify requirements directly with the institution
-            before applying.
+            requirements from over 1,500 courses across 838 institutions. HalaTuju
+            does not guarantee admission to any course or institution. Always verify
+            requirements directly with the institution before applying.
           </p>
 
           <h2 className="text-lg font-semibold text-gray-900">Limitation of Liability</h2>

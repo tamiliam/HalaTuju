@@ -3,9 +3,11 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
+import { useAuth } from '@/lib/auth-context'
 
 export default function AppFooter() {
   const { t } = useT()
+  const { isAuthenticated, showAuthGate } = useAuth()
 
   return (
     <footer className="bg-gray-50 border-t border-gray-200">
@@ -36,9 +38,18 @@ export default function AppFooter() {
                 </Link>
               </li>
               <li>
-                <Link href="/saved" className="text-sm text-gray-600 hover:text-gray-900">
-                  {t('common.saved')}
-                </Link>
+                {isAuthenticated ? (
+                  <Link href="/saved" className="text-sm text-gray-600 hover:text-gray-900">
+                    {t('common.saved')}
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => showAuthGate('save')}
+                    className="text-sm text-gray-600 hover:text-gray-900"
+                  >
+                    {t('common.saved')}
+                  </button>
+                )}
               </li>
             </ul>
           </div>

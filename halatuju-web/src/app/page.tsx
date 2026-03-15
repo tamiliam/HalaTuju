@@ -73,8 +73,8 @@ export default function LandingPage() {
       <section className="bg-primary-500 py-16">
         <div className="container mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-8 text-center text-white">
-            <StatCard number="310" label={t('landing.courses')} />
-            <StatCard number="212" label={t('landing.institutions')} />
+            <StatCard number="1,500+" label={t('landing.courses')} />
+            <StatCard number="838" label={t('landing.institutions')} />
             <StatCard number="3" label={t('landing.languages')} />
             <StatCard number="100%" label={t('landing.free')} />
           </div>
