@@ -211,19 +211,20 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Saved Courses Sprint 2 COMPLETE (2026-03-15)** — Frontend shared hook + all surfaces
-- `useSavedCourses()` hook: auth gate, optimistic toggle, toast feedback, resume-after-login
-- Toast notification system (`ToastProvider` + `useToast()`)
-- Dashboard, search, SPM detail, STPM detail pages all use shared hook
-- Saved page: SPM/STPM tabs with counts, correct detail links per type
-- Build passes, ~10 files touched, no backend changes
+**Frontend Cleanup Sprint COMPLETE (2026-03-15)** — Tech debt group D
+- TD-014: Centralised localStorage keys (`storage.ts`, 19 constants, 15 files updated)
+- TD-042: Error/loading/404 pages with trilingual i18n
+- TD-048: All console.error replaced with user-facing toast notifications
+- Auth gating for anon users (My Profile, Load More, profile page)
+- Saved courses UX improvements (status toggle, institution names)
+- 38/52 tech debt items now resolved
 
 **Pending work**
 - Field taxonomy normalisation (plan in memory, needs implementation plan)
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
-- Continue tech debt remediation from `docs/technical-debt.md` (17 items remaining)
+- Continue tech debt remediation from `docs/technical-debt.md` (14 items remaining)
 
 ## Streamlit App (Legacy — migrating to Django API)
 

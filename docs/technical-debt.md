@@ -96,12 +96,9 @@
 **Risk if left:** Medium — any new subject requires changes in 5+ places.
 **Dependencies:** All eligibility logic, all UI grade entry.
 
-### [TD-014] localStorage sprawl with no centralised management
-**File(s):** `halatuju-web/src/app/dashboard/page.tsx`, `halatuju-web/src/app/onboarding/grades/page.tsx`, `halatuju-web/src/app/onboarding/stpm-grades/page.tsx`, `halatuju-web/src/lib/auth-context.tsx`, `halatuju-web/src/components/AuthGateModal.tsx`, many others
-**What it is:** Over 20 different `halatuju_*` localStorage keys scattered across 15+ files with no centralised read/write layer. Keys include: `halatuju_grades`, `halatuju_profile`, `halatuju_stream`, `halatuju_merit`, `halatuju_quiz_signals`, `halatuju_signal_strength`, `halatuju_report_generated`, `halatuju_exam_type`, `halatuju_stpm_grades`, `halatuju_stpm_cgpa`, `halatuju_muet_band`, `halatuju_spm_prereq`, `halatuju_stpm_stream`, `halatuju_koko_score`, `halatuju_aliran`, `halatuju_elektif`, `halatuju_lang`, `halatuju_locale`, `halatuju_resume_action`. No TypeScript types enforce the shape of values stored/retrieved.
-**What consistent looks like:** A single `useStudentStore()` hook (or Zustand/Jotai store) that wraps localStorage with typed getters/setters.
-**Risk if left:** Medium — easy to introduce bugs by reading/writing wrong key or wrong shape. Hard to reason about data flow.
-**Dependencies:** Every page that reads/writes student data.
+### [TD-014] localStorage sprawl with no centralised management ✅ RESOLVED (Frontend Cleanup Sprint, 2026-03-15)
+**File(s):** `halatuju-web/src/lib/storage.ts`
+**Resolution:** Created `storage.ts` with 19 named key constants and `clearAll()` helper. All 15 files updated to import constants — zero hardcoded `halatuju_*` strings remain outside storage.ts. Grep-verified.
 
 ### [TD-015] Frontend merit calculation sent to backend, backend may recalculate — RESOLVED
 **Resolved:** TD-002 Sprint (2026-03-14). Frontend no longer calculates merit locally — it calls `/calculate/merit/` API. Backend is the single source of truth. `merit.ts` deleted.
@@ -284,12 +281,9 @@
 **Risk if left:** Low — users see a nearly empty page.
 **Dependencies:** None.
 
-### [TD-042] No error.tsx, loading.tsx, or not-found.tsx pages
-**File(s):** `halatuju-web/src/app/`
-**What it is:** No custom error boundary, loading skeleton, or 404 page. Using Next.js defaults which show generic messages.
-**What consistent looks like:** Custom error page with HalaTuju branding, helpful error messages in BM/EN/TA.
-**Risk if left:** Low — functional but unprofessional UX.
-**Dependencies:** i18n keys.
+### [TD-042] No error.tsx, loading.tsx, or not-found.tsx pages ✅ RESOLVED (Frontend Cleanup Sprint, 2026-03-15)
+**File(s):** `halatuju-web/src/app/error.tsx`, `loading.tsx`, `not-found.tsx`
+**Resolution:** Three pages added with full i18n (EN/MS/TA via `useT()`), primary brand colour, consistent layout. 7 translation keys added to `errors` section in all message files.
 
 ### [TD-043] Phone/OTP login blocked with "coming soon"
 **File(s):** `halatuju-web/src/app/login/page.tsx`
@@ -328,12 +322,9 @@
 
 ## Frontend-Specific Issues
 
-### [TD-048] console.error calls in production code
-**File(s):** `halatuju-web/src/app/course/[id]/page.tsx` (line 39), `halatuju-web/src/app/profile/page.tsx` (lines 88, 121, 135, 145), `halatuju-web/src/app/dashboard/page.tsx` (line 160), `halatuju-web/src/app/stpm/[id]/page.tsx` (line 35)
-**What it is:** Error handling in catch blocks uses `console.error()` which shows in browser DevTools but provides no user feedback.
-**What consistent looks like:** Show a toast/notification to the user AND log to an error tracking service.
-**Risk if left:** Low — errors are swallowed from the user's perspective.
-**Dependencies:** Would need a toast/notification component.
+### [TD-048] console.error calls in production code ✅ RESOLVED (Frontend Cleanup Sprint, 2026-03-15)
+**File(s):** All frontend pages
+**Resolution:** All `console.error` calls replaced with `useToast()` hook providing user-facing toast notifications. Zero console.error/log/warn calls remain in production code. Toast system (`ToastProvider` + `useToast()`) added in Saved Courses Sprint 2.
 
 ### [TD-049] `as any` type assertion in profile page ✅ RESOLVED (Quick Wins Sprint, 2026-03-15)
 **File(s):** `halatuju-web/src/app/profile/page.tsx`, `halatuju-web/src/lib/api.ts`
@@ -380,7 +371,7 @@
 | TD-009 | No rate limiting on Gemini API calls | Open |
 | TD-011 | SupabaseIsAuthenticated returns 403 instead of 401 | Resolved (API Consistency Sprint) |
 | TD-013 | Subject key naming split (5+ files to change) | Resolved (Subject Key Unification Sprint) |
-| TD-014 | localStorage sprawl (20+ keys, no typing) | Open |
+| TD-014 | localStorage sprawl (20+ keys, no typing) | Resolved (Frontend Cleanup Sprint) |
 | TD-015 | Frontend/backend merit calculation may disagree | Resolved (TD-002 Sprint) |
 | TD-016 | StpmProgrammeDetailView institution lookup by name | Open |
 | TD-017 | Pre-U fit scoring exists only on frontend | Resolved (TD-002 Sprint) |
@@ -392,7 +383,7 @@
 | TD-043 | Phone/OTP login blocked | Open |
 | TD-044 | EligibilityCheckView iterates DataFrame twice | Resolved (Refactoring Sprint) |
 | TD-046 | CourseListView returns all courses unpaginated | Open |
-| TD-048 | console.error in production with no user feedback | Open |
+| TD-048 | console.error in production with no user feedback | Resolved (Frontend Cleanup Sprint) |
 | TD-051 | STPM field metadata has 207 unique values | Open |
 | TD-052 | Hardcoded merit thresholds duplicated across layers | Resolved (API Consistency Sprint) |
 
@@ -421,7 +412,7 @@
 | TD-039 | sentry-sdk pinned to <2.0 | Open |
 | TD-040 | numpy pinned to <2.0 | Open |
 | TD-041 | settings/page.tsx is a stub | Open |
-| TD-042 | No custom error/loading/404 pages | Open |
+| TD-042 | No custom error/loading/404 pages | Resolved (Frontend Cleanup Sprint) |
 | TD-047 | Startup data load is all-or-nothing | Open |
 | TD-049 | `as any` type assertion | Resolved (Quick Wins Sprint) |
 | TD-052 | Search limit hardcoded to 10000, no pagination | Open |

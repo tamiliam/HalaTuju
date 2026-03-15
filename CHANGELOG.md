@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] — Bug Fixes & Auth Gating (2026-03-15)
 
 ### Added
-- **Centralised localStorage keys** — `storage.ts` with 22 key constants + typed helpers (`getJSON`, `setJSON`, `clearAll`), all 12 pages updated
+- **Centralised localStorage keys** — `storage.ts` with 19 key constants + `clearAll()` helper, all 15 pages updated (TD-014 resolved)
 - **Auth gating** — My Profile nav link, Load More buttons (dashboard SPM/STPM/ranked + search), and profile page now show sign-up modal for anon users
 - **Saved courses UX** — institution name + course ID on saved cards, unified status toggle with correct state transitions (un-toggle "Got Offer" falls back to "Applied")
 - **Error boundary pages** — `error.tsx`, `loading.tsx`, `not-found.tsx` for graceful error handling
