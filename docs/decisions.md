@@ -287,6 +287,18 @@
 
 **Revisit if:** User testing reveals the Edit button is too many clicks, or if a more complex profile structure (e.g., education history, multiple addresses) requires a different pattern.
 
+## Course content in BM database columns, not i18n — STPM Headlines Sprint, 2026-03-15
+
+**Decision:** STPM headlines (and all course content: names, descriptions) are stored in BM in the database. The i18n system (`en.json`, `ms.json`, `ta.json`) is used only for static UI strings. If EN/TA course translations are needed later, they will be added as additional DB columns (`headline_en`, `headline_ta`), not i18n keys.
+
+**Alternatives considered:** (1) Store headlines as i18n message keys (`courses.{course_id}.headline`) — trilingual from day one. (2) Store in DB with BM only (chosen). (3) Store in DB with BM + EN columns immediately.
+
+**Rationale:** There are 1341 visible courses (390 SPM + 951 STPM). Maintaining i18n keys for this many courses creates a massive, hard-to-manage JSON file. Course content is dynamic (changes with annual data refreshes) while i18n files are static and versioned with code. DB columns allow content updates via management commands or admin tools without code deploys. BM is sufficient for now — 90%+ of users are BM-literate.
+
+**Trade-offs:** No English or Tamil headlines until DB columns are added. The earlier decision (Tech Debt Quick Wins 2) to use i18n for pre-U descriptions is now inconsistent — those 6 descriptions should eventually migrate to DB columns too.
+
+**Revisit if:** Multi-language course content becomes a priority, or if a course content CMS is built.
+
 ## Dual nullable FKs for SavedCourse — Saved Courses Sprint 1, 2026-03-15
 
 **Decision:** SavedCourse has two nullable FKs (`course` → Course, `stpm_course` → StpmCourse) with a DB check constraint ensuring exactly one is set. Partial unique indexes enforce uniqueness per type.

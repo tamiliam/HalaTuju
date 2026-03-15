@@ -199,6 +199,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/management/commands/sync_stpm_mohe.py` | STPM data sync with diff report | No |
 | `apps/courses/management/commands/validate_stpm_urls.py` | Dead link checker | No |
 | `apps/courses/management/commands/audit_data.py` | Data completeness report | No |
+| `apps/courses/management/commands/generate_stpm_headlines.py` | Gemini-powered STPM headline generator | No |
 | `apps/courses/insights_engine.py` | Deterministic insights from eligibility results | No |
 | `apps/reports/report_engine.py` | Gemini-powered narrative report generator | No |
 | `apps/reports/prompts.py` | BM/EN counselor report prompt templates | No |
@@ -211,14 +212,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**IC Gate + Profile Redesign COMPLETE (2026-03-15)**
-- IC number gate after Gmail/phone auth (replaces school input, validates DOB/state, 17 tests)
-- Profile page redesigned: view mode by default, per-section Edit/Save/Cancel, masked IC
-- Incompleteness badge in nav (counts 8 unfilled profile fields)
-- Returning user skip logic (already has NRIC → skip IC gate)
-- 16 new i18n keys × 3 languages (EN/MS/TA)
+**STPM Headlines Sprint COMPLETE (2026-03-15)**
+- 951 STPM courses now have BM headlines (emoji + tagline) as subtitles
+- Shared `CourseHeader` component for SPM + STPM detail pages
+- Badge maps extracted to `courseBadges.ts` (shared between CourseCard + CourseHeader)
+- Management command `generate_stpm_headlines.py` (Gemini, for future regeneration)
 
-**Current state:** 293 backend tests, 17 frontend tests, 0 failures. 48/52 tech debt.
+**Current state:** 424 backend tests, 17 frontend tests, 0 failures. 48/52 tech debt.
 
 **Remaining tech debt (4 items)**
 - TD-024: Course name field is `course` (too risky to rename)
@@ -231,6 +231,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
+- Audit course content for BM consistency (some mixed with English)
 
 ## Streamlit App (Legacy — migrating to Django API)
 
