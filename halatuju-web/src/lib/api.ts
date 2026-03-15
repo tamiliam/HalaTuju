@@ -482,6 +482,7 @@ export interface SyncProfileData {
   preferred_state?: string
   name?: string
   school?: string
+  nric?: string
 }
 
 export async function syncProfile(

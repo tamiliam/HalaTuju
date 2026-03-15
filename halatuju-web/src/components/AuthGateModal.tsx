@@ -7,8 +7,10 @@ import { syncProfile, type SyncProfileData } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
+import IcInput from './IcInput'
+import { validateIc } from '@/lib/ic-utils'
 
-type ModalStep = 'login' | 'otp' | 'profile'
+type ModalStep = 'login' | 'otp' | 'ic' | 'profile'
 
 export default function AuthGateModal() {
   const router = useRouter()
@@ -26,7 +28,8 @@ export default function AuthGateModal() {
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
   const [name, setName] = useState('')
-  const [school, setSchool] = useState('')
+  const [ic, setIc] = useState('')
+  const [icValid, setIcValid] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -37,7 +40,8 @@ export default function AuthGateModal() {
       setPhone('')
       setOtp('')
       setName('')
-      setSchool('')
+      setIc('')
+      setIcValid(false)
       setError(null)
       setLoading(false)
     }
@@ -46,14 +50,14 @@ export default function AuthGateModal() {
 
   // Advance to profile step when user authenticates mid-modal (OTP success)
   useEffect(() => {
-    if (isAuthenticated && authGateReason && step !== 'profile') {
+    if (isAuthenticated && authGateReason && step !== 'ic' && step !== 'profile') {
       // Pre-fill name from Google profile if available
       const googleName = session?.user?.user_metadata?.full_name
         || session?.user?.user_metadata?.name
       if (googleName && !name) {
         setName(googleName)
       }
-      setStep('profile')
+      setStep('ic')
       setError(null)
     }
   }, [isAuthenticated, authGateReason, step, session, name])
@@ -113,6 +117,17 @@ export default function AuthGateModal() {
     setLoading(false)
   }
 
+  const handleIcSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const err = validateIc(ic)
+    if (err) {
+      setError(err)
+      return
+    }
+    setError(null)
+    setStep('profile')
+  }
+
   const handleGoogleLogin = async () => {
     // Store pending action before redirect (page will remount after OAuth)
     localStorage.setItem(
@@ -157,7 +172,7 @@ export default function AuthGateModal() {
     }
 
     if (name.trim()) syncData.name = name.trim()
-    if (school.trim()) syncData.school = school.trim()
+    if (ic) syncData.nric = ic
 
     try {
       await syncProfile(syncData, { token })
@@ -324,6 +339,31 @@ export default function AuthGateModal() {
             </form>
           )}
 
+          {/* IC Step */}
+          {step === 'ic' && (
+            <form onSubmit={handleIcSubmit} className="space-y-4">
+              <p className="text-gray-600 text-center mb-2">
+                {t('authGate.icSubtitle')}
+              </p>
+              <IcInput
+                value={ic}
+                onChange={setIc}
+                onValidChange={setIcValid}
+                label={t('authGate.icLabel')}
+              />
+              <button
+                type="submit"
+                disabled={!icValid}
+                className="btn-primary w-full disabled:opacity-50"
+              >
+                {t('authGate.icContinue')}
+              </button>
+              <p className="text-xs text-gray-400 text-center">
+                {t('authGate.icPrivacy')}
+              </p>
+            </form>
+          )}
+
           {/* Profile Step */}
           {step === 'profile' && (
             <form onSubmit={handleProfileSubmit} className="space-y-4">
@@ -339,18 +379,6 @@ export default function AuthGateModal() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={t('authGate.namePlaceholder')}
-                  className="input"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('authGate.schoolLabel')}
-                </label>
-                <input
-                  type="text"
-                  value={school}
-                  onChange={(e) => setSchool(e.target.value)}
-                  placeholder={t('authGate.schoolPlaceholder')}
                   className="input"
                 />
               </div>
