@@ -18,7 +18,7 @@ export function useProfileCompleteness() {
       const profile = await getProfile({ token })
       let count = 0
       for (const field of COMPLETENESS_FIELDS) {
-        const val = (profile as Record<string, unknown>)[field]
+        const val = (profile as unknown as Record<string, unknown>)[field]
         if (val === null || val === undefined || val === '') count++
       }
       setIncompleteCount(count)
