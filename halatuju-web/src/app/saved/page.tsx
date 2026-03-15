@@ -2,17 +2,22 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getSavedCourses, unsaveCourse, createOutcome, type Course } from '@/lib/api'
+import { getSavedCourses, unsaveCourse, createOutcome, type SavedCourseWithStatus } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
+import { useToast } from '@/components/Toast'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 
+type QualificationTab = 'SPM' | 'STPM'
+
 export default function SavedPage() {
   const { t } = useT()
   const { token, isAuthenticated, isLoading: authLoading } = useAuth()
-  const [courses, setCourses] = useState<Course[]>([])
+  const { showToast } = useToast()
+  const [courses, setCourses] = useState<SavedCourseWithStatus[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<QualificationTab>('SPM')
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set())
   const [applyingId, setApplyingId] = useState<string | null>(null)
 
@@ -28,14 +33,23 @@ export default function SavedPage() {
       .finally(() => setLoading(false))
   }, [authLoading, isAuthenticated, token])
 
+  const filteredCourses = courses.filter(c =>
+    (c.course_type === 'stpm' ? 'STPM' : 'SPM') === activeTab
+  )
+
+  const spmCount = courses.filter(c => c.course_type !== 'stpm').length
+  const stpmCount = courses.filter(c => c.course_type === 'stpm').length
+
   const handleRemove = async (courseId: string) => {
     if (!token) return
     setCourses(prev => prev.filter(c => c.course_id !== courseId))
     try {
       await unsaveCourse(courseId, { token })
+      showToast('Course removed', 'success')
     } catch {
       const { saved_courses } = await getSavedCourses({ token })
       setCourses(saved_courses)
+      showToast('Failed to remove course', 'error')
     }
   }
 
@@ -44,14 +58,9 @@ export default function SavedPage() {
     setApplyingId(courseId)
     try {
       await createOutcome({ course_id: courseId, status: 'applied' }, { token })
-      const n = new Set(appliedIds)
-      n.add(courseId)
-      setAppliedIds(n)
+      setAppliedIds(prev => { const n = new Set(prev); n.add(courseId); return n })
     } catch {
-      // Might already exist (409) — treat as success
-      const n = new Set(appliedIds)
-      n.add(courseId)
-      setAppliedIds(n)
+      setAppliedIds(prev => { const n = new Set(prev); n.add(courseId); return n })
     }
     setApplyingId(null)
   }
@@ -61,16 +70,18 @@ export default function SavedPage() {
     setApplyingId(courseId)
     try {
       await createOutcome({ course_id: courseId, status: 'offered' }, { token })
-      const n = new Set(appliedIds)
-      n.add(courseId)
-      setAppliedIds(n)
+      setAppliedIds(prev => { const n = new Set(prev); n.add(courseId); return n })
     } catch {
-      const n = new Set(appliedIds)
-      n.add(courseId)
-      setAppliedIds(n)
+      setAppliedIds(prev => { const n = new Set(prev); n.add(courseId); return n })
     }
     setApplyingId(null)
   }
+
+  /** Returns the correct detail page path based on course type */
+  const detailHref = (course: SavedCourseWithStatus) =>
+    course.course_type === 'stpm'
+      ? `/stpm/${course.course_id}`
+      : `/course/${course.course_id}`
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -97,7 +108,7 @@ export default function SavedPage() {
           </div>
         )}
 
-        {!loading && courses.length > 0 && (
+        {!loading && isAuthenticated && courses.length > 0 && (
           <>
             {/* Track applications CTA */}
             <Link
@@ -117,56 +128,91 @@ export default function SavedPage() {
               </div>
             </Link>
 
-            <div className="grid gap-4">
-              {courses.map(course => (
-                <div key={course.course_id} className="bg-white rounded-xl border border-gray-200 p-5">
-                  <div className="flex items-center justify-between">
-                    <Link href={`/course/${course.course_id}`} className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{course.course || course.course_id}</h3>
-                      <p className="text-sm text-gray-500">{course.level} &middot; {course.field}</p>
-                    </Link>
-                    <button
-                      onClick={() => handleRemove(course.course_id)}
-                      className="ml-4 p-2 text-gray-400 hover:text-red-500 transition-colors"
-                      aria-label={t('saved.remove')}
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  {/* Outcome action buttons */}
-                  <div className="mt-3 flex gap-2">
-                    {appliedIds.has(course.course_id) ? (
-                      <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-green-50 text-green-700 text-sm font-medium">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        {t('outcomes.statusApplied')}
-                      </span>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleApplied(course.course_id)}
-                          disabled={applyingId === course.course_id}
-                          className="px-3 py-1.5 rounded-full border border-primary-300 text-primary-700 text-sm font-medium hover:bg-primary-50 transition-colors disabled:opacity-50"
-                        >
-                          {t('outcomes.iApplied')}
-                        </button>
-                        <button
-                          onClick={() => handleGotOffer(course.course_id)}
-                          disabled={applyingId === course.course_id}
-                          className="px-3 py-1.5 rounded-full border border-green-300 text-green-700 text-sm font-medium hover:bg-green-50 transition-colors disabled:opacity-50"
-                        >
-                          {t('outcomes.iGotOffer')}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
+            {/* SPM / STPM tabs */}
+            <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+              <button
+                onClick={() => setActiveTab('SPM')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'SPM'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                SPM ({spmCount})
+              </button>
+              <button
+                onClick={() => setActiveTab('STPM')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'STPM'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                STPM ({stpmCount})
+              </button>
             </div>
+
+            {/* Course list */}
+            {filteredCourses.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">
+                  {activeTab === 'STPM'
+                    ? t('saved.noStpm')
+                    : t('saved.noSpm')}
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {filteredCourses.map(course => (
+                  <div key={course.course_id} className="bg-white rounded-xl border border-gray-200 p-5">
+                    <div className="flex items-center justify-between">
+                      <Link href={detailHref(course)} className="flex-1">
+                        <h3 className="font-semibold text-gray-900">{course.course || course.course_id}</h3>
+                        <p className="text-sm text-gray-500">{course.level} &middot; {course.field}</p>
+                      </Link>
+                      <button
+                        onClick={() => handleRemove(course.course_id)}
+                        className="ml-4 p-2 text-gray-400 hover:text-red-500 transition-colors"
+                        aria-label={t('saved.remove')}
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Outcome action buttons */}
+                    <div className="mt-3 flex gap-2">
+                      {appliedIds.has(course.course_id) ? (
+                        <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-green-50 text-green-700 text-sm font-medium">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          {t('outcomes.statusApplied')}
+                        </span>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleApplied(course.course_id)}
+                            disabled={applyingId === course.course_id}
+                            className="px-3 py-1.5 rounded-full border border-primary-300 text-primary-700 text-sm font-medium hover:bg-primary-50 transition-colors disabled:opacity-50"
+                          >
+                            {t('outcomes.iApplied')}
+                          </button>
+                          <button
+                            onClick={() => handleGotOffer(course.course_id)}
+                            disabled={applyingId === course.course_id}
+                            className="px-3 py-1.5 rounded-full border border-green-300 text-green-700 text-sm font-medium hover:bg-green-50 transition-colors disabled:opacity-50"
+                          >
+                            {t('outcomes.iGotOffer')}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>

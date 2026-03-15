@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Saved Courses Sprint 2 (2026-03-15)
+
+### Added
+- **`useSavedCourses()` shared hook** — single source of truth for save state, auth gating, optimistic updates, toast feedback, and resume-after-login across all pages
+- **Toast notification system** — `ToastProvider` + `useToast()` hook with success/error variants, auto-dismiss after 3s, slide-in animation
+- **Search page save** — bookmark icon on search results now reflects actual saved state and toggles correctly
+- **Detail page visual states** — save button shows green "Saved" when saved, red "Remove from Saved" on hover, blue "Save This Course" when not saved (both SPM and STPM detail pages)
+- **Saved page SPM/STPM tabs** — tabbed interface with counts, correct detail page links per type (`/course/` for SPM, `/stpm/` for STPM)
+- **Translation keys** — `courseDetail.saved`, `saved.noSpm`, `saved.noStpm` in EN/MS/TA
+
+### Changed
+- **Dashboard** — replaced ~50 lines of inline save logic with `useSavedCourses()` hook call
+- **SPM detail page** — replaced broken `handleSave` (no auth, no token) with hook
+- **STPM detail page** — same fix as SPM detail page
+
+### Removed
+- Inline `savedIds` state, `handleToggleSave`, `handleSaveOrGate` from dashboard (moved to hook)
+- Direct `saveCourse`/`unsaveCourse` imports from detail pages (now via hook)
+
+---
+
 ## [Unreleased] — Saved Courses Sprint 1 (2026-03-15)
 
 ### Added

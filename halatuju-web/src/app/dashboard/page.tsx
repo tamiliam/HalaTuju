@@ -8,9 +8,6 @@ import {
   checkEligibility,
   checkStpmEligibility,
   rankStpmCourses,
-  getSavedCourses,
-  saveCourse,
-  unsaveCourse,
   getRankedResults,
   generateReport,
   getReports,
@@ -18,10 +15,10 @@ import {
   type EligibleCourse,
   type RankedCourse,
   type RankingResult,
-  type StpmEligibleCourse,
   type StpmRankedCourse,
 } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
+import { useSavedCourses } from '@/hooks/useSavedCourses'
 import CourseCard from '@/components/CourseCard'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
@@ -49,11 +46,11 @@ export default function DashboardPage() {
   const { t } = useT()
   const router = useRouter()
   const { isAuthenticated, token, showAuthGate } = useAuth()
+  const { savedIds, toggleSave: handleSaveOrGate } = useSavedCourses()
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
   const [displayCount, setDisplayCount] = useState(6)
-  const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [quizSignals, setQuizSignals] = useState<Record<string, Record<string, number>> | null>(null)
   const [reportLoading, setReportLoading] = useState(false)
   const [reportError, setReportError] = useState(false)
@@ -161,17 +158,6 @@ export default function DashboardPage() {
     })
   }, [examType, stpmData, profile])
 
-  // Load saved courses when token becomes available
-  useEffect(() => {
-    if (token) {
-      getSavedCourses({ token })
-        .then(({ saved_courses }) => {
-          setSavedIds(new Set(saved_courses.map(c => c.course_id)))
-        })
-        .catch(() => {})
-    }
-  }, [token])
-
   // Check for existing reports when token becomes available
   useEffect(() => {
     if (!token) return
@@ -183,44 +169,6 @@ export default function DashboardPage() {
       })
       .catch(() => {})
   }, [token])
-
-  const handleToggleSave = useCallback(async (courseId: string) => {
-    if (!token) return
-    const isSaved = savedIds.has(courseId)
-
-    // Optimistic update
-    setSavedIds(prev => {
-      const next = new Set(prev)
-      if (isSaved) next.delete(courseId)
-      else next.add(courseId)
-      return next
-    })
-
-    try {
-      if (isSaved) {
-        await unsaveCourse(courseId, { token })
-      } else {
-        await saveCourse(courseId, { token })
-      }
-    } catch {
-      // Revert on failure
-      setSavedIds(prev => {
-        const next = new Set(prev)
-        if (isSaved) next.add(courseId)
-        else next.delete(courseId)
-        return next
-      })
-    }
-  }, [token, savedIds])
-
-  // Save handler that gates on auth
-  const handleSaveOrGate = useCallback((courseId: string) => {
-    if (!isAuthenticated) {
-      showAuthGate('save', { courseId })
-      return
-    }
-    handleToggleSave(courseId)
-  }, [isAuthenticated, showAuthGate, handleToggleSave])
 
   // Query eligibility when profile is ready
   const {
@@ -319,27 +267,20 @@ export default function DashboardPage() {
     router.push('/quiz')
   }, [isAuthenticated, showAuthGate, router])
 
-  // Resume actions after auth completion (from auth gate modal)
+  // Resume report action after auth completion (save resume is handled by useSavedCourses hook)
   const resumeHandledRef = useRef(false)
   useEffect(() => {
     if (!token || resumeHandledRef.current) return
     const resumeStr = localStorage.getItem(RESUME_ACTION_KEY)
     if (!resumeStr) return
-    localStorage.removeItem(RESUME_ACTION_KEY)
-    resumeHandledRef.current = true
 
     try {
-      const { action, courseId } = JSON.parse(resumeStr)
-      if (action === 'save' && courseId) {
-        setSavedIds(prev => { const n = new Set(prev); n.add(courseId); return n })
-        saveCourse(courseId, { token }).catch(() => {
-          setSavedIds(prev => {
-            const n = new Set(prev)
-            n.delete(courseId)
-            return n
-          })
-        })
-      } else if (action === 'report' && eligibilityData) {
+      const { action } = JSON.parse(resumeStr)
+      if (action === 'save') return // handled by useSavedCourses hook
+      localStorage.removeItem(RESUME_ACTION_KEY)
+      resumeHandledRef.current = true
+
+      if (action === 'report' && eligibilityData) {
         setReportLoading(true)
         generateReport(eligibilityData.eligible_courses, eligibilityData.insights, 'bm', { token })
           .then(result => {

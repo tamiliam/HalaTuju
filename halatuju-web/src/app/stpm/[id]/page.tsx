@@ -3,39 +3,29 @@
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { getStpmCourseDetail, saveCourse, unsaveCourse } from '@/lib/api'
+import { getStpmCourseDetail } from '@/lib/api'
+import { useSavedCourses } from '@/hooks/useSavedCourses'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 
 export default function StpmCourseDetailPage() {
   const params = useParams()
   const id = params.id as string
   const { t } = useT()
-  const [isSaved, setIsSaved] = useState(false)
-  const [saving, setSaving] = useState(false)
+  const { savedIds, toggleSave } = useSavedCourses()
+  const isSaved = savedIds.has(id)
+  const [isHovering, setIsHovering] = useState(false)
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['stpm_course', id],
     queryFn: () => getStpmCourseDetail(id),
   })
 
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      if (isSaved) {
-        await unsaveCourse(id)
-        setIsSaved(false)
-      } else {
-        await saveCourse(id)
-        setIsSaved(true)
-      }
-    } catch (err) {
-      console.error('Failed to save course:', err)
-    }
-    setSaving(false)
-  }
+  const handleSave = useCallback(() => {
+    toggleSave(id)
+  }, [toggleSave, id])
 
   if (isLoading) {
     return (
@@ -350,10 +340,21 @@ export default function StpmCourseDetailPage() {
               <div className="space-y-3">
                 <button
                   onClick={handleSave}
-                  disabled={saving}
-                  className="btn-primary w-full"
+                  onMouseEnter={() => setIsHovering(true)}
+                  onMouseLeave={() => setIsHovering(false)}
+                  className={`w-full px-4 py-2.5 rounded-lg font-medium text-sm transition-colors ${
+                    isSaved
+                      ? isHovering
+                        ? 'bg-red-500 text-white hover:bg-red-600'
+                        : 'bg-green-500 text-white'
+                      : 'bg-primary-500 text-white hover:bg-primary-600'
+                  }`}
                 >
-                  {isSaved ? t('courseDetail.removeFromSaved') : t('courseDetail.saveCourse')}
+                  {isSaved
+                    ? isHovering
+                      ? t('courseDetail.removeFromSaved')
+                      : t('courseDetail.saved')
+                    : t('courseDetail.saveCourse')}
                 </button>
                 <Link
                   href="/dashboard"

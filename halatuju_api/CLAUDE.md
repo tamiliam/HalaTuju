@@ -214,26 +214,19 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Saved Courses Sprint 1 COMPLETE (2026-03-15)** — Backend dual-FK model + API
-- SavedCourse supports both SPM and STPM via `course` + `stpm_course` nullable FKs with check constraint
-- API: POST auto-detects STPM, GET returns `course_type` + `?qualification=` filter, DELETE/PATCH check both FKs
-- Supabase migration applied, RLS unchanged (filters by student_id)
-- Tests: 425 pass, 0 fail, 0 skip
-
-**Next: Saved Courses Sprint 2 (Frontend)**
-- Create `useSavedCourses()` shared hook (load savedIds, toggleSave with auth gate + optimistic update + toast)
-- Create Toast notification component
-- Fix dashboard, search, SPM detail, STPM detail pages to use shared hook
-- Tabbed saved page (SPM/STPM tabs with qualification filter)
-- Design doc: `docs/plans/2026-03-15-saved-courses-design.md`, roadmap: `docs/plans/2026-03-15-saved-courses-roadmap.md`
-- ~10 frontend files, no backend changes needed
+**Saved Courses Sprint 2 COMPLETE (2026-03-15)** — Frontend shared hook + all surfaces
+- `useSavedCourses()` hook: auth gate, optimistic toggle, toast feedback, resume-after-login
+- Toast notification system (`ToastProvider` + `useToast()`)
+- Dashboard, search, SPM detail, STPM detail pages all use shared hook
+- Saved page: SPM/STPM tabs with counts, correct detail links per type
+- Build passes, ~10 files touched, no backend changes
 
 **Pending work**
 - Field taxonomy normalisation (plan in memory, needs implementation plan)
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
-- Continue tech debt remediation from `docs/technical-debt.md` (27 items remaining) — Quick Wins Sprint resolved TD-027, TD-030, TD-037, TD-049
+- Continue tech debt remediation from `docs/technical-debt.md` (27 items remaining)
 
 ## Streamlit App (Legacy — migrating to Django API)
 

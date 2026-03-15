@@ -269,6 +269,7 @@
     "viewOnEpanduan": "Lihat di ePanduan (KPT)",
     "actions": "Tindakan",
     "saveCourse": "Simpan Kursus Ini",
+    "saved": "Disimpan",
     "removeFromSaved": "Buang dari Simpanan",
     "backToRecommendations": "Kembali ke Cadangan",
     "notFound": "Kami tidak dapat mencari kursus yang anda cari.",
@@ -285,7 +286,9 @@
     "signIn": "Log Masuk",
     "empty": "Anda belum menyimpan sebarang kursus.",
     "browseCourses": "Layari Kursus",
-    "remove": "Buang dari senarai"
+    "remove": "Buang dari senarai",
+    "noSpm": "Tiada kursus SPM disimpan lagi.",
+    "noStpm": "Tiada kursus STPM disimpan lagi."
   },
   "authGate": {
     "title": "Cipta Akaun Percuma Anda",

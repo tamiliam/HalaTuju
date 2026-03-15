@@ -8,6 +8,7 @@ import AppFooter from '@/components/AppFooter'
 import CourseCard from '@/components/CourseCard'
 import FilterPill from '@/components/FilterPill'
 import { useAuth } from '@/lib/auth-context'
+import { useSavedCourses } from '@/hooks/useSavedCourses'
 import clsx from 'clsx'
 import { useT } from '@/lib/i18n'
 
@@ -34,6 +35,7 @@ function SearchPageInner() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { isAuthenticated, showAuthGate } = useAuth()
+  const { savedIds, toggleSave } = useSavedCourses()
   const [courses, setCourses] = useState<SearchCourse[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [filters, setFilters] = useState<SearchFilters | null>(null)
@@ -442,7 +444,8 @@ function SearchPageInner() {
                 <CourseCard
                   key={course.course_id}
                   course={toEligible(course)}
-                  isSaved={false}
+                  isSaved={savedIds.has(course.course_id)}
+                  onToggleSave={toggleSave}
                   institutionName={course.institution_name}
                   institutionState={course.institution_state}
                   institutionCount={course.institution_count}

@@ -3,12 +3,13 @@
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { getCourse, saveCourse, unsaveCourse, type Course, type Institution, type MascoOccupation, type CourseRequirements } from '@/lib/api'
+import { getCourse, type Course, type Institution, type MascoOccupation, type CourseRequirements } from '@/lib/api'
+import { useSavedCourses } from '@/hooks/useSavedCourses'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import RequirementsCard from '@/components/RequirementsCard'
 import { useT } from '@/lib/i18n'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { STPM_SCHOOLS, type StpmSchool } from '@/data/stpm-schools'
 import { MATRIC_COLLEGES, type MatricCollege } from '@/data/matric-colleges'
 
@@ -16,8 +17,9 @@ export default function CourseDetailPage() {
   const params = useParams()
   const courseId = params.id as string
   const { locale, t } = useT()
-  const [isSaved, setIsSaved] = useState(false)
-  const [saving, setSaving] = useState(false)
+  const { savedIds, toggleSave } = useSavedCourses()
+  const isSaved = savedIds.has(courseId)
+  const [isHovering, setIsHovering] = useState(false)
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['course', courseId],
@@ -25,21 +27,9 @@ export default function CourseDetailPage() {
     enabled: !!courseId,
   })
 
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      if (isSaved) {
-        await unsaveCourse(courseId)
-        setIsSaved(false)
-      } else {
-        await saveCourse(courseId)
-        setIsSaved(true)
-      }
-    } catch (err) {
-      console.error('Failed to save course:', err)
-    }
-    setSaving(false)
-  }
+  const handleSave = useCallback(() => {
+    toggleSave(courseId)
+  }, [toggleSave, courseId])
 
   if (isLoading) {
     return (
@@ -255,10 +245,21 @@ export default function CourseDetailPage() {
               <div className="space-y-3">
                 <button
                   onClick={handleSave}
-                  disabled={saving}
-                  className="btn-primary w-full"
+                  onMouseEnter={() => setIsHovering(true)}
+                  onMouseLeave={() => setIsHovering(false)}
+                  className={`w-full px-4 py-2.5 rounded-lg font-medium text-sm transition-colors ${
+                    isSaved
+                      ? isHovering
+                        ? 'bg-red-500 text-white hover:bg-red-600'
+                        : 'bg-green-500 text-white'
+                      : 'bg-primary-500 text-white hover:bg-primary-600'
+                  }`}
                 >
-                  {isSaved ? t('courseDetail.removeFromSaved') : t('courseDetail.saveCourse')}
+                  {isSaved
+                    ? isHovering
+                      ? t('courseDetail.removeFromSaved')
+                      : t('courseDetail.saved')
+                    : t('courseDetail.saveCourse')}
                 </button>
                 <Link
                   href="/dashboard"

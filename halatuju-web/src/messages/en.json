@@ -269,6 +269,7 @@
     "viewOnEpanduan": "View on ePanduan (MOHE)",
     "actions": "Actions",
     "saveCourse": "Save This Course",
+    "saved": "Saved",
     "removeFromSaved": "Remove from Saved",
     "backToRecommendations": "Back to Recommendations",
     "notFound": "We couldn't find the course you're looking for.",
@@ -285,7 +286,9 @@
     "signIn": "Sign In",
     "empty": "You haven't saved any courses yet.",
     "browseCourses": "Browse Courses",
-    "remove": "Remove from saved"
+    "remove": "Remove from saved",
+    "noSpm": "No SPM courses saved yet.",
+    "noStpm": "No STPM courses saved yet."
   },
   "authGate": {
     "title": "Create Your Free Account",

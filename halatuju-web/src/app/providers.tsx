@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { I18nProvider } from '@/lib/i18n'
 import { AuthProvider } from '@/lib/auth-context'
 import AuthGateModal from '@/components/AuthGateModal'
+import { ToastProvider } from '@/components/Toast'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -23,8 +24,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
         <AuthProvider>
-          {children}
-          <AuthGateModal />
+          <ToastProvider>
+            {children}
+            <AuthGateModal />
+          </ToastProvider>
         </AuthProvider>
       </I18nProvider>
     </QueryClientProvider>
