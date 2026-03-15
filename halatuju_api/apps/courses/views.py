@@ -1302,6 +1302,7 @@ class StpmCourseDetailView(APIView):
             'field': prog.field,
             'category': prog.category,
             'description': prog.description,
+            'headline': prog.headline,
             'merit_score': prog.merit_score,
             'mohe_url': prog.mohe_url or '',
             'requirements': requirements,
