@@ -8,6 +8,7 @@ import { useSavedCourses } from '@/hooks/useSavedCourses'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import RequirementsCard from '@/components/RequirementsCard'
+import SpecialConditions from '@/components/SpecialConditions'
 import { useT } from '@/lib/i18n'
 import { useState, useMemo, useCallback } from 'react'
 import { STPM_SCHOOLS, type StpmSchool } from '@/data/stpm-schools'
@@ -235,6 +236,15 @@ export default function CourseDetailPage() {
 
             {/* Requirements */}
             {requirements && <RequirementsCard requirements={requirements} />}
+
+            {/* Special Conditions */}
+            {requirements && (
+              <SpecialConditions
+                reqInterview={requirements.special?.some((s: { key: string }) => s.key === 'req_interview')}
+                noColorblind={requirements.special?.some((s: { key: string }) => s.key === 'no_colorblind')}
+                reqMedicalFitness={requirements.special?.some((s: { key: string }) => s.key === 'req_medical_fitness')}
+              />
+            )}
 
             {/* Subject Key for STPM courses */}
             {courseId.startsWith('stpm-') && (
