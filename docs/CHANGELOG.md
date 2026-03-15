@@ -1,5 +1,30 @@
 # Changelog — HalaTuju
 
+## IC Gate + Profile Redesign Sprint (2026-03-15)
+
+### Added
+- **IC Gate**: New compulsory IC number step in AuthGateModal after Gmail/phone auth — replaces school name input
+- **IC utilities**: `ic-utils.ts` with auto-dash formatting (`XXXXXX-XX-XXXX`), validation (DOB age 15–23, valid state code), and masked display (`****-**-1234`)
+- **IcInput component**: Reusable input with `inputMode="numeric"`, auto-formatting, blur validation, and error display
+- **Profile completeness hook**: `useProfileCompleteness()` counts 8 key unfilled fields (name, NRIC, gender, state, phone, income, siblings, address)
+- **Incompleteness badge**: Red badge on profile nav link and avatar showing count of unfilled fields
+- **Returning user skip**: IC gate is skipped if user already has NRIC stored in backend
+- **i18n keys**: 16 new keys × 3 languages (EN/MS/TA) for IC gate and profile view/edit
+- **Jest config**: `jest.config.js` for TypeScript test support in frontend
+
+### Changed
+- **Profile page redesign**: View mode by default with per-section Edit/Save/Cancel. IC always masked and read-only. Only one section editable at a time. Global save button removed.
+- **AuthGateModal**: `ModalStep` type now includes `'ic'` step. School input removed. NRIC synced to backend via `SyncProfileData`.
+- **SyncProfileData**: Added `nric` field to API interface
+
+### Stats
+- Frontend tests: 17 pass (IC utils)
+- Backend tests: 293 pass, 0 failures
+- Files created: 4 (ic-utils.ts, ic-utils.test.ts, IcInput.tsx, useProfileCompleteness.ts)
+- Files modified: 6 (AuthGateModal.tsx, api.ts, AppHeader.tsx, profile/page.tsx, en/ms/ta.json)
+
+---
+
 ## API Consistency Sprint — TD-005, TD-006, TD-022, TD-026, TD-052 (2026-03-15)
 
 ### Changed
