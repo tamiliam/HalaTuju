@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
+import { maskIc } from '@/lib/ic-utils'
 import {
   getProfile,
   updateProfile,
@@ -38,6 +39,8 @@ const STATUS_OPTIONS = [
   { value: 'got_offer', label: 'profile.status.got_offer', color: 'bg-green-100 text-green-700' },
 ]
 
+type EditingSection = 'identity' | 'contact' | 'family' | null
+
 export default function ProfilePage() {
   const router = useRouter()
   const { t } = useT()
@@ -63,7 +66,8 @@ export default function ProfilePage() {
   // UI state
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [editingSection, setEditingSection] = useState<EditingSection>(null)
+  const [snapshot, setSnapshot] = useState<Record<string, unknown>>({})
 
   const loadData = useCallback(async () => {
     if (!token) return
@@ -118,12 +122,35 @@ export default function ProfilePage() {
         colorblind: colorblind ? 'Ya' : 'Tidak',
         disability: disability ? 'Ya' : 'Tidak',
       }, { token })
-      setLastSaved(new Date())
     } catch (err) {
       showToast('Failed to save profile. Please try again.', 'error')
     } finally {
       setSaving(false)
     }
+  }
+
+  const startEditing = (section: NonNullable<EditingSection>) => {
+    setSnapshot({ name, nric, gender, nationality, state, address, phone, familyIncome, siblings, colorblind, disability })
+    setEditingSection(section)
+  }
+
+  const cancelEditing = () => {
+    setName(snapshot.name as string || '')
+    setGender(snapshot.gender as '' | 'male' | 'female' || '')
+    setNationality(snapshot.nationality as 'malaysian' | 'non_malaysian' || 'malaysian')
+    setState(snapshot.state as string || '')
+    setAddress(snapshot.address as string || '')
+    setPhone(snapshot.phone as string || '')
+    setFamilyIncome(snapshot.familyIncome as string || '')
+    setSiblings(snapshot.siblings as string || '')
+    setColorblind(snapshot.colorblind as boolean || false)
+    setDisability(snapshot.disability as boolean || false)
+    setEditingSection(null)
+  }
+
+  const saveSection = async () => {
+    await handleSave()
+    setEditingSection(null)
   }
 
   const handleStatusChange = async (courseId: string, newStatus: string) => {
@@ -177,191 +204,294 @@ export default function ProfilePage() {
             </p>
           </div>
 
-          {/* Section 1: Personal Details */}
+          {/* Section 1: Personal Details (Identity) */}
           <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0" />
-                </svg>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0" />
+                  </svg>
+                </div>
+                <h2 className="text-lg font-semibold text-gray-900">{t('profile.personalDetails')}</h2>
               </div>
-              <h2 className="text-lg font-semibold text-gray-900">{t('profile.personalDetails')}</h2>
+              {editingSection === null && (
+                <button onClick={() => startEditing('identity')} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                  {t('profile.edit')}
+                </button>
+              )}
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.name') || 'Name'} <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.nric')}</label>
-                <input
-                  type="text"
-                  value={nric}
-                  onChange={e => setNric(e.target.value)}
-                  placeholder="XXXXXX-XX-XXXX"
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {editingSection === 'identity' ? (
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.gender')} <span className="text-red-500">*</span></label>
-                  <div className="flex gap-2">
-                    {(['male', 'female'] as const).map(g => (
-                      <button
-                        key={g}
-                        onClick={() => setGender(g)}
-                        className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
-                          gender === g
-                            ? 'bg-primary-50 border-primary-500 text-primary-700'
-                            : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
-                        }`}
-                      >
-                        {t(`onboarding.${g}`)}
-                      </button>
-                    ))}
-                  </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.icMasked')}</label>
+                  <input
+                    type="text"
+                    value={nric ? maskIc(nric) : '—'}
+                    disabled
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 font-mono cursor-not-allowed"
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.nationality')}</label>
-                  <div className="flex gap-2">
-                    {(['malaysian', 'non_malaysian'] as const).map(n => (
-                      <button
-                        key={n}
-                        onClick={() => setNationality(n)}
-                        className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
-                          nationality === n
-                            ? 'bg-primary-50 border-primary-500 text-primary-700'
-                            : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
-                        }`}
-                      >
-                        {n === 'malaysian' ? t('onboarding.malaysian') : t('onboarding.nonMalaysian')}
-                      </button>
-                    ))}
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.name') || 'Name'} <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.gender')} <span className="text-red-500">*</span></label>
+                    <div className="flex gap-2">
+                      {(['male', 'female'] as const).map(g => (
+                        <button
+                          key={g}
+                          onClick={() => setGender(g)}
+                          className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
+                            gender === g
+                              ? 'bg-primary-50 border-primary-500 text-primary-700'
+                              : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
+                          }`}
+                        >
+                          {t(`onboarding.${g}`)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.nationality')}</label>
+                    <div className="flex gap-2">
+                      {(['malaysian', 'non_malaysian'] as const).map(n => (
+                        <button
+                          key={n}
+                          onClick={() => setNationality(n)}
+                          className={`flex-1 px-3 py-2.5 rounded-lg text-sm font-medium transition-all border ${
+                            nationality === n
+                              ? 'bg-primary-50 border-primary-500 text-primary-700'
+                              : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
+                          }`}
+                        >
+                          {n === 'malaysian' ? t('onboarding.malaysian') : t('onboarding.nonMalaysian')}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
+                <div className="flex gap-3 pt-4">
+                  <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    {t('profile.cancel')}
+                  </button>
+                  <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
+                    {saving ? '...' : t('profile.save')}
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('profile.icMasked')}</span>
+                  <span className="text-sm text-gray-900 font-mono">{nric ? maskIc(nric) : '—'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('onboarding.name')}</span>
+                  <span className="text-sm text-gray-900">{name || '—'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('onboarding.gender')}</span>
+                  <span className="text-sm text-gray-900">{gender ? t(`onboarding.${gender}`) : '—'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('onboarding.nationality')}</span>
+                  <span className="text-sm text-gray-900">{nationality === 'malaysian' ? t('onboarding.malaysian') : t('onboarding.nonMalaysian')}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Section 2: Contact & Location */}
           <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-                </svg>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                  </svg>
+                </div>
+                <h2 className="text-lg font-semibold text-gray-900">{t('profile.contactLocation')}</h2>
               </div>
-              <h2 className="text-lg font-semibold text-gray-900">{t('profile.contactLocation')}</h2>
+              {editingSection === null && (
+                <button onClick={() => startEditing('contact')} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                  {t('profile.edit')}
+                </button>
+              )}
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.state')}</label>
-                <select
-                  value={state}
-                  onChange={e => setState(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                >
-                  <option value="">{t('onboarding.selectState')}</option>
-                  {MALAYSIAN_STATES.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+            {editingSection === 'contact' ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.state')}</label>
+                  <select
+                    value={state}
+                    onChange={e => setState(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                  >
+                    <option value="">{t('onboarding.selectState')}</option>
+                    {MALAYSIAN_STATES.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.address')}</label>
+                  <textarea
+                    value={address}
+                    onChange={e => setAddress(e.target.value)}
+                    placeholder={t('profile.addressPlaceholder') || 'Your home address'}
+                    rows={2}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.phone')}</label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    placeholder="+60 12-345 6789"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                  />
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    {t('profile.cancel')}
+                  </button>
+                  <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
+                    {saving ? '...' : t('profile.save')}
+                  </button>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.address')}</label>
-                <textarea
-                  value={address}
-                  onChange={e => setAddress(e.target.value)}
-                  placeholder={t('profile.addressPlaceholder') || 'Your home address'}
-                  rows={2}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none resize-none"
-                />
+            ) : (
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('onboarding.state')}</span>
+                  <span className="text-sm text-gray-900">{state || '—'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('profile.address')}</span>
+                  <span className="text-sm text-gray-900">{address || '—'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('profile.phone')}</span>
+                  <span className="text-sm text-gray-900">{phone || '—'}</span>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.phone')}</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  placeholder="+60 12-345 6789"
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                />
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Section 3: Family & Background */}
           <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                </svg>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                  </svg>
+                </div>
+                <h2 className="text-lg font-semibold text-gray-900">{t('profile.familyBackground')}</h2>
               </div>
-              <h2 className="text-lg font-semibold text-gray-900">{t('profile.familyBackground')}</h2>
+              {editingSection === null && (
+                <button onClick={() => startEditing('family')} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                  {t('profile.edit')}
+                </button>
+              )}
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.familyIncome')}</label>
-                <select
-                  value={familyIncome}
-                  onChange={e => setFamilyIncome(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                >
-                  <option value="">—</option>
-                  {INCOME_RANGES.map(r => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.siblings')}</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="20"
-                  value={siblings}
-                  onChange={e => setSiblings(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.specialNeeds')}</label>
-                <div className="flex flex-wrap gap-3">
-                  <label className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
-                    colorblind ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}>
-                    <input
-                      type="checkbox"
-                      checked={colorblind}
-                      onChange={e => setColorblind(e.target.checked)}
-                      className="w-4 h-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
-                    />
-                    <span className="text-sm text-gray-700">{t('onboarding.colorBlindness')}</span>
-                  </label>
-                  <label className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
-                    disability ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'
-                  }`}>
-                    <input
-                      type="checkbox"
-                      checked={disability}
-                      onChange={e => setDisability(e.target.checked)}
-                      className="w-4 h-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
-                    />
-                    <span className="text-sm text-gray-700">{t('onboarding.physicalDisability')}</span>
-                  </label>
+            {editingSection === 'family' ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.familyIncome')}</label>
+                  <select
+                    value={familyIncome}
+                    onChange={e => setFamilyIncome(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                  >
+                    <option value="">—</option>
+                    {INCOME_RANGES.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.siblings')}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    value={siblings}
+                    onChange={e => setSiblings(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.specialNeeds')}</label>
+                  <div className="flex flex-wrap gap-3">
+                    <label className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
+                      colorblind ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={colorblind}
+                        onChange={e => setColorblind(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-700">{t('onboarding.colorBlindness')}</span>
+                    </label>
+                    <label className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all ${
+                      disability ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={disability}
+                        onChange={e => setDisability(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-700">{t('onboarding.physicalDisability')}</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    {t('profile.cancel')}
+                  </button>
+                  <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
+                    {saving ? '...' : t('profile.save')}
+                  </button>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('profile.familyIncome')}</span>
+                  <span className="text-sm text-gray-900">{familyIncome || '—'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('profile.siblings')}</span>
+                  <span className="text-sm text-gray-900">{siblings || '—'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('onboarding.colorBlindness')}</span>
+                  <span className="text-sm text-gray-900">{colorblind ? 'Ya' : 'Tidak'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('onboarding.physicalDisability')}</span>
+                  <span className="text-sm text-gray-900">{disability ? 'Ya' : 'Tidak'}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Section 4: My Course Interests */}
@@ -418,20 +548,6 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-
-          {/* Save button */}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-          >
-            {saving ? t('common.loading') : t('profile.saveChanges')}
-          </button>
-          {lastSaved && (
-            <p className="text-center text-xs text-gray-400 mt-2">
-              {t('profile.lastSaved')}: {lastSaved.toLocaleTimeString()}
-            </p>
-          )}
         </div>
       </main>
     </>
