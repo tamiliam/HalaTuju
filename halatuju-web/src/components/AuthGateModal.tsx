@@ -146,6 +146,7 @@ export default function AuthGateModal() {
         const p = JSON.parse(prof)
         if (p.gender) syncData.gender = p.gender
         if (p.nationality) syncData.nationality = p.nationality
+        if (p.state) syncData.preferred_state = p.state
         if (p.colorblind) syncData.colorblind = p.colorblind
         if (p.disability) syncData.disability = p.disability
       }
