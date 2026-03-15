@@ -23,3 +23,4 @@ Cross-cutting lessons from sprint retrospectives. Only items that affect future 
 - Never guess institution URLs from naming patterns — scrape the authoritative listing page instead. Even within a single system (e.g. IPG), URL conventions are inconsistent. (External Links Sprint)
 - Design docs for rename/removal tasks must include a mechanical `grep` for all references before finalising the file list — manual estimates undercount because symbols propagate into tests, views, and utility code. (Subject Key Unification Sprint)
 - Before changing a function signature, grep all call sites first — adding a new positional parameter breaks callers that pass options as the second argument. Use options objects for new optional parameters. (Saved Courses Sprint 1)
+- When removing `as any`, check all types it was masking — a single `as any` often papers over multiple distinct type mismatches. Run `tsc --noEmit` after removal to catch cascading issues. (Quick Wins Sprint)

@@ -45,8 +45,8 @@ export default function ProfilePage() {
   // Profile form state
   const [name, setName] = useState('')
   const [nric, setNric] = useState('')
-  const [gender, setGender] = useState('')
-  const [nationality, setNationality] = useState('malaysian')
+  const [gender, setGender] = useState<'male' | 'female' | ''>('')
+  const [nationality, setNationality] = useState<'malaysian' | 'non_malaysian'>('malaysian')
   const [state, setState] = useState('')
   const [address, setAddress] = useState('')
   const [phone, setPhone] = useState('')
@@ -106,7 +106,7 @@ export default function ProfilePage() {
       await updateProfile({
         name,
         nric,
-        gender,
+        ...(gender ? { gender } : {}),
         nationality,
         preferred_state: state,
         address,
@@ -115,7 +115,7 @@ export default function ProfilePage() {
         siblings: siblings ? parseInt(siblings, 10) : null,
         colorblind: colorblind ? 'Ya' : 'Tidak',
         disability: disability ? 'Ya' : 'Tidak',
-      } as any, { token })
+      }, { token })
       setLastSaved(new Date())
     } catch (err) {
       console.error('Failed to save profile:', err)
@@ -210,7 +210,7 @@ export default function ProfilePage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.gender')} <span className="text-red-500">*</span></label>
                   <div className="flex gap-2">
-                    {['male', 'female'].map(g => (
+                    {(['male', 'female'] as const).map(g => (
                       <button
                         key={g}
                         onClick={() => setGender(g)}
@@ -228,7 +228,7 @@ export default function ProfilePage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.nationality')}</label>
                   <div className="flex gap-2">
-                    {['malaysian', 'non_malaysian'].map(n => (
+                    {(['malaysian', 'non_malaysian'] as const).map(n => (
                       <button
                         key={n}
                         onClick={() => setNationality(n)}

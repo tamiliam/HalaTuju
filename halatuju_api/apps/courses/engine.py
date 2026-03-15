@@ -88,14 +88,6 @@ SUBJ_GROUP_SCIENCE = ["chem", "phy", "bio", "sci", "addsci"]
 SUBJ_GROUP_TECHNICAL = SUBJ_LIST_TECHNICAL + SUBJ_LIST_IT
 SUBJ_GROUP_VOCATIONAL = SUBJ_LIST_VOCATIONAL
 
-# Legacy key mapping (for backward compatibility with existing user data)
-LEGACY_KEY_MAP = {
-    "tech": "eng_civil",
-    "voc": "voc_weld",
-    "islam": "moral",
-    "b_arab": "b_tamil"
-}
-
 
 # ============================================
 # HELPER FUNCTIONS

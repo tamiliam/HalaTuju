@@ -1,14 +1,12 @@
 """
 Database models for HalaTuju courses and eligibility.
 
-These models mirror the CSV data structure from the Streamlit version:
-- courses.csv → Course
-- requirements.csv + tvet_requirements.csv + university_requirements.csv → CourseRequirement
-- course_tags.json → CourseTag
-- institutions.csv → Institution
-- links.csv → CourseInstitution
-- masco_details.csv → MascoOccupation
-- course_masco_link.csv → Course.career_occupations (M2M)
+All data lives in Supabase PostgreSQL. Models:
+- Course, CourseRequirement, CourseTag
+- StpmCourse, StpmRequirement
+- Institution, CourseInstitution
+- MascoOccupation (M2M via Course.career_occupations)
+- StudentProfile, SavedCourse
 """
 from django.db import models
 from django.db.models import Q
@@ -18,7 +16,7 @@ class Course(models.Model):
     """
     Master course information.
 
-    Source: courses.csv (431 rows)
+    Source: Supabase `courses` table
     """
     course_id = models.CharField(max_length=50, primary_key=True)
     course = models.CharField(max_length=255, help_text="Course name in Malay")
@@ -53,7 +51,7 @@ class MascoOccupation(models.Model):
     """
     MASCO (Malaysia Standard Classification of Occupations) job codes.
 
-    Source: masco_details.csv (274 entries)
+    Source: Supabase `masco_occupations` table
     Links to official eMASCO portal: emasco.mohr.gov.my
     """
     masco_code = models.CharField(max_length=20, primary_key=True)
@@ -72,7 +70,7 @@ class CourseRequirement(models.Model):
     """
     Eligibility requirements for courses.
 
-    Source: requirements.csv + tvet_requirements.csv + university_requirements.csv
+    Source: Supabase `course_requirements` table
 
     CRITICAL: These fields map directly to the engine.py logic.
     Do not rename without updating the engine.
@@ -207,7 +205,7 @@ class CourseTag(models.Model):
     """
     Course characteristics for fit scoring / ranking.
 
-    Source: course_tags.json (431 entries)
+    Source: Supabase `course_tags` table
     """
     course = models.OneToOneField(
         Course,
@@ -264,7 +262,7 @@ class Institution(models.Model):
     """
     Educational institutions offering courses.
 
-    Source: institutions.csv (212 rows)
+    Source: Supabase `institutions` table
     """
     institution_id = models.CharField(max_length=50, primary_key=True)
     institution_name = models.CharField(max_length=255)
@@ -308,7 +306,7 @@ class CourseInstitution(models.Model):
     """
     Many-to-many: Which courses are offered at which institutions.
 
-    Source: links.csv (633 rows) + details.csv
+    Source: Supabase `course_institutions` table
     """
     course = models.ForeignKey(
         Course,

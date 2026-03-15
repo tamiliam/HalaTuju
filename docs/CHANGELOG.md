@@ -1,5 +1,19 @@
 # Changelog — HalaTuju
 
+## Tech Debt Quick Wins — TD-027, TD-030, TD-037, TD-049 (2026-03-15)
+
+### Fixed
+- Removed dead `LEGACY_KEY_MAP` from `engine.py` — never used, contained questionable `islam → moral` mapping (TD-027)
+- Removed stale CSV row counts from model docstrings, now reference Supabase tables (TD-030)
+- Deleted `db.sqlite3` from working directory — already in `.gitignore` (TD-037)
+- Removed `as any` type assertion in profile page — properly typed `colorblind`/`disability` as `boolean | 'Ya' | 'Tidak'` union, typed gender/nationality state vars (TD-049)
+
+### Stats
+- Tests: 425 pass, 0 failures | TypeScript: 0 errors
+- Tech debt resolved: TD-027, TD-030, TD-037, TD-049 (25/52 total resolved)
+
+---
+
 ## Subject Key Unification — TD-013 (2026-03-15)
 
 ### Changed

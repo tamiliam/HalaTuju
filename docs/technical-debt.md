@@ -197,12 +197,9 @@
 
 ## Bolt-On Code from Pre-Django Migration
 
-### [TD-027] Legacy key mapping still in engine.py
-**File(s):** `halatuju_api/apps/courses/engine.py` (lines 92-97)
-**What it is:** `LEGACY_KEY_MAP` maps old keys like `"tech" → "eng_civil"`, `"voc" → "voc_weld"`, `"islam" → "moral"`, `"b_arab" → "b_tamil"`. The `islam → moral` mapping is particularly surprising — it means if a student has `moral` grade data stored under `islam` key, it maps to `moral`.
-**What consistent looks like:** If no user data still uses these keys, remove the map. If it's still needed, document why each mapping exists.
-**Risk if left:** Low — defensive code, but the `islam → moral` mapping could be a logic error.
-**Dependencies:** Would need to check if any StudentProfile.grades in Supabase still use these keys.
+### [TD-027] Legacy key mapping still in engine.py ✅ RESOLVED (Quick Wins Sprint, 2026-03-15)
+**File(s):** `halatuju_api/apps/courses/engine.py`
+**Resolution:** `LEGACY_KEY_MAP` removed. Grep confirmed it was never referenced anywhere in the codebase — dead code from the Streamlit migration.
 
 ### [TD-028] CSV data files still in codebase
 **File(s):** `halatuju_api/data/stpm/` (4 CSV files)
@@ -218,12 +215,9 @@
 **Risk if left:** Low — clearly marked as archive.
 **Dependencies:** None.
 
-### [TD-030] Model docstring row counts are stale
-**File(s):** `halatuju_api/apps/courses/models.py` (lines 21, 57, 75, 206, 267, 311)
-**What it is:** Docstrings reference original CSV row counts: "431 rows", "212 rows", "633 rows". The actual current counts are different (389 courses, 239 institutions, ~800 course_institutions).
-**What consistent looks like:** Remove specific row counts from docstrings — they go stale immediately.
-**Risk if left:** Low — misleading but no functional impact.
-**Dependencies:** None.
+### [TD-030] Model docstring row counts are stale ✅ RESOLVED (Quick Wins Sprint, 2026-03-15)
+**File(s):** `halatuju_api/apps/courses/models.py`
+**Resolution:** Removed stale CSV filenames and row counts from all model docstrings. Now reference Supabase table names instead.
 
 ---
 
@@ -282,12 +276,9 @@
 **File(s):** `halatuju_api/halatuju/settings/production.py`
 **Resolution:** `production.py` now raises `ValueError` if `SECRET_KEY` equals the insecure dev default. Dev/test environments still use the fallback for convenience.
 
-### [TD-037] db.sqlite3 in project folder
+### [TD-037] db.sqlite3 in project folder ✅ RESOLVED (Quick Wins Sprint, 2026-03-15)
 **File(s):** `halatuju_api/db.sqlite3`
-**What it is:** Local development SQLite database is present in the project folder. It's in .gitignore but its presence in the working directory can confuse.
-**What consistent looks like:** Store in a temp or data directory, not the project root.
-**Risk if left:** Low — just clutter.
-**Dependencies:** development.py database config.
+**Resolution:** Deleted the file. Already covered by `.gitignore` (`*.sqlite3`). Django dev settings recreate it on demand if needed.
 
 ### [TD-038] CORS_ALLOW_ALL_ORIGINS possible in production ✅ RESOLVED (Security Sprint, 2026-03-14)
 **File(s):** `halatuju_api/halatuju/settings/production.py`
@@ -369,12 +360,9 @@
 **Risk if left:** Low — errors are swallowed from the user's perspective.
 **Dependencies:** Would need a toast/notification component.
 
-### [TD-049] `as any` type assertion in profile page
-**File(s):** `halatuju-web/src/app/profile/page.tsx` (line 118)
-**What it is:** `} as any, { token })` — a type assertion to `any` bypasses TypeScript safety.
-**What consistent looks like:** Define the proper type for the API call parameter.
-**Risk if left:** Low — single instance, but sets a bad precedent.
-**Dependencies:** None.
+### [TD-049] `as any` type assertion in profile page ✅ RESOLVED (Quick Wins Sprint, 2026-03-15)
+**File(s):** `halatuju-web/src/app/profile/page.tsx`, `halatuju-web/src/lib/api.ts`
+**Resolution:** Extended `StudentProfile.colorblind`/`disability` to accept `'Ya' | 'Tidak'` union type (backend format). Typed gender/nationality state vars with literal types. Removed `as any`.
 
 ### [TD-050] i18n locale key inconsistency
 **File(s):** `halatuju-web/src/lib/i18n.tsx`, `halatuju-web/src/app/quiz/page.tsx` (lines 40, 149)
@@ -454,20 +442,20 @@
 | TD-024 | Course name field is just 'course' | Open |
 | TD-025 | StudentProfile table name uses 'api_' prefix | Open |
 | TD-026 | Inconsistent response field names for course name | Open |
-| TD-027 | Legacy key mapping in engine.py | Open |
+| TD-027 | Legacy key mapping in engine.py | Resolved (Quick Wins Sprint) |
 | TD-028 | CSV data files still in codebase | Open |
 | TD-029 | Legacy Streamlit archive (246 files) | Open |
-| TD-030 | Model docstring row counts are stale | Open |
+| TD-030 | Model docstring row counts are stale | Resolved (Quick Wins Sprint) |
 | TD-031 | One-time scripts still in management commands | Open |
 | TD-032 | load_csv_data.py references Streamlit paths | Open |
 | TD-036 | Hardcoded fallback SECRET_KEY | Resolved (Security Sprint) |
-| TD-037 | db.sqlite3 in project folder | Open |
+| TD-037 | db.sqlite3 in project folder | Resolved (Quick Wins Sprint) |
 | TD-039 | sentry-sdk pinned to <2.0 | Open |
 | TD-040 | numpy pinned to <2.0 | Open |
 | TD-041 | settings/page.tsx is a stub | Open |
 | TD-042 | No custom error/loading/404 pages | Open |
 | TD-047 | Startup data load is all-or-nothing | Open |
-| TD-049 | `as any` type assertion | Open |
+| TD-049 | `as any` type assertion | Resolved (Quick Wins Sprint) |
 | TD-052 | Search limit hardcoded to 10000, no pagination | Open |
 
 ---
