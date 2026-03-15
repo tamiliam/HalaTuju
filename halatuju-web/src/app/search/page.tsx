@@ -458,7 +458,10 @@ function SearchPageInner() {
               <div className="text-center py-4">
                 <button
                   className="btn-secondary"
-                  onClick={() => setDisplayCount(displayCount + PAGE_SIZE)}
+                  onClick={() => {
+                    if (!isAuthenticated) { showAuthGate('loadmore'); return }
+                    setDisplayCount(displayCount + PAGE_SIZE)
+                  }}
                 >
                   {t('search.loadMore')} ({remaining} {t('search.remaining')})
                 </button>

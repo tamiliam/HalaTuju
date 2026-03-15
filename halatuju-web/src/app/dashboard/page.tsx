@@ -362,6 +362,10 @@ export default function DashboardPage() {
                 onToggleSave={handleSaveOrGate}
                 quizSignals={quizSignals}
                 onQuizCta={handleQuizCta}
+                onLoadMoreGate={() => {
+                  if (!isAuthenticated) { showAuthGate('loadmore'); return true }
+                  return false
+                }}
               />
             )}
           </>
@@ -476,6 +480,10 @@ export default function DashboardPage() {
           setDisplayCount={setDisplayCount}
           savedIds={savedIds}
           onToggleSave={handleSaveOrGate}
+          onLoadMoreGate={() => {
+            if (!isAuthenticated) { showAuthGate('loadmore'); return true }
+            return false
+          }}
         />}
 
         {/* Flat Course List — when no quiz taken */}
@@ -512,7 +520,10 @@ export default function DashboardPage() {
                 <div className="text-center py-4">
                   <button
                     className="btn-secondary"
-                    onClick={() => setDisplayCount(displayCount + 6)}
+                    onClick={() => {
+                      if (!isAuthenticated) { showAuthGate('loadmore'); return }
+                      setDisplayCount(displayCount + 6)
+                    }}
                   >
                     {t('dashboard.loadMore')} ({remaining} {t('dashboard.remaining')})
                   </button>
@@ -539,6 +550,7 @@ function StpmDashboardCards({
   onToggleSave,
   quizSignals,
   onQuizCta,
+  onLoadMoreGate,
 }: {
   stpmResults: StpmRankedCourse[]
   stpmData: { cgpa: number }
@@ -548,6 +560,7 @@ function StpmDashboardCards({
   onToggleSave?: (courseId: string) => void
   quizSignals: Record<string, Record<string, number>> | null
   onQuizCta: () => void
+  onLoadMoreGate?: () => boolean
 }) {
   const { t } = useT()
   const studentMerit = Math.round((stpmData.cgpa / 4.0) * 10000) / 100
@@ -660,7 +673,10 @@ function StpmDashboardCards({
         <div className="text-center py-4">
           <button
             className="btn-secondary"
-            onClick={() => setDisplayCount((prev: number) => prev + 6)}
+            onClick={() => {
+              if (onLoadMoreGate?.()) return
+              setDisplayCount((prev: number) => prev + 6)
+            }}
           >
             {t('dashboard.loadMore')} ({remaining} {t('dashboard.remaining')})
           </button>
@@ -679,6 +695,7 @@ function RankedResults({
   setDisplayCount,
   savedIds,
   onToggleSave,
+  onLoadMoreGate,
 }: {
   rankingData: RankingResult
   filter: string
@@ -686,6 +703,7 @@ function RankedResults({
   setDisplayCount: (n: number) => void
   savedIds: Set<string>
   onToggleSave?: (courseId: string) => void
+  onLoadMoreGate?: () => boolean
 }) {
   const { t } = useT()
   const filterCourses = (courses: RankedCourse[]) =>
@@ -747,7 +765,10 @@ function RankedResults({
             <div className="text-center py-4">
               <button
                 className="btn-secondary"
-                onClick={() => setDisplayCount(displayCount + 6)}
+                onClick={() => {
+                  if (onLoadMoreGate?.()) return
+                  setDisplayCount(displayCount + 6)
+                }}
               >
                 {t('dashboard.loadMore')} ({remaining} {t('dashboard.remaining')})
               </button>

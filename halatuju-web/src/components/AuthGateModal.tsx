@@ -67,7 +67,11 @@ export default function AuthGateModal() {
         ? 'saveReason'
         : authGateReason === 'eligible'
           ? 'eligibleReason'
-          : 'reportReason'
+          : authGateReason === 'profile'
+            ? 'profileReason'
+            : authGateReason === 'loadmore'
+              ? 'loadmoreReason'
+              : 'reportReason'
 
   const formatPhone = (raw: string) => {
     let formatted = raw.trim()

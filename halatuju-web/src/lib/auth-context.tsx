@@ -13,7 +13,7 @@ import { getProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
 import { KEY_PENDING_AUTH_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
 
-export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | null
+export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | null
 
 interface AuthGateOptions {
   courseId?: string

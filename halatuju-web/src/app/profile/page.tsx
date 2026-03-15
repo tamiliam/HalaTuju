@@ -41,7 +41,7 @@ const STATUS_OPTIONS = [
 export default function ProfilePage() {
   const router = useRouter()
   const { t } = useT()
-  const { token, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { token, isAuthenticated, isLoading: authLoading, showAuthGate } = useAuth()
   const { showToast } = useToast()
 
   // Profile form state
@@ -95,11 +95,11 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push('/login')
+      showAuthGate('profile')
       return
     }
     if (token) loadData()
-  }, [token, authLoading, isAuthenticated, router, loadData])
+  }, [token, authLoading, isAuthenticated, showAuthGate, loadData])
 
   const handleSave = async () => {
     if (!token) return

@@ -13,7 +13,7 @@ import LanguageSelector from './LanguageSelector'
 export default function AppHeader() {
   const { t } = useT()
   const pathname = usePathname()
-  const { session, isAuthenticated } = useAuth()
+  const { session, isAuthenticated, showAuthGate } = useAuth()
   const [profileOpen, setProfileOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
@@ -41,7 +41,7 @@ export default function AppHeader() {
     { href: '/dashboard', label: t('common.dashboard') },
     { href: '/search', label: t('search.nav') },
     { href: '/saved', label: t('common.saved') },
-    { href: '/profile', label: t('header.myProfile') },
+    { href: '/profile', label: t('header.myProfile'), authRequired: true as const },
   ]
 
   // User display info from Supabase session metadata
@@ -70,17 +70,27 @@ export default function AppHeader() {
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1 ml-8">
           {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                pathname === link.href
-                  ? 'text-primary-600 bg-primary-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              {link.label}
-            </Link>
+            link.authRequired && !isAuthenticated ? (
+              <button
+                key={link.href}
+                onClick={() => showAuthGate('profile')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-50`}
+              >
+                {link.label}
+              </button>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  pathname === link.href
+                    ? 'text-primary-600 bg-primary-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                {link.label}
+              </Link>
+            )
           ))}
         </nav>
 
@@ -197,18 +207,28 @@ export default function AppHeader() {
         <div className="md:hidden border-t bg-white">
           <div className="container mx-auto px-6 py-4 space-y-1">
             {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`block px-3 py-2.5 rounded-lg text-sm font-medium ${
-                  pathname === link.href
-                    ? 'text-primary-600 bg-primary-50'
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-                onClick={() => setMobileOpen(false)}
-              >
-                {link.label}
-              </Link>
+              link.authRequired && !isAuthenticated ? (
+                <button
+                  key={link.href}
+                  onClick={() => { setMobileOpen(false); showAuthGate('profile') }}
+                  className="block w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50"
+                >
+                  {link.label}
+                </button>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`block px-3 py-2.5 rounded-lg text-sm font-medium ${
+                    pathname === link.href
+                      ? 'text-primary-600 bg-primary-50'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              )
             ))}
 
             {isAuthenticated && (
