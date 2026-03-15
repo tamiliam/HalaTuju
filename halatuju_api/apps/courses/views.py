@@ -594,11 +594,32 @@ class QuizSubmitView(APIView):
 
 
 class CourseListView(APIView):
-    """GET /api/v1/courses/ - List all courses with pagination."""
+    """GET /api/v1/courses/ - List all courses with optional pagination."""
     permission_classes = [AllowAny]
 
     def get(self, request):
         courses = Course.objects.all()
+
+        # Optional pagination (backwards-compatible: no params = all results)
+        page = request.query_params.get('page')
+        page_size = min(int(request.query_params.get('page_size', 50)), 100)
+
+        if page is not None:
+            try:
+                page = max(int(page), 1)
+            except (ValueError, TypeError):
+                page = 1
+            start = (page - 1) * page_size
+            total = courses.count()
+            courses = courses[start:start + page_size]
+            serializer = CourseSerializer(courses, many=True)
+            return Response({
+                'courses': serializer.data,
+                'total_count': total,
+                'page': page,
+                'page_size': page_size,
+            })
+
         serializer = CourseSerializer(courses, many=True)
         return Response({
             'courses': serializer.data,

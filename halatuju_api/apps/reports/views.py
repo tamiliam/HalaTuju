@@ -8,6 +8,7 @@ Endpoints:
 """
 import logging
 
+from django.core.cache import cache
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -18,6 +19,10 @@ from .models import GeneratedReport
 from .report_engine import generate_report
 
 logger = logging.getLogger(__name__)
+
+# Max report generations per user per day
+REPORT_DAILY_LIMIT = 3
+REPORT_RATE_LIMIT_TTL = 86400  # 24 hours in seconds
 
 
 class GenerateReportView(APIView):
@@ -44,6 +49,15 @@ class GenerateReportView(APIView):
     permission_classes = [SupabaseIsAuthenticated]
 
     def post(self, request):
+        # Rate limit: max 3 reports per user per day
+        cache_key = f'report_limit:{request.user_id}'
+        count = cache.get(cache_key, 0)
+        if count >= REPORT_DAILY_LIMIT:
+            return Response(
+                {'error': 'Daily report limit reached (max 3 per day). Please try again tomorrow.'},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
         # Validate required fields
         eligible_courses = request.data.get('eligible_courses')
         if not eligible_courses or not isinstance(eligible_courses, list):
@@ -95,6 +109,9 @@ class GenerateReportView(APIView):
             model_used=result['model_used'],
             generation_time_ms=result.get('generation_time_ms'),
         )
+
+        # Increment rate limit counter
+        cache.set(cache_key, count + 1, REPORT_RATE_LIMIT_TTL)
 
         logger.info(
             f'Report {report.id} generated for {request.user_id} '

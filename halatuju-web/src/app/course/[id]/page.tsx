@@ -96,9 +96,11 @@ export default function CourseDetailPage() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {course.course}
               </h1>
-              {(course.headline || course.headline_en) && (
+              {(t(`courses.${course.course_id}.headline`) !== `courses.${course.course_id}.headline` || course.headline || course.headline_en) && (
                 <p className="text-lg text-primary-600 font-medium mb-2">
-                  {locale === 'ms' ? (course.headline || course.headline_en) : (course.headline_en || course.headline)}
+                  {t(`courses.${course.course_id}.headline`) !== `courses.${course.course_id}.headline`
+                    ? t(`courses.${course.course_id}.headline`)
+                    : locale === 'ms' ? (course.headline || course.headline_en) : (course.headline_en || course.headline)}
                 </p>
               )}
             </div>
@@ -117,9 +119,11 @@ export default function CourseDetailPage() {
                 {t('courseDetail.aboutTitle')}
               </h2>
               <p className="text-gray-600 leading-relaxed">
-                {locale === 'ms'
-                  ? (course.description || course.description_en || `Program ${course.level} dalam bidang ${course.field} menyediakan pelajar untuk kerjaya dalam ${course.department}.`)
-                  : (course.description_en || course.description || `This ${course.level} programme in ${course.field} prepares students for careers in ${course.department}. The course combines theoretical knowledge with practical skills to ensure graduates are industry-ready.`)}
+                {t(`courses.${course.course_id}.description`) !== `courses.${course.course_id}.description`
+                  ? t(`courses.${course.course_id}.description`)
+                  : locale === 'ms'
+                    ? (course.description || course.description_en || t('courses.descriptionFallback', { level: course.level, field: course.field, department: course.department }))
+                    : (course.description_en || course.description || t('courses.descriptionFallback', { level: course.level, field: course.field, department: course.department }))}
               </p>
               {courseInfoUrl && (
                 <div className="flex justify-end mt-4">

@@ -525,7 +525,7 @@ def check_eligibility(student, req):
                 return False, audit
 
     # --- TVET SPECIAL: 3M ONLY ---
-    if to_int(req.get('3m_only')) == 1:
+    if to_int(req.get('three_m_only')) == 1:
         cond = is_attempted(g.get('bm')) and is_attempted(g.get('math'))
         audit.append({
             "label": "chk_3m",

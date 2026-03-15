@@ -24,14 +24,7 @@ def load_requirements_df():
 
     df = pd.DataFrame(list(qs))
 
-    # Rename columns to match engine expectations (same as apps.py line 65)
-    col_renames = {'three_m_only': '3m_only'}
-    df.rename(
-        columns={k: v for k, v in col_renames.items() if k in df.columns},
-        inplace=True,
-    )
-
-    # Inject into app config (same as apps.py line 61)
+    # Inject into app config (same as apps.py)
     courses_config = apps.get_app_config('courses')
     courses_config.requirements_df = df
 

@@ -494,5 +494,32 @@
     "noResults": "No courses found",
     "noResultsDesc": "Try adjusting your search or filters",
     "browseAll": "Browse All Courses"
+  },
+  "courses": {
+    "matric-sains": {
+      "headline": "Fast Track to University for Science Students",
+      "description": "A 1–2 year matriculation programme under KPM that prepares you for a bachelor's degree in science, medicine, pharmacy, and related fields. You study Mathematics, Physics, Chemistry, and Biology at pre-university level — more rigorous than SPM but with lecturer support and tutorials. Admission is based on SPM merit and quota allocation."
+    },
+    "matric-kejuruteraan": {
+      "headline": "A Strong Foundation for an Engineering Career",
+      "description": "A 1–2 year KPM matriculation programme focused on Mathematics, Physics, and Chemistry — the three pillars of engineering. You get early exposure to engineering concepts before progressing to a bachelor's degree at a public university. Ideal for students who enjoy solving technical problems and building things."
+    },
+    "matric-sains-komputer": {
+      "headline": "Start Your Career in Information Technology",
+      "description": "A 1–2 year KPM matriculation programme covering programming fundamentals, discrete mathematics, and introduction to computer systems. Designed for students who want to pursue a degree in computer science, software engineering, or information technology at a public university."
+    },
+    "matric-perakaunan": {
+      "headline": "Your First Step into Finance and Accounting",
+      "description": "A 1–2 year KPM matriculation programme providing foundations in accounting principles, economics, and business mathematics. Prepares you for a bachelor's degree in accounting, finance, or business management at a public university. Suited for students who are detail-oriented with numbers and interested in the business world."
+    },
+    "stpm-sains": {
+      "headline": "An Internationally Recognised Pre-U Qualification",
+      "description": "STPM Science is an 18-month programme (3 terms) at Form 6, equivalent to A-Levels. You choose 3–4 science subjects (Mathematics, Physics, Chemistry, Biology) and sit examinations each term. STPM results are accepted by public and private universities locally and internationally. The best option if you want an open pathway to a wide range of universities."
+    },
+    "stpm-sains-sosial": {
+      "headline": "A Flexible Pathway to Arts, Law, and Business",
+      "description": "STPM Social Science is an 18-month programme (3 terms) at Form 6 covering subjects like Economics, Business Studies, History, Geography, and Literature. An A-Level equivalent qualification that opens doors to degrees in law, public administration, communications, and more. Suited for students who enjoy analysing social issues and thinking critically."
+    },
+    "descriptionFallback": "This {level} programme in {field} prepares students for careers in {department}. The course combines theoretical knowledge with practical skills to ensure graduates are industry-ready."
   }
 }

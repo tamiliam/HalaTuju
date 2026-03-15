@@ -60,15 +60,6 @@ class CoursesConfig(AppConfig):
         if qs.exists():
             self.requirements_df = pd.DataFrame(list(qs))
 
-            # Rename columns to match engine expectations (CSV column names)
-            # Django model uses 'three_m_only' but engine expects '3m_only'
-            col_renames = {'three_m_only': '3m_only'}
-            self.requirements_df.rename(
-                columns={k: v for k, v in col_renames.items()
-                         if k in self.requirements_df.columns},
-                inplace=True
-            )
-
             logger.info(f"Loaded {len(self.requirements_df)} course requirements")
         else:
             logger.warning("No course requirements found in database")

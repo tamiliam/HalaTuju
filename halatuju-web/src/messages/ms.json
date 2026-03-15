@@ -494,5 +494,32 @@
     "noResults": "Tiada kursus dijumpai",
     "noResultsDesc": "Cuba laraskan carian atau penapis anda",
     "browseAll": "Layari Semua Kursus"
+  },
+  "courses": {
+    "matric-sains": {
+      "headline": "Laluan Pantas ke Universiti untuk Pelajar Sains",
+      "description": "Program matrikulasi sains selama 1–2 tahun di bawah KPM yang menyediakan anda untuk ijazah sarjana muda dalam bidang sains, perubatan, farmasi, dan lain-lain. Anda belajar Matematik, Fizik, Kimia, dan Biologi pada tahap universiti — lebih mendalam daripada SPM tetapi dengan sokongan pensyarah dan tutorial. Kemasukan berdasarkan merit SPM dan kuota."
+    },
+    "matric-kejuruteraan": {
+      "headline": "Asas Kukuh untuk Kerjaya Kejuruteraan",
+      "description": "Program matrikulasi kejuruteraan KPM selama 1–2 tahun yang fokus kepada Matematik, Fizik, dan Kimia — tiga tunjang utama kejuruteraan. Anda diberi pendedahan awal kepada konsep kejuruteraan sebelum meneruskan ke ijazah sarjana muda di universiti awam. Sesuai untuk pelajar yang minat menyelesaikan masalah teknikal dan membina sesuatu."
+    },
+    "matric-sains-komputer": {
+      "headline": "Permulaan Kerjaya dalam Teknologi Maklumat",
+      "description": "Program matrikulasi sains komputer KPM selama 1–2 tahun yang merangkumi asas pengaturcaraan, matematik diskret, dan pengenalan kepada sistem komputer. Direka untuk pelajar yang ingin melanjutkan ke ijazah sains komputer, kejuruteraan perisian, atau teknologi maklumat di universiti awam."
+    },
+    "matric-perakaunan": {
+      "headline": "Langkah Pertama ke Dunia Kewangan dan Perakaunan",
+      "description": "Program matrikulasi perakaunan KPM selama 1–2 tahun yang memberi asas dalam prinsip perakaunan, ekonomi, dan matematik perniagaan. Menyediakan anda untuk ijazah sarjana muda dalam perakaunan, kewangan, atau pengurusan perniagaan di universiti awam. Sesuai untuk pelajar yang teliti dengan nombor dan berminat dalam dunia perniagaan."
+    },
+    "stpm-sains": {
+      "headline": "Kelayakan Pra-U yang Diiktiraf Antarabangsa",
+      "description": "STPM aliran sains adalah program 1½ tahun (3 penggal) di Tingkatan 6 yang setaraf A-Level. Anda memilih 3–4 mata pelajaran sains (Matematik, Fizik, Kimia, Biologi) dan menduduki peperiksaan setiap penggal. Keputusan STPM diterima oleh universiti awam dan swasta dalam dan luar negara. Pilihan terbaik jika anda mahukan laluan terbuka ke pelbagai universiti."
+    },
+    "stpm-sains-sosial": {
+      "headline": "Laluan Fleksibel ke Bidang Sastera, Undang-undang, dan Perniagaan",
+      "description": "STPM aliran sains sosial adalah program 1½ tahun (3 penggal) di Tingkatan 6 merangkumi mata pelajaran seperti Ekonomi, Pengajian Perniagaan, Sejarah, Geografi, dan Kesusasteraan. Kelayakan setaraf A-Level yang membuka pintu ke ijazah dalam undang-undang, pentadbiran awam, komunikasi, dan banyak lagi. Sesuai untuk pelajar yang suka menganalisis isu sosial dan berfikir secara kritis."
+    },
+    "descriptionFallback": "Program {level} dalam bidang {field} menyediakan pelajar untuk kerjaya dalam {department}."
   }
 }
