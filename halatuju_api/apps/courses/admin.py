@@ -3,16 +3,25 @@ Django Admin configuration for courses app.
 """
 from django.contrib import admin
 from .models import (
+    FieldTaxonomy,
     Course, CourseRequirement, CourseTag,
     Institution, CourseInstitution,
     StudentProfile, SavedCourse
 )
 
 
+@admin.register(FieldTaxonomy)
+class FieldTaxonomyAdmin(admin.ModelAdmin):
+    list_display = ['key', 'name_ms', 'name_en', 'parent_key', 'image_slug', 'sort_order']
+    list_filter = ['parent_key']
+    search_fields = ['key', 'name_en', 'name_ms', 'name_ta']
+    ordering = ['sort_order']
+
+
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ['course_id', 'course', 'level', 'field', 'frontend_label']
-    list_filter = ['level', 'frontend_label', 'wbl']
+    list_display = ['course_id', 'course', 'level', 'field', 'frontend_label', 'field_key']
+    list_filter = ['level', 'frontend_label', 'field_key', 'wbl']
     search_fields = ['course_id', 'course', 'department', 'field']
     ordering = ['course_id']
 

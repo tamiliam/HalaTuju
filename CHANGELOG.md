@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Field Taxonomy Sprint 1: Model + Migration + SPM Backfill (2026-03-16)
+
+### Added
+- **FieldTaxonomy model** — canonical table with 37 leaf fields + 10 parent groups, trilingual names (EN/MS/TA), image slugs, parent-child hierarchy
+- **field_key FK** on `Course` and `StpmCourse` — nullable foreign key to FieldTaxonomy (will become non-nullable in Sprint 5)
+- **Data migration** — populates all 47 taxonomy entries with trilingual names and sort orders
+- **Deterministic classifier** — `classify_course()` maps `frontend_label + field + course_name` to taxonomy key; handles 16 production frontend_label variants
+- **Backfill management command** — `backfill_spm_field_key` with `--save` flag (dry-run by default), safety check for PostgreSQL
+- **Admin registration** — FieldTaxonomyAdmin with list/filter/search; CourseAdmin updated with field_key display/filter
+- **55 new tests** — 7 model integrity tests + 48 classifier tests (including 24 production frontend_label tests)
+
+### Database
+- Created `field_taxonomy` table (47 entries) with RLS enabled (public read)
+- Added `field_key_id` column to `courses` and `stpm_courses`
+- Backfilled all 390 SPM courses (0 unmapped)
+- Recorded Django migrations 0025 + 0026
+
+---
+
 ## [Unreleased] — Special Conditions, Report Guard & Search Fix (2026-03-15)
 
 ### Added

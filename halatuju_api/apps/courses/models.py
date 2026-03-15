@@ -2,6 +2,7 @@
 Database models for HalaTuju courses and eligibility.
 
 All data lives in Supabase PostgreSQL. Models:
+- FieldTaxonomy (canonical field classification)
 - Course, CourseRequirement, CourseTag
 - StpmCourse, StpmRequirement
 - Institution, CourseInstitution
@@ -10,6 +11,35 @@ All data lives in Supabase PostgreSQL. Models:
 """
 from django.db import models
 from django.db.models import Q
+
+
+class FieldTaxonomy(models.Model):
+    """
+    Canonical field/discipline classification for all courses.
+
+    37 entries covering all SPM and STPM course fields.
+    Language-neutral keys with trilingual display names.
+    Image slugs map directly to Supabase Storage filenames.
+    """
+    key = models.CharField(max_length=50, primary_key=True)
+    name_en = models.CharField(max_length=100)
+    name_ms = models.CharField(max_length=100)
+    name_ta = models.CharField(max_length=100)
+    image_slug = models.CharField(max_length=100, help_text="Supabase Storage filename (without .png)")
+    parent_key = models.ForeignKey(
+        'self', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='children',
+        help_text="Parent group for dropdown grouping (~9 top-level groups)"
+    )
+    sort_order = models.IntegerField(default=0)
+
+    class Meta:
+        db_table = 'field_taxonomy'
+        ordering = ['sort_order', 'key']
+
+    def __str__(self):
+        return f"{self.key}: {self.name_ms}"
 
 
 class Course(models.Model):
@@ -26,6 +56,12 @@ class Course(models.Model):
     field = models.CharField(max_length=100)
     frontend_label = models.CharField(max_length=100, help_text="UI category label")
     semesters = models.IntegerField(null=True, blank=True)
+    field_key = models.ForeignKey(
+        FieldTaxonomy, on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name='courses',
+        help_text="Canonical field classification"
+    )
     headline = models.TextField(blank=True, default='', help_text="Catchy student-friendly headline")
     headline_en = models.TextField(blank=True, default='', help_text="English headline")
     description = models.TextField(blank=True)
@@ -562,6 +598,12 @@ class StpmCourse(models.Model):
     merit_score = models.FloatField(null=True, blank=True, help_text='UPU average merit percentage (0-100)')
     field = models.CharField(max_length=255, blank=True, default='', help_text='AI-assigned field category')
     category = models.CharField(max_length=255, blank=True, default='', help_text='AI-assigned category (Malay)')
+    field_key = models.ForeignKey(
+        FieldTaxonomy, on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name='stpm_courses',
+        help_text="Canonical field classification"
+    )
     description = models.TextField(blank=True, default='', help_text='AI-generated course description')
     headline = models.CharField(max_length=200, blank=True, default='', help_text='Quirky BM headline for student-facing subtitle')
     mohe_url = models.URLField(
