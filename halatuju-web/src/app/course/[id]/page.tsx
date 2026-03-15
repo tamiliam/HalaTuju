@@ -7,6 +7,7 @@ import { getCourse, type Course, type Institution, type MascoOccupation, type Co
 import { useSavedCourses } from '@/hooks/useSavedCourses'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
+import CourseHeader from '@/components/CourseHeader'
 import RequirementsCard from '@/components/RequirementsCard'
 import SpecialConditions from '@/components/SpecialConditions'
 import { LoadingSpinner, CourseNotFound, InfoRow, CourseActions } from '@/components/CourseDetailShared'
@@ -41,8 +42,17 @@ export default function CourseDetailPage() {
   const isPreU = courseId.startsWith('stpm-') || courseId.startsWith('matric-')
   const isArtsStream = courseId === 'stpm-sains-sosial'
 
-  // Course-level "More Info" link
+  // Course-level headline / subtitle
   const sourceType = requirements?.source_type
+  const headlineKey = `courses.${course.course_id}.headline`
+  const headlineI18n = t(headlineKey)
+  const subtitle = headlineI18n !== headlineKey
+    ? headlineI18n
+    : locale === 'ms'
+      ? (course.headline || course.headline_en)
+      : (course.headline_en || course.headline)
+
+  // Course-level "More Info" link
   const courseInfoUrl = courseId.startsWith('matric-')
     ? 'https://www.moe.gov.my/pengenalan-matrikulasi'
     : courseId.startsWith('stpm-')
@@ -55,36 +65,12 @@ export default function CourseDetailPage() {
     <main className="min-h-screen bg-gray-50">
       <AppHeader />
 
-      {/* Course Header */}
-      <section className="bg-white border-b">
-        <div className="container mx-auto px-6 py-8">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <LevelBadge level={course.level} />
-                {course.wbl && (
-                  <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
-                    Work-Based Learning
-                  </span>
-                )}
-                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
-                  {course.department}
-                </span>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {course.course}
-              </h1>
-              {(t(`courses.${course.course_id}.headline`) !== `courses.${course.course_id}.headline` || course.headline || course.headline_en) && (
-                <p className="text-lg text-primary-600 font-medium mb-2">
-                  {t(`courses.${course.course_id}.headline`) !== `courses.${course.course_id}.headline`
-                    ? t(`courses.${course.course_id}.headline`)
-                    : locale === 'ms' ? (course.headline || course.headline_en) : (course.headline_en || course.headline)}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
+      <CourseHeader
+        sourceType={sourceType || 'university'}
+        level={course.level}
+        title={course.course}
+        subtitle={subtitle || undefined}
+      />
 
       {/* Main Content */}
       <div className="container mx-auto px-6 py-8">
@@ -242,25 +228,6 @@ export default function CourseDetailPage() {
 
       <AppFooter />
     </main>
-  )
-}
-
-function LevelBadge({ level }: { level: string }) {
-  const colors: Record<string, string> = {
-    'Diploma': 'bg-blue-100 text-blue-700',
-    'Sijil': 'bg-green-100 text-green-700',
-    'Sarjana Muda': 'bg-purple-100 text-purple-700',
-    'Asasi': 'bg-orange-100 text-orange-700',
-  }
-
-  return (
-    <span
-      className={`px-3 py-1 rounded-full text-sm font-medium ${
-        colors[level] || 'bg-gray-100 text-gray-700'
-      }`}
-    >
-      {level}
-    </span>
   )
 }
 

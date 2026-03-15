@@ -6,6 +6,7 @@ import { getStpmCourseDetail } from '@/lib/api'
 import { useSavedCourses } from '@/hooks/useSavedCourses'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
+import CourseHeader from '@/components/CourseHeader'
 import SpecialConditions from '@/components/SpecialConditions'
 import { LoadingSpinner, CourseNotFound, InfoRow, CourseActions } from '@/components/CourseDetailShared'
 import { useT } from '@/lib/i18n'
@@ -39,31 +40,12 @@ export default function StpmCourseDetailPage() {
     <main className="min-h-screen bg-gray-50">
       <AppHeader />
 
-      {/* Course Header */}
-      <section className="bg-white border-b">
-        <div className="container mx-auto px-6 py-8">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-700">
-                  Ijazah Sarjana Muda
-                </span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  data.stream === 'science' ? 'bg-green-100 text-green-700' : 'bg-sky-100 text-sky-700'
-                }`}>
-                  {streamLabel}
-                </span>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {data.course_name}
-              </h1>
-              <p className="text-lg text-primary-600 font-medium">
-                {data.university}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <CourseHeader
+        sourceType="university"
+        level="Ijazah Sarjana Muda"
+        title={data.course_name}
+        subtitle={data.university}
+      />
 
       {/* Main Content */}
       <div className="container mx-auto px-6 py-8">
