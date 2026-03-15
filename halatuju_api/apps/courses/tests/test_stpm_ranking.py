@@ -37,14 +37,15 @@ class TestStpmFitScore:
         assert score2 - score1 <= 5  # small or zero difference once capped
 
     def test_field_interest_match(self):
-        """Field interest matching stream adds bonus."""
+        """Field interest matching via field_key adds bonus."""
         course = {
             'course_id': 'TEST001', 'course_name': 'BACELOR KEJURUTERAAN', 'university': 'UTM',
             'stream': 'science', 'min_cgpa': 3.0, 'min_muet_band': 3,
             'req_interview': False, 'no_colorblind': False,
+            'field_key': 'mekanikal',
         }
-        signals_match = {'field_interest': ['field_mechanical', 'field_electrical']}
-        signals_no_match = {'field_interest': ['field_arts', 'field_music']}
+        signals_match = {'field_interest': {'field_mechanical': 3}}
+        signals_no_match = {'field_interest': {'field_creative': 3}}
         score_match, _ = calculate_stpm_fit_score(course, student_cgpa=3.5, signals=signals_match)
         score_no, _ = calculate_stpm_fit_score(course, student_cgpa=3.5, signals=signals_no_match)
         assert score_match > score_no
@@ -55,14 +56,26 @@ class TestStpmFitScore:
             'course_id': 'TEST001', 'course_name': 'BACELOR KEJURUTERAAN', 'university': 'UTM',
             'stream': 'science', 'min_cgpa': 3.0, 'min_muet_band': 3,
             'req_interview': False, 'no_colorblind': False,
+            'field_key': 'mekanikal',
         }
         # Quiz engine returns dicts: {signal_name: score}
         signals_match = {'field_interest': {'field_mechanical': 3, 'field_electrical': 2}}
-        signals_no_match = {'field_interest': {'field_arts': 3}}
+        signals_no_match = {'field_interest': {'field_creative': 3}}
         score_match, reasons = calculate_stpm_fit_score(course, student_cgpa=3.5, signals=signals_match)
         score_no, _ = calculate_stpm_fit_score(course, student_cgpa=3.5, signals=signals_no_match)
         assert score_match > score_no
         assert any('Field' in r for r in reasons)
+
+    def test_field_interest_no_field_key(self):
+        """Course without field_key → no field match bonus."""
+        course = {
+            'course_id': 'TEST001', 'course_name': 'BACELOR KEJURUTERAAN', 'university': 'UTM',
+            'stream': 'science', 'min_cgpa': 3.0, 'min_muet_band': 3,
+            'req_interview': False, 'no_colorblind': False,
+        }
+        signals = {'field_interest': {'field_mechanical': 3}}
+        score, reasons = calculate_stpm_fit_score(course, student_cgpa=3.0, signals=signals)
+        assert score == 50  # base only, no field match
 
     def test_interview_penalty(self):
         """Interview requirement adds slight penalty."""

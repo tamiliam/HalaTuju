@@ -14,50 +14,24 @@ Scoring:
 """
 from typing import Dict, List, Tuple
 
+from .ranking_engine import FIELD_KEY_MAP
+
 BASE_SCORE = 50
 CGPA_MARGIN_CAP = 1.0
 CGPA_MARGIN_MULTIPLIER = 20  # points per 1.0 CGPA margin
 FIELD_MATCH_BONUS = 10
 INTERVIEW_PENALTY = 3
 
-# Course name keywords → field interest signals
-COURSE_FIELD_MAP = {
-    'kejuruteraan': ['field_mechanical', 'field_electrical', 'field_civil', 'field_heavy_industry'],
-    'engineering': ['field_mechanical', 'field_electrical', 'field_civil', 'field_heavy_industry'],
-    'sains komputer': ['field_digital'],
-    'computer science': ['field_digital'],
-    'teknologi maklumat': ['field_digital'],
-    'perniagaan': ['field_business'],
-    'perakaunan': ['field_business'],
-    'ekonomi': ['field_business', 'field_social_science'],
-    'undang': ['field_social_science'],
-    'pendidikan': ['field_social_science', 'field_education'],
-    'seni': ['field_arts'],
-    'sastera': ['field_arts'],
-    'perubatan': ['field_medical', 'field_health'],
-    'farmasi': ['field_health'],
-    'kejururawatan': ['field_health'],
-    'pertanian': ['field_agriculture'],
-    'sains': ['field_science'],
-    'biologi': ['field_science', 'field_health'],
-    'kimia': ['field_science'],
-    'fizik': ['field_science'],
-    'matematik': ['field_science'],
-    'senibina': ['field_architecture'],
-    'alam bina': ['field_architecture'],
-}
 
-
-def _match_field_interest(course_name: str, signals: Dict) -> bool:
-    """Check if course name keywords match student's field interests."""
+def _match_field_interest(field_key: str, signals: Dict) -> bool:
+    """Check if course field_key matches student's field interests."""
     field_interests = signals.get('field_interest', {})
-    if not field_interests:
+    if not field_interests or not field_key:
         return False
-    name_lower = course_name.lower()
-    for keyword, fields in COURSE_FIELD_MAP.items():
-        if keyword in name_lower:
-            if any(f in field_interests for f in fields):
-                return True
+    for sig_name in field_interests:
+        keys = FIELD_KEY_MAP.get(sig_name, [])
+        if field_key in keys:
+            return True
     return False
 
 
@@ -87,8 +61,8 @@ def calculate_stpm_fit_score(
         score += cgpa_bonus
         reasons.append(f'CGPA margin: +{margin:.2f}')
 
-    # 2. Field interest match
-    if _match_field_interest(course['course_name'], signals):
+    # 2. Field interest match (uses taxonomy field_key)
+    if _match_field_interest(course.get('field_key', ''), signals):
         score += FIELD_MATCH_BONUS
         reasons.append('Field match')
 

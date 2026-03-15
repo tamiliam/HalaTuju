@@ -444,6 +444,7 @@ class EligibilityCheckView(APIView):
                 'course_name': course_name,
                 'level': course.level if course else '',
                 'field': (course.frontend_label or course.field) if course else '',
+                'field_key': (course.field_key_id or '') if course else '',
                 'source_type': source_type,
                 'pathway_type': pathway_type,
                 'merit_cutoff': merit_result['merit_cutoff'],

@@ -21,24 +21,27 @@ CATEGORY_CAP = 6  # Normalised cap per category
 FIELD_INTEREST_CAP = 8
 WORK_PREFERENCE_CAP = 4
 
-# Field interest → course frontend_label mapping
-FIELD_LABEL_MAP = {
-    'field_mechanical': ['Mekanikal & Automotif'],
-    'field_digital': ['Komputer, IT & Multimedia'],
-    'field_business': ['Perniagaan & Perdagangan'],
-    'field_health': ['Pertanian & Bio-Industri'],
-    'field_creative': ['Seni Reka & Kreatif'],
-    'field_hospitality': ['Hospitaliti, Kulinari & Pelancongan'],
-    'field_agriculture': ['Pertanian & Bio-Industri'],
+# Field interest → taxonomy field_key mapping
+# Maps quiz signal names to the canonical taxonomy keys they match.
+# Used by both SPM and STPM ranking for field interest scoring.
+FIELD_KEY_MAP = {
+    'field_mechanical': ['mekanikal', 'automotif', 'mekatronik'],
+    'field_digital': ['it-perisian', 'it-rangkaian', 'multimedia'],
+    'field_business': ['perniagaan', 'perakaunan', 'pengurusan'],
+    'field_health': ['perubatan', 'farmasi', 'sains-hayat'],
+    'field_creative': ['senireka', 'multimedia'],
+    'field_hospitality': ['hospitaliti', 'kulinari', 'kecantikan'],
+    'field_agriculture': ['pertanian', 'alam-sekitar'],
     'field_heavy_industry': [
-        'Aero, Marin, Minyak & Gas',
-        'Elektrik & Elektronik',
-        'Sivil, Seni Bina & Pembinaan',
+        'mekanikal', 'automotif', 'mekatronik',
+        'aero', 'marin', 'minyak-gas',
+        'elektrik', 'sivil', 'senibina',
+        'kimia-proses',
     ],
-    'field_electrical': ['Elektrik & Elektronik'],
-    'field_civil': ['Sivil, Seni Bina & Pembinaan'],
-    'field_aero_marine': ['Aero, Marin, Minyak & Gas'],
-    'field_oil_gas': ['Aero, Marin, Minyak & Gas'],
+    'field_electrical': ['elektrik'],
+    'field_civil': ['sivil', 'senibina'],
+    'field_aero_marine': ['aero', 'marin'],
+    'field_oil_gas': ['minyak-gas'],
 }
 
 # Merit-based ranking penalty (v1.4)
@@ -369,7 +372,7 @@ def get_credential_priority(course_name, source_type=''):
 
 
 def calculate_fit_score(student_profile, course_id, institution_id,
-                        course_tags_map, inst_modifiers_map):
+                        course_tags_map, inst_modifiers_map, field_key=''):
     """
     Calculates the fit score for a single course/institution pair.
 
@@ -380,6 +383,7 @@ def calculate_fit_score(student_profile, course_id, institution_id,
         institution_id: Institution ID string.
         course_tags_map: Dict {course_id: tags_dict} from CourseTag model.
         inst_modifiers_map: Dict {inst_id: modifiers_dict} from JSON.
+        field_key: Taxonomy field_key for field interest matching.
 
     Returns:
         (final_score: int, reasons: list[str])
@@ -412,20 +416,19 @@ def calculate_fit_score(student_profile, course_id, institution_id,
 
     # --- Field Interest Matching ---
     field_signals = signals.get('field_interest', {})
-    course_label = c_tags.get('frontend_label', '')
 
-    if field_signals and course_label:
+    if field_signals and field_key:
         # Find matching field signals, sorted by score (highest first)
         matches = []
         for sig_name, sig_score in sorted(field_signals.items(), key=lambda x: -x[1]):
-            labels = FIELD_LABEL_MAP.get(sig_name, [])
-            if course_label in labels:
+            keys = FIELD_KEY_MAP.get(sig_name, [])
+            if field_key in keys:
                 matches.append(sig_score)
 
         if matches:
             # Primary match: +8 boost
             cat_scores['field_interest'] += 8
-            match_reasons.append(f"strong interest in {course_label} field")
+            match_reasons.append(f"strong interest in {field_key} field")
             if len(matches) > 1:
                 # Secondary match: +4 additional
                 cat_scores['field_interest'] += 4
@@ -781,6 +784,7 @@ def get_ranked_results(eligible_courses, student_profile,
             score, reasons = calculate_fit_score(
                 student_profile, c_id, i_id,
                 course_tags_map, inst_modifiers_map,
+                field_key=item.get('field_key', ''),
             )
 
         # v1.4: Apply merit-based penalty as "reality check"

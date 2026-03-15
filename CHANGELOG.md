@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Field Taxonomy Sprint 3: Ranking Engine field_key Integration (2026-03-16)
+
+### Changed
+- **SPM ranking** — field interest matching now uses `field_key` (taxonomy key) instead of `frontend_label` strings; `FIELD_LABEL_MAP` replaced by `FIELD_KEY_MAP`
+- **STPM ranking** — keyword-based `_match_field_interest()` replaced with `field_key` lookup against shared `FIELD_KEY_MAP` (DRY); removed 48-line `COURSE_FIELD_MAP`
+- **`field_health` signal** — now correctly maps to health fields (`perubatan`, `farmasi`, `sains-hayat`) instead of agriculture (was a bug)
+- **`field_key` in eligibility results** — added to both SPM and STPM eligibility response dicts so ranking engines can use it
+
+### Tests
+- Updated 7 field interest tests (5 SPM, 2 STPM) from `frontend_label`/keyword to `field_key`
+- Added 3 new tests: double-match bonus, no-field_key edge case (SPM + STPM)
+- Total: 544 tests, 0 failures
+
+---
+
 ## [Unreleased] — Field Taxonomy Sprint 2: STPM Classification + API Integration (2026-03-16)
 
 ### Added

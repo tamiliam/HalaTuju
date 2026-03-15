@@ -535,52 +535,66 @@ class TestRankingEndpoint(TestCase):
 
 
 class TestFieldInterestMatching(TestCase):
-    """Tests for field interest → frontend_label matching."""
+    """Tests for field interest → field_key matching."""
 
     def test_primary_field_match_gives_boost(self):
-        """Student with field_mechanical=3 + course with Mekanikal label → score > BASE."""
+        """Student with field_mechanical=3 + course with mekanikal field_key → score > BASE."""
         signals = make_signals(**{'field_interest.field_mechanical': 3})
-        tags = {'frontend_label': 'Mekanikal & Automotif'}
         score, reasons = calculate_fit_score(
-            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+            {'student_signals': signals}, 'C001', 'I001', {}, {},
+            field_key='mekanikal')
         self.assertGreater(score, BASE_SCORE)
 
     def test_no_field_match_no_penalty(self):
-        """Student interested in digital, course is Mekanikal → no field penalty, score = BASE."""
+        """Student interested in digital, course is mekanikal → no field penalty, score = BASE."""
         signals = make_signals(**{'field_interest.field_digital': 3})
-        tags = {'frontend_label': 'Mekanikal & Automotif'}
         score, _ = calculate_fit_score(
-            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+            {'student_signals': signals}, 'C001', 'I001', {}, {},
+            field_key='mekanikal')
         self.assertEqual(score, BASE_SCORE)
 
     def test_field_interest_capped_at_8(self):
         """Even with double match, field interest capped at FIELD_INTEREST_CAP (8)."""
         signals = make_signals(**{
-            'field_interest.field_mechanical': 3,
-            'field_interest.field_health': 3,  # Also maps to Pertanian & Bio-Industri
+            'field_interest.field_health': 3,
+            'field_interest.field_agriculture': 3,
         })
-        tags = {'frontend_label': 'Pertanian & Bio-Industri'}
+        # Both field_health and field_agriculture have 'pertanian' in their key lists
+        # — but field_health maps to perubatan/farmasi/sains-hayat, not pertanian.
+        # Only field_agriculture matches pertanian → single match → +8 → capped at 8
         score, _ = calculate_fit_score(
-            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
-        # Both field_health and field_agriculture map to Pertanian — but only field_health is present
-        # With only 1 match: +8 → cap at 8 → score = 108
+            {'student_signals': signals}, 'C001', 'I001', {}, {},
+            field_key='pertanian')
         self.assertLessEqual(score, BASE_SCORE + FIELD_INTEREST_CAP)
 
     def test_heavy_industry_sub_signal_matches(self):
-        """field_electrical signal matches Elektrik & Elektronik label."""
+        """field_electrical signal matches elektrik field_key."""
         signals = make_signals(**{'field_interest.field_electrical': 3})
-        tags = {'frontend_label': 'Elektrik & Elektronik'}
         score, _ = calculate_fit_score(
-            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+            {'student_signals': signals}, 'C001', 'I001', {}, {},
+            field_key='elektrik')
         self.assertGreater(score, BASE_SCORE)
 
-    def test_no_frontend_label_no_field_score(self):
-        """Course with no frontend_label → field interest contributes 0."""
+    def test_no_field_key_no_field_score(self):
+        """Course with no field_key → field interest contributes 0."""
         signals = make_signals(**{'field_interest.field_mechanical': 3})
-        tags = {}  # No frontend_label
         score, _ = calculate_fit_score(
-            {'student_signals': signals}, 'C001', 'I001', {'C001': tags}, {})
+            {'student_signals': signals}, 'C001', 'I001', {}, {},
+            field_key='')
         self.assertEqual(score, BASE_SCORE)
+
+    def test_double_match_gives_bonus(self):
+        """Two signals matching the same field_key → primary +8 and secondary +4, capped at 8."""
+        signals = make_signals(**{
+            'field_interest.field_mechanical': 3,
+            'field_interest.field_heavy_industry': 2,
+        })
+        # Both field_mechanical and field_heavy_industry include 'mekanikal'
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {}, {},
+            field_key='mekanikal')
+        # +8 primary + 4 secondary = 12, capped at FIELD_INTEREST_CAP (8)
+        self.assertEqual(score, BASE_SCORE + FIELD_INTEREST_CAP)
 
 
 class TestHighStaminaSignal(TestCase):

@@ -95,7 +95,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (542 collected, 542 pass, 0 failures, 0 skipped)
+# Run ALL tests (544 collected, 544 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -118,7 +118,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_auth.py | 15 | Auth enforcement — protected endpoints reject 401, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
 | test_saved_courses.py | 17 | SPM save/list/delete/idempotent/course_type, STPM save (auto-detect prefix + explicit type)/list/filter/delete/patch/404, both types list, qualification filter (SPM/STPM), check constraint (both-null/both-set rejected) |
 | test_quiz.py | 24 | Quiz endpoints (questions 3 langs, submit single+multi, validation), engine (multi-select, weight splitting, Not Sure Yet, conditional Q2.5, field_interest, signal strength, lang parity) |
-| test_ranking.py | 62 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, top_5/rest split, API endpoint validation, field interest matching (primary/secondary/no match/multi-field/cap), high_stamina, rote_tolerant, quality_priority, work preference cap, pre-U scoring (Matric/STPM prestige, academic bonus, field preference, signal adjustment, signal cap, routing) |
+| test_ranking.py | 63 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, top_5/rest split, API endpoint validation, field interest matching via field_key (primary/no match/cap/heavy_industry/no field_key/double match), high_stamina, rote_tolerant, quality_priority, work preference cap, pre-U scoring (Matric/STPM prestige, academic bonus, field preference, signal adjustment, signal cap, routing) |
 | test_data_loading.py | 10 | TVET metadata enrichment, PISMP metadata enrichment, institution modifiers storage, MASCO occupation model (PK, M2M, reverse relation, idempotent load, __str__) |
 | test_insights.py | 8 | Insights engine: empty input, stream breakdown, labels, top fields, merit counts, level distribution, summary text |
 | test_report_engine.py | 12 | Report engine: format helpers (grades, signals, courses, insights), prompts (BM/EN), persona mapping, Gemini mock (success, cascade, missing key) |
@@ -132,7 +132,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_golden_master.py | 1 | 5 students × all programmes = 1811 baseline |
 | test_stpm_api.py | 9 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency), STPM ranking API (returns 200, scored programmes, sorted desc, missing 400, empty list) |
 | test_stpm_search.py | 12 | STPM search API (200, programmes shape, text/university/stream filters, pagination, filter metadata), STPM detail API (200, programme data, 404, subjects list) |
-| test_stpm_ranking.py | 9 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest match dict format, interview penalty), ranked results (sorted desc, empty list, output shape) |
+| test_stpm_ranking.py | 10 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest via field_key, field interest dict format, no field_key edge case, interview penalty), ranked results (sorted desc, empty list, output shape) |
 | test_eligibility_service.py | 19 | Service module: compute_student_merit (precomputed/grades/hist rename/default coq), compute_course_merit (standard/no cutoff/tvet/matric/stpm), deduplicate_pismp (passthrough/identical collapse/language merge), sort_eligible_courses (merit order/pismp/iljtm), compute_stats (source_type/pathway_type) |
 | test_preu_courses.py | 4 | Pre-U eligibility (stats include matric/stpm), search (level Pra-U, text Matrikulasi, source_type matric) |
 | test_field_taxonomy.py | 118 | FieldTaxonomy model integrity (7), SPM classify_course (48: all frontend_label variants incl. 24 production labels), STPM classify_stpm_course (57: 10 SPM-matching categories with course_name sub-classification, ~40 STPM-specific categories, edge cases), FieldListView API (4: groups structure, children count) |
@@ -164,7 +164,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (542 collected, 542 must pass, SPM golden master = 5319, STPM golden master = 1811)
+# 1. Run all tests (544 collected, 544 must pass, SPM golden master = 5319, STPM golden master = 1811)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -176,7 +176,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-542 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
+544 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -215,16 +215,16 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Field Taxonomy Sprint 2 COMPLETE (2026-03-16)**
-- STPM deterministic classifier: 1,113/1,113 courses classified (29 of 37 taxonomy keys used)
-- FieldTaxonomySerializer with recursive children, GET /api/v1/fields/ endpoint
-- field_key in search results + detail APIs, ?field_key= backwards-compatible filter
-- 61 new tests (57 STPM classifier + 4 API)
+**Field Taxonomy Sprint 3 COMPLETE (2026-03-16)**
+- Ranking engines use `field_key` instead of `frontend_label`/keyword matching
+- Shared `FIELD_KEY_MAP` (DRY) replaces both `FIELD_LABEL_MAP` and `COURSE_FIELD_MAP`
+- `field_key` added to SPM + STPM eligibility results
+- `field_health` bug fixed (was mapping to agriculture, now maps to health)
+- 2 new tests (544 total)
 
-**Current state:** 542 backend tests, 17 frontend tests, 0 failures. 48/52 tech debt. TD-051 RESOLVED.
+**Current state:** 544 backend tests, 17 frontend tests, 0 failures. 49/52 tech debt.
 
 **Field Taxonomy Remaining Sprints**
-- Sprint 3: Ranking engine field_key integration
 - Sprint 4: Frontend (field filter dropdown, image slug from taxonomy)
 - Sprint 5: Cleanup (make field_key non-nullable, remove legacy fields, new images)
 
