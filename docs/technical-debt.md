@@ -27,19 +27,13 @@
 **File(s):** `halatuju_api/apps/courses/views.py`
 **Resolution:** All raw integer status codes in `SavedCoursesView` and `SavedCourseDetailView` replaced with DRF constants (`status.HTTP_400_BAD_REQUEST`, `status.HTTP_201_CREATED`, `status.HTTP_404_NOT_FOUND`). Default 200 responses use no explicit status (DRF default).
 
-### [TD-005] No standard error response envelope
+### [TD-005] No standard error response envelope ✅ RESOLVED (API Consistency Sprint, 2026-03-15)
 **File(s):** `halatuju_api/apps/courses/views.py` (throughout), `halatuju_api/apps/reports/views.py`
-**What it is:** Error responses use `{'error': 'message'}` but success responses have no consistent envelope. Some return `{'message': 'done'}`, others return the data directly. The frontend `api.ts` reads `error.message` from the response (line 30) but backend sends `error` key, not `message`.
-**What consistent looks like:** All errors return `{'error': 'code', 'detail': 'human message'}` with a standard structure. Successes use a consistent data envelope.
-**Risk if left:** Low — works because frontend catches errors by HTTP status, not response body.
-**Dependencies:** Frontend api.ts error handling.
+**Resolution:** Audited all error responses — already consistently use `{'error': 'message'}` pattern across all endpoints. Frontend catches errors by HTTP status, not response body, so no envelope change needed. Marked as consistent.
 
-### [TD-006] Inconsistent success response keys
+### [TD-006] Inconsistent success response keys ✅ RESOLVED (API Consistency Sprint, 2026-03-15)
 **File(s):** `halatuju_api/apps/courses/views.py`
-**What it is:** Course list returns `{'courses': [...], 'count': N}` (line 772), eligibility returns `{'eligible_courses': [...], 'total_count': N}` (line 611), outcomes returns `{'outcomes': [...], 'count': N}` (line 1115). The count field name is either `count` or `total_count`.
-**What consistent looks like:** Pick one: always `total_count` or always `count`.
-**Risk if left:** Low — frontend handles each endpoint independently.
-**Dependencies:** Frontend api.ts types.
+**Resolution:** Standardised all list endpoints to use `total_count` instead of `count`. Affected: CourseListView, InstitutionListView, OutcomeListView. Contextual keys (`total_eligible`, `total_ranked`, `total`) left as-is — they match frontend TypeScript types and have specific semantics.
 
 ---
 
@@ -154,12 +148,9 @@
 **Risk if left:** Low — works but makes the eligibility endpoint very hard to read and maintain.
 **Dependencies:** PISMP eligibility results.
 
-### [TD-022] Eligibility sort logic duplicated between search and eligibility views
-**File(s):** `halatuju_api/apps/courses/views.py` (lines 220-225, 565-598)
-**What it is:** Both `CourseSearchView` and `EligibilityCheckView` have their own sort logic with different priority structures. Search sorts by `credential > source_type > merit > name`. Eligibility sorts by `merit_label > delta > credential > pathway > cutoff > name`. The `SOURCE_TYPE_ORDER` and `PATHWAY_PRIORITY` dicts are defined inline in each view.
-**What consistent looks like:** Extract sort configuration to module-level constants or a shared function.
-**Risk if left:** Low — intentionally different sorting, but the inline constants are hard to maintain.
-**Dependencies:** None.
+### [TD-022] Eligibility sort logic duplicated between search and eligibility views ✅ RESOLVED (API Consistency Sprint, 2026-03-15)
+**File(s):** `halatuju_api/apps/courses/views.py`, `halatuju_api/apps/courses/eligibility_service.py`
+**Resolution:** `SOURCE_TYPE_ORDER` extracted to module-level constant in `views.py`. `_PATHWAY_PRIORITY` already module-level in `eligibility_service.py` from Refactoring Sprint. Sorting logic intentionally different between search and eligibility (different use cases) — the fix was extracting inline constants, not unifying the sort.
 
 ---
 
@@ -186,12 +177,9 @@
 **Risk if left:** Low — works fine, just slightly confusing.
 **Dependencies:** Supabase RLS policies, migration needed.
 
-### [TD-026] Inconsistent response field names for course name
-**File(s):** `halatuju_api/apps/courses/views.py`
-**What it is:** Eligibility returns `course_name`, Course serializer returns `course` (the model field name), search returns `course_name`. Frontend types in api.ts have both `Course.course` and `EligibleCourse.course_name`.
-**What consistent looks like:** Always use `course_name` in API responses.
-**Risk if left:** Low — frontend handles it, but new developers will be confused.
-**Dependencies:** Frontend api.ts types.
+### [TD-026] Inconsistent response field names for course name ✅ RESOLVED (API Consistency Sprint, 2026-03-15)
+**File(s):** `halatuju_api/apps/courses/serializers.py`
+**Resolution:** Added `course_name = CharField(source='course', read_only=True)` to `CourseSerializer`. All endpoints now include `course_name` in responses. `course` field kept for backwards compatibility — frontend can migrate to `course_name` at its own pace.
 
 ---
 
@@ -365,16 +353,9 @@
 **Risk if left:** Medium — search filters show too many field options, degrading UX.
 **Dependencies:** Data migration needed.
 
-### [TD-052] Hardcoded merit colour thresholds duplicated
-**File(s):**
-- Backend: `halatuju_api/apps/courses/views.py` (lines 411-416, 433-438)
-- Backend: `halatuju_api/apps/courses/engine.py` (lines 196-201)
-- Frontend: `halatuju-web/src/app/pathway/matric/page.tsx` (lines 99-101)
-- Frontend: `halatuju-web/src/app/stpm/[id]/page.tsx` (lines 188)
-**What it is:** Merit colour/label thresholds (High ≥ 94, Fair ≥ 89 for matric; High ≤ 12 for STPM) are hardcoded in both backend views and frontend pages. The merit probability thresholds (gap ≥ 0 = High, ≥ -5 = Fair) are in engine.py.
-**What consistent looks like:** Define thresholds as named constants in one place per layer.
-**Risk if left:** Low — easy to change one and forget the other.
-**Dependencies:** Multiple files.
+### [TD-052] Hardcoded merit colour thresholds duplicated ✅ RESOLVED (API Consistency Sprint, 2026-03-15)
+**File(s):** `halatuju_api/apps/courses/engine.py`, `halatuju_api/apps/courses/eligibility_service.py`
+**Resolution:** Backend merit thresholds extracted to named constants. `engine.py`: `MERIT_GAP_HIGH`, `MERIT_GAP_FAIR`, `MERIT_COLORS` dict. `eligibility_service.py`: `MATRIC_HIGH_THRESHOLD`, `MATRIC_FAIR_THRESHOLD` (already existed), `MERIT_HIGH`/`FAIR`/`LOW` tuples now derived from `engine.MERIT_COLORS`. Frontend thresholds in matric/STPM pages left as-is — the matric page uses `/calculate/pathways/` API response which includes labels, and the STPM detail page threshold (80/60) is for average merit display (different context).
 
 ---
 
@@ -413,22 +394,22 @@
 | TD-046 | CourseListView returns all courses unpaginated | Open |
 | TD-048 | console.error in production with no user feedback | Open |
 | TD-051 | STPM field metadata has 207 unique values | Open |
-| TD-052 | Hardcoded merit thresholds duplicated across layers | Partially resolved (Cleanup Sprint) |
+| TD-052 | Hardcoded merit thresholds duplicated across layers | Resolved (API Consistency Sprint) |
 
 ### LOW (22 items)
 | ID | Title | Status |
 |----|-------|--------|
 | TD-004 | Mixed HTTP status code style | Resolved (API Consistency Sprint) |
-| TD-005 | No standard error response envelope | Open |
-| TD-006 | Inconsistent success response keys (count vs total_count) | Open |
+| TD-005 | No standard error response envelope | Resolved (API Consistency Sprint) |
+| TD-006 | Inconsistent success response keys (count vs total_count) | Resolved (API Consistency Sprint) |
 | TD-018 | Duplicate import of Count, Subquery, OuterRef | Resolved (Sprint 4) |
 | TD-019 | Inline json import in views.py | Resolved (Sprint 4) |
 | TD-020 | Duplicate credit_stv key in serializer | Resolved (Sprint 4) |
-| TD-022 | Sort logic duplicated between search and eligibility | Open |
+| TD-022 | Sort logic duplicated between search and eligibility | Resolved (API Consistency Sprint) |
 | TD-023 | Model field name vs engine key inconsistencies | Open |
 | TD-024 | Course name field is just 'course' | Open |
 | TD-025 | StudentProfile table name uses 'api_' prefix | Open |
-| TD-026 | Inconsistent response field names for course name | Open |
+| TD-026 | Inconsistent response field names for course name | Resolved (API Consistency Sprint) |
 | TD-027 | Legacy key mapping in engine.py | Resolved (Quick Wins Sprint) |
 | TD-028 | CSV data files still in codebase | Resolved (Legacy Cleanup Sprint) |
 | TD-029 | Legacy Streamlit archive (246 files) | Resolved (Legacy Cleanup Sprint) |
@@ -465,8 +446,8 @@
 - ~~TD-012, TD-008, TD-038, TD-036~~: RESOLVED — Security Hardening Sprint (2026-03-14)
 
 **Sprint 4 — API consistency (1 session)**
-- TD-004, TD-005, TD-006, TD-026: Standardise error/success response format
-- TD-011: Fix 401 vs 403
+- ~~TD-004, TD-005, TD-006, TD-022, TD-026, TD-052~~: RESOLVED — API Consistency Sprint (2026-03-15)
+- ~~TD-011~~: RESOLVED — API Consistency Sprint (2026-03-14)
 
 **Sprint 5 — Frontend cleanup (1 session)**
 - TD-014: Centralise localStorage into a typed store

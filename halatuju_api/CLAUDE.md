@@ -223,7 +223,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Phone/OTP login implementation (currently blocked with "coming soon" message)
 - Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
 - Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
-- Continue tech debt remediation from `docs/technical-debt.md` (23 items remaining)
+- Continue tech debt remediation from `docs/technical-debt.md` (17 items remaining)
 
 ## Streamlit App (Legacy — migrating to Django API)
 

@@ -130,7 +130,7 @@ class TestOutcomeEndpoints(TestCase):
         resp = self.client.get('/api/v1/outcomes/')
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertEqual(data['count'], 1)
+        self.assertEqual(data['total_count'], 1)
         self.assertEqual(data['outcomes'][0]['status'], 'applied')
 
     # --- UPDATE ---

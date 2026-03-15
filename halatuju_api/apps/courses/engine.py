@@ -173,6 +173,19 @@ def calculate_merit_score(sec1_grades, sec2_grades, sec3_grades, coq_score):
     }
 
 
+# Merit probability gap thresholds (SPM standard merit)
+MERIT_GAP_HIGH = 0      # gap >= 0 → High
+MERIT_GAP_FAIR = -5     # gap >= -5 → Fair, below → Low
+
+# Merit label/colour constants
+MERIT_COLORS = {
+    'High': '#2ecc71',
+    'Fair': '#f1c40f',
+    'Low': '#e74c3c',
+    'Unknown': '#95a5a6',
+}
+
+
 def check_merit_probability(student_merit, course_cutoff):
     """
     Returns (label, color_hex) based on the gap between student merit and course cutoff.
@@ -181,16 +194,16 @@ def check_merit_probability(student_merit, course_cutoff):
         cutoff = float(course_cutoff)
         merit = float(student_merit)
     except (ValueError, TypeError):
-        return "Unknown", "#95a5a6"
+        return "Unknown", MERIT_COLORS['Unknown']
 
     gap = merit - cutoff
 
-    if gap >= 0:
-        return "High", "#2ecc71"
-    elif gap >= -5:
-        return "Fair", "#f1c40f"
+    if gap >= MERIT_GAP_HIGH:
+        return "High", MERIT_COLORS['High']
+    elif gap >= MERIT_GAP_FAIR:
+        return "Fair", MERIT_COLORS['Fair']
     else:
-        return "Low", "#e74c3c"
+        return "Low", MERIT_COLORS['Low']
 
 
 def prepare_merit_inputs(grades):

@@ -11,6 +11,7 @@ Functions:
 from collections import defaultdict
 
 from .engine import (
+    MERIT_COLORS,
     prepare_merit_inputs,
     calculate_merit_score,
     check_merit_probability,
@@ -18,10 +19,10 @@ from .engine import (
 from .pathways import check_matric_track, check_stpm_bidang
 from .ranking_engine import get_credential_priority
 
-# Merit label/colour constants — single source of truth for all merit types
-MERIT_HIGH = ("High", "#2ecc71")
-MERIT_FAIR = ("Fair", "#f1c40f")
-MERIT_LOW = ("Low", "#e74c3c")
+# Merit label/colour tuples — derived from engine constants
+MERIT_HIGH = ("High", MERIT_COLORS['High'])
+MERIT_FAIR = ("Fair", MERIT_COLORS['Fair'])
+MERIT_LOW = ("Low", MERIT_COLORS['Low'])
 
 # Matric merit thresholds (grade-point scale, higher = better)
 MATRIC_HIGH_THRESHOLD = 94

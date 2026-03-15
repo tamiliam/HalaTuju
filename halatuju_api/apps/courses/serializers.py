@@ -7,11 +7,12 @@ from .models import Course, Institution, CourseRequirement, CourseTag, MascoOccu
 
 class CourseSerializer(serializers.ModelSerializer):
     """Serializer for Course model."""
+    course_name = serializers.CharField(source='course', read_only=True)
 
     class Meta:
         model = Course
         fields = [
-            'course_id', 'course', 'wbl', 'level', 'department',
+            'course_id', 'course', 'course_name', 'wbl', 'level', 'department',
             'field', 'frontend_label', 'semesters',
             'headline', 'headline_en', 'description', 'description_en',
         ]

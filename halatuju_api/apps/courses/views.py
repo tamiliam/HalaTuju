@@ -61,6 +61,11 @@ from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 
 logger = logging.getLogger(__name__)
 
+# Sort priority for source types in search results (higher = sorted first)
+SOURCE_TYPE_ORDER = {
+    'ua': 5, 'matric': 4, 'stpm': 4, 'pismp': 3, 'poly': 2, 'kkom': 1,
+}
+
 
 class CourseSearchView(APIView):
     """
@@ -87,11 +92,6 @@ class CourseSearchView(APIView):
         source_type = request.query_params.get('source_type', '').strip()
         state = request.query_params.get('state', '').strip()
         qualification = request.query_params.get('qualification', '').strip().upper()
-
-        # Sort order: credential > source_type > merit > name
-        SOURCE_TYPE_ORDER = {
-            'ua': 5, 'matric': 4, 'stpm': 4, 'pismp': 3, 'poly': 2, 'kkom': 1,
-        }
 
         # Pagination
         try:
@@ -602,7 +602,7 @@ class CourseListView(APIView):
         serializer = CourseSerializer(courses, many=True)
         return Response({
             'courses': serializer.data,
-            'count': len(serializer.data),
+            'total_count': len(serializer.data),
         })
 
 
@@ -732,7 +732,7 @@ class InstitutionListView(APIView):
         serializer = InstitutionSerializer(qs, many=True)
         return Response({
             'institutions': serializer.data,
-            'count': len(serializer.data),
+            'total_count': len(serializer.data),
         })
 
 
@@ -798,28 +798,24 @@ class SavedCoursesView(APIView):
             supabase_user_id=request.user_id
         )
 
-        # Auto-detect STPM from course_type or ID prefix
-        course_type = request.data.get('course_type', '')
-        is_stpm = course_type == 'stpm' or course_id.startswith('stpm-')
+        # Try SPM table first, then STPM — no prefix-guessing needed
+        try:
+            course = Course.objects.get(course_id=course_id)
+            SavedCourse.objects.get_or_create(
+                student=profile, course=course,
+            )
+            return Response({'message': 'Course saved'}, status=status.HTTP_201_CREATED)
+        except Course.DoesNotExist:
+            pass
 
-        if is_stpm:
-            try:
-                stpm_course = StpmCourse.objects.get(course_id=course_id)
-                SavedCourse.objects.get_or_create(
-                    student=profile, stpm_course=stpm_course,
-                )
-                return Response({'message': 'Course saved'}, status=status.HTTP_201_CREATED)
-            except StpmCourse.DoesNotExist:
-                return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
-        else:
-            try:
-                course = Course.objects.get(course_id=course_id)
-                SavedCourse.objects.get_or_create(
-                    student=profile, course=course,
-                )
-                return Response({'message': 'Course saved'}, status=status.HTTP_201_CREATED)
-            except Course.DoesNotExist:
-                return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            stpm_course = StpmCourse.objects.get(course_id=course_id)
+            SavedCourse.objects.get_or_create(
+                student=profile, stpm_course=stpm_course,
+            )
+            return Response({'message': 'Course saved'}, status=status.HTTP_201_CREATED)
+        except StpmCourse.DoesNotExist:
+            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class SavedCourseDetailView(APIView):
@@ -962,7 +958,7 @@ class OutcomeListView(APIView):
                 'updated_at': o.updated_at.isoformat(),
             })
 
-        return Response({'outcomes': data, 'count': len(data)})
+        return Response({'outcomes': data, 'total_count': len(data)})
 
     def post(self, request):
         course_id = request.data.get('course_id')

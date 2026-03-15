@@ -1,5 +1,22 @@
 # Changelog — HalaTuju
 
+## API Consistency Sprint — TD-005, TD-006, TD-022, TD-026, TD-052 (2026-03-15)
+
+### Changed
+- Standardised list endpoint count keys: `count` → `total_count` in CourseListView, InstitutionListView, OutcomeListView (TD-006)
+- Added `course_name` alias to `CourseSerializer` — all endpoints now include `course_name` alongside `course` for consistency (TD-026)
+- Extracted `SOURCE_TYPE_ORDER` to module-level constant in `views.py` (TD-022)
+- Extracted merit gap thresholds to named constants: `MERIT_GAP_HIGH`, `MERIT_GAP_FAIR`, `MERIT_COLORS` in `engine.py` (TD-052)
+- `eligibility_service.py` merit tuples now derive colours from `engine.MERIT_COLORS` instead of duplicating hex values (TD-052)
+- Audited error responses — already consistently use `{'error': 'message'}` pattern (TD-005)
+
+### Stats
+- Tests: 424 pass, 0 failures
+- Golden masters: SPM 5319, STPM 1811
+- Tech debt resolved: TD-005, TD-006, TD-022, TD-026, TD-052 (35/52 total resolved)
+
+---
+
 ## Legacy Cleanup — TD-028, TD-029, TD-031, TD-032 (2026-03-15)
 
 ### Removed

@@ -442,7 +442,7 @@ class TestCourseEndpoints(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn('courses', data)
-        self.assertIn('count', data)
+        self.assertIn('total_count', data)
 
     def test_course_detail_not_found(self):
         """Non-existent course_id should return 404."""
@@ -655,7 +655,7 @@ class TestCourseDetailBilingualDescriptions(TestCase):
         """Course list serializer should include bilingual fields."""
         response = self.client.get('/api/v1/courses/')
         data = response.json()
-        if data['count'] > 0:
+        if data['total_count'] > 0:
             course = data['courses'][0]
             self.assertIn('headline_en', course)
             self.assertIn('description_en', course)
@@ -674,7 +674,7 @@ class TestInstitutionEndpoints(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn('institutions', data)
-        self.assertIn('count', data)
+        self.assertIn('total_count', data)
 
     def test_institution_detail_not_found(self):
         """Non-existent institution_id should return 404."""
