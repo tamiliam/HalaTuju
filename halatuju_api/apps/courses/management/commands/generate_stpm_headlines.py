@@ -2,7 +2,7 @@
 
 import json
 import time
-import google.generativeai as genai
+from google import genai
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from apps.courses.models import StpmCourse
@@ -50,8 +50,7 @@ class Command(BaseCommand):
             self.stderr.write('GEMINI_API_KEY not set')
             return
 
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        client = genai.Client(api_key=api_key)
 
         # Select courses needing headlines
         qs = StpmCourse.objects.exclude(
@@ -87,9 +86,10 @@ class Command(BaseCommand):
             )
 
             try:
-                response = model.generate_content(
-                    [SYSTEM_PROMPT, user_prompt],
-                    generation_config={'temperature': 0.9, 'max_output_tokens': 4096},
+                response = client.models.generate_content(
+                    model='gemini-2.0-flash',
+                    contents=[SYSTEM_PROMPT, user_prompt],
+                    config={'temperature': 0.9, 'max_output_tokens': 4096},
                 )
                 text = response.text.strip()
                 # Strip markdown fences if present
