@@ -1,11 +1,11 @@
 'use client'
 
-import { useAuth } from '@/lib/auth-context'
+import { useAdminAuth } from '@/lib/admin-auth-context'
 import { getPartnerDashboard, type DashboardData } from '@/lib/admin-api'
 import { useEffect, useState } from 'react'
 
 export default function AdminDashboard() {
-  const { token } = useAuth()
+  const { token } = useAdminAuth()
   const [data, setData] = useState<DashboardData | null>(null)
   const [error, setError] = useState('')
 

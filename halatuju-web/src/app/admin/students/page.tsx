@@ -1,6 +1,6 @@
 'use client'
 
-import { useAuth } from '@/lib/auth-context'
+import { useAdminAuth } from '@/lib/admin-auth-context'
 import {
   getPartnerStudents,
   getExportUrl,
@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 export default function AdminStudentList() {
-  const { token } = useAuth()
+  const { token } = useAdminAuth()
   const [data, setData] = useState<StudentListData | null>(null)
   const [error, setError] = useState('')
 

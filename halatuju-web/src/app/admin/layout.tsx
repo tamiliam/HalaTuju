@@ -1,23 +1,28 @@
 'use client'
 
-import { useAuth } from '@/lib/auth-context'
-import { useRouter } from 'next/navigation'
+import { AdminAuthProvider, useAdminAuth } from '@/lib/admin-auth-context'
+import { useRouter, usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 import Link from 'next/link'
+import { adminSignOut } from '@/lib/admin-supabase'
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const { isAuthenticated, isLoading } = useAuth()
+function AdminLayoutInner({ children }: { children: React.ReactNode }) {
+  const { isAdminAuthenticated, isLoading, role } = useAdminAuth()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace('/login')
+    // Don't redirect if on login or callback pages
+    if (pathname === '/admin/login' || pathname.startsWith('/admin/auth/')) return
+    if (!isLoading && !isAdminAuthenticated) {
+      router.replace('/admin/login')
     }
-  }, [isAuthenticated, isLoading, router])
+  }, [isAdminAuthenticated, isLoading, router, pathname])
+
+  // Login and callback pages render without nav
+  if (pathname === '/admin/login' || pathname.startsWith('/admin/auth/')) {
+    return <>{children}</>
+  }
 
   if (isLoading) {
     return (
@@ -27,8 +32,13 @@ export default function AdminLayout({
     )
   }
 
-  if (!isAuthenticated) {
+  if (!isAdminAuthenticated) {
     return null
+  }
+
+  const handleSignOut = async () => {
+    await adminSignOut()
+    router.replace('/admin/login')
   }
 
   return (
@@ -48,9 +58,41 @@ export default function AdminLayout({
           >
             Pelajar
           </Link>
+          {role?.is_super_admin && (
+            <Link
+              href="/admin/invite"
+              className="text-sm text-gray-600 hover:text-blue-600"
+            >
+              Invite
+            </Link>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500">
+            {role?.admin_name}
+            {role?.org_name ? ` (${role.org_name})` : ' (Super Admin)'}
+          </span>
+          <button
+            onClick={handleSignOut}
+            className="text-sm text-red-600 hover:text-red-800"
+          >
+            Log Out
+          </button>
         </div>
       </nav>
       <main className="max-w-6xl mx-auto p-4 md:p-6">{children}</main>
     </div>
+  )
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <AdminAuthProvider>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </AdminAuthProvider>
   )
 }
