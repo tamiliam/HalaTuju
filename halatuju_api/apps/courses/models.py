@@ -607,6 +607,14 @@ class StpmCourse(models.Model):
         help_text='Link to MOHE ePanduan programme page'
     )
 
+    # Career pathway: links to MASCO occupation codes
+    career_occupations = models.ManyToManyField(
+        'MascoOccupation',
+        related_name='stpm_courses',
+        blank=True,
+        help_text="MASCO occupation codes this programme leads to"
+    )
+
     class Meta:
         db_table = 'stpm_courses'
         ordering = ['university', 'course_name']

@@ -1,6 +1,6 @@
 """Tests for StpmCourse and StpmRequirement models."""
 import pytest
-from apps.courses.models import StpmCourse, StpmRequirement
+from apps.courses.models import MascoOccupation, StpmCourse, StpmRequirement
 
 
 @pytest.mark.django_db
@@ -141,3 +141,41 @@ class TestStpmCourseMetadata:
         )
         assert course.field == ''
         assert course.description == ''
+
+
+@pytest.mark.django_db
+class TestStpmCourseCareerOccupations:
+    """Test M2M relationship between StpmCourse and MascoOccupation."""
+
+    def setUp(self):
+        self.course = StpmCourse.objects.create(
+            course_id='test-stpm-career',
+            course_name='Test Programme',
+            university='Universiti Test',
+            field_key_id='umum',
+        )
+        self.occ = MascoOccupation.objects.create(
+            masco_code='2512-03',
+            job_title='Jurutera Perisian',
+            emasco_url='https://emasco.mohr.gov.my/masco/2512-03',
+        )
+
+    def test_can_add_career_occupation(self):
+        self.setUp()
+        self.course.career_occupations.add(self.occ)
+        assert self.course.career_occupations.count() == 1
+
+    def test_reverse_relation(self):
+        self.setUp()
+        self.course.career_occupations.add(self.occ)
+        assert self.course in self.occ.stpm_courses.all()
+
+    def test_multiple_occupations(self):
+        self.setUp()
+        occ2 = MascoOccupation.objects.create(
+            masco_code='2513-01',
+            job_title='Pembangun Web',
+            emasco_url='https://emasco.mohr.gov.my/masco/2513-01',
+        )
+        self.course.career_occupations.add(self.occ, occ2)
+        assert self.course.career_occupations.count() == 2
