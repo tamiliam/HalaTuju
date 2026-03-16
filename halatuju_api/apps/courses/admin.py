@@ -6,7 +6,8 @@ from .models import (
     FieldTaxonomy,
     Course, CourseRequirement, CourseTag,
     Institution, CourseInstitution,
-    StudentProfile, SavedCourse
+    StudentProfile, SavedCourse,
+    PartnerOrganisation
 )
 
 
@@ -74,3 +75,9 @@ class StudentProfileAdmin(admin.ModelAdmin):
 class SavedCourseAdmin(admin.ModelAdmin):
     list_display = ['student', 'course', 'saved_at']
     list_filter = ['saved_at']
+
+
+@admin.register(PartnerOrganisation)
+class PartnerOrganisationAdmin(admin.ModelAdmin):
+    list_display = ['code', 'name', 'is_active', 'created_at']
+    list_filter = ['is_active']
