@@ -390,6 +390,30 @@ class PartnerOrganisation(models.Model):
         return f'{self.name} ({self.code})'
 
 
+class PartnerAdmin(models.Model):
+    """Admin user for a partner organisation. Separate from StudentProfile."""
+    supabase_user_id = models.CharField(
+        max_length=100, unique=True, null=True, blank=True,
+        help_text='Set on first login via UID or email match',
+    )
+    org = models.ForeignKey(
+        PartnerOrganisation, on_delete=models.CASCADE,
+        null=True, blank=True, related_name='admins',
+        help_text='NULL for super admin',
+    )
+    is_super_admin = models.BooleanField(default=False)
+    name = models.CharField(max_length=200)
+    email = models.EmailField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'partner_admins'
+
+    def __str__(self):
+        org_name = self.org.name if self.org else 'Super Admin'
+        return f'{self.name} ({org_name})'
+
+
 class StudentProfile(models.Model):
     """
     User profile linked to Supabase Auth.
