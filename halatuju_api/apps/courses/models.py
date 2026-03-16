@@ -674,6 +674,10 @@ class StpmRequirement(models.Model):
     req_medical_fitness = models.BooleanField(default=False)
     req_malaysian = models.BooleanField(default=False)
     req_bumiputera = models.BooleanField(default=False)
+    req_male = models.BooleanField(default=False)
+    req_female = models.BooleanField(default=False)
+    single = models.BooleanField(default=False)
+    no_disability = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'stpm_requirements'

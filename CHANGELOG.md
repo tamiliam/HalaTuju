@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — STPM Requirements Pipeline Rebuild Sprint 2: Backend Integration (2026-03-16)
+
+### Added
+- **Fixture converter** (`Settings/_tools/stpm_requirements/stpm_json_to_fixture.py`): Converts structured JSON → Django fixture format with null-safety for non-nullable model fields
+- **4 new StpmRequirement boolean fields**: `req_male`, `req_female`, `single`, `no_disability` (migration 0031)
+- **List-aware subject group engine**: `check_stpm_subject_group()` and `check_spm_prerequisites()` now handle both single dict (legacy) and list of dicts (new pipeline) formats with AND semantics
+- **Exclusion list support**: SPM prerequisites engine checks `exclude` lists — student needs min_count subjects at min_grade from any subject NOT in the exclude list
+- **Demographic eligibility checks**: `check_stpm_eligibility()` now enforces `req_male`, `req_female`, `no_disability`
+- **API fields**: STPM course detail response includes `req_male`, `req_female`, `single`, `no_disability`
+- **SpecialConditions component**: Renders gender, marital, disability conditions with colour-coded indicators
+- **i18n keys**: `maleOnly`, `femaleOnly`, `unmarriedOnly`, `noDisability` in EN/MS/TA
+- **Search page fix**: SPM grades merged from `KEY_GRADES` into profile for eligibility checks
+- **Dashboard fix**: Report existence synced with DB on fresh devices
+
+### Changed
+- **STPM golden master**: 1811 → 2103 (richer requirement data = more eligible matches)
+- **stpm_requirements.json fixture**: Regenerated from new pipeline (1,113 courses)
+
+### Tests
+- 32 new fixture converter tests (199 total pipeline tool tests)
+- 590 backend tests, 17 frontend tests, 0 failures
+- Golden masters: SPM=5319, STPM=2103
+
+## [Unreleased] — STPM Requirements Pipeline Rebuild Sprint 1: Parser Rewrite (2026-03-16)
+
+### Added
+- **Subject key registry** (`Settings/_tools/stpm_requirements/subject_keys.py`): 135+ subject mappings (25 STPM + 110 SPM), slash-combo handling, `UNKNOWN:` fallback
+- **HTML→JSON parser** (`Settings/_tools/stpm_requirements/parse_stpm_html.py`): Per-`<li>` block parsing via BeautifulSoup, 11 block types, multi-tier STPM groups, exclusion lists
+- **Pipeline test suite**: 167 tests (subject keys + parser + integration)
+- Parsed 1,680 courses (1,003 science + 677 arts): 1.4% warning rate, 0 unknown subjects
+
 ## [Unreleased] — MASCO Career Mappings Sprint B: AI Mapping Pipeline (2026-03-16)
 
 ### Added

@@ -1321,6 +1321,10 @@ class StpmCourseDetailView(APIView):
                 'req_medical_fitness': req.req_medical_fitness,
                 'req_malaysian': req.req_malaysian,
                 'req_bumiputera': req.req_bumiputera,
+                'req_male': req.req_male,
+                'req_female': req.req_female,
+                'single': req.single,
+                'no_disability': req.no_disability,
             }
 
         # Use FK to get institution data (no extra query thanks to select_related)

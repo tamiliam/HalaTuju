@@ -322,3 +322,15 @@
 **Trade-offs:** New STPM categories added in future data refreshes require manual additions to the classifier. But this is a small maintenance cost vs. ongoing API costs and non-determinism.
 
 **Revisit if:** A new data source with thousands of unpredictable category values is added, where keyword matching becomes impractical.
+
+## List-of-dicts for multi-tier STPM subject groups — STPM Pipeline Sprint 2, 2026-03-16
+
+**Decision:** `stpm_subject_group` and `spm_subject_group` JSONFields store a **list of dicts** instead of a single dict. Each dict has `{subjects, min_grade, min_count, exclude}`. Engine uses AND semantics — student must satisfy all groups.
+
+**Alternatives considered:** (1) Nested dict with numbered tiers (`{"tier_1": {...}, "tier_2": {...}}`). (2) Single dict with comma-separated grades. (3) List of dicts (chosen).
+
+**Rationale:** Many MOHE courses require "A in 2 AND A- in 1" — two distinct grade thresholds. A single dict can only represent one threshold. A list naturally represents N thresholds with AND semantics. Backward compatibility achieved with `isinstance(group, list)` check — old single-dict data still works.
+
+**Trade-offs:** Engine code needs the isinstance check for backward compatibility until all data is migrated. List format is slightly more verbose in JSON.
+
+**Revisit if:** MOHE introduces OR-semantics between tiers (unlikely given how university admission works — requirements are cumulative).

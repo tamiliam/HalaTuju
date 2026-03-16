@@ -129,7 +129,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_models.py | 5 | StpmCourse creation + __str__, StpmRequirement creation + defaults, JSON field round-trip, metadata fields (explicit values + defaults) |
 | test_stpm_data_loading.py | 17 | Fixture integrity (courses loaded, 1:1 requirements, count ~1113, JSON parsing, booleans, merit scores, proper case) + proper_case_name utility (9 unit tests) |
 | test_stpm_engine.py | 15 | CGPA calculator (5), grade comparison (4), eligibility integration (6: strong science, CGPA filter, MUET filter, subject req, result shape, colorblind). Grade scale: A→F with D+(1.33), C-(1.67), E/G legacy aliases |
-| test_stpm_golden_master.py | 1 | 5 students × all programmes = 1811 baseline |
+| test_stpm_golden_master.py | 1 | 5 students × all programmes = 2103 baseline |
 | test_stpm_api.py | 9 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency), STPM ranking API (returns 200, scored programmes, sorted desc, missing 400, empty list) |
 | test_stpm_search.py | 12 | STPM search API (200, programmes shape, text/university/stream filters, pagination, filter metadata), STPM detail API (200, programme data, 404, subjects list) |
 | test_stpm_ranking.py | 10 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest via field_key, field interest dict format, no field_key edge case, interview penalty), ranked results (sorted desc, empty list, output shape) |
@@ -164,7 +164,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (546 collected, 546 must pass, SPM golden master = 5319, STPM golden master = 1811)
+# 1. Run all tests (590 collected, 590 must pass, SPM golden master = 5319, STPM golden master = 2103)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -176,7 +176,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-590 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
+590 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2103. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -215,35 +215,26 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**MASCO Career Mappings Sprint A COMPLETE (2026-03-16)**
-- `load_masco_full` management command: loads 4,854 MASCO 2020 occupations from CSV
-- eMASCO URLs auto-generated: `https://emasco.mohr.gov.my/masco/{code}`
-- `StpmCourse.career_occupations` M2M field added (mirrors SPM Course model)
-- STPM detail API returns `career_occupations` array
-- Shared `CareerPathways` component extracted, used by both SPM + STPM detail pages
-- Data file: `halatuju_api/data/masco_full.csv` (4,854 jobs, all MASCO 2020 digits 0-9)
+**STPM Requirements Pipeline Rebuild Sprint 2 COMPLETE (2026-03-16)**
+- Fixture converter (`stpm_json_to_fixture.py`): JSON → Django fixture with null-safety
+- 4 new boolean fields on StpmRequirement (`req_male`, `req_female`, `single`, `no_disability`)
+- List-aware engine: `check_stpm_subject_group()` + `check_spm_prerequisites()` handle multi-tier groups
+- Exclusion list + demographic eligibility checks in engine
+- 1,113 courses loaded via new pipeline, STPM golden master 1811 → 2103
+- Pipeline tool tests: 199 passing (in `Settings/_tools/stpm_requirements/tests/`)
 
-**MASCO Career Mappings Sprint B COMPLETE (2026-03-16)**
-- `FIELD_KEY_TO_MASCO` mapping: 31 field_keys → MASCO 2-digit groups
-- `filter_masco_by_field_key()` helper for pre-filtering
-- `map_course_careers` command: Gemini-assisted generate + apply modes
-- 12 new tests
+**Current state:** 590 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2103.
 
-**Current state:** 590 backend tests, 17 frontend tests, 0 failures. 49/52 tech debt.
-
-**MASCO Career Mappings — Next Sprint**
-- Sprint C: Run the pipeline — load MASCO data, generate mappings for UA/PISMP/STPM, review, apply
-
-**Remaining tech debt (3 items)**
-- TD-024: Course name field is `course` (too risky to rename)
-- TD-025: StudentProfile table `api_` prefix (needs migration + RLS)
-- TD-043: Phone/OTP login blocked (needs Twilio, ~RM12/mo)
+**STPM Requirements Pipeline — Next Sprint (Sprint 3)**
+- Build Stage 3 validator tool (`validate_stpm_requirements.py`)
+- Write reusable workflow doc (`Settings/_workflows/stpm-requirements-update.md`)
 
 **Pending work**
-- Phone/OTP login implementation (currently blocked with "coming soon" message)
-- Grade modulation layer (4 rules cross-referencing StudentProfile.grades with quiz signals)
-- Course detail page: remaining fixes from `docs/Course Detail Page.pdf`
-- Audit course content for BM consistency (some mixed with English)
+- MASCO Career Mappings Sprint C: Run pipeline for UA/PISMP/STPM
+- Phone/OTP login (blocked — Twilio ~RM12/mo)
+- Grade modulation layer
+- Course detail page fixes from `docs/Course Detail Page.pdf`
+- Audit course content for BM consistency
 
 ## Streamlit App (Legacy — migrating to Django API)
 

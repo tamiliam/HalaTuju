@@ -119,20 +119,33 @@ def check_spm_prerequisites(req, spm_grades):
             if not student_grade or student_grade not in grade_set:
                 return False
 
-    # Flexible SPM subject group (JSON)
+    # Flexible SPM subject group (JSON) — supports both dict and list formats
     group = req.spm_subject_group
     if group:
-        min_count = group.get('min_count', 1)
-        min_grade = group.get('min_grade', 'C')
-        subjects = group.get('subjects', [])
-        matched = 0
-        for csv_code in subjects:
-            engine_key = SPM_CODE_MAP.get(csv_code, csv_code.lower())
-            student_grade = spm_grades.get(engine_key)
-            if student_grade and meets_spm_grade(student_grade, min_grade):
-                matched += 1
-        if matched < min_count:
-            return False
+        groups = group if isinstance(group, list) else [group]
+        for g in groups:
+            min_count = g.get('min_count', 1)
+            min_grade = g.get('min_grade', 'C')
+            subjects = g.get('subjects')
+            exclude = g.get('exclude', [])
+            matched = 0
+            if subjects:
+                # Specific subject list — check only these
+                for csv_code in subjects:
+                    engine_key = SPM_CODE_MAP.get(csv_code, csv_code.lower())
+                    student_grade = spm_grades.get(engine_key)
+                    if student_grade and meets_spm_grade(student_grade, min_grade):
+                        matched += 1
+            else:
+                # No subject list — match ANY subject not in exclude list
+                exclude_keys = {SPM_CODE_MAP.get(c, c.lower()) for c in exclude}
+                for engine_key, student_grade in spm_grades.items():
+                    if engine_key in exclude_keys:
+                        continue
+                    if student_grade and meets_spm_grade(student_grade, min_grade):
+                        matched += 1
+            if matched < min_count:
+                return False
 
     return True
 
@@ -166,21 +179,30 @@ def check_stpm_min_subjects(req, stpm_grades):
 def check_stpm_subject_group(req, stpm_grades):
     """Check flexible STPM subject group JSON requirement.
 
-    JSON format: {"min_count": N, "min_grade": "C", "subjects": ["PHYSICS", "MATH_T", ...]}
-    Student must have at least min_count of the listed subjects at or above min_grade.
+    Supports both single dict and list-of-dicts formats (backward compatible).
+    Single dict: {"min_count": N, "min_grade": "C", "subjects": ["PHYSICS", ...]}
+    List: [{"min_count": 1, ...}, {"min_count": 1, ...}]
+    With list format, student must satisfy ALL groups (AND semantics).
     """
     group = req.stpm_subject_group
     if not group:
         return True
-    min_count = group.get('min_count', 1)
-    min_grade = group.get('min_grade', 'C')
-    subjects = group.get('subjects', [])
-    matched = 0
-    for subject in subjects:
-        student_grade = stpm_grades.get(subject)
-        if student_grade and meets_stpm_grade(student_grade, min_grade):
-            matched += 1
-    return matched >= min_count
+    # Support both old (dict) and new (list) formats
+    groups = group if isinstance(group, list) else [group]
+    for g in groups:
+        min_count = g.get('min_count', 1)
+        min_grade = g.get('min_grade', 'C')
+        subjects = g.get('subjects')
+        # Count matching subjects
+        matched = 0
+        for subj_key, student_grade in stpm_grades.items():
+            if subjects and subj_key.upper() not in [s.upper() for s in subjects]:
+                continue
+            if meets_stpm_grade(student_grade, min_grade):
+                matched += 1
+        if matched < min_count:
+            return False
+    return True
 
 
 def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
@@ -218,6 +240,12 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
         if req.req_malaysian and nationality != 'Warganegara':
             continue
         if req.no_colorblind and colorblind == 'Ya':
+            continue
+        if req.no_disability and disability == 'Ya':
+            continue
+        if req.req_male and gender != 'Lelaki':
+            continue
+        if req.req_female and gender != 'Perempuan':
             continue
         # Bumiputera-only courses (e.g. UiTM) are out of scope
         if req.req_bumiputera:
