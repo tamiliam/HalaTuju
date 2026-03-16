@@ -487,6 +487,7 @@ export interface SyncProfileData {
   name?: string
   school?: string
   nric?: string
+  referral_source?: string
 }
 
 export async function syncProfile(
