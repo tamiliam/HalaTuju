@@ -2,11 +2,14 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth-context'
+import { hasGrades } from '@/lib/storage'
 
 export default function AppFooter() {
   const { t } = useT()
+  const router = useRouter()
   const { isAuthenticated, showAuthGate } = useAuth()
 
   return (
@@ -44,7 +47,7 @@ export default function AppFooter() {
                   </Link>
                 ) : (
                   <button
-                    onClick={() => showAuthGate('save')}
+                    onClick={() => hasGrades() ? showAuthGate('save') : router.push('/onboarding/exam-type')}
                     className="text-sm text-gray-600 hover:text-gray-900"
                   >
                     {t('common.saved')}
@@ -89,9 +92,14 @@ export default function AppFooter() {
           <p className="text-sm text-gray-400">
             &copy; {t('common.copyright')}
           </p>
-          <Link href="/contact" className="text-sm text-gray-500 hover:text-gray-900">
-            {t('common.contact')}
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/contact" className="text-sm text-gray-500 hover:text-gray-900">
+              {t('common.contact')}
+            </Link>
+            <Link href="/admin" className="text-sm text-gray-400 hover:text-gray-600">
+              Admin
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
