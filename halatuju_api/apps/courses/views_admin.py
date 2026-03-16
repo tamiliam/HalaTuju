@@ -2,88 +2,88 @@
 Partner admin API views.
 
 Endpoints:
-- GET /api/v1/admin/role/ - Check admin role
+- GET /api/v1/admin/role/ - Check admin role (with email fallback + UID backfill)
 - GET /api/v1/admin/dashboard/ - Partner dashboard stats
 - GET /api/v1/admin/students/ - List referred students
 - GET /api/v1/admin/students/export/ - CSV export of referred students
 - GET /api/v1/admin/students/<user_id>/ - Student detail
+- POST /api/v1/admin/invite/ - Invite a partner admin (super admin only)
+- GET /api/v1/admin/orgs/ - List organisations (for invite dropdown)
 """
 import csv
+import logging
 from collections import Counter
+from django.conf import settings
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
-from .models import StudentProfile, PartnerOrganisation
+from .models import StudentProfile, PartnerOrganisation, PartnerAdmin
 from .serializers_admin import PartnerStudentListSerializer, PartnerStudentDetailSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class PartnerAdminMixin:
-    """Validate partner admin access and resolve org.
+    """Validate partner admin access via partner_admins table.
 
-    admin_org_code='*' means super admin — sees ALL students.
-    admin_org_code='cumig' means partner admin — sees only their referred students.
+    Lookup order:
+    1. By supabase_user_id (fast path)
+    2. By email from JWT (first-login backfill)
     """
     permission_classes = [SupabaseIsAuthenticated]
 
-    def get_admin_profile(self, request):
+    def get_admin(self, request):
         user_id = request.user_id
         if not user_id:
             return None
-        try:
-            profile = StudentProfile.objects.get(supabase_user_id=user_id)
-        except StudentProfile.DoesNotExist:
-            return None
-        if not profile.admin_org_code:
-            return None
-        return profile
 
-    def get_partner_org(self, request):
-        profile = self.get_admin_profile(request)
-        if not profile:
-            return None
-        if profile.admin_org_code == '*':
-            return None  # super admin has no single org
-        try:
-            return PartnerOrganisation.objects.get(code=profile.admin_org_code, is_active=True)
-        except PartnerOrganisation.DoesNotExist:
-            return None
+        # Fast path: lookup by UID
+        admin = PartnerAdmin.objects.filter(supabase_user_id=user_id).select_related('org').first()
+        if admin:
+            return admin
 
-    def is_super_admin(self, request):
-        profile = self.get_admin_profile(request)
-        return profile and profile.admin_org_code == '*'
+        # Fallback: lookup by email, backfill UID
+        email = getattr(request, 'supabase_user', {}).get('email')
+        if email:
+            admin = PartnerAdmin.objects.filter(email=email, supabase_user_id__isnull=True).select_related('org').first()
+            if admin:
+                admin.supabase_user_id = user_id
+                admin.save(update_fields=['supabase_user_id'])
+                return admin
+
+        return None
 
     def get_partner_students(self, request):
-        profile = self.get_admin_profile(request)
-        if not profile:
+        admin = self.get_admin(request)
+        if not admin:
             return None, None
 
-        if profile.admin_org_code == '*':
-            # Super admin sees all students
+        if admin.is_super_admin:
             students = StudentProfile.objects.all().order_by('-created_at')
-            return students, None  # org=None for super admin
+            return students, None
 
-        org = self.get_partner_org(request)
-        if not org:
+        if not admin.org:
             return None, None
+
         students = StudentProfile.objects.filter(
-            referred_by_org=org,
+            referred_by_org=admin.org,
         ).order_by('-created_at')
-        return students, org
+        return students, admin.org
 
 
 class AdminRoleView(PartnerAdminMixin, APIView):
     """GET /api/v1/admin/role/ - Check if user has admin access."""
 
     def get(self, request):
-        profile = self.get_admin_profile(request)
-        if not profile:
+        admin = self.get_admin(request)
+        if not admin:
             return Response({'is_admin': False})
-        org = self.get_partner_org(request)
         return Response({
             'is_admin': True,
-            'is_super_admin': profile.admin_org_code == '*',
-            'org_name': org.name if org else ('Semua Organisasi' if profile.admin_org_code == '*' else None),
+            'is_super_admin': admin.is_super_admin,
+            'org_name': admin.org.name if admin.org else None,
+            'admin_name': admin.name,
         })
 
 
@@ -111,9 +111,10 @@ class PartnerDashboardView(PartnerAdminMixin, APIView):
                     field_counter[field] += 1
         top_fields = [{'field': f, 'count': c} for f, c in field_counter.most_common(5)]
 
+        admin = self.get_admin(request)
         return Response({
             'org_name': org.name if org else 'Semua Organisasi',
-            'is_super_admin': org is None,
+            'is_super_admin': admin.is_super_admin if admin else False,
             'total_students': total,
             'completed_onboarding': completed,
             'by_exam_type': by_exam,
@@ -129,10 +130,11 @@ class PartnerStudentListView(PartnerAdminMixin, APIView):
         if students is None:
             return Response({'error': 'Not a partner admin'}, status=403)
 
+        admin = self.get_admin(request)
         serializer = PartnerStudentListSerializer(students, many=True)
         return Response({
             'org_name': org.name if org else 'Semua Organisasi',
-            'is_super_admin': org is None,
+            'is_super_admin': admin.is_super_admin if admin else False,
             'count': students.count(),
             'students': serializer.data,
         })
@@ -142,12 +144,11 @@ class PartnerStudentDetailView(PartnerAdminMixin, APIView):
     """GET /api/v1/admin/students/<user_id>/ - Student detail."""
 
     def get(self, request, user_id):
-        profile = self.get_admin_profile(request)
-        if not profile:
+        admin = self.get_admin(request)
+        if not admin:
             return Response({'error': 'Not a partner admin'}, status=403)
 
-        if profile.admin_org_code == '*':
-            # Super admin can view any student
+        if admin.is_super_admin:
             try:
                 student = StudentProfile.objects.get(supabase_user_id=user_id)
             except StudentProfile.DoesNotExist:
@@ -187,3 +188,86 @@ class PartnerStudentExportView(PartnerAdminMixin, APIView):
             ])
 
         return response
+
+
+class AdminInviteView(PartnerAdminMixin, APIView):
+    """POST /api/v1/admin/invite/ - Invite a partner admin (super admin only)."""
+
+    def post(self, request):
+        admin = self.get_admin(request)
+        if not admin or not admin.is_super_admin:
+            return Response({'error': 'Super admin access required'}, status=403)
+
+        email = request.data.get('email', '').strip().lower()
+        name = request.data.get('name', '').strip()
+        org_id = request.data.get('org_id')
+        new_org_name = request.data.get('new_org_name', '').strip()
+        new_org_code = request.data.get('new_org_code', '').strip().lower()
+
+        if not email or not name:
+            return Response({'error': 'email and name are required'}, status=400)
+
+        if PartnerAdmin.objects.filter(email=email).exists():
+            return Response({'error': 'Admin with this email already exists'}, status=409)
+
+        org = None
+        if new_org_name and new_org_code:
+            org, _ = PartnerOrganisation.objects.get_or_create(
+                code=new_org_code,
+                defaults={
+                    'name': new_org_name,
+                    'contact_person': request.data.get('contact_person', ''),
+                    'phone': request.data.get('org_phone', ''),
+                },
+            )
+        elif org_id:
+            try:
+                org = PartnerOrganisation.objects.get(id=org_id)
+            except PartnerOrganisation.DoesNotExist:
+                return Response({'error': 'Organisation not found'}, status=404)
+
+        service_role_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '')
+        supabase_url = getattr(settings, 'SUPABASE_URL', '')
+
+        if not service_role_key or not supabase_url:
+            return Response({'error': 'Supabase service role key not configured'}, status=500)
+
+        import requests as http_requests
+        invite_resp = http_requests.post(
+            f'{supabase_url}/auth/v1/invite',
+            json={'email': email},
+            headers={
+                'apikey': service_role_key,
+                'Authorization': f'Bearer {service_role_key}',
+                'Content-Type': 'application/json',
+            },
+        )
+
+        if invite_resp.status_code not in (200, 201):
+            logger.error(f"Supabase invite failed: {invite_resp.status_code} {invite_resp.text}")
+            return Response({'error': 'Failed to send invite email'}, status=502)
+
+        PartnerAdmin.objects.create(
+            email=email,
+            name=name,
+            org=org,
+        )
+
+        return Response({
+            'message': f'Invite sent to {email}',
+            'org': org.name if org else None,
+        }, status=201)
+
+
+class AdminOrgsView(PartnerAdminMixin, APIView):
+    """GET /api/v1/admin/orgs/ - List organisations for invite dropdown."""
+
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin or not admin.is_super_admin:
+            return Response({'error': 'Super admin access required'}, status=403)
+
+        orgs = PartnerOrganisation.objects.filter(is_active=True).values(
+            'id', 'code', 'name', 'contact_person', 'phone',
+        )
+        return Response({'orgs': list(orgs)})

@@ -102,6 +102,7 @@ REST_FRAMEWORK = {
 # Supabase Auth settings
 SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
 SUPABASE_JWT_SECRET = os.environ.get('SUPABASE_JWT_SECRET', '')
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
 
 # Gemini API for AI reports
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')

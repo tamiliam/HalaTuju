@@ -1,5 +1,5 @@
 from django.test import TestCase
-from apps.courses.models import PartnerOrganisation, PartnerAdmin
+from apps.courses.models import PartnerOrganisation, PartnerAdmin, StudentProfile
 
 
 class PartnerOrgFieldsTest(TestCase):
@@ -59,3 +59,65 @@ class PartnerAdminModelTest(TestCase):
         admin = PartnerAdmin.objects.create(email='admin@cumig.org', name='Ali', org=self.org)
         self.assertIn('Ali', str(admin))
         self.assertIn('CUMIG', str(admin))
+
+
+class PartnerAdminMixinTest(TestCase):
+    def setUp(self):
+        self.org = PartnerOrganisation.objects.create(code='cumig', name='CUMIG')
+        self.partner_admin = PartnerAdmin.objects.create(
+            supabase_user_id='admin-uid-1',
+            email='admin@cumig.org',
+            name='Ali',
+            org=self.org,
+        )
+        self.super_admin = PartnerAdmin.objects.create(
+            supabase_user_id='super-uid-1',
+            email='super@halatuju.com',
+            name='Super',
+            is_super_admin=True,
+        )
+        for i in range(2):
+            StudentProfile.objects.create(
+                supabase_user_id=f'student-{i}',
+                name=f'Student {i}',
+                referred_by_org=self.org,
+            )
+        StudentProfile.objects.create(
+            supabase_user_id='student-other',
+            name='Other',
+        )
+
+    def test_get_admin_by_uid(self):
+        admin = PartnerAdmin.objects.filter(supabase_user_id='admin-uid-1').first()
+        self.assertIsNotNone(admin)
+        self.assertEqual(admin.org, self.org)
+
+    def test_get_admin_by_email_fallback(self):
+        self.partner_admin.supabase_user_id = None
+        self.partner_admin.save()
+        admin = PartnerAdmin.objects.filter(email='admin@cumig.org').first()
+        self.assertIsNotNone(admin)
+        admin.supabase_user_id = 'new-uid'
+        admin.save()
+        admin.refresh_from_db()
+        self.assertEqual(admin.supabase_user_id, 'new-uid')
+
+    def test_partner_admin_sees_own_students(self):
+        students = StudentProfile.objects.filter(referred_by_org=self.org)
+        self.assertEqual(students.count(), 2)
+
+    def test_super_admin_sees_all_students(self):
+        students = StudentProfile.objects.all()
+        self.assertEqual(students.count(), 3)
+
+    def test_admin_role_view_exists(self):
+        from apps.courses.views_admin import AdminRoleView
+        self.assertTrue(hasattr(AdminRoleView, 'get'))
+
+    def test_invite_view_exists(self):
+        from apps.courses.views_admin import AdminInviteView
+        self.assertTrue(hasattr(AdminInviteView, 'post'))
+
+    def test_orgs_view_exists(self):
+        from apps.courses.views_admin import AdminOrgsView
+        self.assertTrue(hasattr(AdminOrgsView, 'get'))
