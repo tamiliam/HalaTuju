@@ -1282,9 +1282,9 @@ class StpmCourseDetailView(APIView):
 
     def get(self, request, course_id):
         try:
-            prog = StpmCourse.objects.select_related('requirement', 'institution').get(
-                course_id=course_id
-            )
+            prog = StpmCourse.objects.select_related('requirement', 'institution').prefetch_related(
+                'career_occupations'
+            ).get(course_id=course_id)
         except StpmCourse.DoesNotExist:
             return Response(
                 {'error': 'Course not found'},
@@ -1350,6 +1350,9 @@ class StpmCourseDetailView(APIView):
             'mohe_url': prog.mohe_url or '',
             'requirements': requirements,
             'institution': institution_data,
+            'career_occupations': MascoOccupationSerializer(
+                prog.career_occupations.all(), many=True
+            ).data,
         })
 
 

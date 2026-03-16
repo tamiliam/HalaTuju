@@ -1,5 +1,8 @@
 import pytest
+from django.test import TestCase
 from rest_framework.test import APIClient
+
+from apps.courses.models import FieldTaxonomy, MascoOccupation, StpmCourse, StpmRequirement
 
 
 @pytest.mark.django_db
@@ -124,3 +127,53 @@ class TestStpmRankingAPI:
         body = response.json()
         assert body['ranked_courses'] == []
         assert body['total'] == 0
+
+
+@pytest.mark.django_db
+class TestStpmCourseDetailCareerOccupations(TestCase):
+    """Test career_occupations in STPM course detail endpoint."""
+
+    def setUp(self):
+        self.field, _ = FieldTaxonomy.objects.get_or_create(
+            key='it', defaults={
+                'name_en': 'IT & Digital', 'name_ms': 'IT & Digital',
+                'name_ta': 'IT & Digital', 'image_slug': 'it', 'sort_order': 1,
+            })
+        self.course = StpmCourse.objects.create(
+            course_id='stpm-test-career',
+            course_name='Ijazah Sarjana Muda Sains Komputer',
+            university='Universiti Malaya',
+            field_key=self.field,
+        )
+        StpmRequirement.objects.create(course=self.course)
+        self.occ = MascoOccupation.objects.create(
+            masco_code='2512-03',
+            job_title='Jurutera Perisian',
+            emasco_url='https://emasco.mohr.gov.my/masco/2512-03',
+        )
+        self.course.career_occupations.add(self.occ)
+
+    def test_career_occupations_included(self):
+        resp = self.client.get(f'/api/v1/stpm/courses/{self.course.course_id}/')
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn('career_occupations', data)
+        self.assertEqual(len(data['career_occupations']), 1)
+
+    def test_career_occupation_fields(self):
+        resp = self.client.get(f'/api/v1/stpm/courses/{self.course.course_id}/')
+        occ = resp.json()['career_occupations'][0]
+        self.assertEqual(occ['masco_code'], '2512-03')
+        self.assertEqual(occ['job_title'], 'Jurutera Perisian')
+        self.assertIn('emasco_url', occ)
+
+    def test_empty_career_occupations(self):
+        course2 = StpmCourse.objects.create(
+            course_id='stpm-test-empty',
+            course_name='Test Empty',
+            university='UM',
+            field_key=self.field,
+        )
+        StpmRequirement.objects.create(course=course2)
+        resp = self.client.get(f'/api/v1/stpm/courses/{course2.course_id}/')
+        self.assertEqual(resp.json()['career_occupations'], [])
