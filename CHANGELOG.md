@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Field Taxonomy Sprint 5: Cleanup & Legacy Removal (2026-03-16)
+
+### Changed
+- **`field_key` non-nullable** — both `Course` and `StpmCourse` now require `field_key` (was nullable); all 1,503 courses already populated
+- **Frontend field fallbacks** — all `course.field` references replaced with `getFieldName(course.field_key)` from taxonomy hook (detail pages, saved page, CourseCard)
+- **Search API** — removed `?field=` fallback from frontend; only `field_key` sent
+
+### Removed
+- `frontend_label` column from `Course` model (migration 0028)
+- `category` column from `StpmCourse` model (migration 0029)
+- `frontend_label` from `CourseSerializer` output and TypeScript `Course` type
+- `field` from `SearchParams` TypeScript type
+
+### Tests
+- Total: 530 backend + 17 frontend, 0 failures
+- Golden masters: SPM=5319, STPM=1811 (unchanged)
+
 ## [Unreleased] — Field Taxonomy Sprint 4: Frontend Integration (2026-03-16)
 
 ### Changed

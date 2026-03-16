@@ -215,17 +215,15 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Field Taxonomy Sprint 4 COMPLETE (2026-03-16)**
-- CourseCard images from taxonomy `image_slug` (replaced 150-line `getImageSlug()` keyword matcher)
-- Search field filter uses `/api/v1/fields/` with trilingual labels + `field_key` filter
-- `useFieldTaxonomy` hook (module-level cache, provides `getImageUrl`/`getFieldName`)
-- `field_key` added to all frontend course types
-- 2 new backend tests (546 total)
+**Field Taxonomy Sprint 5 COMPLETE (2026-03-16)** — Final sprint
+- `field_key` non-nullable on Course + StpmCourse (migration 0027)
+- `frontend_label` removed from Course model (migration 0028)
+- `category` removed from StpmCourse model (migration 0029)
+- All frontend `course.field` fallbacks replaced with `getFieldName(field_key)`
+- `frontend_label` removed from serializer + TS types
+- Field taxonomy series DONE (5 sprints, 37 fields, unified across SPM+STPM)
 
-**Current state:** 546 backend tests, 17 frontend tests, 0 failures. 49/52 tech debt.
-
-**Field Taxonomy Remaining Sprints**
-- Sprint 5: Cleanup (make field_key non-nullable, remove legacy fields, new images)
+**Current state:** 530 backend tests, 17 frontend tests, 0 failures. 49/52 tech debt.
 
 **Remaining tech debt (3 items)**
 - TD-024: Course name field is `course` (too risky to rename)
