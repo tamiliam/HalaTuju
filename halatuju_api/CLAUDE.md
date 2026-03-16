@@ -176,7 +176,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-556 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
+568 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -223,11 +223,16 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Shared `CareerPathways` component extracted, used by both SPM + STPM detail pages
 - Data file: `halatuju_api/data/masco_full.csv` (4,854 jobs, all MASCO 2020 digits 0-9)
 
-**Current state:** 556 backend tests, 17 frontend tests, 0 failures. 49/52 tech debt.
+**MASCO Career Mappings Sprint B COMPLETE (2026-03-16)**
+- `FIELD_KEY_TO_MASCO` mapping: 31 field_keys → MASCO 2-digit groups
+- `filter_masco_by_field_key()` helper for pre-filtering
+- `map_course_careers` command: Gemini-assisted generate + apply modes
+- 12 new tests
 
-**MASCO Career Mappings — Next Sprints**
-- Sprint B: AI mapping pipeline (field_key→MASCO digit map, Gemini matcher, review CSV)
-- Sprint C: Review + apply mappings for all ~1,275 courses (89 UA, 73 PISMP, 1,113 STPM)
+**Current state:** 568 backend tests, 17 frontend tests, 0 failures. 49/52 tech debt.
+
+**MASCO Career Mappings — Next Sprint**
+- Sprint C: Run the pipeline — load MASCO data, generate mappings for UA/PISMP/STPM, review, apply
 
 **Remaining tech debt (3 items)**
 - TD-024: Course name field is `course` (too risky to rename)

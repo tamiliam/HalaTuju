@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — MASCO Career Mappings Sprint B: AI Mapping Pipeline (2026-03-16)
+
+### Added
+- **FIELD_KEY_TO_MASCO mapping**: Deterministic mapping from 31 field_keys to MASCO 2-digit occupation groups for pre-filtering
+- **filter_masco_by_field_key**: Filters 4,854 MASCO jobs to ~200-400 relevant jobs per field
+- **map_course_careers command**: AI-assisted career mapping pipeline
+  - Generate mode (`--output`): iterates unmapped courses, calls Gemini, outputs review CSV
+  - Apply mode (`--apply`): reads reviewed CSV, writes M2M links to DB
+  - Supports both SPM (`--source-type`) and STPM (`--stpm`) courses
+  - Rate limiting (`--delay`), batch size (`--limit`), Gemini model cascade
+
+### Tests
+- 12 new tests (5 mapping, 3 filter, 2 generate, 2 apply)
+- Total: 568 backend + 17 frontend, 0 failures
+- Golden masters: SPM=5319, STPM=1811 (unchanged)
+
 ## [Unreleased] — MASCO Career Mappings Sprint A: Backend Foundation (2026-03-16)
 
 ### Added
