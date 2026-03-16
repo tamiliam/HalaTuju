@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — STPM Requirements Pipeline Rebuild Sprint 3: Validator + Workflow (2026-03-17)
+
+### Added
+- **Validator tool** (`Settings/_tools/stpm_requirements/validate_stpm_requirements.py`): 6 automated quality checks — completeness, subject key validity (validates against canonical key sets), grade validity, count sanity, cross-reference with source CSV, sample audit against raw HTML
+- **Reusable workflow** (`Settings/_workflows/stpm-requirements-update.md`): Annual STPM requirements refresh SOP covering all 5 pipeline stages with checkpoints and failure modes
+
+### Fixed
+- Validator subject key check now catches invalid keys beyond `UNKNOWN:` prefix (validates against `VALID_STPM_KEYS`/`VALID_SPM_KEYS` sets)
+- Validator handles `stpm_named_subjects` as list of dicts (real data format), not just list of strings
+- Validator CSV cross-reference gracefully handles missing files instead of crashing
+- Validator sample audit uses isolated PRNG (`random.Random(42)`) instead of global seed
+
+### Tests
+- 49 new validator tests (248 total pipeline tool tests)
+- 590 backend tests, 17 frontend tests, 0 failures
+- Golden masters: SPM=5319, STPM=2103
+
 ## [Unreleased] — STPM Requirements Pipeline Rebuild Sprint 2: Backend Integration (2026-03-16)
 
 ### Added

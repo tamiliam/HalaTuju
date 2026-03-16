@@ -215,25 +215,16 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**STPM Requirements Pipeline Rebuild Sprint 2 COMPLETE (2026-03-16)**
-- Fixture converter (`stpm_json_to_fixture.py`): JSON → Django fixture with null-safety
-- 4 new boolean fields on StpmRequirement (`req_male`, `req_female`, `single`, `no_disability`)
-- List-aware engine: `check_stpm_subject_group()` + `check_spm_prerequisites()` handle multi-tier groups
-- Exclusion list + demographic eligibility checks in engine
-- 1,113 courses loaded via new pipeline, STPM golden master 1811 → 2103
-- Pipeline tool tests: 199 passing (in `Settings/_tools/stpm_requirements/tests/`)
+**STPM Requirements Pipeline Sprint 3 COMPLETE (2026-03-17)**
+- Validator tool (`validate_stpm_requirements.py`): 6 automated checks, validates against canonical key sets, handles dict-format named subjects
+- Reusable workflow (`Settings/_workflows/stpm-requirements-update.md`): 5-stage SOP with checkpoints and failure modes
+- Pipeline tool tests: 248 passing (in `Settings/_tools/stpm_requirements/tests/`)
+- Real-data validation: 0 unknown subjects, 3 PASS + 2 known FAIL (legacy grade E, empty UP6640001)
 
 **Current state:** 590 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2103.
 
-**STPM Requirements Pipeline — Next Sprint (Sprint 3)**
-- Build Stage 3 validator tool (`validate_stpm_requirements.py`)
-- Write reusable workflow doc (`Settings/_workflows/stpm-requirements-update.md`)
-
-**MASCO Career Mappings Sprint C COMPLETE (2026-03-16)**
-- 6 missing field_key→MASCO mappings added (bahasa, kejururawatan, komunikasi, pergigian, sains-data, sains-fizikal)
-- Gemini AI pipeline: 89 UA + 73 PISMP + 951 STPM = 1,113 courses mapped
-- 3,338 new M2M rows applied to Supabase (courses_career_occupations: 529→1014, stpm_courses_career_occupations: 0→2853)
-- Standalone script: `scripts/gemini_map_careers.py`
+**STPM Requirements Pipeline — Next Sprint (Sprint 5)**
+- Build Playwright-based MOHE scraper (`scrape_stpm_requirements.py`) for next year's data refresh
 
 **Pending work**
 - Phone/OTP login (blocked — Twilio ~RM12/mo)
