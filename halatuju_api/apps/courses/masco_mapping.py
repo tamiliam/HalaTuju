@@ -48,6 +48,18 @@ FIELD_KEY_TO_MASCO: dict[str, list[str]] = {
     'sains-sosial': ['24', '28', '36'],
     'undang-undang': ['26', '34'],
     'pengajian-islam': ['23', '28'],
+    # Languages
+    'bahasa': ['23', '28', '36'],
+    # Nursing
+    'kejururawatan': ['22', '32'],
+    # Communications & Media
+    'komunikasi': ['28', '24', '36'],
+    # Dentistry
+    'pergigian': ['22', '32'],
+    # Data Science
+    'sains-data': ['25', '21', '35'],
+    # Physical Sciences (physics, chemistry, math)
+    'sains-fizikal': ['21', '31'],
     # General catch-all
     'umum': ['24', '33', '28'],
 }
