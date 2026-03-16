@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — MASCO Career Mappings Sprint A: Backend Foundation (2026-03-16)
+
+### Added
+- **Full MASCO 2020 dataset**: `load_masco_full` management command loads 4,854 occupations from CSV with auto-generated eMASCO URLs (`https://emasco.mohr.gov.my/masco/{code}`)
+- **StpmCourse.career_occupations**: New M2M field mirrors SPM `Course` model — STPM degree courses can now link to MASCO job codes
+- **STPM detail API**: Now returns `career_occupations` array (same shape as SPM detail)
+- **CareerPathways component**: Extracted from SPM detail page into shared component used by both SPM and STPM course detail pages; jobs with `emasco_url` are clickable, without are plain tags; hidden when empty
+
+### Tests
+- 10 new tests (4 data loading, 3 model, 3 API)
+- Total: 556 backend + 17 frontend, 0 failures
+- Golden masters: SPM=5319, STPM=1811 (unchanged — no eligibility/ranking changes)
+
 ## [Unreleased] — Field Taxonomy Sprint 5: Cleanup & Legacy Removal (2026-03-16)
 
 ### Changed
