@@ -2,6 +2,22 @@ from django.test import TestCase
 from apps.courses.models import PartnerOrganisation, PartnerAdmin
 
 
+class PartnerOrgFieldsTest(TestCase):
+    def test_contact_fields(self):
+        org = PartnerOrganisation.objects.create(
+            code='cumig', name='CUMIG',
+            contact_person='Encik Ali',
+            phone='012-3456789',
+        )
+        self.assertEqual(org.contact_person, 'Encik Ali')
+        self.assertEqual(org.phone, '012-3456789')
+
+    def test_contact_fields_optional(self):
+        org = PartnerOrganisation.objects.create(code='cumig', name='CUMIG')
+        self.assertEqual(org.contact_person, '')
+        self.assertEqual(org.phone, '')
+
+
 class PartnerAdminModelTest(TestCase):
     def setUp(self):
         self.org = PartnerOrganisation.objects.create(code='cumig', name='CUMIG')

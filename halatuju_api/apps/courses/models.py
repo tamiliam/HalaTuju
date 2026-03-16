@@ -379,6 +379,8 @@ class PartnerOrganisation(models.Model):
     code = models.CharField(max_length=50, unique=True, help_text='URL slug: cumig, partner2')
     name = models.CharField(max_length=200)
     contact_email = models.EmailField(blank=True)
+    contact_person = models.CharField(max_length=200, blank=True, default='')
+    phone = models.CharField(max_length=30, blank=True, default='')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -496,11 +498,6 @@ class StudentProfile(models.Model):
         'PartnerOrganisation', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='referred_students',
     )
-    admin_org_code = models.CharField(
-        max_length=50, blank=True, default='',
-        help_text='If set, this user is an admin for the given partner org code',
-    )
-
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
