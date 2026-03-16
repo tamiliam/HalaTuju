@@ -89,3 +89,50 @@ export async function getPartnerStudent(userId: string, options?: ApiOptions) {
 export function getExportUrl() {
   return `${API_BASE}/api/v1/admin/students/export/`
 }
+
+// ── Invite / Orgs ───────────────────────────────────────────────────
+
+export interface OrgItem {
+  id: number
+  code: string
+  name: string
+  contact_person: string
+  phone: string
+}
+
+export async function getOrgs(options?: ApiOptions) {
+  return adminFetch<{ orgs: OrgItem[] }>('/api/v1/admin/orgs/', options)
+}
+
+export async function inviteAdmin(
+  data: {
+    email: string
+    name: string
+    org_id?: number
+    new_org_name?: string
+    new_org_code?: string
+    contact_person?: string
+    org_phone?: string
+  },
+  options?: ApiOptions
+) {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (options?.token) {
+    headers['Authorization'] = `Bearer ${options.token}`
+  }
+
+  const res = await fetch(`${API_BASE}/api/v1/admin/invite/`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `Invite failed: ${res.status}`)
+  }
+
+  return res.json()
+}

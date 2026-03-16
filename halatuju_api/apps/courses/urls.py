@@ -4,7 +4,8 @@ URL patterns for the courses app.
 from django.urls import path
 from . import views
 from .views_admin import (
-    AdminRoleView, PartnerDashboardView, PartnerStudentListView,
+    AdminRoleView, AdminInviteView, AdminOrgsView,
+    PartnerDashboardView, PartnerStudentListView,
     PartnerStudentDetailView, PartnerStudentExportView,
 )
 
@@ -15,6 +16,8 @@ urlpatterns = [
     path('admin/students/', PartnerStudentListView.as_view(), name='partner-students'),
     path('admin/students/export/', PartnerStudentExportView.as_view(), name='partner-export'),
     path('admin/students/<str:user_id>/', PartnerStudentDetailView.as_view(), name='partner-student-detail'),
+    path('admin/invite/', AdminInviteView.as_view(), name='admin-invite'),
+    path('admin/orgs/', AdminOrgsView.as_view(), name='admin-orgs'),
 
     # Eligibility check (main engine endpoint)
     path('eligibility/check/', views.EligibilityCheckView.as_view(), name='eligibility-check'),

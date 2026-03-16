@@ -105,11 +105,6 @@ class ReferralResolutionTest(TestCase):
 class PartnerAdminModelTest(TestCase):
     def setUp(self):
         self.partner = PartnerOrganisation.objects.create(code='cumig', name='CUMIG')
-        self.admin = StudentProfile.objects.create(
-            supabase_user_id='admin-1',
-            name='Admin User',
-            admin_org_code='cumig',
-        )
         for i in range(3):
             StudentProfile.objects.create(
                 supabase_user_id=f'student-{i}',
@@ -133,10 +128,6 @@ class PartnerAdminModelTest(TestCase):
         students = StudentProfile.objects.filter(referred_by_org=self.partner)
         user_ids = list(students.values_list('supabase_user_id', flat=True))
         self.assertNotIn('student-other', user_ids)
-
-    def test_admin_org_code_resolves(self):
-        org = PartnerOrganisation.objects.get(code=self.admin.admin_org_code, is_active=True)
-        self.assertEqual(org, self.partner)
 
     def test_views_exist(self):
         from apps.courses.views_admin import (
