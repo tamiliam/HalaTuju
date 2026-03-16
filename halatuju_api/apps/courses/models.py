@@ -464,6 +464,14 @@ class StudentProfile(models.Model):
         default=dict, blank=True,
         help_text="SPM prerequisite grades for STPM students: {'bm': 'A', 'eng': 'B+', ...}"
     )
+    referral_source = models.CharField(
+        max_length=50, blank=True, null=True,
+        help_text='Raw referral code or chip value (e.g. cumig, whatsapp, google)',
+    )
+    referred_by_org = models.ForeignKey(
+        'PartnerOrganisation', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='referred_students',
+    )
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
