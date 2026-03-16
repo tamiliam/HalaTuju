@@ -13,6 +13,7 @@ Endpoints:
 import csv
 import logging
 from collections import Counter
+import requests as http_requests
 from django.conf import settings
 from django.http import HttpResponse
 from rest_framework.views import APIView
@@ -57,19 +58,19 @@ class PartnerAdminMixin:
     def get_partner_students(self, request):
         admin = self.get_admin(request)
         if not admin:
-            return None, None
+            return None, None, None
 
         if admin.is_super_admin:
             students = StudentProfile.objects.all().order_by('-created_at')
-            return students, None
+            return students, None, admin
 
         if not admin.org:
-            return None, None
+            return None, None, None
 
         students = StudentProfile.objects.filter(
             referred_by_org=admin.org,
         ).order_by('-created_at')
-        return students, admin.org
+        return students, admin.org, admin
 
 
 class AdminRoleView(PartnerAdminMixin, APIView):
@@ -91,7 +92,7 @@ class PartnerDashboardView(PartnerAdminMixin, APIView):
     """GET /api/v1/admin/dashboard/ - Partner dashboard statistics."""
 
     def get(self, request):
-        students, org = self.get_partner_students(request)
+        students, org, admin = self.get_partner_students(request)
         if students is None:
             return Response({'error': 'Not a partner admin'}, status=403)
 
@@ -111,10 +112,9 @@ class PartnerDashboardView(PartnerAdminMixin, APIView):
                     field_counter[field] += 1
         top_fields = [{'field': f, 'count': c} for f, c in field_counter.most_common(5)]
 
-        admin = self.get_admin(request)
         return Response({
             'org_name': org.name if org else 'Semua Organisasi',
-            'is_super_admin': admin.is_super_admin if admin else False,
+            'is_super_admin': admin.is_super_admin,
             'total_students': total,
             'completed_onboarding': completed,
             'by_exam_type': by_exam,
@@ -126,15 +126,14 @@ class PartnerStudentListView(PartnerAdminMixin, APIView):
     """GET /api/v1/admin/students/ - List referred students."""
 
     def get(self, request):
-        students, org = self.get_partner_students(request)
+        students, org, admin = self.get_partner_students(request)
         if students is None:
             return Response({'error': 'Not a partner admin'}, status=403)
 
-        admin = self.get_admin(request)
         serializer = PartnerStudentListSerializer(students, many=True)
         return Response({
             'org_name': org.name if org else 'Semua Organisasi',
-            'is_super_admin': admin.is_super_admin if admin else False,
+            'is_super_admin': admin.is_super_admin,
             'count': students.count(),
             'students': serializer.data,
         })
@@ -154,7 +153,7 @@ class PartnerStudentDetailView(PartnerAdminMixin, APIView):
             except StudentProfile.DoesNotExist:
                 return Response({'error': 'Student not found'}, status=404)
         else:
-            students, org = self.get_partner_students(request)
+            students, org, _ = self.get_partner_students(request)
             if students is None:
                 return Response({'error': 'Not a partner admin'}, status=403)
             try:
@@ -170,7 +169,7 @@ class PartnerStudentExportView(PartnerAdminMixin, APIView):
     """GET /api/v1/admin/students/export/ - CSV export of referred students."""
 
     def get(self, request):
-        students, org = self.get_partner_students(request)
+        students, org, _ = self.get_partner_students(request)
         if students is None:
             return Response({'error': 'Not a partner admin'}, status=403)
 
@@ -232,7 +231,6 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         if not service_role_key or not supabase_url:
             return Response({'error': 'Supabase service role key not configured'}, status=500)
 
-        import requests as http_requests
         invite_resp = http_requests.post(
             f'{supabase_url}/auth/v1/invite',
             json={'email': email},
