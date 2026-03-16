@@ -20,8 +20,8 @@ class FieldTaxonomyAdmin(admin.ModelAdmin):
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ['course_id', 'course', 'level', 'field', 'frontend_label', 'field_key']
-    list_filter = ['level', 'frontend_label', 'field_key', 'wbl']
+    list_display = ['course_id', 'course', 'level', 'field', 'field_key']
+    list_filter = ['level', 'field_key', 'wbl']
     search_fields = ['course_id', 'course', 'department', 'field']
     ordering = ['course_id']
 

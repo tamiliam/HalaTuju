@@ -54,11 +54,9 @@ class Course(models.Model):
     level = models.CharField(max_length=50, help_text="Diploma, Sijil, Asasi, etc.")
     department = models.CharField(max_length=100)
     field = models.CharField(max_length=100)
-    frontend_label = models.CharField(max_length=100, help_text="UI category label")
     semesters = models.IntegerField(null=True, blank=True)
     field_key = models.ForeignKey(
         FieldTaxonomy, on_delete=models.PROTECT,
-        null=True, blank=True,
         related_name='courses',
         help_text="Canonical field classification"
     )
@@ -597,10 +595,8 @@ class StpmCourse(models.Model):
     )
     merit_score = models.FloatField(null=True, blank=True, help_text='UPU average merit percentage (0-100)')
     field = models.CharField(max_length=255, blank=True, default='', help_text='AI-assigned field category')
-    category = models.CharField(max_length=255, blank=True, default='', help_text='AI-assigned category (Malay)')
     field_key = models.ForeignKey(
         FieldTaxonomy, on_delete=models.PROTECT,
-        null=True, blank=True,
         related_name='stpm_courses',
         help_text="Canonical field classification"
     )

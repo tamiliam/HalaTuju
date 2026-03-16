@@ -464,6 +464,7 @@ class TestCourseDetailOfferings(TestCase):
             level='Diploma',
             department='Engineering',
             field='Mechanical Engineering',
+            field_key_id='mekanikal',
             semesters=6,
         )
         # Create test institution
@@ -528,6 +529,7 @@ class TestCourseDetailOfferings(TestCase):
         course2 = Course.objects.create(
             course_id='TEST-DIP-002', course='Test Diploma 2',
             level='Diploma', department='IT', field='IT',
+            field_key_id='it-perisian',
         )
         inst2 = Institution.objects.create(
             institution_id='TEST-INST-002',
@@ -559,6 +561,7 @@ class TestCourseDetailCareerOccupations(TestCase):
             level='Diploma',
             department='IT',
             field='Software Engineering',
+            field_key_id='it-perisian',
         )
         self.occ1 = MascoOccupation.objects.create(
             masco_code='2512-03',
@@ -596,6 +599,7 @@ class TestCourseDetailCareerOccupations(TestCase):
             course_id='TEST-DIP-NOCAREER',
             course='Test Diploma No Career',
             level='Diploma', department='Art', field='Art',
+            field_key_id='umum',
         )
         response = self.client.get(f'/api/v1/courses/{course2.course_id}/')
         data = response.json()
@@ -615,6 +619,7 @@ class TestCourseDetailBilingualDescriptions(TestCase):
             level='Diploma',
             department='Kejuruteraan',
             field='Mekanikal',
+            field_key_id='mekanikal',
             headline='Bina mesin, bina masa depan!',
             headline_en='Build machines, build your future!',
             description='Program ini melatih jurutera mekanikal yang mahir.',
@@ -645,6 +650,7 @@ class TestCourseDetailBilingualDescriptions(TestCase):
             level='Sijil',
             department='Test',
             field='Test',
+            field_key_id='umum',
         )
         response = self.client.get(f'/api/v1/courses/{bare_course.course_id}/')
         data = response.json()
@@ -717,7 +723,6 @@ class TestCourseSearchEndpoint(TestCase):
             level='Diploma',
             department='Engineering',
             field='Mechanical',
-            frontend_label='Mekanikal & Pembuatan',
             field_key_id='mekanikal',
         )
         CourseRequirement.objects.create(
@@ -732,7 +737,6 @@ class TestCourseSearchEndpoint(TestCase):
             level='Sijil',
             department='IT',
             field='IT',
-            frontend_label='Teknologi Maklumat',
             field_key_id='it-perisian',
         )
         CourseRequirement.objects.create(
@@ -746,7 +750,7 @@ class TestCourseSearchEndpoint(TestCase):
             level='Asasi',
             department='Science',
             field='Science',
-            frontend_label='Sains',
+            field_key_id='sains-hayat',
         )
         CourseRequirement.objects.create(
             course=cls.course3,
@@ -925,7 +929,7 @@ class TestUnifiedSearchEndpoint(TestCase):
             level='Diploma',
             department='Engineering',
             field='Mechanical',
-            frontend_label='Mekanikal & Pembuatan',
+            field_key_id='mekanikal',
         )
         CourseRequirement.objects.create(
             course=cls.spm_course,
@@ -948,6 +952,7 @@ class TestUnifiedSearchEndpoint(TestCase):
             stream='science',
             merit_score=85.0,
             field='Mekanikal & Pembuatan',
+            field_key_id='mekanikal',
         )
         StpmRequirement.objects.create(
             course=cls.stpm_course,
@@ -961,6 +966,7 @@ class TestUnifiedSearchEndpoint(TestCase):
             university='UiTM',
             stream='arts',
             field='Seni Bina',
+            field_key_id='senibina',
         )
         StpmRequirement.objects.create(
             course=cls.stpm_bumi,
@@ -1041,9 +1047,9 @@ class TestUnifiedSearchEndpoint(TestCase):
         qualifications = {c['qualification'] for c in response.data['courses']}
         self.assertEqual(qualifications, {'SPM', 'STPM'})
 
-    def test_search_field_filter_works_for_stpm(self):
-        """Field filter works for STPM courses."""
-        response = self.client.get(self.url, {'field': 'Mekanikal & Pembuatan'})
+    def test_search_field_key_filter_works_for_both(self):
+        """field_key filter works for both SPM and STPM courses."""
+        response = self.client.get(self.url, {'field_key': 'mekanikal'})
         self.assertEqual(response.status_code, 200)
         course_ids = [c['course_id'] for c in response.data['courses']]
         self.assertIn('UNI-STPM-001', course_ids)

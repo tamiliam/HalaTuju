@@ -58,7 +58,7 @@ class TestSavedCourseSPM(TestCase):
             level='Diploma',
             department='Engineering',
             field='Mekanikal & Automotif',
-            frontend_label='Mekanikal & Automotif',
+            field_key_id='mekanikal',
         )
         _setup_auth(self)
 
@@ -133,7 +133,7 @@ class TestSavedCourseSTPM(TestCase):
             level='Diploma',
             department='Engineering',
             field='Mekanikal',
-            frontend_label='Mekanikal',
+            field_key_id='mekanikal',
         )
         self.stpm_course = StpmCourse.objects.create(
             course_id='stpm-sains-001',
@@ -141,6 +141,7 @@ class TestSavedCourseSTPM(TestCase):
             university='Universiti Malaya',
             stream='science',
             field='Computer Science',
+            field_key_id='it-perisian',
         )
         _setup_auth(self)
 
@@ -265,10 +266,12 @@ class TestSavedCourseConstraint(TestCase):
         profile = StudentProfile.objects.create(supabase_user_id='constraint-test-2')
         course = Course.objects.create(
             course_id='CONST-SPM', course='Test', level='Diploma',
+            field_key_id='umum',
         )
         stpm = StpmCourse.objects.create(
             course_id='stpm-const-001', course_name='Test STPM',
             university='UM', stream='science',
+            field_key_id='umum',
         )
         with self.assertRaises(IntegrityError):
             SavedCourse.objects.create(

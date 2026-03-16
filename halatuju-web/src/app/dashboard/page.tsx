@@ -594,7 +594,7 @@ function StpmDashboardCards({
         course_id: prog.course_id,
         course_name: prog.course_name,
         level: 'Ijazah Sarjana Muda',
-        field: prog.field || '',
+        field: '', // Legacy — CourseCard uses field_key via useFieldTaxonomy
         field_key: prog.field_key || '',
         source_type: 'ua',
         qualification: 'STPM' as const,

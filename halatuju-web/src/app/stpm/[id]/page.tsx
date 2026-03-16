@@ -10,12 +10,14 @@ import CourseHeader from '@/components/CourseHeader'
 import SpecialConditions from '@/components/SpecialConditions'
 import { LoadingSpinner, CourseNotFound, InfoRow, CourseActions } from '@/components/CourseDetailShared'
 import { useT } from '@/lib/i18n'
+import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import { useState, useCallback } from 'react'
 
 export default function StpmCourseDetailPage() {
   const params = useParams()
   const id = params.id as string
-  const { t } = useT()
+  const { t, locale } = useT()
+  const { getFieldName } = useFieldTaxonomy(locale)
   const { savedIds, toggleSave } = useSavedCourses()
   const isSaved = savedIds.has(id)
   const [isHovering, setIsHovering] = useState(false)
@@ -138,7 +140,7 @@ export default function StpmCourseDetailPage() {
               </h2>
               <div className="space-y-4">
                 <InfoRow label="Level" value="Ijazah Sarjana Muda" />
-                {data.field && <InfoRow label="Field" value={data.field} />}
+                {(data.field_key || data.field) && <InfoRow label="Field" value={getFieldName(data.field_key) || data.field} />}
                 {data.category && <InfoRow label="Category" value={data.category} />}
                 <InfoRow label="Stream" value={streamLabel} />
                 {data.merit_score != null && (

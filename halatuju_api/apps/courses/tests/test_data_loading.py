@@ -19,6 +19,7 @@ class TestTvetCourseMetadata(TestCase):
         self.course = Course.objects.create(
             course_id='IKBN-DIP-TEST',
             course='IKBN-DIP-TEST',  # Name defaults to ID when no 'course' col
+            field_key_id='umum',
         )
         CourseRequirement.objects.create(
             course=self.course,
@@ -42,7 +43,6 @@ class TestTvetCourseMetadata(TestCase):
             level='Diploma',
             department='Elektrik & Elektronik',
             field='Elektrik & Elektronik',
-            frontend_label='Elektrik & Elektronik',
             description='Test TVET course description.',
             wbl=True,
             semesters=4,
@@ -63,6 +63,7 @@ class TestPismpCourseMetadata(TestCase):
         self.course = Course.objects.create(
             course_id='50PD-TEST',
             course='Bahasa Melayu Pendidikan Rendah',
+            field_key_id='pendidikan',
         )
         CourseRequirement.objects.create(
             course=self.course,
@@ -146,6 +147,7 @@ class TestCourseDescriptionLoading(TestCase):
             level='Diploma',
             department='Kejuruteraan',
             field='Mekanikal',
+            field_key_id='mekanikal',
             description='Thin CSV description.',
         )
 
@@ -198,6 +200,7 @@ class TestMascoOccupationModel(TestCase):
             level='Diploma',
             department='Engineering',
             field='Mechatronics',
+            field_key_id='mekatronik',
         )
 
     def test_masco_occupation_str(self):

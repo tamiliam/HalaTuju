@@ -66,6 +66,7 @@ class TestSavedCourseInterestStatus:
             course_id='TEST-001',
             course='Test Course',
             level='Diploma',
+            field_key_id='umum',
         )
 
     def test_default_status_is_interested(self):
@@ -77,7 +78,7 @@ class TestSavedCourseInterestStatus:
 
     def test_can_set_planning_status(self):
         profile = StudentProfile.objects.create(supabase_user_id='test-planning')
-        course = Course.objects.create(course_id='TEST-002', course='Test 2', level='Diploma')
+        course = Course.objects.create(course_id='TEST-002', course='Test 2', level='Diploma', field_key_id='umum')
         sc = SavedCourse.objects.create(
             student=profile, course=course, interest_status='planning'
         )
@@ -86,7 +87,7 @@ class TestSavedCourseInterestStatus:
 
     def test_can_set_got_offer_status(self):
         profile = StudentProfile.objects.create(supabase_user_id='test-offer')
-        course = Course.objects.create(course_id='TEST-003', course='Test 3', level='Diploma')
+        course = Course.objects.create(course_id='TEST-003', course='Test 3', level='Diploma', field_key_id='umum')
         sc = SavedCourse.objects.create(
             student=profile, course=course, interest_status='got_offer'
         )
@@ -153,7 +154,8 @@ class TestSavedCoursesAPIInterestStatus:
     def _setup(self, user_id='saved-api-user'):
         profile = StudentProfile.objects.create(supabase_user_id=user_id)
         course = Course.objects.create(
-            course_id='TEST-API-001', course='Test Course', level='Diploma'
+            course_id='TEST-API-001', course='Test Course', level='Diploma',
+            field_key_id='umum',
         )
         SavedCourse.objects.create(student=profile, course=course)
         return profile, course

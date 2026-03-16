@@ -22,7 +22,8 @@ PREU_COURSES = [
         'level': 'Pra-U',
         'department': 'KPM',
         'field': 'Sains & Teknologi',
-        'frontend_label': 'Sains & Teknologi',
+
+        'field_key_id': 'sains-hayat',
     },
     {
         'course_id': 'matric-kejuruteraan',
@@ -30,7 +31,8 @@ PREU_COURSES = [
         'level': 'Pra-U',
         'department': 'KPM',
         'field': 'Kejuruteraan',
-        'frontend_label': 'Kejuruteraan',
+
+        'field_key_id': 'mekanikal',
     },
     {
         'course_id': 'matric-sains-komputer',
@@ -38,7 +40,8 @@ PREU_COURSES = [
         'level': 'Pra-U',
         'department': 'KPM',
         'field': 'Teknologi Maklumat',
-        'frontend_label': 'Teknologi Maklumat',
+
+        'field_key_id': 'it-perisian',
     },
     {
         'course_id': 'matric-perakaunan',
@@ -46,7 +49,8 @@ PREU_COURSES = [
         'level': 'Pra-U',
         'department': 'KPM',
         'field': 'Perakaunan & Kewangan',
-        'frontend_label': 'Perakaunan & Kewangan',
+
+        'field_key_id': 'perakaunan',
     },
     {
         'course_id': 'stpm-sains',
@@ -54,7 +58,8 @@ PREU_COURSES = [
         'level': 'Pra-U',
         'department': 'KPM',
         'field': 'Sains & Teknologi',
-        'frontend_label': 'Sains & Teknologi',
+
+        'field_key_id': 'sains-hayat',
     },
     {
         'course_id': 'stpm-sains-sosial',
@@ -62,7 +67,8 @@ PREU_COURSES = [
         'level': 'Pra-U',
         'department': 'KPM',
         'field': 'Sains Sosial',
-        'frontend_label': 'Sains Sosial',
+
+        'field_key_id': 'sains-sosial',
     },
 ]
 

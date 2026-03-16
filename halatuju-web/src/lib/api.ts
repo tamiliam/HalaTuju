@@ -59,7 +59,7 @@ export interface EligibleCourse {
   course_id: string
   course_name: string
   level: string
-  field: string
+  field: string // Legacy — use field_key instead
   field_key?: string
   source_type: string
   pathway_type?: string
@@ -81,8 +81,8 @@ export interface Course {
   course: string
   level: string
   department: string
-  field: string
-  frontend_label: string
+  field: string // Legacy — use field_key instead
+  field_key?: string
   headline: string
   headline_en: string
   description: string
@@ -157,7 +157,7 @@ export interface SearchCourse {
   course_id: string
   course_name: string
   level: string
-  field: string
+  field: string // Legacy — use field_key instead
   field_key?: string
   source_type: string
   pathway_type?: string
@@ -179,7 +179,6 @@ export interface SearchFilters {
 export interface SearchParams {
   q?: string
   level?: string
-  field?: string
   field_key?: string
   source_type?: string
   state?: string
@@ -196,7 +195,6 @@ export async function searchCourses(
   if (params.q) query.set('q', params.q)
   if (params.level) query.set('level', params.level)
   if (params.field_key) query.set('field_key', params.field_key)
-  else if (params.field) query.set('field', params.field)
   if (params.source_type) query.set('source_type', params.source_type)
   if (params.state) query.set('state', params.state)
   if (params.qualification) query.set('qualification', params.qualification)
@@ -508,7 +506,7 @@ export interface StpmEligibleCourse {
   course_name: string
   university: string
   stream: string
-  field: string
+  field: string // Legacy — use field_key instead
   field_key?: string
   min_cgpa: number
   min_muet_band: number
@@ -622,7 +620,8 @@ export interface StpmCourseDetail {
   course_name: string
   university: string
   stream: string
-  field: string
+  field: string // Legacy — use field_key instead
+  field_key?: string
   category: string
   description: string
   headline: string

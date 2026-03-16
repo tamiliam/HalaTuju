@@ -30,7 +30,7 @@ interface CourseCardProps {
 export default function CourseCard({ course, rank, isSaved, onToggleSave, institutionName, institutionState, institutionCount }: CourseCardProps) {
   const { getImageUrl, getFieldName } = useFieldTaxonomy()
   const imageUrl = getImageUrl(course.field_key)
-  const fieldLabel = getFieldName(course.field_key) || course.field || 'View course details'
+  const fieldLabel = getFieldName(course.field_key) || 'View course details'
   const isLowMerit = course.merit_label === 'Low'
 
   return (

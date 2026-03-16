@@ -322,8 +322,10 @@ class Command(BaseCommand):
         key_counts = {}
 
         for course in courses:
+            # category column removed in Sprint 5; use field as fallback
+            cat = getattr(course, 'category', course.field)
             key = classify_stpm_course(
-                course.category,
+                cat,
                 course.field,
                 course.course_name,
             )
@@ -332,7 +334,7 @@ class Command(BaseCommand):
 
             if key not in valid_keys:
                 unmapped.append((
-                    course.course_id, course.category,
+                    course.course_id, cat,
                     course.field, key,
                 ))
                 continue

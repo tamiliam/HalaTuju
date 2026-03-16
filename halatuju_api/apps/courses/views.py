@@ -97,7 +97,7 @@ class CourseSearchView(APIView):
     Query params:
       ?q=kejuruteraan          (text search on course name)
       &level=Diploma           (Course.level)
-      &field=Teknologi Maklumat (Course.frontend_label / StpmCourse.field)
+      &field=Teknologi Maklumat (Course.field / StpmCourse.field)
       &field_key=it-perisian   (FieldTaxonomy key — preferred over field)
       &source_type=poly        (CourseRequirement.source_type)
       &state=Selangor          (Institution.state via CourseInstitution)
@@ -148,7 +148,7 @@ class CourseSearchView(APIView):
             if field_key:
                 qs = qs.filter(field_key=field_key)
             elif field:
-                qs = qs.filter(frontend_label__iexact=field)
+                qs = qs.filter(field__iexact=field)
             if source_type:
                 # Map iljtm/ilkbs filter to tvet source_type + post-filter
                 if source_type in ('iljtm', 'ilkbs'):
@@ -190,7 +190,7 @@ class CourseSearchView(APIView):
                     'course_id': c.course_id,
                     'course_name': c.course,
                     'level': c.level,
-                    'field': c.frontend_label or c.field,
+                    'field': c.field,
                     'field_key': c.field_key_id or '',
                     'source_type': st,
                     'pathway_type': pt,
@@ -285,9 +285,9 @@ class CourseSearchView(APIView):
 
         # Legacy: keep fields list for backward compatibility
         spm_fields = list(
-            Course.objects.exclude(frontend_label='')
-            .values_list('frontend_label', flat=True)
-            .distinct().order_by('frontend_label')
+            Course.objects.exclude(field='')
+            .values_list('field', flat=True)
+            .distinct().order_by('field')
         )
         stpm_fields = list(
             StpmCourse.objects.exclude(field='')
@@ -457,7 +457,7 @@ class EligibilityCheckView(APIView):
                 'course_id': course_id,
                 'course_name': course_name,
                 'level': course.level if course else '',
-                'field': (course.frontend_label or course.field) if course else '',
+                'field': course.field if course else '',
                 'field_key': (course.field_key_id or '') if course else '',
                 'source_type': source_type,
                 'pathway_type': pathway_type,
@@ -1344,7 +1344,6 @@ class StpmCourseDetailView(APIView):
             'stream': prog.stream,
             'field': prog.field,
             'field_key': prog.field_key_id or '',
-            'category': prog.category,
             'description': prog.description,
             'headline': prog.headline,
             'merit_score': prog.merit_score,

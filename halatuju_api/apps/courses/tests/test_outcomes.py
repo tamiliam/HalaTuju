@@ -40,7 +40,7 @@ class TestOutcomeEndpoints(TestCase):
             level='Diploma',
             department='Engineering',
             field='Mechanical',
-            frontend_label='Engineering',
+            field_key_id='mekanikal',
         )
         cls.course2 = Course.objects.create(
             course_id='TEST002',
@@ -48,7 +48,7 @@ class TestOutcomeEndpoints(TestCase):
             level='Sijil',
             department='IT',
             field='Software',
-            frontend_label='IT',
+            field_key_id='it-perisian',
         )
         cls.institution = Institution.objects.create(
             institution_id='INST001',

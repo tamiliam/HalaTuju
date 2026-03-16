@@ -13,7 +13,7 @@ def insert_preu_courses(apps, schema_editor):
             'level': 'Pra-U',
             'department': 'KPM',
             'field': 'Sains & Teknologi',
-            'frontend_label': 'Sains & Teknologi',
+            # frontend_label removed in 0028; was:'Sains & Teknologi',
         },
         {
             'course_id': 'matric-kejuruteraan',
@@ -21,7 +21,7 @@ def insert_preu_courses(apps, schema_editor):
             'level': 'Pra-U',
             'department': 'KPM',
             'field': 'Kejuruteraan',
-            'frontend_label': 'Kejuruteraan',
+            # frontend_label removed in 0028; was:'Kejuruteraan',
         },
         {
             'course_id': 'matric-sains-komputer',
@@ -29,7 +29,7 @@ def insert_preu_courses(apps, schema_editor):
             'level': 'Pra-U',
             'department': 'KPM',
             'field': 'Teknologi Maklumat',
-            'frontend_label': 'Teknologi Maklumat',
+            # frontend_label removed in 0028; was:'Teknologi Maklumat',
         },
         {
             'course_id': 'matric-perakaunan',
@@ -37,7 +37,7 @@ def insert_preu_courses(apps, schema_editor):
             'level': 'Pra-U',
             'department': 'KPM',
             'field': 'Perakaunan & Kewangan',
-            'frontend_label': 'Perakaunan & Kewangan',
+            # frontend_label removed in 0028; was:'Perakaunan & Kewangan',
         },
         {
             'course_id': 'stpm-sains',
@@ -45,7 +45,7 @@ def insert_preu_courses(apps, schema_editor):
             'level': 'Pra-U',
             'department': 'KPM',
             'field': 'Sains & Teknologi',
-            'frontend_label': 'Sains & Teknologi',
+            # frontend_label removed in 0028; was:'Sains & Teknologi',
         },
         {
             'course_id': 'stpm-sains-sosial',
@@ -53,7 +53,7 @@ def insert_preu_courses(apps, schema_editor):
             'level': 'Pra-U',
             'department': 'KPM',
             'field': 'Sains Sosial',
-            'frontend_label': 'Sains Sosial',
+            # frontend_label removed in 0028; was:'Sains Sosial',
         },
     ]
 

@@ -30,7 +30,6 @@ class Command(BaseCommand):
         no_level = Course.objects.filter(level='').count()
         no_dept = Course.objects.filter(department='').count()
         no_field = Course.objects.filter(field='').count()
-        no_label = Course.objects.filter(frontend_label='').count()
         no_sem = Course.objects.filter(semesters__isnull=True).count()
 
         self.stdout.write(f'COURSES: {total} total')
@@ -38,7 +37,6 @@ class Command(BaseCommand):
         self.stdout.write(f'  Missing level:          {no_level}')
         self.stdout.write(f'  Missing department:     {no_dept}')
         self.stdout.write(f'  Missing field:          {no_field}')
-        self.stdout.write(f'  Missing frontend_label: {no_label}')
         self.stdout.write(f'  Missing semesters:      {no_sem}')
 
         if no_level > 0:

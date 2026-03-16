@@ -12,6 +12,7 @@ class TestStpmCourseCreation:
             course_name='Bachelor of Computer Science',
             university='Universiti Malaya',
             stream='science',
+            field_key_id='it-perisian',
         )
         course.refresh_from_db()
         assert course.course_id == 'UM-CS-001'
@@ -30,6 +31,7 @@ class TestStpmRequirementCreation:
             course_name='Bachelor of Engineering',
             university='Universiti Sains Malaysia',
             stream='science',
+            field_key_id='kejuruteraan-am',
         )
         req = StpmRequirement.objects.create(
             course=course,
@@ -63,6 +65,7 @@ class TestStpmRequirementCreation:
             course_id='UKM-SCI-005',
             course_name='Bachelor of Science',
             university='Universiti Kebangsaan Malaysia',
+            field_key_id='sains-hayat',
         )
         group_data = {
             'min_count': 2,
@@ -92,6 +95,7 @@ class TestStpmCourseMeritScore:
             university='Test University',
             stream='science',
             merit_score=96.04,
+            field_key_id='umum',
         )
         course.refresh_from_db()
         assert course.merit_score == 96.04
@@ -103,6 +107,7 @@ class TestStpmCourseMeritScore:
             course_name='No Merit Programme',
             university='Test University',
             stream='arts',
+            field_key_id='umum',
         )
         course.refresh_from_db()
         assert course.merit_score is None
@@ -112,19 +117,18 @@ class TestStpmCourseMeritScore:
 class TestStpmCourseMetadata:
 
     def test_stpm_course_metadata_fields(self):
-        """StpmCourse has field, category, and description columns."""
+        """StpmCourse has field and description columns."""
         course = StpmCourse.objects.create(
             course_id='TEST-META-001',
             course_name='Test Programme',
             university='Test University',
             stream='science',
             field='Engineering',
-            category='Kejuruteraan',
             description='A test programme in engineering.',
+            field_key_id='kejuruteraan-am',
         )
         course.refresh_from_db()
         assert course.field == 'Engineering'
-        assert course.category == 'Kejuruteraan'
         assert course.description == 'A test programme in engineering.'
 
     def test_stpm_course_metadata_defaults_blank(self):
@@ -133,7 +137,7 @@ class TestStpmCourseMetadata:
             course_id='TEST-META-002',
             course_name='Test Programme 2',
             university='Test University',
+            field_key_id='umum',
         )
         assert course.field == ''
-        assert course.category == ''
         assert course.description == ''

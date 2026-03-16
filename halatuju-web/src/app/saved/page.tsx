@@ -8,12 +8,14 @@ import { useToast } from '@/components/Toast'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
+import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 
 type QualificationTab = 'SPM' | 'STPM'
 
 export default function SavedPage() {
-  const { t } = useT()
+  const { t, locale } = useT()
+  const { getFieldName } = useFieldTaxonomy(locale)
   const { ready: onboarded } = useOnboardingGuard()
   const { token, isAuthenticated, isLoading: authLoading } = useAuth()
   const { showToast } = useToast()
@@ -183,7 +185,7 @@ export default function SavedPage() {
                             {course.institution_name && (
                               <>{course.institution_name} &middot; </>
                             )}
-                            {course.level} &middot; {course.field}
+                            {course.level} &middot; {getFieldName(course.field_key)}
                           </p>
                           <p className="text-xs text-gray-400 mt-0.5 font-mono">{course.course_id}</p>
                         </Link>

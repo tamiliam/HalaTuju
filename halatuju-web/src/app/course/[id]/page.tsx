@@ -12,6 +12,7 @@ import RequirementsCard from '@/components/RequirementsCard'
 import SpecialConditions from '@/components/SpecialConditions'
 import { LoadingSpinner, CourseNotFound, InfoRow, CourseActions } from '@/components/CourseDetailShared'
 import { useT } from '@/lib/i18n'
+import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import { useState, useMemo, useCallback } from 'react'
 import { STPM_SCHOOLS, type StpmSchool } from '@/data/stpm-schools'
 import { MATRIC_COLLEGES, type MatricCollege } from '@/data/matric-colleges'
@@ -20,6 +21,7 @@ export default function CourseDetailPage() {
   const params = useParams()
   const courseId = params.id as string
   const { locale, t } = useT()
+  const { getFieldName } = useFieldTaxonomy(locale)
   const { savedIds, toggleSave } = useSavedCourses()
   const isSaved = savedIds.has(courseId)
   const [isHovering, setIsHovering] = useState(false)
@@ -86,8 +88,8 @@ export default function CourseDetailPage() {
                 {t(`courses.${course.course_id}.description`) !== `courses.${course.course_id}.description`
                   ? t(`courses.${course.course_id}.description`)
                   : locale === 'ms'
-                    ? (course.description || course.description_en || t('courses.descriptionFallback', { level: course.level, field: course.field, department: course.department }))
-                    : (course.description_en || course.description || t('courses.descriptionFallback', { level: course.level, field: course.field, department: course.department }))}
+                    ? (course.description || course.description_en || t('courses.descriptionFallback', { level: course.level, field: getFieldName(course.field_key), department: course.department }))
+                    : (course.description_en || course.description || t('courses.descriptionFallback', { level: course.level, field: getFieldName(course.field_key), department: course.department }))}
               </p>
               {courseInfoUrl && (
                 <div className="flex justify-end mt-4">
@@ -170,7 +172,7 @@ export default function CourseDetailPage() {
               </h2>
               <div className="space-y-4">
                 <InfoRow label="Level" value={course.level} />
-                <InfoRow label="Field" value={course.field} />
+                <InfoRow label="Field" value={getFieldName(course.field_key)} />
                 {!isPreU && <InfoRow label="Department" value={course.department} />}
                 {course.semesters && (
                   <InfoRow label="Duration" value={`${course.semesters} semesters`} />

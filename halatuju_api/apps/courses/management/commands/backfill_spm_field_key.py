@@ -307,14 +307,16 @@ class Command(BaseCommand):
         unmapped = []
 
         for course in courses:
+            # frontend_label removed in Sprint 5; use field as fallback
+            fl = getattr(course, 'frontend_label', course.field)
             key = classify_course(
-                course.frontend_label,
+                fl,
                 course.field,
                 course.course,
             )
 
             if key not in valid_keys:
-                unmapped.append((course.course_id, course.frontend_label, course.field, key))
+                unmapped.append((course.course_id, fl, course.field, key))
                 continue
 
             classified += 1
@@ -331,4 +333,4 @@ class Command(BaseCommand):
         if unmapped:
             self.stderr.write(self.style.WARNING(f"{len(unmapped)} courses had invalid keys:"))
             for cid, fl, field, key in unmapped:
-                self.stderr.write(f"  {cid}: frontend_label={fl}, field={field} → {key}")
+                self.stderr.write(f"  {cid}: field={fl}/{field} → {key}")
