@@ -229,8 +229,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Build Stage 3 validator tool (`validate_stpm_requirements.py`)
 - Write reusable workflow doc (`Settings/_workflows/stpm-requirements-update.md`)
 
+**MASCO Career Mappings Sprint C COMPLETE (2026-03-16)**
+- 6 missing field_key→MASCO mappings added (bahasa, kejururawatan, komunikasi, pergigian, sains-data, sains-fizikal)
+- Gemini AI pipeline: 89 UA + 73 PISMP + 951 STPM = 1,113 courses mapped
+- 3,338 new M2M rows applied to Supabase (courses_career_occupations: 529→1014, stpm_courses_career_occupations: 0→2853)
+- Standalone script: `scripts/gemini_map_careers.py`
+
 **Pending work**
-- MASCO Career Mappings Sprint C: Run pipeline for UA/PISMP/STPM
 - Phone/OTP login (blocked — Twilio ~RM12/mo)
 - Grade modulation layer
 - Course detail page fixes from `docs/Course Detail Page.pdf`
