@@ -60,6 +60,7 @@ export interface EligibleCourse {
   course_name: string
   level: string
   field: string
+  field_key?: string
   source_type: string
   pathway_type?: string
   qualification?: 'SPM' | 'STPM'
@@ -157,6 +158,7 @@ export interface SearchCourse {
   course_name: string
   level: string
   field: string
+  field_key?: string
   source_type: string
   pathway_type?: string
   merit_cutoff: number | null
@@ -178,6 +180,7 @@ export interface SearchParams {
   q?: string
   level?: string
   field?: string
+  field_key?: string
   source_type?: string
   state?: string
   qualification?: string
@@ -192,7 +195,8 @@ export async function searchCourses(
   const query = new URLSearchParams()
   if (params.q) query.set('q', params.q)
   if (params.level) query.set('level', params.level)
-  if (params.field) query.set('field', params.field)
+  if (params.field_key) query.set('field_key', params.field_key)
+  else if (params.field) query.set('field', params.field)
   if (params.source_type) query.set('source_type', params.source_type)
   if (params.state) query.set('state', params.state)
   if (params.qualification) query.set('qualification', params.qualification)
@@ -505,6 +509,7 @@ export interface StpmEligibleCourse {
   university: string
   stream: string
   field: string
+  field_key?: string
   min_cgpa: number
   min_muet_band: number
   stpm_req_physics: boolean
@@ -646,6 +651,25 @@ export async function getStpmCourseDetail(
   options?: ApiOptions
 ): Promise<StpmCourseDetail> {
   return apiRequest(`/api/v1/stpm/courses/${courseId}/`, options)
+}
+
+// ── Field Taxonomy types ──────────────────────────────────────────────
+
+export interface FieldTaxonomyEntry {
+  key: string
+  name_en: string
+  name_ms: string
+  name_ta: string
+  image_slug: string
+  parent_key: string | null
+  sort_order: number
+  children: FieldTaxonomyEntry[]
+}
+
+export async function fetchFieldTaxonomy(
+  options?: ApiOptions
+): Promise<{ groups: FieldTaxonomyEntry[] }> {
+  return apiRequest('/api/v1/fields/', options)
 }
 
 // ── Calculation types ──────────────────────────────────────────────────

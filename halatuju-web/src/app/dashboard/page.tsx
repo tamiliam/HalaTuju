@@ -595,6 +595,7 @@ function StpmDashboardCards({
         course_name: prog.course_name,
         level: 'Ijazah Sarjana Muda',
         field: prog.field || '',
+        field_key: prog.field_key || '',
         source_type: 'ua',
         qualification: 'STPM' as const,
         merit_cutoff: prog.merit_score,

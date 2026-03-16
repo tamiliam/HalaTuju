@@ -688,7 +688,28 @@ class TestCourseSearchEndpoint(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        from apps.courses.models import Course, CourseRequirement, Institution, CourseInstitution
+        from apps.courses.models import Course, CourseRequirement, Institution, CourseInstitution, FieldTaxonomy
+        # Create taxonomy entries for field_key FK
+        FieldTaxonomy.objects.get_or_create(
+            key='engineering', defaults={
+                'name_en': 'Engineering', 'name_ms': 'Kejuruteraan', 'name_ta': 'பொறியியல்',
+                'image_slug': 'kejuruteraan-am', 'sort_order': 1,
+            })
+        FieldTaxonomy.objects.get_or_create(
+            key='mekanikal', defaults={
+                'name_en': 'Mechanical', 'name_ms': 'Mekanikal', 'name_ta': 'எந்திரவியல்',
+                'image_slug': 'mekanikal-am', 'parent_key_id': 'engineering', 'sort_order': 1,
+            })
+        FieldTaxonomy.objects.get_or_create(
+            key='it', defaults={
+                'name_en': 'IT & Digital', 'name_ms': 'IT & Digital', 'name_ta': 'IT & Digital',
+                'image_slug': 'it-perisian', 'sort_order': 2,
+            })
+        FieldTaxonomy.objects.get_or_create(
+            key='it-perisian', defaults={
+                'name_en': 'IT & Software', 'name_ms': 'IT & Perisian', 'name_ta': 'IT & மென்பொருள்',
+                'image_slug': 'it-perisian', 'parent_key_id': 'it', 'sort_order': 1,
+            })
         # Create test courses
         cls.course1 = Course.objects.create(
             course_id='SRCH-DIP-001',
@@ -697,6 +718,7 @@ class TestCourseSearchEndpoint(TestCase):
             department='Engineering',
             field='Mechanical',
             frontend_label='Mekanikal & Pembuatan',
+            field_key_id='mekanikal',
         )
         CourseRequirement.objects.create(
             course=cls.course1,
@@ -711,6 +733,7 @@ class TestCourseSearchEndpoint(TestCase):
             department='IT',
             field='IT',
             frontend_label='Teknologi Maklumat',
+            field_key_id='it-perisian',
         )
         CourseRequirement.objects.create(
             course=cls.course2,
@@ -803,6 +826,20 @@ class TestCourseSearchEndpoint(TestCase):
         self.assertEqual(response.status_code, 200)
         courses = response.json()['courses']
         self.assertTrue(all(c['field'] == 'Teknologi Maklumat' for c in courses))
+
+    def test_search_field_key_filter(self):
+        """?field_key= filters by taxonomy key."""
+        response = self.client.get(self.url, {'field_key': 'it-perisian'})
+        self.assertEqual(response.status_code, 200)
+        courses = response.json()['courses']
+        self.assertTrue(all(c['field_key'] == 'it-perisian' for c in courses))
+
+    def test_search_filters_include_field_keys(self):
+        """Filters should include field_keys from taxonomy."""
+        response = self.client.get(self.url)
+        filters = response.json()['filters']
+        self.assertIn('field_keys', filters)
+        self.assertIsInstance(filters['field_keys'], list)
 
     def test_search_pagination(self):
         """?limit=1&offset=0 should return 1 course."""

@@ -95,7 +95,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (544 collected, 544 pass, 0 failures, 0 skipped)
+# Run ALL tests (546 collected, 546 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -114,7 +114,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 |------|-------|----------------|
 | test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 5319 baseline (DB fixtures) |
 | test_serializers.py | 27 | Grade key passthrough, gender/nationality normalization, bool→Ya/Tidak, validation |
-| test_api.py | 71 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration, Matric/STPM integration, pathway_stats), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering), unified search (both qualifications, qualification filter, STPM field mapping, bumiputera exclusion, filters include qualifications, cross-qualification text search, field filter STPM, level/source_type filter skipping), calculate endpoints (merit, cgpa, pathways with signals) |
+| test_api.py | 73 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration, Matric/STPM integration, pathway_stats), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/field_key/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering/field_keys filter), unified search (both qualifications, qualification filter, STPM field mapping, bumiputera exclusion, filters include qualifications, cross-qualification text search, field filter STPM, level/source_type filter skipping), calculate endpoints (merit, cgpa, pathways with signals) |
 | test_auth.py | 15 | Auth enforcement — protected endpoints reject 401, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
 | test_saved_courses.py | 17 | SPM save/list/delete/idempotent/course_type, STPM save (auto-detect prefix + explicit type)/list/filter/delete/patch/404, both types list, qualification filter (SPM/STPM), check constraint (both-null/both-set rejected) |
 | test_quiz.py | 24 | Quiz endpoints (questions 3 langs, submit single+multi, validation), engine (multi-select, weight splitting, Not Sure Yet, conditional Q2.5, field_interest, signal strength, lang parity) |
@@ -164,7 +164,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (544 collected, 544 must pass, SPM golden master = 5319, STPM golden master = 1811)
+# 1. Run all tests (546 collected, 546 must pass, SPM golden master = 5319, STPM golden master = 1811)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -176,7 +176,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-544 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
+546 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -215,17 +215,16 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Field Taxonomy Sprint 3 COMPLETE (2026-03-16)**
-- Ranking engines use `field_key` instead of `frontend_label`/keyword matching
-- Shared `FIELD_KEY_MAP` (DRY) replaces both `FIELD_LABEL_MAP` and `COURSE_FIELD_MAP`
-- `field_key` added to SPM + STPM eligibility results
-- `field_health` bug fixed (was mapping to agriculture, now maps to health)
-- 2 new tests (544 total)
+**Field Taxonomy Sprint 4 COMPLETE (2026-03-16)**
+- CourseCard images from taxonomy `image_slug` (replaced 150-line `getImageSlug()` keyword matcher)
+- Search field filter uses `/api/v1/fields/` with trilingual labels + `field_key` filter
+- `useFieldTaxonomy` hook (module-level cache, provides `getImageUrl`/`getFieldName`)
+- `field_key` added to all frontend course types
+- 2 new backend tests (546 total)
 
-**Current state:** 544 backend tests, 17 frontend tests, 0 failures. 49/52 tech debt.
+**Current state:** 546 backend tests, 17 frontend tests, 0 failures. 49/52 tech debt.
 
 **Field Taxonomy Remaining Sprints**
-- Sprint 4: Frontend (field filter dropdown, image slug from taxonomy)
 - Sprint 5: Cleanup (make field_key non-nullable, remove legacy fields, new images)
 
 **Remaining tech debt (3 items)**

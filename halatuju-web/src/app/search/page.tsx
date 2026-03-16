@@ -9,6 +9,7 @@ import CourseCard from '@/components/CourseCard'
 import FilterPill from '@/components/FilterPill'
 import { useAuth } from '@/lib/auth-context'
 import { useSavedCourses } from '@/hooks/useSavedCourses'
+import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import clsx from 'clsx'
 import { useT } from '@/lib/i18n'
 import { KEY_PROFILE, KEY_GRADES, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_RESUME_ACTION } from '@/lib/storage'
@@ -32,11 +33,12 @@ export default function SearchPage() {
 }
 
 function SearchPageInner() {
-  const { t } = useT()
+  const { t, locale } = useT()
   const searchParams = useSearchParams()
   const router = useRouter()
   const { isAuthenticated, showAuthGate } = useAuth()
   const { savedIds, toggleSave } = useSavedCourses()
+  const { fieldOptions, loaded: taxonomyLoaded } = useFieldTaxonomy(locale)
   const [courses, setCourses] = useState<SearchCourse[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [filters, setFilters] = useState<SearchFilters | null>(null)
@@ -45,7 +47,7 @@ function SearchPageInner() {
   // Initialise filter state from URL search params
   const [query, setQuery] = useState(searchParams.get('q') || '')
   const [level, setLevel] = useState(searchParams.get('level') || '')
-  const [field, setField] = useState(searchParams.get('field') || '')
+  const [field, setField] = useState(searchParams.get('field_key') || searchParams.get('field') || '')
   const [sourceType, setSourceType] = useState(searchParams.get('type') || '')
   const [state, setState] = useState(searchParams.get('state') || '')
   const [qualification, setQualification] = useState(searchParams.get('qualification') || '')
@@ -110,6 +112,7 @@ function SearchPageInner() {
             course_name: prog.course_name,
             level: 'Ijazah Sarjana Muda',
             field: '',
+            field_key: prog.field_key || '',
             source_type: 'ua',
             merit_cutoff: prog.merit_score,
             student_merit: null,
@@ -172,7 +175,7 @@ function SearchPageInner() {
     const params = new URLSearchParams()
     if (query) params.set('q', query)
     if (level) params.set('level', level)
-    if (field) params.set('field', field)
+    if (field) params.set('field_key', field)
     if (sourceType) params.set('type', sourceType)
     if (state) params.set('state', state)
     if (qualification) params.set('qualification', qualification)
@@ -194,7 +197,7 @@ function SearchPageInner() {
       const data = await searchCourses({
         q: debouncedQuery || undefined,
         level: level || undefined,
-        field: field || undefined,
+        field_key: field || undefined,
         source_type: sourceType || undefined,
         state: state || undefined,
         qualification: qualification || undefined,
@@ -242,6 +245,7 @@ function SearchPageInner() {
       course_name: c.course_name,
       level: c.level,
       field: c.field,
+      field_key: c.field_key,
       source_type: c.source_type,
       pathway_type: c.pathway_type,
       qualification: c.qualification,
@@ -368,7 +372,8 @@ function SearchPageInner() {
           <FilterPill
             label={t('search.allFields')}
             value={field}
-            options={filters?.fields ?? []}
+            options={taxonomyLoaded ? fieldOptions.map(f => f.key) : (filters?.fields ?? [])}
+            optionLabels={taxonomyLoaded ? Object.fromEntries(fieldOptions.map(f => [f.key, f.label])) : undefined}
             onChange={setField}
           />
 

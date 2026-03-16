@@ -271,6 +271,19 @@ class CourseSearchView(APIView):
         stpm_levels = ['Ijazah Sarjana Muda'] if StpmCourse.objects.exists() else []
         all_levels = sorted(set(spm_levels + stpm_levels))
 
+        spm_field_keys = list(
+            Course.objects.exclude(field_key__isnull=True)
+            .values_list('field_key', flat=True)
+            .distinct()
+        )
+        stpm_field_keys = list(
+            StpmCourse.objects.exclude(field_key__isnull=True)
+            .values_list('field_key', flat=True)
+            .distinct()
+        )
+        all_field_keys = sorted(set(spm_field_keys + stpm_field_keys))
+
+        # Legacy: keep fields list for backward compatibility
         spm_fields = list(
             Course.objects.exclude(frontend_label='')
             .values_list('frontend_label', flat=True)
@@ -297,6 +310,7 @@ class CourseSearchView(APIView):
         filters = {
             'levels': all_levels,
             'fields': all_fields,
+            'field_keys': all_field_keys,
             'source_types': all_source_types,
             'states': sorted(
                 Institution.objects.exclude(state='')

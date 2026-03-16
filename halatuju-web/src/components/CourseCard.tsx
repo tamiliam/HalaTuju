@@ -3,179 +3,7 @@
 import Link from 'next/link'
 import type { EligibleCourse, RankedCourse } from '@/lib/api'
 import { TYPE_LABELS, TYPE_COLORS, LEVEL_COLORS } from '@/lib/courseBadges'
-
-const SUPABASE_STORAGE = 'https://pbrrlyoyyiftckqvzvvo.supabase.co/storage/v1/object/public/field-images'
-
-/** Check if text contains any of the keywords (case-insensitive). */
-function matchAny(text: string, keywords: string[]): boolean {
-  return keywords.some(kw => text.includes(kw))
-}
-
-/**
- * Map a course's field + name to one of 37 image slugs.
- * Uses keyword matching: umbrella fields sub-route by course name,
- * specific fields match by keyword, "Umum" catch-all routes by course name.
- */
-function getImageSlug(field: string, courseName: string): string {
-  const f = field.toLowerCase()
-  const c = courseName.toLowerCase()
-
-  // ── PENDIDIKAN — sub-route by course name ──
-  if (f === 'pendidikan') {
-    if (matchAny(c, ['bahasa', 'pengajaran'])) return 'pendidikan-bahasa'
-    if (matchAny(c, ['matematik', 'sains', 'reka bentuk dan teknologi'])) return 'pendidikan-stem'
-    if (matchAny(c, ['seni visual', 'muzik'])) return 'pendidikan-seni'
-    if (matchAny(c, ['sejarah', 'islam', 'kaunseling', 'bimbingan'])) return 'pendidikan-kemanusiaan'
-    if (matchAny(c, ['khas', 'kanak-kanak', 'jasmani'])) return 'pendidikan-khas'
-    return 'pendidikan-stem'
-  }
-
-  // ── MEKANIKAL & PEMBUATAN — sub-route by course name ──
-  if (f === 'mekanikal & pembuatan') {
-    if (matchAny(c, ['kimpalan', 'boilermaker'])) return 'mekanikal-kimpalan'
-    if (matchAny(c, ['mekatronik'])) return 'mekanikal-mekatronik'
-    if (matchAny(c, ['pemesinan', 'perkakasan', 'die', 'mould', 'dai', 'cadd'])) return 'mekanikal-pemesinan'
-    return 'mekanikal-am'
-  }
-
-  // ── ELEKTRIK & ELEKTRONIK — sub-route by course name ──
-  if (f === 'elektrik & elektronik') {
-    if (matchAny(c, ['elektronik industri', 'instrumen perindustrian'])) return 'elektronik-kawalan'
-    if (matchAny(c, ['elektronik', 'mikroelektronik', 'telekomunikasi'])) return 'elektronik-telekom'
-    return 'elektrik-kuasa'
-  }
-
-  // ── TEKNOLOGI MAKLUMAT — sub-route by course name ──
-  if (f === 'teknologi maklumat') {
-    if (matchAny(c, ['networking', 'security', 'data', 'rangkaian'])) return 'it-rangkaian'
-    return 'it-perisian'
-  }
-
-  // ── ICT & MULTIMEDIA ──
-  if (f === 'ict & multimedia') return 'it-rangkaian'
-
-  // ── AERO & MARIN — split by course name ──
-  if (f === 'aero & marin') {
-    if (matchAny(c, ['marin', 'kapal', 'perkapalan'])) return 'marin-perkapalan'
-    return 'aero-penerbangan'
-  }
-
-  // ── HOSPITALITI & GAYA HIDUP — sub-route by course name ──
-  if (f === 'hospitaliti & gaya hidup') {
-    if (matchAny(c, ['fesyen', 'pakaian', 'jahitan'])) return 'senireka-fesyen'
-    if (matchAny(c, ['kulinari', 'culinary', 'pastri', 'patisserie', 'makanan', 'food', 'roti'])) return 'kulinari-makanan'
-    if (matchAny(c, ['dandanan', 'kecantikan', 'terapi', 'spa', 'kosmetologi', 'rambut'])) return 'kecantikan-gayahidup'
-    return 'hospitaliti-pelancongan'
-  }
-
-  // ── FIELD KEYWORD MATCHING (specific first) ──
-
-  // Automotif
-  if (matchAny(f, ['automotif', 'kenderaan', 'motosikal'])) return 'automotif'
-
-  // Mekanikal sub-fields
-  if (matchAny(f, ['kimpalan'])) return 'mekanikal-kimpalan'
-  if (matchAny(f, ['mekatronik'])) return 'mekanikal-mekatronik'
-  if (f.startsWith('kejuruteraan mekanikal')) {
-    if (matchAny(f, ['automasi'])) return 'mekanikal-mekatronik'
-    if (matchAny(f, ['automotif'])) return 'automotif'
-    if (matchAny(f, ['pembuatan', 'produk', 'pembungkusan', 'plastik'])) return 'mekanikal-pemesinan'
-    if (matchAny(f, ['petrokimia'])) return 'minyak-gas'
-    return 'mekanikal-am'
-  }
-  if (matchAny(f, ['kejuruteraan pembuatan', 'teknologi pembuatan', 'mechanical design'])) return 'mekanikal-pemesinan'
-  if (matchAny(f, ['penyejukan', 'penyamanan udara', 'kejuruteraan bahan', 'berasaskan kayu', 'penyenggaraan industri', 'perabot'])) return 'mekanikal-am'
-
-  // Elektrik sub-fields
-  if (f.startsWith('kejuruteraan elektrik')) {
-    if (matchAny(f, ['elektronik'])) return 'elektronik-telekom'
-    if (matchAny(f, ['instrumentasi'])) return 'elektronik-telekom'
-    return 'elektrik-kuasa'
-  }
-  if (f.startsWith('kejuruteraan elektronik')) {
-    if (matchAny(f, ['kawalan'])) return 'elektronik-kawalan'
-    if (matchAny(f, ['perubatan', 'komputer'])) return 'elektronik-kawalan'
-    return 'elektronik-telekom'
-  }
-  if (matchAny(f, ['teknologi elektrik', 'solar fotovoltan'])) return 'elektrik-kuasa'
-  if (matchAny(f, ['telekomunikasi', 'telecommunication', 'rail signalling', 'electronics instrumentation'])) return 'elektronik-telekom'
-
-  // IT
-  if (matchAny(f, ['kejuruteraan komputer', 'sistem maklumat', 'mobile technology', 'peranti mudah alih'])) return 'it-perisian'
-
-  // Sivil
-  if (matchAny(f, ['sivil', 'kejuruteraan awam', 'penyeliaan tapak'])) return 'sivil-struktur'
-  if (matchAny(f, ['penyelenggaraan bangunan', 'perkhidmatan bangunan', 'teknologi pembinaan', 'ukur bahan'])) return 'sivil-bangunan'
-
-  // Architecture & Landscape (but NOT 'senibina kapal' which is naval architecture)
-  if (f.includes('senibina kapal')) return 'marin-perkapalan'
-  if (matchAny(f, ['seni bina', 'senibina', 'architectural', 'landskap', 'hortikultur', 'rekabentuk dalaman', 'perancangan bandar', 'geomatik'])) return 'senibina-landskap'
-
-  // Chemical engineering (before oil/gas to avoid 'teknologi kimia (lemak dan minyak)' misroute)
-  if (matchAny(f, ['kejuruteraan kimia', 'teknologi kimia', 'kejuruteraan alam sekitar', 'kejuruteraan proses'])) return 'kimia-alam-sekitar'
-
-  // Oil & Gas
-  if (matchAny(f, ['minyak', 'gas'])) return 'minyak-gas'
-
-  // Hospitality cluster
-  if (matchAny(f, ['hospitaliti', 'hotel', 'pelancongan', 'resort', 'pengurusan acara', 'pengendalian acara', 'recreational tourism'])) return 'hospitaliti-pelancongan'
-  if (matchAny(f, ['kulinari', 'culinary', 'patisserie', 'pastri', 'food', 'makanan', 'seni kulinari'])) return 'kulinari-makanan'
-  if (matchAny(f, ['dandanan', 'kecantikan', 'terapi', 'spa', 'kecergasan'])) return 'kecantikan-gayahidup'
-
-  // Business cluster
-  if (matchAny(f, ['perniagaan', 'keusahawanan', 'pemasaran', 'e-commerce', 'pengoperasian'])) return 'perniagaan'
-  if (matchAny(f, ['perakaunan', 'kewangan', 'insurans'])) return 'perakaunan-kewangan'
-  if (matchAny(f, ['pengurusan', 'logistik', 'peruncitan', 'retail'])) return 'pengurusan-logistik'
-
-  // Agriculture & Agro
-  if (matchAny(f, ['pertanian', 'agroteknologi', 'akuakultur', 'kesihatan haiwan', 'bioteknologi', 'teknologi pertanian'])) return 'pertanian-agro'
-
-  // Science & Health
-  if (matchAny(f, ['perubatan', 'kesihatan', 'fisioterapi'])) return 'perubatan-kesihatan'
-  if (matchAny(f, ['sains', 'stem'])) return 'sains-stem'
-
-  // Design & Fashion
-  if (matchAny(f, ['seni reka', 'rekabentuk grafik', 'rekabentuk industri', 'fesyen', 'seni visual', 'media cetak', 'reka bentuk kraf', 'sound & lighting'])) return 'senireka-fesyen'
-
-  // Multimedia & Animation
-  if (matchAny(f, ['animasi', '3d animation', 'games art', 'teknologi kreatif digital', 'multimedia kreatif'])) return 'multimedia-animasi'
-
-  // Aero & Marine (specific fields)
-  if (matchAny(f, ['aero', 'penerbangan', 'pesawat'])) return 'aero-penerbangan'
-  if (matchAny(f, ['marin', 'perkapalan', 'kapal'])) return 'marin-perkapalan'
-
-  // General Engineering
-  if (matchAny(f, ['kejuruteraan'])) return 'kejuruteraan-am'
-
-  // Law & Pharmacy (future STPM)
-  if (matchAny(f, ['undang-undang', 'law'])) return 'undang-undang'
-  if (matchAny(f, ['farmasi', 'pharmacy'])) return 'farmasi'
-
-  // Humanities
-  if (matchAny(f, ['bahasa', 'pengajian islam', 'sains sosial', 'kesetiausahaan'])) return 'umum-kemanusiaan'
-
-  // ── UMUM catch-all — route by course name ──
-  if (f === 'umum') {
-    if (matchAny(c, ['perikanan', 'perhutanan', 'pertanian'])) return 'pertanian-agro'
-    if (matchAny(c, ['bank', 'insurans'])) return 'perakaunan-kewangan'
-    if (matchAny(c, ['radiografi'])) return 'perubatan-kesihatan'
-    if (matchAny(c, ['makmal'])) return 'sains-stem'
-    if (matchAny(c, ['animasi', 'tari', 'teater', 'muzik'])) return 'multimedia-animasi'
-    if (matchAny(c, ['pembuatan'])) return 'mekanikal-pemesinan'
-    if (matchAny(c, ['rekabentuk'])) return 'senireka-fesyen'
-    if (matchAny(c, ['kanak-kanak'])) return 'pendidikan-khas'
-    if (matchAny(c, ['tahfiz'])) return 'umum-kemanusiaan'
-    return 'umum-kemanusiaan'
-  }
-
-  return 'umum-kemanusiaan'
-}
-
-function getFieldImageUrl(field: string, courseName: string): string {
-  const slug = getImageSlug(field, courseName)
-  return `${SUPABASE_STORAGE}/${slug}.png`
-}
-
+import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 
 /** Build the detail page URL for a course. */
 function getCourseHref(courseId: string, sourceType?: string, qualification?: string): string {
@@ -200,7 +28,9 @@ interface CourseCardProps {
 }
 
 export default function CourseCard({ course, rank, isSaved, onToggleSave, institutionName, institutionState, institutionCount }: CourseCardProps) {
-  const imageUrl = getFieldImageUrl(course.field, course.course_name || '')
+  const { getImageUrl, getFieldName } = useFieldTaxonomy()
+  const imageUrl = getImageUrl(course.field_key)
+  const fieldLabel = getFieldName(course.field_key) || course.field || 'View course details'
   const isLowMerit = course.merit_label === 'Low'
 
   return (
@@ -215,7 +45,7 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
       <div className="relative h-36 bg-gray-100 flex-shrink-0">
         <img
           src={imageUrl}
-          alt={course.field}
+          alt={fieldLabel}
           className="w-full h-full object-cover"
         />
 
@@ -286,7 +116,7 @@ export default function CourseCard({ course, rank, isSaved, onToggleSave, instit
           <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
           </svg>
-          <span className="truncate">{course.field || 'View course details'}</span>
+          <span className="truncate">{fieldLabel}</span>
         </div>
 
         {/* Institution info (search context only) */}

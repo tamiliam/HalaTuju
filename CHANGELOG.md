@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Field Taxonomy Sprint 4: Frontend Integration (2026-03-16)
+
+### Changed
+- **CourseCard images** — replaced 150-line `getImageSlug()` keyword matcher with taxonomy-driven lookup via `field_key` → `image_slug`; images now resolve from `FieldTaxonomy.image_slug` instead of hardcoded keyword rules
+- **Search field filter** — dropdown now uses `/api/v1/fields/` taxonomy API with trilingual labels (EN/MS/TA) and filters by `field_key` instead of raw `frontend_label`/`field` strings
+- **Search API** — `?field_key=` parameter now preferred over `?field=` for filtering; `field_keys` list added to search filter response
+- **Dashboard** — STPM course cards now pass `field_key` through to CourseCard for correct image resolution
+
+### Added
+- `useFieldTaxonomy` hook — fetches taxonomy once, caches module-level, provides `getImageUrl(fieldKey)` and `getFieldName(fieldKey)` for trilingual field labels
+- `fetchFieldTaxonomy()` API client function for `/api/v1/fields/`
+- `field_key` added to `EligibleCourse`, `SearchCourse`, `StpmEligibleCourse` TypeScript types
+- 2 new backend tests: `field_key` filter, `field_keys` in search filters
+
+### Tests
+- Total: 546 backend + 17 frontend, 0 failures
+
 ## [Unreleased] — Field Taxonomy Sprint 3: Ranking Engine field_key Integration (2026-03-16)
 
 ### Changed
