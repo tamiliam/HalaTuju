@@ -31,6 +31,32 @@ def classify_course(frontend_label: str, field: str, course_name: str) -> str:
     c = course_name.lower()
     fl = frontend_label.lower()
 
+    # ── PENDIDIKAN protection: education courses never reclassified ──
+    if fl == 'pendidikan' or f == 'pendidikan':
+        return 'pendidikan'
+
+    # ── COURSE NAME OVERRIDES (name trumps frontend_label) ──
+    # Kejuruteraan Kimia in wrong category
+    if 'kejuruteraan kimia' in c and 'bioteknologi' not in c and 'makanan' not in c:
+        return 'kimia-proses'
+    # UA (UPSI) course-name overrides — must be before frontend_label checks
+    if match_any(c, ['diploma muzik', 'diploma tari', 'diploma teater']):
+        return 'senireka'
+    if 'pendidikan awal kanak-kanak' in c:
+        return 'pendidikan'
+    if match_any(c, ['diploma bahasa etnik', 'diploma bahasa inggeris']):
+        return 'bahasa'
+    if 'turath islami' in c:
+        return 'pengajian-islam'
+    if 'teknologi makmal' in c and 'perubatan' not in c:
+        return 'sains-hayat'
+    if c == 'diploma sains':
+        return 'sains-hayat'
+    if 'sains (matematik)' in c:
+        return 'sains-fizikal'
+    if 'sains sukan' in c or 'kejurulatihan' in c:
+        return 'sains-sosial'
+
     # ── PENDIDIKAN ──
     if fl == 'pendidikan':
         return 'pendidikan'
@@ -193,9 +219,17 @@ def classify_course(frontend_label: str, field: str, course_name: str) -> str:
     if match_any(f, ['kejuruteraan kimia', 'teknologi kimia', 'kejuruteraan alam sekitar', 'kejuruteraan proses']):
         return 'kimia-proses'
 
+    # Fitness / Sports (before Oil & Gas — 'gas' false-matches 'kecergasan')
+    if 'kecergasan' in f:
+        return 'sains-sosial'
+
     # Oil & Gas
     if match_any(f, ['minyak', 'gas']):
         return 'minyak-gas'
+
+    # Physiotherapy (before Hospitality — 'terapi' false-matches 'fisioterapi')
+    if 'fisioterapi' in f:
+        return 'perubatan'
 
     # Hospitality cluster
     if match_any(f, ['hospitaliti', 'hotel', 'pelancongan', 'resort', 'pengurusan acara', 'pengendalian acara', 'recreational tourism']):
@@ -206,7 +240,7 @@ def classify_course(frontend_label: str, field: str, course_name: str) -> str:
         return 'kecantikan'
 
     # Business cluster
-    if match_any(f, ['perniagaan', 'keusahawanan', 'pemasaran', 'e-commerce', 'pengoperasian']):
+    if match_any(f, ['perniagaan', 'keusahawanan', 'pemasaran', 'e-commerce', 'pengoperasian', 'kesetiausahaan']):
         return 'perniagaan'
     if match_any(f, ['perakaunan', 'kewangan', 'insurans']):
         return 'perakaunan'
@@ -248,8 +282,12 @@ def classify_course(frontend_label: str, field: str, course_name: str) -> str:
         return 'farmasi'
 
     # Humanities
-    if match_any(f, ['bahasa', 'pengajian islam', 'sains sosial', 'kesetiausahaan']):
-        return 'umum'
+    if match_any(f, ['pengajian islam']):
+        return 'pengajian-islam'
+    if match_any(f, ['bahasa']):
+        return 'bahasa'
+    if match_any(f, ['sains sosial']):
+        return 'sains-sosial'
 
     # ── UMUM catch-all ──
     if fl == 'umum' or f == 'umum':

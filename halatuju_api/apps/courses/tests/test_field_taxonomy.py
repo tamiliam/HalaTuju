@@ -358,6 +358,29 @@ class ClassifyCourseTest(TestCase):
             'mekanikal'
         )
 
+    # ── Substring false-positive regression tests ──
+
+    def test_fisioterapi_not_kecantikan(self):
+        """'fisioterapi' contains 'terapi' but is medical, not beauty."""
+        self.assertEqual(
+            classify_course('', 'Fisioterapi', 'Diploma Fisioterapi'),
+            'perubatan'
+        )
+
+    def test_kecergasan_not_minyak_gas(self):
+        """'kecergasan' contains 'gas' but is fitness, not oil & gas."""
+        self.assertEqual(
+            classify_course('', 'Kecergasan Pertahanan', 'Diploma Kecergasan Pertahanan'),
+            'sains-sosial'
+        )
+
+    def test_kesetiausahaan_is_perniagaan(self):
+        """'Sains Kesetiausahaan' contains 'sains' but is secretarial/business."""
+        self.assertEqual(
+            classify_course('', 'Sains Kesetiausahaan', 'Diploma Sains Kesetiausahaan'),
+            'perniagaan'
+        )
+
 
 class ClassifyStpmCourseTest(TestCase):
     """Test the STPM deterministic classification function."""
@@ -493,7 +516,7 @@ class ClassifyStpmCourseTest(TestCase):
     def test_stpm_matematik(self):
         self.assertEqual(
             classify_stpm_course('Matematik', 'Matematik', 'Sarjana Muda Matematik'),
-            'sains-hayat'
+            'sains-fizikal'
         )
 
     def test_stpm_matematik_kewangan(self):
@@ -505,7 +528,7 @@ class ClassifyStpmCourseTest(TestCase):
     def test_stpm_fizik(self):
         self.assertEqual(
             classify_stpm_course('Fizik', 'Fizik', 'Sarjana Muda Fizik'),
-            'sains-hayat'
+            'sains-fizikal'
         )
 
     def test_stpm_fizik_perubatan(self):
@@ -523,7 +546,7 @@ class ClassifyStpmCourseTest(TestCase):
     def test_stpm_kejururawatan(self):
         self.assertEqual(
             classify_stpm_course('Kejururawatan', 'Kejururawatan', 'Sarjana Muda Sains Kejururawatan'),
-            'perubatan'
+            'kejururawatan'
         )
 
     def test_stpm_farmasi(self):
@@ -553,7 +576,7 @@ class ClassifyStpmCourseTest(TestCase):
     def test_stpm_bahasa_linguistik(self):
         self.assertEqual(
             classify_stpm_course('Bahasa & Linguistik', 'Bahasa', 'Sarjana Muda Linguistik'),
-            'umum'
+            'bahasa'
         )
 
     def test_stpm_ekonomi(self):
@@ -583,7 +606,7 @@ class ClassifyStpmCourseTest(TestCase):
     def test_stpm_komunikasi_media(self):
         self.assertEqual(
             classify_stpm_course('Komunikasi & Media', 'Komunikasi', 'Sarjana Muda Komunikasi'),
-            'multimedia'
+            'komunikasi'
         )
 
     def test_stpm_sains_kemasyarakatan(self):
@@ -613,7 +636,7 @@ class ClassifyStpmCourseTest(TestCase):
     def test_stpm_geologi(self):
         self.assertEqual(
             classify_stpm_course('Geologi', 'Geologi', 'Sarjana Muda Geologi'),
-            'sains-hayat'
+            'sains-fizikal'
         )
 
     def test_stpm_sains_makanan(self):
@@ -637,13 +660,13 @@ class ClassifyStpmCourseTest(TestCase):
     def test_stpm_sains_data(self):
         self.assertEqual(
             classify_stpm_course('Sains Data', 'Sains Data', 'Sarjana Muda Sains Data'),
-            'it-rangkaian'
+            'sains-data'
         )
 
     def test_stpm_veterinar(self):
         self.assertEqual(
             classify_stpm_course('Veterinar', 'Veterinar', 'Doktor Perubatan Veterinar'),
-            'pertanian'
+            'perubatan'
         )
 
     def test_stpm_tekstil_fesyen(self):
@@ -665,10 +688,10 @@ class ClassifyStpmCourseTest(TestCase):
         )
 
     def test_stpm_lain_lain_kejururawatan(self):
-        """Lain-lain (Kejururawatan) → perubatan via keyword matching."""
+        """Lain-lain (Kejururawatan) → kejururawatan via name override."""
         self.assertEqual(
             classify_stpm_course('Lain-lain (Kejururawatan)', 'Kejururawatan', 'Sarjana Muda Kejururawatan'),
-            'perubatan'
+            'kejururawatan'
         )
 
     def test_stpm_lain_lain_kimia_gunaan(self):
@@ -723,7 +746,146 @@ class ClassifyStpmCourseTest(TestCase):
     def test_stpm_sains_bahan(self):
         self.assertEqual(
             classify_stpm_course('Sains Bahan', 'Sains Bahan', 'Sarjana Muda Sains Bahan'),
+            'sains-fizikal'
+        )
+
+
+    # ── Audit-specific tests ──
+
+    def test_stpm_pergigian(self):
+        self.assertEqual(
+            classify_stpm_course('Pergigian', 'Pergigian', 'Sarjana Muda Pergigian'),
+            'pergigian'
+        )
+
+    def test_stpm_allied_health_fisioterapi(self):
+        self.assertEqual(
+            classify_stpm_course('Fisioterapi', 'Fisioterapi', 'Sarjana Muda Fisioterapi'),
+            'kejururawatan'
+        )
+
+    def test_stpm_nutrition_not_kejururawatan(self):
+        """Nutrition → kulinari, NOT kejururawatan."""
+        self.assertEqual(
+            classify_stpm_course('Pemakanan', 'Sains Kesihatan', 'Sarjana Muda Sains Pemakanan'),
+            'kulinari'
+        )
+
+    def test_stpm_statistik_sains_data(self):
+        self.assertEqual(
+            classify_stpm_course('Statistik', 'Statistik', 'Sarjana Muda Statistik'),
+            'sains-data'
+        )
+
+    def test_stpm_pendidikan_fizik_stays(self):
+        """Education degrees stay as pendidikan regardless of subject."""
+        self.assertEqual(
+            classify_stpm_course('Pendidikan', 'Pendidikan', 'Sarjana Muda Pendidikan (Fizik)'),
+            'pendidikan'
+        )
+
+    def test_stpm_pertanian_food_science_kulinari(self):
+        """Food science under pertanian → kulinari."""
+        self.assertEqual(
+            classify_stpm_course('Pertanian & Bio-Industri', 'Pertanian & Bio-Industri',
+                                 'Sarjana Muda Sains Makanan'),
+            'kulinari'
+        )
+
+    def test_stpm_pertanian_biotech_sains_hayat(self):
+        """Pure biotech under pertanian → sains-hayat."""
+        self.assertEqual(
+            classify_stpm_course('Pertanian & Bio-Industri', 'Pertanian & Bio-Industri',
+                                 'Sarjana Muda Bioteknologi'),
             'sains-hayat'
+        )
+
+    def test_stpm_pertanian_agro_stays(self):
+        """Agricultural biotech stays as pertanian."""
+        self.assertEqual(
+            classify_stpm_course('Pertanian & Bio-Industri', 'Pertanian & Bio-Industri',
+                                 'Sarjana Muda Bioteknologi Pertanian'),
+            'pertanian'
+        )
+
+    def test_stpm_komunikasi_perhubungan_awam(self):
+        """Perhubungan awam → komunikasi via name override."""
+        self.assertEqual(
+            classify_stpm_course('Sains Sosial', 'Sains Sosial',
+                                 'Sarjana Muda Perhubungan Awam'),
+            'komunikasi'
+        )
+
+    def test_stpm_kejuruteraan_kimia_override(self):
+        """Kejuruteraan Kimia under wrong category → kimia-proses."""
+        self.assertEqual(
+            classify_stpm_course('Aero, Marin, Minyak & Gas', 'Aero, Marin, Minyak & Gas',
+                                 'Sarjana Muda Kejuruteraan Kimia'),
+            'kimia-proses'
+        )
+
+    def test_stpm_veterinar_override(self):
+        """Veterinar under agriculture category → perubatan via name."""
+        self.assertEqual(
+            classify_stpm_course('Pertanian & Bio-Industri', 'Pertanian & Bio-Industri',
+                                 'Doktor Perubatan Veterinar'),
+            'perubatan'
+        )
+
+    def test_stpm_biodiversiti_alam_sekitar(self):
+        """Biodiversiti → alam-sekitar."""
+        self.assertEqual(
+            classify_stpm_course('Biodiversiti', 'Biodiversiti', 'Sarjana Muda Biodiversiti'),
+            'alam-sekitar'
+        )
+
+    def test_spm_ua_muzik_senireka(self):
+        """UA Diploma Muzik → senireka."""
+        self.assertEqual(
+            classify_course('Perniagaan & Perdagangan', 'Umum', 'Diploma Muzik'),
+            'senireka'
+        )
+
+    def test_spm_ua_pendidikan_kanak(self):
+        """UA Diploma Pendidikan Awal Kanak-Kanak → pendidikan."""
+        self.assertEqual(
+            classify_course('Perniagaan & Perdagangan', 'Umum', 'Diploma Pendidikan Awal Kanak-Kanak'),
+            'pendidikan'
+        )
+
+    def test_spm_ua_bahasa_etnik(self):
+        """UA Diploma Bahasa Etnik → bahasa."""
+        self.assertEqual(
+            classify_course('Seni Reka & Kreatif', 'Bahasa', 'Diploma Bahasa Etnik Baru'),
+            'bahasa'
+        )
+
+    def test_spm_ua_turath_islami(self):
+        """UA Diploma Pengajian Turath Islami → pengajian-islam."""
+        self.assertEqual(
+            classify_course('Seni Reka & Kreatif', 'Pengajian Islam', 'Diploma Pengajian Turath Islami'),
+            'pengajian-islam'
+        )
+
+    def test_spm_ua_sains_sukan(self):
+        """UA Diploma Sains Sukan → sains-sosial."""
+        self.assertEqual(
+            classify_course('Pertanian & Bio-Industri', 'Sains', 'Diploma Sains Sukan Dan Kejurulatihan'),
+            'sains-sosial'
+        )
+
+    def test_spm_ua_diploma_sains(self):
+        """UA Diploma Sains → sains-hayat."""
+        self.assertEqual(
+            classify_course('Pertanian & Bio-Industri', 'Sains', 'Diploma Sains'),
+            'sains-hayat'
+        )
+
+    def test_spm_ua_sains_matematik(self):
+        """UA Diploma Sains (Matematik) → sains-fizikal."""
+        self.assertEqual(
+            classify_course('Pertanian & Bio-Industri', 'Sains', 'Diploma Sains (Matematik)'),
+            'sains-fizikal'
         )
 
 

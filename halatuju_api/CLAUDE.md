@@ -135,7 +135,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_ranking.py | 10 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest via field_key, field interest dict format, no field_key edge case, interview penalty), ranked results (sorted desc, empty list, output shape) |
 | test_eligibility_service.py | 19 | Service module: compute_student_merit (precomputed/grades/hist rename/default coq), compute_course_merit (standard/no cutoff/tvet/matric/stpm), deduplicate_pismp (passthrough/identical collapse/language merge), sort_eligible_courses (merit order/pismp/iljtm), compute_stats (source_type/pathway_type) |
 | test_preu_courses.py | 4 | Pre-U eligibility (stats include matric/stpm), search (level Pra-U, text Matrikulasi, source_type matric) |
-| test_field_taxonomy.py | 118 | FieldTaxonomy model integrity (7), SPM classify_course (48: all frontend_label variants incl. 24 production labels), STPM classify_stpm_course (57: 10 SPM-matching categories with course_name sub-classification, ~40 STPM-specific categories, edge cases), FieldListView API (4: groups structure, children count) |
+| test_field_taxonomy.py | 140 | FieldTaxonomy model integrity (7), SPM classify_course (51: all frontend_label variants incl. 24 production labels, substring regression tests), STPM classify_stpm_course (57: 10 SPM-matching categories with course_name sub-classification, ~40 STPM-specific categories, edge cases), FieldListView API (4: groups structure, children count), UA course-name overrides (11) |
 
 ### Annual STPM Data Refresh (before UPU application season)
 
@@ -176,7 +176,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-568 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
+590 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -229,7 +229,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - `map_course_careers` command: Gemini-assisted generate + apply modes
 - 12 new tests
 
-**Current state:** 568 backend tests, 17 frontend tests, 0 failures. 49/52 tech debt.
+**Current state:** 590 backend tests, 17 frontend tests, 0 failures. 49/52 tech debt.
 
 **MASCO Career Mappings — Next Sprint**
 - Sprint C: Run the pipeline — load MASCO data, generate mappings for UA/PISMP/STPM, review, apply
