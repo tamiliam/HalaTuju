@@ -7,7 +7,7 @@ from .models import (
     Course, CourseRequirement, CourseTag,
     Institution, CourseInstitution,
     StudentProfile, SavedCourse,
-    PartnerOrganisation
+    PartnerOrganisation, PartnerAdmin
 )
 
 
@@ -81,3 +81,10 @@ class SavedCourseAdmin(admin.ModelAdmin):
 class PartnerOrganisationAdmin(admin.ModelAdmin):
     list_display = ['code', 'name', 'is_active', 'created_at']
     list_filter = ['is_active']
+
+
+@admin.register(PartnerAdmin)
+class PartnerAdminAdmin(admin.ModelAdmin):
+    list_display = ['name', 'email', 'org', 'is_super_admin', 'created_at']
+    list_filter = ['is_super_admin', 'org']
+    search_fields = ['name', 'email']
