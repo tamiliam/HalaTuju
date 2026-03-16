@@ -472,6 +472,10 @@ class StudentProfile(models.Model):
         'PartnerOrganisation', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='referred_students',
     )
+    admin_org_code = models.CharField(
+        max_length=50, blank=True, default='',
+        help_text='If set, this user is an admin for the given partner org code',
+    )
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)

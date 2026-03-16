@@ -3,8 +3,18 @@ URL patterns for the courses app.
 """
 from django.urls import path
 from . import views
+from .views_admin import (
+    PartnerDashboardView, PartnerStudentListView,
+    PartnerStudentDetailView, PartnerStudentExportView,
+)
 
 urlpatterns = [
+    # Partner admin
+    path('admin/dashboard/', PartnerDashboardView.as_view(), name='partner-dashboard'),
+    path('admin/students/', PartnerStudentListView.as_view(), name='partner-students'),
+    path('admin/students/export/', PartnerStudentExportView.as_view(), name='partner-export'),
+    path('admin/students/<str:user_id>/', PartnerStudentDetailView.as_view(), name='partner-student-detail'),
+
     # Eligibility check (main engine endpoint)
     path('eligibility/check/', views.EligibilityCheckView.as_view(), name='eligibility-check'),
 
