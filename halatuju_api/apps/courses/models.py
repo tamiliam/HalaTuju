@@ -374,6 +374,22 @@ class CourseInstitution(models.Model):
         return f"{self.course_id} @ {self.institution_id}"
 
 
+class PartnerOrganisation(models.Model):
+    """Partner organisation that refers students via roadshows or campaigns."""
+    code = models.CharField(max_length=50, unique=True, help_text='URL slug: cumig, partner2')
+    name = models.CharField(max_length=200)
+    contact_email = models.EmailField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'partner_organisations'
+        ordering = ['name']
+
+    def __str__(self):
+        return f'{self.name} ({self.code})'
+
+
 class StudentProfile(models.Model):
     """
     User profile linked to Supabase Auth.
@@ -447,6 +463,18 @@ class StudentProfile(models.Model):
     spm_prereq_grades = models.JSONField(
         default=dict, blank=True,
         help_text="SPM prerequisite grades for STPM students: {'bm': 'A', 'eng': 'B+', ...}"
+    )
+    referral_source = models.CharField(
+        max_length=50, blank=True, null=True,
+        help_text='Raw referral code or chip value (e.g. cumig, whatsapp, google)',
+    )
+    referred_by_org = models.ForeignKey(
+        'PartnerOrganisation', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='referred_students',
+    )
+    admin_org_code = models.CharField(
+        max_length=50, blank=True, default='',
+        help_text='If set, this user is an admin for the given partner org code',
     )
 
     # Timestamps

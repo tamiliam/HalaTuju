@@ -276,6 +276,6 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             'student_signals', 'preferred_state', 'name', 'school',
             'nric', 'address', 'phone', 'family_income', 'siblings',
             'exam_type', 'stpm_grades', 'stpm_cgpa', 'muet_band',
-            'spm_prereq_grades',
+            'spm_prereq_grades', 'referral_source',
         ]
         extra_kwargs = {f: {'required': False} for f in fields}

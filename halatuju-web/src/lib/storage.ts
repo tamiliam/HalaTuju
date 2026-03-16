@@ -64,6 +64,9 @@ export const KEY_PENDING_AUTH_ACTION = 'halatuju_pending_auth_action'
 /** Resume action after login (save course, generate report, etc.) */
 export const KEY_RESUME_ACTION = 'halatuju_resume_action'
 
+/** Referral source: partner code or self-reported channel */
+export const KEY_REFERRAL_SOURCE = 'halatuju_referral_source'
+
 // ── Helpers ──────────────────────────────────────────────────────────
 
 /** Remove all halatuju_* keys from localStorage. */

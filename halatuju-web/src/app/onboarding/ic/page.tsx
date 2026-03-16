@@ -9,6 +9,7 @@ import { syncProfile } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 import IcInput from '@/components/IcInput'
 import { validateIc } from '@/lib/ic-utils'
+import { KEY_REFERRAL_SOURCE } from '@/lib/storage'
 
 export default function IcOnboardingPage() {
   const router = useRouter()
@@ -23,6 +24,17 @@ export default function IcOnboardingPage() {
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [referral, setReferral] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? localStorage.getItem(KEY_REFERRAL_SOURCE) : null
+  )
+
+  const REFERRAL_OPTIONS = [
+    { value: 'whatsapp', label: 'WhatsApp' },
+    { value: 'google', label: 'Google' },
+    { value: 'fbig', label: 'FB/IG' },
+    { value: 'cumig', label: 'CUMIG' },
+    { value: 'other', label: 'Lain-lain' },
+  ]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,8 +52,9 @@ export default function IcOnboardingPage() {
     setError(null)
 
     try {
+      const ref = localStorage.getItem(KEY_REFERRAL_SOURCE)
       await syncProfile(
-        { nric: ic, ...(name.trim() && { name: name.trim() }) },
+        { nric: ic, ...(name.trim() && { name: name.trim() }), ...(ref && { referral_source: ref }) },
         { token }
       )
       router.replace('/onboarding/exam-type')
@@ -99,6 +112,33 @@ export default function IcOnboardingPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
               />
             </div>
+
+            {!referral && (
+              <div className="mt-6 pt-4 border-t border-gray-100">
+                <p className="text-sm text-gray-500 mb-3">
+                  Bagaimana anda tahu tentang HalaTuju? (Pilihan)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {REFERRAL_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setReferral(opt.value)
+                        localStorage.setItem(KEY_REFERRAL_SOURCE, opt.value)
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                        referral === opt.value
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <button
               type="submit"

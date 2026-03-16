@@ -966,7 +966,19 @@ class ProfileView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer.save()
+        profile = serializer.save()
+
+        # Resolve referral source to partner organisation
+        referral = serializer.validated_data.get('referral_source')
+        if referral:
+            try:
+                from .models import PartnerOrganisation
+                org = PartnerOrganisation.objects.get(code=referral, is_active=True)
+                profile.referred_by_org = org
+                profile.save(update_fields=['referred_by_org'])
+            except PartnerOrganisation.DoesNotExist:
+                pass  # Generic source (whatsapp, google) — no partner FK
+
         return Response({'message': 'Profile updated'})
 
 
@@ -989,7 +1001,19 @@ class ProfileSyncView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer.save()
+        profile = serializer.save()
+
+        # Resolve referral source to partner organisation
+        referral = serializer.validated_data.get('referral_source')
+        if referral:
+            try:
+                from .models import PartnerOrganisation
+                org = PartnerOrganisation.objects.get(code=referral, is_active=True)
+                profile.referred_by_org = org
+                profile.save(update_fields=['referred_by_org'])
+            except PartnerOrganisation.DoesNotExist:
+                pass  # Generic source (whatsapp, google) — no partner FK
+
         return Response({
             'message': 'Profile synced',
             'created': created,
