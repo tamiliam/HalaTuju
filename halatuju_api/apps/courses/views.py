@@ -946,6 +946,7 @@ class ProfileView(APIView):
             'name': profile.name,
             'school': profile.school,
             'nric': profile.nric,
+            'angka_giliran': profile.angka_giliran,
             'address': profile.address,
             'phone': profile.phone,
             'family_income': profile.family_income,

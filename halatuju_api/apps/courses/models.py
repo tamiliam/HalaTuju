@@ -424,6 +424,8 @@ class StudentProfile(models.Model):
     # Identity (Lentera longitudinal tracking)
     nric = models.CharField(max_length=14, blank=True, default='',
                             help_text="NRIC: XXXXXX-XX-XXXX")
+    angka_giliran = models.CharField(max_length=9, blank=True, default='',
+                                     help_text="University application ref: AB123C456")
 
     # Family background
     family_income = models.CharField(max_length=30, blank=True, default='',
