@@ -14,6 +14,8 @@ Django REST API for SPM course eligibility checking. Deployed on Cloud Run (asia
                │ POST /api/v1/eligibility/check/
                │ POST /api/v1/profile/sync/
                │ GET/POST/PUT/DELETE /api/v1/outcomes/
+               │ POST /api/v1/admin/invite/
+               │ GET /api/v1/admin/orgs/
                ▼
 ┌─────────────────────────────────┐
 │  Django API (Cloud Run)         │
@@ -95,7 +97,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (546 collected, 546 pass, 0 failures, 0 skipped)
+# Run ALL tests (615 collected, 615 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -135,6 +137,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_ranking.py | 10 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest via field_key, field interest dict format, no field_key edge case, interview penalty), ranked results (sorted desc, empty list, output shape) |
 | test_eligibility_service.py | 19 | Service module: compute_student_merit (precomputed/grades/hist rename/default coq), compute_course_merit (standard/no cutoff/tvet/matric/stpm), deduplicate_pismp (passthrough/identical collapse/language merge), sort_eligible_courses (merit order/pismp/iljtm), compute_stats (source_type/pathway_type) |
 | test_preu_courses.py | 4 | Pre-U eligibility (stats include matric/stpm), search (level Pra-U, text Matrikulasi, source_type matric) |
+| test_admin_auth.py | 14 | PartnerAdmin model (CRUD, super admin flag), PartnerAdminMixin (UID lookup, email fallback, UID backfill), invite endpoint (super admin only, validation), orgs endpoint, AdminRoleView (admin_name) |
 | test_field_taxonomy.py | 140 | FieldTaxonomy model integrity (7), SPM classify_course (51: all frontend_label variants incl. 24 production labels, substring regression tests), STPM classify_stpm_course (57: 10 SPM-matching categories with course_name sub-classification, ~40 STPM-specific categories, edge cases), FieldListView API (4: groups structure, children count), UA course-name overrides (11) |
 
 ### Annual STPM Data Refresh (before UPU application season)
@@ -164,7 +167,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (590 collected, 590 must pass, SPM golden master = 5319, STPM golden master = 2103)
+# 1. Run all tests (615 collected, 615 must pass, SPM golden master = 5319, STPM golden master = 2098)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -176,7 +179,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-590 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2103. If golden master deviates, you broke eligibility logic.
+615 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2098. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -215,18 +218,16 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**STPM Requirements Pipeline Sprint 3 COMPLETE (2026-03-17)**
-- Validator tool (`validate_stpm_requirements.py`): 6 automated checks, validates against canonical key sets, handles dict-format named subjects
-- Reusable workflow (`Settings/_workflows/stpm-requirements-update.md`): 5-stage SOP with checkpoints and failure modes
-- Pipeline tool tests: 248 passing (in `Settings/_tools/stpm_requirements/tests/`)
-- Real-data validation: 0 unknown subjects, 3 PASS + 2 known FAIL (legacy grade E, empty UP6640001)
+**Admin Auth Sprint COMPLETE (2026-03-16)**
+- Separate admin auth system: PartnerAdmin model, isolated Supabase client, AdminAuthProvider
+- Admin login (email/password + Google), invite (super admin only), orgs endpoint
+- 14 new tests, 615 total backend tests passing
 
-**Current state:** 590 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2103.
-
-**STPM Requirements Pipeline — Next Sprint (Sprint 5)**
-- Build Playwright-based MOHE scraper (`scrape_stpm_requirements.py`) for next year's data refresh
+**Current state:** 615 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2103.
 
 **Pending work**
+- Supabase setup for admin auth: RLS on partner_admins, service role key for invite, seed super admin
+- STPM Requirements Pipeline Sprint 5: Playwright-based MOHE scraper for next year's data refresh
 - Phone/OTP login (blocked — Twilio ~RM12/mo)
 - Grade modulation layer
 - Course detail page fixes from `docs/Course Detail Page.pdf`

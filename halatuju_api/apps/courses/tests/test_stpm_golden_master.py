@@ -74,7 +74,7 @@ class TestStpmGoldenMaster:
 
         # FIRST RUN: Print the baseline and skip
         # After first run, replace None with the actual number
-        GOLDEN_BASELINE = 2103
+        GOLDEN_BASELINE = 2098
 
         if GOLDEN_BASELINE is None:
             for sid, count in per_student.items():

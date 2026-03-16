@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('courses', '0034_student_profile_admin_org'),
+        ('courses', '0035_add_angka_giliran'),
     ]
 
     operations = [

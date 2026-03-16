@@ -1,5 +1,37 @@
 # Changelog — HalaTuju
 
+## Admin Auth Sprint (2026-03-16)
+
+### Added
+- **PartnerAdmin model**: Separate admin identity table (`partner_admins`) with `supabase_user_id`, org FK, `is_super_admin`, name, email — replaces `admin_org_code` on StudentProfile
+- **Admin invite endpoint**: `POST /api/v1/admin/invite/` — super admin only, calls Supabase `inviteUserByEmail`
+- **Admin orgs endpoint**: `GET /api/v1/admin/orgs/` — returns all partner organisations
+- **AdminRoleView**: Returns `admin_name` for display in admin UI
+- **Isolated admin Supabase client**: Separate localStorage key (`halatuju_admin_session`) — admin and student sessions are completely independent
+- **AdminAuthProvider + useAdminAuth() hook**: Wraps only `/admin/*` routes, checks PartnerAdmin role via backend
+- **Admin login page** (`/admin/login`): Email/password + Google sign-in + forgot password
+- **Admin OAuth callback** (`/admin/auth/callback`): Handles Google sign-in redirect
+- **Admin invite page** (`/admin/invite`): Super admin only, supports existing or new org toggle
+- **Admin layout**: Nav with Dashboard | Pelajar | Invite | Log Out, separate from student auth
+- **Admin link**: Added to footer next to Contact Us
+- `contact_person` and `phone` fields added to PartnerOrganisation
+- `getOrgs()` and `inviteAdmin()` functions in `admin-api.ts`
+- PartnerAdmin registered in Django admin
+- 14 new admin auth tests (`test_admin_auth.py`)
+
+### Changed
+- **PartnerAdminMixin** rewritten: Uses `partner_admins` table with UID lookup + email fallback + UID backfill (replaces `admin_org_code` lookup on StudentProfile)
+- All admin pages rewired from `useAuth()` to `useAdminAuth()`
+
+### Removed
+- `admin_org_code` field from StudentProfile (migration 0037)
+
+### Stats
+- Backend tests: 615 pass, 0 failures (was 590)
+- Migrations: 0036_partneradmin, 0037_remove_admin_org_code_add_org_fields
+
+---
+
 ## IC Gate + Profile Redesign Sprint (2026-03-15)
 
 ### Added

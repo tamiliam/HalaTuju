@@ -323,6 +323,30 @@
 
 **Revisit if:** A new data source with thousands of unpredictable category values is added, where keyword matching becomes impractical.
 
+## Separate admin auth with isolated Supabase clients — Admin Auth Sprint, 2026-03-16
+
+**Decision:** Built a completely separate admin authentication system: PartnerAdmin model (not a role on StudentProfile), isolated Supabase client with separate localStorage key (`halatuju_admin_session`), AdminAuthProvider that wraps only `/admin/*` routes. Admin and student sessions are fully independent.
+
+**Alternatives considered:** (1) Add `is_admin` + `admin_org` fields to StudentProfile — simpler model but conflates identities. (2) Shared Supabase client with role-based routing — risk of session confusion. (3) Separate everything (chosen).
+
+**Rationale:** Admin identity is fundamentally different from student identity. Different fields (org FK, is_super_admin, name), different auth flows (invite-based vs self-signup), different lifecycles. A role flag on StudentProfile would require every admin to also have a student profile — wrong semantically and creates confusing data. Isolated Supabase clients prevent any possibility of a student session granting admin access, even if the same person holds both roles.
+
+**Trade-offs:** More code to maintain (two auth providers, two Supabase clients, two sets of session management). Admin must log in separately even if they're also a student. But the security guarantee is worth the duplication.
+
+**Revisit if:** A unified identity system is needed (e.g., single sign-on across student and admin), or if the number of role types grows beyond two and a proper RBAC system becomes warranted.
+
+## PartnerAdmin UID backfill pattern — Admin Auth Sprint, 2026-03-16
+
+**Decision:** PartnerAdminMixin uses UID lookup first, falls back to email lookup, then backfills the UID on the PartnerAdmin row. This handles the invite flow where the admin row is created (with email only) before the user has authenticated with Supabase.
+
+**Alternatives considered:** (1) Require UID at invite time — impossible since the user hasn't signed up yet. (2) Two-step invite: create Supabase user first, then create PartnerAdmin with UID — requires service role key and more complex flow. (3) Email fallback + UID backfill (chosen).
+
+**Rationale:** The invite creates a PartnerAdmin row with email. When the invited user signs up and first hits an admin endpoint, the mixin finds them by email and stores their UID for fast subsequent lookups. This is simple, handles the temporal gap between invite and first login, and requires no service role key for the lookup path.
+
+**Trade-offs:** First admin request after signup is slightly slower (email lookup + UID write). Negligible in practice.
+
+**Revisit if:** Never — this is a standard pattern for invite-based systems.
+
 ## List-of-dicts for multi-tier STPM subject groups — STPM Pipeline Sprint 2, 2026-03-16
 
 **Decision:** `stpm_subject_group` and `spm_subject_group` JSONFields store a **list of dicts** instead of a single dict. Each dict has `{subjects, min_grade, min_count, exclude}`. Engine uses AND semantics — student must satisfy all groups.
