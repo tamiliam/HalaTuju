@@ -239,3 +239,49 @@ class TestMascoOccupationModel(TestCase):
         self.assertEqual(MascoOccupation.objects.filter(masco_code='3115-24').count(), 1)
         self.occ.refresh_from_db()
         self.assertIn('Updated', self.occ.job_title)
+
+
+class TestLoadMascoFull(TestCase):
+    """Test loading full MASCO dataset from CSV."""
+
+    def test_load_creates_records(self):
+        """Loading CSV should create MascoOccupation records."""
+        from django.core.management import call_command
+        from io import StringIO
+        out = StringIO()
+        call_command('load_masco_full', stdout=out)
+        output = out.getvalue()
+        count = MascoOccupation.objects.count()
+        self.assertGreater(count, 4000, f"Expected 4000+ records, got {count}")
+        self.assertIn('Loaded', output)
+
+    def test_emasco_url_generated(self):
+        """Each record should have emasco_url from kod_masco."""
+        from django.core.management import call_command
+        from io import StringIO
+        call_command('load_masco_full', stdout=StringIO())
+        specific = MascoOccupation.objects.filter(masco_code__contains='-').first()
+        self.assertIsNotNone(specific, "Should have at least one hyphenated MASCO code")
+        expected = f'https://emasco.mohr.gov.my/masco/{specific.masco_code}'
+        self.assertEqual(specific.emasco_url, expected)
+
+    def test_idempotent(self):
+        """Running twice should not create duplicates."""
+        from django.core.management import call_command
+        from io import StringIO
+        call_command('load_masco_full', stdout=StringIO())
+        count1 = MascoOccupation.objects.count()
+        call_command('load_masco_full', stdout=StringIO())
+        count2 = MascoOccupation.objects.count()
+        self.assertEqual(count1, count2)
+
+    def test_duplicate_kod_masco_handled(self):
+        """Duplicate kod_masco values in CSV should keep first occurrence only."""
+        from django.core.management import call_command
+        from io import StringIO
+        call_command('load_masco_full', stdout=StringIO())
+        # kod_masco '11' appears twice in CSV (civilian + military)
+        # Should have exactly one record, with the first (civilian) title
+        records = MascoOccupation.objects.filter(masco_code='11')
+        self.assertEqual(records.count(), 1)
+        self.assertNotIn('TDM', records.first().job_title)
