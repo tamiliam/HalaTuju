@@ -3,10 +3,10 @@
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { signOut } from '@/lib/supabase'
-import { clearAll } from '@/lib/storage'
+import { clearAll, hasGrades } from '@/lib/storage'
 import { useT } from '@/lib/i18n'
 import LanguageSelector from './LanguageSelector'
 import { useProfileCompleteness } from '@/lib/useProfileCompleteness'
@@ -14,6 +14,7 @@ import { useProfileCompleteness } from '@/lib/useProfileCompleteness'
 export default function AppHeader() {
   const { t } = useT()
   const pathname = usePathname()
+  const router = useRouter()
   const { session, isAuthenticated, showAuthGate } = useAuth()
   const { incompleteCount } = useProfileCompleteness()
   const [profileOpen, setProfileOpen] = useState(false)
@@ -75,7 +76,7 @@ export default function AppHeader() {
             link.authRequired && !isAuthenticated ? (
               <button
                 key={link.href}
-                onClick={() => showAuthGate(link.authReason || 'profile')}
+                onClick={() => hasGrades() ? showAuthGate(link.authReason || 'profile') : router.push('/onboarding/exam-type')}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-50`}
               >
                 {link.label}
@@ -224,7 +225,7 @@ export default function AppHeader() {
               link.authRequired && !isAuthenticated ? (
                 <button
                   key={link.href}
-                  onClick={() => { setMobileOpen(false); showAuthGate(link.authReason || 'profile') }}
+                  onClick={() => { setMobileOpen(false); hasGrades() ? showAuthGate(link.authReason || 'profile') : router.push('/onboarding/exam-type') }}
                   className="block w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50"
                 >
                   {link.label}

@@ -75,3 +75,16 @@ export function clearAll(): void {
     .filter(k => k.startsWith('halatuju_'))
     .forEach(k => localStorage.removeItem(k))
 }
+
+/** Check if the user has entered any subject grades (SPM or STPM). */
+export function hasGrades(): boolean {
+  try {
+    const spm = localStorage.getItem(KEY_GRADES)
+    if (spm && Object.keys(JSON.parse(spm)).length > 0) return true
+    const stpm = localStorage.getItem(KEY_STPM_GRADES)
+    if (stpm && Object.keys(JSON.parse(stpm)).length > 0) return true
+  } catch {
+    // Malformed JSON — treat as no grades
+  }
+  return false
+}

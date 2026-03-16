@@ -1,16 +1,18 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { getSavedCourses, saveCourse, unsaveCourse } from '@/lib/api'
 import { useToast } from '@/components/Toast'
-import { KEY_RESUME_ACTION } from '@/lib/storage'
+import { KEY_RESUME_ACTION, hasGrades } from '@/lib/storage'
 
 /**
  * Shared hook for saved course state across all pages.
  * Handles: loading saved IDs, optimistic toggle, auth gating, resume after login, toast feedback.
  */
 export function useSavedCourses() {
+  const router = useRouter()
   const { token, isAuthenticated, showAuthGate } = useAuth()
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const { showToast } = useToast()
@@ -80,14 +82,18 @@ export function useSavedCourses() {
     }
   }, [token, savedIds, showToast])
 
-  // Auth-gated toggle: shows auth gate if not logged in, otherwise toggles
+  // Auth-gated toggle: redirects to onboarding if no grades, shows auth gate if grades but not logged in
   const toggleSaveOrGate = useCallback((courseId: string) => {
     if (!isAuthenticated) {
+      if (!hasGrades()) {
+        router.push('/onboarding/exam-type')
+        return
+      }
       showAuthGate('save', { courseId })
       return
     }
     toggleSave(courseId)
-  }, [isAuthenticated, showAuthGate, toggleSave])
+  }, [isAuthenticated, showAuthGate, toggleSave, router])
 
   return { savedIds, toggleSave: toggleSaveOrGate }
 }

@@ -12,7 +12,7 @@ import { useSavedCourses } from '@/hooks/useSavedCourses'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import clsx from 'clsx'
 import { useT } from '@/lib/i18n'
-import { KEY_PROFILE, KEY_GRADES, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_RESUME_ACTION } from '@/lib/storage'
+import { KEY_PROFILE, KEY_GRADES, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_RESUME_ACTION, hasGrades } from '@/lib/storage'
 
 const PAGE_SIZE = 6
 
@@ -139,6 +139,10 @@ function SearchPageInner() {
       return
     }
     if (!isAuthenticated) {
+      if (!hasGrades()) {
+        router.push('/onboarding/exam-type')
+        return
+      }
       showAuthGate('eligible')
       return
     }
