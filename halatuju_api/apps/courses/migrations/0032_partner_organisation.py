@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('courses', '0030_add_stpm_career_occupations'),
+        ('courses', '0031_stpmrequirement_no_disability_and_more'),
     ]
 
     operations = [

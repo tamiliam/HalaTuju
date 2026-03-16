@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('courses', '0032_student_profile_referral'),
+        ('courses', '0033_student_profile_referral'),
     ]
 
     operations = [
