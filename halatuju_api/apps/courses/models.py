@@ -374,6 +374,22 @@ class CourseInstitution(models.Model):
         return f"{self.course_id} @ {self.institution_id}"
 
 
+class PartnerOrganisation(models.Model):
+    """Partner organisation that refers students via roadshows or campaigns."""
+    code = models.CharField(max_length=50, unique=True, help_text='URL slug: cumig, partner2')
+    name = models.CharField(max_length=200)
+    contact_email = models.EmailField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'partner_organisations'
+        ordering = ['name']
+
+    def __str__(self):
+        return f'{self.name} ({self.code})'
+
+
 class StudentProfile(models.Model):
     """
     User profile linked to Supabase Auth.
