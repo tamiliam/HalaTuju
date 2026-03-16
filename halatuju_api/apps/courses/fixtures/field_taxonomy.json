@@ -1,0 +1,8 @@
+[
+{
+  "model": "courses.fieldtaxonomy",
+  "pk": "aero",
+  "fields": {
+    "name_en": "Aerospace & Aviation",
+    "name_ms": "Aero & Penerbangan",
+    "name_ta": 

@@ -628,21 +628,25 @@ export default function ProfilePage() {
                   <input
                     type="text"
                     value={angkaGiliran}
-                    onChange={e => {
-                      const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 9)
-                      setAngkaGiliran(val)
-                    }}
-                    placeholder="AB1234567"
+                    onChange={e => setAngkaGiliran(e.target.value.toUpperCase().slice(0, 9))}
+                    placeholder="AB123C456"
                     maxLength={9}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none font-mono uppercase"
+                    className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-1 outline-none font-mono uppercase ${
+                      angkaGiliran && !/^[A-Z]{2}\d{3}[A-Z]\d{3}$/.test(angkaGiliran)
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-500'
+                        : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
+                    }`}
                   />
+                  {angkaGiliran && !/^[A-Z]{2}\d{3}[A-Z]\d{3}$/.test(angkaGiliran) && (
+                    <p className="text-xs text-red-500 mt-1">{t('profile.angkaGiliranInvalid')}</p>
+                  )}
                   <p className="text-xs text-gray-400 mt-1">{t('profile.angkaGiliranHelper')}</p>
                 </div>
                 <div className="flex gap-3 pt-4">
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
                     {t('profile.cancel')}
                   </button>
-                  <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
+                  <button onClick={saveSection} disabled={saving || (!!angkaGiliran && !/^[A-Z]{2}\d{3}[A-Z]\d{3}$/.test(angkaGiliran))} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
                     {saving ? '...' : t('profile.save')}
                   </button>
                 </div>
