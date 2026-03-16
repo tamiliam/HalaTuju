@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { getCourse, type Course, type Institution, type MascoOccupation, type CourseRequirements } from '@/lib/api'
+import { getCourse, type Course, type Institution, type CourseRequirements } from '@/lib/api'
 import { useSavedCourses } from '@/hooks/useSavedCourses'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
@@ -11,6 +11,7 @@ import CourseHeader from '@/components/CourseHeader'
 import RequirementsCard from '@/components/RequirementsCard'
 import SpecialConditions from '@/components/SpecialConditions'
 import { LoadingSpinner, CourseNotFound, InfoRow, CourseActions } from '@/components/CourseDetailShared'
+import CareerPathways from '@/components/CareerPathways'
 import { useT } from '@/lib/i18n'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import { useState, useMemo, useCallback } from 'react'
@@ -106,32 +107,7 @@ export default function CourseDetailPage() {
             </section>
 
             {/* Career Pathways */}
-            {career_occupations && career_occupations.length > 0 && (
-              <section className="bg-white rounded-xl border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  {t('courseDetail.careerPathways')}
-                </h2>
-                <p className="text-sm text-gray-500 mb-4">
-                  {t('courseDetail.careerPathwaysDesc')}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {career_occupations.map((occ) => (
-                    <a
-                      key={occ.masco_code}
-                      href={occ.emasco_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-full text-sm font-medium hover:bg-indigo-100 transition-colors"
-                    >
-                      {occ.job_title}
-                      <svg className="w-3.5 h-3.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </a>
-                  ))}
-                </div>
-              </section>
-            )}
+            <CareerPathways occupations={career_occupations || []} />
 
             {/* Institutions */}
             {courseId.startsWith('stpm-') ? (

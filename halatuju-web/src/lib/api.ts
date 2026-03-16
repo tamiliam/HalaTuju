@@ -629,6 +629,7 @@ export interface StpmCourseDetail {
   mohe_url?: string
   requirements: StpmRequirements
   institution: StpmInstitutionDetail | null
+  career_occupations: MascoOccupation[]
 }
 
 export async function searchStpmCourses(

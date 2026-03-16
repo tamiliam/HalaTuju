@@ -8,6 +8,7 @@ import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 import CourseHeader from '@/components/CourseHeader'
 import SpecialConditions from '@/components/SpecialConditions'
+import CareerPathways from '@/components/CareerPathways'
 import { LoadingSpinner, CourseNotFound, InfoRow, CourseActions } from '@/components/CourseDetailShared'
 import { useT } from '@/lib/i18n'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
@@ -77,6 +78,9 @@ export default function StpmCourseDetailPage() {
                 )}
               </section>
             )}
+
+            {/* Career Pathways */}
+            <CareerPathways occupations={data.career_occupations || []} />
 
             {/* Institution */}
             <section className="bg-white rounded-xl border border-gray-200 p-6">
