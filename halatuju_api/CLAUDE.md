@@ -176,7 +176,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-546 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
+556 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1811. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -215,15 +215,19 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Field Taxonomy Sprint 5 COMPLETE (2026-03-16)** — Final sprint
-- `field_key` non-nullable on Course + StpmCourse (migration 0027)
-- `frontend_label` removed from Course model (migration 0028)
-- `category` removed from StpmCourse model (migration 0029)
-- All frontend `course.field` fallbacks replaced with `getFieldName(field_key)`
-- `frontend_label` removed from serializer + TS types
-- Field taxonomy series DONE (5 sprints, 37 fields, unified across SPM+STPM)
+**MASCO Career Mappings Sprint A COMPLETE (2026-03-16)**
+- `load_masco_full` management command: loads 4,854 MASCO 2020 occupations from CSV
+- eMASCO URLs auto-generated: `https://emasco.mohr.gov.my/masco/{code}`
+- `StpmCourse.career_occupations` M2M field added (mirrors SPM Course model)
+- STPM detail API returns `career_occupations` array
+- Shared `CareerPathways` component extracted, used by both SPM + STPM detail pages
+- Data file: `halatuju_api/data/masco_full.csv` (4,854 jobs, all MASCO 2020 digits 0-9)
 
-**Current state:** 530 backend tests, 17 frontend tests, 0 failures. 49/52 tech debt.
+**Current state:** 556 backend tests, 17 frontend tests, 0 failures. 49/52 tech debt.
+
+**MASCO Career Mappings — Next Sprints**
+- Sprint B: AI mapping pipeline (field_key→MASCO digit map, Gemini matcher, review CSV)
+- Sprint C: Review + apply mappings for all ~1,275 courses (89 UA, 73 PISMP, 1,113 STPM)
 
 **Remaining tech debt (3 items)**
 - TD-024: Course name field is `course` (too risky to rename)
