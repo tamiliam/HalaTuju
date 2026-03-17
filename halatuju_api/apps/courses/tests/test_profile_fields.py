@@ -302,3 +302,144 @@ class TestProfileSyncStpmFields:
         assert response.data['stpm_cgpa'] == 3.33
         assert response.data['muet_band'] == 5
         assert response.data['spm_prereq_grades'] == {'bm': 'B+'}
+
+
+@pytest.mark.django_db
+class TestContactFields:
+    """Contact email/phone fields with verification status."""
+
+    def test_contact_email_default_blank(self):
+        profile = StudentProfile.objects.create(supabase_user_id='contact-test-1')
+        assert profile.contact_email == ''
+        assert profile.contact_email_verified is False
+
+    def test_contact_phone_default_blank(self):
+        profile = StudentProfile.objects.create(supabase_user_id='contact-test-2')
+        assert profile.contact_phone == ''
+        assert profile.contact_phone_verified is False
+
+    def test_contact_email_can_be_set(self):
+        profile = StudentProfile.objects.create(
+            supabase_user_id='contact-test-3',
+            contact_email='test@example.com',
+            contact_email_verified=True,
+        )
+        profile.refresh_from_db()
+        assert profile.contact_email == 'test@example.com'
+        assert profile.contact_email_verified is True
+
+    def test_contact_phone_can_be_set(self):
+        profile = StudentProfile.objects.create(
+            supabase_user_id='contact-test-4',
+            contact_phone='+60123456789',
+            contact_phone_verified=False,
+        )
+        profile.refresh_from_db()
+        assert profile.contact_phone == '+60123456789'
+        assert profile.contact_phone_verified is False
+
+
+@pytest.mark.django_db
+class TestNricUniqueness:
+    """NRIC must be unique across profiles."""
+
+    def test_nric_unique_constraint(self):
+        StudentProfile.objects.create(
+            supabase_user_id='nric-uniq-1', nric='040815-01-2022'
+        )
+        from django.db import IntegrityError
+        with pytest.raises(IntegrityError):
+            StudentProfile.objects.create(
+                supabase_user_id='nric-uniq-2', nric='040815-01-2022'
+            )
+
+    def test_blank_nric_not_unique(self):
+        """Multiple profiles can have blank NRIC (pre-onboarding)."""
+        StudentProfile.objects.create(supabase_user_id='blank-nric-1', nric='')
+        StudentProfile.objects.create(supabase_user_id='blank-nric-2', nric='')
+        assert StudentProfile.objects.filter(nric='').count() == 2
+
+
+@pytest.mark.django_db
+class TestProfileContactAPI:
+    """Profile API returns and accepts contact fields."""
+
+    def test_get_profile_returns_contact_fields(self):
+        StudentProfile.objects.create(
+            supabase_user_id='contact-api-1',
+            contact_email='test@example.com',
+            contact_email_verified=True,
+            contact_phone='+60123456789',
+            contact_phone_verified=False,
+        )
+        factory = RequestFactory()
+        request = factory.get('/api/v1/profile/')
+        request.user_id = 'contact-api-1'
+        request.supabase_user = {'id': 'contact-api-1', 'email': 'login@gmail.com'}
+        resp = ProfileView.as_view()(request)
+        assert resp.data['contact_email'] == 'test@example.com'
+        assert resp.data['contact_email_verified'] is True
+        assert resp.data['contact_phone'] == '+60123456789'
+        assert resp.data['contact_phone_verified'] is False
+        assert resp.data['email'] == 'login@gmail.com'
+
+    def test_put_contact_email_resets_verified(self):
+        """Editing contact_email resets verification status."""
+        StudentProfile.objects.create(
+            supabase_user_id='contact-api-2',
+            contact_email='old@example.com',
+            contact_email_verified=True,
+        )
+        factory = RequestFactory()
+        request = factory.put(
+            '/api/v1/profile/',
+            data={'contact_email': 'new@example.com'},
+            content_type='application/json',
+        )
+        request.user_id = 'contact-api-2'
+        request.supabase_user = {'id': 'contact-api-2', 'email': 'login@gmail.com'}
+        resp = ProfileView.as_view()(request)
+        assert resp.status_code == 200
+        profile = StudentProfile.objects.get(supabase_user_id='contact-api-2')
+        assert profile.contact_email == 'new@example.com'
+        assert profile.contact_email_verified is False
+
+    def test_put_contact_phone_resets_verified(self):
+        """Editing contact_phone resets verification status."""
+        StudentProfile.objects.create(
+            supabase_user_id='contact-api-3',
+            contact_phone='+60111111111',
+            contact_phone_verified=True,
+        )
+        factory = RequestFactory()
+        request = factory.put(
+            '/api/v1/profile/',
+            data={'contact_phone': '+60222222222'},
+            content_type='application/json',
+        )
+        request.user_id = 'contact-api-3'
+        request.supabase_user = {'id': 'contact-api-3', 'email': 'login@gmail.com'}
+        resp = ProfileView.as_view()(request)
+        assert resp.status_code == 200
+        profile = StudentProfile.objects.get(supabase_user_id='contact-api-3')
+        assert profile.contact_phone == '+60222222222'
+        assert profile.contact_phone_verified is False
+
+    def test_put_same_contact_email_keeps_verified(self):
+        """Saving the same email value should NOT reset verified status."""
+        StudentProfile.objects.create(
+            supabase_user_id='contact-api-4',
+            contact_email='same@example.com',
+            contact_email_verified=True,
+        )
+        factory = RequestFactory()
+        request = factory.put(
+            '/api/v1/profile/',
+            data={'contact_email': 'same@example.com'},
+            content_type='application/json',
+        )
+        request.user_id = 'contact-api-4'
+        request.supabase_user = {'id': 'contact-api-4', 'email': 'login@gmail.com'}
+        ProfileView.as_view()(request)
+        profile = StudentProfile.objects.get(supabase_user_id='contact-api-4')
+        assert profile.contact_email_verified is True  # Should stay True

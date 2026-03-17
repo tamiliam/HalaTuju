@@ -56,21 +56,26 @@ export default function AdminStudentDetail() {
 
   return (
     <div>
-      <Link href="/admin/students" className="text-blue-600 text-sm hover:underline mb-4 block">
-        &larr; Kembali ke senarai
+      <Link href="/admin/students" className="inline-flex items-center gap-1.5 text-blue-600 text-sm hover:underline mb-5">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Kembali ke senarai
       </Link>
 
-      <h1 className="text-2xl font-bold mb-2">{data.name || 'Tiada Nama'}</h1>
-      <p className="text-gray-500 mb-6">
+      <h1 className="text-2xl font-bold mb-1">{data.name || 'Tiada Nama'}</h1>
+      <p className="text-gray-500 mb-8 text-sm">
         {data.nric} &middot; {data.exam_type?.toUpperCase()} &middot; {data.gender}
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Card 1: Maklumat Peribadi */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border">
-          <h2 className="font-semibold mb-3">Maklumat Peribadi</h2>
-          <dl className="space-y-2 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">Nama Penuh</dt><dd>{data.name || '\u2014'}</dd></div>
+        <div className="bg-white rounded-xl p-6 shadow-sm border">
+          <h2 className="font-semibold mb-4 flex items-center gap-2">
+            <span className="text-lg">&#128100;</span> Maklumat Peribadi
+          </h2>
+          <dl className="space-y-3 text-sm">
+            <div className="flex justify-between"><dt className="text-gray-500">Nama Penuh</dt><dd className="font-medium">{data.name || '\u2014'}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">No. KP</dt><dd className="font-mono">{data.nric || '\u2014'}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Angka Giliran</dt><dd className="font-mono">{data.angka_giliran || '\u2014'}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Jantina</dt><dd>{data.gender || '\u2014'}</dd></div>
@@ -79,9 +84,11 @@ export default function AdminStudentDetail() {
         </div>
 
         {/* Card 2: Hubungi & Sekolah */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border">
-          <h2 className="font-semibold mb-3">Hubungi &amp; Sekolah</h2>
-          <dl className="space-y-2 text-sm">
+        <div className="bg-white rounded-xl p-6 shadow-sm border">
+          <h2 className="font-semibold mb-4 flex items-center gap-2">
+            <span className="text-lg">&#128222;</span> Hubungi &amp; Sekolah
+          </h2>
+          <dl className="space-y-3 text-sm">
             <div className="flex justify-between"><dt className="text-gray-500">Telefon</dt><dd>{data.phone || '\u2014'}</dd></div>
             <div><dt className="text-gray-500">Alamat</dt><dd className="mt-1">{data.address || '\u2014'}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Sekolah</dt><dd>{data.school || '\u2014'}</dd></div>
@@ -89,87 +96,103 @@ export default function AdminStudentDetail() {
         </div>
 
         {/* Card 3: Latar Belakang Keluarga */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border">
-          <h2 className="font-semibold mb-3">Latar Belakang Keluarga</h2>
-          <dl className="space-y-2 text-sm">
+        <div className="bg-white rounded-xl p-6 shadow-sm border">
+          <h2 className="font-semibold mb-4 flex items-center gap-2">
+            <span className="text-lg">&#128106;</span> Latar Belakang Keluarga
+          </h2>
+          <dl className="space-y-3 text-sm">
             <div className="flex justify-between"><dt className="text-gray-500">Pendapatan Keluarga</dt><dd>{data.family_income || '\u2014'}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Bilangan Adik-Beradik</dt><dd>{data.siblings ?? '\u2014'}</dd></div>
           </dl>
         </div>
 
         {/* Card 4: Kesihatan & Kelayakan */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border">
-          <h2 className="font-semibold mb-3">Kesihatan &amp; Kelayakan</h2>
-          <dl className="space-y-2 text-sm">
+        <div className="bg-white rounded-xl p-6 shadow-sm border">
+          <h2 className="font-semibold mb-4 flex items-center gap-2">
+            <span className="text-lg">&#127973;</span> Kesihatan &amp; Kelayakan
+          </h2>
+          <dl className="space-y-3 text-sm">
             <div className="flex justify-between"><dt className="text-gray-500">Buta Warna</dt><dd>{data.colorblind || '\u2014'}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">OKU</dt><dd>{data.disability || '\u2014'}</dd></div>
           </dl>
         </div>
 
-        {/* Card 5: SPM Grades (shown if SPM grades exist) */}
+        {/* Card 5: SPM Grades */}
         {hasSpmGrades && (
-          <div className="bg-white rounded-lg p-6 shadow-sm border md:col-span-2">
-            <h2 className="font-semibold mb-3">Keputusan SPM</h2>
-            <dl className="grid grid-cols-3 gap-2 text-sm">
+          <div className="bg-white rounded-xl p-6 shadow-sm border md:col-span-2">
+            <h2 className="font-semibold mb-4 flex items-center gap-2">
+              <span className="text-lg">&#128202;</span> Keputusan SPM
+            </h2>
+            <div className="flex flex-wrap gap-2">
               {Object.entries(data.grades).map(([subject, grade]) => (
-                <div key={subject}>
-                  <dt className="text-gray-500">{subject.toUpperCase()}</dt>
-                  <dd className="font-medium">{grade as string}</dd>
-                </div>
+                <span key={subject} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-sm">
+                  <span className="text-gray-600">{subject.toUpperCase()}</span>
+                  <span className="font-bold text-blue-700">{grade as string}</span>
+                </span>
               ))}
-            </dl>
+            </div>
           </div>
         )}
 
-        {/* Card 6: STPM Grades (shown if STPM grades exist) */}
+        {/* Card 6: STPM Grades */}
         {hasStpmGrades && (
-          <div className="bg-white rounded-lg p-6 shadow-sm border md:col-span-2">
-            <h2 className="font-semibold mb-3">Keputusan STPM</h2>
-            <div className="flex gap-6 mb-3 text-sm">
+          <div className="bg-white rounded-xl p-6 shadow-sm border md:col-span-2">
+            <h2 className="font-semibold mb-4 flex items-center gap-2">
+              <span className="text-lg">&#128202;</span> Keputusan STPM
+            </h2>
+            <div className="flex gap-4 mb-4 text-sm">
               {data.stpm_cgpa != null && (
-                <div><span className="text-gray-500">CGPA:</span> <span className="font-medium">{data.stpm_cgpa.toFixed(2)}</span></div>
+                <span className="px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200">
+                  <span className="text-gray-600">CGPA:</span> <span className="font-bold text-purple-700">{data.stpm_cgpa.toFixed(2)}</span>
+                </span>
               )}
               {data.muet_band != null && (
-                <div><span className="text-gray-500">MUET:</span> <span className="font-medium">Band {data.muet_band}</span></div>
+                <span className="px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200">
+                  <span className="text-gray-600">MUET:</span> <span className="font-bold text-purple-700">Band {data.muet_band}</span>
+                </span>
               )}
             </div>
-            <dl className="grid grid-cols-3 gap-2 text-sm">
+            <div className="flex flex-wrap gap-2">
               {Object.entries(data.stpm_grades).map(([subject, grade]) => (
-                <div key={subject}>
-                  <dt className="text-gray-500">{subject}</dt>
-                  <dd className="font-medium">{grade as string}</dd>
-                </div>
+                <span key={subject} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-sm">
+                  <span className="text-gray-600">{subject}</span>
+                  <span className="font-bold text-purple-700">{grade as string}</span>
+                </span>
               ))}
-            </dl>
+            </div>
           </div>
         )}
 
-        {/* Show message if no grades at all */}
+        {/* No grades */}
         {!hasSpmGrades && !hasStpmGrades && (
-          <div className="bg-white rounded-lg p-6 shadow-sm border md:col-span-2">
-            <h2 className="font-semibold mb-3">Keputusan Peperiksaan</h2>
+          <div className="bg-white rounded-xl p-6 shadow-sm border md:col-span-2">
+            <h2 className="font-semibold mb-4 flex items-center gap-2">
+              <span className="text-lg">&#128202;</span> Keputusan Peperiksaan
+            </h2>
             <p className="text-gray-400 text-sm">Belum diisi</p>
           </div>
         )}
 
         {/* Card 7: Keutamaan & Isyarat */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border">
-          <h2 className="font-semibold mb-3">Keutamaan &amp; Isyarat</h2>
-          <dl className="space-y-2 text-sm">
+        <div className="bg-white rounded-xl p-6 shadow-sm border">
+          <h2 className="font-semibold mb-4 flex items-center gap-2">
+            <span className="text-lg">&#11088;</span> Keutamaan &amp; Isyarat
+          </h2>
+          <dl className="space-y-3 text-sm">
             <div className="flex justify-between"><dt className="text-gray-500">Negeri Pilihan</dt><dd>{data.preferred_state || '\u2014'}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Tekanan Kewangan</dt><dd>{data.financial_pressure || '\u2014'}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Kesanggupan Berpindah</dt><dd>{data.travel_willingness || '\u2014'}</dd></div>
           </dl>
           {Object.keys(fieldInterest).length > 0 && (
-            <div className="mt-3">
+            <div className="mt-4 pt-3 border-t border-gray-100">
               <p className="text-gray-500 text-sm mb-2">Minat Bidang</p>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(fieldInterest).map(([field, value]) => {
                   const strength = getStrengthLabel(value as number)
                   return (
-                    <span key={field} className="flex items-center gap-1.5 text-sm">
+                    <span key={field} className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm border ${strength.className}`}>
                       {field}
-                      <span className={`px-1.5 py-0.5 rounded text-xs ${strength.className}`}>{strength.text}</span>
+                      <span className="font-semibold">{strength.text}</span>
                     </span>
                   )
                 })}
@@ -179,13 +202,15 @@ export default function AdminStudentDetail() {
         </div>
 
         {/* Card 8: Kursus Disimpan */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border">
-          <h2 className="font-semibold mb-3">Kursus Disimpan</h2>
+        <div className="bg-white rounded-xl p-6 shadow-sm border">
+          <h2 className="font-semibold mb-4 flex items-center gap-2">
+            <span className="text-lg">&#128218;</span> Kursus Disimpan
+          </h2>
           {data.saved_courses?.length > 0 ? (
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-2.5 text-sm">
               {data.saved_courses.map((c) => (
-                <li key={c.course_id} className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                <li key={c.course_id} className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
                   {c.name}
                 </li>
               ))}
@@ -197,12 +222,12 @@ export default function AdminStudentDetail() {
 
         {/* Card 9: Sumber Rujukan (super admin only) */}
         {role?.is_super_admin && (
-          <div className="bg-white rounded-lg p-6 shadow-sm border">
-            <h2 className="font-semibold mb-3">
-              Sumber Rujukan
-              <span className="text-xs text-gray-400 ml-2">[Super Admin]</span>
+          <div className="bg-white rounded-xl p-6 shadow-sm border">
+            <h2 className="font-semibold mb-4 flex items-center gap-2">
+              <span className="text-lg">&#128279;</span> Sumber Rujukan
+              <span className="text-[10px] text-gray-400 ml-1">[Super Admin]</span>
             </h2>
-            <dl className="space-y-2 text-sm">
+            <dl className="space-y-3 text-sm">
               <div className="flex justify-between"><dt className="text-gray-500">Sumber</dt><dd>{data.referral_source || '\u2014'}</dd></div>
               <div className="flex justify-between"><dt className="text-gray-500">Organisasi</dt><dd>{data.org_name || '\u2014'}</dd></div>
             </dl>
@@ -212,26 +237,30 @@ export default function AdminStudentDetail() {
 
       {/* Danger Zone - super admin only */}
       {role?.is_super_admin && (
-        <div className="mt-8 border border-red-200 rounded-lg p-6 bg-red-50">
-          <h2 className="font-semibold text-red-700 mb-1">
-            Zon Bahaya
-            <span className="text-xs text-red-400 ml-2">[Super Admin]</span>
-          </h2>
-          <p className="text-sm text-red-600 mb-4">
-            Tindakan ini tidak boleh dibatalkan. Semua data pelajar akan dipadamkan.
-          </p>
-          <div className="flex items-center gap-3">
+        <div className="mt-8 bg-white border border-red-200 rounded-xl overflow-hidden">
+          <div className="px-6 py-4 bg-red-50 border-b border-red-200 flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-red-700 flex items-center gap-2">
+                <span className="text-lg">&#9888;&#65039;</span> Zon Bahaya
+                <span className="text-[10px] text-red-400 ml-1">[Super Admin]</span>
+              </h2>
+              <p className="text-sm text-red-500 mt-0.5">
+                Tindakan ini tidak boleh dibatalkan. Sila kenali hati sebelum memadamkan maklumat pelajar.
+              </p>
+            </div>
+          </div>
+          <div className="px-6 py-4 flex items-center gap-3">
             <input
               type="text"
               value={deleteConfirm}
               onChange={(e) => setDeleteConfirm(e.target.value)}
               placeholder='Taip "delete" untuk mengesahkan'
-              className="px-3 py-2 border border-red-300 rounded-lg text-sm w-64"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-64 focus:border-red-400 focus:ring-1 focus:ring-red-400 outline-none"
             />
             <button
               onClick={handleDelete}
               disabled={deleteConfirm !== 'delete' || deleting}
-              className="px-4 py-2 border border-red-600 text-red-600 rounded-lg text-sm hover:bg-red-600 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2 border-2 border-red-500 text-red-600 rounded-xl text-sm font-medium hover:bg-red-600 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {deleting ? 'Memadamkan...' : 'Padam Pelajar Ini'}
             </button>

@@ -25,7 +25,7 @@ from django.apps import apps
 
 from django.db.models import Count, OuterRef, Q, Subquery
 
-from .models import Course, CourseInstitution, CourseRequirement, FieldTaxonomy, Institution, StudentProfile, SavedCourse, AdmissionOutcome, StpmCourse, StpmRequirement
+from .models import Course, CourseInstitution, CourseRequirement, EmailVerification, FieldTaxonomy, Institution, StudentProfile, SavedCourse, AdmissionOutcome, StpmCourse, StpmRequirement
 from .eligibility_service import (
     compute_student_merit,
     compute_course_merit,
@@ -953,6 +953,10 @@ class ProfileView(APIView):
             'address': profile.address,
             'phone': profile.phone,
             'email': email,
+            'contact_email': profile.contact_email,
+            'contact_email_verified': profile.contact_email_verified,
+            'contact_phone': profile.contact_phone,
+            'contact_phone_verified': profile.contact_phone_verified,
             'family_income': profile.family_income,
             'siblings': profile.siblings,
             'exam_type': profile.exam_type,
@@ -971,7 +975,19 @@ class ProfileView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        # Capture old contact values before save
+        old_contact_email = profile.contact_email
+        old_contact_phone = profile.contact_phone
+
         profile = serializer.save()
+
+        # Reset verification when contact details actually change
+        if 'contact_email' in serializer.validated_data and profile.contact_email != old_contact_email:
+            profile.contact_email_verified = False
+            profile.save(update_fields=['contact_email_verified'])
+        if 'contact_phone' in serializer.validated_data and profile.contact_phone != old_contact_phone:
+            profile.contact_phone_verified = False
+            profile.save(update_fields=['contact_phone_verified'])
 
         # Resolve referral source to partner organisation
         referral = serializer.validated_data.get('referral_source')
@@ -1023,6 +1039,168 @@ class ProfileSyncView(APIView):
             'message': 'Profile synced',
             'created': created,
         })
+
+
+class NricClaimView(APIView):
+    """
+    POST /api/v1/profile/claim-nric/
+
+    Claim or reclaim an NRIC. Outcomes:
+    - NRIC is new → create/update profile, status='created'
+    - NRIC owned by caller → status='linked' (no-op)
+    - NRIC owned by someone else → status='exists' (needs confirm=True)
+    - confirm=True → transfer profile, status='claimed'
+    """
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request):
+        import re
+        nric = request.data.get('nric', '').strip()
+        confirm = request.data.get('confirm', False)
+
+        if not nric:
+            return Response({'error': 'NRIC is required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if not re.match(r'^\d{6}-\d{2}-\d{4}$', nric):
+            return Response({'error': 'Invalid NRIC format'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            existing = StudentProfile.objects.get(nric=nric)
+        except StudentProfile.DoesNotExist:
+            existing = None
+
+        if existing is None:
+            # New NRIC — create or update caller's profile
+            profile, created = StudentProfile.objects.get_or_create(
+                supabase_user_id=request.user_id
+            )
+            profile.nric = nric
+            profile.save(update_fields=['nric'])
+            return Response({'status': 'created'})
+
+        if existing.supabase_user_id == request.user_id:
+            return Response({'status': 'linked'})
+
+        if not confirm:
+            return Response({
+                'status': 'exists',
+                'name': existing.name or None,
+            })
+
+        # Confirmed — delete caller's empty profile, transfer existing one
+        # Use raw SQL to update PK + all FK references in a transaction.
+        # Django ORM can't update PKs, and delete+re-insert would CASCADE
+        # delete saved courses, outcomes, and reports.
+        from django.db import connection, transaction
+        StudentProfile.objects.filter(
+            supabase_user_id=request.user_id, nric=''
+        ).delete()
+        old_pk = existing.supabase_user_id
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                # Update FK references first
+                for table, col in [
+                    ('saved_courses', 'student_id'),
+                    ('admission_outcomes', 'student_id'),
+                    ('generated_reports', 'student_id'),
+                    ('email_verifications', 'profile_id'),
+                ]:
+                    cursor.execute(
+                        f'UPDATE {table} SET {col} = %s WHERE {col} = %s',
+                        [request.user_id, old_pk],
+                    )
+                # Update the profile PK last
+                cursor.execute(
+                    'UPDATE api_student_profiles SET supabase_user_id = %s'
+                    ' WHERE supabase_user_id = %s',
+                    [request.user_id, old_pk],
+                )
+        return Response({'status': 'claimed'})
+
+
+class SendVerificationView(APIView):
+    """
+    POST /api/v1/profile/verify-email/send/
+    Generates a verification token and sends an email with a verification link.
+    """
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request):
+        import uuid
+        from datetime import timedelta
+        from django.utils import timezone
+        from django.core.mail import send_mail
+        from django.conf import settings
+
+        email = request.data.get('email', '').strip()
+        if not email:
+            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            profile = StudentProfile.objects.get(supabase_user_id=request.user_id)
+        except StudentProfile.DoesNotExist:
+            return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Invalidate previous tokens for this profile+email
+        EmailVerification.objects.filter(profile=profile, email=email, used=False).update(used=True)
+
+        token = uuid.uuid4()
+        EmailVerification.objects.create(
+            profile=profile,
+            email=email,
+            token=token,
+            expires_at=timezone.now() + timedelta(hours=24),
+        )
+
+        # Send verification email
+        frontend_url = getattr(settings, 'FRONTEND_URL', '')
+        verify_url = f"{frontend_url}/verify-email?token={token}"
+        try:
+            send_mail(
+                subject='HalaTuju — Verify your email',
+                message=f'Click this link to verify your email: {verify_url}\n\nThis link expires in 24 hours.',
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+                recipient_list=[email],
+            )
+        except Exception:
+            logger.warning('Failed to send verification email to %s', email, exc_info=True)
+
+        return Response({'status': 'sent'})
+
+
+class VerifyEmailView(APIView):
+    """
+    GET /api/v1/profile/verify-email/<token>/
+    Public endpoint — student clicks link from email.
+    """
+    permission_classes = []  # Public
+
+    def get(self, request, token):
+        from django.db import transaction
+
+        with transaction.atomic():
+            try:
+                verification = EmailVerification.objects.select_for_update().get(token=token)
+            except EmailVerification.DoesNotExist:
+                return Response({'error': 'Invalid token'}, status=status.HTTP_404_NOT_FOUND)
+
+            if verification.used:
+                return Response({'error': 'Token already used'}, status=status.HTTP_400_BAD_REQUEST)
+
+            if verification.is_expired:
+                return Response({'error': 'Token expired'}, status=status.HTTP_400_BAD_REQUEST)
+
+            verification.used = True
+            verification.save(update_fields=['used'])
+
+            profile = verification.profile
+            profile.contact_email = verification.email
+            profile.contact_email_verified = True
+            profile.save(update_fields=['contact_email', 'contact_email_verified'])
+
+        return Response({'status': 'verified', 'email': verification.email})
 
 
 class OutcomeListView(APIView):

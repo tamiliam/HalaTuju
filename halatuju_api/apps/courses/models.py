@@ -448,6 +448,14 @@ class StudentProfile(models.Model):
     phone = models.CharField(max_length=20, blank=True, default='',
                              help_text="Phone number")
 
+    # Contact details (separate from login credentials)
+    contact_email = models.EmailField(blank=True, default='',
+                                       help_text="Verified contact email")
+    contact_email_verified = models.BooleanField(default=False)
+    contact_phone = models.CharField(max_length=20, blank=True, default='',
+                                      help_text="Verified contact phone")
+    contact_phone_verified = models.BooleanField(default=False)
+
     # Identity (Lentera longitudinal tracking)
     nric = models.CharField(max_length=14, blank=True, default='',
                             help_text="NRIC: XXXXXX-XX-XXXX")
@@ -507,9 +515,39 @@ class StudentProfile(models.Model):
 
     class Meta:
         db_table = 'api_student_profiles'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['nric'],
+                name='unique_nric_when_set',
+                condition=~models.Q(nric=''),
+            ),
+        ]
 
     def __str__(self):
         return f"Profile {self.supabase_user_id}"
+
+
+class EmailVerification(models.Model):
+    """Token-based email verification for contact email."""
+    profile = models.ForeignKey(
+        StudentProfile, on_delete=models.CASCADE, related_name='email_verifications'
+    )
+    email = models.EmailField()
+    token = models.UUIDField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'email_verifications'
+
+    @property
+    def is_expired(self):
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"Verify {self.email} for {self.profile_id}"
 
 
 class SavedCourse(models.Model):

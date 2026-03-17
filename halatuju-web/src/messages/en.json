@@ -141,7 +141,11 @@
     "spmPrereqHint": "Some degree programmes require minimum SPM grades.",
     "spmCompulsory": "Compulsory",
     "spmOptional": "Optional (stream-specific)",
-    "enterStpmSubjects": "Please select stream, grade PA + 2 subjects, and MUET band."
+    "enterStpmSubjects": "Please select stream, grade PA + 2 subjects, and MUET band.",
+    "nricExistsNamed": "This IC number is registered to {name}. Is this your account?",
+    "nricExists": "This IC number is already registered. Is this your account?",
+    "yesThisIsMe": "Yes, this is me",
+    "noReenter": "No, let me re-enter"
   },
   "dashboard": {
     "title": "Your Course Recommendations",
@@ -378,7 +382,15 @@
     "colorBlindness": "Colour Blindness",
     "physicalDisability": "Physical Disability",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "contactDetails": "Contact Details",
+    "loginMethod": "Login Method",
+    "contactEmail": "Contact Email",
+    "contactPhone": "Contact Phone",
+    "verified": "Verified",
+    "notVerified": "Not verified",
+    "verify": "Verify",
+    "verificationSent": "Verification email sent. Check your inbox."
   },
   "quiz": {
     "pickUpTo": "Pick up to {count}",

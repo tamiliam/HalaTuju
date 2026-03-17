@@ -12,6 +12,7 @@ import {
   getSavedCourses,
   unsaveCourse,
   updateSavedCourseStatus,
+  sendVerificationEmail,
 } from '@/lib/api'
 import type { SavedCourseWithStatus } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
@@ -41,7 +42,7 @@ const STATUS_OPTIONS = [
   { value: 'got_offer', label: 'profile.status.got_offer', color: 'bg-green-100 text-green-700' },
 ]
 
-type EditingSection = 'identity' | 'contact' | 'family' | 'application' | null
+type EditingSection = 'identity' | 'contactDetails' | 'contact' | 'family' | 'application' | null
 
 function countIncomplete(fields: (string | boolean | number | null | undefined)[]): number {
   return fields.filter(f => f === '' || f === null || f === undefined).length
@@ -84,6 +85,12 @@ export default function ProfilePage() {
   const [colorblind, setColorblind] = useState(false)
   const [disability, setDisability] = useState(false)
   const [angkaGiliran, setAngkaGiliran] = useState('')
+  const [contactEmail, setContactEmail] = useState('')
+  const [contactEmailVerified, setContactEmailVerified] = useState(false)
+  const [contactPhone, setContactPhone] = useState('')
+  const [contactPhoneVerified, setContactPhoneVerified] = useState(false)
+  const [loginMethod, setLoginMethod] = useState('')
+  const [sendingVerification, setSendingVerification] = useState(false)
 
   // Course interests
   const [savedCourses, setSavedCourses] = useState<SavedCourseWithStatus[]>([])
@@ -115,6 +122,16 @@ export default function ProfilePage() {
       setColorblind(profileData.colorblind === true || String(profileData.colorblind) === 'Ya')
       setDisability(profileData.disability === true || String(profileData.disability) === 'Ya')
       setAngkaGiliran(profileData.angka_giliran || '')
+      setContactEmail(profileData.contact_email || '')
+      setContactEmailVerified(profileData.contact_email_verified || false)
+      setContactPhone(profileData.contact_phone || '')
+      setContactPhoneVerified(profileData.contact_phone_verified || false)
+      // Determine login method from session
+      if (session?.user?.email) {
+        setLoginMethod(`Google (${session.user.email})`)
+      } else if (session?.user?.phone) {
+        setLoginMethod(`Phone (${session.user.phone})`)
+      }
 
       setSavedCourses(coursesData.saved_courses || [])
     } catch (err) {
@@ -122,7 +139,7 @@ export default function ProfilePage() {
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [token, session])
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -145,6 +162,8 @@ export default function ProfilePage() {
         address,
         phone,
         email,
+        contact_email: contactEmail,
+        contact_phone: contactPhone,
         family_income: familyIncome,
         siblings: siblings ? parseInt(siblings, 10) : null,
         colorblind: colorblind ? 'Ya' : 'Tidak',
@@ -167,7 +186,7 @@ export default function ProfilePage() {
   }
 
   const startEditing = (section: NonNullable<EditingSection>) => {
-    setSnapshot({ name, nric, gender, nationality, state, address, phone, email, familyIncome, siblings, colorblind, disability, angkaGiliran })
+    setSnapshot({ name, nric, gender, nationality, state, address, phone, email, familyIncome, siblings, colorblind, disability, angkaGiliran, contactEmail, contactPhone })
     setEditingSection(section)
   }
 
@@ -184,6 +203,8 @@ export default function ProfilePage() {
     setColorblind(snapshot.colorblind as boolean || false)
     setDisability(snapshot.disability as boolean || false)
     setAngkaGiliran(snapshot.angkaGiliran as string || '')
+    setContactEmail(snapshot.contactEmail as string || '')
+    setContactPhone(snapshot.contactPhone as string || '')
     setEditingSection(null)
   }
 
@@ -218,7 +239,8 @@ export default function ProfilePage() {
     STATUS_OPTIONS.find(s => s.value === status)?.color || 'bg-gray-100 text-gray-600'
 
   // Incomplete field counts per section
-  const identityIncomplete = countIncomplete([name, gender, email, phone])
+  const identityIncomplete = countIncomplete([name, gender])
+  const contactDetailsIncomplete = (!contactEmailVerified && !contactPhoneVerified) ? 1 : 0
   const contactIncomplete = countIncomplete([state, address])
   const familyIncomplete = countIncomplete([familyIncome, siblings])
   const appIncomplete = countIncomplete([angkaGiliran])
@@ -297,27 +319,6 @@ export default function ProfilePage() {
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.email')}</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">{t('profile.emailVerifyNote')}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.phone')}</label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    placeholder="+60 12-345 6789"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">{t('profile.phoneVerifyNote')}</p>
-                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.gender')} <span className="text-red-500">*</span></label>
@@ -381,21 +382,6 @@ export default function ProfilePage() {
                   <FieldValue value={name} t={t} />
                 </div>
                 <div className="flex justify-between">
-                  <FieldLabel label={t('profile.email')} empty={!email} />
-                  {email ? (
-                    <span className="text-sm text-gray-900 flex items-center gap-1.5">
-                      {email}
-                      <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{t('profile.emailVerified')}</span>
-                    </span>
-                  ) : (
-                    <FieldValue value="" t={t} />
-                  )}
-                </div>
-                <div className="flex justify-between">
-                  <FieldLabel label={t('profile.phone')} empty={!phone} />
-                  <FieldValue value={phone} t={t} />
-                </div>
-                <div className="flex justify-between">
                   <FieldLabel label={t('onboarding.gender')} empty={!gender} />
                   {gender ? (
                     <span className="text-sm text-gray-900">{t(`onboarding.${gender}`)}</span>
@@ -411,7 +397,134 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* Section 2: Contact & Location */}
+          {/* Section 2: Contact Details (NEW) */}
+          <div className={`bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5 ${contactDetailsIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                  </svg>
+                </div>
+                <h2 className="text-lg font-semibold text-gray-900">{t('profile.contactDetails')}</h2>
+                {contactDetailsIncomplete > 0 && (
+                  <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-xs font-medium rounded-full">
+                    1 {t('profile.incomplete')}
+                  </span>
+                )}
+              </div>
+              {editingSection === null && (
+                <button onClick={() => startEditing('contactDetails')} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                  {t('profile.edit')}
+                </button>
+              )}
+            </div>
+
+            {editingSection === 'contactDetails' ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.loginMethod')}</label>
+                  <input
+                    type="text"
+                    value={loginMethod || '—'}
+                    disabled
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.contactEmail')}</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={contactEmail}
+                      onChange={e => setContactEmail(e.target.value)}
+                      className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!contactEmail || !token) return
+                        setSendingVerification(true)
+                        try {
+                          // Save first, then send verification
+                          await updateProfile({ contact_email: contactEmail }, { token })
+                          await sendVerificationEmail(contactEmail, { token })
+                          showToast(t('profile.verificationSent'), 'success')
+                          window.dispatchEvent(new Event('profile-updated'))
+                        } catch {
+                          showToast('Failed to send verification email.', 'error')
+                        } finally {
+                          setSendingVerification(false)
+                        }
+                      }}
+                      disabled={!contactEmail || sendingVerification}
+                      className="px-4 py-2.5 bg-primary-50 text-primary-700 border border-primary-200 rounded-lg text-sm font-medium hover:bg-primary-100 disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {sendingVerification ? '...' : t('profile.verify')}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">{t('profile.emailVerifyNote')}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.contactPhone')}</label>
+                  <input
+                    type="tel"
+                    value={contactPhone}
+                    onChange={e => setContactPhone(e.target.value)}
+                    placeholder="+60 12-345 6789"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">{t('profile.phoneVerifyNote')}</p>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    {t('profile.cancel')}
+                  </button>
+                  <button onClick={saveSection} disabled={saving} className="flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-medium hover:bg-primary-600 disabled:opacity-50">
+                    {saving ? '...' : t('profile.save')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">{t('profile.loginMethod')}</span>
+                  <span className="text-sm text-gray-900">{loginMethod || '—'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <FieldLabel label={t('profile.contactEmail')} empty={!contactEmail} />
+                  {contactEmail ? (
+                    <span className="text-sm text-gray-900 flex items-center gap-1.5">
+                      {contactEmail}
+                      {contactEmailVerified ? (
+                        <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
+                      ) : (
+                        <span className="text-amber-500 text-xs">{t('profile.notVerified')}</span>
+                      )}
+                    </span>
+                  ) : (
+                    <FieldValue value="" t={t} />
+                  )}
+                </div>
+                <div className="flex justify-between">
+                  <FieldLabel label={t('profile.contactPhone')} empty={!contactPhone} />
+                  {contactPhone ? (
+                    <span className="text-sm text-gray-900 flex items-center gap-1.5">
+                      {contactPhone}
+                      {contactPhoneVerified ? (
+                        <span className="px-1.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-medium rounded-full">{t('profile.verified')}</span>
+                      ) : (
+                        <span className="text-amber-500 text-xs">{t('profile.notVerified')}</span>
+                      )}
+                    </span>
+                  ) : (
+                    <FieldValue value="" t={t} />
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: Contact & Location */}
           <div className={`bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5 ${contactIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
@@ -483,7 +596,7 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* Section 3: Family & Background */}
+          {/* Section 4: Family & Background */}
           <div className={`bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5 ${familyIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
@@ -613,7 +726,7 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* Section 4: Application Tracking */}
+          {/* Section 5: Application Tracking */}
           <div className={`bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5 ${appIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
@@ -680,7 +793,7 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* Section 5: My Course Interests */}
+          {/* Section 6: My Course Interests */}
           <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
