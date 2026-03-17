@@ -636,11 +636,6 @@ export default function StpmGradesPage() {
           </button>
         </div>
 
-        {!isComplete && (
-          <p className="text-center text-sm text-gray-500 mt-4">
-            {t('onboarding.enterStpmSubjects')}
-          </p>
-        )}
       </div>
     </main>
   )
