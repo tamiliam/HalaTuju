@@ -145,7 +145,20 @@
     "nricExistsNamed": "Nombor IC ini berdaftar atas nama {name}. Adakah ini akaun anda?",
     "nricExists": "Nombor IC ini sudah berdaftar. Adakah ini akaun anda?",
     "yesThisIsMe": "Ya, ini saya",
-    "noReenter": "Tidak, biar saya masukkan semula"
+    "noReenter": "Tidak, biar saya masukkan semula",
+    "referralQuestion": "Bagaimana anda tahu tentang HalaTuju? (Pilihan)",
+    "referralOther": "Lain-lain"
+  },
+  "verifyEmail": {
+    "loading": "Mengesahkan e-mel anda...",
+    "successTitle": "E-mel Disahkan",
+    "successMsg": "{email} telah disahkan.",
+    "failedTitle": "Pengesahan Gagal",
+    "noToken": "Tiada token pengesahan.",
+    "networkError": "Ralat rangkaian. Sila cuba lagi.",
+    "verificationFailed": "Pengesahan gagal.",
+    "goToProfile": "Ke Profil",
+    "pageLoading": "Memuatkan..."
   },
   "dashboard": {
     "title": "Cadangan Kursus Anda",

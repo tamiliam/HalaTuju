@@ -35,7 +35,7 @@ export default function IcOnboardingPage() {
     { value: 'google', label: 'Google' },
     { value: 'fbig', label: 'FB/IG' },
     { value: 'cumig', label: 'CUMIG' },
-    { value: 'other', label: 'Lain-lain' },
+    { value: 'other', label: '' },
   ]
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,7 +148,7 @@ export default function IcOnboardingPage() {
             {!referral && (
               <div className="mt-6 pt-4 border-t border-gray-100">
                 <p className="text-sm text-gray-500 mb-3">
-                  Bagaimana anda tahu tentang HalaTuju? (Pilihan)
+                  {t('onboarding.referralQuestion')}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {REFERRAL_OPTIONS.map((opt) => (
@@ -165,7 +165,7 @@ export default function IcOnboardingPage() {
                           : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
                       }`}
                     >
-                      {opt.label}
+                      {opt.label || t('onboarding.referralOther')}
                     </button>
                   ))}
                 </div>

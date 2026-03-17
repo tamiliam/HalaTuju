@@ -145,7 +145,20 @@
     "nricExistsNamed": "This IC number is registered to {name}. Is this your account?",
     "nricExists": "This IC number is already registered. Is this your account?",
     "yesThisIsMe": "Yes, this is me",
-    "noReenter": "No, let me re-enter"
+    "noReenter": "No, let me re-enter",
+    "referralQuestion": "How did you hear about HalaTuju? (Optional)",
+    "referralOther": "Others"
+  },
+  "verifyEmail": {
+    "loading": "Verifying your email...",
+    "successTitle": "Email Verified",
+    "successMsg": "{email} has been verified.",
+    "failedTitle": "Verification Failed",
+    "noToken": "No verification token provided.",
+    "networkError": "Network error. Please try again.",
+    "verificationFailed": "Verification failed.",
+    "goToProfile": "Go to Profile",
+    "pageLoading": "Loading..."
   },
   "dashboard": {
     "title": "Your Course Recommendations",

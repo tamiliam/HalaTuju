@@ -756,7 +756,7 @@ class StpmRequirement(models.Model):
     spm_subject_group = models.JSONField(null=True, blank=True)
 
     # MUET requirement
-    min_muet_band = models.IntegerField(default=1)
+    min_muet_band = models.FloatField(default=1.0)
 
     # Demographic / fitness requirements
     req_interview = models.BooleanField(default=False)

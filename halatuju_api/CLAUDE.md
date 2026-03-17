@@ -167,7 +167,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (615 collected, 615 must pass, SPM golden master = 5319, STPM golden master = 1994)
+# 1. Run all tests (615 collected, 615 must pass, SPM golden master = 5319, STPM golden master = 1976)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -179,7 +179,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-645 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1994. If golden master deviates, you broke eligibility logic.
+645 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1976. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -225,7 +225,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Admin UI polish: student list (pagination, download icon, blue accent) + detail (icons, grade pills, danger zone)
 - 30 new tests (645 total), migrations 0039-0041
 
-**Current state:** 645 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=1994.
+**Current state:** 645 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=1976.
 
 **Pending work**
 - Supabase migrations: Apply 0039-0041, RLS on new tables, seed super admin for admin auth
