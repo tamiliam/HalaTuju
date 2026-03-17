@@ -387,35 +387,33 @@ export default function DashboardPage() {
 
         {/* Compact Dashboard Header */}
         {examType === 'spm' && eligibilityData && (
-          <div className="bg-white rounded-xl border border-gray-200 px-6 py-4 mb-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="bg-white rounded-xl border border-gray-200 px-4 sm:px-6 py-4 mb-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               {/* Left: headline + chance pills */}
               <div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                  <h1 className="text-xl font-bold text-gray-900">
-                    {t('dashboard.qualifyFor')} <span className="text-primary-500">{eligibilityData.eligible_courses.length}</span> {t('dashboard.qualifyCourses')}
-                  </h1>
-                  {eligibilityData.insights && (
-                    <div className="flex items-center gap-3 text-sm">
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-green-500" />
-                        <span className="text-gray-600">{eligibilityData.insights.merit_summary.high} {t('dashboard.meritHigh')}</span>
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-amber-400" />
-                        <span className="text-gray-600">{eligibilityData.insights.merit_summary.fair} {t('dashboard.meritFair')}</span>
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-red-500" />
-                        <span className="text-gray-600">{eligibilityData.insights.merit_summary.low} {t('dashboard.meritLow')}</span>
-                      </span>
-                      {eligibilityData.insights.merit_summary.no_data > 0 && (
-                        <span className="text-gray-400">&middot; {eligibilityData.insights.merit_summary.no_data} unrated</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <Link href="/onboarding/grades" className="text-xs text-gray-400 hover:text-primary-500 underline mt-1 inline-block">
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900">
+                  {t('dashboard.qualifyFor')} <span className="text-primary-500">{eligibilityData.eligible_courses.length}</span> {t('dashboard.qualifyCourses')}
+                </h1>
+                {eligibilityData.insights && (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-sm">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-green-500" />
+                      <span className="text-gray-600">{eligibilityData.insights.merit_summary.high} {t('dashboard.meritHigh')}</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-400" />
+                      <span className="text-gray-600">{eligibilityData.insights.merit_summary.fair} {t('dashboard.meritFair')}</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-red-500" />
+                      <span className="text-gray-600">{eligibilityData.insights.merit_summary.low} {t('dashboard.meritLow')}</span>
+                    </span>
+                    {eligibilityData.insights.merit_summary.no_data > 0 && (
+                      <span className="text-gray-400">&middot; {eligibilityData.insights.merit_summary.no_data} unrated</span>
+                    )}
+                  </div>
+                )}
+                <Link href="/onboarding/grades" className="text-xs text-gray-400 hover:text-primary-500 underline mt-1.5 inline-block">
                   {t('dashboard.editProfile')}
                 </Link>
               </div>

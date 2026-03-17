@@ -71,7 +71,7 @@ export default function AppHeader() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-1 ml-8">
+        <nav className="hidden lg:flex items-center gap-1 ml-8">
           {navLinks.map((link) => (
             link.authRequired && !isAuthenticated ? (
               <button
@@ -106,7 +106,7 @@ export default function AppHeader() {
         <div className="flex-1" />
 
         {/* Right side — desktop */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden lg:flex items-center gap-3">
           <LanguageSelector />
 
           {isAuthenticated ? (
@@ -201,7 +201,7 @@ export default function AppHeader() {
 
         {/* Mobile hamburger */}
         <button
-          className="md:hidden p-2 rounded-lg hover:bg-gray-50"
+          className="lg:hidden p-2 rounded-lg hover:bg-gray-50"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Menu"
         >
@@ -219,7 +219,7 @@ export default function AppHeader() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t bg-white">
+        <div className="lg:hidden border-t bg-white">
           <div className="container mx-auto px-6 py-4 space-y-1">
             {navLinks.map((link) => (
               link.authRequired && !isAuthenticated ? (
