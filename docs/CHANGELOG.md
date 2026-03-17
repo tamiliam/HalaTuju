@@ -1,5 +1,26 @@
 # Changelog — HalaTuju
 
+## SPM Prereq UI & Content Sprint (2026-03-18)
+
+### Added
+- **STPM SPM prereq stream-based UI**: Section 4 of STPM grades page redesigned with stream pills (Science/Arts/Technical), 4 stream subject slots, 0-2 elective slots
+- **SPM_PREREQ_STREAM_POOLS**: New data structure in `subjects.ts` providing stream-specific subject pools for STPM SPM prerequisites
+- **8 new subject display names**: teknologi_kej, prinsip_elektrik, etc. added to SUBJECT_NAMES in subjects.ts
+- **SPM_PREREQ_OPTIONAL expanded**: 2 → 9 entries (added phy, chem, bio, poa, ekonomi, moral, geo)
+- **7 i18n keys**: spmStream, spmStreamHint, spmAddElective, spmSains, spmSastera, spmTeknikal, spmVokasional across EN/MS/TA
+
+### Fixed
+- **NRIC/phone formatting**: Standardised display formatting in admin views
+- **Admin mobile layout**: Improved responsive layout for admin portal on mobile devices
+- **Site content**: Updated to cover both SPM and STPM students (was SPM-only)
+
+### Stats
+- Backend tests: 654 pass, 0 failures
+- Frontend tests: 17 pass, 0 failures
+- Golden masters: SPM 5319, STPM 2026
+
+---
+
 ## Post-Launch Hardening Sprint (2026-03-17)
 
 ### Added

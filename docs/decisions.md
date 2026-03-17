@@ -370,3 +370,15 @@
 **Trade-offs:** Frontend must now slice the list itself (`filtered.slice(0, 3)` for top, rest for overflow). This is trivial and gives the frontend full control.
 
 **Revisit if:** Multiple frontends need different split sizes — but even then, a `top_n` query parameter is cleaner than hardcoding in the backend.
+
+## Three-stream SPM prereq UI (excluding vocational and Islamic) — SPM Prereq UI Sprint, 2026-03-18
+
+**Decision:** STPM SPM prerequisite section shows 3 stream buttons (Science, Arts, Technical) with vocational and Islamic school subjects excluded from the frontend.
+
+**Alternatives considered:** (1) Show all 5 streams including Vocational and Agama. (2) Show 4 streams (add Vocational as a button). (3) Flat list of all 100+ SPM subjects with search.
+
+**Rationale:** Islamic school (Agama) subjects are out of scope for the initial release — the target audience is mainstream SPM students. Vocational subjects are niche and adding a 4th button increases UI complexity. Vocational subjects remain accessible via elective dropdowns if needed. The backend maps all subjects correctly (121 SPM_CODE_MAP entries) regardless of frontend scope.
+
+**Trade-offs:** Students from vocational or Islamic school streams cannot fully specify their SPM subjects in the STPM prereq section. This may cause false negatives for a small number of courses. The backend eligibility engine still handles these subjects correctly if the data were provided.
+
+**Revisit if:** User research shows significant demand from vocational/Islamic school students, or if the STPM prereq check produces too many false negatives for these streams.

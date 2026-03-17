@@ -218,19 +218,15 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Post-Launch Hardening Sprint COMPLETE (2026-03-17)**
-- SPM merit fix (4+2+2 subject grouping), merit formula documentation ("DO NOT CHANGE" blocks)
-- Dashboard ranking fix (single sorted list, frontend splits after filtering)
-- Rate limiting on email verification (3 req/hr), NRIC validation (date/age/state), mobile layout fixes
-- SPM_CODE_MAP 13→121 entries, STPM MUET float support, IC/verify-email i18n
-- 9 new tests (654 total), STPM golden master 1976→2026
+**SPM Prereq UI & Content Sprint COMPLETE (2026-03-18)**
+- STPM SPM prereq section redesigned with stream-based subject selection (Science/Arts/Technical pills + 4 stream slots + 0-2 electives)
+- Admin mobile layout and NRIC/phone formatting fixes
+- Site content updated for both SPM and STPM students
 
 **Current state:** 654 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
 
 **Pending work**
-- Cloud Run env vars for email: `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `FRONTEND_URL`
-- Supabase migrations 0039-0042 need RLS policies + seed super admin
-- STPM Pipeline: test scrapers against live MOHE, update workflow doc, extend audit_data, course deactivation mechanism
+- STPM Pipeline: test scrapers against live MOHE, extend audit_data, course deactivation mechanism
 - Phone/OTP login (blocked — Twilio ~RM12/mo)
 - Grade modulation layer
 - Course detail page fixes from `docs/Course Detail Page.pdf`
