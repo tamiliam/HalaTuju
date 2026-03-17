@@ -54,6 +54,31 @@ export default function AdminStudentDetail() {
     return { text: 'Rendah', className: 'bg-gray-100 text-gray-600' }
   }
 
+  const formatNric = (nric: string | null) => {
+    if (!nric || nric.length !== 12) return nric || '\u2014'
+    return `${nric.slice(0, 6)}-${nric.slice(6, 8)}-${nric.slice(8)}`
+  }
+
+  const formatPhone = (phone: string | null) => {
+    if (!phone) return '\u2014'
+    const digits = phone.replace(/\D/g, '')
+    let local: string
+    if (digits.startsWith('60')) {
+      local = digits.slice(2)
+    } else if (digits.startsWith('0')) {
+      local = digits.slice(1)
+    } else {
+      return phone
+    }
+    if (local.startsWith('11') && local.length === 10) {
+      return `+60 ${local.slice(0, 2)}-${local.slice(2, 6)} ${local.slice(6)}`
+    }
+    if (local.length === 9) {
+      return `+60 ${local.slice(0, 2)}-${local.slice(2, 5)} ${local.slice(5)}`
+    }
+    return phone
+  }
+
   return (
     <div>
       <Link href="/admin/students" className="inline-flex items-center gap-1.5 text-blue-600 text-sm hover:underline mb-5">
@@ -65,7 +90,7 @@ export default function AdminStudentDetail() {
 
       <h1 className="text-2xl font-bold mb-1">{data.name || 'Tiada Nama'}</h1>
       <p className="text-gray-500 mb-8 text-sm">
-        {data.nric} &middot; {data.exam_type?.toUpperCase()} &middot; {data.gender}
+        {formatNric(data.nric)} &middot; {data.exam_type?.toUpperCase()} &middot; {data.gender}
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -76,9 +101,7 @@ export default function AdminStudentDetail() {
           </h2>
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between"><dt className="text-gray-500">Nama Penuh</dt><dd className="font-medium">{data.name || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">No. KP</dt><dd className="font-mono">{data.nric || '\u2014'}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Angka Giliran</dt><dd className="font-mono">{data.angka_giliran || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">Jantina</dt><dd>{data.gender || '\u2014'}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Kewarganegaraan</dt><dd>{data.nationality || '\u2014'}</dd></div>
           </dl>
         </div>
@@ -89,7 +112,7 @@ export default function AdminStudentDetail() {
             <span className="text-lg">&#128222;</span> Hubungi &amp; Sekolah
           </h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">Telefon</dt><dd>{data.phone || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">Telefon</dt><dd>{formatPhone(data.phone)}</dd></div>
             <div><dt className="text-gray-500">Alamat</dt><dd className="mt-1">{data.address || '\u2014'}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Sekolah</dt><dd>{data.school || '\u2014'}</dd></div>
           </dl>
@@ -249,13 +272,13 @@ export default function AdminStudentDetail() {
               </p>
             </div>
           </div>
-          <div className="px-6 py-4 flex items-center gap-3">
+          <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
             <input
               type="text"
               value={deleteConfirm}
               onChange={(e) => setDeleteConfirm(e.target.value)}
               placeholder='Taip "delete" untuk mengesahkan'
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-64 focus:border-red-400 focus:ring-1 focus:ring-red-400 outline-none"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-64 focus:border-red-400 focus:ring-1 focus:ring-red-400 outline-none"
             />
             <button
               onClick={handleDelete}
