@@ -382,7 +382,15 @@
     "colorBlindness": "Buta Warna",
     "physicalDisability": "Kurang Upaya Fizikal",
     "yes": "Ya",
-    "no": "Tidak"
+    "no": "Tidak",
+    "contactDetails": "Butiran Hubungan",
+    "loginMethod": "Kaedah Log Masuk",
+    "contactEmail": "Emel Hubungan",
+    "contactPhone": "Telefon Hubungan",
+    "verified": "Disahkan",
+    "notVerified": "Belum disahkan",
+    "verify": "Sahkan",
+    "verificationSent": "Emel pengesahan dihantar. Semak peti masuk anda."
   },
   "quiz": {
     "pickUpTo": "Pilih sehingga {count}",

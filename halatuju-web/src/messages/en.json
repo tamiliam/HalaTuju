@@ -382,7 +382,15 @@
     "colorBlindness": "Colour Blindness",
     "physicalDisability": "Physical Disability",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "contactDetails": "Contact Details",
+    "loginMethod": "Login Method",
+    "contactEmail": "Contact Email",
+    "contactPhone": "Contact Phone",
+    "verified": "Verified",
+    "notVerified": "Not verified",
+    "verify": "Verify",
+    "verificationSent": "Verification email sent. Check your inbox."
   },
   "quiz": {
     "pickUpTo": "Pick up to {count}",

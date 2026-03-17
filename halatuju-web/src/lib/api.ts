@@ -53,6 +53,10 @@ export interface StudentProfile {
   family_income?: string
   siblings?: number | null
   angka_giliran?: string
+  contact_email?: string
+  contact_email_verified?: boolean
+  contact_phone?: string
+  contact_phone_verified?: boolean
 }
 
 export interface EligibleCourse {
@@ -288,6 +292,17 @@ export async function claimNric(
   return apiRequest('/api/v1/profile/claim-nric/', {
     method: 'POST',
     body: JSON.stringify({ nric, confirm }),
+    ...options,
+  })
+}
+
+export async function sendVerificationEmail(
+  email: string,
+  options?: ApiOptions
+): Promise<{ status: string }> {
+  return apiRequest('/api/v1/profile/verify-email/send/', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
     ...options,
   })
 }

@@ -4,7 +4,7 @@ import { getProfile } from '@/lib/api'
 
 const COMPLETENESS_FIELDS = [
   'name', 'nric', 'gender', 'preferred_state',
-  'phone', 'email', 'family_income', 'siblings', 'address',
+  'family_income', 'siblings', 'address',
   'angka_giliran',
 ] as const
 
@@ -22,6 +22,11 @@ export function useProfileCompleteness() {
         const val = (profile as unknown as Record<string, unknown>)[field]
         if (val === null || val === undefined || val === '') count++
       }
+      // At least one verified contact method required
+      const hasVerifiedContact =
+        (profile as unknown as Record<string, unknown>).contact_email_verified ||
+        (profile as unknown as Record<string, unknown>).contact_phone_verified
+      if (!hasVerifiedContact) count++
       setIncompleteCount(count)
       setLoaded(true)
     } catch {
