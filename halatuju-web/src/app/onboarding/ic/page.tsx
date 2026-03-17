@@ -24,6 +24,8 @@ export default function IcOnboardingPage() {
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [existingName, setExistingName] = useState<string | null>(null)
   const [referral, setReferral] = useState<string | null>(() =>
     typeof window !== 'undefined' ? localStorage.getItem(KEY_REFERRAL_SOURCE) : null
   )
@@ -52,16 +54,46 @@ export default function IcOnboardingPage() {
     setError(null)
 
     try {
-      const ref = localStorage.getItem(KEY_REFERRAL_SOURCE)
-      await syncProfile(
-        { nric: ic, ...(name.trim() && { name: name.trim() }), ...(ref && { referral_source: ref }) },
-        { token }
-      )
-      router.replace('/onboarding/exam-type')
+      const { claimNric } = await import('@/lib/api')
+      const result = await claimNric(ic, false, { token: token! })
+
+      if (result.status === 'created' || result.status === 'linked') {
+        // New NRIC or already own it — sync name & referral then proceed
+        const ref = localStorage.getItem(KEY_REFERRAL_SOURCE)
+        await syncProfile(
+          { ...(name.trim() && { name: name.trim() }), ...(ref && { referral_source: ref }) },
+          { token }
+        )
+        router.replace('/onboarding/exam-type')
+      } else if (result.status === 'exists') {
+        // Someone else has this NRIC — ask confirmation
+        setExistingName(result.name || null)
+        setShowConfirm(true)
+        setLoading(false)
+      }
     } catch {
       setError('Failed to save. Please try again.')
       setLoading(false)
     }
+  }
+
+  const handleConfirmClaim = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const { claimNric } = await import('@/lib/api')
+      await claimNric(ic, true, { token: token! })
+      router.replace('/onboarding/exam-type')
+    } catch {
+      setError('Failed to claim. Please try again.')
+      setLoading(false)
+    }
+  }
+
+  const handleDenyClaim = () => {
+    setShowConfirm(false)
+    setExistingName(null)
+    setIc('')
   }
 
   return (
@@ -136,6 +168,33 @@ export default function IcOnboardingPage() {
                       {opt.label}
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {showConfirm && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-amber-800 mb-3">
+                  {existingName
+                    ? t('onboarding.nricExistsNamed', { name: existingName })
+                    : t('onboarding.nricExists')}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handleConfirmClaim}
+                    disabled={loading}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
+                  >
+                    {t('onboarding.yesThisIsMe')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDenyClaim}
+                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
+                  >
+                    {t('onboarding.noReenter')}
+                  </button>
                 </div>
               </div>
             )}

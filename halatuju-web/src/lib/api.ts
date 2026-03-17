@@ -280,6 +280,18 @@ export async function updateSavedCourseStatus(
   })
 }
 
+export async function claimNric(
+  nric: string,
+  confirm: boolean = false,
+  options?: ApiOptions
+): Promise<{ status: 'created' | 'exists' | 'claimed' | 'linked'; name?: string }> {
+  return apiRequest('/api/v1/profile/claim-nric/', {
+    method: 'POST',
+    body: JSON.stringify({ nric, confirm }),
+    ...options,
+  })
+}
+
 export async function getProfile(options?: ApiOptions): Promise<StudentProfile> {
   return apiRequest('/api/v1/profile/', options)
 }

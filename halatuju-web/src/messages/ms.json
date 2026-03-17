@@ -141,7 +141,11 @@
     "spmPrereqHint": "Sesetengah program ijazah memerlukan gred SPM minimum.",
     "spmCompulsory": "Wajib",
     "spmOptional": "Pilihan (mengikut aliran)",
-    "enterStpmSubjects": "Sila pilih aliran, gred PA + 2 mata pelajaran, dan band MUET."
+    "enterStpmSubjects": "Sila pilih aliran, gred PA + 2 mata pelajaran, dan band MUET.",
+    "nricExistsNamed": "Nombor IC ini berdaftar atas nama {name}. Adakah ini akaun anda?",
+    "nricExists": "Nombor IC ini sudah berdaftar. Adakah ini akaun anda?",
+    "yesThisIsMe": "Ya, ini saya",
+    "noReenter": "Tidak, biar saya masukkan semula"
   },
   "dashboard": {
     "title": "Cadangan Kursus Anda",
