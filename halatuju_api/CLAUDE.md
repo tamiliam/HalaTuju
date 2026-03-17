@@ -97,7 +97,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (645 collected, 645 pass, 0 failures, 0 skipped)
+# Run ALL tests (654 collected, 654 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -120,7 +120,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_auth.py | 15 | Auth enforcement — protected endpoints reject 401, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
 | test_saved_courses.py | 17 | SPM save/list/delete/idempotent/course_type, STPM save (auto-detect prefix + explicit type)/list/filter/delete/patch/404, both types list, qualification filter (SPM/STPM), check constraint (both-null/both-set rejected) |
 | test_quiz.py | 24 | Quiz endpoints (questions 3 langs, submit single+multi, validation), engine (multi-select, weight splitting, Not Sure Yet, conditional Q2.5, field_interest, signal strength, lang parity) |
-| test_ranking.py | 63 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, top_5/rest split, API endpoint validation, field interest matching via field_key (primary/no match/cap/heavy_industry/no field_key/double match), high_stamina, rote_tolerant, quality_priority, work preference cap, pre-U scoring (Matric/STPM prestige, academic bonus, field preference, signal adjustment, signal cap, routing) |
+| test_ranking.py | 62 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, ranked list output, API endpoint validation, field interest matching via field_key (primary/no match/cap/heavy_industry/no field_key/double match), high_stamina, rote_tolerant, quality_priority, work preference cap, pre-U scoring (Matric/STPM prestige, academic bonus, field preference, signal adjustment, signal cap, routing) |
 | test_data_loading.py | 10 | TVET metadata enrichment, PISMP metadata enrichment, institution modifiers storage, MASCO occupation model (PK, M2M, reverse relation, idempotent load, __str__) |
 | test_insights.py | 8 | Insights engine: empty input, stream breakdown, labels, top fields, merit counts, level distribution, summary text |
 | test_report_engine.py | 12 | Report engine: format helpers (grades, signals, courses, insights), prompts (BM/EN), persona mapping, Gemini mock (success, cascade, missing key) |
@@ -167,7 +167,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (655 collected, 655 must pass, SPM golden master = 5319, STPM golden master = 2026)
+# 1. Run all tests (654 collected, 654 must pass, SPM golden master = 5319, STPM golden master = 2026)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -179,7 +179,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-655 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
+654 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -218,18 +218,18 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Identity Verification + UI Polish Sprint COMPLETE (2026-03-17)**
-- NRIC identity system (claim/reclaim), contact fields, email verification (Gmail SMTP)
-- Profile redesign (5 sections), onboarding IC claim flow, verify-email landing page
-- Referral link sharing (QR code), course compare (desktop, 2-3 courses), state sync, outcomes→saved merge
-- Admin UI polish: student list (pagination, download icon, blue accent) + detail (icons, grade pills, danger zone)
-- 30 new tests (645 total), migrations 0039-0041
+**Post-Launch Hardening Sprint COMPLETE (2026-03-17)**
+- SPM merit fix (4+2+2 subject grouping), merit formula documentation ("DO NOT CHANGE" blocks)
+- Dashboard ranking fix (single sorted list, frontend splits after filtering)
+- Rate limiting on email verification (3 req/hr), NRIC validation (date/age/state), mobile layout fixes
+- SPM_CODE_MAP 13→121 entries, STPM MUET float support, IC/verify-email i18n
+- 9 new tests (654 total), STPM golden master 1976→2026
 
-**Current state:** 655 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
+**Current state:** 654 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
 
 **Pending work**
-- Rate limiting on email verification endpoint (prevent Gmail 500/day abuse)
 - Cloud Run env vars for email: `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `FRONTEND_URL`
+- Supabase migrations 0039-0042 need RLS policies + seed super admin
 - STPM Pipeline: test scrapers against live MOHE, update workflow doc, extend audit_data, course deactivation mechanism
 - Phone/OTP login (blocked — Twilio ~RM12/mo)
 - Grade modulation layer

@@ -358,3 +358,15 @@
 **Trade-offs:** Engine code needs the isinstance check for backward compatibility until all data is migrated. List format is slightly more verbose in JSON.
 
 **Revisit if:** MOHE introduces OR-semantics between tiers (unlikely given how university admission works — requirements are cumulative).
+
+## Single ranked list from ranking API — Post-Launch Hardening Sprint, 2026-03-17
+
+**Decision:** Ranking API returns `{ranked: [...]}` (single sorted list) instead of `{top_5: [...], rest: [...]}`.
+
+**Alternatives considered:** (1) Keep top_5/rest split but increase top_5 to 10. (2) Add a `top_n` parameter. (3) Return single list (chosen).
+
+**Rationale:** The backend was pre-splitting courses for a specific UI layout (6 top + rest). When the frontend filtered by pathway type after the split, most top slots belonged to other categories — causing fewer than 3 cards in TOP MATCHES. The backend's job is to rank, not to decide display groupings.
+
+**Trade-offs:** Frontend must now slice the list itself (`filtered.slice(0, 3)` for top, rest for overflow). This is trivial and gives the frontend full control.
+
+**Revisit if:** Multiple frontends need different split sizes — but even then, a `top_n` query parameter is cleaner than hardcoding in the backend.

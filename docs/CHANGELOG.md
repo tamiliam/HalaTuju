@@ -1,5 +1,31 @@
 # Changelog — HalaTuju
 
+## Post-Launch Hardening Sprint (2026-03-17)
+
+### Added
+- **Rate limiting on email verification**: 3 requests/hour per profile to prevent Gmail 500/day abuse
+- **SPM_CODE_MAP expansion**: 13 → 121 entries for complete STPM prerequisite coverage (all SPM subjects mapped)
+- **Merit formula documentation**: "DO NOT CHANGE" blocks on all 4 formulas (SPM UPU, Matric, STPM mata gred, STPM CGPA) with full breakdowns
+- **STPM MUET float support**: `min_muet_band` changed from IntegerField to FloatField (65 courses have fractional bands)
+- **IC/verify-email i18n**: Trilingual support for IC claim page and verify-email landing page
+
+### Fixed
+- **SPM merit subject grouping**: `prepare_merit_inputs()` was grouping 5+3+1 subjects instead of correct UPU formula 4+2+2 (core/stream/elective)
+- **NRIC validation**: Date portion validated (catch typos), age 15-23 enforced, state code validated against known codes
+- **Mobile layout**: Header and dashboard card layout improved on mobile breakpoints
+- **Dashboard TOP MATCHES**: Backend returned `top_5`/`rest` split globally — when filtered by pathway, some categories had fewer than 3 cards. Now returns single `ranked` list; frontend filters first, then splits into top 3 + rest
+
+### Changed
+- **Ranking API response**: `{top_5: [...], rest: [...]}` → `{ranked: [...]}`  (breaking change — frontend updated simultaneously)
+- **STPM golden master**: Rebaselined 1994 → 2026 (MUET float fix + SPM_CODE_MAP expansion)
+
+### Stats
+- Backend tests: 654 pass, 0 failures (+9 net new)
+- Frontend tests: 17 pass, 0 failures
+- Golden masters: SPM 5319, STPM 2026
+
+---
+
 ## Identity Verification + UI Polish Sprint (2026-03-17)
 
 ### Added
