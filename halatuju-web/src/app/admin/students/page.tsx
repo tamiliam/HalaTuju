@@ -9,7 +9,7 @@ import {
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
-const PER_PAGE = 5
+const PER_PAGE = 10
 
 const formatNric = (nric: string | null) => {
   if (!nric || nric.length !== 12) return nric || '\u2014'
