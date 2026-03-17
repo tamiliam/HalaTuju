@@ -1151,6 +1151,7 @@ class SendVerificationView(APIView):
     """
     POST /api/v1/profile/verify-email/send/
     Generates a verification token and sends an email with a verification link.
+    Rate limited to 3 requests per hour per user.
     """
     permission_classes = [SupabaseIsAuthenticated]
 
@@ -1169,6 +1170,17 @@ class SendVerificationView(APIView):
             profile = StudentProfile.objects.get(supabase_user_id=request.user_id)
         except StudentProfile.DoesNotExist:
             return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Rate limit: max 3 verification emails per hour per profile
+        one_hour_ago = timezone.now() - timedelta(hours=1)
+        recent_count = EmailVerification.objects.filter(
+            profile=profile, created_at__gte=one_hour_ago
+        ).count()
+        if recent_count >= 3:
+            return Response(
+                {'error': 'Too many verification requests. Please try again later.'},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
 
         # Invalidate previous tokens for this profile+email
         EmailVerification.objects.filter(profile=profile, email=email, used=False).update(used=True)

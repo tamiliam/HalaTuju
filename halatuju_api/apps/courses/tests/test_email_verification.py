@@ -81,6 +81,30 @@ class TestSendVerification(TestCase):
         )
         self.assertEqual(active.count(), 1)
 
+    def test_rate_limit_blocks_after_3_requests(self):
+        """Max 3 verification emails per hour per profile."""
+        for i in range(3):
+            resp = self._post({'email': f'test{i}@example.com'})
+            self.assertEqual(resp.status_code, 200)
+        resp = self._post({'email': 'test4@example.com'})
+        self.assertEqual(resp.status_code, 429)
+
+    def test_rate_limit_resets_after_old_tokens_expire(self):
+        """Tokens older than 1 hour don't count towards the limit."""
+        old_time = timezone.now() - timedelta(hours=2)
+        for i in range(3):
+            v = EmailVerification.objects.create(
+                profile=self.profile,
+                email=f'old{i}@example.com',
+                token=uuid.uuid4(),
+                expires_at=timezone.now() + timedelta(hours=24),
+            )
+            # Backdate the created_at
+            EmailVerification.objects.filter(pk=v.pk).update(created_at=old_time)
+        # Should be allowed since old tokens are > 1 hour ago
+        resp = self._post({'email': 'new@example.com'})
+        self.assertEqual(resp.status_code, 200)
+
 
 class TestVerifyEmail(TestCase):
 
