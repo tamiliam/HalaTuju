@@ -1074,17 +1074,32 @@ class NricClaimView(APIView):
             })
 
         # Confirmed — delete caller's empty profile, transfer existing one
-        # supabase_user_id is the PK, so we delete old + insert new.
+        # Use raw SQL to update PK + all FK references in a transaction.
+        # Django ORM can't update PKs, and delete+re-insert would CASCADE
+        # delete saved courses, outcomes, and reports.
+        from django.db import connection, transaction
         StudentProfile.objects.filter(
             supabase_user_id=request.user_id, nric=''
         ).delete()
         old_pk = existing.supabase_user_id
-        # Delete the old record first (frees the NRIC unique constraint)
-        StudentProfile.objects.filter(supabase_user_id=old_pk).delete()
-        # Re-insert with the new PK
-        existing.pk = request.user_id
-        existing.supabase_user_id = request.user_id
-        existing.save(force_insert=True)
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                # Update FK references first
+                for table, col in [
+                    ('saved_courses', 'student_id'),
+                    ('admission_outcomes', 'student_id'),
+                    ('generated_reports', 'student_id'),
+                ]:
+                    cursor.execute(
+                        f'UPDATE {table} SET {col} = %s WHERE {col} = %s',
+                        [request.user_id, old_pk],
+                    )
+                # Update the profile PK last
+                cursor.execute(
+                    'UPDATE api_student_profiles SET supabase_user_id = %s'
+                    ' WHERE supabase_user_id = %s',
+                    [request.user_id, old_pk],
+                )
         return Response({'status': 'claimed'})
 
 

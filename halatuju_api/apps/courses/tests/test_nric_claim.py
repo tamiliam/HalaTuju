@@ -1,6 +1,6 @@
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory
-from apps.courses.models import StudentProfile
+from apps.courses.models import StudentProfile, SavedCourse, Course
 from apps.courses.views import NricClaimView
 
 
@@ -71,6 +71,21 @@ class TestNricClaim(TestCase):
     def test_missing_nric_rejected(self):
         resp = self._post('user-a', {})
         self.assertEqual(resp.status_code, 400)
+
+    def test_claim_preserves_saved_courses(self):
+        """Saved courses must survive profile transfer (no CASCADE delete)."""
+        profile = StudentProfile.objects.create(
+            supabase_user_id='user-a', nric='040815-01-2022', name='Student A'
+        )
+        course = Course.objects.first()  # Use any existing course from fixtures
+        if course:
+            SavedCourse.objects.create(student=profile, course=course)
+            resp = self._post('user-b', {'nric': '040815-01-2022', 'confirm': True})
+            self.assertEqual(resp.status_code, 200)
+            # Saved course still exists under the transferred profile
+            self.assertEqual(
+                SavedCourse.objects.filter(student__nric='040815-01-2022').count(), 1
+            )
 
     def test_new_nric_updates_existing_empty_profile(self):
         """If caller already has a profile with blank NRIC, update it."""
