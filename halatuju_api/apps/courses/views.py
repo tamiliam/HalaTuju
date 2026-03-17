@@ -1025,6 +1025,69 @@ class ProfileSyncView(APIView):
         })
 
 
+class NricClaimView(APIView):
+    """
+    POST /api/v1/profile/claim-nric/
+
+    Claim or reclaim an NRIC. Outcomes:
+    - NRIC is new → create/update profile, status='created'
+    - NRIC owned by caller → status='linked' (no-op)
+    - NRIC owned by someone else → status='exists' (needs confirm=True)
+    - confirm=True → transfer profile, status='claimed'
+    """
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request):
+        import re
+        nric = request.data.get('nric', '').strip()
+        confirm = request.data.get('confirm', False)
+
+        if not nric:
+            return Response({'error': 'NRIC is required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if not re.match(r'^\d{6}-\d{2}-\d{4}$', nric):
+            return Response({'error': 'Invalid NRIC format'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            existing = StudentProfile.objects.get(nric=nric)
+        except StudentProfile.DoesNotExist:
+            existing = None
+
+        if existing is None:
+            # New NRIC — create or update caller's profile
+            profile, created = StudentProfile.objects.get_or_create(
+                supabase_user_id=request.user_id
+            )
+            profile.nric = nric
+            profile.save(update_fields=['nric'])
+            return Response({'status': 'created'})
+
+        if existing.supabase_user_id == request.user_id:
+            return Response({'status': 'linked'})
+
+        if not confirm:
+            return Response({
+                'status': 'exists',
+                'name': existing.name or None,
+            })
+
+        # Confirmed — delete caller's empty profile, transfer existing one
+        # supabase_user_id is the PK, so we delete old + insert new.
+        StudentProfile.objects.filter(
+            supabase_user_id=request.user_id, nric=''
+        ).delete()
+        old_pk = existing.supabase_user_id
+        # Delete the old record first (frees the NRIC unique constraint)
+        StudentProfile.objects.filter(supabase_user_id=old_pk).delete()
+        # Re-insert with the new PK
+        existing.pk = request.user_id
+        existing.supabase_user_id = request.user_id
+        existing.save(force_insert=True)
+        return Response({'status': 'claimed'})
+
+
 class OutcomeListView(APIView):
     """
     GET /api/v1/outcomes/ — List own admission outcomes.

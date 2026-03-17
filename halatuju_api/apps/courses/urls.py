@@ -52,6 +52,7 @@ urlpatterns = [
     # User profile
     path('profile/', views.ProfileView.as_view(), name='profile'),
     path('profile/sync/', views.ProfileSyncView.as_view(), name='profile-sync'),
+    path('profile/claim-nric/', views.NricClaimView.as_view(), name='profile-claim-nric'),
 
     # Admission outcomes
     path('outcomes/', views.OutcomeListView.as_view(), name='outcome-list'),
