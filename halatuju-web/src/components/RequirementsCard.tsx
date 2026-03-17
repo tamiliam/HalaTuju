@@ -266,8 +266,8 @@ function tvetKeyLabel(key: string, locale: string): string {
   const labels: Record<string, { bm: string; en: string }> = {
     req_malaysian: { bm: 'Warganegara', en: 'Nationality' },
     single: { bm: 'Status Perkahwinan', en: 'Marital Status' },
-    min_credits: { bm: 'Kredit SPM', en: 'SPM Credits' },
-    min_pass: { bm: 'Lulus SPM', en: 'SPM Passes' },
+    min_credits: { bm: 'Kredit Minimum', en: 'Minimum Credits' },
+    min_pass: { bm: 'Lulus Minimum', en: 'Minimum Passes' },
     no_colorblind: { bm: 'Penglihatan Warna', en: 'Colour Vision' },
     no_disability: { bm: 'Fizikal', en: 'Physical' },
     req_male: { bm: 'Jantina', en: 'Gender' },

@@ -11,9 +11,9 @@ const lexend = Lexend({
 })
 
 export const metadata: Metadata = {
-  title: 'HalaTuju - SPM Course Recommendations',
-  description: 'Find the right course for your future based on your SPM results and interests.',
-  keywords: ['SPM', 'course recommendation', 'Malaysia', 'education', 'university', 'polytechnic'],
+  title: 'HalaTuju - SPM & STPM Course Recommendations',
+  description: 'Find the right course for your future based on your SPM or STPM results and interests.',
+  keywords: ['SPM', 'STPM', 'course recommendation', 'Malaysia', 'education', 'university', 'polytechnic', 'degree'],
 }
 
 export default function RootLayout({

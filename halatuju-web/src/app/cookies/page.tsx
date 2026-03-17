@@ -29,7 +29,7 @@ export default function CookiesPage() {
           <ul className="list-disc pl-6 text-gray-600 space-y-1">
             <li><strong>Authentication cookies</strong> &mdash; to keep you signed in securely (managed by Supabase).</li>
             <li><strong>Language preference</strong> &mdash; to remember your chosen language (stored in localStorage).</li>
-            <li><strong>Profile data</strong> &mdash; your SPM grades and quiz answers are stored locally on your device so you do not need to re-enter them.</li>
+            <li><strong>Profile data</strong> &mdash; your SPM or STPM grades and quiz answers are stored locally on your device so you do not need to re-enter them.</li>
           </ul>
 
           <h2 className="text-lg font-semibold text-gray-900">Third-Party Cookies</h2>

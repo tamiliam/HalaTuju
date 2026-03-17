@@ -34,18 +34,18 @@
     "logout": "Log Keluar"
   },
   "footer": {
-    "tagline": "Membimbing pelajar SPM Malaysia ke kursus yang tepat.",
+    "tagline": "Membimbing pelajar Malaysia ke kursus yang tepat.",
     "quickLinks": "Pautan Pantas",
     "legal": "Undang-undang",
     "startHere": "Mula Di Sini"
   },
   "landing": {
     "heroTitle": "Cari Kursus Anda",
-    "heroSubtitle": "Temui laluan yang sesuai untuk masa depan anda berdasarkan keputusan SPM. Dapatkan cadangan peribadi daripada lebih 300 kursus di politeknik, universiti dan institusi TVET.",
+    "heroSubtitle": "Temui laluan yang sesuai untuk masa depan anda berdasarkan keputusan SPM atau STPM. Dapatkan cadangan peribadi daripada lebih 1,300 kursus di 800 institusi — politeknik, universiti dan kolej TVET.",
     "startJourney": "Mulakan Perjalanan Anda",
     "howItWorks": "Cara Ia Berfungsi",
     "step1Title": "Masukkan Gred Anda",
-    "step1Desc": "Beritahu kami keputusan SPM anda dan kami akan cari kursus yang anda layak.",
+    "step1Desc": "Beritahu kami keputusan SPM atau STPM anda dan kami akan cari kursus yang anda layak.",
     "step2Title": "Kongsi Minat Anda",
     "step2Desc": "Jawab beberapa soalan tentang apa yang anda minati untuk padanan peribadi.",
     "step3Title": "Dapatkan Cadangan",
@@ -55,7 +55,7 @@
     "languages": "Bahasa",
     "free": "Percuma",
     "readyTitle": "Bersedia Mencari Laluan Anda?",
-    "readySubtitle": "Sertai ribuan lepasan SPM yang telah menemui kursus ideal mereka menggunakan HalaTuju.",
+    "readySubtitle": "Sertai ribuan pelajar yang telah menemui kursus ideal mereka menggunakan HalaTuju.",
     "getStartedFree": "Mulakan — Percuma"
   },
   "onboarding": {
@@ -147,7 +147,14 @@
     "yesThisIsMe": "Ya, ini saya",
     "noReenter": "Tidak, biar saya masukkan semula",
     "referralQuestion": "Bagaimana anda tahu tentang HalaTuju? (Pilihan)",
-    "referralOther": "Lain-lain"
+    "referralOther": "Lain-lain",
+    "spmStream": "Aliran SPM Anda",
+    "spmStreamHint": "Pilih 4 subjek aliran",
+    "spmAddElective": "+ Tambah elektif",
+    "spmSains": "Sains",
+    "spmSastera": "Sastera",
+    "spmTeknikal": "Teknikal",
+    "spmVokasional": "Vokasional"
   },
   "verifyEmail": {
     "loading": "Mengesahkan e-mel anda...",
@@ -162,7 +169,7 @@
   },
   "dashboard": {
     "title": "Cadangan Kursus Anda",
-    "subtitle": "Berdasarkan gred SPM dan profil anda, ini adalah kursus yang anda layak.",
+    "subtitle": "Berdasarkan gred dan profil anda, ini adalah kursus yang anda layak.",
     "qualifyFor": "Anda layak memohon",
     "qualifyCourses": "kursus",
     "rankedSubtitle": "Disusun mengikut kesesuaian dengan minat dan pilihan anda.",
@@ -500,18 +507,18 @@
   },
   "about": {
     "problemTitle": "Masalah Yang Kami Selesaikan",
-    "problemP1": "Setiap tahun, ribuan pelajar India Malaysia meninggalkan SPM dan mendaftar di kolej swasta yang mahal — sering kali menanggung pinjaman pelajaran yang berat untuk kelayakan yang tidak selalu sepadan dengan apa yang tersedia secara percuma atau pada kadar bersubsidi tinggi dalam sistem awam.",
+    "problemP1": "Setiap tahun, ribuan pelajar Malaysia meninggalkan sekolah dan mendaftar di kolej swasta yang mahal — sering kali menanggung pinjaman pelajaran yang berat untuk kelayakan yang tidak selalu sepadan dengan apa yang tersedia secara percuma atau pada kadar bersubsidi tinggi dalam sistem awam.",
     "problemP2": "Pada 2024, lebih 137,000 tempat tersedia di politeknik, kolej komuniti, institusi TVET, dan universiti awam — tidak termasuk UiTM. Ini adalah program yang dibiayai kerajaan dan diiktiraf industri. Tetapi terlalu ramai pelajar dan keluarga tidak menemuinya, kerana maklumat bertaburan dan sukar dinavigasi.",
     "problemTagline": "HalaTuju wujud untuk menyelesaikan masalah ini.",
     "whatTitle": "Apa Yang Dilakukan",
-    "whatDesc": "Masukkan keputusan SPM anda, dan enjin kelayakan kami menyemaknya terhadap syarat kemasukan lebih 800 kursus di institusi awam Malaysia. Kami membantu anda mencari program yang anda benar-benar layak — disesuaikan dengan gred, minat, dan matlamat anda.",
+    "whatDesc": "Masukkan keputusan SPM atau STPM anda, dan enjin kelayakan kami menyemaknya terhadap syarat kemasukan lebih 1,300 kursus di 800 institusi awam Malaysia. Kami membantu anda mencari program yang anda benar-benar layak — disesuaikan dengan gred, minat, dan matlamat anda.",
     "whatTagline": "Tiada bayaran. Tiada syarat tersembunyi.",
     "whoTitle": "Siapa Di Sebalik Ini",
     "whoP1": "HalaTuju dibina di bawah Projek Lentera, sebuah inisiatif komuniti yang berfokus pada peningkatan akses kepada pendidikan tinggi awam untuk pelajar Malaysia.",
     "whoP2": "Ini adalah usaha sukarelawan — tiada seorang pun yang memilikinya. Guru, kaunselor, ibu bapa, alumni, dan organisasi masyarakat semuanya memainkan peranan. Kami percaya setiap pelajar layak membuat pilihan yang bermaklumat, bukan pilihan lalai yang didorong oleh kekurangan maklumat.",
     "helpTitle": "Bagaimana Anda Boleh Membantu",
     "helpParents": "Ibu bapa:",
-    "helpParentsDesc": "Gunakan HalaTuju bersama anak anda selepas keputusan SPM. Pilihannya mungkin mengejutkan anda.",
+    "helpParentsDesc": "Gunakan HalaTuju bersama anak anda selepas keputusan SPM atau STPM. Pilihannya mungkin mengejutkan anda.",
     "helpTeachers": "Guru dan kaunselor:",
     "helpTeachersDesc": "Kongsikan dengan pelajar anda. Lima minit boleh menyelamatkan sebuah keluarga daripada hutang bertahun-tahun.",
     "helpEveryone": "Semua orang:",
