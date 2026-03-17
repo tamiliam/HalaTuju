@@ -277,5 +277,6 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             'nric', 'angka_giliran', 'address', 'phone', 'family_income', 'siblings',
             'exam_type', 'stpm_grades', 'stpm_cgpa', 'muet_band',
             'spm_prereq_grades', 'referral_source',
+            'contact_email', 'contact_phone',
         ]
         extra_kwargs = {f: {'required': False} for f in fields}

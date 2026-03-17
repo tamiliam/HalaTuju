@@ -358,3 +358,88 @@ class TestNricUniqueness:
         StudentProfile.objects.create(supabase_user_id='blank-nric-1', nric='')
         StudentProfile.objects.create(supabase_user_id='blank-nric-2', nric='')
         assert StudentProfile.objects.filter(nric='').count() == 2
+
+
+@pytest.mark.django_db
+class TestProfileContactAPI:
+    """Profile API returns and accepts contact fields."""
+
+    def test_get_profile_returns_contact_fields(self):
+        StudentProfile.objects.create(
+            supabase_user_id='contact-api-1',
+            contact_email='test@example.com',
+            contact_email_verified=True,
+            contact_phone='+60123456789',
+            contact_phone_verified=False,
+        )
+        factory = RequestFactory()
+        request = factory.get('/api/v1/profile/')
+        request.user_id = 'contact-api-1'
+        request.supabase_user = {'id': 'contact-api-1', 'email': 'login@gmail.com'}
+        resp = ProfileView.as_view()(request)
+        assert resp.data['contact_email'] == 'test@example.com'
+        assert resp.data['contact_email_verified'] is True
+        assert resp.data['contact_phone'] == '+60123456789'
+        assert resp.data['contact_phone_verified'] is False
+        assert resp.data['email'] == 'login@gmail.com'
+
+    def test_put_contact_email_resets_verified(self):
+        """Editing contact_email resets verification status."""
+        StudentProfile.objects.create(
+            supabase_user_id='contact-api-2',
+            contact_email='old@example.com',
+            contact_email_verified=True,
+        )
+        factory = RequestFactory()
+        request = factory.put(
+            '/api/v1/profile/',
+            data={'contact_email': 'new@example.com'},
+            content_type='application/json',
+        )
+        request.user_id = 'contact-api-2'
+        request.supabase_user = {'id': 'contact-api-2', 'email': 'login@gmail.com'}
+        resp = ProfileView.as_view()(request)
+        assert resp.status_code == 200
+        profile = StudentProfile.objects.get(supabase_user_id='contact-api-2')
+        assert profile.contact_email == 'new@example.com'
+        assert profile.contact_email_verified is False
+
+    def test_put_contact_phone_resets_verified(self):
+        """Editing contact_phone resets verification status."""
+        StudentProfile.objects.create(
+            supabase_user_id='contact-api-3',
+            contact_phone='+60111111111',
+            contact_phone_verified=True,
+        )
+        factory = RequestFactory()
+        request = factory.put(
+            '/api/v1/profile/',
+            data={'contact_phone': '+60222222222'},
+            content_type='application/json',
+        )
+        request.user_id = 'contact-api-3'
+        request.supabase_user = {'id': 'contact-api-3', 'email': 'login@gmail.com'}
+        resp = ProfileView.as_view()(request)
+        assert resp.status_code == 200
+        profile = StudentProfile.objects.get(supabase_user_id='contact-api-3')
+        assert profile.contact_phone == '+60222222222'
+        assert profile.contact_phone_verified is False
+
+    def test_put_same_contact_email_keeps_verified(self):
+        """Saving the same email value should NOT reset verified status."""
+        StudentProfile.objects.create(
+            supabase_user_id='contact-api-4',
+            contact_email='same@example.com',
+            contact_email_verified=True,
+        )
+        factory = RequestFactory()
+        request = factory.put(
+            '/api/v1/profile/',
+            data={'contact_email': 'same@example.com'},
+            content_type='application/json',
+        )
+        request.user_id = 'contact-api-4'
+        request.supabase_user = {'id': 'contact-api-4', 'email': 'login@gmail.com'}
+        ProfileView.as_view()(request)
+        profile = StudentProfile.objects.get(supabase_user_id='contact-api-4')
+        assert profile.contact_email_verified is True  # Should stay True

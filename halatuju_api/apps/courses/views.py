@@ -953,6 +953,10 @@ class ProfileView(APIView):
             'address': profile.address,
             'phone': profile.phone,
             'email': email,
+            'contact_email': profile.contact_email,
+            'contact_email_verified': profile.contact_email_verified,
+            'contact_phone': profile.contact_phone,
+            'contact_phone_verified': profile.contact_phone_verified,
             'family_income': profile.family_income,
             'siblings': profile.siblings,
             'exam_type': profile.exam_type,
@@ -971,7 +975,19 @@ class ProfileView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        # Capture old contact values before save
+        old_contact_email = profile.contact_email
+        old_contact_phone = profile.contact_phone
+
         profile = serializer.save()
+
+        # Reset verification when contact details actually change
+        if 'contact_email' in serializer.validated_data and profile.contact_email != old_contact_email:
+            profile.contact_email_verified = False
+            profile.save(update_fields=['contact_email_verified'])
+        if 'contact_phone' in serializer.validated_data and profile.contact_phone != old_contact_phone:
+            profile.contact_phone_verified = False
+            profile.save(update_fields=['contact_phone_verified'])
 
         # Resolve referral source to partner organisation
         referral = serializer.validated_data.get('referral_source')
