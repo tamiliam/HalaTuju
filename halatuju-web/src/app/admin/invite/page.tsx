@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAdminAuth } from '@/lib/admin-auth-context'
-import { getOrgs, inviteAdmin, type OrgItem } from '@/lib/admin-api'
+import { getOrgs, inviteAdmin, getAdmins, revokeAdmin, type OrgItem, type AdminItem } from '@/lib/admin-api'
 
 export default function AdminInvitePage() {
   const { token, role } = useAdminAuth()
@@ -17,10 +17,19 @@ export default function AdminInvitePage() {
   const [adminEmail, setAdminEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [admins, setAdmins] = useState<AdminItem[]>([])
+  const [revoking, setRevoking] = useState<number | null>(null)
+
+  const loadAdmins = () => {
+    if (token) {
+      getAdmins({ token }).then((data) => setAdmins(data.admins)).catch(() => {})
+    }
+  }
 
   useEffect(() => {
     if (token) {
       getOrgs({ token }).then((data) => setOrgs(data.orgs)).catch(() => {})
+      loadAdmins()
     }
   }, [token])
 
@@ -59,9 +68,10 @@ export default function AdminInvitePage() {
       setContactPerson('')
       setOrgPhone('')
 
-      // Refresh org list
+      // Refresh org list and admin list
       if (token) {
         getOrgs({ token }).then((data) => setOrgs(data.orgs)).catch(() => {})
+        loadAdmins()
       }
     } catch (err) {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to send invite' })
@@ -181,6 +191,65 @@ export default function AdminInvitePage() {
           {loading ? 'Sending invite...' : 'Send Invite'}
         </button>
       </form>
+
+      {/* Admin list */}
+      <div className="mt-10">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Senarai Admin</h2>
+        <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Nama</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Emel</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Organisasi</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Tindakan</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {admins.map((a) => (
+                <tr key={a.id}>
+                  <td className="px-4 py-3">{a.name}</td>
+                  <td className="px-4 py-3 text-gray-500">{a.email}</td>
+                  <td className="px-4 py-3">{a.org_name || 'Super Admin'}</td>
+                  <td className="px-4 py-3">
+                    {a.is_active ? (
+                      <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">Active</span>
+                    ) : (
+                      <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-600">Revoked</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {!a.is_super_admin && (
+                      <button
+                        disabled={revoking === a.id}
+                        onClick={async () => {
+                          setRevoking(a.id)
+                          try {
+                            await revokeAdmin(a.id, a.is_active ? 'revoke' : 'restore', { token: token! })
+                            loadAdmins()
+                          } catch (err) {
+                            setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Action failed' })
+                          }
+                          setRevoking(null)
+                        }}
+                        className={`text-xs font-medium ${a.is_active ? 'text-red-600 hover:text-red-800' : 'text-blue-600 hover:text-blue-800'} disabled:opacity-50`}
+                      >
+                        {a.is_active ? 'Revoke' : 'Restore'}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {admins.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6 text-center text-gray-400">Tiada admin.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }

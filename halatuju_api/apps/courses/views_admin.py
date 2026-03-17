@@ -10,6 +10,9 @@ Endpoints:
 - DELETE /api/v1/admin/students/<user_id>/ - Delete student (super admin only)
 - POST /api/v1/admin/invite/ - Invite a partner admin (super admin only)
 - GET /api/v1/admin/orgs/ - List organisations (for invite dropdown)
+- GET /api/v1/admin/admins/ - List all admins (super admin only)
+- PATCH /api/v1/admin/admins/<id>/revoke/ - Revoke or restore admin access (super admin only)
+- GET/PUT /api/v1/admin/profile/ - View/edit own admin profile
 """
 import csv
 import logging
@@ -41,14 +44,14 @@ class PartnerAdminMixin:
             return None
 
         # Fast path: lookup by UID
-        admin = PartnerAdmin.objects.filter(supabase_user_id=user_id).select_related('org').first()
+        admin = PartnerAdmin.objects.filter(supabase_user_id=user_id, is_active=True).select_related('org').first()
         if admin:
             return admin
 
         # Fallback: lookup by email, backfill UID
         email = getattr(request, 'supabase_user', {}).get('email')
         if email:
-            admin = PartnerAdmin.objects.filter(email=email, supabase_user_id__isnull=True).select_related('org').first()
+            admin = PartnerAdmin.objects.filter(email=email, supabase_user_id__isnull=True, is_active=True).select_related('org').first()
             if admin:
                 admin.supabase_user_id = user_id
                 admin.save(update_fields=['supabase_user_id'])
@@ -284,3 +287,97 @@ class AdminOrgsView(PartnerAdminMixin, APIView):
             'id', 'code', 'name', 'contact_person', 'phone',
         )
         return Response({'orgs': list(orgs)})
+
+
+class AdminListView(PartnerAdminMixin, APIView):
+    """GET /api/v1/admin/admins/ - List all admins (super admin only)."""
+
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin or not admin.is_super_admin:
+            return Response({'error': 'Super admin access required'}, status=403)
+
+        admins = PartnerAdmin.objects.select_related('org').order_by('-created_at')
+        data = []
+        for a in admins:
+            data.append({
+                'id': a.id,
+                'name': a.name,
+                'email': a.email,
+                'is_super_admin': a.is_super_admin,
+                'is_active': a.is_active,
+                'org_name': a.org.name if a.org else None,
+                'created_at': a.created_at.isoformat(),
+            })
+        return Response({'admins': data})
+
+
+class AdminRevokeView(PartnerAdminMixin, APIView):
+    """PATCH /api/v1/admin/admins/<id>/revoke/ - Revoke or restore admin access."""
+
+    def patch(self, request, admin_id):
+        admin = self.get_admin(request)
+        if not admin or not admin.is_super_admin:
+            return Response({'error': 'Super admin access required'}, status=403)
+
+        try:
+            target = PartnerAdmin.objects.get(id=admin_id)
+        except PartnerAdmin.DoesNotExist:
+            return Response({'error': 'Admin not found'}, status=404)
+
+        if target.is_super_admin:
+            return Response({'error': 'Cannot revoke super admin'}, status=400)
+
+        action = request.data.get('action')
+        if action == 'revoke':
+            target.is_active = False
+            target.save(update_fields=['is_active'])
+            return Response({'message': f'{target.name} access revoked'})
+        elif action == 'restore':
+            target.is_active = True
+            target.save(update_fields=['is_active'])
+            return Response({'message': f'{target.name} access restored'})
+        else:
+            return Response({'error': 'action must be "revoke" or "restore"'}, status=400)
+
+
+class AdminProfileView(PartnerAdminMixin, APIView):
+    """GET/PUT /api/v1/admin/profile/ - View/edit own admin profile."""
+
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return Response({'error': 'Not an admin'}, status=403)
+
+        return Response({
+            'id': admin.id,
+            'name': admin.name,
+            'email': admin.email,
+            'is_super_admin': admin.is_super_admin,
+            'org_name': admin.org.name if admin.org else None,
+            'org_contact_person': admin.org.contact_person if admin.org else None,
+            'org_phone': admin.org.phone if admin.org else None,
+        })
+
+    def put(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return Response({'error': 'Not an admin'}, status=403)
+
+        name = request.data.get('name', '').strip()
+        if name:
+            admin.name = name
+            admin.save(update_fields=['name'])
+
+        # Org admins can edit their org's contact info
+        if admin.org:
+            contact = request.data.get('org_contact_person')
+            phone = request.data.get('org_phone')
+            if contact is not None:
+                admin.org.contact_person = contact.strip()
+            if phone is not None:
+                admin.org.phone = phone.strip()
+            if contact is not None or phone is not None:
+                admin.org.save(update_fields=['contact_person', 'phone'])
+
+        return Response({'message': 'Profile updated'})

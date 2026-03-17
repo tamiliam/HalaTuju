@@ -5,6 +5,7 @@ from django.urls import path
 from . import views
 from .views_admin import (
     AdminRoleView, AdminInviteView, AdminOrgsView,
+    AdminListView, AdminRevokeView, AdminProfileView,
     PartnerDashboardView, PartnerStudentListView,
     PartnerStudentDetailView, PartnerStudentExportView,
 )
@@ -18,6 +19,9 @@ urlpatterns = [
     path('admin/students/<str:user_id>/', PartnerStudentDetailView.as_view(), name='partner-student-detail'),
     path('admin/invite/', AdminInviteView.as_view(), name='admin-invite'),
     path('admin/orgs/', AdminOrgsView.as_view(), name='admin-orgs'),
+    path('admin/admins/', AdminListView.as_view(), name='admin-list'),
+    path('admin/admins/<int:admin_id>/revoke/', AdminRevokeView.as_view(), name='admin-revoke'),
+    path('admin/profile/', AdminProfileView.as_view(), name='admin-profile'),
 
     # Eligibility check (main engine endpoint)
     path('eligibility/check/', views.EligibilityCheckView.as_view(), name='eligibility-check'),

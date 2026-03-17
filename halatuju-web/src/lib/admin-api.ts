@@ -129,6 +129,71 @@ export async function deleteStudent(userId: string, options?: ApiOptions) {
   return res.json()
 }
 
+// ── Admin management ────────────────────────────────────────────────
+
+export interface AdminItem {
+  id: number
+  name: string
+  email: string
+  is_super_admin: boolean
+  is_active: boolean
+  org_name: string | null
+  created_at: string
+}
+
+export async function getAdmins(options?: ApiOptions) {
+  return adminFetch<{ admins: AdminItem[] }>('/api/v1/admin/admins/', options)
+}
+
+export async function revokeAdmin(adminId: number, action: 'revoke' | 'restore', options?: ApiOptions) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
+  const res = await fetch(`${API_BASE}/api/v1/admin/admins/${adminId}/revoke/`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ action }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `Action failed: ${res.status}`)
+  }
+  return res.json()
+}
+
+// ── Admin profile ───────────────────────────────────────────────────
+
+export interface AdminProfile {
+  id: number
+  name: string
+  email: string
+  is_super_admin: boolean
+  org_name: string | null
+  org_contact_person: string | null
+  org_phone: string | null
+}
+
+export async function getAdminProfile(options?: ApiOptions) {
+  return adminFetch<AdminProfile>('/api/v1/admin/profile/', options)
+}
+
+export async function updateAdminProfile(
+  data: { name?: string; org_contact_person?: string; org_phone?: string },
+  options?: ApiOptions
+) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
+  const res = await fetch(`${API_BASE}/api/v1/admin/profile/`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `Update failed: ${res.status}`)
+  }
+  return res.json()
+}
+
 // ── Invite / Orgs ───────────────────────────────────────────────────
 
 export interface OrgItem {

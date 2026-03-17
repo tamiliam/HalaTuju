@@ -404,6 +404,7 @@ class PartnerAdmin(models.Model):
         help_text='NULL for super admin',
     )
     is_super_admin = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     name = models.CharField(max_length=200)
     email = models.EmailField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)

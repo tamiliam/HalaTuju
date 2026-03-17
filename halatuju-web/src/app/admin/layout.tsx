@@ -66,6 +66,12 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
               Invite
             </Link>
           )}
+          <Link
+            href="/admin/profile"
+            className="text-sm text-gray-600 hover:text-blue-600"
+          >
+            Profil
+          </Link>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500">
