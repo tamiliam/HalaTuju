@@ -1105,8 +1105,10 @@ class TestCalculateEndpoints(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('academic_merit', response.data)
         self.assertIn('final_merit', response.data)
-        self.assertAlmostEqual(response.data['academic_merit'], 90.0, places=1)
-        self.assertAlmostEqual(response.data['final_merit'], 98.0, places=1)
+        # 4+2+2 UPU formula: all-A (16pts) → academic 80.0, final 88.0
+        # (Only all-A+ would reach the 90.0 academic cap)
+        self.assertAlmostEqual(response.data['academic_merit'], 80.0, places=1)
+        self.assertAlmostEqual(response.data['final_merit'], 88.0, places=1)
 
     def test_merit_missing_grades(self):
         """POST empty body returns 400."""

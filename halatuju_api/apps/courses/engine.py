@@ -145,12 +145,49 @@ def map_subject_code(subj_code):
 
 
 # ============================================
-# MERIT CALCULATION
+# SPM MERIT CALCULATION (UPU Formula)
+# ============================================
+#
+# DO NOT CHANGE THIS FORMULA without explicit approval from the user.
+#
+# Source: UPU (Unit Pusat Universiti) official merit calculation.
+#
+# Grade scale (MERIT_GRADE_POINTS, higher = better):
+#   A+=18, A=16, A-=14, B+=12, B=10, C+=8, C=6, D=4, E=2, G=0
+#
+# Subject grouping (4+2+2 = 8 subjects):
+#   Sec1 (Teras/Core):    4 FIXED subjects — BM, BI, Math, Sejarah
+#                          Max = 4 × 18 = 72 pts
+#   Sec2 (Aliran/Stream): Best 2 from student's stream pool
+#                          (science/arts/technical)
+#                          Max = 2 × 18 = 36 pts
+#   Sec3 (Tambahan/Elective): Best 2 from remaining subjects
+#                          Max = 2 × 18 = 36 pts
+#
+# Weighted formula:
+#   weighted = (Sec1/72 × 40) + (Sec2/36 × 30) + (Sec3/36 × 10)
+#   Simplified: ((p1 × 5/9) + (p2 × 5/6) + (p3 × 5/18))
+#
+# Academic merit:
+#   academic = weighted × 9/8, capped at 90
+#
+# Final merit:
+#   final = academic + CoQ (co-curriculum, 0-10), max 100
+#
 # ============================================
 
 def calculate_merit_score(sec1_grades, sec2_grades, sec3_grades, coq_score):
     """
-    Calculates the detailed academic merit and final merit based on the 18-point scale.
+    UPU SPM merit score from three subject sections + co-curriculum.
+
+    Args:
+        sec1_grades: List of 4 grade strings (core: BM, BI, Math, Sejarah)
+        sec2_grades: List of 2 grade strings (best from stream pool)
+        sec3_grades: List of 2 grade strings (best from remaining)
+        coq_score: Co-curriculum score (0-10)
+
+    Returns:
+        Dict with academic_merit (0-90), final_merit (0-100), total_points.
     """
     def get_points(g_list):
         return sum(MERIT_GRADE_POINTS.get(g, 0) for g in g_list)
@@ -208,52 +245,60 @@ def check_merit_probability(student_merit, course_cutoff):
 
 def prepare_merit_inputs(grades):
     """
-    Intelligently splits grades into Sec1 (5 subjs), Sec2 (3 subjs), Sec3 (1 subj)
+    Splits grades into Sec1 (4 core), Sec2 (2 stream), Sec3 (2 elective)
     for UPU-style merit calculation.
+
+    UPU formula sections:
+      Sec1 (Teras/Core, 40%): BM, BI, Math, Sejarah — fixed 4, max 72 pts
+      Sec2 (Aliran/Stream, 30%): Best 2 from stream pool — max 36 pts
+      Sec3 (Tambahan/Elective, 10%): Best 2 from remaining — max 36 pts
     """
-    has_phy = 'phy' in grades
-    has_chem = 'chem' in grades
-    is_science = has_phy and has_chem
+    # Stream subject pools (match frontend subjects.ts categories)
+    SCIENCE_POOL = {'phy', 'chem', 'bio', 'addmath'}
+    ARTS_POOL = {'ekonomi', 'poa', 'business', 'geo', 'b_tamil', 'b_cina',
+                 'lukisan', 'psv', 'keusahawanan'}
+    TECHNICAL_POOL = {'eng_civil', 'eng_mech', 'eng_elec', 'eng_draw', 'gkt',
+                      'comp_sci', 'multimedia', 'reka_cipta'}
 
     def get_g(s):
         return grades.get(s, 'G')
 
-    # Section 3: History (Critical for UPU)
-    sec3 = [get_g('history')]
+    # Section 1: 4 fixed core subjects (BM, BI, Math, Sejarah)
+    sec1 = [get_g('bm'), get_g('eng'), get_g('math'), get_g('history')]
 
-    # Section 1: 5 Critical Subjects
-    sec1_keys = []
-    if is_science:
-        candidates = ['math', 'addmath', 'phy', 'chem', 'bio']
-        for k in candidates:
-            if k in grades:
-                sec1_keys.append(k)
-    else:
-        candidates = ['bm', 'math', 'sci']
-        for k in candidates:
-            if k in grades:
-                sec1_keys.append(k)
+    # Determine stream from subjects taken
+    student_keys = set(grades.keys())
+    core_keys = {'bm', 'eng', 'math', 'history'}
 
-    # Fill Sec1 to 5 items with best remaining
-    all_keys = list(grades.keys())
-    used = set(['history'] + sec1_keys)
-    remaining = [k for k in all_keys if k not in used and grades[k] not in ['G', 'E', 'D', 'C', 'C+']]
+    science_present = student_keys & SCIENCE_POOL
+    arts_present = student_keys & ARTS_POOL
+    technical_present = student_keys & TECHNICAL_POOL
 
-    remaining.sort(key=lambda k: MERIT_GRADE_POINTS.get(grades[k], 0), reverse=True)
+    # Pick the stream pool with the most subjects taken
+    stream_counts = [
+        (len(science_present), SCIENCE_POOL),
+        (len(arts_present), ARTS_POOL),
+        (len(technical_present), TECHNICAL_POOL),
+    ]
+    stream_counts.sort(key=lambda x: x[0], reverse=True)
+    primary_stream_pool = stream_counts[0][1]
 
-    while len(sec1_keys) < 5 and remaining:
-        k = remaining.pop(0)
-        sec1_keys.append(k)
-
-    sec1 = [grades.get(k) for k in sec1_keys]
-
-    # Section 2: Next 3 Best
-    sec2_keys = []
-    while len(sec2_keys) < 3 and remaining:
-        k = remaining.pop(0)
-        sec2_keys.append(k)
-
+    # Section 2: Best 2 from the student's primary stream pool
+    stream_keys = [k for k in student_keys if k in primary_stream_pool]
+    stream_keys.sort(
+        key=lambda k: MERIT_GRADE_POINTS.get(grades[k], 0), reverse=True
+    )
+    sec2_keys = stream_keys[:2]
     sec2 = [grades.get(k) for k in sec2_keys]
+
+    # Section 3: Best 2 from remaining (not core, not used in sec2)
+    used = core_keys | set(sec2_keys)
+    remaining = [k for k in student_keys if k not in used]
+    remaining.sort(
+        key=lambda k: MERIT_GRADE_POINTS.get(grades[k], 0), reverse=True
+    )
+    sec3_keys = remaining[:2]
+    sec3 = [grades.get(k) for k in sec3_keys]
 
     return sec1, sec2, sec3
 

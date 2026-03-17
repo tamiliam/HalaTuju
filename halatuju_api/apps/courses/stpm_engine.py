@@ -1,8 +1,31 @@
 """
 STPM eligibility engine — checks STPM student grades against degree course requirements.
+
+This is a GOLDEN MASTER file (baseline: 1976 matches).
 """
 
-# STPM CGPA scale (official MQA scale)
+# ============================================
+# STPM CGPA CALCULATION
+# ============================================
+#
+# DO NOT CHANGE THIS FORMULA without explicit approval from the user.
+#
+# Source: Official MQA (Malaysian Qualifications Agency) STPM scale.
+#
+# Grade scale (STPM_CGPA_POINTS):
+#   A=4.00, A-=3.67, B+=3.33, B=3.00, B-=2.67,
+#   C+=2.33, C=2.00, C-=1.67, D+=1.33, D=1.00, F=0.00
+#
+# Calculation:
+#   CGPA = sum(grade points for each subject) / number of subjects
+#   Rounded to 2 decimal places. Range: 0.00 – 4.00.
+#
+# Grade hierarchy for threshold checks (STPM_GRADE_ORDER):
+#   A > A- > B+ > B > B- > C+ > C > C- > D+ > D > E > F > G
+#   E and G are legacy aliases from parsed data; real STPM uses D and F.
+#
+# ============================================
+
 STPM_CGPA_POINTS = {
     'A': 4.00, 'A-': 3.67,
     'B+': 3.33, 'B': 3.00, 'B-': 2.67,
@@ -11,8 +34,6 @@ STPM_CGPA_POINTS = {
     'F': 0.00,
 }
 
-# Grade hierarchy for "meets minimum grade" checks
-# E and G kept as legacy aliases (parsed data uses them, real STPM scale does not)
 STPM_GRADE_ORDER = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'E', 'F', 'G']
 
 

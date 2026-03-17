@@ -10,13 +10,72 @@ Output: eligibility + merit/mata_gred per pathway track.
 
 # ── Grade Point Scales ───────────────────────────────────────────────────
 
-# Matriculation merit scale (from matrikulasi.moe.gov.my calculator)
+# ============================================
+# MATRIC MERIT CALCULATION
+# ============================================
+#
+# DO NOT CHANGE THIS FORMULA without explicit approval from the user.
+#
+# Source: matrikulasi.moe.gov.my official merit calculator.
+#
+# Grade scale (MATRIC_GRADE_POINTS, higher = better):
+#   A+=25, A=24, A-=23, B+=22, B=21, C+=20, C=19, D=18, E=17, G=0
+#
+# Subject count: 4 subjects per track
+#   - Track-specific required subjects are filled first
+#     (e.g. Sains: math, addmath, chem, phy/bio)
+#   - Remaining slots filled with best available electives (min C)
+#   - Always exactly 4 subjects total
+#   Max = 4 × 25 = 100 pts
+#
+# Academic merit:
+#   academic = (subject_points / 100) × 90
+#
+# Final merit:
+#   final = academic + CoQ (co-curriculum, 0-10), capped at 100
+#
+# Thresholds (in eligibility_service.py):
+#   High: merit >= 94
+#   Fair: merit >= 89
+#   Low:  merit < 89
+#
+# ============================================
+
 MATRIC_GRADE_POINTS = {
     'A+': 25, 'A': 24, 'A-': 23, 'B+': 22, 'B': 21,
     'C+': 20, 'C': 19, 'D': 18, 'E': 17, 'G': 0,
 }
 
-# STPM (Form 6) mata gred scale — lower is better
+# ============================================
+# STPM MATA GRED CALCULATION
+# ============================================
+#
+# DO NOT CHANGE THIS FORMULA without explicit approval from the user.
+#
+# Source: UPU STPM entry requirements.
+#
+# Grade scale (STPM_MATA_GRED, LOWER = better):
+#   A+=1, A=1, A-=2, B+=3, B=4, C+=5, C=6, D=7, E=8, G=9
+#   Note: A+ and A both map to 1.
+#   Credit = C or better (mata gred <= 6).
+#
+# Calculation:
+#   1. Prerequisite: BM must have credit (C or better)
+#   2. Find best credit from each subject group (bidang-specific groups)
+#   3. Take the best 3 groups (lowest mata gred = best)
+#   4. Total mata gred = sum of 3 best group scores
+#
+# Thresholds per bidang:
+#   Sains:        max_mata_gred = 18, high_mata_gred = 18
+#   Sains Sosial: max_mata_gred = 18, high_mata_gred = 12
+#
+# Merit labelling (in eligibility_service.py):
+#   High: mata_gred <= high_mata_gred
+#   Fair: mata_gred <= max_mata_gred (but above high)
+#   Low:  mata_gred > max_mata_gred (not eligible)
+#
+# ============================================
+
 STPM_MATA_GRED = {
     'A+': 1, 'A': 1, 'A-': 2, 'B+': 3, 'B': 4,
     'C+': 5, 'C': 6, 'D': 7, 'E': 8, 'G': 9,
