@@ -302,3 +302,59 @@ class TestProfileSyncStpmFields:
         assert response.data['stpm_cgpa'] == 3.33
         assert response.data['muet_band'] == 5
         assert response.data['spm_prereq_grades'] == {'bm': 'B+'}
+
+
+@pytest.mark.django_db
+class TestContactFields:
+    """Contact email/phone fields with verification status."""
+
+    def test_contact_email_default_blank(self):
+        profile = StudentProfile.objects.create(supabase_user_id='contact-test-1')
+        assert profile.contact_email == ''
+        assert profile.contact_email_verified is False
+
+    def test_contact_phone_default_blank(self):
+        profile = StudentProfile.objects.create(supabase_user_id='contact-test-2')
+        assert profile.contact_phone == ''
+        assert profile.contact_phone_verified is False
+
+    def test_contact_email_can_be_set(self):
+        profile = StudentProfile.objects.create(
+            supabase_user_id='contact-test-3',
+            contact_email='test@example.com',
+            contact_email_verified=True,
+        )
+        profile.refresh_from_db()
+        assert profile.contact_email == 'test@example.com'
+        assert profile.contact_email_verified is True
+
+    def test_contact_phone_can_be_set(self):
+        profile = StudentProfile.objects.create(
+            supabase_user_id='contact-test-4',
+            contact_phone='+60123456789',
+            contact_phone_verified=False,
+        )
+        profile.refresh_from_db()
+        assert profile.contact_phone == '+60123456789'
+        assert profile.contact_phone_verified is False
+
+
+@pytest.mark.django_db
+class TestNricUniqueness:
+    """NRIC must be unique across profiles."""
+
+    def test_nric_unique_constraint(self):
+        StudentProfile.objects.create(
+            supabase_user_id='nric-uniq-1', nric='040815-01-2022'
+        )
+        from django.db import IntegrityError
+        with pytest.raises(IntegrityError):
+            StudentProfile.objects.create(
+                supabase_user_id='nric-uniq-2', nric='040815-01-2022'
+            )
+
+    def test_blank_nric_not_unique(self):
+        """Multiple profiles can have blank NRIC (pre-onboarding)."""
+        StudentProfile.objects.create(supabase_user_id='blank-nric-1', nric='')
+        StudentProfile.objects.create(supabase_user_id='blank-nric-2', nric='')
+        assert StudentProfile.objects.filter(nric='').count() == 2

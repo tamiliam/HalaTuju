@@ -448,6 +448,14 @@ class StudentProfile(models.Model):
     phone = models.CharField(max_length=20, blank=True, default='',
                              help_text="Phone number")
 
+    # Contact details (separate from login credentials)
+    contact_email = models.EmailField(blank=True, default='',
+                                       help_text="Verified contact email")
+    contact_email_verified = models.BooleanField(default=False)
+    contact_phone = models.CharField(max_length=20, blank=True, default='',
+                                      help_text="Verified contact phone")
+    contact_phone_verified = models.BooleanField(default=False)
+
     # Identity (Lentera longitudinal tracking)
     nric = models.CharField(max_length=14, blank=True, default='',
                             help_text="NRIC: XXXXXX-XX-XXXX")
@@ -507,6 +515,13 @@ class StudentProfile(models.Model):
 
     class Meta:
         db_table = 'api_student_profiles'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['nric'],
+                name='unique_nric_when_set',
+                condition=~models.Q(nric=''),
+            ),
+        ]
 
     def __str__(self):
         return f"Profile {self.supabase_user_id}"
