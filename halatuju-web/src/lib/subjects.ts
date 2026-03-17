@@ -132,6 +132,16 @@ const SUBJECT_NAMES: Record<string, { bm: string; en: string }> = {
   voc_elec_serv: { bm: 'MPV Elektrik & Elektronik', en: 'Electrical & Electronics' },
   voc_catering: { bm: 'MPV Katering & Penyajian', en: 'Catering & Service' },
   voc_tailoring: { bm: 'MPV Jahitan & Pakaian', en: 'Fashion & Sewing' },
+
+  // Technical / vocational (SPM_CODE_MAP targets)
+  teknologi_kej: { bm: 'Teknologi Kejuruteraan', en: 'Engineering Technology' },
+  prinsip_elektrik: { bm: 'Prinsip Elektrik & Elektronik', en: 'Electrical & Electronics Principles' },
+  aplikasi_elektrik: { bm: 'Aplikasi Elektrik & Elektronik', en: 'Electrical & Electronics Applications' },
+  pemesinan_berkomputer: { bm: 'Pemesinan Berkomputer', en: 'CNC Machining' },
+  aplikasi_komputer: { bm: 'Aplikasi Komputer dlm Perniagaan', en: 'Business Computing' },
+  komunikasi_visual: { bm: 'Komunikasi Visual', en: 'Visual Communication' },
+  bahan_binaan: { bm: 'Bahan Binaan', en: 'Construction Materials' },
+  teknologi_binaan: { bm: 'Teknologi Binaan', en: 'Construction Technology' },
 }
 
 export function getSubjectName(code: string, locale: string): string {
@@ -258,6 +268,13 @@ export const SPM_PREREQ_COMPULSORY = [
 export const SPM_PREREQ_OPTIONAL = [
   { id: 'addmath', name: 'Matematik Tambahan' },
   { id: 'sci', name: 'Sains' },
+  { id: 'phy', name: 'Fizik' },
+  { id: 'chem', name: 'Kimia' },
+  { id: 'bio', name: 'Biologi' },
+  { id: 'poa', name: 'Prinsip Perakaunan' },
+  { id: 'ekonomi', name: 'Ekonomi' },
+  { id: 'moral', name: 'Pendidikan Moral' },
+  { id: 'geo', name: 'Geografi' },
 ]
 
 // Combined for backward compatibility

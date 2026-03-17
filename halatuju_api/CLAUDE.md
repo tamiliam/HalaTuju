@@ -167,7 +167,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (615 collected, 615 must pass, SPM golden master = 5319, STPM golden master = 1976)
+# 1. Run all tests (655 collected, 655 must pass, SPM golden master = 5319, STPM golden master = 2026)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -179,7 +179,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-645 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1976. If golden master deviates, you broke eligibility logic.
+655 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -225,14 +225,12 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Admin UI polish: student list (pagination, download icon, blue accent) + detail (icons, grade pills, danger zone)
 - 30 new tests (645 total), migrations 0039-0041
 
-**Current state:** 645 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=1976.
+**Current state:** 655 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
 
 **Pending work**
-- Supabase migrations: Apply 0039-0041, RLS on new tables, seed super admin for admin auth
-- i18n: IC page + verify-email page have hardcoded strings — need translation keys
 - Rate limiting on email verification endpoint (prevent Gmail 500/day abuse)
-- NRIC date validation (regex accepts impossible dates)
-- STPM Requirements Pipeline Sprint 5: Playwright-based MOHE scraper
+- Cloud Run env vars for email: `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `FRONTEND_URL`
+- STPM Pipeline: test scrapers against live MOHE, update workflow doc, extend audit_data, course deactivation mechanism
 - Phone/OTP login (blocked — Twilio ~RM12/mo)
 - Grade modulation layer
 - Course detail page fixes from `docs/Course Detail Page.pdf`

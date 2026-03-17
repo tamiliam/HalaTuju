@@ -1,7 +1,7 @@
 """
 STPM eligibility engine — checks STPM student grades against degree course requirements.
 
-This is a GOLDEN MASTER file (baseline: 1976 matches).
+This is a GOLDEN MASTER file (baseline: 2026 matches).
 """
 
 # ============================================
@@ -82,12 +82,145 @@ SPM_GRADE_ORDER = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G']
 SPM_CREDIT_GRADES = {'A+', 'A', 'A-', 'B+', 'B', 'C+', 'C'}
 SPM_PASS_GRADES = SPM_CREDIT_GRADES | {'D', 'E'}
 
-# Map CSV subject codes (used in spm_subject_group JSON) to engine keys
+# Map fixture subject codes (used in spm_subject_group JSON) to frontend engine keys.
+# Frontend keys: halatuju-web/src/lib/subjects.ts (SPM_SUBJECTS + SUBJECT_NAMES).
+# Fixture keys: Settings/_tools/stpm_requirements/subject_keys.py (SPM_SUBJECT_MAP).
 SPM_CODE_MAP = {
-    'MATH': 'math', 'ADD_MATH': 'addmath', 'BM': 'bm', 'BI': 'eng',
-    'SCIENCE': 'sci', 'PHYSICS_SPM': 'phy', 'CHEMISTRY_SPM': 'chem',
-    'BIOLOGY_SPM': 'bio', 'ACCOUNTING_SPM': 'poa', 'ECONOMICS_SPM': 'ekonomi',
-    'COMMERCE': 'business', 'GEOGRAPHY_SPM': 'geo', 'SEJARAH': 'hist',
+    # --- Core subjects ---
+    'BM': 'bm',
+    'BI': 'eng',
+    'MATH': 'math',
+    'ADD_MATH': 'addmath',
+    'SEJARAH': 'hist',
+
+    # --- Science subjects ---
+    'PHYSICS_SPM': 'phy',
+    'CHEMISTRY_SPM': 'chem',
+    'BIOLOGY_SPM': 'bio',
+    'SCIENCE_SPM': 'sci',
+    'SAINS_TAMBAHAN_SPM': 'addsci',
+    'APPLIED_SCIENCE_SPM': 'sci',
+
+    # --- Arts / humanities ---
+    'EKONOMI_SPM': 'ekonomi',
+    'EKONOMI_ASAS_SPM': 'ekonomi',
+    'PRINSIP_PERAKAUNAN_SPM': 'poa',
+    'PERNIAGAAN_SPM': 'business',
+    'PERDAGANGAN_SPM': 'business',
+    'GEOGRAFI_SPM': 'geo',
+    'PENDIDIKAN_MORAL_SPM': 'moral',
+    'PENDIDIKAN_ISLAM_SPM': 'islam',
+    'PENDIDIKAN_SENI_VISUAL_SPM': 'psv',
+    'PENGAJIAN_KEUSAHAWANAN_SPM': 'keusahawanan',
+    'LUKISAN_SPM': 'lukisan',
+    'BAHASA_CINA_SPM': 'b_cina',
+    'BAHASA_TAMIL_SPM': 'b_tamil',
+    'SAINS_RUMAH_TANGGA_SPM': 'srt',
+    'EKONOMI_RUMAH_TANGGA_SPM': 'srt',
+
+    # --- Islamic studies ---
+    'PENDIDIKAN_SYARIAH_ISLAMIAH_SPM': 'psi',
+    'USUL_AL_DIN_SPM': 'usul_aldin',
+    'PENDIDIKAN_AL_QURAN_SPM': 'pqs',
+    'AL_SYARIAH_SPM': 'al_syariah',
+    'TASAWWUR_ISLAM_SPM': 'tasawwur_islam',
+    'HIFZ_AL_QURAN_SPM': 'hifz_alquran',
+    'MAHARAT_AL_QURAN_SPM': 'maharat_alquran',
+    'MANAHIJ_SPM': 'manahij',
+    'TURATH_DIRASAT_ISLAMIAH_SPM': 'turath_islamiah',
+    'TURATH_AL_QURAN_SPM': 'turath_quran_sunnah',
+    'AL_ADAB_SPM': 'adab_balaghah',
+    'TURATH_BAHASA_ARAB_SPM': 'turath_bahasa_arab',
+    'BAHASA_ARAB_SPM': 'bahasa_arab',
+    'BAHASA_ARAB_TINGGI_SPM': 'bahasa_arab_tinggi',
+    'BAHASA_ARAB_MUASIRAH_SPM': 'bahasa_arab',
+
+    # --- Languages ---
+    'BAHASA_IBAN_SPM': 'bahasa_iban',
+    'BAHASA_KADAZANDUSUN_SPM': 'bahasa_kadazandusun',
+    'BAHASA_SEMAI_SPM': 'bahasa_semai',
+
+    # --- Literature ---
+    'LITERATURE_IN_ENGLISH_SPM': 'lit_eng',
+    'KESUSASTERAAN_MELAYU_SPM': 'lit_bm',
+    'KESUSASTERAAN_CINA_SPM': 'lit_cina',
+    'KESUSASTERAAN_TAMIL_SPM': 'lit_tamil',
+    'KESUSASTERAAN_INGGERIS_SPM': 'lit_eng',
+
+    # --- Technical / engineering ---
+    'LUKISAN_KEJURUTERAAN_SPM': 'eng_draw',
+    'KEJURUTERAAN_AWAM_SPM': 'eng_civil',
+    'KEJURUTERAAN_MEKANIKAL_SPM': 'eng_mech',
+    'KEJURUTERAAN_EE_SPM': 'eng_elec',
+    'GRAFIK_KOMUNIKASI_TEKNIKAL_SPM': 'gkt',
+    'SAINS_KOMPUTER_SPM': 'comp_sci',
+    'ICT_SPM': 'comp_sci',
+    'REKA_CIPTA_SPM': 'reka_cipta',
+    'TEKNOLOGI_KEJURUTERAAN_SPM': 'teknologi_kej',
+    'ASAS_KELESTARIAN_SPM': 'kelestarian',
+    'GRAFIK_BERKOMPUTER_SPM': 'digital_gfx',
+    'REKA_BENTUK_GRAFIK_DIGITAL_SPM': 'digital_gfx',
+    'PRINSIP_ELEKTRIK_SPM': 'prinsip_elektrik',
+    'APLIKASI_ELEKTRIK_SPM': 'aplikasi_elektrik',
+    'PEMESINAN_BERKOMPUTER_SPM': 'pemesinan_berkomputer',
+    'APLIKASI_KOMPUTER_PERNIAGAAN_SPM': 'aplikasi_komputer',
+    'KOMUNIKASI_VISUAL_SPM': 'komunikasi_visual',
+    'BAHAN_BINAAN_SPM': 'bahan_binaan',
+    'TEKNOLOGI_BINAAN_SPM': 'teknologi_binaan',
+    'TEKNOLOGI_BINAAN_BANGUNAN_SPM': 'teknologi_binaan',
+    'PRODUKSI_MULTIMEDIA_SPM': 'produksi_multimedia',
+    'SENI_REKA_TANDA_SPM': 'produksi_reka_tanda',
+
+    # --- Sports ---
+    'PENGETAHUAN_SAINS_SUKAN_SPM': 'sports_sci',
+    'SAINS_SUKAN_SPM': 'sports_sci',
+
+    # --- Agriculture ---
+    'PERTANIAN_SPM': 'pertanian',
+    'SAINS_PERTANIAN_SPM': 'pertanian',
+    'TANAMAN_MAKANAN_SPM': 'tanaman_makanan',
+    'AKUAKULTUR_SPM': 'akuakultur',
+    'LANDSKAP_DAN_NURSERI_SPM': 'landskap_nurseri',
+
+    # --- Vocational / MPV ---
+    # Use voc_* keys that match SPM_SUBJECTS in subjects.ts
+    'KATERING_SPM': 'voc_catering',
+    'REKAAN_JAHITAN_SPM': 'voc_tailoring',
+    'KIMPALAN_SPM': 'voc_weld',
+    'MENSERVIS_AUTOMOBIL_SPM': 'voc_auto',
+    'PENDAWAIAN_DOMESTIK_SPM': 'voc_elec_serv',
+    'PEMPROSESAN_MAKANAN_SPM': 'voc_food',
+    'PEMBINAAN_DOMESTIK_SPM': 'voc_construct',
+    'PENJAGAAN_MUKA_SPM': 'penjagaan_muka',
+    'HIASAN_DALAMAN_SPM': 'hiasan_dalaman',
+    'KERJA_PAIP_SPM': 'kerja_paip',
+    'PEMBUATAN_PERABOT_SPM': 'pembuatan_perabot',
+    'ASUHAN_KANAK_KANAK_SPM': 'asuhan_kanak',
+    'GERONTOLOGI_SPM': 'gerontologi',
+    'MENSERVIS_MOTOSIKAL_SPM': 'menservis_motosikal',
+    'MENSERVIS_PENYEJUKAN_SPM': 'penyejukan',
+    'MENSERVIS_ELEKTRIK_SPM': 'menservis_elektrik',
+
+    # --- Arts / performance (mostly in exclude lists) ---
+    'MULTIMEDIA_KREATIF_SPM': 'multimedia_kreatif',
+    'REKA_BENTUK_GRAFIK_SPM': 'reka_bentuk_grafik',
+    'REKA_BENTUK_INDUSTRI_SPM': 'reka_bentuk_industri',
+    'REKA_BENTUK_KRAF_SPM': 'reka_bentuk_kraf',
+    'SEJARAH_PENGURUSAN_SENI_SPM': 'sejarah_seni',
+    'SENI_HALUS_2D_SPM': 'seni_halus_2d',
+    'SENI_HALUS_3D_SPM': 'seni_halus_3d',
+    'AURAL_TEORI_MUZIK_SPM': 'aural_teori_muzik',
+    'ALAT_MUZIK_UTAMA_SPM': 'alat_muzik',
+    'MUZIK_KOMPUTER_SPM': 'muzik_komputer',
+    'TARIAN_SPM': 'tarian',
+    'KOREOGRAFI_TARI_SPM': 'koreografi',
+    'APRESIASI_TARI_SPM': 'apresiasi_tari',
+    'LAKONAN_SPM': 'lakonan',
+    'SINOGRAFI_SPM': 'sinografi',
+    'PENULISAN_SKRIP_SPM': 'penulisan_skrip',
+    'PRODUKSI_SENI_PERSEMBAHAN_SPM': 'produksi_seni',
+    'PRODUKSI_REKA_TANDA_SPM': 'produksi_reka_tanda',
+    'PENDIDIKAN_MUZIK_SPM': 'music',
 }
 
 # Map StpmRequirement boolean field suffixes to STPM grade dict keys

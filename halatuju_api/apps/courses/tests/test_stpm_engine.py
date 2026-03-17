@@ -5,6 +5,38 @@ from apps.courses.stpm_engine import (
 )
 
 
+class TestStpmEngine:
+    def test_spm_code_map_covers_all_fixture_keys(self):
+        """Every SPM subject key in fixtures must have an SPM_CODE_MAP entry."""
+        import json
+        from pathlib import Path
+        from apps.courses.stpm_engine import SPM_CODE_MAP
+
+        fixture_path = Path(__file__).parent.parent / 'fixtures' / 'stpm_requirements.json'
+        with open(fixture_path, 'r', encoding='utf-8') as f:
+            fixtures = json.load(f)
+
+        all_keys = set()
+        for fix in fixtures:
+            sg = fix['fields'].get('spm_subject_group')
+            if sg:
+                groups = sg if isinstance(sg, list) else [sg]
+                for g in groups:
+                    if not isinstance(g, dict):
+                        continue
+                    for s in g.get('subjects', []) or []:
+                        all_keys.add(s)
+                    for s in g.get('exclude', []) or []:
+                        all_keys.add(s)
+
+        unmapped = []
+        for key in sorted(all_keys):
+            if key not in SPM_CODE_MAP and not key.startswith('UNKNOWN:'):
+                unmapped.append(key)
+
+        assert unmapped == [], f"Unmapped fixture keys: {unmapped}"
+
+
 class TestStpmCgpa:
     def test_perfect_cgpa(self):
         grades = {'PA': 'A', 'MATH_T': 'A', 'PHYSICS': 'A', 'CHEMISTRY': 'A'}
