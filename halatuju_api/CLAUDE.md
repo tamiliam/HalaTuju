@@ -97,7 +97,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (615 collected, 615 pass, 0 failures, 0 skipped)
+# Run ALL tests (645 collected, 645 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -179,7 +179,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-615 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1994. If golden master deviates, you broke eligibility logic.
+645 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1994. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -218,21 +218,24 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Admin Portal Enhancement COMPLETE (2026-03-17)**
-- Student list: added Sekolah, Telefon, Sumber (super admin only) columns
-- Student detail: 9 info cards showing all captured data, dual SPM+STPM grades
-- Delete student endpoint (super admin only), expanded serializers with select_related
-- STPM golden master rebaselined: 2098 → 1994
+**Identity Verification + UI Polish Sprint COMPLETE (2026-03-17)**
+- NRIC identity system (claim/reclaim), contact fields, email verification (Gmail SMTP)
+- Profile redesign (5 sections), onboarding IC claim flow, verify-email landing page
+- Referral link sharing (QR code), course compare (desktop, 2-3 courses), state sync, outcomes→saved merge
+- Admin UI polish: student list (pagination, download icon, blue accent) + detail (icons, grade pills, danger zone)
+- 30 new tests (645 total), migrations 0039-0041
 
-**Current state:** 615 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=1994. DELETE endpoint at `/api/v1/admin/students/<id>/`.
+**Current state:** 645 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=1994.
 
 **Pending work**
-- Supabase setup for admin auth: RLS on partner_admins, service role key for invite, seed super admin
-- STPM Requirements Pipeline Sprint 5: Playwright-based MOHE scraper for next year's data refresh
+- Supabase migrations: Apply 0039-0041, RLS on new tables, seed super admin for admin auth
+- i18n: IC page + verify-email page have hardcoded strings — need translation keys
+- Rate limiting on email verification endpoint (prevent Gmail 500/day abuse)
+- NRIC date validation (regex accepts impossible dates)
+- STPM Requirements Pipeline Sprint 5: Playwright-based MOHE scraper
 - Phone/OTP login (blocked — Twilio ~RM12/mo)
 - Grade modulation layer
 - Course detail page fixes from `docs/Course Detail Page.pdf`
-- Audit course content for BM consistency
 
 ## Streamlit App (Legacy — migrating to Django API)
 

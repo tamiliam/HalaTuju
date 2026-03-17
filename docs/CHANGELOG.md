@@ -1,5 +1,35 @@
 # Changelog — HalaTuju
 
+## Identity Verification + UI Polish Sprint (2026-03-17)
+
+### Added
+- **NRIC identity system**: NRIC as unique identity anchor with claim/reclaim model — raw SQL PK transfer for existing profiles
+- **Contact fields**: `contact_email` and `contact_phone` on StudentProfile (separate from auth credentials)
+- **Email verification**: EmailVerification model, Gmail SMTP send/verify endpoints, verify-email landing page
+- **Profile redesign**: 5-section layout (identity, contact with verification badges, academic, preferences, special needs)
+- **Onboarding IC claim flow**: IC page now claims NRIC on backend, handles existing profile transfer
+- **Referral link sharing**: Admin dashboard card with copy button, WhatsApp share, and QR code (`react-qr-code`)
+- **Admin login back link**: "Kembali ke laman utama" link on `/admin/login`
+- **Course compare feature**: Side-by-side comparison of 2-3 saved courses (desktop only, hidden on mobile)
+- **Admin UI polish**: Student list — subtitle, download icon, pagination (5/page), blue left-border accent on names
+- **Admin UI polish**: Student detail — icons on card headers, grade pill badges, rounded-xl cards, redesigned danger zone
+
+### Changed
+- **State sync**: Bidirectional sync between onboarding profile page and main profile page (localStorage + backend API)
+- **Outcomes merged into Saved**: Deleted `/outcomes` page — application tracking now inline on `/saved` page via `interest_status`
+- **Admin dashboard**: Returns `org_code` for referral URL generation
+- **STPM golden master**: Rebaselined 1995 → 1994 (fixture corrections)
+
+### Removed
+- `/outcomes` page (`src/app/outcomes/page.tsx`) — redundant with saved page tracking
+
+### Stats
+- Backend tests: 645 pass, 0 failures (+30 new: profile fields, NRIC claim, email verification)
+- Golden masters: SPM 5319, STPM 1994
+- Migrations: 0039 (contact fields), 0040 (phone migration), 0041 (email verification)
+
+---
+
 ## Admin Portal Student Pages Enhancement (2026-03-17)
 
 ### Added
