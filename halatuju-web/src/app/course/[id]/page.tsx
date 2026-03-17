@@ -120,7 +120,7 @@ export default function CourseDetailPage() {
                   {t('courseDetail.whereToStudy')}
                   {institutions && (
                     <span className="text-gray-500 font-normal ml-2">
-                      ({institutions.length} institutions)
+                      ({institutions.length} {institutions.length === 1 ? 'institution' : 'institutions'})
                     </span>
                   )}
                 </h2>
