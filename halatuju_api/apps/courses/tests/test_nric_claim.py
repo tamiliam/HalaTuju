@@ -80,6 +80,22 @@ class TestNricClaim(TestCase):
         resp = self._post('user-a', {'nric': '040015-01-2022'})  # month 00
         self.assertEqual(resp.status_code, 400)
 
+    def test_invalid_nric_age_too_old_rejected(self):
+        resp = self._post('user-a', {'nric': '800815-01-2022'})  # born 1980, age 46
+        self.assertEqual(resp.status_code, 400)
+
+    def test_invalid_nric_age_too_young_rejected(self):
+        resp = self._post('user-a', {'nric': '150815-01-2022'})  # born 2015, age 11
+        self.assertEqual(resp.status_code, 400)
+
+    def test_invalid_state_code_rejected(self):
+        resp = self._post('user-a', {'nric': '040815-99-2022'})  # invalid state 99
+        self.assertEqual(resp.status_code, 400)
+
+    def test_valid_foreign_born_state_code_accepted(self):
+        resp = self._post('user-a', {'nric': '040815-71-2022'})  # foreign born, valid
+        self.assertEqual(resp.status_code, 200)
+
     def test_missing_nric_rejected(self):
         resp = self._post('user-a', {})
         self.assertEqual(resp.status_code, 400)

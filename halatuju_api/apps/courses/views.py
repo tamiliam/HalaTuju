@@ -1072,6 +1072,27 @@ class NricClaimView(APIView):
             return Response({'error': 'Invalid NRIC: date portion is not valid'},
                             status=status.HTTP_400_BAD_REQUEST)
 
+        # Age check: must be 15-23 (matches frontend ic-utils.ts)
+        from datetime import date
+        year = 2000 + yy if yy <= 11 else 1900 + yy
+        age = date.today().year - year
+        if not (15 <= age <= 23):
+            return Response({'error': 'IC number must belong to a student aged 15-23'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # State code check (digits 7-8)
+        state_code = nric[7:9]
+        valid_state_codes = {
+            '01', '02', '03', '04', '05', '06', '07', '08', '09', '10',
+            '11', '12', '13', '14', '15', '16',
+            '21', '22', '23', '24',
+            '71', '72',
+            '82',
+        }
+        if state_code not in valid_state_codes:
+            return Response({'error': 'Invalid state code in IC number'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         try:
             existing = StudentProfile.objects.get(nric=nric)
         except StudentProfile.DoesNotExist:
