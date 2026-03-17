@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
+import { useAuth } from '@/lib/auth-context'
+import { getProfile, syncProfile } from '@/lib/api'
 import ProgressStepper from '@/components/ProgressStepper'
 import { KEY_PROFILE } from '@/lib/storage'
 
@@ -18,6 +20,7 @@ const MALAYSIAN_STATES = [
 export default function ProfileInputPage() {
   const router = useRouter()
   const { t } = useT()
+  const { token } = useAuth()
   const [gender, setGender] = useState<string>('')
   const [nationality, setNationality] = useState<string>('malaysian')
   const [state, setState] = useState<string>('')
@@ -34,7 +37,17 @@ export default function ProfileInputPage() {
       if (parsed.colorblind !== undefined) setColorblind(parsed.colorblind)
       if (parsed.disability !== undefined) setDisability(parsed.disability)
     }
-  }, [])
+
+    if (token) {
+      getProfile({ token }).then(p => {
+        if (p.preferred_state) setState(p.preferred_state)
+        if (p.gender) setGender(p.gender)
+        if (p.nationality) setNationality(p.nationality)
+        if (p.colorblind !== undefined) setColorblind(p.colorblind === true || String(p.colorblind) === 'Ya')
+        if (p.disability !== undefined) setDisability(p.disability === true || String(p.disability) === 'Ya')
+      }).catch(() => {})
+    }
+  }, [token])
 
   const isComplete = gender !== ''
 
@@ -52,6 +65,17 @@ export default function ProfileInputPage() {
         disability,
       }
       localStorage.setItem(KEY_PROFILE, JSON.stringify(profile))
+
+      if (token) {
+        syncProfile({
+          gender,
+          nationality,
+          preferred_state: state,
+          colorblind: colorblind ? 'Ya' : 'Tidak',
+          disability: disability ? 'Ya' : 'Tidak',
+        }, { token }).catch(() => {})
+      }
+
       router.push('/dashboard')
     }
   }

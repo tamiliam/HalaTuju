@@ -17,6 +17,7 @@ import type { SavedCourseWithStatus } from '@/lib/api'
 import AppHeader from '@/components/AppHeader'
 import { useToast } from '@/components/Toast'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
+import { KEY_PROFILE } from '@/lib/storage'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -150,6 +151,13 @@ export default function ProfilePage() {
         disability: disability ? 'Ya' : 'Tidak',
         angka_giliran: angkaGiliran,
       }, { token })
+
+      // Keep localStorage in sync so onboarding uses the same values
+      const prev = JSON.parse(localStorage.getItem(KEY_PROFILE) || '{}')
+      localStorage.setItem(KEY_PROFILE, JSON.stringify({
+        ...prev, gender, nationality, state, colorblind, disability,
+      }))
+
       window.dispatchEvent(new Event('profile-updated'))
     } catch (err) {
       showToast('Failed to save profile. Please try again.', 'error')

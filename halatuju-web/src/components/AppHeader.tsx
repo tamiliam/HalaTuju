@@ -158,7 +158,7 @@ export default function AppHeader() {
                     {t('header.myProfile')}
                   </Link>
                   <Link
-                    href="/outcomes"
+                    href="/saved"
                     className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                     onClick={() => setProfileOpen(false)}
                   >
@@ -265,7 +265,7 @@ export default function AppHeader() {
                     {t('header.myProfile')}
                   </Link>
                   <Link
-                    href="/outcomes"
+                    href="/saved"
                     className="block px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
                     onClick={() => setMobileOpen(false)}
                   >
