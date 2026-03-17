@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import {
   adminSignInWithPassword,
   adminSignInWithGoogle,
@@ -230,6 +231,12 @@ export default function AdminLoginPage() {
               </button>
             </div>
           )}
+        </div>
+
+        <div className="text-center mt-6">
+          <Link href="/" className="text-sm text-gray-500 hover:text-blue-600 transition-colors">
+            Kembali ke laman utama
+          </Link>
         </div>
       </div>
     </main>

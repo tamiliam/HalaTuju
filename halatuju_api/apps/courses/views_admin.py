@@ -118,6 +118,7 @@ class PartnerDashboardView(PartnerAdminMixin, APIView):
 
         return Response({
             'org_name': org.name if org else 'Semua Organisasi',
+            'org_code': org.code if org else None,
             'is_super_admin': admin.is_super_admin,
             'total_students': total,
             'completed_onboarding': completed,

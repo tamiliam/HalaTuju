@@ -33,6 +33,7 @@ async function adminFetch<T>(path: string, options?: ApiOptions): Promise<T> {
 
 export interface DashboardData {
   org_name: string
+  org_code: string | null
   total_students: number
   completed_onboarding: number
   by_exam_type: Record<string, number>
