@@ -1,5 +1,26 @@
 # Changelog — HalaTuju
 
+## Admin Portal Student Pages Enhancement (2026-03-17)
+
+### Added
+- **Student list columns**: Sekolah, Telefon, Sumber (super admin only) added to admin student table
+- **Student detail page**: Rewritten with 9 info cards showing all captured student data (personal, academic, contact, family, admin)
+- **Dual grades display**: Both SPM and STPM grades shown simultaneously when student has both
+- **Delete student endpoint**: `DELETE /api/v1/admin/students/<id>/` — super admin only, requires typing "delete" to confirm
+- **Email in profile API**: ProfileView now returns email from Supabase Auth JWT
+- **Profile completeness**: `angka_giliran` added to incompleteness badge count
+
+### Changed
+- Backend serializers expanded with `select_related` for N+1 query prevention
+- Referral source column restricted to super admin only
+- STPM golden master rebaselined: 2098 → 1995 (fixture corrections)
+
+### Stats
+- Backend tests: 615 pass, 0 failures
+- Golden masters: SPM 5319, STPM 1995
+
+---
+
 ## Admin Auth Sprint (2026-03-16)
 
 ### Added

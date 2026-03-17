@@ -6886,21 +6886,6 @@
   },
   {
     "model": "courses.stpmcourse",
-    "pk": "UJ6521004",
-    "fields": {
-      "course_name": "Sarjana Muda Kejuruteraan Pembuatan dengan Kepujian",
-      "university": "Universiti Malaysia Pahang Al-Sultan Abdullah",
-      "institution": null,
-      "stream": "science",
-      "merit_score": 79.08,
-      "field": "",
-      "description": "",
-      "mohe_url": "",
-      "field_key": "umum"
-    }
-  },
-  {
-    "model": "courses.stpmcourse",
     "pk": "UJ6521005",
     "fields": {
       "course_name": "Sarjana Muda Teknologi Kejuruteraan Pembuatan (Pembuatan Termaju) dengan Kepujian",

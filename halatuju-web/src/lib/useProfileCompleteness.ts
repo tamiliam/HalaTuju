@@ -33,5 +33,12 @@ export function useProfileCompleteness() {
     if (isAuthenticated && token) refresh()
   }, [isAuthenticated, token, refresh])
 
+  // Re-fetch when profile is saved from another component
+  useEffect(() => {
+    const handler = () => { refresh() }
+    window.addEventListener('profile-updated', handler)
+    return () => window.removeEventListener('profile-updated', handler)
+  }, [refresh])
+
   return { incompleteCount, loaded, refresh }
 }

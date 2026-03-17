@@ -150,6 +150,7 @@ export default function ProfilePage() {
         disability: disability ? 'Ya' : 'Tidak',
         angka_giliran: angkaGiliran,
       }, { token })
+      window.dispatchEvent(new Event('profile-updated'))
     } catch (err) {
       showToast('Failed to save profile. Please try again.', 'error')
     } finally {
@@ -212,6 +213,7 @@ export default function ProfilePage() {
   const identityIncomplete = countIncomplete([name, gender, email, phone])
   const contactIncomplete = countIncomplete([state, address])
   const familyIncomplete = countIncomplete([familyIncome, siblings])
+  const appIncomplete = countIncomplete([angkaGiliran])
 
   if (authLoading || loading || !onboarded) {
     return (
@@ -604,7 +606,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Section 4: Application Tracking */}
-          <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5">
+          <div className={`bg-white border border-gray-100 rounded-xl shadow-sm p-6 mb-5 ${appIncomplete > 0 ? 'border-l-4 border-l-amber-400' : ''}`}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm shadow-primary-500/20">
@@ -613,6 +615,11 @@ export default function ProfilePage() {
                   </svg>
                 </div>
                 <h2 className="text-lg font-semibold text-gray-900">{t('profile.applicationTracking')}</h2>
+                {appIncomplete > 0 && (
+                  <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-medium">
+                    {appIncomplete} {t('profile.incomplete')}
+                  </span>
+                )}
               </div>
               {editingSection === null && (
                 <button onClick={() => startEditing('application')} className="text-sm text-primary-600 hover:text-primary-700 font-medium">

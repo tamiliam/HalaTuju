@@ -935,6 +935,9 @@ class ProfileView(APIView):
             supabase_user_id=request.user_id
         )
 
+        # Email comes from Supabase Auth JWT, not the profile model
+        email = getattr(request, 'supabase_user', {}).get('email', '')
+
         return Response({
             'grades': profile.grades,
             'gender': profile.gender,
@@ -949,6 +952,7 @@ class ProfileView(APIView):
             'angka_giliran': profile.angka_giliran,
             'address': profile.address,
             'phone': profile.phone,
+            'email': email,
             'family_income': profile.family_income,
             'siblings': profile.siblings,
             'exam_type': profile.exam_type,
