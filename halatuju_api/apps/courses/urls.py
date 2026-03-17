@@ -53,6 +53,8 @@ urlpatterns = [
     path('profile/', views.ProfileView.as_view(), name='profile'),
     path('profile/sync/', views.ProfileSyncView.as_view(), name='profile-sync'),
     path('profile/claim-nric/', views.NricClaimView.as_view(), name='profile-claim-nric'),
+    path('profile/verify-email/send/', views.SendVerificationView.as_view(), name='verify-email-send'),
+    path('profile/verify-email/<uuid:token>/', views.VerifyEmailView.as_view(), name='verify-email'),
 
     # Admission outcomes
     path('outcomes/', views.OutcomeListView.as_view(), name='outcome-list'),

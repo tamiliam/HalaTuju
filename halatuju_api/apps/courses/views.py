@@ -25,7 +25,7 @@ from django.apps import apps
 
 from django.db.models import Count, OuterRef, Q, Subquery
 
-from .models import Course, CourseInstitution, CourseRequirement, FieldTaxonomy, Institution, StudentProfile, SavedCourse, AdmissionOutcome, StpmCourse, StpmRequirement
+from .models import Course, CourseInstitution, CourseRequirement, EmailVerification, FieldTaxonomy, Institution, StudentProfile, SavedCourse, AdmissionOutcome, StpmCourse, StpmRequirement
 from .eligibility_service import (
     compute_student_merit,
     compute_course_merit,
@@ -1101,6 +1101,86 @@ class NricClaimView(APIView):
                     [request.user_id, old_pk],
                 )
         return Response({'status': 'claimed'})
+
+
+class SendVerificationView(APIView):
+    """
+    POST /api/v1/profile/verify-email/send/
+    Generates a verification token and sends an email with a verification link.
+    """
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request):
+        import uuid
+        from datetime import timedelta
+        from django.utils import timezone
+        from django.core.mail import send_mail
+        from django.conf import settings
+
+        email = request.data.get('email', '').strip()
+        if not email:
+            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile = StudentProfile.objects.get(supabase_user_id=request.user_id)
+
+        # Invalidate previous tokens for this profile+email
+        EmailVerification.objects.filter(profile=profile, email=email, used=False).update(used=True)
+
+        token = uuid.uuid4()
+        EmailVerification.objects.create(
+            profile=profile,
+            email=email,
+            token=token,
+            expires_at=timezone.now() + timedelta(hours=24),
+        )
+
+        # Send verification email
+        frontend_url = getattr(settings, 'FRONTEND_URL', '')
+        verify_url = f"{frontend_url}/verify-email?token={token}"
+        try:
+            send_mail(
+                subject='HalaTuju — Verify your email',
+                message=f'Click this link to verify your email: {verify_url}\n\nThis link expires in 24 hours.',
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+                recipient_list=[email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass  # Token exists for retry even if email fails
+
+        return Response({'status': 'sent'})
+
+
+class VerifyEmailView(APIView):
+    """
+    GET /api/v1/profile/verify-email/<token>/
+    Public endpoint — student clicks link from email.
+    """
+    permission_classes = []  # Public
+
+    def get(self, request, token):
+        from django.utils import timezone
+
+        try:
+            verification = EmailVerification.objects.get(token=token)
+        except EmailVerification.DoesNotExist:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_404_NOT_FOUND)
+
+        if verification.used:
+            return Response({'error': 'Token already used'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if verification.is_expired:
+            return Response({'error': 'Token expired'}, status=status.HTTP_400_BAD_REQUEST)
+
+        verification.used = True
+        verification.save(update_fields=['used'])
+
+        profile = verification.profile
+        profile.contact_email = verification.email
+        profile.contact_email_verified = True
+        profile.save(update_fields=['contact_email', 'contact_email_verified'])
+
+        return Response({'status': 'verified', 'email': verification.email})
 
 
 class OutcomeListView(APIView):
