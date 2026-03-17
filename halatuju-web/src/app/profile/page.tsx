@@ -19,6 +19,7 @@ import AppHeader from '@/components/AppHeader'
 import { useToast } from '@/components/Toast'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 import { KEY_PROFILE } from '@/lib/storage'
+import { findPostcode } from 'malaysia-postcodes'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -78,6 +79,8 @@ export default function ProfilePage() {
   const [nationality, setNationality] = useState<'malaysian' | 'non_malaysian'>('malaysian')
   const [state, setState] = useState('')
   const [address, setAddress] = useState('')
+  const [postalCode, setPostalCode] = useState('')
+  const [city, setCity] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [familyIncome, setFamilyIncome] = useState('')
@@ -115,6 +118,8 @@ export default function ProfilePage() {
       setNationality(profileData.nationality || 'malaysian')
       setState(profileData.preferred_state || '')
       setAddress(profileData.address || '')
+      setPostalCode(profileData.postal_code || '')
+      setCity(profileData.city || '')
       setPhone(profileData.phone || '')
       setEmail(profileData.email || session?.user?.email || '')
       setFamilyIncome(profileData.family_income || '')
@@ -160,6 +165,8 @@ export default function ProfilePage() {
         nationality,
         preferred_state: state,
         address,
+        postal_code: postalCode,
+        city,
         phone,
         email,
         contact_email: contactEmail,
@@ -186,7 +193,7 @@ export default function ProfilePage() {
   }
 
   const startEditing = (section: NonNullable<EditingSection>) => {
-    setSnapshot({ name, nric, gender, nationality, state, address, phone, email, familyIncome, siblings, colorblind, disability, angkaGiliran, contactEmail, contactPhone })
+    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, phone, email, familyIncome, siblings, colorblind, disability, angkaGiliran, contactEmail, contactPhone })
     setEditingSection(section)
   }
 
@@ -196,6 +203,8 @@ export default function ProfilePage() {
     setNationality(snapshot.nationality as 'malaysian' | 'non_malaysian' || 'malaysian')
     setState(snapshot.state as string || '')
     setAddress(snapshot.address as string || '')
+    setPostalCode(snapshot.postalCode as string || '')
+    setCity(snapshot.city as string || '')
     setPhone(snapshot.phone as string || '')
     setEmail(snapshot.email as string || '')
     setFamilyIncome(snapshot.familyIncome as string || '')
@@ -240,8 +249,8 @@ export default function ProfilePage() {
 
   // Incomplete field counts per section
   const identityIncomplete = countIncomplete([name, gender])
-  const contactDetailsIncomplete = (!contactEmailVerified && !contactPhoneVerified) ? 1 : 0
-  const contactIncomplete = countIncomplete([state, address])
+  const contactDetailsIncomplete = (!contactEmailVerified ? 1 : 0) + (!contactPhoneVerified ? 1 : 0)
+  const contactIncomplete = countIncomplete([state, address, postalCode, city])
   const familyIncomplete = countIncomplete([familyIncome, siblings])
   const appIncomplete = countIncomplete([angkaGiliran])
 
@@ -551,6 +560,49 @@ export default function ProfilePage() {
             {editingSection === 'contact' ? (
               <div className="space-y-4">
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.street')}</label>
+                  <textarea
+                    value={address}
+                    onChange={e => setAddress(e.target.value)}
+                    placeholder="No. 12, Jalan ABC, Taman XYZ"
+                    rows={2}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none resize-none"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.postalCode')}</label>
+                    <input
+                      type="text"
+                      value={postalCode}
+                      onChange={e => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 5)
+                        setPostalCode(val)
+                        if (val.length === 5) {
+                          const result = findPostcode(val)
+                          if (result.found && result.city && result.state) {
+                            setCity(result.city)
+                            setState(result.state)
+                          }
+                        }
+                      }}
+                      placeholder="08000"
+                      maxLength={5}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.city')}</label>
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={e => setCity(e.target.value)}
+                      placeholder="Sungai Petani"
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('onboarding.state')}</label>
                   <select
                     value={state}
@@ -562,16 +614,6 @@ export default function ProfilePage() {
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.address')}</label>
-                  <textarea
-                    value={address}
-                    onChange={e => setAddress(e.target.value)}
-                    placeholder={t('profile.addressPlaceholder') || 'Your home address'}
-                    rows={2}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none resize-none"
-                  />
                 </div>
                 <div className="flex gap-3 pt-4">
                   <button onClick={cancelEditing} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
@@ -585,12 +627,12 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <FieldLabel label={t('onboarding.state')} empty={!state} />
-                  <FieldValue value={state} t={t} />
-                </div>
-                <div className="flex justify-between">
-                  <FieldLabel label={t('profile.address')} empty={!address} />
-                  <FieldValue value={address} t={t} />
+                  <FieldLabel label={t('profile.address')} empty={!address && !postalCode && !city && !state} />
+                  <span className="text-sm text-gray-900 text-right max-w-[60%]">
+                    {[address, [postalCode, city].filter(Boolean).join(' '), state].filter(Boolean).join(', ') || (
+                      <span className="text-amber-500 italic">{t('profile.notSet')}</span>
+                    )}
+                  </span>
                 </div>
               </div>
             )}

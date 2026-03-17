@@ -28,7 +28,7 @@ class PartnerStudentDetailSerializer(serializers.ModelSerializer):
         fields = [
             'supabase_user_id', 'name', 'nric', 'angka_giliran',
             'gender', 'nationality',
-            'phone', 'address', 'school',
+            'phone', 'address', 'postal_code', 'city', 'school',
             'family_income', 'siblings',
             'colorblind', 'disability',
             'exam_type', 'grades', 'stpm_grades', 'stpm_cgpa', 'muet_band',

@@ -472,19 +472,23 @@ export default function StpmGradesPage() {
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
             {/* A) SPM Stream pills */}
             <div className="mb-4">
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">ALIRAN</div>
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{t('onboarding.spmStream')}</div>
               <div className="flex gap-2">
-                {(['science', 'arts', 'technical'] as const).map(s => (
+                {([
+                  { id: 'science', key: 'spmSains' },
+                  { id: 'arts', key: 'spmSastera' },
+                  { id: 'technical', key: 'spmTeknikal' },
+                ] as const).map(s => (
                   <button
-                    key={s}
-                    onClick={() => handleSpmStreamChange(s)}
+                    key={s.id}
+                    onClick={() => handleSpmStreamChange(s.id)}
                     className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-all ${
-                      spmStream === s
+                      spmStream === s.id
                         ? 'bg-primary-500 text-white shadow-sm'
                         : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
                     }`}
                   >
-                    {t(`onboarding.spm${s.charAt(0).toUpperCase() + s.slice(1)}`)}
+                    {t(`onboarding.${s.key}`)}
                   </button>
                 ))}
               </div>

@@ -113,7 +113,7 @@ export default function AdminStudentDetail() {
           </h2>
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between"><dt className="text-gray-500">Telefon</dt><dd>{formatPhone(data.phone)}</dd></div>
-            <div><dt className="text-gray-500">Alamat</dt><dd className="mt-1">{data.address || '\u2014'}</dd></div>
+            <div><dt className="text-gray-500">Alamat</dt><dd className="mt-1">{[data.address, [data.postal_code, data.city].filter(Boolean).join(' '), data.preferred_state].filter(Boolean).join(', ') || '\u2014'}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Sekolah</dt><dd>{data.school || '\u2014'}</dd></div>
           </dl>
         </div>

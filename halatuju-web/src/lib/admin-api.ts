@@ -68,6 +68,8 @@ export interface StudentDetailData {
   nationality: string
   phone: string
   address: string
+  postal_code: string
+  city: string
   school: string
   family_income: string
   siblings: number | null

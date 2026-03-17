@@ -274,7 +274,8 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         fields = [
             'grades', 'gender', 'nationality', 'colorblind', 'disability',
             'student_signals', 'preferred_state', 'name', 'school',
-            'nric', 'angka_giliran', 'address', 'phone', 'family_income', 'siblings',
+            'nric', 'angka_giliran', 'address', 'postal_code', 'city',
+            'phone', 'family_income', 'siblings',
             'exam_type', 'stpm_grades', 'stpm_cgpa', 'muet_band',
             'spm_prereq_grades', 'referral_source',
             'contact_email', 'contact_phone',

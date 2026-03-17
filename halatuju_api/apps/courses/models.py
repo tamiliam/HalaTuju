@@ -444,7 +444,11 @@ class StudentProfile(models.Model):
 
     # Contact & location
     address = models.TextField(blank=True, default='',
-                               help_text="Home address")
+                               help_text="Street address")
+    postal_code = models.CharField(max_length=5, blank=True, default='',
+                                   help_text="5-digit Malaysian postcode")
+    city = models.CharField(max_length=100, blank=True, default='',
+                            help_text="City/town (auto-filled from postcode)")
     phone = models.CharField(max_length=20, blank=True, default='',
                              help_text="Phone number")
 

@@ -48,6 +48,8 @@ export interface StudentProfile {
   school?: string
   nric?: string
   address?: string
+  postal_code?: string
+  city?: string
   phone?: string
   email?: string
   family_income?: string

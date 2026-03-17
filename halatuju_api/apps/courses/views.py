@@ -950,6 +950,8 @@ class ProfileView(APIView):
             'nric': profile.nric,
             'angka_giliran': profile.angka_giliran,
             'address': profile.address,
+            'postal_code': profile.postal_code,
+            'city': profile.city,
             'phone': profile.phone,
             'email': email,
             'contact_email': profile.contact_email,
