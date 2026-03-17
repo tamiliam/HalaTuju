@@ -68,6 +68,18 @@ class TestNricClaim(TestCase):
         resp = self._post('user-a', {'nric': '12345'})
         self.assertEqual(resp.status_code, 400)
 
+    def test_invalid_nric_date_month_rejected(self):
+        resp = self._post('user-a', {'nric': '041315-01-2022'})  # month 13
+        self.assertEqual(resp.status_code, 400)
+
+    def test_invalid_nric_date_day_rejected(self):
+        resp = self._post('user-a', {'nric': '040800-01-2022'})  # day 00
+        self.assertEqual(resp.status_code, 400)
+
+    def test_invalid_nric_date_zeros_rejected(self):
+        resp = self._post('user-a', {'nric': '040015-01-2022'})  # month 00
+        self.assertEqual(resp.status_code, 400)
+
     def test_missing_nric_rejected(self):
         resp = self._post('user-a', {})
         self.assertEqual(resp.status_code, 400)

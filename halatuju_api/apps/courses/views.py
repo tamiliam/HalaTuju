@@ -1066,6 +1066,12 @@ class NricClaimView(APIView):
             return Response({'error': 'Invalid NRIC format'},
                             status=status.HTTP_400_BAD_REQUEST)
 
+        # Validate date portion (YYMMDD)
+        yy, mm, dd = int(nric[:2]), int(nric[2:4]), int(nric[4:6])
+        if not (1 <= mm <= 12 and 1 <= dd <= 31):
+            return Response({'error': 'Invalid NRIC: date portion is not valid'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         try:
             existing = StudentProfile.objects.get(nric=nric)
         except StudentProfile.DoesNotExist:
