@@ -55,6 +55,9 @@ export const KEY_STPM_STREAM = 'halatuju_stpm_stream'
 /** Koko score for STPM (string) */
 export const KEY_KOKO_SCORE = 'halatuju_koko_score'
 
+/** SPM stream for STPM prereq entry: 'science' | 'arts' | 'technical' | 'vocational' */
+export const KEY_SPM_STREAM = 'halatuju_spm_stream'
+
 /** UI locale: 'en' | 'ms' | 'ta' */
 export const KEY_LOCALE = 'halatuju_locale'
 

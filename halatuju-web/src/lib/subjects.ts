@@ -219,6 +219,17 @@ export const SPM_STREAM_POOLS: Record<string, SpmSubject[]> = {
 }
 export const SPM_ALL_ELECTIVE_SUBJECTS = SPM_SUBJECTS.filter(s => s.category !== 'core')
 
+// SPM stream pools for STPM prerequisite entry
+// 4 streams: science, arts, technical, vocational (no Islamic/agama)
+export const SPM_PREREQ_STREAM_POOLS: Record<string, SpmSubject[]> = {
+  science: SPM_SUBJECTS.filter(s => s.category === 'science'),
+  arts: SPM_SUBJECTS.filter(s => s.category === 'arts'),
+  technical: SPM_SUBJECTS.filter(s => s.category === 'technical'),
+  vocational: SPM_SUBJECTS.filter(s =>
+    s.id.startsWith('voc_') || ['pertanian', 'srt'].includes(s.id)
+  ),
+}
+
 // ---------------------------------------------------------------------------
 // STPM subject definitions (keys match backend stpm_engine.py)
 // ---------------------------------------------------------------------------
