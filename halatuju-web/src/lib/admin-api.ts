@@ -45,6 +45,10 @@ export interface StudentListItem {
   nric: string
   gender: string
   exam_type: string
+  school: string
+  phone: string
+  referral_source: string | null
+  org_name: string | null
   created_at: string
 }
 
@@ -58,13 +62,27 @@ export interface StudentDetailData {
   supabase_user_id: string
   name: string
   nric: string
+  angka_giliran: string
   gender: string
   nationality: string
+  phone: string
+  address: string
+  school: string
+  family_income: string
+  siblings: number | null
+  colorblind: string
+  disability: string
   exam_type: string
   grades: Record<string, string>
   stpm_grades: Record<string, string>
+  stpm_cgpa: number | null
+  muet_band: number | null
   student_signals: Record<string, unknown>
   preferred_state: string
+  financial_pressure: string
+  travel_willingness: string
+  referral_source: string | null
+  org_name: string | null
   created_at: string
   saved_courses: Array<{ course_id: string; name: string }>
 }
@@ -88,6 +106,27 @@ export async function getPartnerStudent(userId: string, options?: ApiOptions) {
 
 export function getExportUrl() {
   return `${API_BASE}/api/v1/admin/students/export/`
+}
+
+export async function deleteStudent(userId: string, options?: ApiOptions) {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (options?.token) {
+    headers['Authorization'] = `Bearer ${options.token}`
+  }
+
+  const res = await fetch(`${API_BASE}/api/v1/admin/students/${userId}/`, {
+    method: 'DELETE',
+    headers,
+  })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `Delete failed: ${res.status}`)
+  }
+
+  return res.json()
 }
 
 // ── Invite / Orgs ───────────────────────────────────────────────────

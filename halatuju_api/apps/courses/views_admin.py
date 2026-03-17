@@ -7,6 +7,7 @@ Endpoints:
 - GET /api/v1/admin/students/ - List referred students
 - GET /api/v1/admin/students/export/ - CSV export of referred students
 - GET /api/v1/admin/students/<user_id>/ - Student detail
+- DELETE /api/v1/admin/students/<user_id>/ - Delete student (super admin only)
 - POST /api/v1/admin/invite/ - Invite a partner admin (super admin only)
 - GET /api/v1/admin/orgs/ - List organisations (for invite dropdown)
 """
@@ -130,6 +131,7 @@ class PartnerStudentListView(PartnerAdminMixin, APIView):
         if students is None:
             return Response({'error': 'Not a partner admin'}, status=403)
 
+        students = students.select_related('referred_by_org')
         serializer = PartnerStudentListSerializer(students, many=True)
         return Response({
             'org_name': org.name if org else 'Semua Organisasi',
@@ -163,6 +165,19 @@ class PartnerStudentDetailView(PartnerAdminMixin, APIView):
 
         serializer = PartnerStudentDetailSerializer(student)
         return Response(serializer.data)
+
+    def delete(self, request, user_id):
+        admin = self.get_admin(request)
+        if not admin or not admin.is_super_admin:
+            return Response({'error': 'Super admin access required'}, status=403)
+
+        try:
+            student = StudentProfile.objects.get(supabase_user_id=user_id)
+        except StudentProfile.DoesNotExist:
+            return Response({'error': 'Student not found'}, status=404)
+
+        student.delete()
+        return Response({'message': 'Student deleted'}, status=200)
 
 
 class PartnerStudentExportView(PartnerAdminMixin, APIView):

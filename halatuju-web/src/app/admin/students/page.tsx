@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
 export default function AdminStudentList() {
-  const { token } = useAdminAuth()
+  const { token, role } = useAdminAuth()
   const [data, setData] = useState<StudentListData | null>(null)
   const [error, setError] = useState('')
 
@@ -66,6 +66,13 @@ export default function AdminStudentList() {
               <th className="text-left p-3 font-medium">No. KP</th>
               <th className="text-left p-3 font-medium">Jantina</th>
               <th className="text-left p-3 font-medium">Peperiksaan</th>
+              <th className="text-left p-3 font-medium">Sekolah</th>
+              <th className="text-left p-3 font-medium">Telefon</th>
+              {role?.is_super_admin && (
+                <th className="text-left p-3 font-medium">
+                  Sumber <span className="text-xs text-gray-400 ml-1">[Super Admin]</span>
+                </th>
+              )}
               <th className="text-left p-3 font-medium">Tarikh</th>
             </tr>
           </thead>
@@ -98,6 +105,16 @@ export default function AdminStudentList() {
                     {s.exam_type?.toUpperCase()}
                   </span>
                 </td>
+                <td className="p-3">{s.school || '\u2014'}</td>
+                <td className="p-3">{s.phone || '\u2014'}</td>
+                {role?.is_super_admin && (
+                  <td className="p-3">
+                    <div>{s.referral_source || '\u2014'}</div>
+                    {s.org_name && (
+                      <div className="text-xs text-gray-400">{s.org_name}</div>
+                    )}
+                  </td>
+                )}
                 <td className="p-3 text-gray-500">
                   {new Date(s.created_at).toLocaleDateString('ms-MY')}
                 </td>
