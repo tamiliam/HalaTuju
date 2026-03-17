@@ -351,8 +351,7 @@ export interface RankedCourse extends EligibleCourse {
 }
 
 export interface RankingResult {
-  top_5: RankedCourse[]
-  rest: RankedCourse[]
+  ranked: RankedCourse[]
   total_ranked: number
 }
 

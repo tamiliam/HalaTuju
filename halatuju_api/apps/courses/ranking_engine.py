@@ -765,7 +765,7 @@ def get_ranked_results(eligible_courses, student_profile,
         inst_subcategories: Dict {inst_id: subcategory_string}.
 
     Returns:
-        {"top_5": [...], "rest": [...]}
+        {"ranked": [...]}  — single sorted list, frontend handles display split
     """
     from .engine import check_merit_probability
 
@@ -804,10 +804,6 @@ def get_ranked_results(eligible_courses, student_profile,
 
     ranked_list = sort_courses(ranked_list, inst_subcategories)
 
-    top_5 = ranked_list[:6]
-    rest = ranked_list[6:]
-
     return {
-        "top_5": top_5,
-        "rest": rest,
+        "ranked": ranked_list,
     }

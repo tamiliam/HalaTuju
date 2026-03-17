@@ -95,24 +95,22 @@ class TestEligibilityToRankingFlow(TestCase):
         ranking_data = ranking_response.json()
 
         # Verify ranking response shape
-        self.assertIn('top_5', ranking_data)
-        self.assertIn('rest', ranking_data)
+        self.assertIn('ranked', ranking_data)
         self.assertIn('total_ranked', ranking_data)
 
         # All eligible courses should be ranked
-        total_ranked = len(ranking_data['top_5']) + len(ranking_data['rest'])
-        self.assertEqual(ranking_data['total_ranked'], total_ranked)
-        self.assertEqual(total_ranked, len(eligible_courses))
+        ranked = ranking_data['ranked']
+        self.assertEqual(ranking_data['total_ranked'], len(ranked))
+        self.assertEqual(len(ranked), len(eligible_courses))
 
-        # Top 5 should have fit scores in descending order
-        top_5 = ranking_data['top_5']
-        if len(top_5) >= 2:
-            scores = [c['fit_score'] for c in top_5]
+        # Ranked list should have fit scores in descending order
+        if len(ranked) >= 2:
+            scores = [c['fit_score'] for c in ranked]
             self.assertEqual(scores, sorted(scores, reverse=True),
-                             "Top 5 should be sorted by fit_score descending")
+                             "Ranked list should be sorted by fit_score descending")
 
         # Every ranked course should have a fit_score
-        for course in top_5:
+        for course in ranked:
             self.assertIn('fit_score', course)
             self.assertIsInstance(course['fit_score'], (int, float))
             self.assertGreaterEqual(course['fit_score'], 0)

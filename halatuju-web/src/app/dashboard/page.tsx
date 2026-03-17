@@ -722,26 +722,27 @@ function RankedResults({
   onLoadMoreGate?: () => boolean
 }) {
   const { t } = useT()
-  const filterCourses = (courses: RankedCourse[]) =>
-    filter === 'all'
-      ? courses
-      : courses.filter(c => (c.pathway_type || c.source_type) === filter)
+  const TOP_COUNT = 3
 
-  const filteredTop5 = filterCourses(rankingData.top_5)
-  const filteredRest = filterCourses(rankingData.rest)
+  const filtered = filter === 'all'
+    ? rankingData.ranked
+    : rankingData.ranked.filter(c => (c.pathway_type || c.source_type) === filter)
+
+  const filteredTop = filtered.slice(0, TOP_COUNT)
+  const filteredRest = filtered.slice(TOP_COUNT)
   const displayedRest = filteredRest.slice(0, displayCount)
   const remaining = filteredRest.length - displayCount
 
   return (
     <div className="space-y-8">
-      {/* Top 5 */}
-      {filteredTop5.length > 0 && (
+      {/* Top Matches */}
+      {filteredTop.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-primary-600 uppercase tracking-wide mb-3">
             {t('dashboard.topMatches')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredTop5.map((course, idx) => (
+            {filteredTop.map((course, idx) => (
               <CourseCard
                 key={course.course_id}
                 course={course}

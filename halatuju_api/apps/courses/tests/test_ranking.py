@@ -9,7 +9,7 @@ Covers:
 - Merit penalty application (High/Fair/Low)
 - sort_courses: tie-breaking hierarchy (score > credential > institution > merit > name)
 - Sort stability: equal items preserve relative order
-- get_ranked_results: top_5/rest split, end-to-end ranking
+- get_ranked_results: single ranked list, end-to-end ranking
 - get_credential_priority: credential level ordering
 - RankingView API endpoint: validation, success, empty input
 """
@@ -267,7 +267,7 @@ class TestMeritPenalty(TestCase):
             {'student_signals': EMPTY_SIGNALS},
             {}, {}, {},
         )
-        item = result['top_5'][0]
+        item = result['ranked'][0]
         # No tags → base score, no merit penalty
         self.assertEqual(item['fit_score'], BASE_SCORE)
 
@@ -285,7 +285,7 @@ class TestMeritPenalty(TestCase):
             {'student_signals': EMPTY_SIGNALS},
             {}, {}, {},
         )
-        self.assertEqual(result['top_5'][0]['fit_score'], BASE_SCORE + MERIT_PENALTY['Fair'])
+        self.assertEqual(result['ranked'][0]['fit_score'], BASE_SCORE + MERIT_PENALTY['Fair'])
 
     def test_low_merit_minus_15(self):
         """Student 10 points below cutoff → Low → -15 penalty."""
@@ -301,7 +301,7 @@ class TestMeritPenalty(TestCase):
             {'student_signals': EMPTY_SIGNALS},
             {}, {}, {},
         )
-        self.assertEqual(result['top_5'][0]['fit_score'], BASE_SCORE + MERIT_PENALTY['Low'])
+        self.assertEqual(result['ranked'][0]['fit_score'], BASE_SCORE + MERIT_PENALTY['Low'])
 
 
 class TestSortCourses(TestCase):
@@ -408,8 +408,8 @@ class TestGetCredentialPriority(TestCase):
 class TestGetRankedResults(TestCase):
     """Tests for the main get_ranked_results entry point."""
 
-    def test_top_6_rest_split(self):
-        """8 courses should yield 6 top + 2 rest."""
+    def test_all_courses_in_ranked(self):
+        """All courses returned in single ranked list."""
         courses = [
             {'course_id': f'C{i}', 'institution_id': 'I001',
              'course_name': f'Diploma {i}'}
@@ -420,23 +420,7 @@ class TestGetRankedResults(TestCase):
             {'student_signals': EMPTY_SIGNALS},
             {}, {}, {},
         )
-        self.assertEqual(len(result['top_5']), 6)
-        self.assertEqual(len(result['rest']), 2)
-
-    def test_fewer_than_6_all_in_top(self):
-        """3 courses → all in top_5, rest empty."""
-        courses = [
-            {'course_id': f'C{i}', 'institution_id': '',
-             'course_name': f'Diploma {i}'}
-            for i in range(3)
-        ]
-        result = get_ranked_results(
-            courses,
-            {'student_signals': EMPTY_SIGNALS},
-            {}, {}, {},
-        )
-        self.assertEqual(len(result['top_5']), 3)
-        self.assertEqual(len(result['rest']), 0)
+        self.assertEqual(len(result['ranked']), 8)
 
     def test_fit_reasons_populated(self):
         """Matching signals should produce fit_reasons."""
@@ -454,7 +438,7 @@ class TestGetRankedResults(TestCase):
             {'student_signals': signals},
             tags, {}, {},
         )
-        item = result['top_5'][0]
+        item = result['ranked'][0]
         self.assertGreater(len(item['fit_reasons']), 0)
         self.assertIn("hands-on", item['fit_reasons'][0])
 
@@ -467,7 +451,7 @@ class TestRankingEndpoint(TestCase):
         self.client = APIClient()
 
     def test_ranking_success(self):
-        """Valid request returns 200 with top_5 and rest."""
+        """Valid request returns 200 with ranked list."""
         response = self.client.post(
             '/api/v1/ranking/',
             data={
@@ -486,8 +470,7 @@ class TestRankingEndpoint(TestCase):
             format='json',
         )
         self.assertEqual(response.status_code, 200)
-        self.assertIn('top_5', response.data)
-        self.assertIn('rest', response.data)
+        self.assertIn('ranked', response.data)
         self.assertIn('total_ranked', response.data)
         self.assertEqual(response.data['total_ranked'], 1)
 
@@ -779,8 +762,8 @@ class TestPreUScoring(TestCase):
                      'student_merit': 95, 'course_name': 'Matriculation — Science',
                      'track_id': 'sains', 'merit_cutoff': 94, 'merit_label': 'High'}]
         result = get_ranked_results(courses, {'student_signals': {}}, {}, {}, {})
-        self.assertEqual(len(result['top_5']), 1)
-        self.assertGreaterEqual(result['top_5'][0]['fit_score'], 108)
+        self.assertEqual(len(result['ranked']), 1)
+        self.assertGreaterEqual(result['ranked'][0]['fit_score'], 108)
 
     def test_ranking_routes_stpm(self):
         """get_ranked_results routes stpm to pre-U scorer."""
@@ -790,5 +773,5 @@ class TestPreUScoring(TestCase):
                      'track_id': 'sains', 'mata_gred': 6, 'merit_cutoff': 38,
                      'merit_label': 'High'}]
         result = get_ranked_results(courses, {'student_signals': {}}, {}, {}, {})
-        self.assertEqual(len(result['top_5']), 1)
-        self.assertGreaterEqual(result['top_5'][0]['fit_score'], 105)
+        self.assertEqual(len(result['ranked']), 1)
+        self.assertGreaterEqual(result['ranked'][0]['fit_score'], 105)

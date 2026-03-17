@@ -511,8 +511,7 @@ class RankingView(APIView):
 
     Response:
     {
-        "top_5": [...],
-        "rest": [...],
+        "ranked": [...],
         "total_ranked": 123
     }
     """
@@ -543,7 +542,7 @@ class RankingView(APIView):
             inst_subcategories,
         )
 
-        result['total_ranked'] = len(result['top_5']) + len(result['rest'])
+        result['total_ranked'] = len(result['ranked'])
 
         return Response(result)
 
