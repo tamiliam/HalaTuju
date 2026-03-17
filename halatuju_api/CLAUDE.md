@@ -167,7 +167,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (615 collected, 615 must pass, SPM golden master = 5319, STPM golden master = 1995)
+# 1. Run all tests (615 collected, 615 must pass, SPM golden master = 5319, STPM golden master = 1994)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -179,7 +179,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-615 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1995. If golden master deviates, you broke eligibility logic.
+615 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 1994. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -222,9 +222,9 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Student list: added Sekolah, Telefon, Sumber (super admin only) columns
 - Student detail: 9 info cards showing all captured data, dual SPM+STPM grades
 - Delete student endpoint (super admin only), expanded serializers with select_related
-- STPM golden master rebaselined: 2098 → 1995
+- STPM golden master rebaselined: 2098 → 1994
 
-**Current state:** 615 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=1995. DELETE endpoint at `/api/v1/admin/students/<id>/`.
+**Current state:** 615 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=1994. DELETE endpoint at `/api/v1/admin/students/<id>/`.
 
 **Pending work**
 - Supabase setup for admin auth: RLS on partner_admins, service role key for invite, seed super admin

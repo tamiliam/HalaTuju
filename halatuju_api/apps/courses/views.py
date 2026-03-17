@@ -1105,6 +1105,7 @@ class NricClaimView(APIView):
                     ('saved_courses', 'student_id'),
                     ('admission_outcomes', 'student_id'),
                     ('generated_reports', 'student_id'),
+                    ('email_verifications', 'profile_id'),
                 ]:
                     cursor.execute(
                         f'UPDATE {table} SET {col} = %s WHERE {col} = %s',
@@ -1137,7 +1138,10 @@ class SendVerificationView(APIView):
         if not email:
             return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        profile = StudentProfile.objects.get(supabase_user_id=request.user_id)
+        try:
+            profile = StudentProfile.objects.get(supabase_user_id=request.user_id)
+        except StudentProfile.DoesNotExist:
+            return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
         # Invalidate previous tokens for this profile+email
         EmailVerification.objects.filter(profile=profile, email=email, used=False).update(used=True)
@@ -1159,10 +1163,9 @@ class SendVerificationView(APIView):
                 message=f'Click this link to verify your email: {verify_url}\n\nThis link expires in 24 hours.',
                 from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
                 recipient_list=[email],
-                fail_silently=True,
             )
         except Exception:
-            pass  # Token exists for retry even if email fails
+            logger.warning('Failed to send verification email to %s', email, exc_info=True)
 
         return Response({'status': 'sent'})
 
@@ -1175,26 +1178,27 @@ class VerifyEmailView(APIView):
     permission_classes = []  # Public
 
     def get(self, request, token):
-        from django.utils import timezone
+        from django.db import transaction
 
-        try:
-            verification = EmailVerification.objects.get(token=token)
-        except EmailVerification.DoesNotExist:
-            return Response({'error': 'Invalid token'}, status=status.HTTP_404_NOT_FOUND)
+        with transaction.atomic():
+            try:
+                verification = EmailVerification.objects.select_for_update().get(token=token)
+            except EmailVerification.DoesNotExist:
+                return Response({'error': 'Invalid token'}, status=status.HTTP_404_NOT_FOUND)
 
-        if verification.used:
-            return Response({'error': 'Token already used'}, status=status.HTTP_400_BAD_REQUEST)
+            if verification.used:
+                return Response({'error': 'Token already used'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if verification.is_expired:
-            return Response({'error': 'Token expired'}, status=status.HTTP_400_BAD_REQUEST)
+            if verification.is_expired:
+                return Response({'error': 'Token expired'}, status=status.HTTP_400_BAD_REQUEST)
 
-        verification.used = True
-        verification.save(update_fields=['used'])
+            verification.used = True
+            verification.save(update_fields=['used'])
 
-        profile = verification.profile
-        profile.contact_email = verification.email
-        profile.contact_email_verified = True
-        profile.save(update_fields=['contact_email', 'contact_email_verified'])
+            profile = verification.profile
+            profile.contact_email = verification.email
+            profile.contact_email_verified = True
+            profile.save(update_fields=['contact_email', 'contact_email_verified'])
 
         return Response({'status': 'verified', 'email': verification.email})
 
