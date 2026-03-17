@@ -18,7 +18,7 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-4">
           <LanguageSelector />
-          <Link href="/about" className="text-gray-600 hover:text-gray-900">
+          <Link href="/about" className="hidden sm:inline text-gray-600 hover:text-gray-900">
             {t('common.about')}
           </Link>
           <Link href="/login" className="btn-primary">
