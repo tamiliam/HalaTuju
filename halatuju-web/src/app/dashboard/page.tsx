@@ -411,15 +411,15 @@ export default function DashboardPage() {
                     {eligibilityData.insights.merit_summary.no_data > 0 && (
                       <span className="text-gray-400">&middot; {eligibilityData.insights.merit_summary.no_data} unrated</span>
                     )}
+                    <Link href="/onboarding/grades" className="text-xs text-gray-400 hover:text-primary-500 underline">
+                      {t('dashboard.editProfile')}
+                    </Link>
                   </div>
                 )}
-                <Link href="/onboarding/grades" className="text-xs text-gray-400 hover:text-primary-500 underline mt-1.5 inline-block">
-                  {t('dashboard.editProfile')}
-                </Link>
               </div>
 
               {/* Right: action buttons */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {existingReportId && (
                   <Link href={`/report/${existingReportId}`} className="btn-secondary text-sm whitespace-nowrap">
                     {t('dashboard.readReport')}
