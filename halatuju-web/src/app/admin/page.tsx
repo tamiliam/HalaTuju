@@ -4,9 +4,11 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import { getPartnerDashboard, type DashboardData } from '@/lib/admin-api'
 import { useEffect, useState } from 'react'
 import QRCode from 'react-qr-code'
+import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 
 export default function AdminDashboard() {
   const { token } = useAdminAuth()
+  const { getFieldName } = useFieldTaxonomy()
   const [data, setData] = useState<DashboardData | null>(null)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
@@ -124,7 +126,7 @@ export default function AdminDashboard() {
           <ul className="space-y-2">
             {data.top_fields.map((f) => (
               <li key={f.field} className="flex justify-between">
-                <span>{f.field}</span>
+                <span>{getFieldName(f.field) || f.field}</span>
                 <span className="text-gray-500">{f.count} pelajar</span>
               </li>
             ))}
