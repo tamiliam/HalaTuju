@@ -161,17 +161,24 @@ def _format_signals(student_signals, lang='bm'):
     return header + '\n' + '\n'.join(lines)
 
 
-def _format_courses(eligible_courses, limit=3):
-    """Format top courses for the prompt."""
+def _format_courses(eligible_courses, limit=5):
+    """Format top courses for the prompt, sorted by fit_score descending."""
     if not eligible_courses:
         return 'Tiada kursus layak.'
 
+    sorted_courses = sorted(
+        eligible_courses,
+        key=lambda c: c.get('fit_score', 0),
+        reverse=True,
+    )
+
     lines = []
-    for i, c in enumerate(eligible_courses[:limit]):
+    for i, c in enumerate(sorted_courses[:limit]):
         name = c.get('course_name', c.get('course_id', '?'))
         field = c.get('field', '')
         source = c.get('source_type', '')
         merit = c.get('merit_label', '')
+        fit = c.get('fit_score')
         line = f'{i + 1}. {name}'
         if field:
             line += f' (Bidang: {field})'
@@ -179,6 +186,8 @@ def _format_courses(eligible_courses, limit=3):
             line += f' [{source.upper()}]'
         if merit:
             line += f' — Peluang: {merit}'
+        if fit is not None:
+            line += f' [Skor Kesesuaian: {fit}]'
         lines.append(line)
     return '\n'.join(lines)
 

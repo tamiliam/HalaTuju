@@ -162,12 +162,12 @@ class TestFormatHelpers(TestCase):
         self.assertIn('Hands-on Work (strong)', en)
         self.assertIn('Creative (moderate)', en)
 
-    def test_format_courses_limits_to_three(self):
-        """At most 3 courses are formatted."""
+    def test_format_courses_limits_to_five(self):
+        """At most 5 courses are formatted (default limit)."""
         many_courses = SAMPLE_COURSES * 5  # 15 courses
         result = _format_courses(many_courses)
         lines = [l for l in result.strip().split('\n') if l.strip()]
-        self.assertEqual(len(lines), 3)
+        self.assertEqual(len(lines), 5)
 
     def test_format_insights_includes_summary(self):
         """Insights formatting includes the summary text."""
@@ -276,3 +276,44 @@ class TestGenerateReport(TestCase):
         self.assertNotIn('error', result)
         # Should have tried at least 2 models
         self.assertGreaterEqual(call_count[0], 2)
+
+
+class TestSmartCourseSelection(TestCase):
+    """Test fit_score sorting and display in course formatting."""
+
+    def test_courses_sorted_by_fit_score(self):
+        """Courses are sorted by fit_score descending."""
+        courses = [
+            {'course_name': 'Low', 'field': 'A', 'fit_score': 30},
+            {'course_name': 'High', 'field': 'B', 'fit_score': 70},
+            {'course_name': 'Mid', 'field': 'C', 'fit_score': 50},
+        ]
+        result = _format_courses(courses)
+        lines = result.strip().split('\n')
+        self.assertTrue(lines[0].startswith('1. High'))
+        self.assertTrue(lines[1].startswith('2. Mid'))
+        self.assertTrue(lines[2].startswith('3. Low'))
+
+    def test_courses_limit_5(self):
+        """Default limit is 5 courses."""
+        courses = [{'course_name': f'C{i}', 'field': 'X', 'fit_score': i}
+                   for i in range(10)]
+        result = _format_courses(courses)
+        lines = [l for l in result.strip().split('\n') if l.strip()]
+        self.assertEqual(len(lines), 5)
+
+    def test_courses_without_fit_score_still_work(self):
+        """Courses without fit_score default to 0 and still format."""
+        courses = [
+            {'course_name': 'A', 'field': 'X'},
+            {'course_name': 'B', 'field': 'Y'},
+        ]
+        result = _format_courses(courses)
+        self.assertIn('A', result)
+        self.assertIn('B', result)
+
+    def test_fit_score_displayed(self):
+        """fit_score is shown in the output when present."""
+        courses = [{'course_name': 'Test', 'field': 'X', 'fit_score': 65}]
+        result = _format_courses(courses)
+        self.assertIn('Skor Kesesuaian: 65', result)
