@@ -37,8 +37,6 @@ export default function StpmCourseDetailPage() {
 
   const streamLabel = data.stream === 'science' ? 'Science' : data.stream === 'arts' ? 'Arts' : 'Science / Arts'
 
-  const { req_interview, no_colorblind, req_medical_fitness } = data.requirements
-
   return (
     <main className="min-h-screen bg-gray-50">
       <AppHeader />
@@ -226,40 +224,129 @@ export default function StpmCourseDetailPage() {
                   </div>
                 </div>
 
-                {/* STPM Subjects */}
-                {data.requirements.stpm_subjects.length > 0 && (
+                {/* STPM Subject Requirements */}
+                {(data.requirements.stpm_subjects.length > 0 ||
+                  data.requirements.stpm_subject_groups_display.length > 0) && (
                   <div>
                     <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
                       {t('stpm.stpmSubjects')}
                     </h3>
-                    <div className="flex flex-wrap gap-1.5">
-                      {data.requirements.stpm_subjects.map(subj => (
-                        <span key={subj} className="px-2.5 py-1 bg-blue-50 border border-blue-100 rounded-full text-xs font-medium text-blue-700">
-                          {subj}
-                        </span>
-                      ))}
-                    </div>
-                    {data.requirements.stpm_subject_group && (
-                      <p className="text-[11px] text-gray-400 mt-1.5">
-                        + flexible subject group requirement
-                      </p>
+                    {data.requirements.stpm_subjects.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {data.requirements.stpm_subjects.map(subj => (
+                          <span key={subj} className="px-2.5 py-1 bg-blue-50 border border-blue-100 rounded-full text-xs font-medium text-blue-700">
+                            {subj}
+                          </span>
+                        ))}
+                      </div>
                     )}
+                    {data.requirements.stpm_subject_groups_display.map((group, i) => (
+                      <div key={i} className="mt-2 rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-semibold text-blue-800">
+                            {group.any_subject
+                              ? t('stpm.anySubject', { count: String(group.min_count) })
+                              : t('stpm.pickFrom', { count: String(group.min_count) })}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            ['A', 'A-'].includes(group.min_grade) ? 'bg-green-100 text-green-700'
+                              : ['B+', 'B', 'B-', 'C+', 'C'].includes(group.min_grade) ? 'bg-amber-100 text-amber-700'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {group.min_grade}
+                          </span>
+                        </div>
+                        {group.subjects.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {group.subjects.map(s => (
+                              <span key={s} className="px-2 py-0.5 bg-white border border-blue-200 rounded text-[11px] text-blue-700">
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {group.any_subject && group.subjects.length === 0 && (
+                          <span className="text-[11px] text-blue-600 italic">
+                            {t('stpm.anyStpmSubject')}
+                          </span>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
 
                 {/* SPM Prerequisites */}
-                {data.requirements.spm_prerequisites.length > 0 && (
+                {(data.requirements.spm_prerequisites.length > 0 ||
+                  data.requirements.spm_subject_groups_display.length > 0) && (
                   <div>
                     <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
                       {t('stpm.spmPrerequisites')}
                     </h3>
-                    <div className="flex flex-wrap gap-1.5">
-                      {data.requirements.spm_prerequisites.map(prereq => (
-                        <span key={prereq} className="px-2.5 py-1 bg-green-50 border border-green-100 rounded-full text-xs font-medium text-green-700">
-                          {prereq}
-                        </span>
-                      ))}
-                    </div>
+                    {data.requirements.spm_prerequisites.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {data.requirements.spm_prerequisites.map(prereq => (
+                          <span key={prereq} className="px-2.5 py-1 bg-green-50 border border-green-100 rounded-full text-xs font-medium text-green-700">
+                            {prereq}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {data.requirements.spm_subject_groups_display.map((group, i) => (
+                      <div key={i} className="mt-2 rounded-lg border border-green-100 bg-green-50/50 p-3">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-semibold text-green-800">
+                            {group.any_subject
+                              ? t('stpm.anySubject', { count: String(group.min_count) })
+                              : t('stpm.pickFrom', { count: String(group.min_count) })}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            ['A', 'A-'].includes(group.min_grade) ? 'bg-green-100 text-green-700'
+                              : ['B+', 'B', 'B-', 'C+', 'C'].includes(group.min_grade) ? 'bg-amber-100 text-amber-700'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {group.min_grade}
+                          </span>
+                        </div>
+                        {group.subjects.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {group.subjects.map(s => (
+                              <span key={s} className="px-2 py-0.5 bg-white border border-green-200 rounded text-[11px] text-green-700">
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {group.any_subject && group.subjects.length === 0 && !group.exclude.length && (
+                          <span className="text-[11px] text-green-600 italic">
+                            {t('stpm.anySpmSubject')}
+                          </span>
+                        )}
+                        {group.any_subject && group.subjects.length === 0 && group.exclude.length > 0 && (
+                          <div>
+                            <span className="text-[11px] text-green-600 italic">
+                              {t('stpm.anySpmSubject')}
+                            </span>
+                            <div className="mt-1.5">
+                              <span className="text-[10px] font-semibold text-red-500 uppercase">
+                                {t('stpm.excluding')}
+                              </span>
+                              <div className="flex flex-wrap gap-1 mt-0.5">
+                                {group.exclude.slice(0, 5).map(ex => (
+                                  <span key={ex} className="px-1.5 py-0.5 bg-red-50 border border-red-100 rounded text-[10px] text-red-600">
+                                    {ex}
+                                  </span>
+                                ))}
+                                {group.exclude.length > 5 && (
+                                  <span className="px-1.5 py-0.5 text-[10px] text-red-400">
+                                    +{group.exclude.length - 5} {t('common.more')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -267,9 +354,13 @@ export default function StpmCourseDetailPage() {
 
             {/* Special Conditions */}
             <SpecialConditions
-              reqInterview={req_interview}
-              noColorblind={no_colorblind}
-              reqMedicalFitness={req_medical_fitness}
+              reqInterview={data.requirements.req_interview}
+              noColorblind={data.requirements.no_colorblind}
+              reqMedicalFitness={data.requirements.req_medical_fitness}
+              reqMale={data.requirements.req_male}
+              reqFemale={data.requirements.req_female}
+              single={data.requirements.single}
+              noDisability={data.requirements.no_disability}
             />
 
             {/* Actions */}

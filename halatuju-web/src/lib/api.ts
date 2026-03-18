@@ -618,6 +618,14 @@ export interface StpmSearchResponse {
   filters: StpmSearchFilters
 }
 
+export interface SubjectGroupDisplay {
+  min_count: number
+  min_grade: string
+  subjects: string[]
+  any_subject: boolean
+  exclude: string[]
+}
+
 export interface StpmRequirements {
   min_cgpa: number
   min_muet_band: number
@@ -627,9 +635,15 @@ export interface StpmRequirements {
   stpm_subject_group: Record<string, unknown> | null
   spm_prerequisites: string[]
   spm_subject_group: Record<string, unknown> | null
+  stpm_subject_groups_display: SubjectGroupDisplay[]
+  spm_subject_groups_display: SubjectGroupDisplay[]
   req_interview: boolean
   no_colorblind: boolean
   req_medical_fitness: boolean
+  req_male: boolean
+  req_female: boolean
+  single: boolean
+  no_disability: boolean
   req_malaysian: boolean
   req_bumiputera: boolean
 }
