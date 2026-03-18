@@ -1637,6 +1637,7 @@ class StpmCourseDetailView(APIView):
         'APRESIASI_TARI_SPM': 'Apresiasi Tari',
         'KOREOGRAFI_TARI_SPM': 'Koreografi Tari',
         'TARIAN_SPM': 'Tarian',
+        'LUKISAN_SPM': 'Lukisan',
     }
 
     @staticmethod
@@ -1661,10 +1662,10 @@ class StpmCourseDetailView(APIView):
                     for code in group['subjects']
                 ]
             if group.get('exclude'):
-                entry['exclude'] = [
+                entry['exclude'] = list(dict.fromkeys(
                     display_map.get(code, code.replace('_', ' ').title())
                     for code in group['exclude']
-                ]
+                ))
             result.append(entry)
         return result
 
