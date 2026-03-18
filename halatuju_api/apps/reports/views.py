@@ -78,6 +78,19 @@ class GenerateReportView(APIView):
         grades = profile.grades or {}
         student_signals = profile.student_signals or {}
 
+        # Enrich courses with field display names
+        from apps.courses.models import FieldTaxonomy
+        field_cache = {}
+        for course in eligible_courses:
+            fk = course.get('field_key') or course.get('field', '')
+            if fk and fk not in field_cache:
+                try:
+                    ft = FieldTaxonomy.objects.get(key=fk)
+                    field_cache[fk] = ft.name_ms if lang == 'bm' else ft.name_en
+                except FieldTaxonomy.DoesNotExist:
+                    field_cache[fk] = ''
+            course['field_display'] = field_cache.get(fk, '')
+
         # Call Gemini via report engine
         result = generate_report(
             grades=grades,

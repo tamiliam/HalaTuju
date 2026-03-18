@@ -175,7 +175,7 @@ def _format_courses(eligible_courses, limit=5):
     lines = []
     for i, c in enumerate(sorted_courses[:limit]):
         name = c.get('course_name', c.get('course_id', '?'))
-        field = c.get('field', '')
+        field = c.get('field_display', c.get('field', ''))
         source = c.get('source_type', '')
         merit = c.get('merit_label', '')
         fit = c.get('fit_score')

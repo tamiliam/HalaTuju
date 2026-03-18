@@ -317,3 +317,20 @@ class TestSmartCourseSelection(TestCase):
         courses = [{'course_name': 'Test', 'field': 'X', 'fit_score': 65}]
         result = _format_courses(courses)
         self.assertIn('Skor Kesesuaian: 65', result)
+
+    def test_field_display_in_course_format(self):
+        """field_display is used instead of raw field key when available."""
+        courses = [
+            {'course_name': 'Diploma Kejuruteraan', 'field': 'kejuruteraan',
+             'field_display': 'Kejuruteraan Mekanikal'},
+        ]
+        result = _format_courses(courses)
+        self.assertIn('Kejuruteraan Mekanikal', result)
+        # Raw key should not appear before the display name
+        self.assertNotIn('kejuruteraan', result.split('Kejuruteraan Mekanikal')[0])
+
+    def test_field_fallback_when_no_display(self):
+        """Falls back to raw field value when field_display is absent."""
+        courses = [{'course_name': 'Test', 'field': 'sains'}]
+        result = _format_courses(courses)
+        self.assertIn('sains', result)
