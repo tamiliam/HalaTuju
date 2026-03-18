@@ -274,6 +274,44 @@ class TestGenerateReport(TestCase):
         self.assertGreaterEqual(call_count[0], 2)
 
 
+class TestStpmPrompt(TestCase):
+    """Test STPM prompt templates."""
+
+    def test_get_prompt_stpm_bm(self):
+        prompt = get_prompt('bm', exam_type='stpm')
+        self.assertIn('{student_name}', prompt)
+        self.assertIn('{academic_context}', prompt)
+        self.assertIn('STPM', prompt)
+
+    def test_get_prompt_stpm_en(self):
+        prompt = get_prompt('en', exam_type='stpm')
+        self.assertIn('{student_name}', prompt)
+        self.assertIn('STPM', prompt)
+
+    def test_get_prompt_defaults_to_spm(self):
+        prompt = get_prompt('bm')
+        self.assertIn('SPM', prompt)
+
+    def test_stpm_prompts_have_same_placeholders_as_spm(self):
+        spm_bm = get_prompt('bm', exam_type='spm')
+        stpm_bm = get_prompt('bm', exam_type='stpm')
+        placeholders = ['{student_name}', '{student_profile}', '{academic_context}',
+                       '{recommended_courses}', '{insights_summary}']
+        for p in placeholders:
+            self.assertIn(p, spm_bm, f'{p} missing from SPM BM prompt')
+            self.assertIn(p, stpm_bm, f'{p} missing from STPM BM prompt')
+
+    def test_stpm_bm_has_no_persona_placeholders(self):
+        prompt = get_prompt('bm', exam_type='stpm')
+        self.assertNotIn('{counsellor_name}', prompt)
+        self.assertNotIn('{gender_context}', prompt)
+
+    def test_stpm_en_has_no_persona_placeholders(self):
+        prompt = get_prompt('en', exam_type='stpm')
+        self.assertNotIn('{counsellor_name}', prompt)
+        self.assertNotIn('{gender_context}', prompt)
+
+
 class TestSmartCourseSelection(TestCase):
     """Test fit_score sorting and display in course formatting."""
 
