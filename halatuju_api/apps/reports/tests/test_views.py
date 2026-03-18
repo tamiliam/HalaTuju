@@ -8,6 +8,7 @@ Covers:
 - FK bug regression: views must filter by student__supabase_user_id, not student_id
 """
 from unittest.mock import patch, ANY
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from apps.courses.models import StudentProfile
@@ -22,6 +23,7 @@ class TestReportViews(TestCase):
     """Tests for report list, detail, and generate endpoints."""
 
     def setUp(self):
+        cache.clear()
         self.client = APIClient()
         # Create test student profile
         self.profile = StudentProfile.objects.create(
@@ -152,3 +154,50 @@ class TestReportViews(TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('eligible_courses', response.json()['error'])
+
+    @patch('apps.reports.views.generate_report')
+    def test_stpm_student_passes_exam_type(self, mock_gen):
+        """POST /api/v1/reports/generate/ passes STPM data for STPM students."""
+        mock_gen.return_value = {
+            'markdown': 'text', 'model_used': 'gemini-2.5-flash',
+            'generation_time_ms': 100,
+        }
+        self.profile.exam_type = 'stpm'
+        self.profile.stpm_grades = {'PA': 'A', 'PHYSICS': 'B+'}
+        self.profile.stpm_cgpa = 3.50
+        self.profile.muet_band = 4
+        self.profile.save()
+
+        self.client.post(
+            '/api/v1/reports/generate/',
+            {'eligible_courses': [{'course_name': 'BSc'}], 'insights': {}},
+            format='json',
+        )
+
+        mock_gen.assert_called_once()
+        call_kwargs = mock_gen.call_args[1]
+        self.assertEqual(call_kwargs['exam_type'], 'stpm')
+        self.assertEqual(call_kwargs['stpm_grades'], {'PA': 'A', 'PHYSICS': 'B+'})
+        self.assertEqual(call_kwargs['stpm_cgpa'], 3.50)
+        self.assertEqual(call_kwargs['muet_band'], 4)
+
+    @patch('apps.reports.views.generate_report')
+    def test_spm_student_passes_spm_exam_type(self, mock_gen):
+        """POST /api/v1/reports/generate/ passes exam_type='spm' and no STPM data for SPM students."""
+        mock_gen.return_value = {
+            'markdown': 'text', 'model_used': 'gemini-2.5-flash',
+            'generation_time_ms': 100,
+        }
+
+        self.client.post(
+            '/api/v1/reports/generate/',
+            {'eligible_courses': [{'course_name': 'Diploma IT'}], 'insights': {}},
+            format='json',
+        )
+
+        mock_gen.assert_called_once()
+        call_kwargs = mock_gen.call_args[1]
+        self.assertEqual(call_kwargs['exam_type'], 'spm')
+        self.assertIsNone(call_kwargs['stpm_grades'])
+        self.assertIsNone(call_kwargs['stpm_cgpa'])
+        self.assertIsNone(call_kwargs['muet_band'])

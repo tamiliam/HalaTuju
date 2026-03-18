@@ -395,3 +395,57 @@ class TestStpmGradeFormatting(TestCase):
     def test_format_stpm_grades_unknown_subject(self):
         result = _format_stpm_grades({'UNKNOWN': 'A'})
         self.assertIn('UNKNOWN: A', result)
+
+
+class TestExamTypeRouting(TestCase):
+    """Test exam_type routing in generate_report."""
+
+    @patch('google.genai.Client')
+    @patch('apps.reports.report_engine.settings')
+    def test_stpm_uses_stpm_prompt(self, mock_settings, mock_client_cls):
+        """STPM exam_type routes to STPM prompt and grade formatter."""
+        mock_settings.GEMINI_API_KEY = 'test-key'
+        mock_response = MagicMock()
+        mock_response.text = 'STPM report'
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
+        mock_client_cls.return_value = mock_client
+
+        result = generate_report(
+            grades={},
+            eligible_courses=[{'course_name': 'BSc CS', 'field': 'IT'}],
+            insights={},
+            student_signals={},
+            student_name='Ali',
+            lang='bm',
+            exam_type='stpm',
+            stpm_grades={'PA': 'A', 'MATH_T': 'B+'},
+            stpm_cgpa=3.50,
+            muet_band=4,
+        )
+        call_args = mock_client.models.generate_content.call_args
+        prompt_text = str(call_args)
+        self.assertIn('STPM', prompt_text)
+        self.assertIn('CGPA: 3.5', prompt_text)
+        self.assertIn('MUET: Band 4', prompt_text)
+
+    @patch('google.genai.Client')
+    @patch('apps.reports.report_engine.settings')
+    def test_spm_default_uses_spm_prompt(self, mock_settings, mock_client_cls):
+        """Default exam_type (SPM) routes to SPM prompt and grade formatter."""
+        mock_settings.GEMINI_API_KEY = 'test-key'
+        mock_response = MagicMock()
+        mock_response.text = 'SPM report'
+        mock_client = MagicMock()
+        mock_client.models.generate_content.return_value = mock_response
+        mock_client_cls.return_value = mock_client
+
+        result = generate_report(
+            grades={'bm': 'A'},
+            eligible_courses=[{'course_name': 'Diploma IT', 'field': 'IT'}],
+            insights={},
+            lang='bm',
+        )
+        call_args = mock_client.models.generate_content.call_args
+        prompt_text = str(call_args)
+        self.assertIn('SPM', prompt_text)

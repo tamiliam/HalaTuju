@@ -267,7 +267,8 @@ def _format_insights(insights):
 
 def generate_report(grades, eligible_courses, insights,
                     student_signals=None, student_name='pelajar',
-                    lang='bm'):
+                    lang='bm', exam_type='spm',
+                    stpm_grades=None, stpm_cgpa=None, muet_band=None):
     """
     Generate an AI counselor report using Gemini.
 
@@ -299,12 +300,15 @@ def generate_report(grades, eligible_courses, insights,
     client = genai.Client(api_key=api_key)
 
     # Format data for prompt
-    academic_context = _format_grades(grades)
+    if exam_type == 'stpm':
+        academic_context = _format_stpm_grades(stpm_grades, stpm_cgpa, muet_band)
+    else:
+        academic_context = _format_grades(grades)
     student_profile = _format_signals(student_signals, lang=lang)
     recommended_courses = _format_courses(eligible_courses)
     insights_summary = _format_insights(insights)
 
-    prompt_template = get_prompt(lang)
+    prompt_template = get_prompt(lang, exam_type=exam_type)
 
     # Try models in cascade
     last_error = None

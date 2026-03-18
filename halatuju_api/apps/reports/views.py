@@ -90,6 +90,9 @@ class GenerateReportView(APIView):
                     field_cache[fk] = ''
             course['field_display'] = field_cache.get(fk, '')
 
+        # Determine exam type
+        exam_type = profile.exam_type or 'spm'
+
         # Call Gemini via report engine
         result = generate_report(
             grades=grades,
@@ -98,6 +101,10 @@ class GenerateReportView(APIView):
             student_signals=student_signals,
             student_name=profile.name or 'pelajar',
             lang=lang,
+            exam_type=exam_type,
+            stpm_grades=profile.stpm_grades if exam_type == 'stpm' else None,
+            stpm_cgpa=profile.stpm_cgpa if exam_type == 'stpm' else None,
+            muet_band=profile.muet_band if exam_type == 'stpm' else None,
         )
 
         if 'error' in result:
@@ -113,10 +120,20 @@ class GenerateReportView(APIView):
             content=result['markdown'],
             summary=insights.get('summary_text', ''),
             student_profile_snapshot={
+                'exam_type': exam_type,
                 'grades': grades,
                 'gender': profile.gender,
                 'nationality': profile.nationality,
                 'student_signals': student_signals,
+                **(
+                    {
+                        'stpm_grades': profile.stpm_grades,
+                        'stpm_cgpa': profile.stpm_cgpa,
+                        'muet_band': profile.muet_band,
+                    }
+                    if exam_type == 'stpm'
+                    else {}
+                ),
             },
             eligible_courses_snapshot=eligible_courses,
             model_used=result['model_used'],
