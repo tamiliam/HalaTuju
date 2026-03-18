@@ -17,6 +17,7 @@ from django.test import TestCase
 from apps.reports.report_engine import (
     generate_report,
     _format_grades,
+    _format_stpm_grades,
     _format_signals,
     _format_courses,
     _format_insights,
@@ -368,3 +369,29 @@ class TestSmartCourseSelection(TestCase):
         courses = [{'course_name': 'Test', 'field': 'sains'}]
         result = _format_courses(courses)
         self.assertIn('sains', result)
+
+
+class TestStpmGradeFormatting(TestCase):
+    """Test STPM grade formatting for report prompts."""
+
+    def test_format_stpm_grades(self):
+        stpm_grades = {'PA': 'B+', 'MATH_T': 'A-', 'PHYSICS': 'B'}
+        result = _format_stpm_grades(stpm_grades, cgpa=3.33, muet_band=4)
+        self.assertIn('Pengajian Am: B+', result)
+        self.assertIn('Matematik T: A-', result)
+        self.assertIn('Fizik: B', result)
+        self.assertIn('CGPA: 3.33', result)
+        self.assertIn('MUET: Band 4', result)
+
+    def test_format_stpm_grades_empty(self):
+        result = _format_stpm_grades({}, cgpa=None, muet_band=None)
+        self.assertIn('Tiada', result)
+
+    def test_format_stpm_grades_only_cgpa(self):
+        result = _format_stpm_grades(None, cgpa=3.50, muet_band=None)
+        self.assertIn('CGPA: 3.5', result)
+        self.assertNotIn('MUET', result)
+
+    def test_format_stpm_grades_unknown_subject(self):
+        result = _format_stpm_grades({'UNKNOWN': 'A'})
+        self.assertIn('UNKNOWN: A', result)

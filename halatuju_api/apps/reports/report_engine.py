@@ -75,6 +75,34 @@ SUBJECT_LABELS = {
 }
 
 
+# STPM subject display names for prompt formatting
+STPM_SUBJECT_LABELS = {
+    'PA': 'Pengajian Am',
+    'MATH_T': 'Matematik T',
+    'MATH_M': 'Matematik M',
+    'PHYSICS': 'Fizik',
+    'CHEMISTRY': 'Kimia',
+    'BIOLOGY': 'Biologi',
+    'ECONOMICS': 'Ekonomi',
+    'ACCOUNTING': 'Perakaunan',
+    'BUSINESS': 'Perniagaan',
+    'BAHASA_MELAYU': 'Bahasa Melayu',
+    'BAHASA_CINA': 'Bahasa Cina',
+    'BAHASA_TAMIL': 'Bahasa Tamil',
+    'BAHASA_ARAB': 'Bahasa Arab',
+    'SEJARAH': 'Sejarah',
+    'GEOGRAFI': 'Geografi',
+    'KESUSASTERAAN_MELAYU': 'Kesusasteraan Melayu',
+    'LITERATURE_IN_ENGLISH': 'Literature in English',
+    'SENI_VISUAL': 'Seni Visual',
+    'SAINS_SUKAN': 'Sains Sukan',
+    'ICT': 'ICT',
+    'SYARIAH': 'Syariah',
+    'USULUDDIN': 'Usuluddin',
+    'TAHFIZ_AL_QURAN': 'Tahfiz Al-Quran',
+}
+
+
 SIGNAL_LABELS = {
     'field_mechanical': ('Mekanikal & Automotif', 'Mechanical & Automotive'),
     'field_digital': ('Teknologi Digital', 'Digital Technology'),
@@ -118,6 +146,24 @@ STRENGTH_LABELS = {
     'bm': {2: 'kuat', 1: 'sederhana'},
     'en': {2: 'strong', 1: 'moderate'},
 }
+
+
+def _format_stpm_grades(stpm_grades, cgpa=None, muet_band=None):
+    """Format STPM grades + CGPA + MUET for the prompt."""
+    if not stpm_grades and cgpa is None:
+        return 'Tiada maklumat gred STPM.'
+
+    lines = []
+    for subj, grade in (stpm_grades or {}).items():
+        label = STPM_SUBJECT_LABELS.get(subj, subj)
+        lines.append(f'- {label}: {grade}')
+
+    if cgpa is not None:
+        lines.append(f'- CGPA: {cgpa}')
+    if muet_band is not None:
+        lines.append(f'- MUET: Band {muet_band}')
+
+    return '\n'.join(lines) if lines else 'Tiada maklumat gred STPM.'
 
 
 def _format_grades(grades):
