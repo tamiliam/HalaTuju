@@ -97,7 +97,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (775 collected, 775 pass, 0 failures, 0 skipped)
+# Run ALL tests (829 collected, 829 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -123,8 +123,8 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_ranking.py | 62 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, ranked list output, API endpoint validation, field interest matching via field_key (primary/no match/cap/heavy_industry/no field_key/double match), high_stamina, rote_tolerant, quality_priority, work preference cap, pre-U scoring (Matric/STPM prestige, academic bonus, field preference, signal adjustment, signal cap, routing) |
 | test_data_loading.py | 10 | TVET metadata enrichment, PISMP metadata enrichment, institution modifiers storage, MASCO occupation model (PK, M2M, reverse relation, idempotent load, __str__) |
 | test_insights.py | 8 | Insights engine: empty input, stream breakdown, labels, top fields, merit counts, level distribution, summary text |
-| test_report_engine.py | 12 | Report engine: format helpers (grades, signals, courses, insights), prompts (BM/EN), persona mapping, Gemini mock (success, cascade, missing key) |
-| test_views.py (reports) | 4 | Report views: list (own only), detail, cross-user 404 regression, validation |
+| test_report_engine.py | 37 | Report engine: format helpers (SPM grades, STPM grades, human-readable signals BM/EN, courses sorted by fit score, insights), prompts (SPM BM/EN, STPM BM/EN, placeholder parity), exam_type routing (SPM/STPM), Gemini mock (success, cascade, missing key) |
+| test_views.py (reports) | 8 | Report views: list (own only), detail, cross-user 404 regression, validation, student name passthrough, STPM exam_type passthrough |
 | test_outcomes.py | 10 | Outcome CRUD (create, duplicate 409, with institution, missing course), list (own only), update status, cross-user 404, delete, auth enforcement (GET/POST 401) |
 | test_pathways.py | 37 | Matric/STPM eligibility: grade helpers (is_credit, meets_min, find_best_elective), all 4 Matric tracks (sains, kejuruteraan, sains_komputer, perakaunan), both STPM bidangs (sains, sains_sosial), merit calculation, mata gred threshold, check_all_pathways integration, pathway fit score (base, academic bonus, signal cap) |
 | test_profile_fields.py | 19 | Expanded profile fields (NRIC, address, phone, income, siblings defaults), SavedCourse interest_status (default, set, got_offer), profile API (GET new fields, PUT new fields), saved-courses API (GET includes status, PATCH updates status), STPM profile fields (exam_type default, STPM fields stored, defaults empty/null), profile sync STPM (create, update, GET returns fields) |
@@ -141,6 +141,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_eligibility_service.py | 19 | Service module: compute_student_merit (precomputed/grades/hist rename/default coq), compute_course_merit (standard/no cutoff/tvet/matric/stpm), deduplicate_pismp (passthrough/identical collapse/language merge), sort_eligible_courses (merit order/pismp/iljtm), compute_stats (source_type/pathway_type) |
 | test_preu_courses.py | 4 | Pre-U eligibility (stats include matric/stpm), search (level Pra-U, text Matrikulasi, source_type matric) |
 | test_admin_auth.py | 14 | PartnerAdmin model (CRUD, super admin flag), PartnerAdminMixin (UID lookup, email fallback, UID backfill), invite endpoint (super admin only, validation), orgs endpoint, AdminRoleView (admin_name) |
+| test_stpm_enrichment.py | 40 | RIASEC mapping (completeness, all 6 types, design doc keys R/I/A/S/E/C, umum excluded), difficulty mapping (valid levels, medicine=high, law=high, business=low), efficacy mapping (valid domains, eng=quantitative, med=scientific, law=verbal, design=practical), mapping consistency (same keys across all 3 maps), FieldTaxonomy riasec_primary (default, valid code, leaf enrichment), StpmCourse fields (default, set/read, all three together), enrich command (dry run, apply RIASEC/difficulty/efficacy, unmapped field_key, taxonomy update, idempotent, multi-course same field) |
 | test_field_taxonomy.py | 140 | FieldTaxonomy model integrity (7), SPM classify_course (51: all frontend_label variants incl. 24 production labels, substring regression tests), STPM classify_stpm_course (57: 10 SPM-matching categories with course_name sub-classification, ~40 STPM-specific categories, edge cases), FieldListView API (4: groups structure, children count), UA course-name overrides (11) |
 
 ### Annual STPM Data Refresh (before UPU application season)
@@ -170,7 +171,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (654 collected, 654 must pass, SPM golden master = 5319, STPM golden master = 2026)
+# 1. Run all tests (789 collected, 789 must pass, SPM golden master = 5319, STPM golden master = 2026)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -182,7 +183,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-775 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
+789 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -211,9 +212,10 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/management/commands/generate_stpm_headlines.py` | Gemini-powered STPM headline generator | No |
 | `apps/courses/management/commands/backfill_spm_field_key.py` | Deterministic SPM field_key classifier + backfill | No |
 | `apps/courses/management/commands/classify_stpm_fields.py` | Deterministic STPM field_key classifier + backfill | No |
+| `apps/courses/management/commands/enrich_stpm_riasec.py` | RIASEC type, difficulty, efficacy domain classifier for StpmCourse + FieldTaxonomy | No |
 | `apps/courses/insights_engine.py` | Deterministic insights from eligibility results | No |
 | `apps/reports/report_engine.py` | Gemini-powered narrative report generator | No |
-| `apps/reports/prompts.py` | BM/EN counselor report prompt templates | No |
+| `apps/reports/prompts.py` | SPM/STPM × BM/EN counselor report prompt templates | No |
 | `apps/reports/views.py` | Report API endpoints (generate, detail, list) | No |
 
 ## Known Issues
@@ -223,20 +225,29 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**STPM Quiz Engine Sprint 1 COMPLETE (2026-03-18)**
-- STPM quiz engine with subject-seeded branching (Science/Arts/Mixed), RIASEC seed calculation, grade-adaptive Q4, cross-domain Q5 with stream asymmetry
-- 3 new API endpoints: questions, resolve, submit
-- 102 new tests (775 total backend, 0 failures)
+**Report Prompt Improvements Sprint COMPLETE (2026-03-18)**
+- Two-track report prompts: SPM (BM+EN) + STPM (BM+EN) with exam_type routing
+- Human-readable quiz signals (36 labels, bilingual), dropped persona system
+- Smart course selection (top 5 by fit score), field display names from taxonomy
+- Student name wired into prompts, STPM grade+CGPA+MUET formatter
+- Plan: `docs/plans/2026-03-18-report-prompt-improvements.md`
 
-**Current state:** 775 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
+**STPM Quiz Engine Sprint 2 COMPLETE (2026-03-18)**
+- 3 new fields on StpmCourse (`riasec_type`, `difficulty_level`, `efficacy_domain`) + `riasec_primary` on FieldTaxonomy
+- `enrich_stpm_riasec` management command — deterministic classifier from field_key mappings
+- Migration 0044. 40 new tests. 829 total backend, 0 failures.
 
-**Next: STPM Quiz Sprint 2 — Data Enrichment**
-- Add `riasec_type`, `difficulty_level`, `efficacy_domain` to StpmCourse model
-- Add `riasec_primary` to FieldTaxonomy
-- AI-classify 1,113 STPM courses for RIASEC type
-- Design doc: `docs/plans/2026-03-18-stpm-quiz-design.md`
+**Current state:** 829 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
+
+**Next: STPM Quiz Sprint 3 — Ranking Integration**
+- Implement new STPM ranking formula with RIASEC alignment, efficacy modifier, goal alignment, resilience discount
+- Implement result framing logic (3 modes: confirmatory/guided/discovery)
+- Must run `enrich_stpm_riasec --apply` against Supabase first (local SQLite only has `umum` field_keys)
+- Design doc: `halatuju-web/docs/plans/2026-03-18-stpm-quiz-design.md` (Sections 11, 12)
 
 **Pending work (parked)**
+- Report: MASCO career data in prompt, institution/location context (low priority)
+- Report: EN language selector in frontend
 - STPM Pipeline: test scrapers against live MOHE, extend audit_data, course deactivation mechanism
 - Phone/OTP login (blocked — Twilio ~RM12/mo)
 - Grade modulation layer
