@@ -7,7 +7,7 @@ Covers:
 - POST /api/v1/reports/generate/ — validation (no real Gemini calls)
 - FK bug regression: views must filter by student__supabase_user_id, not student_id
 """
-from unittest.mock import patch
+from unittest.mock import patch, ANY
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from apps.courses.models import StudentProfile
@@ -96,6 +96,54 @@ class TestReportViews(TestCase):
         """GET /api/v1/reports/<id>/ returns 404 for another user's report."""
         response = self.client.get(f'/api/v1/reports/{self.other_report.id}/')
         self.assertEqual(response.status_code, 404)
+
+    @patch('apps.reports.views.generate_report')
+    def test_generate_passes_student_name(self, mock_gen):
+        """POST /api/v1/reports/generate/ passes profile.name as student_name."""
+        # Set a name on the profile
+        self.profile.name = 'Ahmad bin Ali'
+        self.profile.save()
+
+        mock_gen.return_value = {
+            'markdown': '# Report\nHello Ahmad.',
+            'model_used': 'gemini-2.5-flash',
+            'counsellor_name': 'Cikgu Gopal',
+            'generation_time_ms': 100,
+        }
+
+        self.client.post(
+            '/api/v1/reports/generate/',
+            {'eligible_courses': [{'course_id': 'C001'}], 'insights': {}},
+            format='json',
+        )
+
+        mock_gen.assert_called_once()
+        call_kwargs = mock_gen.call_args[1]
+        self.assertEqual(call_kwargs['student_name'], 'Ahmad bin Ali')
+
+    @patch('apps.reports.views.generate_report')
+    def test_generate_defaults_student_name_when_blank(self, mock_gen):
+        """POST /api/v1/reports/generate/ defaults student_name to 'pelajar' when name is blank."""
+        # Ensure name is blank
+        self.profile.name = ''
+        self.profile.save()
+
+        mock_gen.return_value = {
+            'markdown': '# Report\nHello pelajar.',
+            'model_used': 'gemini-2.5-flash',
+            'counsellor_name': 'Cikgu Gopal',
+            'generation_time_ms': 100,
+        }
+
+        self.client.post(
+            '/api/v1/reports/generate/',
+            {'eligible_courses': [{'course_id': 'C001'}], 'insights': {}},
+            format='json',
+        )
+
+        mock_gen.assert_called_once()
+        call_kwargs = mock_gen.call_args[1]
+        self.assertEqual(call_kwargs['student_name'], 'pelajar')
 
     def test_generate_report_requires_eligible_courses(self):
         """POST /api/v1/reports/generate/ returns 400 without eligible_courses."""

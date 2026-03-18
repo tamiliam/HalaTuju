@@ -84,6 +84,7 @@ class GenerateReportView(APIView):
             eligible_courses=eligible_courses,
             insights=insights,
             student_signals=student_signals,
+            student_name=profile.name or 'pelajar',
             lang=lang,
         )
 
