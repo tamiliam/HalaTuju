@@ -70,11 +70,22 @@ class Command(BaseCommand):
 
                 while True:
                     url = LISTING_URL.format(cat=cat_code, page=page_num)
-                    page.goto(url, wait_until='networkidle')
+                    page.goto(url, wait_until='domcontentloaded')
+                    # Wait for programme cards to render (executive-data-value elements)
+                    try:
+                        page.wait_for_selector('.executive-data-value', timeout=30000)
+                    except Exception:
+                        self.stdout.write('  Warning: timed out waiting for cards to load')
+                    # Brief extra wait for any remaining JS rendering
+                    page.wait_for_timeout(2000)
 
                     # Extract total from heading "Paparan X - Y daripada Z carian"
-                    heading = page.query_selector('h5')
-                    heading_text = heading.inner_text() if heading else ''
+                    heading_text = ''
+                    for h5 in page.query_selector_all('h5'):
+                        text = h5.inner_text()
+                        if 'daripada' in text:
+                            heading_text = text
+                            break
 
                     if page_num == 1:
                         total_match = re.search(r'daripada (\d+)', heading_text)
@@ -119,41 +130,56 @@ class Command(BaseCommand):
         """Parse programme cards from the current page."""
         cards = page.evaluate("""() => {
             const results = [];
-            const container = document.querySelector('h5')?.closest('div')?.parentElement;
-            if (!container) return results;
+            const seen = new Set();
+            const nameLinks = document.querySelectorAll('a[href="#"]');
 
-            const cardDivs = container.querySelectorAll(':scope > div');
-            for (const card of cardDivs) {
-                const nameLink = card.querySelector('a[href="#"]');
-                if (!nameLink) continue;
+            for (const link of nameLinks) {
+                // Walk up to find the card container (must have executive-data-value elements)
+                let card = link;
+                for (let i = 0; i < 8; i++) {
+                    card = card.parentElement;
+                    if (!card) break;
+                    if (card.querySelectorAll('.executive-data-value').length >= 2) break;
+                }
+                if (!card || !card.querySelectorAll('.executive-data-value').length) continue;
 
-                const name = nameLink.textContent.replace('#', '').trim();
+                // Extract name (strip # markers and whitespace)
+                const name = link.textContent.replace(/#/g, '').trim();
+                if (!name || name === 'Program Pengajian') continue;
 
-                const uniP = card.querySelector('p');
+                // Extract university from <p> tag near the link
+                const uniP = link.parentElement?.querySelector('p');
                 const university = uniP ? uniP.textContent.trim() : '';
 
-                const allText = card.innerText;
-                const codeMatch = allText.match(/KOD PROGRAM\\s*([A-Z]{2}\\d+)/);
-                const code = codeMatch ? codeMatch[1] : '';
+                // Extract structured data fields
+                const labels = card.querySelectorAll('.executive-data-label');
+                const values = card.querySelectorAll('.executive-data-value');
+                const data = {};
+                for (let k = 0; k < labels.length; k++) {
+                    data[labels[k].textContent.trim()] = values[k]?.textContent?.trim() || '';
+                }
 
-                const meritMatch = allText.match(/(\\d+\\.\\d+)%/);
+                const code = data['KOD PROGRAM'] || '';
+                if (!code || seen.has(code)) continue;
+                seen.add(code);
+
+                const meritRaw = data['PURATA MARKAH MERIT'] || '';
+                const meritMatch = meritRaw.match(/([\\.\\d]+)%/);
                 const merit = meritMatch ? meritMatch[1] : '';
 
-                const yearMatch = allText.match(/TAHUN\\s*(\\d{4})/);
-                const year = yearMatch ? yearMatch[1] : '';
+                const year = data['TAHUN'] || '';
 
+                // Extract badges (within THIS card only)
                 const badgeEls = card.querySelectorAll('[class*="cursor"]');
                 const badges = [];
                 for (const b of badgeEls) {
                     const t = b.textContent.trim();
-                    if (t && !t.includes('Merit') && t.length < 30) {
+                    if (t && t !== '#' && !t.includes('Merit') && t.length < 30) {
                         badges.push(t);
                     }
                 }
 
-                if (code) {
-                    results.push({ name, university, code, merit, year, badges: badges.join('|') });
-                }
+                results.push({ name, university, code, merit, year, badges: badges.join('|') });
             }
             return results;
         }""")
