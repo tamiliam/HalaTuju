@@ -33,6 +33,14 @@ class FieldTaxonomy(models.Model):
         help_text="Parent group for dropdown grouping (~9 top-level groups)"
     )
     sort_order = models.IntegerField(default=0)
+    riasec_primary = models.CharField(
+        max_length=1, blank=True, default='',
+        choices=[
+            ('R', 'Realistic'), ('I', 'Investigative'), ('A', 'Artistic'),
+            ('S', 'Social'), ('E', 'Enterprising'), ('C', 'Conventional'),
+        ],
+        help_text="Primary Holland RIASEC type for this field"
+    )
 
     class Meta:
         db_table = 'field_taxonomy'
@@ -699,6 +707,31 @@ class StpmCourse(models.Model):
     mohe_url = models.URLField(
         max_length=500, blank=True, default='',
         help_text='Link to MOHE ePanduan programme page'
+    )
+
+    # Quiz enrichment fields (Sprint 2 — RIASEC matching)
+    riasec_type = models.CharField(
+        max_length=1, blank=True, default='',
+        choices=[
+            ('R', 'Realistic'), ('I', 'Investigative'), ('A', 'Artistic'),
+            ('S', 'Social'), ('E', 'Enterprising'), ('C', 'Conventional'),
+        ],
+        help_text="Primary Holland RIASEC type for this programme"
+    )
+    difficulty_level = models.CharField(
+        max_length=10, blank=True, default='',
+        choices=[
+            ('low', 'Low'), ('moderate', 'Moderate'), ('high', 'High'),
+        ],
+        help_text="Programme difficulty for resilience matching"
+    )
+    efficacy_domain = models.CharField(
+        max_length=15, blank=True, default='',
+        choices=[
+            ('quantitative', 'Quantitative'), ('scientific', 'Scientific'),
+            ('verbal', 'Verbal'), ('practical', 'Practical'),
+        ],
+        help_text="Primary cognitive domain for efficacy matching"
     )
 
     # Career pathway: links to MASCO occupation codes
