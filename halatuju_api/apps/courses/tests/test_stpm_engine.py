@@ -173,3 +173,33 @@ class TestStpmEligibility:
         )
         assert len(results) > 0
         assert 'merit_score' in results[0]
+
+
+@pytest.mark.django_db
+class TestStpmIsActiveFiltering:
+    """Inactive courses must be excluded from eligibility checks."""
+
+    @pytest.fixture(autouse=True)
+    def load_data(self):
+        from django.core.management import call_command
+        from io import StringIO
+        call_command('loaddata', 'stpm_courses', 'stpm_requirements', stdout=StringIO(), verbosity=0)
+
+    def test_inactive_course_excluded_from_eligibility(self):
+        """Mark a course inactive — it must disappear from results."""
+        from apps.courses.models import StpmCourse
+        # Pick any course and deactivate it
+        course = StpmCourse.objects.first()
+        original_id = course.course_id
+        course.is_active = False
+        course.save(update_fields=['is_active'])
+
+        # Run eligibility with the strongest student (matches most courses)
+        results = check_stpm_eligibility(
+            stpm_grades={'PA': 'A', 'MATH_T': 'A', 'PHYSICS': 'A', 'CHEMISTRY': 'A'},
+            spm_grades={'bm': 'A', 'eng': 'A', 'hist': 'A', 'math': 'A', 'addmath': 'A', 'sci': 'A'},
+            cgpa=4.0,
+            muet_band=6,
+        )
+        result_ids = [r['course_id'] for r in results]
+        assert original_id not in result_ids

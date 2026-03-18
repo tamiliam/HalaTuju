@@ -223,7 +223,7 @@ class CourseSearchView(APIView):
         if include_stpm and source_type and source_type.lower() != 'ua':
             include_stpm = False
         if include_stpm:
-            stpm_qs = StpmCourse.objects.select_related('requirement', 'institution').all()
+            stpm_qs = StpmCourse.objects.select_related('requirement', 'institution').filter(is_active=True)
 
             # Exclude bumiputera-only courses
             stpm_qs = stpm_qs.exclude(requirement__req_bumiputera=True)
@@ -274,7 +274,7 @@ class CourseSearchView(APIView):
             Course.objects.values_list('level', flat=True)
             .distinct().order_by('level')
         )
-        stpm_levels = ['Ijazah Sarjana Muda'] if StpmCourse.objects.exists() else []
+        stpm_levels = ['Ijazah Sarjana Muda'] if StpmCourse.objects.filter(is_active=True).exists() else []
         all_levels = sorted(set(spm_levels + stpm_levels))
 
         spm_field_keys = list(
@@ -283,7 +283,7 @@ class CourseSearchView(APIView):
             .distinct()
         )
         stpm_field_keys = list(
-            StpmCourse.objects.exclude(field_key__isnull=True)
+            StpmCourse.objects.filter(is_active=True).exclude(field_key__isnull=True)
             .values_list('field_key', flat=True)
             .distinct()
         )
@@ -296,7 +296,7 @@ class CourseSearchView(APIView):
             .distinct().order_by('field')
         )
         stpm_fields = list(
-            StpmCourse.objects.exclude(field='')
+            StpmCourse.objects.filter(is_active=True).exclude(field='')
             .values_list('field', flat=True)
             .distinct().order_by('field')
         )
@@ -1429,9 +1429,11 @@ class StpmRankingView(APIView):
         signals = request.data.get('student_signals', {})
 
         ranked = get_stpm_ranked_results(courses, student_cgpa, signals)
+        framing = get_result_framing(signals)
         return Response({
             'ranked_courses': ranked,
             'total': len(ranked),
+            'framing': framing,
         })
 
 
@@ -1444,7 +1446,7 @@ class StpmSearchView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        qs = StpmCourse.objects.select_related('requirement').all()
+        qs = StpmCourse.objects.select_related('requirement').filter(is_active=True)
 
         q = request.query_params.get('q', '').strip()
         if q:
@@ -1490,11 +1492,11 @@ class StpmSearchView(APIView):
 
         filters = {
             'universities': sorted(
-                StpmCourse.objects.values_list('university', flat=True)
+                StpmCourse.objects.filter(is_active=True).values_list('university', flat=True)
                 .distinct().order_by('university')
             ),
             'streams': sorted(
-                StpmCourse.objects.values_list('stream', flat=True)
+                StpmCourse.objects.filter(is_active=True).values_list('stream', flat=True)
                 .distinct().order_by('stream')
             ),
         }

@@ -211,3 +211,41 @@ class TestStpmDetailSubjectGroups:
         resp = self.client.get('/api/v1/stpm/courses/TEST001/')
         req = resp.json()['requirements']
         assert req['no_disability'] is True
+
+
+@pytest.mark.django_db
+class TestStpmSearchIsActive:
+    """Inactive courses must be excluded from search."""
+
+    @pytest.fixture(autouse=True)
+    def load_data(self):
+        from django.core.management import call_command
+        from io import StringIO
+        call_command('loaddata', 'stpm_courses', 'stpm_requirements', stdout=StringIO(), verbosity=0)
+
+    def test_inactive_course_excluded_from_search(self, client):
+        from apps.courses.models import StpmCourse
+        total_before = StpmCourse.objects.filter(is_active=True).count()
+
+        # Deactivate one course
+        course = StpmCourse.objects.first()
+        course.is_active = False
+        course.save(update_fields=['is_active'])
+
+        response = client.get('/api/v1/stpm/search/')
+        assert response.status_code == 200
+        assert response.data['total_count'] == total_before - 1
+
+    def test_inactive_course_excluded_from_unified_search(self, client):
+        from apps.courses.models import StpmCourse
+        total_active = StpmCourse.objects.filter(is_active=True).count()
+
+        # Deactivate one course
+        course = StpmCourse.objects.first()
+        course.is_active = False
+        course.save(update_fields=['is_active'])
+
+        response = client.get('/api/v1/courses/search/?qualification=STPM')
+        assert response.status_code == 200
+        stpm_results = [r for r in response.data['courses'] if r.get('qualification') == 'STPM']
+        assert len(stpm_results) < total_active

@@ -379,7 +379,7 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
     from apps.courses.models import StpmRequirement
 
     eligible = []
-    all_reqs = StpmRequirement.objects.select_related('course').all()
+    all_reqs = StpmRequirement.objects.select_related('course').filter(course__is_active=True)
 
     for req in all_reqs:
         # 1. CGPA check
@@ -430,6 +430,9 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
             'stream': course.stream,
             'field': course.field or '',
             'field_key': course.field_key_id or '',
+            'riasec_type': course.riasec_type or '',
+            'difficulty_level': course.difficulty_level or '',
+            'efficacy_domain': course.efficacy_domain or '',
             'min_cgpa': req.min_cgpa,
             'min_muet_band': req.min_muet_band,
             'req_interview': req.req_interview,
