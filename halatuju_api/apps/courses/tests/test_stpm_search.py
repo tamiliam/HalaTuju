@@ -134,3 +134,80 @@ class TestStpmCourseDetailAPI:
         resp = self.client.get(f'/api/v1/stpm/courses/{course.course_id}/')
         assert resp.status_code == 200
         assert resp.json()['mohe_url'] == ''
+
+
+@pytest.mark.django_db
+class TestStpmDetailSubjectGroups:
+    """Tests for human-readable subject group rendering in STPM detail."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        from apps.courses.models import FieldTaxonomy, StpmCourse, StpmRequirement
+        self.client = APIClient()
+        field_key, _ = FieldTaxonomy.objects.get_or_create(
+            key='engineering',
+            defaults={'name_en': 'Engineering', 'name_ms': 'Kejuruteraan', 'name_ta': 'பொறியியல்', 'image_slug': 'engineering'},
+        )
+        self.course = StpmCourse.objects.create(
+            course_id='TEST001',
+            course_name='Test Engineering',
+            university='Test University',
+            stream='science',
+            field_key=field_key,
+        )
+        self.req = StpmRequirement.objects.create(
+            course=self.course,
+            stpm_req_physics=True,
+            stpm_subject_group=[
+                {'min_count': 2, 'min_grade': 'A', 'subjects': ['PHYSICS', 'CHEMISTRY', 'MATH_T']},
+                {'min_count': 1, 'min_grade': 'C', 'subjects': None},
+            ],
+            spm_subject_group=[
+                {'min_count': 3, 'min_grade': 'B', 'subjects': ['PHYSICS_SPM', 'CHEMISTRY_SPM', 'MATH']},
+                {'min_count': 1, 'min_grade': 'C', 'subjects': None, 'exclude': ['EKONOMI_SPM', 'PERNIAGAAN_SPM']},
+            ],
+            no_disability=True,
+        )
+
+    def test_detail_has_stpm_subject_groups_display(self):
+        resp = self.client.get('/api/v1/stpm/courses/TEST001/')
+        req = resp.json()['requirements']
+        groups = req['stpm_subject_groups_display']
+        assert len(groups) == 2
+        assert groups[0]['min_count'] == 2
+        assert groups[0]['min_grade'] == 'A'
+        assert 'Physics' in groups[0]['subjects']
+        assert 'Chemistry' in groups[0]['subjects']
+        assert 'Mathematics (T)' in groups[0]['subjects']
+        assert groups[0]['any_subject'] is False
+        assert groups[1]['min_count'] == 1
+        assert groups[1]['any_subject'] is True
+        assert groups[1]['subjects'] == []
+
+    def test_detail_has_spm_subject_groups_display(self):
+        resp = self.client.get('/api/v1/stpm/courses/TEST001/')
+        req = resp.json()['requirements']
+        groups = req['spm_subject_groups_display']
+        assert len(groups) == 2
+        assert groups[0]['min_count'] == 3
+        assert groups[0]['min_grade'] == 'B'
+        assert 'Fizik' in groups[0]['subjects']
+        assert 'Kimia' in groups[0]['subjects']
+        assert 'Matematik' in groups[0]['subjects']
+        assert groups[1]['any_subject'] is True
+        assert len(groups[1]['exclude']) == 2
+        assert 'Ekonomi' in groups[1]['exclude']
+
+    def test_detail_empty_groups_when_no_subject_group(self):
+        self.req.stpm_subject_group = None
+        self.req.spm_subject_group = None
+        self.req.save()
+        resp = self.client.get('/api/v1/stpm/courses/TEST001/')
+        req = resp.json()['requirements']
+        assert req['stpm_subject_groups_display'] == []
+        assert req['spm_subject_groups_display'] == []
+
+    def test_detail_includes_no_disability(self):
+        resp = self.client.get('/api/v1/stpm/courses/TEST001/')
+        req = resp.json()['requirements']
+        assert req['no_disability'] is True

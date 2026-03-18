@@ -1527,6 +1527,147 @@ class StpmCourseDetailView(APIView):
         ('spm_credit_science', 'Sains (credit)'),
     ]
 
+    STPM_SUBJECT_DISPLAY = {
+        'PA': 'Pengajian Am', 'MATH_T': 'Mathematics (T)', 'MATH_M': 'Mathematics (M)',
+        'PHYSICS': 'Physics', 'CHEMISTRY': 'Chemistry', 'BIOLOGY': 'Biology',
+        'ECONOMICS': 'Economics', 'ACCOUNTING': 'Accounting', 'BUSINESS': 'Business Studies',
+        'BAHASA_MELAYU': 'Bahasa Melayu', 'BAHASA_CINA': 'Bahasa Cina',
+        'BAHASA_TAMIL': 'Bahasa Tamil', 'BAHASA_ARAB': 'Bahasa Arab',
+        'SEJARAH': 'Sejarah', 'GEOGRAFI': 'Geografi',
+        'KESUSASTERAAN_MELAYU': 'Kesusasteraan Melayu',
+        'LITERATURE_IN_ENGLISH': 'Literature in English',
+        'SENI_VISUAL': 'Seni Visual', 'SAINS_SUKAN': 'Sains Sukan', 'ICT': 'ICT',
+        'SYARIAH': 'Syariah', 'USULUDDIN': 'Usuluddin', 'TAHFIZ_AL_QURAN': 'Tahfiz Al-Quran',
+    }
+
+    SPM_SUBJECT_DISPLAY = {
+        'BM': 'Bahasa Melayu', 'BI': 'Bahasa Inggeris', 'MATH': 'Matematik',
+        'ADD_MATH': 'Matematik Tambahan', 'SEJARAH': 'Sejarah',
+        'SCIENCE_SPM': 'Sains', 'SAINS_TAMBAHAN_SPM': 'Sains Tambahan',
+        'APPLIED_SCIENCE_SPM': 'Sains Gunaan',
+        'PHYSICS_SPM': 'Fizik', 'CHEMISTRY_SPM': 'Kimia', 'BIOLOGY_SPM': 'Biologi',
+        'EKONOMI_SPM': 'Ekonomi', 'EKONOMI_ASAS_SPM': 'Ekonomi Asas',
+        'PRINSIP_PERAKAUNAN_SPM': 'Prinsip Perakaunan',
+        'PERNIAGAAN_SPM': 'Perniagaan', 'PERDAGANGAN_SPM': 'Perdagangan',
+        'GEOGRAFI_SPM': 'Geografi',
+        'PENDIDIKAN_MORAL_SPM': 'Pendidikan Moral',
+        'PENDIDIKAN_ISLAM_SPM': 'Pendidikan Islam',
+        'ICT_SPM': 'ICT', 'SAINS_KOMPUTER_SPM': 'Sains Komputer',
+        'PENDIDIKAN_SENI_VISUAL_SPM': 'Pendidikan Seni Visual',
+        'LUKISAN_KEJURUTERAAN_SPM': 'Lukisan Kejuruteraan',
+        'GRAFIK_KOMUNIKASI_TEKNIKAL_SPM': 'Grafik Komunikasi Teknikal',
+        'TEKNOLOGI_KEJURUTERAAN_SPM': 'Teknologi Kejuruteraan',
+        'REKA_CIPTA_SPM': 'Reka Cipta',
+        'SAINS_SUKAN_SPM': 'Sains Sukan',
+        'PENGETAHUAN_SAINS_SUKAN_SPM': 'Pengetahuan Sains Sukan',
+        'SAINS_RUMAH_TANGGA_SPM': 'Sains Rumah Tangga',
+        'EKONOMI_RUMAH_TANGGA_SPM': 'Ekonomi Rumah Tangga',
+        'SAINS_PERTANIAN_SPM': 'Sains Pertanian',
+        'PERTANIAN_SPM': 'Pertanian',
+        'PENGAJIAN_KEUSAHAWANAN_SPM': 'Pengajian Keusahawanan',
+        'BAHASA_TAMIL_SPM': 'Bahasa Tamil', 'BAHASA_CINA_SPM': 'Bahasa Cina',
+        'BAHASA_ARAB_SPM': 'Bahasa Arab', 'BAHASA_ARAB_TINGGI_SPM': 'Bahasa Arab Tinggi',
+        'BAHASA_ARAB_MUASIRAH_SPM': 'Bahasa Arab Muasirah',
+        'BAHASA_IBAN_SPM': 'Bahasa Iban', 'BAHASA_KADAZANDUSUN_SPM': 'Bahasa Kadazandusun',
+        'BAHASA_SEMAI_SPM': 'Bahasa Semai',
+        'KESUSASTERAAN_MELAYU_SPM': 'Kesusasteraan Melayu',
+        'KESUSASTERAAN_INGGERIS_SPM': 'Kesusasteraan Inggeris',
+        'KESUSASTERAAN_TAMIL_SPM': 'Kesusasteraan Tamil',
+        'KESUSASTERAAN_CINA_SPM': 'Kesusasteraan Cina',
+        'LITERATURE_IN_ENGLISH_SPM': 'Literature in English',
+        'REKA_BENTUK_GRAFIK_SPM': 'Reka Bentuk Grafik',
+        'REKA_BENTUK_GRAFIK_DIGITAL_SPM': 'Reka Bentuk Grafik Digital',
+        'KOMUNIKASI_VISUAL_SPM': 'Komunikasi Visual',
+        'PRODUKSI_MULTIMEDIA_SPM': 'Produksi Multimedia',
+        'GRAFIK_BERKOMPUTER_SPM': 'Grafik Berkomputer',
+        'PENDIDIKAN_SYARIAH_ISLAMIAH_SPM': 'Pendidikan Syariah Islamiah',
+        'PENDIDIKAN_AL_QURAN_SPM': 'Pendidikan Al-Quran',
+        'TASAWWUR_ISLAM_SPM': 'Tasawwur Islam',
+        'AL_SYARIAH_SPM': 'Al-Syariah', 'USUL_AL_DIN_SPM': 'Usul Al-Din',
+        'MANAHIJ_SPM': 'Manahij', 'AL_ADAB_SPM': 'Al-Adab',
+        'TURATH_BAHASA_ARAB_SPM': 'Turath Bahasa Arab',
+        'TURATH_DIRASAT_ISLAMIAH_SPM': 'Turath Dirasat Islamiah',
+        'TURATH_AL_QURAN_SPM': 'Turath Al-Quran',
+        'MAHARAT_AL_QURAN_SPM': 'Maharat Al-Quran',
+        'HIFZ_AL_QURAN_SPM': 'Hifz Al-Quran',
+        'PRINSIP_ELEKTRIK_SPM': 'Prinsip Elektrik',
+        'APLIKASI_ELEKTRIK_SPM': 'Aplikasi Elektrik',
+        'APLIKASI_KOMPUTER_PERNIAGAAN_SPM': 'Aplikasi Komputer Perniagaan',
+        'KEJURUTERAAN_AWAM_SPM': 'Kejuruteraan Awam',
+        'KEJURUTERAAN_EE_SPM': 'Kejuruteraan Elektrik & Elektronik',
+        'KEJURUTERAAN_MEKANIKAL_SPM': 'Kejuruteraan Mekanikal',
+        'TEKNOLOGI_BINAAN_SPM': 'Teknologi Binaan',
+        'TEKNOLOGI_BINAAN_BANGUNAN_SPM': 'Teknologi Binaan Bangunan',
+        'HIASAN_DALAMAN_SPM': 'Hiasan Dalaman',
+        'BAHAN_BINAAN_SPM': 'Bahan Binaan',
+        'KATERING_SPM': 'Katering', 'KIMPALAN_SPM': 'Kimpalan',
+        'MENSERVIS_AUTOMOBIL_SPM': 'Menservis Automobil',
+        'MENSERVIS_MOTOSIKAL_SPM': 'Menservis Motosikal',
+        'MENSERVIS_ELEKTRIK_SPM': 'Menservis Elektrik',
+        'MENSERVIS_PENYEJUKAN_SPM': 'Menservis Penyejukan',
+        'PEMBINAAN_DOMESTIK_SPM': 'Pembinaan Domestik',
+        'PEMBUATAN_PERABOT_SPM': 'Pembuatan Perabot',
+        'PEMESINAN_BERKOMPUTER_SPM': 'Pemesinan Berkomputer',
+        'PEMPROSESAN_MAKANAN_SPM': 'Pemprosesan Makanan',
+        'PENDAWAIAN_DOMESTIK_SPM': 'Pendawaian Domestik',
+        'KERJA_PAIP_SPM': 'Kerja Paip',
+        'REKAAN_JAHITAN_SPM': 'Rekaan Jahitan',
+        'PENJAGAAN_MUKA_SPM': 'Penjagaan Muka',
+        'ASUHAN_KANAK_KANAK_SPM': 'Asuhan Kanak-kanak',
+        'GERONTOLOGI_SPM': 'Gerontologi',
+        'AKUAKULTUR_SPM': 'Akuakultur',
+        'LANDSKAP_DAN_NURSERI_SPM': 'Landskap dan Nurseri',
+        'TANAMAN_MAKANAN_SPM': 'Tanaman Makanan',
+        'ASAS_KELESTARIAN_SPM': 'Asas Kelestarian',
+        'SENI_REKA_TANDA_SPM': 'Seni Reka Tanda',
+        'PRODUKSI_REKA_TANDA_SPM': 'Produksi Reka Tanda',
+        'REKA_BENTUK_INDUSTRI_SPM': 'Reka Bentuk Industri',
+        'REKA_BENTUK_KRAF_SPM': 'Reka Bentuk Kraf',
+        'MULTIMEDIA_KREATIF_SPM': 'Multimedia Kreatif',
+        'SENI_HALUS_3D_SPM': 'Seni Halus 3D',
+        'SENI_HALUS_2D_SPM': 'Seni Halus 2D',
+        'SEJARAH_PENGURUSAN_SENI_SPM': 'Sejarah Pengurusan Seni',
+        'PENDIDIKAN_MUZIK_SPM': 'Pendidikan Muzik',
+        'AURAL_TEORI_MUZIK_SPM': 'Aural Teori Muzik',
+        'MUZIK_KOMPUTER_SPM': 'Muzik Komputer',
+        'ALAT_MUZIK_UTAMA_SPM': 'Alat Muzik Utama',
+        'PRODUKSI_SENI_PERSEMBAHAN_SPM': 'Produksi Seni Persembahan',
+        'SINOGRAFI_SPM': 'Sinografi', 'PENULISAN_SKRIP_SPM': 'Penulisan Skrip',
+        'LAKONAN_SPM': 'Lakonan',
+        'APRESIASI_TARI_SPM': 'Apresiasi Tari',
+        'KOREOGRAFI_TARI_SPM': 'Koreografi Tari',
+        'TARIAN_SPM': 'Tarian',
+    }
+
+    @staticmethod
+    def _build_groups_display(groups_json, display_map):
+        """Transform subject group JSON into display-ready list."""
+        if not groups_json:
+            return []
+        result = []
+        for group in groups_json:
+            if not isinstance(group, dict):
+                continue
+            entry = {
+                'min_count': group.get('min_count', 1),
+                'min_grade': group.get('min_grade', 'C'),
+                'any_subject': group.get('subjects') is None,
+                'subjects': [],
+                'exclude': [],
+            }
+            if group.get('subjects'):
+                entry['subjects'] = [
+                    display_map.get(code, code.replace('_', ' ').title())
+                    for code in group['subjects']
+                ]
+            if group.get('exclude'):
+                entry['exclude'] = [
+                    display_map.get(code, code.replace('_', ' ').title())
+                    for code in group['exclude']
+                ]
+            result.append(entry)
+        return result
+
     def get(self, request, course_id):
         try:
             prog = StpmCourse.objects.select_related('requirement', 'institution').prefetch_related(
@@ -1563,6 +1704,12 @@ class StpmCourseDetailView(APIView):
                 'stpm_subject_group': req.stpm_subject_group,
                 'spm_prerequisites': spm_prerequisites,
                 'spm_subject_group': req.spm_subject_group,
+                'stpm_subject_groups_display': self._build_groups_display(
+                    req.stpm_subject_group, self.STPM_SUBJECT_DISPLAY
+                ),
+                'spm_subject_groups_display': self._build_groups_display(
+                    req.spm_subject_group, self.SPM_SUBJECT_DISPLAY
+                ),
                 'req_interview': req.req_interview,
                 'no_colorblind': req.no_colorblind,
                 'req_medical_fitness': req.req_medical_fitness,
