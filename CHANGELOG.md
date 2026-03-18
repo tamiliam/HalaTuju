@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — STPM Quiz Engine Sprint 2: Data Enrichment (2026-03-18)
+
+### Added
+- **3 new fields on StpmCourse**: `riasec_type` (R/I/A/S/E/C), `difficulty_level` (low/moderate/high), `efficacy_domain` (quantitative/scientific/verbal/practical) — for quiz-informed ranking in Sprint 3
+- **`riasec_primary` field on FieldTaxonomy**: maps each field to its primary Holland RIASEC type
+- **`enrich_stpm_riasec` management command**: deterministic classifier using field_key → RIASEC/difficulty/efficacy mappings from the design doc. Covers 37 field_keys (all except `umum` catch-all). Dry-run by default, `--apply` to save.
+- **Migration 0044**: `add_riasec_difficulty_efficacy_fields`
+
+### Tests
+- 40 new enrichment tests (mapping completeness, correctness, consistency, DB fields, management command)
+- 829 backend tests, 0 failures
+- Golden masters: SPM=5319, STPM=2026 (unchanged)
+
 ## [Unreleased] — STPM Quiz Engine Sprint 1: Foundation (2026-03-18)
 
 ### Added
