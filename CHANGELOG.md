@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — STPM Quiz Sprint 5: Deploy & Validate (2026-03-18)
+
+### Changed
+- **Migrations 0042-0045 applied to Supabase**: MUET float type, postal_code/city/address profile fields, RIASEC/difficulty/efficacy enrichment fields, is_active flag — all applied via raw SQL (bypassing InconsistentMigrationHistory blocker).
+- **RIASEC enrichment applied to production**: 867 STPM courses + 28 field taxonomy entries enriched with riasec_type, difficulty_level, efficacy_domain via `enrich_stpm_riasec --apply`.
+- **Backend deployed**: `halatuju-api-00131-p7l` on Cloud Run asia-southeast1.
+- **Frontend deployed**: `halatuju-web-00160-rql` on Cloud Run asia-southeast1.
+
+### Verified
+- Supabase Security Advisor: 0 new issues after schema changes.
+- Smoke tests: STPM quiz questions (branch routing), quiz submit (signal accumulation), eligibility check (545 courses for strong science student), all passing on production.
+
 ## [Unreleased] — STPM Quiz Engine Sprint 4: Frontend (2026-03-18)
 
 ### Added

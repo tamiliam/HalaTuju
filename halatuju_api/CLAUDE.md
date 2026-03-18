@@ -226,22 +226,20 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**STPM Quiz Engine Sprint 4 COMPLETE (2026-03-18)**
-- STPM quiz page at `/stpm/quiz` — branching card-based UI with dynamic Q3/Q4 resolution
-- 3 STPM quiz API client functions (questions, resolve, submit) + StpmResultFraming type
-- Subject-to-API key mapping (20 frontend IDs to backend keys)
-- Dashboard shows quiz-informed framing (confirmatory/guided/discovery heading + subtitle)
-- STPM quiz signals stored separately from SPM (`KEY_STPM_QUIZ_SIGNALS`)
-- Trilingual quiz strings (EN/BM/TA)
+**STPM Quiz Sprint 5 COMPLETE (2026-03-18)** — Deploy & Validate
+- Migrations 0042-0045 applied to Supabase via raw SQL (InconsistentMigrationHistory bypass)
+- RIASEC enrichment applied: 867 courses + 28 taxonomy entries
+- Backend + frontend deployed to Cloud Run
+- Smoke tested: quiz questions, submit, eligibility (545 courses) all passing
 
-**Current state:** 888 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
+**Current state:** 888 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026. All deployed.
 
-**Next: STPM Quiz Sprint 5 — Polish & Validate**
+**Next: STPM Quiz Sprint 6 — Polish & User Testing**
 - User testing with real STPM students (Science + Arts branches)
 - Adjust signal weights based on feedback
-- Mobile testing across branches
+- Mobile testing across quiz branches
 - Trilingual content review (verify all quiz question text renders correctly in BM/TA)
-- Must run `enrich_stpm_riasec --apply` against Supabase before deploying
+- 8 unmapped field_keys for RIASEC (bahasa, kejururawatan, komunikasi, pergigian, sains-data, sains-fizikal, sains-sosial, umum)
 
 **Pending work (parked)**
 - Report: MASCO career data in prompt, institution/location context (low priority)
