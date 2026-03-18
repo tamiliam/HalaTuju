@@ -97,7 +97,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (881 collected, 881 pass, 0 failures, 0 skipped)
+# Run ALL tests (888 collected, 888 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -128,12 +128,13 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_outcomes.py | 10 | Outcome CRUD (create, duplicate 409, with institution, missing course), list (own only), update status, cross-user 404, delete, auth enforcement (GET/POST 401) |
 | test_pathways.py | 37 | Matric/STPM eligibility: grade helpers (is_credit, meets_min, find_best_elective), all 4 Matric tracks (sains, kejuruteraan, sains_komputer, perakaunan), both STPM bidangs (sains, sains_sosial), merit calculation, mata gred threshold, check_all_pathways integration, pathway fit score (base, academic bonus, signal cap) |
 | test_profile_fields.py | 19 | Expanded profile fields (NRIC, address, phone, income, siblings defaults), SavedCourse interest_status (default, set, got_offer), profile API (GET new fields, PUT new fields), saved-courses API (GET includes status, PATCH updates status), STPM profile fields (exam_type default, STPM fields stored, defaults empty/null), profile sync STPM (create, update, GET returns fields) |
-| test_stpm_models.py | 5 | StpmCourse creation + __str__, StpmRequirement creation + defaults, JSON field round-trip, metadata fields (explicit values + defaults) |
+| test_stpm_models.py | 7 | StpmCourse creation + __str__, StpmRequirement creation + defaults, JSON field round-trip, metadata fields (explicit values + defaults), is_active (defaults true, can set false) |
 | test_stpm_data_loading.py | 17 | Fixture integrity (courses loaded, 1:1 requirements, count ~1113, JSON parsing, booleans, merit scores, proper case) + proper_case_name utility (9 unit tests) |
-| test_stpm_engine.py | 15 | CGPA calculator (5), grade comparison (4), eligibility integration (6: strong science, CGPA filter, MUET filter, subject req, result shape, colorblind). Grade scale: A→F with D+(1.33), C-(1.67), E/G legacy aliases |
+| test_stpm_engine.py | 16 | CGPA calculator (5), grade comparison (4), eligibility integration (6: strong science, CGPA filter, MUET filter, subject req, result shape, colorblind), is_active filtering (1: inactive excluded from eligibility). Grade scale: A→F with D+(1.33), C-(1.67), E/G legacy aliases |
 | test_stpm_golden_master.py | 1 | 5 students × all programmes = 2103 baseline |
 | test_stpm_api.py | 9 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency), STPM ranking API (returns 200, scored programmes, sorted desc, missing 400, empty list) |
-| test_stpm_search.py | 12 | STPM search API (200, programmes shape, text/university/stream filters, pagination, filter metadata), STPM detail API (200, programme data, 404, subjects list) |
+| test_stpm_search.py | 14 | STPM search API (200, programmes shape, text/university/stream filters, pagination, filter metadata), STPM detail API (200, programme data, 404, subjects list), is_active filtering (inactive excluded from STPM search, inactive excluded from unified search) |
+| test_stpm_sync.py | 7 | Sync command: dry run reports removed, apply deactivates removed, reactivates returned, updates URLs, reports merit changes, reports new programmes, shows inactive count |
 | test_stpm_ranking.py | 58 | CGPA margin (5: base, bonus, cap, negative, partial), field match (9: primary +8, automotif via mekanikal, secondary +4, no match, empty, cross-domain +2, cap, law), RIASEC alignment (8: primary +6, secondary +3, no match, cross +2, cap, empty, no signals, tied seeds), efficacy (6: confirmed/confident/open/redirect/mismatch/none), goal alignment (7: professional+medicine, nonreg, postgrad+research, entrepreneurial+business, employment, no goal, no field), resilience (7: redirect+high/-3, redirect+moderate/-1, supported+high/-1, redirect+low/0, high resilience/0, no difficulty, no signals), interview (2), full integration (4: max/min score, no quiz, v1 compat), result framing (5: 3 modes, default, subtitle), ranked results (5: sort, empty, output, merit survives, quiz affects order) |
 | test_stpm_quiz_engine.py | 56 | RIASEC seed calculation (all combos, PA excluded, unknown subjects), primary seed (single/tie/empty), branch routing (science/arts/mixed/ICT/MathM/PA), cross-stream detection, question generation (branch Q2, Q3 variants, Q5 filtering, trilingual, lang fallback), Q3/Q4 resolution (all fields, weak/strong grade threshold, interpolation), signal accumulation (RIASEC seed, field interest, field_key, efficacy, context, strength levels, arts branch, error handling) |
 | test_stpm_quiz_data.py | 22 | Structure validation (required fields, no dupes), trilingual completeness (prompts, options, Q5, display names), signal taxonomy consistency (categories, no cross-category dupes, question signals in taxonomy), field key map, subject classification, grade points monotonicity |
@@ -183,7 +184,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-789 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
+888 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -225,28 +226,21 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**Report Prompt Improvements Sprint COMPLETE (2026-03-18)**
-- Two-track report prompts: SPM (BM+EN) + STPM (BM+EN) with exam_type routing
-- Human-readable quiz signals (36 labels, bilingual), dropped persona system
-- Smart course selection (top 5 by fit score), field display names from taxonomy
-- Student name wired into prompts, STPM grade+CGPA+MUET formatter
-- Plan: `docs/plans/2026-03-18-report-prompt-improvements.md`
+**STPM Pipeline Completion Sprint COMPLETE (2026-03-18)**
+- `is_active` field on StpmCourse + all queries filtered (8 sites)
+- `sync_stpm_mohe` deactivates removed courses, reactivates returned ones (7 tests)
+- `audit_data` extended with STPM courses, requirements, career mappings
+- MOHE scraper selectors fixed for redesigned ePanduan DOM (verified: 1,002 courses)
+- Workflow doc updated with Stage 5 (deactivation) and current test counts
 
-**STPM Quiz Engine Sprint 3 COMPLETE (2026-03-18)**
-- Ranking formula rewritten: 7 components, max score 98
-- Result framing: 3 modes (confirmatory/guided/discovery) from Q1 crystallisation
-- Eligibility output now includes riasec_type, difficulty_level, efficacy_domain
-- 58 ranking tests (was 11). 881 total backend, 0 failures.
+**Current state:** 888 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
 
-**Current state:** 881 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
-
-**Next: STPM Quiz Sprint 4 — Frontend**
-- Build STPM quiz page with branching UI (card-based, one question per screen)
-- Implement grade-adaptive Q4 (frontend receives grade context from localStorage)
-- Dynamic Q5 cross-domain options
-- Update STPM dashboard with quiz-informed framing
-- Must run `enrich_stpm_riasec --apply` against Supabase before deploying
-- Design doc: `halatuju-web/docs/plans/2026-03-18-stpm-quiz-design.md` (Sections 13, 17)
+**Pending work**
+- STPM Quiz Sprint 4 — Frontend (quiz page with branching UI, grade-adaptive Q4, Q5 cross-domain)
+- Must run `enrich_stpm_riasec --apply` against Supabase before deploying quiz
+- Phone/OTP login (blocked — Twilio ~RM12/mo)
+- Grade modulation layer
+- Course detail page fixes from `docs/Course Detail Page.pdf`
 
 **Pending work (parked)**
 - Report: MASCO career data in prompt, institution/location context (low priority)

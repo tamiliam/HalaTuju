@@ -1,5 +1,25 @@
 # Changelog — HalaTuju
 
+## STPM Pipeline Completion Sprint (2026-03-18)
+
+### Added
+- **`is_active` field on StpmCourse**: BooleanField (default True) — deactivated courses hidden from search and eligibility
+- **Course deactivation in `sync_stpm_mohe`**: `--apply` now deactivates removed courses and reactivates returned ones
+- **STPM audit sections in `audit_data`**: 3 new sections — STPM courses (active/inactive, description, headline, MOHE URL, merit, institution, careers), requirements (coverage, subject groups), career mappings (M2M link count)
+- **Stage 5 in STPM workflow**: Deactivation stage added to `stpm-requirements-update.md`
+
+### Fixed
+- **MOHE scraper selectors**: Rewrote `_parse_cards()` for redesigned ePanduan DOM — uses `.executive-data-label`/`.executive-data-value` instead of stale generic selectors. Changed page load strategy from `networkidle` (hung) to `domcontentloaded` + explicit selector wait. Added deduplication via `Set`. Verified: 1,002 Science programmes scraped successfully.
+- **All STPM queries filtered by `is_active=True`**: 8 query sites updated (1 in `stpm_engine.py`, 7 in `views.py`). Detail view and saved courses intentionally NOT filtered.
+
+### Stats
+- Backend tests: 888 pass, 0 failures (was 829)
+- Frontend tests: 17 pass, 0 failures
+- Golden masters: SPM 5319, STPM 2026 (unchanged)
+- New tests: 12 (model 2, engine 1, search 2, sync 7)
+
+---
+
 ## SPM Prereq UI & Content Sprint (2026-03-18)
 
 ### Added

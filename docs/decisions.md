@@ -382,3 +382,15 @@
 **Trade-offs:** Students from vocational or Islamic school streams cannot fully specify their SPM subjects in the STPM prereq section. This may cause false negatives for a small number of courses. The backend eligibility engine still handles these subjects correctly if the data were provided.
 
 **Revisit if:** User research shows significant demand from vocational/Islamic school students, or if the STPM prereq check produces too many false negatives for these streams.
+
+## is_active soft delete over hard delete for STPM courses — Pipeline Completion Sprint, 2026-03-18
+
+**Decision:** Added `is_active` BooleanField to StpmCourse (default True). Removed courses are deactivated, not deleted. Detail view and saved courses remain accessible for inactive courses.
+
+**Alternatives considered:** (1) Hard delete removed courses from DB. (2) Add `status` CharField with multiple states (active/inactive/archived/draft). (3) Soft delete with `deleted_at` timestamp.
+
+**Rationale:** Hard delete loses historical data and breaks saved course references. Multiple status states add complexity for a binary need. `is_active` boolean is the simplest model that works — courses are either shown to users or not. Detail view stays unfiltered so saved courses and shared links continue working.
+
+**Trade-offs:** No "archived" or "draft" distinction. If MOHE temporarily removes a course and we deactivate it, then it reappears, we automatically reactivate — but any manual data changes made while inactive are preserved.
+
+**Revisit if:** A third state is needed (e.g. "pending review" for new courses that haven't been parsed yet), or if the admin portal needs to manage course lifecycle states.
