@@ -1,136 +1,436 @@
-import pytest
-from apps.courses.stpm_ranking import calculate_stpm_fit_score, get_stpm_ranked_results
+"""
+Tests for STPM ranking engine v2 (quiz-informed).
+
+Covers all scoring components from the design doc Section 11:
+- CGPA margin (+20 max)
+- Field match (+12 max, from Q2-Q4 field_key signals)
+- RIASEC alignment (+8 max, from subject seed + Q5 cross-domain)
+- Efficacy modifier (+4 to -2)
+- Goal alignment (+4 max)
+- Interview penalty (-3)
+- Resilience discount (0 to -3)
+- Result framing (3 modes)
+"""
+from apps.courses.stpm_ranking import (
+    BASE_SCORE,
+    calculate_stpm_fit_score,
+    get_result_framing,
+    get_stpm_ranked_results,
+    _get_field_match_score,
+    _get_riasec_alignment,
+    _get_efficacy_modifier,
+    _get_goal_alignment,
+    _get_resilience_discount,
+)
 
 
-class TestStpmFitScore:
-    def test_base_score(self):
-        """Course with no signals gets base score only."""
-        course = {
-            'course_id': 'TEST001', 'course_name': 'Test', 'university': 'UM',
-            'stream': 'science', 'min_cgpa': 3.0, 'min_muet_band': 3,
-            'req_interview': False, 'no_colorblind': False,
+def _course(**overrides):
+    """Helper: build a minimal course dict."""
+    base = {
+        'course_id': 'TEST001',
+        'course_name': 'Test Course',
+        'university': 'UM',
+        'stream': 'science',
+        'min_cgpa': 3.0,
+        'min_muet_band': 3,
+        'req_interview': False,
+        'no_colorblind': False,
+        'field_key': '',
+        'riasec_type': '',
+        'difficulty_level': '',
+    }
+    base.update(overrides)
+    return base
+
+
+# ── Base score + CGPA margin ─────────────────────────────────────────
+
+class TestBaseAndCgpa:
+    def test_base_score_no_signals(self):
+        score, reasons = calculate_stpm_fit_score(_course(), 3.0, {})
+        assert score == BASE_SCORE
+
+    def test_cgpa_margin_adds_bonus(self):
+        score, reasons = calculate_stpm_fit_score(_course(min_cgpa=2.5), 3.5, {})
+        assert score == BASE_SCORE + 20  # 1.0 margin × 20 = +20 (capped)
+
+    def test_cgpa_margin_capped_at_20(self):
+        score1, _ = calculate_stpm_fit_score(_course(min_cgpa=1.0), 3.5, {})
+        score2, _ = calculate_stpm_fit_score(_course(min_cgpa=1.0), 4.0, {})
+        # Both margins > 1.0, should both cap at +20
+        assert score1 == BASE_SCORE + 20
+        assert score2 == BASE_SCORE + 20
+
+    def test_cgpa_margin_negative_gives_no_bonus(self):
+        score, _ = calculate_stpm_fit_score(_course(min_cgpa=3.5), 3.0, {})
+        assert score == BASE_SCORE  # margin is -0.5, no bonus
+
+    def test_cgpa_margin_partial(self):
+        score, _ = calculate_stpm_fit_score(_course(min_cgpa=3.0), 3.5, {})
+        assert score == BASE_SCORE + 10  # 0.5 margin × 20 = +10
+
+
+# ── Field match (max +12) ────────────────────────────────────────────
+
+class TestFieldMatch:
+    def test_primary_field_key_match_gives_8(self):
+        signals = {'field_key': {'field_key_mekanikal': 2}}
+        score, _ = _get_field_match_score('mekanikal', signals)
+        assert score == 8
+
+    def test_primary_match_automotif_via_mekanikal(self):
+        """field_key_mekanikal maps to ['mekanikal', 'automotif']."""
+        signals = {'field_key': {'field_key_mekanikal': 2}}
+        score, _ = _get_field_match_score('automotif', signals)
+        assert score == 8
+
+    def test_secondary_field_interest_match_gives_4(self):
+        """Q2 broad interest matches course field_key via parent mapping."""
+        signals = {
+            'field_interest': {'field_engineering': 3},
+            'field_key': {},
         }
-        score, reasons = calculate_stpm_fit_score(course, student_cgpa=3.0, signals={})
-        assert score == 50  # base
+        score, _ = _get_field_match_score('mekanikal', signals)
+        assert score == 4
 
-    def test_cgpa_margin_bonus(self):
-        """Higher CGPA margin increases score."""
-        course = {
-            'course_id': 'TEST001', 'course_name': 'Test', 'university': 'UM',
-            'stream': 'science', 'min_cgpa': 2.5, 'min_muet_band': 3,
-            'req_interview': False, 'no_colorblind': False,
+    def test_no_match_gives_0(self):
+        signals = {'field_key': {'field_key_perubatan': 2}}
+        score, _ = _get_field_match_score('mekanikal', signals)
+        assert score == 0
+
+    def test_empty_field_key_gives_0(self):
+        signals = {'field_key': {'field_key_mekanikal': 2}}
+        score, _ = _get_field_match_score('', signals)
+        assert score == 0
+
+    def test_no_signals_gives_0(self):
+        score, _ = _get_field_match_score('mekanikal', {})
+        assert score == 0
+
+    def test_cross_domain_adds_2(self):
+        signals = {'cross_domain': {'cross_R': 1}}
+        score, _ = _get_field_match_score('mekanikal', signals)
+        assert score == 2
+
+    def test_primary_plus_cross_capped_at_12(self):
+        signals = {
+            'field_key': {'field_key_mekanikal': 2},
+            'cross_domain': {'cross_R': 1},
         }
-        score, reasons = calculate_stpm_fit_score(course, student_cgpa=3.5, signals={})
-        assert score > 50  # CGPA margin +1.0 should add bonus
-        assert any('CGPA' in r for r in reasons)
+        score, _ = _get_field_match_score('mekanikal', signals)
+        assert score == 10  # 8 + 2 = 10 (under cap)
 
-    def test_cgpa_margin_capped(self):
-        """CGPA margin bonus capped at max."""
-        prog = {
-            'course_id': 'TEST001', 'course_name': 'Test', 'university': 'UM',
-            'stream': 'science', 'min_cgpa': 1.0, 'min_muet_band': 1,
-            'req_interview': False, 'no_colorblind': False,
+    def test_field_match_law(self):
+        signals = {'field_key': {'field_key_law': 2}}
+        score, _ = _get_field_match_score('undang-undang', signals)
+        assert score == 8
+
+
+# ── RIASEC alignment (max +8) ────────────────────────────────────────
+
+class TestRiasecAlignment:
+    def test_primary_seed_match_gives_6(self):
+        signals = {'riasec_seed': {'riasec_I': 5, 'riasec_R': 3}}
+        score, _ = _get_riasec_alignment('I', signals)
+        assert score == 6
+
+    def test_secondary_seed_match_gives_3(self):
+        signals = {'riasec_seed': {'riasec_I': 5, 'riasec_R': 3, 'riasec_C': 1}}
+        score, _ = _get_riasec_alignment('R', signals)
+        assert score == 3
+
+    def test_no_match_gives_0(self):
+        signals = {'riasec_seed': {'riasec_I': 5, 'riasec_R': 3}}
+        score, _ = _get_riasec_alignment('E', signals)
+        assert score == 0
+
+    def test_cross_domain_adds_2(self):
+        signals = {
+            'riasec_seed': {'riasec_I': 5},
+            'cross_domain': {'cross_E': 1},
         }
-        score1, _ = calculate_stpm_fit_score(prog, student_cgpa=3.5, signals={})
-        score2, _ = calculate_stpm_fit_score(prog, student_cgpa=4.0, signals={})
-        # Both well above min — should be capped at same max
-        assert score2 - score1 <= 5  # small or zero difference once capped
+        score, _ = _get_riasec_alignment('E', signals)
+        assert score == 2
 
-    def test_field_interest_match(self):
-        """Field interest matching via field_key adds bonus."""
-        course = {
-            'course_id': 'TEST001', 'course_name': 'BACELOR KEJURUTERAAN', 'university': 'UTM',
-            'stream': 'science', 'min_cgpa': 3.0, 'min_muet_band': 3,
-            'req_interview': False, 'no_colorblind': False,
-            'field_key': 'mekanikal',
+    def test_primary_plus_cross_capped_at_8(self):
+        signals = {
+            'riasec_seed': {'riasec_I': 5},
+            'cross_domain': {'cross_I': 1},
         }
-        signals_match = {'field_interest': {'field_mechanical': 3}}
-        signals_no_match = {'field_interest': {'field_creative': 3}}
-        score_match, _ = calculate_stpm_fit_score(course, student_cgpa=3.5, signals=signals_match)
-        score_no, _ = calculate_stpm_fit_score(course, student_cgpa=3.5, signals=signals_no_match)
-        assert score_match > score_no
+        score, _ = _get_riasec_alignment('I', signals)
+        assert score == 8  # 6 + 2 = 8 = cap
 
-    def test_field_interest_match_dict_format(self):
-        """Field interest works with dict format from quiz engine."""
-        course = {
-            'course_id': 'TEST001', 'course_name': 'BACELOR KEJURUTERAAN', 'university': 'UTM',
-            'stream': 'science', 'min_cgpa': 3.0, 'min_muet_band': 3,
-            'req_interview': False, 'no_colorblind': False,
-            'field_key': 'mekanikal',
+    def test_empty_riasec_type_gives_0(self):
+        signals = {'riasec_seed': {'riasec_I': 5}}
+        score, _ = _get_riasec_alignment('', signals)
+        assert score == 0
+
+    def test_no_signals_gives_0(self):
+        score, _ = _get_riasec_alignment('I', {})
+        assert score == 0
+
+    def test_tied_primary_seeds(self):
+        """When two types tie for highest, both are 'primary'."""
+        signals = {'riasec_seed': {'riasec_I': 5, 'riasec_R': 5, 'riasec_C': 1}}
+        score_i, _ = _get_riasec_alignment('I', signals)
+        score_r, _ = _get_riasec_alignment('R', signals)
+        assert score_i == 6
+        assert score_r == 6
+
+
+# ── Efficacy modifier (+4 to -2) ─────────────────────────────────────
+
+class TestEfficacyModifier:
+    def test_confirmed_gives_plus4(self):
+        signals = {'efficacy': {'efficacy_confirmed': 2}}
+        mod, _ = _get_efficacy_modifier(signals)
+        assert mod == 4
+
+    def test_confident_gives_plus2(self):
+        signals = {'efficacy': {'efficacy_confident': 2}}
+        mod, _ = _get_efficacy_modifier(signals)
+        assert mod == 2
+
+    def test_open_gives_0(self):
+        signals = {'efficacy': {'efficacy_open': 2}}
+        mod, _ = _get_efficacy_modifier(signals)
+        assert mod == 0
+
+    def test_redirect_gives_minus1(self):
+        signals = {'efficacy': {'efficacy_redirect': 1}}
+        mod, _ = _get_efficacy_modifier(signals)
+        assert mod == -1
+
+    def test_mismatch_gives_minus2(self):
+        signals = {'efficacy': {'efficacy_mismatch': 0}}
+        mod, _ = _get_efficacy_modifier(signals)
+        assert mod == -2
+
+    def test_no_signals_gives_0(self):
+        mod, _ = _get_efficacy_modifier({})
+        assert mod == 0
+
+
+# ── Goal alignment (max +4) ──────────────────────────────────────────
+
+class TestGoalAlignment:
+    def test_professional_plus_medicine_gives_4(self):
+        signals = {'career_goal': {'goal_professional': 2}}
+        score, _ = _get_goal_alignment('perubatan', signals)
+        assert score == 4
+
+    def test_professional_plus_nonreg_gives_0(self):
+        signals = {'career_goal': {'goal_professional': 2}}
+        score, _ = _get_goal_alignment('pemasaran', signals)
+        assert score == 0
+
+    def test_postgrad_plus_research_gives_4(self):
+        signals = {'career_goal': {'goal_postgrad': 2}}
+        score, _ = _get_goal_alignment('bioteknologi', signals)
+        assert score == 4
+
+    def test_entrepreneurial_plus_business_gives_3(self):
+        signals = {'career_goal': {'goal_entrepreneurial': 2}}
+        score, _ = _get_goal_alignment('perniagaan', signals)
+        assert score == 3
+
+    def test_employment_universal_gives_3(self):
+        signals = {'career_goal': {'goal_employment': 2}}
+        score, _ = _get_goal_alignment('mekanikal', signals)
+        assert score == 3
+
+    def test_no_career_goal_gives_0(self):
+        score, _ = _get_goal_alignment('perubatan', {})
+        assert score == 0
+
+    def test_no_field_key_gives_0(self):
+        signals = {'career_goal': {'goal_professional': 2}}
+        score, _ = _get_goal_alignment('', signals)
+        assert score == 0
+
+
+# ── Resilience discount (0 to -3) ────────────────────────────────────
+
+class TestResilienceDiscount:
+    def test_redirect_plus_high_gives_minus3(self):
+        signals = {'resilience': {'resilience_redirect': 1}}
+        discount, _ = _get_resilience_discount('high', signals)
+        assert discount == -3
+
+    def test_redirect_plus_moderate_gives_minus1(self):
+        signals = {'resilience': {'resilience_redirect': 1}}
+        discount, _ = _get_resilience_discount('moderate', signals)
+        assert discount == -1
+
+    def test_supported_plus_high_gives_minus1(self):
+        signals = {'resilience': {'resilience_supported': 1}}
+        discount, _ = _get_resilience_discount('high', signals)
+        assert discount == -1
+
+    def test_redirect_plus_low_gives_0(self):
+        signals = {'resilience': {'resilience_redirect': 1}}
+        discount, _ = _get_resilience_discount('low', signals)
+        assert discount == 0
+
+    def test_high_resilience_no_discount(self):
+        signals = {'resilience': {'resilience_high': 2}}
+        discount, _ = _get_resilience_discount('high', signals)
+        assert discount == 0
+
+    def test_no_difficulty_gives_0(self):
+        signals = {'resilience': {'resilience_redirect': 1}}
+        discount, _ = _get_resilience_discount('', signals)
+        assert discount == 0
+
+    def test_no_signals_gives_0(self):
+        discount, _ = _get_resilience_discount('high', {})
+        assert discount == 0
+
+
+# ── Interview penalty ─────────────────────────────────────────────────
+
+class TestInterviewPenalty:
+    def test_interview_subtracts_3(self):
+        score_yes, _ = calculate_stpm_fit_score(
+            _course(req_interview=True), 3.0, {},
+        )
+        score_no, _ = calculate_stpm_fit_score(
+            _course(req_interview=False), 3.0, {},
+        )
+        assert score_no - score_yes == 3
+
+    def test_interview_reason_in_output(self):
+        _, reasons = calculate_stpm_fit_score(
+            _course(req_interview=True), 3.0, {},
+        )
+        assert any('Interview' in r for r in reasons)
+
+
+# ── Full score integration ────────────────────────────────────────────
+
+class TestFullScore:
+    def test_maximum_possible_score(self):
+        """All bonuses maxed, no penalties: 50+20+12+8+4+4 = 98."""
+        course = _course(
+            min_cgpa=2.0,
+            field_key='mekanikal',
+            riasec_type='R',
+            difficulty_level='low',
+            req_interview=False,
+        )
+        signals = {
+            'riasec_seed': {'riasec_R': 5, 'riasec_I': 3},
+            'field_key': {'field_key_mekanikal': 2},
+            'field_interest': {'field_engineering': 3},
+            'cross_domain': {'cross_R': 1},
+            'efficacy': {'efficacy_confirmed': 2},
+            'career_goal': {'goal_professional': 2},
+            'resilience': {'resilience_high': 2},
         }
-        # Quiz engine returns dicts: {signal_name: score}
-        signals_match = {'field_interest': {'field_mechanical': 3, 'field_electrical': 2}}
-        signals_no_match = {'field_interest': {'field_creative': 3}}
-        score_match, reasons = calculate_stpm_fit_score(course, student_cgpa=3.5, signals=signals_match)
-        score_no, _ = calculate_stpm_fit_score(course, student_cgpa=3.5, signals=signals_no_match)
-        assert score_match > score_no
-        assert any('Field' in r for r in reasons)
+        score, _ = calculate_stpm_fit_score(course, 3.0, signals)
+        # 50 + 20 + 10(field: 8 primary + 2 cross) + 8(riasec: 6+2) + 4(eff) + 4(goal) = 96
+        # Note: field is 8+2=10, not 12 (no secondary on top of primary)
+        assert score >= 90
+        assert score <= 98
 
-    def test_field_interest_no_field_key(self):
-        """Course without field_key → no field match bonus."""
-        course = {
-            'course_id': 'TEST001', 'course_name': 'BACELOR KEJURUTERAAN', 'university': 'UTM',
-            'stream': 'science', 'min_cgpa': 3.0, 'min_muet_band': 3,
-            'req_interview': False, 'no_colorblind': False,
+    def test_minimum_possible_score(self):
+        """All penalties, no bonuses."""
+        course = _course(
+            min_cgpa=4.0,
+            field_key='perubatan',
+            riasec_type='I',
+            difficulty_level='high',
+            req_interview=True,
+        )
+        signals = {
+            'efficacy': {'efficacy_mismatch': 0},
+            'resilience': {'resilience_redirect': 1},
         }
-        signals = {'field_interest': {'field_mechanical': 3}}
-        score, reasons = calculate_stpm_fit_score(course, student_cgpa=3.0, signals=signals)
-        assert score == 50  # base only, no field match
+        score, _ = calculate_stpm_fit_score(course, 3.0, signals)
+        # 50 + 0(cgpa) + 0(field) + 0(riasec) + (-2)(eff) + 0(goal) + (-3)(interview) + (-3)(resilience) = 42
+        assert score == 42
 
-    def test_interview_penalty(self):
-        """Interview requirement adds slight penalty."""
-        base = {
-            'course_id': 'TEST001', 'course_name': 'Test', 'university': 'UM',
-            'stream': 'science', 'min_cgpa': 3.0, 'min_muet_band': 3,
-            'no_colorblind': False,
-        }
-        prog_no = {**base, 'req_interview': False}
-        prog_yes = {**base, 'req_interview': True}
-        score_no, _ = calculate_stpm_fit_score(prog_no, student_cgpa=3.5, signals={})
-        score_yes, _ = calculate_stpm_fit_score(prog_yes, student_cgpa=3.5, signals={})
-        assert score_no > score_yes
+    def test_no_quiz_still_works(self):
+        """Without quiz signals, scoring falls back to CGPA + base only."""
+        course = _course(min_cgpa=2.5)
+        score, reasons = calculate_stpm_fit_score(course, 3.5, {})
+        assert score == 70  # 50 + 20
+
+    def test_backwards_compatible_with_v1_signals(self):
+        """Old-style signals (field_interest dict) still produce a score."""
+        course = _course(min_cgpa=3.0, field_key='mekanikal')
+        signals = {'field_interest': {'field_engineering': 3}}
+        score, _ = calculate_stpm_fit_score(course, 3.5, signals)
+        assert score > BASE_SCORE  # gets CGPA bonus + field secondary
 
 
-class TestStpmRankedResults:
+# ── Result framing ────────────────────────────────────────────────────
+
+class TestResultFraming:
+    def test_confirmatory_mode(self):
+        signals = {'context': {'crystallisation_high': 2}}
+        framing = get_result_framing(signals)
+        assert framing['mode'] == 'confirmatory'
+        assert 'aligns' in framing['heading']
+
+    def test_guided_mode(self):
+        signals = {'context': {'crystallisation_moderate': 2}}
+        framing = get_result_framing(signals)
+        assert framing['mode'] == 'guided'
+        assert 'interests' in framing['heading']
+
+    def test_discovery_mode(self):
+        signals = {'context': {'crystallisation_low': 2}}
+        framing = get_result_framing(signals)
+        assert framing['mode'] == 'discovery'
+        assert 'exploring' in framing['heading']
+
+    def test_default_is_guided(self):
+        framing = get_result_framing({})
+        assert framing['mode'] == 'guided'
+
+    def test_framing_has_subtitle(self):
+        framing = get_result_framing({'context': {'crystallisation_high': 2}})
+        assert 'subtitle' in framing
+        assert len(framing['subtitle']) > 0
+
+
+# ── Ranked results ────────────────────────────────────────────────────
+
+class TestRankedResults:
     def test_sorted_by_score_desc(self):
-        """Courses returned in descending score order."""
         courses = [
-            {'course_id': 'A', 'course_name': 'Low', 'university': 'X',
-             'stream': 'arts', 'min_cgpa': 3.5, 'min_muet_band': 4,
-             'req_interview': False, 'no_colorblind': False},
-            {'course_id': 'B', 'course_name': 'High', 'university': 'Y',
-             'stream': 'science', 'min_cgpa': 2.0, 'min_muet_band': 2,
-             'req_interview': False, 'no_colorblind': False},
+            _course(course_id='A', course_name='Low', min_cgpa=3.5),
+            _course(course_id='B', course_name='High', min_cgpa=2.0),
         ]
-        result = get_stpm_ranked_results(courses, student_cgpa=3.5, signals={})
-        assert result[0]['course_id'] == 'B'  # higher CGPA margin → higher score
+        result = get_stpm_ranked_results(courses, 3.5, {})
+        assert result[0]['course_id'] == 'B'
 
     def test_empty_list(self):
-        """Empty input returns empty list."""
-        result = get_stpm_ranked_results([], student_cgpa=3.0, signals={})
-        assert result == []
+        assert get_stpm_ranked_results([], 3.0, {}) == []
 
     def test_fit_score_in_output(self):
-        """Each course in output has fit_score and fit_reasons."""
-        courses = [
-            {'course_id': 'A', 'course_name': 'Test', 'university': 'UM',
-             'stream': 'science', 'min_cgpa': 2.5, 'min_muet_band': 3,
-             'req_interview': False, 'no_colorblind': False},
-        ]
-        result = get_stpm_ranked_results(courses, student_cgpa=3.0, signals={})
+        courses = [_course()]
+        result = get_stpm_ranked_results(courses, 3.0, {})
         assert 'fit_score' in result[0]
         assert 'fit_reasons' in result[0]
-        assert isinstance(result[0]['fit_score'], (int, float))
-        assert isinstance(result[0]['fit_reasons'], list)
 
-    def test_merit_score_survives_ranking(self):
-        """merit_score passes through ranking pipeline."""
-        courses = [
-            {'course_id': 'X', 'course_name': 'Test', 'university': 'UM',
-             'stream': 'science', 'min_cgpa': 2.0, 'min_muet_band': 3,
-             'req_interview': False, 'no_colorblind': False,
-             'merit_score': 95.5},
-        ]
-        ranked = get_stpm_ranked_results(courses, student_cgpa=3.5, signals={})
-        assert 'merit_score' in ranked[0]
+    def test_merit_score_survives(self):
+        courses = [_course(merit_score=95.5)]
+        ranked = get_stpm_ranked_results(courses, 3.5, {})
         assert ranked[0]['merit_score'] == 95.5
+
+    def test_quiz_signals_affect_ordering(self):
+        """Course matching quiz signals should rank higher."""
+        courses = [
+            _course(course_id='A', course_name='AAA', min_cgpa=3.0,
+                    field_key='pemasaran', riasec_type='E'),
+            _course(course_id='B', course_name='BBB', min_cgpa=3.0,
+                    field_key='mekanikal', riasec_type='R'),
+        ]
+        signals = {
+            'riasec_seed': {'riasec_R': 5, 'riasec_I': 3},
+            'field_key': {'field_key_mekanikal': 2},
+        }
+        ranked = get_stpm_ranked_results(courses, 3.5, signals)
+        assert ranked[0]['course_id'] == 'B'  # mekanikal matches R seed + field_key

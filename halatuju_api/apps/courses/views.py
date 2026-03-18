@@ -53,7 +53,7 @@ from .serializers import (
 )
 from .ranking_engine import get_ranked_results, get_credential_priority
 from .stpm_engine import calculate_stpm_cgpa, check_stpm_eligibility
-from .stpm_ranking import get_stpm_ranked_results
+from .stpm_ranking import get_result_framing, get_stpm_ranked_results
 from .insights_engine import generate_insights
 from .quiz_data import get_quiz_questions, QUESTION_IDS, SUPPORTED_LANGUAGES
 from .quiz_engine import process_quiz_answers

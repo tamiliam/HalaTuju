@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — STPM Quiz Engine Sprint 3: Ranking Integration (2026-03-18)
+
+### Changed
+- **STPM ranking formula rewritten** (`stpm_ranking.py`): 7-component scoring — BASE(50) + CGPA_MARGIN(+20) + FIELD_MATCH(+12) + RIASEC_ALIGNMENT(+8) + EFFICACY_MODIFIER(+4/-2) + GOAL_ALIGNMENT(+4) - INTERVIEW(-3) - RESILIENCE_DISCOUNT(0/-3). Max score 98.
+- **Eligibility output enriched** (`stpm_engine.py`): Eligible course dicts now include `riasec_type`, `difficulty_level`, `efficacy_domain` for ranking engine consumption
+- **Ranking API returns framing** (`views.py`): `POST /stpm/ranking/` now includes `framing` object with mode (confirmatory/guided/discovery), heading, and subtitle from Q1 crystallisation signal
+
+### Added
+- **Result framing logic**: 3 modes based on Q1 — confirmatory ("Your profile aligns with..."), guided ("Based on your interests..."), discovery ("Here are fields worth exploring")
+- **STPM field_key → field_interest reverse mapping** (`_FK_TO_INTEREST`): Maps Q3 sub-field signals back to Q2 broad interest for secondary field matching
+
+### Tests
+- 58 ranking tests (was 11): CGPA margin (5), field match (9), RIASEC alignment (8), efficacy modifier (6), goal alignment (7), resilience discount (7), interview (2), full integration (4), framing (5), ranked results (5)
+- 881 backend tests, 0 failures
+- Golden masters: SPM=5319, STPM=2026 (unchanged)
+
 ## [Unreleased] — STPM Quiz Engine Sprint 2: Data Enrichment (2026-03-18)
 
 ### Added

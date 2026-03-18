@@ -97,7 +97,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (829 collected, 829 pass, 0 failures, 0 skipped)
+# Run ALL tests (881 collected, 881 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -134,7 +134,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_golden_master.py | 1 | 5 students × all programmes = 2103 baseline |
 | test_stpm_api.py | 9 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency), STPM ranking API (returns 200, scored programmes, sorted desc, missing 400, empty list) |
 | test_stpm_search.py | 12 | STPM search API (200, programmes shape, text/university/stream filters, pagination, filter metadata), STPM detail API (200, programme data, 404, subjects list) |
-| test_stpm_ranking.py | 10 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest via field_key, field interest dict format, no field_key edge case, interview penalty), ranked results (sorted desc, empty list, output shape) |
+| test_stpm_ranking.py | 58 | CGPA margin (5: base, bonus, cap, negative, partial), field match (9: primary +8, automotif via mekanikal, secondary +4, no match, empty, cross-domain +2, cap, law), RIASEC alignment (8: primary +6, secondary +3, no match, cross +2, cap, empty, no signals, tied seeds), efficacy (6: confirmed/confident/open/redirect/mismatch/none), goal alignment (7: professional+medicine, nonreg, postgrad+research, entrepreneurial+business, employment, no goal, no field), resilience (7: redirect+high/-3, redirect+moderate/-1, supported+high/-1, redirect+low/0, high resilience/0, no difficulty, no signals), interview (2), full integration (4: max/min score, no quiz, v1 compat), result framing (5: 3 modes, default, subtitle), ranked results (5: sort, empty, output, merit survives, quiz affects order) |
 | test_stpm_quiz_engine.py | 56 | RIASEC seed calculation (all combos, PA excluded, unknown subjects), primary seed (single/tie/empty), branch routing (science/arts/mixed/ICT/MathM/PA), cross-stream detection, question generation (branch Q2, Q3 variants, Q5 filtering, trilingual, lang fallback), Q3/Q4 resolution (all fields, weak/strong grade threshold, interpolation), signal accumulation (RIASEC seed, field interest, field_key, efficacy, context, strength levels, arts branch, error handling) |
 | test_stpm_quiz_data.py | 22 | Structure validation (required fields, no dupes), trilingual completeness (prompts, options, Q5, display names), signal taxonomy consistency (categories, no cross-category dupes, question signals in taxonomy), field key map, subject classification, grade points monotonicity |
 | test_stpm_quiz_api.py | 24 | Questions endpoint (200, branch/seed, Q3 variants, Q5/trunk, validation, grades JSON, lang), resolve endpoint (200, Q3/Q4, validation), submit endpoint (200, signals, strength, branch, validation, arts branch) |
@@ -232,18 +232,21 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Student name wired into prompts, STPM grade+CGPA+MUET formatter
 - Plan: `docs/plans/2026-03-18-report-prompt-improvements.md`
 
-**STPM Quiz Engine Sprint 2 COMPLETE (2026-03-18)**
-- 3 new fields on StpmCourse (`riasec_type`, `difficulty_level`, `efficacy_domain`) + `riasec_primary` on FieldTaxonomy
-- `enrich_stpm_riasec` management command — deterministic classifier from field_key mappings
-- Migration 0044. 40 new tests. 829 total backend, 0 failures.
+**STPM Quiz Engine Sprint 3 COMPLETE (2026-03-18)**
+- Ranking formula rewritten: 7 components, max score 98
+- Result framing: 3 modes (confirmatory/guided/discovery) from Q1 crystallisation
+- Eligibility output now includes riasec_type, difficulty_level, efficacy_domain
+- 58 ranking tests (was 11). 881 total backend, 0 failures.
 
-**Current state:** 829 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
+**Current state:** 881 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
 
-**Next: STPM Quiz Sprint 3 — Ranking Integration**
-- Implement new STPM ranking formula with RIASEC alignment, efficacy modifier, goal alignment, resilience discount
-- Implement result framing logic (3 modes: confirmatory/guided/discovery)
-- Must run `enrich_stpm_riasec --apply` against Supabase first (local SQLite only has `umum` field_keys)
-- Design doc: `halatuju-web/docs/plans/2026-03-18-stpm-quiz-design.md` (Sections 11, 12)
+**Next: STPM Quiz Sprint 4 — Frontend**
+- Build STPM quiz page with branching UI (card-based, one question per screen)
+- Implement grade-adaptive Q4 (frontend receives grade context from localStorage)
+- Dynamic Q5 cross-domain options
+- Update STPM dashboard with quiz-informed framing
+- Must run `enrich_stpm_riasec --apply` against Supabase before deploying
+- Design doc: `halatuju-web/docs/plans/2026-03-18-stpm-quiz-design.md` (Sections 13, 17)
 
 **Pending work (parked)**
 - Report: MASCO career data in prompt, institution/location context (low priority)
