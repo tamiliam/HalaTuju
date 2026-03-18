@@ -26,7 +26,8 @@
     "maleOnly": "Lelaki Sahaja",
     "femaleOnly": "Perempuan Sahaja",
     "unmarriedOnly": "Belum Berkahwin",
-    "noDisability": "Tiada Kecacatan Fizikal"
+    "noDisability": "Tiada Kecacatan Fizikal",
+    "more": "lagi"
   },
   "header": {
     "myProfile": "Profil Saya",
@@ -569,7 +570,12 @@
     "bumiputeraOnly": "Bumiputera Sahaja",
     "noResults": "Tiada kursus dijumpai",
     "noResultsDesc": "Cuba laraskan carian atau penapis anda",
-    "browseAll": "Layari Semua Kursus"
+    "browseAll": "Layari Semua Kursus",
+    "pickFrom": "Pilih {count} daripada:",
+    "anySubject": "Mana-mana {count} mata pelajaran:",
+    "anyStpmSubject": "Mana-mana mata pelajaran STPM",
+    "anySpmSubject": "Mana-mana mata pelajaran SPM",
+    "excluding": "Kecuali:"
   },
   "courses": {
     "matric-sains": {

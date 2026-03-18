@@ -26,7 +26,8 @@
     "maleOnly": "Male Applicants Only",
     "femaleOnly": "Female Applicants Only",
     "unmarriedOnly": "Unmarried Applicants Only",
-    "noDisability": "No Physical Disability"
+    "noDisability": "No Physical Disability",
+    "more": "more"
   },
   "header": {
     "myProfile": "My Profile",
@@ -569,7 +570,12 @@
     "bumiputeraOnly": "Bumiputera Only",
     "noResults": "No courses found",
     "noResultsDesc": "Try adjusting your search or filters",
-    "browseAll": "Browse All Courses"
+    "browseAll": "Browse All Courses",
+    "pickFrom": "Pick {count} from:",
+    "anySubject": "Any {count} subject(s):",
+    "anyStpmSubject": "Any STPM subject",
+    "anySpmSubject": "Any SPM subject",
+    "excluding": "Excluding:"
   },
   "courses": {
     "matric-sains": {
