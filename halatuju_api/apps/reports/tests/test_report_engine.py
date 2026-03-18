@@ -23,7 +23,7 @@ from apps.reports.report_engine import (
     SIGNAL_LABELS,
     STRENGTH_LABELS,
 )
-from apps.reports.prompts import get_prompt, get_persona_for_model
+from apps.reports.prompts import get_prompt
 
 
 # Sample data matching real eligibility output (engine keys)
@@ -191,16 +191,13 @@ class TestPrompts(TestCase):
         self.assertIn('career counselor', prompt)
         self.assertIn('{student_name}', prompt)
 
-    def test_persona_for_model(self):
-        """Correct persona is returned for each model family."""
-        p = get_persona_for_model('gemini-2.5-flash')
-        self.assertEqual(p['name'], 'Cikgu Gopal')
-
-        p = get_persona_for_model('gemini-2.0-flash')
-        self.assertEqual(p['name'], 'Cikgu Guna')
-
-        p = get_persona_for_model('unknown-model')
-        self.assertEqual(p['name'], 'Cikgu Guna')  # default
+    def test_prompt_has_no_persona_placeholders(self):
+        """Neither BM nor EN prompt contains persona placeholders."""
+        bm = get_prompt('bm')
+        en = get_prompt('en')
+        for prompt in (bm, en):
+            self.assertNotIn('{counsellor_name}', prompt)
+            self.assertNotIn('{gender_context}', prompt)
 
 
 class TestGenerateReport(TestCase):
@@ -226,7 +223,7 @@ class TestGenerateReport(TestCase):
         mock_settings.GEMINI_API_KEY = 'test-key'
 
         mock_response = MagicMock()
-        mock_response.text = 'Salam sejahtera pelajar, saya Cikgu Gopal...'
+        mock_response.text = 'Salam sejahtera pelajar...'
 
         mock_client = MagicMock()
         mock_client.models.generate_content.return_value = mock_response
@@ -240,9 +237,8 @@ class TestGenerateReport(TestCase):
         )
 
         self.assertIn('markdown', result)
-        self.assertIn('Cikgu Gopal', result['markdown'])
         self.assertIn('model_used', result)
-        self.assertIn('counsellor_name', result)
+        self.assertNotIn('counsellor_name', result)
         self.assertNotIn('error', result)
 
     @patch('google.genai.Client')

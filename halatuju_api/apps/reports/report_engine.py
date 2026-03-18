@@ -14,7 +14,7 @@ Usage:
         student_signals={...},
         lang='bm',
     )
-    # result = {'markdown': '...', 'model_used': 'gemini-2.5-flash', 'counsellor_name': 'Cikgu Gopal'}
+    # result = {'markdown': '...', 'model_used': 'gemini-2.5-flash'}
     # OR
     # result = {'error': 'AI service unavailable'}
 """
@@ -23,7 +23,7 @@ import time
 
 from django.conf import settings
 
-from .prompts import get_prompt, get_persona_for_model
+from .prompts import get_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -235,7 +235,7 @@ def generate_report(grades, eligible_courses, insights,
 
     Returns:
         dict with either:
-            {'markdown': '...', 'model_used': '...', 'counsellor_name': '...'}
+            {'markdown': '...', 'model_used': '...'}
         or:
             {'error': '...'}
     """
@@ -263,13 +263,8 @@ def generate_report(grades, eligible_courses, insights,
     # Try models in cascade
     last_error = None
     for model_name in MODEL_CASCADE:
-        persona = get_persona_for_model(model_name)
-        gender_key = 'gender_en' if lang == 'en' else 'gender'
-
         try:
             full_prompt = prompt_template.format(
-                counsellor_name=persona['name'],
-                gender_context=persona[gender_key],
                 student_name=student_name,
                 student_profile=student_profile,
                 academic_context=academic_context,
@@ -297,7 +292,6 @@ def generate_report(grades, eligible_courses, insights,
             return {
                 'markdown': text,
                 'model_used': model_name,
-                'counsellor_name': persona['name'],
                 'generation_time_ms': elapsed_ms,
             }
 

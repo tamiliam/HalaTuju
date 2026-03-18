@@ -42,7 +42,6 @@ class GenerateReportView(APIView):
     {
         "report_id": 1,
         "markdown": "...",
-        "counsellor_name": "Cikgu Gopal",
         "model_used": "gemini-2.5-flash"
     }
     """
@@ -110,7 +109,7 @@ class GenerateReportView(APIView):
         # Save report to DB
         report = GeneratedReport.objects.create(
             student=profile,
-            title=f'Laporan Kaunseling — {result["counsellor_name"]}',
+            title='Laporan Kaunseling',
             content=result['markdown'],
             summary=insights.get('summary_text', ''),
             student_profile_snapshot={
@@ -135,7 +134,6 @@ class GenerateReportView(APIView):
         return Response({
             'report_id': report.id,
             'markdown': result['markdown'],
-            'counsellor_name': result['counsellor_name'],
             'model_used': result['model_used'],
         }, status=status.HTTP_201_CREATED)
 

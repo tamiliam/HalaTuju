@@ -107,7 +107,6 @@ class TestReportViews(TestCase):
         mock_gen.return_value = {
             'markdown': '# Report\nHello Ahmad.',
             'model_used': 'gemini-2.5-flash',
-            'counsellor_name': 'Cikgu Gopal',
             'generation_time_ms': 100,
         }
 
@@ -131,7 +130,6 @@ class TestReportViews(TestCase):
         mock_gen.return_value = {
             'markdown': '# Report\nHello pelajar.',
             'model_used': 'gemini-2.5-flash',
-            'counsellor_name': 'Cikgu Gopal',
             'generation_time_ms': 100,
         }
 
