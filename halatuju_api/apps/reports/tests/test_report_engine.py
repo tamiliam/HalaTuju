@@ -20,6 +20,8 @@ from apps.reports.report_engine import (
     _format_signals,
     _format_courses,
     _format_insights,
+    SIGNAL_LABELS,
+    STRENGTH_LABELS,
 )
 from apps.reports.prompts import get_prompt, get_persona_for_model
 
@@ -78,8 +80,8 @@ SAMPLE_INSIGHTS = {
 }
 
 SAMPLE_SIGNALS = {
-    'work_style': {'structured': 3, 'creative': 1},
-    'environment': {'outdoor': 2, 'office': 1},
+    'work_style': {'hands_on': 3, 'creative': 1},
+    'environment': {'workshop_environment': 2, 'office_environment': 1},
 }
 
 
@@ -99,15 +101,66 @@ class TestFormatHelpers(TestCase):
         self.assertIn('Tiada', result)
 
     def test_format_signals_with_data(self):
-        """Signals are formatted into a readable string."""
-        result = _format_signals(SAMPLE_SIGNALS)
-        self.assertIn('structured', result)
+        """Signals are formatted into human-readable BM labels."""
+        result = _format_signals(SAMPLE_SIGNALS, lang='bm')
+        self.assertIn('Kerja Amali', result)
+        self.assertIn('kuat', result)
         self.assertNotIn('kuiz belum', result)
 
     def test_format_signals_empty(self):
         """Empty signals indicate quiz not taken."""
-        result = _format_signals({})
+        result = _format_signals({}, lang='bm')
         self.assertIn('kuiz belum', result)
+
+    def test_format_signals_bm_labels(self):
+        """BM output uses Malay labels and strength words."""
+        result = _format_signals(SAMPLE_SIGNALS, lang='bm')
+        self.assertIn('Kecenderungan pelajar:', result)
+        self.assertIn('- Kerja Amali (kuat)', result)
+        self.assertIn('- Kreatif (sederhana)', result)
+        self.assertIn('- Persekitaran Bengkel (kuat)', result)
+        self.assertIn('- Persekitaran Pejabat (sederhana)', result)
+
+    def test_format_signals_en_labels(self):
+        """EN output uses English labels and strength words."""
+        result = _format_signals(SAMPLE_SIGNALS, lang='en')
+        self.assertIn('Student inclinations:', result)
+        self.assertIn('- Hands-on Work (strong)', result)
+        self.assertIn('- Creative (moderate)', result)
+        self.assertIn('- Workshop Environment (strong)', result)
+        self.assertIn('- Office Environment (moderate)', result)
+
+    def test_format_signals_empty_en(self):
+        """Empty signals in EN return English message."""
+        result = _format_signals({}, lang='en')
+        self.assertIn('quiz not taken', result)
+
+    def test_format_signals_none(self):
+        """None signals return safe default."""
+        result = _format_signals(None, lang='bm')
+        self.assertIn('kuiz belum', result)
+
+    def test_format_signals_all_zero(self):
+        """All-zero signals return no dominant message."""
+        signals = {'work_style': {'hands_on': 0, 'creative': 0}}
+        result = _format_signals(signals, lang='bm')
+        self.assertIn('Tiada kecenderungan dominan', result)
+
+    def test_format_signals_unknown_key_falls_back(self):
+        """Unknown signal keys use the raw key as label."""
+        signals = {'misc': {'unknown_signal': 2}}
+        result = _format_signals(signals, lang='bm')
+        self.assertIn('unknown_signal', result)
+
+    def test_format_signals_strength_threshold(self):
+        """Score >= 2 is kuat/strong, score 1 is sederhana/moderate."""
+        signals = {'test': {'hands_on': 2, 'creative': 1}}
+        bm = _format_signals(signals, lang='bm')
+        self.assertIn('Kerja Amali (kuat)', bm)
+        self.assertIn('Kreatif (sederhana)', bm)
+        en = _format_signals(signals, lang='en')
+        self.assertIn('Hands-on Work (strong)', en)
+        self.assertIn('Creative (moderate)', en)
 
     def test_format_courses_limits_to_three(self):
         """At most 3 courses are formatted."""

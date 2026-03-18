@@ -18,7 +18,6 @@ Usage:
     # OR
     # result = {'error': 'AI service unavailable'}
 """
-import json
 import logging
 import time
 
@@ -76,6 +75,51 @@ SUBJECT_LABELS = {
 }
 
 
+SIGNAL_LABELS = {
+    'field_mechanical': ('Mekanikal & Automotif', 'Mechanical & Automotive'),
+    'field_digital': ('Teknologi Digital', 'Digital Technology'),
+    'field_business': ('Perniagaan & Pengurusan', 'Business & Management'),
+    'field_health': ('Kesihatan & Perubatan', 'Health & Medical'),
+    'field_creative': ('Seni & Kreatif', 'Arts & Creative'),
+    'field_hospitality': ('Hospitaliti & Pelancongan', 'Hospitality & Tourism'),
+    'field_agriculture': ('Pertanian & Alam Sekitar', 'Agriculture & Environment'),
+    'field_heavy_industry': ('Industri Berat', 'Heavy Industry'),
+    'field_electrical': ('Elektrik & Elektronik', 'Electrical & Electronics'),
+    'field_civil': ('Kejuruteraan Awam', 'Civil Engineering'),
+    'field_aero_marine': ('Aero & Marin', 'Aerospace & Marine'),
+    'field_oil_gas': ('Minyak & Gas', 'Oil & Gas'),
+    'hands_on': ('Kerja Amali', 'Hands-on Work'),
+    'problem_solving': ('Penyelesaian Masalah', 'Problem Solving'),
+    'people_helping': ('Bantu Orang', 'Helping People'),
+    'creative': ('Kreatif', 'Creative'),
+    'workshop_environment': ('Persekitaran Bengkel', 'Workshop Environment'),
+    'office_environment': ('Persekitaran Pejabat', 'Office Environment'),
+    'high_people_environment': ('Ramai Orang', 'High People Environment'),
+    'field_environment': ('Kerja Luar', 'Fieldwork'),
+    'high_stamina': ('Stamina Tinggi', 'High Stamina'),
+    'mental_fatigue_sensitive': ('Sensitif Penat Mental', 'Mentally Sensitive'),
+    'physical_fatigue_sensitive': ('Sensitif Penat Fizikal', 'Physically Sensitive'),
+    'low_people_tolerance': ('Kurang Selesa Ramai Orang', 'Low People Tolerance'),
+    'learning_by_doing': ('Belajar Sambil Buat', 'Learning by Doing'),
+    'concept_first': ('Konsep Dahulu', 'Concept First'),
+    'rote_tolerant': ('Boleh Hafal', 'Rote Tolerant'),
+    'project_based': ('Berasaskan Projek', 'Project-based'),
+    'stability_priority': ('Keutamaan Kestabilan', 'Stability Priority'),
+    'quality_priority': ('Keutamaan Kualiti', 'Quality Priority'),
+    'fast_employment_priority': ('Nak Kerja Cepat', 'Fast Employment'),
+    'income_risk_tolerant': ('Sanggup Risiko Gaji', 'Income Risk Tolerant'),
+    'pathway_priority': ('Laluan Kerjaya', 'Career Pathway'),
+    'proximity_priority': ('Dekat Rumah', 'Proximity'),
+    'allowance_priority': ('Elaun Penting', 'Allowance Priority'),
+    'employment_guarantee': ('Jaminan Kerja', 'Employment Guarantee'),
+}
+
+STRENGTH_LABELS = {
+    'bm': {2: 'kuat', 1: 'sederhana'},
+    'en': {2: 'strong', 1: 'moderate'},
+}
+
+
 def _format_grades(grades):
     """Format SPM grades into a readable string for the prompt."""
     if not grades:
@@ -88,22 +132,33 @@ def _format_grades(grades):
     return '\n'.join(lines)
 
 
-def _format_signals(student_signals):
-    """Format quiz signals into a personality summary string."""
+def _format_signals(student_signals, lang='bm'):
+    """Format quiz signals into human-readable personality summary."""
     if not student_signals:
-        return 'Tiada maklumat kecenderungan (kuiz belum diambil).'
+        return 'Tiada maklumat kecenderungan (kuiz belum diambil).' if lang == 'bm' \
+            else 'No inclination data (quiz not taken).'
 
-    dominant = {}
+    lang_idx = 0 if lang == 'bm' else 1
+    strength = STRENGTH_LABELS.get(lang, STRENGTH_LABELS['bm'])
+    lines = []
+
     for category, sig_dict in student_signals.items():
-        if isinstance(sig_dict, dict):
-            for k, v in sig_dict.items():
-                if v and v > 0:
-                    dominant[k] = v
+        if not isinstance(sig_dict, dict):
+            continue
+        for key, score in sig_dict.items():
+            if not score or score <= 0:
+                continue
+            label_pair = SIGNAL_LABELS.get(key)
+            label = label_pair[lang_idx] if label_pair else key
+            level = strength.get(2, 'kuat') if score >= 2 else strength.get(1, 'sederhana')
+            lines.append(f'- {label} ({level})')
 
-    if not dominant:
-        return 'Tiada kecenderungan dominan dikesan.'
+    if not lines:
+        return 'Tiada kecenderungan dominan dikesan.' if lang == 'bm' \
+            else 'No dominant inclinations detected.'
 
-    return f'Kecenderungan: {json.dumps(dominant, ensure_ascii=False)}'
+    header = 'Kecenderungan pelajar:' if lang == 'bm' else 'Student inclinations:'
+    return header + '\n' + '\n'.join(lines)
 
 
 def _format_courses(eligible_courses, limit=3):
@@ -190,7 +245,7 @@ def generate_report(grades, eligible_courses, insights,
 
     # Format data for prompt
     academic_context = _format_grades(grades)
-    student_profile = _format_signals(student_signals)
+    student_profile = _format_signals(student_signals, lang=lang)
     recommended_courses = _format_courses(eligible_courses)
     insights_summary = _format_insights(insights)
 
