@@ -226,26 +226,27 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**STPM Pipeline Completion Sprint COMPLETE (2026-03-18)**
-- `is_active` field on StpmCourse + all queries filtered (8 sites)
-- `sync_stpm_mohe` deactivates removed courses, reactivates returned ones (7 tests)
-- `audit_data` extended with STPM courses, requirements, career mappings
-- MOHE scraper selectors fixed for redesigned ePanduan DOM (verified: 1,002 courses)
-- Workflow doc updated with Stage 5 (deactivation) and current test counts
+**STPM Quiz Engine Sprint 4 COMPLETE (2026-03-18)**
+- STPM quiz page at `/stpm/quiz` — branching card-based UI with dynamic Q3/Q4 resolution
+- 3 STPM quiz API client functions (questions, resolve, submit) + StpmResultFraming type
+- Subject-to-API key mapping (20 frontend IDs to backend keys)
+- Dashboard shows quiz-informed framing (confirmatory/guided/discovery heading + subtitle)
+- STPM quiz signals stored separately from SPM (`KEY_STPM_QUIZ_SIGNALS`)
+- Trilingual quiz strings (EN/BM/TA)
 
 **Current state:** 888 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
 
-**Pending work**
-- STPM Quiz Sprint 4 — Frontend (quiz page with branching UI, grade-adaptive Q4, Q5 cross-domain)
-- Must run `enrich_stpm_riasec --apply` against Supabase before deploying quiz
-- Phone/OTP login (blocked — Twilio ~RM12/mo)
-- Grade modulation layer
-- Course detail page fixes from `docs/Course Detail Page.pdf`
+**Next: STPM Quiz Sprint 5 — Polish & Validate**
+- User testing with real STPM students (Science + Arts branches)
+- Adjust signal weights based on feedback
+- Mobile testing across branches
+- Trilingual content review (verify all quiz question text renders correctly in BM/TA)
+- Must run `enrich_stpm_riasec --apply` against Supabase before deploying
 
 **Pending work (parked)**
 - Report: MASCO career data in prompt, institution/location context (low priority)
 - Report: EN language selector in frontend
-- STPM Pipeline: test scrapers against live MOHE, extend audit_data, course deactivation mechanism
+- STPM Pipeline: test scrapers against live MOHE
 - Phone/OTP login (blocked — Twilio ~RM12/mo)
 - Grade modulation layer
 - Course detail page fixes from `docs/Course Detail Page.pdf`

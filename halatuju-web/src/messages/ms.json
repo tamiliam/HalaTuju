@@ -432,6 +432,14 @@
     "retry": "Cuba Lagi",
     "loadingQuiz": "Memuatkan kuiz..."
   },
+  "stpmQuiz": {
+    "loading": "Memuatkan kuiz peribadi anda...",
+    "loadError": "Gagal memuatkan soalan kuiz. Sila cuba lagi.",
+    "submitError": "Gagal menghantar kuiz. Sila cuba lagi.",
+    "skip": "Langkau Kuiz",
+    "takeQuiz": "Ambil Kuiz Kerjaya",
+    "retakeQuiz": "Ambil Semula Kuiz"
+  },
   "outcomes": {
     "title": "Permohonan Saya",
     "empty": "Anda belum menjejaki sebarang permohonan.",

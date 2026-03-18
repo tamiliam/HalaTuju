@@ -25,7 +25,8 @@ import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
 import { useToast } from '@/components/Toast'
-import { KEY_RESUME_ACTION, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_PROFILE, KEY_GRADES, KEY_MERIT, KEY_QUIZ_SIGNALS, KEY_REPORT_GENERATED } from '@/lib/storage'
+import { KEY_RESUME_ACTION, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_PROFILE, KEY_GRADES, KEY_MERIT, KEY_QUIZ_SIGNALS, KEY_REPORT_GENERATED, KEY_STPM_QUIZ_SIGNALS } from '@/lib/storage'
+import type { StpmResultFraming } from '@/lib/api'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 
 function getMeritLevel(studentMerit: number, courseMerit: number | null | undefined): 'high' | 'fair' | 'low' | 'none' {
@@ -67,6 +68,7 @@ export default function DashboardPage() {
     spmGrades: Record<string, string>
   } | null>(null)
   const [stpmResults, setStpmResults] = useState<StpmRankedCourse[] | null>(null)
+  const [stpmFraming, setStpmFraming] = useState<StpmResultFraming | null>(null)
 
   // Load profile from localStorage on mount
   useEffect(() => {
@@ -145,9 +147,12 @@ export default function DashboardPage() {
       nationality: nationalityMap[profile.nationality] || 'Warganegara',
       colorblind: profile.colorblind ? 'Ya' : 'Tidak',
     }).then(data => {
-      // Chain ranking after eligibility
-      const signalsStr = localStorage.getItem(KEY_QUIZ_SIGNALS)
-      const signals = signalsStr ? JSON.parse(signalsStr) : {}
+      // Chain ranking after eligibility — use STPM quiz signals if available
+      const stpmSignalsStr = localStorage.getItem(KEY_STPM_QUIZ_SIGNALS)
+      const spmSignalsStr = localStorage.getItem(KEY_QUIZ_SIGNALS)
+      const signals = stpmSignalsStr ? JSON.parse(stpmSignalsStr)
+        : spmSignalsStr ? JSON.parse(spmSignalsStr) : {}
+      if (stpmSignalsStr) setQuizSignals(JSON.parse(stpmSignalsStr))
       return rankStpmCourses({
         eligible_courses: data.eligible_courses,
         student_cgpa: stpmData.cgpa,
@@ -155,7 +160,8 @@ export default function DashboardPage() {
       })
     }).then(ranked => {
       setStpmResults(ranked.ranked_courses)
-    }).catch(err => {
+      if (ranked.framing) setStpmFraming(ranked.framing)
+    }).catch(() => {
       showToast('Failed to load STPM results. Please try again.', 'error')
       setStpmResults([])
     })
@@ -375,7 +381,11 @@ export default function DashboardPage() {
                 savedIds={savedIds}
                 onToggleSave={handleSaveOrGate}
                 quizSignals={quizSignals}
-                onQuizCta={handleQuizCta}
+                framing={stpmFraming}
+                onQuizCta={() => {
+                  if (!isAuthenticated) { showAuthGate('quiz'); return }
+                  router.push('/stpm/quiz')
+                }}
                 onLoadMoreGate={() => {
                   if (!isAuthenticated) { showAuthGate('loadmore'); return true }
                   return false
@@ -564,6 +574,7 @@ function StpmDashboardCards({
   savedIds,
   onToggleSave,
   quizSignals,
+  framing,
   onQuizCta,
   onLoadMoreGate,
 }: {
@@ -574,6 +585,7 @@ function StpmDashboardCards({
   savedIds: Set<string>
   onToggleSave?: (courseId: string) => void
   quizSignals: Record<string, Record<string, number>> | null
+  framing?: StpmResultFraming | null
   onQuizCta: () => void
   onLoadMoreGate?: () => boolean
 }) {
@@ -639,33 +651,59 @@ function StpmDashboardCards({
       <div className="bg-white rounded-xl border border-gray-200 px-6 py-4 mb-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <h1 className="text-xl font-bold text-gray-900">
-                {t('dashboard.qualifyFor')} <span className="text-primary-500">{stpmResults.length}</span> {t('dashboard.qualifyCourses')}
-              </h1>
-              <div className="flex items-center gap-3 text-sm">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-green-500" />
-                  <span className="text-gray-600">{highCount} {t('dashboard.meritHigh')}</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-amber-400" />
-                  <span className="text-gray-600">{fairCount} {t('dashboard.meritFair')}</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-red-500" />
-                  <span className="text-gray-600">{lowCount} {t('dashboard.meritLow')}</span>
-                </span>
+            {framing && quizSignals ? (
+              <>
+                <h1 className="text-xl font-bold text-gray-900">{framing.heading}</h1>
+                <p className="text-sm text-gray-500 mt-0.5">{framing.subtitle}</p>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm">
+                  <span className="text-gray-600">{stpmResults.length} {t('dashboard.qualifyCourses')}</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="text-gray-600">{highCount} {t('dashboard.meritHigh')}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                    <span className="text-gray-600">{fairCount} {t('dashboard.meritFair')}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                    <span className="text-gray-600">{lowCount} {t('dashboard.meritLow')}</span>
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <h1 className="text-xl font-bold text-gray-900">
+                  {t('dashboard.qualifyFor')} <span className="text-primary-500">{stpmResults.length}</span> {t('dashboard.qualifyCourses')}
+                </h1>
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                    <span className="text-gray-600">{highCount} {t('dashboard.meritHigh')}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                    <span className="text-gray-600">{fairCount} {t('dashboard.meritFair')}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                    <span className="text-gray-600">{lowCount} {t('dashboard.meritLow')}</span>
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
             <Link href="/onboarding/stpm-grades" className="text-xs text-gray-400 hover:text-primary-500 underline mt-1 inline-block">
               {t('dashboard.editProfile')}
             </Link>
           </div>
           <div className="flex items-center gap-2">
-            {!quizSignals && (
+            {quizSignals ? (
+              <button onClick={onQuizCta} className="text-sm text-gray-400 hover:text-primary-500 underline whitespace-nowrap">
+                {t('stpmQuiz.retakeQuiz')}
+              </button>
+            ) : (
               <button onClick={onQuizCta} className="btn-primary text-sm whitespace-nowrap">
-                {t('dashboard.takeQuiz')}
+                {t('stpmQuiz.takeQuiz')}
               </button>
             )}
           </div>

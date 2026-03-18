@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — STPM Quiz Engine Sprint 4: Frontend (2026-03-18)
+
+### Added
+- **STPM quiz page** (`halatuju-web/src/app/stpm/quiz/page.tsx`): Branching card-based quiz UI with dynamic Q3/Q4 resolution after Q2. Reads subjects from localStorage, routes Science/Arts/Mixed branches via backend API, auto-advances between questions.
+- **STPM quiz API client** (`halatuju-web/src/lib/api.ts`): 3 functions — `getStpmQuizQuestions`, `resolveStpmQuizQ3Q4`, `submitStpmQuiz` — plus `StpmResultFraming` type for ranking response framing.
+- **Subject-to-API key mapping** (`halatuju-web/src/lib/subjects.ts`): `STPM_SUBJECT_TO_API_KEY` maps 20 frontend subject IDs (e.g. `PHYSICS`) to backend keys (e.g. `physics`).
+- **STPM quiz storage keys** (`halatuju-web/src/lib/storage.ts`): `KEY_STPM_QUIZ_SIGNALS`, `KEY_STPM_QUIZ_BRANCH` for persisting quiz results across sessions.
+- **Trilingual STPM quiz strings** (`messages/en.json`, `ms.json`, `ta.json`): Loading, error, skip, take/retake quiz labels.
+
+### Changed
+- **Dashboard shows quiz-informed framing** (`halatuju-web/src/app/dashboard/page.tsx`): When STPM quiz signals exist, dashboard header shows result framing (confirmatory/guided/discovery heading + subtitle). Quiz CTA routes to `/stpm/quiz`. Retake button shown after quiz completion.
+- **Dashboard reads STPM quiz signals** (`dashboard/page.tsx`): STPM ranking now uses `KEY_STPM_QUIZ_SIGNALS` (falling back to `KEY_QUIZ_SIGNALS`), and displays framing from ranking API response.
+
 ## [Unreleased] — STPM Quiz Engine Sprint 3: Ranking Integration (2026-03-18)
 
 ### Changed

@@ -432,6 +432,14 @@
     "retry": "Retry",
     "loadingQuiz": "Loading quiz..."
   },
+  "stpmQuiz": {
+    "loading": "Loading your personalised quiz...",
+    "loadError": "Failed to load quiz questions. Please try again.",
+    "submitError": "Failed to submit quiz. Please try again.",
+    "skip": "Skip Quiz",
+    "takeQuiz": "Take Career Quiz",
+    "retakeQuiz": "Retake Quiz"
+  },
   "outcomes": {
     "title": "My Applications",
     "empty": "You haven't tracked any applications yet.",

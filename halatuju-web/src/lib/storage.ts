@@ -70,6 +70,12 @@ export const KEY_RESUME_ACTION = 'halatuju_resume_action'
 /** Referral source: partner code or self-reported channel */
 export const KEY_REFERRAL_SOURCE = 'halatuju_referral_source'
 
+/** STPM quiz signals: {riasec_seed: {...}, field_interest: {...}, ...} */
+export const KEY_STPM_QUIZ_SIGNALS = 'halatuju_stpm_quiz_signals'
+
+/** STPM quiz branch: 'science' | 'arts' | 'mixed' */
+export const KEY_STPM_QUIZ_BRANCH = 'halatuju_stpm_quiz_branch'
+
 // ── Helpers ──────────────────────────────────────────────────────────
 
 /** Remove all halatuju_* keys from localStorage. */

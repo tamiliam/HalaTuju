@@ -582,9 +582,16 @@ export interface StpmRankingRequest {
   student_signals: Record<string, unknown>
 }
 
+export interface StpmResultFraming {
+  mode: 'confirmatory' | 'guided' | 'discovery'
+  heading: string
+  subtitle: string
+}
+
 export interface StpmRankingResponse {
   ranked_courses: StpmRankedCourse[]
   total: number
+  framing?: StpmResultFraming
 }
 
 export async function rankStpmCourses(
@@ -594,6 +601,85 @@ export async function rankStpmCourses(
   return apiRequest('/api/v1/stpm/ranking/', {
     method: 'POST',
     body: JSON.stringify(data),
+    ...options,
+  })
+}
+
+// ── STPM Quiz types ──────────────────────────────────────────────────
+
+export interface StpmQuizQuestion {
+  id: string
+  prompt: string
+  options: { text: string; icon: string; signals: Record<string, number> }[]
+}
+
+export interface StpmQuizQuestionsResponse {
+  branch: 'science' | 'arts' | 'mixed'
+  riasec_seed: Record<string, number>
+  primary_seed: string[]
+  has_cross_stream: boolean
+  questions: StpmQuizQuestion[]
+  q3_variants: Record<string, StpmQuizQuestion>
+  q5: StpmQuizQuestion
+  trunk_remaining: StpmQuizQuestion[]
+}
+
+export interface StpmQuizResolveResponse {
+  q3: StpmQuizQuestion | null
+  q4: StpmQuizQuestion | null
+}
+
+export interface StpmQuizSubmitResponse {
+  student_signals: Record<string, Record<string, number>>
+  signal_strength: Record<string, string>
+  branch: string
+  riasec_seed: Record<string, number>
+}
+
+// ── STPM Quiz API functions ──────────────────────────────────────────
+
+export async function getStpmQuizQuestions(
+  subjects: string[],
+  grades: Record<string, string>,
+  lang: string = 'en',
+  options?: ApiOptions
+): Promise<StpmQuizQuestionsResponse> {
+  const params = new URLSearchParams()
+  params.set('subjects', subjects.join(','))
+  params.set('grades', JSON.stringify(grades))
+  params.set('lang', lang)
+  return apiRequest(`/api/v1/stpm/quiz/questions/?${params.toString()}`, options)
+}
+
+export async function resolveStpmQuizQ3Q4(
+  fieldSignal: string,
+  branch: string,
+  grades: Record<string, string>,
+  lang: string = 'en',
+  options?: ApiOptions
+): Promise<StpmQuizResolveResponse> {
+  return apiRequest('/api/v1/stpm/quiz/resolve/', {
+    method: 'POST',
+    body: JSON.stringify({
+      field_signal: fieldSignal,
+      branch,
+      grades,
+      lang,
+    }),
+    ...options,
+  })
+}
+
+export async function submitStpmQuiz(
+  answers: { question_id: string; option_index: number }[],
+  subjects: string[],
+  grades: Record<string, string>,
+  lang: string = 'en',
+  options?: ApiOptions
+): Promise<StpmQuizSubmitResponse> {
+  return apiRequest('/api/v1/stpm/quiz/submit/', {
+    method: 'POST',
+    body: JSON.stringify({ answers, subjects, grades, lang }),
     ...options,
   })
 }

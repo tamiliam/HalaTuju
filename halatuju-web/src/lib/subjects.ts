@@ -265,6 +265,30 @@ export const STPM_SUBJECTS: StpmSubject[] = [
 
 export const STPM_GRADES = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'F']
 
+/** Map frontend subject IDs (localStorage) to backend API keys (stpm_quiz_engine). */
+export const STPM_SUBJECT_TO_API_KEY: Record<string, string> = {
+  MATH_T: 'mathematics_t',
+  MATH_M: 'mathematics_m',
+  PHYSICS: 'physics',
+  CHEMISTRY: 'chemistry',
+  BIOLOGY: 'biology',
+  FURTHER_MATH: 'further_mathematics',
+  ECONOMICS: 'economics',
+  ACCOUNTING: 'accounting',
+  BUSINESS: 'business_studies',
+  GEOGRAFI: 'geography',
+  SEJARAH: 'history',
+  KESUSASTERAAN_MELAYU: 'kesusasteraan_melayu',
+  BAHASA_MELAYU: 'bahasa_melayu',
+  BAHASA_CINA: 'bahasa_cina',
+  BAHASA_TAMIL: 'bahasa_tamil',
+  SENI_VISUAL: 'visual_arts',
+  SYARIAH: 'syariah',
+  USULUDDIN: 'usuluddin',
+  ICT: 'ict',
+  PA: 'pengajian_am',
+}
+
 export const MUET_BANDS = [1, 2, 3, 4, 5, 6]
 
 // SPM prerequisite subjects for STPM students
