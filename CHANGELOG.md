@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — STPM Quiz Engine Sprint 1: Foundation (2026-03-18)
+
+### Added
+- **STPM quiz data** (`stpm_quiz_data.py`): ~35 questions × 3 languages (EN/BM/TA) with subject-seeded branching design grounded in Holland's RIASEC, SCCT, SDT, and Super's Career Development Theory
+- **STPM quiz engine** (`stpm_quiz_engine.py`): RIASEC seed calculation from STPM subjects, branch routing (Science/Arts/Mixed), grade-adaptive Q4 resolution, cross-domain Q5 stream filtering, signal accumulation into 9-category taxonomy
+- **3 new API endpoints**: `GET /stpm/quiz/questions/` (returns branch-specific questions), `POST /stpm/quiz/resolve/` (resolves Q3+Q4 after Q2 answer), `POST /stpm/quiz/submit/` (processes answers → signals)
+- **STPM signal taxonomy**: 9 categories (riasec_seed, field_interest, field_key, cross_domain, efficacy, resilience, motivation, career_goal, context)
+- **Cross-domain asymmetry enforcement**: Science students see 6 Q5 options; arts students see only achievable options (no science-prerequisite programmes)
+- **Grade-adaptive confidence check**: Q4 uses actual STPM grades — weak grades (≤B-) trigger honest framing, strong grades trigger confirmatory framing
+
+### Tests
+- 102 new STPM quiz tests (56 engine + 22 data + 24 API)
+- 775 backend tests, 0 failures
+- Golden masters: SPM=5319, STPM=2026 (unchanged)
+
 ## [Unreleased] — STPM Requirements Pipeline Rebuild Sprint 3: Validator + Workflow (2026-03-17)
 
 ### Added

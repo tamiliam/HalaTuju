@@ -97,7 +97,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (654 collected, 654 pass, 0 failures, 0 skipped)
+# Run ALL tests (775 collected, 775 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -135,6 +135,9 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_api.py | 9 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency), STPM ranking API (returns 200, scored programmes, sorted desc, missing 400, empty list) |
 | test_stpm_search.py | 12 | STPM search API (200, programmes shape, text/university/stream filters, pagination, filter metadata), STPM detail API (200, programme data, 404, subjects list) |
 | test_stpm_ranking.py | 10 | STPM fit score (base score, CGPA margin bonus, CGPA margin capped, field interest via field_key, field interest dict format, no field_key edge case, interview penalty), ranked results (sorted desc, empty list, output shape) |
+| test_stpm_quiz_engine.py | 56 | RIASEC seed calculation (all combos, PA excluded, unknown subjects), primary seed (single/tie/empty), branch routing (science/arts/mixed/ICT/MathM/PA), cross-stream detection, question generation (branch Q2, Q3 variants, Q5 filtering, trilingual, lang fallback), Q3/Q4 resolution (all fields, weak/strong grade threshold, interpolation), signal accumulation (RIASEC seed, field interest, field_key, efficacy, context, strength levels, arts branch, error handling) |
+| test_stpm_quiz_data.py | 22 | Structure validation (required fields, no dupes), trilingual completeness (prompts, options, Q5, display names), signal taxonomy consistency (categories, no cross-category dupes, question signals in taxonomy), field key map, subject classification, grade points monotonicity |
+| test_stpm_quiz_api.py | 24 | Questions endpoint (200, branch/seed, Q3 variants, Q5/trunk, validation, grades JSON, lang), resolve endpoint (200, Q3/Q4, validation), submit endpoint (200, signals, strength, branch, validation, arts branch) |
 | test_eligibility_service.py | 19 | Service module: compute_student_merit (precomputed/grades/hist rename/default coq), compute_course_merit (standard/no cutoff/tvet/matric/stpm), deduplicate_pismp (passthrough/identical collapse/language merge), sort_eligible_courses (merit order/pismp/iljtm), compute_stats (source_type/pathway_type) |
 | test_preu_courses.py | 4 | Pre-U eligibility (stats include matric/stpm), search (level Pra-U, text Matrikulasi, source_type matric) |
 | test_admin_auth.py | 14 | PartnerAdmin model (CRUD, super admin flag), PartnerAdminMixin (UID lookup, email fallback, UID backfill), invite endpoint (super admin only, validation), orgs endpoint, AdminRoleView (admin_name) |
@@ -179,7 +182,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-654 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
+775 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -198,6 +201,8 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/courses/ranking_engine.py` | Fit score calculation + course ranking | No |
 | `apps/courses/stpm_engine.py` | STPM eligibility logic | YES — STPM Golden Master |
 | `apps/courses/stpm_ranking.py` | STPM fit score calculation + ranking | No |
+| `apps/courses/stpm_quiz_data.py` | STPM quiz questions (~35 Qs × 3 languages, branching) | No |
+| `apps/courses/stpm_quiz_engine.py` | RIASEC seed, branch routing, signal accumulation | No |
 | `apps/courses/utils.py` | Shared utilities (proper_case_name, build_mohe_url) | No |
 | `apps/courses/management/commands/scrape_mohe_stpm.py` | MOHE ePanduan scraper (annual) | No |
 | `apps/courses/management/commands/sync_stpm_mohe.py` | STPM data sync with diff report | No |
@@ -218,14 +223,20 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**SPM Prereq UI & Content Sprint COMPLETE (2026-03-18)**
-- STPM SPM prereq section redesigned with stream-based subject selection (Science/Arts/Technical pills + 4 stream slots + 0-2 electives)
-- Admin mobile layout and NRIC/phone formatting fixes
-- Site content updated for both SPM and STPM students
+**STPM Quiz Engine Sprint 1 COMPLETE (2026-03-18)**
+- STPM quiz engine with subject-seeded branching (Science/Arts/Mixed), RIASEC seed calculation, grade-adaptive Q4, cross-domain Q5 with stream asymmetry
+- 3 new API endpoints: questions, resolve, submit
+- 102 new tests (775 total backend, 0 failures)
 
-**Current state:** 654 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
+**Current state:** 775 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
 
-**Pending work**
+**Next: STPM Quiz Sprint 2 — Data Enrichment**
+- Add `riasec_type`, `difficulty_level`, `efficacy_domain` to StpmCourse model
+- Add `riasec_primary` to FieldTaxonomy
+- AI-classify 1,113 STPM courses for RIASEC type
+- Design doc: `docs/plans/2026-03-18-stpm-quiz-design.md`
+
+**Pending work (parked)**
 - STPM Pipeline: test scrapers against live MOHE, extend audit_data, course deactivation mechanism
 - Phone/OTP login (blocked — Twilio ~RM12/mo)
 - Grade modulation layer
