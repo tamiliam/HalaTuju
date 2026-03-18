@@ -6,7 +6,7 @@ Reads the CSV output from scrape_mohe_stpm and:
 2. Reports removed programmes (in DB but not in MOHE)
 3. Reports changed merit scores
 4. Updates mohe_url for all matched courses
-5. Optionally applies merit score updates
+5. Deactivates removed courses / reactivates returned courses
 
 Usage:
     python manage.py sync_stpm_mohe --csv data/stpm/mohe_latest.csv
@@ -36,7 +36,7 @@ class Command(BaseCommand):
                 if cid:
                     scraped[cid] = row
 
-        # Load DB data
+        # Load DB data (all courses, including inactive)
         db_courses = {c.course_id: c for c in StpmCourse.objects.all()}
 
         db_ids = set(db_courses.keys())
@@ -47,10 +47,13 @@ class Command(BaseCommand):
         removed_ids = db_ids - mohe_ids
         common_ids = db_ids & mohe_ids
 
+        inactive_count = StpmCourse.objects.filter(is_active=False).count()
+
         self.stdout.write(f'\n=== STPM MOHE Sync Report ===')
         self.stdout.write(f'MOHE programmes: {len(mohe_ids)}')
         self.stdout.write(f'DB courses:      {len(db_ids)}')
         self.stdout.write(f'Matched:         {len(common_ids)}')
+        self.stdout.write(f'Currently inactive: {inactive_count}')
 
         # New programmes
         if new_ids:
@@ -59,12 +62,36 @@ class Command(BaseCommand):
                 row = scraped[cid]
                 self.stdout.write(f'  + {cid}: {row["course_name"]} ({row["university"]})')
 
-        # Removed programmes
+        # Removed programmes (in DB but not in MOHE)
         if removed_ids:
-            self.stdout.write(self.style.ERROR(f'\n--- REMOVED ({len(removed_ids)}) ---'))
-            for cid in sorted(removed_ids):
+            active_removed = [cid for cid in removed_ids if db_courses[cid].is_active]
+            already_inactive = [cid for cid in removed_ids if not db_courses[cid].is_active]
+
+            if active_removed:
+                self.stdout.write(self.style.ERROR(
+                    f'\n--- REMOVED — will deactivate ({len(active_removed)}) ---'
+                ))
+                for cid in sorted(active_removed):
+                    course = db_courses[cid]
+                    self.stdout.write(f'  - {cid}: {course.course_name} ({course.university})')
+
+            if already_inactive:
+                self.stdout.write(
+                    f'\n  ({len(already_inactive)} already inactive, unchanged)'
+                )
+
+        # Reactivation candidates (in MOHE and in DB but currently inactive)
+        reactivate_ids = [
+            cid for cid in common_ids
+            if not db_courses[cid].is_active
+        ]
+        if reactivate_ids:
+            self.stdout.write(self.style.SUCCESS(
+                f'\n--- REACTIVATE ({len(reactivate_ids)}) ---'
+            ))
+            for cid in sorted(reactivate_ids):
                 course = db_courses[cid]
-                self.stdout.write(f'  - {cid}: {course.course_name} ({course.university})')
+                self.stdout.write(f'  \u2191 {cid}: {course.course_name} ({course.university})')
 
         # Merit changes
         merit_changes = []
@@ -73,7 +100,6 @@ class Command(BaseCommand):
             row = scraped[cid]
             course = db_courses[cid]
 
-            # Check merit change
             new_merit = None
             if row.get('merit'):
                 try:
@@ -85,7 +111,6 @@ class Command(BaseCommand):
                 if abs(new_merit - course.merit_score) > 0.01:
                     merit_changes.append((cid, course.merit_score, new_merit))
 
-            # Check URL update needed
             if row.get('mohe_url') and row['mohe_url'] != course.mohe_url:
                 url_updates += 1
 
@@ -120,6 +145,25 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f'\nApplied: {updated} URL updates'))
 
+        # Deactivate removed courses
+        active_removed = [cid for cid in removed_ids if db_courses[cid].is_active]
+        if active_removed:
+            deactivated = StpmCourse.objects.filter(
+                course_id__in=active_removed
+            ).update(is_active=False)
+            self.stdout.write(self.style.WARNING(
+                f'Deactivated {deactivated} removed courses'
+            ))
+
+        # Reactivate returned courses
+        if reactivate_ids:
+            reactivated = StpmCourse.objects.filter(
+                course_id__in=reactivate_ids
+            ).update(is_active=True)
+            self.stdout.write(self.style.SUCCESS(
+                f'Reactivated {reactivated} returned courses'
+            ))
+
         if merit_changes:
             self.stdout.write(self.style.WARNING(
                 f'{len(merit_changes)} merit changes detected but NOT auto-applied. '
@@ -130,10 +174,4 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(
                 f'{len(new_ids)} new programmes detected. '
                 'These need manual review — requirements must be parsed before adding to DB.'
-            ))
-
-        if removed_ids:
-            self.stdout.write(self.style.WARNING(
-                f'{len(removed_ids)} programmes no longer on MOHE. '
-                'Consider marking as inactive rather than deleting.'
             ))
