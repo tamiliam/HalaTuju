@@ -179,3 +179,27 @@ class TestStpmCourseCareerOccupations:
         )
         self.course.career_occupations.add(self.occ, occ2)
         assert self.course.career_occupations.count() == 2
+
+
+@pytest.mark.django_db
+class TestStpmCourseIsActive:
+
+    def test_is_active_defaults_true(self):
+        course = StpmCourse(
+            course_id='TEST_ACTIVE_001',
+            course_name='Test Active Course',
+            university='Test University',
+            field_key_id='it-perisian',
+        )
+        assert course.is_active is True
+
+    def test_can_set_inactive(self):
+        course = StpmCourse.objects.create(
+            course_id='TEST_INACTIVE_001',
+            course_name='Inactive Course',
+            university='Test University',
+            field_key_id='it-perisian',
+            is_active=False,
+        )
+        course.refresh_from_db()
+        assert course.is_active is False

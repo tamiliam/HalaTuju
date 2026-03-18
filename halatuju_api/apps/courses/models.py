@@ -708,6 +708,10 @@ class StpmCourse(models.Model):
         max_length=500, blank=True, default='',
         help_text='Link to MOHE ePanduan programme page'
     )
+    is_active = models.BooleanField(
+        default=True,
+        help_text='False = removed from MOHE, hidden from search/eligibility'
+    )
 
     # Quiz enrichment fields (Sprint 2 — RIASEC matching)
     riasec_type = models.CharField(
