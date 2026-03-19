@@ -1,5 +1,14 @@
 # Changelog
 
+## W7 FIELD_KEY_MAP Expansion Sprint — 2026-03-20
+
+### Added
+- **W7: Expanded FIELD_KEY_MAP** — 7 new field_key mappings to existing quiz signals: kejururawatan+pergigian→field_health, sains-data→field_digital, kejuruteraan-am→field_mechanical+field_heavy_industry, komunikasi→field_creative, sains-fizikal→field_agriculture. Coverage: 22/37 → 30/37 leaf keys. 8 tests.
+
+### Changed
+- Test count: 932 → 940
+- Search filter pills now sorted alphabetically (source type + field)
+
 ## Ranking Improvements Sprint — 2026-03-19
 
 ### Added

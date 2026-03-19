@@ -580,6 +580,74 @@ class TestFieldInterestMatching(TestCase):
         self.assertEqual(score, BASE_SCORE + FIELD_INTEREST_CAP)
 
 
+class TestW7ExpandedFieldKeyMap(TestCase):
+    """W7: Verify newly mapped field_keys get field interest boosts."""
+
+    def test_nursing_matches_health(self):
+        """kejururawatan (nursing) should match field_health signal."""
+        signals = make_signals(**{'field_interest.field_health': 3})
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {}, {},
+            field_key='kejururawatan')
+        self.assertGreater(score, BASE_SCORE)
+
+    def test_dentistry_matches_health(self):
+        """pergigian (dentistry) should match field_health signal."""
+        signals = make_signals(**{'field_interest.field_health': 3})
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {}, {},
+            field_key='pergigian')
+        self.assertGreater(score, BASE_SCORE)
+
+    def test_data_science_matches_digital(self):
+        """sains-data (data science) should match field_digital signal."""
+        signals = make_signals(**{'field_interest.field_digital': 3})
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {}, {},
+            field_key='sains-data')
+        self.assertGreater(score, BASE_SCORE)
+
+    def test_general_engineering_matches_mechanical(self):
+        """kejuruteraan-am (general engineering) should match field_mechanical."""
+        signals = make_signals(**{'field_interest.field_mechanical': 3})
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {}, {},
+            field_key='kejuruteraan-am')
+        self.assertGreater(score, BASE_SCORE)
+
+    def test_general_engineering_matches_heavy_industry(self):
+        """kejuruteraan-am should also match field_heavy_industry."""
+        signals = make_signals(**{'field_interest.field_heavy_industry': 3})
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {}, {},
+            field_key='kejuruteraan-am')
+        self.assertGreater(score, BASE_SCORE)
+
+    def test_communications_matches_creative(self):
+        """komunikasi (communications) should match field_creative."""
+        signals = make_signals(**{'field_interest.field_creative': 3})
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {}, {},
+            field_key='komunikasi')
+        self.assertGreater(score, BASE_SCORE)
+
+    def test_physical_science_matches_agriculture(self):
+        """sains-fizikal (physical science) should match field_agriculture."""
+        signals = make_signals(**{'field_interest.field_agriculture': 3})
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {}, {},
+            field_key='sains-fizikal')
+        self.assertGreater(score, BASE_SCORE)
+
+    def test_unmapped_field_still_no_boost(self):
+        """pendidikan (education) has no matching signal — should stay at BASE_SCORE."""
+        signals = make_signals(**{'field_interest.field_health': 3})
+        score, _ = calculate_fit_score(
+            {'student_signals': signals}, 'C001', 'I001', {}, {},
+            field_key='pendidikan')
+        self.assertEqual(score, BASE_SCORE)
+
+
 class TestHighStaminaSignal(TestCase):
     def test_high_stamina_boosts_physically_demanding(self):
         signals = make_signals(**{'energy_sensitivity_signals.high_stamina': 1})

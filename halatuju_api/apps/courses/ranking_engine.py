@@ -25,18 +25,21 @@ WORK_PREFERENCE_CAP = 4
 # Maps quiz signal names to the canonical taxonomy keys they match.
 # Used by both SPM and STPM ranking for field interest scoring.
 FIELD_KEY_MAP = {
-    'field_mechanical': ['mekanikal', 'automotif', 'mekatronik'],
-    'field_digital': ['it-perisian', 'it-rangkaian', 'multimedia'],
+    'field_mechanical': ['mekanikal', 'automotif', 'mekatronik', 'kejuruteraan-am'],
+    'field_digital': ['it-perisian', 'it-rangkaian', 'multimedia', 'sains-data'],
     'field_business': ['perniagaan', 'perakaunan', 'pengurusan'],
-    'field_health': ['perubatan', 'farmasi', 'sains-hayat'],
-    'field_creative': ['senireka', 'multimedia'],
+    'field_health': [
+        'perubatan', 'farmasi', 'sains-hayat',
+        'kejururawatan', 'pergigian',
+    ],
+    'field_creative': ['senireka', 'multimedia', 'komunikasi'],
     'field_hospitality': ['hospitaliti', 'kulinari', 'kecantikan'],
-    'field_agriculture': ['pertanian', 'alam-sekitar'],
+    'field_agriculture': ['pertanian', 'alam-sekitar', 'sains-fizikal'],
     'field_heavy_industry': [
         'mekanikal', 'automotif', 'mekatronik',
         'aero', 'marin', 'minyak-gas',
         'elektrik', 'sivil', 'senibina',
-        'kimia-proses',
+        'kimia-proses', 'kejuruteraan-am',
     ],
     'field_electrical': ['elektrik'],
     'field_civil': ['sivil', 'senibina'],

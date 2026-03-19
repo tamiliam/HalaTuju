@@ -120,7 +120,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_auth.py | 15 | Auth enforcement — protected endpoints reject 401, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
 | test_saved_courses.py | 17 | SPM save/list/delete/idempotent/course_type, STPM save (auto-detect prefix + explicit type)/list/filter/delete/patch/404, both types list, qualification filter (SPM/STPM), check constraint (both-null/both-set rejected) |
 | test_quiz.py | 24 | Quiz endpoints (questions 3 langs, submit single+multi, validation), engine (multi-select, weight splitting, Not Sure Yet, conditional Q2.5, field_interest, signal strength, lang parity) |
-| test_ranking.py | 62 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, ranked list output, API endpoint validation, field interest matching via field_key (primary/no match/cap/heavy_industry/no field_key/double match), high_stamina, rote_tolerant, quality_priority, work preference cap, pre-U scoring (Matric/STPM prestige, academic bonus, field preference, signal adjustment, signal cap, routing) |
+| test_ranking.py | 70 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, ranked list output, API endpoint validation, field interest matching via field_key (primary/no match/cap/heavy_industry/no field_key/double match), W7 expanded mappings (nursing/dentistry→health, data science→digital, gen engineering→mechanical+heavy, comms→creative, physical science→agriculture, unmapped→no boost), high_stamina, rote_tolerant, quality_priority, work preference cap, pre-U scoring (Matric/STPM prestige, academic bonus, field preference, signal adjustment, signal cap, routing) |
 | test_data_loading.py | 10 | TVET metadata enrichment, PISMP metadata enrichment, institution modifiers storage, MASCO occupation model (PK, M2M, reverse relation, idempotent load, __str__) |
 | test_insights.py | 8 | Insights engine: empty input, stream breakdown, labels, top fields, merit counts, level distribution, summary text |
 | test_report_engine.py | 37 | Report engine: format helpers (SPM grades, STPM grades, human-readable signals BM/EN, courses sorted by fit score, insights), prompts (SPM BM/EN, STPM BM/EN, placeholder parity), exam_type routing (SPM/STPM), Gemini mock (success, cascade, missing key) |
@@ -172,7 +172,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (932 collected, 932 must pass, SPM golden master = 5319, STPM golden master = 2026)
+# 1. Run all tests (940 collected, 940 must pass, SPM golden master = 5319, STPM golden master = 2026)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -184,7 +184,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-932 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
+940 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -231,7 +231,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - Ranking: W4 (PISMP tags) and W11 (STPM stream pre-quiz signal) done
 - W16 resolved: 100% STPM enrichment coverage in production
 
-**Current state:** 932 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026. Deployed.
+**Current state:** 940 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
 
 **Next: Polish & User Testing Sprint**
 - User testing with real STPM students (Science + Arts branches)
@@ -243,7 +243,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 **Pending work (parked)**
 - **Ranking improvements** (full audit: `docs/2026-03-18-ranking-audit.md`)
   - ~~W4: PISMP course tags~~ — **DONE** (2026-03-19). 73 PISMP courses backfilled via `backfill_pismp_tags` command + SQL. 12 specialisations mapped (Sains→lab, Jasmani→field, Muzik/Seni→workshop, Reka Bentuk→workshop+design, etc.). 33 tests added. Applied to production Supabase.
-  - W7: Expand SPM FIELD_KEY_MAP — only 12 quiz signals map to field_keys but taxonomy has ~45 keys. Courses in unmapped fields (pelancongan, tekstil, alam-sekitar) get no field interest boost. Fix: map existing signals more broadly (e.g., field_hospitality → also pelancongan).
+  - ~~W7: Expand SPM FIELD_KEY_MAP~~ — **DONE** (2026-03-20). Added 7 field_keys to existing signals: kejururawatan+pergigian→field_health, sains-data→field_digital, kejuruteraan-am→field_mechanical+field_heavy_industry, komunikasi→field_creative, sains-fizikal→field_agriculture. 8 tests added. Remaining unmapped keys (pendidikan, bahasa, pengajian-islam, undang-undang, sains-sosial, umum) need new quiz questions — separate effort.
   - W8: Institution modifiers + real proximity scoring — **separate sprint, 3 parts**: (1) Populate modifiers: zero institutions have modifiers today, but Institution model has lat/long, state, demographics — need a command to derive `urban` and `cultural_safety_net`. (2) Capture student location: add home state or lat/long to StudentProfile. (3) Real proximity scoring: `proximity_priority` quiz signal currently doesn't check actual distance — STPM pathway gives hardcoded +1, generic courses check `cultural_safety_net` (empty). Should calculate real distance from student to institution. Affects all SPM courses (±5 institution points completely inert) + makes proximity_priority meaningful.
   - ~~W11: STPM stream as free pre-quiz signal~~ — **DONE** (2026-03-19). Backend `StpmRankingView` derives RIASEC seed from `stpm_subjects` via `calculate_riasec_seed()` when no quiz signals present. Frontend sends `stpm_subjects` (subject keys from grade input). Science students now see I-type programmes ranked higher; arts students see A-type higher. Post-quiz signals take precedence (not overwritten). 7 tests added.
   - W14: Richer STPM sort tie-breaking — currently only score desc + name asc. Add university type/subcategory, min_cgpa competitiveness. SPM has 7-level hierarchy; STPM has 2. ~30 min fix.

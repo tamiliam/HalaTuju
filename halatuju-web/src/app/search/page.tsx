@@ -354,7 +354,9 @@ function SearchPageInner() {
           <FilterPill
             label={t('search.allTypes')}
             value={sourceType}
-            options={(filters?.source_types ?? []).filter(t => t !== 'tvet')}
+            options={(filters?.source_types ?? []).filter(t => t !== 'tvet').sort((a, b) =>
+              (SOURCE_LABELS[a] ?? a).localeCompare(SOURCE_LABELS[b] ?? b, 'ms')
+            )}
             optionLabels={SOURCE_LABELS}
             onChange={setSourceType}
           />
@@ -376,7 +378,7 @@ function SearchPageInner() {
           <FilterPill
             label={t('search.allFields')}
             value={field}
-            options={taxonomyLoaded ? fieldOptions.map(f => f.key) : (filters?.fields ?? [])}
+            options={taxonomyLoaded ? [...fieldOptions].sort((a, b) => a.label.localeCompare(b.label, 'ms')).map(f => f.key) : (filters?.fields ?? [])}
             optionLabels={taxonomyLoaded ? Object.fromEntries(fieldOptions.map(f => [f.key, f.label])) : undefined}
             onChange={setField}
           />
