@@ -3,6 +3,7 @@ import { Lexend } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 import { ReferralCapture } from '@/components/ReferralCapture'
+import { HtmlLang } from '@/components/HtmlLang'
 
 const lexend = Lexend({
   subsets: ['latin'],
@@ -25,6 +26,7 @@ export default function RootLayout({
     <html lang="en" className={lexend.variable}>
       <body className="font-sans">
         <Providers>
+          <HtmlLang />
           <ReferralCapture />
           {children}
         </Providers>

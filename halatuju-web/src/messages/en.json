@@ -27,7 +27,11 @@
     "femaleOnly": "Female Applicants Only",
     "unmarriedOnly": "Unmarried Applicants Only",
     "noDisability": "No Physical Disability",
-    "more": "more"
+    "more": "more",
+    "clear": "Clear",
+    "remove": "Remove",
+    "dismiss": "Dismiss",
+    "menu": "Menu"
   },
   "header": {
     "myProfile": "My Profile",

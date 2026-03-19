@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { useT } from '@/lib/i18n'
 
 interface ToastState {
   message: string
@@ -44,6 +45,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 
 function ToastItem({ toast, onDismiss }: { toast: ToastState; onDismiss: (id: number) => void }) {
+  const { t } = useT()
   useEffect(() => {
     const timer = setTimeout(() => onDismiss(toast.id), 3000)
     return () => clearTimeout(timer)
@@ -68,7 +70,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastState; onDismiss: (id: nu
       <button
         onClick={() => onDismiss(toast.id)}
         className="ml-auto opacity-70 hover:opacity-100"
-        aria-label="Dismiss"
+        aria-label={t('common.dismiss')}
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

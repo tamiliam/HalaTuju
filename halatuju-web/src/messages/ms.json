@@ -27,7 +27,11 @@
     "femaleOnly": "Perempuan Sahaja",
     "unmarriedOnly": "Belum Berkahwin",
     "noDisability": "Tiada Kecacatan Fizikal",
-    "more": "lagi"
+    "more": "lagi",
+    "clear": "Kosongkan",
+    "remove": "Buang",
+    "dismiss": "Tutup",
+    "menu": "Menu"
   },
   "header": {
     "myProfile": "Profil Saya",

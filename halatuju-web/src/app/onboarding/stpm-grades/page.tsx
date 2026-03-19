@@ -337,7 +337,7 @@ export default function StpmGradesPage() {
                   <button
                     onClick={() => handleSubjectChange(index, '')}
                     className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"
-                    aria-label="Remove"
+                    aria-label={t('common.remove')}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -376,7 +376,7 @@ export default function StpmGradesPage() {
                   <button
                     onClick={() => { handleElectiveChange(''); setShowElective(false) }}
                     className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"
-                    aria-label="Remove"
+                    aria-label={t('common.remove')}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -555,7 +555,7 @@ export default function StpmGradesPage() {
                     <button
                       onClick={() => handleSpmAliranChange(index, '')}
                       className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"
-                      aria-label="Remove"
+                      aria-label={t('common.remove')}
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -601,7 +601,7 @@ export default function StpmGradesPage() {
                     <button
                       onClick={() => removeSpmElektifSlot(index)}
                       className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"
-                      aria-label="Remove"
+                      aria-label={t('common.remove')}
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

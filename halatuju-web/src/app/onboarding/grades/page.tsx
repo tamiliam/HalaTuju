@@ -447,6 +447,7 @@ function CoreSubjectGrade({
   onChange: (grade: string) => void
   onClear: () => void
 }) {
+  const { t } = useT()
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-4">
       <div className="flex items-center justify-between mb-3">
@@ -462,7 +463,7 @@ function CoreSubjectGrade({
           <span className="text-red-500 text-sm">*</span>
         </div>
         {value && (
-          <button onClick={onClear} className="text-gray-400 hover:text-gray-600 p-1" aria-label="Clear">
+          <button onClick={onClear} className="text-gray-400 hover:text-gray-600 p-1" aria-label={t('common.clear')}>
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -547,7 +548,7 @@ function CompactSubjectRow({
       <button
         onClick={onRemove}
         className="text-gray-400 hover:text-red-500 p-1 flex-shrink-0"
-        aria-label="Remove"
+        aria-label={t('common.remove')}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
