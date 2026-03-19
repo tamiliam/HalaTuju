@@ -101,7 +101,7 @@ function SearchPageInner() {
           muet_band: parseInt(muetBandStr),
           gender: genderMap[profileData.gender] || '',
           nationality: nationalityMap[profileData.nationality] || 'Warganegara',
-          colorblind: profileData.colorblind ? 'Ya' : 'Tidak',
+          colorblind: !!profileData.colorblind,
         })
 
         // Map STPM eligible courses to EligibleCourse format

@@ -71,8 +71,8 @@ export default function ProfileInputPage() {
           gender,
           nationality,
           preferred_state: state,
-          colorblind: colorblind ? 'Ya' : 'Tidak',
-          disability: disability ? 'Ya' : 'Tidak',
+          colorblind,
+          disability,
         }, { token }).catch(() => {})
       }
 

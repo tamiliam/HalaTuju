@@ -145,7 +145,7 @@ export default function DashboardPage() {
       muet_band: stpmData.muetBand,
       gender: genderMap[profile.gender] || '',
       nationality: nationalityMap[profile.nationality] || 'Warganegara',
-      colorblind: profile.colorblind ? 'Ya' : 'Tidak',
+      colorblind: !!profile.colorblind,
     }).then(data => {
       // Chain ranking after eligibility — use STPM quiz signals if available
       const stpmSignalsStr = localStorage.getItem(KEY_STPM_QUIZ_SIGNALS)

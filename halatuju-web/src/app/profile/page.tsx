@@ -173,8 +173,8 @@ export default function ProfilePage() {
         contact_phone: contactPhone,
         family_income: familyIncome,
         siblings: siblings ? parseInt(siblings, 10) : null,
-        colorblind: colorblind ? 'Ya' : 'Tidak',
-        disability: disability ? 'Ya' : 'Tidak',
+        colorblind,
+        disability,
         angka_giliran: angkaGiliran,
       }, { token })
 

@@ -38,8 +38,8 @@ export interface StudentProfile {
   grades: Record<string, string>
   gender: 'male' | 'female'
   nationality: 'malaysian' | 'non_malaysian'
-  colorblind?: boolean | 'Ya' | 'Tidak'
-  disability?: boolean | 'Ya' | 'Tidak'
+  colorblind?: boolean
+  disability?: boolean
   coq_score?: number
   student_merit?: number
   student_signals?: Record<string, number>
@@ -509,8 +509,8 @@ export interface SyncProfileData {
   grades?: Record<string, string>
   gender?: string
   nationality?: string
-  colorblind?: string
-  disability?: string
+  colorblind?: boolean
+  disability?: boolean
   student_signals?: Record<string, Record<string, number>>
   preferred_state?: string
   name?: string
@@ -553,7 +553,7 @@ export interface StpmEligibilityRequest {
   muet_band: number
   gender?: string
   nationality?: string
-  colorblind?: string
+  colorblind?: boolean
 }
 
 export interface StpmEligibilityResponse {
