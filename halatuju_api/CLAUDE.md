@@ -226,21 +226,20 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**i18n Sprint 1 COMPLETE (2026-03-19)**
-- BooleanField conversion: colorblind/disability CharField→BooleanField end-to-end (fixes dashboard 400 bug)
-- i18n: error mapping layer (`ERROR_MAP` + `PATTERN_MAP`) + hardcoded string removal across 5 page groups
-- Trilingual email verification (EN/MS/TA subject + body, `lang` parameter)
-- Dynamic `<html lang>` attribute, translated aria-labels (Clear, Remove, Dismiss)
-- UI fixes: stats numbers, login button overflow, profile incomplete count badge
-- Migration 0046 applied to Supabase
+**i18n Sprint 2 COMPLETE (2026-03-19)**
+- All 7 admin pages i18n'd: layout, login, dashboard, students list, student detail, invite, profile
+- 118 admin i18n keys added (EN/MS/TA parity verified)
+- Interpolation: `studentsCount`, `showingRange`, `orgInfo`
+- Final grep: zero hardcoded UI strings remaining in admin pages
 
 **Current state:** 892 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026. Needs deploy after push.
 
-**Next: i18n Sprint 2 — Admin Pages**
-- Task 8: Admin student detail page (~50 Malay strings → i18n)
-- Task 9: Admin layout, login, invite, student list (~20 strings)
-- Task 10: Final grep + parity check across all 3 message files
-- Then: Deploy backend+frontend to Cloud Run
+**Next: Deploy + Polish & User Testing Sprint**
+- Deploy backend+frontend to Cloud Run (i18n Sprint 1 + 2 combined)
+- User testing with real STPM students (Science + Arts branches)
+- Adjust signal weights based on feedback
+- Mobile testing across quiz branches
+- Trilingual content review (verify all quiz question text renders correctly in BM/TA)
 
 **After i18n: Polish & User Testing Sprint**
 - User testing with real STPM students (Science + Arts branches)
@@ -253,10 +252,11 @@ Supabase Security Advisor must show 0 errors before deploy.
 - **Ranking improvements** (full audit: `docs/2026-03-18-ranking-audit.md`)
   - W4: Backfill 73 PISMP course tags — PISMP courses use generic `calculate_fit_score()` but have no `CourseTag` rows, so quiz has zero effect on their ranking. Need a `generate_pismp_tags` command mapping specialisations to tags (e.g., PISMP Sains → cognitive_type:abstract, environment:lab, people_interaction:high_people). All teaching courses are high_people by nature; specialisation determines other dimensions.
   - W7: Expand SPM FIELD_KEY_MAP — only 12 quiz signals map to field_keys but taxonomy has ~45 keys. Courses in unmapped fields (pelancongan, tekstil, alam-sekitar) get no field interest boost. Fix: map existing signals more broadly (e.g., field_hospitality → also pelancongan).
-  - W8: Auto-populate institution modifiers — **separate sprint**. Zero institutions have modifiers populated (the JSONField was added but never backfilled). Institution model already has lat/long, state, dun, parliament, indian_population, indian_percentage, average_income — need a command to derive `urban` and `cultural_safety_net` from these. Affects all SPM courses (±5 points completely inert today). PISMP institutions (IPG campuses) would especially benefit — Tamil-stream students need cultural_safety_net scoring.
+  - W8: Institution modifiers + real proximity scoring — **separate sprint, 3 parts**: (1) Populate modifiers: zero institutions have modifiers today, but Institution model has lat/long, state, demographics — need a command to derive `urban` and `cultural_safety_net`. (2) Capture student location: add home state or lat/long to StudentProfile. (3) Real proximity scoring: `proximity_priority` quiz signal currently doesn't check actual distance — STPM pathway gives hardcoded +1, generic courses check `cultural_safety_net` (empty). Should calculate real distance from student to institution. Affects all SPM courses (±5 institution points completely inert) + makes proximity_priority meaningful.
   - W11: Use STPM stream as free pre-quiz signal — student's STPM subjects are already known from grade input. Map via existing SUBJECT_RIASEC_MAP to apply field_match boost (+4 to +8) without quiz. Currently STPM pre-quiz is CGPA-only (score range 30-70), so a science student sees arts programmes ranked equally at same CGPA margin.
   - W14: Richer STPM sort tie-breaking — currently only score desc + name asc. Add university type/subcategory, min_cgpa competitiveness. SPM has 7-level hierarchy; STPM has 2. ~30 min fix.
-  - W16: Audit STPM enrichment completeness — run `enrich_stpm_riasec --dry-run` to count null riasec_type/efficacy_domain on StpmCourse. Courses with nulls get neutral scores (0 RIASEC alignment, no efficacy engagement). Target 95%+ coverage before deploying quiz-informed ranking.
+  - W16: Audit STPM enrichment completeness — **RESOLVED**: production has 1,112/1,112 courses enriched (100%). Test fixtures don't have the data but production is fine. `efficacy_domain` is stored but not consumed by ranking formula — potential future enhancement.
+  - W21: Add matric:sains and stpm:sains to TRACK_FIELD_MAP — science tracks missing from field preference mapping, so students interested in health/agriculture get no +3 bonus for the science pre-U track. Quick fix: add field_health, field_agriculture to both.
 - Report: MASCO career data in prompt, institution/location context (low priority)
 - Report: EN language selector in frontend
 - STPM Pipeline: test scrapers against live MOHE

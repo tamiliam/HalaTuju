@@ -5,10 +5,12 @@ import { getPartnerDashboard, type DashboardData } from '@/lib/admin-api'
 import { useEffect, useState } from 'react'
 import QRCode from 'react-qr-code'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
+import { useT } from '@/lib/i18n'
 
 export default function AdminDashboard() {
   const { token } = useAdminAuth()
   const { getFieldName } = useFieldTaxonomy()
+  const { t } = useT()
   const [data, setData] = useState<DashboardData | null>(null)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
@@ -17,7 +19,7 @@ export default function AdminDashboard() {
     if (!token) return
     getPartnerDashboard({ token })
       .then(setData)
-      .catch(() => setError('Anda bukan admin organisasi rakan kongsi.'))
+      .catch(() => setError(t('admin.notPartnerAdmin')))
   }, [token])
 
   const referralUrl = data?.org_code
@@ -39,25 +41,25 @@ export default function AdminDashboard() {
 
   if (!data) {
     return (
-      <div className="mt-8 text-center text-gray-500">Loading...</div>
+      <div className="mt-8 text-center text-gray-500">{t('common.loading')}</div>
     )
   }
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">
-        {data.org_name} &mdash; Dashboard
+        {data.org_name} &mdash; {t('common.dashboard')}
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="bg-white rounded-lg p-6 shadow-sm border">
-          <p className="text-sm text-gray-500">Jumlah Pelajar</p>
+          <p className="text-sm text-gray-500">{t('admin.totalStudents')}</p>
           <p className="text-3xl font-bold text-blue-600">
             {data.total_students}
           </p>
         </div>
         <div className="bg-white rounded-lg p-6 shadow-sm border">
-          <p className="text-sm text-gray-500">Selesai Onboarding</p>
+          <p className="text-sm text-gray-500">{t('admin.completedOnboarding')}</p>
           <p className="text-3xl font-bold text-green-600">
             {data.completed_onboarding}
           </p>
@@ -72,9 +74,9 @@ export default function AdminDashboard() {
 
       {referralUrl && (
         <div className="bg-white rounded-lg p-6 shadow-sm border mb-8">
-          <h2 className="font-semibold mb-1">Pautan Rujukan Pelajar</h2>
+          <h2 className="font-semibold mb-1">{t('admin.referralLink')}</h2>
           <p className="text-sm text-gray-500 mb-4">
-            Kongsi pautan ini kepada pelajar untuk mendaftar di bawah organisasi anda.
+            {t('admin.referralDesc')}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-6">
@@ -91,13 +93,13 @@ export default function AdminDashboard() {
                   onClick={handleCopy}
                   className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
                 >
-                  {copied ? 'Disalin!' : 'Salin'}
+                  {copied ? t('admin.copied') : t('admin.copy')}
                 </button>
               </div>
 
               <div className="flex gap-2">
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`Daftar di HalaTuju untuk semak kelayakan kursus anda: ${referralUrl}`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(`${t('admin.whatsappText')} ${referralUrl}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
@@ -114,7 +116,7 @@ export default function AdminDashboard() {
               <div className="bg-white p-3 border rounded-lg">
                 <QRCode value={referralUrl} size={120} />
               </div>
-              <p className="text-xs text-gray-400">Imbas untuk mendaftar</p>
+              <p className="text-xs text-gray-400">{t('admin.scanToRegister')}</p>
             </div>
           </div>
         </div>
@@ -122,12 +124,12 @@ export default function AdminDashboard() {
 
       {data.top_fields.length > 0 && (
         <div className="bg-white rounded-lg p-6 shadow-sm border">
-          <h2 className="font-semibold mb-3">Bidang Popular</h2>
+          <h2 className="font-semibold mb-3">{t('admin.popularFields')}</h2>
           <ul className="space-y-2">
             {data.top_fields.map((f) => (
               <li key={f.field} className="flex justify-between">
                 <span>{getFieldName(f.field) || f.field}</span>
-                <span className="text-gray-500">{f.count} pelajar</span>
+                <span className="text-gray-500">{f.count} {t('admin.studentsLabel')}</span>
               </li>
             ))}
           </ul>

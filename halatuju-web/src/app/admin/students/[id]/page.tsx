@@ -5,11 +5,13 @@ import { getPartnerStudent, deleteStudent, type StudentDetailData } from '@/lib/
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useT } from '@/lib/i18n'
 
 export default function AdminStudentDetail() {
   const { id } = useParams<{ id: string }>()
   const { token, role } = useAdminAuth()
   const router = useRouter()
+  const { t } = useT()
   const [data, setData] = useState<StudentDetailData | null>(null)
   const [error, setError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState('')
@@ -19,7 +21,7 @@ export default function AdminStudentDetail() {
     if (!token || !id) return
     getPartnerStudent(id, { token })
       .then(setData)
-      .catch(() => setError('Pelajar tidak ditemui.'))
+      .catch(() => setError(t('apiErrors.studentNotFound')))
   }, [token, id])
 
   if (error) {
@@ -27,7 +29,7 @@ export default function AdminStudentDetail() {
   }
 
   if (!data) {
-    return <div className="mt-8 text-center text-gray-500">Loading...</div>
+    return <div className="mt-8 text-center text-gray-500">{t('common.loading')}</div>
   }
 
   const handleDelete = async () => {
@@ -37,7 +39,7 @@ export default function AdminStudentDetail() {
       await deleteStudent(data.supabase_user_id, { token: token! })
       router.replace('/admin/students')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete')
+      setError(err instanceof Error ? err.message : t('admin.deleteFailed'))
       setDeleting(false)
     }
   }
@@ -49,9 +51,9 @@ export default function AdminStudentDetail() {
   const fieldInterest = (data.student_signals?.field_interest || {}) as Record<string, number>
 
   const getStrengthLabel = (value: number) => {
-    if (value >= 0.7) return { text: 'Kuat', className: 'bg-green-100 text-green-700' }
-    if (value >= 0.4) return { text: 'Sederhana', className: 'bg-yellow-100 text-yellow-700' }
-    return { text: 'Rendah', className: 'bg-gray-100 text-gray-600' }
+    if (value >= 0.7) return { text: t('admin.strong'), className: 'bg-green-100 text-green-700' }
+    if (value >= 0.4) return { text: t('admin.moderate'), className: 'bg-yellow-100 text-yellow-700' }
+    return { text: t('admin.weak'), className: 'bg-gray-100 text-gray-600' }
   }
 
   const formatNric = (nric: string | null) => {
@@ -85,10 +87,10 @@ export default function AdminStudentDetail() {
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        Kembali ke senarai
+        {t('admin.backToList')}
       </Link>
 
-      <h1 className="text-2xl font-bold mb-1">{data.name || 'Tiada Nama'}</h1>
+      <h1 className="text-2xl font-bold mb-1">{data.name || t('admin.noName')}</h1>
       <p className="text-gray-500 mb-8 text-sm">
         {formatNric(data.nric)} &middot; {data.exam_type?.toUpperCase()} &middot; {data.gender}
       </p>
@@ -97,46 +99,46 @@ export default function AdminStudentDetail() {
         {/* Card 1: Maklumat Peribadi */}
         <div className="bg-white rounded-xl p-6 shadow-sm border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
-            <span className="text-lg">&#128100;</span> Maklumat Peribadi
+            <span className="text-lg">&#128100;</span> {t('admin.personalInfo')}
           </h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">Nama Penuh</dt><dd className="font-medium">{data.name || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">Angka Giliran</dt><dd className="font-mono">{data.angka_giliran || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">Kewarganegaraan</dt><dd>{data.nationality || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.fullName')}</dt><dd className="font-medium">{data.name || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('profile.angkaGiliran')}</dt><dd className="font-mono">{data.angka_giliran || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.nationality')}</dt><dd>{data.nationality || '\u2014'}</dd></div>
           </dl>
         </div>
 
         {/* Card 2: Hubungi & Sekolah */}
         <div className="bg-white rounded-xl p-6 shadow-sm border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
-            <span className="text-lg">&#128222;</span> Hubungi &amp; Sekolah
+            <span className="text-lg">&#128222;</span> {t('admin.contactSchool')}
           </h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">Telefon</dt><dd>{formatPhone(data.phone)}</dd></div>
-            <div><dt className="text-gray-500">Alamat</dt><dd className="mt-1">{[data.address, [data.postal_code, data.city].filter(Boolean).join(' '), data.preferred_state].filter(Boolean).join(', ') || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">Sekolah</dt><dd>{data.school || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.phone')}</dt><dd>{formatPhone(data.phone)}</dd></div>
+            <div><dt className="text-gray-500">{t('admin.address')}</dt><dd className="mt-1">{[data.address, [data.postal_code, data.city].filter(Boolean).join(' '), data.preferred_state].filter(Boolean).join(', ') || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.school')}</dt><dd>{data.school || '\u2014'}</dd></div>
           </dl>
         </div>
 
         {/* Card 3: Latar Belakang Keluarga */}
         <div className="bg-white rounded-xl p-6 shadow-sm border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
-            <span className="text-lg">&#128106;</span> Latar Belakang Keluarga
+            <span className="text-lg">&#128106;</span> {t('admin.familyBackground')}
           </h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">Pendapatan Keluarga</dt><dd>{data.family_income || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">Bilangan Adik-Beradik</dt><dd>{data.siblings ?? '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.familyIncome')}</dt><dd>{data.family_income || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.siblings')}</dt><dd>{data.siblings ?? '\u2014'}</dd></div>
           </dl>
         </div>
 
         {/* Card 4: Kesihatan & Kelayakan */}
         <div className="bg-white rounded-xl p-6 shadow-sm border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
-            <span className="text-lg">&#127973;</span> Kesihatan &amp; Kelayakan
+            <span className="text-lg">&#127973;</span> {t('admin.healthEligibility')}
           </h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">Buta Warna</dt><dd>{data.colorblind || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">OKU</dt><dd>{data.disability || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.colorblind')}</dt><dd>{data.colorblind || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.disability')}</dt><dd>{data.disability || '\u2014'}</dd></div>
           </dl>
         </div>
 
@@ -144,7 +146,7 @@ export default function AdminStudentDetail() {
         {hasSpmGrades && (
           <div className="bg-white rounded-xl p-6 shadow-sm border md:col-span-2">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
-              <span className="text-lg">&#128202;</span> Keputusan SPM
+              <span className="text-lg">&#128202;</span> {t('admin.spmResults')}
             </h2>
             <div className="flex flex-wrap gap-2">
               {Object.entries(data.grades).map(([subject, grade]) => (
@@ -161,7 +163,7 @@ export default function AdminStudentDetail() {
         {hasStpmGrades && (
           <div className="bg-white rounded-xl p-6 shadow-sm border md:col-span-2">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
-              <span className="text-lg">&#128202;</span> Keputusan STPM
+              <span className="text-lg">&#128202;</span> {t('admin.stpmResults')}
             </h2>
             <div className="flex gap-4 mb-4 text-sm">
               {data.stpm_cgpa != null && (
@@ -190,25 +192,25 @@ export default function AdminStudentDetail() {
         {!hasSpmGrades && !hasStpmGrades && (
           <div className="bg-white rounded-xl p-6 shadow-sm border md:col-span-2">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
-              <span className="text-lg">&#128202;</span> Keputusan Peperiksaan
+              <span className="text-lg">&#128202;</span> {t('admin.examResults')}
             </h2>
-            <p className="text-gray-400 text-sm">Belum diisi</p>
+            <p className="text-gray-400 text-sm">{t('admin.notFilled')}</p>
           </div>
         )}
 
         {/* Card 7: Keutamaan & Isyarat */}
         <div className="bg-white rounded-xl p-6 shadow-sm border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
-            <span className="text-lg">&#11088;</span> Keutamaan &amp; Isyarat
+            <span className="text-lg">&#11088;</span> {t('admin.preferencesSignals')}
           </h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">Negeri Pilihan</dt><dd>{data.preferred_state || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">Tekanan Kewangan</dt><dd>{data.financial_pressure || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">Kesanggupan Berpindah</dt><dd>{data.travel_willingness || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.preferredState')}</dt><dd>{data.preferred_state || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.financialPressure')}</dt><dd>{data.financial_pressure || '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.travelWillingness')}</dt><dd>{data.travel_willingness || '\u2014'}</dd></div>
           </dl>
           {Object.keys(fieldInterest).length > 0 && (
             <div className="mt-4 pt-3 border-t border-gray-100">
-              <p className="text-gray-500 text-sm mb-2">Minat Bidang</p>
+              <p className="text-gray-500 text-sm mb-2">{t('admin.fieldInterest')}</p>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(fieldInterest).map(([field, value]) => {
                   const strength = getStrengthLabel(value as number)
@@ -227,7 +229,7 @@ export default function AdminStudentDetail() {
         {/* Card 8: Kursus Disimpan */}
         <div className="bg-white rounded-xl p-6 shadow-sm border">
           <h2 className="font-semibold mb-4 flex items-center gap-2">
-            <span className="text-lg">&#128218;</span> Kursus Disimpan
+            <span className="text-lg">&#128218;</span> {t('admin.savedCourses')}
           </h2>
           {data.saved_courses?.length > 0 ? (
             <ul className="space-y-2.5 text-sm">
@@ -239,7 +241,7 @@ export default function AdminStudentDetail() {
               ))}
             </ul>
           ) : (
-            <p className="text-gray-400 text-sm">Tiada kursus disimpan</p>
+            <p className="text-gray-400 text-sm">{t('admin.noSavedCourses')}</p>
           )}
         </div>
 
@@ -247,12 +249,12 @@ export default function AdminStudentDetail() {
         {role?.is_super_admin && (
           <div className="bg-white rounded-xl p-6 shadow-sm border">
             <h2 className="font-semibold mb-4 flex items-center gap-2">
-              <span className="text-lg">&#128279;</span> Sumber Rujukan
-              <span className="text-[10px] text-gray-400 ml-1">[Super Admin]</span>
+              <span className="text-lg">&#128279;</span> {t('admin.referralSource')}
+              <span className="text-[10px] text-gray-400 ml-1">[{t('admin.superAdmin')}]</span>
             </h2>
             <dl className="space-y-3 text-sm">
-              <div className="flex justify-between"><dt className="text-gray-500">Sumber</dt><dd>{data.referral_source || '\u2014'}</dd></div>
-              <div className="flex justify-between"><dt className="text-gray-500">Organisasi</dt><dd>{data.org_name || '\u2014'}</dd></div>
+              <div className="flex justify-between"><dt className="text-gray-500">{t('admin.source')}</dt><dd>{data.referral_source || '\u2014'}</dd></div>
+              <div className="flex justify-between"><dt className="text-gray-500">{t('admin.orgLabel')}</dt><dd>{data.org_name || '\u2014'}</dd></div>
             </dl>
           </div>
         )}
@@ -264,11 +266,11 @@ export default function AdminStudentDetail() {
           <div className="px-6 py-4 bg-red-50 border-b border-red-200 flex items-center justify-between">
             <div>
               <h2 className="font-semibold text-red-700 flex items-center gap-2">
-                <span className="text-lg">&#9888;&#65039;</span> Zon Bahaya
-                <span className="text-[10px] text-red-400 ml-1">[Super Admin]</span>
+                <span className="text-lg">&#9888;&#65039;</span> {t('admin.dangerZone')}
+                <span className="text-[10px] text-red-400 ml-1">[{t('admin.superAdmin')}]</span>
               </h2>
               <p className="text-sm text-red-500 mt-0.5">
-                Tindakan ini tidak boleh dibatalkan. Sila kenali hati sebelum memadamkan maklumat pelajar.
+                {t('admin.dangerWarning')}
               </p>
             </div>
           </div>
@@ -277,7 +279,7 @@ export default function AdminStudentDetail() {
               type="text"
               value={deleteConfirm}
               onChange={(e) => setDeleteConfirm(e.target.value)}
-              placeholder='Taip "delete" untuk mengesahkan'
+              placeholder={t('admin.typeDeleteConfirm')}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-64 focus:border-red-400 focus:ring-1 focus:ring-red-400 outline-none"
             />
             <button
@@ -285,7 +287,7 @@ export default function AdminStudentDetail() {
               disabled={deleteConfirm !== 'delete' || deleting}
               className="px-5 py-2 border-2 border-red-500 text-red-600 rounded-xl text-sm font-medium hover:bg-red-600 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {deleting ? 'Memadamkan...' : 'Padam Pelajar Ini'}
+              {deleting ? t('admin.deleting') : t('admin.deleteStudent')}
             </button>
           </div>
         </div>

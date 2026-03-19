@@ -5,12 +5,14 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { adminSignOut } from '@/lib/admin-supabase'
+import { useT } from '@/lib/i18n'
 
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const { isAdminAuthenticated, isLoading, role } = useAdminAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { t } = useT()
 
   useEffect(() => {
     // Don't redirect if on login or callback pages
@@ -33,7 +35,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        Loading...
+        {t('common.loading')}
       </div>
     )
   }
@@ -48,10 +50,10 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   }
 
   const navLinks = [
-    { href: '/admin', label: 'Dashboard' },
-    { href: '/admin/students', label: 'Pelajar' },
-    ...(role?.is_super_admin ? [{ href: '/admin/invite', label: 'Invite' }] : []),
-    { href: '/admin/profile', label: 'Profil' },
+    { href: '/admin', label: t('common.dashboard') },
+    { href: '/admin/students', label: t('admin.students') },
+    ...(role?.is_super_admin ? [{ href: '/admin/invite', label: t('admin.invite') }] : []),
+    { href: '/admin/profile', label: t('admin.profile') },
   ]
 
   return (
@@ -79,10 +81,10 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           <div className="hidden md:flex items-center gap-3">
             <span className="text-sm text-gray-500">
               {role?.admin_name}
-              {role?.org_name ? ` (${role.org_name})` : ' (Super Admin)'}
+              {role?.org_name ? ` (${role.org_name})` : ` (${t('admin.superAdmin')})`}
             </span>
             <button onClick={handleSignOut} className="text-sm text-red-600 hover:text-red-800">
-              Log Out
+              {t('header.logout')}
             </button>
           </div>
 
@@ -90,7 +92,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           <button
             className="md:hidden p-2 rounded-lg hover:bg-gray-50"
             onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Menu"
+            aria-label={t('common.menu')}
           >
             {mobileOpen ? (
               <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -119,13 +121,13 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="border-t border-gray-100 pt-2 mt-2">
               <p className="px-3 py-1 text-xs text-gray-400">
                 {role?.admin_name}
-                {role?.org_name ? ` (${role.org_name})` : ' (Super Admin)'}
+                {role?.org_name ? ` (${role.org_name})` : ` (${t('admin.superAdmin')})`}
               </p>
               <button
                 onClick={handleSignOut}
                 className="block w-full text-left px-3 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50"
               >
-                Log Out
+                {t('header.logout')}
               </button>
             </div>
           </div>

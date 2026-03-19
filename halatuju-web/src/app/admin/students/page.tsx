@@ -8,6 +8,7 @@ import {
 } from '@/lib/admin-api'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useT } from '@/lib/i18n'
 
 const PER_PAGE = 10
 
@@ -38,6 +39,7 @@ const formatPhone = (phone: string | null) => {
 
 export default function AdminStudentList() {
   const { token, role } = useAdminAuth()
+  const { t } = useT()
   const [data, setData] = useState<StudentListData | null>(null)
   const [error, setError] = useState('')
   const [page, setPage] = useState(1)
@@ -46,7 +48,7 @@ export default function AdminStudentList() {
     if (!token) return
     getPartnerStudents({ token })
       .then(setData)
-      .catch(() => setError('Gagal memuat senarai pelajar.'))
+      .catch(() => setError(t('admin.loadStudentsFailed')))
   }, [token])
 
   if (error) {
@@ -55,7 +57,7 @@ export default function AdminStudentList() {
 
   if (!data) {
     return (
-      <div className="mt-8 text-center text-gray-500">Loading...</div>
+      <div className="mt-8 text-center text-gray-500">{t('common.loading')}</div>
     )
   }
 
@@ -81,8 +83,8 @@ export default function AdminStudentList() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Pelajar ({data.count})</h1>
-          <p className="text-sm text-gray-500 mt-1">Senarai pendaftaran pelajar terkini di platform HalaTuju.</p>
+          <h1 className="text-xl sm:text-2xl font-bold">{t('admin.studentsCount', { count: String(data.count) })}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('admin.studentsDesc')}</p>
         </div>
         <button
           onClick={handleExport}
@@ -91,7 +93,7 @@ export default function AdminStudentList() {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
-          Muat Turun CSV
+          {t('admin.downloadCsv')}
         </button>
       </div>
 
@@ -132,18 +134,18 @@ export default function AdminStudentList() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50/80 border-b">
             <tr>
-              <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">Nama</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">No. KP</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">Jantina</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">Peperiksaan</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">Sekolah</th>
-              <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">Telefon</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.nameHeader')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.nricHeader')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.genderHeader')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.examHeader')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.schoolHeader')}</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.phoneHeader')}</th>
               {role?.is_super_admin && (
                 <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                  Sumber <span className="text-[10px] text-gray-400 ml-1 normal-case">[Super Admin]</span>
+                  {t('admin.sourceHeader')} <span className="text-[10px] text-gray-400 ml-1 normal-case">[{t('admin.superAdmin')}]</span>
                 </th>
               )}
-              <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">Tarikh</th>
+              <th className="text-left px-4 py-3.5 font-semibold text-gray-600 text-xs uppercase tracking-wider">{t('admin.dateHeader')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -197,7 +199,7 @@ export default function AdminStudentList() {
       {/* Pagination */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mt-4 text-sm text-gray-500">
         <span>
-          Papar {Math.min((page - 1) * PER_PAGE + 1, data.students.length)}{'\u2013'}{Math.min(page * PER_PAGE, data.students.length)} daripada {data.students.length} pelajar
+          {t('admin.showingRange', { start: String(Math.min((page - 1) * PER_PAGE + 1, data.students.length)), end: String(Math.min(page * PER_PAGE, data.students.length)), total: String(data.students.length) })}
         </span>
         {totalPages > 1 && (
           <div className="flex items-center gap-1">

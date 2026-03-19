@@ -1,5 +1,19 @@
 # Changelog — HalaTuju
 
+## i18n Sprint 2 — Admin Pages (2026-03-19)
+
+### Added
+- **Admin i18n**: All 7 admin pages fully internationalised with `t()` calls (login, dashboard, students list, student detail, invite, profile, layout)
+- **118 admin i18n keys** added to `en.json`, `ms.json`, `ta.json` under `admin` namespace — covering auth flow, dashboard stats, student table, 9 detail cards, invite form, profile form, danger zone
+- **Interpolation support** for dynamic admin strings: `studentsCount`, `showingRange`, `orgInfo`
+
+### Stats
+- Admin pages with hardcoded strings: 0 (down from 7)
+- Admin i18n keys: 118 (EN/MS/TA parity verified)
+- Build: passes cleanly
+
+---
+
 ## i18n & Bug Fixes Sprint (2026-03-19)
 
 ### Added

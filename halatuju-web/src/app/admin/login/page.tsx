@@ -9,11 +9,13 @@ import {
   adminSignInWithGoogle,
   adminResetPassword,
 } from '@/lib/admin-supabase'
+import { useT } from '@/lib/i18n'
 
 type Step = 'login' | 'forgot' | 'forgot-sent'
 
 export default function AdminLoginPage() {
   const router = useRouter()
+  const { t } = useT()
   const [step, setStep] = useState<Step>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -47,14 +49,14 @@ export default function AdminLoginPage() {
         )
         const role = await res.json()
         if (!role.is_admin) {
-          setError('This account does not have admin access.')
+          setError(t('errors.noAdminAccess'))
           const { adminSignOut } = await import('@/lib/admin-supabase')
           await adminSignOut()
           setLoading(false)
           return
         }
       } catch {
-        setError('Failed to verify admin access.')
+        setError(t('errors.adminVerifyFailed'))
         setLoading(false)
         return
       }
@@ -103,10 +105,10 @@ export default function AdminLoginPage() {
           {step === 'login' && (
             <>
               <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">
-                Admin Login
+                {t('admin.loginTitle')}
               </h1>
               <p className="text-gray-600 text-center mb-8">
-                Partner organisation portal
+                {t('admin.loginSubtitle')}
               </p>
 
               {error && (
@@ -117,7 +119,7 @@ export default function AdminLoginPage() {
 
               <form onSubmit={handleLogin} className="space-y-4 mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.email')}</label>
                   <input
                     type="email"
                     value={email}
@@ -128,12 +130,12 @@ export default function AdminLoginPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.password')}</label>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    placeholder={t('admin.enterPassword')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
@@ -143,7 +145,7 @@ export default function AdminLoginPage() {
                   disabled={loading || !email || !password}
                   className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
-                  {loading ? 'Signing in...' : 'Sign In'}
+                  {loading ? t('admin.signingIn') : t('admin.signIn')}
                 </button>
               </form>
 
@@ -151,7 +153,7 @@ export default function AdminLoginPage() {
                 onClick={() => { setStep('forgot'); setError(null) }}
                 className="w-full text-sm text-gray-500 hover:text-gray-700 mb-6"
               >
-                Forgot password?
+                {t('admin.forgotPassword')}
               </button>
 
               <div className="relative mb-6">
@@ -159,7 +161,7 @@ export default function AdminLoginPage() {
                   <div className="w-full border-t border-gray-200" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">or</span>
+                  <span className="px-4 bg-white text-gray-500">{t('login.or')}</span>
                 </div>
               </div>
 
@@ -174,15 +176,15 @@ export default function AdminLoginPage() {
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
-                Sign in with Google
+                {t('admin.signInGoogle')}
               </button>
             </>
           )}
 
           {step === 'forgot' && (
             <>
-              <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">Reset Password</h1>
-              <p className="text-gray-600 text-center mb-8">Enter your email to receive a reset link</p>
+              <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">{t('admin.resetPassword')}</h1>
+              <p className="text-gray-600 text-center mb-8">{t('admin.resetSubtitle')}</p>
 
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
@@ -204,14 +206,14 @@ export default function AdminLoginPage() {
                   disabled={loading || !email}
                   className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
-                  {loading ? 'Sending...' : 'Send Reset Link'}
+                  {loading ? t('admin.sending') : t('admin.sendResetLink')}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setStep('login'); setError(null) }}
                   className="w-full text-sm text-gray-500 hover:text-gray-700"
                 >
-                  Back to login
+                  {t('login.backToLogin')}
                 </button>
               </form>
             </>
@@ -219,15 +221,15 @@ export default function AdminLoginPage() {
 
           {step === 'forgot-sent' && (
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Check Your Email</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('admin.checkEmail')}</h1>
               <p className="text-gray-600 mb-6">
-                A password reset link has been sent to <strong>{email}</strong>
+                {t('admin.resetSent')} <strong>{email}</strong>
               </p>
               <button
                 onClick={() => { setStep('login'); setError(null) }}
                 className="text-blue-600 hover:underline text-sm"
               >
-                Back to login
+                {t('login.backToLogin')}
               </button>
             </div>
           )}
@@ -235,7 +237,7 @@ export default function AdminLoginPage() {
 
         <div className="text-center mt-6">
           <Link href="/" className="text-sm text-gray-500 hover:text-blue-600 transition-colors">
-            Kembali ke laman utama
+            {t('admin.backToHome')}
           </Link>
         </div>
       </div>
