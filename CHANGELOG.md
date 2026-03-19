@@ -5,6 +5,120 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Auth Flow Canonical Refactor (2026-03-20)
+
+### Changed
+- **AuthProvider is single routing authority**: `status` + `profile` live in React context. Routing reads AuthProvider, never localStorage directly.
+- **localStorage is write-only cache**: AuthProvider fetches from API, writes to localStorage as cache. `profile-restore.ts` deleted.
+- **Callback page simplified**: Just establishes session, delegates all routing to AuthProvider status machine.
+- **AuthGateModal reads context**: No more standalone `getProfile()` calls — reads `status`/`profile` from AuthProvider.
+- **useOnboardingGuard reads AuthProvider**: Guards use AuthProvider state with loading support, not localStorage.
+- **IC page guard reads status from AuthProvider**: Redirects if anonymous or already has NRIC.
+- **STPM fields added to StudentProfile TS type**: Cached in AuthProvider alongside SPM fields.
+- **Dashboard ranked results flattened to single list**: Removed dual-list display.
+
+### Fixed
+- **Rules of Hooks crash**: Moved `pendingProfileRedirect` useEffect before early return.
+- **Onboarding redirect loop**: Resolved empty profile creation causing infinite redirects.
+- **OAuth amnesia**: Stopped premature profile creation; fixed `signInWithGoogle` vs `linkIdentity` for login.
+- **IC format**: Hyphens inserted before API call; loading race condition fixed.
+
+### Removed
+- `profile-restore.ts` — AuthProvider handles caching.
+- TD-003 — auth flow refactored, localStorage no longer routing authority.
+
+### Docs
+- Comprehensive auth/onboarding flow documentation (`docs/auth-onboarding-flow.md`).
+- Sprint retrospective, decisions, lessons.
+
+### Tests
+- 966 backend tests, 17 frontend, 0 failures.
+
+---
+
+## [Unreleased] — W14+W21 Ranking Sprint (2026-03-20)
+
+### Added
+- **W14**: 5-level STPM sort tiebreaking — score → uni tier → min_cgpa → difficulty → name.
+- **W21**: `TRACK_FIELD_MAP` — matric:sains + stpm:sains → health + agriculture.
+- 8 new tests.
+
+---
+
+## [Unreleased] — NRIC Hard Gate Sprint (2026-03-20)
+
+### Added
+- **Anonymous sign-in**: Auto-sign-in anonymously on first visit via Supabase; `isAnonymous` flag in AuthProvider.
+- **linkIdentity helpers**: For upgrading anonymous sessions to Google-linked accounts.
+- **NRIC hard gate middleware**: Blocks protected endpoints without NRIC — returns 403 `nric_required`.
+- **Auth gate rewrite**: NRIC-first identity flow with `linkIdentity()`, replaces login page with redirect.
+- **403 handler**: Frontend auto-shows auth gate on `nric_required` response.
+- **Header updates**: Different UI for anonymous vs identified users.
+- **IC page guard**: Redirect if anonymous or already has NRIC.
+- 18 new integration tests for NRIC hard gate flow.
+
+### Changed
+- `isAuthenticated` now means has-NRIC; `hasSession` added as separate flag.
+- Removed `get_or_create` from protected views — profiles must exist via NRIC claim.
+- `is_anonymous` extracted from JWT in auth middleware.
+- Course display limit unified to 9; explore filters sorted alphabetically.
+
+---
+
+## [Unreleased] — W7 FIELD_KEY_MAP Sprint (2026-03-20)
+
+### Added
+- 7 new `field_key` → signal mappings in `FIELD_KEY_MAP`.
+- Search filter alphabetical sort.
+- 8 new tests.
+
+---
+
+## [Unreleased] — Ranking Improvements Sprint (2026-03-19)
+
+### Changed
+- **W4**: 73 PISMP course tags backfilled for ranking accuracy.
+- **W11**: STPM pre-quiz RIASEC signal derived from subjects (no quiz needed).
+- Ranking audit doc added.
+- W16 resolved.
+
+### Fixed
+- localStorage restoration from Supabase on login.
+- Frontend boolean conversion — stopped converting booleans to Ya/Tidak before API calls.
+- localStorage migration for legacy Ya/Tidak strings.
+
+### Tests
+- 40 new tests.
+
+---
+
+## [Unreleased] — i18n Sprint 2: Admin Pages (2026-03-19)
+
+### Changed
+- **All 7 admin pages internationalised**: 118 keys × 3 languages (EN/MS/TA).
+- Zero hardcoded admin strings remaining.
+
+---
+
+## [Unreleased] — i18n & Bug Fixes Sprint (2026-03-19)
+
+### Changed
+- **BooleanField conversion**: `colorblind`/`disability` CharField → BooleanField (fixes dashboard 400 bug). Migration 0046.
+- **Error mapping layer**: `ERROR_MAP` + `PATTERN_MAP` for i18n error translation.
+- **Trilingual email verification**: EN/MS/TA templates.
+- **Dynamic HTML lang attribute**: Set from locale.
+- **Translated aria-labels**: Accessibility i18n.
+
+### Fixed
+- Dashboard 400 error from boolean field type mismatch.
+- Hardcoded strings in auth callback, quiz, report, and IC onboarding pages replaced with `t()` calls.
+- Stats display, login button, and incomplete badge UI fixes.
+
+### Tests
+- 4 new tests.
+
+---
+
 ## [Unreleased] — STPM Quiz Sprint 5: Deploy & Validate (2026-03-18)
 
 ### Changed
