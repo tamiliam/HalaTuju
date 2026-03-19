@@ -110,6 +110,10 @@ class TestProtectedEndpointsAcceptAuth(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_profile_put_accepted(self):
+        # Profile must exist — protected views use .get() not get_or_create
+        StudentProfile.objects.create(
+            supabase_user_id=TEST_USER_ID, nric='010101-01-1234',
+        )
         response = self.client.put(
             '/api/v1/profile/',
             {'gender': 'Lelaki'},

@@ -869,7 +869,7 @@ class SavedCoursesView(APIView):
         if not course_id:
             return Response({'error': 'course_id required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        profile, _ = StudentProfile.objects.get_or_create(
+        profile = StudentProfile.objects.get(
             supabase_user_id=request.user_id
         )
 
@@ -974,7 +974,7 @@ class ProfileView(APIView):
         })
 
     def put(self, request):
-        profile, _ = StudentProfile.objects.get_or_create(
+        profile = StudentProfile.objects.get(
             supabase_user_id=request.user_id
         )
 
@@ -1317,7 +1317,7 @@ class OutcomeListView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        profile, _ = StudentProfile.objects.get_or_create(
+        profile = StudentProfile.objects.get(
             supabase_user_id=request.user_id
         )
 
