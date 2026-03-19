@@ -57,3 +57,18 @@ export async function getUser() {
   const { data: { user }, error } = await getSupabase().auth.getUser()
   return { user, error }
 }
+
+export async function signInAnonymously() {
+  const { data, error } = await getSupabase().auth.signInAnonymously()
+  return { data, error }
+}
+
+export async function linkIdentity(provider: 'google') {
+  const { data, error } = await getSupabase().auth.linkIdentity({
+    provider,
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    },
+  })
+  return { data, error }
+}
