@@ -85,6 +85,32 @@ export function clearAll(): void {
     .forEach(k => localStorage.removeItem(k))
 }
 
+/**
+ * Migrate profile data from legacy CharField format ("Ya"/"Tidak") to booleans.
+ * Runs once on app startup. Safe to call repeatedly — no-ops if already clean.
+ */
+export function migrateProfile(): void {
+  try {
+    const raw = localStorage.getItem(KEY_PROFILE)
+    if (!raw) return
+    const profile = JSON.parse(raw)
+    let changed = false
+    if (typeof profile.colorblind === 'string') {
+      profile.colorblind = profile.colorblind === 'Ya'
+      changed = true
+    }
+    if (typeof profile.disability === 'string') {
+      profile.disability = profile.disability === 'Ya'
+      changed = true
+    }
+    if (changed) {
+      localStorage.setItem(KEY_PROFILE, JSON.stringify(profile))
+    }
+  } catch {
+    // Malformed JSON — ignore
+  }
+}
+
 /** Check if the user has entered any subject grades (SPM or STPM). */
 export function hasGrades(): boolean {
   try {

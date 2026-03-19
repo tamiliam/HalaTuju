@@ -89,8 +89,8 @@ export default function DashboardPage() {
           grades: {},
           gender: parsedProfile.gender || 'male',
           nationality: parsedProfile.nationality || 'malaysian',
-          colorblind: parsedProfile.colorblind || false,
-          disability: parsedProfile.disability || false,
+          colorblind: !!parsedProfile.colorblind,
+          disability: !!parsedProfile.disability,
         })
         setStpmData({
           stpmGrades: JSON.parse(stpmGradesStr),
@@ -114,8 +114,8 @@ export default function DashboardPage() {
           grades: parsedGrades,
           gender: parsedProfile.gender,
           nationality: parsedProfile.nationality,
-          colorblind: parsedProfile.colorblind || false,
-          disability: parsedProfile.disability || false,
+          colorblind: !!parsedProfile.colorblind,
+          disability: !!parsedProfile.disability,
           coq_score: parsedProfile.coqScore ?? 5.0,
           ...(savedMerit && { student_merit: parseFloat(savedMerit) }),
         })
@@ -157,6 +157,7 @@ export default function DashboardPage() {
         eligible_courses: data.eligible_courses,
         student_cgpa: stpmData.cgpa,
         student_signals: signals,
+        stpm_subjects: Object.keys(stpmData.stpmGrades),
       })
     }).then(ranked => {
       setStpmResults(ranked.ranked_courses)

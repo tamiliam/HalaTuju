@@ -581,6 +581,7 @@ export interface StpmRankingRequest {
   eligible_courses: StpmEligibleCourse[]
   student_cgpa: number
   student_signals: Record<string, unknown>
+  stpm_subjects?: string[]
 }
 
 export interface StpmResultFraming {

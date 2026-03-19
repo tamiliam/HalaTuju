@@ -11,7 +11,7 @@ import {
 import { getSession, getSupabase } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
-import { KEY_PENDING_AUTH_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
+import { KEY_PENDING_AUTH_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, migrateProfile } from '@/lib/storage'
 
 export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | null
 
@@ -74,6 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authGateCourseId, setAuthGateCourseId] = useState<string | null>(null)
 
   useEffect(() => {
+    // Migrate legacy "Ya"/"Tidak" strings to booleans in localStorage
+    migrateProfile()
+
     getSession()
       .then(({ session }) => {
         setSession(session ?? null)

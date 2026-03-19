@@ -43,8 +43,8 @@ export default function ProfileInputPage() {
         if (p.preferred_state) setState(p.preferred_state)
         if (p.gender) setGender(p.gender)
         if (p.nationality) setNationality(p.nationality)
-        if (p.colorblind !== undefined) setColorblind(p.colorblind === true || String(p.colorblind) === 'Ya')
-        if (p.disability !== undefined) setDisability(p.disability === true || String(p.disability) === 'Ya')
+        if (p.colorblind !== undefined) setColorblind(!!p.colorblind)
+        if (p.disability !== undefined) setDisability(!!p.disability)
       }).catch(() => {})
     }
   }, [token])
