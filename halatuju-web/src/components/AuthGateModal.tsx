@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { signInWithPhone, verifyOTP, signInWithGoogle } from '@/lib/supabase'
-import { syncProfile, getProfile, claimNric, type SyncProfileData } from '@/lib/api'
-import { restoreProfileToLocalStorage } from '@/lib/profile-restore'
+import { syncProfile, claimNric, type SyncProfileData } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE } from '@/lib/storage'
@@ -24,6 +23,8 @@ export default function AuthGateModal() {
     isAnonymous,
     token,
     session,
+    status,
+    profile,
   } = useAuth()
 
   const [step, setStep] = useState<ModalStep>('login')
@@ -33,6 +34,7 @@ export default function AuthGateModal() {
   const [ic, setIc] = useState('')
   const [icValid, setIcValid] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [pendingProfileRedirect, setPendingProfileRedirect] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
   const [existingName, setExistingName] = useState<string | null>(null)
@@ -60,26 +62,23 @@ export default function AuthGateModal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authGateReason])
 
-  // Advance when user authenticates mid-modal (OTP/Google success)
+  // Advance when user authenticates mid-modal
   useEffect(() => {
-    if (!authGateReason || !token || isAnonymous) return
-    if (step === 'ic') return  // Already on IC step, don't re-check
+    if (!authGateReason || status === 'loading' || status === 'anonymous') return
+    if (step === 'ic') return
 
-    // Non-anonymous user with token — check NRIC
-    getProfile({ token }).then(profile => {
-      if (profile.nric) {
-        // RETURNING USER — has NRIC, skip IC, sync and close
-        handleReturningUser()
-      } else {
-        // NEW USER — needs NRIC verification
-        const googleName = session?.user?.user_metadata?.full_name
-          || session?.user?.user_metadata?.name
-        if (googleName && !name) setName(googleName)
-        setStep('ic')
-      }
-    }).catch(() => setStep('ic'))
+    if (status === 'ready') {
+      // RETURNING USER — has NRIC, sync and close
+      handleReturningUser()
+    } else if (status === 'needs-nric') {
+      // NEW USER — needs NRIC verification
+      const googleName = session?.user?.user_metadata?.full_name
+        || session?.user?.user_metadata?.name
+      if (googleName && !name) setName(googleName)
+      setStep('ic')
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, isAnonymous, authGateReason])
+  }, [status, authGateReason])
 
   if (!authGateReason) return null
 
@@ -147,15 +146,24 @@ export default function AuthGateModal() {
     if (reason === 'quiz') {
       router.push('/quiz')
     } else if (reason === 'profile') {
-      const hasGrades = localStorage.getItem(KEY_GRADES)
-      router.push(hasGrades ? '/dashboard' : '/onboarding/exam-type')
+      setPendingProfileRedirect(true)
     }
   }
 
+  // Redirect after profile-reason auth completes — reads fresh status, not stale closure
+  useEffect(() => {
+    if (!pendingProfileRedirect || status === 'loading') return
+    setPendingProfileRedirect(false)
+    if (status === 'ready') {
+      const hasGrades = profile?.grades && Object.keys(profile.grades).length > 0
+      router.push(hasGrades ? '/dashboard' : '/onboarding/exam-type')
+    } else {
+      router.push('/onboarding/exam-type')
+    }
+  }, [pendingProfileRedirect, status, profile, router])
+
   const handleReturningUser = async () => {
     if (!token) return
-    // Restore profile from backend first, then sync any local data up
-    await restoreProfileToLocalStorage(token)
     await syncLocalStorageToBackend(token)
     finishAndClose()
   }
