@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { signInWithPhone, verifyOTP, signInWithGoogle } from '@/lib/supabase'
-import { syncProfile, getProfile, type SyncProfileData } from '@/lib/api'
+import { signInWithPhone, verifyOTP, signInWithGoogle, linkIdentity } from '@/lib/supabase'
+import { syncProfile, getProfile, claimNric, type SyncProfileData } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
-import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
+import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE } from '@/lib/storage'
 import IcInput from './IcInput'
 import { validateIc } from '@/lib/ic-utils'
 
-type ModalStep = 'login' | 'otp' | 'ic' | 'profile'
+type ModalStep = 'login' | 'otp' | 'ic'
 
 export default function AuthGateModal() {
   const router = useRouter()
@@ -20,6 +20,7 @@ export default function AuthGateModal() {
     authGateCourseId,
     hideAuthGate,
     isAuthenticated,
+    isAnonymous,
     token,
     session,
   } = useAuth()
@@ -32,8 +33,10 @@ export default function AuthGateModal() {
   const [icValid, setIcValid] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [existingName, setExistingName] = useState<string | null>(null)
 
-  // Reset when modal opens; if already authenticated, check NRIC to decide step
+  // Reset when modal opens; if already authenticated (has NRIC), close immediately
   useEffect(() => {
     if (authGateReason) {
       setPhone('')
@@ -43,52 +46,39 @@ export default function AuthGateModal() {
       setIcValid(false)
       setError(null)
       setLoading(false)
+      setShowConfirm(false)
+      setExistingName(null)
 
-      if (isAuthenticated && token) {
-        // Check if returning user already has NRIC → skip IC gate
-        getProfile({ token }).then(profile => {
-          if (profile.nric) {
-            setIc(profile.nric)
-            setIcValid(true)
-            setStep('profile')
-          } else {
-            setStep('ic')
-          }
-        }).catch(() => setStep('ic'))
-      } else {
-        setStep('login')
+      if (isAuthenticated) {
+        // Already has identity — no gate needed, close immediately
+        hideAuthGate()
+        return
       }
+      setStep('login')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authGateReason])
 
   // Advance when user authenticates mid-modal (OTP/Google success)
   useEffect(() => {
-    if (isAuthenticated && authGateReason && step !== 'ic' && step !== 'profile') {
-      // Pre-fill name from Google profile if available
-      const googleName = session?.user?.user_metadata?.full_name
-        || session?.user?.user_metadata?.name
-      if (googleName && !name) {
-        setName(googleName)
-      }
-      setError(null)
+    if (!authGateReason || !token || isAnonymous) return
+    if (step === 'ic') return  // Already on IC step, don't re-check
 
-      // Check if returning user already has NRIC → skip IC gate
-      if (token) {
-        getProfile({ token }).then(profile => {
-          if (profile.nric) {
-            setIc(profile.nric)
-            setIcValid(true)
-            setStep('profile')
-          } else {
-            setStep('ic')
-          }
-        }).catch(() => setStep('ic'))
+    // Non-anonymous user with token — check NRIC
+    getProfile({ token }).then(profile => {
+      if (profile.nric) {
+        // RETURNING USER — has NRIC, skip IC, sync and close
+        handleReturningUser()
       } else {
+        // NEW USER — needs NRIC verification
+        const googleName = session?.user?.user_metadata?.full_name
+          || session?.user?.user_metadata?.name
+        if (googleName && !name) setName(googleName)
         setStep('ic')
       }
-    }
-  }, [isAuthenticated, authGateReason, step, session, name, token])
+    }).catch(() => setStep('ic'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, isAnonymous, authGateReason])
 
   if (!authGateReason) return null
 
@@ -113,6 +103,54 @@ export default function AuthGateModal() {
         : '+60' + formatted
     }
     return formatted
+  }
+
+  const syncLocalStorageToBackend = async (tkn: string) => {
+    const syncData: SyncProfileData = {}
+    try {
+      const grades = localStorage.getItem(KEY_GRADES)
+      if (grades) syncData.grades = JSON.parse(grades)
+      const prof = localStorage.getItem(KEY_PROFILE)
+      if (prof) {
+        const p = JSON.parse(prof)
+        if (p.gender) syncData.gender = p.gender
+        if (p.nationality) syncData.nationality = p.nationality
+        if (p.state) syncData.preferred_state = p.state
+        if (p.colorblind) syncData.colorblind = p.colorblind
+        if (p.disability) syncData.disability = p.disability
+      }
+      const signals = localStorage.getItem(KEY_QUIZ_SIGNALS)
+      if (signals) syncData.student_signals = JSON.parse(signals)
+    } catch { /* ignore */ }
+    if (name.trim()) syncData.name = name.trim()
+    const ref = localStorage.getItem(KEY_REFERRAL_SOURCE)
+    if (ref) syncData.referral_source = ref
+    try {
+      await syncProfile(syncData, { token: tkn })
+    } catch { /* non-critical */ }
+  }
+
+  const finishAndClose = () => {
+    const reason = authGateReason
+    const courseId = authGateCourseId
+    if (reason === 'save' && courseId) {
+      localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'save', courseId }))
+    } else if (reason === 'report') {
+      localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'report' }))
+    } else if (reason === 'eligible') {
+      localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'eligible' }))
+    }
+    localStorage.removeItem(KEY_PENDING_AUTH_ACTION)
+    hideAuthGate()
+    setLoading(false)
+    if (reason === 'quiz') router.push('/quiz')
+  }
+
+  const handleReturningUser = async () => {
+    if (!token) return
+    // Sync localStorage data to backend
+    await syncLocalStorageToBackend(token)
+    finishAndClose()
   }
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
@@ -141,23 +179,11 @@ export default function AuthGateModal() {
       setLoading(false)
       return
     }
-    // Session set by onAuthStateChange → useEffect advances to profile
+    // Session set by onAuthStateChange → useEffect advances
     setLoading(false)
   }
 
-  const handleIcSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const err = validateIc(ic)
-    if (err) {
-      setError(err)
-      return
-    }
-    setError(null)
-    setStep('profile')
-  }
-
   const handleGoogleLogin = async () => {
-    // Store pending action before redirect (page will remount after OAuth)
     localStorage.setItem(
       KEY_PENDING_AUTH_ACTION,
       JSON.stringify({ reason: authGateReason, courseId: authGateCourseId })
@@ -165,70 +191,63 @@ export default function AuthGateModal() {
     setLoading(true)
     setError(null)
 
-    const { error } = await signInWithGoogle()
-    if (error) {
-      setError(error.message)
-      setLoading(false)
+    if (isAnonymous) {
+      // Try linking Google to anonymous user
+      const { error } = await linkIdentity('google')
+      if (error) {
+        // Google already belongs to an existing user — sign in normally
+        const { error: signInError } = await signInWithGoogle()
+        if (signInError) {
+          setError(signInError.message)
+          setLoading(false)
+        }
+      }
+    } else {
+      const { error } = await signInWithGoogle()
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+      }
     }
-    // Browser redirects to Google — no further code runs
   }
 
-  const handleProfileSubmit = async (e: React.FormEvent) => {
+  const handleIcSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const err = validateIc(ic)
+    if (err) { setError(err); return }
     if (!token) return
+
     setLoading(true)
     setError(null)
 
-    // Collect localStorage data for sync
-    const syncData: SyncProfileData = {}
     try {
-      const grades = localStorage.getItem(KEY_GRADES)
-      if (grades) syncData.grades = JSON.parse(grades)
-      const prof = localStorage.getItem(KEY_PROFILE)
-      if (prof) {
-        const p = JSON.parse(prof)
-        if (p.gender) syncData.gender = p.gender
-        if (p.nationality) syncData.nationality = p.nationality
-        if (p.state) syncData.preferred_state = p.state
-        if (p.colorblind) syncData.colorblind = p.colorblind
-        if (p.disability) syncData.disability = p.disability
+      const result = await claimNric(ic, false, { token })
+
+      if (result.status === 'created' || result.status === 'linked') {
+        await syncLocalStorageToBackend(token)
+        finishAndClose()
+      } else if (result.status === 'exists') {
+        setExistingName(result.name || null)
+        setShowConfirm(true)
+        setLoading(false)
       }
-      const signals = localStorage.getItem(KEY_QUIZ_SIGNALS)
-      if (signals) syncData.student_signals = JSON.parse(signals)
     } catch {
-      // Ignore parse errors — sync what we can
+      setError(t('authGate.icError') || 'Failed to verify NRIC')
+      setLoading(false)
     }
+  }
 
-    if (name.trim()) syncData.name = name.trim()
-    if (ic) syncData.nric = ic
-
+  const handleConfirmClaim = async () => {
+    if (!token) return
+    setLoading(true)
+    setError(null)
     try {
-      await syncProfile(syncData, { token })
+      await claimNric(ic, true, { token })
+      await syncLocalStorageToBackend(token)
+      finishAndClose()
     } catch {
-      // Non-critical — will sync next time
-    }
-
-    // Store resume action for the page to pick up
-    const reason = authGateReason
-    const courseId = authGateCourseId
-    if (reason === 'save' && courseId) {
-      localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'save', courseId }))
-    } else if (reason === 'report') {
-      localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'report' }))
-    } else if (reason === 'eligible') {
-      localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'eligible' }))
-    }
-
-    // Clear pending action (from Google OAuth flow)
-    localStorage.removeItem(KEY_PENDING_AUTH_ACTION)
-
-    // Close modal
-    hideAuthGate()
-    setLoading(false)
-
-    // For quiz, navigate directly
-    if (reason === 'quiz') {
-      router.push('/quiz')
+      setError(t('authGate.claimError') || 'Failed to claim NRIC')
+      setLoading(false)
     }
   }
 
@@ -369,55 +388,64 @@ export default function AuthGateModal() {
 
           {/* IC Step */}
           {step === 'ic' && (
-            <form onSubmit={handleIcSubmit} className="space-y-4">
-              <p className="text-gray-600 text-center mb-2">
-                {t('authGate.icSubtitle')}
-              </p>
-              <IcInput
-                value={ic}
-                onChange={setIc}
-                onValidChange={setIcValid}
-                label={t('authGate.icLabel')}
-              />
-              <button
-                type="submit"
-                disabled={!icValid}
-                className="btn-primary w-full disabled:opacity-50"
-              >
-                {t('authGate.icContinue')}
-              </button>
-              <p className="text-xs text-gray-400 text-center">
-                {t('authGate.icPrivacy')}
-              </p>
-            </form>
-          )}
-
-          {/* Profile Step */}
-          {step === 'profile' && (
-            <form onSubmit={handleProfileSubmit} className="space-y-4">
-              <p className="text-gray-600 text-center mb-2">
-                {t('authGate.almostDone')}
-              </p>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('authGate.nameLabel')}
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t('authGate.namePlaceholder')}
-                  className="input"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary w-full disabled:opacity-50"
-              >
-                {loading ? '...' : t('authGate.completeProfile')}
-              </button>
-            </form>
+            <>
+              {showConfirm ? (
+                <div className="space-y-4">
+                  <p className="text-gray-600 text-center">
+                    {t('authGate.icExistsMessage') || `This NRIC is already registered${existingName ? ` to ${existingName}` : ''}. Is this you?`}
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => { setShowConfirm(false); setIc(''); setError(null) }}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                      {t('authGate.icNotMe') || 'No, not me'}
+                    </button>
+                    <button
+                      onClick={handleConfirmClaim}
+                      disabled={loading}
+                      className="flex-1 btn-primary disabled:opacity-50"
+                    >
+                      {loading ? '...' : (t('authGate.icYesMe') || "Yes, that's me")}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleIcSubmit} className="space-y-4">
+                  <p className="text-gray-600 text-center mb-2">
+                    {t('authGate.icSubtitle')}
+                  </p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {t('authGate.nameLabel')}
+                    </label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder={t('authGate.namePlaceholder')}
+                      className="input"
+                    />
+                  </div>
+                  <IcInput
+                    value={ic}
+                    onChange={setIc}
+                    onValidChange={setIcValid}
+                    label={t('authGate.icLabel')}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!icValid || loading}
+                    className="btn-primary w-full disabled:opacity-50"
+                  >
+                    {loading ? '...' : t('authGate.icContinue')}
+                  </button>
+                  <p className="text-xs text-gray-400 text-center">
+                    {t('authGate.icPrivacy')}
+                  </p>
+                </form>
+              )}
+            </>
           )}
 
           {/* Dismiss */}
