@@ -10,11 +10,12 @@ import {
 } from 'react'
 import { getSession, getSupabase, signInAnonymously } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
-import { restoreProfileToLocalStorage } from '@/lib/profile-restore'
+import type { StudentProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
-import { KEY_PENDING_AUTH_ACTION } from '@/lib/storage'
+import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
 
 export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | null
+export type AuthStatus = 'loading' | 'anonymous' | 'needs-nric' | 'ready'
 
 interface AuthGateOptions {
   courseId?: string
@@ -27,6 +28,8 @@ interface AuthContextValue {
   isAuthenticated: boolean  // true = has NRIC, full access
   isAnonymous: boolean      // true = anonymous session
   hasSession: boolean       // true = has any session (including anonymous)
+  status: AuthStatus
+  profile: StudentProfile | null
   authGateReason: AuthGateReason
   authGateCourseId: string | null
   showAuthGate: (reason: NonNullable<AuthGateReason>, options?: AuthGateOptions) => void
@@ -39,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [hasIdentity, setHasIdentity] = useState(false)
+  const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [authGateReason, setAuthGateReason] = useState<AuthGateReason>(null)
   const [authGateCourseId, setAuthGateCourseId] = useState<string | null>(null)
 
@@ -56,28 +60,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Check identity (NRIC) for non-anonymous users
         if (session?.access_token && !session.user?.is_anonymous) {
-          getProfile({ token: session.access_token }).then(profile => {
-            setHasIdentity(!!profile.nric)
-            if (profile.nric) restoreProfileToLocalStorage(session.access_token!)
-          }).catch(() => setHasIdentity(false))
+          getProfile({ token: session.access_token }).then(p => {
+            setProfile(p)
+            setHasIdentity(!!p.nric)
+          }).catch(() => {
+            setProfile(null)
+            setHasIdentity(false)
+          })
         } else {
           setHasIdentity(false)
-        }
-
-        // Check for pending auth action (from Google OAuth redirect)
-        if (session && !session.user?.is_anonymous) {
-          const pending = localStorage.getItem(KEY_PENDING_AUTH_ACTION)
-          if (pending) {
-            try {
-              const { reason, courseId } = JSON.parse(pending)
-              if (reason) {
-                setAuthGateReason(reason)
-                if (courseId) setAuthGateCourseId(courseId)
-              }
-            } catch {
-              localStorage.removeItem(KEY_PENDING_AUTH_ACTION)
-            }
-          }
         }
       })
       .catch(() => setIsLoading(false))
@@ -89,10 +80,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Check identity and restore profile when a non-anonymous user signs in
       if (event === 'SIGNED_IN' && session?.access_token && !session.user?.is_anonymous) {
-        getProfile({ token: session.access_token }).then(profile => {
-          setHasIdentity(!!profile.nric)
-          if (profile.nric) restoreProfileToLocalStorage(session.access_token!)
-        }).catch(() => setHasIdentity(false))
+        getProfile({ token: session.access_token }).then(p => {
+          setProfile(p)
+          setHasIdentity(!!p.nric)
+        }).catch(() => {
+          setProfile(null)
+          setHasIdentity(false)
+        })
       }
     })
     return () => subscription.unsubscribe()
@@ -118,7 +112,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('nric-required', handler)
   }, [showAuthGate])
 
+  // Cache profile data to localStorage
+  useEffect(() => {
+    if (!profile) return
+    if (profile.grades && Object.keys(profile.grades).length > 0) {
+      localStorage.setItem(KEY_GRADES, JSON.stringify(profile.grades))
+    }
+    const demo: Record<string, unknown> = {}
+    if (profile.gender) demo.gender = profile.gender
+    if (profile.nationality) demo.nationality = profile.nationality
+    if (profile.colorblind != null) demo.colorblind = profile.colorblind
+    if (profile.disability != null) demo.disability = profile.disability
+    if (Object.keys(demo).length > 0) {
+      localStorage.setItem(KEY_PROFILE, JSON.stringify(demo))
+    }
+    if (profile.student_signals) {
+      localStorage.setItem(KEY_QUIZ_SIGNALS, JSON.stringify(profile.student_signals))
+    }
+  }, [profile])
+
   const isAnonymous = session?.user?.is_anonymous ?? true
+
+  const status: AuthStatus = isLoading
+    ? 'loading'
+    : isAnonymous
+      ? 'anonymous'
+      : hasIdentity
+        ? 'ready'
+        : 'needs-nric'
 
   const value: AuthContextValue = {
     session,
@@ -127,6 +148,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: hasIdentity,
     isAnonymous,
     hasSession: !!session,
+    status,
+    profile,
     authGateReason,
     authGateCourseId,
     showAuthGate,
