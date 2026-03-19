@@ -12,7 +12,7 @@ import { getSession, getSupabase, signInAnonymously } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
 import type { StudentProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
-import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
+import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
 
 export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | null
 export type AuthStatus = 'loading' | 'anonymous' | 'needs-nric' | 'ready'
@@ -128,6 +128,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (profile.student_signals) {
       localStorage.setItem(KEY_QUIZ_SIGNALS, JSON.stringify(profile.student_signals))
+    }
+    // STPM data
+    if (profile.stpm_grades && Object.keys(profile.stpm_grades).length > 0) {
+      localStorage.setItem(KEY_STPM_GRADES, JSON.stringify(profile.stpm_grades))
+    }
+    if (profile.stpm_cgpa != null) {
+      localStorage.setItem(KEY_STPM_CGPA, String(profile.stpm_cgpa))
+    }
+    if (profile.muet_band != null) {
+      localStorage.setItem(KEY_MUET_BAND, String(profile.muet_band))
+    }
+    if (profile.exam_type) {
+      localStorage.setItem(KEY_EXAM_TYPE, profile.exam_type)
     }
   }, [profile])
 

@@ -21,14 +21,7 @@ export function useOnboardingGuard() {
   }
 
   const hasGrades = profile?.grades && Object.keys(profile.grades).length > 0
-
-  // stpm_grades may be returned by the API but is not in the StudentProfile type
-  const profileAny = profile as Record<string, unknown> | null
-  const stpmGrades = profileAny?.stpm_grades
-  const hasStpmGrades =
-    stpmGrades != null &&
-    typeof stpmGrades === 'object' &&
-    Object.keys(stpmGrades as object).length > 0
+  const hasStpmGrades = profile?.stpm_grades && Object.keys(profile.stpm_grades).length > 0
 
   return { ready: !!(hasGrades || hasStpmGrades), loading: false }
 }
