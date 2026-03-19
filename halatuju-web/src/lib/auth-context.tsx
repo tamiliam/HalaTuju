@@ -23,8 +23,9 @@ interface AuthContextValue {
   session: Session | null
   token: string | null
   isLoading: boolean
-  isAuthenticated: boolean
-  isAnonymous: boolean  // true if anonymous session
+  isAuthenticated: boolean  // true = has NRIC, full access
+  isAnonymous: boolean      // true = anonymous session
+  hasSession: boolean       // true = has any session (including anonymous)
   authGateReason: AuthGateReason
   authGateCourseId: string | null
   showAuthGate: (reason: NonNullable<AuthGateReason>, options?: AuthGateOptions) => void
@@ -71,6 +72,7 @@ async function restoreProfileToLocalStorage(token: string) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [hasIdentity, setHasIdentity] = useState(false)
   const [authGateReason, setAuthGateReason] = useState<AuthGateReason>(null)
   const [authGateCourseId, setAuthGateCourseId] = useState<string | null>(null)
 
@@ -86,9 +88,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session ?? null)
         setIsLoading(false)
 
-        // Only restore profile for non-anonymous returning users
+        // Check identity (NRIC) for non-anonymous users
         if (session?.access_token && !session.user?.is_anonymous) {
-          restoreProfileToLocalStorage(session.access_token)
+          getProfile({ token: session.access_token }).then(profile => {
+            setHasIdentity(!!profile.nric)
+            if (profile.nric) restoreProfileToLocalStorage(session.access_token!)
+          }).catch(() => setHasIdentity(false))
+        } else {
+          setHasIdentity(false)
         }
 
         // Check for pending auth action (from Google OAuth redirect)
@@ -114,9 +121,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = getSupabase().auth.onAuthStateChange((event, session) => {
       setSession(session)
 
-      // Restore profile from Supabase when a non-anonymous user signs in
+      // Check identity and restore profile when a non-anonymous user signs in
       if (event === 'SIGNED_IN' && session?.access_token && !session.user?.is_anonymous) {
-        restoreProfileToLocalStorage(session.access_token)
+        getProfile({ token: session.access_token }).then(profile => {
+          setHasIdentity(!!profile.nric)
+          if (profile.nric) restoreProfileToLocalStorage(session.access_token!)
+        }).catch(() => setHasIdentity(false))
       }
     })
     return () => subscription.unsubscribe()
@@ -141,8 +151,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     token: session?.access_token ?? null,
     isLoading,
-    isAuthenticated: !!session,
+    isAuthenticated: hasIdentity,
     isAnonymous,
+    hasSession: !!session,
     authGateReason,
     authGateCourseId,
     showAuthGate,
