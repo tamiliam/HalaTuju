@@ -10,6 +10,7 @@ import jwt
 from unittest.mock import patch
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
+from apps.courses.models import StudentProfile
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 TEST_USER_ID = 'test-user-abc-123'
@@ -97,6 +98,10 @@ class TestProtectedEndpointsAcceptAuth(TestCase):
         self._header_patcher.stop()
 
     def test_saved_courses_get_accepted(self):
+        # Profile with NRIC needed to pass NricGateMiddleware
+        StudentProfile.objects.create(
+            supabase_user_id=TEST_USER_ID, nric='010101-01-1234',
+        )
         response = self.client.get('/api/v1/saved-courses/')
         self.assertEqual(response.status_code, 200)
 

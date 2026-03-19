@@ -155,3 +155,57 @@ class SupabaseIsAuthenticated(BasePermission):
         if request.user_id is None:
             raise NotAuthenticated('Authentication required.')
         return True
+
+
+# Endpoints that work without NRIC (identity establishment + admin)
+NRIC_GATE_WHITELIST = [
+    '/api/v1/profile/',           # GET to check NRIC status
+    '/api/v1/profile/claim-nric/',# POST to claim NRIC
+    '/api/v1/profile/sync/',      # POST to sync after NRIC claim
+    '/api/v1/admin/',             # All admin endpoints (prefix match)
+]
+
+
+class NricGateMiddleware:
+    """
+    Hard gate: non-anonymous authenticated users MUST have NRIC
+    to access any protected endpoint. Whitelist allows identity
+    establishment endpoints through.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Skip if no auth (public endpoints) or anonymous user
+        user_id = getattr(request, 'user_id', None)
+        if not user_id:
+            return self.get_response(request)
+
+        supabase_user = getattr(request, 'supabase_user', None) or {}
+        if supabase_user.get('is_anonymous', False):
+            return self.get_response(request)
+
+        # Skip whitelisted paths
+        path = request.path
+        for allowed in NRIC_GATE_WHITELIST:
+            if path.startswith(allowed):
+                return self.get_response(request)
+
+        # Check if user has NRIC
+        from apps.courses.models import StudentProfile
+        try:
+            profile = StudentProfile.objects.only('nric').get(
+                supabase_user_id=user_id
+            )
+            if not profile.nric:
+                return JsonResponse(
+                    {'error': 'NRIC verification required', 'code': 'nric_required'},
+                    status=403
+                )
+        except StudentProfile.DoesNotExist:
+            return JsonResponse(
+                {'error': 'NRIC verification required', 'code': 'nric_required'},
+                status=403
+            )
+
+        return self.get_response(request)

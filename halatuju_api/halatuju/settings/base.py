@@ -40,6 +40,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'halatuju.middleware.supabase_auth.SupabaseAuthMiddleware',
+    'halatuju.middleware.supabase_auth.NricGateMiddleware',
 ]
 
 ROOT_URLCONF = 'halatuju.urls'
