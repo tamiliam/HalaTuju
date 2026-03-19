@@ -97,7 +97,7 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 ```bash
 cd halatuju_api
 
-# Run ALL tests (888 collected, 888 pass, 0 failures, 0 skipped)
+# Run ALL tests (892 collected, 892 pass, 0 failures, 0 skipped)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # Golden master only (5319 baseline)
@@ -172,7 +172,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (789 collected, 789 must pass, SPM golden master = 5319, STPM golden master = 2026)
+# 1. Run all tests (892 collected, 892 must pass, SPM golden master = 5319, STPM golden master = 2026)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -184,7 +184,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-888 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
+892 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -226,16 +226,23 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**i18n & Bug Fixes Sprint COMPLETE (2026-03-19)**
+**i18n Sprint 1 COMPLETE (2026-03-19)**
 - BooleanField conversion: colorblind/disability CharField→BooleanField end-to-end (fixes dashboard 400 bug)
-- i18n: error mapping layer + hardcoded string removal across 5 page groups
+- i18n: error mapping layer (`ERROR_MAP` + `PATTERN_MAP`) + hardcoded string removal across 5 page groups
+- Trilingual email verification (EN/MS/TA subject + body, `lang` parameter)
+- Dynamic `<html lang>` attribute, translated aria-labels (Clear, Remove, Dismiss)
 - UI fixes: stats numbers, login button overflow, profile incomplete count badge
 - Migration 0046 applied to Supabase
 
-**Current state:** 888 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026. Needs deploy after push.
+**Current state:** 892 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026. Needs deploy after push.
 
-**Next: Polish & User Testing Sprint**
-- Deploy backend+frontend to Cloud Run (BooleanField fix + i18n + UI fixes)
+**Next: i18n Sprint 2 — Admin Pages**
+- Task 8: Admin student detail page (~50 Malay strings → i18n)
+- Task 9: Admin layout, login, invite, student list (~20 strings)
+- Task 10: Final grep + parity check across all 3 message files
+- Then: Deploy backend+frontend to Cloud Run
+
+**After i18n: Polish & User Testing Sprint**
 - User testing with real STPM students (Science + Arts branches)
 - Adjust signal weights based on feedback
 - Mobile testing across quiz branches
@@ -243,6 +250,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 - 8 unmapped field_keys for RIASEC (bahasa, kejururawatan, komunikasi, pergigian, sains-data, sains-fizikal, sains-sosial, umum)
 
 **Pending work (parked)**
+- **Ranking improvements** (full audit: `docs/2026-03-18-ranking-audit.md`)
+  - W4: Backfill 73 PISMP course tags — PISMP courses use generic `calculate_fit_score()` but have no `CourseTag` rows, so quiz has zero effect on their ranking. Need a `generate_pismp_tags` command mapping specialisations to tags (e.g., PISMP Sains → cognitive_type:abstract, environment:lab, people_interaction:high_people). All teaching courses are high_people by nature; specialisation determines other dimensions.
+  - W7: Expand SPM FIELD_KEY_MAP — only 12 quiz signals map to field_keys but taxonomy has ~45 keys. Courses in unmapped fields (pelancongan, tekstil, alam-sekitar) get no field interest boost. Fix: map existing signals more broadly (e.g., field_hospitality → also pelancongan).
+  - W8: Auto-populate institution modifiers — **separate sprint**. Zero institutions have modifiers populated (the JSONField was added but never backfilled). Institution model already has lat/long, state, dun, parliament, indian_population, indian_percentage, average_income — need a command to derive `urban` and `cultural_safety_net` from these. Affects all SPM courses (±5 points completely inert today). PISMP institutions (IPG campuses) would especially benefit — Tamil-stream students need cultural_safety_net scoring.
+  - W11: Use STPM stream as free pre-quiz signal — student's STPM subjects are already known from grade input. Map via existing SUBJECT_RIASEC_MAP to apply field_match boost (+4 to +8) without quiz. Currently STPM pre-quiz is CGPA-only (score range 30-70), so a science student sees arts programmes ranked equally at same CGPA margin.
+  - W14: Richer STPM sort tie-breaking — currently only score desc + name asc. Add university type/subcategory, min_cgpa competitiveness. SPM has 7-level hierarchy; STPM has 2. ~30 min fix.
+  - W16: Audit STPM enrichment completeness — run `enrich_stpm_riasec --dry-run` to count null riasec_type/efficacy_domain on StpmCourse. Courses with nulls get neutral scores (0 RIASEC alignment, no efficacy engagement). Target 95%+ coverage before deploying quiz-informed ranking.
 - Report: MASCO career data in prompt, institution/location context (low priority)
 - Report: EN language selector in frontend
 - STPM Pipeline: test scrapers against live MOHE

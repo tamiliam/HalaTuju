@@ -34,7 +34,7 @@ Three workstreams in one sprint:
 
 ## Numbers
 
-- Files changed: 18 (8 backend, 1 migration, 6 frontend, 3 i18n message files)
-- Tests: 888 pass, 0 fail
+- Files changed: 22 (9 backend, 1 migration, 8 frontend, 3 i18n message files, 1 error-i18n lib)
+- Tests: 892 pass, 0 fail
 - Golden masters: SPM 5319, STPM 2026 (unchanged)
 - Supabase migration: 0046 applied (data converted in-place)

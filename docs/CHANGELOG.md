@@ -5,6 +5,9 @@
 ### Added
 - **Error mapping layer**: `apiErrors` i18n keys + `ERROR_MAP` for translating API error codes to user-facing messages
 - **i18n coverage**: Replaced hardcoded strings in auth callback, quiz, report, IC onboarding pages with `t()` calls
+- **Trilingual email verification**: Email subject and body sent in user's language (EN/MS/TA). `SendVerificationView` accepts `lang` parameter.
+- **Dynamic HTML lang attribute**: `<html lang>` now updates when user switches language
+- **Translated aria-labels**: Clear, Remove, Dismiss buttons now use i18n system
 
 ### Fixed
 - **Dashboard "Failed to load recommendations" bug**: Root cause — `StudentProfile.colorblind` and `disability` were `CharField` storing "Ya"/"Tidak" strings, but eligibility serializer expected `BooleanField`. Converted both fields to `BooleanField` end-to-end (model, engine, serializer, views, tests). Migration 0046 applied to Supabase.
@@ -17,7 +20,7 @@
 - **Engine checks use boolean logic**: `student.colorblind == 'Tidak'` → `not student.colorblind` in both SPM and STPM engines
 
 ### Stats
-- Backend tests: 888 pass, 0 failures
+- Backend tests: 892 pass, 0 failures
 - Frontend tests: 17 pass, 0 failures
 - Golden masters: SPM 5319, STPM 2026 (unchanged)
 
