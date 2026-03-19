@@ -406,3 +406,15 @@
 **Trade-offs:** No "archived" or "draft" distinction. If MOHE temporarily removes a course and we deactivate it, then it reappears, we automatically reactivate — but any manual data changes made while inactive are preserved.
 
 **Revisit if:** A third state is needed (e.g. "pending review" for new courses that haven't been parsed yet), or if the admin portal needs to manage course lifecycle states.
+
+## localStorage as disposable cache, not source of truth — i18n & Bug Fixes Sprint, 2026-03-19
+
+**Decision:** `restoreProfileToLocalStorage()` always overwrites localStorage from Supabase API on login. No conditional writes. `clearAll()` wipes all `halatuju_*` keys on logout. Supabase is authoritative; localStorage is a performance cache only.
+
+**Alternatives considered:** (1) Conditional restore — only write to localStorage when empty (the previous approach). (2) Field-specific migration shims (e.g. `migrateProfile()` to convert legacy "Ya"/"Tidak" strings to booleans). (3) Versioned localStorage schema with migration on read.
+
+**Rationale:** Conditional writes create stale-cache bugs that only affect returning users — when the backend data format changes, localStorage retains the old format indefinitely. Field-specific migrations are workarounds that must be written for every future schema change. Always-overwrite eliminates the entire class of stale-cache bugs with a single architectural rule.
+
+**Trade-offs:** An extra API call on every login (getProfile). Negligible cost — the call is fast and happens once per session.
+
+**Revisit if:** localStorage needs to function as an offline-first store (Progressive Web App), in which case a versioned schema with migrations would be needed.

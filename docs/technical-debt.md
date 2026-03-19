@@ -298,7 +298,7 @@
 
 ### [TD-049] `as any` type assertion in profile page ✅ RESOLVED (Quick Wins Sprint, 2026-03-15)
 **File(s):** `halatuju-web/src/app/profile/page.tsx`, `halatuju-web/src/lib/api.ts`
-**Resolution:** Extended `StudentProfile.colorblind`/`disability` to accept `'Ya' | 'Tidak'` union type (backend format). Typed gender/nationality state vars with literal types. Removed `as any`. **UPDATE (i18n & Bug Fixes Sprint):** Backend now returns booleans (BooleanField), so frontend types should be updated to `boolean` instead of `'Ya' | 'Tidak'`.
+**Resolution:** Extended `StudentProfile.colorblind`/`disability` to accept `'Ya' | 'Tidak'` union type (backend format). Typed gender/nationality state vars with literal types. Removed `as any`. **UPDATE (i18n & Bug Fixes Sprint, 2026-03-19):** Backend converted to BooleanField, frontend types updated to `boolean`. Union type removed — booleans flow end-to-end with zero conversion layers.
 
 ### [TD-050] i18n locale key inconsistency
 **File(s):** `halatuju-web/src/lib/i18n.tsx`, `halatuju-web/src/app/quiz/page.tsx` (lines 40, 149)
