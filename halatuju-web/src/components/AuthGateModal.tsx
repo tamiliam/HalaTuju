@@ -80,6 +80,18 @@ export default function AuthGateModal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, authGateReason])
 
+  // Redirect after profile-reason auth completes — reads fresh status, not stale closure
+  useEffect(() => {
+    if (!pendingProfileRedirect || status === 'loading') return
+    setPendingProfileRedirect(false)
+    if (status === 'ready') {
+      const hasGrades = profile?.grades && Object.keys(profile.grades).length > 0
+      router.push(hasGrades ? '/dashboard' : '/onboarding/exam-type')
+    } else {
+      router.push('/onboarding/exam-type')
+    }
+  }, [pendingProfileRedirect, status, profile, router])
+
   if (!authGateReason) return null
 
   const reasonKey =
@@ -149,18 +161,6 @@ export default function AuthGateModal() {
       setPendingProfileRedirect(true)
     }
   }
-
-  // Redirect after profile-reason auth completes — reads fresh status, not stale closure
-  useEffect(() => {
-    if (!pendingProfileRedirect || status === 'loading') return
-    setPendingProfileRedirect(false)
-    if (status === 'ready') {
-      const hasGrades = profile?.grades && Object.keys(profile.grades).length > 0
-      router.push(hasGrades ? '/dashboard' : '/onboarding/exam-type')
-    } else {
-      router.push('/onboarding/exam-type')
-    }
-  }, [pendingProfileRedirect, status, profile, router])
 
   const handleReturningUser = async () => {
     if (!token) return
