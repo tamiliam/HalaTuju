@@ -8,7 +8,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react'
-import { getSession, getSupabase } from '@/lib/supabase'
+import { getSession, getSupabase, signInAnonymously } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
 import { KEY_PENDING_AUTH_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
@@ -24,6 +24,7 @@ interface AuthContextValue {
   token: string | null
   isLoading: boolean
   isAuthenticated: boolean
+  isAnonymous: boolean  // true if anonymous session
   authGateReason: AuthGateReason
   authGateCourseId: string | null
   showAuthGate: (reason: NonNullable<AuthGateReason>, options?: AuthGateOptions) => void
@@ -75,17 +76,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     getSession()
-      .then(({ session }) => {
+      .then(async ({ session: existingSession }) => {
+        let session = existingSession
+        if (!session) {
+          // No session — sign in anonymously
+          const { data } = await signInAnonymously()
+          session = data?.session ?? null
+        }
         setSession(session ?? null)
         setIsLoading(false)
 
-        // Always restore from Supabase — it's the source of truth
-        if (session?.access_token) {
+        // Only restore profile for non-anonymous returning users
+        if (session?.access_token && !session.user?.is_anonymous) {
           restoreProfileToLocalStorage(session.access_token)
         }
 
         // Check for pending auth action (from Google OAuth redirect)
-        if (session) {
+        if (session && !session.user?.is_anonymous) {
           const pending = localStorage.getItem(KEY_PENDING_AUTH_ACTION)
           if (pending) {
             try {
@@ -107,8 +114,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = getSupabase().auth.onAuthStateChange((event, session) => {
       setSession(session)
 
-      // Restore profile from Supabase when a user signs in
-      if (event === 'SIGNED_IN' && session?.access_token) {
+      // Restore profile from Supabase when a non-anonymous user signs in
+      if (event === 'SIGNED_IN' && session?.access_token && !session.user?.is_anonymous) {
         restoreProfileToLocalStorage(session.access_token)
       }
     })
@@ -128,11 +135,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthGateCourseId(null)
   }, [])
 
+  const isAnonymous = session?.user?.is_anonymous ?? true
+
   const value: AuthContextValue = {
     session,
     token: session?.access_token ?? null,
     isLoading,
     isAuthenticated: !!session,
+    isAnonymous,
     authGateReason,
     authGateCourseId,
     showAuthGate,
