@@ -1,5 +1,44 @@
 # Changelog — HalaTuju
 
+## NRIC Hard Gate Sprint (2026-03-20)
+
+### Added
+- **NRIC hard gate middleware**: `NricGateMiddleware` blocks all authenticated non-anonymous users without NRIC from protected endpoints. Whitelists: `/api/v1/profile/`, `/api/v1/profile/claim-nric/`, `/api/v1/profile/sync/`, `/api/v1/admin/*`
+- **Supabase anonymous sign-in**: Students browse with anonymous JWT (`is_anonymous=true`). No Supabase account or Django profile created until NRIC verified.
+- **`signInAnonymously()` + `linkIdentity()`** helpers in `supabase.ts` for the new auth flow
+- **Auto-anonymous sign-in**: `AuthProvider` creates anonymous session on first visit if no session exists
+- **`isAnonymous`, `hasSession` flags** added to `AuthContextValue` for finer auth state control
+- **`is_anonymous` extraction** from JWT in `SupabaseAuthMiddleware`
+- **403 `nric_required` handling**: Frontend `apiRequest()` detects NRIC gate 403s and auto-opens auth gate
+- **IC confirm dialog** in AuthGateModal for "NRIC already registered" case (account recovery flow)
+- **IC page guard**: Redirects anonymous users to `/` and already-verified users to dashboard
+- **Restrictive RLS policies** on 5 tables blocking anonymous users from student data
+- **18 new tests**: 8 middleware unit tests + 10 integration tests for NRIC gate flow
+
+### Changed
+- **`isAuthenticated` redefined**: Now means "has NRIC" (non-anonymous + verified identity), not just "has session"
+- **AuthGateModal rewritten**: 3-step flow (login → otp → ic) replaces 4-step (login → otp → ic → profile). Google login uses `linkIdentity()` for anonymous users. IC step calls `claimNric()` API directly.
+- **Login page replaced** with redirect to `/` — all login happens through AuthGateModal
+- **Auth callback updated** for `linkIdentity()` redirects and pending auth actions
+- **AppHeader** now shows "Get Started" for anonymous, profile dropdown for identified users
+
+### Fixed
+- **Orphan account prevention**: Google OAuth no longer creates Supabase user immediately. Account created only after NRIC verification.
+- **`get_or_create` removed** from `SavedCourseListView.post`, `ProfileView.put`, `OutcomeListView.post` — profiles must exist via NRIC claim
+
+### Removed
+- **Standalone login page** (`/login`) — replaced with redirect
+- **`profile` step** from AuthGateModal — name collected in IC step instead
+- **16 orphan Supabase users** without NRIC (cleaned up from production)
+
+### Stats
+- Backend tests: 958 pass, 0 failures (up from 948)
+- Frontend build: passes cleanly
+- Golden masters: SPM 5319, STPM 2026 (unchanged)
+- Supabase RLS: 5 restrictive policies added
+
+---
+
 ## localStorage & Bug Fixes Sprint (2026-03-19)
 
 ### Fixed

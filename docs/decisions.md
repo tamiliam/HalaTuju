@@ -407,6 +407,18 @@
 
 **Revisit if:** A third state is needed (e.g. "pending review" for new courses that haven't been parsed yet), or if the admin portal needs to manage course lifecycle states.
 
+## NRIC as hard identity gate via middleware — NRIC Hard Gate Sprint, 2026-03-20
+
+**Decision:** Enforce NRIC verification via Django middleware (`NricGateMiddleware`) rather than per-endpoint checks. No Supabase account or Django profile created until NRIC is verified. Students browse with Supabase anonymous sign-in (`is_anonymous=true` JWT).
+
+**Alternatives considered:** (1) Check NRIC at each protected endpoint (rejected by user — "you are proposing a workaround, we want a hard gate"). (2) Create Supabase account at Google sign-in, check NRIC before profile creation — still creates orphan accounts if student changes login method. (3) Middleware-based gate with anonymous sign-in (chosen).
+
+**Rationale:** A middleware gate means every new endpoint is automatically protected — no developer can accidentally forget the NRIC check. Anonymous sign-in provides a valid JWT for API calls without creating a permanent account, solving the orphan user problem. The whitelist (`/profile/`, `/profile/claim-nric/`, `/profile/sync/`, `/admin/`) covers only the endpoints needed to establish identity.
+
+**Trade-offs:** Additional DB query per request (profile lookup). Mitigated with `.only('nric')` to fetch a single column. Anonymous sessions create lightweight Supabase auth entries that need periodic cleanup (30-day cron). `isAuthenticated` meaning changed from "has session" to "has NRIC" — existing code works because auth gates already check `!isAuthenticated`.
+
+**Revisit if:** Performance profiling shows the per-request profile lookup is a bottleneck (could cache in middleware), or if a more granular permission system is needed beyond binary NRIC/no-NRIC.
+
 ## localStorage as disposable cache, not source of truth — i18n & Bug Fixes Sprint, 2026-03-19
 
 **Decision:** `restoreProfileToLocalStorage()` always overwrites localStorage from Supabase API on login. No conditional writes. `clearAll()` wipes all `halatuju_*` keys on logout. Supabase is authoritative; localStorage is a performance cache only.

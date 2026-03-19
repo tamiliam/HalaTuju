@@ -141,6 +141,8 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_quiz_api.py | 24 | Questions endpoint (200, branch/seed, Q3 variants, Q5/trunk, validation, grades JSON, lang), resolve endpoint (200, Q3/Q4, validation), submit endpoint (200, signals, strength, branch, validation, arts branch) |
 | test_eligibility_service.py | 19 | Service module: compute_student_merit (precomputed/grades/hist rename/default coq), compute_course_merit (standard/no cutoff/tvet/matric/stpm), deduplicate_pismp (passthrough/identical collapse/language merge), sort_eligible_courses (merit order/pismp/iljtm), compute_stats (source_type/pathway_type) |
 | test_preu_courses.py | 4 | Pre-U eligibility (stats include matric/stpm), search (level Pra-U, text Matrikulasi, source_type matric) |
+| test_nric_gate.py | 8 | NricGateMiddleware: anonymous pass-through, whitelisted endpoints (profile/claim-nric/sync/admin), blocks without NRIC, blocks without profile, allows with NRIC, public endpoints pass |
+| test_nric_gate_integration.py | 10 | End-to-end NRIC gate: anonymous public access, anonymous blocked from saves, no-NRIC 403, with-NRIC pass-through, no-profile 403, whitelist (profile/claim-nric/sync), public endpoints open |
 | test_admin_auth.py | 14 | PartnerAdmin model (CRUD, super admin flag), PartnerAdminMixin (UID lookup, email fallback, UID backfill), invite endpoint (super admin only, validation), orgs endpoint, AdminRoleView (admin_name) |
 | test_stpm_enrichment.py | 40 | RIASEC mapping (completeness, all 6 types, design doc keys R/I/A/S/E/C, umum excluded), difficulty mapping (valid levels, medicine=high, law=high, business=low), efficacy mapping (valid domains, eng=quantitative, med=scientific, law=verbal, design=practical), mapping consistency (same keys across all 3 maps), FieldTaxonomy riasec_primary (default, valid code, leaf enrichment), StpmCourse fields (default, set/read, all three together), enrich command (dry run, apply RIASEC/difficulty/efficacy, unmapped field_key, taxonomy update, idempotent, multi-course same field) |
 | test_field_taxonomy.py | 140 | FieldTaxonomy model integrity (7), SPM classify_course (51: all frontend_label variants incl. 24 production labels, substring regression tests), STPM classify_stpm_course (57: 10 SPM-matching categories with course_name sub-classification, ~40 STPM-specific categories, edge cases), FieldListView API (4: groups structure, children count), UA course-name overrides (11) |
@@ -172,7 +174,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (940 collected, 940 must pass, SPM golden master = 5319, STPM golden master = 2026)
+# 1. Run all tests (958 collected, 958 must pass, SPM golden master = 5319, STPM golden master = 2026)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -184,7 +186,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-940 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
+958 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -225,20 +227,22 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**localStorage & Bug Fixes Sprint COMPLETE (2026-03-19)**
-- localStorage always refreshed from Supabase on login (source of truth, not cache)
-- Frontend boolean cleanup: 6 sites stopped converting bool→"Ya"/"Tidak", API types cleaned
-- Ranking: W4 (PISMP tags) and W11 (STPM stream pre-quiz signal) done
-- W16 resolved: 100% STPM enrichment coverage in production
+**NRIC Hard Gate Sprint COMPLETE (2026-03-20)**
+- NRIC is the hard identity gate — no account/profile created until NRIC verified
+- Anonymous sign-in for browsing, `linkIdentity()` for Google, `claimNric()` for NRIC
+- NricGateMiddleware blocks protected endpoints without NRIC (whitelists identity endpoints)
+- `isAuthenticated` = has NRIC (not just has session)
+- 16 orphan users cleaned up, 5 restrictive RLS policies added
+- **Manual step needed before deploy**: Enable "Anonymous Sign-Ins" + "Manual Linking" in Supabase Dashboard → Authentication → Providers
 
-**Current state:** 940 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
+**Current state:** 958 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
 
-**Next: Polish & User Testing Sprint**
-- User testing with real STPM students (Science + Arts branches)
-- Adjust signal weights based on feedback
-- Mobile testing across quiz branches
-- Trilingual content review (verify all quiz question text renders correctly in BM/TA)
-- 8 unmapped field_keys for RIASEC (bahasa, kejururawatan, komunikasi, pergigian, sains-data, sains-fizikal, sains-sosial, umum)
+**Next: User Testing & Phone Login Sprint**
+- Enable anonymous sign-in in Supabase dashboard (required for NRIC gate)
+- User testing with real students through new NRIC gate flow
+- Phone/OTP login implementation (currently Google only)
+- Test account recovery flow (new Google → existing NRIC)
+- Mobile testing across auth gate + IC step
 
 **Pending work (parked)**
 - **Ranking improvements** (full audit: `docs/2026-03-18-ranking-audit.md`)
