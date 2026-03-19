@@ -15,7 +15,7 @@ export default function AppHeader() {
   const { t } = useT()
   const pathname = usePathname()
   const router = useRouter()
-  const { session, isAuthenticated, showAuthGate } = useAuth()
+  const { session, isAuthenticated, isAnonymous, showAuthGate } = useAuth()
   const { incompleteCount } = useProfileCompleteness()
   const [profileOpen, setProfileOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
