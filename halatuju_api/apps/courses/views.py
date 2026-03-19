@@ -1446,6 +1446,20 @@ class StpmRankingView(APIView):
         student_cgpa = float(request.data.get('student_cgpa', 0))
         signals = request.data.get('student_signals', {})
 
+        # W11: When no quiz signals, derive RIASEC seed from STPM subjects
+        # so pre-quiz ranking uses field alignment instead of CGPA-only.
+        if not signals.get('riasec_seed'):
+            stpm_subjects = request.data.get('stpm_subjects', [])
+            if stpm_subjects:
+                from .stpm_quiz_engine import calculate_riasec_seed
+                riasec_scores = calculate_riasec_seed(stpm_subjects)
+                if riasec_scores:
+                    # Convert {R: 5, I: 3} → {riasec_R: 5, riasec_I: 3}
+                    seed = {
+                        f'riasec_{k}': v for k, v in riasec_scores.items()
+                    }
+                    signals = {**signals, 'riasec_seed': seed}
+
         ranked = get_stpm_ranked_results(courses, student_cgpa, signals)
         framing = get_result_framing(signals)
         return Response({

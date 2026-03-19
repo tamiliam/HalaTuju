@@ -309,7 +309,18 @@ Pre-U courses (Asasi, Matric, STPM pathways) use dedicated scoring with quiz sig
 | `mental_fatigue_sensitive` | -2 | Always |
 | `high_stamina` | +1 | Always |
 
-**Field preference bonus:** +3 if student's field_interest matches course's field.
+**Field preference bonus:** +3 if student's field_interest matches course's track via `TRACK_FIELD_MAP`:
+
+| Track | Quiz Signals That Trigger +3 |
+|-------|------------------------------|
+| `matric:kejuruteraan` | field_mechanical, field_electrical, field_civil, field_heavy_industry |
+| `matric:sains_komputer` | field_digital |
+| `matric:perakaunan` | field_business |
+| `stpm:sains_sosial` | creative (work_preference signal, not field_interest) |
+| `matric:sains` | **Not in map — no field match possible** |
+| `stpm:sains` | **Not in map — no field match possible** |
+
+**Gap (W21):** The two science tracks (`matric:sains` and `stpm:sains`) are missing from `TRACK_FIELD_MAP`. A student interested in health (`field_health`) or agriculture (`field_agriculture`) — both science-aligned — gets no +3 bonus for the science track. Fix: add `'matric:sains': ['field_health', 'field_agriculture']` and `'stpm:sains': ['field_health', 'field_agriculture']`.
 
 ### Sort Order
 
@@ -332,7 +343,7 @@ Same 7-level hierarchy as pre-quiz (see Section 2).
 | W5 | **Cap asymmetry** — field interest cap is 8, work preference cap is 4, others are 6. Field interest contributes 2x work preference with no documented rationale | May over-weight field match relative to working style fit | Medium |
 | W6 | **Multi-select weight splitting dilutes signals** — selecting 2+ options reduces weight by 1 (min 1). Broad-interest students get weaker signals than focused ones | Penalises honestly broad-interest students | Medium |
 | W7 | **FIELD_KEY_MAP coverage gaps** — only 12 field_interest signals map to field_keys. Field taxonomy has ~45 keys. Unmapped fields (e.g., `pelancongan`, `alam_sekitar`) get no field interest boost | Courses in niche fields are systematically under-ranked | High |
-| W8 | **Institution modifiers sparsely populated** — only institutions with non-empty `modifiers` JSON contribute | Institution-level differentiation available for only a subset | Medium |
+| W8 | **Institution modifiers empty + no real proximity scoring** — zero institutions have modifiers populated (±5 points completely inert). The `proximity_priority` quiz signal doesn't check actual distance — STPM pathway gives a hardcoded +1, generic courses check `cultural_safety_net` (which is empty). Institution model has lat/long, state, demographics but nothing derives modifiers from them. Student profile doesn't capture home location. | proximity_priority signal is meaningless; institution differentiation disabled across all SPM courses | High |
 | W9 | **No negative field mismatch penalty** — if student prefers engineering but a culinary course has no matching field_key, score is +0 (no boost) rather than a penalty | Mismatched courses aren't pushed down, just not boosted | Low |
 | W10 | **Fit reasons are English-only** — `fit_reasons` list generated in English regardless of user language | Inconsistent with bilingual BM/EN approach | Low |
 
@@ -344,7 +355,10 @@ Same 7-level hierarchy as pre-quiz (see Section 2).
 
 3. **Document cap rationale (W5).** Add reasoning comments in `ranking_engine.py` explaining each cap value. Consider equalising to 6 or explicitly justifying the asymmetry.
 
-4. **Auto-populate institution modifiers (W8).** Use institution location data (state, parliament, DUN) already in the Institution model to auto-populate `urban` and `cultural_safety_net` modifiers.
+4. **Auto-populate institution modifiers + real proximity scoring (W8).** Three parts:
+   - **Populate modifiers:** Use institution lat/long, state, and demographics (already on Institution model) to derive `urban` and `cultural_safety_net` via a management command.
+   - **Capture student location:** Add home state (or lat/long) to StudentProfile so proximity can be calculated.
+   - **Real proximity scoring:** When student has `proximity_priority` signal, calculate actual distance from student's home to each institution. Nearby institutions get a boost, distant ones get a penalty. This replaces the current approach where proximity_priority checks `cultural_safety_net` (a community support concept, not actual distance) or gives a hardcoded +1 (STPM pathway).
 
 ---
 
@@ -617,7 +631,7 @@ SPM field taxonomy has ~45 keys but only 12 quiz signals map to them. STPM has 3
 | W7 | Expand SPM FIELD_KEY_MAP coverage | Low (1h) | High | **P1** |
 | W11 | Use STPM stream as free pre-quiz signal | Medium (2-3h) | High | **P1** |
 | W1 | Show "Admission Chance" not fit_score pre-quiz | Low (1h) | Medium | **P2** |
-| W8 | Auto-populate institution modifiers | Medium (2h) | Medium | **P2** |
+| W8 | Auto-populate institution modifiers + real proximity scoring | High (4-5h) | High | **P1** |
 | W14 | Richer STPM sort tie-breaking | Low (30min) | Medium | **P2** |
 | W15 | Lightweight STPM course tags | High (4-5h) | Medium | **P2** |
 | W16 | Audit STPM enrichment completeness | Low (30min) | Medium | **P2** |
@@ -630,6 +644,7 @@ SPM field taxonomy has ~45 keys but only 12 quiz signals map to them. STPM has 3
 | W13 | Interview penalty pre-quiz | Low (15min) | Low | **P4** |
 | W17 | STPM institution modifiers | Medium (2h) | Low | **P4** |
 | W3 | Institution location/preference pre-quiz | Medium (2h) | Low | **P4** |
+| W21 | Add matric:sains and stpm:sains to TRACK_FIELD_MAP | Low (15min) | Medium | **P1** |
 | W9 | Negative field mismatch penalty | Low (1h) | Low | **P4** |
 
 ### Recommended First Sprint

@@ -1,5 +1,25 @@
 # Changelog — HalaTuju
 
+## localStorage & Bug Fixes Sprint (2026-03-19)
+
+### Fixed
+- **Dashboard "Failed to load recommendations" — complete fix**: Frontend was converting booleans to "Ya"/"Tidak" strings before API calls (6 sites). Removed all string conversions — frontend now sends booleans directly.
+- **Stale localStorage causing errors on login**: `restoreProfileToLocalStorage()` now always overwrites from Supabase (source of truth) instead of only writing when localStorage is empty. Eliminates entire class of stale-cache bugs.
+
+### Changed
+- **localStorage is a cache, not a source of truth**: All `!localStorage.getItem()` guards removed from `restoreProfileToLocalStorage()`. Login always refreshes from Supabase API.
+- **API types cleaned up**: `colorblind`/`disability` types changed from `boolean | 'Ya' | 'Tidak'` to `boolean` across `StudentProfile`, `SyncProfileData`, `StpmEligibilityRequest`
+
+### Removed
+- **`migrateProfile()` shim**: One-time localStorage migration for "Ya"/"Tidak" strings — replaced by always-overwrite-from-Supabase approach
+
+### Stats
+- Backend tests: 932 pass, 0 failures
+- Frontend build: passes cleanly
+- Golden masters: SPM 5319, STPM 2026 (unchanged)
+
+---
+
 ## i18n Sprint 2 — Admin Pages (2026-03-19)
 
 ### Added

@@ -132,7 +132,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_data_loading.py | 17 | Fixture integrity (courses loaded, 1:1 requirements, count ~1113, JSON parsing, booleans, merit scores, proper case) + proper_case_name utility (9 unit tests) |
 | test_stpm_engine.py | 16 | CGPA calculator (5), grade comparison (4), eligibility integration (6: strong science, CGPA filter, MUET filter, subject req, result shape, colorblind), is_active filtering (1: inactive excluded from eligibility). Grade scale: A→F with D+(1.33), C-(1.67), E/G legacy aliases |
 | test_stpm_golden_master.py | 1 | 5 students × all programmes = 2103 baseline |
-| test_stpm_api.py | 9 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency), STPM ranking API (returns 200, scored programmes, sorted desc, missing 400, empty list) |
+| test_stpm_api.py | 16 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency), STPM ranking API (returns 200, scored programmes, sorted desc, missing 400, empty list), W11 pre-quiz RIASEC (science boost I-type, arts boost A-type, post-quiz not overwritten, empty/PA no effect, framing) |
 | test_stpm_search.py | 14 | STPM search API (200, programmes shape, text/university/stream filters, pagination, filter metadata), STPM detail API (200, programme data, 404, subjects list), is_active filtering (inactive excluded from STPM search, inactive excluded from unified search) |
 | test_stpm_sync.py | 7 | Sync command: dry run reports removed, apply deactivates removed, reactivates returned, updates URLs, reports merit changes, reports new programmes, shows inactive count |
 | test_stpm_ranking.py | 58 | CGPA margin (5: base, bonus, cap, negative, partial), field match (9: primary +8, automotif via mekanikal, secondary +4, no match, empty, cross-domain +2, cap, law), RIASEC alignment (8: primary +6, secondary +3, no match, cross +2, cap, empty, no signals, tied seeds), efficacy (6: confirmed/confident/open/redirect/mismatch/none), goal alignment (7: professional+medicine, nonreg, postgrad+research, entrepreneurial+business, employment, no goal, no field), resilience (7: redirect+high/-3, redirect+moderate/-1, supported+high/-1, redirect+low/0, high resilience/0, no difficulty, no signals), interview (2), full integration (4: max/min score, no quiz, v1 compat), result framing (5: 3 modes, default, subtitle), ranked results (5: sort, empty, output, merit survives, quiz affects order) |
@@ -172,7 +172,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (892 collected, 892 must pass, SPM golden master = 5319, STPM golden master = 2026)
+# 1. Run all tests (932 collected, 932 must pass, SPM golden master = 5319, STPM golden master = 2026)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -184,7 +184,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-892 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
+932 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -221,27 +221,19 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Known Issues
 
-- 73 PISMP courses without course tags (need tag data to be created)
 - 87 offerings without tuition fee data (data not available in source CSVs)
 
 ## Next Sprint
 
-**i18n Sprint 2 COMPLETE (2026-03-19)**
-- All 7 admin pages i18n'd: layout, login, dashboard, students list, student detail, invite, profile
-- 118 admin i18n keys added (EN/MS/TA parity verified)
-- Interpolation: `studentsCount`, `showingRange`, `orgInfo`
-- Final grep: zero hardcoded UI strings remaining in admin pages
+**localStorage & Bug Fixes Sprint COMPLETE (2026-03-19)**
+- localStorage always refreshed from Supabase on login (source of truth, not cache)
+- Frontend boolean cleanup: 6 sites stopped converting bool→"Ya"/"Tidak", API types cleaned
+- Ranking: W4 (PISMP tags) and W11 (STPM stream pre-quiz signal) done
+- W16 resolved: 100% STPM enrichment coverage in production
 
-**Current state:** 892 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026. Needs deploy after push.
+**Current state:** 932 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026. Deployed.
 
-**Next: Deploy + Polish & User Testing Sprint**
-- Deploy backend+frontend to Cloud Run (i18n Sprint 1 + 2 combined)
-- User testing with real STPM students (Science + Arts branches)
-- Adjust signal weights based on feedback
-- Mobile testing across quiz branches
-- Trilingual content review (verify all quiz question text renders correctly in BM/TA)
-
-**After i18n: Polish & User Testing Sprint**
+**Next: Polish & User Testing Sprint**
 - User testing with real STPM students (Science + Arts branches)
 - Adjust signal weights based on feedback
 - Mobile testing across quiz branches
@@ -250,10 +242,10 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 **Pending work (parked)**
 - **Ranking improvements** (full audit: `docs/2026-03-18-ranking-audit.md`)
-  - W4: Backfill 73 PISMP course tags — PISMP courses use generic `calculate_fit_score()` but have no `CourseTag` rows, so quiz has zero effect on their ranking. Need a `generate_pismp_tags` command mapping specialisations to tags (e.g., PISMP Sains → cognitive_type:abstract, environment:lab, people_interaction:high_people). All teaching courses are high_people by nature; specialisation determines other dimensions.
+  - ~~W4: PISMP course tags~~ — **DONE** (2026-03-19). 73 PISMP courses backfilled via `backfill_pismp_tags` command + SQL. 12 specialisations mapped (Sains→lab, Jasmani→field, Muzik/Seni→workshop, Reka Bentuk→workshop+design, etc.). 33 tests added. Applied to production Supabase.
   - W7: Expand SPM FIELD_KEY_MAP — only 12 quiz signals map to field_keys but taxonomy has ~45 keys. Courses in unmapped fields (pelancongan, tekstil, alam-sekitar) get no field interest boost. Fix: map existing signals more broadly (e.g., field_hospitality → also pelancongan).
   - W8: Institution modifiers + real proximity scoring — **separate sprint, 3 parts**: (1) Populate modifiers: zero institutions have modifiers today, but Institution model has lat/long, state, demographics — need a command to derive `urban` and `cultural_safety_net`. (2) Capture student location: add home state or lat/long to StudentProfile. (3) Real proximity scoring: `proximity_priority` quiz signal currently doesn't check actual distance — STPM pathway gives hardcoded +1, generic courses check `cultural_safety_net` (empty). Should calculate real distance from student to institution. Affects all SPM courses (±5 institution points completely inert) + makes proximity_priority meaningful.
-  - W11: Use STPM stream as free pre-quiz signal — student's STPM subjects are already known from grade input. Map via existing SUBJECT_RIASEC_MAP to apply field_match boost (+4 to +8) without quiz. Currently STPM pre-quiz is CGPA-only (score range 30-70), so a science student sees arts programmes ranked equally at same CGPA margin.
+  - ~~W11: STPM stream as free pre-quiz signal~~ — **DONE** (2026-03-19). Backend `StpmRankingView` derives RIASEC seed from `stpm_subjects` via `calculate_riasec_seed()` when no quiz signals present. Frontend sends `stpm_subjects` (subject keys from grade input). Science students now see I-type programmes ranked higher; arts students see A-type higher. Post-quiz signals take precedence (not overwritten). 7 tests added.
   - W14: Richer STPM sort tie-breaking — currently only score desc + name asc. Add university type/subcategory, min_cgpa competitiveness. SPM has 7-level hierarchy; STPM has 2. ~30 min fix.
   - W16: Audit STPM enrichment completeness — **RESOLVED**: production has 1,112/1,112 courses enriched (100%). Test fixtures don't have the data but production is fine. `efficacy_domain` is stored but not consumed by ranking formula — potential future enhancement.
   - W21: Add matric:sains and stpm:sains to TRACK_FIELD_MAP — science tracks missing from field preference mapping, so students interested in health/agriculture get no +3 bonus for the science pre-U track. Quick fix: add field_health, field_agriculture to both.

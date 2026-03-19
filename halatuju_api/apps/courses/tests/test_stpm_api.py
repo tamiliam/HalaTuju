@@ -130,6 +130,127 @@ class TestStpmRankingAPI:
 
 
 @pytest.mark.django_db
+class TestStpmRankingW11PreQuizRiasec:
+    """W11: STPM subjects as free pre-quiz RIASEC signal."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.client = APIClient()
+        # Two courses: one I-type (science), one A-type (arts)
+        self.science_course = {
+            'course_id': 'SCI001', 'course_name': 'BSc Physics',
+            'university': 'UM', 'stream': 'science',
+            'min_cgpa': 2.5, 'min_muet_band': 3,
+            'req_interview': False, 'no_colorblind': False,
+            'riasec_type': 'I',
+        }
+        self.arts_course = {
+            'course_id': 'ART001', 'course_name': 'BA Literature',
+            'university': 'UM', 'stream': 'arts',
+            'min_cgpa': 2.5, 'min_muet_band': 3,
+            'req_interview': False, 'no_colorblind': False,
+            'riasec_type': 'A',
+        }
+
+    def test_science_subjects_boost_investigative_courses(self):
+        """Science subjects should boost I-type courses via RIASEC seed."""
+        data = {
+            'eligible_courses': [self.science_course, self.arts_course],
+            'student_cgpa': 3.0,
+            'student_signals': {},
+            'stpm_subjects': ['physics', 'chemistry', 'biology'],
+        }
+        response = self.client.post('/api/v1/stpm/ranking/', data, format='json')
+        assert response.status_code == 200
+        progs = response.json()['ranked_courses']
+        # Science student → I-type should rank higher than A-type
+        sci = next(p for p in progs if p['course_id'] == 'SCI001')
+        art = next(p for p in progs if p['course_id'] == 'ART001')
+        assert sci['fit_score'] > art['fit_score']
+
+    def test_arts_subjects_boost_artistic_courses(self):
+        """Arts subjects should boost A-type courses."""
+        data = {
+            'eligible_courses': [self.science_course, self.arts_course],
+            'student_cgpa': 3.0,
+            'student_signals': {},
+            'stpm_subjects': ['literature_english', 'visual_arts', 'history'],
+        }
+        response = self.client.post('/api/v1/stpm/ranking/', data, format='json')
+        progs = response.json()['ranked_courses']
+        art = next(p for p in progs if p['course_id'] == 'ART001')
+        sci = next(p for p in progs if p['course_id'] == 'SCI001')
+        assert art['fit_score'] > sci['fit_score']
+
+    def test_existing_riasec_seed_not_overwritten(self):
+        """Post-quiz signals with riasec_seed should NOT be replaced by stpm_subjects."""
+        # Student has quiz-derived A-type seed but science subjects
+        data = {
+            'eligible_courses': [self.science_course, self.arts_course],
+            'student_cgpa': 3.0,
+            'student_signals': {
+                'riasec_seed': {'riasec_A': 5, 'riasec_S': 3},
+            },
+            'stpm_subjects': ['physics', 'chemistry', 'biology'],
+        }
+        response = self.client.post('/api/v1/stpm/ranking/', data, format='json')
+        progs = response.json()['ranked_courses']
+        # Quiz says A-type → arts should still rank higher despite science subjects
+        art = next(p for p in progs if p['course_id'] == 'ART001')
+        sci = next(p for p in progs if p['course_id'] == 'SCI001')
+        assert art['fit_score'] > sci['fit_score']
+
+    def test_no_stpm_subjects_no_effect(self):
+        """Without stpm_subjects, pre-quiz ranking is CGPA-only (same as before)."""
+        data = {
+            'eligible_courses': [self.science_course, self.arts_course],
+            'student_cgpa': 3.0,
+            'student_signals': {},
+        }
+        response = self.client.post('/api/v1/stpm/ranking/', data, format='json')
+        progs = response.json()['ranked_courses']
+        # Both courses have same min_cgpa, so scores should be equal
+        assert progs[0]['fit_score'] == progs[1]['fit_score']
+
+    def test_empty_stpm_subjects_no_effect(self):
+        """Empty stpm_subjects list has no effect."""
+        data = {
+            'eligible_courses': [self.science_course, self.arts_course],
+            'student_cgpa': 3.0,
+            'student_signals': {},
+            'stpm_subjects': [],
+        }
+        response = self.client.post('/api/v1/stpm/ranking/', data, format='json')
+        progs = response.json()['ranked_courses']
+        assert progs[0]['fit_score'] == progs[1]['fit_score']
+
+    def test_pa_excluded_from_seed(self):
+        """pengajian_am (PA) should not contribute to RIASEC seed."""
+        data = {
+            'eligible_courses': [self.science_course, self.arts_course],
+            'student_cgpa': 3.0,
+            'student_signals': {},
+            'stpm_subjects': ['pengajian_am'],
+        }
+        response = self.client.post('/api/v1/stpm/ranking/', data, format='json')
+        progs = response.json()['ranked_courses']
+        # PA alone produces no seed → same as no subjects
+        assert progs[0]['fit_score'] == progs[1]['fit_score']
+
+    def test_framing_still_returned(self):
+        """Response still includes framing metadata with W11 active."""
+        data = {
+            'eligible_courses': [self.science_course],
+            'student_cgpa': 3.0,
+            'student_signals': {},
+            'stpm_subjects': ['physics', 'chemistry'],
+        }
+        response = self.client.post('/api/v1/stpm/ranking/', data, format='json')
+        body = response.json()
+        assert 'framing' in body
+
+
+@pytest.mark.django_db
 class TestStpmCourseDetailCareerOccupations(TestCase):
     """Test career_occupations in STPM course detail endpoint."""
 
