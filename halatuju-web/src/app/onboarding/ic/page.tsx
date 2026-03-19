@@ -5,32 +5,29 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth-context'
-import { getProfile, syncProfile } from '@/lib/api'
+import { syncProfile } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 import IcInput from '@/components/IcInput'
 import { validateIc } from '@/lib/ic-utils'
-import { KEY_GRADES, KEY_REFERRAL_SOURCE, KEY_STPM_GRADES } from '@/lib/storage'
+import { KEY_REFERRAL_SOURCE } from '@/lib/storage'
 
 export default function IcOnboardingPage() {
   const router = useRouter()
   const { t } = useT()
-  const { token, session, isAnonymous } = useAuth()
+  const { token, session, isAnonymous, status, profile: authProfile } = useAuth()
 
   // Guard: anonymous users shouldn't be here; users with NRIC skip to dashboard
   useEffect(() => {
-    if (isAnonymous) {
-      router.replace('/')
+    if (status === 'loading') return
+    if (status === 'anonymous') { router.replace('/'); return }
+    if (status === 'ready') {
+      // Already has NRIC — check if they have grades too
+      const hasGrades = authProfile?.grades && Object.keys(authProfile.grades).length > 0
+      router.replace(hasGrades ? '/dashboard' : '/onboarding/exam-type')
       return
     }
-    if (token) {
-      getProfile({ token }).then(profile => {
-        if (profile.nric) {
-          const hasGrades = localStorage.getItem(KEY_GRADES) || localStorage.getItem(KEY_STPM_GRADES)
-          router.replace(hasGrades ? '/dashboard' : '/onboarding/exam-type')
-        }
-      }).catch(() => {})
-    }
-  }, [token, isAnonymous, router])
+    // status === 'needs-nric' — stay on this page
+  }, [status, authProfile, router])
   const [ic, setIc] = useState('')
   const [icValid, setIcValid] = useState(false)
   const [name, setName] = useState(
