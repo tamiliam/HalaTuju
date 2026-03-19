@@ -151,9 +151,30 @@ export default function AuthGateModal() {
     }
   }
 
+  const restoreProfileToLocalStorage = async (tkn: string) => {
+    try {
+      const profile = await getProfile({ token: tkn })
+      if (profile.grades && Object.keys(profile.grades).length > 0) {
+        localStorage.setItem(KEY_GRADES, JSON.stringify(profile.grades))
+      }
+      const demo: Record<string, unknown> = {}
+      if (profile.gender) demo.gender = profile.gender
+      if (profile.nationality) demo.nationality = profile.nationality
+      if (profile.colorblind != null) demo.colorblind = profile.colorblind
+      if (profile.disability != null) demo.disability = profile.disability
+      if (Object.keys(demo).length > 0) {
+        localStorage.setItem(KEY_PROFILE, JSON.stringify(demo))
+      }
+      if (profile.student_signals) {
+        localStorage.setItem(KEY_QUIZ_SIGNALS, JSON.stringify(profile.student_signals))
+      }
+    } catch { /* non-critical */ }
+  }
+
   const handleReturningUser = async () => {
     if (!token) return
-    // Sync localStorage data to backend
+    // Restore profile from backend first, then sync any local data up
+    await restoreProfileToLocalStorage(token)
     await syncLocalStorageToBackend(token)
     finishAndClose()
   }
