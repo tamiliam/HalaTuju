@@ -155,12 +155,12 @@ class TestStpmEligibility:
         all_results = check_stpm_eligibility(
             stpm_grades={'PA': 'A', 'MATH_T': 'A', 'CHEMISTRY': 'A', 'BIOLOGY': 'A'},
             spm_grades={'bm': 'A', 'eng': 'A', 'hist': 'A', 'math': 'A', 'sci': 'A'},
-            cgpa=3.8, muet_band=4, colorblind='Tidak',
+            cgpa=3.8, muet_band=4, colorblind=False,
         )
         cb_results = check_stpm_eligibility(
             stpm_grades={'PA': 'A', 'MATH_T': 'A', 'CHEMISTRY': 'A', 'BIOLOGY': 'A'},
             spm_grades={'bm': 'A', 'eng': 'A', 'hist': 'A', 'math': 'A', 'sci': 'A'},
-            cgpa=3.8, muet_band=4, colorblind='Ya',
+            cgpa=3.8, muet_band=4, colorblind=True,
         )
         assert len(all_results) >= len(cb_results)
 

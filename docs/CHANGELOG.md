@@ -1,5 +1,28 @@
 # Changelog — HalaTuju
 
+## i18n & Bug Fixes Sprint (2026-03-19)
+
+### Added
+- **Error mapping layer**: `apiErrors` i18n keys + `ERROR_MAP` for translating API error codes to user-facing messages
+- **i18n coverage**: Replaced hardcoded strings in auth callback, quiz, report, IC onboarding pages with `t()` calls
+
+### Fixed
+- **Dashboard "Failed to load recommendations" bug**: Root cause — `StudentProfile.colorblind` and `disability` were `CharField` storing "Ya"/"Tidak" strings, but eligibility serializer expected `BooleanField`. Converted both fields to `BooleanField` end-to-end (model, engine, serializer, views, tests). Migration 0046 applied to Supabase.
+- **Landing page stats**: Corrected from "1,500+" to "1,300+" courses and "838" to "800+" institutions
+- **Login button overflow on mobile**: Replaced `btn-primary` base class (which forced `px-6 py-3`) with explicit compact styling + `whitespace-nowrap`
+- **Profile incomplete count badge**: Fixed hardcoded `1` to use `{contactDetailsIncomplete}` variable
+
+### Changed
+- **Serializer no longer converts booleans to "Ya"/"Tidak"**: `EligibilityRequestSerializer.to_internal_value()` now passes booleans through directly
+- **Engine checks use boolean logic**: `student.colorblind == 'Tidak'` → `not student.colorblind` in both SPM and STPM engines
+
+### Stats
+- Backend tests: 888 pass, 0 failures
+- Frontend tests: 17 pass, 0 failures
+- Golden masters: SPM 5319, STPM 2026 (unchanged)
+
+---
+
 ## STPM Pipeline Completion Sprint (2026-03-18)
 
 ### Added

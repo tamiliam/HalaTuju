@@ -300,11 +300,12 @@ export async function claimNric(
 
 export async function sendVerificationEmail(
   email: string,
+  lang?: string,
   options?: ApiOptions
 ): Promise<{ status: string }> {
   return apiRequest('/api/v1/profile/verify-email/send/', {
     method: 'POST',
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, lang }),
     ...options,
   })
 }

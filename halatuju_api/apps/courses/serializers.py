@@ -218,11 +218,8 @@ class EligibilityRequestSerializer(serializers.Serializer):
         return mapping.get(value.lower(), value)
 
     def to_internal_value(self, data):
-        """Convert boolean colorblind/disability to engine format after validation."""
+        """Validate and pass through boolean colorblind/disability fields."""
         result = super().to_internal_value(data)
-        # Convert booleans to Ya/Tidak for engine
-        result['colorblind'] = 'Ya' if result.get('colorblind') else 'Tidak'
-        result['disability'] = 'Ya' if result.get('disability') else 'Tidak'
         return result
 
 

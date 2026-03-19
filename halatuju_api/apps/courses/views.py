@@ -344,8 +344,8 @@ class EligibilityCheckView(APIView):
         "grades": {"bm": "A+", "math": "B", "eng": "A", ...},
         "gender": "Lelaki",
         "nationality": "Warganegara",
-        "colorblind": "Tidak",
-        "disability": "Tidak"
+        "colorblind": false,
+        "disability": false
     }
 
     Response:
@@ -369,8 +369,8 @@ class EligibilityCheckView(APIView):
             grades=data.get('grades', {}),
             gender=data.get('gender', 'Lelaki'),
             nationality=data.get('nationality', 'Warganegara'),
-            colorblind=data.get('colorblind', 'Tidak'),
-            disability=data.get('disability', 'Tidak'),
+            colorblind=data.get('colorblind', False),
+            disability=data.get('disability', False),
             other_tech=data.get('other_tech', False),
             other_voc=data.get('other_voc', False),
         )
@@ -1154,11 +1154,25 @@ class NricClaimView(APIView):
         return Response({'status': 'claimed'})
 
 
+VERIFICATION_EMAIL_SUBJECTS = {
+    'en': 'HalaTuju — Verify your email',
+    'ms': 'HalaTuju — Sahkan e-mel anda',
+    'ta': 'HalaTuju — உங்கள் மின்னஞ்சலை சரிபார்க்கவும்',
+}
+
+VERIFICATION_EMAIL_BODIES = {
+    'en': 'Click this link to verify your email: {url}\n\nThis link expires in 24 hours.',
+    'ms': 'Klik pautan ini untuk mengesahkan e-mel anda: {url}\n\nPautan ini tamat tempoh dalam 24 jam.',
+    'ta': 'உங்கள் மின்னஞ்சலை சரிபார்க்க இந்த இணைப்பைக் கிளிக் செய்யவும்: {url}\n\nஇந்த இணைப்பு 24 மணி நேரத்தில் காலாவதியாகும்.',
+}
+
+
 class SendVerificationView(APIView):
     """
     POST /api/v1/profile/verify-email/send/
     Generates a verification token and sends an email with a verification link.
     Rate limited to 3 requests per hour per user.
+    Accepts optional ``lang`` parameter (en/ms/ta) for trilingual email.
     """
     permission_classes = [SupabaseIsAuthenticated]
 
@@ -1172,6 +1186,10 @@ class SendVerificationView(APIView):
         email = request.data.get('email', '').strip()
         if not email:
             return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        lang = request.data.get('lang', 'en')
+        if lang not in ('en', 'ms', 'ta'):
+            lang = 'en'
 
         try:
             profile = StudentProfile.objects.get(supabase_user_id=request.user_id)
@@ -1200,13 +1218,13 @@ class SendVerificationView(APIView):
             expires_at=timezone.now() + timedelta(hours=24),
         )
 
-        # Send verification email
+        # Send verification email in the user's language
         frontend_url = getattr(settings, 'FRONTEND_URL', '')
         verify_url = f"{frontend_url}/verify-email?token={token}"
         try:
             send_mail(
-                subject='HalaTuju — Verify your email',
-                message=f'Click this link to verify your email: {verify_url}\n\nThis link expires in 24 hours.',
+                subject=VERIFICATION_EMAIL_SUBJECTS[lang],
+                message=VERIFICATION_EMAIL_BODIES[lang].format(url=verify_url),
                 from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
                 recipient_list=[email],
             )
@@ -1405,7 +1423,7 @@ class StpmEligibilityCheckView(APIView):
             muet_band=int(muet_band),
             gender=request.data.get('gender', ''),
             nationality=request.data.get('nationality', 'Warganegara'),
-            colorblind=request.data.get('colorblind', 'Tidak'),
+            colorblind=request.data.get('colorblind', False),
         )
 
         return Response({

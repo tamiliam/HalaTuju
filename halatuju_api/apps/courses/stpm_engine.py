@@ -361,7 +361,7 @@ def check_stpm_subject_group(req, stpm_grades):
 
 def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
                             gender='', nationality='Warganegara',
-                            colorblind='Tidak', disability='Tidak'):
+                            colorblind=False, disability=False):
     """Check which STPM degree courses a student qualifies for.
 
     Args:
@@ -369,7 +369,8 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
         spm_grades: {'bm': 'A', 'eng': 'B+', 'math': 'A', ...}  (engine keys)
         cgpa: float 0.0-4.0
         muet_band: int 1-6
-        gender, nationality, colorblind, disability: demographic strings
+        gender, nationality: demographic strings
+        colorblind, disability: boolean flags
 
     Returns:
         List of dicts, each with: course_id, course_name, university, stream,
@@ -393,9 +394,9 @@ def check_stpm_eligibility(stpm_grades, spm_grades, cgpa, muet_band,
         # 3. Demographic checks
         if req.req_malaysian and nationality != 'Warganegara':
             continue
-        if req.no_colorblind and colorblind == 'Ya':
+        if req.no_colorblind and colorblind:
             continue
-        if req.no_disability and disability == 'Ya':
+        if req.no_disability and disability:
             continue
         if req.req_male and gender != 'Lelaki':
             continue

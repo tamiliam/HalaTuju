@@ -8,6 +8,18 @@
 
 **Rationale:** The SPM ranking engine handles merit tiers, credential priority, pathway scoring, and category caps — none of which apply to STPM. Merging would require branching on every scoring step, making both paths harder to test and reason about.
 
+## CharField → BooleanField for colorblind/disability — i18n & Bug Fixes Sprint, 2026-03-19
+
+**Decision:** Converted `StudentProfile.colorblind` and `disability` from `CharField(max_length=10, default='Tidak')` to `BooleanField(default=False)`. Removed the serializer's `Bool→"Ya"/"Tidak"` conversion layer. Engine comparisons changed from string equality to boolean logic.
+
+**Alternatives considered:** (A) Make the serializer accept both booleans and "Ya"/"Tidak" strings, normalising to "Ya"/"Tidak" for the engine. (B) Normalise on the frontend before sending to the API.
+
+**Rationale:** The root cause of the dashboard "Failed to load recommendations" bug was a type mismatch — `restoreProfileToLocalStorage()` stored "Ya"/"Tidak" strings from the profile API, which the eligibility serializer's `BooleanField` rejected as invalid. Option A would have papered over the inconsistency. The canonical fix eliminates the entire string-boolean conversion layer.
+
+**Trade-offs:** Required updating ~50 test data entries and 8 source files. Migration converts existing Supabase data in-place.
+
+**Revisit if:** Never — booleans are the correct type for binary flags.
+
 **Trade-offs:** Two ranking modules to maintain. Some scoring concepts (CGPA margin, field match) are duplicated at the constant level but with different values.
 
 **Revisit if:** A unified ranking API is needed that handles both SPM and STPM in a single call, or if a third pathway (e.g. UEC) is added and a shared abstraction becomes worthwhile.

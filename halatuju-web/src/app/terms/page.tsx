@@ -34,7 +34,7 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold text-gray-900">Recommendations Disclaimer</h2>
           <p className="text-gray-600">
             Course recommendations are generated based on publicly available entry
-            requirements from over 1,500 courses across 838 institutions. HalaTuju
+            requirements from over 1,300 courses across 800+ institutions. HalaTuju
             does not guarantee admission to any course or institution. Always verify
             requirements directly with the institution before applying.
           </p>

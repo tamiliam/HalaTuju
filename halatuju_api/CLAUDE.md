@@ -25,7 +25,7 @@ Django REST API for SPM course eligibility checking. Deployed on Cloud Run (asia
 │  │ Grade key mapping         │  │
 │  │ BM→bm, BI→eng, MAT→math  │  │
 │  │ Gender/nationality norm.  │  │
-│  │ Bool → Ya/Tidak           │  │
+│  │ Bool passthrough           │  │
 │  └───────────┬───────────────┘  │
 │              ▼                  │
 │  ┌─ Hybrid Engine ───────────┐  │
@@ -115,7 +115,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | File | Tests | What's Covered |
 |------|-------|----------------|
 | test_golden_master.py | 1 (50 students × all courses) | Engine integrity — 5319 baseline (DB fixtures) |
-| test_serializers.py | 27 | Grade key passthrough, gender/nationality normalization, bool→Ya/Tidak, validation |
+| test_serializers.py | 27 | Grade key passthrough, gender/nationality normalization, bool passthrough, validation |
 | test_api.py | 73 | Eligibility endpoint (perfect/ghost/frontend/engine keys, colorblind, nationality, merit labels, PISMP integration, Matric/STPM integration, pathway_stats), course detail offerings (fees, hyperlink, allowances, badges, empty fields), career occupations (included, fields, empty), course/institution CRUD, search (text/level/field/field_key/source_type/state/pagination/combined/institution count/institution name/institution state/empty offering/field_keys filter), unified search (both qualifications, qualification filter, STPM field mapping, bumiputera exclusion, filters include qualifications, cross-qualification text search, field filter STPM, level/source_type filter skipping), calculate endpoints (merit, cgpa, pathways with signals) |
 | test_auth.py | 15 | Auth enforcement — protected endpoints reject 401, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
 | test_saved_courses.py | 17 | SPM save/list/delete/idempotent/course_type, STPM save (auto-detect prefix + explicit type)/list/filter/delete/patch/404, both types list, qualification filter (SPM/STPM), check constraint (both-null/both-set rejected) |
@@ -226,15 +226,16 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**STPM Quiz Sprint 5 COMPLETE (2026-03-18)** — Deploy & Validate
-- Migrations 0042-0045 applied to Supabase via raw SQL (InconsistentMigrationHistory bypass)
-- RIASEC enrichment applied: 867 courses + 28 taxonomy entries
-- Backend + frontend deployed to Cloud Run
-- Smoke tested: quiz questions, submit, eligibility (545 courses) all passing
+**i18n & Bug Fixes Sprint COMPLETE (2026-03-19)**
+- BooleanField conversion: colorblind/disability CharField→BooleanField end-to-end (fixes dashboard 400 bug)
+- i18n: error mapping layer + hardcoded string removal across 5 page groups
+- UI fixes: stats numbers, login button overflow, profile incomplete count badge
+- Migration 0046 applied to Supabase
 
-**Current state:** 888 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026. All deployed.
+**Current state:** 888 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026. Needs deploy after push.
 
-**Next: STPM Quiz Sprint 6 — Polish & User Testing**
+**Next: Polish & User Testing Sprint**
+- Deploy backend+frontend to Cloud Run (BooleanField fix + i18n + UI fixes)
 - User testing with real STPM students (Science + Arts branches)
 - Adjust signal weights based on feedback
 - Mobile testing across quiz branches

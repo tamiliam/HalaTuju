@@ -193,7 +193,7 @@ export default function AppHeader() {
               )}
             </div>
           ) : (
-            <Link href="/login" className="btn-primary text-sm px-4 py-2">
+            <Link href="/login" className="bg-primary-500 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-primary-600 transition-colors whitespace-nowrap">
               {t('common.getStarted')}
             </Link>
           )}

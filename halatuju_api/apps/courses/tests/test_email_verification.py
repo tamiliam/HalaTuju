@@ -1,3 +1,4 @@
+import unittest.mock
 import uuid
 from datetime import timedelta
 from django.test import TestCase
@@ -60,6 +61,42 @@ class TestSendVerification(TestCase):
         request.user_id = 'send-v-1'
         request.supabase_user = {'id': 'send-v-1', 'email': 'old@gmail.com'}
         return SendVerificationView.as_view()(request)
+
+    @unittest.mock.patch('django.core.mail.send_mail')
+    def test_send_email_in_malay(self, mock_send):
+        resp = self._post({'email': 'new@example.com', 'lang': 'ms'})
+        self.assertEqual(resp.status_code, 200)
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args
+        self.assertEqual(call_kwargs[1]['subject'], 'HalaTuju — Sahkan e-mel anda')
+        self.assertIn('Klik pautan ini', call_kwargs[1]['message'])
+
+    @unittest.mock.patch('django.core.mail.send_mail')
+    def test_send_email_in_tamil(self, mock_send):
+        resp = self._post({'email': 'new@example.com', 'lang': 'ta'})
+        self.assertEqual(resp.status_code, 200)
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args
+        self.assertEqual(
+            call_kwargs[1]['subject'],
+            'HalaTuju — உங்கள் மின்னஞ்சலை சரிபார்க்கவும்',
+        )
+
+    @unittest.mock.patch('django.core.mail.send_mail')
+    def test_send_email_defaults_to_english(self, mock_send):
+        resp = self._post({'email': 'new@example.com'})
+        self.assertEqual(resp.status_code, 200)
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args
+        self.assertEqual(call_kwargs[1]['subject'], 'HalaTuju — Verify your email')
+
+    @unittest.mock.patch('django.core.mail.send_mail')
+    def test_send_email_invalid_lang_falls_back_to_english(self, mock_send):
+        resp = self._post({'email': 'new@example.com', 'lang': 'xx'})
+        self.assertEqual(resp.status_code, 200)
+        mock_send.assert_called_once()
+        call_kwargs = mock_send.call_args
+        self.assertEqual(call_kwargs[1]['subject'], 'HalaTuju — Verify your email')
 
     def test_send_creates_token(self):
         resp = self._post({'email': 'new@example.com'})

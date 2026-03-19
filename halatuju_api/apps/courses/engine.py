@@ -543,10 +543,10 @@ def check_eligibility(student, req):
         if not check("chk_female", student.gender in FEMALE_VALUES, "fail_female"):
             return False, audit
     if to_int(req.get('no_colorblind')) == 1:
-        if not check("chk_colorblind", student.colorblind == 'Tidak', "fail_colorblind"):
+        if not check("chk_colorblind", not student.colorblind, "fail_colorblind"):
             return False, audit
     if to_int(req.get('no_disability')) == 1:
-        if not check("chk_disability", student.disability == 'Tidak', "fail_disability"):
+        if not check("chk_disability", not student.disability, "fail_disability"):
             return False, audit
 
     # Age limit (placeholder)

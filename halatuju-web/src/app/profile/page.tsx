@@ -67,7 +67,7 @@ function FieldLabel({ label, empty }: { label: string; empty: boolean }) {
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { t } = useT()
+  const { t, locale } = useT()
   const { ready: onboarded } = useOnboardingGuard()
   const { session, token, isAuthenticated, isLoading: authLoading, showAuthGate } = useAuth()
   const { showToast } = useToast()
@@ -418,7 +418,7 @@ export default function ProfilePage() {
                 <h2 className="text-lg font-semibold text-gray-900">{t('profile.contactDetails')}</h2>
                 {contactDetailsIncomplete > 0 && (
                   <span className="px-2 py-0.5 bg-amber-50 text-amber-600 text-xs font-medium rounded-full">
-                    1 {t('profile.incomplete')}
+                    {contactDetailsIncomplete} {t('profile.incomplete')}
                   </span>
                 )}
               </div>
@@ -456,7 +456,7 @@ export default function ProfilePage() {
                         try {
                           // Save first, then send verification
                           await updateProfile({ contact_email: contactEmail }, { token })
-                          await sendVerificationEmail(contactEmail, { token })
+                          await sendVerificationEmail(contactEmail, locale, { token })
                           showToast(t('profile.verificationSent'), 'success')
                           window.dispatchEvent(new Event('profile-updated'))
                         } catch {

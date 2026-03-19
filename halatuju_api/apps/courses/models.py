@@ -483,8 +483,8 @@ class StudentProfile(models.Model):
     # Demographics (for eligibility checking)
     gender = models.CharField(max_length=20, blank=True)
     nationality = models.CharField(max_length=50, default='Warganegara')
-    colorblind = models.CharField(max_length=10, default='Tidak')
-    disability = models.CharField(max_length=10, default='Tidak')
+    colorblind = models.BooleanField(default=False)
+    disability = models.BooleanField(default=False)
 
     # Quiz results (student signals for ranking)
     student_signals = models.JSONField(

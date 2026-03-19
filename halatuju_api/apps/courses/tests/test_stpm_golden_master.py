@@ -44,7 +44,7 @@ STPM_TEST_STUDENTS = [
         'spm_grades': {'bm': 'A', 'eng': 'A', 'hist': 'A', 'math': 'A', 'addmath': 'A', 'sci': 'A', 'phy': 'A'},
         'cgpa': 3.75,
         'muet_band': 4,
-        'colorblind': 'Ya',
+        'colorblind': True,
     },
 ]
 
@@ -67,7 +67,7 @@ class TestStpmGoldenMaster:
                 spm_grades=student['spm_grades'],
                 cgpa=student['cgpa'],
                 muet_band=student['muet_band'],
-                colorblind=student.get('colorblind', 'Tidak'),
+                colorblind=student.get('colorblind', False),
             )
             per_student[student['id']] = len(results)
             total += len(results)

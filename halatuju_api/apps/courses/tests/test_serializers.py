@@ -141,39 +141,39 @@ class TestNationalityNormalization(TestCase):
 
 
 class TestBooleanConversion(TestCase):
-    """Test colorblind and disability are converted from bool to Ya/Tidak."""
+    """Test colorblind and disability remain as booleans through serializer."""
 
     def test_colorblind_true(self):
         data = {'grades': {'bm': 'A'}, 'gender': 'male', 'colorblind': True}
         s = EligibilityRequestSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
-        self.assertEqual(s.validated_data['colorblind'], 'Ya')
+        self.assertEqual(s.validated_data['colorblind'], True)
 
     def test_colorblind_false(self):
         data = {'grades': {'bm': 'A'}, 'gender': 'male', 'colorblind': False}
         s = EligibilityRequestSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
-        self.assertEqual(s.validated_data['colorblind'], 'Tidak')
+        self.assertEqual(s.validated_data['colorblind'], False)
 
     def test_disability_true(self):
         data = {'grades': {'bm': 'A'}, 'gender': 'male', 'disability': True}
         s = EligibilityRequestSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
-        self.assertEqual(s.validated_data['disability'], 'Ya')
+        self.assertEqual(s.validated_data['disability'], True)
 
     def test_disability_false(self):
         data = {'grades': {'bm': 'A'}, 'gender': 'male', 'disability': False}
         s = EligibilityRequestSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
-        self.assertEqual(s.validated_data['disability'], 'Tidak')
+        self.assertEqual(s.validated_data['disability'], False)
 
     def test_defaults_when_omitted(self):
-        """Colorblind and disability default to Tidak when not sent."""
+        """Colorblind and disability default to False when not sent."""
         data = {'grades': {'bm': 'A'}, 'gender': 'male'}
         s = EligibilityRequestSerializer(data=data)
         self.assertTrue(s.is_valid(), s.errors)
-        self.assertEqual(s.validated_data['colorblind'], 'Tidak')
-        self.assertEqual(s.validated_data['disability'], 'Tidak')
+        self.assertEqual(s.validated_data['colorblind'], False)
+        self.assertEqual(s.validated_data['disability'], False)
 
 
 class TestValidation(TestCase):
