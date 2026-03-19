@@ -260,7 +260,9 @@
     "verifying": "Verifying...",
     "differentPhone": "Use a different phone number",
     "noAccount": "Don't have an account?",
-    "getStartedFree": "Get started for free"
+    "getStartedFree": "Get started for free",
+    "backToLogin": "Back to Login",
+    "completingSignIn": "Completing sign in..."
   },
   "subjects": {
     "BM": "Bahasa Melayu",
@@ -546,7 +548,10 @@
     "tryAgain": "Try Again",
     "pageNotFound": "Page Not Found",
     "pageNotFoundDesc": "The page you are looking for does not exist or has been moved.",
-    "backToHome": "Back to Home"
+    "backToHome": "Back to Home",
+    "authFailed": "Authentication failed. Please try again.",
+    "noAdminAccess": "This account does not have admin access.",
+    "adminVerifyFailed": "Failed to verify admin access."
   },
   "stpm": {
     "searchTitle": "Browse STPM Degree Courses",

@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { getSession } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
 import { KEY_GRADES, KEY_STPM_GRADES } from '@/lib/storage'
+import { useT } from '@/lib/i18n'
 
 export default function AuthCallbackPage() {
   const router = useRouter()
+  const { t } = useT()
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -21,7 +23,7 @@ export default function AuthCallbackPage() {
         return
       }
       if (!session) {
-        setError('Authentication failed. Please try again.')
+        setError(t('errors.authFailed'))
         return
       }
 
@@ -61,7 +63,7 @@ export default function AuthCallbackPage() {
       <main className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
-          <a href="/login" className="btn-primary">Back to Login</a>
+          <a href="/login" className="btn-primary">{t('login.backToLogin')}</a>
         </div>
       </main>
     )
@@ -71,7 +73,7 @@ export default function AuthCallbackPage() {
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary-50 to-white">
       <div className="text-center">
         <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent mb-4" />
-        <p className="text-gray-600">Completing sign in...</p>
+        <p className="text-gray-600">{t('login.completingSignIn')}</p>
       </div>
     </main>
   )

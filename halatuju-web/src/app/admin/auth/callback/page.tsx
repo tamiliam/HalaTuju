@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAdminSupabase } from '@/lib/admin-supabase'
+import { useT } from '@/lib/i18n'
 
 export default function AdminAuthCallbackPage() {
   const router = useRouter()
+  const { t } = useT()
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -13,7 +15,7 @@ export default function AdminAuthCallbackPage() {
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
-        setError('Authentication failed. Please try again.')
+        setError(t('errors.authFailed'))
         return
       }
 
@@ -30,11 +32,11 @@ export default function AdminAuthCallbackPage() {
         const role = await res.json()
         if (!role.is_admin) {
           await supabase.auth.signOut()
-          setError('This account does not have admin access.')
+          setError(t('errors.noAdminAccess'))
           return
         }
       } catch {
-        setError('Failed to verify admin access.')
+        setError(t('errors.adminVerifyFailed'))
         return
       }
 
@@ -48,7 +50,7 @@ export default function AdminAuthCallbackPage() {
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <a href="/admin/login" className="text-blue-600 hover:underline">
-            Back to login
+            {t('login.backToLogin')}
           </a>
         </div>
       </main>
@@ -57,7 +59,7 @@ export default function AdminAuthCallbackPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center">
-      <p className="text-gray-600">Signing in...</p>
+      <p className="text-gray-600">{t('login.completingSignIn')}</p>
     </main>
   )
 }

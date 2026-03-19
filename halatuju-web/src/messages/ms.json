@@ -260,7 +260,9 @@
     "verifying": "Mengesahkan...",
     "differentPhone": "Guna nombor telefon lain",
     "noAccount": "Belum ada akaun?",
-    "getStartedFree": "Mulakan secara percuma"
+    "getStartedFree": "Mulakan secara percuma",
+    "backToLogin": "Kembali ke Log Masuk",
+    "completingSignIn": "Sedang log masuk..."
   },
   "subjects": {
     "BM": "Bahasa Melayu",
@@ -546,7 +548,10 @@
     "tryAgain": "Cuba Lagi",
     "pageNotFound": "Halaman Tidak Dijumpai",
     "pageNotFoundDesc": "Halaman yang anda cari tidak wujud atau telah dipindahkan.",
-    "backToHome": "Kembali ke Laman Utama"
+    "backToHome": "Kembali ke Laman Utama",
+    "authFailed": "Pengesahan gagal. Sila cuba lagi.",
+    "noAdminAccess": "Akaun ini tiada akses pentadbir.",
+    "adminVerifyFailed": "Gagal mengesahkan akses pentadbir."
   },
   "stpm": {
     "searchTitle": "Layari Kursus Ijazah STPM",
