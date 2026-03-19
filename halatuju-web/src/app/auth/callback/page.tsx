@@ -22,7 +22,7 @@ export default function AuthCallback() {
         // Go back — AuthProvider will detect session + pending action
         // and re-open the auth gate at the right step
         const hasGrades = localStorage.getItem(KEY_GRADES)
-        router.replace(hasGrades ? '/dashboard' : '/')
+        router.replace(hasGrades ? '/dashboard' : '/onboarding/exam-type')
         return
       }
 

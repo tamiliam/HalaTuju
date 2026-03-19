@@ -143,7 +143,12 @@ export default function AuthGateModal() {
     localStorage.removeItem(KEY_PENDING_AUTH_ACTION)
     hideAuthGate()
     setLoading(false)
-    if (reason === 'quiz') router.push('/quiz')
+    if (reason === 'quiz') {
+      router.push('/quiz')
+    } else if (reason === 'profile') {
+      const hasGrades = localStorage.getItem(KEY_GRADES)
+      router.push(hasGrades ? '/dashboard' : '/onboarding/exam-type')
+    }
   }
 
   const handleReturningUser = async () => {
