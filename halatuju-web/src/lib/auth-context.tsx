@@ -10,8 +10,9 @@ import {
 } from 'react'
 import { getSession, getSupabase, signInAnonymously } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
+import { restoreProfileToLocalStorage } from '@/lib/profile-restore'
 import type { Session } from '@supabase/supabase-js'
-import { KEY_PENDING_AUTH_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
+import { KEY_PENDING_AUTH_ACTION } from '@/lib/storage'
 
 export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | null
 
@@ -33,41 +34,6 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
-
-/**
- * Restore student data from Supabase into localStorage for a returning user.
- * Only writes keys that are missing locally (avoids overwriting fresh data).
- */
-/**
- * Restore student data from Supabase into localStorage.
- * Always overwrites — Supabase is the source of truth, localStorage is a cache.
- */
-async function restoreProfileToLocalStorage(token: string) {
-  try {
-    const profile = await getProfile({ token })
-    if (!profile.grades || Object.keys(profile.grades).length === 0) return
-
-    // Grades
-    localStorage.setItem(KEY_GRADES, JSON.stringify(profile.grades))
-
-    // Demographics (gender, nationality, colorblind, disability)
-    const demo: Record<string, unknown> = {}
-    if (profile.gender) demo.gender = profile.gender
-    if (profile.nationality) demo.nationality = profile.nationality
-    if (profile.colorblind != null) demo.colorblind = profile.colorblind
-    if (profile.disability != null) demo.disability = profile.disability
-    if (Object.keys(demo).length > 0) {
-      localStorage.setItem(KEY_PROFILE, JSON.stringify(demo))
-    }
-
-    // Quiz signals
-    if (profile.student_signals) {
-      localStorage.setItem(KEY_QUIZ_SIGNALS, JSON.stringify(profile.student_signals))
-    }
-  } catch {
-    // Non-critical — user can still use the app without restored data
-  }
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)

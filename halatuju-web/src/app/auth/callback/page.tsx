@@ -3,31 +3,8 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSession } from '@/lib/supabase'
-import { getProfile } from '@/lib/api'
-import { KEY_PENDING_AUTH_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
-
-async function restoreProfileToLocalStorage(token: string) {
-  try {
-    const profile = await getProfile({ token })
-    if (profile.grades && Object.keys(profile.grades).length > 0) {
-      localStorage.setItem(KEY_GRADES, JSON.stringify(profile.grades))
-    }
-    const demo: Record<string, unknown> = {}
-    if (profile.gender) demo.gender = profile.gender
-    if (profile.nationality) demo.nationality = profile.nationality
-    if (profile.colorblind != null) demo.colorblind = profile.colorblind
-    if (profile.disability != null) demo.disability = profile.disability
-    if (Object.keys(demo).length > 0) {
-      localStorage.setItem(KEY_PROFILE, JSON.stringify(demo))
-    }
-    if (profile.student_signals) {
-      localStorage.setItem(KEY_QUIZ_SIGNALS, JSON.stringify(profile.student_signals))
-    }
-    return profile
-  } catch {
-    return null
-  }
-}
+import { restoreProfileToLocalStorage } from '@/lib/profile-restore'
+import { KEY_PENDING_AUTH_ACTION, KEY_GRADES } from '@/lib/storage'
 
 export default function AuthCallback() {
   const router = useRouter()

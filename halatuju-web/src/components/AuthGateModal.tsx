@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { signInWithPhone, verifyOTP, signInWithGoogle, linkIdentity } from '@/lib/supabase'
 import { syncProfile, getProfile, claimNric, type SyncProfileData } from '@/lib/api'
+import { restoreProfileToLocalStorage } from '@/lib/profile-restore'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE } from '@/lib/storage'
@@ -149,26 +150,6 @@ export default function AuthGateModal() {
       const hasGrades = localStorage.getItem(KEY_GRADES)
       router.push(hasGrades ? '/dashboard' : '/onboarding/exam-type')
     }
-  }
-
-  const restoreProfileToLocalStorage = async (tkn: string) => {
-    try {
-      const profile = await getProfile({ token: tkn })
-      if (profile.grades && Object.keys(profile.grades).length > 0) {
-        localStorage.setItem(KEY_GRADES, JSON.stringify(profile.grades))
-      }
-      const demo: Record<string, unknown> = {}
-      if (profile.gender) demo.gender = profile.gender
-      if (profile.nationality) demo.nationality = profile.nationality
-      if (profile.colorblind != null) demo.colorblind = profile.colorblind
-      if (profile.disability != null) demo.disability = profile.disability
-      if (Object.keys(demo).length > 0) {
-        localStorage.setItem(KEY_PROFILE, JSON.stringify(demo))
-      }
-      if (profile.student_signals) {
-        localStorage.setItem(KEY_QUIZ_SIGNALS, JSON.stringify(profile.student_signals))
-      }
-    } catch { /* non-critical */ }
   }
 
   const handleReturningUser = async () => {
