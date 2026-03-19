@@ -60,6 +60,9 @@ class TestSavedCourseSPM(TestCase):
             field='Mekanikal & Automotif',
             field_key_id='mekanikal',
         )
+        StudentProfile.objects.create(
+            supabase_user_id=TEST_USER_ID, nric='010101-01-1234',
+        )
         _setup_auth(self)
 
     def tearDown(self):
@@ -142,6 +145,9 @@ class TestSavedCourseSTPM(TestCase):
             stream='science',
             field='Computer Science',
             field_key_id='it-perisian',
+        )
+        StudentProfile.objects.create(
+            supabase_user_id=TEST_USER_ID, nric='010101-01-1234',
         )
         _setup_auth(self)
 

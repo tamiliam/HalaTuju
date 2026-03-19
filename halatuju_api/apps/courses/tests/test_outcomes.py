@@ -58,6 +58,7 @@ class TestOutcomeEndpoints(TestCase):
         )
         cls.profile_a = StudentProfile.objects.create(
             supabase_user_id=USER_A,
+            nric='010101-01-1234',
         )
         cls.profile_b = StudentProfile.objects.create(
             supabase_user_id=USER_B,

@@ -28,6 +28,7 @@ class TestReportViews(TestCase):
         # Create test student profile
         self.profile = StudentProfile.objects.create(
             supabase_user_id=TEST_USER_ID,
+            nric='010101-01-1234',
             grades={'bm': 'A', 'eng': 'B+', 'math': 'A-'},
             gender='male',
             nationality='malaysian',
