@@ -224,7 +224,6 @@ Supabase Security Advisor must show 0 errors before deploy.
 ## Known Issues
 
 - 87 offerings without tuition fee data (data not available in source CSVs)
-- **TD-003: localStorage as routing authority** — Routing decisions (dashboard vs onboarding) depend on localStorage having grades/profile data. Every new auth entry path (Google OAuth, phone, future magic link) must populate localStorage before routing checks run. Root fix: AuthProvider should expose `profileReady: boolean` after fetching from API; routing logic reads AuthProvider state, not localStorage. localStorage becomes a write-only cache for fast rendering. See `lib/profile-restore.ts` for the current shared workaround.
 
 ## Next Sprint
 
