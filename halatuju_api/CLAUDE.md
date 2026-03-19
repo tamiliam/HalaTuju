@@ -120,7 +120,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_auth.py | 15 | Auth enforcement — protected endpoints reject 401, accept with JWT 200, public endpoints open, profile sync (create/update/anon reject), profile name+school fields |
 | test_saved_courses.py | 17 | SPM save/list/delete/idempotent/course_type, STPM save (auto-detect prefix + explicit type)/list/filter/delete/patch/404, both types list, qualification filter (SPM/STPM), check constraint (both-null/both-set rejected) |
 | test_quiz.py | 24 | Quiz endpoints (questions 3 langs, submit single+multi, validation), engine (multi-select, weight splitting, Not Sure Yet, conditional Q2.5, field_interest, signal strength, lang parity) |
-| test_ranking.py | 70 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, ranked list output, API endpoint validation, field interest matching via field_key (primary/no match/cap/heavy_industry/no field_key/double match), W7 expanded mappings (nursing/dentistry→health, data science→digital, gen engineering→mechanical+heavy, comms→creative, physical science→agriculture, unmapped→no boost), high_stamina, rote_tolerant, quality_priority, work preference cap, pre-U scoring (Matric/STPM prestige, academic bonus, field preference, signal adjustment, signal cap, routing) |
+| test_ranking.py | 73 | Fit score calculation, category/institution/global caps, merit penalty, sort tie-breaking, credential priority, ranked list output, API endpoint validation, field interest matching via field_key (primary/no match/cap/heavy_industry/no field_key/double match), W7 expanded mappings (nursing/dentistry→health, data science→digital, gen engineering→mechanical+heavy, comms→creative, physical science→agriculture, unmapped→no boost), high_stamina, rote_tolerant, quality_priority, work preference cap, pre-U scoring (Matric/STPM prestige, academic bonus, field preference, signal adjustment, signal cap, routing), W21 TRACK_FIELD_MAP science tracks (matric:sains→health, matric:sains→agriculture, stpm:sains→health) |
 | test_data_loading.py | 10 | TVET metadata enrichment, PISMP metadata enrichment, institution modifiers storage, MASCO occupation model (PK, M2M, reverse relation, idempotent load, __str__) |
 | test_insights.py | 8 | Insights engine: empty input, stream breakdown, labels, top fields, merit counts, level distribution, summary text |
 | test_report_engine.py | 37 | Report engine: format helpers (SPM grades, STPM grades, human-readable signals BM/EN, courses sorted by fit score, insights), prompts (SPM BM/EN, STPM BM/EN, placeholder parity), exam_type routing (SPM/STPM), Gemini mock (success, cascade, missing key) |
@@ -135,7 +135,7 @@ python -m pytest apps/courses/tests/test_api.py -v
 | test_stpm_api.py | 16 | STPM eligibility endpoint (exists 200, returns programmes, missing fields 400, count consistency), STPM ranking API (returns 200, scored programmes, sorted desc, missing 400, empty list), W11 pre-quiz RIASEC (science boost I-type, arts boost A-type, post-quiz not overwritten, empty/PA no effect, framing) |
 | test_stpm_search.py | 14 | STPM search API (200, programmes shape, text/university/stream filters, pagination, filter metadata), STPM detail API (200, programme data, 404, subjects list), is_active filtering (inactive excluded from STPM search, inactive excluded from unified search) |
 | test_stpm_sync.py | 7 | Sync command: dry run reports removed, apply deactivates removed, reactivates returned, updates URLs, reports merit changes, reports new programmes, shows inactive count |
-| test_stpm_ranking.py | 58 | CGPA margin (5: base, bonus, cap, negative, partial), field match (9: primary +8, automotif via mekanikal, secondary +4, no match, empty, cross-domain +2, cap, law), RIASEC alignment (8: primary +6, secondary +3, no match, cross +2, cap, empty, no signals, tied seeds), efficacy (6: confirmed/confident/open/redirect/mismatch/none), goal alignment (7: professional+medicine, nonreg, postgrad+research, entrepreneurial+business, employment, no goal, no field), resilience (7: redirect+high/-3, redirect+moderate/-1, supported+high/-1, redirect+low/0, high resilience/0, no difficulty, no signals), interview (2), full integration (4: max/min score, no quiz, v1 compat), result framing (5: 3 modes, default, subtitle), ranked results (5: sort, empty, output, merit survives, quiz affects order) |
+| test_stpm_ranking.py | 63 | CGPA margin (5: base, bonus, cap, negative, partial), field match (9: primary +8, automotif via mekanikal, secondary +4, no match, empty, cross-domain +2, cap, law), RIASEC alignment (8: primary +6, secondary +3, no match, cross +2, cap, empty, no signals, tied seeds), efficacy (6: confirmed/confident/open/redirect/mismatch/none), goal alignment (7: professional+medicine, nonreg, postgrad+research, entrepreneurial+business, employment, no goal, no field), resilience (7: redirect+high/-3, redirect+moderate/-1, supported+high/-1, redirect+low/0, high resilience/0, no difficulty, no signals), interview (2), full integration (4: max/min score, no quiz, v1 compat), result framing (5: 3 modes, default, subtitle), ranked results (10: sort, empty, output, merit survives, quiz affects order, W14 uni tier tiebreak, competitiveness tiebreak, difficulty tiebreak, name tiebreak, score trumps tier) |
 | test_stpm_quiz_engine.py | 56 | RIASEC seed calculation (all combos, PA excluded, unknown subjects), primary seed (single/tie/empty), branch routing (science/arts/mixed/ICT/MathM/PA), cross-stream detection, question generation (branch Q2, Q3 variants, Q5 filtering, trilingual, lang fallback), Q3/Q4 resolution (all fields, weak/strong grade threshold, interpolation), signal accumulation (RIASEC seed, field interest, field_key, efficacy, context, strength levels, arts branch, error handling) |
 | test_stpm_quiz_data.py | 22 | Structure validation (required fields, no dupes), trilingual completeness (prompts, options, Q5, display names), signal taxonomy consistency (categories, no cross-category dupes, question signals in taxonomy), field key map, subject classification, grade points monotonicity |
 | test_stpm_quiz_api.py | 24 | Questions endpoint (200, branch/seed, Q3 variants, Q5/trunk, validation, grades JSON, lang), resolve endpoint (200, Q3/Q4, validation), submit endpoint (200, signals, strength, branch, validation, arts branch) |
@@ -174,7 +174,7 @@ Requires: `pip install selenium` (URL validation) + `pip install playwright && p
 ### CRITICAL: Pre-Deploy Checklist
 
 ```bash
-# 1. Run all tests (958 collected, 958 must pass, SPM golden master = 5319, STPM golden master = 2026)
+# 1. Run all tests (966 collected, 966 must pass, SPM golden master = 5319, STPM golden master = 2026)
 python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 
 # 2. After any migration that creates/alters tables:
@@ -186,7 +186,7 @@ python -m pytest apps/courses/tests/ apps/reports/tests/ -v
 #    See docs/incident-001-rls-disabled.md for templates
 ```
 
-958 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
+966 tests must all pass (0 skipped, 0 failures). SPM golden master = 5319, STPM golden master = 2026. If golden master deviates, you broke eligibility logic.
 Supabase Security Advisor must show 0 errors before deploy.
 
 ## Key Files
@@ -235,7 +235,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 - 16 orphan users cleaned up, 5 restrictive RLS policies added
 - **Manual step needed before deploy**: Enable "Anonymous Sign-Ins" + "Manual Linking" in Supabase Dashboard → Authentication → Providers
 
-**Current state:** 958 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
+**Current state:** 966 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
 
 **Next: User Testing & Phone Login Sprint**
 - Enable anonymous sign-in in Supabase dashboard (required for NRIC gate)
@@ -250,9 +250,9 @@ Supabase Security Advisor must show 0 errors before deploy.
   - ~~W7: Expand SPM FIELD_KEY_MAP~~ — **DONE** (2026-03-20). Added 7 field_keys to existing signals: kejururawatan+pergigian→field_health, sains-data→field_digital, kejuruteraan-am→field_mechanical+field_heavy_industry, komunikasi→field_creative, sains-fizikal→field_agriculture. 8 tests added. Remaining unmapped keys (pendidikan, bahasa, pengajian-islam, undang-undang, sains-sosial, umum) need new quiz questions — separate effort.
   - W8: Institution modifiers + real proximity scoring — **separate sprint, 3 parts**: (1) Populate modifiers: zero institutions have modifiers today, but Institution model has lat/long, state, demographics — need a command to derive `urban` and `cultural_safety_net`. (2) Capture student location: add home state or lat/long to StudentProfile. (3) Real proximity scoring: `proximity_priority` quiz signal currently doesn't check actual distance — STPM pathway gives hardcoded +1, generic courses check `cultural_safety_net` (empty). Should calculate real distance from student to institution. Affects all SPM courses (±5 institution points completely inert) + makes proximity_priority meaningful.
   - ~~W11: STPM stream as free pre-quiz signal~~ — **DONE** (2026-03-19). Backend `StpmRankingView` derives RIASEC seed from `stpm_subjects` via `calculate_riasec_seed()` when no quiz signals present. Frontend sends `stpm_subjects` (subject keys from grade input). Science students now see I-type programmes ranked higher; arts students see A-type higher. Post-quiz signals take precedence (not overwritten). 7 tests added.
-  - W14: Richer STPM sort tie-breaking — currently only score desc + name asc. Add university type/subcategory, min_cgpa competitiveness. SPM has 7-level hierarchy; STPM has 2. ~30 min fix.
+  - ~~W14: Richer STPM sort tie-breaking~~ — **DONE** (2026-03-20). Added 5-level sort hierarchy: score → university tier (research=3, comprehensive=2, focused=1) → min_cgpa competitiveness → difficulty_level → name. 5 tests added.
   - W16: Audit STPM enrichment completeness — **RESOLVED**: production has 1,112/1,112 courses enriched (100%). Test fixtures don't have the data but production is fine. `efficacy_domain` is stored but not consumed by ranking formula — potential future enhancement.
-  - W21: Add matric:sains and stpm:sains to TRACK_FIELD_MAP — science tracks missing from field preference mapping, so students interested in health/agriculture get no +3 bonus for the science pre-U track. Quick fix: add field_health, field_agriculture to both.
+  - ~~W21: Add matric:sains and stpm:sains to TRACK_FIELD_MAP~~ — **DONE** (2026-03-20). Added `matric:sains` and `stpm:sains` mapping to `field_health` + `field_agriculture`. Science-track students with health/agriculture interest now get +3 field preference bonus. 3 tests added.
 - Report: MASCO career data in prompt, institution/location context (low priority)
 - Report: EN language selector in frontend
 - STPM Pipeline: test scrapers against live MOHE

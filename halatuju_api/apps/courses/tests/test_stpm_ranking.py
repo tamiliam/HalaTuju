@@ -434,3 +434,61 @@ class TestRankedResults:
         }
         ranked = get_stpm_ranked_results(courses, 3.5, signals)
         assert ranked[0]['course_id'] == 'B'  # mekanikal matches R seed + field_key
+
+    def test_university_tier_breaks_tie(self):
+        """At equal score, research uni ranks above focused uni."""
+        courses = [
+            _course(course_id='A', course_name='AAA', min_cgpa=3.0,
+                    university='Universiti Utara Malaysia'),
+            _course(course_id='B', course_name='BBB', min_cgpa=3.0,
+                    university='Universiti Malaya'),
+        ]
+        ranked = get_stpm_ranked_results(courses, 3.0, {})
+        # Same score, same min_cgpa → UM (tier 3) beats UUM (tier 1)
+        assert ranked[0]['course_id'] == 'B'
+
+    def test_competitiveness_breaks_tie(self):
+        """At equal score and uni tier, higher min_cgpa ranks first."""
+        # Both min_cgpa values are >1.0 below student_cgpa so CGPA margin
+        # is capped equally — only the tiebreaker differs.
+        courses = [
+            _course(course_id='A', course_name='AAA', min_cgpa=2.0,
+                    university='Universiti Utara Malaysia'),
+            _course(course_id='B', course_name='BBB', min_cgpa=2.5,
+                    university='Universiti Utara Malaysia'),
+        ]
+        ranked = get_stpm_ranked_results(courses, 3.5, {})
+        # B has higher min_cgpa (more competitive) → ranks first
+        assert ranked[0]['course_id'] == 'B'
+
+    def test_difficulty_breaks_tie(self):
+        """At equal score, uni, and min_cgpa, higher difficulty ranks first."""
+        courses = [
+            _course(course_id='A', course_name='AAA', min_cgpa=3.0,
+                    university='UM', difficulty_level='low'),
+            _course(course_id='B', course_name='BBB', min_cgpa=3.0,
+                    university='UM', difficulty_level='high'),
+        ]
+        ranked = get_stpm_ranked_results(courses, 3.0, {})
+        assert ranked[0]['course_id'] == 'B'
+
+    def test_name_breaks_final_tie(self):
+        """When everything else is equal, alphabetical name wins."""
+        courses = [
+            _course(course_id='A', course_name='Zoology', min_cgpa=3.0),
+            _course(course_id='B', course_name='Accounting', min_cgpa=3.0),
+        ]
+        ranked = get_stpm_ranked_results(courses, 3.0, {})
+        assert ranked[0]['course_id'] == 'B'  # Accounting < Zoology
+
+    def test_score_always_trumps_tier(self):
+        """Score is primary — a focused uni with higher score beats research uni."""
+        courses = [
+            _course(course_id='A', course_name='AAA', min_cgpa=3.5,
+                    university='Universiti Malaya'),        # tier 3, low margin
+            _course(course_id='B', course_name='BBB', min_cgpa=2.0,
+                    university='Universiti Utara Malaysia'),  # tier 1, high margin
+        ]
+        ranked = get_stpm_ranked_results(courses, 3.5, {})
+        # B has much higher CGPA margin → higher score → ranks first despite lower tier
+        assert ranked[0]['course_id'] == 'B'

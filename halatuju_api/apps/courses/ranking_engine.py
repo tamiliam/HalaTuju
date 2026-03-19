@@ -183,6 +183,8 @@ TRACK_FIELD_MAP = {
     'matric:kejuruteraan': ['field_mechanical', 'field_electrical', 'field_civil', 'field_heavy_industry'],
     'matric:sains_komputer': ['field_digital'],
     'matric:perakaunan': ['field_business'],
+    'matric:sains': ['field_health', 'field_agriculture'],
+    'stpm:sains': ['field_health', 'field_agriculture'],
     'stpm:sains_sosial': [],  # uses creative signal instead
 }
 

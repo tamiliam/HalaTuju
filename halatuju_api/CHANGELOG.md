@@ -1,5 +1,14 @@
 # Changelog
 
+## W14+W21 Ranking Tiebreak & Science Tracks Sprint — 2026-03-20
+
+### Added
+- **W14: STPM 5-level sort tiebreaking** — replaced 2-level sort (score, name) with 5-level: score → university tier (research=3, comprehensive=2, focused=1) → min_cgpa competitiveness → difficulty_level → name. UNIVERSITY_TIER map covers 5 research and 4 comprehensive universities. 5 tests.
+- **W21: TRACK_FIELD_MAP science tracks** — added `matric:sains` and `stpm:sains` mapping to `field_health` + `field_agriculture`. Science-track pre-U students with health/agriculture interest now get +3 field preference bonus. 3 tests.
+
+### Changed
+- Test count: 958 → 966
+
 ## W7 FIELD_KEY_MAP Expansion Sprint — 2026-03-20
 
 ### Added

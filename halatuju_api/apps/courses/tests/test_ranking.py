@@ -799,6 +799,33 @@ class TestPreUScoring(TestCase):
         # 100 + 5 + 4(acad) + 3(field) + 1(creative socsci signal adj) = 113
         self.assertEqual(score, 113)
 
+    def test_matric_sains_field_preference_health(self):
+        """W21: Matric Sains + field_health signal → +3 field preference."""
+        item = {'pathway_type': 'matric', 'source_type': 'matric',
+                'field': 'Foundation Studies', 'student_merit': 80,
+                'track_id': 'sains'}
+        signals = {'field_interest': {'field_health': 2}}
+        score, _ = calculate_matric_stpm_fit_score(item, {'student_signals': signals})
+        self.assertEqual(score, 111)  # 100 + 8 + 0 + 3
+
+    def test_matric_sains_field_preference_agriculture(self):
+        """W21: Matric Sains + field_agriculture signal → +3 field preference."""
+        item = {'pathway_type': 'matric', 'source_type': 'matric',
+                'field': 'Foundation Studies', 'student_merit': 80,
+                'track_id': 'sains'}
+        signals = {'field_interest': {'field_agriculture': 2}}
+        score, _ = calculate_matric_stpm_fit_score(item, {'student_signals': signals})
+        self.assertEqual(score, 111)  # 100 + 8 + 0 + 3
+
+    def test_stpm_sains_field_preference_health(self):
+        """W21: STPM Sains + field_health signal → +3 field preference."""
+        item = {'pathway_type': 'stpm', 'source_type': 'stpm',
+                'field': 'Form 6', 'track_id': 'sains', 'mata_gred': 10}
+        signals = {'field_interest': {'field_health': 2}}
+        score, _ = calculate_matric_stpm_fit_score(item, {'student_signals': signals})
+        # 100 + 5(prestige) + 4(acad) + 3(field) = 112
+        self.assertEqual(score, 112)
+
     def test_signal_pathway_priority(self):
         """pathway_priority signal → +3 adjustment."""
         item = {'pathway_type': 'matric', 'source_type': 'matric',

@@ -475,6 +475,22 @@ def get_result_framing(signals: Dict) -> Dict:
     }
 
 
+# Malaysian public university tiers (higher = more prestigious)
+UNIVERSITY_TIER = {
+    'Universiti Malaya': 3,
+    'Universiti Sains Malaysia': 3,
+    'Universiti Kebangsaan Malaysia': 3,
+    'Universiti Putra Malaysia': 3,
+    'Universiti Teknologi Malaysia': 3,
+    # Comprehensive
+    'Universiti Islam Antarabangsa Malaysia': 2,
+    'Universiti Malaysia Sabah': 2,
+    'Universiti Malaysia Sarawak': 2,
+    'Universiti Pendidikan Sultan Idris': 2,
+}
+# All others default to 1 (focused/technical)
+
+
 def get_stpm_ranked_results(
     courses: List[Dict],
     student_cgpa: float,
@@ -489,8 +505,12 @@ def get_stpm_ranked_results(
         signals: Quiz signals from process_stpm_quiz
 
     Returns:
-        Courses sorted by fit_score descending, each with fit_score and
-        fit_reasons added
+        Courses sorted by 5-level hierarchy:
+        1. fit_score (desc)
+        2. university tier (desc) — research > comprehensive > focused
+        3. competitiveness — min_cgpa (desc)
+        4. difficulty_level (desc) — high > medium > low
+        5. course_name (asc)
     """
     if not courses:
         return []
@@ -500,5 +520,13 @@ def get_stpm_ranked_results(
         fit_score, fit_reasons = calculate_stpm_fit_score(course, student_cgpa, signals)
         scored.append({**course, 'fit_score': fit_score, 'fit_reasons': fit_reasons})
 
-    scored.sort(key=lambda c: (-c['fit_score'], c['course_name']))
+    difficulty_order = {'high': 3, 'medium': 2, 'low': 1, '': 0}
+
+    def sort_key(c):
+        uni_tier = UNIVERSITY_TIER.get(c.get('university', ''), 1)
+        competitiveness = float(c.get('min_cgpa', 0) or 0)
+        diff = difficulty_order.get(c.get('difficulty_level', ''), 0)
+        return (-c['fit_score'], -uni_tier, -competitiveness, -diff, c['course_name'])
+
+    scored.sort(key=sort_key)
     return scored
