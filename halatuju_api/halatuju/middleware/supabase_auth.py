@@ -89,6 +89,7 @@ class SupabaseAuthMiddleware:
                         'email': payload.get('email'),
                         'phone': payload.get('phone'),
                         'role': payload.get('role'),
+                        'is_anonymous': payload.get('is_anonymous', False),
                     }
                     logger.debug(f"Authenticated user: {request.user_id}")
 
