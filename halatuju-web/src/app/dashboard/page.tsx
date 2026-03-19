@@ -761,53 +761,24 @@ function RankedResults({
   onLoadMoreGate?: () => boolean
 }) {
   const { t } = useT()
-  const TOP_COUNT = 3
 
   const filtered = filter === 'all'
     ? rankingData.ranked
     : rankingData.ranked.filter(c => (c.pathway_type || c.source_type) === filter)
 
-  const filteredTop = filtered.slice(0, TOP_COUNT)
-  const filteredRest = filtered.slice(TOP_COUNT)
-  const displayedRest = filteredRest.slice(0, displayCount)
-  const remaining = filteredRest.length - displayCount
+  const displayed = filtered.slice(0, displayCount)
+  const remaining = filtered.length - displayCount
 
   return (
-    <div className="space-y-8">
-      {/* Top Matches */}
-      {filteredTop.length > 0 && (
+    <div>
+      {displayed.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-primary-600 uppercase tracking-wide mb-3">
-            {t('dashboard.topMatches')}
-          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredTop.map((course, idx) => (
+            {displayed.map((course, idx) => (
               <CourseCard
                 key={course.course_id}
                 course={course}
-                rank={idx + 1}
-                isSaved={savedIds.has(course.course_id)}
-                onToggleSave={onToggleSave}
-                institutionName={course.institution_name}
-                institutionState={course.institution_state}
-                institutionCount={course.institution_count}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Rest */}
-      {displayedRest.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            {t('dashboard.otherEligible')}
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {displayedRest.map((course) => (
-              <CourseCard
-                key={course.course_id}
-                course={course}
+                rank={idx < 3 ? idx + 1 : undefined}
                 isSaved={savedIds.has(course.course_id)}
                 onToggleSave={onToggleSave}
                 institutionName={course.institution_name}
