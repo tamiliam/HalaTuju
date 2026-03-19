@@ -11,7 +11,7 @@ import {
 import { getSession, getSupabase } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
-import { KEY_PENDING_AUTH_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, migrateProfile } from '@/lib/storage'
+import { KEY_PENDING_AUTH_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS } from '@/lib/storage'
 
 export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | null
 
@@ -36,30 +36,30 @@ const AuthContext = createContext<AuthContextValue | null>(null)
  * Restore student data from Supabase into localStorage for a returning user.
  * Only writes keys that are missing locally (avoids overwriting fresh data).
  */
+/**
+ * Restore student data from Supabase into localStorage.
+ * Always overwrites — Supabase is the source of truth, localStorage is a cache.
+ */
 async function restoreProfileToLocalStorage(token: string) {
   try {
     const profile = await getProfile({ token })
     if (!profile.grades || Object.keys(profile.grades).length === 0) return
 
     // Grades
-    if (!localStorage.getItem(KEY_GRADES)) {
-      localStorage.setItem(KEY_GRADES, JSON.stringify(profile.grades))
-    }
+    localStorage.setItem(KEY_GRADES, JSON.stringify(profile.grades))
 
     // Demographics (gender, nationality, colorblind, disability)
-    if (!localStorage.getItem(KEY_PROFILE)) {
-      const demo: Record<string, unknown> = {}
-      if (profile.gender) demo.gender = profile.gender
-      if (profile.nationality) demo.nationality = profile.nationality
-      if (profile.colorblind != null) demo.colorblind = profile.colorblind
-      if (profile.disability != null) demo.disability = profile.disability
-      if (Object.keys(demo).length > 0) {
-        localStorage.setItem(KEY_PROFILE, JSON.stringify(demo))
-      }
+    const demo: Record<string, unknown> = {}
+    if (profile.gender) demo.gender = profile.gender
+    if (profile.nationality) demo.nationality = profile.nationality
+    if (profile.colorblind != null) demo.colorblind = profile.colorblind
+    if (profile.disability != null) demo.disability = profile.disability
+    if (Object.keys(demo).length > 0) {
+      localStorage.setItem(KEY_PROFILE, JSON.stringify(demo))
     }
 
     // Quiz signals
-    if (!localStorage.getItem(KEY_QUIZ_SIGNALS) && profile.student_signals) {
+    if (profile.student_signals) {
       localStorage.setItem(KEY_QUIZ_SIGNALS, JSON.stringify(profile.student_signals))
     }
   } catch {
@@ -74,16 +74,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authGateCourseId, setAuthGateCourseId] = useState<string | null>(null)
 
   useEffect(() => {
-    // Migrate legacy "Ya"/"Tidak" strings to booleans in localStorage
-    migrateProfile()
-
     getSession()
       .then(({ session }) => {
         setSession(session ?? null)
         setIsLoading(false)
 
-        // Restore profile from Supabase if localStorage is empty (e.g. cache cleared)
-        if (session?.access_token && !localStorage.getItem(KEY_GRADES)) {
+        // Always restore from Supabase — it's the source of truth
+        if (session?.access_token) {
           restoreProfileToLocalStorage(session.access_token)
         }
 
