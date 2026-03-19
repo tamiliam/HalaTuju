@@ -1021,6 +1021,14 @@ class ProfileSyncView(APIView):
     permission_classes = [SupabaseIsAuthenticated]
 
     def post(self, request):
+        # Reject anonymous users — they must claim NRIC first
+        supabase_user = getattr(request, 'supabase_user', None) or {}
+        if supabase_user.get('is_anonymous', False):
+            return Response(
+                {'error': 'Anonymous users cannot sync profiles. Please sign in first.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         profile, created = StudentProfile.objects.get_or_create(
             supabase_user_id=request.user_id
         )

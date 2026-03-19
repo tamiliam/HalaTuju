@@ -59,6 +59,20 @@ class NricGateIntegrationTest(TestCase):
         finally:
             _teardown_auth(self)
 
+    def test_anonymous_user_blocked_from_profile_sync(self):
+        """Anonymous user cannot sync profiles — view rejects with 400."""
+        _setup_auth_with_anon(self, 'anon-user', is_anonymous=True)
+        try:
+            response = self.client.post(
+                '/api/v1/profile/sync/',
+                {'gender': 'male', 'grades': {'bm': 'A'}},
+                format='json',
+            )
+            self.assertEqual(response.status_code, 400)
+            self.assertIn('Anonymous', response.data['error'])
+        finally:
+            _teardown_auth(self)
+
     def test_anonymous_user_blocked_from_saving_courses(self):
         """Anonymous user cannot save courses — blocked at view level."""
         _setup_auth_with_anon(self, 'anon-user', is_anonymous=True)

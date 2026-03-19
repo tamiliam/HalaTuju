@@ -39,7 +39,7 @@ export default function AuthGateModal() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [existingName, setExistingName] = useState<string | null>(null)
 
-  // Reset when modal opens; if already authenticated (has NRIC), close immediately
+  // Reset when modal opens; if already authenticated (has NRIC), sync and resume
   useEffect(() => {
     if (authGateReason) {
       setPhone('')
@@ -53,8 +53,8 @@ export default function AuthGateModal() {
       setExistingName(null)
 
       if (isAuthenticated) {
-        // Already has identity — no gate needed, close immediately
-        hideAuthGate()
+        // Already has identity — sync localStorage to backend and resume action
+        handleReturningUser()
         return
       }
       setStep('login')
@@ -151,6 +151,8 @@ export default function AuthGateModal() {
       localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'report' }))
     } else if (reason === 'eligible') {
       localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'eligible' }))
+    } else if (reason === 'loadmore') {
+      localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'loadmore' }))
     }
     localStorage.removeItem(KEY_PENDING_AUTH_ACTION)
     hideAuthGate()

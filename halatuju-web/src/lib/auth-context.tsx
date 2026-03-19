@@ -12,7 +12,7 @@ import { getSession, getSupabase, signInAnonymously } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
 import type { StudentProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
-import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
+import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_PENDING_AUTH_ACTION } from '@/lib/storage'
 
 export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | null
 export type AuthStatus = 'loading' | 'anonymous' | 'needs-nric' | 'ready'
@@ -124,6 +124,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener('nric-required', handler)
     return () => window.removeEventListener('nric-required', handler)
   }, [showAuthGate])
+
+  // Resume pending auth action after OAuth redirect (e.g. Google login → callback → dashboard)
+  // When status transitions to 'needs-nric' or 'ready', check if an action was pending.
+  useEffect(() => {
+    if (isLoading) return
+    const isAnon = session?.user?.is_anonymous ?? true
+    if (isAnon) return // Not yet signed in with a real account
+
+    const pendingStr = localStorage.getItem(KEY_PENDING_AUTH_ACTION)
+    if (!pendingStr) return
+
+    try {
+      const { reason, courseId } = JSON.parse(pendingStr)
+      if (reason) {
+        // Restore the auth gate — modal will auto-advance based on status
+        showAuthGate(reason, courseId ? { courseId } : undefined)
+      }
+    } catch { /* malformed — ignore */ }
+    // Remove regardless — consumed once
+    localStorage.removeItem(KEY_PENDING_AUTH_ACTION)
+  }, [isLoading, session, showAuthGate])
 
   // Cache profile data to localStorage
   useEffect(() => {
