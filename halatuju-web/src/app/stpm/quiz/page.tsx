@@ -278,7 +278,7 @@ export default function StpmQuizPage() {
       <header className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="text-white/90 hover:text-white text-sm font-medium">
-            &larr; HalaTuju
+            &larr; {t('common.appName')}
           </Link>
           <Link href="/dashboard" className="text-white/70 hover:text-white text-sm">
             {t('stpmQuiz.skip')}
@@ -323,7 +323,7 @@ export default function StpmQuizPage() {
                       ? 'bg-blue-300'
                       : 'bg-gray-300'
                 }`}
-                aria-label={`Go to question ${i + 1}`}
+                aria-label={t('quiz.goToQuestion', { n: String(i + 1) })}
               />
             )
           })}

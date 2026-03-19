@@ -46,7 +46,7 @@ export default function QuizPage() {
         setLoading(false)
       })
       .catch(() => {
-        setError('Failed to load quiz questions. Please try again.')
+        setError(t('quiz.loadError'))
         setLoading(false)
       })
   }, [authLoading, isAuthenticated, locale])
@@ -167,7 +167,7 @@ export default function QuizPage() {
       localStorage.removeItem(KEY_REPORT_GENERATED)
       router.push('/dashboard')
     } catch {
-      setError('Failed to submit quiz. Please try again.')
+      setError(t('quiz.submitError'))
       setSubmitting(false)
     }
   }
@@ -249,7 +249,7 @@ export default function QuizPage() {
       <header className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="text-white/90 hover:text-white text-sm font-medium">
-            ← HalaTuju
+            ← {t('common.appName')}
           </Link>
           <Link href="/dashboard" className="text-white/70 hover:text-white text-sm">
             {t('quiz.skipQuiz')}
@@ -293,7 +293,7 @@ export default function QuizPage() {
                       ? 'bg-blue-300'
                       : 'bg-gray-300'
                 }`}
-                aria-label={`Go to question ${i + 1}`}
+                aria-label={t('quiz.goToQuestion', { n: String(i + 1) })}
               />
             )
           })}

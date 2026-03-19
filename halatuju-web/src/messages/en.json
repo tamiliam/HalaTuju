@@ -432,7 +432,10 @@
     "answered": "{count} answered",
     "becauseYouPicked": "Because you picked Big Machines...",
     "retry": "Retry",
-    "loadingQuiz": "Loading quiz..."
+    "loadingQuiz": "Loading quiz...",
+    "loadError": "Failed to load quiz questions. Please try again.",
+    "submitError": "Failed to submit quiz. Please try again.",
+    "goToQuestion": "Go to question {n}"
   },
   "stpmQuiz": {
     "loading": "Loading your personalised quiz...",

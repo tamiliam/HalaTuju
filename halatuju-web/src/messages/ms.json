@@ -432,7 +432,10 @@
     "answered": "{count} dijawab",
     "becauseYouPicked": "Kerana anda memilih Mesin Besar...",
     "retry": "Cuba Lagi",
-    "loadingQuiz": "Memuatkan kuiz..."
+    "loadingQuiz": "Memuatkan kuiz...",
+    "loadError": "Gagal memuatkan soalan kuiz. Sila cuba lagi.",
+    "submitError": "Gagal menghantar kuiz. Sila cuba lagi.",
+    "goToQuestion": "Pergi ke soalan {n}"
   },
   "stpmQuiz": {
     "loading": "Memuatkan kuiz peribadi anda...",
