@@ -563,7 +563,10 @@
     "backToHome": "Back to Home",
     "authFailed": "Authentication failed. Please try again.",
     "noAdminAccess": "This account does not have admin access.",
-    "adminVerifyFailed": "Failed to verify admin access."
+    "adminVerifyFailed": "Failed to verify admin access.",
+    "notSignedIn": "Not signed in. Please go back and sign in again.",
+    "saveFailed": "Failed to save. Please try again.",
+    "claimFailed": "Failed to claim. Please try again."
   },
   "stpm": {
     "searchTitle": "Browse STPM Degree Courses",

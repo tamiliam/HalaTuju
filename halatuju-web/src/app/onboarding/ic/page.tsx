@@ -46,7 +46,7 @@ export default function IcOnboardingPage() {
       return
     }
     if (!token) {
-      setError('Not signed in. Please go back and sign in again.')
+      setError(t('errors.notSignedIn'))
       return
     }
 
@@ -72,7 +72,7 @@ export default function IcOnboardingPage() {
         setLoading(false)
       }
     } catch {
-      setError('Failed to save. Please try again.')
+      setError(t('errors.saveFailed'))
       setLoading(false)
     }
   }
@@ -85,7 +85,7 @@ export default function IcOnboardingPage() {
       await claimNric(ic, true, { token: token! })
       router.replace('/onboarding/exam-type')
     } catch {
-      setError('Failed to claim. Please try again.')
+      setError(t('errors.claimFailed'))
       setLoading(false)
     }
   }

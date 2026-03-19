@@ -563,7 +563,10 @@
     "backToHome": "Kembali ke Laman Utama",
     "authFailed": "Pengesahan gagal. Sila cuba lagi.",
     "noAdminAccess": "Akaun ini tiada akses pentadbir.",
-    "adminVerifyFailed": "Gagal mengesahkan akses pentadbir."
+    "adminVerifyFailed": "Gagal mengesahkan akses pentadbir.",
+    "notSignedIn": "Belum log masuk. Sila kembali dan log masuk semula.",
+    "saveFailed": "Gagal menyimpan. Sila cuba lagi.",
+    "claimFailed": "Gagal menuntut. Sila cuba lagi."
   },
   "stpm": {
     "searchTitle": "Layari Kursus Ijazah STPM",
