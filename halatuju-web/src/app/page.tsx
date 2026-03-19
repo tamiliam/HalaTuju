@@ -3,11 +3,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
+import { useAuth } from '@/lib/auth-context'
 import LanguageSelector from '@/components/LanguageSelector'
 import AppFooter from '@/components/AppFooter'
 
 export default function LandingPage() {
   const { t } = useT()
+  const { showAuthGate } = useAuth()
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-primary-50 to-white">
@@ -21,9 +23,9 @@ export default function LandingPage() {
           <Link href="/about" className="hidden sm:inline text-gray-600 hover:text-gray-900">
             {t('common.about')}
           </Link>
-          <Link href="/login" className="btn-primary px-4 py-2 text-sm whitespace-nowrap">
+          <button onClick={() => showAuthGate('profile')} className="btn-primary px-4 py-2 text-sm whitespace-nowrap">
             {t('common.getStarted')}
-          </Link>
+          </button>
         </div>
       </nav>
 

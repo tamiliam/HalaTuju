@@ -193,9 +193,9 @@ export default function AppHeader() {
               )}
             </div>
           ) : (
-            <Link href="/login" className="bg-primary-500 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-primary-600 transition-colors whitespace-nowrap">
+            <button onClick={() => showAuthGate('profile')} className="bg-primary-500 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-primary-600 transition-colors whitespace-nowrap">
               {t('common.getStarted')}
-            </Link>
+            </button>
           )}
         </div>
 
@@ -292,13 +292,12 @@ export default function AppHeader() {
 
             {!isAuthenticated && (
               <div className="border-t border-gray-100 pt-3 mt-2">
-                <Link
-                  href="/login"
-                  className="block btn-primary text-sm text-center"
-                  onClick={() => setMobileOpen(false)}
+                <button
+                  className="block w-full btn-primary text-sm text-center"
+                  onClick={() => { setMobileOpen(false); showAuthGate('profile'); }}
                 >
                   {t('common.getStarted')}
-                </Link>
+                </button>
               </div>
             )}
 
