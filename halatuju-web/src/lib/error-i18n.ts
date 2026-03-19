@@ -1,5 +1,5 @@
 // Maps backend English error/success strings → i18n keys
-const ERROR_MAP: Record<string, string> = {
+export const ERROR_MAP: Record<string, string> = {
   'Course not found': 'apiErrors.courseNotFound',
   'Not found': 'apiErrors.notFound',
   'Course saved': 'apiErrors.courseSaved',
@@ -41,11 +41,26 @@ const ERROR_MAP: Record<string, string> = {
   'Not an admin': 'apiErrors.notAdmin',
 }
 
+// Patterns for interpolated backend messages (f-strings with dynamic values)
+const PATTERN_MAP: Array<[RegExp, string]> = [
+  [/^Invite sent to /, 'apiErrors.inviteSent'],
+  [/ access revoked$/, 'apiErrors.accessRevoked'],
+  [/ access restored$/, 'apiErrors.accessRestored'],
+]
+
 /**
  * Translate a backend error/success message using the i18n system.
+ * Checks exact matches first, then regex patterns for interpolated messages.
  * Falls back to the generic "Something went wrong" message for unknown strings.
  */
-export function tError(t: (key: string) => string, backendMessage: string): string {
+export function tError(
+  t: (key: string, params?: Record<string, string>) => string,
+  backendMessage: string | undefined | null
+): string {
+  if (!backendMessage) return t('errors.somethingWentWrong')
   const key = ERROR_MAP[backendMessage]
-  return key ? t(key) : t('errors.somethingWentWrong')
+  if (key) return t(key)
+  const pattern = PATTERN_MAP.find(([re]) => re.test(backendMessage))
+  if (pattern) return t(pattern[1])
+  return t('errors.somethingWentWrong')
 }

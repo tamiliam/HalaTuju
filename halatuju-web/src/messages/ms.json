@@ -669,6 +669,9 @@
     "inviteEmailFailed": "Gagal menghantar emel jemputan",
     "adminNotFound": "Pentadbir tidak dijumpai",
     "cannotRevokeSuperAdmin": "Tidak boleh membatalkan pentadbir utama",
-    "notAdmin": "Bukan pentadbir"
+    "notAdmin": "Bukan pentadbir",
+    "inviteSent": "Jemputan berjaya dihantar",
+    "accessRevoked": "Akses dibatalkan",
+    "accessRestored": "Akses dipulihkan"
   }
 }

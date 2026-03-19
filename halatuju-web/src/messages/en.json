@@ -669,6 +669,9 @@
     "inviteEmailFailed": "Failed to send invite email",
     "adminNotFound": "Admin not found",
     "cannotRevokeSuperAdmin": "Cannot revoke super admin",
-    "notAdmin": "Not an admin"
+    "notAdmin": "Not an admin",
+    "inviteSent": "Invite sent successfully",
+    "accessRevoked": "Access revoked",
+    "accessRestored": "Access restored"
   }
 }
