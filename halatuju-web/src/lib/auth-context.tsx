@@ -132,6 +132,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Listen for NRIC-required events from API layer
+  useEffect(() => {
+    const handler = () => showAuthGate('profile')
+    window.addEventListener('nric-required', handler)
+    return () => window.removeEventListener('nric-required', handler)
+  }, [showAuthGate])
+
   const showAuthGate = useCallback(
     (reason: NonNullable<AuthGateReason>, options?: AuthGateOptions) => {
       setAuthGateReason(reason)

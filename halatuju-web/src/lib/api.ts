@@ -27,6 +27,10 @@ async function apiRequest<T>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
+    if (response.status === 403 && error.code === 'nric_required') {
+      window.dispatchEvent(new CustomEvent('nric-required'))
+      throw new Error('NRIC verification required')
+    }
     throw new Error(error.message || `API error: ${response.status}`)
   }
 
