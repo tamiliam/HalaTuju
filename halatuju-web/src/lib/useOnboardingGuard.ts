@@ -1,26 +1,34 @@
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { KEY_GRADES, KEY_STPM_GRADES } from '@/lib/storage'
+import { useAuth } from '@/lib/auth-context'
 
 /**
- * Redirects to /onboarding/exam-type if the user hasn't completed onboarding
- * (no SPM or STPM grades in localStorage).
+ * Guards pages that require a completed profile with grades.
+ * Reads from AuthProvider state — never from localStorage.
  *
- * Returns { ready } — true once the check is done and the user can stay.
+ * Returns:
+ * - { ready: false, loading: true } — AuthProvider still resolving
+ * - { ready: false, loading: false } — no grades, caller should redirect
+ * - { ready: true, loading: false } — grades present, page can render
  */
 export function useOnboardingGuard() {
-  const router = useRouter()
-  const [ready, setReady] = useState(false)
+  const { status, profile } = useAuth()
 
-  useEffect(() => {
-    const hasGrades =
-      localStorage.getItem(KEY_GRADES) || localStorage.getItem(KEY_STPM_GRADES)
-    if (!hasGrades) {
-      router.replace('/onboarding/exam-type')
-    } else {
-      setReady(true)
-    }
-  }, [router])
+  if (status === 'loading') {
+    return { ready: false, loading: true }
+  }
 
-  return { ready }
+  if (status !== 'ready') {
+    return { ready: false, loading: false }
+  }
+
+  const hasGrades = profile?.grades && Object.keys(profile.grades).length > 0
+
+  // stpm_grades may be returned by the API but is not in the StudentProfile type
+  const profileAny = profile as Record<string, unknown> | null
+  const stpmGrades = profileAny?.stpm_grades
+  const hasStpmGrades =
+    stpmGrades != null &&
+    typeof stpmGrades === 'object' &&
+    Object.keys(stpmGrades as object).length > 0
+
+  return { ready: !!(hasGrades || hasStpmGrades), loading: false }
 }
