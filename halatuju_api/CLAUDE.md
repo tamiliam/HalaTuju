@@ -227,19 +227,23 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Next Sprint
 
-**NRIC Hard Gate Sprint COMPLETE (2026-03-20)**
-- NRIC is the hard identity gate — no account/profile created until NRIC verified
-- Anonymous sign-in for browsing, `linkIdentity()` for Google, `claimNric()` for NRIC
-- NricGateMiddleware blocks protected endpoints without NRIC (whitelists identity endpoints)
-- `isAuthenticated` = has NRIC (not just has session)
-- 16 orphan users cleaned up, 5 restrictive RLS policies added
-- **Manual step needed before deploy**: Enable "Anonymous Sign-Ins" + "Manual Linking" in Supabase Dashboard → Authentication → Providers
+**Auth Flow Canonical Refactor COMPLETE (2026-03-20)**
+- AuthProvider is the single routing authority — `status: 'loading' | 'anonymous' | 'needs-nric' | 'ready'` + `profile: StudentProfile | null`
+- localStorage is write-only cache — AuthProvider fetches from API, writes cache as side effect, routing never reads localStorage
+- Callback page simplified to ~20 lines (just establishes session, redirects to `/dashboard`)
+- AuthGateModal reads `status`/`profile` from context, no more `getProfile()` calls
+- useOnboardingGuard reads AuthProvider, not localStorage
+- IC page, dashboard, saved, profile pages all use AuthProvider status
+- `profile-restore.ts` deleted — AuthProvider handles caching
+- STPM fields added to `StudentProfile` TypeScript interface (`exam_type`, `stpm_grades`, `stpm_cgpa`, `muet_band`)
+- Rules of Hooks crash fixed (useEffect before early return in AuthGateModal)
 
 **Current state:** 966 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
+**Manual step needed before deploy**: Enable "Anonymous Sign-Ins" + "Manual Linking" in Supabase Dashboard → Authentication → Providers.
 
 **Next: User Testing & Phone Login Sprint**
 - Enable anonymous sign-in in Supabase dashboard (required for NRIC gate)
-- User testing with real students through new NRIC gate flow
+- User testing with real students through new auth flow
 - Phone/OTP login implementation (currently Google only)
 - Test account recovery flow (new Google → existing NRIC)
 - Mobile testing across auth gate + IC step

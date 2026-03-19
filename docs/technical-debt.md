@@ -197,11 +197,11 @@
 
 ## Test Patterns and Coverage Gaps
 
-### [TD-003] Zero frontend tests (LOW RISK)
+### [TD-003] Zero frontend tests (LOW RISK) — PARTIALLY RESOLVED
 **File(s):** `halatuju-web/` (entire frontend)
-**What it is:** The Next.js frontend has zero test files. Remaining client-side logic is UI rendering and API calls — no business logic after TD-002 Sprint deleted `pathways.ts`, `merit.ts`, and `stpm.ts`.
+**What it is:** The Next.js frontend had zero test files. After IC Gate Sprint (2026-03-15), 17 frontend tests exist. Remaining client-side logic is UI rendering and API calls — no business logic after TD-002 Sprint deleted `pathways.ts`, `merit.ts`, and `stpm.ts`.
 **What consistent looks like:** Component tests for critical flows (onboarding, dashboard). Nice-to-have, not urgent.
-**Risk if left:** LOW — all calculation logic now lives in the backend with 344 tests. Frontend is display-only.
+**Risk if left:** LOW — all calculation logic now lives in the backend with 966 tests. Frontend is display-only. Auth flow refactored (2026-03-20) to eliminate localStorage as routing authority, further reducing frontend complexity.
 **Dependencies:** Would need Jest/Vitest setup in halatuju-web.
 
 ### [TD-033] ~~Auth test failures not triaged~~ **RESOLVED (TD-010 Sprint, 2026-03-14)**

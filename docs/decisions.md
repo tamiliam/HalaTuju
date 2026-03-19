@@ -419,6 +419,18 @@
 
 **Revisit if:** Performance profiling shows the per-request profile lookup is a bottleneck (could cache in middleware), or if a more granular permission system is needed beyond binary NRIC/no-NRIC.
 
+## AuthProvider as single routing authority — Auth Flow Canonical Refactor, 2026-03-20
+
+**Decision:** AuthProvider holds `status: AuthStatus` and `profile: StudentProfile | null` in React context. All routing decisions (callback, AuthGateModal, onboarding guard, IC page, dashboard, saved, profile) read from context. localStorage is a write-only cache — AuthProvider writes it as a side effect after fetching from API, but no component reads it for routing.
+
+**Alternatives considered:** (1) Keep localStorage reads but add a "freshness" timestamp to detect stale data. (2) Add a global event bus that components subscribe to for profile changes. (3) Centralise in AuthProvider context (chosen).
+
+**Rationale:** The root cause of multiple bugs (stale cache after BooleanField migration, profile not available after login, inconsistent state across components) was that each component independently read localStorage. A single context provider eliminates the entire class of stale-cache routing bugs. React context is the standard mechanism for shared state — no custom event bus needed.
+
+**Trade-offs:** AuthProvider re-renders all consumers when status or profile changes. Acceptable because auth state changes are infrequent (login, logout, profile update). If performance becomes an issue, can split into separate StatusContext and ProfileContext.
+
+**Revisit if:** Offline-first (PWA) support is needed — at that point localStorage would need to become a read source with a versioned schema and migration strategy.
+
 ## localStorage as disposable cache, not source of truth — i18n & Bug Fixes Sprint, 2026-03-19
 
 **Decision:** `restoreProfileToLocalStorage()` always overwrites localStorage from Supabase API on login. No conditional writes. `clearAll()` wipes all `halatuju_*` keys on logout. Supabase is authoritative; localStorage is a performance cache only.
