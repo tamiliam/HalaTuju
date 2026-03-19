@@ -222,6 +222,15 @@
     "meritLow": "Rendah",
     "courses": "kursus"
   },
+  "report": {
+    "loginRequired": "Sila log masuk untuk melihat laporan anda.",
+    "loadFailed": "Gagal memuatkan laporan.",
+    "loading": "Memuatkan laporan anda...",
+    "notFound": "Laporan tidak dijumpai",
+    "backToDashboard": "Kembali ke Papan Pemuka",
+    "downloadPdf": "Muat turun PDF",
+    "footerText": "Dijana oleh Kaunselor AI HalaTuju | halatuju.com | {date}"
+  },
   "search": {
     "title": "Terokai Kursus",
     "subtitle": "Layari semua kursus di politeknik, universiti dan institusi TVET.",
