@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { signInWithPhone, verifyOTP, signInWithGoogle, linkIdentity } from '@/lib/supabase'
+import { signInWithPhone, verifyOTP, signInWithGoogle } from '@/lib/supabase'
 import { syncProfile, getProfile, claimNric, type SyncProfileData } from '@/lib/api'
 import { restoreProfileToLocalStorage } from '@/lib/profile-restore'
 import { useAuth } from '@/lib/auth-context'
@@ -198,23 +198,17 @@ export default function AuthGateModal() {
     setLoading(true)
     setError(null)
 
-    if (isAnonymous) {
-      // Try linking Google to anonymous user
-      const { error } = await linkIdentity('google')
-      if (error) {
-        // Google already belongs to an existing user — sign in normally
-        const { error: signInError } = await signInWithGoogle()
-        if (signInError) {
-          setError(signInError.message)
-          setLoading(false)
-        }
-      }
-    } else {
-      const { error } = await signInWithGoogle()
-      if (error) {
-        setError(error.message)
-        setLoading(false)
-      }
+    // Always use signInWithGoogle — not linkIdentity.
+    // linkIdentity redirects to Google before errors can be caught locally.
+    // For returning users whose Google identity is already claimed,
+    // linkIdentity silently fails at the Supabase callback, leaving the
+    // anonymous session active. signInWithGoogle works for both new and
+    // returning users. Anonymous users have no data to preserve (NRIC gate
+    // blocks all writes), so orphaning the anonymous session is harmless.
+    const { error } = await signInWithGoogle()
+    if (error) {
+      setError(error.message)
+      setLoading(false)
     }
   }
 
