@@ -3,8 +3,6 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSession } from '@/lib/supabase'
-import { restoreProfileToLocalStorage } from '@/lib/profile-restore'
-import { KEY_PENDING_AUTH_ACTION, KEY_GRADES } from '@/lib/storage'
 
 export default function AuthCallback() {
   const router = useRouter()
@@ -16,23 +14,13 @@ export default function AuthCallback() {
       const { session } = await getSession()
       if (!session) { router.replace('/'); return }
 
-      // Clear pending auth action — we handle everything here
-      localStorage.removeItem(KEY_PENDING_AUTH_ACTION)
-
-      // Check profile: NRIC status + restore data to localStorage
-      try {
-        const profile = await restoreProfileToLocalStorage(session.access_token)
-        if (profile?.nric) {
-          // Returning user with NRIC — go to dashboard or onboarding
-          const hasGrades = localStorage.getItem(KEY_GRADES)
-          router.replace(hasGrades ? '/dashboard' : '/onboarding/exam-type')
-        } else {
-          // No NRIC — needs IC verification
-          router.replace('/onboarding/ic')
-        }
-      } catch {
-        router.replace('/onboarding/ic')
-      }
+      // Always go to dashboard. AuthProvider will:
+      // 1. Detect the session
+      // 2. Fetch profile from API
+      // 3. Set status to 'ready', 'needs-nric', or 'anonymous'
+      // 4. Write profile to localStorage as cache
+      // The dashboard's onboarding guard will redirect if no grades.
+      router.replace('/dashboard')
     }
     handle()
   }, [router])
