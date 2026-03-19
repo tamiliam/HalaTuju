@@ -47,7 +47,7 @@ const MERIT_LABELS = { high: 'High', fair: 'Fair', low: 'Low', none: '—' }
 export default function DashboardPage() {
   const { t } = useT()
   const router = useRouter()
-  const { ready: onboarded, loading: guardLoading } = useOnboardingGuard()
+  const { ready: onboarded, loading: guardLoading, needsNric } = useOnboardingGuard()
   const { isAuthenticated, token, showAuthGate } = useAuth()
   const { savedIds, toggleSave: handleSaveOrGate } = useSavedCourses()
   const { showToast } = useToast()
@@ -319,10 +319,13 @@ export default function DashboardPage() {
 
   // Redirect to onboarding if guard resolves with no grades
   useEffect(() => {
-    if (!guardLoading && !onboarded) {
+    if (guardLoading) return
+    if (needsNric) {
+      router.replace('/onboarding/ic')
+    } else if (!onboarded) {
       router.replace('/onboarding/exam-type')
     }
-  }, [guardLoading, onboarded, router])
+  }, [guardLoading, onboarded, needsNric, router])
 
   if (isLoading || guardLoading) {
     return <LoadingScreen />

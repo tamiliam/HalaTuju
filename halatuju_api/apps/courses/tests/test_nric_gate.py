@@ -55,13 +55,13 @@ class NricGateMiddlewareTest(TestCase):
         response = self.middleware(request)
         self.assertEqual(response.status_code, 200)
 
-    def test_allows_profile_sync(self):
-        """Profile sync is whitelisted (called right after NRIC claim)."""
+    def test_blocks_profile_sync_without_nric(self):
+        """Profile sync requires NRIC — no longer whitelisted."""
         request = self.factory.post('/api/v1/profile/sync/')
         request.user_id = 'user-123'
         request.supabase_user = {'is_anonymous': False}
         response = self.middleware(request)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
 
     def test_allows_admin_endpoints(self):
         """Admin endpoints are not subject to NRIC gate."""

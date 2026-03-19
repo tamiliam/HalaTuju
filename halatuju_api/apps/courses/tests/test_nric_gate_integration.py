@@ -155,9 +155,9 @@ class NricGateIntegrationTest(TestCase):
         finally:
             _teardown_auth(self)
 
-    def test_profile_sync_whitelisted(self):
-        """Profile sync endpoint is whitelisted — works without NRIC."""
-        user_id = 'user-sync-whitelist'
+    def test_profile_sync_blocked_without_nric(self):
+        """Profile sync requires NRIC — no longer whitelisted."""
+        user_id = 'user-sync-no-whitelist'
         _setup_auth_with_anon(self, user_id, is_anonymous=False)
         try:
             response = self.client.post(
@@ -165,8 +165,8 @@ class NricGateIntegrationTest(TestCase):
                 {'grades': {}},
                 format='json',
             )
-            # Should NOT be 403 (sync is whitelisted)
-            self.assertNotEqual(response.status_code, 403)
+            # Should be 403 (sync is no longer whitelisted)
+            self.assertEqual(response.status_code, 403)
         finally:
             _teardown_auth(self)
 

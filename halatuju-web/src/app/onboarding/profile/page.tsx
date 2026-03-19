@@ -6,9 +6,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth-context'
-import { getProfile, syncProfile } from '@/lib/api'
+import { getProfile, syncProfile, type SyncProfileData } from '@/lib/api'
 import ProgressStepper from '@/components/ProgressStepper'
-import { KEY_PROFILE } from '@/lib/storage'
+import { KEY_PROFILE, KEY_GRADES, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -20,7 +20,7 @@ const MALAYSIAN_STATES = [
 export default function ProfileInputPage() {
   const router = useRouter()
   const { t } = useT()
-  const { token } = useAuth()
+  const { token, refreshProfile } = useAuth()
   const [gender, setGender] = useState<string>('')
   const [nationality, setNationality] = useState<string>('malaysian')
   const [state, setState] = useState<string>('')
@@ -51,33 +51,62 @@ export default function ProfileInputPage() {
 
   const isComplete = gender !== ''
 
-  const handleContinue = () => {
-    if (isComplete) {
-      // Preserve CoQ score set on grades page
-      const existing = localStorage.getItem(KEY_PROFILE)
-      const prev = existing ? JSON.parse(existing) : {}
-      const profile = {
-        ...prev,
+  const handleContinue = async () => {
+    if (!isComplete) return
+
+    // Preserve CoQ score set on grades page
+    const existing = localStorage.getItem(KEY_PROFILE)
+    const prev = existing ? JSON.parse(existing) : {}
+    const profileData = {
+      ...prev,
+      gender,
+      nationality,
+      state,
+      colorblind,
+      disability,
+    }
+    localStorage.setItem(KEY_PROFILE, JSON.stringify(profileData))
+
+    if (token) {
+      // Build sync payload including grades from localStorage
+      const syncPayload: SyncProfileData = {
         gender,
         nationality,
-        state,
+        preferred_state: state,
         colorblind,
         disability,
       }
-      localStorage.setItem(KEY_PROFILE, JSON.stringify(profile))
 
-      if (token) {
-        syncProfile({
-          gender,
-          nationality,
-          preferred_state: state,
-          colorblind,
-          disability,
-        }, { token }).catch(() => {})
+      // Include SPM grades
+      const gradesStr = localStorage.getItem(KEY_GRADES)
+      if (gradesStr) {
+        try { syncPayload.grades = JSON.parse(gradesStr) } catch { /* ignore */ }
       }
 
-      router.push('/dashboard')
+      // Include STPM data
+      const examType = localStorage.getItem(KEY_EXAM_TYPE)
+      if (examType) syncPayload.exam_type = examType
+
+      const stpmGradesStr = localStorage.getItem(KEY_STPM_GRADES)
+      if (stpmGradesStr) {
+        try { syncPayload.stpm_grades = JSON.parse(stpmGradesStr) } catch { /* ignore */ }
+      }
+
+      const stpmCgpa = localStorage.getItem(KEY_STPM_CGPA)
+      if (stpmCgpa) syncPayload.stpm_cgpa = parseFloat(stpmCgpa)
+
+      const muetBand = localStorage.getItem(KEY_MUET_BAND)
+      if (muetBand) syncPayload.muet_band = parseInt(muetBand)
+
+      try {
+        await syncProfile(syncPayload, { token })
+        await refreshProfile()
+      } catch {
+        // Continue to dashboard even if sync fails — localStorage has the data
+      }
     }
+
+    router.push('/dashboard')
   }
 
   return (

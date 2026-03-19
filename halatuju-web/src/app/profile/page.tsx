@@ -68,7 +68,7 @@ function FieldLabel({ label, empty }: { label: string; empty: boolean }) {
 export default function ProfilePage() {
   const router = useRouter()
   const { t, locale } = useT()
-  const { ready: onboarded, loading: guardLoading } = useOnboardingGuard()
+  const { ready: onboarded, loading: guardLoading, needsNric } = useOnboardingGuard()
   const { session, token, isAuthenticated, isLoading: authLoading, showAuthGate } = useAuth()
   const { showToast } = useToast()
 
@@ -256,10 +256,13 @@ export default function ProfilePage() {
 
   // Redirect to onboarding if guard resolves with no grades
   useEffect(() => {
-    if (!guardLoading && !onboarded) {
+    if (guardLoading) return
+    if (needsNric) {
+      router.replace('/onboarding/ic')
+    } else if (!onboarded) {
       router.replace('/onboarding/exam-type')
     }
-  }, [guardLoading, onboarded, router])
+  }, [guardLoading, onboarded, needsNric, router])
 
   if (authLoading || loading || guardLoading) {
     return (

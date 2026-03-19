@@ -122,6 +122,10 @@ class TestProtectedEndpointsAcceptAuth(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_profile_sync_creates_profile(self):
+        # User must have NRIC to pass NricGateMiddleware (sync not whitelisted)
+        StudentProfile.objects.create(
+            supabase_user_id=TEST_USER_ID, nric='010101-01-1234',
+        )
         response = self.client.post(
             '/api/v1/profile/sync/',
             {
@@ -133,7 +137,7 @@ class TestProtectedEndpointsAcceptAuth(TestCase):
             format='json',
         )
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.data['created'])
+        self.assertFalse(response.data['created'])  # Profile already exists from NRIC claim
         # Verify data persisted
         get_resp = self.client.get('/api/v1/profile/')
         self.assertEqual(get_resp.data['name'], 'Siti Aminah')
@@ -141,11 +145,10 @@ class TestProtectedEndpointsAcceptAuth(TestCase):
         self.assertEqual(get_resp.data['grades'], {'bm': 'A', 'eng': 'B+'})
 
     def test_profile_sync_updates_existing(self):
-        # Create profile first
-        self.client.post(
-            '/api/v1/profile/sync/',
-            {'name': 'Original Name', 'school': 'Original School'},
-            format='json',
+        # Create profile with NRIC (required by NricGateMiddleware)
+        StudentProfile.objects.create(
+            supabase_user_id=TEST_USER_ID, nric='010101-01-1234',
+            name='Original Name', school='Original School',
         )
         # Update with sync
         response = self.client.post(
@@ -161,11 +164,10 @@ class TestProtectedEndpointsAcceptAuth(TestCase):
         self.assertEqual(get_resp.data['school'], 'Original School')
 
     def test_profile_put_accepts_name_school(self):
-        # Create profile
-        self.client.post(
-            '/api/v1/profile/sync/',
-            {'name': 'Test'},
-            format='json',
+        # Create profile with NRIC
+        StudentProfile.objects.create(
+            supabase_user_id=TEST_USER_ID, nric='010101-01-1234',
+            name='Test',
         )
         # Update via PUT
         response = self.client.put(

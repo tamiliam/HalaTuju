@@ -158,10 +158,12 @@ class SupabaseIsAuthenticated(BasePermission):
 
 
 # Endpoints that work without NRIC (identity establishment + admin)
-NRIC_GATE_WHITELIST = [
+# Exact-match paths checked with == ; prefix-match paths checked with startswith
+NRIC_GATE_EXACT = [
     '/api/v1/profile/',           # GET to check NRIC status
     '/api/v1/profile/claim-nric/',# POST to claim NRIC
-    '/api/v1/profile/sync/',      # POST to sync after NRIC claim
+]
+NRIC_GATE_PREFIX = [
     '/api/v1/admin/',             # All admin endpoints (prefix match)
 ]
 
@@ -185,9 +187,13 @@ class NricGateMiddleware:
         if supabase_user.get('is_anonymous', False):
             return self.get_response(request)
 
-        # Skip whitelisted paths
+        # Skip whitelisted paths (exact match)
         path = request.path
-        for allowed in NRIC_GATE_WHITELIST:
+        if path in NRIC_GATE_EXACT:
+            return self.get_response(request)
+
+        # Skip whitelisted paths (prefix match)
+        for allowed in NRIC_GATE_PREFIX:
             if path.startswith(allowed):
                 return self.get_response(request)
 

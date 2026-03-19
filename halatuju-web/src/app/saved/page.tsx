@@ -44,7 +44,7 @@ export default function SavedPage() {
   const { t, locale } = useT()
   const router = useRouter()
   const { getFieldName } = useFieldTaxonomy(locale)
-  const { ready: onboarded, loading: guardLoading } = useOnboardingGuard()
+  const { ready: onboarded, loading: guardLoading, needsNric } = useOnboardingGuard()
   const { token, isAuthenticated, isLoading: authLoading } = useAuth()
   const { showToast } = useToast()
   const [courses, setCourses] = useState<SavedCourseWithStatus[]>([])
@@ -239,10 +239,13 @@ export default function SavedPage() {
 
   // Redirect to onboarding if guard resolves with no grades
   useEffect(() => {
-    if (!guardLoading && !onboarded) {
+    if (guardLoading) return
+    if (needsNric) {
+      router.replace('/onboarding/ic')
+    } else if (!onboarded) {
       router.replace('/onboarding/exam-type')
     }
-  }, [guardLoading, onboarded, router])
+  }, [guardLoading, onboarded, needsNric, router])
 
   return (
     <main className="min-h-screen bg-gray-50">

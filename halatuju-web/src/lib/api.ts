@@ -525,6 +525,10 @@ export interface SyncProfileData {
   school?: string
   nric?: string
   referral_source?: string
+  exam_type?: string
+  stpm_grades?: Record<string, string>
+  stpm_cgpa?: number
+  muet_band?: number
 }
 
 export async function syncProfile(

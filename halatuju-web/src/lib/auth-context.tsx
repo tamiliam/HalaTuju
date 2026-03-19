@@ -30,6 +30,7 @@ interface AuthContextValue {
   hasSession: boolean       // true = has any session (including anonymous)
   status: AuthStatus
   profile: StudentProfile | null
+  refreshProfile: () => Promise<void>
   authGateReason: AuthGateReason
   authGateCourseId: string | null
   showAuthGate: (reason: NonNullable<AuthGateReason>, options?: AuthGateOptions) => void
@@ -105,6 +106,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthGateCourseId(null)
   }, [])
 
+  const refreshProfile = useCallback(async () => {
+    const tkn = session?.access_token
+    if (!tkn || session?.user?.is_anonymous) return
+    try {
+      const p = await getProfile({ token: tkn })
+      setProfile(p)
+      setHasIdentity(!!p.nric)
+    } catch {
+      // Ignore — profile may not exist yet
+    }
+  }, [session])
+
   // Listen for NRIC-required events from API layer
   useEffect(() => {
     const handler = () => showAuthGate('profile')
@@ -163,6 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hasSession: !!session,
     status,
     profile,
+    refreshProfile,
     authGateReason,
     authGateCourseId,
     showAuthGate,
