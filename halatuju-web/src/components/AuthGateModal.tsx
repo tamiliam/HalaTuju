@@ -6,7 +6,7 @@ import { signInWithPhone, verifyOTP, signInWithGoogle } from '@/lib/supabase'
 import { syncProfile, claimNric, type SyncProfileData } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
-import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE } from '@/lib/storage'
+import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
 import IcInput from './IcInput'
 import { validateIc } from '@/lib/ic-utils'
 
@@ -25,6 +25,7 @@ export default function AuthGateModal() {
     session,
     status,
     profile,
+    refreshProfile,
   } = useAuth()
 
   const [step, setStep] = useState<ModalStep>('login')
@@ -39,7 +40,7 @@ export default function AuthGateModal() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [existingName, setExistingName] = useState<string | null>(null)
 
-  // Reset when modal opens; if already authenticated (has NRIC), close immediately
+  // Reset when modal opens; if already authenticated (has NRIC), sync and resume
   useEffect(() => {
     if (authGateReason) {
       setPhone('')
@@ -53,8 +54,8 @@ export default function AuthGateModal() {
       setExistingName(null)
 
       if (isAuthenticated) {
-        // Already has identity — no gate needed, close immediately
-        hideAuthGate()
+        // Already has identity — sync localStorage to backend and resume action
+        handleReturningUser()
         return
       }
       setStep('login')
@@ -133,6 +134,14 @@ export default function AuthGateModal() {
       }
       const signals = localStorage.getItem(KEY_QUIZ_SIGNALS)
       if (signals) syncData.student_signals = JSON.parse(signals)
+      const examType = localStorage.getItem(KEY_EXAM_TYPE)
+      if (examType) syncData.exam_type = examType
+      const stpmGrades = localStorage.getItem(KEY_STPM_GRADES)
+      if (stpmGrades) syncData.stpm_grades = JSON.parse(stpmGrades)
+      const stpmCgpa = localStorage.getItem(KEY_STPM_CGPA)
+      if (stpmCgpa) syncData.stpm_cgpa = parseFloat(stpmCgpa)
+      const muetBand = localStorage.getItem(KEY_MUET_BAND)
+      if (muetBand) syncData.muet_band = parseInt(muetBand)
     } catch { /* ignore */ }
     if (name.trim()) syncData.name = name.trim()
     const ref = localStorage.getItem(KEY_REFERRAL_SOURCE)
@@ -151,6 +160,8 @@ export default function AuthGateModal() {
       localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'report' }))
     } else if (reason === 'eligible') {
       localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'eligible' }))
+    } else if (reason === 'loadmore') {
+      localStorage.setItem(KEY_RESUME_ACTION, JSON.stringify({ action: 'loadmore' }))
     }
     localStorage.removeItem(KEY_PENDING_AUTH_ACTION)
     hideAuthGate()
@@ -234,6 +245,7 @@ export default function AuthGateModal() {
 
       if (result.status === 'created' || result.status === 'linked') {
         await syncLocalStorageToBackend(token)
+        await refreshProfile()
         finishAndClose()
       } else if (result.status === 'exists') {
         setExistingName(result.name || null)
@@ -253,6 +265,7 @@ export default function AuthGateModal() {
     try {
       await claimNric(ic, true, { token })
       await syncLocalStorageToBackend(token)
+      await refreshProfile()
       finishAndClose()
     } catch {
       setError(t('authGate.claimError') || 'Failed to claim NRIC')

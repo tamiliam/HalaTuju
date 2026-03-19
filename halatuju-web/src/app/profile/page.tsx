@@ -258,11 +258,11 @@ export default function ProfilePage() {
   useEffect(() => {
     if (guardLoading) return
     if (needsNric) {
-      router.replace('/onboarding/ic')
+      showAuthGate('profile')
     } else if (!onboarded) {
       router.replace('/onboarding/exam-type')
     }
-  }, [guardLoading, onboarded, needsNric, router])
+  }, [guardLoading, onboarded, needsNric, showAuthGate, router])
 
   if (authLoading || loading || guardLoading) {
     return (

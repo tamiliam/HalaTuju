@@ -45,7 +45,7 @@ export default function SavedPage() {
   const router = useRouter()
   const { getFieldName } = useFieldTaxonomy(locale)
   const { ready: onboarded, loading: guardLoading, needsNric } = useOnboardingGuard()
-  const { token, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { token, isAuthenticated, isLoading: authLoading, showAuthGate } = useAuth()
   const { showToast } = useToast()
   const [courses, setCourses] = useState<SavedCourseWithStatus[]>([])
   const [loading, setLoading] = useState(true)
@@ -241,11 +241,11 @@ export default function SavedPage() {
   useEffect(() => {
     if (guardLoading) return
     if (needsNric) {
-      router.replace('/onboarding/ic')
+      showAuthGate('profile')
     } else if (!onboarded) {
       router.replace('/onboarding/exam-type')
     }
-  }, [guardLoading, onboarded, needsNric, router])
+  }, [guardLoading, onboarded, needsNric, showAuthGate, router])
 
   return (
     <main className="min-h-screen bg-gray-50">

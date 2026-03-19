@@ -302,7 +302,9 @@ export default function DashboardPage() {
       localStorage.removeItem(KEY_RESUME_ACTION)
       resumeHandledRef.current = true
 
-      if (action === 'report' && eligibilityData) {
+      if (action === 'loadmore') {
+        setDisplayCount(prev => prev + COURSE_PAGE_SIZE)
+      } else if (action === 'report' && eligibilityData) {
         setReportLoading(true)
         generateReport(eligibilityData.eligible_courses, eligibilityData.insights, 'bm', { token })
           .then(result => {
@@ -321,11 +323,11 @@ export default function DashboardPage() {
   useEffect(() => {
     if (guardLoading) return
     if (needsNric) {
-      router.replace('/onboarding/ic')
+      showAuthGate('profile')
     } else if (!onboarded) {
       router.replace('/onboarding/exam-type')
     }
-  }, [guardLoading, onboarded, needsNric, router])
+  }, [guardLoading, onboarded, needsNric, showAuthGate, router])
 
   if (isLoading || guardLoading) {
     return <LoadingScreen />

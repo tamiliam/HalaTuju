@@ -20,7 +20,7 @@ const MALAYSIAN_STATES = [
 export default function ProfileInputPage() {
   const router = useRouter()
   const { t } = useT()
-  const { token, refreshProfile } = useAuth()
+  const { token, isAnonymous, refreshProfile } = useAuth()
   const [gender, setGender] = useState<string>('')
   const [nationality, setNationality] = useState<string>('malaysian')
   const [state, setState] = useState<string>('')
@@ -38,7 +38,7 @@ export default function ProfileInputPage() {
       if (parsed.disability !== undefined) setDisability(parsed.disability)
     }
 
-    if (token) {
+    if (token && !isAnonymous) {
       getProfile({ token }).then(p => {
         if (p.preferred_state) setState(p.preferred_state)
         if (p.gender) setGender(p.gender)
@@ -47,7 +47,7 @@ export default function ProfileInputPage() {
         if (p.disability !== undefined) setDisability(!!p.disability)
       }).catch(() => {})
     }
-  }, [token])
+  }, [token, isAnonymous])
 
   const isComplete = gender !== ''
 
@@ -67,7 +67,7 @@ export default function ProfileInputPage() {
     }
     localStorage.setItem(KEY_PROFILE, JSON.stringify(profileData))
 
-    if (token) {
+    if (token && !isAnonymous) {
       // Build sync payload including grades from localStorage
       const syncPayload: SyncProfileData = {
         gender,
