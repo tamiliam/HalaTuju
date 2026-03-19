@@ -68,7 +68,7 @@ function FieldLabel({ label, empty }: { label: string; empty: boolean }) {
 export default function ProfilePage() {
   const router = useRouter()
   const { t, locale } = useT()
-  const { ready: onboarded } = useOnboardingGuard()
+  const { ready: onboarded, loading: guardLoading } = useOnboardingGuard()
   const { session, token, isAuthenticated, isLoading: authLoading, showAuthGate } = useAuth()
   const { showToast } = useToast()
 
@@ -254,7 +254,14 @@ export default function ProfilePage() {
   const familyIncomplete = countIncomplete([familyIncome, siblings])
   const appIncomplete = countIncomplete([angkaGiliran])
 
-  if (authLoading || loading || !onboarded) {
+  // Redirect to onboarding if guard resolves with no grades
+  useEffect(() => {
+    if (!guardLoading && !onboarded) {
+      router.replace('/onboarding/exam-type')
+    }
+  }, [guardLoading, onboarded, router])
+
+  if (authLoading || loading || guardLoading) {
     return (
       <>
         <AppHeader />

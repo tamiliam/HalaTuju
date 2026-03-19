@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   getSavedCourses,
@@ -41,8 +42,9 @@ interface CompareData {
 
 export default function SavedPage() {
   const { t, locale } = useT()
+  const router = useRouter()
   const { getFieldName } = useFieldTaxonomy(locale)
-  const { ready: onboarded } = useOnboardingGuard()
+  const { ready: onboarded, loading: guardLoading } = useOnboardingGuard()
   const { token, isAuthenticated, isLoading: authLoading } = useAuth()
   const { showToast } = useToast()
   const [courses, setCourses] = useState<SavedCourseWithStatus[]>([])
@@ -235,18 +237,25 @@ export default function SavedPage() {
     { label: 'Merit', key: 'merit' },
   ]
 
+  // Redirect to onboarding if guard resolves with no grades
+  useEffect(() => {
+    if (!guardLoading && !onboarded) {
+      router.replace('/onboarding/exam-type')
+    }
+  }, [guardLoading, onboarded, router])
+
   return (
     <main className="min-h-screen bg-gray-50">
       <AppHeader />
 
       <div className="container mx-auto px-6 py-8">
-        {(loading || !onboarded) && (
+        {(loading || guardLoading) && (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent" />
           </div>
         )}
 
-        {!loading && onboarded && !isAuthenticated && (
+        {!loading && !guardLoading && onboarded && !isAuthenticated && (
           <div className="text-center py-12">
             <p className="text-gray-600 mb-4">{t('saved.signInPrompt')}</p>
             <Link href="/login" className="btn-primary">{t('saved.signIn')}</Link>
