@@ -1,80 +1,50 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSession } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
-import { KEY_GRADES, KEY_STPM_GRADES } from '@/lib/storage'
-import { useT } from '@/lib/i18n'
+import { KEY_PENDING_AUTH_ACTION, KEY_GRADES } from '@/lib/storage'
 
-export default function AuthCallbackPage() {
+export default function AuthCallback() {
   const router = useRouter()
-  const { t } = useT()
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const checkSession = async () => {
-      // Small delay to let Supabase process the callback
-      await new Promise(resolve => setTimeout(resolve, 500))
+    const handle = async () => {
+      // Small delay to let Supabase process the OAuth callback
+      await new Promise(r => setTimeout(r, 500))
+      const { session } = await getSession()
+      if (!session) { router.replace('/'); return }
 
-      const { session, error } = await getSession()
-      if (error) {
-        setError(error.message)
+      // Check for pending auth action (from AuthGateModal Google flow)
+      const pending = localStorage.getItem(KEY_PENDING_AUTH_ACTION)
+      if (pending) {
+        // Go back — AuthProvider will detect session + pending action
+        // and re-open the auth gate at the right step
+        const hasGrades = localStorage.getItem(KEY_GRADES)
+        router.replace(hasGrades ? '/dashboard' : '/')
         return
       }
-      if (!session) {
-        setError(t('errors.authFailed'))
-        return
-      }
 
-      // Check if user has a backend profile with NRIC
-      const token = session.access_token
-      let hasNric = false
+      // Direct login (not from auth gate) — check NRIC
       try {
-        const profile = await getProfile({ token })
-        hasNric = !!profile.nric
+        const profile = await getProfile({ token: session.access_token })
+        if (profile.nric) {
+          const hasGrades = localStorage.getItem(KEY_GRADES)
+          router.replace(hasGrades ? '/dashboard' : '/onboarding/exam-type')
+        } else {
+          router.replace('/onboarding/ic')
+        }
       } catch {
-        // No profile yet — treat as new user
-      }
-
-      if (!hasNric) {
-        // New user or missing NRIC → collect IC first
         router.replace('/onboarding/ic')
-        return
       }
-
-      // Returning user with NRIC — check if they have onboarding data
-      const hasGrades =
-        localStorage.getItem(KEY_GRADES) || localStorage.getItem(KEY_STPM_GRADES)
-      if (!hasGrades) {
-        router.replace('/onboarding/exam-type')
-        return
-      }
-
-      // Fully set up — go to dashboard
-      router.replace('/dashboard')
     }
-
-    checkSession()
+    handle()
   }, [router])
 
-  if (error) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <a href="/login" className="btn-primary">{t('login.backToLogin')}</a>
-        </div>
-      </main>
-    )
-  }
-
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary-50 to-white">
-      <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent mb-4" />
-        <p className="text-gray-600">{t('login.completingSignIn')}</p>
-      </div>
-    </main>
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-gray-500">Redirecting...</div>
+    </div>
   )
 }
