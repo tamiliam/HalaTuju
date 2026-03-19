@@ -25,7 +25,7 @@ import AppFooter from '@/components/AppFooter'
 import { useT } from '@/lib/i18n'
 import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
 import { useToast } from '@/components/Toast'
-import { KEY_RESUME_ACTION, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_PROFILE, KEY_GRADES, KEY_MERIT, KEY_QUIZ_SIGNALS, KEY_REPORT_GENERATED, KEY_STPM_QUIZ_SIGNALS } from '@/lib/storage'
+import { KEY_RESUME_ACTION, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_PROFILE, KEY_GRADES, KEY_MERIT, KEY_QUIZ_SIGNALS, KEY_REPORT_GENERATED, KEY_STPM_QUIZ_SIGNALS, COURSE_PAGE_SIZE } from '@/lib/storage'
 import type { StpmResultFraming } from '@/lib/api'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 
@@ -54,7 +54,7 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
-  const [displayCount, setDisplayCount] = useState(6)
+  const [displayCount, setDisplayCount] = useState(COURSE_PAGE_SIZE)
   const [quizSignals, setQuizSignals] = useState<Record<string, Record<string, number>> | null>(null)
   const [reportLoading, setReportLoading] = useState(false)
   const [reportError, setReportError] = useState(false)
@@ -467,7 +467,7 @@ export default function DashboardPage() {
             activeFilter={filter}
             onFilterChange={(type) => {
               setFilter(type)
-              setDisplayCount(isAuthenticated ? 20 : 6)
+              setDisplayCount(COURSE_PAGE_SIZE)
             }}
           />
         )}
@@ -548,7 +548,7 @@ export default function DashboardPage() {
                     className="btn-secondary"
                     onClick={() => {
                       if (!isAuthenticated) { showAuthGate('loadmore'); return }
-                      setDisplayCount(displayCount + 6)
+                      setDisplayCount(displayCount + COURSE_PAGE_SIZE)
                     }}
                   >
                     {t('dashboard.loadMore')} ({remaining} {t('dashboard.remaining')})
@@ -730,7 +730,7 @@ function StpmDashboardCards({
             className="btn-secondary"
             onClick={() => {
               if (onLoadMoreGate?.()) return
-              setDisplayCount((prev: number) => prev + 6)
+              setDisplayCount((prev: number) => prev + COURSE_PAGE_SIZE)
             }}
           >
             {t('dashboard.loadMore')} ({remaining} {t('dashboard.remaining')})
@@ -823,7 +823,7 @@ function RankedResults({
                 className="btn-secondary"
                 onClick={() => {
                   if (onLoadMoreGate?.()) return
-                  setDisplayCount(displayCount + 6)
+                  setDisplayCount(displayCount + COURSE_PAGE_SIZE)
                 }}
               >
                 {t('dashboard.loadMore')} ({remaining} {t('dashboard.remaining')})

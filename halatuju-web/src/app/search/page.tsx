@@ -12,9 +12,7 @@ import { useSavedCourses } from '@/hooks/useSavedCourses'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import clsx from 'clsx'
 import { useT } from '@/lib/i18n'
-import { KEY_PROFILE, KEY_GRADES, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_RESUME_ACTION, hasGrades } from '@/lib/storage'
-
-const PAGE_SIZE = 6
+import { KEY_PROFILE, KEY_GRADES, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_RESUME_ACTION, hasGrades, COURSE_PAGE_SIZE } from '@/lib/storage'
 
 export default function SearchPage() {
   return (
@@ -51,7 +49,7 @@ function SearchPageInner() {
   const [sourceType, setSourceType] = useState(searchParams.get('type') || '')
   const [state, setState] = useState(searchParams.get('state') || '')
   const [qualification, setQualification] = useState(searchParams.get('qualification') || '')
-  const [displayCount, setDisplayCount] = useState(PAGE_SIZE)
+  const [displayCount, setDisplayCount] = useState(COURSE_PAGE_SIZE)
 
   // Eligible toggle
   const [eligibleOnly, setEligibleOnly] = useState(false)
@@ -226,7 +224,7 @@ function SearchPageInner() {
 
   // Reset display count when filters change
   useEffect(() => {
-    setDisplayCount(PAGE_SIZE)
+    setDisplayCount(COURSE_PAGE_SIZE)
   }, [debouncedQuery, level, field, sourceType, state, qualification, eligibleOnly])
 
   // Apply eligible filter client-side
@@ -473,7 +471,7 @@ function SearchPageInner() {
                   className="btn-secondary"
                   onClick={() => {
                     if (!isAuthenticated) { showAuthGate('loadmore'); return }
-                    setDisplayCount(displayCount + PAGE_SIZE)
+                    setDisplayCount(displayCount + COURSE_PAGE_SIZE)
                   }}
                 >
                   {t('search.loadMore')} ({remaining} {t('search.remaining')})

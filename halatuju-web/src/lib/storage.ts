@@ -76,6 +76,11 @@ export const KEY_STPM_QUIZ_SIGNALS = 'halatuju_stpm_quiz_signals'
 /** STPM quiz branch: 'science' | 'arts' | 'mixed' */
 export const KEY_STPM_QUIZ_BRANCH = 'halatuju_stpm_quiz_branch'
 
+// ── Display constants ────────────────────────────────────────────────
+
+/** Number of course cards shown initially (anon and logged-in). Anon users hit auth gate on "Load More". */
+export const COURSE_PAGE_SIZE = 9
+
 // ── Helpers ──────────────────────────────────────────────────────────
 
 /** Remove all halatuju_* keys from localStorage. */
