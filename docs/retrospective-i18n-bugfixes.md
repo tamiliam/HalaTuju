@@ -32,6 +32,11 @@
    - *Root cause*: Didn't trace the full data flow (backend → API → frontend → localStorage → dashboard → API) before starting. Each push fixed one segment and revealed the next.
    - *Fix*: Before fixing a data-flow bug, draw the full pipeline on paper (or in a comment). Identify every touchpoint. Fix them all in one commit.
 
+4. **Recorded the migration but never applied the DDL.**
+   - *Symptom*: After all frontend/backend/localStorage fixes were deployed, all 222 poly/kkom/tvet courses were missing from the dashboard. ILJTM and ILKBS pathways showed 0 courses.
+   - *Root cause*: Migration 0046 was inserted into `django_migrations` via raw SQL (to bypass `InconsistentMigrationHistory`), but the actual `ALTER TABLE` to change `colorblind`/`disability` from VARCHAR to BOOLEAN was never executed. The columns remained VARCHAR. Django's BooleanField read the VARCHAR string `"Tidak"` as truthy → `True`. Every course with `no_disability=true` (all poly, kkom, tvet) failed eligibility for every student.
+   - *Fix*: Applied the DDL directly: add temp boolean columns, convert data ("Tidak"→false, "Ya"→true), drop old VARCHAR columns, rename. Verify column types match the Django model AFTER applying migrations via raw SQL — never trust the `django_migrations` record alone.
+
 ## Design Decisions
 
 1. **localStorage as disposable cache**: `restoreProfileToLocalStorage()` always overwrites from Supabase on login. No conditional writes. Logout (`clearAll()`) wipes everything. This is the canonical architecture — Supabase is authoritative, localStorage is a performance cache.
@@ -44,4 +49,5 @@
 - Tests: 932 pass, 0 fail
 - Golden masters: SPM 5319, STPM 2026 (unchanged)
 - Supabase migration: 0046 applied (data converted in-place)
-- Deploys: 3 (should have been 1)
+- Deploys: 3 (should have been 1) + 1 direct DB fix
+- Post-deploy DB fix: VARCHAR→BOOLEAN column conversion (19 profiles corrected)
