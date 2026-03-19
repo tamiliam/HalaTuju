@@ -57,20 +57,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           session = data?.session ?? null
         }
         setSession(session ?? null)
-        setIsLoading(false)
 
         // Check identity (NRIC) for non-anonymous users
         if (session?.access_token && !session.user?.is_anonymous) {
-          getProfile({ token: session.access_token }).then(p => {
+          try {
+            const p = await getProfile({ token: session.access_token })
             setProfile(p)
             setHasIdentity(!!p.nric)
-          }).catch(() => {
+          } catch {
             setProfile(null)
             setHasIdentity(false)
-          })
+          }
         } else {
           setHasIdentity(false)
         }
+        setIsLoading(false)
       })
       .catch(() => setIsLoading(false))
 

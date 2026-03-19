@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
 import IcInput from './IcInput'
-import { validateIc } from '@/lib/ic-utils'
+import { validateIc, formatIc } from '@/lib/ic-utils'
 
 type ModalStep = 'login' | 'otp' | 'ic'
 
@@ -240,8 +240,9 @@ export default function AuthGateModal() {
     setLoading(true)
     setError(null)
 
+    const formattedIc = formatIc(ic)
     try {
-      const result = await claimNric(ic, false, { token })
+      const result = await claimNric(formattedIc, false, { token })
 
       if (result.status === 'created' || result.status === 'linked') {
         await syncLocalStorageToBackend(token)
@@ -253,7 +254,7 @@ export default function AuthGateModal() {
         setLoading(false)
       }
     } catch {
-      setError(t('authGate.icError') || 'Failed to verify NRIC')
+      setError(t('authGate.icError') !== 'authGate.icError' ? t('authGate.icError') : 'Failed to verify NRIC')
       setLoading(false)
     }
   }
@@ -263,7 +264,7 @@ export default function AuthGateModal() {
     setLoading(true)
     setError(null)
     try {
-      await claimNric(ic, true, { token })
+      await claimNric(formatIc(ic), true, { token })
       await syncLocalStorageToBackend(token)
       await refreshProfile()
       finishAndClose()
