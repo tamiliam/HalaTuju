@@ -21,7 +21,7 @@ export default function LandingPage() {
           <Link href="/about" className="hidden sm:inline text-gray-600 hover:text-gray-900">
             {t('common.about')}
           </Link>
-          <Link href="/login" className="btn-primary">
+          <Link href="/login" className="btn-primary px-4 py-2 text-sm whitespace-nowrap">
             {t('common.getStarted')}
           </Link>
         </div>
