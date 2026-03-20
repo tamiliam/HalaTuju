@@ -350,5 +350,40 @@ def generate_report(grades, eligible_courses, insights,
             logger.warning(f'Generation failed with {model_name}: {e}')
             continue
 
-    logger.error(f'All Gemini models failed. Last error: {last_error}')
+    logger.warning(f'All Gemini models failed. Last error: {last_error}')
+
+    # OpenAI fallback — try after Gemini cascade exhausted
+    openai_key = getattr(settings, 'OPENAI_API_KEY', '')
+    if openai_key:
+        try:
+            from openai import OpenAI
+        except ImportError:
+            logger.error('openai package not installed')
+            return {'error': f'All AI models failed: {last_error}'}
+
+        try:
+            openai_client = OpenAI(api_key=openai_key)
+            start_ms = time.time()
+            completion = openai_client.chat.completions.create(
+                model='gpt-4o-mini',
+                messages=[{'role': 'user', 'content': full_prompt}],
+                temperature=0.7,
+                max_tokens=4096,
+            )
+            elapsed_ms = int((time.time() - start_ms) * 1000)
+            text = completion.choices[0].message.content
+            logger.info(
+                f'Report generated with gpt-4o-mini (OpenAI fallback) '
+                f'in {elapsed_ms}ms ({len(text)} chars)'
+            )
+            return {
+                'markdown': text,
+                'model_used': 'gpt-4o-mini',
+                'generation_time_ms': elapsed_ms,
+            }
+        except Exception as e:
+            logger.error(f'OpenAI fallback also failed: {e}')
+            last_error = str(e)
+
+    logger.error(f'All AI models failed. Last error: {last_error}')
     return {'error': f'All AI models failed: {last_error}'}

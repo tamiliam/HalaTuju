@@ -275,6 +275,85 @@ class TestGenerateReport(TestCase):
         self.assertGreaterEqual(call_count[0], 2)
 
 
+class TestOpenAIFallback(TestCase):
+    """Test OpenAI fallback when all Gemini models fail."""
+
+    @patch('apps.reports.report_engine.settings')
+    def test_openai_fallback_skipped_when_no_key(self, mock_settings):
+        """When OPENAI_API_KEY is empty, returns Gemini error without trying OpenAI."""
+        mock_settings.GEMINI_API_KEY = ''
+        mock_settings.OPENAI_API_KEY = ''
+
+        result = generate_report(
+            grades=SAMPLE_GRADES,
+            eligible_courses=SAMPLE_COURSES,
+            insights=SAMPLE_INSIGHTS,
+        )
+        self.assertIn('error', result)
+
+    @patch('openai.OpenAI')
+    @patch('google.genai.Client')
+    @patch('apps.reports.report_engine.settings')
+    def test_openai_fallback_on_gemini_failure(self, mock_settings, mock_genai_cls, mock_openai_cls):
+        """When all Gemini models fail, OpenAI fallback is used."""
+        mock_settings.GEMINI_API_KEY = 'test-gemini-key'
+        mock_settings.OPENAI_API_KEY = 'test-openai-key'
+
+        # Gemini always fails
+        mock_genai_client = MagicMock()
+        mock_genai_client.models.generate_content.side_effect = Exception('Gemini down')
+        mock_genai_cls.return_value = mock_genai_client
+
+        # OpenAI succeeds
+        mock_message = MagicMock()
+        mock_message.content = 'Report from OpenAI fallback.'
+        mock_choice = MagicMock()
+        mock_choice.message = mock_message
+        mock_completion = MagicMock()
+        mock_completion.choices = [mock_choice]
+
+        mock_openai_client = MagicMock()
+        mock_openai_client.chat.completions.create.return_value = mock_completion
+        mock_openai_cls.return_value = mock_openai_client
+
+        result = generate_report(
+            grades=SAMPLE_GRADES,
+            eligible_courses=SAMPLE_COURSES,
+            insights=SAMPLE_INSIGHTS,
+            lang='bm',
+        )
+
+        self.assertIn('markdown', result)
+        self.assertEqual(result['markdown'], 'Report from OpenAI fallback.')
+        self.assertEqual(result['model_used'], 'gpt-4o-mini')
+        self.assertNotIn('error', result)
+
+    @patch('openai.OpenAI')
+    @patch('google.genai.Client')
+    @patch('apps.reports.report_engine.settings')
+    def test_both_gemini_and_openai_fail(self, mock_settings, mock_genai_cls, mock_openai_cls):
+        """When both Gemini and OpenAI fail, returns error."""
+        mock_settings.GEMINI_API_KEY = 'test-gemini-key'
+        mock_settings.OPENAI_API_KEY = 'test-openai-key'
+
+        mock_genai_client = MagicMock()
+        mock_genai_client.models.generate_content.side_effect = Exception('Gemini down')
+        mock_genai_cls.return_value = mock_genai_client
+
+        mock_openai_client = MagicMock()
+        mock_openai_client.chat.completions.create.side_effect = Exception('OpenAI down')
+        mock_openai_cls.return_value = mock_openai_client
+
+        result = generate_report(
+            grades=SAMPLE_GRADES,
+            eligible_courses=SAMPLE_COURSES,
+            insights=SAMPLE_INSIGHTS,
+        )
+
+        self.assertIn('error', result)
+        self.assertIn('OpenAI down', result['error'])
+
+
 class TestStpmPrompt(TestCase):
     """Test STPM prompt templates."""
 

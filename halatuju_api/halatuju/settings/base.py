@@ -105,8 +105,9 @@ SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
 SUPABASE_JWT_SECRET = os.environ.get('SUPABASE_JWT_SECRET', '')
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
 
-# Gemini API for AI reports
+# AI APIs for reports
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 
 # Logging configuration (structured JSON for Cloud Run)
 LOGGING = {
