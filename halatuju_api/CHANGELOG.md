@@ -1,5 +1,13 @@
 # Changelog
 
+## W8 Part 1: Institution Modifiers Sprint — 2026-03-20
+
+### Added
+- **W8 Part 1: Institution modifiers populated** — `derive_institution_modifiers` management command. Derives `urban` (boolean) and `cultural_safety_net` ("high"/"low") from state and address data. Applied to all 838 production institutions: 171 urban, 438 high safety net. Activates previously inert `income_risk_tolerant` (+2 urban) and `proximity_priority` (+4/-2 safety net) quiz signals. 31 tests.
+
+### Changed
+- Test count: 966 → 997
+
 ## W14+W21 Ranking Tiebreak & Science Tracks Sprint — 2026-03-20
 
 ### Added
