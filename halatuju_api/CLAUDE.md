@@ -87,7 +87,8 @@ gcloud run deploy halatuju-web --source . --region asia-southeast1 --project gen
 - `CORS_ALLOWED_ORIGINS`
 - `SUPABASE_JWT_SECRET` — HS256 secret for legacy anon/service key JWTs
 - `SUPABASE_URL` — e.g. `https://pbrrlyoyyiftckqvzvvo.supabase.co` (needed for ES256 JWKS verification)
-- `GEMINI_API_KEY` — Google Gemini API key for AI report generation
+- `GEMINI_API_KEY` — Google Gemini API key for AI report generation (primary)
+- `OPENAI_API_KEY` — OpenAI API key for report generation (fallback when all Gemini models fail)
 
 **Frontend (halatuju-web)**:
 - `NEXT_PUBLIC_API_URL` — Backend API URL
