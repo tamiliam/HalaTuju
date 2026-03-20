@@ -470,7 +470,10 @@ function SearchPageInner() {
                 <button
                   className="btn-secondary"
                   onClick={() => {
-                    if (!isAuthenticated) { showAuthGate('loadmore'); return }
+                    if (!isAuthenticated) {
+                      if (!hasGrades()) { router.push('/onboarding/exam-type'); return }
+                      showAuthGate('loadmore'); return
+                    }
                     setDisplayCount(displayCount + COURSE_PAGE_SIZE)
                   }}
                 >

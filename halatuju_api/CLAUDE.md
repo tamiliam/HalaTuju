@@ -221,75 +221,17 @@ Supabase Security Advisor must show 0 errors before deploy.
 | `apps/reports/prompts.py` | SPM/STPM × BM/EN counselor report prompt templates | No |
 | `apps/reports/views.py` | Report API endpoints (generate, detail, list) | No |
 
-## Known Issues
+## Project Status
 
-- 87 offerings without tuition fee data (data not available in source CSVs)
+**v2.0 Released** (2026-03-20). Live at [halatuju.xyz](https://halatuju.xyz).
 
-## Next Sprint
+- 966 backend tests, 17 frontend tests, 0 failures
+- Golden masters: SPM=5319, STPM=2026
+- CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy)
+- Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-**Auth Flow Canonical Refactor COMPLETE (2026-03-20)**
-- AuthProvider is the single routing authority — `status: 'loading' | 'anonymous' | 'needs-nric' | 'ready'` + `profile: StudentProfile | null`
-- localStorage is write-only cache — AuthProvider fetches from API, writes cache as side effect, routing never reads localStorage
-- Callback page simplified to ~20 lines (just establishes session, redirects to `/dashboard`)
-- AuthGateModal reads `status`/`profile` from context, no more `getProfile()` calls
-- useOnboardingGuard reads AuthProvider, not localStorage
-- IC page, dashboard, saved, profile pages all use AuthProvider status
-- `profile-restore.ts` deleted — AuthProvider handles caching
-- STPM fields added to `StudentProfile` TypeScript interface (`exam_type`, `stpm_grades`, `stpm_cgpa`, `muet_band`)
-- Rules of Hooks crash fixed (useEffect before early return in AuthGateModal)
+## Known Issues & Future Work
 
-**Current state:** 966 backend tests, 17 frontend tests, 0 failures. Golden masters: SPM=5319, STPM=2026.
-**Manual step needed before deploy**: Enable "Anonymous Sign-Ins" + "Manual Linking" in Supabase Dashboard → Authentication → Providers.
-
-**Next: User Testing & Phone Login Sprint**
-- Enable anonymous sign-in in Supabase dashboard (required for NRIC gate)
-- User testing with real students through new auth flow
-- Phone/OTP login implementation (currently Google only)
-- Test account recovery flow (new Google → existing NRIC)
-- Mobile testing across auth gate + IC step
-
-**Pending work (parked)**
-- **Ranking improvements** (full audit: `docs/2026-03-18-ranking-audit.md`)
-  - ~~W4: PISMP course tags~~ — **DONE** (2026-03-19). 73 PISMP courses backfilled via `backfill_pismp_tags` command + SQL. 12 specialisations mapped (Sains→lab, Jasmani→field, Muzik/Seni→workshop, Reka Bentuk→workshop+design, etc.). 33 tests added. Applied to production Supabase.
-  - ~~W7: Expand SPM FIELD_KEY_MAP~~ — **DONE** (2026-03-20). Added 7 field_keys to existing signals: kejururawatan+pergigian→field_health, sains-data→field_digital, kejuruteraan-am→field_mechanical+field_heavy_industry, komunikasi→field_creative, sains-fizikal→field_agriculture. 8 tests added. Remaining unmapped keys (pendidikan, bahasa, pengajian-islam, undang-undang, sains-sosial, umum) need new quiz questions — separate effort.
-  - W8: Institution modifiers + real proximity scoring — **separate sprint, 3 parts**: (1) Populate modifiers: zero institutions have modifiers today, but Institution model has lat/long, state, demographics — need a command to derive `urban` and `cultural_safety_net`. (2) Capture student location: add home state or lat/long to StudentProfile. (3) Real proximity scoring: `proximity_priority` quiz signal currently doesn't check actual distance — STPM pathway gives hardcoded +1, generic courses check `cultural_safety_net` (empty). Should calculate real distance from student to institution. Affects all SPM courses (±5 institution points completely inert) + makes proximity_priority meaningful.
-  - ~~W11: STPM stream as free pre-quiz signal~~ — **DONE** (2026-03-19). Backend `StpmRankingView` derives RIASEC seed from `stpm_subjects` via `calculate_riasec_seed()` when no quiz signals present. Frontend sends `stpm_subjects` (subject keys from grade input). Science students now see I-type programmes ranked higher; arts students see A-type higher. Post-quiz signals take precedence (not overwritten). 7 tests added.
-  - ~~W14: Richer STPM sort tie-breaking~~ — **DONE** (2026-03-20). Added 5-level sort hierarchy: score → university tier (research=3, comprehensive=2, focused=1) → min_cgpa competitiveness → difficulty_level → name. 5 tests added.
-  - W16: Audit STPM enrichment completeness — **RESOLVED**: production has 1,112/1,112 courses enriched (100%). Test fixtures don't have the data but production is fine. `efficacy_domain` is stored but not consumed by ranking formula — potential future enhancement.
-  - ~~W21: Add matric:sains and stpm:sains to TRACK_FIELD_MAP~~ — **DONE** (2026-03-20). Added `matric:sains` and `stpm:sains` mapping to `field_health` + `field_agriculture`. Science-track students with health/agriculture interest now get +3 field preference bonus. 3 tests added.
-- Report: MASCO career data in prompt, institution/location context (low priority)
-- Report: EN language selector in frontend
-- STPM Pipeline: test scrapers against live MOHE
-- Phone/OTP login (blocked — Twilio ~RM12/mo)
-- Grade modulation layer
-- Course detail page fixes from `docs/Course Detail Page.pdf`
-
-## Streamlit App (Legacy — migrating to Django API)
-
-**Root directory:** `./HalaTuju` (Streamlit), `./HalaTuju/halatuju_api` (Django API)
-
-### Critical Rules (Non-Negotiable)
-
-| Rule | What It Means |
-|------|---------------|
-| **Golden Master** | `src/engine.py` is sacred. Run `python -m unittest tests/test_golden_master.py` before AND after any change touching ranking or eligibility logic. |
-| **Data Integrity** | `requirements.csv` must align with `course_tags.json`. If unsure, run `python _tools/check_integrity.py`. |
-| **Data Discipline** | Do not create new CSVs. Append only to `data/courses.csv`. |
-
-### Common Commands (Streamlit)
-
-| Action | Command |
-|--------|---------|
-| Run App | `cd HalaTuju && streamlit run main.py` |
-| Run Golden Master Tests | `cd HalaTuju && python -m unittest tests/test_golden_master.py` |
-| Lint Code | `flake8 src/` |
-| Snapshot Data | `python _tools/snapshot_db.py` (run before mass edits) |
-
-### Coding Standards
-
-- **Type hints** on all new functions
-- **Absolute imports** (`from src.engine import ...`)
-- **Reasoning comments** for complex logic (ranking, penalties) — comment block-by-block
-- Deterministic correctness beats cleverness
+See `docs/roadmap.md` for the full list of known issues and planned future work.
 
 General rules (testing, deployment discipline, git, cleanup, British English) are in the workspace-level `CLAUDE.md`.

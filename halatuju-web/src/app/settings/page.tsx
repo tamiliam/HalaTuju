@@ -7,7 +7,7 @@ import LanguageSelector from '@/components/LanguageSelector'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 
-const VERSION = '1.33.0'
+const VERSION = '2.0.0'
 
 export default function SettingsPage() {
   const { t, locale } = useT()
