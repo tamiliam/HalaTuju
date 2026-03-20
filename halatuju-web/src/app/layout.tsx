@@ -13,11 +13,11 @@ const lexend = Lexend({
 
 export const metadata: Metadata = {
   title: 'HalaTuju — Cari Kursus Anda',
-  description: 'Masukkan keputusan SPM atau STPM anda dan temui 1,500+ kursus di universiti, politeknik dan TVET yang anda layak. Percuma.',
+  description: 'Masukkan keputusan SPM atau STPM anda dan temui 1,300+ kursus di universiti, politeknik dan TVET yang anda layak. Percuma.',
   keywords: ['SPM', 'STPM', 'course recommendation', 'Malaysia', 'education', 'university', 'polytechnic', 'degree', 'kursus', 'kelayakan'],
   openGraph: {
     title: 'HalaTuju — Cari Kursus Anda',
-    description: 'Masukkan keputusan SPM atau STPM anda dan temui 1,500+ kursus di universiti, politeknik dan TVET yang anda layak. Percuma.',
+    description: 'Masukkan keputusan SPM atau STPM anda dan temui 1,300+ kursus di universiti, politeknik dan TVET yang anda layak. Percuma.',
     url: 'https://halatuju.xyz',
     siteName: 'HalaTuju',
     locale: 'ms_MY',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'HalaTuju — Cari Kursus Anda',
-    description: 'Masukkan keputusan SPM atau STPM anda dan temui 1,500+ kursus di universiti, politeknik dan TVET yang anda layak. Percuma.',
+    description: 'Masukkan keputusan SPM atau STPM anda dan temui 1,300+ kursus di universiti, politeknik dan TVET yang anda layak. Percuma.',
     images: ['/og-image.png'],
   },
 }
