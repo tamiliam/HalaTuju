@@ -19,6 +19,7 @@ import logging
 from collections import Counter
 import requests as http_requests
 from django.conf import settings
+from django.db import connection
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -197,15 +198,38 @@ class PartnerStudentExportView(PartnerAdminMixin, APIView):
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
         writer = csv.writer(response)
-        writer.writerow(['Name', 'IC', 'Gender', 'State', 'Exam Type', 'Date Joined'])
+        writer.writerow(['Name', 'IC', 'Email', 'Gender', 'State', 'Exam Type', 'Date Joined'])
+
+        email_map = _fetch_auth_emails([s.supabase_user_id for s in students])
 
         for s in students:
             writer.writerow([
-                s.name, s.nric, s.gender, s.preferred_state,
+                s.name, s.nric, email_map.get(s.supabase_user_id, ''),
+                s.gender, s.preferred_state,
                 s.exam_type, s.created_at.strftime('%Y-%m-%d'),
             ])
 
         return response
+
+
+def _fetch_auth_emails(user_ids):
+    """Look up emails from Supabase Auth's auth.users table for the given Supabase user IDs.
+
+    Returns {supabase_user_id: email}. Missing IDs are omitted.
+    Failures are logged but never break the export.
+    """
+    if not user_ids:
+        return {}
+    try:
+        with connection.cursor() as cur:
+            cur.execute(
+                "SELECT id::text, email FROM auth.users WHERE id::text = ANY(%s)",
+                [list(user_ids)],
+            )
+            return {uid: email for uid, email in cur.fetchall() if email}
+    except Exception:
+        logger.exception('Failed to fetch auth.users emails for CSV export')
+        return {}
 
 
 class AdminInviteView(PartnerAdminMixin, APIView):

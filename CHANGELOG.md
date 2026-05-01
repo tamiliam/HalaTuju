@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Admin CSV Email Column (2026-05-02)
+
+### Added
+- **`Email` column in partner admin CSV export** (`/api/v1/admin/students/export/`). Emails are joined from Supabase Auth's `auth.users` table via raw SQL by `supabase_user_id`. Lets admins identify ghost-profile drop-offs (rows auto-created on auth but never filled in). Failures fall back to blank emails so the export never breaks.
+- **`apps/courses/tests/test_admin_export.py`** (4 tests): header column, per-row email join, missing-email blank, auth-table-missing fallback.
+
+---
+
 ## [2.0-rc] — 2026-03-20
 
 ### Added
