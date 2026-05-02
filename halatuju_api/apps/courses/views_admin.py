@@ -15,6 +15,7 @@ Endpoints:
 - GET/PUT /api/v1/admin/profile/ - View/edit own admin profile
 """
 import csv
+import json
 import logging
 from collections import Counter
 import requests as http_requests
@@ -193,29 +194,53 @@ class PartnerStudentExportView(PartnerAdminMixin, APIView):
         if students is None:
             return Response({'error': 'Not a partner admin'}, status=403)
 
+        students = students.select_related('referred_by_org')
+
         filename = f'{org.code}_students.csv' if org else 'all_students.csv'
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
         writer = csv.writer(response)
-        writer.writerow(['Name', 'IC', 'Email', 'Gender', 'State', 'Exam Type', 'Date Joined'])
+        writer.writerow([
+            'Name', 'IC', 'Angka Giliran', 'Email', 'Phone', 'School',
+            'Gender', 'Nationality',
+            'Address', 'Postal Code', 'City', 'State',
+            'Family Income', 'Siblings', 'Colorblind', 'Disability',
+            'Exam Type', 'SPM Grades', 'STPM Grades', 'STPM CGPA', 'MUET Band',
+            'Financial Pressure', 'Travel Willingness',
+            'Referral Source', 'Referred By Org',
+            'Date Joined', 'Last Sign-In',
+        ])
 
-        email_map = _fetch_auth_emails([s.supabase_user_id for s in students])
+        auth_data = _fetch_auth_data([s.supabase_user_id for s in students])
 
         for s in students:
+            ad = auth_data.get(s.supabase_user_id, {})
+            org_name = s.referred_by_org.name if s.referred_by_org_id else ''
             writer.writerow([
-                s.name, s.nric, email_map.get(s.supabase_user_id, ''),
-                s.gender, s.preferred_state,
-                s.exam_type, s.created_at.strftime('%Y-%m-%d'),
+                s.name, s.nric, s.angka_giliran, ad.get('email', ''),
+                s.phone, s.school,
+                s.gender, s.nationality,
+                s.address, s.postal_code, s.city, s.preferred_state,
+                s.family_income,
+                _fmt_int(s.siblings),
+                _fmt_bool(s.colorblind), _fmt_bool(s.disability),
+                s.exam_type,
+                _fmt_json(s.grades), _fmt_json(s.stpm_grades),
+                _fmt_num(s.stpm_cgpa), _fmt_int(s.muet_band),
+                s.financial_pressure, s.travel_willingness,
+                s.referral_source or '', org_name,
+                s.created_at.strftime('%Y-%m-%d'),
+                ad.get('last_sign_in', ''),
             ])
 
         return response
 
 
-def _fetch_auth_emails(user_ids):
-    """Look up emails from Supabase Auth's auth.users table for the given Supabase user IDs.
+def _fetch_auth_data(user_ids):
+    """Look up email + last_sign_in from Supabase Auth's auth.users for the given user IDs.
 
-    Returns {supabase_user_id: email}. Missing IDs are omitted.
+    Returns {supabase_user_id: {'email': str, 'last_sign_in': 'YYYY-MM-DD' or ''}}.
     Failures are logged but never break the export.
     """
     if not user_ids:
@@ -223,13 +248,39 @@ def _fetch_auth_emails(user_ids):
     try:
         with connection.cursor() as cur:
             cur.execute(
-                "SELECT id::text, email FROM auth.users WHERE id::text = ANY(%s)",
+                "SELECT id::text, email, to_char(last_sign_in_at, 'YYYY-MM-DD') "
+                "FROM auth.users WHERE id::text = ANY(%s)",
                 [list(user_ids)],
             )
-            return {uid: email for uid, email in cur.fetchall() if email}
+            return {
+                uid: {'email': email or '', 'last_sign_in': lsi or ''}
+                for uid, email, lsi in cur.fetchall()
+            }
     except Exception:
-        logger.exception('Failed to fetch auth.users emails for CSV export')
+        logger.exception('Failed to fetch auth.users data for CSV export')
         return {}
+
+
+def _fmt_bool(value):
+    if value is True:
+        return 'Yes'
+    if value is False:
+        return 'No'
+    return ''
+
+
+def _fmt_int(value):
+    return '' if value is None else str(value)
+
+
+def _fmt_num(value):
+    return '' if value is None else str(value)
+
+
+def _fmt_json(value):
+    if not value:
+        return ''
+    return json.dumps(value, ensure_ascii=False, separators=(',', ':'))
 
 
 class AdminInviteView(PartnerAdminMixin, APIView):

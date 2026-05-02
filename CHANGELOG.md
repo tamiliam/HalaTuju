@@ -5,11 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — Admin CSV Email Column (2026-05-02)
+## [Unreleased] — Admin CSV Full Field Set (2026-05-02)
+
+### Changed
+- **Partner admin CSV export expanded from 7 columns to 27** (`/api/v1/admin/students/export/`). Now carries every field admins see in the dashboard detail view: identity (Name, IC, Angka Giliran, Email, Phone, School), demographics (Gender, Nationality), address (Address, Postal Code, City, State), eligibility context (Family Income, Siblings, Colorblind, Disability), academic (Exam Type, SPM Grades, STPM Grades, STPM CGPA, MUET Band), preferences (Financial Pressure, Travel Willingness), attribution (Referral Source, Referred By Org), and timestamps (Date Joined, Last Sign-In).
+- `_fetch_auth_emails` → `_fetch_auth_data`: now fetches `last_sign_in_at` alongside `email` from `auth.users` in the same query.
+- Export queryset now uses `select_related('referred_by_org')` to avoid N+1 lookups for the org-name column.
 
 ### Added
-- **`Email` column in partner admin CSV export** (`/api/v1/admin/students/export/`). Emails are joined from Supabase Auth's `auth.users` table via raw SQL by `supabase_user_id`. Lets admins identify ghost-profile drop-offs (rows auto-created on auth but never filled in). Failures fall back to blank emails so the export never breaks.
-- **`apps/courses/tests/test_admin_export.py`** (4 tests): header column, per-row email join, missing-email blank, auth-table-missing fallback.
+- **`Email` and `Last Sign-In` columns** joined from Supabase Auth's `auth.users` by `supabase_user_id`. Anonymous-only users (no email or phone) appear as blank in those columns; everyone else has them populated.
+- JSON fields (SPM Grades, STPM Grades) are compactly stringified; empty `{}` renders as blank.
+- Booleans render as `Yes`/`No` for human readability.
+
+### Tests
+- 5 tests in `apps/courses/tests/test_admin_export.py`: full 27-column header, full SPM profile rendering, STPM-specific columns, ghost-row blank rendering, auth-query-failure fallback.
 
 ---
 
