@@ -14,7 +14,7 @@ export default function PrivacyPage() {
       <div className="container mx-auto px-6 py-8 max-w-2xl">
         <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('common.privacy')}</h1>
-          <p className="text-sm text-gray-500">Last updated: March 2026</p>
+          <p className="text-sm text-gray-500">Last updated: May 2026</p>
 
           <h2 className="text-lg font-semibold text-gray-900">Data We Collect</h2>
           <p className="text-gray-600">
@@ -34,6 +34,17 @@ export default function PrivacyPage() {
             Your data is used solely to generate personalised course recommendations
             and to track your application journey. We do not sell, share, or disclose
             your personal information to third parties.
+          </p>
+
+          <h2 className="text-lg font-semibold text-gray-900">Email Communications</h2>
+          <p className="text-gray-600">
+            From time to time, we may send you relevant follow-up emails about
+            opportunities and updates that match your profile &mdash; for example,
+            scholarship or assistance programmes, important changes to HalaTuju,
+            or invitations to participate in pilot initiatives. We will never
+            share your email address with third parties for unrelated marketing,
+            and you may unsubscribe at any time using the link at the bottom of
+            any such email.
           </p>
 
           <h2 className="text-lg font-semibold text-gray-900">Data Storage</h2>
