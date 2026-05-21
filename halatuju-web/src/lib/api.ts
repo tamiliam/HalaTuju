@@ -898,6 +898,26 @@ export async function calculatePathways(
 
 // ── Scholarship (B40 Assistance Programme) ──────────────────────────────
 
+export interface FundingNeed {
+  tuition_gap: number
+  laptop: number
+  hostel: number
+  transport: number
+  books: number
+  monthly_allowance: number
+  allowance_months: number
+  other: number
+  other_desc: string
+  total: number
+}
+
+export interface ApplicationCompleteness {
+  quiz_done: boolean
+  details_done: boolean
+  funding_done: boolean
+  complete: boolean
+}
+
 export interface ScholarshipApplication {
   id: number
   cohort_code: string
@@ -919,6 +939,12 @@ export interface ScholarshipApplication {
   acknowledged_at: string | null
   submitted_at: string
   updated_at: string
+  aspirations: string
+  plans: string
+  fears: string
+  justification: string
+  funding_need: FundingNeed | null
+  completeness: ApplicationCompleteness
   form_data: Record<string, unknown>
 }
 
@@ -938,4 +964,16 @@ export async function getMyScholarshipApplications(
   options?: ApiOptions
 ): Promise<{ total_count: number; applications: ScholarshipApplication[] }> {
   return apiRequest('/api/v1/scholarship/applications/', options)
+}
+
+export async function updateScholarshipDetails(
+  id: number,
+  payload: Record<string, unknown>,
+  options?: ApiOptions
+): Promise<ScholarshipApplication> {
+  return apiRequest(`/api/v1/scholarship/applications/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+    ...options,
+  })
 }

@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 4b (2026-05-21)
+
+Post-shortlist next-steps flow (frontend) — completes Sprint 4.
+
+### Added
+- **`ScholarshipNextSteps` component** — a 3-step checklist driven by the `completeness` block:
+  course quiz (links to the existing `/quiz`), about-you textareas, and a funding-need line-item
+  form with a live RM total. PATCHes to the Sprint 4a details endpoint; "all done" banner on completion.
+- Shortlisted applications on `/scholarship/apply` now render this flow (rejected/submitted keep
+  the status card).
+- `scholarship.ts` helpers: `fundingTotal`, `buildDetailsPayload`, `applicationToDetailsForm`,
+  `emptyDetailsForm`.
+- API: extended `ScholarshipApplication` type (`funding_need`, `completeness`, deeper-info) +
+  `updateScholarshipDetails()` PATCH.
+- i18n: `scholarship.nextSteps.*` in EN/MS/TA (819 keys, parity verified).
+
+### Tests
+- 5 new helper tests (frontend suite **35 pass**); check-i18n PASS; `next build` success.
+
+### Notes
+- Verified at compile + unit + i18n level; the PATCH round-trip + quiz-then-return flow need a
+  browser smoke test against a live backend before Phase 1 ships (existing carry-forward).
+
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 4a (2026-05-21)
 
 Post-shortlist data layer: funding need + deeper info + completeness (backend; frontend is 4b).

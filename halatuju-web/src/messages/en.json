@@ -392,6 +392,34 @@
         "income": "Please enter your combined monthly household income.",
         "generic": "Something went wrong submitting your application. You may have already applied, or applications may be closed. Please try again later."
       }
+    },
+    "nextSteps": {
+      "title": "You've been shortlisted!",
+      "intro": "Complete these steps so sponsors can consider you.",
+      "allDone": "All done — your profile is complete. Sponsors will be able to consider you.",
+      "step1Title": "1. Complete your course profile",
+      "step1Body": "Take the short quiz so we understand your interests and strengths.",
+      "step1Cta": "Take the quiz",
+      "step2Title": "2. Tell us about yourself",
+      "aspirations": "Your aspirations",
+      "justification": "Why you need assistance",
+      "plans": "Your study plans",
+      "fears": "Your concerns or worries",
+      "step3Title": "3. Your funding need",
+      "tuitionGap": "Tuition gap (RM)",
+      "laptop": "Laptop (RM)",
+      "hostel": "Hostel (RM)",
+      "transport": "Transport (RM)",
+      "books": "Books & stationery (RM)",
+      "other": "Other (RM)",
+      "monthlyAllowance": "Monthly allowance (RM)",
+      "allowanceMonths": "Number of months",
+      "otherDesc": "What is the 'other' amount for?",
+      "total": "Total funding need",
+      "save": "Save my details",
+      "saving": "Saving…",
+      "saved": "Saved.",
+      "saveError": "Could not save your details. Please try again."
     }
   },
   "authGate": {

@@ -3,9 +3,13 @@ import {
   profileToApplyDefaults,
   buildApplicationPayload,
   applyFormError,
+  fundingTotal,
+  emptyDetailsForm,
+  applicationToDetailsForm,
+  buildDetailsPayload,
   type ApplyFormState,
 } from '@/lib/scholarship'
-import type { StudentProfile } from '@/lib/api'
+import type { StudentProfile, ScholarshipApplication } from '@/lib/api'
 
 function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
   return {
@@ -99,5 +103,50 @@ describe('applyFormError', () => {
   })
   it('requires household income', () => {
     expect(applyFormError(baseForm({ householdIncome: '' }))).toBe('income')
+  })
+})
+
+describe('fundingTotal', () => {
+  it('sums line items plus allowance × months', () => {
+    const f = { ...emptyDetailsForm(), laptop: '2000', books: '500', monthlyAllowance: '300', allowanceMonths: '10', other: '200' }
+    expect(fundingTotal(f)).toBe(2000 + 500 + 3000 + 200)
+  })
+  it('treats blanks as zero', () => {
+    expect(fundingTotal(emptyDetailsForm())).toBe(0)
+  })
+})
+
+describe('buildDetailsPayload', () => {
+  it('maps form to snake_case with nested funding_need (trimmed)', () => {
+    const f = { ...emptyDetailsForm(), aspirations: '  be a teacher ', laptop: '2000', allowanceMonths: '10', monthlyAllowance: '300' }
+    const p = buildDetailsPayload(f) as { aspirations: string; funding_need: Record<string, number> }
+    expect(p.aspirations).toBe('be a teacher')
+    expect(p.funding_need.laptop).toBe(2000)
+    expect(p.funding_need.monthly_allowance).toBe(300)
+    expect(p.funding_need.allowance_months).toBe(10)
+  })
+})
+
+describe('applicationToDetailsForm', () => {
+  it('pre-fills from an application with a funding need (zeros blanked)', () => {
+    const app = {
+      aspirations: 'Teach', plans: '', fears: '', justification: 'Need help',
+      funding_need: {
+        tuition_gap: 0, laptop: 2000, hostel: 0, transport: 0, books: 0,
+        monthly_allowance: 300, allowance_months: 10, other: 0, other_desc: '', total: 5000,
+      },
+    } as unknown as ScholarshipApplication
+    const f = applicationToDetailsForm(app)
+    expect(f.aspirations).toBe('Teach')
+    expect(f.justification).toBe('Need help')
+    expect(f.laptop).toBe('2000')
+    expect(f.tuitionGap).toBe('')
+    expect(f.monthlyAllowance).toBe('300')
+  })
+  it('handles a null funding need', () => {
+    const app = { aspirations: '', plans: '', fears: '', justification: '', funding_need: null } as unknown as ScholarshipApplication
+    const f = applicationToDetailsForm(app)
+    expect(f.laptop).toBe('')
+    expect(f.aspirations).toBe('')
   })
 })

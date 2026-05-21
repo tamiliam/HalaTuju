@@ -392,6 +392,34 @@
         "income": "Sila masukkan jumlah pendapatan isi rumah bulanan anda.",
         "generic": "Sesuatu telah berlaku semasa menghantar permohonan anda. Mungkin anda telah memohon, atau permohonan telah ditutup. Sila cuba sebentar lagi."
       }
+    },
+    "nextSteps": {
+      "title": "Anda telah disenarai pendek!",
+      "intro": "Lengkapkan langkah-langkah ini supaya penaja boleh mempertimbangkan anda.",
+      "allDone": "Selesai — profil anda lengkap. Penaja kini boleh mempertimbangkan anda.",
+      "step1Title": "1. Lengkapkan profil kursus anda",
+      "step1Body": "Jawab kuiz ringkas supaya kami memahami minat dan kekuatan anda.",
+      "step1Cta": "Jawab kuiz",
+      "step2Title": "2. Ceritakan tentang diri anda",
+      "aspirations": "Cita-cita anda",
+      "justification": "Mengapa anda memerlukan bantuan",
+      "plans": "Rancangan pengajian anda",
+      "fears": "Kebimbangan anda",
+      "step3Title": "3. Keperluan kewangan anda",
+      "tuitionGap": "Jurang yuran pengajian (RM)",
+      "laptop": "Komputer riba (RM)",
+      "hostel": "Asrama (RM)",
+      "transport": "Pengangkutan (RM)",
+      "books": "Buku & alat tulis (RM)",
+      "other": "Lain-lain (RM)",
+      "monthlyAllowance": "Elaun bulanan (RM)",
+      "allowanceMonths": "Bilangan bulan",
+      "otherDesc": "Untuk apa jumlah 'lain-lain' itu?",
+      "total": "Jumlah keperluan kewangan",
+      "save": "Simpan butiran saya",
+      "saving": "Menyimpan…",
+      "saved": "Disimpan.",
+      "saveError": "Tidak dapat menyimpan butiran anda. Sila cuba lagi."
     }
   },
   "authGate": {

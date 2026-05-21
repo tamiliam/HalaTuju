@@ -252,11 +252,15 @@ it a charity, not SC-regulated P2P).
 - **Sprint 4a DONE:** `FundingNeed` model (OneToOne, computed total) + deeper-info fields +
   `PATCH` details endpoint (own, shortlisted-only) + `completeness` block on read. Migration 0003.
   Backend suite 1059 pass.
+- **Sprint 4b DONE (frontend):** `ScholarshipNextSteps` component — 3-step checklist (quiz gate →
+  `/quiz`, about-you, funding-need form with live total) driven by the `completeness` block; apply
+  page routes shortlisted apps to it; `updateScholarshipDetails` PATCH; EN/MS/TA i18n. 35 frontend
+  tests; `next build` clean.
 - **On branch `feature/b40-assistance` — NOT merged, NOT deployed.** Carry-forward before Phase 1
   ships: apply Supabase migrations (0001+0002+0003) + RLS; wire the fail-email scheduler (Cloud
-  Scheduler); browser smoke-test the apply OAuth round-trip.
-- **Next: Sprint 4b** (frontend) — next-steps checklist (incompleteness-badge), quiz-gate routing
-  to `/quiz`, and the funding/deeper-info form rendering the `completeness` block.
+  Scheduler); browser smoke-test the apply + details PATCH + quiz-return flows against a live backend.
+- **Next: Sprint 5** — document vault (Supabase private Storage) + referee + e-consent (PDPA,
+  guardian gate for minors).
 - **Gotcha:** PII source docs in `docs/scholarship/` (`*.pdf|xlsx|txt`) are gitignored — real
   student NRICs/names/financials. Never commit them.
 - **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing the feature branch does not. Keep

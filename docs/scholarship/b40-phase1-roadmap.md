@@ -43,10 +43,11 @@ deeper-info fields (aspirations/plans/fears/justification) + `PATCH` details end
 on the read serializer. Migration 0003. 11 tests; backend suite 1059 green. See
 `docs/retrospective-b40-sprint4a.md`.
 
-**Sprint 4b — frontend (TODO):** next-steps checklist (incompleteness-badge pattern) on the
-shortlisted state; quiz-gate routing to the existing `/quiz`; funding/deeper-info form (PATCH);
-i18n; tests. Returning quiz-completers skip the quiz step.
-- **Complexity:** Medium
+**Sprint 4b — frontend ✅ DONE (2026-05-21):** `ScholarshipNextSteps` component — 3-step checklist
+(quiz gate → existing `/quiz`, about-you textareas, funding-need form with live RM total) driven by
+the `completeness` block; apply page routes shortlisted apps to it; `updateScholarshipDetails` PATCH;
+EN/MS/TA i18n (819 keys). 5 helper tests (frontend suite 35); check-i18n + `next build` green. Not
+browser-smoke-tested against a live backend yet. See `docs/retrospective-b40-sprint4b.md`.
 
 ### Sprint 5 — Document vault + referee + e-consent (PDPA)
 - **Goal:** Students upload supporting docs and give written, age-appropriate consent.

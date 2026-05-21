@@ -15,6 +15,7 @@ import {
   PATHWAY_OPTIONS,
   type ApplyFormState,
 } from '@/lib/scholarship'
+import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
 
 export default function ScholarshipApplyPage() {
   const { t, locale } = useT()
@@ -117,6 +118,10 @@ export default function ScholarshipApplyPage() {
 
   if (submitted || existing) {
     const app = (submitted ?? existing)!
+    // Shortlisted applicants get the STEP 1A/2 next-steps flow.
+    if (app.status === 'shortlisted') {
+      return wrap(<ScholarshipNextSteps initialApp={app} token={token} />)
+    }
     const isNew = !!submitted
     return wrap(
       <div className="bg-green-50 border border-green-200 rounded-xl p-6">

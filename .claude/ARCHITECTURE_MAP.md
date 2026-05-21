@@ -200,6 +200,9 @@ fields (`aspirations`/`plans`/`fears`/`justification`), a `PATCH` details endpoi
 application form), `src/lib/scholarship.ts` (pure form helpers, node-tested in
 `src/lib/__tests__/scholarship.test.ts`), `submit/getMyScholarshipApplications` in `lib/api.ts`,
 and a new `'apply'` `AuthGateReason` in `lib/auth-context.tsx` + `components/AuthGateModal.tsx`.
+Sprint 4b added `components/ScholarshipNextSteps.tsx` (post-shortlist 3-step checklist + funding/
+deeper-info form), funding/details helpers in `lib/scholarship.ts`, and `updateScholarshipDetails`
+in `lib/api.ts`.
 
 ### Backend Root Files
 
