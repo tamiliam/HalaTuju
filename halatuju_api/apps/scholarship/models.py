@@ -215,3 +215,91 @@ class FundingNeed(models.Model):
 
     def __str__(self):
         return f'FundingNeed for application #{self.application_id} (RM{self.total})'
+
+
+class ApplicantDocument(models.Model):
+    """A supporting document for an application, stored in a private Supabase
+    Storage bucket. Only the storage path + metadata live here; file bytes never
+    pass through Django."""
+    DOC_TYPES = [
+        ('ic', 'Identity Card'),
+        ('results_slip', 'Results Slip'),
+        ('photo', 'Photo'),
+        ('epf', 'EPF Statement'),
+        ('str', 'STR Document'),
+        ('statement_of_intent', 'Statement of Intent'),
+        ('reference_letter', 'Reference Letter'),
+    ]
+    VERIFICATION_CHOICES = [
+        ('pending', 'Pending'),
+        ('verified', 'Verified'),
+        ('rejected', 'Rejected'),
+    ]
+    application = models.ForeignKey(
+        ScholarshipApplication, on_delete=models.CASCADE, related_name='documents',
+    )
+    doc_type = models.CharField(max_length=30, choices=DOC_TYPES)
+    storage_path = models.CharField(max_length=500)
+    original_filename = models.CharField(max_length=255, blank=True, default='')
+    content_type = models.CharField(max_length=100, blank=True, default='')
+    size = models.IntegerField(default=0)
+    verification_status = models.CharField(
+        max_length=20, choices=VERIFICATION_CHOICES, default='pending',
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'applicant_documents'
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f'{self.doc_type} for application #{self.application_id}'
+
+
+class Referee(models.Model):
+    """A person who can vouch for the applicant (teacher, counsellor, referring
+    org contact). The B40 analysis flagged the absence of a referee."""
+    application = models.ForeignKey(
+        ScholarshipApplication, on_delete=models.CASCADE, related_name='referees',
+    )
+    name = models.CharField(max_length=200)
+    role = models.CharField(
+        max_length=200, blank=True, default='',
+        help_text='e.g. teacher, school counsellor, referring org contact',
+    )
+    relationship = models.CharField(max_length=100, blank=True, default='')
+    phone = models.CharField(max_length=30, blank=True, default='')
+    email = models.EmailField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'referees'
+
+    def __str__(self):
+        return f'Referee {self.name} for application #{self.application_id}'
+
+
+class Consent(models.Model):
+    """A versioned, withdrawable consent record. For a minor (<18), consent must
+    be granted by a guardian. Replaces the verbal consent the B40 analysis
+    flagged as insufficient for PDPA."""
+    GRANTED_BY = [('self', 'Self'), ('guardian', 'Guardian')]
+    application = models.ForeignKey(
+        ScholarshipApplication, on_delete=models.CASCADE, related_name='consents',
+    )
+    consent_type = models.CharField(max_length=50, default='share_with_sponsors')
+    version = models.CharField(max_length=20)
+    locale = models.CharField(max_length=2, default='en')
+    granted_by = models.CharField(max_length=20, choices=GRANTED_BY, default='self')
+    guardian_name = models.CharField(max_length=200, blank=True, default='')
+    guardian_relationship = models.CharField(max_length=100, blank=True, default='')
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    granted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'consents'
+        ordering = ['-granted_at']
+
+    def __str__(self):
+        return f'Consent {self.consent_type} v{self.version} for application #{self.application_id}'

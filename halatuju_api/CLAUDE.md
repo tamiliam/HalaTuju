@@ -256,11 +256,16 @@ it a charity, not SC-regulated P2P).
   `/quiz`, about-you, funding-need form with live total) driven by the `completeness` block; apply
   page routes shortlisted apps to it; `updateScholarshipDetails` PATCH; EN/MS/TA i18n. 35 frontend
   tests; `next build` clean.
+- **Sprint 5a DONE (backend):** `ApplicantDocument`/`Referee`/`Consent` models (migration 0004) +
+  `storage.py` (signed URLs, private bucket) + endpoints + consent guardian gate (minor → guardian,
+  age from NRIC). Backend suite 1077.
 - **On branch `feature/b40-assistance` — NOT merged, NOT deployed.** Carry-forward before Phase 1
-  ships: apply Supabase migrations (0001+0002+0003) + RLS; wire the fail-email scheduler (Cloud
-  Scheduler); browser smoke-test the apply + details PATCH + quiz-return flows against a live backend.
-- **Next: Sprint 5** — document vault (Supabase private Storage) + referee + e-consent (PDPA,
-  guardian gate for minors).
+  ships: apply Supabase migrations (0001–0004) + RLS; **create the `b40-documents` private bucket**;
+  **swap the DRAFT consent text** (`CONSENT_VERSION`) for the lawyer-reviewed version; wire the
+  fail-email scheduler (Cloud Scheduler); browser smoke-test the apply / details / quiz / upload /
+  consent flows against a live backend.
+- **Next: Sprint 5b** (frontend) — document upload UI + referee form + consent flow (incl. guardian
+  fields for minors), wired into the next-steps checklist.
 - **Gotcha:** PII source docs in `docs/scholarship/` (`*.pdf|xlsx|txt`) are gitignored — real
   student NRICs/names/financials. Never commit them.
 - **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing the feature branch does not. Keep

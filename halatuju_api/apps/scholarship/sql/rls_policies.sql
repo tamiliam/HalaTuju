@@ -14,6 +14,9 @@
 ALTER TABLE scholarship_cohorts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scholarship_applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE funding_needs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE applicant_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE referees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE consents ENABLE ROW LEVEL SECURITY;
 
 -- No GRANTs / policies for anon or authenticated roles: direct PostgREST access
 -- is intentionally denied. If a future sprint needs direct client reads (e.g. a

@@ -49,15 +49,21 @@ the `completeness` block; apply page routes shortlisted apps to it; `updateSchol
 EN/MS/TA i18n (819 keys). 5 helper tests (frontend suite 35); check-i18n + `next build` green. Not
 browser-smoke-tested against a live backend yet. See `docs/retrospective-b40-sprint4b.md`.
 
-### Sprint 5 — Document vault + referee + e-consent (PDPA)
-- **Goal:** Students upload supporting docs and give written, age-appropriate consent.
-- **Scope:** Supabase private Storage bucket + signed URLs; `ApplicantDocument`, `Referee`,
-  `Consent` models; upload UI; versioned consent flow (EN/MS/TA) with guardian gate for under-18s;
-  tests.
-- **Acceptance:** docs stored privately (no public URL); consent recorded with version/timestamp;
-  minor without guardian consent blocked from sponsor exposure.
-- **Complexity:** High · *External dependency: lawyer-approved consent wording — build with draft,
-  swap before go-live.*
+### Sprint 5 — Document vault + referee + e-consent (PDPA) (split into 5a + 5b)
+
+**Sprint 5a — backend ✅ DONE (2026-05-22):** `ApplicantDocument`/`Referee`/`Consent` models
+(migration 0004, RLS); `storage.py` signed upload/download URLs for a private bucket (stdlib urllib,
+service key); endpoints (documents sign-upload/list/record/delete, referees, consent); consent
+guardian gate (minor <18 from NRIC → guardian required), versioned + superseding. 18 tests; backend
+suite 1077 green. See `docs/retrospective-b40-sprint5a.md`.
+
+**Sprint 5b — frontend (TODO):** document upload UI (sign-upload → PUT to Storage → record),
+referee form, consent flow (EN/MS/TA, guardian fields for minors), wired into the next-steps
+checklist; tests.
+
+**Deploy carry-forwards:** create the `b40-documents` private bucket; swap the DRAFT consent text
+(`CONSENT_VERSION`) for the lawyer-reviewed version.
+- **Complexity:** High
 
 ### Sprint 6 — AI-drafted sponsor profile + admin review console
 - **Goal:** MyNadi staff review Bucket B, approve AI-drafted profiles, and publish.

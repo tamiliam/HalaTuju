@@ -194,7 +194,9 @@ Sprints 1-3 done. Sprint 3 added `shortlisting.py` (pure rules engine → A/B/FA
 (`shortlisted_at`, `decision_email_sent_at`, `locale`, `notify_email`; migration 0002). Sprint 4a
 added the `FundingNeed` model (OneToOne → application, `funding_needs`, computed `total`), deeper-info
 fields (`aspirations`/`plans`/`fears`/`justification`), a `PATCH` details endpoint, and a
-`completeness` block on the read serializer (migration 0003).
+`completeness` block on the read serializer (migration 0003). Sprint 5a added `ApplicantDocument`/
+`Referee`/`Consent` models, `storage.py` (signed-URL private-bucket vault), and document/referee/
+consent endpoints with a minor→guardian consent gate (migration 0004).
 
 **Frontend (Sprint 2):** `halatuju-web/src/app/scholarship/apply/page.tsx` (single front-door
 application form), `src/lib/scholarship.ts` (pure form helpers, node-tested in

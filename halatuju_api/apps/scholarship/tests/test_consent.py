@@ -1,0 +1,94 @@
+"""Tests for consent + minor/guardian gate (Sprint 5a)."""
+import jwt
+from django.test import TestCase, override_settings
+from rest_framework.test import APIClient
+
+from apps.courses.models import StudentProfile
+from apps.scholarship.models import Consent, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.services import CONSENT_VERSION, age_from_nric, is_minor
+
+TEST_JWT_SECRET = 'test-supabase-jwt-secret'
+ADULT = 'consent-adult'
+MINOR = 'consent-minor'
+
+
+def _token(uid, secret=TEST_JWT_SECRET):
+    return jwt.encode(
+        {'sub': uid, 'aud': 'authenticated', 'role': 'authenticated'},
+        secret, algorithm='HS256',
+    )
+
+
+class TestAgeMinor(TestCase):
+    def test_age_parses_valid_nric(self):
+        self.assertIsInstance(age_from_nric('030101-14-1234'), int)
+
+    def test_age_none_for_unparseable(self):
+        self.assertIsNone(age_from_nric(''))
+        self.assertIsNone(age_from_nric('xx'))
+
+    def test_is_minor_distinguishes(self):
+        self.assertFalse(is_minor(StudentProfile(nric='030101-14-1234')))  # 2003 -> adult
+        self.assertTrue(is_minor(StudentProfile(nric='110101-14-1234')))   # 2011 -> minor
+        self.assertFalse(is_minor(None))
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestConsentApi(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.adult = StudentProfile.objects.create(supabase_user_id=ADULT, nric='030101-14-1234')
+        cls.minor = StudentProfile.objects.create(supabase_user_id=MINOR, nric='110101-14-5678')
+        cls.app_adult = ScholarshipApplication.objects.create(
+            cohort=cls.cohort, profile=cls.adult, status='shortlisted',
+        )
+        cls.app_minor = ScholarshipApplication.objects.create(
+            cohort=cls.cohort, profile=cls.minor, status='shortlisted',
+        )
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def _auth(self, uid):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
+
+    def test_adult_self_consent(self):
+        self._auth(ADULT)
+        resp = self.client.post('/api/v1/scholarship/consent/', {'locale': 'en'}, format='json')
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.json()['version'], CONSENT_VERSION)
+        self.assertEqual(resp.json()['granted_by'], 'self')
+
+    def test_minor_requires_guardian(self):
+        self._auth(MINOR)
+        resp = self.client.post('/api/v1/scholarship/consent/', {'granted_by': 'self'}, format='json')
+        self.assertEqual(resp.status_code, 400)
+
+    def test_minor_with_guardian_ok(self):
+        self._auth(MINOR)
+        resp = self.client.post('/api/v1/scholarship/consent/', {
+            'granted_by': 'guardian', 'guardian_name': 'Parent', 'guardian_relationship': 'Mother',
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.json()['guardian_name'], 'Parent')
+
+    def test_consent_supersedes_prior(self):
+        self._auth(ADULT)
+        self.client.post('/api/v1/scholarship/consent/', {}, format='json')
+        self.client.post('/api/v1/scholarship/consent/', {}, format='json')
+        self.assertEqual(
+            Consent.objects.filter(application=self.app_adult, is_active=True).count(), 1,
+        )
+        self.assertEqual(Consent.objects.filter(application=self.app_adult).count(), 2)
+
+    def test_get_consent_status_minor(self):
+        self._auth(MINOR)
+        resp = self.client.get('/api/v1/scholarship/consent/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()['is_minor'])
+        self.assertEqual(resp.json()['consent_version'], CONSENT_VERSION)
+
+    def test_consent_requires_auth(self):
+        resp = self.client.post('/api/v1/scholarship/consent/', {}, format='json')
+        self.assertEqual(resp.status_code, 401)

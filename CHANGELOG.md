@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 5a (2026-05-22)
+
+Document vault + referee + e-consent (backend; frontend is 5b).
+
+### Added
+- **`ApplicantDocument`, `Referee`, `Consent` models** (migration 0004; all RLS deny-by-default).
+- **`storage.py`** — signed upload/download URLs for a private Supabase Storage bucket
+  (`b40-documents`) via stdlib `urllib` + the service key; file bytes go browser↔Storage, never
+  through Django. Best-effort (returns None on failure).
+- **Endpoints** (scoped to the caller's shortlisted application): `documents/sign-upload/`,
+  `documents/` (list/record), `documents/<id>/` (delete), `referees/`, `consent/`.
+- **Consent + guardian gate** — versioned (`CONSENT_VERSION`), withdrawable, supersedes prior; a
+  **minor (<18, age from NRIC DOB) requires a guardian** (name + relationship) or consent is rejected.
+- `age_from_nric` / `is_minor` / `record_consent` services.
+
+### Tests
+- 18 new (`test_consent.py` 9, `test_documents.py` 9). Full backend suite **1077 pass, 0 fail**;
+  golden masters unchanged.
+
+### Notes
+- Two deploy carry-forwards: create the `b40-documents` private bucket; replace the DRAFT consent
+  text (`CONSENT_VERSION = '2026-draft-1'`) with the lawyer-reviewed version.
+
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 4b (2026-05-21)
 
 Post-shortlist next-steps flow (frontend) — completes Sprint 4.

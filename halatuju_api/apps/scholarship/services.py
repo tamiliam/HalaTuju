@@ -6,7 +6,7 @@ Pure-ish functions kept out of the view (mirrors apps/courses/eligibility_servic
 from django.utils import timezone
 
 from .emails import send_acknowledgement_email, send_pass_email
-from .models import FundingNeed, ScholarshipApplication, ScholarshipCohort
+from .models import Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort
 from .shortlisting import evaluate
 
 # SPM grades that count as an "A" for shortlisting (A+, A and A- all count,
@@ -136,3 +136,49 @@ def save_application_details(application, data):
     if fn_data is not None:
         FundingNeed.objects.update_or_create(application=application, defaults=fn_data)
     return application
+
+
+# ── Consent / minor logic (Sprint 5a) ────────────────────────────────────
+
+# DRAFT — replace the version string when the lawyer-reviewed consent text lands.
+CONSENT_VERSION = '2026-draft-1'
+
+
+def age_from_nric(nric):
+    """Best-effort age from a Malaysian NRIC (YYMMDD-PB-###G). None if unparseable."""
+    digits = ''.join(c for c in (nric or '') if c.isdigit())
+    if len(digits) < 6:
+        return None
+    from datetime import date
+    yy, mm, dd = int(digits[0:2]), int(digits[2:4]), int(digits[4:6])
+    today = date.today()
+    century = 2000 if (2000 + yy) <= today.year else 1900
+    try:
+        dob = date(century + yy, mm, dd)
+    except ValueError:
+        return None
+    return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+
+
+def is_minor(profile):
+    """True if the profile's NRIC indicates an age under 18."""
+    age = age_from_nric(getattr(profile, 'nric', '') if profile else '')
+    return age is not None and age < 18
+
+
+def record_consent(application, *, consent_type, locale, granted_by,
+                   guardian_name, guardian_relationship, ip):
+    """Record a consent, superseding any prior active consent of the same type."""
+    Consent.objects.filter(
+        application=application, consent_type=consent_type, is_active=True,
+    ).update(is_active=False)
+    return Consent.objects.create(
+        application=application,
+        consent_type=consent_type,
+        version=CONSENT_VERSION,
+        locale=locale if locale in ('en', 'ms', 'ta') else 'en',
+        granted_by=granted_by,
+        guardian_name=guardian_name,
+        guardian_relationship=guardian_relationship,
+        ip_address=ip,
+    )

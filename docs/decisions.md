@@ -526,3 +526,27 @@
 **Trade-offs:** A second table and a reverse relation to handle (accessed via `try/except DoesNotExist`). Negligible.
 
 **Revisit if:** The breakdown needs free-form, highly variable line items that don't fit fixed columns.
+
+## Signed-URL direct-to-Supabase document storage (no bytes through Django) — B40 Sprint 5a, 2026-05-22
+
+**Decision:** Documents upload straight from the browser to a private Supabase Storage bucket using a signed upload URL the backend mints (service key, stdlib `urllib`); Django stores only the path + metadata and serves time-limited signed download URLs on demand.
+
+**Alternatives considered:** (1) Proxy file bytes through Django to Storage. (2) `supabase-py` client. (3) Signed URLs via stdlib `urllib` (chosen).
+
+**Rationale:** Cloud Run has request-size/memory limits; keeping bytes off Django avoids them and is the standard private-storage pattern. stdlib `urllib` avoids a new dependency and keeps the module importable so tests mock the two functions cleanly. The service key stays server-side; the browser only ever receives short-lived signed URLs.
+
+**Trade-offs:** Can't integration-test against real Storage locally (mocked + a 503 fallback when unavailable); the private bucket is a deploy carry-forward. Generating a download URL per document during list serialization makes one HTTP call per doc — fine at N≤7.
+
+**Revisit if:** Per-applicant document volume grows large (sign lazily), or a richer storage SDK becomes warranted.
+
+## Versioned, guardian-gated consent keyed on NRIC age — B40 Sprint 5a, 2026-05-22
+
+**Decision:** `Consent` rows are versioned (`CONSENT_VERSION`), withdrawable (`is_active`), and superseding (a new consent of a type deactivates prior ones). A minor (<18, age derived from the NRIC DOB) must have consent granted by a guardian (name + relationship) or it is rejected.
+
+**Alternatives considered:** (1) A single boolean consent flag on the application. (2) Verbal/implicit consent (what the B40 analysis flagged as insufficient). (3) Versioned consent records with a guardian gate (chosen).
+
+**Rationale:** PDPA needs an auditable, purpose- and version-specific record, and Malaysian minors need guardian consent before their data is shared with sponsors. Deriving age from the already-verified NRIC avoids collecting DOB twice. Superseding keeps an audit trail while making "current consent" unambiguous.
+
+**Trade-offs:** Consent text is DRAFT until lawyer review (the version string swaps then). NRIC-derived age assumes a valid NRIC (already gated at identity).
+
+**Revisit if:** The lawyer requires a different consent structure, or non-NRIC identities are admitted.
