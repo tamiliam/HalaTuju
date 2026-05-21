@@ -442,3 +442,39 @@
 **Trade-offs:** An extra API call on every login (getProfile). Negligible cost — the call is fast and happens once per session.
 
 **Revisit if:** localStorage needs to function as an offline-first store (Progressive Web App), in which case a versioned schema with migrations would be needed.
+
+## Separate `apps/scholarship/` app for the B40 financing extension — B40 Sprint 1, 2026-05-21
+
+**Decision:** Build the B40 Assistance Programme as a new `apps/scholarship/` Django app rather than adding models/views to `apps/courses/`.
+
+**Alternatives considered:** (1) Add scholarship models + endpoints to `apps/courses/`. (2) A separate app.
+
+**Rationale:** `apps/courses/` is the eligibility engine — its `apps.py` loads the whole course DataFrame at startup and it holds the golden-master logic. The financing domain (applications, sponsors, disbursements) is orthogonal: different lifecycle, different RLS posture, different reviewers. A separate app keeps the sacred engine untouched and lets the financing schema evolve independently. It reuses `StudentProfile` by FK across the app boundary (label `courses`).
+
+**Trade-offs:** A cross-app FK (`'courses.StudentProfile'`) and a second migration history to track. Negligible vs. the isolation benefit.
+
+**Revisit if:** The financing flow ever needs to run inside the eligibility request path (it doesn't — it's a separate funnel).
+
+## Application model: explicit shortlisting fields + `form_data` JSON blob — B40 Sprint 1, 2026-05-21
+
+**Decision:** `ScholarshipApplication` stores the shortlisting-relevant inputs as explicit typed columns (qualification, spm_a_count, stpm_pngk, household_income/size, receives_str/jkm, intended_pathway, intends_tertiary_2026, consent_to_contact) AND a `form_data` JSONField for the rest of the native form.
+
+**Alternatives considered:** (1) Everything in one JSON blob. (2) Every form field as a column. (3) Hybrid (chosen).
+
+**Rationale:** The shortlisting rules engine (Sprint 3) must filter/score on the criteria fields — those need to be queryable, typed, and indexable, so they are real columns. The remaining free-form intake (aspirations, narrative, etc.) is display-only and still firming up while the native form is designed (Sprint 2), so a JSON blob avoids premature schema churn.
+
+**Trade-offs:** Two homes for intake data; a field that graduates from "display-only" to "scored" later needs a migration to promote it from `form_data` to a column.
+
+**Revisit if:** A `form_data` key becomes load-bearing for shortlisting — promote it to a typed column at that point.
+
+## RLS deny-by-default (no policies) for scholarship tables — B40 Sprint 1, 2026-05-21
+
+**Decision:** Enable RLS on `scholarship_cohorts` and `scholarship_applications` with **no** permissive policies.
+
+**Alternatives considered:** (1) RLS + per-row `authenticated` policies (as some Supabase-direct tables use). (2) RLS off. (3) RLS on, no policies (chosen).
+
+**Rationale:** These tables are served exclusively by the Django API, which connects as the table-owner (service) role and bypasses RLS. The frontend never reaches them via PostgREST. Enabling RLS with no policy therefore denies all direct anon/authenticated access (defense in depth) while the API works normally. Application rows hold sensitive financial/family data, so deny-by-default is correct. Also satisfies the Security Advisor "RLS disabled" check.
+
+**Trade-offs:** If a future sprint wants a direct, public, non-sensitive read (e.g. an open cohort listing via PostgREST), a narrowly-scoped SELECT policy must be added for that one table.
+
+**Revisit if:** A frontend feature needs to read these tables directly from Supabase rather than through the Django API.

@@ -233,6 +233,24 @@ Supabase Security Advisor must show 0 errors before deploy.
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy)
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
+## Next Sprint — B40 Assistance Programme (Phase 1)
+
+Financing extension: a sponsor "adopts" one B40 student to fund IPTA/ILKA study. PRD + 6-sprint
+Phase 1 roadmap in `docs/scholarship/`. MyNadi Foundation is the (tentative) fund custodian;
+the platform is matchmaker + ledger and never holds cash. No financial return to sponsors (keeps
+it a charity, not SC-regulated P2P).
+
+- **Sprint 1 DONE:** `apps/scholarship/` intake API — `ScholarshipCohort` + `ScholarshipApplication`
+  models, trilingual acknowledgement email, RLS SQL, 17 tests. Full suite 1023 pass.
+- **On branch `feature/b40-assistance` — NOT merged, NOT deployed.** The Supabase migration + RLS
+  have **not** been applied yet (deferred to the first deploy, end of Phase 1).
+- **Next: Sprint 2** — native application form (frontend single front door; fresh students get an
+  account auto-created via the NRIC gate; pre-fill from `StudentProfile`).
+- **Gotcha:** PII source docs in `docs/scholarship/` (`*.pdf|xlsx|txt`) are gitignored — real
+  student NRICs/names/financials. Never commit them.
+- **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing the feature branch does not. Keep
+  B40 on the branch until Phase 1 is deployable.
+
 ## Known Issues & Future Work
 
 See `docs/roadmap.md` for the full list of known issues and planned future work.

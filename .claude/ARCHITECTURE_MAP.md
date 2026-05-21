@@ -171,6 +171,26 @@ apps/reports/
     └── test_views.py              # 4 — report list/detail, cross-user 404, auth
 ```
 
+### App: scholarship (B40 Assistance Programme — financing extension)
+
+```
+apps/scholarship/                  # Phase 1: intake & profile engine (no money flow)
+├── models.py                      # ScholarshipCohort, ScholarshipApplication
+├── apps.py                        # ScholarshipConfig (no startup data load)
+├── serializers.py                 # ApplicationCreate / ApplicationRead
+├── services.py                    # Intake logic (count_spm_a_grades, resolve_open_cohort, create_application)
+├── emails.py                      # Trilingual (EN/MS/TA) acknowledgement email
+├── views.py                       # ApplicationListCreateView, ApplicationDetailView
+├── urls.py                        # /api/v1/scholarship/applications/ (+ <id>/)
+├── sql/rls_policies.sql           # Deny-by-default RLS for the 2 new tables (apply before deploy)
+├── migrations/0001_initial.py     # ScholarshipCohort + ScholarshipApplication
+└── tests/                         # test_models.py (4), test_api.py (13)
+```
+
+**New tables (created in migration; applied to Supabase at deploy):** `scholarship_cohorts`,
+`scholarship_applications`. PRD + roadmap live in `docs/scholarship/`. Phase 1 = 6 sprints;
+Sprint 1 (intake API) done.
+
 ### Backend Root Files
 
 ```

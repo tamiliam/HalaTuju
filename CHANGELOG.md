@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 1 (2026-05-21)
+
+New `apps/scholarship/` app — the financing extension's intake backbone. Phase 1 carries
+no sponsor or money flow (those are Phases 2-3). See `docs/scholarship/b40-assistance-prd.md`
+and `docs/scholarship/b40-phase1-roadmap.md`.
+
+### Added
+- **`ScholarshipCohort` model** (`scholarship_cohorts`) — per-round config holding the
+  configurable shortlisting thresholds (`min_spm_a_count`, `min_stpm_pngk`, `income_ceiling`,
+  `bucket_b_margin`) and funding/workflow parameters (`funding_envelope`, `fail_email_delay_days`)
+  that the Sprint 3 rules engine will read.
+- **`ScholarshipApplication` model** (`scholarship_applications`) — one application per student
+  per cohort (partial unique constraint), with explicit shortlisting inputs (qualification,
+  spm_a_count, stpm_pngk, household_income/size, receives_str/jkm, intended_pathway,
+  intends_tertiary_2026, consent_to_contact), workflow fields (status, bucket, shortlist_reason,
+  acknowledged_at) and a free-form `form_data` blob.
+- **Intake API** — `GET/POST /api/v1/scholarship/applications/` (list own + submit) and
+  `GET /api/v1/scholarship/applications/<id>/` (own detail). Submit resolves the active open
+  cohort, snapshots the SPM A-count from the linked `StudentProfile` (A+/A/A- all count), sends
+  a trilingual acknowledgement email, and stamps `acknowledged_at`. Default-deny auth; anonymous
+  users and the duplicate/closed-round cases are rejected (403/409).
+- **Trilingual acknowledgement email** (EN/MS/TA) via the existing Gmail SMTP infra; best-effort
+  send that never blocks recording the application.
+- **RLS policy SQL** (`apps/scholarship/sql/rls_policies.sql`) — enables RLS deny-by-default on
+  both new tables (Django service role bypasses; direct PostgREST access denied). Apply before
+  first deploy, then confirm Security Advisor 0 errors.
+
+### Tests
+- 17 new tests (`apps/scholarship/tests/`): models + defaults + partial-unique constraint +
+  A-count helper (test_models.py, 4); intake create/ack-email/snapshot/consent/duplicate/
+  closed-round/anonymous/no-profile/list-own/detail/cross-user-404/auth (test_api.py, 13).
+- Full backend suite: **1023 passed, 0 failures** (1006 existing + 17 new); SPM/STPM golden
+  masters unchanged.
+
+### Notes
+- Backend only — the native application form (frontend) is Sprint 2.
+- Comms via email + in-app for Phase 1; WhatsApp deferred to Phase 2.
+
 ## [Unreleased] — Admin CSV Full Field Set (2026-05-02)
 
 ### Changed
