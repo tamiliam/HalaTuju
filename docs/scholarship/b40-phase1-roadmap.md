@@ -28,14 +28,12 @@ migration + RLS not yet applied). See `docs/retrospective-b40-sprint1.md`.
 i18n (793 keys). check-i18n + 30 frontend tests + `next build` green. Not browser-smoke-tested
 against a live backend yet. See `docs/retrospective-b40-sprint2.md`.
 
-### Sprint 3 — Shortlisting rules engine + Bucket A/B + pass/fail notifications
-- **Goal:** Applications auto-sort into FAIL / BUCKET_A / BUCKET_B with the right emails.
-- **Scope:** configurable rules engine reading thresholds from `ScholarshipCohort` (grades,
-  income band, intent, consent); delayed fail email; pass email; golden-master-style tests using
-  the 3 B40 PDF candidates as fixtures.
-- **Acceptance:** Priya/Nathiyaa/Theresa fixtures land in expected buckets; emails fire; thresholds
-  tunable without code changes.
-- **Complexity:** Medium
+### Sprint 3 — Shortlisting rules engine + Bucket A/B + pass/fail notifications ✅ DONE (2026-05-21)
+Pure `shortlisting.py` engine (A/B/FAIL, cohort-configured thresholds, STR income anchor + 1.15×
+marginal band); synchronous shortlist on submit (pass email immediate); trilingual pass/fail
+emails; `send_pending_decision_emails` command (delayed fail email); migration 0002 (4 fields).
+25 new tests; backend suite 1048 green. Scheduler not yet wired. See
+`docs/retrospective-b40-sprint3.md`.
 
 ### Sprint 4 — STEP 1A quiz gate + deeper-info capture
 - **Goal:** Passed students complete their course profile (quiz) and submit aspirations + a

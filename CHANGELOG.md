@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 3 (2026-05-21)
+
+Mechanical shortlisting engine + Bucket A/B + pass/fail decision emails.
+
+### Added
+- **`apps/scholarship/shortlisting.py`** — pure `evaluate(app, cohort)` → status/bucket/reason.
+  Per-criterion OK/marginal/fail across academic (A-count or PNGK), income (STR anchor + ceiling
+  × 1.15 marginal band), intent and consent. All-OK → Bucket A; exactly one marginal → Bucket B;
+  otherwise rejected. All thresholds read from `ScholarshipCohort`.
+- **`shortlist_application()`** wired into the intake view — runs synchronously on submit, persists
+  status/bucket/reason/shortlisted_at, sends the pass email immediately.
+- **Trilingual pass + fail emails** (refactored `emails.py` onto a shared `_send` helper).
+- **`send_pending_decision_emails` management command** — sends the courteous "not this round"
+  email after `fail_email_delay_days`; `--dry-run`, prints the DB host, reads config from settings.
+- Model fields `shortlisted_at`, `decision_email_sent_at`, `locale`, `notify_email` (migration 0002).
+
+### Changed
+- Submitting now triggers an instant shortlist: a qualifying applicant receives the acknowledgement
+  *and* a congratulations email; a rejected applicant receives only the acknowledgement, with the
+  fail email deferred to the command after the cohort delay.
+
+### Tests
+- 25 new (`test_shortlisting.py` 19, `test_decision_emails.py` 6) + updated intake tests. Full
+  backend suite **1048 pass, 0 fail**; SPM/STPM golden masters unchanged.
+
+### Notes
+- The fail-email command's scheduler (e.g. Cloud Scheduler) is not yet wired — deploy work,
+  deferred with the Supabase migration/RLS to the end of Phase 1.
+
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 2 (2026-05-21)
 
 Native application form + single front door (frontend), wired to the Sprint 1 intake API.

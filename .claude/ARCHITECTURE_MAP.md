@@ -189,7 +189,9 @@ apps/scholarship/                  # Phase 1: intake & profile engine (no money 
 
 **New tables (created in migration; applied to Supabase at deploy):** `scholarship_cohorts`,
 `scholarship_applications`. PRD + roadmap live in `docs/scholarship/`. Phase 1 = 6 sprints;
-Sprints 1-2 done.
+Sprints 1-3 done. Sprint 3 added `shortlisting.py` (pure rules engine → A/B/FAIL),
+`management/commands/send_pending_decision_emails.py` (delayed fail email), and 4 model fields
+(`shortlisted_at`, `decision_email_sent_at`, `locale`, `notify_email`; migration 0002).
 
 **Frontend (Sprint 2):** `halatuju-web/src/app/scholarship/apply/page.tsx` (single front-door
 application form), `src/lib/scholarship.ts` (pure form helpers, node-tested in

@@ -502,3 +502,15 @@
 **Trade-offs:** Self-reported numbers can be wrong; shortlisting on them is provisional until document verification (Sprint 5). Acceptable — the alternative front-loads friction onto exactly the B40 audience we want to reach.
 
 **Revisit if:** Self-reporting proves unreliable enough to distort shortlisting before documents are collected.
+
+## Synchronous shortlist on submit; pass email immediate, fail email deferred — B40 Sprint 3, 2026-05-21
+
+**Decision:** The intake view runs `shortlist_application()` synchronously right after creating the application. A qualifying applicant gets the acknowledgement email *and* an immediate congratulations email; a rejected applicant gets only the acknowledgement, with the courteous "not this round" email deferred to the `send_pending_decision_emails` command (after `fail_email_delay_days`). The applicant's `locale` and resolved `notify_email` are stored on the application at submit so the deferred command needs no request context.
+
+**Alternatives considered:** (1) Shortlist asynchronously via a queue/cron after submit. (2) Send the fail email immediately too. (3) Synchronous shortlist + deferred fail email (chosen).
+
+**Rationale:** Instant mechanical shortlisting matches the PRD funnel and the near-zero-touch goal, and the synchronous send is consistent with the existing synchronous acknowledgement send. Deferring the fail email avoids a rejection landing seconds after applying (a deliberate kindness in the spec). Storing locale + notify_email avoids needing the request (or a live JWT) when the scheduled command runs days later.
+
+**Trade-offs:** The submit request does up to two SMTP sends (acknowledgement + pass), adding latency; both are best-effort (failures are swallowed). A future move to async sending would remove the latency. The fail email depends on a scheduler being wired at deploy.
+
+**Revisit if:** SMTP latency degrades the submit UX (move sends to a queue), or the two-email pass flow proves redundant (merge acknowledgement + pass into one email).

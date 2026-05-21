@@ -136,6 +136,21 @@ class ScholarshipApplication(models.Model):
     )
     acknowledged_at = models.DateTimeField(null=True, blank=True)
 
+    # Shortlisting outcome + decision-email tracking (Sprint 3)
+    shortlisted_at = models.DateTimeField(null=True, blank=True)
+    decision_email_sent_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the pass/fail decision email was sent",
+    )
+    locale = models.CharField(
+        max_length=2, default='en',
+        help_text="Applicant's language at apply time (en/ms/ta) for deferred emails",
+    )
+    notify_email = models.EmailField(
+        blank=True, default='',
+        help_text="Resolved contact email captured at submit (for the deferred fail email)",
+    )
+
     form_data = models.JSONField(
         default=dict, blank=True,
         help_text="Raw/extra intake fields from the native form",

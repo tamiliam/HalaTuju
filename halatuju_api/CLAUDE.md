@@ -246,10 +246,13 @@ it a charity, not SC-regulated P2P).
   Google + NRIC auth flow (new `'apply'` AuthGateReason), pre-fill from profile, `lib/scholarship.ts`
   helpers, EN/MS/TA i18n. 13 frontend tests (suite 30); `next build` clean. **Not browser-smoke-tested
   against a live backend yet** — do so before Phase 1 ships.
-- **On branch `feature/b40-assistance` — NOT merged, NOT deployed.** The Supabase migration + RLS
-  have **not** been applied yet (deferred to the first deploy, end of Phase 1).
-- **Next: Sprint 3** — shortlisting rules engine + Bucket A/B + pass/fail emails (reads thresholds
-  from `ScholarshipCohort`; use the 3 B40 PDF candidates as golden-master fixtures).
+- **Sprint 3 DONE:** mechanical shortlisting engine (`shortlisting.py`, pure, cohort-configured),
+  Bucket A/B, trilingual pass/fail emails, `send_pending_decision_emails` command (delayed fail
+  email). Migration 0002. Backend suite 1048 pass.
+- **On branch `feature/b40-assistance` — NOT merged, NOT deployed.** Carry-forward before Phase 1
+  ships: apply Supabase migrations (0001+0002) + RLS; wire the fail-email scheduler (Cloud
+  Scheduler); browser smoke-test the apply OAuth round-trip.
+- **Next: Sprint 4** — STEP 1A quiz gate + deeper-info capture + `FundingNeed` model.
 - **Gotcha:** PII source docs in `docs/scholarship/` (`*.pdf|xlsx|txt`) are gitignored — real
   student NRICs/names/financials. Never commit them.
 - **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing the feature branch does not. Keep

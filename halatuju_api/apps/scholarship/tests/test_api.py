@@ -28,6 +28,7 @@ class TestApplicationIntake(TestCase):
     def setUpTestData(cls):
         cls.cohort = ScholarshipCohort.objects.create(
             code='b40-2026', name='B40 Assistance Programme 2026', year=2026,
+            income_ceiling=5250,
         )
         cls.profile_a = StudentProfile.objects.create(
             supabase_user_id=USER_A, nric='080101-14-1234',
@@ -59,7 +60,8 @@ class TestApplicationIntake(TestCase):
 
     # --- CREATE ---
 
-    def test_create_application_201_and_ack_email(self):
+    def test_create_application_shortlists_bucket_a_and_emails(self):
+        # profile_a: 5 A's, RM2500, STR -> all criteria OK -> Bucket A
         self._auth(_make_token(USER_A))
         resp = self.client.post(
             '/api/v1/scholarship/applications/', self._payload(), format='json',
@@ -67,12 +69,33 @@ class TestApplicationIntake(TestCase):
         self.assertEqual(resp.status_code, 201)
         body = resp.json()
         self.assertEqual(body['cohort_code'], 'b40-2026')
-        self.assertEqual(body['status'], 'submitted')
+        self.assertEqual(body['status'], 'shortlisted')
+        self.assertEqual(body['bucket'], 'A')
         app = ScholarshipApplication.objects.get(id=body['id'])
         self.assertEqual(app.profile_id, USER_A)
         self.assertIsNotNone(app.acknowledged_at)
-        self.assertEqual(len(mail.outbox), 1)
+        self.assertIsNotNone(app.shortlisted_at)
+        self.assertIsNotNone(app.decision_email_sent_at)
+        # acknowledgement + immediate pass email
+        self.assertEqual(len(mail.outbox), 2)
         self.assertIn('priya@example.com', mail.outbox[0].to)
+
+    def test_failing_application_rejected_no_decision_email(self):
+        # 2 A's (academic fail) + RM9000 no STR (income fail) -> rejected
+        self._auth(_make_token(USER_B))
+        resp = self.client.post(
+            '/api/v1/scholarship/applications/',
+            self._payload(spm_a_count=2, household_income=9000, receives_str=False),
+            format='json',
+        )
+        self.assertEqual(resp.status_code, 201)
+        body = resp.json()
+        self.assertEqual(body['status'], 'rejected')
+        self.assertEqual(body['bucket'], '')
+        app = ScholarshipApplication.objects.get(id=body['id'])
+        self.assertIsNone(app.decision_email_sent_at)
+        # only the acknowledgement — the fail email is deferred to the command
+        self.assertEqual(len(mail.outbox), 1)
 
     def test_spm_a_count_snapshot_from_profile(self):
         self._auth(_make_token(USER_A))
