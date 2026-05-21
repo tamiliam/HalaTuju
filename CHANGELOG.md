@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 5b (2026-05-22)
+
+Document upload + referee + consent UI (frontend) — completes Sprint 5.
+
+### Added
+- **`ScholarshipDocuments`** — per-doc-type upload (sign → PUT straight to Supabase Storage →
+  record), list with signed-URL view links + delete.
+- **`ScholarshipReferee`** — add/list referees.
+- **`ScholarshipConsent`** — DRAFT consent text + checkbox; guardian name/relationship fields when
+  the applicant is a minor; "consent given" once recorded.
+- Wired as steps 4–6 of the next-steps checklist.
+- API client: sign-upload, direct PUT, record/list/delete docs, referee CRUD, consent get/record;
+  `DOC_TYPES` + `formatFileSize` helpers.
+- i18n: `scholarship.docs/referee/consent` + step 4–6 labels in EN/MS/TA (856 keys, parity verified).
+
+### Tests
+- 2 new helper tests (frontend suite **37 pass**); check-i18n PASS; `next build` success.
+
+### Notes
+- UI + network glue; the upload PUT-to-Storage and consent round-trip need the live `b40-documents`
+  bucket — folded into the browser smoke-test carry-forward.
+
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 5a (2026-05-22)
 
 Document vault + referee + e-consent (backend; frontend is 5b).

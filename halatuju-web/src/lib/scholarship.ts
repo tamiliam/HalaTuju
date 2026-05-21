@@ -191,3 +191,16 @@ export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown
     },
   }
 }
+
+// ── Documents (Sprint 5b) ────────────────────────────────────────────────
+
+export const DOC_TYPES = [
+  'ic', 'results_slip', 'photo', 'epf', 'str', 'statement_of_intent', 'reference_letter',
+] as const
+export type DocType = typeof DOC_TYPES[number]
+
+export function formatFileSize(bytes: number): string {
+  if (!bytes || bytes < 0) return '0 KB'
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}

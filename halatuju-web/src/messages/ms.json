@@ -419,7 +419,52 @@
       "save": "Simpan butiran saya",
       "saving": "Menyimpan…",
       "saved": "Disimpan.",
-      "saveError": "Tidak dapat menyimpan butiran anda. Sila cuba lagi."
+      "saveError": "Tidak dapat menyimpan butiran anda. Sila cuba lagi.",
+      "step4Title": "4. Muat naik dokumen anda",
+      "step4Body": "IC, slip keputusan, STR, dan apa-apa dokumen sokongan.",
+      "step5Title": "5. Tambah perujuk",
+      "step5Body": "Seseorang yang boleh menjamin anda — guru, kaunselor, atau kenalan komuniti.",
+      "step6Title": "6. Berikan persetujuan anda",
+      "step6Body": "Benarkan kami berkongsi profil anda dengan bakal penaja."
+    },
+    "docs": {
+      "type": {
+        "ic": "Kad pengenalan (IC)",
+        "results_slip": "Slip keputusan SPM/STPM",
+        "photo": "Foto",
+        "epf": "Penyata KWSP",
+        "str": "Dokumen STR",
+        "statement_of_intent": "Pernyataan hasrat",
+        "reference_letter": "Surat rujukan"
+      },
+      "choose": "Pilih fail",
+      "uploading": "Memuat naik…",
+      "remove": "Buang",
+      "uploadError": "Muat naik gagal. Sila cuba lagi.",
+      "deleteError": "Tidak dapat membuang dokumen."
+    },
+    "referee": {
+      "name": "Nama perujuk",
+      "role": "Peranan (cth. guru)",
+      "relationship": "Hubungan",
+      "phone": "Telefon",
+      "email": "E-mel",
+      "add": "Tambah perujuk",
+      "adding": "Menambah…",
+      "error": "Tidak dapat menambah perujuk."
+    },
+    "consent": {
+      "draftNotice": "DERAF — kata-kata muktamad menunggu semakan undang-undang.",
+      "text": "Saya bersetuju membenarkan Program Bantuan B40 berkongsi profil dan maklumat sokongan saya dengan bakal penaja bagi tujuan pertimbangan bantuan kewangan. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa.",
+      "guardianNotice": "Memandangkan anda berumur bawah 18 tahun, ibu bapa atau penjaga mesti memberikan persetujuan ini.",
+      "guardianName": "Nama penjaga",
+      "guardianRelationship": "Hubungan dengan anda",
+      "agree": "Saya telah membaca dan bersetuju dengan perkara di atas.",
+      "agreeGuardian": "Sebagai penjaga, saya telah membaca dan bersetuju dengan perkara di atas bagi pihak pemohon.",
+      "given": "Persetujuan diberikan. Terima kasih.",
+      "submit": "Beri persetujuan",
+      "saving": "Menyimpan…",
+      "error": "Tidak dapat merekodkan persetujuan anda. Sila cuba lagi."
     }
   },
   "authGate": {

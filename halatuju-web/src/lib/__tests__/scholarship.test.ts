@@ -7,6 +7,8 @@ import {
   emptyDetailsForm,
   applicationToDetailsForm,
   buildDetailsPayload,
+  DOC_TYPES,
+  formatFileSize,
   type ApplyFormState,
 } from '@/lib/scholarship'
 import type { StudentProfile, ScholarshipApplication } from '@/lib/api'
@@ -148,5 +150,22 @@ describe('applicationToDetailsForm', () => {
     const f = applicationToDetailsForm(app)
     expect(f.laptop).toBe('')
     expect(f.aspirations).toBe('')
+  })
+})
+
+describe('formatFileSize', () => {
+  it('formats KB and MB', () => {
+    expect(formatFileSize(0)).toBe('0 KB')
+    expect(formatFileSize(500)).toBe('1 KB')
+    expect(formatFileSize(2048)).toBe('2 KB')
+    expect(formatFileSize(2 * 1024 * 1024)).toBe('2.0 MB')
+  })
+})
+
+describe('DOC_TYPES', () => {
+  it('lists the seven supporting document types', () => {
+    expect(DOC_TYPES).toHaveLength(7)
+    expect(DOC_TYPES).toContain('ic')
+    expect(DOC_TYPES).toContain('reference_letter')
   })
 })

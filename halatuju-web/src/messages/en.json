@@ -419,7 +419,52 @@
       "save": "Save my details",
       "saving": "Saving…",
       "saved": "Saved.",
-      "saveError": "Could not save your details. Please try again."
+      "saveError": "Could not save your details. Please try again.",
+      "step4Title": "4. Upload your documents",
+      "step4Body": "IC, results slip, STR, and any supporting documents.",
+      "step5Title": "5. Add a referee",
+      "step5Body": "Someone who can vouch for you — a teacher, counsellor, or community contact.",
+      "step6Title": "6. Give your consent",
+      "step6Body": "Allow us to share your profile with potential sponsors."
+    },
+    "docs": {
+      "type": {
+        "ic": "Identity card (IC)",
+        "results_slip": "SPM/STPM results slip",
+        "photo": "Photo",
+        "epf": "EPF statement",
+        "str": "STR document",
+        "statement_of_intent": "Statement of intent",
+        "reference_letter": "Reference letter"
+      },
+      "choose": "Choose file",
+      "uploading": "Uploading…",
+      "remove": "Remove",
+      "uploadError": "Upload failed. Please try again.",
+      "deleteError": "Could not remove the document."
+    },
+    "referee": {
+      "name": "Referee name",
+      "role": "Role (e.g. teacher)",
+      "relationship": "Relationship",
+      "phone": "Phone",
+      "email": "Email",
+      "add": "Add referee",
+      "adding": "Adding…",
+      "error": "Could not add the referee."
+    },
+    "consent": {
+      "draftNotice": "DRAFT — final wording pending legal review.",
+      "text": "I consent to the B40 Assistance Programme sharing my profile and supporting information with potential sponsors for the purpose of considering me for financial assistance. I understand I can withdraw this consent at any time.",
+      "guardianNotice": "As you are under 18, a parent or guardian must give this consent.",
+      "guardianName": "Guardian's name",
+      "guardianRelationship": "Relationship to you",
+      "agree": "I have read and agree to the above.",
+      "agreeGuardian": "As guardian, I have read and agree to the above on the applicant's behalf.",
+      "given": "Consent given. Thank you.",
+      "submit": "Give consent",
+      "saving": "Saving…",
+      "error": "Could not record your consent. Please try again."
     }
   },
   "authGate": {

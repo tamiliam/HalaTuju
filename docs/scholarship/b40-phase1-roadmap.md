@@ -57,9 +57,11 @@ service key); endpoints (documents sign-upload/list/record/delete, referees, con
 guardian gate (minor <18 from NRIC → guardian required), versioned + superseding. 18 tests; backend
 suite 1077 green. See `docs/retrospective-b40-sprint5a.md`.
 
-**Sprint 5b — frontend (TODO):** document upload UI (sign-upload → PUT to Storage → record),
-referee form, consent flow (EN/MS/TA, guardian fields for minors), wired into the next-steps
-checklist; tests.
+**Sprint 5b — frontend ✅ DONE (2026-05-22):** `ScholarshipDocuments` (sign → PUT to Storage →
+record + list/delete), `ScholarshipReferee`, `ScholarshipConsent` (guardian fields for minors),
+wired as next-steps steps 4–6; 10 API client functions; EN/MS/TA i18n (856 keys). 2 helper tests
+(frontend suite 37); check-i18n + `next build` green. Upload/consent round-trip not
+browser-smoke-tested (needs the live bucket). See `docs/retrospective-b40-sprint5b.md`.
 
 **Deploy carry-forwards:** create the `b40-documents` private bucket; swap the DRAFT consent text
 (`CONSENT_VERSION`) for the lawyer-reviewed version.

@@ -10,6 +10,9 @@ import {
   fundingTotal,
   type DetailsFormState,
 } from '@/lib/scholarship'
+import ScholarshipDocuments from '@/components/ScholarshipDocuments'
+import ScholarshipReferee from '@/components/ScholarshipReferee'
+import ScholarshipConsent from '@/components/ScholarshipConsent'
 
 const TEXT_FIELDS = ['aspirations', 'justification', 'plans', 'fears'] as const
 const MONEY_FIELDS = ['tuitionGap', 'laptop', 'hostel', 'transport', 'books', 'other'] as const
@@ -21,7 +24,7 @@ export default function ScholarshipNextSteps({
   initialApp: ScholarshipApplication
   token: string | null
 }) {
-  const { t } = useT()
+  const { t, locale } = useT()
   const [app, setApp] = useState<ScholarshipApplication>(initialApp)
   const [form, setForm] = useState<DetailsFormState>(() => applicationToDetailsForm(initialApp))
   const [saving, setSaving] = useState(false)
@@ -167,6 +170,27 @@ export default function ScholarshipNextSteps({
           {saving ? t('scholarship.nextSteps.saving') : t('scholarship.nextSteps.save')}
         </button>
       </form>
+
+      {/* Step 4 — supporting documents */}
+      <div className="border rounded-xl p-4">
+        <p className="font-medium text-gray-900 mb-1">{t('scholarship.nextSteps.step4Title')}</p>
+        <p className="text-sm text-gray-600 mb-3">{t('scholarship.nextSteps.step4Body')}</p>
+        <ScholarshipDocuments token={token} />
+      </div>
+
+      {/* Step 5 — referee */}
+      <div className="border rounded-xl p-4">
+        <p className="font-medium text-gray-900 mb-1">{t('scholarship.nextSteps.step5Title')}</p>
+        <p className="text-sm text-gray-600 mb-3">{t('scholarship.nextSteps.step5Body')}</p>
+        <ScholarshipReferee token={token} />
+      </div>
+
+      {/* Step 6 — consent */}
+      <div className="border rounded-xl p-4">
+        <p className="font-medium text-gray-900 mb-1">{t('scholarship.nextSteps.step6Title')}</p>
+        <p className="text-sm text-gray-600 mb-3">{t('scholarship.nextSteps.step6Body')}</p>
+        <ScholarshipConsent token={token} locale={locale} />
+      </div>
     </div>
   )
 }

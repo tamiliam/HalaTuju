@@ -977,3 +977,106 @@ export async function updateScholarshipDetails(
     ...options,
   })
 }
+
+// ── Documents / referee / consent (Sprint 5b) ───────────────────────────
+
+export interface ApplicantDocument {
+  id: number
+  doc_type: string
+  original_filename: string
+  content_type: string
+  size: number
+  verification_status: string
+  uploaded_at: string
+  download_url: string | null
+}
+
+export interface Referee {
+  id: number
+  name: string
+  role: string
+  relationship: string
+  phone: string
+  email: string
+}
+
+export interface ConsentStatus {
+  is_minor: boolean
+  consent_version: string
+  consents: {
+    id: number
+    consent_type: string
+    version: string
+    granted_by: string
+    guardian_name: string
+    is_active: boolean
+    granted_at: string
+  }[]
+}
+
+export async function signUploadDocument(
+  docType: string,
+  options?: ApiOptions
+): Promise<{ upload_url: string; storage_path: string; doc_type: string }> {
+  return apiRequest('/api/v1/scholarship/documents/sign-upload/', {
+    method: 'POST',
+    body: JSON.stringify({ doc_type: docType }),
+    ...options,
+  })
+}
+
+/** Direct PUT of the file bytes to the signed Supabase Storage URL (not our API). */
+export async function uploadFileToSignedUrl(uploadUrl: string, file: File): Promise<void> {
+  const resp = await fetch(uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'true' },
+  })
+  if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`)
+}
+
+export async function recordDocument(
+  payload: { doc_type: string; storage_path: string; original_filename?: string; content_type?: string; size?: number },
+  options?: ApiOptions
+): Promise<ApplicantDocument> {
+  return apiRequest('/api/v1/scholarship/documents/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    ...options,
+  })
+}
+
+export async function listDocuments(options?: ApiOptions): Promise<{ documents: ApplicantDocument[] }> {
+  return apiRequest('/api/v1/scholarship/documents/', options)
+}
+
+export async function deleteDocument(id: number, options?: ApiOptions): Promise<{ status: string }> {
+  return apiRequest(`/api/v1/scholarship/documents/${id}/`, { method: 'DELETE', ...options })
+}
+
+export async function listReferees(options?: ApiOptions): Promise<{ referees: Referee[] }> {
+  return apiRequest('/api/v1/scholarship/referees/', options)
+}
+
+export async function addReferee(payload: Partial<Referee>, options?: ApiOptions): Promise<Referee> {
+  return apiRequest('/api/v1/scholarship/referees/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    ...options,
+  })
+}
+
+export async function getConsentStatus(options?: ApiOptions): Promise<ConsentStatus> {
+  return apiRequest('/api/v1/scholarship/consent/', options)
+}
+
+export async function recordConsent(
+  payload: { consent_type?: string; locale?: string; granted_by?: string; guardian_name?: string; guardian_relationship?: string },
+  options?: ApiOptions
+): Promise<unknown> {
+  return apiRequest('/api/v1/scholarship/consent/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    ...options,
+  })
+}

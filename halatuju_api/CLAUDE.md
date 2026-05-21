@@ -264,8 +264,11 @@ it a charity, not SC-regulated P2P).
   **swap the DRAFT consent text** (`CONSENT_VERSION`) for the lawyer-reviewed version; wire the
   fail-email scheduler (Cloud Scheduler); browser smoke-test the apply / details / quiz / upload /
   consent flows against a live backend.
-- **Next: Sprint 5b** (frontend) — document upload UI + referee form + consent flow (incl. guardian
-  fields for minors), wired into the next-steps checklist.
+- **Sprint 5b DONE (frontend):** `ScholarshipDocuments` (signed-URL upload), `ScholarshipReferee`,
+  `ScholarshipConsent` (guardian fields for minors) wired as next-steps steps 4–6; 10 API client
+  functions; EN/MS/TA i18n. Frontend suite 37; `next build` clean.
+- **Next: Sprint 6 (LAST)** — AI-drafted sponsor profile (extend `apps/reports` Gemini engine) +
+  MyNadi admin console (Bucket B review, profile approval/publish). Then the single Phase-1 deploy.
 - **Gotcha:** PII source docs in `docs/scholarship/` (`*.pdf|xlsx|txt`) are gitignored — real
   student NRICs/names/financials. Never commit them.
 - **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing the feature branch does not. Keep

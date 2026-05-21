@@ -204,7 +204,9 @@ application form), `src/lib/scholarship.ts` (pure form helpers, node-tested in
 and a new `'apply'` `AuthGateReason` in `lib/auth-context.tsx` + `components/AuthGateModal.tsx`.
 Sprint 4b added `components/ScholarshipNextSteps.tsx` (post-shortlist 3-step checklist + funding/
 deeper-info form), funding/details helpers in `lib/scholarship.ts`, and `updateScholarshipDetails`
-in `lib/api.ts`.
+in `lib/api.ts`. Sprint 5b added `components/Scholarship{Documents,Referee,Consent}.tsx` (signed-URL
+upload + referee + consent flow with guardian fields for minors) as next-steps steps 4–6, plus the
+document/referee/consent client functions in `lib/api.ts`.
 
 ### Backend Root Files
 
