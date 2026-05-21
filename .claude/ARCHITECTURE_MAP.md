@@ -189,7 +189,12 @@ apps/scholarship/                  # Phase 1: intake & profile engine (no money 
 
 **New tables (created in migration; applied to Supabase at deploy):** `scholarship_cohorts`,
 `scholarship_applications`. PRD + roadmap live in `docs/scholarship/`. Phase 1 = 6 sprints;
-Sprint 1 (intake API) done.
+Sprints 1-2 done.
+
+**Frontend (Sprint 2):** `halatuju-web/src/app/scholarship/apply/page.tsx` (single front-door
+application form), `src/lib/scholarship.ts` (pure form helpers, node-tested in
+`src/lib/__tests__/scholarship.test.ts`), `submit/getMyScholarshipApplications` in `lib/api.ts`,
+and a new `'apply'` `AuthGateReason` in `lib/auth-context.tsx` + `components/AuthGateModal.tsx`.
 
 ### Backend Root Files
 

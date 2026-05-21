@@ -22,13 +22,11 @@ Intake API + `ScholarshipCohort`/`ScholarshipApplication` models + trilingual ac
 17 tests; full suite 1023 green. Branch `feature/b40-assistance` (not merged/deployed; Supabase
 migration + RLS not yet applied). See `docs/retrospective-b40-sprint1.md`.
 
-### Sprint 2 — Native application form + single front door (frontend)
-- **Goal:** The "Apply" page works end-to-end for returning and fresh students.
-- **Scope:** trilingual form (EN/MS/TA); login pre-fill path; fresh-student submit →
-  anonymous-sign-in → link-by-NRIC (reuse NRIC hard gate); wire to Sprint 1 API; frontend tests.
-- **Acceptance:** returning user sees pre-filled form; fresh user's submit creates account +
-  application; no double NRIC entry.
-- **Complexity:** Medium
+### Sprint 2 — Native application form + single front door (frontend) ✅ DONE (2026-05-21)
+`/scholarship/apply` trilingual form; single front door reusing Google + NRIC auth via a new
+`'apply'` AuthGateReason; pre-fill from profile; `lib/scholarship.ts` helpers + 13 tests; EN/MS/TA
+i18n (793 keys). check-i18n + 30 frontend tests + `next build` green. Not browser-smoke-tested
+against a live backend yet. See `docs/retrospective-b40-sprint2.md`.
 
 ### Sprint 3 — Shortlisting rules engine + Bucket A/B + pass/fail notifications
 - **Goal:** Applications auto-sort into FAIL / BUCKET_A / BUCKET_B with the right emails.
@@ -78,5 +76,7 @@ S1→S5 (docs attach to application); S4+S5→S6 (profile draft needs deeper inf
 - Programme naming/branding within HalaTuju.
 
 ## Next step
-Sprint 1 complete (17 tests, full suite 1023 green, on branch `feature/b40-assistance`, not yet
-committed/pushed). Start Sprint 2 (native application form) via `Settings/_workflows/sprint-start.md`.
+Sprints 1-2 complete on branch `feature/b40-assistance` (committed; not merged/deployed). Start
+Sprint 3 (shortlisting rules engine + Bucket A/B + pass/fail emails) via
+`Settings/_workflows/sprint-start.md`. Pending before Phase 1 ships: apply Supabase migration + RLS,
+and a browser smoke test of the apply OAuth round-trip.

@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 2 (2026-05-21)
+
+Native application form + single front door (frontend), wired to the Sprint 1 intake API.
+
+### Added
+- **`/scholarship/apply` page** — trilingual application form with a requirements intro and
+  status-gated rendering (loading / sign-in gate / form / success / already-applied), pre-filled
+  from the AuthProvider profile. Lightweight academic capture (SPM A-count or STPM PNGK); full
+  grades + quiz stay deferred to STEP 1A.
+- **`src/lib/scholarship.ts`** — pure, node-testable helpers (`countAGrades`,
+  `profileToApplyDefaults`, `buildApplicationPayload`, `applyFormError`).
+- **API client** — `submitScholarshipApplication` + `getMyScholarshipApplications`.
+- **`'apply'` auth-gate reason** — new branch in `auth-context` + `AuthGateModal` that reuses the
+  existing Google sign-in + NRIC-claim flow and returns the user to `/scholarship/apply`.
+- **"B40 Aid" header nav link.**
+- **i18n** — `scholarship.*` block + `authGate.applyReason` in EN/MS/TA (793 keys, parity verified).
+
+### Tests
+- 13 new (`src/lib/__tests__/scholarship.test.ts`); full frontend suite **30 pass** (17 + 13).
+- check-i18n PASS; `next build` success (`/scholarship/apply` compiles + prerenders).
+
+### Notes
+- Verified at compile + unit + i18n level. The OAuth round-trip (sign-in → return to apply) has
+  not been browser-smoke-tested against a live backend — do so before Phase 1 ships.
+
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 1 (2026-05-21)
 
 New `apps/scholarship/` app — the financing extension's intake backbone. Phase 1 carries

@@ -895,3 +895,47 @@ export async function calculatePathways(
   }))
   return { pathways }
 }
+
+// ── Scholarship (B40 Assistance Programme) ──────────────────────────────
+
+export interface ScholarshipApplication {
+  id: number
+  cohort_code: string
+  cohort_name: string
+  profile_id: string | null
+  qualification: 'spm' | 'stpm'
+  spm_a_count: number | null
+  stpm_pngk: number | null
+  household_income: number | null
+  household_size: number | null
+  receives_str: boolean
+  receives_jkm: boolean
+  intended_pathway: string
+  intends_tertiary_2026: boolean
+  consent_to_contact: boolean
+  status: string
+  bucket: string
+  shortlist_reason: string
+  acknowledged_at: string | null
+  submitted_at: string
+  updated_at: string
+  form_data: Record<string, unknown>
+}
+
+export async function submitScholarshipApplication(
+  payload: Record<string, unknown>,
+  lang: string = 'en',
+  options?: ApiOptions
+): Promise<ScholarshipApplication> {
+  return apiRequest('/api/v1/scholarship/applications/', {
+    method: 'POST',
+    body: JSON.stringify({ ...payload, lang }),
+    ...options,
+  })
+}
+
+export async function getMyScholarshipApplications(
+  options?: ApiOptions
+): Promise<{ total_count: number; applications: ScholarshipApplication[] }> {
+  return apiRequest('/api/v1/scholarship/applications/', options)
+}

@@ -241,11 +241,15 @@ the platform is matchmaker + ledger and never holds cash. No financial return to
 it a charity, not SC-regulated P2P).
 
 - **Sprint 1 DONE:** `apps/scholarship/` intake API — `ScholarshipCohort` + `ScholarshipApplication`
-  models, trilingual acknowledgement email, RLS SQL, 17 tests. Full suite 1023 pass.
+  models, trilingual acknowledgement email, RLS SQL, 17 tests. Full backend suite 1023 pass.
+- **Sprint 2 DONE:** `/scholarship/apply` native form (frontend) — single front door reusing the
+  Google + NRIC auth flow (new `'apply'` AuthGateReason), pre-fill from profile, `lib/scholarship.ts`
+  helpers, EN/MS/TA i18n. 13 frontend tests (suite 30); `next build` clean. **Not browser-smoke-tested
+  against a live backend yet** — do so before Phase 1 ships.
 - **On branch `feature/b40-assistance` — NOT merged, NOT deployed.** The Supabase migration + RLS
   have **not** been applied yet (deferred to the first deploy, end of Phase 1).
-- **Next: Sprint 2** — native application form (frontend single front door; fresh students get an
-  account auto-created via the NRIC gate; pre-fill from `StudentProfile`).
+- **Next: Sprint 3** — shortlisting rules engine + Bucket A/B + pass/fail emails (reads thresholds
+  from `ScholarshipCohort`; use the 3 B40 PDF candidates as golden-master fixtures).
 - **Gotcha:** PII source docs in `docs/scholarship/` (`*.pdf|xlsx|txt`) are gitignored — real
   student NRICs/names/financials. Never commit them.
 - **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing the feature branch does not. Keep

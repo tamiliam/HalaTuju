@@ -14,7 +14,7 @@ import type { StudentProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
 import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_PENDING_AUTH_ACTION } from '@/lib/storage'
 
-export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | null
+export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | 'apply' | null
 export type AuthStatus = 'loading' | 'anonymous' | 'needs-nric' | 'ready'
 
 interface AuthGateOptions {

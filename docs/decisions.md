@@ -478,3 +478,27 @@
 **Trade-offs:** If a future sprint wants a direct, public, non-sensitive read (e.g. an open cohort listing via PostgREST), a narrowly-scoped SELECT policy must be added for that one table.
 
 **Revisit if:** A frontend feature needs to read these tables directly from Supabase rather than through the Django API.
+
+## New `'apply'` AuthGateReason extends the shared auth flow — B40 Sprint 2, 2026-05-21
+
+**Decision:** Added `'apply'` to `AuthGateReason` and a branch in `AuthGateModal.finishAndClose` that `router.push('/scholarship/apply')`, rather than building a separate auth path for the apply page.
+
+**Alternatives considered:** (1) Reuse the existing `'profile'` reason (but it redirects to dashboard/onboarding, not back to apply). (2) A bespoke inline auth flow on the apply page. (3) Extend the shared flow with one new reason (chosen).
+
+**Rationale:** The auth flow (anonymous sign-in → Google → NRIC claim → resume pending action) is delicate and has been the subject of multiple bug-fix sprints. Reproducing it would be risky and duplicative. A single new reason reuses the entire `KEY_PENDING_AUTH_ACTION` resume machinery and the IC-gate, and returns the user to the apply page — the correct UX with a minimal, contained change.
+
+**Trade-offs:** Touches two shared auth files. Mitigated by mirroring the existing `'quiz'` reason exactly (direct `router.push`) and gating on `next build`.
+
+**Revisit if:** The auth flow is refactored, or apply needs a different post-auth destination.
+
+## Lightweight self-reported academics in the apply form — B40 Sprint 2, 2026-05-21
+
+**Decision:** The apply form captures academics as a single self-reported number (SPM A-count, or STPM PNGK), pre-filled from the profile when grades exist, rather than embedding the full grades-onboarding UI or forcing the student through it first.
+
+**Alternatives considered:** (1) Reuse/embed the full per-subject grades onboarding. (2) Require grades onboarding before the apply page opens. (3) Lightweight self-reported number (chosen).
+
+**Rationale:** The shortlist only needs the A-count / PNGK. Self-reporting keeps "apply-first" smooth (the agreed principle — don't front-load the quiz/onboarding), and documents verify the real figures later. The backend still snapshots the A-count from `profile.grades` when no explicit value is sent, so returning students with grades are covered automatically. Full grades + quiz arrive at STEP 1A (Sprint 4).
+
+**Trade-offs:** Self-reported numbers can be wrong; shortlisting on them is provisional until document verification (Sprint 5). Acceptable — the alternative front-loads friction onto exactly the B40 audience we want to reach.
+
+**Revisit if:** Self-reporting proves unreliable enough to distort shortlisting before documents are collected.
