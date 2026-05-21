@@ -514,3 +514,15 @@
 **Trade-offs:** The submit request does up to two SMTP sends (acknowledgement + pass), adding latency; both are best-effort (failures are swallowed). A future move to async sending would remove the latency. The fail email depends on a scheduler being wired at deploy.
 
 **Revisit if:** SMTP latency degrades the submit UX (move sends to a queue), or the two-email pass flow proves redundant (merge acknowledgement + pass into one email).
+
+## FundingNeed as a separate OneToOne model with a computed total — B40 Sprint 4a, 2026-05-21
+
+**Decision:** Store the funding-need breakdown as its own `FundingNeed` model (OneToOne → application) with typed integer line items and a computed `total` property, rather than a JSON blob on the application.
+
+**Alternatives considered:** (1) A JSON field on the application. (2) Columns directly on the application. (3) Separate OneToOne model (chosen).
+
+**Rationale:** The breakdown will be displayed, summed, shown to sponsors, and eventually used in disbursement maths — typed columns + a computed total are queryable and validatable, and a separate model keeps the already-large application row uncluttered and the funding concern cohesive. Upsert via `update_or_create`.
+
+**Trade-offs:** A second table and a reverse relation to handle (accessed via `try/except DoesNotExist`). Negligible.
+
+**Revisit if:** The breakdown needs free-form, highly variable line items that don't fit fixed columns.

@@ -7,8 +7,17 @@ from apps.courses.models import StudentProfile
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 
 from .models import ScholarshipApplication
-from .serializers import ApplicationCreateSerializer, ApplicationReadSerializer
-from .services import create_application, resolve_open_cohort, shortlist_application
+from .serializers import (
+    ApplicationCreateSerializer,
+    ApplicationDetailsUpdateSerializer,
+    ApplicationReadSerializer,
+)
+from .services import (
+    create_application,
+    resolve_open_cohort,
+    save_application_details,
+    shortlist_application,
+)
 
 
 def _get_profile(user_id):
@@ -25,7 +34,7 @@ class ApplicationListCreateView(APIView):
     def get(self, request):
         qs = ScholarshipApplication.objects.filter(
             profile_id=request.user_id
-        ).select_related('cohort')
+        ).select_related('cohort', 'profile')
         data = ApplicationReadSerializer(qs, many=True).data
         return Response({'total_count': len(data), 'applications': data})
 
@@ -82,13 +91,34 @@ class ApplicationListCreateView(APIView):
 
 
 class ApplicationDetailView(APIView):
-    """GET /api/v1/scholarship/applications/<id>/ -> the caller's application."""
+    """
+    GET   /api/v1/scholarship/applications/<id>/  -> the caller's application
+    PATCH /api/v1/scholarship/applications/<id>/  -> save STEP 2 deeper-info + funding need
+    """
     permission_classes = [SupabaseIsAuthenticated]
 
-    def get(self, request, pk):
-        application = ScholarshipApplication.objects.filter(
+    def _get_own(self, request, pk):
+        return ScholarshipApplication.objects.filter(
             pk=pk, profile_id=request.user_id
-        ).select_related('cohort').first()
+        ).select_related('cohort', 'profile').first()
+
+    def get(self, request, pk):
+        application = self._get_own(request, pk)
         if application is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(ApplicationReadSerializer(application).data)
+
+    def patch(self, request, pk):
+        application = self._get_own(request, pk)
+        if application is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        # Deeper info + funding need are a post-shortlist (STEP 2) step.
+        if application.status != 'shortlisted':
+            return Response(
+                {'error': 'Details can only be added once your application is shortlisted.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        serializer = ApplicationDetailsUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        save_application_details(application, serializer.validated_data)
         return Response(ApplicationReadSerializer(application).data)

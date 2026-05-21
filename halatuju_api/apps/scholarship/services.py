@@ -6,7 +6,7 @@ Pure-ish functions kept out of the view (mirrors apps/courses/eligibility_servic
 from django.utils import timezone
 
 from .emails import send_acknowledgement_email, send_pass_email
-from .models import ScholarshipApplication, ScholarshipCohort
+from .models import FundingNeed, ScholarshipApplication, ScholarshipCohort
 from .shortlisting import evaluate
 
 # SPM grades that count as an "A" for shortlisting (A+, A and A- all count,
@@ -98,4 +98,41 @@ def shortlist_application(application):
             application.decision_email_sent_at = timezone.now()
             application.save(update_fields=['decision_email_sent_at'])
 
+    return application
+
+
+def application_completeness(application):
+    """
+    Report STEP 1A / STEP 2 progress for a (typically shortlisted) application:
+    quiz done (the linked profile has quiz signals), deeper info done, funding
+    need done. The sponsor stage (Phase 2) will gate on ``complete``.
+    """
+    profile = application.profile
+    quiz_done = bool(profile and profile.student_signals)
+    details_done = bool(application.aspirations.strip() and application.justification.strip())
+    try:
+        funding_done = application.funding_need.total > 0
+    except FundingNeed.DoesNotExist:
+        funding_done = False
+    return {
+        'quiz_done': quiz_done,
+        'details_done': details_done,
+        'funding_done': funding_done,
+        'complete': quiz_done and details_done and funding_done,
+    }
+
+
+_DEEPER_FIELDS = ('aspirations', 'plans', 'fears', 'justification')
+
+
+def save_application_details(application, data):
+    """Persist deeper-info fields and upsert the funding-need breakdown."""
+    deeper = {k: data[k] for k in _DEEPER_FIELDS if k in data}
+    if deeper:
+        for k, v in deeper.items():
+            setattr(application, k, v)
+        application.save(update_fields=list(deeper.keys()) + ['updated_at'])
+    fn_data = data.get('funding_need')
+    if fn_data is not None:
+        FundingNeed.objects.update_or_create(application=application, defaults=fn_data)
     return application

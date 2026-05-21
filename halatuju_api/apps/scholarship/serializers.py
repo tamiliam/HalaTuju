@@ -1,7 +1,7 @@
 """Serializers for B40 Assistance Programme intake."""
 from rest_framework import serializers
 
-from .models import ScholarshipApplication
+from .models import FundingNeed, ScholarshipApplication
 
 
 class ApplicationCreateSerializer(serializers.ModelSerializer):
@@ -33,6 +33,26 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
         return value
 
 
+class FundingNeedSerializer(serializers.ModelSerializer):
+    total = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = FundingNeed
+        fields = [
+            'tuition_gap', 'laptop', 'hostel', 'transport', 'books',
+            'monthly_allowance', 'allowance_months', 'other', 'other_desc', 'total',
+        ]
+
+
+class ApplicationDetailsUpdateSerializer(serializers.Serializer):
+    """PATCH payload for STEP 2 deeper-info + funding need."""
+    aspirations = serializers.CharField(required=False, allow_blank=True)
+    plans = serializers.CharField(required=False, allow_blank=True)
+    fears = serializers.CharField(required=False, allow_blank=True)
+    justification = serializers.CharField(required=False, allow_blank=True)
+    funding_need = FundingNeedSerializer(required=False)
+
+
 class ApplicationReadSerializer(serializers.ModelSerializer):
     """Output representation of an application (read-only)."""
     cohort_code = serializers.CharField(source='cohort.code', read_only=True)
@@ -40,6 +60,8 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
     profile_id = serializers.CharField(
         source='profile.pk', read_only=True, allow_null=True,
     )
+    funding_need = serializers.SerializerMethodField()
+    completeness = serializers.SerializerMethodField()
 
     class Meta:
         model = ScholarshipApplication
@@ -52,5 +74,17 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'consent_to_contact',
             'status', 'bucket', 'shortlist_reason',
             'acknowledged_at', 'submitted_at', 'updated_at',
+            'aspirations', 'plans', 'fears', 'justification',
+            'funding_need', 'completeness',
             'form_data',
         ]
+
+    def get_funding_need(self, obj):
+        try:
+            return FundingNeedSerializer(obj.funding_need).data
+        except FundingNeed.DoesNotExist:
+            return None
+
+    def get_completeness(self, obj):
+        from .services import application_completeness
+        return application_completeness(obj)

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 4a (2026-05-21)
+
+Post-shortlist data layer: funding need + deeper info + completeness (backend; frontend is 4b).
+
+### Added
+- **`FundingNeed` model** (OneToOne → application, `funding_needs`) — line items (tuition_gap,
+  laptop, hostel, transport, books, monthly_allowance × allowance_months, other, other_desc) + a
+  computed `total`. Quantifies the funding ask (the B40 analysis flagged its absence).
+- **Deeper-info fields** on `ScholarshipApplication`: `aspirations`, `plans`, `fears`, `justification`.
+- **`PATCH /api/v1/scholarship/applications/<id>/`** — saves deeper-info + funding need for the
+  caller's own **shortlisted** application; read serializer now returns `funding_need` + a
+  `completeness` block (`quiz_done` / `details_done` / `funding_done` / `complete`).
+- `application_completeness()` + `save_application_details()` services. Migration 0003.
+- `funding_needs` added to the deny-by-default RLS SQL.
+
+### Tests
+- 11 new (`test_details.py`). Full backend suite **1059 pass, 0 fail**; golden masters unchanged.
+
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 3 (2026-05-21)
 
 Mechanical shortlisting engine + Bucket A/B + pass/fail decision emails.

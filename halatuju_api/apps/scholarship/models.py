@@ -151,6 +151,14 @@ class ScholarshipApplication(models.Model):
         help_text="Resolved contact email captured at submit (for the deferred fail email)",
     )
 
+    # Deeper info (STEP 2 — collected after shortlisting)
+    aspirations = models.TextField(blank=True, default='')
+    plans = models.TextField(blank=True, default='')
+    fears = models.TextField(blank=True, default='')
+    justification = models.TextField(
+        blank=True, default='', help_text="Why the student needs assistance",
+    )
+
     form_data = models.JSONField(
         default=dict, blank=True,
         help_text="Raw/extra intake fields from the native form",
@@ -173,3 +181,37 @@ class ScholarshipApplication(models.Model):
     def __str__(self):
         who = self.profile_id or 'unlinked'
         return f'Application #{self.pk} ({who} -> {self.cohort.code})'
+
+
+class FundingNeed(models.Model):
+    """
+    Structured funding-need breakdown for one application — the "quantified ask"
+    a sponsor needs (the B40 analysis flagged its absence). Line items in RM.
+    """
+    application = models.OneToOneField(
+        ScholarshipApplication, on_delete=models.CASCADE, related_name='funding_need',
+    )
+    tuition_gap = models.IntegerField(default=0, help_text="Tuition not covered by subsidy (RM)")
+    laptop = models.IntegerField(default=0)
+    hostel = models.IntegerField(default=0)
+    transport = models.IntegerField(default=0)
+    books = models.IntegerField(default=0)
+    monthly_allowance = models.IntegerField(default=0, help_text="Living allowance per month (RM)")
+    allowance_months = models.IntegerField(default=0, help_text="Number of months of allowance")
+    other = models.IntegerField(default=0)
+    other_desc = models.CharField(max_length=200, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'funding_needs'
+
+    @property
+    def total(self):
+        return (
+            self.tuition_gap + self.laptop + self.hostel + self.transport
+            + self.books + self.monthly_allowance * self.allowance_months + self.other
+        )
+
+    def __str__(self):
+        return f'FundingNeed for application #{self.application_id} (RM{self.total})'

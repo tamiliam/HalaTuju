@@ -35,13 +35,17 @@ emails; `send_pending_decision_emails` command (delayed fail email); migration 0
 25 new tests; backend suite 1048 green. Scheduler not yet wired. See
 `docs/retrospective-b40-sprint3.md`.
 
-### Sprint 4 — STEP 1A quiz gate + deeper-info capture
-- **Goal:** Passed students complete their course profile (quiz) and submit aspirations + a
-  quantified funding need.
-- **Scope:** incompleteness-badge gate (reuse) routing to existing quiz; `FundingNeed` model +
-  breakdown form; deeper-info fields (aspirations/plans/fears); backend + frontend + tests.
-- **Acceptance:** passed student can't reach sponsor stage until quiz done; funding envelope sums
-  correctly; returning quiz-completers skip ahead.
+### Sprint 4 — STEP 1A quiz gate + deeper-info capture (split into 4a + 4b)
+
+**Sprint 4a — backend ✅ DONE (2026-05-21):** `FundingNeed` model (OneToOne, computed total) +
+deeper-info fields (aspirations/plans/fears/justification) + `PATCH` details endpoint
+(own, shortlisted-only) + `completeness` block (`quiz_done`/`details_done`/`funding_done`/`complete`)
+on the read serializer. Migration 0003. 11 tests; backend suite 1059 green. See
+`docs/retrospective-b40-sprint4a.md`.
+
+**Sprint 4b — frontend (TODO):** next-steps checklist (incompleteness-badge pattern) on the
+shortlisted state; quiz-gate routing to the existing `/quiz`; funding/deeper-info form (PATCH);
+i18n; tests. Returning quiz-completers skip the quiz step.
 - **Complexity:** Medium
 
 ### Sprint 5 — Document vault + referee + e-consent (PDPA)

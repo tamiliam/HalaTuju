@@ -191,7 +191,10 @@ apps/scholarship/                  # Phase 1: intake & profile engine (no money 
 `scholarship_applications`. PRD + roadmap live in `docs/scholarship/`. Phase 1 = 6 sprints;
 Sprints 1-3 done. Sprint 3 added `shortlisting.py` (pure rules engine → A/B/FAIL),
 `management/commands/send_pending_decision_emails.py` (delayed fail email), and 4 model fields
-(`shortlisted_at`, `decision_email_sent_at`, `locale`, `notify_email`; migration 0002).
+(`shortlisted_at`, `decision_email_sent_at`, `locale`, `notify_email`; migration 0002). Sprint 4a
+added the `FundingNeed` model (OneToOne → application, `funding_needs`, computed `total`), deeper-info
+fields (`aspirations`/`plans`/`fears`/`justification`), a `PATCH` details endpoint, and a
+`completeness` block on the read serializer (migration 0003).
 
 **Frontend (Sprint 2):** `halatuju-web/src/app/scholarship/apply/page.tsx` (single front-door
 application form), `src/lib/scholarship.ts` (pure form helpers, node-tested in

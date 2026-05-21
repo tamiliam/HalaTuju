@@ -249,10 +249,14 @@ it a charity, not SC-regulated P2P).
 - **Sprint 3 DONE:** mechanical shortlisting engine (`shortlisting.py`, pure, cohort-configured),
   Bucket A/B, trilingual pass/fail emails, `send_pending_decision_emails` command (delayed fail
   email). Migration 0002. Backend suite 1048 pass.
+- **Sprint 4a DONE:** `FundingNeed` model (OneToOne, computed total) + deeper-info fields +
+  `PATCH` details endpoint (own, shortlisted-only) + `completeness` block on read. Migration 0003.
+  Backend suite 1059 pass.
 - **On branch `feature/b40-assistance` — NOT merged, NOT deployed.** Carry-forward before Phase 1
-  ships: apply Supabase migrations (0001+0002) + RLS; wire the fail-email scheduler (Cloud
+  ships: apply Supabase migrations (0001+0002+0003) + RLS; wire the fail-email scheduler (Cloud
   Scheduler); browser smoke-test the apply OAuth round-trip.
-- **Next: Sprint 4** — STEP 1A quiz gate + deeper-info capture + `FundingNeed` model.
+- **Next: Sprint 4b** (frontend) — next-steps checklist (incompleteness-badge), quiz-gate routing
+  to `/quiz`, and the funding/deeper-info form rendering the `completeness` block.
 - **Gotcha:** PII source docs in `docs/scholarship/` (`*.pdf|xlsx|txt`) are gitignored — real
   student NRICs/names/financials. Never commit them.
 - **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing the feature branch does not. Keep
