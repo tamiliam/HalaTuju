@@ -10,6 +10,13 @@ from .views import (
     DocumentSignUploadView,
     RefereeListCreateView,
 )
+from .views_admin import (
+    AdminApplicationDetailView,
+    AdminApplicationListView,
+    AdminGenerateProfileView,
+    AdminProfileEditView,
+    AdminPublishProfileView,
+)
 
 urlpatterns = [
     path('scholarship/applications/', ApplicationListCreateView.as_view()),
@@ -19,4 +26,11 @@ urlpatterns = [
     path('scholarship/documents/<int:pk>/', DocumentDetailView.as_view()),
     path('scholarship/referees/', RefereeListCreateView.as_view()),
     path('scholarship/consent/', ConsentView.as_view()),
+
+    # MyNadi admin (PartnerAdmin auth; /admin/ is NRIC-gate whitelisted)
+    path('admin/scholarship/applications/', AdminApplicationListView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/', AdminApplicationDetailView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/generate-profile/', AdminGenerateProfileView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/profile/', AdminProfileEditView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/publish/', AdminPublishProfileView.as_view()),
 ]

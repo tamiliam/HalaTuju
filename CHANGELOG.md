@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 6a (2026-05-22)
+
+AI sponsor-profile drafting + MyNadi admin API (backend; the admin console UI is 6b).
+
+### Added
+- **`SponsorProfile` model** (OneToOne application; `draft_markdown`/`edited_markdown`, status
+  draft→approved→published, `model_used`, timestamps; migration 0005, RLS).
+- **`profile_engine.py`** — `generate_sponsor_profile()` drafts a sponsor-ready Markdown profile
+  from intake + deeper-info + funding + grades + referee via the Gemini cascade (graceful error).
+- **Admin API** (reuses `PartnerAdminMixin`, super-admin sees all): list applications (status/bucket
+  filter), full detail (intake/funding/docs/referees/consents/profile), generate-profile, edit
+  profile, publish — under `/api/v1/admin/scholarship/`.
+
+### Tests
+- 9 new (`test_admin_scholarship.py`, Gemini mocked). Full backend suite **1086 pass, 0 fail**;
+  golden masters unchanged.
+
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 5b (2026-05-22)
 
 Document upload + referee + consent UI (frontend) — completes Sprint 5.

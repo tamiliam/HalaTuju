@@ -550,3 +550,15 @@
 **Trade-offs:** Consent text is DRAFT until lawyer review (the version string swaps then). NRIC-derived age assumes a valid NRIC (already gated at identity).
 
 **Revisit if:** The lawyer requires a different consent structure, or non-NRIC identities are admitted.
+
+## AI-draft → admin-edit → publish profile workflow — B40 Sprint 6a, 2026-05-22
+
+**Decision:** `SponsorProfile` keeps the raw AI `draft_markdown` and the admin's `edited_markdown` separately, with `current_markdown` = edited-wins, and a status flow draft → approved → published. Regenerating a published profile reverts it to draft.
+
+**Alternatives considered:** (1) A single markdown field overwritten by both AI and admin. (2) Auto-publish the AI draft. (3) Separate draft/edited with an explicit publish status (chosen).
+
+**Rationale:** Keeping the AI draft distinct from the admin's edits preserves the original for comparison/regeneration and makes "what sponsors will see" unambiguous (`current_markdown`). The status flow gives an explicit human publish gate before a profile becomes sponsor-visible (Phase 2) — never auto-publish AI output about a real person. Reverting on regenerate prevents a stale published profile silently diverging from a fresh draft.
+
+**Trade-offs:** Two text fields + a status to reason about. Negligible vs. the auditability and the human gate.
+
+**Revisit if:** Profiles need multi-version history (add a revisions table), or sponsors should ever see drafts directly (they shouldn't).

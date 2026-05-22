@@ -67,14 +67,15 @@ browser-smoke-tested (needs the live bucket). See `docs/retrospective-b40-sprint
 (`CONSENT_VERSION`) for the lawyer-reviewed version.
 - **Complexity:** High
 
-### Sprint 6 — AI-drafted sponsor profile + admin review console
-- **Goal:** MyNadi staff review Bucket B, approve AI-drafted profiles, and publish.
-- **Scope:** extend `apps/reports/report_engine.py` (Gemini) to draft a sponsor-ready profile from
-  intake + deeper-info + notes; admin queues (Bucket B review, profile approval); publish/unpublish
-  action; tests.
-- **Acceptance:** profile auto-drafted, admin edits/approves, reaches "published" state; full audit
-  trail.
-- **Complexity:** High
+### Sprint 6 — AI-drafted sponsor profile + admin console (split into 6a + 6b)
+
+**Sprint 6a — backend ✅ DONE (2026-05-22):** `SponsorProfile` model (draft/edited/status; migration
+0005, RLS); `profile_engine.py` (Gemini sponsor-profile drafting from application data); MyNadi admin
+API (list/detail/generate/edit/publish) reusing `PartnerAdminMixin`. 9 tests; backend suite 1086.
+See `docs/retrospective-b40-sprint6a.md`.
+
+**Sprint 6b — frontend (TODO, LAST):** MyNadi admin console UI — applications list/detail, Bucket B
+review, AI-profile generate/edit/publish — extending the existing admin portal.
 
 ## Dependencies
 S1→S2 (form needs API); S1→S3 (shortlist needs application model); S3→S4 (quiz gate is post-pass);

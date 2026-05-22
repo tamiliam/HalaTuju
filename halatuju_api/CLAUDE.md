@@ -260,15 +260,18 @@ it a charity, not SC-regulated P2P).
   `storage.py` (signed URLs, private bucket) + endpoints + consent guardian gate (minor → guardian,
   age from NRIC). Backend suite 1077.
 - **On branch `feature/b40-assistance` — NOT merged, NOT deployed.** Carry-forward before Phase 1
-  ships: apply Supabase migrations (0001–0004) + RLS; **create the `b40-documents` private bucket**;
+  ships: apply Supabase migrations (0001–0005) + RLS; **create the `b40-documents` private bucket**;
   **swap the DRAFT consent text** (`CONSENT_VERSION`) for the lawyer-reviewed version; wire the
   fail-email scheduler (Cloud Scheduler); browser smoke-test the apply / details / quiz / upload /
   consent flows against a live backend.
 - **Sprint 5b DONE (frontend):** `ScholarshipDocuments` (signed-URL upload), `ScholarshipReferee`,
   `ScholarshipConsent` (guardian fields for minors) wired as next-steps steps 4–6; 10 API client
   functions; EN/MS/TA i18n. Frontend suite 37; `next build` clean.
-- **Next: Sprint 6 (LAST)** — AI-drafted sponsor profile (extend `apps/reports` Gemini engine) +
-  MyNadi admin console (Bucket B review, profile approval/publish). Then the single Phase-1 deploy.
+- **Sprint 6a DONE (backend):** `SponsorProfile` model (migration 0005) + `profile_engine.py`
+  (Gemini sponsor-profile drafting) + MyNadi admin API (list/detail/generate/edit/publish, reuses
+  `PartnerAdminMixin`). Backend suite 1086.
+- **Next: Sprint 6b (LAST)** — MyNadi admin console UI (applications list/detail, Bucket B review,
+  AI-profile generate/edit/publish), extending the existing admin portal. Then the single deploy.
 - **Gotcha:** PII source docs in `docs/scholarship/` (`*.pdf|xlsx|txt`) are gitignored — real
   student NRICs/names/financials. Never commit them.
 - **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing the feature branch does not. Keep

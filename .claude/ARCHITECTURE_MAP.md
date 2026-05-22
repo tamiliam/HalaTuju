@@ -196,7 +196,10 @@ added the `FundingNeed` model (OneToOne → application, `funding_needs`, comput
 fields (`aspirations`/`plans`/`fears`/`justification`), a `PATCH` details endpoint, and a
 `completeness` block on the read serializer (migration 0003). Sprint 5a added `ApplicantDocument`/
 `Referee`/`Consent` models, `storage.py` (signed-URL private-bucket vault), and document/referee/
-consent endpoints with a minor→guardian consent gate (migration 0004).
+consent endpoints with a minor→guardian consent gate (migration 0004). Sprint 6a added the
+`SponsorProfile` model, `profile_engine.py` (Gemini sponsor-profile drafting), and the MyNadi admin
+API (`views_admin.py`/`serializers_admin.py`, reusing `PartnerAdminMixin`) under
+`/api/v1/admin/scholarship/` (migration 0005).
 
 **Frontend (Sprint 2):** `halatuju-web/src/app/scholarship/apply/page.tsx` (single front-door
 application form), `src/lib/scholarship.ts` (pure form helpers, node-tested in
