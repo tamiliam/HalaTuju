@@ -1,6 +1,7 @@
 import {
   countAGrades,
   profileToApplyDefaults,
+  profileAcademicSummary,
   buildApplicationPayload,
   applyFormError,
   fundingTotal,
@@ -15,9 +16,6 @@ import type { StudentProfile, ScholarshipApplication } from '@/lib/api'
 
 function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
   return {
-    qualification: 'spm',
-    spmACount: '5',
-    stpmPngk: '',
     householdIncome: '2500',
     householdSize: '5',
     receivesStr: true,
@@ -43,46 +41,69 @@ describe('countAGrades', () => {
 })
 
 describe('profileToApplyDefaults', () => {
-  it('defaults to SPM with a snapshotted A-count', () => {
+  it('pre-fills the financial fields from the profile (academic is read-only, not in the form)', () => {
     const profile = {
       grades: { math: 'A', sej: 'A', tamil: 'A+', eko: 'A-', sci: 'A-' },
       exam_type: 'spm',
+      household_income: 2500, household_size: 6, receives_str: true, receives_jkm: false,
     } as unknown as StudentProfile
     const d = profileToApplyDefaults(profile)
-    expect(d.qualification).toBe('spm')
-    expect(d.spmACount).toBe('5')
+    expect(d.householdIncome).toBe('2500')
+    expect(d.householdSize).toBe('6')
+    expect(d.receivesStr).toBe(true)
     expect(d.consentToContact).toBe(false)
     expect(d.intendsTertiary2026).toBe(true)
+    // academic fields are NOT part of the form state any more
+    expect((d as Record<string, unknown>).spmACount).toBeUndefined()
   })
-  it('uses STPM PNGK when exam_type is stpm', () => {
-    const profile = { exam_type: 'stpm', stpm_cgpa: 3.5 } as unknown as StudentProfile
-    const d = profileToApplyDefaults(profile)
-    expect(d.qualification).toBe('stpm')
-    expect(d.stpmPngk).toBe('3.5')
-  })
-  it('handles a null profile', () => {
+  it('handles a null profile (blank financial fields)', () => {
     const d = profileToApplyDefaults(null)
-    expect(d.qualification).toBe('spm')
-    expect(d.spmACount).toBe('')
+    expect(d.householdIncome).toBe('')
+    expect(d.householdSize).toBe('')
+    expect(d.receivesStr).toBe(false)
+  })
+})
+
+describe('profileAcademicSummary', () => {
+  it('summarises SPM A/A+ counts from grades', () => {
+    const profile = { exam_type: 'spm', grades: { a: 'A+', b: 'A+', c: 'A', d: 'A-', e: 'B' } } as unknown as StudentProfile
+    const s = profileAcademicSummary(profile)
+    expect(s.examType).toBe('spm')
+    expect(s.aCount).toBe(4)
+    expect(s.aPlusCount).toBe(2)
+    expect(s.hasData).toBe(true)
+  })
+  it('uses STPM CGPA when exam_type is stpm', () => {
+    const s = profileAcademicSummary({ exam_type: 'stpm', stpm_cgpa: 3.5 } as unknown as StudentProfile)
+    expect(s.examType).toBe('stpm')
+    expect(s.stpmCgpa).toBe(3.5)
+    expect(s.hasData).toBe(true)
+  })
+  it('flags missing academic data', () => {
+    expect(profileAcademicSummary(null).hasData).toBe(false)
+    expect(profileAcademicSummary({ exam_type: 'spm', grades: {} } as unknown as StudentProfile).hasData).toBe(false)
+    expect(profileAcademicSummary({ exam_type: 'stpm' } as unknown as StudentProfile).hasData).toBe(false)
   })
 })
 
 describe('buildApplicationPayload', () => {
-  it('maps SPM form to snake_case payload, nulling STPM fields', () => {
-    const p = buildApplicationPayload(baseForm())
-    expect(p.qualification).toBe('spm')
-    expect(p.spm_a_count).toBe(5)
-    expect(p.stpm_pngk).toBeNull()
+  it('maps the financial + application fields to a snake_case payload (no academic fields)', () => {
+    const p = buildApplicationPayload(baseForm()) as Record<string, unknown>
     expect(p.household_income).toBe(2500)
     expect(p.household_size).toBe(5)
     expect(p.receives_str).toBe(true)
+    expect(p.intended_pathway).toBe('asasi')
     expect(p.consent_to_contact).toBe(true)
     expect(p.form_data).toEqual({})
+    // academic data is read from the profile server-side, never posted
+    expect(p.qualification).toBeUndefined()
+    expect(p.spm_a_count).toBeUndefined()
+    expect(p.stpm_pngk).toBeUndefined()
   })
-  it('maps STPM form, nulling SPM A-count', () => {
-    const p = buildApplicationPayload(baseForm({ qualification: 'stpm', stpmPngk: '3.2', spmACount: '' }))
-    expect(p.spm_a_count).toBeNull()
-    expect(p.stpm_pngk).toBeCloseTo(3.2)
+  it('nulls a blank income / size', () => {
+    const p = buildApplicationPayload(baseForm({ householdIncome: '', householdSize: '' }))
+    expect(p.household_income).toBeNull()
+    expect(p.household_size).toBeNull()
   })
   it('puts notes into form_data', () => {
     const p = buildApplicationPayload(baseForm({ notes: '  hello  ' }))
@@ -91,17 +112,11 @@ describe('buildApplicationPayload', () => {
 })
 
 describe('applyFormError', () => {
-  it('passes a complete SPM form', () => {
+  it('passes a complete form', () => {
     expect(applyFormError(baseForm())).toBeNull()
   })
   it('requires consent', () => {
     expect(applyFormError(baseForm({ consentToContact: false }))).toBe('consent')
-  })
-  it('requires an A-count for SPM', () => {
-    expect(applyFormError(baseForm({ spmACount: '' }))).toBe('aCount')
-  })
-  it('requires a PNGK for STPM', () => {
-    expect(applyFormError(baseForm({ qualification: 'stpm', stpmPngk: '', spmACount: '' }))).toBe('pngk')
   })
   it('requires household income', () => {
     expect(applyFormError(baseForm({ householdIncome: '' }))).toBe('income')

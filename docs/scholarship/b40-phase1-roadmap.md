@@ -91,7 +91,14 @@ The HalaTuju profile is now the single source of truth for applicant academic + 
 (no duplication on the application; `intake_snapshot` holds the immutable audit copy; the apply
 form pre-fills from and writes back to the profile). Email de-Gmailed (Brevo relay, env-driven).
 Migrations `courses 0047` + `scholarship 0006`. Backend suite 1086. See `docs/decisions.md`.
-**Frontend not yet rebuilt to the new shape** — that follows the Stitch redesign (next).
+
+### Phase 1.5b — apply-form frontend rebuild ✅ DONE (2026-05-22)
+Stitch design approved (Empathetic Guidance system): **landing soft sign-in gate** + **tabbed
+5-section form (Form A)** in the `HalaTuju B40 Assistance` Stitch project. Frontend rebuilt to match
+and to the profile-canonical API: sections 1 & 3 read-only/pre-filled with "From your HalaTuju profile"
+badges; section 2 writes financial fields back to the profile; academic data never posted; empty-state
+quiz prompt when the profile lacks results. New `scholarship.apply.*` i18n (EN/MS/TA, 925 keys).
+Jest 37, `next build` green. **Live browser smoke-test still pending** (pre-deploy carry-forward #6).
 
 ## Dependencies
 S1→S2 (form needs API); S1→S3 (shortlist needs application model); S3→S4 (quiz gate is post-pass);

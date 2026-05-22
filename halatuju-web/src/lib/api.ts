@@ -67,6 +67,12 @@ export interface StudentProfile {
   stpm_grades?: Record<string, string>
   stpm_cgpa?: number
   muet_band?: number
+  // Financial detail — canonical home for the B40 Assistance Programme
+  household_income?: number | null
+  household_size?: number | null
+  receives_str?: boolean
+  receives_jkm?: boolean
+  guardians?: { name?: string; relationship?: string; occupation?: string; income?: number }[]
 }
 
 export interface EligibleCourse {
@@ -923,7 +929,8 @@ export interface ScholarshipApplication {
   cohort_code: string
   cohort_name: string
   profile_id: string | null
-  qualification: 'spm' | 'stpm'
+  // Academic + financial fields are derived live from the canonical profile.
+  exam_type?: 'spm' | 'stpm'
   spm_a_count: number | null
   stpm_pngk: number | null
   household_income: number | null
@@ -946,6 +953,7 @@ export interface ScholarshipApplication {
   funding_need: FundingNeed | null
   completeness: ApplicationCompleteness
   form_data: Record<string, unknown>
+  intake_snapshot?: Record<string, unknown>   // frozen audit copy of what was declared at submit
 }
 
 export async function submitScholarshipApplication(

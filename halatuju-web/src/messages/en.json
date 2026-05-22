@@ -375,7 +375,7 @@
         "other": "Other / not sure yet"
       },
       "intendLabel": "I intend to continue to tertiary education this year.",
-      "notesLabel": "Anything else you'd like us to know (optional)",
+      "notesLabel": "Tell us briefly why you need assistance and what would help",
       "notesPlaceholder": "Your plans, hopes, or circumstances…",
       "consentLabel": "I consent to be contacted about this application.",
       "submit": "Submit application",
@@ -391,7 +391,46 @@
         "pngk": "Please enter your STPM PNGK.",
         "income": "Please enter your combined monthly household income.",
         "generic": "Something went wrong submitting your application. You may have already applied, or applications may be closed. Please try again later."
-      }
+      },
+      "gate": {
+        "readFreely": "Read everything freely — you only need to sign in when you're ready to apply.",
+        "helper": "New here? The same button creates your HalaTuju account. Already did the HalaTuju quiz? We'll use your profile so you never retype anything."
+      },
+      "field": {
+        "name": "Full name",
+        "school": "School",
+        "ic": "IC number",
+        "email": "Contact email"
+      },
+      "section": {
+        "personal": "About You",
+        "family": "Your Family",
+        "results": "Your SPM / STPM Results",
+        "plans": "Your Plans",
+        "support": "Support You'd Like From Us"
+      },
+      "tab": {
+        "personal": "About",
+        "family": "Family",
+        "results": "Results",
+        "plans": "Plans",
+        "support": "Support"
+      },
+      "fromProfile": "From your HalaTuju profile",
+      "edit": "Edit",
+      "writebackNote": "Updating these updates your HalaTuju profile too.",
+      "aGradesWord": "A's",
+      "including": "including",
+      "resultsFromProfile": "From your saved results",
+      "resultsWrong": "Results wrong? Update them in your profile",
+      "noResultsTitle": "We don't have your results yet",
+      "noResultsBody": "Finish your HalaTuju quiz so we can assess your application.",
+      "noResultsCta": "Go to the quiz",
+      "signedInAs": "Signed in as",
+      "usingProfile": "Using your HalaTuju profile",
+      "step": "Step",
+      "back": "Back",
+      "continue": "Continue"
     },
     "nextSteps": {
       "title": "You've been shortlisted!",

@@ -375,7 +375,7 @@
         "other": "Lain-lain / belum pasti"
       },
       "intendLabel": "Saya berhasrat melanjutkan pengajian tertiari tahun ini.",
-      "notesLabel": "Apa-apa lagi yang ingin anda kongsikan (pilihan)",
+      "notesLabel": "Beritahu kami secara ringkas mengapa anda memerlukan bantuan dan apa yang membantu",
       "notesPlaceholder": "Rancangan, harapan atau keadaan anda…",
       "consentLabel": "Saya bersetuju untuk dihubungi mengenai permohonan ini.",
       "submit": "Hantar permohonan",
@@ -391,7 +391,46 @@
         "pngk": "Sila masukkan PNGK STPM anda.",
         "income": "Sila masukkan jumlah pendapatan isi rumah bulanan anda.",
         "generic": "Sesuatu telah berlaku semasa menghantar permohonan anda. Mungkin anda telah memohon, atau permohonan telah ditutup. Sila cuba sebentar lagi."
-      }
+      },
+      "gate": {
+        "readFreely": "Baca semuanya dengan bebas — anda hanya perlu log masuk apabila bersedia untuk memohon.",
+        "helper": "Baru di sini? Butang yang sama akan mencipta akaun HalaTuju anda. Sudah buat kuiz HalaTuju? Kami akan guna profil anda supaya anda tidak perlu menaip semula."
+      },
+      "field": {
+        "name": "Nama penuh",
+        "school": "Sekolah",
+        "ic": "Nombor IC",
+        "email": "E-mel hubungan"
+      },
+      "section": {
+        "personal": "Tentang Anda",
+        "family": "Keluarga Anda",
+        "results": "Keputusan SPM / STPM Anda",
+        "plans": "Rancangan Anda",
+        "support": "Bantuan Yang Anda Mahukan"
+      },
+      "tab": {
+        "personal": "Diri",
+        "family": "Keluarga",
+        "results": "Keputusan",
+        "plans": "Rancangan",
+        "support": "Bantuan"
+      },
+      "fromProfile": "Daripada profil HalaTuju anda",
+      "edit": "Edit",
+      "writebackNote": "Mengemas kini ini turut mengemas kini profil HalaTuju anda.",
+      "aGradesWord": "A",
+      "including": "termasuk",
+      "resultsFromProfile": "Daripada keputusan tersimpan anda",
+      "resultsWrong": "Keputusan salah? Kemas kini dalam profil anda",
+      "noResultsTitle": "Kami belum ada keputusan anda",
+      "noResultsBody": "Lengkapkan kuiz HalaTuju supaya kami boleh menilai permohonan anda.",
+      "noResultsCta": "Pergi ke kuiz",
+      "signedInAs": "Log masuk sebagai",
+      "usingProfile": "Menggunakan profil HalaTuju anda",
+      "step": "Langkah",
+      "back": "Kembali",
+      "continue": "Teruskan"
     },
     "nextSteps": {
       "title": "Anda telah disenarai pendek!",

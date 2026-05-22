@@ -24,11 +24,14 @@ export const PATHWAY_OPTIONS: IntendedPathway[] = [
   'asasi', 'matrik', 'stpm', 'pismp', 'diploma', 'degree', 'other',
 ]
 
+/**
+ * The apply form only carries fields the applicant edits here. Academic data
+ * (exam type, grades, STPM CGPA) is read live from the canonical HalaTuju
+ * profile — never collected or posted by this form. The financial fields below
+ * are written back to the profile on submit (their canonical home).
+ */
 export interface ApplyFormState {
-  qualification: Qualification
-  spmACount: string   // strings for controlled inputs
-  stpmPngk: string
-  householdIncome: string
+  householdIncome: string   // strings for controlled inputs
   householdSize: string
   receivesStr: boolean
   receivesJkm: boolean
@@ -39,16 +42,13 @@ export interface ApplyFormState {
 }
 
 export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFormState {
-  const qualification: Qualification = profile?.exam_type === 'stpm' ? 'stpm' : 'spm'
-  const aCount = countAGrades(profile?.grades)
+  // Pre-fill the financial fields from the profile (the form refreshes them and
+  // writes any change back). Academic data is shown read-only, not in the form.
   return {
-    qualification,
-    spmACount: aCount > 0 ? String(aCount) : '',
-    stpmPngk: profile?.stpm_cgpa != null ? String(profile.stpm_cgpa) : '',
-    householdIncome: '',
-    householdSize: '',
-    receivesStr: false,
-    receivesJkm: false,
+    householdIncome: profile?.household_income != null ? String(profile.household_income) : '',
+    householdSize: profile?.household_size != null ? String(profile.household_size) : '',
+    receivesStr: !!profile?.receives_str,
+    receivesJkm: !!profile?.receives_jkm,
     intendedPathway: '',
     intendsTertiary2026: true,
     consentToContact: false,
@@ -56,10 +56,30 @@ export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFo
   }
 }
 
+/** A read-only summary of the profile's academic standing, for display only. */
+export interface AcademicSummary {
+  examType: Qualification
+  aCount: number          // SPM A+/A/A- count
+  aPlusCount: number      // SPM A+ count, for the "including N A+" line
+  stpmCgpa: number | null
+  hasData: boolean        // does the profile carry enough academic data to score?
+}
+
+export function profileAcademicSummary(profile?: StudentProfile | null): AcademicSummary {
+  const examType: Qualification = profile?.exam_type === 'stpm' ? 'stpm' : 'spm'
+  const grades = profile?.grades
+  const aCount = countAGrades(grades)
+  const aPlusCount = grades
+    ? Object.values(grades).filter((g) => typeof g === 'string' && g.trim().toUpperCase() === 'A+').length
+    : 0
+  const stpmCgpa = profile?.stpm_cgpa ?? null
+  const hasData = examType === 'stpm'
+    ? stpmCgpa != null
+    : !!grades && Object.keys(grades).length > 0
+  return { examType, aCount, aPlusCount, stpmCgpa, hasData }
+}
+
 export interface ApplicationPayload {
-  qualification: Qualification
-  spm_a_count: number | null
-  stpm_pngk: number | null
   household_income: number | null
   household_size: number | null
   receives_str: boolean
@@ -77,19 +97,10 @@ function toIntOrNull(s: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-function toFloatOrNull(s: string): number | null {
-  const t = s.trim()
-  if (t === '') return null
-  const n = parseFloat(t)
-  return Number.isFinite(n) ? n : null
-}
-
 export function buildApplicationPayload(form: ApplyFormState): ApplicationPayload {
-  const isSpm = form.qualification === 'spm'
+  // Academic fields are intentionally absent — the backend reads them from the
+  // profile. The financial fields are synced to the profile server-side.
   return {
-    qualification: form.qualification,
-    spm_a_count: isSpm ? toIntOrNull(form.spmACount) : null,
-    stpm_pngk: isSpm ? null : toFloatOrNull(form.stpmPngk),
     household_income: toIntOrNull(form.householdIncome),
     household_size: toIntOrNull(form.householdSize),
     receives_str: form.receivesStr,
@@ -103,12 +114,11 @@ export function buildApplicationPayload(form: ApplyFormState): ApplicationPayloa
 
 /**
  * Returns the i18n error sub-key for the first validation problem, or null if
- * the form is ready to submit. Mirrors the backend's hard requirements.
+ * the form is ready to submit. Mirrors the backend's hard requirements (academic
+ * data is validated against the profile server-side, not here).
  */
 export function applyFormError(form: ApplyFormState): string | null {
   if (!form.consentToContact) return 'consent'
-  if (form.qualification === 'spm' && toIntOrNull(form.spmACount) === null) return 'aCount'
-  if (form.qualification === 'stpm' && toFloatOrNull(form.stpmPngk) === null) return 'pngk'
   if (toIntOrNull(form.householdIncome) === null) return 'income'
   return null
 }

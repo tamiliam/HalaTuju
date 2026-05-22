@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Assistance Programme · Phase 1.5b apply-form frontend rebuild (2026-05-22)
+
+Rebuilt the student apply flow to the profile-canonical API and the Stitch-approved design
+(landing soft sign-in gate + tabbed 5-section form).
+
+### Added / Changed
+- **Soft sign-in gate** — anonymous visitors read the eligibility criteria freely and apply via a
+  one-tap "Continue with Google" (the same button registers new students), with a "we'll use your
+  profile so you never retype" reassurance. Replaces the old plain sign-in prompt.
+- **Tabbed 5-section apply form** (Form A) — About You · Your Family · Your SPM/STPM Results ·
+  Your Plans · Support, with a step progress bar + sticky bottom tab bar.
+  - Sections 1 & 3 are **read-only, pre-filled from the profile** with "From your HalaTuju profile"
+    badges and Edit links; results show A-count / A+ / STPM CGPA, or a "finish your quiz" prompt when
+    the profile has no academic data yet.
+  - Section 2 (Family) **writes financial fields back to the profile** (income, household size, STR/JKM
+    toggles) with a "this also updates your HalaTuju profile" caption.
+  - Academic data is **never posted** — the backend reads it from the profile.
+- **`scholarship.ts`** — `ApplyFormState` slimmed to the financial + application fields;
+  `profileToApplyDefaults` pre-fills financial from the profile; new `profileAcademicSummary` helper;
+  `buildApplicationPayload`/`applyFormError` drop the academic fields.
+- **API types** — `StudentProfile` gains the financial fields; student `ScholarshipApplication` uses
+  `exam_type` (was `qualification`) and exposes `intake_snapshot`. (Admin types/serializer unchanged.)
+- **i18n** — new `scholarship.apply.*` keys (gate, tabs, sections, read-only field labels, write-back
+  note, results summary, empty states) in EN/MS/TA; 925 keys, parity verified.
+
+### Tests
+- `scholarship.test.ts` updated to the new shape (20 pass); full Jest **37 pass**; `next build` green
+  (`/scholarship/apply` compiles). Not deployed.
+
 ## [Unreleased] — B40 Assistance Programme · Phase 1.5a source-of-truth refactor (2026-05-22)
 
 Made the HalaTuju profile the single source of truth for applicant data, plus de-Gmailed email.
