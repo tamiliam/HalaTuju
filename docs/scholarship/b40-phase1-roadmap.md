@@ -98,7 +98,10 @@ Stitch design approved (Empathetic Guidance system): **landing soft sign-in gate
 and to the profile-canonical API: sections 1 & 3 read-only/pre-filled with "From your HalaTuju profile"
 badges; section 2 writes financial fields back to the profile; academic data never posted; empty-state
 quiz prompt when the profile lacks results. New `scholarship.apply.*` i18n (EN/MS/TA, 925 keys).
-Jest 37, `next build` green. **Live browser smoke-test still pending** (pre-deploy carry-forward #6).
+Jest 37, `next build` green. **Local render smoke-test done** (Playwright on `next dev`): anonymous
+gate + all 5 tabs render correctly, toggles/pre-fill/academic-summary verified; gate button copy fixed
+to "Continue with Google". **Still pending pre-deploy (carry-forward #6): real end-to-end** — Google
+OAuth → backend submit → shortlist → email — needs the API + a real session.
 
 ## Dependencies
 S1→S2 (form needs API); S1→S3 (shortlist needs application model); S3→S4 (quiz gate is post-pass);
