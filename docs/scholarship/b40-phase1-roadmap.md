@@ -103,6 +103,14 @@ gate + all 5 tabs render correctly, toggles/pre-fill/academic-summary verified; 
 to "Continue with Google". **Still pending pre-deploy (carry-forward #6): real end-to-end** — Google
 OAuth → backend submit → shortlist → email — needs the API + a real session.
 
+### Phase 1.5c — public landing + follow-up route ✅ DONE (2026-05-22)
+Stitch-designed public landing at `/scholarship/` (overview, requirements, 8-step process, FAQ,
+AI imagery, community self-help framing — content in `docs/scholarship/landing-content.md`). Follow-up
+moved to its own `/scholarship/application` route (apply page redirects returning applicants there).
+AI images saved to `public/scholarship/`. i18n EN/MS/TA → 1002 keys. Jest 37, `next build` green,
+landing render-checked on `next dev`. **Post-award page deferred to Phase 2** (per user). Entity name
+still generic ("coordinators and partner organisations") — confirm before launch.
+
 ## Dependencies
 S1→S2 (form needs API); S1→S3 (shortlist needs application model); S3→S4 (quiz gate is post-pass);
 S1→S5 (docs attach to application); S4+S5→S6 (profile draft needs deeper info + docs).

@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import {
   submitScholarshipApplication,
   getMyScholarshipApplications,
-  type ScholarshipApplication,
 } from '@/lib/api'
 import {
   profileToApplyDefaults,
@@ -17,7 +17,6 @@ import {
   PATHWAY_OPTIONS,
   type ApplyFormState,
 } from '@/lib/scholarship'
-import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
 
 type TabKey = 'personal' | 'family' | 'results' | 'plans' | 'support'
 const TAB_ORDER: TabKey[] = ['personal', 'family', 'results', 'plans', 'support']
@@ -62,12 +61,11 @@ function TabIcon({ tab, active }: { tab: TabKey; active: boolean }) {
 export default function ScholarshipApplyPage() {
   const { t, locale } = useT()
   const { status, profile, token, showAuthGate } = useAuth()
+  const router = useRouter()
 
   const [form, setForm] = useState<ApplyFormState>(() => profileToApplyDefaults(null))
-  const [existing, setExisting] = useState<ScholarshipApplication | null>(null)
   const [loadingExisting, setLoadingExisting] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [submitted, setSubmitted] = useState<ScholarshipApplication | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<TabKey>('personal')
 
@@ -76,8 +74,9 @@ export default function ScholarshipApplyPage() {
     if (profile) setForm(profileToApplyDefaults(profile))
   }, [profile])
 
-  // Load any existing application so a returning applicant sees their status
-  // instead of a blank form (also avoids a 409 on resubmit)
+  // A returning applicant has nothing to fill in here — send them to their
+  // application page (which shows status / the follow-up steps). Keeps the
+  // form for first-time applicants only and avoids a 409 on resubmit.
   useEffect(() => {
     let active = true
     if (status !== 'ready' || !token) {
@@ -86,11 +85,14 @@ export default function ScholarshipApplyPage() {
     }
     setLoadingExisting(true)
     getMyScholarshipApplications({ token })
-      .then((res) => { if (active) setExisting(res.applications[0] ?? null) })
-      .catch(() => { /* ignore — treat as no application */ })
-      .finally(() => { if (active) setLoadingExisting(false) })
+      .then((res) => {
+        if (!active) return
+        if (res.applications[0]) { router.replace('/scholarship/application'); return }
+        setLoadingExisting(false)
+      })
+      .catch(() => { if (active) setLoadingExisting(false) })
     return () => { active = false }
-  }, [status, token])
+  }, [status, token, router])
 
   const update = useCallback(
     <K extends keyof ApplyFormState>(key: K, value: ApplyFormState[K]) => {
@@ -108,8 +110,8 @@ export default function ScholarshipApplyPage() {
     setError(null)
     try {
       const payload = buildApplicationPayload(form) as unknown as Record<string, unknown>
-      const app = await submitScholarshipApplication(payload, locale, { token })
-      setSubmitted(app)
+      await submitScholarshipApplication(payload, locale, { token })
+      router.replace('/scholarship/application')
     } catch {
       setError(t('scholarship.apply.error.generic'))
     } finally {
@@ -166,29 +168,8 @@ export default function ScholarshipApplyPage() {
     )
   }
 
-  // ── Already submitted / returning applicant ──
-  if (submitted || existing) {
-    const app = (submitted ?? existing)!
-    if (app.status === 'shortlisted') {
-      return wrap(<ScholarshipNextSteps initialApp={app} token={token} />)
-    }
-    const isNew = !!submitted
-    return wrap(
-      <div className="bg-green-50 border border-green-200 rounded-2xl p-6">
-        <h2 className="font-semibold text-gray-900 mb-2">
-          {isNew ? t('scholarship.apply.successTitle') : t('scholarship.apply.alreadyTitle')}
-        </h2>
-        <p className="text-gray-700 mb-3">
-          {isNew ? t('scholarship.apply.successBody') : t('scholarship.apply.alreadyBody')}
-        </p>
-        <p className="text-sm text-gray-600">
-          {t('scholarship.apply.statusLabel')}: <span className="font-medium">{app.status}</span>
-        </p>
-      </div>
-    )
-  }
-
   // ── status === 'ready', no existing application → the tabbed form ──
+  // (returning applicants were redirected to /scholarship/application above)
   const academic = profileAcademicSummary(profile)
   const tabIndex = TAB_ORDER.indexOf(tab)
   const isLast = tabIndex === TAB_ORDER.length - 1

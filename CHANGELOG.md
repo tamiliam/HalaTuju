@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Assistance Programme · Phase 1.5c public landing + follow-up route (2026-05-22)
+
+Added the public marketing landing and gave the post-submission follow-up its own page.
+
+### Added
+- **`/scholarship/` landing** (public, no sign-in) — Stitch-designed, community self-help framing:
+  hero + AI imagery, overview + value cards, a "Please note (pilot)" callout, a "Can you apply?"
+  checklist (Indian-descent pilot, B40 < RM5,860, 5 A's / PNGK 3.0, public post-secondary), an
+  8-step "How it works" timeline, a 10-item FAQ accordion, and a closing CTA. Renders with
+  `AppHeader`/`AppFooter` like other content pages.
+- **`/scholarship/application`** — the post-submission home: shortlisted students complete their
+  follow-up (`ScholarshipNextSteps`) here; everyone else sees a neutral "received" status; visitors
+  with no application are sent to apply. The apply page now redirects returning applicants here and
+  routes here after submit (no more inline status branch).
+- **AI imagery** (Gemini, via Stitch) saved as real assets: `public/scholarship/hero.jpg`,
+  `community.jpg`. Hero is `priority`; the CTA image lazy-loads.
+- **i18n**: `scholarship.landing.*` + `scholarship.application.*` in EN/MS/TA (1002 keys, parity
+  verified). Gate button copy and all landing copy use the approved British-English wording.
+
+### Tests / verification
+- Jest **37 pass**; `next build` green (`/scholarship`, `/scholarship/application`, `/scholarship/apply`
+  all compile). Live render check on `next dev` confirmed the landing renders (hero image, value cards,
+  pilot callout, requirements, timeline, FAQ, CTA, footer). Not deployed.
+
 ## [Unreleased] — B40 Assistance Programme · Phase 1.5b apply-form frontend rebuild (2026-05-22)
 
 Rebuilt the student apply flow to the profile-canonical API and the Stitch-approved design

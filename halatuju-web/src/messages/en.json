@@ -504,6 +504,107 @@
       "submit": "Give consent",
       "saving": "Saving…",
       "error": "Could not record your consent. Please try again."
+    },
+    "landing": {
+      "hero": {
+        "heading": "A community behind every student.",
+        "sub": "A community self-help pilot helping eligible B40 students of Indian descent continue their post-secondary studies at public institutions — from pre-university to university — supported by people in our own community.",
+        "apply": "Apply now",
+        "seeQualify": "See if you qualify"
+      },
+      "overview": {
+        "p1": "Every year, talented students from our community earn a place in post-secondary education — pre-university (Matrikulasi, Foundation, STPM) and public university or college (IPTA / ILKA). We want to help as many of them as possible make the most of it and realise their potential.",
+        "p2": "This is a community self-help pilot: people from our own community choose to support a student directly through their studies. It is assistance, not a loan — there is nothing to repay, and the hope is that those we help today help others tomorrow."
+      },
+      "card1": {
+        "title": "Realise your potential",
+        "desc": "Support to help you thrive at a public institution."
+      },
+      "card2": {
+        "title": "Your community behind you",
+        "desc": "Backed by people who want you to succeed."
+      },
+      "card3": {
+        "title": "Your privacy protected",
+        "desc": "Sponsors only ever see what you allow."
+      },
+      "note": {
+        "title": "Please note",
+        "pilotLabel": "This is a pilot",
+        "pilotText": "expect some uncertainty as we get going.",
+        "noGuaranteeLabel": "No guarantees",
+        "noGuaranteeText": "applying lets us assess you; it does not guarantee assistance.",
+        "strictLabel": "Strict criteria",
+        "strictText": "we try to support every eligible student, but places are limited.",
+        "accurateLabel": "Be accurate",
+        "accurateText": "honest answers help us match you only to opportunities you are genuinely eligible for.",
+        "confidentialLabel": "Confidential",
+        "confidentialText": "your answers are shared only with the coordinators and partners involved in this pilot."
+      },
+      "req": {
+        "title": "Can you apply?",
+        "item1": "Malaysian of Indian descent (for this pilot — this may widen in future).",
+        "item2": "From a B40 household — combined monthly income below RM5,860.",
+        "item3": "At least 5 A's in SPM, or a PNGK of 3.0 or above in STPM.",
+        "item4": "Continuing post-secondary study at a public institution — Matrikulasi, Foundation/Asasi, STPM, IPTA, polytechnic or ILKA.",
+        "item5": "Willing to be contacted about your application.",
+        "closeNote": "Close but not exactly? Apply anyway — we also consider students who narrowly miss one criterion."
+      },
+      "how": {
+        "title": "How it works",
+        "rolling": "No fixed deadline — reviewed on a rolling basis",
+        "step1Title": "Apply",
+        "step1Desc": "Sign in with Google, confirm your HalaTuju profile, and submit.",
+        "step2Title": "We confirm",
+        "step2Desc": "You get an email confirming we've received your application.",
+        "step3Title": "Shortlisting",
+        "step3Desc": "We check your results and need against the criteria.",
+        "step4Title": "Complete your profile",
+        "step4Desc": "If shortlisted, finish your quiz, share more, and upload documents.",
+        "step5Title": "A quick chat",
+        "step5Desc": "We may arrange a short phone call to get to know you.",
+        "step6Title": "Ready for sponsors",
+        "step6Desc": "With your consent, we prepare a profile for sponsors to consider.",
+        "step7Title": "Matched & awarded",
+        "step7Desc": "When a sponsor chooses to support you, we arrange the assistance.",
+        "step8Title": "Staying supported",
+        "step8Desc": "Once awarded, you keep your progress updated so support continues."
+      },
+      "faq": {
+        "title": "Questions",
+        "q1": "Do I need to have used HalaTuju before?",
+        "a1": "No. If you're new, the same Google sign-in creates your account. If you've already done the HalaTuju quiz, we'll use your profile so you don't retype anything.",
+        "q2": "Who can apply?",
+        "a2": "For this pilot, the programme is open to Malaysian students of Indian descent from B40 households who meet the academic criteria. This scope may widen in future.",
+        "q3": "Is this a loan? Do I have to pay it back?",
+        "a3": "No. It is education assistance from a sponsor — nothing to repay, no interest.",
+        "q4": "Is it guaranteed if I qualify?",
+        "a4": "No. This is a pilot with limited places and strict criteria. Applying lets us assess you; it doesn't guarantee assistance.",
+        "q5": "Who can see my personal details?",
+        "a5": "Your private details (IC, contact, exact address) are never shown to sponsors. Sponsors only see a profile, and only after you consent. If you're under 18, a parent or guardian must give that consent.",
+        "q6": "What documents will I need?",
+        "a6": "After you're shortlisted: your IC, SPM/STPM results slip, and proof of household income or aid (e.g. STR, EPF statement). We'll tell you exactly what's needed.",
+        "q7": "What levels does it cover?",
+        "a7": "Public post-secondary study — both pre-university (Matrikulasi, Foundation/Asasi at an IPTA or polytechnic, STPM) and tertiary (IPTA, polytechnic/ILKA).",
+        "q8": "Does it cover private colleges (IPTS)?",
+        "a8": "Not in this pilot — it supports study at public institutions only. Foundation or Asasi must be at a public institution (IPTA or polytechnic).",
+        "q9": "Is there a deadline?",
+        "a9": "Not for this pilot — applications are reviewed on a rolling basis. We'll keep you updated after you apply.",
+        "q10": "Is there a cost to apply?",
+        "a10": "No. Applying is free, and takes about 5–10 minutes."
+      },
+      "cta": {
+        "heading": "Ready to apply?",
+        "body": "It takes about 5–10 minutes, and we'll use what's already in your HalaTuju profile.",
+        "questions": "Questions? Email"
+      }
+    },
+    "application": {
+      "title": "Your application",
+      "none": "You haven't applied yet.",
+      "applyCta": "Start your application",
+      "receivedTitle": "Application received",
+      "receivedBody": "Thank you. We've received your application and will be in touch by email. There's nothing more to do for now."
     }
   },
   "authGate": {

@@ -504,6 +504,107 @@
       "submit": "Beri persetujuan",
       "saving": "Menyimpan…",
       "error": "Tidak dapat merekodkan persetujuan anda. Sila cuba lagi."
+    },
+    "landing": {
+      "hero": {
+        "heading": "Komuniti menyokong setiap pelajar.",
+        "sub": "Perintis bantuan kendiri komuniti yang membantu pelajar B40 berketurunan India yang layak meneruskan pengajian pasca-menengah di institusi awam — daripada pra-universiti hingga ke universiti — disokong oleh orang dalam komuniti kita sendiri.",
+        "apply": "Mohon sekarang",
+        "seeQualify": "Lihat jika anda layak"
+      },
+      "overview": {
+        "p1": "Setiap tahun, pelajar berbakat daripada komuniti kita memperoleh tempat dalam pengajian pasca-menengah — pra-universiti (Matrikulasi, Asasi, STPM) dan universiti atau kolej awam (IPTA / ILKA). Kami ingin membantu seramai mungkin daripada mereka memanfaatkannya dan mencapai potensi mereka.",
+        "p2": "Ini ialah perintis bantuan kendiri komuniti: orang daripada komuniti kita sendiri memilih untuk menyokong seorang pelajar secara langsung sepanjang pengajian mereka. Ia bantuan, bukan pinjaman — tiada apa-apa untuk dibayar balik, dan harapannya mereka yang kita bantu hari ini akan membantu orang lain pada masa hadapan."
+      },
+      "card1": {
+        "title": "Capai potensi anda",
+        "desc": "Sokongan untuk membantu anda berjaya di institusi awam."
+      },
+      "card2": {
+        "title": "Komuniti di sisi anda",
+        "desc": "Disokong oleh orang yang mahu anda berjaya."
+      },
+      "card3": {
+        "title": "Privasi anda dilindungi",
+        "desc": "Penaja hanya melihat apa yang anda benarkan."
+      },
+      "note": {
+        "title": "Sila ambil perhatian",
+        "pilotLabel": "Ini ialah perintis",
+        "pilotText": "jangkakan sedikit ketidakpastian semasa kami bermula.",
+        "noGuaranteeLabel": "Tiada jaminan",
+        "noGuaranteeText": "memohon membolehkan kami menilai anda; ia tidak menjamin bantuan.",
+        "strictLabel": "Kriteria ketat",
+        "strictText": "kami cuba membantu setiap pelajar yang layak, tetapi tempat adalah terhad.",
+        "accurateLabel": "Berikan maklumat tepat",
+        "accurateText": "jawapan yang jujur membantu kami memadankan anda hanya dengan peluang yang benar-benar anda layak.",
+        "confidentialLabel": "Sulit",
+        "confidentialText": "jawapan anda dikongsi hanya dengan penyelaras dan rakan kongsi yang terlibat dalam perintis ini."
+      },
+      "req": {
+        "title": "Adakah anda layak?",
+        "item1": "Warganegara Malaysia berketurunan India (untuk perintis ini — mungkin diperluas pada masa hadapan).",
+        "item2": "Daripada isi rumah B40 — pendapatan bulanan gabungan di bawah RM5,860.",
+        "item3": "Sekurang-kurangnya 5A dalam SPM, atau PNGK 3.0 ke atas dalam STPM.",
+        "item4": "Meneruskan pengajian pasca-menengah di institusi awam — Matrikulasi, Asasi, STPM, IPTA, politeknik atau ILKA.",
+        "item5": "Bersedia untuk dihubungi tentang permohonan anda.",
+        "closeNote": "Hampir layak tetapi tidak tepat? Mohon juga — kami turut mempertimbangkan pelajar yang tersasar sedikit pada satu kriteria."
+      },
+      "how": {
+        "title": "Cara ia berfungsi",
+        "rolling": "Tiada tarikh tutup tetap — dinilai secara berterusan",
+        "step1Title": "Mohon",
+        "step1Desc": "Log masuk dengan Google, sahkan profil HalaTuju anda, dan hantar.",
+        "step2Title": "Kami sahkan",
+        "step2Desc": "Anda menerima e-mel mengesahkan kami telah menerima permohonan anda.",
+        "step3Title": "Penyenaraian pendek",
+        "step3Desc": "Kami menyemak keputusan dan keperluan anda berdasarkan kriteria.",
+        "step4Title": "Lengkapkan profil anda",
+        "step4Desc": "Jika disenarai pendek, lengkapkan kuiz, kongsi lebih lanjut, dan muat naik dokumen.",
+        "step5Title": "Perbualan ringkas",
+        "step5Desc": "Kami mungkin mengatur panggilan telefon ringkas untuk mengenali anda.",
+        "step6Title": "Sedia untuk penaja",
+        "step6Desc": "Dengan kebenaran anda, kami menyediakan profil untuk pertimbangan penaja.",
+        "step7Title": "Dipadankan & dianugerahkan",
+        "step7Desc": "Apabila penaja memilih untuk menyokong anda, kami mengatur bantuan.",
+        "step8Title": "Sokongan berterusan",
+        "step8Desc": "Selepas dianugerahkan, anda mengemas kini kemajuan anda supaya sokongan berterusan."
+      },
+      "faq": {
+        "title": "Soalan",
+        "q1": "Perlukah saya pernah menggunakan HalaTuju?",
+        "a1": "Tidak. Jika anda baharu, log masuk Google yang sama akan mencipta akaun anda. Jika anda sudah membuat kuiz HalaTuju, kami akan guna profil anda supaya anda tidak perlu menaip semula.",
+        "q2": "Siapa yang boleh memohon?",
+        "a2": "Untuk perintis ini, program ini terbuka kepada pelajar Malaysia berketurunan India daripada isi rumah B40 yang memenuhi kriteria akademik. Skop ini mungkin diperluas pada masa hadapan.",
+        "q3": "Adakah ini pinjaman? Perlukah saya membayarnya balik?",
+        "a3": "Tidak. Ia bantuan pendidikan daripada penaja — tiada bayaran balik, tiada faedah.",
+        "q4": "Adakah ia dijamin jika saya layak?",
+        "a4": "Tidak. Ini perintis dengan tempat yang terhad dan kriteria yang ketat. Memohon membolehkan kami menilai anda; ia tidak menjamin bantuan.",
+        "q5": "Siapa yang boleh melihat butiran peribadi saya?",
+        "a5": "Butiran peribadi anda (IC, hubungan, alamat tepat) tidak pernah ditunjukkan kepada penaja. Penaja hanya melihat profil, dan hanya selepas anda memberi kebenaran. Jika anda di bawah 18 tahun, ibu bapa atau penjaga mesti memberi kebenaran itu.",
+        "q6": "Dokumen apa yang saya perlukan?",
+        "a6": "Selepas disenarai pendek: IC anda, slip keputusan SPM/STPM, dan bukti pendapatan isi rumah atau bantuan (cth. STR, penyata KWSP). Kami akan beritahu apa yang diperlukan dengan tepat.",
+        "q7": "Peringkat apa yang dilindungi?",
+        "a7": "Pengajian pasca-menengah awam — pra-universiti (Matrikulasi, Asasi di IPTA atau politeknik, STPM) dan pengajian tinggi (IPTA, politeknik/ILKA).",
+        "q8": "Adakah ia merangkumi kolej swasta (IPTS)?",
+        "a8": "Tidak dalam perintis ini — ia menyokong pengajian di institusi awam sahaja. Asasi mesti di institusi awam (IPTA atau politeknik).",
+        "q9": "Adakah terdapat tarikh tutup?",
+        "a9": "Tiada untuk perintis ini — permohonan dinilai secara berterusan. Kami akan memaklumkan anda selepas anda memohon.",
+        "q10": "Adakah terdapat kos untuk memohon?",
+        "a10": "Tidak. Memohon adalah percuma, dan mengambil masa kira-kira 5–10 minit."
+      },
+      "cta": {
+        "heading": "Bersedia untuk memohon?",
+        "body": "Ia mengambil masa kira-kira 5–10 minit, dan kami akan guna apa yang sudah ada dalam profil HalaTuju anda.",
+        "questions": "Ada soalan? E-mel"
+      }
+    },
+    "application": {
+      "title": "Permohonan anda",
+      "none": "Anda belum memohon lagi.",
+      "applyCta": "Mulakan permohonan anda",
+      "receivedTitle": "Permohonan diterima",
+      "receivedBody": "Terima kasih. Kami telah menerima permohonan anda dan akan menghubungi anda melalui e-mel. Tiada apa-apa lagi yang perlu dilakukan buat masa ini."
     }
   },
   "authGate": {
