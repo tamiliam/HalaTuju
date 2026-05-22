@@ -7,21 +7,72 @@ from django.utils import timezone
 
 from .emails import send_acknowledgement_email, send_pass_email
 from .models import Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort
-from .shortlisting import evaluate
+# count_spm_a_grades + the A-grade set now live with the shortlisting engine
+# (the single place that scores academics). Re-exported here for callers that
+# still import it from services.
+from .shortlisting import A_GRADES, count_spm_a_grades, evaluate  # noqa: F401
 
-# SPM grades that count as an "A" for shortlisting (A+, A and A- all count,
-# matching how the B40 candidate profiles tally "10 A's incl. A+ and A-").
-A_GRADES = {'A+', 'A', 'A-'}
+# Financial fields the apply form may collect/refresh. Their canonical home is
+# the StudentProfile (HalaTuju onboarding doesn't gather income), so the form
+# writes them back to the profile rather than duplicating them on the
+# application — avoiding a clash on the hierarchy of truth.
+_PROFILE_WRITEBACK_FIELDS = (
+    'household_income', 'household_size', 'receives_str', 'receives_jkm',
+)
+
+# Per-application fields that genuinely belong on the ScholarshipApplication row.
+_APP_FIELDS = (
+    'intended_pathway', 'intends_tertiary_2026', 'consent_to_contact', 'form_data',
+)
 
 
-def count_spm_a_grades(grades):
-    """Count A+/A/A- across an SPM grades dict like {'bm': 'A+', ...}."""
-    if not isinstance(grades, dict):
-        return 0
-    return sum(
-        1 for g in grades.values()
-        if isinstance(g, str) and g.strip().upper() in A_GRADES
-    )
+def sync_profile_fields(profile, data):
+    """
+    Write the form's financial fields back to the canonical profile. Only keys
+    that are present and non-None overwrite (the form may legitimately omit a
+    field that is already on the profile). Returns the fields actually changed.
+    """
+    if profile is None:
+        return []
+    updated = []
+    for field in _PROFILE_WRITEBACK_FIELDS:
+        if field in data and data[field] is not None:
+            if getattr(profile, field, None) != data[field]:
+                setattr(profile, field, data[field])
+                updated.append(field)
+    if updated:
+        profile.save(update_fields=updated + ['updated_at'])
+    return updated
+
+
+def build_intake_snapshot(profile, app_data):
+    """
+    Freeze what the applicant declared at submit time — profile-derived academic
+    + financial values plus the per-application fields. This is immutable audit
+    evidence, NOT the live source of truth (the profile remains canonical).
+    """
+    p = profile
+    return {
+        'captured_at': timezone.now().isoformat(),
+        'profile': {
+            'name': getattr(p, 'name', '') if p else '',
+            'school': getattr(p, 'school', '') if p else '',
+            'exam_type': getattr(p, 'exam_type', '') if p else '',
+            'grades': getattr(p, 'grades', {}) if p else {},
+            'stpm_cgpa': getattr(p, 'stpm_cgpa', None) if p else None,
+            'spm_a_count': count_spm_a_grades(getattr(p, 'grades', None) if p else None),
+            'household_income': getattr(p, 'household_income', None) if p else None,
+            'household_size': getattr(p, 'household_size', None) if p else None,
+            'receives_str': bool(getattr(p, 'receives_str', False)) if p else False,
+            'receives_jkm': bool(getattr(p, 'receives_jkm', False)) if p else False,
+        },
+        'application': {
+            'intended_pathway': app_data.get('intended_pathway', ''),
+            'intends_tertiary_2026': app_data.get('intends_tertiary_2026', True),
+            'consent_to_contact': app_data.get('consent_to_contact', False),
+            'form_data': app_data.get('form_data', {}),
+        },
+    }
 
 
 def resolve_open_cohort(cohort_code=''):
@@ -41,21 +92,28 @@ def resolve_open_cohort(cohort_code=''):
 
 def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
     """
-    Create an application, snapshot the SPM A-count from the profile if the
-    client didn't supply one, send the acknowledgement email, and stamp
-    ``acknowledged_at``. Returns the created application.
+    Submit an application:
+      1. write the form's financial fields back to the canonical profile,
+      2. create the application with per-application fields only,
+      3. freeze an intake snapshot (audit evidence),
+      4. send the acknowledgement email and stamp ``acknowledged_at``.
+    Returns the created application.
     """
     data = dict(validated_data)
     data.pop('cohort_code', None)
 
-    if data.get('spm_a_count') is None and profile is not None:
-        data['spm_a_count'] = count_spm_a_grades(getattr(profile, 'grades', None))
+    # 1. Profile is the single source of truth — sync financial fields to it.
+    sync_profile_fields(profile, data)
 
+    # 2. Create the application from per-application fields only; academic +
+    #    financial data is read live from the profile by the shortlist engine.
+    app_fields = {k: data[k] for k in _APP_FIELDS if k in data}
     application = ScholarshipApplication.objects.create(
         cohort=cohort, profile=profile,
         locale=lang if lang in ('en', 'ms', 'ta') else 'en',
         notify_email=to_email or '',
-        **data,
+        intake_snapshot=build_intake_snapshot(profile, data),
+        **app_fields,
     )
 
     sent = send_acknowledgement_email(

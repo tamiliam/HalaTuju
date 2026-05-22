@@ -1,10 +1,9 @@
 """
 B40 Assistance Programme — mechanical shortlisting engine.
 
-Pure functions: given an application's fields and a cohort's thresholds, decide
-FAIL / BUCKET_A / BUCKET_B and explain why. No DB access, so it is trivially
-testable and deterministic (a small golden master). All thresholds come from the
-cohort, so a round can be re-tuned without code changes.
+Pure functions. The academic + income inputs are read from the linked
+StudentProfile (the single source of truth); intent + consent are per-application.
+No DB writes, deterministic, all thresholds from the cohort.
 """
 from dataclasses import dataclass
 
@@ -17,6 +16,20 @@ OK = 'ok'
 MARGINAL = 'marginal'
 FAIL = 'fail'
 
+# SPM grades that count as an "A" (A+, A and A- all count, matching how the B40
+# candidate profiles tally "10 A's incl. A+ and A-").
+A_GRADES = {'A+', 'A', 'A-'}
+
+
+def count_spm_a_grades(grades):
+    """Count A+/A/A- across an SPM grades dict like {'bm': 'A+', ...}."""
+    if not isinstance(grades, dict):
+        return 0
+    return sum(
+        1 for g in grades.values()
+        if isinstance(g, str) and g.strip().upper() in A_GRADES
+    )
+
 
 @dataclass
 class ShortlistResult:
@@ -25,9 +38,10 @@ class ShortlistResult:
     reason: str   # human-readable explanation
 
 
-def _academic_status(app, cohort):
-    if app.qualification == 'stpm':
-        p = app.stpm_pngk
+def _academic_status(profile, cohort):
+    exam = (getattr(profile, 'exam_type', 'spm') or 'spm') if profile else 'spm'
+    if exam == 'stpm':
+        p = getattr(profile, 'stpm_cgpa', None) if profile else None
         if p is None:
             return FAIL, 'STPM PNGK not provided'
         if p >= cohort.min_stpm_pngk:
@@ -35,10 +49,7 @@ def _academic_status(app, cohort):
         if p >= cohort.min_stpm_pngk - STPM_PNGK_MARGIN:
             return MARGINAL, f'PNGK {p} just below {cohort.min_stpm_pngk}'
         return FAIL, f'PNGK {p} below {cohort.min_stpm_pngk}'
-    # SPM
-    a = app.spm_a_count
-    if a is None:
-        return FAIL, 'SPM A-count not provided'
+    a = count_spm_a_grades(getattr(profile, 'grades', None) if profile else None)
     if a >= cohort.min_spm_a_count:
         return OK, ''
     if a >= cohort.min_spm_a_count - cohort.bucket_b_margin:
@@ -46,41 +57,40 @@ def _academic_status(app, cohort):
     return FAIL, f"{a} A's (need {cohort.min_spm_a_count})"
 
 
-def _income_status(app, cohort):
+def _income_status(profile, cohort):
     ceiling = cohort.income_ceiling
-    inc = app.household_income
-    has_str = app.receives_str
+    inc = getattr(profile, 'household_income', None) if profile else None
+    has_str = bool(getattr(profile, 'receives_str', False)) if profile else False
     if ceiling is None:
-        # Income band not configured for this cohort — not assessed here.
         return OK, ''
     if inc is None:
-        # No income figure: trust STR (government-verified B40), else can't confirm.
         return (OK, '') if has_str else (FAIL, 'No income figure and no STR')
     if inc <= ceiling:
         return OK, ''
     if inc <= ceiling * INCOME_MARGIN_FACTOR:
         return MARGINAL, f'income RM{inc} just over RM{ceiling}'
-    # Well over the ceiling: STR holders are flagged for review, not auto-rejected.
     if has_str:
         return MARGINAL, f'income RM{inc} over RM{ceiling} but holds STR'
     return FAIL, f'income RM{inc} over RM{ceiling}'
 
 
-def _intent_status(app):
-    return (OK, '') if app.intends_tertiary_2026 else (FAIL, 'not intending tertiary study this year')
+def _intent_status(application):
+    return (OK, '') if application.intends_tertiary_2026 else (FAIL, 'not intending tertiary study this year')
 
 
-def _consent_status(app):
-    return (OK, '') if app.consent_to_contact else (FAIL, 'no consent to contact')
+def _consent_status(application):
+    return (OK, '') if application.consent_to_contact else (FAIL, 'no consent to contact')
 
 
-def evaluate(app, cohort):
-    """Return a ShortlistResult for the application against the cohort thresholds."""
+def evaluate(application, cohort):
+    """Return a ShortlistResult for the application against the cohort thresholds.
+    Academic + income are read from application.profile; intent + consent from the application."""
+    profile = getattr(application, 'profile', None)
     checks = {
-        'academic': _academic_status(app, cohort),
-        'income': _income_status(app, cohort),
-        'intent': _intent_status(app),
-        'consent': _consent_status(app),
+        'academic': _academic_status(profile, cohort),
+        'income': _income_status(profile, cohort),
+        'intent': _intent_status(application),
+        'consent': _consent_status(application),
     }
     fails = {k: v[1] for k, v in checks.items() if v[0] == FAIL}
     marginals = {k: v[1] for k, v in checks.items() if v[0] == MARGINAL}

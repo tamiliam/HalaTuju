@@ -49,8 +49,9 @@ class TestApplicationIntake(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
     def _payload(self, **over):
+        # Academic data is never posted — it is read from the profile. The form
+        # only collects the financial write-back fields + per-application fields.
         base = {
-            'qualification': 'spm',
             'household_income': 2500,
             'receives_str': True,
             'consent_to_contact': True,
@@ -81,11 +82,11 @@ class TestApplicationIntake(TestCase):
         self.assertIn('priya@example.com', mail.outbox[0].to)
 
     def test_failing_application_rejected_no_decision_email(self):
-        # 2 A's (academic fail) + RM9000 no STR (income fail) -> rejected
+        # profile_b has no grades (0 A's -> academic fail) + RM9000 no STR (income fail) -> rejected
         self._auth(_make_token(USER_B))
         resp = self.client.post(
             '/api/v1/scholarship/applications/',
-            self._payload(spm_a_count=2, household_income=9000, receives_str=False),
+            self._payload(household_income=9000, receives_str=False),
             format='json',
         )
         self.assertEqual(resp.status_code, 201)
@@ -97,7 +98,8 @@ class TestApplicationIntake(TestCase):
         # only the acknowledgement — the fail email is deferred to the command
         self.assertEqual(len(mail.outbox), 1)
 
-    def test_spm_a_count_snapshot_from_profile(self):
+    def test_spm_a_count_derived_from_profile(self):
+        # The A-count is computed live from profile.grades, never posted.
         self._auth(_make_token(USER_A))
         resp = self.client.post(
             '/api/v1/scholarship/applications/', self._payload(), format='json',
@@ -105,14 +107,25 @@ class TestApplicationIntake(TestCase):
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.json()['spm_a_count'], 5)
 
-    def test_explicit_a_count_overrides_snapshot(self):
+    def test_financial_fields_written_back_to_profile_and_snapshot_frozen(self):
+        # The form's financial fields are synced to the canonical profile, and a
+        # frozen intake_snapshot records what was declared at submit time.
         self._auth(_make_token(USER_A))
         resp = self.client.post(
             '/api/v1/scholarship/applications/',
-            self._payload(spm_a_count=10), format='json',
+            self._payload(household_income=1800, household_size=6, receives_str=True),
+            format='json',
         )
         self.assertEqual(resp.status_code, 201)
-        self.assertEqual(resp.json()['spm_a_count'], 10)
+        self.profile_a.refresh_from_db()
+        self.assertEqual(self.profile_a.household_income, 1800)
+        self.assertEqual(self.profile_a.household_size, 6)
+        self.assertTrue(self.profile_a.receives_str)
+        app = ScholarshipApplication.objects.get(id=resp.json()['id'])
+        snap = app.intake_snapshot
+        self.assertEqual(snap['profile']['household_income'], 1800)
+        self.assertEqual(snap['profile']['spm_a_count'], 5)
+        self.assertIn('captured_at', snap)
 
     def test_consent_required(self):
         self._auth(_make_token(USER_A))

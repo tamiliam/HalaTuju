@@ -562,3 +562,15 @@
 **Trade-offs:** Two text fields + a status to reason about. Negligible vs. the auditability and the human gate.
 
 **Revisit if:** Profiles need multi-version history (add a revisions table), or sponsors should ever see drafts directly (they shouldn't).
+
+## Profile is the single source of truth for applicant data — B40 Phase 1.5a, 2026-05-22
+
+**Decision:** Academic (grades / exam type / STPM CGPA) and financial (household income/size, STR/JKM) data lives **only** on `courses.StudentProfile`. The `ScholarshipApplication` row keeps per-application fields only (intended pathway, intent, consent, deeper-info, funding need). The apply form **pre-fills** from the profile and **writes back** the financial fields it collects (`services.sync_profile_fields`), the shortlisting engine reads academic + income **live** from `application.profile`, and a frozen `intake_snapshot` JSON captures what was declared at submit time as audit evidence (never the live source).
+
+**Alternatives considered:** (1) Duplicate the shortlisting-relevant fields onto the application and snapshot them at submit (the original Sprint-1–3 design). (2) Profile-only with no snapshot. (3) Profile-canonical + write-back + immutable intake_snapshot (chosen).
+
+**Rationale:** ~600 students already onboarded HalaTuju via Google Sign-In, so much of this data already exists on the profile. Re-asking and storing a second copy on the application created a "clash on the hierarchy of truth" (the user's words) — two divergent values for the same fact, with no defined winner. Making the profile canonical means a student updates their income once and every round sees it; the engine never scores stale duplicated data. The `intake_snapshot` preserves auditability (what they actually declared then) without making the application a competing source.
+
+**Trade-offs:** Shortlisting now depends on the profile being populated — a profile with empty grades scores 0 A's (correctly fails academic). The write-back only overwrites with non-None form values, so a form that omits a field can't blank an existing profile value. Migrations `courses 0047` (add financial fields) + `scholarship 0006` (remove the duplicated fields, add `intake_snapshot`) must both deploy together.
+
+**Revisit if:** A future round needs point-in-time scoring against the snapshot rather than the live profile (then score from `intake_snapshot`), or non-HalaTuju applicants (no profile) are admitted (then the application would need to carry its own data again).

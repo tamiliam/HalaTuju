@@ -8,19 +8,31 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
     """
     Validates an incoming application. ``cohort`` and ``profile`` are resolved
     and attached by the view, not the client.
+
+    Academic data (grades, exam type, STPM CGPA) is never accepted here — it is
+    read live from the canonical HalaTuju profile. The financial fields below are
+    write-only: the form may collect/refresh them, and the service syncs them
+    back to the profile (their canonical home) rather than storing them on the
+    application.
     """
     cohort_code = serializers.CharField(
         required=False, allow_blank=True, write_only=True,
         help_text="Optional; defaults to the active open cohort",
     )
+    household_income = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0, write_only=True,
+    )
+    household_size = serializers.IntegerField(
+        required=False, allow_null=True, min_value=1, write_only=True,
+    )
+    receives_str = serializers.BooleanField(required=False, write_only=True)
+    receives_jkm = serializers.BooleanField(required=False, write_only=True)
 
     class Meta:
         model = ScholarshipApplication
         fields = [
             'cohort_code',
-            'qualification', 'spm_a_count', 'stpm_pngk',
-            'household_income', 'household_size',
-            'receives_str', 'receives_jkm',
+            'household_income', 'household_size', 'receives_str', 'receives_jkm',
             'intended_pathway', 'intends_tertiary_2026',
             'consent_to_contact', 'form_data',
         ]
@@ -54,12 +66,26 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
 
 
 class ApplicationReadSerializer(serializers.ModelSerializer):
-    """Output representation of an application (read-only)."""
+    """
+    Output representation of an application (read-only).
+
+    Academic + financial fields are derived live from the linked profile (the
+    single source of truth), never stored on the application. ``intake_snapshot``
+    is the frozen audit copy of what was declared at submit time.
+    """
     cohort_code = serializers.CharField(source='cohort.code', read_only=True)
     cohort_name = serializers.CharField(source='cohort.name', read_only=True)
     profile_id = serializers.CharField(
         source='profile.pk', read_only=True, allow_null=True,
     )
+    # Profile-derived (read live from the canonical StudentProfile).
+    exam_type = serializers.CharField(source='profile.exam_type', read_only=True)
+    stpm_pngk = serializers.FloatField(source='profile.stpm_cgpa', read_only=True)
+    household_income = serializers.IntegerField(source='profile.household_income', read_only=True)
+    household_size = serializers.IntegerField(source='profile.household_size', read_only=True)
+    receives_str = serializers.BooleanField(source='profile.receives_str', read_only=True)
+    receives_jkm = serializers.BooleanField(source='profile.receives_jkm', read_only=True)
+    spm_a_count = serializers.SerializerMethodField()
     funding_need = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
 
@@ -67,7 +93,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
         model = ScholarshipApplication
         fields = [
             'id', 'cohort_code', 'cohort_name', 'profile_id',
-            'qualification', 'spm_a_count', 'stpm_pngk',
+            'exam_type', 'spm_a_count', 'stpm_pngk',
             'household_income', 'household_size',
             'receives_str', 'receives_jkm',
             'intended_pathway', 'intends_tertiary_2026',
@@ -76,8 +102,12 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'acknowledged_at', 'submitted_at', 'updated_at',
             'aspirations', 'plans', 'fears', 'justification',
             'funding_need', 'completeness',
-            'form_data',
+            'form_data', 'intake_snapshot',
         ]
+
+    def get_spm_a_count(self, obj):
+        from .shortlisting import count_spm_a_grades
+        return count_spm_a_grades(getattr(obj.profile, 'grades', None)) if obj.profile else 0
 
     def get_funding_need(self, obj):
         try:

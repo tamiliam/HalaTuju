@@ -476,9 +476,22 @@ class StudentProfile(models.Model):
 
     # Family background
     family_income = models.CharField(max_length=30, blank=True, default='',
-                                     help_text="Family monthly income range")
+                                     help_text="Family monthly income range (legacy/coarse)")
     siblings = models.IntegerField(null=True, blank=True,
                                    help_text="Number of siblings")
+    # Financial detail (canonical source for the B40 Assistance Programme; collected
+    # once here and reused across application rounds — see apps/scholarship)
+    household_income = models.IntegerField(
+        null=True, blank=True, help_text="Combined monthly household income in RM")
+    household_size = models.IntegerField(
+        null=True, blank=True, help_text="Number of people in the household")
+    receives_str = models.BooleanField(
+        default=False, help_text="Active Sumbangan Tunai Rahmah recipient (B40 anchor)")
+    receives_jkm = models.BooleanField(
+        default=False, help_text="Receives JKM assistance")
+    guardians = models.JSONField(
+        default=list, blank=True,
+        help_text="Guardian details: [{name, relationship, occupation, income}]")
 
     # Demographics (for eligibility checking)
     gender = models.CharField(max_length=20, blank=True)

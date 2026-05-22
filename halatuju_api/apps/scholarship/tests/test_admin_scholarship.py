@@ -31,10 +31,12 @@ class TestAdminScholarship(TestCase):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
         cls.profile = StudentProfile.objects.create(
             supabase_user_id='stud-prof', nric='030101-14-1234', name='Priya', school='SMK X',
+            # academic + financial data is canonical on the profile
+            grades={f'sub{i}': 'A' for i in range(10)},
+            household_income=2500, receives_str=True,
         )
         cls.app = ScholarshipApplication.objects.create(
             cohort=cls.cohort, profile=cls.profile, status='shortlisted', bucket='A',
-            spm_a_count=10, household_income=2500, receives_str=True,
             aspirations='Become an auditor', justification='Low income family',
         )
 

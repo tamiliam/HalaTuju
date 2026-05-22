@@ -84,7 +84,14 @@ Frontend suite 37; check-i18n + `next build` green. See `docs/retrospective-b40-
 ## ✅ Phase 1 build COMPLETE (2026-05-22) — all 6 sprints
 
 Full applicant→admin loop built and locally green (backend 1086, frontend 37, golden masters intact,
-migrations 0001–0005), on branch `feature/b40-assistance`, **not deployed**.
+migrations 0001–0006 + courses 0047), on branch `feature/b40-assistance`, **not deployed**.
+
+### Phase 1.5a — source-of-truth refactor ✅ DONE (2026-05-22)
+The HalaTuju profile is now the single source of truth for applicant academic + financial data
+(no duplication on the application; `intake_snapshot` holds the immutable audit copy; the apply
+form pre-fills from and writes back to the profile). Email de-Gmailed (Brevo relay, env-driven).
+Migrations `courses 0047` + `scholarship 0006`. Backend suite 1086. See `docs/decisions.md`.
+**Frontend not yet rebuilt to the new shape** — that follows the Stitch redesign (next).
 
 ## Dependencies
 S1→S2 (form needs API); S1→S3 (shortlist needs application model); S3→S4 (quiz gate is post-pass);
@@ -97,13 +104,16 @@ S1→S5 (docs attach to application); S4+S5→S6 (profile draft needs deeper inf
 - Programme naming/branding within HalaTuju.
 
 ## Next step
-All 6 Phase-1 sprints complete on branch `feature/b40-assistance` (committed; not merged/deployed).
-**Next is the single Phase-1 deploy**, gated on these carry-forwards:
-1. Apply Supabase migrations 0001–0005 + run the RLS SQL (`apps/scholarship/sql/rls_policies.sql`); confirm Security Advisor 0 errors.
+Backend complete on branch `feature/b40-assistance`. **Immediate next: Stitch redesign of the
+5-section apply form** (sections 1–3 pre-filled from profile, 4–5 app-specific; soft sign-in gate;
+one-button Google sign-in/register) → user visual approval → rebuild the frontend to the
+profile-canonical API shape. Only then the single Phase-1 deploy, gated on these carry-forwards:
+1. Apply Supabase migrations `scholarship 0001–0006` **and** `courses 0047` + run the RLS SQL (`apps/scholarship/sql/rls_policies.sql`); confirm Security Advisor 0 errors.
 2. Create the `b40-documents` private Storage bucket.
-3. Swap the DRAFT consent text (`CONSENT_VERSION`) for the lawyer-reviewed version.
-4. Wire the fail-email scheduler (Cloud Scheduler → `send_pending_decision_emails`).
-5. Browser smoke-test every flow: apply OAuth, details PATCH, quiz return, upload, consent, admin generate/edit/publish.
-6. Merge to `main` (triggers CI/CD deploy).
+3. **Brevo email cutover** — set `EMAIL_HOST_USER`/`EMAIL_HOST_PASSWORD` (Brevo SMTP login + key) and `DEFAULT_FROM_EMAIL` env vars on Cloud Run; verify the `halatuju.xyz` sender domain in Brevo. No personal Gmail in the deploy.
+4. Swap the DRAFT consent text (`CONSENT_VERSION`) for the lawyer-reviewed version.
+5. Wire the fail-email scheduler (Cloud Scheduler → `send_pending_decision_emails`).
+6. Browser smoke-test every flow: apply OAuth, details PATCH, quiz return, upload, consent, admin generate/edit/publish.
+7. Merge to `main` (triggers CI/CD deploy).
 
 **Public launch** additionally gated on Phase 0 (confirm MyNadi entity, fundraising permit, lawyer sign-off). **Phase 2** (sponsor portal) follows.

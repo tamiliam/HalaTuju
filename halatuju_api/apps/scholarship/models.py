@@ -91,27 +91,10 @@ class ScholarshipApplication(models.Model):
         help_text="Linked HalaTuju profile (always set in the apply-first flow)",
     )
 
-    # Shortlisting inputs
-    qualification = models.CharField(
-        max_length=10, choices=QUALIFICATION_CHOICES, default='spm',
-    )
-    spm_a_count = models.IntegerField(
-        null=True, blank=True,
-        help_text="Snapshot of SPM A's at apply time (A+/A/A- all count)",
-    )
-    stpm_pngk = models.FloatField(null=True, blank=True)
-    household_income = models.IntegerField(
-        null=True, blank=True,
-        help_text="Combined monthly household income in RM",
-    )
-    household_size = models.IntegerField(null=True, blank=True)
-    receives_str = models.BooleanField(
-        default=False,
-        help_text="Active Sumbangan Tunai Rahmah recipient (B40 anchor)",
-    )
-    receives_jkm = models.BooleanField(
-        default=False, help_text="Receives JKM assistance",
-    )
+    # Per-application fields only. Person-level data (grades, household_income,
+    # household_size, receives_str/jkm, exam_type) lives on the linked
+    # StudentProfile — the single source of truth. The shortlisting engine reads
+    # those from the profile; this row never duplicates them.
     intended_pathway = models.CharField(
         max_length=50, blank=True, default='',
         help_text="e.g. asasi, matrik, stpm, pismp, diploma, degree",
@@ -162,6 +145,11 @@ class ScholarshipApplication(models.Model):
     form_data = models.JSONField(
         default=dict, blank=True,
         help_text="Raw/extra intake fields from the native form",
+    )
+    intake_snapshot = models.JSONField(
+        default=dict, blank=True,
+        help_text="Immutable record of what the applicant declared at submit time "
+                  "(profile + application fields). Audit evidence, NOT the live source.",
     )
 
     submitted_at = models.DateTimeField(auto_now_add=True)

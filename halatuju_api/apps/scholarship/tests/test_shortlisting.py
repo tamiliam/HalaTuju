@@ -12,14 +12,33 @@ def cohort(**over):
     return SimpleNamespace(**base)
 
 
-def app(**over):
-    base = dict(
-        qualification='spm', spm_a_count=10, stpm_pngk=None,
+def _grades_with_a_count(n):
+    """A 10-subject SPM grades dict with exactly ``n`` A's (rest B's). None passes through."""
+    if n is None:
+        return None
+    return {f'sub{i}': ('A' if i < n else 'B') for i in range(10)}
+
+
+def app(*, qualification='spm', spm_a_count=10, stpm_pngk=None,
         household_income=2500, receives_str=True,
-        intends_tertiary_2026=True, consent_to_contact=True,
+        intends_tertiary_2026=True, consent_to_contact=True):
+    """
+    Build an application stand-in. Academic + income now live on the linked
+    profile (the single source of truth); intent + consent on the application.
+    ``spm_a_count`` is expressed as a grades dict the engine tallies itself.
+    """
+    profile = SimpleNamespace(
+        exam_type=qualification,
+        grades=_grades_with_a_count(spm_a_count),
+        stpm_cgpa=stpm_pngk,
+        household_income=household_income,
+        receives_str=receives_str,
     )
-    base.update(over)
-    return SimpleNamespace(**base)
+    return SimpleNamespace(
+        profile=profile,
+        intends_tertiary_2026=intends_tertiary_2026,
+        consent_to_contact=consent_to_contact,
+    )
 
 
 class TestShortlistingEngine(TestCase):

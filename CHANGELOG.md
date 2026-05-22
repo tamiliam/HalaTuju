@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Assistance Programme · Phase 1.5a source-of-truth refactor (2026-05-22)
+
+Made the HalaTuju profile the single source of truth for applicant data, plus de-Gmailed email.
+
+### Changed
+- **Profile is canonical.** Moved academic (read from existing `grades`/`exam_type`/`stpm_cgpa`) and
+  financial data to `courses.StudentProfile`: added `household_income`, `household_size`,
+  `receives_str`, `receives_jkm`, `guardians` (migration `courses 0047`).
+- **`ScholarshipApplication` slimmed** (migration `scholarship 0006`) — removed the duplicated
+  `qualification`/`spm_a_count`/`stpm_pngk`/`household_income`/`household_size`/`receives_str`/
+  `receives_jkm`; added `intake_snapshot` (immutable record of what was declared at submit time).
+- **Shortlisting reads the profile live** — `shortlisting.evaluate()` scores academic + income from
+  `application.profile`; intent + consent stay per-application. `count_spm_a_grades` now lives in
+  `shortlisting.py`.
+- **Apply flow writes back** — `services.sync_profile_fields` syncs the form's financial fields to the
+  profile (non-None only, never blanks an existing value); `build_intake_snapshot` freezes the audit copy.
+- **Serializers** — create accepts the financial write-back fields (write-only); read + admin serializers
+  derive academic/financial from the profile and expose `intake_snapshot`.
+- **Email de-Gmailed** — `production.py` email is now fully env-driven (Brevo SMTP relay default);
+  no personal address in code. Deploy sets `EMAIL_HOST_USER`/`EMAIL_HOST_PASSWORD` + verifies the sender domain.
+
+### Tests
+- Full backend suite **1086 pass**. Updated `test_shortlisting`/`test_api`/`test_models`/
+  `test_admin_scholarship` for the profile-canonical shape; removed the obsolete
+  "explicit a-count override" test; added write-back + snapshot coverage.
+
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 6b (2026-05-22) — Phase 1 build complete
 
 MyNadi admin console UI (frontend) — completes Sprint 6 and the Phase 1 build.

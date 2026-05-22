@@ -31,9 +31,9 @@ class TestScholarshipModels(TestCase):
         )
         self.assertEqual(app.status, 'submitted')
         self.assertEqual(app.bucket, '')
-        self.assertFalse(app.receives_str)
         self.assertTrue(app.intends_tertiary_2026)
         self.assertEqual(app.form_data, {})
+        self.assertEqual(app.intake_snapshot, {})
         self.assertIsNone(app.acknowledged_at)
         self.assertIn(str(app.pk), str(app))
 
