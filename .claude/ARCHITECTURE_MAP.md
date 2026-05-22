@@ -171,6 +171,48 @@ apps/reports/
     └── test_views.py              # 4 — report list/detail, cross-user 404, auth
 ```
 
+### App: scholarship (B40 Assistance Programme — financing extension)
+
+```
+apps/scholarship/                  # Phase 1: intake & profile engine (no money flow)
+├── models.py                      # ScholarshipCohort, ScholarshipApplication
+├── apps.py                        # ScholarshipConfig (no startup data load)
+├── serializers.py                 # ApplicationCreate / ApplicationRead
+├── services.py                    # Intake logic (count_spm_a_grades, resolve_open_cohort, create_application)
+├── emails.py                      # Trilingual (EN/MS/TA) acknowledgement email
+├── views.py                       # ApplicationListCreateView, ApplicationDetailView
+├── urls.py                        # /api/v1/scholarship/applications/ (+ <id>/)
+├── sql/rls_policies.sql           # Deny-by-default RLS for the 2 new tables (apply before deploy)
+├── migrations/0001_initial.py     # ScholarshipCohort + ScholarshipApplication
+└── tests/                         # test_models.py (4), test_api.py (13)
+```
+
+**New tables (created in migration; applied to Supabase at deploy):** `scholarship_cohorts`,
+`scholarship_applications`. PRD + roadmap live in `docs/scholarship/`. Phase 1 = 6 sprints;
+Sprints 1-3 done. Sprint 3 added `shortlisting.py` (pure rules engine → A/B/FAIL),
+`management/commands/send_pending_decision_emails.py` (delayed fail email), and 4 model fields
+(`shortlisted_at`, `decision_email_sent_at`, `locale`, `notify_email`; migration 0002). Sprint 4a
+added the `FundingNeed` model (OneToOne → application, `funding_needs`, computed `total`), deeper-info
+fields (`aspirations`/`plans`/`fears`/`justification`), a `PATCH` details endpoint, and a
+`completeness` block on the read serializer (migration 0003). Sprint 5a added `ApplicantDocument`/
+`Referee`/`Consent` models, `storage.py` (signed-URL private-bucket vault), and document/referee/
+consent endpoints with a minor→guardian consent gate (migration 0004). Sprint 6a added the
+`SponsorProfile` model, `profile_engine.py` (Gemini sponsor-profile drafting), and the MyNadi admin
+API (`views_admin.py`/`serializers_admin.py`, reusing `PartnerAdminMixin`) under
+`/api/v1/admin/scholarship/` (migration 0005). Sprint 6b added the admin console UI
+(`src/app/admin/scholarship/page.tsx` + `[id]/page.tsx`, AI profile generate/edit/publish) and the
+admin scholarship client functions in `lib/admin-api.ts`. **Phase 1 build complete (all 6 sprints).**
+
+**Frontend (Sprint 2):** `halatuju-web/src/app/scholarship/apply/page.tsx` (single front-door
+application form), `src/lib/scholarship.ts` (pure form helpers, node-tested in
+`src/lib/__tests__/scholarship.test.ts`), `submit/getMyScholarshipApplications` in `lib/api.ts`,
+and a new `'apply'` `AuthGateReason` in `lib/auth-context.tsx` + `components/AuthGateModal.tsx`.
+Sprint 4b added `components/ScholarshipNextSteps.tsx` (post-shortlist 3-step checklist + funding/
+deeper-info form), funding/details helpers in `lib/scholarship.ts`, and `updateScholarshipDetails`
+in `lib/api.ts`. Sprint 5b added `components/Scholarship{Documents,Referee,Consent}.tsx` (signed-URL
+upload + referee + consent flow with guardian fields for minors) as next-steps steps 4–6, plus the
+document/referee/consent client functions in `lib/api.ts`.
+
 ### Backend Root Files
 
 ```

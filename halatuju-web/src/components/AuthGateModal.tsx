@@ -106,7 +106,9 @@ export default function AuthGateModal() {
             ? 'profileReason'
             : authGateReason === 'loadmore'
               ? 'loadmoreReason'
-              : 'reportReason'
+              : authGateReason === 'apply'
+                ? 'applyReason'
+                : 'reportReason'
 
   const formatPhone = (raw: string) => {
     let formatted = raw.trim()
@@ -168,6 +170,8 @@ export default function AuthGateModal() {
     setLoading(false)
     if (reason === 'quiz') {
       router.push('/quiz')
+    } else if (reason === 'apply') {
+      router.push('/scholarship/apply')
     } else if (reason === 'profile') {
       setPendingProfileRedirect(true)
     }

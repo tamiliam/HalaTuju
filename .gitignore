@@ -29,3 +29,10 @@ halatuju_api/db.sqlite3
 
 # Archived secrets
 **/secrets.toml
+
+# B40 Assistance Programme — source material with REAL student PII
+# (names, NRICs, family finances). Never commit. PRD/roadmap .md files are fine.
+docs/scholarship/*.pdf
+docs/scholarship/*.xlsx
+docs/scholarship/*.txt
+docs/students_batch_1_clean.xlsx

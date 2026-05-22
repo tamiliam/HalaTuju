@@ -442,3 +442,135 @@
 **Trade-offs:** An extra API call on every login (getProfile). Negligible cost — the call is fast and happens once per session.
 
 **Revisit if:** localStorage needs to function as an offline-first store (Progressive Web App), in which case a versioned schema with migrations would be needed.
+
+## Separate `apps/scholarship/` app for the B40 financing extension — B40 Sprint 1, 2026-05-21
+
+**Decision:** Build the B40 Assistance Programme as a new `apps/scholarship/` Django app rather than adding models/views to `apps/courses/`.
+
+**Alternatives considered:** (1) Add scholarship models + endpoints to `apps/courses/`. (2) A separate app.
+
+**Rationale:** `apps/courses/` is the eligibility engine — its `apps.py` loads the whole course DataFrame at startup and it holds the golden-master logic. The financing domain (applications, sponsors, disbursements) is orthogonal: different lifecycle, different RLS posture, different reviewers. A separate app keeps the sacred engine untouched and lets the financing schema evolve independently. It reuses `StudentProfile` by FK across the app boundary (label `courses`).
+
+**Trade-offs:** A cross-app FK (`'courses.StudentProfile'`) and a second migration history to track. Negligible vs. the isolation benefit.
+
+**Revisit if:** The financing flow ever needs to run inside the eligibility request path (it doesn't — it's a separate funnel).
+
+## Application model: explicit shortlisting fields + `form_data` JSON blob — B40 Sprint 1, 2026-05-21
+
+**Decision:** `ScholarshipApplication` stores the shortlisting-relevant inputs as explicit typed columns (qualification, spm_a_count, stpm_pngk, household_income/size, receives_str/jkm, intended_pathway, intends_tertiary_2026, consent_to_contact) AND a `form_data` JSONField for the rest of the native form.
+
+**Alternatives considered:** (1) Everything in one JSON blob. (2) Every form field as a column. (3) Hybrid (chosen).
+
+**Rationale:** The shortlisting rules engine (Sprint 3) must filter/score on the criteria fields — those need to be queryable, typed, and indexable, so they are real columns. The remaining free-form intake (aspirations, narrative, etc.) is display-only and still firming up while the native form is designed (Sprint 2), so a JSON blob avoids premature schema churn.
+
+**Trade-offs:** Two homes for intake data; a field that graduates from "display-only" to "scored" later needs a migration to promote it from `form_data` to a column.
+
+**Revisit if:** A `form_data` key becomes load-bearing for shortlisting — promote it to a typed column at that point.
+
+## RLS deny-by-default (no policies) for scholarship tables — B40 Sprint 1, 2026-05-21
+
+**Decision:** Enable RLS on `scholarship_cohorts` and `scholarship_applications` with **no** permissive policies.
+
+**Alternatives considered:** (1) RLS + per-row `authenticated` policies (as some Supabase-direct tables use). (2) RLS off. (3) RLS on, no policies (chosen).
+
+**Rationale:** These tables are served exclusively by the Django API, which connects as the table-owner (service) role and bypasses RLS. The frontend never reaches them via PostgREST. Enabling RLS with no policy therefore denies all direct anon/authenticated access (defense in depth) while the API works normally. Application rows hold sensitive financial/family data, so deny-by-default is correct. Also satisfies the Security Advisor "RLS disabled" check.
+
+**Trade-offs:** If a future sprint wants a direct, public, non-sensitive read (e.g. an open cohort listing via PostgREST), a narrowly-scoped SELECT policy must be added for that one table.
+
+**Revisit if:** A frontend feature needs to read these tables directly from Supabase rather than through the Django API.
+
+## New `'apply'` AuthGateReason extends the shared auth flow — B40 Sprint 2, 2026-05-21
+
+**Decision:** Added `'apply'` to `AuthGateReason` and a branch in `AuthGateModal.finishAndClose` that `router.push('/scholarship/apply')`, rather than building a separate auth path for the apply page.
+
+**Alternatives considered:** (1) Reuse the existing `'profile'` reason (but it redirects to dashboard/onboarding, not back to apply). (2) A bespoke inline auth flow on the apply page. (3) Extend the shared flow with one new reason (chosen).
+
+**Rationale:** The auth flow (anonymous sign-in → Google → NRIC claim → resume pending action) is delicate and has been the subject of multiple bug-fix sprints. Reproducing it would be risky and duplicative. A single new reason reuses the entire `KEY_PENDING_AUTH_ACTION` resume machinery and the IC-gate, and returns the user to the apply page — the correct UX with a minimal, contained change.
+
+**Trade-offs:** Touches two shared auth files. Mitigated by mirroring the existing `'quiz'` reason exactly (direct `router.push`) and gating on `next build`.
+
+**Revisit if:** The auth flow is refactored, or apply needs a different post-auth destination.
+
+## Lightweight self-reported academics in the apply form — B40 Sprint 2, 2026-05-21
+
+**Decision:** The apply form captures academics as a single self-reported number (SPM A-count, or STPM PNGK), pre-filled from the profile when grades exist, rather than embedding the full grades-onboarding UI or forcing the student through it first.
+
+**Alternatives considered:** (1) Reuse/embed the full per-subject grades onboarding. (2) Require grades onboarding before the apply page opens. (3) Lightweight self-reported number (chosen).
+
+**Rationale:** The shortlist only needs the A-count / PNGK. Self-reporting keeps "apply-first" smooth (the agreed principle — don't front-load the quiz/onboarding), and documents verify the real figures later. The backend still snapshots the A-count from `profile.grades` when no explicit value is sent, so returning students with grades are covered automatically. Full grades + quiz arrive at STEP 1A (Sprint 4).
+
+**Trade-offs:** Self-reported numbers can be wrong; shortlisting on them is provisional until document verification (Sprint 5). Acceptable — the alternative front-loads friction onto exactly the B40 audience we want to reach.
+
+**Revisit if:** Self-reporting proves unreliable enough to distort shortlisting before documents are collected.
+
+## Synchronous shortlist on submit; pass email immediate, fail email deferred — B40 Sprint 3, 2026-05-21
+
+**Decision:** The intake view runs `shortlist_application()` synchronously right after creating the application. A qualifying applicant gets the acknowledgement email *and* an immediate congratulations email; a rejected applicant gets only the acknowledgement, with the courteous "not this round" email deferred to the `send_pending_decision_emails` command (after `fail_email_delay_days`). The applicant's `locale` and resolved `notify_email` are stored on the application at submit so the deferred command needs no request context.
+
+**Alternatives considered:** (1) Shortlist asynchronously via a queue/cron after submit. (2) Send the fail email immediately too. (3) Synchronous shortlist + deferred fail email (chosen).
+
+**Rationale:** Instant mechanical shortlisting matches the PRD funnel and the near-zero-touch goal, and the synchronous send is consistent with the existing synchronous acknowledgement send. Deferring the fail email avoids a rejection landing seconds after applying (a deliberate kindness in the spec). Storing locale + notify_email avoids needing the request (or a live JWT) when the scheduled command runs days later.
+
+**Trade-offs:** The submit request does up to two SMTP sends (acknowledgement + pass), adding latency; both are best-effort (failures are swallowed). A future move to async sending would remove the latency. The fail email depends on a scheduler being wired at deploy.
+
+**Revisit if:** SMTP latency degrades the submit UX (move sends to a queue), or the two-email pass flow proves redundant (merge acknowledgement + pass into one email).
+
+## FundingNeed as a separate OneToOne model with a computed total — B40 Sprint 4a, 2026-05-21
+
+**Decision:** Store the funding-need breakdown as its own `FundingNeed` model (OneToOne → application) with typed integer line items and a computed `total` property, rather than a JSON blob on the application.
+
+**Alternatives considered:** (1) A JSON field on the application. (2) Columns directly on the application. (3) Separate OneToOne model (chosen).
+
+**Rationale:** The breakdown will be displayed, summed, shown to sponsors, and eventually used in disbursement maths — typed columns + a computed total are queryable and validatable, and a separate model keeps the already-large application row uncluttered and the funding concern cohesive. Upsert via `update_or_create`.
+
+**Trade-offs:** A second table and a reverse relation to handle (accessed via `try/except DoesNotExist`). Negligible.
+
+**Revisit if:** The breakdown needs free-form, highly variable line items that don't fit fixed columns.
+
+## Signed-URL direct-to-Supabase document storage (no bytes through Django) — B40 Sprint 5a, 2026-05-22
+
+**Decision:** Documents upload straight from the browser to a private Supabase Storage bucket using a signed upload URL the backend mints (service key, stdlib `urllib`); Django stores only the path + metadata and serves time-limited signed download URLs on demand.
+
+**Alternatives considered:** (1) Proxy file bytes through Django to Storage. (2) `supabase-py` client. (3) Signed URLs via stdlib `urllib` (chosen).
+
+**Rationale:** Cloud Run has request-size/memory limits; keeping bytes off Django avoids them and is the standard private-storage pattern. stdlib `urllib` avoids a new dependency and keeps the module importable so tests mock the two functions cleanly. The service key stays server-side; the browser only ever receives short-lived signed URLs.
+
+**Trade-offs:** Can't integration-test against real Storage locally (mocked + a 503 fallback when unavailable); the private bucket is a deploy carry-forward. Generating a download URL per document during list serialization makes one HTTP call per doc — fine at N≤7.
+
+**Revisit if:** Per-applicant document volume grows large (sign lazily), or a richer storage SDK becomes warranted.
+
+## Versioned, guardian-gated consent keyed on NRIC age — B40 Sprint 5a, 2026-05-22
+
+**Decision:** `Consent` rows are versioned (`CONSENT_VERSION`), withdrawable (`is_active`), and superseding (a new consent of a type deactivates prior ones). A minor (<18, age derived from the NRIC DOB) must have consent granted by a guardian (name + relationship) or it is rejected.
+
+**Alternatives considered:** (1) A single boolean consent flag on the application. (2) Verbal/implicit consent (what the B40 analysis flagged as insufficient). (3) Versioned consent records with a guardian gate (chosen).
+
+**Rationale:** PDPA needs an auditable, purpose- and version-specific record, and Malaysian minors need guardian consent before their data is shared with sponsors. Deriving age from the already-verified NRIC avoids collecting DOB twice. Superseding keeps an audit trail while making "current consent" unambiguous.
+
+**Trade-offs:** Consent text is DRAFT until lawyer review (the version string swaps then). NRIC-derived age assumes a valid NRIC (already gated at identity).
+
+**Revisit if:** The lawyer requires a different consent structure, or non-NRIC identities are admitted.
+
+## AI-draft → admin-edit → publish profile workflow — B40 Sprint 6a, 2026-05-22
+
+**Decision:** `SponsorProfile` keeps the raw AI `draft_markdown` and the admin's `edited_markdown` separately, with `current_markdown` = edited-wins, and a status flow draft → approved → published. Regenerating a published profile reverts it to draft.
+
+**Alternatives considered:** (1) A single markdown field overwritten by both AI and admin. (2) Auto-publish the AI draft. (3) Separate draft/edited with an explicit publish status (chosen).
+
+**Rationale:** Keeping the AI draft distinct from the admin's edits preserves the original for comparison/regeneration and makes "what sponsors will see" unambiguous (`current_markdown`). The status flow gives an explicit human publish gate before a profile becomes sponsor-visible (Phase 2) — never auto-publish AI output about a real person. Reverting on regenerate prevents a stale published profile silently diverging from a fresh draft.
+
+**Trade-offs:** Two text fields + a status to reason about. Negligible vs. the auditability and the human gate.
+
+**Revisit if:** Profiles need multi-version history (add a revisions table), or sponsors should ever see drafts directly (they shouldn't).
+
+## Profile is the single source of truth for applicant data — B40 Phase 1.5a, 2026-05-22
+
+**Decision:** Academic (grades / exam type / STPM CGPA) and financial (household income/size, STR/JKM) data lives **only** on `courses.StudentProfile`. The `ScholarshipApplication` row keeps per-application fields only (intended pathway, intent, consent, deeper-info, funding need). The apply form **pre-fills** from the profile and **writes back** the financial fields it collects (`services.sync_profile_fields`), the shortlisting engine reads academic + income **live** from `application.profile`, and a frozen `intake_snapshot` JSON captures what was declared at submit time as audit evidence (never the live source).
+
+**Alternatives considered:** (1) Duplicate the shortlisting-relevant fields onto the application and snapshot them at submit (the original Sprint-1–3 design). (2) Profile-only with no snapshot. (3) Profile-canonical + write-back + immutable intake_snapshot (chosen).
+
+**Rationale:** ~600 students already onboarded HalaTuju via Google Sign-In, so much of this data already exists on the profile. Re-asking and storing a second copy on the application created a "clash on the hierarchy of truth" (the user's words) — two divergent values for the same fact, with no defined winner. Making the profile canonical means a student updates their income once and every round sees it; the engine never scores stale duplicated data. The `intake_snapshot` preserves auditability (what they actually declared then) without making the application a competing source.
+
+**Trade-offs:** Shortlisting now depends on the profile being populated — a profile with empty grades scores 0 A's (correctly fails academic). The write-back only overwrites with non-None form values, so a form that omits a field can't blank an existing profile value. Migrations `courses 0047` (add financial fields) + `scholarship 0006` (remove the duplicated fields, add `intake_snapshot`) must both deploy together.
+
+**Revisit if:** A future round needs point-in-time scoring against the snapshot rather than the live profile (then score from `intake_snapshot`), or non-HalaTuju applicants (no profile) are admitted (then the application would need to carry its own data again).

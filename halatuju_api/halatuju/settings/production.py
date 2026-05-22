@@ -77,12 +77,15 @@ if SENTRY_DSN:
 MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Email — Gmail SMTP for verification emails
+# Email — sent via an SMTP provider (Brevo), NOT a personal Gmail.
+# Deploy must set EMAIL_HOST_USER / EMAIL_HOST_PASSWORD to the Brevo SMTP login + key,
+# and verify the DEFAULT_FROM_EMAIL sender domain in Brevo. All values are env-driven so no
+# personal address ever lives in code.
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp-relay.brevo.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = f'HalaTuju <{EMAIL_HOST_USER}>' if EMAIL_HOST_USER else 'HalaTuju <noreply@halatuju.com>'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'HalaTuju <noreply@halatuju.xyz>')
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://halatuju-web-bycx45sxsa-as.a.run.app')

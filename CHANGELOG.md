@@ -5,6 +5,300 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Assistance Programme · Phase 1.5c public landing + follow-up route (2026-05-22)
+
+Added the public marketing landing and gave the post-submission follow-up its own page.
+
+### Added
+- **`/scholarship/` landing** (public, no sign-in) — Stitch-designed, community self-help framing:
+  hero + AI imagery, overview + value cards, a "Please note (pilot)" callout, a "Can you apply?"
+  checklist (Indian-descent pilot, B40 < RM5,860, 5 A's / PNGK 3.0, public post-secondary), an
+  8-step "How it works" timeline, a 10-item FAQ accordion, and a closing CTA. Renders with
+  `AppHeader`/`AppFooter` like other content pages.
+- **`/scholarship/application`** — the post-submission home: shortlisted students complete their
+  follow-up (`ScholarshipNextSteps`) here; everyone else sees a neutral "received" status; visitors
+  with no application are sent to apply. The apply page now redirects returning applicants here and
+  routes here after submit (no more inline status branch).
+- **AI imagery** (Gemini, via Stitch) saved as real assets: `public/scholarship/hero.jpg`,
+  `community.jpg`. Hero is `priority`; the CTA image lazy-loads.
+- **i18n**: `scholarship.landing.*` + `scholarship.application.*` in EN/MS/TA (1002 keys, parity
+  verified). Gate button copy and all landing copy use the approved British-English wording.
+
+### Tests / verification
+- Jest **37 pass**; `next build` green (`/scholarship`, `/scholarship/application`, `/scholarship/apply`
+  all compile). Live render check on `next dev` confirmed the landing renders (hero image, value cards,
+  pilot callout, requirements, timeline, FAQ, CTA, footer). Not deployed.
+
+## [Unreleased] — B40 Assistance Programme · Phase 1.5b apply-form frontend rebuild (2026-05-22)
+
+Rebuilt the student apply flow to the profile-canonical API and the Stitch-approved design
+(landing soft sign-in gate + tabbed 5-section form).
+
+### Added / Changed
+- **Soft sign-in gate** — anonymous visitors read the eligibility criteria freely and apply via a
+  one-tap "Continue with Google" (the same button registers new students), with a "we'll use your
+  profile so you never retype" reassurance. Replaces the old plain sign-in prompt.
+- **Tabbed 5-section apply form** (Form A) — About You · Your Family · Your SPM/STPM Results ·
+  Your Plans · Support, with a step progress bar + sticky bottom tab bar.
+  - Sections 1 & 3 are **read-only, pre-filled from the profile** with "From your HalaTuju profile"
+    badges and Edit links; results show A-count / A+ / STPM CGPA, or a "finish your quiz" prompt when
+    the profile has no academic data yet.
+  - Section 2 (Family) **writes financial fields back to the profile** (income, household size, STR/JKM
+    toggles) with a "this also updates your HalaTuju profile" caption.
+  - Academic data is **never posted** — the backend reads it from the profile.
+- **`scholarship.ts`** — `ApplyFormState` slimmed to the financial + application fields;
+  `profileToApplyDefaults` pre-fills financial from the profile; new `profileAcademicSummary` helper;
+  `buildApplicationPayload`/`applyFormError` drop the academic fields.
+- **API types** — `StudentProfile` gains the financial fields; student `ScholarshipApplication` uses
+  `exam_type` (was `qualification`) and exposes `intake_snapshot`. (Admin types/serializer unchanged.)
+- **i18n** — new `scholarship.apply.*` keys (gate, tabs, sections, read-only field labels, write-back
+  note, results summary, empty states) in EN/MS/TA; 925 keys, parity verified.
+
+### Tests
+- `scholarship.test.ts` updated to the new shape (20 pass); full Jest **37 pass**; `next build` green
+  (`/scholarship/apply` compiles). Not deployed.
+
+## [Unreleased] — B40 Assistance Programme · Phase 1.5a source-of-truth refactor (2026-05-22)
+
+Made the HalaTuju profile the single source of truth for applicant data, plus de-Gmailed email.
+
+### Changed
+- **Profile is canonical.** Moved academic (read from existing `grades`/`exam_type`/`stpm_cgpa`) and
+  financial data to `courses.StudentProfile`: added `household_income`, `household_size`,
+  `receives_str`, `receives_jkm`, `guardians` (migration `courses 0047`).
+- **`ScholarshipApplication` slimmed** (migration `scholarship 0006`) — removed the duplicated
+  `qualification`/`spm_a_count`/`stpm_pngk`/`household_income`/`household_size`/`receives_str`/
+  `receives_jkm`; added `intake_snapshot` (immutable record of what was declared at submit time).
+- **Shortlisting reads the profile live** — `shortlisting.evaluate()` scores academic + income from
+  `application.profile`; intent + consent stay per-application. `count_spm_a_grades` now lives in
+  `shortlisting.py`.
+- **Apply flow writes back** — `services.sync_profile_fields` syncs the form's financial fields to the
+  profile (non-None only, never blanks an existing value); `build_intake_snapshot` freezes the audit copy.
+- **Serializers** — create accepts the financial write-back fields (write-only); read + admin serializers
+  derive academic/financial from the profile and expose `intake_snapshot`.
+- **Email de-Gmailed** — `production.py` email is now fully env-driven (Brevo SMTP relay default);
+  no personal address in code. Deploy sets `EMAIL_HOST_USER`/`EMAIL_HOST_PASSWORD` + verifies the sender domain.
+
+### Tests
+- Full backend suite **1086 pass**. Updated `test_shortlisting`/`test_api`/`test_models`/
+  `test_admin_scholarship` for the profile-canonical shape; removed the obsolete
+  "explicit a-count override" test; added write-back + snapshot coverage.
+
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 6b (2026-05-22) — Phase 1 build complete
+
+MyNadi admin console UI (frontend) — completes Sprint 6 and the Phase 1 build.
+
+### Added
+- **`/admin/scholarship`** — applications list with status + bucket filters.
+- **`/admin/scholarship/[id]`** — full applicant detail (intake, funding, documents, referees,
+  consent) + AI sponsor-profile panel: Generate → edit Markdown → Save → Publish, with status badge.
+- Admin API client (`getScholarshipApplications`, `getScholarshipApplication`,
+  `generateSponsorProfile`, `saveSponsorProfile`, `publishSponsorProfile`); "B40 Applications" nav link.
+- i18n: `admin.scholarship.*` in EN/MS/TA (894 keys, parity verified).
+
+### Tests
+- Frontend suite **37 pass**; check-i18n PASS; `next build` — both admin pages compile.
+
+### Phase 1 status
+- **All 6 sprints complete.** Backend 1086 tests, frontend 37, golden masters intact, on
+  `feature/b40-assistance` (not deployed). Remaining: the single Phase-1 deploy (carry-forwards) and
+  Phase 0 legal/entity sign-off before public launch.
+
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 6a (2026-05-22)
+
+AI sponsor-profile drafting + MyNadi admin API (backend; the admin console UI is 6b).
+
+### Added
+- **`SponsorProfile` model** (OneToOne application; `draft_markdown`/`edited_markdown`, status
+  draft→approved→published, `model_used`, timestamps; migration 0005, RLS).
+- **`profile_engine.py`** — `generate_sponsor_profile()` drafts a sponsor-ready Markdown profile
+  from intake + deeper-info + funding + grades + referee via the Gemini cascade (graceful error).
+- **Admin API** (reuses `PartnerAdminMixin`, super-admin sees all): list applications (status/bucket
+  filter), full detail (intake/funding/docs/referees/consents/profile), generate-profile, edit
+  profile, publish — under `/api/v1/admin/scholarship/`.
+
+### Tests
+- 9 new (`test_admin_scholarship.py`, Gemini mocked). Full backend suite **1086 pass, 0 fail**;
+  golden masters unchanged.
+
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 5b (2026-05-22)
+
+Document upload + referee + consent UI (frontend) — completes Sprint 5.
+
+### Added
+- **`ScholarshipDocuments`** — per-doc-type upload (sign → PUT straight to Supabase Storage →
+  record), list with signed-URL view links + delete.
+- **`ScholarshipReferee`** — add/list referees.
+- **`ScholarshipConsent`** — DRAFT consent text + checkbox; guardian name/relationship fields when
+  the applicant is a minor; "consent given" once recorded.
+- Wired as steps 4–6 of the next-steps checklist.
+- API client: sign-upload, direct PUT, record/list/delete docs, referee CRUD, consent get/record;
+  `DOC_TYPES` + `formatFileSize` helpers.
+- i18n: `scholarship.docs/referee/consent` + step 4–6 labels in EN/MS/TA (856 keys, parity verified).
+
+### Tests
+- 2 new helper tests (frontend suite **37 pass**); check-i18n PASS; `next build` success.
+
+### Notes
+- UI + network glue; the upload PUT-to-Storage and consent round-trip need the live `b40-documents`
+  bucket — folded into the browser smoke-test carry-forward.
+
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 5a (2026-05-22)
+
+Document vault + referee + e-consent (backend; frontend is 5b).
+
+### Added
+- **`ApplicantDocument`, `Referee`, `Consent` models** (migration 0004; all RLS deny-by-default).
+- **`storage.py`** — signed upload/download URLs for a private Supabase Storage bucket
+  (`b40-documents`) via stdlib `urllib` + the service key; file bytes go browser↔Storage, never
+  through Django. Best-effort (returns None on failure).
+- **Endpoints** (scoped to the caller's shortlisted application): `documents/sign-upload/`,
+  `documents/` (list/record), `documents/<id>/` (delete), `referees/`, `consent/`.
+- **Consent + guardian gate** — versioned (`CONSENT_VERSION`), withdrawable, supersedes prior; a
+  **minor (<18, age from NRIC DOB) requires a guardian** (name + relationship) or consent is rejected.
+- `age_from_nric` / `is_minor` / `record_consent` services.
+
+### Tests
+- 18 new (`test_consent.py` 9, `test_documents.py` 9). Full backend suite **1077 pass, 0 fail**;
+  golden masters unchanged.
+
+### Notes
+- Two deploy carry-forwards: create the `b40-documents` private bucket; replace the DRAFT consent
+  text (`CONSENT_VERSION = '2026-draft-1'`) with the lawyer-reviewed version.
+
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 4b (2026-05-21)
+
+Post-shortlist next-steps flow (frontend) — completes Sprint 4.
+
+### Added
+- **`ScholarshipNextSteps` component** — a 3-step checklist driven by the `completeness` block:
+  course quiz (links to the existing `/quiz`), about-you textareas, and a funding-need line-item
+  form with a live RM total. PATCHes to the Sprint 4a details endpoint; "all done" banner on completion.
+- Shortlisted applications on `/scholarship/apply` now render this flow (rejected/submitted keep
+  the status card).
+- `scholarship.ts` helpers: `fundingTotal`, `buildDetailsPayload`, `applicationToDetailsForm`,
+  `emptyDetailsForm`.
+- API: extended `ScholarshipApplication` type (`funding_need`, `completeness`, deeper-info) +
+  `updateScholarshipDetails()` PATCH.
+- i18n: `scholarship.nextSteps.*` in EN/MS/TA (819 keys, parity verified).
+
+### Tests
+- 5 new helper tests (frontend suite **35 pass**); check-i18n PASS; `next build` success.
+
+### Notes
+- Verified at compile + unit + i18n level; the PATCH round-trip + quiz-then-return flow need a
+  browser smoke test against a live backend before Phase 1 ships (existing carry-forward).
+
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 4a (2026-05-21)
+
+Post-shortlist data layer: funding need + deeper info + completeness (backend; frontend is 4b).
+
+### Added
+- **`FundingNeed` model** (OneToOne → application, `funding_needs`) — line items (tuition_gap,
+  laptop, hostel, transport, books, monthly_allowance × allowance_months, other, other_desc) + a
+  computed `total`. Quantifies the funding ask (the B40 analysis flagged its absence).
+- **Deeper-info fields** on `ScholarshipApplication`: `aspirations`, `plans`, `fears`, `justification`.
+- **`PATCH /api/v1/scholarship/applications/<id>/`** — saves deeper-info + funding need for the
+  caller's own **shortlisted** application; read serializer now returns `funding_need` + a
+  `completeness` block (`quiz_done` / `details_done` / `funding_done` / `complete`).
+- `application_completeness()` + `save_application_details()` services. Migration 0003.
+- `funding_needs` added to the deny-by-default RLS SQL.
+
+### Tests
+- 11 new (`test_details.py`). Full backend suite **1059 pass, 0 fail**; golden masters unchanged.
+
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 3 (2026-05-21)
+
+Mechanical shortlisting engine + Bucket A/B + pass/fail decision emails.
+
+### Added
+- **`apps/scholarship/shortlisting.py`** — pure `evaluate(app, cohort)` → status/bucket/reason.
+  Per-criterion OK/marginal/fail across academic (A-count or PNGK), income (STR anchor + ceiling
+  × 1.15 marginal band), intent and consent. All-OK → Bucket A; exactly one marginal → Bucket B;
+  otherwise rejected. All thresholds read from `ScholarshipCohort`.
+- **`shortlist_application()`** wired into the intake view — runs synchronously on submit, persists
+  status/bucket/reason/shortlisted_at, sends the pass email immediately.
+- **Trilingual pass + fail emails** (refactored `emails.py` onto a shared `_send` helper).
+- **`send_pending_decision_emails` management command** — sends the courteous "not this round"
+  email after `fail_email_delay_days`; `--dry-run`, prints the DB host, reads config from settings.
+- Model fields `shortlisted_at`, `decision_email_sent_at`, `locale`, `notify_email` (migration 0002).
+
+### Changed
+- Submitting now triggers an instant shortlist: a qualifying applicant receives the acknowledgement
+  *and* a congratulations email; a rejected applicant receives only the acknowledgement, with the
+  fail email deferred to the command after the cohort delay.
+
+### Tests
+- 25 new (`test_shortlisting.py` 19, `test_decision_emails.py` 6) + updated intake tests. Full
+  backend suite **1048 pass, 0 fail**; SPM/STPM golden masters unchanged.
+
+### Notes
+- The fail-email command's scheduler (e.g. Cloud Scheduler) is not yet wired — deploy work,
+  deferred with the Supabase migration/RLS to the end of Phase 1.
+
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 2 (2026-05-21)
+
+Native application form + single front door (frontend), wired to the Sprint 1 intake API.
+
+### Added
+- **`/scholarship/apply` page** — trilingual application form with a requirements intro and
+  status-gated rendering (loading / sign-in gate / form / success / already-applied), pre-filled
+  from the AuthProvider profile. Lightweight academic capture (SPM A-count or STPM PNGK); full
+  grades + quiz stay deferred to STEP 1A.
+- **`src/lib/scholarship.ts`** — pure, node-testable helpers (`countAGrades`,
+  `profileToApplyDefaults`, `buildApplicationPayload`, `applyFormError`).
+- **API client** — `submitScholarshipApplication` + `getMyScholarshipApplications`.
+- **`'apply'` auth-gate reason** — new branch in `auth-context` + `AuthGateModal` that reuses the
+  existing Google sign-in + NRIC-claim flow and returns the user to `/scholarship/apply`.
+- **"B40 Aid" header nav link.**
+- **i18n** — `scholarship.*` block + `authGate.applyReason` in EN/MS/TA (793 keys, parity verified).
+
+### Tests
+- 13 new (`src/lib/__tests__/scholarship.test.ts`); full frontend suite **30 pass** (17 + 13).
+- check-i18n PASS; `next build` success (`/scholarship/apply` compiles + prerenders).
+
+### Notes
+- Verified at compile + unit + i18n level. The OAuth round-trip (sign-in → return to apply) has
+  not been browser-smoke-tested against a live backend — do so before Phase 1 ships.
+
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 1 (2026-05-21)
+
+New `apps/scholarship/` app — the financing extension's intake backbone. Phase 1 carries
+no sponsor or money flow (those are Phases 2-3). See `docs/scholarship/b40-assistance-prd.md`
+and `docs/scholarship/b40-phase1-roadmap.md`.
+
+### Added
+- **`ScholarshipCohort` model** (`scholarship_cohorts`) — per-round config holding the
+  configurable shortlisting thresholds (`min_spm_a_count`, `min_stpm_pngk`, `income_ceiling`,
+  `bucket_b_margin`) and funding/workflow parameters (`funding_envelope`, `fail_email_delay_days`)
+  that the Sprint 3 rules engine will read.
+- **`ScholarshipApplication` model** (`scholarship_applications`) — one application per student
+  per cohort (partial unique constraint), with explicit shortlisting inputs (qualification,
+  spm_a_count, stpm_pngk, household_income/size, receives_str/jkm, intended_pathway,
+  intends_tertiary_2026, consent_to_contact), workflow fields (status, bucket, shortlist_reason,
+  acknowledged_at) and a free-form `form_data` blob.
+- **Intake API** — `GET/POST /api/v1/scholarship/applications/` (list own + submit) and
+  `GET /api/v1/scholarship/applications/<id>/` (own detail). Submit resolves the active open
+  cohort, snapshots the SPM A-count from the linked `StudentProfile` (A+/A/A- all count), sends
+  a trilingual acknowledgement email, and stamps `acknowledged_at`. Default-deny auth; anonymous
+  users and the duplicate/closed-round cases are rejected (403/409).
+- **Trilingual acknowledgement email** (EN/MS/TA) via the existing Gmail SMTP infra; best-effort
+  send that never blocks recording the application.
+- **RLS policy SQL** (`apps/scholarship/sql/rls_policies.sql`) — enables RLS deny-by-default on
+  both new tables (Django service role bypasses; direct PostgREST access denied). Apply before
+  first deploy, then confirm Security Advisor 0 errors.
+
+### Tests
+- 17 new tests (`apps/scholarship/tests/`): models + defaults + partial-unique constraint +
+  A-count helper (test_models.py, 4); intake create/ack-email/snapshot/consent/duplicate/
+  closed-round/anonymous/no-profile/list-own/detail/cross-user-404/auth (test_api.py, 13).
+- Full backend suite: **1023 passed, 0 failures** (1006 existing + 17 new); SPM/STPM golden
+  masters unchanged.
+
+### Notes
+- Backend only — the native application form (frontend) is Sprint 2.
+- Comms via email + in-app for Phase 1; WhatsApp deferred to Phase 2.
+
 ## [Unreleased] — Admin CSV Full Field Set (2026-05-02)
 
 ### Changed

@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     # Local apps
     'apps.courses',
     'apps.reports',
+    'apps.scholarship',
 ]
 
 MIDDLEWARE = [

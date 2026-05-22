@@ -1,0 +1,175 @@
+'use client'
+
+import { useEffect, useState, type ReactNode } from 'react'
+import { useParams } from 'next/navigation'
+import Link from 'next/link'
+import { useAdminAuth } from '@/lib/admin-auth-context'
+import { useT } from '@/lib/i18n'
+import {
+  getScholarshipApplication,
+  generateSponsorProfile,
+  saveSponsorProfile,
+  publishSponsorProfile,
+  type AdminScholarshipDetail,
+  type AdminSponsorProfile,
+} from '@/lib/admin-api'
+
+function Field({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div>
+      <dt className="text-xs text-gray-400 uppercase tracking-wider">{label}</dt>
+      <dd className="text-sm text-gray-800">{value === null || value === undefined || value === '' ? '—' : value}</dd>
+    </div>
+  )
+}
+
+export default function AdminScholarshipDetailPage() {
+  const params = useParams()
+  const id = Number(params?.id)
+  const { token } = useAdminAuth()
+  const { t } = useT()
+  const [app, setApp] = useState<AdminScholarshipDetail | null>(null)
+  const [profile, setProfile] = useState<AdminSponsorProfile | null>(null)
+  const [markdown, setMarkdown] = useState('')
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!token || !id) return
+    getScholarshipApplication(id, { token })
+      .then((d) => {
+        setApp(d)
+        setProfile(d.sponsor_profile)
+        setMarkdown(d.sponsor_profile?.current_markdown || '')
+      })
+      .catch(() => setError(t('admin.scholarship.loadFailed')))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, id])
+
+  const doGenerate = async () => {
+    if (!token) return
+    setBusy('gen'); setError('')
+    try {
+      const p = await generateSponsorProfile(id, { token })
+      setProfile(p); setMarkdown(p.current_markdown || p.draft_markdown)
+    } catch { setError(t('admin.scholarship.genError')) } finally { setBusy('') }
+  }
+
+  const doSave = async () => {
+    if (!token) return
+    setBusy('save'); setError('')
+    try {
+      const p = await saveSponsorProfile(id, { edited_markdown: markdown, status: 'approved' }, { token })
+      setProfile(p)
+    } catch { setError(t('admin.scholarship.saveError')) } finally { setBusy('') }
+  }
+
+  const doPublish = async () => {
+    if (!token) return
+    setBusy('pub'); setError('')
+    try {
+      const p = await publishSponsorProfile(id, { token })
+      setProfile(p)
+    } catch { setError(t('admin.scholarship.publishError')) } finally { setBusy('') }
+  }
+
+  if (error && !app) return <div className="text-red-600 mt-8">{error}</div>
+  if (!app) return <div className="text-center text-gray-500 mt-8">{t('common.loading')}</div>
+
+  return (
+    <div className="space-y-6">
+      <Link href="/admin/scholarship" className="text-sm text-blue-600 hover:underline">‹ {t('admin.scholarship.back')}</Link>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold">{app.name || '—'}</h1>
+        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">{app.status}</span>
+        {app.bucket && <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Bucket {app.bucket}</span>}
+      </div>
+
+      {/* Applicant + intake */}
+      <div className="bg-white rounded-xl border p-4">
+        <h2 className="font-semibold mb-3">{t('admin.scholarship.applicant')}</h2>
+        <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <Field label={t('admin.scholarship.school')} value={app.school} />
+          <Field label={t('admin.scholarship.qualification')} value={app.qualification?.toUpperCase()} />
+          <Field label="SPM A" value={app.spm_a_count} />
+          <Field label="STPM PNGK" value={app.stpm_pngk} />
+          <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM${app.household_income}` : null} />
+          <Field label="STR" value={app.receives_str ? 'Yes' : 'No'} />
+          <Field label={t('admin.scholarship.pathway')} value={app.intended_pathway} />
+        </dl>
+        {app.shortlist_reason && <p className="text-xs text-amber-700 mt-3">{app.shortlist_reason}</p>}
+      </div>
+
+      {/* Deeper info + funding */}
+      <div className="bg-white rounded-xl border p-4 space-y-2">
+        <Field label={t('admin.scholarship.aspirations')} value={app.aspirations} />
+        <Field label={t('admin.scholarship.justification')} value={app.justification} />
+        {app.funding_need && <Field label={t('admin.scholarship.funding')} value={`RM${app.funding_need.total}`} />}
+      </div>
+
+      {/* Documents / referees / consent */}
+      <div className="bg-white rounded-xl border p-4">
+        <h3 className="font-semibold text-sm mb-2">{t('admin.scholarship.documents')} ({app.documents.length})</h3>
+        <ul className="text-sm text-gray-600 space-y-1">
+          {app.documents.map((d) => (
+            <li key={d.id}>
+              {d.doc_type}: {d.download_url
+                ? <a href={d.download_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{d.original_filename || 'view'}</a>
+                : (d.original_filename || '—')}{' '}
+              <span className="text-gray-400">[{d.verification_status}]</span>
+            </li>
+          ))}
+          {app.documents.length === 0 && <li className="text-gray-400">{t('admin.scholarship.none')}</li>}
+        </ul>
+
+        <h3 className="font-semibold text-sm mt-4 mb-2">{t('admin.scholarship.referees')}</h3>
+        <ul className="text-sm text-gray-600 space-y-1">
+          {app.referees.map((r) => (
+            <li key={r.id}>{r.name}{r.role ? ` (${r.role})` : ''}{r.phone ? ` — ${r.phone}` : ''}</li>
+          ))}
+          {app.referees.length === 0 && <li className="text-gray-400">{t('admin.scholarship.none')}</li>}
+        </ul>
+
+        <h3 className="font-semibold text-sm mt-4 mb-2">{t('admin.scholarship.consent')}</h3>
+        <p className="text-sm text-gray-600">
+          {app.consents.some((c) => c.is_active) ? t('admin.scholarship.consentGiven') : t('admin.scholarship.consentNone')}
+        </p>
+      </div>
+
+      {/* AI sponsor profile */}
+      <div className="bg-white rounded-xl border p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">{t('admin.scholarship.profileTitle')}</h2>
+          {profile && <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">{profile.status}</span>}
+        </div>
+
+        {!profile ? (
+          <button onClick={doGenerate} disabled={busy === 'gen'} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
+            {busy === 'gen' ? t('admin.scholarship.generating') : t('admin.scholarship.generate')}
+          </button>
+        ) : (
+          <>
+            <textarea
+              value={markdown} onChange={(e) => setMarkdown(e.target.value)} rows={14}
+              className="w-full border rounded-lg p-3 font-mono text-sm"
+            />
+            <p className="text-xs text-gray-400">{t('admin.scholarship.model')}: {profile.model_used || '—'}</p>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={doGenerate} disabled={!!busy} className="px-3 py-2 border rounded-lg text-sm disabled:opacity-50">
+                {busy === 'gen' ? t('admin.scholarship.generating') : t('admin.scholarship.regenerate')}
+              </button>
+              <button onClick={doSave} disabled={!!busy} className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
+                {busy === 'save' ? t('admin.scholarship.saving') : t('admin.scholarship.save')}
+              </button>
+              <button onClick={doPublish} disabled={!!busy} className="px-3 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
+                {busy === 'pub' ? t('admin.scholarship.publishing') : t('admin.scholarship.publish')}
+              </button>
+            </div>
+          </>
+        )}
+        {error && <p className="text-red-600 text-sm">{error}</p>}
+      </div>
+    </div>
+  )
+}

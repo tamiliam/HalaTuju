@@ -67,6 +67,12 @@ export interface StudentProfile {
   stpm_grades?: Record<string, string>
   stpm_cgpa?: number
   muet_band?: number
+  // Financial detail — canonical home for the B40 Assistance Programme
+  household_income?: number | null
+  household_size?: number | null
+  receives_str?: boolean
+  receives_jkm?: boolean
+  guardians?: { name?: string; relationship?: string; occupation?: string; income?: number }[]
 }
 
 export interface EligibleCourse {
@@ -894,4 +900,191 @@ export async function calculatePathways(
     reason: (p.reason as string) ?? null,
   }))
   return { pathways }
+}
+
+// ── Scholarship (B40 Assistance Programme) ──────────────────────────────
+
+export interface FundingNeed {
+  tuition_gap: number
+  laptop: number
+  hostel: number
+  transport: number
+  books: number
+  monthly_allowance: number
+  allowance_months: number
+  other: number
+  other_desc: string
+  total: number
+}
+
+export interface ApplicationCompleteness {
+  quiz_done: boolean
+  details_done: boolean
+  funding_done: boolean
+  complete: boolean
+}
+
+export interface ScholarshipApplication {
+  id: number
+  cohort_code: string
+  cohort_name: string
+  profile_id: string | null
+  // Academic + financial fields are derived live from the canonical profile.
+  exam_type?: 'spm' | 'stpm'
+  spm_a_count: number | null
+  stpm_pngk: number | null
+  household_income: number | null
+  household_size: number | null
+  receives_str: boolean
+  receives_jkm: boolean
+  intended_pathway: string
+  intends_tertiary_2026: boolean
+  consent_to_contact: boolean
+  status: string
+  bucket: string
+  shortlist_reason: string
+  acknowledged_at: string | null
+  submitted_at: string
+  updated_at: string
+  aspirations: string
+  plans: string
+  fears: string
+  justification: string
+  funding_need: FundingNeed | null
+  completeness: ApplicationCompleteness
+  form_data: Record<string, unknown>
+  intake_snapshot?: Record<string, unknown>   // frozen audit copy of what was declared at submit
+}
+
+export async function submitScholarshipApplication(
+  payload: Record<string, unknown>,
+  lang: string = 'en',
+  options?: ApiOptions
+): Promise<ScholarshipApplication> {
+  return apiRequest('/api/v1/scholarship/applications/', {
+    method: 'POST',
+    body: JSON.stringify({ ...payload, lang }),
+    ...options,
+  })
+}
+
+export async function getMyScholarshipApplications(
+  options?: ApiOptions
+): Promise<{ total_count: number; applications: ScholarshipApplication[] }> {
+  return apiRequest('/api/v1/scholarship/applications/', options)
+}
+
+export async function updateScholarshipDetails(
+  id: number,
+  payload: Record<string, unknown>,
+  options?: ApiOptions
+): Promise<ScholarshipApplication> {
+  return apiRequest(`/api/v1/scholarship/applications/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+    ...options,
+  })
+}
+
+// ── Documents / referee / consent (Sprint 5b) ───────────────────────────
+
+export interface ApplicantDocument {
+  id: number
+  doc_type: string
+  original_filename: string
+  content_type: string
+  size: number
+  verification_status: string
+  uploaded_at: string
+  download_url: string | null
+}
+
+export interface Referee {
+  id: number
+  name: string
+  role: string
+  relationship: string
+  phone: string
+  email: string
+}
+
+export interface ConsentStatus {
+  is_minor: boolean
+  consent_version: string
+  consents: {
+    id: number
+    consent_type: string
+    version: string
+    granted_by: string
+    guardian_name: string
+    is_active: boolean
+    granted_at: string
+  }[]
+}
+
+export async function signUploadDocument(
+  docType: string,
+  options?: ApiOptions
+): Promise<{ upload_url: string; storage_path: string; doc_type: string }> {
+  return apiRequest('/api/v1/scholarship/documents/sign-upload/', {
+    method: 'POST',
+    body: JSON.stringify({ doc_type: docType }),
+    ...options,
+  })
+}
+
+/** Direct PUT of the file bytes to the signed Supabase Storage URL (not our API). */
+export async function uploadFileToSignedUrl(uploadUrl: string, file: File): Promise<void> {
+  const resp = await fetch(uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: { 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'true' },
+  })
+  if (!resp.ok) throw new Error(`Upload failed: ${resp.status}`)
+}
+
+export async function recordDocument(
+  payload: { doc_type: string; storage_path: string; original_filename?: string; content_type?: string; size?: number },
+  options?: ApiOptions
+): Promise<ApplicantDocument> {
+  return apiRequest('/api/v1/scholarship/documents/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    ...options,
+  })
+}
+
+export async function listDocuments(options?: ApiOptions): Promise<{ documents: ApplicantDocument[] }> {
+  return apiRequest('/api/v1/scholarship/documents/', options)
+}
+
+export async function deleteDocument(id: number, options?: ApiOptions): Promise<{ status: string }> {
+  return apiRequest(`/api/v1/scholarship/documents/${id}/`, { method: 'DELETE', ...options })
+}
+
+export async function listReferees(options?: ApiOptions): Promise<{ referees: Referee[] }> {
+  return apiRequest('/api/v1/scholarship/referees/', options)
+}
+
+export async function addReferee(payload: Partial<Referee>, options?: ApiOptions): Promise<Referee> {
+  return apiRequest('/api/v1/scholarship/referees/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    ...options,
+  })
+}
+
+export async function getConsentStatus(options?: ApiOptions): Promise<ConsentStatus> {
+  return apiRequest('/api/v1/scholarship/consent/', options)
+}
+
+export async function recordConsent(
+  payload: { consent_type?: string; locale?: string; granted_by?: string; guardian_name?: string; guardian_relationship?: string },
+  options?: ApiOptions
+): Promise<unknown> {
+  return apiRequest('/api/v1/scholarship/consent/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    ...options,
+  })
 }
