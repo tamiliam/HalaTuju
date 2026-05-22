@@ -199,7 +199,9 @@ fields (`aspirations`/`plans`/`fears`/`justification`), a `PATCH` details endpoi
 consent endpoints with a minor→guardian consent gate (migration 0004). Sprint 6a added the
 `SponsorProfile` model, `profile_engine.py` (Gemini sponsor-profile drafting), and the MyNadi admin
 API (`views_admin.py`/`serializers_admin.py`, reusing `PartnerAdminMixin`) under
-`/api/v1/admin/scholarship/` (migration 0005).
+`/api/v1/admin/scholarship/` (migration 0005). Sprint 6b added the admin console UI
+(`src/app/admin/scholarship/page.tsx` + `[id]/page.tsx`, AI profile generate/edit/publish) and the
+admin scholarship client functions in `lib/admin-api.ts`. **Phase 1 build complete (all 6 sprints).**
 
 **Frontend (Sprint 2):** `halatuju-web/src/app/scholarship/apply/page.tsx` (single front-door
 application form), `src/lib/scholarship.ts` (pure form helpers, node-tested in

@@ -74,8 +74,17 @@ browser-smoke-tested (needs the live bucket). See `docs/retrospective-b40-sprint
 API (list/detail/generate/edit/publish) reusing `PartnerAdminMixin`. 9 tests; backend suite 1086.
 See `docs/retrospective-b40-sprint6a.md`.
 
-**Sprint 6b — frontend (TODO, LAST):** MyNadi admin console UI — applications list/detail, Bucket B
-review, AI-profile generate/edit/publish — extending the existing admin portal.
+**Sprint 6b — frontend ✅ DONE (2026-05-22):** MyNadi admin console UI — `/admin/scholarship`
+(list + status/bucket filter) + `/admin/scholarship/[id]` (full detail + AI profile
+generate/edit/publish panel); admin API client functions; admin nav link; EN/MS/TA i18n (894 keys).
+Frontend suite 37; check-i18n + `next build` green. See `docs/retrospective-b40-sprint6b.md`.
+
+---
+
+## ✅ Phase 1 build COMPLETE (2026-05-22) — all 6 sprints
+
+Full applicant→admin loop built and locally green (backend 1086, frontend 37, golden masters intact,
+migrations 0001–0005), on branch `feature/b40-assistance`, **not deployed**.
 
 ## Dependencies
 S1→S2 (form needs API); S1→S3 (shortlist needs application model); S3→S4 (quiz gate is post-pass);
@@ -88,7 +97,13 @@ S1→S5 (docs attach to application); S4+S5→S6 (profile draft needs deeper inf
 - Programme naming/branding within HalaTuju.
 
 ## Next step
-Sprints 1-2 complete on branch `feature/b40-assistance` (committed; not merged/deployed). Start
-Sprint 3 (shortlisting rules engine + Bucket A/B + pass/fail emails) via
-`Settings/_workflows/sprint-start.md`. Pending before Phase 1 ships: apply Supabase migration + RLS,
-and a browser smoke test of the apply OAuth round-trip.
+All 6 Phase-1 sprints complete on branch `feature/b40-assistance` (committed; not merged/deployed).
+**Next is the single Phase-1 deploy**, gated on these carry-forwards:
+1. Apply Supabase migrations 0001–0005 + run the RLS SQL (`apps/scholarship/sql/rls_policies.sql`); confirm Security Advisor 0 errors.
+2. Create the `b40-documents` private Storage bucket.
+3. Swap the DRAFT consent text (`CONSENT_VERSION`) for the lawyer-reviewed version.
+4. Wire the fail-email scheduler (Cloud Scheduler → `send_pending_decision_emails`).
+5. Browser smoke-test every flow: apply OAuth, details PATCH, quiz return, upload, consent, admin generate/edit/publish.
+6. Merge to `main` (triggers CI/CD deploy).
+
+**Public launch** additionally gated on Phase 0 (confirm MyNadi entity, fundraising permit, lawyer sign-off). **Phase 2** (sponsor portal) follows.

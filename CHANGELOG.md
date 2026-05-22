@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 6b (2026-05-22) — Phase 1 build complete
+
+MyNadi admin console UI (frontend) — completes Sprint 6 and the Phase 1 build.
+
+### Added
+- **`/admin/scholarship`** — applications list with status + bucket filters.
+- **`/admin/scholarship/[id]`** — full applicant detail (intake, funding, documents, referees,
+  consent) + AI sponsor-profile panel: Generate → edit Markdown → Save → Publish, with status badge.
+- Admin API client (`getScholarshipApplications`, `getScholarshipApplication`,
+  `generateSponsorProfile`, `saveSponsorProfile`, `publishSponsorProfile`); "B40 Applications" nav link.
+- i18n: `admin.scholarship.*` in EN/MS/TA (894 keys, parity verified).
+
+### Tests
+- Frontend suite **37 pass**; check-i18n PASS; `next build` — both admin pages compile.
+
+### Phase 1 status
+- **All 6 sprints complete.** Backend 1086 tests, frontend 37, golden masters intact, on
+  `feature/b40-assistance` (not deployed). Remaining: the single Phase-1 deploy (carry-forwards) and
+  Phase 0 legal/entity sign-off before public launch.
+
 ## [Unreleased] — B40 Assistance Programme · Phase 1 Sprint 6a (2026-05-22)
 
 AI sponsor-profile drafting + MyNadi admin API (backend; the admin console UI is 6b).

@@ -243,3 +243,109 @@ export async function inviteAdmin(
 
   return res.json()
 }
+
+// ── Scholarship (B40 Assistance Programme) ──────────────────────────────
+
+export interface AdminScholarshipListItem {
+  id: number
+  name: string
+  profile_id: string | null
+  cohort_code: string
+  qualification: string
+  spm_a_count: number | null
+  stpm_pngk: number | null
+  status: string
+  bucket: string
+  shortlist_reason: string
+  submitted_at: string
+}
+
+export interface AdminSponsorProfile {
+  draft_markdown: string
+  edited_markdown: string
+  current_markdown: string
+  status: string
+  model_used: string
+  generated_at: string | null
+  published_at: string | null
+  updated_at: string
+}
+
+export interface AdminScholarshipDetail {
+  id: number
+  name: string
+  school: string
+  profile_id: string | null
+  qualification: string
+  spm_a_count: number | null
+  stpm_pngk: number | null
+  household_income: number | null
+  household_size: number | null
+  receives_str: boolean
+  receives_jkm: boolean
+  intended_pathway: string
+  intends_tertiary_2026: boolean
+  aspirations: string
+  plans: string
+  fears: string
+  justification: string
+  status: string
+  bucket: string
+  shortlist_reason: string
+  submitted_at: string
+  funding_need: ({ total: number } & Record<string, number | string>) | null
+  documents: Array<{ id: number; doc_type: string; original_filename: string; size: number; verification_status: string; download_url: string | null }>
+  referees: Array<{ id: number; name: string; role: string; relationship: string; phone: string; email: string }>
+  consents: Array<{ id: number; consent_type: string; version: string; granted_by: string; guardian_name: string; is_active: boolean; granted_at: string }>
+  sponsor_profile: AdminSponsorProfile | null
+}
+
+async function adminMutate<T>(path: string, method: string, body: unknown, options?: ApiOptions): Promise<T> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
+  const res = await fetch(`${API_BASE}${path}`, {
+    method, headers, body: body != null ? JSON.stringify(body) : undefined,
+  })
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}))
+    throw new Error(b.error || `Admin API error: ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function getScholarshipApplications(
+  filters: { status?: string; bucket?: string } = {},
+  options?: ApiOptions
+) {
+  const q = new URLSearchParams()
+  if (filters.status) q.set('status', filters.status)
+  if (filters.bucket) q.set('bucket', filters.bucket)
+  const qs = q.toString()
+  return adminFetch<{ applications: AdminScholarshipListItem[]; total_count: number }>(
+    `/api/v1/admin/scholarship/applications/${qs ? `?${qs}` : ''}`, options
+  )
+}
+
+export async function getScholarshipApplication(id: number, options?: ApiOptions) {
+  return adminFetch<AdminScholarshipDetail>(`/api/v1/admin/scholarship/applications/${id}/`, options)
+}
+
+export async function generateSponsorProfile(id: number, options?: ApiOptions) {
+  return adminMutate<AdminSponsorProfile>(
+    `/api/v1/admin/scholarship/applications/${id}/generate-profile/`, 'POST', {}, options
+  )
+}
+
+export async function saveSponsorProfile(
+  id: number, payload: { edited_markdown: string; status?: string }, options?: ApiOptions
+) {
+  return adminMutate<AdminSponsorProfile>(
+    `/api/v1/admin/scholarship/applications/${id}/profile/`, 'PUT', payload, options
+  )
+}
+
+export async function publishSponsorProfile(id: number, options?: ApiOptions) {
+  return adminMutate<AdminSponsorProfile>(
+    `/api/v1/admin/scholarship/applications/${id}/publish/`, 'POST', {}, options
+  )
+}

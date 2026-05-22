@@ -52,6 +52,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const navLinks = [
     { href: '/admin', label: t('common.dashboard') },
     { href: '/admin/students', label: t('admin.students') },
+    { href: '/admin/scholarship', label: t('admin.scholarship.nav') },
     ...(role?.is_super_admin ? [{ href: '/admin/invite', label: t('admin.invite') }] : []),
     { href: '/admin/profile', label: t('admin.profile') },
   ]

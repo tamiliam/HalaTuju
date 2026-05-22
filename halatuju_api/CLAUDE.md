@@ -240,38 +240,17 @@ Phase 1 roadmap in `docs/scholarship/`. MyNadi Foundation is the (tentative) fun
 the platform is matchmaker + ledger and never holds cash. No financial return to sponsors (keeps
 it a charity, not SC-regulated P2P).
 
-- **Sprint 1 DONE:** `apps/scholarship/` intake API — `ScholarshipCohort` + `ScholarshipApplication`
-  models, trilingual acknowledgement email, RLS SQL, 17 tests. Full backend suite 1023 pass.
-- **Sprint 2 DONE:** `/scholarship/apply` native form (frontend) — single front door reusing the
-  Google + NRIC auth flow (new `'apply'` AuthGateReason), pre-fill from profile, `lib/scholarship.ts`
-  helpers, EN/MS/TA i18n. 13 frontend tests (suite 30); `next build` clean. **Not browser-smoke-tested
-  against a live backend yet** — do so before Phase 1 ships.
-- **Sprint 3 DONE:** mechanical shortlisting engine (`shortlisting.py`, pure, cohort-configured),
-  Bucket A/B, trilingual pass/fail emails, `send_pending_decision_emails` command (delayed fail
-  email). Migration 0002. Backend suite 1048 pass.
-- **Sprint 4a DONE:** `FundingNeed` model (OneToOne, computed total) + deeper-info fields +
-  `PATCH` details endpoint (own, shortlisted-only) + `completeness` block on read. Migration 0003.
-  Backend suite 1059 pass.
-- **Sprint 4b DONE (frontend):** `ScholarshipNextSteps` component — 3-step checklist (quiz gate →
-  `/quiz`, about-you, funding-need form with live total) driven by the `completeness` block; apply
-  page routes shortlisted apps to it; `updateScholarshipDetails` PATCH; EN/MS/TA i18n. 35 frontend
-  tests; `next build` clean.
-- **Sprint 5a DONE (backend):** `ApplicantDocument`/`Referee`/`Consent` models (migration 0004) +
-  `storage.py` (signed URLs, private bucket) + endpoints + consent guardian gate (minor → guardian,
-  age from NRIC). Backend suite 1077.
-- **On branch `feature/b40-assistance` — NOT merged, NOT deployed.** Carry-forward before Phase 1
-  ships: apply Supabase migrations (0001–0005) + RLS; **create the `b40-documents` private bucket**;
-  **swap the DRAFT consent text** (`CONSENT_VERSION`) for the lawyer-reviewed version; wire the
-  fail-email scheduler (Cloud Scheduler); browser smoke-test the apply / details / quiz / upload /
-  consent flows against a live backend.
-- **Sprint 5b DONE (frontend):** `ScholarshipDocuments` (signed-URL upload), `ScholarshipReferee`,
-  `ScholarshipConsent` (guardian fields for minors) wired as next-steps steps 4–6; 10 API client
-  functions; EN/MS/TA i18n. Frontend suite 37; `next build` clean.
-- **Sprint 6a DONE (backend):** `SponsorProfile` model (migration 0005) + `profile_engine.py`
-  (Gemini sponsor-profile drafting) + MyNadi admin API (list/detail/generate/edit/publish, reuses
-  `PartnerAdminMixin`). Backend suite 1086.
-- **Next: Sprint 6b (LAST)** — MyNadi admin console UI (applications list/detail, Bucket B review,
-  AI-profile generate/edit/publish), extending the existing admin portal. Then the single deploy.
+- **✅ Phase 1 build COMPLETE — all 6 sprints done (2026-05-22).** Full applicant→admin loop: apply →
+  shortlist → decision emails → funding/next-steps → documents/referee/consent → AI sponsor profile
+  + MyNadi admin console. Backend 1086 tests, frontend 37, golden masters intact, migrations 0001–0005.
+  Per-sprint detail in CHANGELOG, `docs/scholarship/b40-phase1-roadmap.md`, and the retrospectives.
+- **On branch `feature/b40-assistance` — NOT merged, NOT deployed.**
+- **Next: the single Phase-1 deploy.** Carry-forwards: apply Supabase migrations (0001–0005) + RLS;
+  create the `b40-documents` private bucket; swap the DRAFT consent text (`CONSENT_VERSION`) for the
+  lawyer-reviewed version; wire the fail-email scheduler (Cloud Scheduler); **browser smoke-test every
+  flow** (apply OAuth, details PATCH, quiz return, upload, consent, admin generate/edit/publish); then
+  merge to `main`. **Public launch is gated on Phase 0** (confirm MyNadi entity, fundraising permit,
+  lawyer-reviewed consent). Phase 2 (sponsor portal) follows.
 - **Gotcha:** PII source docs in `docs/scholarship/` (`*.pdf|xlsx|txt`) are gitignored — real
   student NRICs/names/financials. Never commit them.
 - **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing the feature branch does not. Keep
