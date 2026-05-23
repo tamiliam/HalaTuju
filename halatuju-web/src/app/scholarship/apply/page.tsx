@@ -195,7 +195,7 @@ export default function ScholarshipApplyPage() {
       <div>
         <div className="flex items-center justify-between mb-1">
           {ProfileBadge}
-          <Link href="/profile" className="text-sm font-medium text-primary-600 hover:underline">{t('scholarship.apply.edit')}</Link>
+          <Link href="/profile?next=/scholarship/apply" className="text-sm font-medium text-primary-600 hover:underline">{t('scholarship.apply.edit')}</Link>
         </div>
         <ReadRow label={t('scholarship.apply.field.name')} value={profile?.name || ''} />
         <ReadRow label={t('scholarship.apply.field.school')} value={profile?.school || ''} />
@@ -245,7 +245,7 @@ export default function ScholarshipApplyPage() {
               </>
             )}
             <p className="text-xs text-gray-400 mt-2">{t('scholarship.apply.resultsFromProfile')}</p>
-            <Link href="/profile" className="text-sm font-medium text-primary-600 hover:underline mt-3 inline-block">
+            <Link href="/profile?next=/scholarship/apply" className="text-sm font-medium text-primary-600 hover:underline mt-3 inline-block">
               {t('scholarship.apply.resultsWrong')}
             </Link>
           </div>
@@ -343,6 +343,12 @@ export default function ScholarshipApplyPage() {
 
       {/* Bottom tab bar */}
       <nav className="sticky bottom-0 bg-white border-t flex justify-around py-2 -mx-6 px-2">
+        <Link href="/scholarship" className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]">
+          <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" />
+          </svg>
+          <span className="text-[10px] text-gray-400">{t('scholarship.apply.tab.home')}</span>
+        </Link>
         {TAB_ORDER.map((k) => (
           <button key={k} type="button" onClick={() => setTab(k)}
             className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]">

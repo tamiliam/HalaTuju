@@ -414,7 +414,8 @@
         "family": "Family",
         "results": "Results",
         "plans": "Plans",
-        "support": "Support"
+        "support": "Support",
+        "home": "Home"
       },
       "fromProfile": "From your HalaTuju profile",
       "edit": "Edit",
@@ -430,7 +431,8 @@
       "usingProfile": "Using your HalaTuju profile",
       "step": "Step",
       "back": "Back",
-      "continue": "Continue"
+      "continue": "Continue",
+      "backToApplication": "Back to your application"
     },
     "nextSteps": {
       "title": "You've been shortlisted!",

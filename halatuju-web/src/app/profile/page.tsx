@@ -72,6 +72,15 @@ export default function ProfilePage() {
   const { session, token, isAuthenticated, isLoading: authLoading, showAuthGate } = useAuth()
   const { showToast } = useToast()
 
+  // Optional "return to" target (e.g. ?next=/scholarship/apply) so an edit started
+  // from the application flow can come straight back. Restricted to internal
+  // scholarship paths to avoid open redirects.
+  const [nextUrl, setNextUrl] = useState<string | null>(null)
+  useEffect(() => {
+    const n = new URLSearchParams(window.location.search).get('next')
+    setNextUrl(n && n.startsWith('/scholarship') ? n : null)
+  }, [])
+
   // Profile form state
   const [name, setName] = useState('')
   const [nric, setNric] = useState('')
@@ -154,8 +163,8 @@ export default function ProfilePage() {
     if (token) loadData()
   }, [token, authLoading, isAuthenticated, showAuthGate, loadData])
 
-  const handleSave = async () => {
-    if (!token) return
+  const handleSave = async (): Promise<boolean> => {
+    if (!token) return false
     setSaving(true)
     try {
       await updateProfile({
@@ -185,8 +194,10 @@ export default function ProfilePage() {
       }))
 
       window.dispatchEvent(new Event('profile-updated'))
+      return true
     } catch (err) {
       showToast('Failed to save profile. Please try again.', 'error')
+      return false
     } finally {
       setSaving(false)
     }
@@ -218,8 +229,10 @@ export default function ProfilePage() {
   }
 
   const saveSection = async () => {
-    await handleSave()
+    const ok = await handleSave()
     setEditingSection(null)
+    // If the edit was started from the application flow, return there on success.
+    if (ok && nextUrl) router.push(nextUrl)
   }
 
   const handleStatusChange = async (courseId: string, newStatus: string) => {
@@ -280,6 +293,11 @@ export default function ProfilePage() {
       <AppHeader />
       <main className="min-h-screen bg-[#f8fafc]">
         <div className="container mx-auto px-6 py-10 max-w-2xl">
+          {nextUrl && (
+            <Link href={nextUrl} className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:underline mb-4">
+              ← {t('scholarship.apply.backToApplication')}
+            </Link>
+          )}
           {/* Page title */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900 mb-1">

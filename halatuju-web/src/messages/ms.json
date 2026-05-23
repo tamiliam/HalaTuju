@@ -414,7 +414,8 @@
         "family": "Keluarga",
         "results": "Keputusan",
         "plans": "Rancangan",
-        "support": "Bantuan"
+        "support": "Bantuan",
+        "home": "Utama"
       },
       "fromProfile": "Daripada profil HalaTuju anda",
       "edit": "Edit",
@@ -430,7 +431,8 @@
       "usingProfile": "Menggunakan profil HalaTuju anda",
       "step": "Langkah",
       "back": "Kembali",
-      "continue": "Teruskan"
+      "continue": "Teruskan",
+      "backToApplication": "Kembali ke permohonan anda"
     },
     "nextSteps": {
       "title": "Anda telah disenarai pendek!",
