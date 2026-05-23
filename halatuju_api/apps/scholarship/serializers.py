@@ -35,6 +35,10 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
             'household_income', 'household_size', 'receives_str', 'receives_jkm',
             'intended_pathway', 'intends_tertiary_2026',
             'consent_to_contact', 'form_data',
+            # Plans + Support intake (Sprint 7) — all optional (blank/default on the model)
+            'field_of_study', 'pathways_considered', 'top_choices', 'upu_status',
+            'other_scholarships', 'other_scholarships_text',
+            'help_university', 'help_scholarship', 'anything_else',
         ]
 
     def validate_consent_to_contact(self, value):
@@ -98,6 +102,9 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'receives_str', 'receives_jkm',
             'intended_pathway', 'intends_tertiary_2026',
             'consent_to_contact',
+            'field_of_study', 'pathways_considered', 'top_choices', 'upu_status',
+            'other_scholarships', 'other_scholarships_text',
+            'help_university', 'help_scholarship', 'anything_else', 'mentoring_candidate',
             'status', 'bucket', 'shortlist_reason',
             'acknowledged_at', 'submitted_at', 'updated_at',
             'aspirations', 'plans', 'fears', 'justification',

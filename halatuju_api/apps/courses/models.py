@@ -471,6 +471,11 @@ class StudentProfile(models.Model):
     # Identity (Lentera longitudinal tracking)
     nric = models.CharField(max_length=14, blank=True, default='',
                             help_text="NRIC: XXXXXX-XX-XXXX")
+    nric_verified = models.BooleanField(
+        default=False,
+        help_text="True once an admin verifies the NRIC against the uploaded MyKad "
+                  "(then it locks). Until then the NRIC stays editable and is NOT "
+                  "uniqueness-enforced. See docs/decisions.md (supersedes 'IC immutable').")
     angka_giliran = models.CharField(max_length=9, blank=True, default='',
                                      help_text="University application ref: AB123C456")
 
@@ -507,6 +512,9 @@ class StudentProfile(models.Model):
 
     # Preferences
     preferred_state = models.CharField(max_length=50, blank=True)
+    preferred_call_language = models.CharField(
+        max_length=10, blank=True, default='',
+        help_text="Preferred language for phone calls: en/ms/ta/mixed (B40 outreach).")
     financial_pressure = models.CharField(max_length=20, blank=True)
     travel_willingness = models.CharField(max_length=50, blank=True)
 
@@ -522,6 +530,10 @@ class StudentProfile(models.Model):
     )
     stpm_cgpa = models.FloatField(null=True, blank=True)
     muet_band = models.IntegerField(null=True, blank=True)
+    coq_score = models.FloatField(
+        null=True, blank=True,
+        help_text="Co-curricular score out of 10 (entered at onboarding, feeds merit); "
+                  "persisted so it pre-fills the scholarship Results section.")
     spm_prereq_grades = models.JSONField(
         default=dict, blank=True,
         help_text="SPM prerequisite grades for STPM students: {'bm': 'A', 'eng': 'B+', ...}"
@@ -541,10 +553,15 @@ class StudentProfile(models.Model):
     class Meta:
         db_table = 'api_student_profiles'
         constraints = [
+            # Soft-NRIC (Option A): an NRIC must be unique only once VERIFIED. While
+            # unverified it stays editable and duplicates are tolerated (a typo of
+            # someone else's number won't block submit); the clash surfaces at admin
+            # verification, where only one NRIC can be verified. Supersedes the old
+            # 'unique_nric_when_set' (unique whenever non-empty).
             models.UniqueConstraint(
                 fields=['nric'],
-                name='unique_nric_when_set',
-                condition=~models.Q(nric=''),
+                name='unique_verified_nric',
+                condition=models.Q(nric_verified=True) & ~models.Q(nric=''),
             ),
         ]
 

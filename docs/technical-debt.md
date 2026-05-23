@@ -422,3 +422,7 @@
 - TD-028, TD-029, TD-031, TD-032: Archive/remove legacy files
 - TD-030: Update stale docstrings
 - TD-039, TD-040: Update dependency pins
+
+**B40 Redesign (found Sprint 7, 2026-05-23)**
+- TD-053: Reconcile the NRIC-gate whitelist — `middleware/supabase_auth.py` `NRIC_GATE_EXACT` omits `/api/v1/profile/sync/`, but `docs/decisions.md` + `test_nric_gate` describe sync as whitelisted. Suite green (no breakage); align code/docs/tests.
+- TD-054: Fix the `claim-nric` transfer path (`confirm=True`) — can collide on the PK if the caller already has a non-empty profile. Less critical now uniqueness is verified-only; fold into the admin verify-&-accept work (S11).

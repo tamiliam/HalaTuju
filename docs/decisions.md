@@ -574,3 +574,15 @@
 **Trade-offs:** Shortlisting now depends on the profile being populated — a profile with empty grades scores 0 A's (correctly fails academic). The write-back only overwrites with non-None form values, so a form that omits a field can't blank an existing profile value. Migrations `courses 0047` (add financial fields) + `scholarship 0006` (remove the duplicated fields, add `intake_snapshot`) must both deploy together.
 
 **Revisit if:** A future round needs point-in-time scoring against the snapshot rather than the live profile (then score from `intake_snapshot`), or non-HalaTuju applicants (no profile) are admitted (then the application would need to carry its own data again).
+
+## Soft-NRIC: editable until admin-verified (supersedes "IC immutable") — B40 Redesign Sprint 7, 2026-05-23
+
+**Decision:** NRIC is **soft** — editable by the student until an admin verifies it against the uploaded MyKad, after which it locks. Added `StudentProfile.nric_verified` (default false). Uniqueness is enforced **only when verified** (`unique_verified_nric`, condition `nric_verified AND nric <> ''`), replacing `unique_nric_when_set`. NRIC is **read-only on `PUT /profile/` and `/profile/sync/`** — it changes only via the validated `/profile/claim-nric/` endpoint, which now **blocks a change once the caller's NRIC is verified** (403 `nric_locked`). **This supersedes the IC Gate Sprint (2026-03-15) decision that "IC is immutable after initial entry."**
+
+**Alternatives considered:** (1) Keep IC immutable + add an admin-only override tool. (2) Free self-service edit anytime (no verification gate). (3) Soft until admin verify-&-accept, uniqueness only when verified (chosen).
+
+**Rationale:** "IC immutable after initial entry" left students permanently stuck with a fat-fingered or fake NRIC (no self-service fix) and let a wrong entry block the rightful owner via the unique constraint — both surfaced in the NRIC investigation. For a need-based programme the real guard is the **document check + admin verify-&-accept before award** (Google Vision assists; a human signs off), not an entry-time lock. Relaxing uniqueness to verified-only means a typo of someone else's number can't hard-block a submission; the clash surfaces at verification, where only one NRIC can be verified. Editing routes through the validated claim path, so format/age/state checks still apply and there is a single write point (closing the `PUT`/`sync` gaps).
+
+**Trade-offs:** During the soft phase the DB no longer blocks duplicate NRICs — the document check + admin verification is the only guard before money moves (intended). The minor/guardian-consent gate recomputes from the (now editable) NRIC birth-date on each change. Existing 493 NRICs start unverified (editable) — fine, none are yet document-verified.
+
+**Revisit if:** Fraud pressure requires entry-time identity verification (then add Vision/JPN at claim time), or a non-applicant context needs a locked NRIC without an admin step.

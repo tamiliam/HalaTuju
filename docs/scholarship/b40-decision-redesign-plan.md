@@ -280,7 +280,7 @@ Bring in the legacy form's support questions — they double as **mentoring / su
 *Per `implementation-planning.md`. Builds on Sprints 1–6 (done). ~≤20 files/sprint. **Work on a feature branch
 (e.g. `feature/b40-redesign`); main stays clean; single deploy at S12** (apply flow not publicly launched). Not started — awaiting approval.*
 
-**S7 — Backend foundation: soft-NRIC + coq + new intake fields.** *(no policy calls)*
+**S7 — Backend foundation: soft-NRIC + coq + new intake fields.** *(no policy calls)* — ✅ **built 2026-05-23, 1091 backend tests green** (commit at sprint close)
 - Scope: `nric_verified` + relax unique → verified-only + close `PUT` gap + claim-edit-until-verified + transfer-bug fix;
   `coq_score` field + persist in onboarding/sync; add new intake fields (parent name/phone, call language, field of study,
   pathways-considered, top-3, other-scholarships, support-needs, hardship flags, IPTS/UPU intent, mentoring flag) + one

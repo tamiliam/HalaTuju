@@ -233,28 +233,24 @@ Supabase Security Advisor must show 0 errors before deploy.
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy)
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint — B40 Assistance Programme (Phase 1)
+## Next Sprint — B40 Redesign (decision engine + apply-form rebuild)
 
-Financing extension: a sponsor "adopts" one B40 student to fund IPTA/ILKA study. PRD + 6-sprint
-Phase 1 roadmap in `docs/scholarship/`. MyNadi Foundation is the (tentative) fund custodian;
-the platform is matchmaker + ledger and never holds cash. No financial return to sponsors (keeps
-it a charity, not SC-regulated P2P).
+Phase 1 (apply → shortlist → decision emails → docs/referee/consent → AI sponsor profile + MyNadi admin)
+is **live on `main`** (deployed 2026-05-23, migrations 0001–0006 + courses 0047 applied to prod). The
+**redesign** reworks the decision flow + apply form. 6-sprint roadmap: `docs/scholarship/b40-decision-redesign-plan.md`.
+On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
 
-- **✅ Phase 1 build COMPLETE — all 6 sprints done (2026-05-22).** Full applicant→admin loop: apply →
-  shortlist → decision emails → funding/next-steps → documents/referee/consent → AI sponsor profile
-  + MyNadi admin console. Backend 1086 tests, frontend 37, golden masters intact, migrations 0001–0005.
-  Per-sprint detail in CHANGELOG, `docs/scholarship/b40-phase1-roadmap.md`, and the retrospectives.
-- **On branch `feature/b40-assistance` — NOT merged, NOT deployed.**
-- **Next: the single Phase-1 deploy.** Carry-forwards: apply Supabase migrations (0001–0005) + RLS;
-  create the `b40-documents` private bucket; swap the DRAFT consent text (`CONSENT_VERSION`) for the
-  lawyer-reviewed version; wire the fail-email scheduler (Cloud Scheduler); **browser smoke-test every
-  flow** (apply OAuth, details PATCH, quiz return, upload, consent, admin generate/edit/publish); then
-  merge to `main`. **Public launch is gated on Phase 0** (confirm MyNadi entity, fundraising permit,
-  lawyer-reviewed consent). Phase 2 (sponsor portal) follows.
-- **Gotcha:** PII source docs in `docs/scholarship/` (`*.pdf|xlsx|txt`) are gitignored — real
-  student NRICs/names/financials. Never commit them.
-- **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing the feature branch does not. Keep
-  B40 on the branch until Phase 1 is deployable.
+- **✅ S7 done (2026-05-23):** backend foundation — **soft-NRIC** (editable until admin-verified; unique only
+  when verified; read-only on PUT/sync, claim-only; claim blocked once verified, 403 `nric_locked`), `coq_score`
+  + `preferred_call_language` persisted, all new `ScholarshipApplication` intake fields. Migrations courses `0048`
+  + scholarship `0007`. Backend **1091** tests green. See `retrospective-b40-sprint7.md` + `docs/decisions.md`.
+- **Next: S8 — decision engine (3-rung) + silent-score + 1h delayed reveal.** **GATED on the 6 policy calls**
+  (descent, academic floor, per-capita bands/weights/pass-mark, hardship flags, decline email, confirm 1h). If
+  deferring those, do **S9** (apply-form frontend ① About Me/Family/Results) first — no policy deps.
+- **Gotcha:** soft-NRIC **supersedes** the old "IC immutable" decision — uniqueness is verified-only now.
+- **Gotcha:** new migrations apply to prod only at the S12 deploy; before numbering, check `max` migration on `main`.
+- **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing `feature/b40-redesign` does not. Keep the redesign on the branch.
+- **Gotcha:** PII source docs in `docs/scholarship/` (`*.pdf|xlsx|txt`) are gitignored — real NRICs/names/financials. Never commit them.
 
 ## Known Issues & Future Work
 

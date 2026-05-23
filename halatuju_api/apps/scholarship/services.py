@@ -23,6 +23,10 @@ _PROFILE_WRITEBACK_FIELDS = (
 # Per-application fields that genuinely belong on the ScholarshipApplication row.
 _APP_FIELDS = (
     'intended_pathway', 'intends_tertiary_2026', 'consent_to_contact', 'form_data',
+    # Plans + Support intake (Sprint 7); mentoring_candidate is coordinator-set, not collected here.
+    'field_of_study', 'pathways_considered', 'top_choices', 'upu_status',
+    'other_scholarships', 'other_scholarships_text',
+    'help_university', 'help_scholarship', 'anything_else',
 )
 
 
@@ -71,6 +75,15 @@ def build_intake_snapshot(profile, app_data):
             'intends_tertiary_2026': app_data.get('intends_tertiary_2026', True),
             'consent_to_contact': app_data.get('consent_to_contact', False),
             'form_data': app_data.get('form_data', {}),
+            'field_of_study': app_data.get('field_of_study', ''),
+            'pathways_considered': app_data.get('pathways_considered', []),
+            'top_choices': app_data.get('top_choices', []),
+            'upu_status': app_data.get('upu_status', ''),
+            'other_scholarships': app_data.get('other_scholarships', []),
+            'other_scholarships_text': app_data.get('other_scholarships_text', ''),
+            'help_university': app_data.get('help_university', ''),
+            'help_scholarship': app_data.get('help_scholarship', ''),
+            'anything_else': app_data.get('anything_else', ''),
         },
     }
 

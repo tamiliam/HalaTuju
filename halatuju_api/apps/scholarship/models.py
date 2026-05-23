@@ -80,6 +80,13 @@ class ScholarshipApplication(models.Model):
         ('withdrawn', 'Withdrawn'),
     ]
     BUCKET_CHOICES = [('', 'Unassigned'), ('A', 'Bucket A'), ('B', 'Bucket B')]
+    UPU_CHOICES = [
+        ('applied', 'Applied through UPU'),
+        ('public_other', 'Plan STPM / Matrikulasi / PISMP / TVET'),
+        ('ipts', 'Plan to study at IPTS'),       # IPTS-only is a disqualifier (engine, S8)
+        ('unknown', 'Unsure what UPU is'),
+    ]
+    HELP_CHOICES = [('yes', 'Yes'), ('no', 'No'), ('unsure', 'Not sure')]
 
     cohort = models.ForeignKey(
         ScholarshipCohort, on_delete=models.PROTECT,
@@ -105,6 +112,42 @@ class ScholarshipApplication(models.Model):
         help_text="Consent to be contacted about this application "
                   "(sponsor-sharing consent is collected later)",
     )
+
+    # ── Plans + Support intake (Sprint 7, apply-form rebuild) ──────────────────
+    # Collected at apply; drive the sponsor profile + mentoring. Some feed the
+    # decision engine in S8 (e.g. upu_status='ipts'-only disqualifies). All optional
+    # so older clients/tests that don't send them keep working.
+    field_of_study = models.CharField(
+        max_length=50, blank=True, default='',
+        help_text="Intended field of study (taxonomy key/label)")
+    pathways_considered = models.JSONField(
+        default=list, blank=True,
+        help_text="Post-SPM pathways being considered (non-exclusive): "
+                  "['matrik','asasi','stpm','poly','kkom',...]")
+    top_choices = models.JSONField(
+        default=list, blank=True,
+        help_text="Ranked top-3 choices: [{rank, course_id, course_name, institution}]")
+    upu_status = models.CharField(
+        max_length=20, blank=True, default='', choices=UPU_CHOICES,
+        help_text="UPU / destination intent; 'ipts'-only is a disqualifier (S8)")
+    other_scholarships = models.JSONField(
+        default=list, blank=True,
+        help_text="Other scholarships applied/held (keys): ['jpa','petronas','mara',...]")
+    other_scholarships_text = models.CharField(
+        max_length=300, blank=True, default='',
+        help_text="Other scholarships not in the list (free text)")
+    help_university = models.CharField(
+        max_length=10, blank=True, default='', choices=HELP_CHOICES,
+        help_text="Wants help with university applications")
+    help_scholarship = models.CharField(
+        max_length=10, blank=True, default='', choices=HELP_CHOICES,
+        help_text="Wants help with scholarship applications & interviews")
+    anything_else = models.TextField(
+        blank=True, default='',
+        help_text="'Anything else you'd like us to know' — narrative context only")
+    mentoring_candidate = models.BooleanField(
+        default=False,
+        help_text="Flagged for mentoring (lost/unfocused); coordinator-facing, NOT a reject signal")
 
     # Workflow
     status = models.CharField(

@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Redesign · Sprint 7: backend foundation (soft-NRIC + intake fields) (2026-05-23)
+
+Foundation for the decision-engine redesign + apply-form rebuild (6-sprint roadmap in
+`docs/scholarship/b40-decision-redesign-plan.md`). Backend only; on `feature/b40-redesign`, not deployed.
+
+### Added
+- **`StudentProfile.nric_verified`** (Bool), **`coq_score`** (Float — co-curricular score now persisted,
+  was transient), **`preferred_call_language`**. Profile GET returns all three.
+- **`ScholarshipApplication`** new intake fields (all optional): `field_of_study`, `pathways_considered`,
+  `top_choices`, `upu_status` (incl. an IPTS option), `other_scholarships` (+ free text), `help_university`,
+  `help_scholarship`, `anything_else`, `mentoring_candidate`. Carried through the create serializer,
+  `_APP_FIELDS`, the audit `intake_snapshot`, and the read serializer.
+- Migrations: courses `0048`, scholarship `0007`.
+
+### Changed
+- **Soft-NRIC (supersedes "IC immutable"):** uniqueness now enforced **only when verified**
+  (`unique_verified_nric` replaces `unique_nric_when_set`); NRIC is **read-only on PUT/sync** (claim path
+  only); the claim endpoint **blocks a change once verified** (403 `nric_locked`). See `docs/decisions.md`.
+
+### Tests
+- Backend **1091 pass** (was 1086; +4 soft-NRIC, +1 intake round-trip), golden masters intact (SPM 5319,
+  STPM 2026). Updated `test_profile_fields` (PUT no longer sets NRIC; uniqueness only when verified).
+
 ## [Unreleased] — B40 Assistance Programme · Phase 1.5c public landing + follow-up route (2026-05-22)
 
 Added the public marketing landing and gave the post-submission follow-up its own page.
