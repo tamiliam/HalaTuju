@@ -249,8 +249,14 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   (invitation) / +48h decline (warm email)** via the scheduler. Migration scholarship `0008`. Backend 1093 tests.
   See `retrospective-b40-sprint8.md` + `docs/decisions.md`. (6 policy calls all settled; public criteria stay at
   the advertised bar, engine intentionally more lenient to accommodate near-misses.)
-- **Next: S9 — apply-form frontend ① (About Me + My Family + My Results).** Inline-edit + commit-on-submit,
-  required `*`+`i` tooltips, onboarding return-marker for Results edits. No policy deps. See the redesign plan.
+- **Next: S9 — apply-form frontend ① (RE-SCOPED 2026-05-24 → About Me + My Family only).** Inline-edit +
+  **commit-on-submit** (the submit writes About-Me profile fields; NRIC saves via the validated claim path),
+  required `*`+`i` tooltips, referring-org / state / phone / parent / call-language fields. **My Results
+  (edit → onboarding-return mechanism) split into its own slice** (before/with S10). **Approval: build to the
+  existing Form-A Stitch design + a real local screenshot before the S12 deploy** — no new Stitch needed (extends
+  the approved design). **Start fresh** (frontend sprint, wants full context budget). Frontend lessons that apply:
+  Jest is node-env → test pure `lib/*.ts`, not components; run `next build` before done; localStorage keys via
+  constants; EN/MS/TA i18n parity (check-i18n).
 - **Gotcha:** soft-NRIC **supersedes** the old "IC immutable" decision — uniqueness is verified-only now.
 - **Gotcha:** new migrations apply to prod only at the S12 deploy; before numbering, check `max` migration on `main`.
 - **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing `feature/b40-redesign` does not. Keep the redesign on the branch.
