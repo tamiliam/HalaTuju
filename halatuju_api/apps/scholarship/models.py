@@ -29,19 +29,30 @@ class ScholarshipCohort(models.Model):
     )
 
     # Shortlisting thresholds (consumed by the rules engine in Sprint 3)
+    # Academic floor (S8 redesign): SPM needs >= min_spm_a_count grades at A-/A/A+ AND
+    # >= min_spm_bplus_count grades at B+ or better; STPM needs PNGK >= min_stpm_pngk.
     min_spm_a_count = models.IntegerField(
-        default=5, help_text="Minimum SPM A's (A+/A/A- all count) for Bucket A",
+        default=4, help_text="Minimum SPM grades at A- or better (A+/A/A- all count)",
+    )
+    min_spm_bplus_count = models.IntegerField(
+        default=5,
+        help_text="Minimum SPM grades at B+ or better (the '+1 B+' beyond the A's → 5 strong subjects)",
     )
     min_stpm_pngk = models.FloatField(
-        default=3.0, help_text="Minimum STPM PNGK for Bucket A",
+        default=2.9, help_text="Minimum STPM PNGK (academic floor)",
     )
     income_ceiling = models.IntegerField(
         null=True, blank=True,
-        help_text="B40 monthly household income ceiling in RM",
+        help_text="B40 monthly household income ceiling in RM (reference; the income gate uses per_capita_ceiling)",
+    )
+    per_capita_ceiling = models.IntegerField(
+        default=1584,
+        help_text="Per-capita monthly income ceiling in RM for non-STR applicants (household_income / "
+                  "household_size). RM5,860 B40 ceiling / 3.7 avg household = RM1,584 (DOSM 2024).",
     )
     bucket_b_margin = models.IntegerField(
         default=1,
-        help_text="How many A's short of min_spm_a_count still qualifies for Bucket B",
+        help_text="DEPRECATED (pre-S8 marginal-miss logic); unused by the current engine",
     )
 
     # Funding + workflow parameters (consumed by later sprints)
@@ -50,7 +61,15 @@ class ScholarshipCohort(models.Model):
     )
     fail_email_delay_days = models.IntegerField(
         default=3,
-        help_text="Days to wait before the 'not this round' email (Sprint 3)",
+        help_text="DEPRECATED (pre-S8); the scheduler now uses success/decline_delay_hours",
+    )
+    success_delay_hours = models.IntegerField(
+        default=2,
+        help_text="Hours after submit before the shortlist (invitation) email + follow-up unlock (S8 delayed reveal)",
+    )
+    decline_delay_hours = models.IntegerField(
+        default=48,
+        help_text="Hours after submit before the warm decline email (S8 delayed reveal)",
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -167,6 +186,21 @@ class ScholarshipApplication(models.Model):
     decision_email_sent_at = models.DateTimeField(
         null=True, blank=True,
         help_text="When the pass/fail decision email was sent",
+    )
+    # S8 delayed reveal: the engine computes the verdict silently at submit; the
+    # scheduler flips status + sends the email at decision_due_at (submit + delay).
+    verdict = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, blank=True, default='',
+        help_text="Engine's computed outcome ('shortlisted'/'rejected'), stored at submit; "
+                  "status stays 'submitted' until the scheduler releases it",
+    )
+    decision_due_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the verdict is revealed (submit + success/decline delay)",
+    )
+    decision_released_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the scheduler flipped status + sent the verdict email",
     )
     locale = models.CharField(
         max_length=2, default='en',

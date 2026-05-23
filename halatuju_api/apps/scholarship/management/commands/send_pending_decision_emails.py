@@ -1,75 +1,59 @@
 """
-Send the courteous "not this round" email to rejected B40 applicants once the
-cohort's configured delay has elapsed.
+Release due B40 decisions: reveal the verdict (flip status + send the email) for
+applications whose ``decision_due_at`` has passed. Shortlist verdicts reveal at
++success_delay_hours (default 2h), declines at +decline_delay_hours (default 48h) —
+both delays are baked into ``decision_due_at`` when the application is scored at
+submit. Idempotent: an already-released application is skipped.
 
-Pass emails are sent immediately at submit; fail emails are deliberately delayed
-(``ScholarshipCohort.fail_email_delay_days``) so a rejection never lands seconds
-after applying. Schedule this command (e.g. Cloud Scheduler, daily) once the
-service is deployed.
+Schedule this (e.g. Cloud Scheduler → Cloud Run Job, every ~15 min) once deployed.
 
     python manage.py send_pending_decision_emails [--dry-run]
 """
-from datetime import timedelta
-
 from django.core.management.base import BaseCommand
 from django.db import connection
 from django.utils import timezone
 
-from apps.scholarship.emails import send_fail_email
 from apps.scholarship.models import ScholarshipApplication
+from apps.scholarship.services import release_decision
 
 
 class Command(BaseCommand):
-    help = "Send delayed 'not this round' emails to rejected applicants past the cohort delay."
+    help = "Release due B40 decisions (flip status + send invitation/decline email) past decision_due_at."
 
     def add_arguments(self, parser):
         parser.add_argument(
             '--dry-run', action='store_true',
-            help='List who would be emailed without sending or stamping anything.',
+            help='List who would be released without changing anything.',
         )
 
     def handle(self, *args, **options):
         dry = options['dry_run']
         db = connection.settings_dict
-        # Transparency: which database are we acting on? (per the management-command lessons)
-        self.stdout.write(
-            f"DB: {db.get('ENGINE')} -> {db.get('HOST') or db.get('NAME')}"
-        )
+        # Transparency: which database are we acting on? (management-command lesson)
+        self.stdout.write(f"DB: {db.get('ENGINE')} -> {db.get('HOST') or db.get('NAME')}")
 
         now = timezone.now()
         qs = ScholarshipApplication.objects.filter(
-            status='rejected',
-            decision_email_sent_at__isnull=True,
-            shortlisted_at__isnull=False,
-        ).select_related('cohort', 'profile')
+            status='submitted',
+            decision_released_at__isnull=True,
+            decision_due_at__isnull=False,
+            decision_due_at__lte=now,
+        ).exclude(verdict='').select_related('cohort', 'profile')
 
-        sent = skipped = 0
+        released = skipped = 0
         for app in qs:
-            due = app.shortlisted_at + timedelta(days=app.cohort.fail_email_delay_days)
-            if now < due:
-                skipped += 1
-                continue
-            if not app.notify_email:
-                self.stdout.write(f"  skip app #{app.pk}: no notify_email on file")
-                skipped += 1
-                continue
             if dry:
-                self.stdout.write(f"  [dry-run] would email {app.notify_email} (app #{app.pk})")
-                sent += 1
+                self.stdout.write(
+                    f"  [dry-run] would release app #{app.pk}: {app.verdict} "
+                    f"-> {app.notify_email or '(no email)'}"
+                )
+                released += 1
                 continue
-            ok = send_fail_email(
-                to_email=app.notify_email,
-                applicant_name=getattr(app.profile, 'name', '') if app.profile else '',
-                programme_name=app.cohort.name,
-                lang=app.locale,
-            )
-            if ok:
-                app.decision_email_sent_at = now
-                app.save(update_fields=['decision_email_sent_at'])
-                sent += 1
+            if release_decision(app):
+                released += 1
             else:
                 skipped += 1
 
         self.stdout.write(self.style.SUCCESS(
-            f"Decision emails: {sent} {'would be ' if dry else ''}sent, {skipped} skipped"
+            f"Decisions: {released} {'would be ' if dry else ''}released, {skipped} skipped"
         ))

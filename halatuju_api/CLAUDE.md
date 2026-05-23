@@ -244,9 +244,13 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   when verified; read-only on PUT/sync, claim-only; claim blocked once verified, 403 `nric_locked`), `coq_score`
   + `preferred_call_language` persisted, all new `ScholarshipApplication` intake fields. Migrations courses `0048`
   + scholarship `0007`. Backend **1091** tests green. See `retrospective-b40-sprint7.md` + `docs/decisions.md`.
-- **Next: S8 — decision engine (3-rung) + silent-score + 1h delayed reveal.** **GATED on the 6 policy calls**
-  (descent, academic floor, per-capita bands/weights/pass-mark, hardship flags, decline email, confirm 1h). If
-  deferring those, do **S9** (apply-form frontend ① About Me/Family/Results) first — no policy deps.
+- **✅ S8 done (2026-05-24):** deterministic decision engine — gates → academic floor (SPM 4A-+1B+ / STPM PNGK 2.9)
+  → income (STR passes, else per-capita < RM1,584); **silent score at submit**, **delayed reveal +2h shortlist
+  (invitation) / +48h decline (warm email)** via the scheduler. Migration scholarship `0008`. Backend 1093 tests.
+  See `retrospective-b40-sprint8.md` + `docs/decisions.md`. (6 policy calls all settled; public criteria stay at
+  the advertised bar, engine intentionally more lenient to accommodate near-misses.)
+- **Next: S9 — apply-form frontend ① (About Me + My Family + My Results).** Inline-edit + commit-on-submit,
+  required `*`+`i` tooltips, onboarding return-marker for Results edits. No policy deps. See the redesign plan.
 - **Gotcha:** soft-NRIC **supersedes** the old "IC immutable" decision — uniqueness is verified-only now.
 - **Gotcha:** new migrations apply to prod only at the S12 deploy; before numbering, check `max` migration on `main`.
 - **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing `feature/b40-redesign` does not. Keep the redesign on the branch.

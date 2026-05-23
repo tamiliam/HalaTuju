@@ -586,3 +586,15 @@
 **Trade-offs:** During the soft phase the DB no longer blocks duplicate NRICs — the document check + admin verification is the only guard before money moves (intended). The minor/guardian-consent gate recomputes from the (now editable) NRIC birth-date on each change. Existing 493 NRICs start unverified (editable) — fine, none are yet document-verified.
 
 **Revisit if:** Fraud pressure requires entry-time identity verification (then add Vision/JPN at claim time), or a non-applicant context needs a locked NRIC without an admin step.
+
+## Deterministic decision rule (per-capita + STR + academic floor) — supersedes the weighted score — B40 Redesign Sprint 8, 2026-05-24
+
+**Decision:** The shortlist decision is a simple deterministic rule, not a 0–100 weighted score: hard gates (consent · intends public study · NOT IPTS-only) → academic floor (SPM ≥4 at A- AND ≥5 at B+ / STPM PNGK ≥2.9) → income (STR recipient passes, bucket A; otherwise per-capita income = household_income / household_size must be < `per_capita_ceiling` RM1,584, bucket B). The verdict is computed **silently at submit** (status stays `submitted`); the scheduler **reveals** it later — +2h for shortlist (invitation email), +48h for decline (warm email). Supersedes the exploratory Sprint-3 Bucket-A/B/marginal engine and the planned weighted score (per-capita bands + factor weights + pass mark + hardship flags).
+
+**Alternatives considered:** (1) Weighted 0–100 score with per-capita bands, dependent/hardship/results weights, and a pass mark (the earlier plan). (2) Household-income bands (B40 < 5,860 / M40 / T20 > 12,679). (3) Simple rule: academic floor + (STR OR per-capita < RM1,584) (chosen).
+
+**Rationale:** Per-capita income already accounts for household size/dependents, so it captures need without a separate hardship score — the grantmaking lead's call ("3 captures this"). RM1,584 = DOSM-2024 B40 ceiling RM5,860 ÷ average household 3.7. Per-capita naturally rejects T20 and is fairer to large families than a flat household ceiling. STR is government-verified low income → a reliable fast-path. With no human in the loop, a transparent reproducible rule is far easier to defend to a rejected applicant than a weighted score. Silent-score + delayed reveal (+2h/+48h) makes an automated verdict feel considered. The public criteria stay at the advertised bar (5 A's / PNGK 3.0, Indian-descent pilot) while the engine is intentionally more lenient (4A-+1B+ / 2.9, open to all) to accommodate near-misses.
+
+**Trade-offs:** No nuanced scoring — a borderline case is decided by hard thresholds (RM1,584, the academic floor) rather than a holistic score. Accepted: simplicity + defensibility + the document/admin verification at award are the real guards. Hardship/clarity become sponsor-profile + mentoring signals, never reject inputs.
+
+**Revisit if:** Outcomes show the per-capita threshold mis-sorts a class of applicants (add back a small scored layer), or a round needs ranking/quotas beyond pass/fail (score within the passing set).

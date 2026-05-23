@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Redesign · Sprint 8: decision engine + silent-score + delayed reveal (2026-05-24)
+
+The deterministic decision engine (final policy calls settled). Backend only; on `feature/b40-redesign`, not deployed.
+
+### Changed
+- **`shortlisting.py` rewritten** to the settled rule (no score/weights/hardship): hard gates (consent · intends
+  public study · not IPTS-only) → academic floor (SPM ≥4 at A- AND ≥5 at B+ / STPM PNGK ≥2.9) → income (STR →
+  pass, bucket A; else per-capita income < `per_capita_ceiling` RM1,584 → pass, bucket B). `evaluate()` returns
+  `verdict` (shortlisted/rejected) + bucket + reason.
+- **Submit no longer decides instantly** — it scores **silently** (`score_application`): stores verdict +
+  `decision_due_at`, status stays `submitted`, only the acknowledgement email is sent.
+- **Delayed reveal** via `send_pending_decision_emails` (now release-due-decisions): flips status + sends the
+  email at `decision_due_at` — **+2h** shortlist (invitation), **+48h** decline (warm).
+- **Decline email** rewritten warm (EN/MS/TA): "not successful this round, all the best, you're welcome at our
+  higher-education seminars — we'll send invites."
+
+### Added
+- Cohort: `per_capita_ceiling` (1584), `min_spm_bplus_count` (5), `success_delay_hours` (2), `decline_delay_hours`
+  (48); defaults `min_spm_a_count` 5→4, `min_stpm_pngk` 3.0→2.9.
+- Application: `verdict`, `decision_due_at`, `decision_released_at`. Migration scholarship `0008`.
+
+### Tests
+- Backend **1093 pass** (golden masters intact). Rewrote engine tests (per-capita + academic-floor + IPTS + STR),
+  scheduler tests (release-due / idempotent / dry-run), submit tests (silent score), cohort-defaults; added a
+  per-verdict-delay scoring test.
+
 ## [Unreleased] — B40 Redesign · Sprint 7: backend foundation (soft-NRIC + intake fields) (2026-05-23)
 
 Foundation for the decision-engine redesign + apply-form rebuild (6-sprint roadmap in

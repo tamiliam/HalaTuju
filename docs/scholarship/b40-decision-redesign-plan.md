@@ -288,7 +288,7 @@ Bring in the legacy form's support questions — they double as **mentoring / su
 - Acceptance: NRIC editable-until-verified + unique-only-when-verified at API; coq persists; new fields round-trip; suite green.
 - Complexity: Medium (~16 files).
 
-**S8 — Decision engine + silent-score + delayed reveal (backend).** *(NEEDS the 6 policy calls)*
+**S8 — Decision engine + silent-score + delayed reveal (backend).** *(policy calls settled)* — ✅ **built 2026-05-24, 1093 backend tests green** (commit at sprint close)
 - Scope: rewrite `shortlisting.py` → 3-rung (eligibility pre-filter incl. IPTS-only/consent/intends-tertiary/descent;
   Rung1 B40+STR auto; Rung2 >T20 auto-decline; Rung3 per-capita formula; need-first) + score breakdown; split
   `score_application` (silent at submit) / `release_decision`; submit → ack-only + "received" + store verdict + `decision_due_at`;
@@ -326,3 +326,51 @@ Bring in the legacy form's support questions — they double as **mentoring / su
 **Total: 6 sprints.** Order = dependency + risk: foundation (S7) → engine (S8, riskiest) → frontend (S9–S10) → admin/lock (S11)
 → integration + deploy (S12). **S8 is the only sprint gated on the 6 policy calls** — so we can start **S7 now** and settle the
 policy calls before S8 (or reorder S9–S10 ahead of S8 if you'd rather keep deferring them).
+
+---
+
+## Decision engine — FINAL (policy calls settled 2026-05-23)
+*Supersedes the earlier exploratory "3-rung + weighted 0–100 score + per-capita bands + hardship flags" sketch.
+The settled logic is a simple deterministic rule — no score, no weights, no pass mark, no hardship flags.*
+
+**Inputs** (already on profile/application): `grades` / `stpm_cgpa`, `receives_str`, `household_income`,
+`household_size`, `upu_status` (IPTS), `consent_to_contact`, `intends_tertiary_2026`.
+
+**Decision (computed silently at submit):**
+1. **Hard gates** — fail any → DECLINE: consent given; intends public post-secondary study; **not IPTS-only**
+   (`upu_status='ipts'` with no public pathway). **No descent check — open to all (#1: "we don't want to know").**
+2. **Academic floor** — fail → DECLINE: SPM **≥4 grades at A- or better AND ≥1 further grade at B+ or better**
+   (≥5 strong subjects; A- counts as an "A" — engine `A_GRADES` = {A+, A, A-}, plus a ≥B+ check) · STPM **PNGK ≥ 2.9**.
+3. **Income test:**
+   - **STR recipient → PASS** (income-qualified; STR = govt-verified low income).
+   - **No STR → per-capita income** = `household_income ÷ household_size`; **< RM1,584 → PASS**, else DECLINE.
+     (RM1,584 = B40 ceiling RM5,860 ÷ avg household **3.7** [DOSM 2024]. Per-capita naturally rejects T20 and is
+     fairer to large families — **replaces** the household RM5,860 / RM12,679 gates.)
+4. **Outcome:** pass all → **SHORTLIST** (Bucket A if STR, Bucket B if via income test); else **DECLINE**.
+
+**Dropped (per #3/#4):** the 0–100 weighted score, per-capita bands, factor weights, pass mark, and hardship
+tick-boxes — per-capita income already accounts for household size/dependents, so it captures need; STR is the
+verified-need fast path. Clarity/hardship remain **sponsor-profile + mentoring signals only**, never reject.
+
+**Reveal (silent → "received" → delayed email + unlock) — #6:**
+- **Shortlisted: +2 hours** → invitation email + follow-up unlocks.
+- **Declined: +48 hours** → warm decline email.
+- Two cohort-config delays: `success_delay_hours=2`, `decline_delay_hours=48`.
+
+**Emails — #5:**
+- Ack (at submit): "received".
+- Invitation (+2h, shortlisted): "you've been shortlisted — complete your application".
+- Decline (+48h): **warm** — *"not successful for this scholarship this round; all the best in your studies;
+  you're welcome at the higher-education seminars we run (online/offline) — we'll send you the invites."*
+  (Keeps declined students in the HalaTuju community → implies a seminar-invite list.)
+
+**Confirmations (settled 2026-05-24):**
+- **A.** ✅ SPM floor = **≥4 at A-/A/A+ and ≥1 further at B+** (≥5 strong subjects; A- is the minimum "A").
+  Engine: `count(grade ≥ A-) ≥ 4` AND `count(grade ≥ B+) ≥ 5`.
+- **B.** ✅ Per-capita RM1,584 is the **sole** income gate for non-STR (no separate household RM5,860 / RM12,679).
+- **C.** ✅ STR auto-passes **only the income test** — STR students still need the academic floor + hard gates (STR ≠ auto-shortlist).
+- **D.** ✅ **Public copy stays as-is** — `/scholarship` keeps advertising "Indian descent (pilot)" + "5 A's / PNGK 3.0".
+  The engine is **intentionally more lenient** (no descent; 4A+1B+ / 2.9) to **accommodate students who barely
+  miss** the advertised bar — under-promise on the page, be generous in practice. **No frontend copy change.**
+
+**→ All 6 policy calls settled. S8 (decision engine) is unblocked.**

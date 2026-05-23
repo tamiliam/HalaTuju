@@ -70,15 +70,18 @@ class TestApplicationIntake(TestCase):
         self.assertEqual(resp.status_code, 201)
         body = resp.json()
         self.assertEqual(body['cohort_code'], 'b40-2026')
-        self.assertEqual(body['status'], 'shortlisted')
+        # S8: scored silently — status stays 'submitted', verdict stored, no decision email yet
+        self.assertEqual(body['status'], 'submitted')
         self.assertEqual(body['bucket'], 'A')
         app = ScholarshipApplication.objects.get(id=body['id'])
         self.assertEqual(app.profile_id, USER_A)
+        self.assertEqual(app.verdict, 'shortlisted')
         self.assertIsNotNone(app.acknowledged_at)
-        self.assertIsNotNone(app.shortlisted_at)
-        self.assertIsNotNone(app.decision_email_sent_at)
-        # acknowledgement + immediate pass email
-        self.assertEqual(len(mail.outbox), 2)
+        self.assertIsNotNone(app.decision_due_at)
+        self.assertIsNone(app.shortlisted_at)          # set only on release
+        self.assertIsNone(app.decision_email_sent_at)  # decision email is deferred
+        # only the acknowledgement is sent at submit
+        self.assertEqual(len(mail.outbox), 1)
         self.assertIn('priya@example.com', mail.outbox[0].to)
 
     def test_failing_application_rejected_no_decision_email(self):
@@ -91,11 +94,14 @@ class TestApplicationIntake(TestCase):
         )
         self.assertEqual(resp.status_code, 201)
         body = resp.json()
-        self.assertEqual(body['status'], 'rejected')
+        # S8: scored silently — status stays 'submitted', verdict='rejected', no decision email
+        self.assertEqual(body['status'], 'submitted')
         self.assertEqual(body['bucket'], '')
         app = ScholarshipApplication.objects.get(id=body['id'])
+        self.assertEqual(app.verdict, 'rejected')
         self.assertIsNone(app.decision_email_sent_at)
-        # only the acknowledgement — the fail email is deferred to the command
+        self.assertIsNotNone(app.decision_due_at)
+        # only the acknowledgement — the decision email is deferred to the scheduler
         self.assertEqual(len(mail.outbox), 1)
 
     def test_spm_a_count_derived_from_profile(self):

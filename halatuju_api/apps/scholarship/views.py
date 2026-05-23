@@ -25,7 +25,7 @@ from .services import (
     record_consent,
     resolve_open_cohort,
     save_application_details,
-    shortlist_application,
+    score_application,
 )
 
 
@@ -90,9 +90,10 @@ class ApplicationListCreateView(APIView):
             profile=profile, cohort=cohort,
             validated_data=validated, to_email=to_email, lang=lang,
         )
-        # Mechanical shortlist runs immediately (pass email sent now; fail email
-        # is deferred to the send_pending_decision_emails command).
-        shortlist_application(application)
+        # Score silently now (S8 delayed reveal): the verdict + decision_due_at are
+        # stored, status stays 'submitted', no decision email yet. The scheduler
+        # (release_due_decisions) reveals it at +2h (shortlist) / +48h (decline).
+        score_application(application)
         return Response(
             ApplicationReadSerializer(application).data,
             status=status.HTTP_201_CREATED,

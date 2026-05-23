@@ -3,9 +3,11 @@ Business logic for B40 Assistance Programme intake.
 
 Pure-ish functions kept out of the view (mirrors apps/courses/eligibility_service.py).
 """
+from datetime import timedelta
+
 from django.utils import timezone
 
-from .emails import send_acknowledgement_email, send_pass_email
+from .emails import send_acknowledgement_email, send_pass_email, send_fail_email
 from .models import Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort
 # count_spm_a_grades + the A-grade set now live with the shortlisting engine
 # (the single place that scores academics). Re-exported here for callers that
@@ -142,34 +144,56 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
     return application
 
 
-def shortlist_application(application):
+def score_application(application):
     """
-    Run the mechanical shortlist on a freshly-created application, persist the
-    outcome (status / bucket / reason / shortlisted_at), and for a PASS send the
-    congratulations email immediately. The FAIL email is deferred to the
-    ``send_pending_decision_emails`` management command (cohort-configured delay).
+    Score a freshly-submitted application **silently** (S8 delayed reveal): run the
+    engine, store verdict + bucket + reason, and set ``decision_due_at`` =
+    submitted_at + the cohort's success/decline delay. Status stays ``submitted`` and
+    NO email is sent — the scheduler reveals the verdict later via ``release_decision``.
+    Returns the ShortlistResult.
     """
-    result = evaluate(application, application.cohort)
-    application.status = result.status
+    cohort = application.cohort
+    result = evaluate(application, cohort)
+    delay_h = cohort.success_delay_hours if result.verdict == 'shortlisted' else cohort.decline_delay_hours
+    base = application.submitted_at or timezone.now()
+    application.verdict = result.verdict
     application.bucket = result.bucket
     application.shortlist_reason = result.reason
-    application.shortlisted_at = timezone.now()
+    application.decision_due_at = base + timedelta(hours=delay_h)
     application.save(update_fields=[
-        'status', 'bucket', 'shortlist_reason', 'shortlisted_at',
+        'verdict', 'bucket', 'shortlist_reason', 'decision_due_at',
     ])
+    return result
 
-    if result.status == 'shortlisted':
-        sent = send_pass_email(
-            to_email=application.notify_email,
-            applicant_name=getattr(application.profile, 'name', '') if application.profile else '',
-            programme_name=application.cohort.name,
-            lang=application.locale,
-        )
-        if sent:
-            application.decision_email_sent_at = timezone.now()
-            application.save(update_fields=['decision_email_sent_at'])
 
-    return application
+def release_decision(application):
+    """
+    Reveal a scored application's verdict (called by the scheduler once
+    ``decision_due_at`` has passed): flip status to the verdict, stamp timestamps,
+    unlock the follow-up for shortlisted students, and send the verdict email
+    (invitation for shortlisted, warm decline for rejected). Idempotent — a second
+    call on an already-released or unscored application is a no-op. Returns True if it released.
+    """
+    if application.decision_released_at or application.status != 'submitted' or not application.verdict:
+        return False
+    now = timezone.now()
+    application.status = application.verdict
+    application.decision_released_at = now
+    if application.verdict == 'shortlisted':
+        application.shortlisted_at = now
+    application.save(update_fields=['status', 'decision_released_at', 'shortlisted_at'])
+
+    name = getattr(application.profile, 'name', '') if application.profile else ''
+    send = send_pass_email if application.verdict == 'shortlisted' else send_fail_email
+    if send(
+        to_email=application.notify_email,
+        applicant_name=name,
+        programme_name=application.cohort.name,
+        lang=application.locale,
+    ):
+        application.decision_email_sent_at = now
+        application.save(update_fields=['decision_email_sent_at'])
+    return True
 
 
 def application_completeness(application):
