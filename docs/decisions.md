@@ -598,3 +598,32 @@
 **Trade-offs:** No nuanced scoring — a borderline case is decided by hard thresholds (RM1,584, the academic floor) rather than a holistic score. Accepted: simplicity + defensibility + the document/admin verification at award are the real guards. Hardship/clarity become sponsor-profile + mentoring signals, never reject inputs.
 
 **Revisit if:** Outcomes show the per-capita threshold mis-sorts a class of applicants (add back a small scored layer), or a round needs ranking/quotas beyond pass/fail (score within the passing set).
+
+## Commit-on-submit: profile fields via the submit, NRIC via the claim path — B40 Redesign Sprint 9, 2026-05-24
+
+**Decision:** The inline-editable apply form holds edits in React state and persists **nothing** until a successful
+submit. On submit, the About-Me/My-Family fields (name, school, home state, phone, parent `guardians`, call
+language, referring-org code) ride the application POST and are written to the canonical `StudentProfile` by
+`services.sync_profile_fields` (extended from financial-only). The **NRIC is committed separately** through the
+validated `/profile/claim-nric/` endpoint — it is never in the application payload and stays read-only on the
+serializer. The referring-org is a **fixed dropdown** whose code is stored raw on `profile.referral_source` and
+resolved to the `referred_by_org` FK only when a matching active `PartnerOrganisation` exists.
+
+**Alternatives considered:** (1) Persist each field as the user edits (the old "financial writes back while editing"
+pattern). (2) Put NRIC in the application payload and let the serializer write it. (3) A live partner-org endpoint
+feeding the dropdown.
+
+**Rationale:** A single commit point means a half-finished or failed submit leaves the profile untouched — no
+partial writes, no "saved but didn't apply" ambiguity. NRIC must keep its format/age/state validation and the
+soft-NRIC verified-lock semantics, all of which live in the claim endpoint — routing it there preserves a single
+validated write path and keeps the serializer's `nric` read-only (closing the PUT/sync gap from S7). A fixed
+referring-org list matches the legacy Google Form exactly, needs no new endpoint, and `referral_source` already
+existed for this; the FK links opportunistically when the org is seeded (TD-056).
+
+**Trade-offs:** The NRIC claim is a second network call on submit, ordered before the application POST; if the claim
+succeeds but the POST then fails, the NRIC is updated while no application is created (acceptable — the next submit
+attempt succeeds, and the NRIC write is itself valid). The apply form's `guardians` write overwrites the whole list
+with one entry (TD-055). Until partner orgs are seeded, attribution persists only as the raw `referral_source` code.
+
+**Revisit if:** Submit latency from the two sequential calls hurts UX (batch into one transactional endpoint), or
+guardians/partner-orgs need richer handling.

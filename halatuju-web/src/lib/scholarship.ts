@@ -24,6 +24,31 @@ export const PATHWAY_OPTIONS: IntendedPathway[] = [
   'asasi', 'matrik', 'stpm', 'pismp', 'diploma', 'degree', 'other',
 ]
 
+// Referring-organisation codes (fixed list from the legacy Google Form). Labels
+// come from i18n (`scholarship.apply.org.<code>`). A code that matches an active
+// PartnerOrganisation row links the FK server-side; the rest are generic sources.
+export const REFERRING_ORG_OPTIONS = [
+  'smc', 'cumig', 'pushparani', 'sathya_sai', 'halatuju', 'tara', 'govind', 'social', 'other',
+] as const
+export type ReferringOrg = typeof REFERRING_ORG_OPTIONS[number] | ''
+
+// Preferred language for phone calls (B40 outreach). Labels via i18n
+// (`scholarship.apply.callLang.<code>`); stored on profile.preferred_call_language.
+export const CALL_LANGUAGE_OPTIONS = ['en', 'ms', 'ta', 'mixed'] as const
+export type CallLanguage = typeof CALL_LANGUAGE_OPTIONS[number] | ''
+
+// Mirrors the onboarding state list (onboarding/profile/page.tsx). Static — a
+// fixed set of Malaysian states/federal territories that does not change.
+export const MALAYSIAN_STATES = [
+  'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
+  'Pahang', 'Perak', 'Perlis', 'Pulau Pinang', 'Sabah',
+  'Sarawak', 'Selangor', 'Terengganu',
+  'Kuala Lumpur', 'Labuan', 'Putrajaya',
+] as const
+
+// NRIC format XXXXXX-XX-XXXX (the claim endpoint does the full age/state checks).
+const NRIC_RE = /^\d{6}-\d{2}-\d{4}$/
+
 /**
  * The apply form only carries fields the applicant edits here. Academic data
  * (exam type, grades, STPM CGPA) is read live from the canonical HalaTuju
@@ -31,10 +56,23 @@ export const PATHWAY_OPTIONS: IntendedPathway[] = [
  * are written back to the profile on submit (their canonical home).
  */
 export interface ApplyFormState {
+  // About Me (inline-editable; pre-filled from the profile, committed on submit).
+  // NRIC is edited here but saved via the validated claim path, not the payload.
+  name: string
+  school: string
+  nric: string
+  referringOrg: ReferringOrg
+  homeState: string
+  phone: string
+  // My Family
   householdIncome: string   // strings for controlled inputs
   householdSize: string
   receivesStr: boolean
   receivesJkm: boolean
+  parentName: string
+  parentPhone: string
+  callLanguage: CallLanguage
+  // My Plans / My Support (unchanged this sprint — still on the existing tabs)
   intendedPathway: IntendedPathway
   intendsTertiary2026: boolean
   consentToContact: boolean
@@ -42,13 +80,24 @@ export interface ApplyFormState {
 }
 
 export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFormState {
-  // Pre-fill the financial fields from the profile (the form refreshes them and
-  // writes any change back). Academic data is shown read-only, not in the form.
+  // Pre-fill every editable field from the canonical profile. The form holds the
+  // edits in state and writes them back only on a successful submit. Academic
+  // data (results) is shown read-only by My Results, not carried in this form.
+  const guardian = profile?.guardians?.[0]
   return {
+    name: profile?.name ?? '',
+    school: profile?.school ?? '',
+    nric: profile?.nric ?? '',
+    referringOrg: (profile?.referral_source as ReferringOrg) ?? '',
+    homeState: profile?.preferred_state ?? '',
+    phone: profile?.contact_phone ?? '',
     householdIncome: profile?.household_income != null ? String(profile.household_income) : '',
     householdSize: profile?.household_size != null ? String(profile.household_size) : '',
     receivesStr: !!profile?.receives_str,
     receivesJkm: !!profile?.receives_jkm,
+    parentName: guardian?.name ?? '',
+    parentPhone: guardian?.phone ?? '',
+    callLanguage: (profile?.preferred_call_language as CallLanguage) ?? '',
     intendedPathway: '',
     intendsTertiary2026: true,
     consentToContact: false,
@@ -80,6 +129,15 @@ export function profileAcademicSummary(profile?: StudentProfile | null): Academi
 }
 
 export interface ApplicationPayload {
+  // About Me + My Family profile fields (write-only; synced to the profile
+  // server-side). NRIC is NOT here — it goes through the claim path on submit.
+  name: string
+  school: string
+  preferred_state: string
+  contact_phone: string
+  preferred_call_language: string
+  referral_source: string
+  guardians: { name: string; phone: string }[]
   household_income: number | null
   household_size: number | null
   receives_str: boolean
@@ -99,8 +157,19 @@ function toIntOrNull(s: string): number | null {
 
 export function buildApplicationPayload(form: ApplyFormState): ApplicationPayload {
   // Academic fields are intentionally absent — the backend reads them from the
-  // profile. The financial fields are synced to the profile server-side.
+  // profile. The About Me + My Family fields are synced to the profile
+  // server-side. NRIC is committed separately via the validated claim path.
+  const guardians = form.parentName.trim() || form.parentPhone.trim()
+    ? [{ name: form.parentName.trim(), phone: form.parentPhone.trim() }]
+    : []
   return {
+    name: form.name.trim(),
+    school: form.school.trim(),
+    preferred_state: form.homeState,
+    contact_phone: form.phone.trim(),
+    preferred_call_language: form.callLanguage,
+    referral_source: form.referringOrg,
+    guardians,
     household_income: toIntOrNull(form.householdIncome),
     household_size: toIntOrNull(form.householdSize),
     receives_str: form.receivesStr,
@@ -112,14 +181,29 @@ export function buildApplicationPayload(form: ApplyFormState): ApplicationPayloa
   }
 }
 
+/** True when the form's NRIC differs from what's on the profile (needs a claim call). */
+export function nricChanged(form: ApplyFormState, profile?: StudentProfile | null): boolean {
+  return form.nric.trim() !== (profile?.nric ?? '').trim()
+}
+
 /**
- * Returns the i18n error sub-key for the first validation problem, or null if
- * the form is ready to submit. Mirrors the backend's hard requirements (academic
- * data is validated against the profile server-side, not here).
+ * Returns the i18n error sub-key for the first validation problem, or null if the
+ * form is ready to submit. Ordered by tab (About Me → My Family → consent) so the
+ * earliest-section problem surfaces first. The full NRIC age/state checks and the
+ * academic floor are enforced server-side (claim endpoint / profile), not here.
  */
 export function applyFormError(form: ApplyFormState): string | null {
-  if (!form.consentToContact) return 'consent'
+  // About Me — all required.
+  if (!form.name.trim()) return 'name'
+  if (!form.school.trim()) return 'school'
+  if (!NRIC_RE.test(form.nric.trim())) return 'nric'
+  if (!form.referringOrg) return 'org'
+  if (!form.homeState) return 'state'
+  if (!form.phone.trim()) return 'phone'
+  // My Family — exact household income required (drives per-capita need).
   if (toIntOrNull(form.householdIncome) === null) return 'income'
+  // My Support — consent required to apply.
+  if (!form.consentToContact) return 'consent'
   return null
 }
 

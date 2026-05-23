@@ -952,6 +952,8 @@ class ProfileView(APIView):
             'student_signals': profile.student_signals,
             'preferred_state': profile.preferred_state,
             'preferred_call_language': profile.preferred_call_language,
+            'referral_source': profile.referral_source,
+            'guardians': profile.guardians,
             'name': profile.name,
             'school': profile.school,
             'nric': profile.nric,

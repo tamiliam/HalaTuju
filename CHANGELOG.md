@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Redesign · Sprint 9: apply form ① — About Me + My Family (2026-05-24)
+
+Apply-form rebuild, first half. Inline-editable **About Me** + **My Family**, commit-on-submit. Frontend +
+small backend write-back; on `feature/b40-redesign`, not deployed. Mobile-first (desktop layout is S12).
+
+### Changed
+- **About Me** (was read-only "About You") is now **inline-editable**, pre-filled from the profile: full name,
+  school, **NRIC** (editable until verified, read-only + "Verified" badge once locked), referring organisation,
+  home state, phone. **Contact email is locked** (already verified). The old "Edit → /profile" bounce is gone.
+- **Commit-on-submit** — edits live in form state; on a successful submit the About Me + My Family fields sync to
+  the canonical profile (`sync_profile_fields`), and the **NRIC commits via the validated claim path** (never the
+  application payload). A failed submit persists nothing.
+- Section headings are first-person (**About Me**, **My Family**); tab labels stay short (About / Family / …).
+- Validation now enforces the required About-Me fields (name, school, NRIC format, referring org, home state,
+  phone) + household income, and **jumps the user to the offending tab**; the error banner moved out of the
+  Support tab so it shows on whichever tab the error is on.
+
+### Added
+- **My Family**: parent/guardian **name + phone** (stored in `profile.guardians`) and **preferred call language**
+  (en/ms/ta/mixed → `profile.preferred_call_language`); `i` tooltips on income, household, STR, JKM.
+- Required `*` + `i` info-bubble tooltips across About Me + My Family (`InfoTip` + `FieldLabel` components).
+- Referring-organisation **fixed dropdown** (9 legacy options) → stored as `referral_source`, resolved to the
+  `referred_by_org` FK server-side when a matching active `PartnerOrganisation` exists.
+- `scholarship.ts`: new form fields + `nricChanged`, `REFERRING_ORG_OPTIONS`, `CALL_LANGUAGE_OPTIONS`,
+  `MALAYSIAN_STATES`; `ApplicationCreateSerializer` accepts the new write-only profile fields; profile GET returns
+  `referral_source` + `guardians`. EN/MS/TA i18n (labels, tooltips, headings, validation).
+
+### Tests
+- Backend **1093 → 1095** (About-Me/Family write-back + referring-org FK resolution). Frontend jest **37 → 44**.
+
 ## [Unreleased] — B40 Redesign · Sprint 8: decision engine + silent-score + delayed reveal (2026-05-24)
 
 The deterministic decision engine (final policy calls settled). Backend only; on `feature/b40-redesign`, not deployed.

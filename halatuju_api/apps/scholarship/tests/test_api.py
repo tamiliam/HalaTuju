@@ -133,6 +133,52 @@ class TestApplicationIntake(TestCase):
         self.assertEqual(snap['profile']['spm_a_count'], 5)
         self.assertIn('captured_at', snap)
 
+    def test_about_me_and_family_fields_written_back_to_profile(self):
+        # S9 commit-on-submit: About Me + My Family scalar fields + parent
+        # (guardians) + call language sync to the canonical profile. NRIC is NOT
+        # written here (claim path only) — posting it must not change the profile.
+        self._auth(_make_token(USER_A))
+        resp = self.client.post(
+            '/api/v1/scholarship/applications/',
+            self._payload(
+                name='Priya Devi', school='SMK Taman Desa',
+                preferred_state='Selangor', contact_phone='012-345 6789',
+                preferred_call_language='ta',
+                guardians=[{'name': 'Rajan', 'phone': '011-2222 3333'}],
+                nric='999999-99-9999',  # ignored by this endpoint
+            ),
+            format='json',
+        )
+        self.assertEqual(resp.status_code, 201)
+        self.profile_a.refresh_from_db()
+        self.assertEqual(self.profile_a.name, 'Priya Devi')
+        self.assertEqual(self.profile_a.school, 'SMK Taman Desa')
+        self.assertEqual(self.profile_a.preferred_state, 'Selangor')
+        self.assertEqual(self.profile_a.contact_phone, '012-345 6789')
+        self.assertEqual(self.profile_a.preferred_call_language, 'ta')
+        self.assertEqual(self.profile_a.guardians, [{'name': 'Rajan', 'phone': '011-2222 3333'}])
+        # NRIC unchanged — the apply endpoint never writes it.
+        self.assertEqual(self.profile_a.nric, '080101-14-1234')
+        # Snapshot captures the committed About-Me values.
+        snap = ScholarshipApplication.objects.get(id=resp.json()['id']).intake_snapshot
+        self.assertEqual(snap['profile']['preferred_state'], 'Selangor')
+        self.assertEqual(snap['profile']['preferred_call_language'], 'ta')
+
+    def test_referral_source_resolves_to_partner_org(self):
+        # A known referring-org code links the profile to the PartnerOrganisation;
+        # a generic source (no matching row) leaves the FK unset.
+        from apps.courses.models import PartnerOrganisation
+        org = PartnerOrganisation.objects.create(code='cumig', name='CUMIG')
+        self._auth(_make_token(USER_A))
+        resp = self.client.post(
+            '/api/v1/scholarship/applications/',
+            self._payload(referral_source='cumig'), format='json',
+        )
+        self.assertEqual(resp.status_code, 201)
+        self.profile_a.refresh_from_db()
+        self.assertEqual(self.profile_a.referral_source, 'cumig')
+        self.assertEqual(self.profile_a.referred_by_org_id, org.pk)
+
     def test_consent_required(self):
         self._auth(_make_token(USER_A))
         resp = self.client.post(

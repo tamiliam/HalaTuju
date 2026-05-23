@@ -390,7 +390,14 @@
         "aCount": "Please enter how many A's you scored in SPM.",
         "pngk": "Please enter your STPM PNGK.",
         "income": "Please enter your combined monthly household income.",
-        "generic": "Something went wrong submitting your application. You may have already applied, or applications may be closed. Please try again later."
+        "generic": "Something went wrong submitting your application. You may have already applied, or applications may be closed. Please try again later.",
+        "name": "Please enter your full name.",
+        "school": "Please enter your school.",
+        "nric": "Please enter a valid IC number (format XXXXXX-XX-XXXX).",
+        "nricTaken": "This IC number is already linked to another account. Please check it.",
+        "org": "Please tell us who referred you.",
+        "state": "Please select your home state.",
+        "phone": "Please enter your phone number."
       },
       "gate": {
         "readFreely": "Read everything freely — you only need to sign in when you're ready to apply.",
@@ -400,11 +407,17 @@
         "name": "Full name",
         "school": "School",
         "ic": "IC number",
-        "email": "Contact email"
+        "email": "Contact email",
+        "org": "Who referred you?",
+        "state": "Home state",
+        "phone": "Phone number",
+        "parentName": "Parent / guardian name",
+        "parentPhone": "Parent / guardian phone",
+        "callLang": "Preferred language for calls"
       },
       "section": {
-        "personal": "About You",
-        "family": "Your Family",
+        "personal": "About Me",
+        "family": "My Family",
         "results": "Your SPM / STPM Results",
         "plans": "Your Plans",
         "support": "Support You'd Like From Us"
@@ -432,7 +445,47 @@
       "step": "Step",
       "back": "Back",
       "continue": "Continue",
-      "backToApplication": "Back to your application"
+      "backToApplication": "Back to your application",
+      "aboutMeHint": "Check your details and update anything that's changed. Your contact email is locked because it's already verified.",
+      "verified": "Verified",
+      "locked": "Locked",
+      "orgPlaceholder": "Select an organisation",
+      "statePlaceholder": "Select your state",
+      "callLangPlaceholder": "Choose a language",
+      "parentHeading": "Parent / guardian",
+      "commitNote": "Nothing is saved until you submit your application.",
+      "org": {
+        "smc": "Sri Murugan Centre (SMC)",
+        "cumig": "Concerned UM Indian Graduates (CUMIG)",
+        "pushparani": "Ms. Pushparani (Kapar)",
+        "sathya_sai": "Sathya Sai Baba Centre",
+        "halatuju": "Halatuju.xyz",
+        "tara": "Tara Foundation",
+        "govind": "Mr. Govind (Melaka)",
+        "social": "Facebook / WhatsApp",
+        "other": "Other"
+      },
+      "callLang": {
+        "en": "English",
+        "ms": "Bahasa Malaysia",
+        "ta": "Tamil",
+        "mixed": "Mixed"
+      },
+      "tip": {
+        "name": "Your full name as in your IC.",
+        "school": "The school where you sat for SPM.",
+        "ic": "Used to confirm your identity. You can edit it until it's verified.",
+        "org": "The organisation or coordinator who told you about this programme.",
+        "state": "The state where you normally live.",
+        "phone": "A number we can reach you on. Format: 01X-XXX XXXX.",
+        "income": "Add up the monthly income of everyone you counted — salaries, business, pensions, and government aid (not just your parents'). An estimate is fine.",
+        "household": "Count everyone who normally lives in your home and shares income or expenses — your parents/guardians, you, your brothers and sisters, and grandparents or relatives living with you. Include a working sibling if they live at home and contribute; don't count family who live elsewhere.",
+        "str": "Sumbangan Tunai Rahmah — government cash aid for lower-income households.",
+        "jkm": "Help from Jabatan Kebajikan Masyarakat (the welfare department).",
+        "parentName": "Your parent's or guardian's name.",
+        "parentPhone": "A number for your parent or guardian.",
+        "callLang": "Which language should we use if we call you?"
+      }
     },
     "nextSteps": {
       "title": "You've been shortlisted!",

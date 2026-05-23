@@ -296,7 +296,7 @@ Bring in the legacy form's support questions — they double as **mentoring / su
 - Acceptance: submit → received+ack; +delay → verdict email + status flip; engine unit tests (rung boundaries, need-first, timing) green.
 - Complexity: High (~15 files). **Gated on the 6 policy calls.**
 
-**S9 — Apply form rebuild ①: About Me + My Family (frontend).** *(no policy calls; RE-SCOPED 2026-05-24 — My Results' onboarding-return mechanism split into its own slice (before/with S10); approval via build + real local screenshot vs the approved Form-A Stitch design, no new Stitch)*
+**S9 — Apply form rebuild ①: About Me + My Family (frontend).** — ✅ **built 2026-05-24, backend 1095 / frontend 44 jest green, mobile build approved via local screenshot** (commit at sprint close). *(RE-SCOPED 2026-05-24 — My Results' onboarding-return mechanism split to S9b; desktop responsiveness deferred to S12 per user.)*
 - Scope: inline-editable About Me (name/school/NRIC validated, email locked, org/state/phone) + My Family (exact income,
   household/income tooltips, parent info, lang, STR/JKM) + My Results (pre-filled display; edit → /onboarding/exam-type
   return-marker + context-aware final button + stash/restore in-progress edits); required `*`+`i`; commit-on-submit scaffolding; EN/MS/TA i18n.

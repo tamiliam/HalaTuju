@@ -249,14 +249,21 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   (invitation) / +48h decline (warm email)** via the scheduler. Migration scholarship `0008`. Backend 1093 tests.
   See `retrospective-b40-sprint8.md` + `docs/decisions.md`. (6 policy calls all settled; public criteria stay at
   the advertised bar, engine intentionally more lenient to accommodate near-misses.)
-- **Next: S9 — apply-form frontend ① (RE-SCOPED 2026-05-24 → About Me + My Family only).** Inline-edit +
-  **commit-on-submit** (the submit writes About-Me profile fields; NRIC saves via the validated claim path),
-  required `*`+`i` tooltips, referring-org / state / phone / parent / call-language fields. **My Results
-  (edit → onboarding-return mechanism) split into its own slice** (before/with S10). **Approval: build to the
-  existing Form-A Stitch design + a real local screenshot before the S12 deploy** — no new Stitch needed (extends
-  the approved design). **Start fresh** (frontend sprint, wants full context budget). Frontend lessons that apply:
-  Jest is node-env → test pure `lib/*.ts`, not components; run `next build` before done; localStorage keys via
-  constants; EN/MS/TA i18n parity (check-i18n).
+- **✅ S9 done (2026-05-24):** apply form ① — **About Me + My Family** now inline-editable, pre-filled, with
+  required `*`+`i` tooltips and **commit-on-submit** (About-Me/Family fields sync to the profile via
+  `sync_profile_fields`; NRIC commits via the validated claim path, never the payload). New: referring-org fixed
+  dropdown (→ `referral_source` → `referred_by_org` FK), home state, phone, parent name/phone (→ `guardians`),
+  preferred call language. Validation jumps to the offending tab; error banner moved out of the Support tab.
+  **No new migration** (reused existing profile fields). Backend 1095 tests, frontend 44 jest, `next build` clean,
+  i18n 1051-key parity. **Approved mobile build via local screenshot** (desktop deferred to S12 — user's call).
+  See `retrospective-b40-sprint9.md`. Results/Plans/Support tabs untouched this sprint.
+- **Next: S9b + S10** — **S9b** (small): My Results edit → `/onboarding/exam-type` return-marker + context-aware
+  final onboarding button + stash/restore in-progress apply edits across the detour. **S10**: My Plans
+  (pathways multi-select; top-3 from eligible courses; UPU/IPTS; field; other-scholarships) + Support (help radios,
+  optional "anything else", consent) + post-submit **"Application received"** screen (replaces auto-advance).
+  Both frontend, commit-on-submit final wiring. Lessons that apply: Jest is node-env (test pure `lib/*.ts`);
+  run `next build` before done; EN/MS/TA parity (check-i18n); **i18n lives in `src/messages/` not `src/i18n/`**;
+  apply form is auth-gated → screenshot via a throwaway preview route with a sample profile.
 - **Gotcha:** soft-NRIC **supersedes** the old "IC immutable" decision — uniqueness is verified-only now.
 - **Gotcha:** new migrations apply to prod only at the S12 deploy; before numbering, check `max` migration on `main`.
 - **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing `feature/b40-redesign` does not. Keep the redesign on the branch.

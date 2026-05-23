@@ -4,22 +4,38 @@ import {
   profileAcademicSummary,
   buildApplicationPayload,
   applyFormError,
+  nricChanged,
   fundingTotal,
   emptyDetailsForm,
   applicationToDetailsForm,
   buildDetailsPayload,
   DOC_TYPES,
   formatFileSize,
+  REFERRING_ORG_OPTIONS,
+  CALL_LANGUAGE_OPTIONS,
+  MALAYSIAN_STATES,
   type ApplyFormState,
 } from '@/lib/scholarship'
 import type { StudentProfile, ScholarshipApplication } from '@/lib/api'
 
 function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
   return {
+    // About Me — all required
+    name: 'Priya',
+    school: 'SMK Taman Desa',
+    nric: '080101-14-1234',
+    referringOrg: 'cumig',
+    homeState: 'Selangor',
+    phone: '012-345 6789',
+    // My Family
     householdIncome: '2500',
     householdSize: '5',
     receivesStr: true,
     receivesJkm: false,
+    parentName: '',
+    parentPhone: '',
+    callLanguage: '',
+    // My Plans / My Support (unchanged this sprint)
     intendedPathway: 'asasi',
     intendsTertiary2026: true,
     consentToContact: true,
@@ -41,25 +57,43 @@ describe('countAGrades', () => {
 })
 
 describe('profileToApplyDefaults', () => {
-  it('pre-fills the financial fields from the profile (academic is read-only, not in the form)', () => {
+  it('pre-fills About Me + My Family from the profile (academic is read-only, not in the form)', () => {
     const profile = {
       grades: { math: 'A', sej: 'A', tamil: 'A+', eko: 'A-', sci: 'A-' },
       exam_type: 'spm',
+      name: 'Priya Devi', school: 'SMK Taman Desa', nric: '080101-14-1234',
+      referral_source: 'cumig', preferred_state: 'Selangor', contact_phone: '012-345 6789',
+      preferred_call_language: 'ta',
+      guardians: [{ name: 'Rajan', phone: '011-2222 3333' }],
       household_income: 2500, household_size: 6, receives_str: true, receives_jkm: false,
     } as unknown as StudentProfile
     const d = profileToApplyDefaults(profile)
+    // About Me
+    expect(d.name).toBe('Priya Devi')
+    expect(d.school).toBe('SMK Taman Desa')
+    expect(d.nric).toBe('080101-14-1234')
+    expect(d.referringOrg).toBe('cumig')
+    expect(d.homeState).toBe('Selangor')
+    expect(d.phone).toBe('012-345 6789')
+    // My Family
     expect(d.householdIncome).toBe('2500')
     expect(d.householdSize).toBe('6')
     expect(d.receivesStr).toBe(true)
+    expect(d.parentName).toBe('Rajan')
+    expect(d.parentPhone).toBe('011-2222 3333')
+    expect(d.callLanguage).toBe('ta')
+    // not pre-checked / read from profile
     expect(d.consentToContact).toBe(false)
     expect(d.intendsTertiary2026).toBe(true)
-    // academic fields are NOT part of the form state any more
     expect((d as Record<string, unknown>).spmACount).toBeUndefined()
   })
-  it('handles a null profile (blank financial fields)', () => {
+  it('handles a null profile (blank editable fields)', () => {
     const d = profileToApplyDefaults(null)
+    expect(d.name).toBe('')
+    expect(d.nric).toBe('')
+    expect(d.referringOrg).toBe('')
+    expect(d.parentName).toBe('')
     expect(d.householdIncome).toBe('')
-    expect(d.householdSize).toBe('')
     expect(d.receivesStr).toBe(false)
   })
 })
@@ -87,18 +121,28 @@ describe('profileAcademicSummary', () => {
 })
 
 describe('buildApplicationPayload', () => {
-  it('maps the financial + application fields to a snake_case payload (no academic fields)', () => {
-    const p = buildApplicationPayload(baseForm()) as Record<string, unknown>
+  it('maps About Me + My Family + application fields to a snake_case payload (no academic, no NRIC)', () => {
+    const p = buildApplicationPayload(baseForm({ parentName: 'Rajan', parentPhone: '011-2222 3333' })) as Record<string, unknown>
+    expect(p.name).toBe('Priya')
+    expect(p.school).toBe('SMK Taman Desa')
+    expect(p.preferred_state).toBe('Selangor')
+    expect(p.contact_phone).toBe('012-345 6789')
+    expect(p.referral_source).toBe('cumig')
+    expect(p.guardians).toEqual([{ name: 'Rajan', phone: '011-2222 3333' }])
     expect(p.household_income).toBe(2500)
     expect(p.household_size).toBe(5)
     expect(p.receives_str).toBe(true)
     expect(p.intended_pathway).toBe('asasi')
     expect(p.consent_to_contact).toBe(true)
     expect(p.form_data).toEqual({})
-    // academic data is read from the profile server-side, never posted
-    expect(p.qualification).toBeUndefined()
+    // academic data + NRIC are never posted here (profile / claim path)
     expect(p.spm_a_count).toBeUndefined()
-    expect(p.stpm_pngk).toBeUndefined()
+    expect(p.nric).toBeUndefined()
+  })
+  it('trims text and omits guardians when parent fields are blank', () => {
+    const p = buildApplicationPayload(baseForm({ name: '  Priya  ', parentName: '', parentPhone: '' }))
+    expect(p.name).toBe('Priya')
+    expect(p.guardians).toEqual([])
   })
   it('nulls a blank income / size', () => {
     const p = buildApplicationPayload(baseForm({ householdIncome: '', householdSize: '' }))
@@ -115,11 +159,47 @@ describe('applyFormError', () => {
   it('passes a complete form', () => {
     expect(applyFormError(baseForm())).toBeNull()
   })
-  it('requires consent', () => {
-    expect(applyFormError(baseForm({ consentToContact: false }))).toBe('consent')
+  it('flags missing About Me fields in tab order', () => {
+    expect(applyFormError(baseForm({ name: '  ' }))).toBe('name')
+    expect(applyFormError(baseForm({ school: '' }))).toBe('school')
+    expect(applyFormError(baseForm({ nric: '123' }))).toBe('nric')        // bad format
+    expect(applyFormError(baseForm({ nric: '' }))).toBe('nric')
+    expect(applyFormError(baseForm({ referringOrg: '' }))).toBe('org')
+    expect(applyFormError(baseForm({ homeState: '' }))).toBe('state')
+    expect(applyFormError(baseForm({ phone: '' }))).toBe('phone')
   })
   it('requires household income', () => {
     expect(applyFormError(baseForm({ householdIncome: '' }))).toBe('income')
+  })
+  it('requires consent', () => {
+    expect(applyFormError(baseForm({ consentToContact: false }))).toBe('consent')
+  })
+  it('surfaces the earliest-tab problem first', () => {
+    // both name and consent are wrong → About Me wins (earlier tab)
+    expect(applyFormError(baseForm({ name: '', consentToContact: false }))).toBe('name')
+  })
+})
+
+describe('nricChanged', () => {
+  it('is false when the form NRIC matches the profile', () => {
+    expect(nricChanged(baseForm({ nric: '080101-14-1234' }), { nric: '080101-14-1234' } as unknown as StudentProfile)).toBe(false)
+  })
+  it('is true when the form NRIC differs (or profile has none)', () => {
+    expect(nricChanged(baseForm({ nric: '080101-14-9999' }), { nric: '080101-14-1234' } as unknown as StudentProfile)).toBe(true)
+    expect(nricChanged(baseForm({ nric: '080101-14-1234' }), null)).toBe(true)
+  })
+})
+
+describe('option constants', () => {
+  it('lists the legacy referring-org codes incl. cumig and other', () => {
+    expect(REFERRING_ORG_OPTIONS).toContain('cumig')
+    expect(REFERRING_ORG_OPTIONS).toContain('other')
+    expect(REFERRING_ORG_OPTIONS.length).toBe(9)
+  })
+  it('offers the four call languages and the 16 states', () => {
+    expect(CALL_LANGUAGE_OPTIONS).toEqual(['en', 'ms', 'ta', 'mixed'])
+    expect(MALAYSIAN_STATES).toContain('Selangor')
+    expect(MALAYSIAN_STATES.length).toBe(16)
   })
 })
 

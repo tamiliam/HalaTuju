@@ -426,3 +426,7 @@
 **B40 Redesign (found Sprint 7, 2026-05-23)**
 - TD-053: Reconcile the NRIC-gate whitelist — `middleware/supabase_auth.py` `NRIC_GATE_EXACT` omits `/api/v1/profile/sync/`, but `docs/decisions.md` + `test_nric_gate` describe sync as whitelisted. Suite green (no breakage); align code/docs/tests.
 - TD-054: Fix the `claim-nric` transfer path (`confirm=True`) — can collide on the PK if the caller already has a non-empty profile. Less critical now uniqueness is verified-only; fold into the admin verify-&-accept work (S11).
+
+**B40 Redesign (found Sprint 9, 2026-05-24)**
+- TD-055: Apply submit overwrites the whole `profile.guardians` list with the single `{name, phone}` entry from My Family. Fine today (guardians collected nowhere else), but if a future flow stores multiple/richer guardians, the apply form would clobber them. Merge-by-index or key on relationship when guardians become multi-entry.
+- TD-056: Seed `PartnerOrganisation` rows for the named referring-orgs (smc, cumig, pushparani, sathya_sai, halatuju, tara, govind). Until seeded, a selection persists as `referral_source` (raw code) but does **not** link the `referred_by_org` FK. Add a seed/data-migration (or admin entries) before launch so partner attribution works.

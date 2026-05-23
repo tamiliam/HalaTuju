@@ -22,6 +22,15 @@ _PROFILE_WRITEBACK_FIELDS = (
     'household_income', 'household_size', 'receives_str', 'receives_jkm',
 )
 
+# About Me + My Family scalar fields the apply form now edits inline and commits
+# on submit (S9). Same write-back-to-profile rule as the financial fields. NRIC
+# is intentionally excluded — it changes only via the validated claim path,
+# never an unchecked write (see docs/decisions.md, soft-NRIC).
+_PROFILE_ABOUTME_FIELDS = (
+    'name', 'school', 'preferred_state', 'contact_phone',
+    'preferred_call_language', 'referral_source',
+)
+
 # Per-application fields that genuinely belong on the ScholarshipApplication row.
 _APP_FIELDS = (
     'intended_pathway', 'intends_tertiary_2026', 'consent_to_contact', 'form_data',
@@ -34,20 +43,48 @@ _APP_FIELDS = (
 
 def sync_profile_fields(profile, data):
     """
-    Write the form's financial fields back to the canonical profile. Only keys
-    that are present and non-None overwrite (the form may legitimately omit a
-    field that is already on the profile). Returns the fields actually changed.
+    Write the form's financial + About Me/My Family fields back to the canonical
+    profile (commit-on-submit, S9). Only keys that are present and non-None
+    overwrite (the form may legitimately omit a field that is already on the
+    profile). Parent/guardian details land in the ``guardians`` JSON list, and
+    the referring-organisation code resolves to the ``referred_by_org`` FK
+    (mirrors ProfileView). NRIC is never written here — claim path only.
+    Returns the fields actually changed.
     """
     if profile is None:
         return []
     updated = []
-    for field in _PROFILE_WRITEBACK_FIELDS:
+    for field in _PROFILE_WRITEBACK_FIELDS + _PROFILE_ABOUTME_FIELDS:
         if field in data and data[field] is not None:
             if getattr(profile, field, None) != data[field]:
                 setattr(profile, field, data[field])
                 updated.append(field)
+
+    # Parent/guardian name + phone live in the guardians JSON list.
+    if 'guardians' in data and data['guardians'] is not None:
+        if profile.guardians != data['guardians']:
+            profile.guardians = data['guardians']
+            updated.append('guardians')
+
+    # Changing the contact phone invalidates any prior verification (mirrors PUT /profile/).
+    if 'contact_phone' in updated:
+        profile.contact_phone_verified = False
+        updated.append('contact_phone_verified')
+
     if updated:
-        profile.save(update_fields=updated + ['updated_at'])
+        profile.save(update_fields=list(dict.fromkeys(updated)) + ['updated_at'])
+
+    # Resolve the referring-organisation code to a PartnerOrganisation FK. A
+    # generic source (whatsapp/google/other) has no row and leaves the FK unset.
+    referral = data.get('referral_source')
+    if referral:
+        from apps.courses.models import PartnerOrganisation
+        org = PartnerOrganisation.objects.filter(code=referral, is_active=True).first()
+        if org and profile.referred_by_org_id != org.pk:
+            profile.referred_by_org = org
+            profile.save(update_fields=['referred_by_org'])
+            updated.append('referred_by_org')
+
     return updated
 
 
@@ -63,6 +100,11 @@ def build_intake_snapshot(profile, app_data):
         'profile': {
             'name': getattr(p, 'name', '') if p else '',
             'school': getattr(p, 'school', '') if p else '',
+            'preferred_state': getattr(p, 'preferred_state', '') if p else '',
+            'contact_phone': getattr(p, 'contact_phone', '') if p else '',
+            'preferred_call_language': getattr(p, 'preferred_call_language', '') if p else '',
+            'guardians': getattr(p, 'guardians', []) if p else [],
+            'referral_source': getattr(p, 'referral_source', '') if p else '',
             'exam_type': getattr(p, 'exam_type', '') if p else '',
             'grades': getattr(p, 'grades', {}) if p else {},
             'stpm_cgpa': getattr(p, 'stpm_cgpa', None) if p else None,

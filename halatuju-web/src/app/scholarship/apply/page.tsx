@@ -8,23 +8,62 @@ import { useT } from '@/lib/i18n'
 import {
   submitScholarshipApplication,
   getMyScholarshipApplications,
+  claimNric,
 } from '@/lib/api'
 import {
   profileToApplyDefaults,
   profileAcademicSummary,
   buildApplicationPayload,
   applyFormError,
+  nricChanged,
   PATHWAY_OPTIONS,
+  REFERRING_ORG_OPTIONS,
+  CALL_LANGUAGE_OPTIONS,
+  MALAYSIAN_STATES,
   type ApplyFormState,
 } from '@/lib/scholarship'
 
 type TabKey = 'personal' | 'family' | 'results' | 'plans' | 'support'
 const TAB_ORDER: TabKey[] = ['personal', 'family', 'results', 'plans', 'support']
 
-function maskNric(nric?: string): string {
-  const digits = (nric || '').replace(/\D/g, '')
-  if (!digits) return '—'
-  return `••••••-••-${digits.slice(-4) || '----'}`
+// Which tab a validation error belongs to, so submit can jump the student there.
+const ERROR_TAB: Record<string, TabKey> = {
+  name: 'personal', school: 'personal', nric: 'personal', nricTaken: 'personal',
+  org: 'personal', state: 'personal', phone: 'personal',
+  income: 'family',
+  consent: 'support',
+}
+
+/** An `i` info bubble — tap/click toggles a small popover (works on mobile + desktop). */
+function InfoTip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <span className="relative inline-flex align-middle">
+      <button
+        type="button" aria-label={text} title={text}
+        onClick={() => setOpen((v) => !v)} onBlur={() => setOpen(false)}
+        className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold leading-none text-gray-600 hover:bg-gray-300"
+      >
+        i
+      </button>
+      {open && (
+        <span role="tooltip" className="absolute left-1/2 top-6 z-20 w-56 -translate-x-1/2 rounded-lg bg-gray-900 px-3 py-2 text-xs font-normal leading-snug text-white shadow-lg">
+          {text}
+        </span>
+      )}
+    </span>
+  )
+}
+
+/** Field label with an optional required `*` and an optional `i` tooltip. */
+function FieldLabel({ children, required, tip }: { children: React.ReactNode; required?: boolean; tip?: string }) {
+  return (
+    <span className="mb-1 flex items-center text-sm font-medium text-gray-700">
+      {children}
+      {required && <span className="ml-0.5 text-red-500" aria-hidden>*</span>}
+      {tip && <InfoTip text={tip} />}
+    </span>
+  )
 }
 
 /** Minimal iOS-style toggle (no external dep, keyboard-accessible). */
@@ -104,10 +143,32 @@ export default function ScholarshipApplyPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const errKey = applyFormError(form)
-    if (errKey) { setError(t(`scholarship.apply.error.${errKey}`)); return }
+    if (errKey) {
+      setError(t(`scholarship.apply.error.${errKey}`))
+      setTab(ERROR_TAB[errKey] ?? 'personal')
+      return
+    }
     if (!token) return
     setSubmitting(true)
     setError(null)
+
+    // Commit-on-submit. The NRIC commits through the validated claim path (never
+    // the application payload); the other About Me + My Family fields are synced
+    // to the profile by the submit. Nothing persists until this succeeds.
+    if (nricChanged(form, profile) && !profile?.nric_verified) {
+      try {
+        const res = await claimNric(form.nric.trim(), false, { token })
+        if (res.status === 'exists') {
+          setError(t('scholarship.apply.error.nricTaken'))
+          setTab('personal'); setSubmitting(false); return
+        }
+      } catch {
+        // 400 (age/state) or 403 (locked) from the claim endpoint
+        setError(t('scholarship.apply.error.nric'))
+        setTab('personal'); setSubmitting(false); return
+      }
+    }
+
     try {
       const payload = buildApplicationPayload(form) as unknown as Record<string, unknown>
       await submitScholarshipApplication(payload, locale, { token })
@@ -183,47 +244,108 @@ export default function ScholarshipApplyPage() {
     </span>
   )
 
-  const ReadRow = ({ label, value }: { label: string; value: string }) => (
-    <div className="py-2.5 border-b border-gray-100 last:border-0">
-      <p className="text-xs text-gray-400">{label}</p>
-      <p className="text-sm font-medium text-gray-900 mt-0.5">{value || '—'}</p>
-    </div>
-  )
+  const lockedEmail = profile?.contact_email || profile?.email || ''
+  const nricLocked = !!profile?.nric_verified
 
   const sections: Record<TabKey, React.ReactNode> = {
     personal: (
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          {ProfileBadge}
-          <Link href="/profile?next=/scholarship/apply" className="text-sm font-medium text-primary-600 hover:underline">{t('scholarship.apply.edit')}</Link>
+      <div className="space-y-4">
+        <p className="text-xs text-gray-500">{t('scholarship.apply.aboutMeHint')}</p>
+        <div>
+          <FieldLabel required tip={t('scholarship.apply.tip.name')}>{t('scholarship.apply.field.name')}</FieldLabel>
+          <input className="input" value={form.name} onChange={(e) => update('name', e.target.value)} />
         </div>
-        <ReadRow label={t('scholarship.apply.field.name')} value={profile?.name || ''} />
-        <ReadRow label={t('scholarship.apply.field.school')} value={profile?.school || ''} />
-        <ReadRow label={t('scholarship.apply.field.ic')} value={maskNric(profile?.nric)} />
-        <ReadRow label={t('scholarship.apply.field.email')} value={profile?.contact_email || profile?.email || ''} />
+        <div>
+          <FieldLabel required tip={t('scholarship.apply.tip.school')}>{t('scholarship.apply.field.school')}</FieldLabel>
+          <input className="input" value={form.school} onChange={(e) => update('school', e.target.value)} />
+        </div>
+        <div>
+          <FieldLabel required tip={t('scholarship.apply.tip.ic')}>{t('scholarship.apply.field.ic')}</FieldLabel>
+          {nricLocked ? (
+            <div className="input flex items-center justify-between bg-gray-50 text-gray-600">
+              <span>{form.nric || '—'}</span>
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600">
+                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 10.7a1 1 0 011.4-1.4l3 3 6.8-6.8a1 1 0 011.2 0z" clipRule="evenodd"/></svg>
+                {t('scholarship.apply.verified')}
+              </span>
+            </div>
+          ) : (
+            <input className="input" value={form.nric} placeholder="XXXXXX-XX-XXXX"
+              onChange={(e) => update('nric', e.target.value)} />
+          )}
+        </div>
+        <div>
+          <FieldLabel>{t('scholarship.apply.field.email')}</FieldLabel>
+          <div className="input flex items-center justify-between bg-gray-50 text-gray-500">
+            <span className="truncate">{lockedEmail || '—'}</span>
+            <span className="ml-2 shrink-0 text-xs text-gray-400">{t('scholarship.apply.locked')}</span>
+          </div>
+        </div>
+        <div>
+          <FieldLabel required tip={t('scholarship.apply.tip.org')}>{t('scholarship.apply.field.org')}</FieldLabel>
+          <select className="input" value={form.referringOrg}
+            onChange={(e) => update('referringOrg', e.target.value as ApplyFormState['referringOrg'])}>
+            <option value="">{t('scholarship.apply.orgPlaceholder')}</option>
+            {REFERRING_ORG_OPTIONS.map((code) => (
+              <option key={code} value={code}>{t(`scholarship.apply.org.${code}`)}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <FieldLabel required tip={t('scholarship.apply.tip.state')}>{t('scholarship.apply.field.state')}</FieldLabel>
+          <select className="input" value={form.homeState} onChange={(e) => update('homeState', e.target.value)}>
+            <option value="">{t('scholarship.apply.statePlaceholder')}</option>
+            {MALAYSIAN_STATES.map((s) => (<option key={s} value={s}>{s}</option>))}
+          </select>
+        </div>
+        <div>
+          <FieldLabel required tip={t('scholarship.apply.tip.phone')}>{t('scholarship.apply.field.phone')}</FieldLabel>
+          <input className="input" inputMode="tel" placeholder="01X-XXX XXXX" value={form.phone}
+            onChange={(e) => update('phone', e.target.value)} />
+        </div>
       </div>
     ),
     family: (
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('scholarship.apply.incomeLabel')}</label>
+          <FieldLabel required tip={t('scholarship.apply.tip.income')}>{t('scholarship.apply.incomeLabel')}</FieldLabel>
           <input type="number" min={0} className="input" value={form.householdIncome}
             onChange={(e) => update('householdIncome', e.target.value)} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('scholarship.apply.householdSizeLabel')}</label>
+          <FieldLabel tip={t('scholarship.apply.tip.household')}>{t('scholarship.apply.householdSizeLabel')}</FieldLabel>
           <input type="number" min={1} className="input" value={form.householdSize}
             onChange={(e) => update('householdSize', e.target.value)} />
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm text-gray-700">{t('scholarship.apply.strLabel')}</span>
+          <span className="flex items-center text-sm text-gray-700">{t('scholarship.apply.strLabel')}<InfoTip text={t('scholarship.apply.tip.str')} /></span>
           <Toggle on={form.receivesStr} onChange={(v) => update('receivesStr', v)} label={t('scholarship.apply.strLabel')} />
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm text-gray-700">{t('scholarship.apply.jkmLabel')}</span>
+          <span className="flex items-center text-sm text-gray-700">{t('scholarship.apply.jkmLabel')}<InfoTip text={t('scholarship.apply.tip.jkm')} /></span>
           <Toggle on={form.receivesJkm} onChange={(v) => update('receivesJkm', v)} label={t('scholarship.apply.jkmLabel')} />
         </div>
-        <p className="text-xs text-gray-400">{t('scholarship.apply.writebackNote')}</p>
+        <hr className="border-gray-100" />
+        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('scholarship.apply.parentHeading')}</p>
+        <div>
+          <FieldLabel tip={t('scholarship.apply.tip.parentName')}>{t('scholarship.apply.field.parentName')}</FieldLabel>
+          <input className="input" value={form.parentName} onChange={(e) => update('parentName', e.target.value)} />
+        </div>
+        <div>
+          <FieldLabel tip={t('scholarship.apply.tip.parentPhone')}>{t('scholarship.apply.field.parentPhone')}</FieldLabel>
+          <input className="input" inputMode="tel" placeholder="01X-XXX XXXX" value={form.parentPhone}
+            onChange={(e) => update('parentPhone', e.target.value)} />
+        </div>
+        <div>
+          <FieldLabel tip={t('scholarship.apply.tip.callLang')}>{t('scholarship.apply.field.callLang')}</FieldLabel>
+          <select className="input" value={form.callLanguage}
+            onChange={(e) => update('callLanguage', e.target.value as ApplyFormState['callLanguage'])}>
+            <option value="">{t('scholarship.apply.callLangPlaceholder')}</option>
+            {CALL_LANGUAGE_OPTIONS.map((c) => (
+              <option key={c} value={c}>{t(`scholarship.apply.callLang.${c}`)}</option>
+            ))}
+          </select>
+        </div>
       </div>
     ),
     results: (
@@ -289,11 +411,6 @@ export default function ScholarshipApplyPage() {
             onChange={(e) => update('consentToContact', e.target.checked)} />
           {t('scholarship.apply.consentLabel')}
         </label>
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-red-600 text-sm">{error}</p>
-          </div>
-        )}
       </div>
     ),
   }
@@ -326,6 +443,18 @@ export default function ScholarshipApplyPage() {
         <h2 className="font-semibold text-gray-900 mb-3">{tabIndex + 1}. {t(`scholarship.apply.section.${tab}`)}</h2>
         {sections[tab]}
       </div>
+
+      {/* Validation / submit error — shown on whichever tab the error sent the user to */}
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
+      {/* Commit-on-submit: nothing is saved until the application is submitted */}
+      {isLast && (
+        <p className="mb-3 text-center text-xs text-gray-400">{t('scholarship.apply.commitNote')}</p>
+      )}
 
       {/* Linear nav */}
       <div className="flex gap-3 mb-4">
