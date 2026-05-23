@@ -43,7 +43,7 @@ export default function AppHeader() {
   const navLinks = [
     { href: '/dashboard', label: t('common.dashboard') },
     { href: '/search', label: t('search.nav') },
-    { href: '/scholarship/apply', label: t('scholarship.nav') },
+    { href: '/scholarship', label: t('scholarship.nav') },
     { href: '/saved', label: t('common.saved'), authRequired: true as const, authReason: 'save' as const },
     { href: '/profile', label: t('header.myProfile'), authRequired: true as const, authReason: 'profile' as const },
   ]

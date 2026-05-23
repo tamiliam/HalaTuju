@@ -33,27 +33,33 @@ export default function ScholarshipLandingPage() {
     <>
       <AppHeader />
       <main className="bg-gray-50">
-        {/* Hero */}
-        <section className="container mx-auto px-6 pt-6 pb-10 max-w-2xl">
-          <div className="relative w-full h-60 rounded-2xl overflow-hidden mb-6">
-            <Image
-              src="/scholarship/hero.jpg" alt="" fill priority
-              className="object-cover object-top" sizes="(max-width:768px) 100vw, 640px"
-            />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 leading-tight">{t('scholarship.landing.hero.heading')}</h1>
-          <p className="text-gray-600 mt-3">{t('scholarship.landing.hero.sub')}</p>
-          <div className="mt-5 flex flex-col gap-2">
-            <Link href="/scholarship/apply" className="btn-primary text-center">{t('scholarship.landing.hero.apply')} →</Link>
-            <a href="#requirements" className="text-primary-600 text-sm text-center font-medium">{t('scholarship.landing.hero.seeQualify')} ↓</a>
+        {/* Hero — single column on mobile, text + image side by side on desktop */}
+        <section className="container mx-auto px-6 pt-6 pb-10 lg:pt-14 lg:pb-16 max-w-2xl lg:max-w-6xl">
+          <div className="lg:grid lg:grid-cols-2 lg:gap-12 lg:items-center">
+            <div className="relative w-full h-60 lg:h-[26rem] rounded-2xl overflow-hidden mb-6 lg:mb-0 lg:order-2">
+              <Image
+                src="/scholarship/hero.jpg" alt="" fill priority
+                className="object-cover object-top" sizes="(max-width:1024px) 100vw, 600px"
+              />
+            </div>
+            <div className="lg:order-1">
+              <h1 className="text-3xl lg:text-5xl font-bold text-gray-900 leading-tight">{t('scholarship.landing.hero.heading')}</h1>
+              <p className="text-gray-600 mt-3 lg:mt-4 lg:text-lg">{t('scholarship.landing.hero.sub')}</p>
+              <div className="mt-5 lg:mt-7 flex flex-col sm:flex-row sm:items-center gap-3">
+                <Link href="/scholarship/apply" className="btn-primary text-center w-full sm:w-auto">{t('scholarship.landing.hero.apply')} →</Link>
+                <a href="#requirements" className="text-primary-600 text-sm text-center sm:text-left font-medium">{t('scholarship.landing.hero.seeQualify')} ↓</a>
+              </div>
+            </div>
           </div>
         </section>
 
         {/* Overview + value cards */}
-        <section className="container mx-auto px-6 pb-10 max-w-2xl">
-          <p className="text-gray-700">{t('scholarship.landing.overview.p1')}</p>
-          <p className="text-gray-700 mt-3">{t('scholarship.landing.overview.p2')}</p>
-          <div className="grid gap-3 mt-6">
+        <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
+          <div className="lg:max-w-3xl">
+            <p className="text-gray-700 lg:text-lg">{t('scholarship.landing.overview.p1')}</p>
+            <p className="text-gray-700 mt-3 lg:text-lg">{t('scholarship.landing.overview.p2')}</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 md:gap-5 mt-6 lg:mt-8">
             {VALUE_CARDS.map((c) => (
               <div key={c} className="bg-white rounded-2xl p-5 shadow-sm">
                 <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center mb-2">
@@ -68,67 +74,72 @@ export default function ScholarshipLandingPage() {
           </div>
         </section>
 
-        {/* Please note (pilot) */}
-        <section className="container mx-auto px-6 pb-10 max-w-2xl">
-          <div className="bg-primary-50 border-l-4 border-primary-500 rounded-2xl p-5">
-            <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {t('scholarship.landing.note.title')}
-            </h2>
-            <ul className="space-y-2.5 text-sm text-gray-700">
-              {NOTE_BULLETS.map((b) => (
-                <li key={b}>
-                  <span className="font-semibold text-gray-900">{t(`scholarship.landing.note.${b}Label`)}:</span>{' '}
-                  {t(`scholarship.landing.note.${b}Text`)}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+        {/* Please note (pilot) + Requirements — side by side on desktop */}
+        <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
+          <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
+            {/* Please note */}
+            <div className="bg-primary-50 border-l-4 border-primary-500 rounded-2xl p-5 mb-6 lg:mb-0">
+              <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {t('scholarship.landing.note.title')}
+              </h2>
+              <ul className="space-y-2.5 text-sm text-gray-700">
+                {NOTE_BULLETS.map((b) => (
+                  <li key={b}>
+                    <span className="font-semibold text-gray-900">{t(`scholarship.landing.note.${b}Label`)}:</span>{' '}
+                    {t(`scholarship.landing.note.${b}Text`)}
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-        {/* Requirements */}
-        <section id="requirements" className="container mx-auto px-6 pb-10 max-w-2xl scroll-mt-24">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('scholarship.landing.req.title')}</h2>
-          <div className="bg-white rounded-2xl shadow-sm divide-y divide-gray-100">
-            {REQ_ITEMS.map((it) => (
-              <div key={it} className="flex items-start gap-3 p-4">
-                <CheckIcon />
-                <span className="text-sm text-gray-700">{t(`scholarship.landing.req.${it}`)}</span>
+            {/* Requirements */}
+            <div id="requirements" className="scroll-mt-24">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('scholarship.landing.req.title')}</h2>
+              <div className="bg-white rounded-2xl shadow-sm divide-y divide-gray-100">
+                {REQ_ITEMS.map((it) => (
+                  <div key={it} className="flex items-start gap-3 p-4">
+                    <CheckIcon />
+                    <span className="text-sm text-gray-700">{t(`scholarship.landing.req.${it}`)}</span>
+                  </div>
+                ))}
               </div>
-            ))}
+              <p className="text-sm text-gray-500 italic mt-3">{t('scholarship.landing.req.closeNote')}</p>
+            </div>
           </div>
-          <p className="text-sm text-gray-500 italic mt-3">{t('scholarship.landing.req.closeNote')}</p>
         </section>
 
-        {/* How it works */}
-        <section className="container mx-auto px-6 pb-10 max-w-2xl">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('scholarship.landing.how.title')}</h2>
-          <span className="inline-block text-xs bg-primary-50 text-primary-700 rounded-full px-3 py-1 mb-6">
-            {t('scholarship.landing.how.rolling')}
-          </span>
-          <ol className="relative border-l-2 border-primary-100 ml-3 space-y-6">
+        {/* How it works — vertical list on mobile, 4-up step cards on desktop */}
+        <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-6xl">
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">{t('scholarship.landing.how.title')}</h2>
+            <span className="inline-block text-xs bg-primary-50 text-primary-700 rounded-full px-3 py-1">
+              {t('scholarship.landing.how.rolling')}
+            </span>
+          </div>
+          <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((n) => (
-              <li key={n} className="ml-6">
-                <span className="absolute -left-[15px] w-7 h-7 rounded-full bg-white border-2 border-primary-500 text-primary-600 text-sm font-semibold flex items-center justify-center">
+              <li key={n} className="bg-white rounded-2xl p-5 shadow-sm">
+                <span className="w-8 h-8 rounded-full bg-primary-500 text-white text-sm font-semibold flex items-center justify-center mb-3">
                   {n}
                 </span>
                 <h3 className="font-semibold text-gray-900">{t(`scholarship.landing.how.step${n}Title`)}</h3>
-                <p className="text-sm text-gray-500 mt-0.5">{t(`scholarship.landing.how.step${n}Desc`)}</p>
+                <p className="text-sm text-gray-500 mt-1">{t(`scholarship.landing.how.step${n}Desc`)}</p>
               </li>
             ))}
           </ol>
         </section>
 
-        {/* FAQ */}
-        <section className="container mx-auto px-6 pb-10 max-w-2xl">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('scholarship.landing.faq.title')}</h2>
-          <div className="space-y-2">
+        {/* FAQ — single column on mobile, two columns on desktop */}
+        <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 lg:mb-6">{t('scholarship.landing.faq.title')}</h2>
+          <div className="grid gap-2 lg:grid-cols-2 lg:gap-x-5 lg:items-start">
             {FAQS.map((i) => {
               const open = openFaq === i
               return (
-                <div key={i} className="bg-white rounded-xl shadow-sm">
+                <div key={i} className="bg-white rounded-xl shadow-sm self-start">
                   <button
                     type="button" aria-expanded={open}
                     onClick={() => setOpenFaq(open ? null : i)}
@@ -146,21 +157,23 @@ export default function ScholarshipLandingPage() {
           </div>
         </section>
 
-        {/* Closing CTA */}
-        <section className="container mx-auto px-6 pb-12 max-w-2xl">
-          <div className="relative w-full h-48 rounded-2xl overflow-hidden mb-5">
-            <Image src="/scholarship/community.jpg" alt="" fill className="object-cover" sizes="(max-width:768px) 100vw, 640px" />
-          </div>
-          <div className="bg-white rounded-2xl p-6 shadow-sm text-center">
-            <h2 className="text-2xl font-bold text-gray-900">{t('scholarship.landing.cta.heading')}</h2>
-            <p className="text-gray-600 mt-2 text-sm">{t('scholarship.landing.cta.body')}</p>
-            <Link href="/scholarship/apply" className="btn-primary w-full mt-4 inline-block text-center">
-              {t('scholarship.landing.hero.apply')} →
-            </Link>
-            <p className="text-xs text-gray-400 mt-3">
-              {t('scholarship.landing.cta.questions')}{' '}
-              <a href="mailto:tamiliam@gmail.com" className="text-primary-600 underline">tamiliam@gmail.com</a>
-            </p>
+        {/* Closing CTA — stacked on mobile, image + text side by side on desktop */}
+        <section className="container mx-auto px-6 pb-12 lg:pb-20 max-w-2xl lg:max-w-5xl">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden lg:grid lg:grid-cols-2 lg:items-stretch">
+            <div className="relative w-full h-48 lg:h-auto lg:min-h-[18rem]">
+              <Image src="/scholarship/community.jpg" alt="" fill className="object-cover" sizes="(max-width:1024px) 100vw, 600px" />
+            </div>
+            <div className="p-6 lg:p-10 text-center lg:text-left lg:flex lg:flex-col lg:justify-center">
+              <h2 className="text-2xl lg:text-3xl font-bold text-gray-900">{t('scholarship.landing.cta.heading')}</h2>
+              <p className="text-gray-600 mt-2 text-sm lg:text-base">{t('scholarship.landing.cta.body')}</p>
+              <Link href="/scholarship/apply" className="btn-primary w-full sm:w-auto mt-4 inline-block text-center self-center lg:self-start">
+                {t('scholarship.landing.hero.apply')} →
+              </Link>
+              <p className="text-xs text-gray-400 mt-3">
+                {t('scholarship.landing.cta.questions')}{' '}
+                <a href="mailto:info@halatuju.xyz" className="text-primary-600 underline">info@halatuju.xyz</a>
+              </p>
+            </div>
           </div>
         </section>
       </main>
