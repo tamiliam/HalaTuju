@@ -69,7 +69,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const { t, locale } = useT()
   const { ready: onboarded, loading: guardLoading, needsNric } = useOnboardingGuard()
-  const { session, token, isAuthenticated, isLoading: authLoading, showAuthGate } = useAuth()
+  const { session, token, isAuthenticated, isLoading: authLoading, showAuthGate, refreshProfile } = useAuth()
   const { showToast } = useToast()
 
   // Optional "return to" target (e.g. ?next=/scholarship/apply) so an edit started
@@ -231,8 +231,13 @@ export default function ProfilePage() {
   const saveSection = async () => {
     const ok = await handleSave()
     setEditingSection(null)
-    // If the edit was started from the application flow, return there on success.
-    if (ok && nextUrl) router.push(nextUrl)
+    if (ok) {
+      // Refresh the cached profile so pages that pre-fill from it (e.g. the apply
+      // form) see the new values immediately instead of a stale cache.
+      await refreshProfile()
+      // If the edit was started from the application flow, return there.
+      if (nextUrl) router.push(nextUrl)
+    }
   }
 
   const handleStatusChange = async (courseId: string, newStatus: string) => {
