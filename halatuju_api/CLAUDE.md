@@ -293,12 +293,16 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   page's layout shell. Application cards already fine centred (left as-is); `ScholarshipNextSteps` not touched
   (desktop pass later if needed). `next build` clean; jest 49; backend unchanged (1100); no migration/i18n.
   Desktop + mobile approved via screenshot. See `retrospective-b40-sprint12a.md`.
-- **▶ Next: S12b (GATED DEPLOY — the only deploy)** — create cohort `b40-2026` (income_ceiling 5860,
-  per_capita_ceiling 1584, min_spm_a_count 4, min_spm_bplus_count 5, min_stpm_pngk 2.9, success_delay_hours 2,
-  decline_delay_hours 48) + wire **Cloud Scheduler → `send_pending_decision_emails`** + reset test data +
-  **single deploy** (scholarship migrations 0007–0009 + courses 0048 hit prod) + prod smoke (submit → received →
-  +2h/+48h verdict → shortlisted follow-up → admin verify → accepted). **Requires explicit deploy authorisation at
-  deploy time.** Lessons: test locally first, ≤2 deploys; `--update-env-vars` not `--set-env-vars`; pass `--account`/`--project`.
+- **▶ IN PROGRESS: S12b (GATED DEPLOY — the only deploy).** **Phase 1 DONE (2026-05-24):** idempotent
+  `seed_b40_2026_cohort` command (get_or_create code `b40-2026`; thresholds are model defaults — 4 A-/5 B+/PNGK 2.9/
+  per-capita 1584/2h/48h — sets name/year/income_ceiling 5860; `--closed` flag) + 3 tests; **1103 backend tests green**,
+  migrations 0007–0009 apply cleanly on a fresh DB; committed to the branch. **Phase 2 (GATED — needs explicit
+  "deploy now"):** merge `feature/b40-redesign` → `main` → Cloud Build deploys both services + applies migrations
+  0007–0009 + courses 0048 to prod; watch build SUCCESS; run Supabase advisors. **Phase 3 (GATED, post-deploy):**
+  run `seed_b40_2026_cohort` on prod via a Cloud Run Job (API image) + wire **Cloud Scheduler → `send_pending_decision_emails`**
+  (~15 min) + reset test data + prod smoke (submit → received → manually release to verify reveal). Open decision at
+  the gate: cohort `--open` (live) vs `--closed` (flip later). Lessons: ≤2 deploys; `--update-env-vars` not
+  `--set-env-vars`; pass `--account`/`--project`.
 - **Then S13 (post-launch fast-follow): Vision OCR** — MyKad upload → instant NRIC match feedback, surfaced to admin
   (soft, never a hard block). New Google Cloud Vision API key + **cost sign-off required** before any paid calls.
   Jest is node-env (test pure `lib/*.ts`); run `next build` before done; EN/MS/TA parity (check-i18n);
