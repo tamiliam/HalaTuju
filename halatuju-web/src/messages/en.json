@@ -159,7 +159,8 @@
     "spmSains": "Science",
     "spmSastera": "Arts",
     "spmTeknikal": "Technical",
-    "spmVokasional": "Vocational"
+    "spmVokasional": "Vocational",
+    "saveReturnToApplication": "Save & return to application"
   },
   "verifyEmail": {
     "loading": "Verifying your email...",
@@ -390,7 +391,14 @@
         "aCount": "Please enter how many A's you scored in SPM.",
         "pngk": "Please enter your STPM PNGK.",
         "income": "Please enter your combined monthly household income.",
-        "generic": "Something went wrong submitting your application. You may have already applied, or applications may be closed. Please try again later."
+        "generic": "Something went wrong submitting your application. You may have already applied, or applications may be closed. Please try again later.",
+        "name": "Please enter your full name.",
+        "school": "Please enter your school.",
+        "nric": "Please enter a valid IC number (format XXXXXX-XX-XXXX).",
+        "nricTaken": "This IC number is already linked to another account. Please check it.",
+        "org": "Please tell us who referred you.",
+        "state": "Please select your home state.",
+        "phone": "Please enter your phone number."
       },
       "gate": {
         "readFreely": "Read everything freely — you only need to sign in when you're ready to apply.",
@@ -400,11 +408,17 @@
         "name": "Full name",
         "school": "School",
         "ic": "IC number",
-        "email": "Contact email"
+        "email": "Contact email",
+        "org": "Who referred you?",
+        "state": "Home state",
+        "phone": "Phone number",
+        "parentName": "Parent / guardian name",
+        "parentPhone": "Parent / guardian phone",
+        "callLang": "Preferred language for calls"
       },
       "section": {
-        "personal": "About You",
-        "family": "Your Family",
+        "personal": "About Me",
+        "family": "My Family",
         "results": "Your SPM / STPM Results",
         "plans": "Your Plans",
         "support": "Support You'd Like From Us"
@@ -423,16 +437,97 @@
       "aGradesWord": "A's",
       "including": "including",
       "resultsFromProfile": "From your saved results",
-      "resultsWrong": "Results wrong? Update them in your profile",
+      "resultsWrong": "Results wrong? Edit them",
       "noResultsTitle": "We don't have your results yet",
-      "noResultsBody": "Finish your HalaTuju quiz so we can assess your application.",
-      "noResultsCta": "Go to the quiz",
+      "noResultsBody": "Add your SPM or STPM results so we can assess your application.",
+      "noResultsCta": "Add my results",
       "signedInAs": "Signed in as",
       "usingProfile": "Using your HalaTuju profile",
       "step": "Step",
       "back": "Back",
       "continue": "Continue",
-      "backToApplication": "Back to your application"
+      "backToApplication": "Back to your application",
+      "aboutMeHint": "Check your details and update anything that's changed. Your contact email is locked because it's already verified.",
+      "verified": "Verified",
+      "locked": "Locked",
+      "orgPlaceholder": "Select an organisation",
+      "statePlaceholder": "Select your state",
+      "callLangPlaceholder": "Choose a language",
+      "parentHeading": "Parent / guardian",
+      "commitNote": "Nothing is saved until you submit your application.",
+      "org": {
+        "smc": "Sri Murugan Centre (SMC)",
+        "cumig": "Concerned UM Indian Graduates (CUMIG)",
+        "pushparani": "Ms. Pushparani (Kapar)",
+        "sathya_sai": "Sathya Sai Baba Centre",
+        "halatuju": "Halatuju.xyz",
+        "tara": "Tara Foundation",
+        "govind": "Mr. Govind (Melaka)",
+        "social": "Facebook / WhatsApp",
+        "other": "Other"
+      },
+      "callLang": {
+        "en": "English",
+        "ms": "Bahasa Malaysia",
+        "ta": "Tamil",
+        "mixed": "Mixed"
+      },
+      "tip": {
+        "name": "Your full name as in your IC.",
+        "school": "The school where you sat for SPM.",
+        "ic": "Used to confirm your identity. You can edit it until it's verified.",
+        "org": "The organisation or coordinator who told you about this programme.",
+        "state": "The state where you normally live.",
+        "phone": "A number we can reach you on. Format: 01X-XXX XXXX.",
+        "income": "Add up the monthly income of everyone you counted — salaries, business, pensions, and government aid (not just your parents'). An estimate is fine.",
+        "household": "Count everyone who normally lives in your home and shares income or expenses — your parents/guardians, you, your brothers and sisters, and grandparents or relatives living with you. Include a working sibling if they live at home and contribute; don't count family who live elsewhere.",
+        "str": "Sumbangan Tunai Rahmah — government cash aid for lower-income households.",
+        "jkm": "Help from Jabatan Kebajikan Masyarakat (the welfare department).",
+        "parentName": "Your parent's or guardian's name.",
+        "parentPhone": "A number for your parent or guardian.",
+        "callLang": "Which language should we use if we call you?",
+        "pathways": "Pick all the post-SPM pathways you're thinking about — you can choose more than one.",
+        "upu": "Tells us your destination. This scholarship is for public/government pathways.",
+        "field": "The broad area you want to study in.",
+        "topChoices": "Pick up to 3 from the courses you've saved, in order of preference. It shows us you've thought it through.",
+        "otherScholarships": "Tell us if you already hold or applied for other funding — it helps us prioritise.",
+        "helpUniversity": "Choosing courses, filling forms, personal statements.",
+        "helpScholarship": "Mock interviews, feedback on applications."
+      },
+      "pathwaysLabel": "Pathways you're considering",
+      "upuLabel": "Where do you plan to continue?",
+      "iptsNote": "This assistance is for public pathways — it's too small to cover private (IPTS) fees. If you're also considering a public option, choose that above.",
+      "fieldLabel": "Field of study you're aiming for",
+      "fieldPlaceholder": "Select a field",
+      "topChoicesLabel": "Your top 3 course choices",
+      "topChoicesHint": "Tap up to 3, in order of preference.",
+      "noSavedCourses": "You haven't saved any courses yet. Browse HalaTuju and bookmark a few, then come back.",
+      "browseCourses": "Browse courses",
+      "otherScholarshipsLabel": "Other scholarships you've applied for or hold",
+      "otherScholarshipsPlaceholder": "Other (please specify)",
+      "helpUniversityLabel": "Would you like help with university applications?",
+      "helpScholarshipLabel": "Would you like help with scholarship applications & interviews?",
+      "anythingElseLabel": "Anything else you'd like us to know? (optional)",
+      "anythingElsePlaceholder": "Special circumstances, concerns, or questions…",
+      "upu": {
+        "applied": "I've applied through UPU",
+        "public_other": "STPM / Matrikulasi / PISMP / TVET",
+        "ipts": "A private college/university (IPTS)",
+        "unknown": "I'm not sure what UPU is"
+      },
+      "help": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Not sure"
+      },
+      "scholarship": {
+        "jpa": "JPA",
+        "petronas": "Petronas",
+        "mara": "MARA",
+        "yayasan": "Yayasan / state foundation",
+        "bank_foundation": "Bank / corporate foundation",
+        "other": "Other"
+      }
     },
     "nextSteps": {
       "title": "You've been shortlisted!",
@@ -606,7 +701,15 @@
       "none": "You haven't applied yet.",
       "applyCta": "Start your application",
       "receivedTitle": "Application received",
-      "receivedBody": "Thank you. We've received your application and will be in touch by email. There's nothing more to do for now."
+      "receivedBody": "Thank you. We've received your application and will be in touch by email. There's nothing more to do for now.",
+      "acceptedTitle": "You've been accepted",
+      "acceptedBody": "Congratulations — your application has been verified and confirmed. Our team will be in touch about the next steps for your award."
+    },
+    "banner": {
+      "shortlistedTitle": "You've been shortlisted",
+      "shortlistedBody": "Complete your application — tap to continue.",
+      "acceptedTitle": "Your application is confirmed",
+      "acceptedBody": "You've been accepted. Tap to view the details."
     }
   },
   "authGate": {
@@ -1007,7 +1110,21 @@
       "model": "Model",
       "genError": "Profile generation failed.",
       "saveError": "Could not save the profile.",
-      "publishError": "Could not publish the profile."
+      "publishError": "Could not publish the profile.",
+      "verifyTitle": "Verify & accept",
+      "nricLocked": "NRIC verified & locked",
+      "acceptedBy": "Verified & accepted by",
+      "verifyHint": "Confirm each item against the uploaded MyKad, then accept. Accepting locks the NRIC.",
+      "check_nric": "NRIC matches the MyKad",
+      "check_name": "Name matches",
+      "check_results": "Results match the slip",
+      "check_document": "MyKad document is clear & valid",
+      "verifyAccept": "Verify & accept",
+      "accepting": "Accepting…",
+      "acceptError": "Couldn't accept. Please try again.",
+      "notShortlisted": "Only a shortlisted application can be verified & accepted.",
+      "mentoring": "Flag for mentoring (lost/unfocused — not a reject)",
+      "mentorError": "Couldn't update the mentoring flag."
     },
     "students": "Students",
     "invite": "Invite",

@@ -70,15 +70,18 @@ class TestApplicationIntake(TestCase):
         self.assertEqual(resp.status_code, 201)
         body = resp.json()
         self.assertEqual(body['cohort_code'], 'b40-2026')
-        self.assertEqual(body['status'], 'shortlisted')
+        # S8: scored silently — status stays 'submitted', verdict stored, no decision email yet
+        self.assertEqual(body['status'], 'submitted')
         self.assertEqual(body['bucket'], 'A')
         app = ScholarshipApplication.objects.get(id=body['id'])
         self.assertEqual(app.profile_id, USER_A)
+        self.assertEqual(app.verdict, 'shortlisted')
         self.assertIsNotNone(app.acknowledged_at)
-        self.assertIsNotNone(app.shortlisted_at)
-        self.assertIsNotNone(app.decision_email_sent_at)
-        # acknowledgement + immediate pass email
-        self.assertEqual(len(mail.outbox), 2)
+        self.assertIsNotNone(app.decision_due_at)
+        self.assertIsNone(app.shortlisted_at)          # set only on release
+        self.assertIsNone(app.decision_email_sent_at)  # decision email is deferred
+        # only the acknowledgement is sent at submit
+        self.assertEqual(len(mail.outbox), 1)
         self.assertIn('priya@example.com', mail.outbox[0].to)
 
     def test_failing_application_rejected_no_decision_email(self):
@@ -91,11 +94,14 @@ class TestApplicationIntake(TestCase):
         )
         self.assertEqual(resp.status_code, 201)
         body = resp.json()
-        self.assertEqual(body['status'], 'rejected')
+        # S8: scored silently — status stays 'submitted', verdict='rejected', no decision email
+        self.assertEqual(body['status'], 'submitted')
         self.assertEqual(body['bucket'], '')
         app = ScholarshipApplication.objects.get(id=body['id'])
+        self.assertEqual(app.verdict, 'rejected')
         self.assertIsNone(app.decision_email_sent_at)
-        # only the acknowledgement — the fail email is deferred to the command
+        self.assertIsNotNone(app.decision_due_at)
+        # only the acknowledgement — the decision email is deferred to the scheduler
         self.assertEqual(len(mail.outbox), 1)
 
     def test_spm_a_count_derived_from_profile(self):
@@ -126,6 +132,52 @@ class TestApplicationIntake(TestCase):
         self.assertEqual(snap['profile']['household_income'], 1800)
         self.assertEqual(snap['profile']['spm_a_count'], 5)
         self.assertIn('captured_at', snap)
+
+    def test_about_me_and_family_fields_written_back_to_profile(self):
+        # S9 commit-on-submit: About Me + My Family scalar fields + parent
+        # (guardians) + call language sync to the canonical profile. NRIC is NOT
+        # written here (claim path only) — posting it must not change the profile.
+        self._auth(_make_token(USER_A))
+        resp = self.client.post(
+            '/api/v1/scholarship/applications/',
+            self._payload(
+                name='Priya Devi', school='SMK Taman Desa',
+                preferred_state='Selangor', contact_phone='012-345 6789',
+                preferred_call_language='ta',
+                guardians=[{'name': 'Rajan', 'phone': '011-2222 3333'}],
+                nric='999999-99-9999',  # ignored by this endpoint
+            ),
+            format='json',
+        )
+        self.assertEqual(resp.status_code, 201)
+        self.profile_a.refresh_from_db()
+        self.assertEqual(self.profile_a.name, 'Priya Devi')
+        self.assertEqual(self.profile_a.school, 'SMK Taman Desa')
+        self.assertEqual(self.profile_a.preferred_state, 'Selangor')
+        self.assertEqual(self.profile_a.contact_phone, '012-345 6789')
+        self.assertEqual(self.profile_a.preferred_call_language, 'ta')
+        self.assertEqual(self.profile_a.guardians, [{'name': 'Rajan', 'phone': '011-2222 3333'}])
+        # NRIC unchanged — the apply endpoint never writes it.
+        self.assertEqual(self.profile_a.nric, '080101-14-1234')
+        # Snapshot captures the committed About-Me values.
+        snap = ScholarshipApplication.objects.get(id=resp.json()['id']).intake_snapshot
+        self.assertEqual(snap['profile']['preferred_state'], 'Selangor')
+        self.assertEqual(snap['profile']['preferred_call_language'], 'ta')
+
+    def test_referral_source_resolves_to_partner_org(self):
+        # A known referring-org code links the profile to the PartnerOrganisation;
+        # a generic source (no matching row) leaves the FK unset.
+        from apps.courses.models import PartnerOrganisation
+        org = PartnerOrganisation.objects.create(code='cumig', name='CUMIG')
+        self._auth(_make_token(USER_A))
+        resp = self.client.post(
+            '/api/v1/scholarship/applications/',
+            self._payload(referral_source='cumig'), format='json',
+        )
+        self.assertEqual(resp.status_code, 201)
+        self.profile_a.refresh_from_db()
+        self.assertEqual(self.profile_a.referral_source, 'cumig')
+        self.assertEqual(self.profile_a.referred_by_org_id, org.pk)
 
     def test_consent_required(self):
         self._auth(_make_token(USER_A))

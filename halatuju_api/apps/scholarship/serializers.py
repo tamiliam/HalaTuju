@@ -28,13 +28,33 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
     receives_str = serializers.BooleanField(required=False, write_only=True)
     receives_jkm = serializers.BooleanField(required=False, write_only=True)
 
+    # About Me + My Family (apply-form rebuild S9): the form edits these profile
+    # fields inline and commits them on submit. Like the financial fields above
+    # they are write-only — the service syncs them back to the canonical profile
+    # (StudentProfile), never storing them on the application. NRIC is NOT here:
+    # it changes only through the validated claim path (/profile/claim-nric/).
+    name = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    school = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    preferred_state = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    contact_phone = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    preferred_call_language = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    referral_source = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    guardians = serializers.JSONField(required=False, write_only=True)
+
     class Meta:
         model = ScholarshipApplication
         fields = [
             'cohort_code',
             'household_income', 'household_size', 'receives_str', 'receives_jkm',
+            # About Me + My Family profile fields (write-only; synced to profile)
+            'name', 'school', 'preferred_state', 'contact_phone',
+            'preferred_call_language', 'referral_source', 'guardians',
             'intended_pathway', 'intends_tertiary_2026',
             'consent_to_contact', 'form_data',
+            # Plans + Support intake (Sprint 7) — all optional (blank/default on the model)
+            'field_of_study', 'pathways_considered', 'top_choices', 'upu_status',
+            'other_scholarships', 'other_scholarships_text',
+            'help_university', 'help_scholarship', 'anything_else',
         ]
 
     def validate_consent_to_contact(self, value):
@@ -98,6 +118,9 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'receives_str', 'receives_jkm',
             'intended_pathway', 'intends_tertiary_2026',
             'consent_to_contact',
+            'field_of_study', 'pathways_considered', 'top_choices', 'upu_status',
+            'other_scholarships', 'other_scholarships_text',
+            'help_university', 'help_scholarship', 'anything_else', 'mentoring_candidate',
             'status', 'bucket', 'shortlist_reason',
             'acknowledged_at', 'submitted_at', 'updated_at',
             'aspirations', 'plans', 'fears', 'justification',

@@ -10,9 +10,13 @@ import {
   generateSponsorProfile,
   saveSponsorProfile,
   publishSponsorProfile,
+  verifyAcceptApplication,
+  setMentoringCandidate,
   type AdminScholarshipDetail,
   type AdminSponsorProfile,
 } from '@/lib/admin-api'
+
+const VERIFY_ITEMS = ['nric', 'name', 'results', 'document'] as const
 
 function Field({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -33,6 +37,7 @@ export default function AdminScholarshipDetailPage() {
   const [markdown, setMarkdown] = useState('')
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
+  const [checklist, setChecklist] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (!token || !id) return
@@ -71,6 +76,24 @@ export default function AdminScholarshipDetailPage() {
       const p = await publishSponsorProfile(id, { token })
       setProfile(p)
     } catch { setError(t('admin.scholarship.publishError')) } finally { setBusy('') }
+  }
+
+  const doVerifyAccept = async () => {
+    if (!token) return
+    setBusy('verify'); setError('')
+    try {
+      setApp(await verifyAcceptApplication(id, checklist, { token }))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('admin.scholarship.acceptError'))
+    } finally { setBusy('') }
+  }
+
+  const toggleMentoring = async (value: boolean) => {
+    if (!token) return
+    setBusy('mentor'); setError('')
+    try {
+      setApp(await setMentoringCandidate(id, value, { token }))
+    } catch { setError(t('admin.scholarship.mentorError')) } finally { setBusy('') }
   }
 
   if (error && !app) return <div className="text-red-600 mt-8">{error}</div>
@@ -135,6 +158,55 @@ export default function AdminScholarshipDetailPage() {
         <p className="text-sm text-gray-600">
           {app.consents.some((c) => c.is_active) ? t('admin.scholarship.consentGiven') : t('admin.scholarship.consentNone')}
         </p>
+      </div>
+
+      {/* Verify & accept (human gate — locks the NRIC, advances → accepted) */}
+      <div className="bg-white rounded-xl border p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">{t('admin.scholarship.verifyTitle')}</h2>
+          {app.nric_verified && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+              {t('admin.scholarship.nricLocked')}
+            </span>
+          )}
+        </div>
+
+        {app.status === 'accepted' ? (
+          <p className="text-sm text-gray-600">
+            {t('admin.scholarship.acceptedBy')} {app.verified_by || '—'}
+            {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
+          </p>
+        ) : app.status === 'shortlisted' ? (
+          <>
+            <p className="text-sm text-gray-500">{t('admin.scholarship.verifyHint')}</p>
+            <div className="space-y-2">
+              {VERIFY_ITEMS.map((key) => (
+                <label key={key} className="flex items-start gap-2 text-sm text-gray-700">
+                  <input type="checkbox" className="mt-1" checked={!!checklist[key]}
+                    onChange={(e) => setChecklist((c) => ({ ...c, [key]: e.target.checked }))} />
+                  <span>
+                    {t(`admin.scholarship.check_${key}`)}
+                    {key === 'nric' && <span className="ml-1 font-mono text-gray-500">{app.nric || '—'}</span>}
+                    {key === 'name' && <span className="ml-1 text-gray-500">{app.name || '—'}</span>}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <button onClick={doVerifyAccept}
+              disabled={!!busy || !VERIFY_ITEMS.every((k) => checklist[k])}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
+              {busy === 'verify' ? t('admin.scholarship.accepting') : t('admin.scholarship.verifyAccept')}
+            </button>
+          </>
+        ) : (
+          <p className="text-sm text-gray-400">{t('admin.scholarship.notShortlisted')}</p>
+        )}
+
+        <label className="mt-2 flex items-center gap-2 border-t pt-3 text-sm text-gray-700">
+          <input type="checkbox" checked={app.mentoring_candidate} disabled={!!busy}
+            onChange={(e) => toggleMentoring(e.target.checked)} />
+          {t('admin.scholarship.mentoring')}
+        </label>
       </div>
 
       {/* AI sponsor profile */}

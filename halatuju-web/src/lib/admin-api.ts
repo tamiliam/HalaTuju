@@ -275,6 +275,12 @@ export interface AdminScholarshipDetail {
   id: number
   name: string
   school: string
+  nric: string
+  nric_verified: boolean
+  mentoring_candidate: boolean
+  verified_at: string | null
+  verified_by: string
+  verify_checklist: Record<string, boolean>
   profile_id: string | null
   qualification: string
   spm_a_count: number | null
@@ -347,5 +353,21 @@ export async function saveSponsorProfile(
 export async function publishSponsorProfile(id: number, options?: ApiOptions) {
   return adminMutate<AdminSponsorProfile>(
     `/api/v1/admin/scholarship/applications/${id}/publish/`, 'POST', {}, options
+  )
+}
+
+/** Verify the checklist + accept: sets nric_verified (locks NRIC), advances → accepted. */
+export async function verifyAcceptApplication(
+  id: number, checklist: Record<string, boolean>, options?: ApiOptions
+) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/verify-accept/`, 'POST', { checklist }, options
+  )
+}
+
+/** Toggle the coordinator-facing mentoring-candidate flag. */
+export async function setMentoringCandidate(id: number, value: boolean, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/`, 'PATCH', { mentoring_candidate: value }, options
   )
 }

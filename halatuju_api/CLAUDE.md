@@ -233,28 +233,85 @@ Supabase Security Advisor must show 0 errors before deploy.
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy)
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint — B40 Assistance Programme (Phase 1)
+## Next Sprint — B40 Redesign (decision engine + apply-form rebuild)
 
-Financing extension: a sponsor "adopts" one B40 student to fund IPTA/ILKA study. PRD + 6-sprint
-Phase 1 roadmap in `docs/scholarship/`. MyNadi Foundation is the (tentative) fund custodian;
-the platform is matchmaker + ledger and never holds cash. No financial return to sponsors (keeps
-it a charity, not SC-regulated P2P).
+Phase 1 (apply → shortlist → decision emails → docs/referee/consent → AI sponsor profile + MyNadi admin)
+is **live on `main`** (deployed 2026-05-23, migrations 0001–0006 + courses 0047 applied to prod). The
+**redesign** reworks the decision flow + apply form. 6-sprint roadmap: `docs/scholarship/b40-decision-redesign-plan.md`.
+On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
 
-- **✅ Phase 1 build COMPLETE — all 6 sprints done (2026-05-22).** Full applicant→admin loop: apply →
-  shortlist → decision emails → funding/next-steps → documents/referee/consent → AI sponsor profile
-  + MyNadi admin console. Backend 1086 tests, frontend 37, golden masters intact, migrations 0001–0005.
-  Per-sprint detail in CHANGELOG, `docs/scholarship/b40-phase1-roadmap.md`, and the retrospectives.
-- **On branch `feature/b40-assistance` — NOT merged, NOT deployed.**
-- **Next: the single Phase-1 deploy.** Carry-forwards: apply Supabase migrations (0001–0005) + RLS;
-  create the `b40-documents` private bucket; swap the DRAFT consent text (`CONSENT_VERSION`) for the
-  lawyer-reviewed version; wire the fail-email scheduler (Cloud Scheduler); **browser smoke-test every
-  flow** (apply OAuth, details PATCH, quiz return, upload, consent, admin generate/edit/publish); then
-  merge to `main`. **Public launch is gated on Phase 0** (confirm MyNadi entity, fundraising permit,
-  lawyer-reviewed consent). Phase 2 (sponsor portal) follows.
-- **Gotcha:** PII source docs in `docs/scholarship/` (`*.pdf|xlsx|txt`) are gitignored — real
-  student NRICs/names/financials. Never commit them.
-- **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing the feature branch does not. Keep
-  B40 on the branch until Phase 1 is deployable.
+- **✅ S7 done (2026-05-23):** backend foundation — **soft-NRIC** (editable until admin-verified; unique only
+  when verified; read-only on PUT/sync, claim-only; claim blocked once verified, 403 `nric_locked`), `coq_score`
+  + `preferred_call_language` persisted, all new `ScholarshipApplication` intake fields. Migrations courses `0048`
+  + scholarship `0007`. Backend **1091** tests green. See `retrospective-b40-sprint7.md` + `docs/decisions.md`.
+- **✅ S8 done (2026-05-24):** deterministic decision engine — gates → academic floor (SPM 4A-+1B+ / STPM PNGK 2.9)
+  → income (STR passes, else per-capita < RM1,584); **silent score at submit**, **delayed reveal +2h shortlist
+  (invitation) / +48h decline (warm email)** via the scheduler. Migration scholarship `0008`. Backend 1093 tests.
+  See `retrospective-b40-sprint8.md` + `docs/decisions.md`. (6 policy calls all settled; public criteria stay at
+  the advertised bar, engine intentionally more lenient to accommodate near-misses.)
+- **✅ S9 done (2026-05-24):** apply form ① — **About Me + My Family** now inline-editable, pre-filled, with
+  required `*`+`i` tooltips and **commit-on-submit** (About-Me/Family fields sync to the profile via
+  `sync_profile_fields`; NRIC commits via the validated claim path, never the payload). New: referring-org fixed
+  dropdown (→ `referral_source` → `referred_by_org` FK), home state, phone, parent name/phone (→ `guardians`),
+  preferred call language. Validation jumps to the offending tab; error banner moved out of the Support tab.
+  **No new migration** (reused existing profile fields). Backend 1095 tests, frontend 44 jest, `next build` clean,
+  i18n 1051-key parity. **Approved mobile build via local screenshot** (desktop deferred to S12 — user's call).
+  See `retrospective-b40-sprint9.md`. Results/Plans/Support tabs untouched this sprint.
+- **✅ S9b done (2026-05-24):** My Results "edit/add results" now routes through the **full onboarding**
+  (`/onboarding/exam-type` → … → "a few more details") instead of `/profile`/`/quiz`; the **final onboarding step**
+  is context-aware — entered from apply, its button is **"Save & return to application"** and routes back to
+  `/scholarship/apply` (else → dashboard). In-progress About-Me/My-Family edits are **stashed/restored** across the
+  detour via sessionStorage (`stashApplyForm`/`popApplyStash`/`hasApplyReturn`/`clearApplyReturn`, storage-injectable,
+  SSR-safe; orphan marker cleared on normal apply visit). Frontend only; **44→49 jest**, build clean, i18n 1052-key
+  parity; backend unchanged (1095). See `retrospective-b40-sprint9b.md` + TD-057.
+- **✅ S10 done (2026-05-24):** apply form ② — **My Plans** (intends-tertiary gate checkbox; pathways multi-select
+  chips; UPU radio + inline IPTS-out-of-scope note; field-of-study dropdown from the taxonomy; **top-3 from the
+  student's saved courses** ranked by tap order; other-scholarships chips + free text) + **Support** (help radios
+  Yes/No/Not sure, optional "anything else", required consent). Single `intended_pathway` → `pathways_considered`
+  multi; `notes` → `anything_else`; `intends_tertiary_2026` kept (engine gate). Apply page fetches saved courses
+  (exam-type aware) + field taxonomy on mount. **Frontend only** (all fields accepted by `ApplicationCreateSerializer`
+  since S7). Post-submit "Application received" screen already works (S8 silent-score → status `submitted` → neutral
+  received card, no auto-advance). 49 jest, build clean, i18n 1087-key parity; backend unchanged (1095). Mobile build
+  approved via screenshot. See `retrospective-b40-sprint10.md`.
+- **✅ S11a done (2026-05-24):** admin verify-&-accept + NRIC lock + mentoring. `AdminVerifyAcceptView`
+  (`POST …/<id>/verify-accept/`): checklist NRIC/name/results/doc → sets `profile.nric_verified` (**locks** NRIC),
+  stamps `verified_at`/`verified_by`/`verify_checklist`, advances **shortlisted → `accepted`** (new status); only a
+  shortlisted app can be accepted. Mentoring toggle via PATCH on the admin detail. **TD-054 RESOLVED** — uniqueness
+  enforced at this single point (409 `nric_conflict` if another profile has that NRIC verified). Admin
+  `/admin/scholarship/[id]` has a Verify-&-accept checklist card + mentoring toggle. Migration `0009`. Backend
+  **1100** tests, build clean, i18n 1101-key parity. See `retrospective-b40-sprint11a.md`.
+- **✅ S11b done (2026-05-24):** applicant application states + login banner. `/scholarship/application` gains the
+  **`accepted`** = confirmed card (distinct from the neutral received card; shortlisted still → follow-up). New
+  self-contained **`ScholarshipBanner`** (`components/ScholarshipBanner.tsx`, self-fetches the caller's application;
+  renders on the dashboard only when shortlisted/accepted, links to `/scholarship/application`; margin on the banner
+  so no empty gap). Frontend only; build clean, i18n 1107-key parity; backend unchanged (1100), jest 49.
+- **S12 split (2026-05-24): Vision OCR deferred to a post-launch fast-follow** (it's a soft assist; admin verify-&-accept
+  is the real gate — user's call). Launch path: desktop responsiveness → gated deploy.
+- **✅ S12a done (2026-05-24):** apply-form desktop responsiveness. On `lg`, `/scholarship/apply` is a two-column
+  layout — left vertical step-nav rail (active highlighted, completed ticked) + the active section card; container
+  widens `max-w-2xl`→`lg:max-w-4xl`; the mobile bottom tab bar is `lg:hidden`. Mobile unchanged. Contained to the
+  page's layout shell. Application cards already fine centred (left as-is); `ScholarshipNextSteps` not touched
+  (desktop pass later if needed). `next build` clean; jest 49; backend unchanged (1100); no migration/i18n.
+  Desktop + mobile approved via screenshot. See `retrospective-b40-sprint12a.md`.
+- **▶ IN PROGRESS: S12b (GATED DEPLOY — the only deploy).** **Phase 1 DONE (2026-05-24):** idempotent
+  `seed_b40_2026_cohort` command (get_or_create code `b40-2026`; thresholds are model defaults — 4 A-/5 B+/PNGK 2.9/
+  per-capita 1584/2h/48h — sets name/year/income_ceiling 5860; `--closed` flag) + 3 tests; **1103 backend tests green**,
+  migrations 0007–0009 apply cleanly on a fresh DB; committed to the branch. **Phase 2 (GATED — needs explicit
+  "deploy now"):** merge `feature/b40-redesign` → `main` → Cloud Build deploys both services + applies migrations
+  0007–0009 + courses 0048 to prod; watch build SUCCESS; run Supabase advisors. **Phase 3 (GATED, post-deploy):**
+  run `seed_b40_2026_cohort` on prod via a Cloud Run Job (API image) + wire **Cloud Scheduler → `send_pending_decision_emails`**
+  (~15 min) + reset test data + prod smoke (submit → received → manually release to verify reveal). Open decision at
+  the gate: cohort `--open` (live) vs `--closed` (flip later). Lessons: ≤2 deploys; `--update-env-vars` not
+  `--set-env-vars`; pass `--account`/`--project`.
+- **Then S13 (post-launch fast-follow): Vision OCR** — MyKad upload → instant NRIC match feedback, surfaced to admin
+  (soft, never a hard block). New Google Cloud Vision API key + **cost sign-off required** before any paid calls.
+  Jest is node-env (test pure `lib/*.ts`); run `next build` before done; EN/MS/TA parity (check-i18n);
+  **i18n lives in `src/messages/` not `src/i18n/`**; apply form is auth-gated → screenshot via a throwaway preview
+  route with a sample profile; render form errors at form level (not inside one tab).
+- **Gotcha:** soft-NRIC **supersedes** the old "IC immutable" decision — uniqueness is verified-only now.
+- **Gotcha:** new migrations apply to prod only at the S12 deploy; before numbering, check `max` migration on `main`.
+- **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing `feature/b40-redesign` does not. Keep the redesign on the branch.
+- **Gotcha:** PII source docs in `docs/scholarship/` (`*.pdf|xlsx|txt`) are gitignored — real NRICs/names/financials. Never commit them.
 
 ## Known Issues & Future Work
 

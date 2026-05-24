@@ -5,6 +5,197 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Redesign · Sprint 12a: apply-form desktop responsiveness (2026-05-24)
+
+The desktop layout for the apply form (the item deferred from S9). Frontend only; on `feature/b40-redesign`, not deployed.
+
+### Changed
+- `/scholarship/apply` is now responsive on desktop: on `lg` it becomes a **two-column layout** — a left vertical
+  **step-nav rail** (the five sections, active highlighted, completed ticked) beside the active section card +
+  Back/Continue — using the horizontal space the mobile single column left empty. The mobile **bottom tab bar is
+  now `lg:hidden`** (the rail replaces it on desktop), and the container widens (`max-w-2xl` → `lg:max-w-4xl`).
+- Mobile is unchanged (single column, progress, section card, bottom tab bar). The change is contained to the
+  page's layout shell — section content and the mobile flow are untouched.
+
+### Notes
+- The `/scholarship/application` cards (received/accepted) already read fine centred at `max-w-2xl` — left as-is.
+  `ScholarshipNextSteps` (post-shortlist follow-up) wasn't touched; can get a desktop pass later if needed.
+
+### Tests
+- `next build` clean. Frontend jest unchanged (49 — layout only). Backend unchanged (1100). No i18n change, no migration.
+
+## [Unreleased] — B40 Redesign · Sprint 11b: applicant application states + login banner (2026-05-24)
+
+The applicant-facing half of S11. Frontend only; on `feature/b40-redesign`, not deployed.
+
+### Added
+- `/scholarship/application` gains the **accepted** state — a distinct "confirmed" card (congratulations + "our team
+  will be in touch about your award"), separate from the neutral received card. Full status map now: submitted →
+  received · shortlisted → follow-up · **accepted → confirmed** · rejected/withdrawn → neutral.
+- **`ScholarshipBanner`** — a self-contained dashboard banner that fetches the caller's application and renders only
+  when it's **shortlisted** ("complete your application") or **accepted** ("confirmed"), linking to
+  `/scholarship/application`; renders nothing otherwise (margin lives on the banner so there's no empty gap). EN/MS/TA i18n.
+
+### Tests
+- Frontend jest unchanged (49 — display + one fetch, no new pure logic). Backend unchanged (1100). `next build`
+  clean; i18n 1107-key parity.
+
+## [Unreleased] — B40 Redesign · Sprint 11a: admin verify-&-accept + NRIC lock + mentoring (2026-05-24)
+
+The human verification gate for MyNadi admins. Backend + admin frontend; on `feature/b40-redesign`, not deployed.
+(Applicant application-page states + login banner split to S11b.)
+
+### Added
+- **`AdminVerifyAcceptView`** (`POST /admin/scholarship/applications/<id>/verify-accept/`): admin confirms a
+  checklist (NRIC / name / results / document) against the uploaded MyKad → sets `profile.nric_verified` (**locks**
+  the NRIC), stamps `verified_at` / `verified_by` / `verify_checklist`, and advances the application
+  **shortlisted → accepted**. Only a shortlisted application can be accepted.
+- New **`accepted`** application status (passed the auto-screen = shortlisted; human-verified & confirmed = accepted).
+- Mentoring-candidate toggle via **PATCH** on the admin detail endpoint.
+- Admin detail page (`/admin/scholarship/[id]`): a **Verify-&-accept checklist card** (Accept enabled only when all
+  four are ticked; shows the locked/accepted + verified-by state) + a mentoring-candidate toggle. EN/MS/TA i18n.
+- `verified_at` / `verified_by` / `verify_checklist` audit fields; serializer exposes `nric` (full, for comparison),
+  `nric_verified`, the audit fields, `mentoring_candidate`, and the S10 plans/support intake. Migration `0009`.
+
+### Fixed
+- **TD-054 resolved**: NRIC uniqueness is now enforced at the single verify-&-accept point — if another profile
+  already has that NRIC *verified*, the endpoint returns `409 nric_conflict` for the admin to resolve (the soft-NRIC
+  "clash surfaces at verification" design), instead of the old claim transfer-path PK collision.
+
+### Tests
+- Backend **1095 → 1100** (verify-accept happy path, TD-054 conflict, only-shortlisted guard, mentoring toggle,
+  non-admin 403). Migration `0009` + golden masters intact. Frontend jest unchanged (49).
+
+## [Unreleased] — B40 Redesign · Sprint 10: apply form ② — My Plans + Support + "received" (2026-05-24)
+
+The second half of the apply form. Frontend only (every field was already accepted by `ApplicationCreateSerializer`
+since S7); on `feature/b40-redesign`, not deployed.
+
+### Added
+- **My Plans**: "intend to continue tertiary study" gate checkbox; **pathways considering** multi-select chips;
+  **UPU / destination** radio (with an inline amber note when "private (IPTS)" is picked — IPTS-only is out of
+  scope and the S8 engine declines it); **field of study** dropdown (from the field taxonomy); **top-3 course
+  choices** picked from the student's **saved courses** (ranked by tap order, max 3, friendly empty-state);
+  **other scholarships** multi-select chips + free text → funding-overlap signal.
+- **My Support**: help-with-university + help-with-scholarship radios (optional, Yes/No/Not sure), "anything else"
+  free text, required consent.
+- `scholarship.ts`: plans/support form state + payload mapping (`top_choices` ranked by order) + constants
+  (`UPU_OPTIONS`, `HELP_OPTIONS`, `OTHER_SCHOLARSHIP_OPTIONS`, `TopChoice`); apply page fetches saved courses
+  (exam-type aware) + field taxonomy on mount. EN/MS/TA i18n.
+
+### Changed
+- The apply form's single `intended_pathway` select is replaced by the `pathways_considered` multi-select; the
+  `notes` free-text is replaced by `anything_else`. `intends_tertiary_2026` kept (engine hard gate) as a checkbox.
+
+### Notes
+- The post-submit **"Application received"** screen already works (S8's silent-score keeps status `submitted`, so the
+  application page shows the neutral "received — we'll be in touch" card; the follow-up only appears once shortlisted).
+  No auto-advance.
+
+### Tests
+- Frontend jest **49** (top_choices builder + plans/support payload; replaces the dropped notes test). Backend unchanged (1095).
+
+## [Unreleased] — B40 Redesign · Sprint 9b: My Results edit → onboarding round-trip (2026-05-24)
+
+Wires the apply form's My Results "edit/add results" into the full onboarding flow and brings the student back
+without losing in-progress edits. Frontend only; on `feature/b40-redesign`, not deployed.
+
+### Changed
+- **My Results "edit / add results"** now routes through the **full onboarding** (`/onboarding/exam-type` → grades
+  → … → "a few more details") instead of `/profile` or `/quiz`, so the profile ends up complete for course
+  recommendations too.
+- The **final onboarding step** is context-aware: entered from the apply form, its button reads **"Save & return
+  to application"** and routes back to `/scholarship/apply` (otherwise unchanged → dashboard).
+
+### Added
+- **Stash & restore** of in-progress About-Me/My-Family edits across the onboarding detour (sessionStorage): the
+  form only commits on submit, so edits are stashed before leaving and restored on return (landing on the Results
+  tab). Helpers `stashApplyForm` / `popApplyStash` / `hasApplyReturn` / `clearApplyReturn` (storage-injectable,
+  SSR-safe); orphan return-marker cleared on a normal apply visit.
+- i18n `onboarding.saveReturnToApplication`; Results CTA copy updated (edit/add → onboarding).
+
+### Tests
+- Frontend jest **44 → 49** (stash/restore round-trip, marker set/clear, SSR no-op). Backend unchanged (1095).
+
+## [Unreleased] — B40 Redesign · Sprint 9: apply form ① — About Me + My Family (2026-05-24)
+
+Apply-form rebuild, first half. Inline-editable **About Me** + **My Family**, commit-on-submit. Frontend +
+small backend write-back; on `feature/b40-redesign`, not deployed. Mobile-first (desktop layout is S12).
+
+### Changed
+- **About Me** (was read-only "About You") is now **inline-editable**, pre-filled from the profile: full name,
+  school, **NRIC** (editable until verified, read-only + "Verified" badge once locked), referring organisation,
+  home state, phone. **Contact email is locked** (already verified). The old "Edit → /profile" bounce is gone.
+- **Commit-on-submit** — edits live in form state; on a successful submit the About Me + My Family fields sync to
+  the canonical profile (`sync_profile_fields`), and the **NRIC commits via the validated claim path** (never the
+  application payload). A failed submit persists nothing.
+- Section headings are first-person (**About Me**, **My Family**); tab labels stay short (About / Family / …).
+- Validation now enforces the required About-Me fields (name, school, NRIC format, referring org, home state,
+  phone) + household income, and **jumps the user to the offending tab**; the error banner moved out of the
+  Support tab so it shows on whichever tab the error is on.
+
+### Added
+- **My Family**: parent/guardian **name + phone** (stored in `profile.guardians`) and **preferred call language**
+  (en/ms/ta/mixed → `profile.preferred_call_language`); `i` tooltips on income, household, STR, JKM.
+- Required `*` + `i` info-bubble tooltips across About Me + My Family (`InfoTip` + `FieldLabel` components).
+- Referring-organisation **fixed dropdown** (9 legacy options) → stored as `referral_source`, resolved to the
+  `referred_by_org` FK server-side when a matching active `PartnerOrganisation` exists.
+- `scholarship.ts`: new form fields + `nricChanged`, `REFERRING_ORG_OPTIONS`, `CALL_LANGUAGE_OPTIONS`,
+  `MALAYSIAN_STATES`; `ApplicationCreateSerializer` accepts the new write-only profile fields; profile GET returns
+  `referral_source` + `guardians`. EN/MS/TA i18n (labels, tooltips, headings, validation).
+
+### Tests
+- Backend **1093 → 1095** (About-Me/Family write-back + referring-org FK resolution). Frontend jest **37 → 44**.
+
+## [Unreleased] — B40 Redesign · Sprint 8: decision engine + silent-score + delayed reveal (2026-05-24)
+
+The deterministic decision engine (final policy calls settled). Backend only; on `feature/b40-redesign`, not deployed.
+
+### Changed
+- **`shortlisting.py` rewritten** to the settled rule (no score/weights/hardship): hard gates (consent · intends
+  public study · not IPTS-only) → academic floor (SPM ≥4 at A- AND ≥5 at B+ / STPM PNGK ≥2.9) → income (STR →
+  pass, bucket A; else per-capita income < `per_capita_ceiling` RM1,584 → pass, bucket B). `evaluate()` returns
+  `verdict` (shortlisted/rejected) + bucket + reason.
+- **Submit no longer decides instantly** — it scores **silently** (`score_application`): stores verdict +
+  `decision_due_at`, status stays `submitted`, only the acknowledgement email is sent.
+- **Delayed reveal** via `send_pending_decision_emails` (now release-due-decisions): flips status + sends the
+  email at `decision_due_at` — **+2h** shortlist (invitation), **+48h** decline (warm).
+- **Decline email** rewritten warm (EN/MS/TA): "not successful this round, all the best, you're welcome at our
+  higher-education seminars — we'll send invites."
+
+### Added
+- Cohort: `per_capita_ceiling` (1584), `min_spm_bplus_count` (5), `success_delay_hours` (2), `decline_delay_hours`
+  (48); defaults `min_spm_a_count` 5→4, `min_stpm_pngk` 3.0→2.9.
+- Application: `verdict`, `decision_due_at`, `decision_released_at`. Migration scholarship `0008`.
+
+### Tests
+- Backend **1093 pass** (golden masters intact). Rewrote engine tests (per-capita + academic-floor + IPTS + STR),
+  scheduler tests (release-due / idempotent / dry-run), submit tests (silent score), cohort-defaults; added a
+  per-verdict-delay scoring test.
+
+## [Unreleased] — B40 Redesign · Sprint 7: backend foundation (soft-NRIC + intake fields) (2026-05-23)
+
+Foundation for the decision-engine redesign + apply-form rebuild (6-sprint roadmap in
+`docs/scholarship/b40-decision-redesign-plan.md`). Backend only; on `feature/b40-redesign`, not deployed.
+
+### Added
+- **`StudentProfile.nric_verified`** (Bool), **`coq_score`** (Float — co-curricular score now persisted,
+  was transient), **`preferred_call_language`**. Profile GET returns all three.
+- **`ScholarshipApplication`** new intake fields (all optional): `field_of_study`, `pathways_considered`,
+  `top_choices`, `upu_status` (incl. an IPTS option), `other_scholarships` (+ free text), `help_university`,
+  `help_scholarship`, `anything_else`, `mentoring_candidate`. Carried through the create serializer,
+  `_APP_FIELDS`, the audit `intake_snapshot`, and the read serializer.
+- Migrations: courses `0048`, scholarship `0007`.
+
+### Changed
+- **Soft-NRIC (supersedes "IC immutable"):** uniqueness now enforced **only when verified**
+  (`unique_verified_nric` replaces `unique_nric_when_set`); NRIC is **read-only on PUT/sync** (claim path
+  only); the claim endpoint **blocks a change once verified** (403 `nric_locked`). See `docs/decisions.md`.
+
+### Tests
+- Backend **1091 pass** (was 1086; +4 soft-NRIC, +1 intake round-trip), golden masters intact (SPM 5319,
+  STPM 2026). Updated `test_profile_fields` (PUT no longer sets NRIC; uniqueness only when verified).
+
 ## [Unreleased] — B40 Assistance Programme · Phase 1.5c public landing + follow-up route (2026-05-22)
 
 Added the public marketing landing and gave the post-submission follow-up its own page.

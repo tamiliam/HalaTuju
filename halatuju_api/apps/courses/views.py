@@ -951,9 +951,13 @@ class ProfileView(APIView):
             'disability': profile.disability,
             'student_signals': profile.student_signals,
             'preferred_state': profile.preferred_state,
+            'preferred_call_language': profile.preferred_call_language,
+            'referral_source': profile.referral_source,
+            'guardians': profile.guardians,
             'name': profile.name,
             'school': profile.school,
             'nric': profile.nric,
+            'nric_verified': profile.nric_verified,
             'angka_giliran': profile.angka_giliran,
             'address': profile.address,
             'postal_code': profile.postal_code,
@@ -970,6 +974,7 @@ class ProfileView(APIView):
             'stpm_grades': profile.stpm_grades,
             'stpm_cgpa': profile.stpm_cgpa,
             'muet_band': profile.muet_band,
+            'coq_score': profile.coq_score,
             'spm_prereq_grades': profile.spm_prereq_grades,
         })
 
@@ -1107,6 +1112,18 @@ class NricClaimView(APIView):
         if state_code not in valid_state_codes:
             return Response({'error': 'Invalid state code in IC number'},
                             status=status.HTTP_400_BAD_REQUEST)
+
+        # Soft-NRIC lock (Option A): once an admin has verified the caller's NRIC it
+        # locks — the student can no longer change it (only an admin can). Until then
+        # it stays editable. Re-submitting the same verified NRIC is harmless and falls
+        # through to the 'linked' no-op below.
+        caller = StudentProfile.objects.filter(supabase_user_id=request.user_id).first()
+        if caller and caller.nric and caller.nric_verified and caller.nric != nric:
+            return Response(
+                {'error': 'Your NRIC is verified and locked. Contact support to change it.',
+                 'code': 'nric_locked'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         try:
             existing = StudentProfile.objects.get(nric=nric)

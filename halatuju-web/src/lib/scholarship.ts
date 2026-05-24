@@ -24,6 +24,52 @@ export const PATHWAY_OPTIONS: IntendedPathway[] = [
   'asasi', 'matrik', 'stpm', 'pismp', 'diploma', 'degree', 'other',
 ]
 
+// Referring-organisation codes (fixed list from the legacy Google Form). Labels
+// come from i18n (`scholarship.apply.org.<code>`). A code that matches an active
+// PartnerOrganisation row links the FK server-side; the rest are generic sources.
+export const REFERRING_ORG_OPTIONS = [
+  'smc', 'cumig', 'pushparani', 'sathya_sai', 'halatuju', 'tara', 'govind', 'social', 'other',
+] as const
+export type ReferringOrg = typeof REFERRING_ORG_OPTIONS[number] | ''
+
+// Preferred language for phone calls (B40 outreach). Labels via i18n
+// (`scholarship.apply.callLang.<code>`); stored on profile.preferred_call_language.
+export const CALL_LANGUAGE_OPTIONS = ['en', 'ms', 'ta', 'mixed'] as const
+export type CallLanguage = typeof CALL_LANGUAGE_OPTIONS[number] | ''
+
+// Mirrors the onboarding state list (onboarding/profile/page.tsx). Static — a
+// fixed set of Malaysian states/federal territories that does not change.
+export const MALAYSIAN_STATES = [
+  'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
+  'Pahang', 'Perak', 'Perlis', 'Pulau Pinang', 'Sabah',
+  'Sarawak', 'Selangor', 'Terengganu',
+  'Kuala Lumpur', 'Labuan', 'Putrajaya',
+] as const
+
+// NRIC format XXXXXX-XX-XXXX (the claim endpoint does the full age/state checks).
+const NRIC_RE = /^\d{6}-\d{2}-\d{4}$/
+
+// ── My Plans + My Support (Sprint 10) ────────────────────────────────────
+// UPU / destination intent. 'ipts' (IPTS-only) is the engine's disqualifier;
+// the form never blocks on it — the backend declines silently (S8 gate).
+export type UpuStatus = '' | 'applied' | 'public_other' | 'ipts' | 'unknown'
+export const UPU_OPTIONS: Exclude<UpuStatus, ''>[] = ['applied', 'public_other', 'ipts', 'unknown']
+
+// Optional support questions (Yes / No / Not sure).
+export type HelpChoice = '' | 'yes' | 'no' | 'unsure'
+export const HELP_OPTIONS: Exclude<HelpChoice, ''>[] = ['yes', 'no', 'unsure']
+
+// Other scholarships applied/held → funding-overlap signal (labels via i18n).
+export const OTHER_SCHOLARSHIP_OPTIONS = ['jpa', 'petronas', 'mara', 'yayasan', 'bank_foundation', 'other'] as const
+
+// A ranked course choice (rank derived from array order). Sourced from the
+// student's saved courses; shape mirrors the backend `top_choices` entries.
+export interface TopChoice {
+  courseId: string
+  courseName: string
+  institution: string
+}
+
 /**
  * The apply form only carries fields the applicant edits here. Academic data
  * (exam type, grades, STPM CGPA) is read live from the canonical HalaTuju
@@ -31,28 +77,67 @@ export const PATHWAY_OPTIONS: IntendedPathway[] = [
  * are written back to the profile on submit (their canonical home).
  */
 export interface ApplyFormState {
+  // About Me (inline-editable; pre-filled from the profile, committed on submit).
+  // NRIC is edited here but saved via the validated claim path, not the payload.
+  name: string
+  school: string
+  nric: string
+  referringOrg: ReferringOrg
+  homeState: string
+  phone: string
+  // My Family
   householdIncome: string   // strings for controlled inputs
   householdSize: string
   receivesStr: boolean
   receivesJkm: boolean
-  intendedPathway: IntendedPathway
-  intendsTertiary2026: boolean
+  parentName: string
+  parentPhone: string
+  callLanguage: CallLanguage
+  // My Plans
+  pathwaysConsidered: string[]      // pathway keys (non-exclusive)
+  topChoices: TopChoice[]           // ranked top-3 (from saved courses)
+  upuStatus: UpuStatus
+  fieldOfStudy: string              // field-taxonomy key
+  otherScholarships: string[]       // scholarship keys
+  otherScholarshipsText: string
+  intendsTertiary2026: boolean      // engine hard gate — must be true to qualify
+  // My Support
+  helpUniversity: HelpChoice
+  helpScholarship: HelpChoice
+  anythingElse: string
   consentToContact: boolean
-  notes: string
 }
 
 export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFormState {
-  // Pre-fill the financial fields from the profile (the form refreshes them and
-  // writes any change back). Academic data is shown read-only, not in the form.
+  // Pre-fill every editable field from the canonical profile. The form holds the
+  // edits in state and writes them back only on a successful submit. Academic
+  // data (results) is shown read-only by My Results, not carried in this form.
+  const guardian = profile?.guardians?.[0]
   return {
+    name: profile?.name ?? '',
+    school: profile?.school ?? '',
+    nric: profile?.nric ?? '',
+    referringOrg: (profile?.referral_source as ReferringOrg) ?? '',
+    homeState: profile?.preferred_state ?? '',
+    phone: profile?.contact_phone ?? '',
     householdIncome: profile?.household_income != null ? String(profile.household_income) : '',
     householdSize: profile?.household_size != null ? String(profile.household_size) : '',
     receivesStr: !!profile?.receives_str,
     receivesJkm: !!profile?.receives_jkm,
-    intendedPathway: '',
+    parentName: guardian?.name ?? '',
+    parentPhone: guardian?.phone ?? '',
+    callLanguage: (profile?.preferred_call_language as CallLanguage) ?? '',
+    pathwaysConsidered: [],
+    topChoices: [],
+    upuStatus: '',
+    fieldOfStudy: '',
+    otherScholarships: [],
+    otherScholarshipsText: '',
     intendsTertiary2026: true,
+    helpUniversity: '',
+    helpScholarship: '',
+    anythingElse: '',
     consentToContact: false,
-    notes: '',
   }
 }
 
@@ -80,13 +165,31 @@ export function profileAcademicSummary(profile?: StudentProfile | null): Academi
 }
 
 export interface ApplicationPayload {
+  // About Me + My Family profile fields (write-only; synced to the profile
+  // server-side). NRIC is NOT here — it goes through the claim path on submit.
+  name: string
+  school: string
+  preferred_state: string
+  contact_phone: string
+  preferred_call_language: string
+  referral_source: string
+  guardians: { name: string; phone: string }[]
   household_income: number | null
   household_size: number | null
   receives_str: boolean
   receives_jkm: boolean
-  intended_pathway: string
   intends_tertiary_2026: boolean
   consent_to_contact: boolean
+  // My Plans + My Support (Sprint 10)
+  pathways_considered: string[]
+  top_choices: { rank: number; course_id: string; course_name: string; institution: string }[]
+  upu_status: string
+  field_of_study: string
+  other_scholarships: string[]
+  other_scholarships_text: string
+  help_university: string
+  help_scholarship: string
+  anything_else: string
   form_data: Record<string, unknown>
 }
 
@@ -99,28 +202,119 @@ function toIntOrNull(s: string): number | null {
 
 export function buildApplicationPayload(form: ApplyFormState): ApplicationPayload {
   // Academic fields are intentionally absent — the backend reads them from the
-  // profile. The financial fields are synced to the profile server-side.
+  // profile. The About Me + My Family fields are synced to the profile
+  // server-side. NRIC is committed separately via the validated claim path.
+  const guardians = form.parentName.trim() || form.parentPhone.trim()
+    ? [{ name: form.parentName.trim(), phone: form.parentPhone.trim() }]
+    : []
   return {
+    name: form.name.trim(),
+    school: form.school.trim(),
+    preferred_state: form.homeState,
+    contact_phone: form.phone.trim(),
+    preferred_call_language: form.callLanguage,
+    referral_source: form.referringOrg,
+    guardians,
     household_income: toIntOrNull(form.householdIncome),
     household_size: toIntOrNull(form.householdSize),
     receives_str: form.receivesStr,
     receives_jkm: form.receivesJkm,
-    intended_pathway: form.intendedPathway,
     intends_tertiary_2026: form.intendsTertiary2026,
     consent_to_contact: form.consentToContact,
-    form_data: form.notes.trim() ? { notes: form.notes.trim() } : {},
+    // My Plans + My Support — rank is derived from the top-3 selection order.
+    pathways_considered: form.pathwaysConsidered,
+    top_choices: form.topChoices.map((c, i) => ({
+      rank: i + 1, course_id: c.courseId, course_name: c.courseName, institution: c.institution,
+    })),
+    upu_status: form.upuStatus,
+    field_of_study: form.fieldOfStudy,
+    other_scholarships: form.otherScholarships,
+    other_scholarships_text: form.otherScholarshipsText.trim(),
+    help_university: form.helpUniversity,
+    help_scholarship: form.helpScholarship,
+    anything_else: form.anythingElse.trim(),
+    form_data: {},
   }
 }
 
+/** True when the form's NRIC differs from what's on the profile (needs a claim call). */
+export function nricChanged(form: ApplyFormState, profile?: StudentProfile | null): boolean {
+  return form.nric.trim() !== (profile?.nric ?? '').trim()
+}
+
 /**
- * Returns the i18n error sub-key for the first validation problem, or null if
- * the form is ready to submit. Mirrors the backend's hard requirements (academic
- * data is validated against the profile server-side, not here).
+ * Returns the i18n error sub-key for the first validation problem, or null if the
+ * form is ready to submit. Ordered by tab (About Me → My Family → consent) so the
+ * earliest-section problem surfaces first. The full NRIC age/state checks and the
+ * academic floor are enforced server-side (claim endpoint / profile), not here.
  */
 export function applyFormError(form: ApplyFormState): string | null {
-  if (!form.consentToContact) return 'consent'
+  // About Me — all required.
+  if (!form.name.trim()) return 'name'
+  if (!form.school.trim()) return 'school'
+  if (!NRIC_RE.test(form.nric.trim())) return 'nric'
+  if (!form.referringOrg) return 'org'
+  if (!form.homeState) return 'state'
+  if (!form.phone.trim()) return 'phone'
+  // My Family — exact household income required (drives per-capita need).
   if (toIntOrNull(form.householdIncome) === null) return 'income'
+  // My Support — consent required to apply.
+  if (!form.consentToContact) return 'consent'
   return null
+}
+
+// ── My Results → onboarding round-trip (Sprint 9b) ───────────────────────
+// Editing/adding results sends the student through the full onboarding flow.
+// The apply form only commits on submit, so before leaving we STASH the
+// in-progress About Me / My Family edits and set a RETURN marker; the final
+// onboarding step reads the marker to route back here (and we restore the stash).
+// sessionStorage keys are constants (not string literals) to avoid drift.
+export const APPLY_STASH_KEY = 'halatuju_apply_stash'
+export const APPLY_RETURN_KEY = 'halatuju_apply_return'
+
+type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
+
+/** sessionStorage if available (browser), else null (SSR / node tests without injection). */
+function safeSession(): StorageLike | null {
+  try {
+    return typeof sessionStorage !== 'undefined' ? sessionStorage : null
+  } catch {
+    return null
+  }
+}
+
+/** Stash the in-progress form and mark that onboarding should return to the apply page. */
+export function stashApplyForm(form: ApplyFormState, storage?: StorageLike): void {
+  const s = storage ?? safeSession()
+  if (!s) return
+  s.setItem(APPLY_STASH_KEY, JSON.stringify(form))
+  s.setItem(APPLY_RETURN_KEY, '1')
+}
+
+/** Read and consume the stashed form (returns null if none / unparseable). */
+export function popApplyStash(storage?: StorageLike): ApplyFormState | null {
+  const s = storage ?? safeSession()
+  if (!s) return null
+  const raw = s.getItem(APPLY_STASH_KEY)
+  if (!raw) return null
+  s.removeItem(APPLY_STASH_KEY)
+  try {
+    return JSON.parse(raw) as ApplyFormState
+  } catch {
+    return null
+  }
+}
+
+/** True when onboarding was entered from the apply form (should return to it). */
+export function hasApplyReturn(storage?: StorageLike): boolean {
+  const s = storage ?? safeSession()
+  return !!s && s.getItem(APPLY_RETURN_KEY) === '1'
+}
+
+/** Clear the return marker (after routing back to the apply page). */
+export function clearApplyReturn(storage?: StorageLike): void {
+  const s = storage ?? safeSession()
+  s?.removeItem(APPLY_RETURN_KEY)
 }
 
 // ── STEP 2: deeper-info + funding-need form (Sprint 4b) ──────────────────

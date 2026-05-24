@@ -48,6 +48,9 @@ export interface StudentProfile {
   student_merit?: number
   student_signals?: Record<string, number>
   preferred_state?: string
+  preferred_call_language?: string
+  referral_source?: string
+  nric_verified?: boolean
   name?: string
   school?: string
   nric?: string
@@ -72,7 +75,7 @@ export interface StudentProfile {
   household_size?: number | null
   receives_str?: boolean
   receives_jkm?: boolean
-  guardians?: { name?: string; relationship?: string; occupation?: string; income?: number }[]
+  guardians?: { name?: string; phone?: string; relationship?: string; occupation?: string; income?: number }[]
 }
 
 export interface EligibleCourse {

@@ -3,9 +3,11 @@ Business logic for B40 Assistance Programme intake.
 
 Pure-ish functions kept out of the view (mirrors apps/courses/eligibility_service.py).
 """
+from datetime import timedelta
+
 from django.utils import timezone
 
-from .emails import send_acknowledgement_email, send_pass_email
+from .emails import send_acknowledgement_email, send_pass_email, send_fail_email
 from .models import Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort
 # count_spm_a_grades + the A-grade set now live with the shortlisting engine
 # (the single place that scores academics). Re-exported here for callers that
@@ -20,28 +22,69 @@ _PROFILE_WRITEBACK_FIELDS = (
     'household_income', 'household_size', 'receives_str', 'receives_jkm',
 )
 
+# About Me + My Family scalar fields the apply form now edits inline and commits
+# on submit (S9). Same write-back-to-profile rule as the financial fields. NRIC
+# is intentionally excluded — it changes only via the validated claim path,
+# never an unchecked write (see docs/decisions.md, soft-NRIC).
+_PROFILE_ABOUTME_FIELDS = (
+    'name', 'school', 'preferred_state', 'contact_phone',
+    'preferred_call_language', 'referral_source',
+)
+
 # Per-application fields that genuinely belong on the ScholarshipApplication row.
 _APP_FIELDS = (
     'intended_pathway', 'intends_tertiary_2026', 'consent_to_contact', 'form_data',
+    # Plans + Support intake (Sprint 7); mentoring_candidate is coordinator-set, not collected here.
+    'field_of_study', 'pathways_considered', 'top_choices', 'upu_status',
+    'other_scholarships', 'other_scholarships_text',
+    'help_university', 'help_scholarship', 'anything_else',
 )
 
 
 def sync_profile_fields(profile, data):
     """
-    Write the form's financial fields back to the canonical profile. Only keys
-    that are present and non-None overwrite (the form may legitimately omit a
-    field that is already on the profile). Returns the fields actually changed.
+    Write the form's financial + About Me/My Family fields back to the canonical
+    profile (commit-on-submit, S9). Only keys that are present and non-None
+    overwrite (the form may legitimately omit a field that is already on the
+    profile). Parent/guardian details land in the ``guardians`` JSON list, and
+    the referring-organisation code resolves to the ``referred_by_org`` FK
+    (mirrors ProfileView). NRIC is never written here — claim path only.
+    Returns the fields actually changed.
     """
     if profile is None:
         return []
     updated = []
-    for field in _PROFILE_WRITEBACK_FIELDS:
+    for field in _PROFILE_WRITEBACK_FIELDS + _PROFILE_ABOUTME_FIELDS:
         if field in data and data[field] is not None:
             if getattr(profile, field, None) != data[field]:
                 setattr(profile, field, data[field])
                 updated.append(field)
+
+    # Parent/guardian name + phone live in the guardians JSON list.
+    if 'guardians' in data and data['guardians'] is not None:
+        if profile.guardians != data['guardians']:
+            profile.guardians = data['guardians']
+            updated.append('guardians')
+
+    # Changing the contact phone invalidates any prior verification (mirrors PUT /profile/).
+    if 'contact_phone' in updated:
+        profile.contact_phone_verified = False
+        updated.append('contact_phone_verified')
+
     if updated:
-        profile.save(update_fields=updated + ['updated_at'])
+        profile.save(update_fields=list(dict.fromkeys(updated)) + ['updated_at'])
+
+    # Resolve the referring-organisation code to a PartnerOrganisation FK. A
+    # generic source (whatsapp/google/other) has no row and leaves the FK unset.
+    referral = data.get('referral_source')
+    if referral:
+        from apps.courses.models import PartnerOrganisation
+        org = PartnerOrganisation.objects.filter(code=referral, is_active=True).first()
+        if org and profile.referred_by_org_id != org.pk:
+            profile.referred_by_org = org
+            profile.save(update_fields=['referred_by_org'])
+            updated.append('referred_by_org')
+
     return updated
 
 
@@ -57,6 +100,11 @@ def build_intake_snapshot(profile, app_data):
         'profile': {
             'name': getattr(p, 'name', '') if p else '',
             'school': getattr(p, 'school', '') if p else '',
+            'preferred_state': getattr(p, 'preferred_state', '') if p else '',
+            'contact_phone': getattr(p, 'contact_phone', '') if p else '',
+            'preferred_call_language': getattr(p, 'preferred_call_language', '') if p else '',
+            'guardians': getattr(p, 'guardians', []) if p else [],
+            'referral_source': getattr(p, 'referral_source', '') if p else '',
             'exam_type': getattr(p, 'exam_type', '') if p else '',
             'grades': getattr(p, 'grades', {}) if p else {},
             'stpm_cgpa': getattr(p, 'stpm_cgpa', None) if p else None,
@@ -71,6 +119,15 @@ def build_intake_snapshot(profile, app_data):
             'intends_tertiary_2026': app_data.get('intends_tertiary_2026', True),
             'consent_to_contact': app_data.get('consent_to_contact', False),
             'form_data': app_data.get('form_data', {}),
+            'field_of_study': app_data.get('field_of_study', ''),
+            'pathways_considered': app_data.get('pathways_considered', []),
+            'top_choices': app_data.get('top_choices', []),
+            'upu_status': app_data.get('upu_status', ''),
+            'other_scholarships': app_data.get('other_scholarships', []),
+            'other_scholarships_text': app_data.get('other_scholarships_text', ''),
+            'help_university': app_data.get('help_university', ''),
+            'help_scholarship': app_data.get('help_scholarship', ''),
+            'anything_else': app_data.get('anything_else', ''),
         },
     }
 
@@ -129,34 +186,56 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
     return application
 
 
-def shortlist_application(application):
+def score_application(application):
     """
-    Run the mechanical shortlist on a freshly-created application, persist the
-    outcome (status / bucket / reason / shortlisted_at), and for a PASS send the
-    congratulations email immediately. The FAIL email is deferred to the
-    ``send_pending_decision_emails`` management command (cohort-configured delay).
+    Score a freshly-submitted application **silently** (S8 delayed reveal): run the
+    engine, store verdict + bucket + reason, and set ``decision_due_at`` =
+    submitted_at + the cohort's success/decline delay. Status stays ``submitted`` and
+    NO email is sent — the scheduler reveals the verdict later via ``release_decision``.
+    Returns the ShortlistResult.
     """
-    result = evaluate(application, application.cohort)
-    application.status = result.status
+    cohort = application.cohort
+    result = evaluate(application, cohort)
+    delay_h = cohort.success_delay_hours if result.verdict == 'shortlisted' else cohort.decline_delay_hours
+    base = application.submitted_at or timezone.now()
+    application.verdict = result.verdict
     application.bucket = result.bucket
     application.shortlist_reason = result.reason
-    application.shortlisted_at = timezone.now()
+    application.decision_due_at = base + timedelta(hours=delay_h)
     application.save(update_fields=[
-        'status', 'bucket', 'shortlist_reason', 'shortlisted_at',
+        'verdict', 'bucket', 'shortlist_reason', 'decision_due_at',
     ])
+    return result
 
-    if result.status == 'shortlisted':
-        sent = send_pass_email(
-            to_email=application.notify_email,
-            applicant_name=getattr(application.profile, 'name', '') if application.profile else '',
-            programme_name=application.cohort.name,
-            lang=application.locale,
-        )
-        if sent:
-            application.decision_email_sent_at = timezone.now()
-            application.save(update_fields=['decision_email_sent_at'])
 
-    return application
+def release_decision(application):
+    """
+    Reveal a scored application's verdict (called by the scheduler once
+    ``decision_due_at`` has passed): flip status to the verdict, stamp timestamps,
+    unlock the follow-up for shortlisted students, and send the verdict email
+    (invitation for shortlisted, warm decline for rejected). Idempotent — a second
+    call on an already-released or unscored application is a no-op. Returns True if it released.
+    """
+    if application.decision_released_at or application.status != 'submitted' or not application.verdict:
+        return False
+    now = timezone.now()
+    application.status = application.verdict
+    application.decision_released_at = now
+    if application.verdict == 'shortlisted':
+        application.shortlisted_at = now
+    application.save(update_fields=['status', 'decision_released_at', 'shortlisted_at'])
+
+    name = getattr(application.profile, 'name', '') if application.profile else ''
+    send = send_pass_email if application.verdict == 'shortlisted' else send_fail_email
+    if send(
+        to_email=application.notify_email,
+        applicant_name=name,
+        programme_name=application.cohort.name,
+        lang=application.locale,
+    ):
+        application.decision_email_sent_at = now
+        application.save(update_fields=['decision_email_sent_at'])
+    return True
 
 
 def application_completeness(application):

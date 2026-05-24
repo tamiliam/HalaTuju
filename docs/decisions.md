@@ -574,3 +574,129 @@
 **Trade-offs:** Shortlisting now depends on the profile being populated — a profile with empty grades scores 0 A's (correctly fails academic). The write-back only overwrites with non-None form values, so a form that omits a field can't blank an existing profile value. Migrations `courses 0047` (add financial fields) + `scholarship 0006` (remove the duplicated fields, add `intake_snapshot`) must both deploy together.
 
 **Revisit if:** A future round needs point-in-time scoring against the snapshot rather than the live profile (then score from `intake_snapshot`), or non-HalaTuju applicants (no profile) are admitted (then the application would need to carry its own data again).
+
+## Soft-NRIC: editable until admin-verified (supersedes "IC immutable") — B40 Redesign Sprint 7, 2026-05-23
+
+**Decision:** NRIC is **soft** — editable by the student until an admin verifies it against the uploaded MyKad, after which it locks. Added `StudentProfile.nric_verified` (default false). Uniqueness is enforced **only when verified** (`unique_verified_nric`, condition `nric_verified AND nric <> ''`), replacing `unique_nric_when_set`. NRIC is **read-only on `PUT /profile/` and `/profile/sync/`** — it changes only via the validated `/profile/claim-nric/` endpoint, which now **blocks a change once the caller's NRIC is verified** (403 `nric_locked`). **This supersedes the IC Gate Sprint (2026-03-15) decision that "IC is immutable after initial entry."**
+
+**Alternatives considered:** (1) Keep IC immutable + add an admin-only override tool. (2) Free self-service edit anytime (no verification gate). (3) Soft until admin verify-&-accept, uniqueness only when verified (chosen).
+
+**Rationale:** "IC immutable after initial entry" left students permanently stuck with a fat-fingered or fake NRIC (no self-service fix) and let a wrong entry block the rightful owner via the unique constraint — both surfaced in the NRIC investigation. For a need-based programme the real guard is the **document check + admin verify-&-accept before award** (Google Vision assists; a human signs off), not an entry-time lock. Relaxing uniqueness to verified-only means a typo of someone else's number can't hard-block a submission; the clash surfaces at verification, where only one NRIC can be verified. Editing routes through the validated claim path, so format/age/state checks still apply and there is a single write point (closing the `PUT`/`sync` gaps).
+
+**Trade-offs:** During the soft phase the DB no longer blocks duplicate NRICs — the document check + admin verification is the only guard before money moves (intended). The minor/guardian-consent gate recomputes from the (now editable) NRIC birth-date on each change. Existing 493 NRICs start unverified (editable) — fine, none are yet document-verified.
+
+**Revisit if:** Fraud pressure requires entry-time identity verification (then add Vision/JPN at claim time), or a non-applicant context needs a locked NRIC without an admin step.
+
+## Deterministic decision rule (per-capita + STR + academic floor) — supersedes the weighted score — B40 Redesign Sprint 8, 2026-05-24
+
+**Decision:** The shortlist decision is a simple deterministic rule, not a 0–100 weighted score: hard gates (consent · intends public study · NOT IPTS-only) → academic floor (SPM ≥4 at A- AND ≥5 at B+ / STPM PNGK ≥2.9) → income (STR recipient passes, bucket A; otherwise per-capita income = household_income / household_size must be < `per_capita_ceiling` RM1,584, bucket B). The verdict is computed **silently at submit** (status stays `submitted`); the scheduler **reveals** it later — +2h for shortlist (invitation email), +48h for decline (warm email). Supersedes the exploratory Sprint-3 Bucket-A/B/marginal engine and the planned weighted score (per-capita bands + factor weights + pass mark + hardship flags).
+
+**Alternatives considered:** (1) Weighted 0–100 score with per-capita bands, dependent/hardship/results weights, and a pass mark (the earlier plan). (2) Household-income bands (B40 < 5,860 / M40 / T20 > 12,679). (3) Simple rule: academic floor + (STR OR per-capita < RM1,584) (chosen).
+
+**Rationale:** Per-capita income already accounts for household size/dependents, so it captures need without a separate hardship score — the grantmaking lead's call ("3 captures this"). RM1,584 = DOSM-2024 B40 ceiling RM5,860 ÷ average household 3.7. Per-capita naturally rejects T20 and is fairer to large families than a flat household ceiling. STR is government-verified low income → a reliable fast-path. With no human in the loop, a transparent reproducible rule is far easier to defend to a rejected applicant than a weighted score. Silent-score + delayed reveal (+2h/+48h) makes an automated verdict feel considered. The public criteria stay at the advertised bar (5 A's / PNGK 3.0, Indian-descent pilot) while the engine is intentionally more lenient (4A-+1B+ / 2.9, open to all) to accommodate near-misses.
+
+**Trade-offs:** No nuanced scoring — a borderline case is decided by hard thresholds (RM1,584, the academic floor) rather than a holistic score. Accepted: simplicity + defensibility + the document/admin verification at award are the real guards. Hardship/clarity become sponsor-profile + mentoring signals, never reject inputs.
+
+**Revisit if:** Outcomes show the per-capita threshold mis-sorts a class of applicants (add back a small scored layer), or a round needs ranking/quotas beyond pass/fail (score within the passing set).
+
+## Commit-on-submit: profile fields via the submit, NRIC via the claim path — B40 Redesign Sprint 9, 2026-05-24
+
+**Decision:** The inline-editable apply form holds edits in React state and persists **nothing** until a successful
+submit. On submit, the About-Me/My-Family fields (name, school, home state, phone, parent `guardians`, call
+language, referring-org code) ride the application POST and are written to the canonical `StudentProfile` by
+`services.sync_profile_fields` (extended from financial-only). The **NRIC is committed separately** through the
+validated `/profile/claim-nric/` endpoint — it is never in the application payload and stays read-only on the
+serializer. The referring-org is a **fixed dropdown** whose code is stored raw on `profile.referral_source` and
+resolved to the `referred_by_org` FK only when a matching active `PartnerOrganisation` exists.
+
+**Alternatives considered:** (1) Persist each field as the user edits (the old "financial writes back while editing"
+pattern). (2) Put NRIC in the application payload and let the serializer write it. (3) A live partner-org endpoint
+feeding the dropdown.
+
+**Rationale:** A single commit point means a half-finished or failed submit leaves the profile untouched — no
+partial writes, no "saved but didn't apply" ambiguity. NRIC must keep its format/age/state validation and the
+soft-NRIC verified-lock semantics, all of which live in the claim endpoint — routing it there preserves a single
+validated write path and keeps the serializer's `nric` read-only (closing the PUT/sync gap from S7). A fixed
+referring-org list matches the legacy Google Form exactly, needs no new endpoint, and `referral_source` already
+existed for this; the FK links opportunistically when the org is seeded (TD-056).
+
+**Trade-offs:** The NRIC claim is a second network call on submit, ordered before the application POST; if the claim
+succeeds but the POST then fails, the NRIC is updated while no application is created (acceptable — the next submit
+attempt succeeds, and the NRIC write is itself valid). The apply form's `guardians` write overwrites the whole list
+with one entry (TD-055). Until partner orgs are seeded, attribution persists only as the raw `referral_source` code.
+
+**Revisit if:** Submit latency from the two sequential calls hurts UX (batch into one transactional endpoint), or
+guardians/partner-orgs need richer handling.
+
+## My Results edit detour: sessionStorage stash + return-marker — B40 Redesign Sprint 9b, 2026-05-24
+
+**Decision:** Editing/adding results from the apply form sends the student through the **full onboarding** flow
+and returns them to the apply page afterwards. Because the apply form only commits on submit, the in-progress
+About-Me/My-Family edits are **stashed to sessionStorage** before leaving and **restored on return**; a separate
+**boolean return-marker** (also sessionStorage) tells the final onboarding step to route back to `/scholarship/apply`
+(button relabelled "Save & return to application") instead of `/dashboard`. The marker is cleared on a legitimate
+return and orphan-cleared on any normal apply visit.
+
+**Alternatives considered:** (1) Thread the return intent as a query param (`?return=apply`) through every
+onboarding step. (2) Persist apply edits to the backend before the detour. (3) Block results-editing from the apply
+form (link to a read-only profile view).
+
+**Rationale:** The onboarding steps `router.push` without preserving query strings, so threading a param would
+mean touching every intermediate step — more surface, more risk — for a flow that's inherently single-tab.
+sessionStorage is tab-scoped (auto-clears on close) and survives the multi-page detour. Persisting edits to the
+backend mid-flow would violate the sprint's commit-on-submit invariant (a half-finished apply must write nothing).
+
+**Trade-offs:** A persistent marker can go stale if the student abandons onboarding mid-flow and then starts a
+normal onboarding in the same tab (TD-057) — mitigated (orphan-clear + tab-scoped) but not eliminated. Restoring
+the stash requires a `populatedRef` guard so the profile-prefill effect doesn't clobber the restored edits.
+
+**Revisit if:** TD-057's abandon edge bites in practice (switch to query-param threading), or onboarding gains a
+step that itself needs to preserve query state (thread a typed nav-state object instead).
+
+## My Plans top-3 sourced from saved courses (not a fresh eligibility recompute) — B40 Redesign Sprint 10, 2026-05-24
+
+**Decision:** The apply form's "top 3 course choices" are picked from the student's **saved courses**
+(`getSavedCourses`, exam-type aware), ranked by tap order, capped at 3, with a friendly empty-state when none are
+saved. `top_choices` is stored as `[{rank, course_id, course_name, institution}]`. It's optional — the decision
+engine never scores it (only `upu_status='ipts'` disqualifies); it feeds the sponsor profile + a seriousness signal.
+
+**Alternatives considered:** (1) Recompute the student's full eligible + ranked list in the apply form (mirror the
+dashboard's `checkEligibility` → `getRankedResults` / `rankStpmCourses` two-step, needing the full grades payload +
+quiz signals) and pick from that. (2) Free-text course names. (3) Search/autocomplete against the whole catalogue.
+
+**Rationale:** Saved courses are a subset of the student's eligible courses (you can only save what was shown to
+you), so they satisfy "from eligible options" while being far lighter — one call, no eligibility recompute, no
+signal prep — which kept S10 to a single session. Deliberately-bookmarked courses are also a *stronger* seriousness
+signal than a list the form generated. Free text isn't validated; full-catalogue search lets them pick ineligible
+courses.
+
+**Trade-offs:** A serious student who hasn't saved anything sees an empty-state and must go bookmark first (top-3
+stays optional, so they can still submit). The picker reflects only what's saved at submit time, not a live ranking.
+
+**Revisit if:** Too many applicants reach My Plans with no saved courses (then offer an inline eligible-courses
+fetch as a fallback), or sponsors need a ranked-eligibility view rather than the student's self-selected three.
+
+## Admin verify-&-accept is the single NRIC-uniqueness point; new `accepted` status — B40 Redesign Sprint 11a, 2026-05-24
+
+**Decision:** A `shortlisted` application is confirmed by a human via `AdminVerifyAcceptView`: the admin ticks a
+checklist (NRIC / name / results / document) against the uploaded MyKad, which sets `profile.nric_verified` (locks
+the NRIC), stamps `verified_at` / `verified_by` / `verify_checklist`, and advances the application to a **new
+`accepted` status**. NRIC uniqueness is enforced **only here** — if another profile already has that NRIC verified,
+the endpoint returns `409 nric_conflict` for the admin to resolve. This is the resolution of TD-054.
+
+**Alternatives considered:** (1) Enforce NRIC uniqueness at entry/claim time (a DB unique constraint or the claim
+endpoint) — the pre-soft-NRIC model. (2) No new status — verify just stamps audit fields, application stays
+`shortlisted`. (3) A separate `is_verified` boolean instead of a status transition.
+
+**Rationale:** The soft-NRIC decision (S7) deliberately tolerates duplicate *unverified* NRICs (a typo of someone
+else's number must not block a poor applicant's submission); the design said the clash should "surface at
+verification". Verify-&-accept is exactly that moment, so it's the correct — and only — place to enforce uniqueness.
+A distinct `accepted` status cleanly separates "passed the automatic screen" (shortlisted) from "a human verified
+the documents and confirmed" (accepted), which the admin list can filter on and the applicant view (S11b) can show.
+
+**Trade-offs:** Uniqueness isn't DB-guaranteed while unverified — two profiles can hold the same NRIC until one is
+verified (intended; the document check is the real guard before money moves). `STATUS_CHOICES` now has five values;
+migration `0009` re-emits an `AlterField` on both `status` and `verdict` (no-op, choices are validation-only).
+
+**Revisit if:** Fraud pressure requires entry-time identity verification (add JPN/Vision at claim time), or the
+programme needs more workflow states beyond submitted/shortlisted/accepted/rejected/withdrawn (e.g. disbursing).

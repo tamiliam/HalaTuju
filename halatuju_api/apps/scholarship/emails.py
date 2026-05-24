@@ -47,7 +47,7 @@ ACK_BODIES = {
     ),
 }
 
-# ── Pass / shortlisted (sent immediately) ────────────────────────────────
+# ── Invitation / shortlisted (sent at +success_delay_hours, ~2h, by the scheduler) ──
 PASS_SUBJECTS = {
     'en': 'Good news about your {programme} application',
     'ms': 'Berita baik tentang permohonan {programme} anda',
@@ -79,7 +79,7 @@ PASS_BODIES = {
     ),
 }
 
-# ── Fail / not this round (sent after the cohort delay) ──────────────────
+# ── Decline / not this round (warm; sent at +decline_delay_hours, ~48h, by the scheduler) ──
 FAIL_SUBJECTS = {
     'en': 'Update on your {programme} application',
     'ms': 'Maklumat terkini permohonan {programme} anda',
@@ -88,29 +88,31 @@ FAIL_SUBJECTS = {
 FAIL_BODIES = {
     'en': (
         "Dear {name},\n\n"
-        "Thank you for applying to the {programme}. After reviewing this "
-        "round's applications, we are unable to offer you assistance at this "
-        "time. We will keep your details on file and will reach out if a "
-        "suitable opportunity opens up.\n\n"
-        "We wish you all the very best in your studies.\n\n"
+        "Thank you for applying to the {programme}. We are not able to offer you "
+        "this particular scholarship this round — please don't be discouraged.\n\n"
+        "We wish you all the very best in your studies. You are warmly welcome to "
+        "join the higher-education seminars we run, online and in person — we will "
+        "send you the invitations.\n\n"
         "Warm regards,\nThe {programme} Team"
     ),
     'ms': (
         "Salam {name},\n\n"
-        "Terima kasih kerana memohon {programme}. Setelah menyemak permohonan "
-        "pusingan ini, kami tidak dapat menawarkan bantuan kepada anda pada "
-        "masa ini. Kami akan menyimpan maklumat anda dan akan menghubungi anda "
-        "jika peluang yang sesuai terbuka.\n\n"
-        "Kami mengucapkan selamat maju jaya dalam pengajian anda.\n\n"
+        "Terima kasih kerana memohon {programme}. Kami tidak dapat menawarkan "
+        "biasiswa ini kepada anda pada pusingan ini — namun janganlah berkecil "
+        "hati.\n\n"
+        "Kami mengucapkan selamat maju jaya dalam pengajian anda. Anda dialu-alukan "
+        "untuk menyertai seminar pendidikan tinggi yang kami anjurkan, dalam talian "
+        "dan secara bersemuka — kami akan menghantar jemputan kepada anda.\n\n"
         "Salam hormat,\nPasukan {programme}"
     ),
     'ta': (
         "அன்புள்ள {name},\n\n"
-        "{programme}-க்கு விண்ணப்பித்ததற்கு நன்றி. இந்தச் சுற்றின் "
-        "விண்ணப்பங்களைப் பரிசீலித்த பிறகு, இந்த நேரத்தில் உங்களுக்கு உதவி வழங்க "
-        "முடியவில்லை. உங்கள் விவரங்களை வைத்திருப்போம்; பொருத்தமான வாய்ப்பு "
-        "ஏற்பட்டால் உங்களைத் தொடர்புகொள்வோம்.\n\n"
-        "உங்கள் படிப்பில் சிறந்த வெற்றியை வாழ்த்துகிறோம்.\n\n"
+        "{programme}-க்கு விண்ணப்பித்ததற்கு நன்றி. இந்தச் சுற்றில் இந்தக் "
+        "குறிப்பிட்ட உதவித்தொகையை உங்களுக்கு வழங்க முடியவில்லை — ஆனால் மனம் "
+        "தளராதீர்கள்.\n\n"
+        "உங்கள் படிப்பில் சிறந்த வெற்றியை வாழ்த்துகிறோம். நாங்கள் நடத்தும் உயர்கல்வி "
+        "கருத்தரங்குகளில் — இணையவழியிலும் நேரிலும் — கலந்துகொள்ள உங்களை அன்புடன் "
+        "வரவேற்கிறோம்; அழைப்புகளை உங்களுக்கு அனுப்புவோம்.\n\n"
         "அன்புடன்,\n{programme} குழு"
     ),
 }

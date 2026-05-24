@@ -22,6 +22,7 @@ import { useSavedCourses } from '@/hooks/useSavedCourses'
 import CourseCard from '@/components/CourseCard'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
+import ScholarshipBanner from '@/components/ScholarshipBanner'
 import { useT } from '@/lib/i18n'
 import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
 import { useToast } from '@/components/Toast'
@@ -357,6 +358,9 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-6 py-8">
+        {/* B40 application status — renders only when shortlisted/accepted */}
+        <ScholarshipBanner />
+
         {/* STPM Results */}
         {examType === 'stpm' && (
           <>

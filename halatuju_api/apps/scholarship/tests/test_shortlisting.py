@@ -1,124 +1,120 @@
-"""Unit tests for the mechanical shortlisting engine (pure, no DB)."""
+"""Unit tests for the S8 shortlisting engine (pure, no DB)."""
 from types import SimpleNamespace
 
 from django.test import TestCase
 
-from apps.scholarship.shortlisting import evaluate
+from apps.scholarship.shortlisting import evaluate, count_spm_a_grades, count_spm_strong_grades
 
 
 def cohort(**over):
-    base = dict(min_spm_a_count=5, min_stpm_pngk=3.0, bucket_b_margin=1, income_ceiling=5250)
+    base = dict(min_spm_a_count=4, min_spm_bplus_count=5, min_stpm_pngk=2.9, per_capita_ceiling=1584)
     base.update(over)
     return SimpleNamespace(**base)
 
 
-def _grades_with_a_count(n):
-    """A 10-subject SPM grades dict with exactly ``n`` A's (rest B's). None passes through."""
-    if n is None:
-        return None
-    return {f'sub{i}': ('A' if i < n else 'B') for i in range(10)}
+def _spm_grades(a=4, bplus=1, lower=4):
+    """SPM grades dict: `a` A's, `bplus` B+'s, `lower` B's."""
+    g, i = {}, 0
+    for _ in range(a):
+        g[f's{i}'] = 'A'; i += 1
+    for _ in range(bplus):
+        g[f's{i}'] = 'B+'; i += 1
+    for _ in range(lower):
+        g[f's{i}'] = 'B'; i += 1
+    return g
 
 
-def app(*, qualification='spm', spm_a_count=10, stpm_pngk=None,
-        household_income=2500, receives_str=True,
-        intends_tertiary_2026=True, consent_to_contact=True):
-    """
-    Build an application stand-in. Academic + income now live on the linked
-    profile (the single source of truth); intent + consent on the application.
-    ``spm_a_count`` is expressed as a grades dict the engine tallies itself.
-    """
+def app(*, qualification='spm', grades=-1, stpm_pngk=None,
+        household_income=3000, household_size=5, receives_str=False,
+        intends_tertiary_2026=True, consent_to_contact=True, upu_status=''):
     profile = SimpleNamespace(
         exam_type=qualification,
-        grades=_grades_with_a_count(spm_a_count),
+        grades=_spm_grades() if grades == -1 else grades,
         stpm_cgpa=stpm_pngk,
         household_income=household_income,
+        household_size=household_size,
         receives_str=receives_str,
     )
     return SimpleNamespace(
         profile=profile,
         intends_tertiary_2026=intends_tertiary_2026,
         consent_to_contact=consent_to_contact,
+        upu_status=upu_status,
     )
 
 
 class TestShortlistingEngine(TestCase):
 
-    # --- Bucket A ---
-    def test_all_ok_is_bucket_a(self):
-        r = evaluate(app(), cohort())
-        self.assertEqual((r.status, r.bucket), ('shortlisted', 'A'))
+    # --- Income: STR fast-path (bucket A) ---
+    def test_str_recipient_is_shortlisted_bucket_a(self):
+        r = evaluate(app(receives_str=True, household_income=99999, household_size=1), cohort())
+        self.assertEqual((r.verdict, r.bucket), ('shortlisted', 'A'))
 
-    def test_three_real_candidates_are_bucket_a(self):
-        # Priya 10A/RM2500/STR, Nathiyaa 11A/RM5000/STR, Theresa 10A/RM1800/STR
-        for a in (
-            app(spm_a_count=10, household_income=2500),
-            app(spm_a_count=11, household_income=5000),
-            app(spm_a_count=10, household_income=1800),
-        ):
-            self.assertEqual(evaluate(a, cohort()).bucket, 'A')
+    # --- Income: per-capita (bucket B) ---
+    def test_low_per_capita_no_str_is_bucket_b(self):
+        r = evaluate(app(receives_str=False, household_income=3000, household_size=5), cohort())  # 600/head
+        self.assertEqual((r.verdict, r.bucket), ('shortlisted', 'B'))
 
-    # --- Bucket B (exactly one marginal) ---
-    def test_academic_marginal_is_bucket_b(self):
-        r = evaluate(app(spm_a_count=4), cohort())
-        self.assertEqual((r.status, r.bucket), ('shortlisted', 'B'))
+    def test_large_family_above_household_ceiling_still_passes(self):
+        # RM7,000 household > RM5,860, but 7000/5 = 1400 < 1584 → passes (per-capita fairness)
+        self.assertEqual(evaluate(app(household_income=7000, household_size=5), cohort()).verdict, 'shortlisted')
 
-    def test_income_marginal_is_bucket_b(self):
-        r = evaluate(app(household_income=5500), cohort())  # within 5250 * 1.15
-        self.assertEqual(r.bucket, 'B')
+    def test_high_per_capita_no_str_rejected(self):
+        self.assertEqual(evaluate(app(household_income=5000, household_size=2), cohort()).verdict, 'rejected')  # 2500/head
 
-    def test_income_over_band_but_str_is_marginal(self):
-        r = evaluate(app(household_income=8000, receives_str=True), cohort())
-        self.assertEqual(r.bucket, 'B')
+    def test_t20_rejected_via_per_capita(self):
+        self.assertEqual(evaluate(app(household_income=13000, household_size=4), cohort()).verdict, 'rejected')
 
-    # --- FAIL ---
-    def test_low_academic_is_rejected(self):
-        r = evaluate(app(spm_a_count=2), cohort())
-        self.assertEqual((r.status, r.bucket), ('rejected', ''))
+    def test_no_str_no_income_data_rejected(self):
+        self.assertEqual(evaluate(app(household_income=None, household_size=None), cohort()).verdict, 'rejected')
 
-    def test_no_consent_is_rejected(self):
-        r = evaluate(app(consent_to_contact=False), cohort())
-        self.assertEqual(r.status, 'rejected')
+    # --- Academic floor (SPM ≥4 A- AND ≥5 at B+) ---
+    def test_exactly_floor_passes(self):
+        r = evaluate(app(grades=_spm_grades(a=4, bplus=1, lower=4), receives_str=True), cohort())
+        self.assertEqual(r.verdict, 'shortlisted')
 
-    def test_not_intending_is_rejected(self):
-        self.assertEqual(evaluate(app(intends_tertiary_2026=False), cohort()).status, 'rejected')
-
-    def test_two_marginals_is_rejected(self):
-        r = evaluate(app(spm_a_count=4, household_income=5500), cohort())
-        self.assertEqual(r.status, 'rejected')
-
-    def test_income_over_band_no_str_is_rejected(self):
-        r = evaluate(app(household_income=8000, receives_str=False), cohort())
-        self.assertEqual(r.status, 'rejected')
-
-    def test_no_income_no_str_is_rejected(self):
-        r = evaluate(app(household_income=None, receives_str=False), cohort())
-        self.assertEqual(r.status, 'rejected')
-
-    # --- Edge config / STPM ---
-    def test_no_income_with_str_is_ok(self):
-        r = evaluate(app(household_income=None, receives_str=True), cohort())
-        self.assertEqual(r.bucket, 'A')
-
-    def test_no_income_ceiling_skips_income(self):
-        r = evaluate(app(household_income=99999, receives_str=False), cohort(income_ceiling=None))
-        self.assertEqual(r.bucket, 'A')
-
-    def test_stpm_ok(self):
-        r = evaluate(app(qualification='stpm', spm_a_count=None, stpm_pngk=3.5), cohort())
-        self.assertEqual(r.bucket, 'A')
-
-    def test_stpm_marginal(self):
-        r = evaluate(app(qualification='stpm', spm_a_count=None, stpm_pngk=2.8), cohort())
-        self.assertEqual(r.bucket, 'B')
-
-    def test_stpm_fail(self):
-        r = evaluate(app(qualification='stpm', spm_a_count=None, stpm_pngk=2.0), cohort())
-        self.assertEqual(r.status, 'rejected')
-
-    def test_missing_academic_data_is_rejected(self):
-        r = evaluate(app(spm_a_count=None), cohort())
-        self.assertEqual(r.status, 'rejected')
-
-    def test_reason_recorded_for_bucket_b(self):
-        r = evaluate(app(spm_a_count=4), cohort())
+    def test_four_a_no_bplus_rejected(self):
+        r = evaluate(app(grades=_spm_grades(a=4, bplus=0, lower=5), receives_str=True), cohort())
+        self.assertEqual(r.verdict, 'rejected')
         self.assertIn('academic', r.reason)
+
+    def test_three_a_rejected(self):
+        self.assertEqual(evaluate(app(grades=_spm_grades(a=3, bplus=3, lower=3), receives_str=True), cohort()).verdict, 'rejected')
+
+    def test_a_minus_counts_as_a(self):
+        g = {'s0': 'A-', 's1': 'A-', 's2': 'A-', 's3': 'A-', 's4': 'B+', 's5': 'B'}
+        self.assertEqual(evaluate(app(grades=g, receives_str=True), cohort()).verdict, 'shortlisted')
+
+    def test_missing_grades_rejected(self):
+        self.assertEqual(evaluate(app(grades=None, receives_str=True), cohort()).verdict, 'rejected')
+
+    # --- STPM floor (PNGK ≥ 2.9) ---
+    def test_stpm_at_floor_passes(self):
+        self.assertEqual(evaluate(app(qualification='stpm', grades=None, stpm_pngk=2.9, receives_str=True), cohort()).verdict, 'shortlisted')
+
+    def test_stpm_below_floor_rejected(self):
+        self.assertEqual(evaluate(app(qualification='stpm', grades=None, stpm_pngk=2.8, receives_str=True), cohort()).verdict, 'rejected')
+
+    def test_stpm_missing_rejected(self):
+        self.assertEqual(evaluate(app(qualification='stpm', grades=None, stpm_pngk=None, receives_str=True), cohort()).verdict, 'rejected')
+
+    # --- Hard gates ---
+    def test_no_consent_rejected(self):
+        self.assertEqual(evaluate(app(consent_to_contact=False, receives_str=True), cohort()).verdict, 'rejected')
+
+    def test_not_intending_rejected(self):
+        self.assertEqual(evaluate(app(intends_tertiary_2026=False, receives_str=True), cohort()).verdict, 'rejected')
+
+    def test_ipts_only_rejected(self):
+        r = evaluate(app(upu_status='ipts', receives_str=True), cohort())
+        self.assertEqual(r.verdict, 'rejected')
+        self.assertIn('IPTS', r.reason)
+
+    def test_public_pathway_not_blocked_by_ipts_gate(self):
+        self.assertEqual(evaluate(app(upu_status='public_other', receives_str=True), cohort()).verdict, 'shortlisted')
+
+    # --- grade counters ---
+    def test_grade_counters(self):
+        g = _spm_grades(a=4, bplus=2, lower=3)
+        self.assertEqual(count_spm_a_grades(g), 4)
+        self.assertEqual(count_spm_strong_grades(g), 6)

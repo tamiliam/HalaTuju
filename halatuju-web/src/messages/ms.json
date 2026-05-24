@@ -159,7 +159,8 @@
     "spmSains": "Sains",
     "spmSastera": "Sastera",
     "spmTeknikal": "Teknikal",
-    "spmVokasional": "Vokasional"
+    "spmVokasional": "Vokasional",
+    "saveReturnToApplication": "Simpan & kembali ke permohonan"
   },
   "verifyEmail": {
     "loading": "Mengesahkan e-mel anda...",
@@ -390,7 +391,14 @@
         "aCount": "Sila masukkan bilangan A yang anda peroleh dalam SPM.",
         "pngk": "Sila masukkan PNGK STPM anda.",
         "income": "Sila masukkan jumlah pendapatan isi rumah bulanan anda.",
-        "generic": "Sesuatu telah berlaku semasa menghantar permohonan anda. Mungkin anda telah memohon, atau permohonan telah ditutup. Sila cuba sebentar lagi."
+        "generic": "Sesuatu telah berlaku semasa menghantar permohonan anda. Mungkin anda telah memohon, atau permohonan telah ditutup. Sila cuba sebentar lagi.",
+        "name": "Sila masukkan nama penuh anda.",
+        "school": "Sila masukkan sekolah anda.",
+        "nric": "Sila masukkan nombor IC yang sah (format XXXXXX-XX-XXXX).",
+        "nricTaken": "Nombor IC ini sudah dikaitkan dengan akaun lain. Sila semak semula.",
+        "org": "Sila beritahu kami siapa yang merujuk anda.",
+        "state": "Sila pilih negeri anda.",
+        "phone": "Sila masukkan nombor telefon anda."
       },
       "gate": {
         "readFreely": "Baca semuanya dengan bebas — anda hanya perlu log masuk apabila bersedia untuk memohon.",
@@ -400,11 +408,17 @@
         "name": "Nama penuh",
         "school": "Sekolah",
         "ic": "Nombor IC",
-        "email": "E-mel hubungan"
+        "email": "E-mel hubungan",
+        "org": "Siapa yang merujuk anda?",
+        "state": "Negeri",
+        "phone": "Nombor telefon",
+        "parentName": "Nama ibu bapa / penjaga",
+        "parentPhone": "Telefon ibu bapa / penjaga",
+        "callLang": "Bahasa pilihan untuk panggilan"
       },
       "section": {
-        "personal": "Tentang Anda",
-        "family": "Keluarga Anda",
+        "personal": "Tentang Saya",
+        "family": "Keluarga Saya",
         "results": "Keputusan SPM / STPM Anda",
         "plans": "Rancangan Anda",
         "support": "Bantuan Yang Anda Mahukan"
@@ -423,16 +437,97 @@
       "aGradesWord": "A",
       "including": "termasuk",
       "resultsFromProfile": "Daripada keputusan tersimpan anda",
-      "resultsWrong": "Keputusan salah? Kemas kini dalam profil anda",
+      "resultsWrong": "Keputusan salah? Edit",
       "noResultsTitle": "Kami belum ada keputusan anda",
-      "noResultsBody": "Lengkapkan kuiz HalaTuju supaya kami boleh menilai permohonan anda.",
-      "noResultsCta": "Pergi ke kuiz",
+      "noResultsBody": "Tambah keputusan SPM atau STPM anda supaya kami boleh menilai permohonan anda.",
+      "noResultsCta": "Tambah keputusan saya",
       "signedInAs": "Log masuk sebagai",
       "usingProfile": "Menggunakan profil HalaTuju anda",
       "step": "Langkah",
       "back": "Kembali",
       "continue": "Teruskan",
-      "backToApplication": "Kembali ke permohonan anda"
+      "backToApplication": "Kembali ke permohonan anda",
+      "aboutMeHint": "Semak butiran anda dan kemas kini apa-apa yang berubah. E-mel hubungan anda dikunci kerana ia telah disahkan.",
+      "verified": "Disahkan",
+      "locked": "Dikunci",
+      "orgPlaceholder": "Pilih organisasi",
+      "statePlaceholder": "Pilih negeri anda",
+      "callLangPlaceholder": "Pilih bahasa",
+      "parentHeading": "Ibu bapa / penjaga",
+      "commitNote": "Tiada apa-apa disimpan sehingga anda menghantar permohonan.",
+      "org": {
+        "smc": "Sri Murugan Centre (SMC)",
+        "cumig": "Concerned UM Indian Graduates (CUMIG)",
+        "pushparani": "Cik Pushparani (Kapar)",
+        "sathya_sai": "Pusat Sathya Sai Baba",
+        "halatuju": "Halatuju.xyz",
+        "tara": "Tara Foundation",
+        "govind": "Encik Govind (Melaka)",
+        "social": "Facebook / WhatsApp",
+        "other": "Lain-lain"
+      },
+      "callLang": {
+        "en": "Bahasa Inggeris",
+        "ms": "Bahasa Malaysia",
+        "ta": "Bahasa Tamil",
+        "mixed": "Campuran"
+      },
+      "tip": {
+        "name": "Nama penuh anda seperti dalam IC.",
+        "school": "Sekolah tempat anda menduduki SPM.",
+        "ic": "Digunakan untuk mengesahkan identiti anda. Anda boleh menyuntingnya sehingga ia disahkan.",
+        "org": "Organisasi atau penyelaras yang memberitahu anda tentang program ini.",
+        "state": "Negeri tempat anda biasa tinggal.",
+        "phone": "Nombor yang boleh kami hubungi. Format: 01X-XXX XXXX.",
+        "income": "Jumlahkan pendapatan bulanan semua orang yang anda kira — gaji, perniagaan, pencen dan bantuan kerajaan (bukan hanya ibu bapa anda). Anggaran boleh diterima.",
+        "household": "Kira semua orang yang biasa tinggal di rumah anda dan berkongsi pendapatan atau perbelanjaan — ibu bapa/penjaga, anda, adik-beradik, serta datuk nenek atau saudara yang tinggal bersama. Masukkan adik-beradik yang bekerja jika mereka tinggal di rumah dan menyumbang; jangan kira ahli keluarga yang tinggal di tempat lain.",
+        "str": "Sumbangan Tunai Rahmah — bantuan tunai kerajaan untuk isi rumah berpendapatan rendah.",
+        "jkm": "Bantuan daripada Jabatan Kebajikan Masyarakat.",
+        "parentName": "Nama ibu bapa atau penjaga anda.",
+        "parentPhone": "Nombor untuk ibu bapa atau penjaga anda.",
+        "callLang": "Bahasa apa yang patut kami gunakan jika kami menelefon anda?",
+        "pathways": "Pilih semua laluan selepas SPM yang anda fikirkan — anda boleh pilih lebih daripada satu.",
+        "upu": "Memberitahu kami destinasi anda. Biasiswa ini untuk laluan awam/kerajaan.",
+        "field": "Bidang umum yang anda ingin pelajari.",
+        "topChoices": "Pilih sehingga 3 daripada kursus yang anda simpan, mengikut keutamaan. Ia menunjukkan anda telah memikirkannya.",
+        "otherScholarships": "Beritahu kami jika anda sudah ada atau memohon pembiayaan lain — ia membantu kami mengutamakan.",
+        "helpUniversity": "Memilih kursus, mengisi borang, penyata diri.",
+        "helpScholarship": "Temu duga olok-olok, maklum balas permohonan."
+      },
+      "pathwaysLabel": "Laluan yang anda pertimbangkan",
+      "upuLabel": "Di mana anda merancang untuk menyambung?",
+      "iptsNote": "Bantuan ini untuk laluan awam — ia terlalu kecil untuk menampung yuran swasta (IPTS). Jika anda juga mempertimbangkan pilihan awam, pilih itu di atas.",
+      "fieldLabel": "Bidang pengajian yang anda sasarkan",
+      "fieldPlaceholder": "Pilih bidang",
+      "topChoicesLabel": "3 pilihan kursus utama anda",
+      "topChoicesHint": "Ketik sehingga 3, mengikut keutamaan.",
+      "noSavedCourses": "Anda belum menyimpan sebarang kursus. Layari HalaTuju dan tandakan beberapa, kemudian kembali.",
+      "browseCourses": "Layari kursus",
+      "otherScholarshipsLabel": "Biasiswa lain yang anda mohon atau pegang",
+      "otherScholarshipsPlaceholder": "Lain-lain (sila nyatakan)",
+      "helpUniversityLabel": "Mahukan bantuan dengan permohonan universiti?",
+      "helpScholarshipLabel": "Mahukan bantuan dengan permohonan biasiswa & temu duga?",
+      "anythingElseLabel": "Apa-apa lagi yang anda ingin kami tahu? (pilihan)",
+      "anythingElsePlaceholder": "Keadaan istimewa, kebimbangan, atau soalan…",
+      "upu": {
+        "applied": "Saya telah memohon melalui UPU",
+        "public_other": "STPM / Matrikulasi / PISMP / TVET",
+        "ipts": "Kolej/universiti swasta (IPTS)",
+        "unknown": "Saya tidak pasti apa itu UPU"
+      },
+      "help": {
+        "yes": "Ya",
+        "no": "Tidak",
+        "unsure": "Tidak pasti"
+      },
+      "scholarship": {
+        "jpa": "JPA",
+        "petronas": "Petronas",
+        "mara": "MARA",
+        "yayasan": "Yayasan / yayasan negeri",
+        "bank_foundation": "Yayasan bank / korporat",
+        "other": "Lain-lain"
+      }
     },
     "nextSteps": {
       "title": "Anda telah disenarai pendek!",
@@ -606,7 +701,15 @@
       "none": "Anda belum memohon lagi.",
       "applyCta": "Mulakan permohonan anda",
       "receivedTitle": "Permohonan diterima",
-      "receivedBody": "Terima kasih. Kami telah menerima permohonan anda dan akan menghubungi anda melalui e-mel. Tiada apa-apa lagi yang perlu dilakukan buat masa ini."
+      "receivedBody": "Terima kasih. Kami telah menerima permohonan anda dan akan menghubungi anda melalui e-mel. Tiada apa-apa lagi yang perlu dilakukan buat masa ini.",
+      "acceptedTitle": "Anda telah diterima",
+      "acceptedBody": "Tahniah — permohonan anda telah disahkan. Pasukan kami akan menghubungi anda tentang langkah seterusnya untuk anugerah anda."
+    },
+    "banner": {
+      "shortlistedTitle": "Anda telah disenarai pendek",
+      "shortlistedBody": "Lengkapkan permohonan anda — ketik untuk teruskan.",
+      "acceptedTitle": "Permohonan anda disahkan",
+      "acceptedBody": "Anda telah diterima. Ketik untuk melihat butiran."
     }
   },
   "authGate": {
@@ -1007,7 +1110,21 @@
       "model": "Model",
       "genError": "Penjanaan profil gagal.",
       "saveError": "Tidak dapat menyimpan profil.",
-      "publishError": "Tidak dapat menerbitkan profil."
+      "publishError": "Tidak dapat menerbitkan profil.",
+      "verifyTitle": "Sahkan & terima",
+      "nricLocked": "IC disahkan & dikunci",
+      "acceptedBy": "Disahkan & diterima oleh",
+      "verifyHint": "Sahkan setiap item dengan MyKad yang dimuat naik, kemudian terima. Penerimaan mengunci IC.",
+      "check_nric": "IC sepadan dengan MyKad",
+      "check_name": "Nama sepadan",
+      "check_results": "Keputusan sepadan dengan slip",
+      "check_document": "Dokumen MyKad jelas & sah",
+      "verifyAccept": "Sahkan & terima",
+      "accepting": "Menerima…",
+      "acceptError": "Tidak dapat menerima. Sila cuba lagi.",
+      "notShortlisted": "Hanya permohonan yang disenarai pendek boleh disahkan & diterima.",
+      "mentoring": "Tandakan untuk mentor (hilang arah — bukan penolakan)",
+      "mentorError": "Tidak dapat mengemas kini tanda mentor."
     },
     "students": "Pelajar",
     "invite": "Jemputan",

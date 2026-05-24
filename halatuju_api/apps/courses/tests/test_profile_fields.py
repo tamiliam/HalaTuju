@@ -2,7 +2,7 @@
 import pytest
 from django.test import RequestFactory
 from apps.courses.models import StudentProfile, SavedCourse, Course
-from apps.courses.views import ProfileView, ProfileSyncView, SavedCoursesView, SavedCourseDetailView
+from apps.courses.views import ProfileView, ProfileSyncView, SavedCoursesView, SavedCourseDetailView, NricClaimView
 
 
 @pytest.mark.django_db
@@ -135,7 +135,7 @@ class TestProfileAPINewFields:
     def test_put_profile_updates_new_fields(self):
         StudentProfile.objects.create(supabase_user_id='api-test-user')
         request = _auth_request('PUT', data={
-            'nric': '010203-14-1234',
+            'nric': '010203-14-1234',   # ignored — read-only via PUT (S7 soft-NRIC gap fix)
             'address': 'New Address',
             'phone': '+60199999999',
             'family_income': 'RM3,001-5,000',
@@ -144,8 +144,11 @@ class TestProfileAPINewFields:
         response = ProfileView().put(request)
         assert response.status_code == 200
         p = StudentProfile.objects.get(supabase_user_id='api-test-user')
-        assert p.nric == '010203-14-1234'
+        assert p.address == 'New Address'
         assert p.siblings == 5
+        # NRIC is NOT settable via PUT — it changes only through the validated claim
+        # endpoint (/profile/claim-nric/). Closes the soft-NRIC write gap.
+        assert p.nric == ''
 
 
 @pytest.mark.django_db
@@ -341,23 +344,77 @@ class TestContactFields:
 
 @pytest.mark.django_db
 class TestNricUniqueness:
-    """NRIC must be unique across profiles."""
+    """NRIC is unique only once VERIFIED (soft-NRIC, S7) — editable & duplicable until then."""
 
     def test_nric_unique_constraint(self):
-        StudentProfile.objects.create(
-            supabase_user_id='nric-uniq-1', nric='040815-01-2022'
-        )
-        from django.db import IntegrityError
+        from django.db import IntegrityError, transaction
+        # Two UNVERIFIED profiles may share an NRIC (still editable, not yet enforced).
+        StudentProfile.objects.create(supabase_user_id='nric-uniq-1', nric='040815-01-2022')
+        StudentProfile.objects.create(supabase_user_id='nric-uniq-2', nric='040815-01-2022')
+        assert StudentProfile.objects.filter(nric='040815-01-2022').count() == 2
+
+        # One can be verified...
+        p1 = StudentProfile.objects.get(supabase_user_id='nric-uniq-1')
+        p1.nric_verified = True
+        p1.save()
+        # ...but a SECOND verified profile with the same NRIC is rejected.
+        p2 = StudentProfile.objects.get(supabase_user_id='nric-uniq-2')
+        p2.nric_verified = True
         with pytest.raises(IntegrityError):
-            StudentProfile.objects.create(
-                supabase_user_id='nric-uniq-2', nric='040815-01-2022'
-            )
+            with transaction.atomic():
+                p2.save()
 
     def test_blank_nric_not_unique(self):
         """Multiple profiles can have blank NRIC (pre-onboarding)."""
         StudentProfile.objects.create(supabase_user_id='blank-nric-1', nric='')
         StudentProfile.objects.create(supabase_user_id='blank-nric-2', nric='')
         assert StudentProfile.objects.filter(nric='').count() == 2
+
+
+@pytest.mark.django_db
+class TestSoftNric:
+    """Soft-NRIC (S7): editable until an admin verifies it, then locked. coq + call language persist."""
+
+    def _claim(self, nric, user_id, confirm=False):
+        factory = RequestFactory()
+        req = factory.post('/api/v1/profile/claim-nric/')
+        req.user_id = user_id
+        req.data = {'nric': nric, 'confirm': confirm}
+        return NricClaimView().post(req)
+
+    def test_get_returns_nric_verified_false_by_default(self):
+        StudentProfile.objects.create(supabase_user_id='snric-1')
+        request = _auth_request('GET', user_id='snric-1')
+        request.supabase_user = {'id': 'snric-1', 'email': 'x@gmail.com'}
+        resp = ProfileView().get(request)
+        assert resp.data['nric_verified'] is False
+
+    def test_coq_and_call_language_round_trip(self):
+        StudentProfile.objects.create(supabase_user_id='snric-coq')
+        put = _auth_request('PUT', data={'coq_score': 8.5, 'preferred_call_language': 'ta'},
+                            user_id='snric-coq')
+        assert ProfileView().put(put).status_code == 200
+        p = StudentProfile.objects.get(supabase_user_id='snric-coq')
+        assert p.coq_score == 8.5
+        assert p.preferred_call_language == 'ta'
+
+    def test_claim_overwrites_while_unverified(self):
+        assert self._claim('040815-01-2022', 'snric-edit').data['status'] == 'created'
+        # A different NRIC overwrites it while still unverified.
+        assert self._claim('050620-10-3344', 'snric-edit').data['status'] == 'created'
+        p = StudentProfile.objects.get(supabase_user_id='snric-edit')
+        assert p.nric == '050620-10-3344'
+
+    def test_claim_blocked_once_verified(self):
+        self._claim('040815-01-2022', 'snric-lock')
+        p = StudentProfile.objects.get(supabase_user_id='snric-lock')
+        p.nric_verified = True
+        p.save()
+        resp = self._claim('050620-10-3344', 'snric-lock')
+        assert resp.status_code == 403
+        assert resp.data.get('code') == 'nric_locked'
+        p.refresh_from_db()
+        assert p.nric == '040815-01-2022'   # unchanged — locked
 
 
 @pytest.mark.django_db

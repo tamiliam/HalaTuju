@@ -55,6 +55,71 @@ class AdminApplicationDetailView(_AdminBase):
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         return Response(AdminApplicationDetailSerializer(app).data)
 
+    def patch(self, request, pk):
+        """Admin-editable per-application flags (currently the mentoring-candidate flag)."""
+        if not self.get_admin(request):
+            return self._deny()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if 'mentoring_candidate' in request.data:
+            app.mentoring_candidate = bool(request.data['mentoring_candidate'])
+            app.save(update_fields=['mentoring_candidate'])
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminVerifyAcceptView(_AdminBase):
+    """
+    POST .../<pk>/verify-accept/ — the human verification gate.
+
+    The admin confirms a checklist (NRIC, name, results, document) against the
+    uploaded MyKad. On accept we set ``profile.nric_verified`` (which LOCKS the
+    NRIC — the student can no longer edit it), stamp who/when/what was confirmed,
+    and advance the application ``shortlisted`` → ``accepted``.
+
+    This is the single point where NRIC uniqueness is enforced (soft-NRIC): if
+    another profile already has this NRIC *verified*, the clash is surfaced (409)
+    for the admin to resolve rather than silently double-verifying. (Resolves TD-054.)
+    """
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if app.status != 'shortlisted':
+            return Response(
+                {'error': 'Only a shortlisted application can be verified & accepted.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        profile = app.profile
+        if profile is None:
+            return Response({'error': 'Application has no linked profile.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Soft-NRIC uniqueness is enforced HERE (and only here). A duplicate that
+        # was tolerated while unverified must be resolved before a second verify.
+        from apps.courses.models import StudentProfile
+        if profile.nric and StudentProfile.objects.filter(
+            nric=profile.nric, nric_verified=True,
+        ).exclude(pk=profile.pk).exists():
+            return Response(
+                {'error': 'This NRIC is already verified on another account. Resolve the duplicate first.',
+                 'code': 'nric_conflict'},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        if not profile.nric_verified:
+            profile.nric_verified = True
+            profile.save(update_fields=['nric_verified'])
+        app.status = 'accepted'
+        app.verified_at = timezone.now()
+        app.verified_by = admin.email
+        app.verify_checklist = request.data.get('checklist', {}) or {}
+        app.save(update_fields=['status', 'verified_at', 'verified_by', 'verify_checklist'])
+        return Response(AdminApplicationDetailSerializer(app).data)
+
 
 class AdminGenerateProfileView(_AdminBase):
     def post(self, request, pk):

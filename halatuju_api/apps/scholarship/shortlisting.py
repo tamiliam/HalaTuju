@@ -1,104 +1,106 @@
 """
-B40 Assistance Programme — mechanical shortlisting engine.
+B40 Assistance Programme — mechanical shortlisting engine (S8 redesign).
 
-Pure functions. The academic + income inputs are read from the linked
-StudentProfile (the single source of truth); intent + consent are per-application.
-No DB writes, deterministic, all thresholds from the cohort.
+Pure functions, deterministic, no DB writes. Academic + income inputs are read
+from the linked StudentProfile (the single source of truth); intent / consent /
+IPTS from the application. All thresholds come from the cohort.
+
+The rule (settled 2026-05-24 — see docs/scholarship/b40-decision-redesign-plan.md):
+  1. Hard gates  — consent + intends public study + NOT IPTS-only        → else REJECT
+  2. Academic    — SPM: >= min_spm_a_count at A- AND >= min_spm_bplus_count at B+;
+                   STPM: PNGK >= min_stpm_pngk                            → else REJECT
+  3. Income      — STR recipient → PASS (bucket A);
+                   else per-capita (household_income / household_size)
+                   < per_capita_ceiling → PASS (bucket B); else REJECT
+  → SHORTLIST if all pass, else REJECT.  No score, no weights, no hardship flags —
+    per-capita income already accounts for household size/dependents.
 """
 from dataclasses import dataclass
 
-# How far over the income ceiling still counts as "marginal" (Bucket B).
-INCOME_MARGIN_FACTOR = 1.15
-# STPM PNGK band below the minimum that still counts as "marginal".
-STPM_PNGK_MARGIN = 0.3
-
-OK = 'ok'
-MARGINAL = 'marginal'
-FAIL = 'fail'
-
-# SPM grades that count as an "A" (A+, A and A- all count, matching how the B40
-# candidate profiles tally "10 A's incl. A+ and A-").
+# SPM grades that count as an "A" (A+/A/A- all count — A- is the minimum "A").
 A_GRADES = {'A+', 'A', 'A-'}
+# Grades at B+ or better (for the "+1 B+" floor → 5 strong subjects).
+STRONG_GRADES = A_GRADES | {'B+'}
 
 
-def count_spm_a_grades(grades):
-    """Count A+/A/A- across an SPM grades dict like {'bm': 'A+', ...}."""
+def _count(grades, allowed):
     if not isinstance(grades, dict):
         return 0
     return sum(
         1 for g in grades.values()
-        if isinstance(g, str) and g.strip().upper() in A_GRADES
+        if isinstance(g, str) and g.strip().upper() in allowed
     )
+
+
+def count_spm_a_grades(grades):
+    """Count A+/A/A- across an SPM grades dict like {'bm': 'A+', ...}."""
+    return _count(grades, A_GRADES)
+
+
+def count_spm_strong_grades(grades):
+    """Count grades at B+ or better."""
+    return _count(grades, STRONG_GRADES)
 
 
 @dataclass
 class ShortlistResult:
-    status: str   # 'shortlisted' or 'rejected'
-    bucket: str   # 'A', 'B' or ''
-    reason: str   # human-readable explanation
+    verdict: str   # 'shortlisted' or 'rejected'
+    bucket: str    # 'A' (STR), 'B' (income test), or ''
+    reason: str    # human-readable explanation
 
 
-def _academic_status(profile, cohort):
+def _academic_ok(profile, cohort):
     exam = (getattr(profile, 'exam_type', 'spm') or 'spm') if profile else 'spm'
     if exam == 'stpm':
         p = getattr(profile, 'stpm_cgpa', None) if profile else None
         if p is None:
-            return FAIL, 'STPM PNGK not provided'
+            return False, 'STPM PNGK not provided'
         if p >= cohort.min_stpm_pngk:
-            return OK, ''
-        if p >= cohort.min_stpm_pngk - STPM_PNGK_MARGIN:
-            return MARGINAL, f'PNGK {p} just below {cohort.min_stpm_pngk}'
-        return FAIL, f'PNGK {p} below {cohort.min_stpm_pngk}'
-    a = count_spm_a_grades(getattr(profile, 'grades', None) if profile else None)
-    if a >= cohort.min_spm_a_count:
-        return OK, ''
-    if a >= cohort.min_spm_a_count - cohort.bucket_b_margin:
-        return MARGINAL, f"{a} A's (need {cohort.min_spm_a_count})"
-    return FAIL, f"{a} A's (need {cohort.min_spm_a_count})"
+            return True, ''
+        return False, f'PNGK {p} below {cohort.min_stpm_pngk}'
+    grades = getattr(profile, 'grades', None) if profile else None
+    a = count_spm_a_grades(grades)
+    strong = count_spm_strong_grades(grades)
+    if a >= cohort.min_spm_a_count and strong >= cohort.min_spm_bplus_count:
+        return True, ''
+    return False, (f"{a} at A-, {strong} at B+ "
+                   f"(need {cohort.min_spm_a_count} A- and {cohort.min_spm_bplus_count} at B+)")
 
 
-def _income_status(profile, cohort):
-    ceiling = cohort.income_ceiling
+def _income_ok(profile, cohort):
+    """STR recipients pass (bucket A); otherwise per-capita income must clear the ceiling (bucket B)."""
+    if profile and getattr(profile, 'receives_str', False):
+        return True, 'A', 'STR recipient'
     inc = getattr(profile, 'household_income', None) if profile else None
-    has_str = bool(getattr(profile, 'receives_str', False)) if profile else False
-    if ceiling is None:
-        return OK, ''
-    if inc is None:
-        return (OK, '') if has_str else (FAIL, 'No income figure and no STR')
-    if inc <= ceiling:
-        return OK, ''
-    if inc <= ceiling * INCOME_MARGIN_FACTOR:
-        return MARGINAL, f'income RM{inc} just over RM{ceiling}'
-    if has_str:
-        return MARGINAL, f'income RM{inc} over RM{ceiling} but holds STR'
-    return FAIL, f'income RM{inc} over RM{ceiling}'
-
-
-def _intent_status(application):
-    return (OK, '') if application.intends_tertiary_2026 else (FAIL, 'not intending tertiary study this year')
-
-
-def _consent_status(application):
-    return (OK, '') if application.consent_to_contact else (FAIL, 'no consent to contact')
+    size = getattr(profile, 'household_size', None) if profile else None
+    if not inc or not size or size <= 0:
+        return False, '', 'no STR and household income/size not provided'
+    per_capita = inc / size
+    if per_capita < cohort.per_capita_ceiling:
+        return True, 'B', f'per-capita RM{per_capita:.0f} < RM{cohort.per_capita_ceiling}'
+    return False, '', f'per-capita RM{per_capita:.0f} >= RM{cohort.per_capita_ceiling}'
 
 
 def evaluate(application, cohort):
-    """Return a ShortlistResult for the application against the cohort thresholds.
-    Academic + income are read from application.profile; intent + consent from the application."""
+    """Return a ShortlistResult for the application against the cohort thresholds."""
     profile = getattr(application, 'profile', None)
-    checks = {
-        'academic': _academic_status(profile, cohort),
-        'income': _income_status(profile, cohort),
-        'intent': _intent_status(application),
-        'consent': _consent_status(application),
-    }
-    fails = {k: v[1] for k, v in checks.items() if v[0] == FAIL}
-    marginals = {k: v[1] for k, v in checks.items() if v[0] == MARGINAL}
 
-    if not fails and not marginals:
-        return ShortlistResult('shortlisted', 'A', '')
-    if not fails and len(marginals) == 1:
-        k, why = next(iter(marginals.items()))
-        return ShortlistResult('shortlisted', 'B', f'Marginal on {k}: {why}')
-    bits = [f'{k}: {why}' for k, why in {**fails, **marginals}.items()]
-    return ShortlistResult('rejected', '', '; '.join(bits))
+    # 1. Hard gates
+    if not application.consent_to_contact:
+        return ShortlistResult('rejected', '', 'no consent to contact')
+    if not application.intends_tertiary_2026:
+        return ShortlistResult('rejected', '', 'not intending tertiary study this year')
+    if application.upu_status == 'ipts':
+        return ShortlistResult('rejected', '', 'IPTS-only — outside programme scope')
+
+    # 2. Academic floor
+    ok, why = _academic_ok(profile, cohort)
+    if not ok:
+        return ShortlistResult('rejected', '', f'academic floor: {why}')
+
+    # 3. Income (STR fast-path, else per-capita)
+    ok, bucket, why = _income_ok(profile, cohort)
+    if not ok:
+        return ShortlistResult('rejected', '', f'income: {why}')
+
+    return ShortlistResult('shortlisted', bucket, why)

@@ -270,11 +270,15 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         model = StudentProfile
         fields = [
             'grades', 'gender', 'nationality', 'colorblind', 'disability',
-            'student_signals', 'preferred_state', 'name', 'school',
+            'student_signals', 'preferred_state', 'preferred_call_language',
+            'name', 'school',
             'nric', 'angka_giliran', 'address', 'postal_code', 'city',
             'phone', 'family_income', 'siblings',
-            'exam_type', 'stpm_grades', 'stpm_cgpa', 'muet_band',
+            'exam_type', 'stpm_grades', 'stpm_cgpa', 'muet_band', 'coq_score',
             'spm_prereq_grades', 'referral_source',
             'contact_email', 'contact_phone',
         ]
+        # NRIC only changes via the validated claim endpoint (/profile/claim-nric/),
+        # never an unchecked PUT or sync — closes the soft-NRIC write gap.
         extra_kwargs = {f: {'required': False} for f in fields}
+        extra_kwargs['nric'] = {'required': False, 'read_only': True}

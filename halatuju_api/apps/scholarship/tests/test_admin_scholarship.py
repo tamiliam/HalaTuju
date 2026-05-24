@@ -115,3 +115,60 @@ class TestAdminScholarship(TestCase):
         self._auth(ADMIN)
         r = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/publish/')
         self.assertEqual(r.status_code, 400)
+
+    # ── S11a: verify & accept ──────────────────────────────────────────────
+    def _verify_url(self):
+        return f'/api/v1/admin/scholarship/applications/{self.app.id}/verify-accept/'
+
+    def test_verify_accept_locks_nric_and_advances(self):
+        self._auth(ADMIN)
+        r = self.client.post(
+            self._verify_url(),
+            {'checklist': {'nric': True, 'name': True, 'results': True, 'document': True}},
+            format='json',
+        )
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertEqual(body['status'], 'accepted')
+        self.assertTrue(body['nric_verified'])
+        self.assertEqual(body['verified_by'], 'admin@example.com')
+        self.assertIsNotNone(body['verified_at'])
+        self.assertTrue(body['verify_checklist']['document'])
+        self.profile.refresh_from_db()
+        self.assertTrue(self.profile.nric_verified)  # NRIC is now locked
+
+    def test_verify_accept_only_shortlisted(self):
+        ScholarshipApplication.objects.filter(pk=self.app.id).update(status='submitted')
+        self._auth(ADMIN)
+        r = self.client.post(self._verify_url())
+        self.assertEqual(r.status_code, 400)
+        self.profile.refresh_from_db()
+        self.assertFalse(self.profile.nric_verified)
+
+    def test_verify_accept_nric_conflict(self):
+        # Soft-NRIC: another profile already has this NRIC verified → 409 (TD-054).
+        StudentProfile.objects.create(
+            supabase_user_id='other-uid', nric='030101-14-1234', nric_verified=True,
+        )
+        self._auth(ADMIN)
+        r = self.client.post(self._verify_url())
+        self.assertEqual(r.status_code, 409)
+        self.assertEqual(r.json().get('code'), 'nric_conflict')
+        self.profile.refresh_from_db()
+        self.assertFalse(self.profile.nric_verified)
+
+    def test_verify_accept_requires_admin(self):
+        self._auth(STUDENT)
+        r = self.client.post(self._verify_url())
+        self.assertEqual(r.status_code, 403)
+
+    def test_mentoring_toggle(self):
+        self._auth(ADMIN)
+        r = self.client.patch(
+            f'/api/v1/admin/scholarship/applications/{self.app.id}/',
+            {'mentoring_candidate': True}, format='json',
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.json()['mentoring_candidate'])
+        self.app.refresh_from_db()
+        self.assertTrue(self.app.mentoring_candidate)

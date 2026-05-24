@@ -48,6 +48,9 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
 class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     name = serializers.SerializerMethodField()
     school = serializers.SerializerMethodField()
+    # NRIC shown in full so the admin can compare it to the uploaded MyKad at verify time.
+    nric = serializers.CharField(source='profile.nric', read_only=True)
+    nric_verified = serializers.BooleanField(source='profile.nric_verified', read_only=True)
     # Academic + financial data is read live from the canonical profile.
     qualification = serializers.CharField(source='profile.exam_type', read_only=True)
     stpm_pngk = serializers.FloatField(source='profile.stpm_cgpa', read_only=True)
@@ -65,11 +68,17 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = ScholarshipApplication
         fields = [
-            'id', 'name', 'school', 'profile_id', 'qualification',
+            'id', 'name', 'school', 'nric', 'nric_verified', 'profile_id', 'qualification',
             'spm_a_count', 'stpm_pngk', 'household_income', 'household_size',
             'receives_str', 'receives_jkm', 'intended_pathway', 'intends_tertiary_2026',
             'aspirations', 'plans', 'fears', 'justification',
             'status', 'bucket', 'shortlist_reason', 'submitted_at',
+            # S11a verify-&-accept + mentoring
+            'mentoring_candidate', 'verified_at', 'verified_by', 'verify_checklist',
+            # S10 plans/support intake (surface for the admin review)
+            'pathways_considered', 'top_choices', 'upu_status', 'field_of_study',
+            'other_scholarships', 'other_scholarships_text', 'help_university',
+            'help_scholarship', 'anything_else',
             'funding_need', 'documents', 'referees', 'consents', 'sponsor_profile',
             'intake_snapshot',
         ]

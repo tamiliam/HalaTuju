@@ -422,3 +422,12 @@
 - TD-028, TD-029, TD-031, TD-032: Archive/remove legacy files
 - TD-030: Update stale docstrings
 - TD-039, TD-040: Update dependency pins
+
+**B40 Redesign (found Sprint 7, 2026-05-23)**
+- TD-053: Reconcile the NRIC-gate whitelist — `middleware/supabase_auth.py` `NRIC_GATE_EXACT` omits `/api/v1/profile/sync/`, but `docs/decisions.md` + `test_nric_gate` describe sync as whitelisted. Suite green (no breakage); align code/docs/tests.
+- ~~TD-054~~: **RESOLVED — S11a (2026-05-24).** NRIC uniqueness is now enforced at the admin verify-&-accept point (`AdminVerifyAcceptView` returns `409 nric_conflict` if another profile already has that NRIC verified), per the soft-NRIC "clash surfaces at verification" design. The old claim transfer-path collision is no longer the uniqueness mechanism.
+
+**B40 Redesign (found Sprint 9, 2026-05-24)**
+- TD-055: Apply submit overwrites the whole `profile.guardians` list with the single `{name, phone}` entry from My Family. Fine today (guardians collected nowhere else), but if a future flow stores multiple/richer guardians, the apply form would clobber them. Merge-by-index or key on relationship when guardians become multi-entry.
+- TD-056: Seed `PartnerOrganisation` rows for the named referring-orgs (smc, cumig, pushparani, sathya_sai, halatuju, tara, govind). Until seeded, a selection persists as `referral_source` (raw code) but does **not** link the `referred_by_org` FK. Add a seed/data-migration (or admin entries) before launch so partner attribution works.
+- TD-057: The apply→onboarding "return" marker (`halatuju_apply_return`, sessionStorage) can go stale if the student **abandons** the results-edit detour mid-flow and then starts a *normal* onboarding in the same tab — the final step would wrongly route to `/scholarship/apply` instead of `/dashboard`. Mitigated (orphan cleared on any normal apply-page visit; sessionStorage clears on tab close) but not eliminated for the abandon→dashboard→onboarding path. Clean fix: thread the return intent as a query param through the onboarding steps instead of a persistent flag, or clear the marker on a dashboard visit.

@@ -20,9 +20,12 @@ class TestScholarshipModels(TestCase):
 
     def test_cohort_str_and_defaults(self):
         self.assertIn('b40-2026', str(self.cohort))
-        self.assertEqual(self.cohort.min_spm_a_count, 5)
-        self.assertEqual(self.cohort.min_stpm_pngk, 3.0)
-        self.assertEqual(self.cohort.bucket_b_margin, 1)
+        self.assertEqual(self.cohort.min_spm_a_count, 4)
+        self.assertEqual(self.cohort.min_spm_bplus_count, 5)
+        self.assertEqual(self.cohort.min_stpm_pngk, 2.9)
+        self.assertEqual(self.cohort.per_capita_ceiling, 1584)
+        self.assertEqual(self.cohort.success_delay_hours, 2)
+        self.assertEqual(self.cohort.decline_delay_hours, 48)
         self.assertTrue(self.cohort.is_open)
 
     def test_application_defaults(self):
