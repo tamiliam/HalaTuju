@@ -74,29 +74,11 @@ export default function ScholarshipLandingPage() {
           </div>
         </section>
 
-        {/* Please note (pilot) + Requirements — side by side on desktop */}
+        {/* Can you apply? + Please note — side by side on desktop, headings top-aligned */}
         <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
           <div className="lg:grid lg:grid-cols-2 lg:gap-6 lg:items-start">
-            {/* Please note */}
-            <div className="bg-primary-50 border-l-4 border-primary-500 rounded-2xl p-5 mb-6 lg:mb-0">
-              <h2 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {t('scholarship.landing.note.title')}
-              </h2>
-              <ul className="space-y-2.5 text-sm text-gray-700">
-                {NOTE_BULLETS.map((b) => (
-                  <li key={b}>
-                    <span className="font-semibold text-gray-900">{t(`scholarship.landing.note.${b}Label`)}:</span>{' '}
-                    {t(`scholarship.landing.note.${b}Text`)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Requirements */}
-            <div id="requirements" className="scroll-mt-24">
+            {/* Can you apply? (left) */}
+            <div id="requirements" className="scroll-mt-24 mb-6 lg:mb-0">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('scholarship.landing.req.title')}</h2>
               <div className="bg-white rounded-2xl shadow-sm divide-y divide-gray-100">
                 {REQ_ITEMS.map((it) => (
@@ -107,6 +89,26 @@ export default function ScholarshipLandingPage() {
                 ))}
               </div>
               <p className="text-sm text-gray-500 italic mt-3">{t('scholarship.landing.req.closeNote')}</p>
+            </div>
+
+            {/* Please note (right) — heading above the card so its top aligns with "Can you apply?" */}
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {t('scholarship.landing.note.title')}
+              </h2>
+              <div className="bg-primary-50 border-l-4 border-primary-500 rounded-2xl p-5">
+                <ul className="space-y-2.5 text-sm text-gray-700">
+                  {NOTE_BULLETS.map((b) => (
+                    <li key={b}>
+                      <span className="font-semibold text-gray-900">{t(`scholarship.landing.note.${b}Label`)}:</span>{' '}
+                      {t(`scholarship.landing.note.${b}Text`)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         </section>
