@@ -605,7 +605,7 @@
     "landing": {
       "hero": {
         "heading": "A community behind every student.",
-        "sub": "A community self-help pilot helping eligible B40 students of Indian descent continue their post-secondary studies at public institutions — from pre-university to university — supported by people in our own community.",
+        "sub": "A community-supported pilot helping students from low-income (B40) households continue their post-secondary studies at public institutions — from pre-university to university — backed by fellow Malaysians who want to see them succeed.",
         "apply": "Apply now",
         "seeQualify": "See if you qualify"
       },
@@ -640,7 +640,7 @@
       },
       "req": {
         "title": "Can you apply?",
-        "item1": "Malaysian of Indian descent (for this pilot — this may widen in future).",
+        "item1": "Malaysian citizen who has just completed, or is completing, SPM or STPM.",
         "item2": "From a B40 household — combined monthly income below RM5,860.",
         "item3": "At least 5 A's in SPM, or a PNGK of 3.0 or above in STPM.",
         "item4": "Continuing post-secondary study at a public institution — Matrikulasi, Foundation/Asasi, STPM, IPTA, polytechnic or ILKA.",
@@ -672,7 +672,7 @@
         "q1": "Do I need to have used HalaTuju before?",
         "a1": "No. If you're new, the same Google sign-in creates your account. If you've already done the HalaTuju quiz, we'll use your profile so you don't retype anything.",
         "q2": "Who can apply?",
-        "a2": "For this pilot, the programme is open to Malaysian students of Indian descent from B40 households who meet the academic criteria. This scope may widen in future.",
+        "a2": "The programme is open to Malaysian citizens from low-income (B40) households who meet the academic criteria and are continuing their studies at a public institution.",
         "q3": "Is this a loan? Do I have to pay it back?",
         "a3": "No. It is education assistance from a sponsor — nothing to repay, no interest.",
         "q4": "Is it guaranteed if I qualify?",

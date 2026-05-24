@@ -12,6 +12,9 @@ const lexend = Lexend({
 })
 
 export const metadata: Metadata = {
+  // Base URL so relative OG/Twitter image paths resolve to the production host
+  // (without this, social-share previews can resolve the image to the wrong host).
+  metadataBase: new URL('https://halatuju.xyz'),
   title: 'HalaTuju — Cari Kursus Anda',
   description: 'Masukkan keputusan SPM atau STPM anda dan temui 1,300+ kursus di universiti, politeknik dan TVET yang anda layak. Percuma.',
   keywords: ['SPM', 'STPM', 'course recommendation', 'Malaysia', 'education', 'university', 'polytechnic', 'degree', 'kursus', 'kelayakan'],

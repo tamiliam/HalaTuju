@@ -39,7 +39,7 @@ export default function ScholarshipLandingPage() {
             <div className="relative w-full h-60 lg:h-[26rem] rounded-2xl overflow-hidden mb-6 lg:mb-0 lg:order-2">
               <Image
                 src="/scholarship/hero.jpg" alt="" fill priority
-                className="object-cover object-top" sizes="(max-width:1024px) 100vw, 600px"
+                className="object-cover object-center" sizes="(max-width:1024px) 100vw, 600px"
               />
             </div>
             <div className="lg:order-1">
