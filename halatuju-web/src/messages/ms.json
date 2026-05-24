@@ -159,7 +159,8 @@
     "spmSains": "Sains",
     "spmSastera": "Sastera",
     "spmTeknikal": "Teknikal",
-    "spmVokasional": "Vokasional"
+    "spmVokasional": "Vokasional",
+    "saveReturnToApplication": "Simpan & kembali ke permohonan"
   },
   "verifyEmail": {
     "loading": "Mengesahkan e-mel anda...",
@@ -436,10 +437,10 @@
       "aGradesWord": "A",
       "including": "termasuk",
       "resultsFromProfile": "Daripada keputusan tersimpan anda",
-      "resultsWrong": "Keputusan salah? Kemas kini dalam profil anda",
+      "resultsWrong": "Keputusan salah? Edit",
       "noResultsTitle": "Kami belum ada keputusan anda",
-      "noResultsBody": "Lengkapkan kuiz HalaTuju supaya kami boleh menilai permohonan anda.",
-      "noResultsCta": "Pergi ke kuiz",
+      "noResultsBody": "Tambah keputusan SPM atau STPM anda supaya kami boleh menilai permohonan anda.",
+      "noResultsCta": "Tambah keputusan saya",
       "signedInAs": "Log masuk sebagai",
       "usingProfile": "Menggunakan profil HalaTuju anda",
       "step": "Langkah",

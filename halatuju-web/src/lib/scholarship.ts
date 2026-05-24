@@ -207,6 +207,60 @@ export function applyFormError(form: ApplyFormState): string | null {
   return null
 }
 
+// ── My Results → onboarding round-trip (Sprint 9b) ───────────────────────
+// Editing/adding results sends the student through the full onboarding flow.
+// The apply form only commits on submit, so before leaving we STASH the
+// in-progress About Me / My Family edits and set a RETURN marker; the final
+// onboarding step reads the marker to route back here (and we restore the stash).
+// sessionStorage keys are constants (not string literals) to avoid drift.
+export const APPLY_STASH_KEY = 'halatuju_apply_stash'
+export const APPLY_RETURN_KEY = 'halatuju_apply_return'
+
+type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
+
+/** sessionStorage if available (browser), else null (SSR / node tests without injection). */
+function safeSession(): StorageLike | null {
+  try {
+    return typeof sessionStorage !== 'undefined' ? sessionStorage : null
+  } catch {
+    return null
+  }
+}
+
+/** Stash the in-progress form and mark that onboarding should return to the apply page. */
+export function stashApplyForm(form: ApplyFormState, storage?: StorageLike): void {
+  const s = storage ?? safeSession()
+  if (!s) return
+  s.setItem(APPLY_STASH_KEY, JSON.stringify(form))
+  s.setItem(APPLY_RETURN_KEY, '1')
+}
+
+/** Read and consume the stashed form (returns null if none / unparseable). */
+export function popApplyStash(storage?: StorageLike): ApplyFormState | null {
+  const s = storage ?? safeSession()
+  if (!s) return null
+  const raw = s.getItem(APPLY_STASH_KEY)
+  if (!raw) return null
+  s.removeItem(APPLY_STASH_KEY)
+  try {
+    return JSON.parse(raw) as ApplyFormState
+  } catch {
+    return null
+  }
+}
+
+/** True when onboarding was entered from the apply form (should return to it). */
+export function hasApplyReturn(storage?: StorageLike): boolean {
+  const s = storage ?? safeSession()
+  return !!s && s.getItem(APPLY_RETURN_KEY) === '1'
+}
+
+/** Clear the return marker (after routing back to the apply page). */
+export function clearApplyReturn(storage?: StorageLike): void {
+  const s = storage ?? safeSession()
+  s?.removeItem(APPLY_RETURN_KEY)
+}
+
 // ── STEP 2: deeper-info + funding-need form (Sprint 4b) ──────────────────
 
 export interface DetailsFormState {

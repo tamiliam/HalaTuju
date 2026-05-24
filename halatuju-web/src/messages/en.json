@@ -159,7 +159,8 @@
     "spmSains": "Science",
     "spmSastera": "Arts",
     "spmTeknikal": "Technical",
-    "spmVokasional": "Vocational"
+    "spmVokasional": "Vocational",
+    "saveReturnToApplication": "Save & return to application"
   },
   "verifyEmail": {
     "loading": "Verifying your email...",
@@ -436,10 +437,10 @@
       "aGradesWord": "A's",
       "including": "including",
       "resultsFromProfile": "From your saved results",
-      "resultsWrong": "Results wrong? Update them in your profile",
+      "resultsWrong": "Results wrong? Edit them",
       "noResultsTitle": "We don't have your results yet",
-      "noResultsBody": "Finish your HalaTuju quiz so we can assess your application.",
-      "noResultsCta": "Go to the quiz",
+      "noResultsBody": "Add your SPM or STPM results so we can assess your application.",
+      "noResultsCta": "Add my results",
       "signedInAs": "Signed in as",
       "usingProfile": "Using your HalaTuju profile",
       "step": "Step",

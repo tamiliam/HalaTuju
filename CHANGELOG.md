@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Redesign · Sprint 9b: My Results edit → onboarding round-trip (2026-05-24)
+
+Wires the apply form's My Results "edit/add results" into the full onboarding flow and brings the student back
+without losing in-progress edits. Frontend only; on `feature/b40-redesign`, not deployed.
+
+### Changed
+- **My Results "edit / add results"** now routes through the **full onboarding** (`/onboarding/exam-type` → grades
+  → … → "a few more details") instead of `/profile` or `/quiz`, so the profile ends up complete for course
+  recommendations too.
+- The **final onboarding step** is context-aware: entered from the apply form, its button reads **"Save & return
+  to application"** and routes back to `/scholarship/apply` (otherwise unchanged → dashboard).
+
+### Added
+- **Stash & restore** of in-progress About-Me/My-Family edits across the onboarding detour (sessionStorage): the
+  form only commits on submit, so edits are stashed before leaving and restored on return (landing on the Results
+  tab). Helpers `stashApplyForm` / `popApplyStash` / `hasApplyReturn` / `clearApplyReturn` (storage-injectable,
+  SSR-safe); orphan return-marker cleared on a normal apply visit.
+- i18n `onboarding.saveReturnToApplication`; Results CTA copy updated (edit/add → onboarding).
+
+### Tests
+- Frontend jest **44 → 49** (stash/restore round-trip, marker set/clear, SSR no-op). Backend unchanged (1095).
+
 ## [Unreleased] — B40 Redesign · Sprint 9: apply form ① — About Me + My Family (2026-05-24)
 
 Apply-form rebuild, first half. Inline-editable **About Me** + **My Family**, commit-on-submit. Frontend +

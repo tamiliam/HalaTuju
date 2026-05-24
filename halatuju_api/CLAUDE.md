@@ -257,13 +257,20 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   **No new migration** (reused existing profile fields). Backend 1095 tests, frontend 44 jest, `next build` clean,
   i18n 1051-key parity. **Approved mobile build via local screenshot** (desktop deferred to S12 — user's call).
   See `retrospective-b40-sprint9.md`. Results/Plans/Support tabs untouched this sprint.
-- **Next: S9b + S10** — **S9b** (small): My Results edit → `/onboarding/exam-type` return-marker + context-aware
-  final onboarding button + stash/restore in-progress apply edits across the detour. **S10**: My Plans
-  (pathways multi-select; top-3 from eligible courses; UPU/IPTS; field; other-scholarships) + Support (help radios,
-  optional "anything else", consent) + post-submit **"Application received"** screen (replaces auto-advance).
-  Both frontend, commit-on-submit final wiring. Lessons that apply: Jest is node-env (test pure `lib/*.ts`);
-  run `next build` before done; EN/MS/TA parity (check-i18n); **i18n lives in `src/messages/` not `src/i18n/`**;
-  apply form is auth-gated → screenshot via a throwaway preview route with a sample profile.
+- **✅ S9b done (2026-05-24):** My Results "edit/add results" now routes through the **full onboarding**
+  (`/onboarding/exam-type` → … → "a few more details") instead of `/profile`/`/quiz`; the **final onboarding step**
+  is context-aware — entered from apply, its button is **"Save & return to application"** and routes back to
+  `/scholarship/apply` (else → dashboard). In-progress About-Me/My-Family edits are **stashed/restored** across the
+  detour via sessionStorage (`stashApplyForm`/`popApplyStash`/`hasApplyReturn`/`clearApplyReturn`, storage-injectable,
+  SSR-safe; orphan marker cleared on normal apply visit). Frontend only; **44→49 jest**, build clean, i18n 1052-key
+  parity; backend unchanged (1095). See `retrospective-b40-sprint9b.md` + TD-057.
+- **▶ Next: S10** — apply form ②: **My Plans** (pathways multi-select; top-3 from the student's **eligible
+  courses**; UPU/IPTS-only question; field of study; other-scholarships) + **Support** (help radios, optional
+  "anything else", consent) + post-submit **"Application received"** screen (replaces the auto-advance). Frontend,
+  commit-on-submit final wiring; My Plans pulls eligible courses/pathways (the heavy part). Lessons that apply:
+  Jest is node-env (test pure `lib/*.ts`); run `next build` before done; EN/MS/TA parity (check-i18n);
+  **i18n lives in `src/messages/` not `src/i18n/`**; apply form is auth-gated → screenshot via a throwaway preview
+  route with a sample profile; render form errors at form level (not inside one tab).
 - **Gotcha:** soft-NRIC **supersedes** the old "IC immutable" decision — uniqueness is verified-only now.
 - **Gotcha:** new migrations apply to prod only at the S12 deploy; before numbering, check `max` migration on `main`.
 - **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing `feature/b40-redesign` does not. Keep the redesign on the branch.

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
@@ -16,6 +16,9 @@ import {
   buildApplicationPayload,
   applyFormError,
   nricChanged,
+  stashApplyForm,
+  popApplyStash,
+  clearApplyReturn,
   PATHWAY_OPTIONS,
   REFERRING_ORG_OPTIONS,
   CALL_LANGUAGE_OPTIONS,
@@ -107,10 +110,33 @@ export default function ScholarshipApplyPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<TabKey>('personal')
+  // Once the form is populated (from a stash on return, or from the profile),
+  // don't let the profile effect overwrite the student's in-progress edits.
+  const populatedRef = useRef(false)
 
-  // Pre-fill the financial fields from the profile once it's available
+  // Returning from the My Results → onboarding detour: restore the stashed
+  // in-progress edits and land back on the Results tab. Runs once on mount,
+  // before the profile prefill below (which then skips, seeing populatedRef).
   useEffect(() => {
-    if (profile) setForm(profileToApplyDefaults(profile))
+    const stashed = popApplyStash()
+    if (stashed) {
+      setForm(stashed)
+      setTab('results')
+      populatedRef.current = true
+    } else {
+      // No stash on a normal apply visit → clear any orphan return marker left by
+      // an abandoned results-edit detour, so a later normal onboarding doesn't
+      // wrongly route back here.
+      clearApplyReturn()
+    }
+  }, [])
+
+  // Pre-fill from the profile once it's available (skipped if we restored a stash).
+  useEffect(() => {
+    if (profile && !populatedRef.current) {
+      setForm(profileToApplyDefaults(profile))
+      populatedRef.current = true
+    }
   }, [profile])
 
   // A returning applicant has nothing to fill in here — send them to their
@@ -139,6 +165,14 @@ export default function ScholarshipApplyPage() {
     },
     []
   )
+
+  // Edit/add results → run the full onboarding (grades, electives, co-curricular,
+  // "a few more details"), then return here. Stash the in-progress edits first so
+  // they survive the detour (the form only commits on submit).
+  const goEditResults = () => {
+    stashApplyForm(form)
+    router.push('/onboarding/exam-type')
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -367,15 +401,15 @@ export default function ScholarshipApplyPage() {
               </>
             )}
             <p className="text-xs text-gray-400 mt-2">{t('scholarship.apply.resultsFromProfile')}</p>
-            <Link href="/profile?next=/scholarship/apply" className="text-sm font-medium text-primary-600 hover:underline mt-3 inline-block">
+            <button type="button" onClick={goEditResults} className="mt-3 inline-block text-sm font-medium text-primary-600 hover:underline">
               {t('scholarship.apply.resultsWrong')}
-            </Link>
+            </button>
           </div>
         ) : (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 text-center">
             <p className="font-medium text-gray-900 mb-1">{t('scholarship.apply.noResultsTitle')}</p>
             <p className="text-sm text-gray-600 mb-3">{t('scholarship.apply.noResultsBody')}</p>
-            <Link href="/quiz" className="btn-primary inline-block">{t('scholarship.apply.noResultsCta')}</Link>
+            <button type="button" onClick={goEditResults} className="btn-primary inline-block">{t('scholarship.apply.noResultsCta')}</button>
           </div>
         )}
       </div>

@@ -627,3 +627,28 @@ with one entry (TD-055). Until partner orgs are seeded, attribution persists onl
 
 **Revisit if:** Submit latency from the two sequential calls hurts UX (batch into one transactional endpoint), or
 guardians/partner-orgs need richer handling.
+
+## My Results edit detour: sessionStorage stash + return-marker — B40 Redesign Sprint 9b, 2026-05-24
+
+**Decision:** Editing/adding results from the apply form sends the student through the **full onboarding** flow
+and returns them to the apply page afterwards. Because the apply form only commits on submit, the in-progress
+About-Me/My-Family edits are **stashed to sessionStorage** before leaving and **restored on return**; a separate
+**boolean return-marker** (also sessionStorage) tells the final onboarding step to route back to `/scholarship/apply`
+(button relabelled "Save & return to application") instead of `/dashboard`. The marker is cleared on a legitimate
+return and orphan-cleared on any normal apply visit.
+
+**Alternatives considered:** (1) Thread the return intent as a query param (`?return=apply`) through every
+onboarding step. (2) Persist apply edits to the backend before the detour. (3) Block results-editing from the apply
+form (link to a read-only profile view).
+
+**Rationale:** The onboarding steps `router.push` without preserving query strings, so threading a param would
+mean touching every intermediate step — more surface, more risk — for a flow that's inherently single-tab.
+sessionStorage is tab-scoped (auto-clears on close) and survives the multi-page detour. Persisting edits to the
+backend mid-flow would violate the sprint's commit-on-submit invariant (a half-finished apply must write nothing).
+
+**Trade-offs:** A persistent marker can go stale if the student abandons onboarding mid-flow and then starts a
+normal onboarding in the same tab (TD-057) — mitigated (orphan-clear + tab-scoped) but not eliminated. Restoring
+the stash requires a `populatedRef` guard so the profile-prefill effect doesn't clobber the restored edits.
+
+**Revisit if:** TD-057's abandon edge bites in practice (switch to query-param threading), or onboarding gains a
+step that itself needs to preserve query state (thread a typed nav-state object instead).

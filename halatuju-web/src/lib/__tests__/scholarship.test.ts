@@ -14,6 +14,12 @@ import {
   REFERRING_ORG_OPTIONS,
   CALL_LANGUAGE_OPTIONS,
   MALAYSIAN_STATES,
+  stashApplyForm,
+  popApplyStash,
+  hasApplyReturn,
+  clearApplyReturn,
+  APPLY_STASH_KEY,
+  APPLY_RETURN_KEY,
   type ApplyFormState,
 } from '@/lib/scholarship'
 import type { StudentProfile, ScholarshipApplication } from '@/lib/api'
@@ -187,6 +193,59 @@ describe('nricChanged', () => {
   it('is true when the form NRIC differs (or profile has none)', () => {
     expect(nricChanged(baseForm({ nric: '080101-14-9999' }), { nric: '080101-14-1234' } as unknown as StudentProfile)).toBe(true)
     expect(nricChanged(baseForm({ nric: '080101-14-1234' }), null)).toBe(true)
+  })
+})
+
+describe('apply stash / return marker (My Results onboarding round-trip)', () => {
+  function fakeStorage() {
+    const m = new Map<string, string>()
+    return {
+      getItem: (k: string) => (m.has(k) ? m.get(k)! : null),
+      setItem: (k: string, v: string) => { m.set(k, v) },
+      removeItem: (k: string) => { m.delete(k) },
+      _map: m,
+    }
+  }
+
+  it('stashes the form and sets the return marker', () => {
+    const s = fakeStorage()
+    const form = baseForm({ name: 'Priya', householdIncome: '1800' })
+    stashApplyForm(form, s)
+    expect(s.getItem(APPLY_RETURN_KEY)).toBe('1')
+    expect(hasApplyReturn(s)).toBe(true)
+    expect(JSON.parse(s.getItem(APPLY_STASH_KEY)!).name).toBe('Priya')
+  })
+
+  it('pops and consumes the stash (round-trips the form, then clears it)', () => {
+    const s = fakeStorage()
+    const form = baseForm({ school: 'SMK Taman Desa', parentName: 'Rajan' })
+    stashApplyForm(form, s)
+    const restored = popApplyStash(s)
+    expect(restored?.school).toBe('SMK Taman Desa')
+    expect(restored?.parentName).toBe('Rajan')
+    // consumed — a second pop returns null
+    expect(popApplyStash(s)).toBeNull()
+  })
+
+  it('returns null on missing / unparseable stash', () => {
+    const s = fakeStorage()
+    expect(popApplyStash(s)).toBeNull()
+    s.setItem(APPLY_STASH_KEY, '{not json')
+    expect(popApplyStash(s)).toBeNull()
+  })
+
+  it('clears the return marker', () => {
+    const s = fakeStorage()
+    stashApplyForm(baseForm(), s)
+    clearApplyReturn(s)
+    expect(hasApplyReturn(s)).toBe(false)
+  })
+
+  it('no-ops safely when no storage is available (SSR/node without injection)', () => {
+    expect(() => stashApplyForm(baseForm())).not.toThrow()
+    expect(popApplyStash()).toBeNull()
+    expect(hasApplyReturn()).toBe(false)
+    expect(() => clearApplyReturn()).not.toThrow()
   })
 })
 

@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-context'
 import { getProfile, syncProfile, type SyncProfileData } from '@/lib/api'
 import ProgressStepper from '@/components/ProgressStepper'
 import { KEY_PROFILE, KEY_GRADES, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
+import { hasApplyReturn, clearApplyReturn } from '@/lib/scholarship'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -26,6 +27,11 @@ export default function ProfileInputPage() {
   const [state, setState] = useState<string>('')
   const [colorblind, setColorblind] = useState<boolean>(false)
   const [disability, setDisability] = useState<boolean>(false)
+  // Entered from the scholarship apply form's "edit results"? Then this final
+  // step returns to the apply page instead of the dashboard.
+  const [returning, setReturning] = useState<boolean>(false)
+
+  useEffect(() => { setReturning(hasApplyReturn()) }, [])
 
   useEffect(() => {
     const savedProfile = localStorage.getItem(KEY_PROFILE)
@@ -102,10 +108,17 @@ export default function ProfileInputPage() {
         await syncProfile(syncPayload, { token })
         await refreshProfile()
       } catch {
-        // Continue to dashboard even if sync fails — localStorage has the data
+        // Continue even if sync fails — localStorage has the data
       }
     }
 
+    // Returning from the apply form's "edit results" detour → back to the apply
+    // page (which restores the stashed edits and shows the updated results).
+    if (returning) {
+      clearApplyReturn()
+      router.push('/scholarship/apply')
+      return
+    }
     router.push('/dashboard')
   }
 
@@ -291,7 +304,7 @@ export default function ProfileInputPage() {
             disabled={!isComplete}
             className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {t('onboarding.seeRecommendations')}
+            {returning ? t('onboarding.saveReturnToApplication') : t('onboarding.seeRecommendations')}
           </button>
         </div>
       </div>

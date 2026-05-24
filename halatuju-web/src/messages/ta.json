@@ -159,7 +159,8 @@
     "spmSains": "அறிவியல்",
     "spmSastera": "கலை",
     "spmTeknikal": "தொழில்நுட்பம்",
-    "spmVokasional": "தொழிற்பயிற்சி"
+    "spmVokasional": "தொழிற்பயிற்சி",
+    "saveReturnToApplication": "சேமித்து விண்ணப்பத்திற்குத் திரும்பு"
   },
   "verifyEmail": {
     "loading": "உங்கள் மின்னஞ்சலை சரிபார்க்கிறது...",
@@ -436,10 +437,10 @@
       "aGradesWord": "A",
       "including": "உட்பட",
       "resultsFromProfile": "உங்கள் சேமித்த முடிவுகளிலிருந்து",
-      "resultsWrong": "முடிவுகள் தவறா? உங்கள் சுயவிவரத்தில் புதுப்பிக்கவும்",
+      "resultsWrong": "முடிவுகள் தவறா? திருத்தவும்",
       "noResultsTitle": "உங்கள் முடிவுகள் இன்னும் எங்களிடம் இல்லை",
-      "noResultsBody": "உங்கள் விண்ணப்பத்தை மதிப்பிட HalaTuju வினாடி வினாவை முடிக்கவும்.",
-      "noResultsCta": "வினாடி வினாவுக்குச் செல்",
+      "noResultsBody": "உங்கள் விண்ணப்பத்தை மதிப்பிட உங்கள் SPM அல்லது STPM முடிவுகளைச் சேர்க்கவும்.",
+      "noResultsCta": "எனது முடிவுகளைச் சேர்",
       "signedInAs": "உள்நுழைந்தவர்",
       "usingProfile": "உங்கள் HalaTuju சுயவிவரத்தைப் பயன்படுத்துகிறது",
       "step": "படி",

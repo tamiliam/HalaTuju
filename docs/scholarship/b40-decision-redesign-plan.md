@@ -303,6 +303,8 @@ Bring in the legacy form's support questions — they double as **mentoring / su
 - Acceptance: sections pre-fill + edit; onboarding round-trip returns to Results; jest + check-i18n + build green.
 - Complexity: High (~20 files).
 
+**S9b — My Results edit → onboarding round-trip (frontend).** — ✅ **built 2026-05-24, frontend 44→49 jest, build + i18n green** (commit at sprint close). Split out of S9. My Results edit/add → full onboarding → context-aware "Save & return to application" final button → back to apply; in-progress edits stashed/restored via sessionStorage (storage-injectable helpers); orphan marker cleanup + TD-057 for the abandon edge.
+
 **S10 — Apply form rebuild ②: My Plans + Support + "received" screen (frontend).** *(no policy calls)*
 - Scope: My Plans (pathways multi-select; top-3 from eligible courses; UPU/IPTS question; field; other-scholarships);
   Support I'd Like (help radios, optional "anything else", consent); commit-on-submit final wiring; post-submit
