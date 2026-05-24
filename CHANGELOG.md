@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Redesign · Sprint 10: apply form ② — My Plans + Support + "received" (2026-05-24)
+
+The second half of the apply form. Frontend only (every field was already accepted by `ApplicationCreateSerializer`
+since S7); on `feature/b40-redesign`, not deployed.
+
+### Added
+- **My Plans**: "intend to continue tertiary study" gate checkbox; **pathways considering** multi-select chips;
+  **UPU / destination** radio (with an inline amber note when "private (IPTS)" is picked — IPTS-only is out of
+  scope and the S8 engine declines it); **field of study** dropdown (from the field taxonomy); **top-3 course
+  choices** picked from the student's **saved courses** (ranked by tap order, max 3, friendly empty-state);
+  **other scholarships** multi-select chips + free text → funding-overlap signal.
+- **My Support**: help-with-university + help-with-scholarship radios (optional, Yes/No/Not sure), "anything else"
+  free text, required consent.
+- `scholarship.ts`: plans/support form state + payload mapping (`top_choices` ranked by order) + constants
+  (`UPU_OPTIONS`, `HELP_OPTIONS`, `OTHER_SCHOLARSHIP_OPTIONS`, `TopChoice`); apply page fetches saved courses
+  (exam-type aware) + field taxonomy on mount. EN/MS/TA i18n.
+
+### Changed
+- The apply form's single `intended_pathway` select is replaced by the `pathways_considered` multi-select; the
+  `notes` free-text is replaced by `anything_else`. `intends_tertiary_2026` kept (engine hard gate) as a checkbox.
+
+### Notes
+- The post-submit **"Application received"** screen already works (S8's silent-score keeps status `submitted`, so the
+  application page shows the neutral "received — we'll be in touch" card; the follow-up only appears once shortlisted).
+  No auto-advance.
+
+### Tests
+- Frontend jest **49** (top_choices builder + plans/support payload; replaces the dropped notes test). Backend unchanged (1095).
+
 ## [Unreleased] — B40 Redesign · Sprint 9b: My Results edit → onboarding round-trip (2026-05-24)
 
 Wires the apply form's My Results "edit/add results" into the full onboarding flow and brings the student back

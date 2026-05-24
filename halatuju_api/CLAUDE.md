@@ -264,10 +264,21 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   detour via sessionStorage (`stashApplyForm`/`popApplyStash`/`hasApplyReturn`/`clearApplyReturn`, storage-injectable,
   SSR-safe; orphan marker cleared on normal apply visit). Frontend only; **44→49 jest**, build clean, i18n 1052-key
   parity; backend unchanged (1095). See `retrospective-b40-sprint9b.md` + TD-057.
-- **▶ Next: S10** — apply form ②: **My Plans** (pathways multi-select; top-3 from the student's **eligible
-  courses**; UPU/IPTS-only question; field of study; other-scholarships) + **Support** (help radios, optional
-  "anything else", consent) + post-submit **"Application received"** screen (replaces the auto-advance). Frontend,
-  commit-on-submit final wiring; My Plans pulls eligible courses/pathways (the heavy part). Lessons that apply:
+- **✅ S10 done (2026-05-24):** apply form ② — **My Plans** (intends-tertiary gate checkbox; pathways multi-select
+  chips; UPU radio + inline IPTS-out-of-scope note; field-of-study dropdown from the taxonomy; **top-3 from the
+  student's saved courses** ranked by tap order; other-scholarships chips + free text) + **Support** (help radios
+  Yes/No/Not sure, optional "anything else", required consent). Single `intended_pathway` → `pathways_considered`
+  multi; `notes` → `anything_else`; `intends_tertiary_2026` kept (engine gate). Apply page fetches saved courses
+  (exam-type aware) + field taxonomy on mount. **Frontend only** (all fields accepted by `ApplicationCreateSerializer`
+  since S7). Post-submit "Application received" screen already works (S8 silent-score → status `submitted` → neutral
+  received card, no auto-advance). 49 jest, build clean, i18n 1087-key parity; backend unchanged (1095). Mobile build
+  approved via screenshot. See `retrospective-b40-sprint10.md`.
+- **▶ Next: S11** — application page + admin verify-&-accept (full-stack). Status-driven application page
+  (received/under-review → shortlisted follow-up) + login banner; **admin "verify & accept" checklist + endpoint**
+  (NRIC + name + results + uploaded doc) → sets `nric_verified` + **locks** the NRIC + advances the application;
+  **mentoring-candidate flag**. Resolves TD-054 (claim transfer-path) by folding it into the admin path. Lessons that
+  apply: enforce invariants in one place; serializer reused across endpoints → enumerate consumers; new migration →
+  check `max` on `main` before numbering; admin auth is a separate Supabase client (see decisions.md).
   Jest is node-env (test pure `lib/*.ts`); run `next build` before done; EN/MS/TA parity (check-i18n);
   **i18n lives in `src/messages/` not `src/i18n/`**; apply form is auth-gated → screenshot via a throwaway preview
   route with a sample profile; render form errors at form level (not inside one tab).

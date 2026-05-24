@@ -305,8 +305,8 @@ Bring in the legacy form's support questions — they double as **mentoring / su
 
 **S9b — My Results edit → onboarding round-trip (frontend).** — ✅ **built 2026-05-24, frontend 44→49 jest, build + i18n green** (commit at sprint close). Split out of S9. My Results edit/add → full onboarding → context-aware "Save & return to application" final button → back to apply; in-progress edits stashed/restored via sessionStorage (storage-injectable helpers); orphan marker cleanup + TD-057 for the abandon edge.
 
-**S10 — Apply form rebuild ②: My Plans + Support + "received" screen (frontend).** *(no policy calls)*
-- Scope: My Plans (pathways multi-select; top-3 from eligible courses; UPU/IPTS question; field; other-scholarships);
+**S10 — Apply form rebuild ②: My Plans + Support + "received" screen (frontend).** — ✅ **built 2026-05-24, frontend 49 jest, build + i18n green, mobile build approved via screenshot** (commit at sprint close). *(no policy calls; top-3 sourced from **saved courses** [decided 2026-05-24], not a fresh eligibility recompute; "received" screen already worked from S8 silent-score; frontend only — backend fields accepted since S7.)*
+- Scope: My Plans (pathways multi-select; top-3 from saved courses; UPU/IPTS question; field; other-scholarships);
   Support I'd Like (help radios, optional "anything else", consent); commit-on-submit final wiring; post-submit
   **"Application received"** screen (replaces auto-advance); EN/MS/TA i18n.
 - Acceptance: full form submits → received; no auto-advance; persists only on success; green.

@@ -652,3 +652,26 @@ the stash requires a `populatedRef` guard so the profile-prefill effect doesn't 
 
 **Revisit if:** TD-057's abandon edge bites in practice (switch to query-param threading), or onboarding gains a
 step that itself needs to preserve query state (thread a typed nav-state object instead).
+
+## My Plans top-3 sourced from saved courses (not a fresh eligibility recompute) — B40 Redesign Sprint 10, 2026-05-24
+
+**Decision:** The apply form's "top 3 course choices" are picked from the student's **saved courses**
+(`getSavedCourses`, exam-type aware), ranked by tap order, capped at 3, with a friendly empty-state when none are
+saved. `top_choices` is stored as `[{rank, course_id, course_name, institution}]`. It's optional — the decision
+engine never scores it (only `upu_status='ipts'` disqualifies); it feeds the sponsor profile + a seriousness signal.
+
+**Alternatives considered:** (1) Recompute the student's full eligible + ranked list in the apply form (mirror the
+dashboard's `checkEligibility` → `getRankedResults` / `rankStpmCourses` two-step, needing the full grades payload +
+quiz signals) and pick from that. (2) Free-text course names. (3) Search/autocomplete against the whole catalogue.
+
+**Rationale:** Saved courses are a subset of the student's eligible courses (you can only save what was shown to
+you), so they satisfy "from eligible options" while being far lighter — one call, no eligibility recompute, no
+signal prep — which kept S10 to a single session. Deliberately-bookmarked courses are also a *stronger* seriousness
+signal than a list the form generated. Free text isn't validated; full-catalogue search lets them pick ineligible
+courses.
+
+**Trade-offs:** A serious student who hasn't saved anything sees an empty-state and must go bookmark first (top-3
+stays optional, so they can still submit). The picker reflects only what's saved at submit time, not a live ranking.
+
+**Revisit if:** Too many applicants reach My Plans with no saved courses (then offer an inline eligible-courses
+fetch as a fallback), or sponsors need a ranked-eligibility view rather than the student's self-selected three.

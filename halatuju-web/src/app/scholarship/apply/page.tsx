@@ -9,6 +9,10 @@ import {
   submitScholarshipApplication,
   getMyScholarshipApplications,
   claimNric,
+  getSavedCourses,
+  fetchFieldTaxonomy,
+  type SavedCourseWithStatus,
+  type FieldTaxonomyEntry,
 } from '@/lib/api'
 import {
   profileToApplyDefaults,
@@ -23,7 +27,11 @@ import {
   REFERRING_ORG_OPTIONS,
   CALL_LANGUAGE_OPTIONS,
   MALAYSIAN_STATES,
+  UPU_OPTIONS,
+  HELP_OPTIONS,
+  OTHER_SCHOLARSHIP_OPTIONS,
   type ApplyFormState,
+  type TopChoice,
 } from '@/lib/scholarship'
 
 type TabKey = 'personal' | 'family' | 'results' | 'plans' | 'support'
@@ -110,6 +118,9 @@ export default function ScholarshipApplyPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<TabKey>('personal')
+  // My Plans data: the student's saved courses (top-3 source) + field taxonomy.
+  const [savedCourses, setSavedCourses] = useState<SavedCourseWithStatus[]>([])
+  const [fieldGroups, setFieldGroups] = useState<FieldTaxonomyEntry[]>([])
   // Once the form is populated (from a stash on return, or from the profile),
   // don't let the profile effect overwrite the student's in-progress edits.
   const populatedRef = useRef(false)
@@ -138,6 +149,18 @@ export default function ScholarshipApplyPage() {
       populatedRef.current = true
     }
   }, [profile])
+
+  // My Plans data: saved courses (top-3 picker, exam-type aware) + field taxonomy.
+  useEffect(() => {
+    if (status !== 'ready' || !token) return
+    const qualification = profile?.exam_type === 'stpm' ? 'STPM' : 'SPM'
+    getSavedCourses({ token, qualification })
+      .then((res) => setSavedCourses(res.saved_courses || []))
+      .catch(() => setSavedCourses([]))
+    fetchFieldTaxonomy({ token })
+      .then((res) => setFieldGroups(res.groups || []))
+      .catch(() => setFieldGroups([]))
+  }, [status, token, profile?.exam_type])
 
   // A returning applicant has nothing to fill in here — send them to their
   // application page (which shows status / the follow-up steps). Keeps the
@@ -173,6 +196,30 @@ export default function ScholarshipApplyPage() {
     stashApplyForm(form)
     router.push('/onboarding/exam-type')
   }
+
+  // ── My Plans helpers ──
+  const togglePathway = (key: string) => setForm((p) => ({
+    ...p,
+    pathwaysConsidered: p.pathwaysConsidered.includes(key)
+      ? p.pathwaysConsidered.filter((k) => k !== key)
+      : [...p.pathwaysConsidered, key],
+  }))
+  const toggleScholarship = (key: string) => setForm((p) => ({
+    ...p,
+    otherScholarships: p.otherScholarships.includes(key)
+      ? p.otherScholarships.filter((k) => k !== key)
+      : [...p.otherScholarships, key],
+  }))
+  // Pick top-3 from saved courses; rank = selection order, capped at 3.
+  const toggleTopChoice = (sc: SavedCourseWithStatus) => setForm((p) => {
+    if (p.topChoices.some((c) => c.courseId === sc.course_id)) {
+      return { ...p, topChoices: p.topChoices.filter((c) => c.courseId !== sc.course_id) }
+    }
+    if (p.topChoices.length >= 3) return p
+    return { ...p, topChoices: [...p.topChoices, { courseId: sc.course_id, courseName: sc.course, institution: sc.institution_name || '' }] }
+  })
+  const topChoiceRank = (id: string) => form.topChoices.findIndex((c) => c.courseId === id) + 1
+  const fieldName = (g: FieldTaxonomyEntry) => (locale === 'ms' ? g.name_ms : locale === 'ta' ? g.name_ta : g.name_en)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -415,35 +462,154 @@ export default function ScholarshipApplyPage() {
       </div>
     ),
     plans: (
-      <div className="space-y-4">
+      <div className="space-y-5">
+        {/* Continuing to tertiary study — engine hard gate */}
+        <label className="flex items-start gap-2 text-sm text-gray-700">
+          <input type="checkbox" className="mt-1" checked={form.intendsTertiary2026}
+            onChange={(e) => update('intendsTertiary2026', e.target.checked)} />
+          {t('scholarship.apply.intendLabel')}
+        </label>
+
+        {/* Pathways considering (non-exclusive multi-select) */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('scholarship.apply.pathwayLabel')}</label>
-          <select className="input" value={form.intendedPathway}
-            onChange={(e) => update('intendedPathway', e.target.value as ApplyFormState['intendedPathway'])}>
-            <option value="">{t('scholarship.apply.pathwayPlaceholder')}</option>
-            {PATHWAY_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>{t(`scholarship.apply.pathway.${opt}`)}</option>
+          <FieldLabel tip={t('scholarship.apply.tip.pathways')}>{t('scholarship.apply.pathwaysLabel')}</FieldLabel>
+          <div className="flex flex-wrap gap-2">
+            {PATHWAY_OPTIONS.map((opt) => {
+              const on = form.pathwaysConsidered.includes(opt)
+              return (
+                <button key={opt} type="button" onClick={() => togglePathway(opt)}
+                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                  {t(`scholarship.apply.pathway.${opt}`)}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* UPU / destination intent (IPTS-only is out of scope) */}
+        <div>
+          <FieldLabel tip={t('scholarship.apply.tip.upu')}>{t('scholarship.apply.upuLabel')}</FieldLabel>
+          <div className="space-y-2">
+            {UPU_OPTIONS.map((opt) => (
+              <label key={opt} className="flex items-start gap-2 text-sm text-gray-700">
+                <input type="radio" name="upu" className="mt-1" checked={form.upuStatus === opt}
+                  onChange={() => update('upuStatus', opt)} />
+                {t(`scholarship.apply.upu.${opt}`)}
+              </label>
             ))}
+          </div>
+          {form.upuStatus === 'ipts' && (
+            <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+              {t('scholarship.apply.iptsNote')}
+            </p>
+          )}
+        </div>
+
+        {/* Field of study */}
+        <div>
+          <FieldLabel tip={t('scholarship.apply.tip.field')}>{t('scholarship.apply.fieldLabel')}</FieldLabel>
+          <select className="input" value={form.fieldOfStudy} onChange={(e) => update('fieldOfStudy', e.target.value)}>
+            <option value="">{t('scholarship.apply.fieldPlaceholder')}</option>
+            {fieldGroups.map((g) => (<option key={g.key} value={g.key}>{fieldName(g)}</option>))}
           </select>
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-sm text-gray-700">{t('scholarship.apply.intendLabel')}</span>
-          <Toggle on={form.intendsTertiary2026} onChange={(v) => update('intendsTertiary2026', v)} label={t('scholarship.apply.intendLabel')} />
+
+        {/* Top-3 course choices — from the student's saved courses */}
+        <div>
+          <FieldLabel tip={t('scholarship.apply.tip.topChoices')}>{t('scholarship.apply.topChoicesLabel')}</FieldLabel>
+          {savedCourses.length === 0 ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-center">
+              <p className="mb-2 text-sm text-gray-600">{t('scholarship.apply.noSavedCourses')}</p>
+              <Link href="/dashboard" className="text-sm font-medium text-primary-600 hover:underline">
+                {t('scholarship.apply.browseCourses')}
+              </Link>
+            </div>
+          ) : (
+            <>
+              <p className="mb-2 text-xs text-gray-400">{t('scholarship.apply.topChoicesHint')}</p>
+              <div className="space-y-2">
+                {savedCourses.map((sc) => {
+                  const rank = topChoiceRank(sc.course_id)
+                  const on = rank > 0
+                  const full = form.topChoices.length >= 3 && !on
+                  return (
+                    <button key={sc.course_id} type="button" disabled={full} onClick={() => toggleTopChoice(sc)}
+                      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left ${on ? 'border-primary-500 bg-primary-50' : full ? 'border-gray-200 opacity-50' : 'border-gray-300'}`}>
+                      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${on ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                        {on ? rank : '+'}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium text-gray-900">{sc.course}</span>
+                        {sc.institution_name && <span className="block truncate text-xs text-gray-400">{sc.institution_name}</span>}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Other scholarships applied/held → funding-overlap signal */}
+        <div>
+          <FieldLabel tip={t('scholarship.apply.tip.otherScholarships')}>{t('scholarship.apply.otherScholarshipsLabel')}</FieldLabel>
+          <div className="mb-2 flex flex-wrap gap-2">
+            {OTHER_SCHOLARSHIP_OPTIONS.map((opt) => {
+              const on = form.otherScholarships.includes(opt)
+              return (
+                <button key={opt} type="button" onClick={() => toggleScholarship(opt)}
+                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                  {t(`scholarship.apply.scholarship.${opt}`)}
+                </button>
+              )
+            })}
+          </div>
+          <input className="input" value={form.otherScholarshipsText}
+            placeholder={t('scholarship.apply.otherScholarshipsPlaceholder')}
+            onChange={(e) => update('otherScholarshipsText', e.target.value)} />
         </div>
       </div>
     ),
     support: (
-      <div className="space-y-4">
+      <div className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('scholarship.apply.notesLabel')}</label>
-          <textarea className="input" rows={4} value={form.notes}
-            placeholder={t('scholarship.apply.notesPlaceholder')}
-            onChange={(e) => update('notes', e.target.value)} />
+          <FieldLabel tip={t('scholarship.apply.tip.helpUniversity')}>{t('scholarship.apply.helpUniversityLabel')}</FieldLabel>
+          <div className="flex flex-wrap gap-2">
+            {HELP_OPTIONS.map((opt) => {
+              const on = form.helpUniversity === opt
+              return (
+                <button key={opt} type="button" onClick={() => update('helpUniversity', opt)}
+                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                  {t(`scholarship.apply.help.${opt}`)}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <div>
+          <FieldLabel tip={t('scholarship.apply.tip.helpScholarship')}>{t('scholarship.apply.helpScholarshipLabel')}</FieldLabel>
+          <div className="flex flex-wrap gap-2">
+            {HELP_OPTIONS.map((opt) => {
+              const on = form.helpScholarship === opt
+              return (
+                <button key={opt} type="button" onClick={() => update('helpScholarship', opt)}
+                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                  {t(`scholarship.apply.help.${opt}`)}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <div>
+          <FieldLabel>{t('scholarship.apply.anythingElseLabel')}</FieldLabel>
+          <textarea className="input" rows={4} value={form.anythingElse}
+            placeholder={t('scholarship.apply.anythingElsePlaceholder')}
+            onChange={(e) => update('anythingElse', e.target.value)} />
         </div>
         <label className="flex items-start gap-2 text-sm text-gray-700">
           <input type="checkbox" className="mt-1" checked={form.consentToContact}
             onChange={(e) => update('consentToContact', e.target.checked)} />
-          {t('scholarship.apply.consentLabel')}
+          <span>{t('scholarship.apply.consentLabel')}<span className="ml-0.5 text-red-500" aria-hidden>*</span></span>
         </label>
       </div>
     ),

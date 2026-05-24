@@ -485,7 +485,48 @@
         "jkm": "Help from Jabatan Kebajikan Masyarakat (the welfare department).",
         "parentName": "Your parent's or guardian's name.",
         "parentPhone": "A number for your parent or guardian.",
-        "callLang": "Which language should we use if we call you?"
+        "callLang": "Which language should we use if we call you?",
+        "pathways": "Pick all the post-SPM pathways you're thinking about — you can choose more than one.",
+        "upu": "Tells us your destination. This scholarship is for public/government pathways.",
+        "field": "The broad area you want to study in.",
+        "topChoices": "Pick up to 3 from the courses you've saved, in order of preference. It shows us you've thought it through.",
+        "otherScholarships": "Tell us if you already hold or applied for other funding — it helps us prioritise.",
+        "helpUniversity": "Choosing courses, filling forms, personal statements.",
+        "helpScholarship": "Mock interviews, feedback on applications."
+      },
+      "pathwaysLabel": "Pathways you're considering",
+      "upuLabel": "Where do you plan to continue?",
+      "iptsNote": "This assistance is for public pathways — it's too small to cover private (IPTS) fees. If you're also considering a public option, choose that above.",
+      "fieldLabel": "Field of study you're aiming for",
+      "fieldPlaceholder": "Select a field",
+      "topChoicesLabel": "Your top 3 course choices",
+      "topChoicesHint": "Tap up to 3, in order of preference.",
+      "noSavedCourses": "You haven't saved any courses yet. Browse HalaTuju and bookmark a few, then come back.",
+      "browseCourses": "Browse courses",
+      "otherScholarshipsLabel": "Other scholarships you've applied for or hold",
+      "otherScholarshipsPlaceholder": "Other (please specify)",
+      "helpUniversityLabel": "Would you like help with university applications?",
+      "helpScholarshipLabel": "Would you like help with scholarship applications & interviews?",
+      "anythingElseLabel": "Anything else you'd like us to know? (optional)",
+      "anythingElsePlaceholder": "Special circumstances, concerns, or questions…",
+      "upu": {
+        "applied": "I've applied through UPU",
+        "public_other": "STPM / Matrikulasi / PISMP / TVET",
+        "ipts": "A private college/university (IPTS)",
+        "unknown": "I'm not sure what UPU is"
+      },
+      "help": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "Not sure"
+      },
+      "scholarship": {
+        "jpa": "JPA",
+        "petronas": "Petronas",
+        "mara": "MARA",
+        "yayasan": "Yayasan / state foundation",
+        "bank_foundation": "Bank / corporate foundation",
+        "other": "Other"
       }
     },
     "nextSteps": {

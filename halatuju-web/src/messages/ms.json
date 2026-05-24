@@ -485,7 +485,48 @@
         "jkm": "Bantuan daripada Jabatan Kebajikan Masyarakat.",
         "parentName": "Nama ibu bapa atau penjaga anda.",
         "parentPhone": "Nombor untuk ibu bapa atau penjaga anda.",
-        "callLang": "Bahasa apa yang patut kami gunakan jika kami menelefon anda?"
+        "callLang": "Bahasa apa yang patut kami gunakan jika kami menelefon anda?",
+        "pathways": "Pilih semua laluan selepas SPM yang anda fikirkan — anda boleh pilih lebih daripada satu.",
+        "upu": "Memberitahu kami destinasi anda. Biasiswa ini untuk laluan awam/kerajaan.",
+        "field": "Bidang umum yang anda ingin pelajari.",
+        "topChoices": "Pilih sehingga 3 daripada kursus yang anda simpan, mengikut keutamaan. Ia menunjukkan anda telah memikirkannya.",
+        "otherScholarships": "Beritahu kami jika anda sudah ada atau memohon pembiayaan lain — ia membantu kami mengutamakan.",
+        "helpUniversity": "Memilih kursus, mengisi borang, penyata diri.",
+        "helpScholarship": "Temu duga olok-olok, maklum balas permohonan."
+      },
+      "pathwaysLabel": "Laluan yang anda pertimbangkan",
+      "upuLabel": "Di mana anda merancang untuk menyambung?",
+      "iptsNote": "Bantuan ini untuk laluan awam — ia terlalu kecil untuk menampung yuran swasta (IPTS). Jika anda juga mempertimbangkan pilihan awam, pilih itu di atas.",
+      "fieldLabel": "Bidang pengajian yang anda sasarkan",
+      "fieldPlaceholder": "Pilih bidang",
+      "topChoicesLabel": "3 pilihan kursus utama anda",
+      "topChoicesHint": "Ketik sehingga 3, mengikut keutamaan.",
+      "noSavedCourses": "Anda belum menyimpan sebarang kursus. Layari HalaTuju dan tandakan beberapa, kemudian kembali.",
+      "browseCourses": "Layari kursus",
+      "otherScholarshipsLabel": "Biasiswa lain yang anda mohon atau pegang",
+      "otherScholarshipsPlaceholder": "Lain-lain (sila nyatakan)",
+      "helpUniversityLabel": "Mahukan bantuan dengan permohonan universiti?",
+      "helpScholarshipLabel": "Mahukan bantuan dengan permohonan biasiswa & temu duga?",
+      "anythingElseLabel": "Apa-apa lagi yang anda ingin kami tahu? (pilihan)",
+      "anythingElsePlaceholder": "Keadaan istimewa, kebimbangan, atau soalan…",
+      "upu": {
+        "applied": "Saya telah memohon melalui UPU",
+        "public_other": "STPM / Matrikulasi / PISMP / TVET",
+        "ipts": "Kolej/universiti swasta (IPTS)",
+        "unknown": "Saya tidak pasti apa itu UPU"
+      },
+      "help": {
+        "yes": "Ya",
+        "no": "Tidak",
+        "unsure": "Tidak pasti"
+      },
+      "scholarship": {
+        "jpa": "JPA",
+        "petronas": "Petronas",
+        "mara": "MARA",
+        "yayasan": "Yayasan / yayasan negeri",
+        "bank_foundation": "Yayasan bank / korporat",
+        "other": "Lain-lain"
       }
     },
     "nextSteps": {

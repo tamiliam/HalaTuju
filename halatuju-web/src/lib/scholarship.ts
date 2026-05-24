@@ -49,6 +49,27 @@ export const MALAYSIAN_STATES = [
 // NRIC format XXXXXX-XX-XXXX (the claim endpoint does the full age/state checks).
 const NRIC_RE = /^\d{6}-\d{2}-\d{4}$/
 
+// ── My Plans + My Support (Sprint 10) ────────────────────────────────────
+// UPU / destination intent. 'ipts' (IPTS-only) is the engine's disqualifier;
+// the form never blocks on it — the backend declines silently (S8 gate).
+export type UpuStatus = '' | 'applied' | 'public_other' | 'ipts' | 'unknown'
+export const UPU_OPTIONS: Exclude<UpuStatus, ''>[] = ['applied', 'public_other', 'ipts', 'unknown']
+
+// Optional support questions (Yes / No / Not sure).
+export type HelpChoice = '' | 'yes' | 'no' | 'unsure'
+export const HELP_OPTIONS: Exclude<HelpChoice, ''>[] = ['yes', 'no', 'unsure']
+
+// Other scholarships applied/held → funding-overlap signal (labels via i18n).
+export const OTHER_SCHOLARSHIP_OPTIONS = ['jpa', 'petronas', 'mara', 'yayasan', 'bank_foundation', 'other'] as const
+
+// A ranked course choice (rank derived from array order). Sourced from the
+// student's saved courses; shape mirrors the backend `top_choices` entries.
+export interface TopChoice {
+  courseId: string
+  courseName: string
+  institution: string
+}
+
 /**
  * The apply form only carries fields the applicant edits here. Academic data
  * (exam type, grades, STPM CGPA) is read live from the canonical HalaTuju
@@ -72,11 +93,19 @@ export interface ApplyFormState {
   parentName: string
   parentPhone: string
   callLanguage: CallLanguage
-  // My Plans / My Support (unchanged this sprint — still on the existing tabs)
-  intendedPathway: IntendedPathway
-  intendsTertiary2026: boolean
+  // My Plans
+  pathwaysConsidered: string[]      // pathway keys (non-exclusive)
+  topChoices: TopChoice[]           // ranked top-3 (from saved courses)
+  upuStatus: UpuStatus
+  fieldOfStudy: string              // field-taxonomy key
+  otherScholarships: string[]       // scholarship keys
+  otherScholarshipsText: string
+  intendsTertiary2026: boolean      // engine hard gate — must be true to qualify
+  // My Support
+  helpUniversity: HelpChoice
+  helpScholarship: HelpChoice
+  anythingElse: string
   consentToContact: boolean
-  notes: string
 }
 
 export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFormState {
@@ -98,10 +127,17 @@ export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFo
     parentName: guardian?.name ?? '',
     parentPhone: guardian?.phone ?? '',
     callLanguage: (profile?.preferred_call_language as CallLanguage) ?? '',
-    intendedPathway: '',
+    pathwaysConsidered: [],
+    topChoices: [],
+    upuStatus: '',
+    fieldOfStudy: '',
+    otherScholarships: [],
+    otherScholarshipsText: '',
     intendsTertiary2026: true,
+    helpUniversity: '',
+    helpScholarship: '',
+    anythingElse: '',
     consentToContact: false,
-    notes: '',
   }
 }
 
@@ -142,9 +178,18 @@ export interface ApplicationPayload {
   household_size: number | null
   receives_str: boolean
   receives_jkm: boolean
-  intended_pathway: string
   intends_tertiary_2026: boolean
   consent_to_contact: boolean
+  // My Plans + My Support (Sprint 10)
+  pathways_considered: string[]
+  top_choices: { rank: number; course_id: string; course_name: string; institution: string }[]
+  upu_status: string
+  field_of_study: string
+  other_scholarships: string[]
+  other_scholarships_text: string
+  help_university: string
+  help_scholarship: string
+  anything_else: string
   form_data: Record<string, unknown>
 }
 
@@ -174,10 +219,21 @@ export function buildApplicationPayload(form: ApplyFormState): ApplicationPayloa
     household_size: toIntOrNull(form.householdSize),
     receives_str: form.receivesStr,
     receives_jkm: form.receivesJkm,
-    intended_pathway: form.intendedPathway,
     intends_tertiary_2026: form.intendsTertiary2026,
     consent_to_contact: form.consentToContact,
-    form_data: form.notes.trim() ? { notes: form.notes.trim() } : {},
+    // My Plans + My Support — rank is derived from the top-3 selection order.
+    pathways_considered: form.pathwaysConsidered,
+    top_choices: form.topChoices.map((c, i) => ({
+      rank: i + 1, course_id: c.courseId, course_name: c.courseName, institution: c.institution,
+    })),
+    upu_status: form.upuStatus,
+    field_of_study: form.fieldOfStudy,
+    other_scholarships: form.otherScholarships,
+    other_scholarships_text: form.otherScholarshipsText.trim(),
+    help_university: form.helpUniversity,
+    help_scholarship: form.helpScholarship,
+    anything_else: form.anythingElse.trim(),
+    form_data: {},
   }
 }
 

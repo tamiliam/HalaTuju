@@ -41,11 +41,19 @@ function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
     parentName: '',
     parentPhone: '',
     callLanguage: '',
-    // My Plans / My Support (unchanged this sprint)
-    intendedPathway: 'asasi',
+    // My Plans
+    pathwaysConsidered: [],
+    topChoices: [],
+    upuStatus: '',
+    fieldOfStudy: '',
+    otherScholarships: [],
+    otherScholarshipsText: '',
     intendsTertiary2026: true,
+    // My Support
+    helpUniversity: '',
+    helpScholarship: '',
+    anythingElse: '',
     consentToContact: true,
-    notes: '',
     ...over,
   }
 }
@@ -138,12 +146,13 @@ describe('buildApplicationPayload', () => {
     expect(p.household_income).toBe(2500)
     expect(p.household_size).toBe(5)
     expect(p.receives_str).toBe(true)
-    expect(p.intended_pathway).toBe('asasi')
+    expect(p.intends_tertiary_2026).toBe(true)
     expect(p.consent_to_contact).toBe(true)
     expect(p.form_data).toEqual({})
     // academic data + NRIC are never posted here (profile / claim path)
     expect(p.spm_a_count).toBeUndefined()
     expect(p.nric).toBeUndefined()
+    expect(p.intended_pathway).toBeUndefined()  // superseded by pathways_considered
   })
   it('trims text and omits guardians when parent fields are blank', () => {
     const p = buildApplicationPayload(baseForm({ name: '  Priya  ', parentName: '', parentPhone: '' }))
@@ -155,9 +164,34 @@ describe('buildApplicationPayload', () => {
     expect(p.household_income).toBeNull()
     expect(p.household_size).toBeNull()
   })
-  it('puts notes into form_data', () => {
-    const p = buildApplicationPayload(baseForm({ notes: '  hello  ' }))
-    expect(p.form_data).toEqual({ notes: 'hello' })
+  it('maps My Plans + My Support (ranks top-3 by order, trims text, empty form_data)', () => {
+    const p = buildApplicationPayload(baseForm({
+      pathwaysConsidered: ['matrik', 'stpm'],
+      topChoices: [
+        { courseId: 'C1', courseName: 'Medicine', institution: 'UM' },
+        { courseId: 'C2', courseName: 'Pharmacy', institution: 'USM' },
+      ],
+      upuStatus: 'applied',
+      fieldOfStudy: 'health',
+      otherScholarships: ['jpa', 'mara'],
+      otherScholarshipsText: '  Yayasan X  ',
+      helpUniversity: 'yes',
+      helpScholarship: 'unsure',
+      anythingElse: '  single parent  ',
+    })) as Record<string, unknown>
+    expect(p.pathways_considered).toEqual(['matrik', 'stpm'])
+    expect(p.top_choices).toEqual([
+      { rank: 1, course_id: 'C1', course_name: 'Medicine', institution: 'UM' },
+      { rank: 2, course_id: 'C2', course_name: 'Pharmacy', institution: 'USM' },
+    ])
+    expect(p.upu_status).toBe('applied')
+    expect(p.field_of_study).toBe('health')
+    expect(p.other_scholarships).toEqual(['jpa', 'mara'])
+    expect(p.other_scholarships_text).toBe('Yayasan X')
+    expect(p.help_university).toBe('yes')
+    expect(p.help_scholarship).toBe('unsure')
+    expect(p.anything_else).toBe('single parent')
+    expect(p.form_data).toEqual({})
   })
 })
 
