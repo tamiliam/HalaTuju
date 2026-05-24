@@ -280,12 +280,18 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   enforced at this single point (409 `nric_conflict` if another profile has that NRIC verified). Admin
   `/admin/scholarship/[id]` has a Verify-&-accept checklist card + mentoring toggle. Migration `0009`. Backend
   **1100** tests, build clean, i18n 1101-key parity. See `retrospective-b40-sprint11a.md`.
-- **▶ Next: S11b** — **applicant-facing** application page + login banner. Status-driven `/scholarship/application`
-  states (submitted=received · shortlisted=follow-up [exists] · **accepted**=confirmed · rejected=neutral) + a
-  **login banner/link** on the dashboard when the user has a shortlisted/accepted application. Frontend only.
-  Lessons: render states off `app.status`; EN/MS/TA parity (i18n in `src/messages/`); `next build` before done.
-- **Then S12** — Vision OCR (MyKad on the application page) + desktop responsiveness (apply + application) + cohort
-  `b40-2026` config + Cloud Scheduler → `send_pending_decision_emails` + reset test data + **single deploy** + prod smoke.
+- **✅ S11b done (2026-05-24):** applicant application states + login banner. `/scholarship/application` gains the
+  **`accepted`** = confirmed card (distinct from the neutral received card; shortlisted still → follow-up). New
+  self-contained **`ScholarshipBanner`** (`components/ScholarshipBanner.tsx`, self-fetches the caller's application;
+  renders on the dashboard only when shortlisted/accepted, links to `/scholarship/application`; margin on the banner
+  so no empty gap). Frontend only; build clean, i18n 1107-key parity; backend unchanged (1100), jest 49.
+- **▶ Next: S12 (FINALE — the only deploy)** — Vision OCR (MyKad upload on the application page → instant
+  match feedback, surfaced to admin) + **desktop responsiveness** (apply + application pages) + create cohort
+  `b40-2026` (income_ceiling 5860, per_capita_ceiling 1584, min_spm_a_count 4, min_spm_bplus_count 5,
+  min_stpm_pngk 2.9, success_delay_hours 2, decline_delay_hours 48) + wire **Cloud Scheduler →
+  `send_pending_decision_emails`** + reset test data + **single deploy** (migrations 0007–0009 + courses 0048 hit
+  prod here) + prod smoke (submit → received → +2h/+48h verdict → shortlisted follow-up → admin verify → accepted).
+  Lessons: test locally before deploy, ≤2 deploys; `--update-env-vars` not `--set-env-vars`; pass `--account`/`--project`.
   Jest is node-env (test pure `lib/*.ts`); run `next build` before done; EN/MS/TA parity (check-i18n);
   **i18n lives in `src/messages/` not `src/i18n/`**; apply form is auth-gated → screenshot via a throwaway preview
   route with a sample profile; render form errors at form level (not inside one tab).

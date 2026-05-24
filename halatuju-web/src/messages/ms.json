@@ -701,7 +701,15 @@
       "none": "Anda belum memohon lagi.",
       "applyCta": "Mulakan permohonan anda",
       "receivedTitle": "Permohonan diterima",
-      "receivedBody": "Terima kasih. Kami telah menerima permohonan anda dan akan menghubungi anda melalui e-mel. Tiada apa-apa lagi yang perlu dilakukan buat masa ini."
+      "receivedBody": "Terima kasih. Kami telah menerima permohonan anda dan akan menghubungi anda melalui e-mel. Tiada apa-apa lagi yang perlu dilakukan buat masa ini.",
+      "acceptedTitle": "Anda telah diterima",
+      "acceptedBody": "Tahniah — permohonan anda telah disahkan. Pasukan kami akan menghubungi anda tentang langkah seterusnya untuk anugerah anda."
+    },
+    "banner": {
+      "shortlistedTitle": "Anda telah disenarai pendek",
+      "shortlistedBody": "Lengkapkan permohonan anda — ketik untuk teruskan.",
+      "acceptedTitle": "Permohonan anda disahkan",
+      "acceptedBody": "Anda telah diterima. Ketik untuk melihat butiran."
     }
   },
   "authGate": {

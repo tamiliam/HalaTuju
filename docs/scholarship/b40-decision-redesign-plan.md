@@ -314,7 +314,7 @@ Bring in the legacy form's support questions — they double as **mentoring / su
 
 **S11 — Application page + admin verify-&-accept + NRIC lock + mentoring (full-stack).** *(split 2026-05-24)*
 - **S11a — admin verify-&-accept + NRIC lock + mentoring (backend + admin).** — ✅ **built 2026-05-24, backend 1100, build + i18n green, admin card approved via screenshot** (commit at sprint close). `AdminVerifyAcceptView` (checklist → `nric_verified` lock + advance shortlisted→**accepted** [new status]); audit fields + migration `0009`; mentoring PATCH; **TD-054 resolved** (uniqueness enforced at verify, 409 on verified-duplicate); admin `/admin/scholarship/[id]` verify card + mentoring toggle.
-- **S11b — applicant application page states + login banner (frontend).** — ⏳ next. Status-driven `/scholarship/application` (submitted=received · shortlisted=follow-up · accepted=confirmed · rejected=neutral) + dashboard login banner when shortlisted/accepted.
+- **S11b — applicant application page states + login banner (frontend).** — ✅ **built 2026-05-24, build + i18n green, states approved via screenshot** (commit at sprint close). `/scholarship/application` `accepted`=confirmed card; self-contained `ScholarshipBanner` (self-fetch; shows on dashboard only when shortlisted/accepted). FE only, no migration, backend unchanged 1100.
 - Acceptance: admin verify+accept locks NRIC + advances (S11a ✅); student sees correct state (S11b); green.
 - Complexity: High (~18 files; split into ~9 + ~5).
 

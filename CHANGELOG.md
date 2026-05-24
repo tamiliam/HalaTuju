@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Redesign · Sprint 11b: applicant application states + login banner (2026-05-24)
+
+The applicant-facing half of S11. Frontend only; on `feature/b40-redesign`, not deployed.
+
+### Added
+- `/scholarship/application` gains the **accepted** state — a distinct "confirmed" card (congratulations + "our team
+  will be in touch about your award"), separate from the neutral received card. Full status map now: submitted →
+  received · shortlisted → follow-up · **accepted → confirmed** · rejected/withdrawn → neutral.
+- **`ScholarshipBanner`** — a self-contained dashboard banner that fetches the caller's application and renders only
+  when it's **shortlisted** ("complete your application") or **accepted** ("confirmed"), linking to
+  `/scholarship/application`; renders nothing otherwise (margin lives on the banner so there's no empty gap). EN/MS/TA i18n.
+
+### Tests
+- Frontend jest unchanged (49 — display + one fetch, no new pure logic). Backend unchanged (1100). `next build`
+  clean; i18n 1107-key parity.
+
 ## [Unreleased] — B40 Redesign · Sprint 11a: admin verify-&-accept + NRIC lock + mentoring (2026-05-24)
 
 The human verification gate for MyNadi admins. Backend + admin frontend; on `feature/b40-redesign`, not deployed.

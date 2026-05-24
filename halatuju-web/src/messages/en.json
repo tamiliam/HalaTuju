@@ -701,7 +701,15 @@
       "none": "You haven't applied yet.",
       "applyCta": "Start your application",
       "receivedTitle": "Application received",
-      "receivedBody": "Thank you. We've received your application and will be in touch by email. There's nothing more to do for now."
+      "receivedBody": "Thank you. We've received your application and will be in touch by email. There's nothing more to do for now.",
+      "acceptedTitle": "You've been accepted",
+      "acceptedBody": "Congratulations — your application has been verified and confirmed. Our team will be in touch about the next steps for your award."
+    },
+    "banner": {
+      "shortlistedTitle": "You've been shortlisted",
+      "shortlistedBody": "Complete your application — tap to continue.",
+      "acceptedTitle": "Your application is confirmed",
+      "acceptedBody": "You've been accepted. Tap to view the details."
     }
   },
   "authGate": {
