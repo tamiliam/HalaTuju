@@ -700,3 +700,25 @@ migration `0009` re-emits an `AlterField` on both `status` and `verdict` (no-op,
 
 **Revisit if:** Fraud pressure requires entry-time identity verification (add JPN/Vision at claim time), or the
 programme needs more workflow states beyond submitted/shortlisted/accepted/rejected/withdrawn (e.g. disbursing).
+
+## Drop "Indian descent" from all public copy (supersedes the keep-it-public call) — Landing-copy review, 2026-05-25
+
+**Decision:** The B40 public copy (`docs/halatuju_scholarship_landing_copy.md`, and the live `/scholarship` page once
+the copy is applied) makes **no mention of Indian descent / ethnicity anywhere — not even as a pilot framing**. This
+**supersedes** the 2026-05-24 decision (item D under "Deterministic decision rule…") to keep advertising the
+"Indian descent (pilot)" line publicly.
+
+**Alternatives considered:** (1) Keep the "Indian-descent pilot" framing in the public copy (the earlier call).
+(2) Mention it only in the About section.
+
+**Rationale:** Funds are administered by **MyNadi Foundation**, whose **Section 44(6)** tax-exempt status requires the
+programme not to discriminate on the basis of race. Even though 44(6) is not yet formally confirmed, it is safer to
+omit ethnicity everywhere from the outset than to publish it and have to retract. This also matches the engine, which
+has **no descent check** (S8 policy call #1, "we don't want to know"). The community's Indian-organisation origins
+remain visible through the partner mentions (CUMIG, Sri Murugan Centre) without ethnicity being a criterion.
+
+**Trade-offs:** The advertised audience reads as all low-income Malaysians, broader than the pilot's community roots;
+referrals still flow through the named partner orgs, so reach is unaffected in practice.
+
+**Revisit if:** MyNadi 44(6) status is declined and a different administering body without that constraint is used,
+or legal advice changes.
