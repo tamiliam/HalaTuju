@@ -675,3 +675,28 @@ stays optional, so they can still submit). The picker reflects only what's saved
 
 **Revisit if:** Too many applicants reach My Plans with no saved courses (then offer an inline eligible-courses
 fetch as a fallback), or sponsors need a ranked-eligibility view rather than the student's self-selected three.
+
+## Admin verify-&-accept is the single NRIC-uniqueness point; new `accepted` status — B40 Redesign Sprint 11a, 2026-05-24
+
+**Decision:** A `shortlisted` application is confirmed by a human via `AdminVerifyAcceptView`: the admin ticks a
+checklist (NRIC / name / results / document) against the uploaded MyKad, which sets `profile.nric_verified` (locks
+the NRIC), stamps `verified_at` / `verified_by` / `verify_checklist`, and advances the application to a **new
+`accepted` status**. NRIC uniqueness is enforced **only here** — if another profile already has that NRIC verified,
+the endpoint returns `409 nric_conflict` for the admin to resolve. This is the resolution of TD-054.
+
+**Alternatives considered:** (1) Enforce NRIC uniqueness at entry/claim time (a DB unique constraint or the claim
+endpoint) — the pre-soft-NRIC model. (2) No new status — verify just stamps audit fields, application stays
+`shortlisted`. (3) A separate `is_verified` boolean instead of a status transition.
+
+**Rationale:** The soft-NRIC decision (S7) deliberately tolerates duplicate *unverified* NRICs (a typo of someone
+else's number must not block a poor applicant's submission); the design said the clash should "surface at
+verification". Verify-&-accept is exactly that moment, so it's the correct — and only — place to enforce uniqueness.
+A distinct `accepted` status cleanly separates "passed the automatic screen" (shortlisted) from "a human verified
+the documents and confirmed" (accepted), which the admin list can filter on and the applicant view (S11b) can show.
+
+**Trade-offs:** Uniqueness isn't DB-guaranteed while unverified — two profiles can hold the same NRIC until one is
+verified (intended; the document check is the real guard before money moves). `STATUS_CHOICES` now has five values;
+migration `0009` re-emits an `AlterField` on both `status` and `verdict` (no-op, choices are validation-only).
+
+**Revisit if:** Fraud pressure requires entry-time identity verification (add JPN/Vision at claim time), or the
+programme needs more workflow states beyond submitted/shortlisted/accepted/rejected/withdrawn (e.g. disbursing).

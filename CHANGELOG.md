@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Redesign · Sprint 11a: admin verify-&-accept + NRIC lock + mentoring (2026-05-24)
+
+The human verification gate for MyNadi admins. Backend + admin frontend; on `feature/b40-redesign`, not deployed.
+(Applicant application-page states + login banner split to S11b.)
+
+### Added
+- **`AdminVerifyAcceptView`** (`POST /admin/scholarship/applications/<id>/verify-accept/`): admin confirms a
+  checklist (NRIC / name / results / document) against the uploaded MyKad → sets `profile.nric_verified` (**locks**
+  the NRIC), stamps `verified_at` / `verified_by` / `verify_checklist`, and advances the application
+  **shortlisted → accepted**. Only a shortlisted application can be accepted.
+- New **`accepted`** application status (passed the auto-screen = shortlisted; human-verified & confirmed = accepted).
+- Mentoring-candidate toggle via **PATCH** on the admin detail endpoint.
+- Admin detail page (`/admin/scholarship/[id]`): a **Verify-&-accept checklist card** (Accept enabled only when all
+  four are ticked; shows the locked/accepted + verified-by state) + a mentoring-candidate toggle. EN/MS/TA i18n.
+- `verified_at` / `verified_by` / `verify_checklist` audit fields; serializer exposes `nric` (full, for comparison),
+  `nric_verified`, the audit fields, `mentoring_candidate`, and the S10 plans/support intake. Migration `0009`.
+
+### Fixed
+- **TD-054 resolved**: NRIC uniqueness is now enforced at the single verify-&-accept point — if another profile
+  already has that NRIC *verified*, the endpoint returns `409 nric_conflict` for the admin to resolve (the soft-NRIC
+  "clash surfaces at verification" design), instead of the old claim transfer-path PK collision.
+
+### Tests
+- Backend **1095 → 1100** (verify-accept happy path, TD-054 conflict, only-shortlisted guard, mentoring toggle,
+  non-admin 403). Migration `0009` + golden masters intact. Frontend jest unchanged (49).
+
 ## [Unreleased] — B40 Redesign · Sprint 10: apply form ② — My Plans + Support + "received" (2026-05-24)
 
 The second half of the apply form. Frontend only (every field was already accepted by `ApplicationCreateSerializer`

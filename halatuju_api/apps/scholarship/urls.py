@@ -16,6 +16,7 @@ from .views_admin import (
     AdminGenerateProfileView,
     AdminProfileEditView,
     AdminPublishProfileView,
+    AdminVerifyAcceptView,
 )
 
 urlpatterns = [
@@ -30,6 +31,7 @@ urlpatterns = [
     # MyNadi admin (PartnerAdmin auth; /admin/ is NRIC-gate whitelisted)
     path('admin/scholarship/applications/', AdminApplicationListView.as_view()),
     path('admin/scholarship/applications/<int:pk>/', AdminApplicationDetailView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/verify-accept/', AdminVerifyAcceptView.as_view()),
     path('admin/scholarship/applications/<int:pk>/generate-profile/', AdminGenerateProfileView.as_view()),
     path('admin/scholarship/applications/<int:pk>/profile/', AdminProfileEditView.as_view()),
     path('admin/scholarship/applications/<int:pk>/publish/', AdminPublishProfileView.as_view()),

@@ -95,6 +95,7 @@ class ScholarshipApplication(models.Model):
     STATUS_CHOICES = [
         ('submitted', 'Submitted'),
         ('shortlisted', 'Shortlisted'),
+        ('accepted', 'Accepted'),      # admin verified & accepted (S11a) — confirmed for award
         ('rejected', 'Rejected'),
         ('withdrawn', 'Withdrawn'),
     ]
@@ -201,6 +202,19 @@ class ScholarshipApplication(models.Model):
     decision_released_at = models.DateTimeField(
         null=True, blank=True,
         help_text="When the scheduler flipped status + sent the verdict email",
+    )
+
+    # Admin verify-&-accept (S11a): a PartnerAdmin confirms NRIC/name/results against
+    # the uploaded MyKad, which sets profile.nric_verified (locks the NRIC) and
+    # advances status → 'accepted'. These capture who/when/what was confirmed.
+    verified_at = models.DateTimeField(null=True, blank=True)
+    verified_by = models.CharField(
+        max_length=254, blank=True, default='',
+        help_text="Email of the PartnerAdmin who verified & accepted",
+    )
+    verify_checklist = models.JSONField(
+        default=dict, blank=True,
+        help_text="What the admin confirmed at accept: {nric, name, results, document: bool}",
     )
     locale = models.CharField(
         max_length=2, default='en',

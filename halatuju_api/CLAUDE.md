@@ -273,12 +273,19 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   since S7). Post-submit "Application received" screen already works (S8 silent-score → status `submitted` → neutral
   received card, no auto-advance). 49 jest, build clean, i18n 1087-key parity; backend unchanged (1095). Mobile build
   approved via screenshot. See `retrospective-b40-sprint10.md`.
-- **▶ Next: S11** — application page + admin verify-&-accept (full-stack). Status-driven application page
-  (received/under-review → shortlisted follow-up) + login banner; **admin "verify & accept" checklist + endpoint**
-  (NRIC + name + results + uploaded doc) → sets `nric_verified` + **locks** the NRIC + advances the application;
-  **mentoring-candidate flag**. Resolves TD-054 (claim transfer-path) by folding it into the admin path. Lessons that
-  apply: enforce invariants in one place; serializer reused across endpoints → enumerate consumers; new migration →
-  check `max` on `main` before numbering; admin auth is a separate Supabase client (see decisions.md).
+- **✅ S11a done (2026-05-24):** admin verify-&-accept + NRIC lock + mentoring. `AdminVerifyAcceptView`
+  (`POST …/<id>/verify-accept/`): checklist NRIC/name/results/doc → sets `profile.nric_verified` (**locks** NRIC),
+  stamps `verified_at`/`verified_by`/`verify_checklist`, advances **shortlisted → `accepted`** (new status); only a
+  shortlisted app can be accepted. Mentoring toggle via PATCH on the admin detail. **TD-054 RESOLVED** — uniqueness
+  enforced at this single point (409 `nric_conflict` if another profile has that NRIC verified). Admin
+  `/admin/scholarship/[id]` has a Verify-&-accept checklist card + mentoring toggle. Migration `0009`. Backend
+  **1100** tests, build clean, i18n 1101-key parity. See `retrospective-b40-sprint11a.md`.
+- **▶ Next: S11b** — **applicant-facing** application page + login banner. Status-driven `/scholarship/application`
+  states (submitted=received · shortlisted=follow-up [exists] · **accepted**=confirmed · rejected=neutral) + a
+  **login banner/link** on the dashboard when the user has a shortlisted/accepted application. Frontend only.
+  Lessons: render states off `app.status`; EN/MS/TA parity (i18n in `src/messages/`); `next build` before done.
+- **Then S12** — Vision OCR (MyKad on the application page) + desktop responsiveness (apply + application) + cohort
+  `b40-2026` config + Cloud Scheduler → `send_pending_decision_emails` + reset test data + **single deploy** + prod smoke.
   Jest is node-env (test pure `lib/*.ts`); run `next build` before done; EN/MS/TA parity (check-i18n);
   **i18n lives in `src/messages/` not `src/i18n/`**; apply form is auth-gated → screenshot via a throwaway preview
   route with a sample profile; render form errors at form level (not inside one tab).
