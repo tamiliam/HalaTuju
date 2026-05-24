@@ -227,10 +227,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 ## Project Status
 
 **v2.0 Released** (2026-03-20). Live at [halatuju.xyz](https://halatuju.xyz).
+**B40 redesign (S7–S12a) DEPLOYED to prod 2026-05-25** (apply-form rebuild + deterministic decision engine + admin
+verify-&-accept). Pipeline live but **dormant — site not promoted**; **wire the decision-email scheduler before promoting** (see Next Sprint).
 
-- 997 backend tests, 17 frontend tests, 0 failures
+- 1103 backend tests, 49 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
-- CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy)
+- CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
+  `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
 ## Next Sprint — B40 Redesign (decision engine + apply-form rebuild)
@@ -293,24 +296,30 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   page's layout shell. Application cards already fine centred (left as-is); `ScholarshipNextSteps` not touched
   (desktop pass later if needed). `next build` clean; jest 49; backend unchanged (1100); no migration/i18n.
   Desktop + mobile approved via screenshot. See `retrospective-b40-sprint12a.md`.
-- **▶ IN PROGRESS: S12b (GATED DEPLOY — the only deploy).** **Phase 1 DONE (2026-05-24):** idempotent
-  `seed_b40_2026_cohort` command (get_or_create code `b40-2026`; thresholds are model defaults — 4 A-/5 B+/PNGK 2.9/
-  per-capita 1584/2h/48h — sets name/year/income_ceiling 5860; `--closed` flag) + 3 tests; **1103 backend tests green**,
-  migrations 0007–0009 apply cleanly on a fresh DB; committed to the branch. **Phase 2 (GATED — needs explicit
-  "deploy now"):** merge `feature/b40-redesign` → `main` → Cloud Build deploys both services + applies migrations
-  0007–0009 + courses 0048 to prod; watch build SUCCESS; run Supabase advisors. **Phase 3 (GATED, post-deploy):**
-  run `seed_b40_2026_cohort` on prod via a Cloud Run Job (API image) + wire **Cloud Scheduler → `send_pending_decision_emails`**
-  (~15 min) + reset test data + prod smoke (submit → received → manually release to verify reveal). Open decision at
-  the gate: cohort `--open` (live) vs `--closed` (flip later). Lessons: ≤2 deploys; `--update-env-vars` not
-  `--set-env-vars`; pass `--account`/`--project`.
-- **Then S13 (post-launch fast-follow): Vision OCR** — MyKad upload → instant NRIC match feedback, surfaced to admin
-  (soft, never a hard block). New Google Cloud Vision API key + **cost sign-off required** before any paid calls.
-  Jest is node-env (test pure `lib/*.ts`); run `next build` before done; EN/MS/TA parity (check-i18n);
-  **i18n lives in `src/messages/` not `src/i18n/`**; apply form is auth-gated → screenshot via a throwaway preview
-  route with a sample profile; render form errors at form level (not inside one tab).
+- **✅ S12b DONE — DEPLOYED TO PROD (2026-05-25).** `feature/b40-redesign` merged to `main` (release `55c2c36`);
+  both Cloud Run services rebuilt + deployed (SUCCESS); health checks 200; live course-guide unaffected. Migrations
+  courses `0048` + scholarship `0007/0008/0009` applied to prod **before** the push (zero-downtime, additive). Cohort
+  `b40-2026` live; its thresholds corrected to the settled S8 values (legacy Phase-1 row had 5/3.0 → set to 4/2.9).
+  Idempotent `seed_b40_2026_cohort` command added (1103 backend tests). See `retrospective-b40-sprint12b.md`.
+  **Pipeline is functional but dormant — the site is not promoted.**
+- **⚠️ BEFORE PROMOTING the programme (must-do):** wire **Cloud Scheduler → a Cloud Run Job running
+  `python manage.py send_pending_decision_emails`** (~every 15 min). Until then, submitted apps score silently but
+  the **+2h shortlist / +48h decline reveal emails never fire**. Also keep one existing prod app (`YOGASHINI KRISHNAN`,
+  rejected, Phase-1 test era) — real person, kept on user's instruction (contact separately, not via the pipeline).
+- **▶ Next: S13 (post-launch): Vision OCR** — MyKad upload → instant NRIC match feedback, surfaced to admin (soft,
+  never a hard block). New Google Cloud Vision API key + **cost sign-off required** before any paid calls. Frontend
+  lessons: Jest node-env (test pure `lib/*.ts`); `next build` before done; EN/MS/TA parity; i18n in `src/messages/`;
+  auth-gated pages → screenshot via a throwaway preview route.
+- **Gotcha (DEPLOY/MIGRATIONS):** the Cloud Run deploy triggers run **build → push → deploy only — they do NOT run
+  `migrate`.** Apply migrations to prod **manually first** (additive migrations are backward-compatible, so the live
+  old code keeps working), **then** push `main`. The migrate is run from a local checkout against prod (DB creds via
+  `gcloud run services describe halatuju-api`; the service uses individual `DB_*` env vars, not `DATABASE_URL`).
+- **Gotcha:** Django `AlterField` that only changes a column **default** does NOT rewrite existing rows — a
+  pre-existing config row keeps its old value (this bit the cohort thresholds: 5/3.0 lingered after S8 changed the
+  defaults to 4/2.9). After a default change, explicitly sync existing config rows.
 - **Gotcha:** soft-NRIC **supersedes** the old "IC immutable" decision — uniqueness is verified-only now.
-- **Gotcha:** new migrations apply to prod only at the S12 deploy; before numbering, check `max` migration on `main`.
-- **Gotcha:** pushing `main` triggers a CI/CD deploy; pushing `feature/b40-redesign` does not. Keep the redesign on the branch.
+- **Gotcha:** pushing `main` triggers a CI/CD deploy (path filters `halatuju_api/**`, `halatuju-web/**`; root `docs/**`
+  + `CHANGELOG.md` do NOT trigger, but `halatuju_api/CLAUDE.md` does).
 - **Gotcha:** PII source docs in `docs/scholarship/` (`*.pdf|xlsx|txt`) are gitignored — real NRICs/names/financials. Never commit them.
 
 ## Known Issues & Future Work

@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] — B40 Redesign · Sprint 12b: DEPLOYED to production (2026-05-25)
+
+The B40 redesign (S7–S12a) is **live in production**. `feature/b40-redesign` merged to `main` (release merge
+`55c2c36`); both Cloud Run services rebuilt + deployed; health checks 200.
+
+### Deployment
+- **Migrations applied to prod first** (zero-downtime, additive): courses `0048` + scholarship `0007`, `0008`, `0009`.
+  Confirmed via `showmigrations` + an information_schema column check. **Note:** the Cloud Run deploy triggers do
+  **not** run migrations (build → push → deploy only), so migrations were applied manually *before* pushing `main`,
+  keeping the existing live site healthy throughout.
+- **Cohort `b40-2026`** verified live and **thresholds corrected to the settled S8 values**: a pre-existing row from
+  Phase 1 still had the advertised cut-offs (`min_spm_a_count=5`, `min_stpm_pngk=3.0`); set to the engine's lenient
+  `4` / `2.9` (B+ count 5, per-capita 1584, 2h/48h delays were already correct). Added an idempotent
+  `seed_b40_2026_cohort` management command (+ 3 tests) for reproducible cohort creation.
+- Post-deploy security advisors: 0 errors (scholarship tables' "RLS enabled, no policy" are the intended
+  deny-by-default design; all WARNs pre-existing).
+
+### Deferred (must do before promoting)
+- **Cloud Scheduler → `send_pending_decision_emails`** — not wired (no applicants while the site is unpromoted).
+  Required before the programme is promoted, or shortlist/decline reveal emails won't fire.
+- **Vision OCR** → post-launch S13 (new Google Vision key + cost sign-off).
+
+### Tests
+- Backend **1100 → 1103** (cohort seed command). Migrations verified on prod. No frontend change.
+
 ## [Unreleased] — B40 Redesign · Sprint 12a: apply-form desktop responsiveness (2026-05-24)
 
 The desktop layout for the apply form (the item deferred from S9). Frontend only; on `feature/b40-redesign`, not deployed.
