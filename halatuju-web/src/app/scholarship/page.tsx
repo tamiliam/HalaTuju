@@ -14,10 +14,10 @@ const CARD_ICONS: Record<string, string> = {
   card3: 'M12 11V7a4 4 0 10-8 0v4M5 11h14a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2z',
 }
 const VALUE_CARDS = ['card1', 'card2', 'card3'] as const
-const NOTE_BULLETS = ['pilot', 'noGuarantee', 'strict', 'accurate', 'confidential'] as const
-const REQ_ITEMS = ['item1', 'item2', 'item3', 'item4', 'item5'] as const
+const NOTE_BULLETS = ['pilot', 'noGuarantee', 'limited', 'accurate', 'verify', 'under18', 'confidential'] as const
+const REQ_ITEMS = ['item1', 'item2', 'item3', 'item4', 'item5', 'item6'] as const
 const STEPS = [1, 2, 3, 4, 5, 6, 7, 8] as const
-const FAQS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const
+const FAQS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const
 
 const CheckIcon = () => (
   <svg className="w-5 h-5 text-primary-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -155,6 +155,35 @@ export default function ScholarshipLandingPage() {
               )
             })}
           </div>
+        </section>
+
+        {/* Want to support a student? — donor block */}
+        <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
+          <div className="bg-primary-50 border border-primary-100 rounded-2xl p-6 lg:p-8">
+            <h2 className="text-2xl font-bold text-gray-900">{t('scholarship.landing.donor.title')}</h2>
+            <p className="text-gray-700 mt-3 lg:text-lg">{t('scholarship.landing.donor.body')}</p>
+            <a
+              href="mailto:info@halatuju.xyz?subject=Sponsor enquiry"
+              className="btn-primary inline-block mt-5 w-full sm:w-auto text-center"
+            >
+              {t('scholarship.landing.donor.cta')} →
+            </a>
+            <p className="text-sm text-gray-500 mt-4">
+              {t('scholarship.landing.donor.fundsPre')}
+              <a href="https://www.yayasanmynadi.org/" target="_blank" rel="noopener noreferrer" className="text-primary-600 underline">MyNadi Foundation</a>
+              {t('scholarship.landing.donor.fundsPost')}
+            </p>
+          </div>
+        </section>
+
+        {/* About this programme */}
+        <section className="container mx-auto px-6 pb-10 lg:pb-14 max-w-2xl lg:max-w-5xl">
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">{t('scholarship.landing.about.title')}</h2>
+          <p className="text-gray-700 lg:text-lg">{t('scholarship.landing.about.body')}</p>
+          <p className="text-sm text-gray-500 mt-3">
+            {t('scholarship.landing.about.contact')}{' '}
+            <a href="mailto:info@halatuju.xyz" className="text-primary-600 underline">info@halatuju.xyz</a>
+          </p>
         </section>
 
         {/* Closing CTA — stacked on mobile, image + text side by side on desktop */}

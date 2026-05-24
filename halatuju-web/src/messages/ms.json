@@ -605,90 +605,105 @@
     "landing": {
       "hero": {
         "heading": "Komuniti menyokong setiap pelajar.",
-        "sub": "Perintis sokongan komuniti yang membantu pelajar daripada isi rumah berpendapatan rendah (B40) meneruskan pengajian pasca-menengah di institusi awam — daripada pra-universiti hingga ke universiti — disokong oleh rakan-rakan Malaysia yang ingin melihat mereka berjaya.",
+        "sub": "Perintis sokongan komuniti yang membantu pelajar daripada isi rumah berpendapatan rendah meneruskan pengajian di kolej dan universiti awam Malaysia — daripada pra-universiti hingga ke ijazah — disokong oleh rakan-rakan Malaysia yang ingin melihat mereka berjaya.",
         "apply": "Mohon sekarang",
-        "seeQualify": "Lihat jika anda layak"
+        "seeQualify": "Lihat jika saya layak"
       },
       "overview": {
-        "p1": "Setiap tahun, pelajar berbakat daripada komuniti kita memperoleh tempat dalam pengajian pasca-menengah — pra-universiti (Matrikulasi, Asasi, STPM) dan universiti atau kolej awam (IPTA / ILKA). Kami ingin membantu seramai mungkin daripada mereka memanfaatkannya dan mencapai potensi mereka.",
-        "p2": "Ini ialah perintis bantuan kendiri komuniti: orang daripada komuniti kita sendiri memilih untuk menyokong seorang pelajar secara langsung sepanjang pengajian mereka. Ia bantuan, bukan pinjaman — tiada apa-apa untuk dibayar balik, dan harapannya mereka yang kita bantu hari ini akan membantu orang lain pada masa hadapan."
+        "p1": "Setiap tahun, pelajar berpotensi daripada isi rumah berpendapatan rendah memperoleh tempat di institusi awam Malaysia — Matrikulasi, Asasi, STPM, politeknik, IPTA atau ILKA — namun mendapati mereka kekurangan kemampuan untuk memanfaatkannya sepenuhnya. Program ini wujud untuk merapatkan jurang itu.",
+        "p2": "Modelnya mudah. Anggota komuniti memilih untuk menyokong seorang pelajar sepanjang pengajian mereka. Ia bantuan, bukan pinjaman — tiada apa-apa untuk dibayar balik. Harapan kami, mereka yang dibantu hari ini akan, pada suatu masa, membantu orang lain pula."
       },
       "card1": {
         "title": "Capai potensi anda",
-        "desc": "Sokongan untuk membantu anda berjaya di institusi awam."
+        "desc": "Sokongan praktikal untuk membantu anda memanfaatkan sepenuhnya tempat anda di institusi awam."
       },
       "card2": {
         "title": "Komuniti di sisi anda",
-        "desc": "Disokong oleh orang yang mahu anda berjaya."
+        "desc": "Dibiayai oleh individu yang mahu anda berjaya, bukan institusi yang tidak mengenali anda."
       },
       "card3": {
-        "title": "Privasi anda dilindungi",
-        "desc": "Penaja hanya melihat apa yang anda benarkan."
+        "title": "Privasi anda, kawalan anda",
+        "desc": "Penaja hanya melihat apa yang anda pilih untuk kongsi."
       },
       "note": {
         "title": "Sila ambil perhatian",
-        "pilotLabel": "Ini ialah perintis",
-        "pilotText": "jangkakan sedikit ketidakpastian semasa kami bermula.",
+        "pilotLabel": "Perintis yang sedang berjalan",
+        "pilotText": "Jangkakan sedikit ketidakpastian semasa kami bermula. Kami akan bertelus tentang perkara yang belum kami ketahui.",
         "noGuaranteeLabel": "Tiada jaminan",
-        "noGuaranteeText": "memohon membolehkan kami menilai anda; ia tidak menjamin bantuan.",
-        "strictLabel": "Kriteria ketat",
-        "strictText": "kami cuba membantu setiap pelajar yang layak, tetapi tempat adalah terhad.",
+        "noGuaranteeText": "Memohon membolehkan kami menilai kelayakan anda. Ia tidak menjamin bantuan.",
+        "limitedLabel": "Tempat terhad",
+        "limitedText": "Kami cuba menyokong setiap pelajar yang layak, tetapi tempat dalam perintis ini adalah terhad.",
         "accurateLabel": "Berikan maklumat tepat",
-        "accurateText": "jawapan yang jujur membantu kami memadankan anda hanya dengan peluang yang benar-benar anda layak.",
+        "accurateText": "Jawapan yang jujur membantu kami memadankan anda dengan peluang yang benar-benar anda layak, dan melindungi tempat untuk mereka yang memerlukannya.",
+        "verifyLabel": "Percaya, dengan pengesahan ringkas",
+        "verifyText": "Kami menerima permohonan anda dengan suci hati. Kami mungkin meminta dokumen sokongan untuk mengesahkan butiran penting.",
+        "under18Label": "Bawah 18 tahun",
+        "under18Text": "Ibu bapa atau penjaga mesti memberi kebenaran bagi pihak anda sebelum profil anda dikongsi dengan mana-mana penaja.",
         "confidentialLabel": "Sulit",
-        "confidentialText": "jawapan anda dikongsi hanya dengan penyelaras dan rakan kongsi yang terlibat dalam perintis ini."
+        "confidentialText": "Jawapan anda dikongsi hanya dengan penyelaras program, NGO yang mentadbir, dan mana-mana penaja yang anda benarkan secara khusus."
       },
       "req": {
         "title": "Bolehkah saya memohon?",
         "item1": "Warganegara Malaysia yang baru menamatkan, atau sedang menamatkan, SPM atau STPM.",
-        "item2": "Daripada isi rumah B40 — pendapatan bulanan gabungan di bawah RM5,860.",
-        "item3": "Sekurang-kurangnya 5A dalam SPM, atau PNGK 3.0 ke atas dalam STPM.",
-        "item4": "Meneruskan pengajian pasca-menengah di institusi awam — Matrikulasi, Asasi, STPM, IPTA, politeknik atau ILKA.",
-        "item5": "Bersedia untuk dihubungi tentang permohonan anda.",
-        "closeNote": "Hampir layak tetapi tidak tepat? Mohon juga — kami turut mempertimbangkan pelajar yang tersasar sedikit pada satu kriteria."
+        "item2": "Daripada isi rumah berpendapatan rendah — pendapatan bulanan gabungan pada atau di bawah RM5,860, ambang B40 kebangsaan (DOSM, 2024).",
+        "item3": "Rekod akademik yang baik — sekurang-kurangnya 5A dalam SPM, atau PNGK 3.0 ke atas dalam STPM.",
+        "item4": "Meneruskan pengajian di institusi awam Malaysia — Matrikulasi, Asasi, STPM, IPTA, politeknik atau ILKA.",
+        "item5": "Boleh dihubungi untuk temu bual ringkas — biasanya panggilan telefon 20 minit dalam bahasa Inggeris, Bahasa Malaysia, atau Tamil.",
+        "item6": "Sanggup berkongsi kemajuan — keputusan suku tahunan dan kemas kini ringkas, supaya sokongan dapat diteruskan sepanjang pengajian anda.",
+        "closeNote": "Hampir layak, tetapi tidak tepat? Mohon juga. Piawai kami sedikit lebih longgar daripada yang dinyatakan di atas — terutamanya pada gred — jadi berbaloi untuk memohon walaupun anda tidak menepati setiap baris dengan tepat. Memohon membolehkan kami menilai kelayakan anda; ia tidak menjamin bantuan."
       },
       "how": {
         "title": "Cara ia berfungsi",
         "rolling": "Tiada tarikh tutup tetap — dinilai secara berterusan",
         "step1Title": "Mohon",
-        "step1Desc": "Log masuk dengan Google, sahkan profil HalaTuju anda, dan hantar.",
-        "step2Title": "Kami sahkan",
-        "step2Desc": "Anda menerima e-mel mengesahkan kami telah menerima permohonan anda.",
-        "step3Title": "Penyenaraian pendek",
-        "step3Desc": "Kami menyemak keputusan dan keperluan anda berdasarkan kriteria.",
+        "step1Desc": "Log masuk dengan Google, sahkan profil HalaTuju anda, dan hantar. Kira-kira 5–10 minit.",
+        "step2Title": "Kami sahkan — pada hari sama",
+        "step2Desc": "Anda akan menerima e-mel mengakui permohonan anda pada hari anda menghantarnya.",
+        "step3Title": "Penyenaraian pendek — dalam 48 jam",
+        "step3Desc": "Kami menyemak keputusan dan pendapatan isi rumah anda berdasarkan kriteria dan memberitahu anda sama ada anda disenarai pendek.",
         "step4Title": "Lengkapkan profil anda",
-        "step4Desc": "Jika disenarai pendek, lengkapkan kuiz, kongsi lebih lanjut, dan muat naik dokumen.",
-        "step5Title": "Perbualan ringkas",
-        "step5Desc": "Kami mungkin mengatur panggilan telefon ringkas untuk mengenali anda.",
+        "step4Desc": "Jika disenarai pendek, kami akan meminta anda berkongsi beberapa butiran lagi dan memuat naik dokumen sokongan (IC, slip keputusan, bukti pendapatan isi rumah). Kami akan beritahu dengan tepat apa yang diperlukan.",
+        "step5Title": "Temu bual ringkas",
+        "step5Desc": "Panggilan telefon ringkas, biasanya 20 minit, dalam bahasa pilihan anda. Ini untuk mengenali anda, bukan untuk menguji anda.",
         "step6Title": "Sedia untuk penaja",
-        "step6Desc": "Dengan kebenaran anda, kami menyediakan profil untuk pertimbangan penaja.",
-        "step7Title": "Dipadankan & dianugerahkan",
-        "step7Desc": "Apabila penaja memilih untuk menyokong anda, kami mengatur bantuan.",
+        "step6Desc": "Dengan kebenaran bertulis anda, kami menyediakan profil sulit untuk pertimbangan penaja.",
+        "step7Title": "Dipadankan dan dianugerahkan",
+        "step7Desc": "Apabila penaja memilih untuk menyokong anda, MyNadi Foundation mengatur bantuan dan mentadbir dana. Daripada permohonan hingga anugerah biasanya mengambil masa sehingga dua bulan.",
         "step8Title": "Sokongan berterusan",
-        "step8Desc": "Selepas dianugerahkan, anda mengemas kini kemajuan anda supaya sokongan berterusan."
+        "step8Desc": "Setiap suku tahun, anda memuat naik keputusan dan nota kemajuan ringkas. Selagi anda maju, sokongan diteruskan."
       },
       "faq": {
         "title": "Soalan",
         "q1": "Perlukah saya pernah menggunakan HalaTuju?",
-        "a1": "Tidak. Jika anda baharu, log masuk Google yang sama akan mencipta akaun anda. Jika anda sudah membuat kuiz HalaTuju, kami akan guna profil anda supaya anda tidak perlu menaip semula.",
-        "q2": "Siapa yang boleh memohon?",
-        "a2": "Program ini terbuka kepada warganegara Malaysia daripada isi rumah berpendapatan rendah (B40) yang memenuhi kriteria akademik dan meneruskan pengajian di institusi awam.",
-        "q3": "Adakah ini pinjaman? Perlukah saya membayarnya balik?",
-        "a3": "Tidak. Ia bantuan pendidikan daripada penaja — tiada bayaran balik, tiada faedah.",
-        "q4": "Adakah ia dijamin jika saya layak?",
-        "a4": "Tidak. Ini perintis dengan tempat yang terhad dan kriteria yang ketat. Memohon membolehkan kami menilai anda; ia tidak menjamin bantuan.",
-        "q5": "Siapa yang boleh melihat butiran peribadi saya?",
-        "a5": "Butiran peribadi anda (IC, hubungan, alamat tepat) tidak pernah ditunjukkan kepada penaja. Penaja hanya melihat profil, dan hanya selepas anda memberi kebenaran. Jika anda di bawah 18 tahun, ibu bapa atau penjaga mesti memberi kebenaran itu.",
-        "q6": "Dokumen apa yang saya perlukan?",
-        "a6": "Selepas disenarai pendek: IC anda, slip keputusan SPM/STPM, dan bukti pendapatan isi rumah atau bantuan (cth. STR, penyata KWSP). Kami akan beritahu apa yang diperlukan dengan tepat.",
-        "q7": "Peringkat apa yang dilindungi?",
-        "a7": "Pengajian pasca-menengah awam — pra-universiti (Matrikulasi, Asasi di IPTA atau politeknik, STPM) dan pengajian tinggi (IPTA, politeknik/ILKA).",
-        "q8": "Adakah ia merangkumi kolej swasta (IPTS)?",
-        "a8": "Tidak dalam perintis ini — ia menyokong pengajian di institusi awam sahaja. Asasi mesti di institusi awam (IPTA atau politeknik).",
-        "q9": "Adakah terdapat tarikh tutup?",
-        "a9": "Tiada untuk perintis ini — permohonan dinilai secara berterusan. Kami akan memaklumkan anda selepas anda memohon.",
-        "q10": "Adakah terdapat kos untuk memohon?",
-        "a10": "Tidak. Memohon adalah percuma, dan mengambil masa kira-kira 5–10 minit."
+        "a1": "Tidak. Jika anda baharu, log masuk Google yang sama akan mencipta akaun anda. Jika anda sudah membuat kuiz padanan kursus HalaTuju, kami akan guna apa yang ada dalam profil anda supaya anda tidak perlu menaip semula.",
+        "q2": "Adakah ini pinjaman? Perlukah saya membayarnya balik?",
+        "a2": "Tidak. Ia bantuan pendidikan daripada penaja — tiada bayaran balik, tiada faedah. Harapan kami, mereka yang dibantu hari ini akan, pada suatu masa, membantu orang lain pula.",
+        "q3": "Adakah ia dijamin jika saya layak?",
+        "a3": "Tidak. Ini perintis dengan tempat yang terhad dan kriteria yang ketat. Memohon membolehkan kami menilai anda; ia tidak menjamin bantuan.",
+        "q4": "Siapa yang boleh melihat butiran peribadi saya?",
+        "a4": "Butiran peribadi anda — IC, butiran hubungan, dan alamat rumah anda — tidak pernah ditunjukkan kepada penaja. Penaja hanya melihat profil, dan hanya selepas anda memberi kebenaran. Jika anda di bawah 18 tahun, ibu bapa atau penjaga mesti memberi kebenaran itu bagi pihak anda.",
+        "q5": "Dokumen apa yang saya perlukan?",
+        "a5": "Hanya selepas anda disenarai pendek: IC anda, slip keputusan SPM atau STPM anda, dan bukti pendapatan isi rumah atau bantuan (seperti surat STR, penyata KWSP, atau slip gaji). Kami akan beritahu dengan tepat apa yang diperlukan pada peringkat itu — tiada apa-apa untuk dimuat naik semasa anda mula memohon.",
+        "q6": "Peringkat apa yang dilindungi?",
+        "a6": "Pengajian pasca-menengah awam sahaja — pra-universiti (Matrikulasi, Asasi di IPTA atau politeknik, atau STPM) dan pengajian tinggi (IPTA, politeknik, atau ILKA).",
+        "q7": "Adakah ia merangkumi kolej swasta (IPTS)?",
+        "a7": "Tidak dalam perintis ini. Program ini menyokong pengajian di institusi awam sahaja. Program Asasi juga mesti di institusi awam (IPTA atau politeknik) untuk layak.",
+        "q8": "Adakah terdapat tarikh tutup?",
+        "a8": "Tiada untuk perintis ini — permohonan dinilai secara berterusan. Anda akan menerima pengakuan pada hari sama anda memohon, dan kami menyasarkan untuk mengesahkan penyenaraian pendek dalam 48 jam. Daripada permohonan hingga dipadankan dengan penaja biasanya mengambil masa sehingga dua bulan.",
+        "q9": "Adakah terdapat kos untuk memohon?",
+        "a9": "Tidak. Memohon adalah percuma dan mengambil masa kira-kira 5–10 minit."
+      },
+      "donor": {
+        "title": "Ingin menyokong seorang pelajar?",
+        "body": "Program ini wujud kerana individu dalam komuniti memilih untuk membiayai pengajian pelajar tertentu. Jika anda ingin mengetahui lebih lanjut tentang menyokong seorang pelajar — sama ada untuk satu suku tahun, setahun, atau sepanjang pengajian mereka — kami amat berbesar hati untuk mendengar daripada anda.",
+        "fundsPre": "Dana ditadbir oleh ",
+        "fundsPost": ", sebuah NGO Malaysia yang berdaftar.",
+        "cta": "Hubungi kami"
+      },
+      "about": {
+        "title": "Tentang program ini",
+        "body": "Program Bantuan B40 diselaraskan oleh HalaTuju dengan kerjasama MyNadi Foundation, yang mentadbir dana, serta rangkaian pertubuhan komuniti — termasuk CUMIG, Sri Murugan Centre dan lain-lain — yang merujuk dan menyokong pelajar.",
+        "contact": "Soalan atau maklum balas? E-mel"
       },
       "cta": {
         "heading": "Bersedia untuk memohon?",

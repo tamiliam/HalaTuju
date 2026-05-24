@@ -605,90 +605,105 @@
     "landing": {
       "hero": {
         "heading": "A community behind every student.",
-        "sub": "A community-supported pilot helping students from low-income (B40) households continue their post-secondary studies at public institutions — from pre-university to university — backed by fellow Malaysians who want to see them succeed.",
+        "sub": "A community-supported pilot helping students from low-income households continue their studies at Malaysia's public colleges and universities — from pre-university through to degree — backed by fellow Malaysians who want to see them succeed.",
         "apply": "Apply now",
-        "seeQualify": "See if you qualify"
+        "seeQualify": "See if I qualify"
       },
       "overview": {
-        "p1": "Every year, talented students from our community earn a place in post-secondary education — pre-university (Matrikulasi, Foundation, STPM) and public university or college (IPTA / ILKA). We want to help as many of them as possible make the most of it and realise their potential.",
-        "p2": "This is a community self-help pilot: people from our own community choose to support a student directly through their studies. It is assistance, not a loan — there is nothing to repay, and the hope is that those we help today help others tomorrow."
+        "p1": "Every year, promising students from low-income households earn a place at a Malaysian public institution — Matrikulasi, Foundation, STPM, polytechnic, IPTA or ILKA — only to find they lack the means to make the most of it. This programme exists to close that gap.",
+        "p2": "The model is straightforward. Members of the community choose to support a student through their studies. It is assistance, not a loan — there is nothing to repay. Our hope is that those who are supported today will, in time, support others tomorrow."
       },
       "card1": {
         "title": "Realise your potential",
-        "desc": "Support to help you thrive at a public institution."
+        "desc": "Practical support to help you make the most of your place at a public institution."
       },
       "card2": {
-        "title": "Your community behind you",
-        "desc": "Backed by people who want you to succeed."
+        "title": "A community behind you",
+        "desc": "Funded by individuals who want you to succeed, not a faceless institution."
       },
       "card3": {
-        "title": "Your privacy protected",
-        "desc": "Sponsors only ever see what you allow."
+        "title": "Your privacy, your control",
+        "desc": "Sponsors only see what you choose to share."
       },
       "note": {
         "title": "Please note",
-        "pilotLabel": "This is a pilot",
-        "pilotText": "expect some uncertainty as we get going.",
+        "pilotLabel": "A pilot in motion",
+        "pilotText": "Expect some uncertainty as we get going. We'll be transparent about what we don't know yet.",
         "noGuaranteeLabel": "No guarantees",
-        "noGuaranteeText": "applying lets us assess you; it does not guarantee assistance.",
-        "strictLabel": "Strict criteria",
-        "strictText": "we try to support every eligible student, but places are limited.",
+        "noGuaranteeText": "Applying lets us assess your eligibility. It does not guarantee assistance.",
+        "limitedLabel": "Limited places",
+        "limitedText": "We try to support every eligible student, but places in this pilot are limited.",
         "accurateLabel": "Be accurate",
-        "accurateText": "honest answers help us match you only to opportunities you are genuinely eligible for.",
+        "accurateText": "Honest answers help us match you to opportunities you're genuinely eligible for, and protect places for those who need them.",
+        "verifyLabel": "Trust, with light verification",
+        "verifyText": "We take your application in good faith. We may ask for supporting documents to confirm key details.",
+        "under18Label": "Under 18",
+        "under18Text": "A parent or guardian must give consent on your behalf before your profile is shared with any sponsor.",
         "confidentialLabel": "Confidential",
-        "confidentialText": "your answers are shared only with the coordinators and partners involved in this pilot."
+        "confidentialText": "Your answers are shared only with the programme coordinators, the administering NGO, and any sponsor you specifically consent to."
       },
       "req": {
         "title": "Can I apply?",
         "item1": "Malaysian citizen who has just completed, or is completing, SPM or STPM.",
-        "item2": "From a B40 household — combined monthly income below RM5,860.",
-        "item3": "At least 5 A's in SPM, or a PNGK of 3.0 or above in STPM.",
-        "item4": "Continuing post-secondary study at a public institution — Matrikulasi, Foundation/Asasi, STPM, IPTA, polytechnic or ILKA.",
-        "item5": "Willing to be contacted about your application.",
-        "closeNote": "Close but not exactly? Apply anyway — we also consider students who narrowly miss one criterion."
+        "item2": "From a low-income household — combined monthly income at or below RM5,860, the national B40 threshold (DOSM, 2024).",
+        "item3": "Solid academic record — at least 5 A's in SPM, or a PNGK of 3.0 or above in STPM.",
+        "item4": "Continuing at a Malaysian public institution — Matrikulasi, Foundation/Asasi, STPM, IPTA, polytechnic or ILKA.",
+        "item5": "Reachable for a short interview — usually a 20-minute phone call in English, Bahasa Malaysia, or Tamil.",
+        "item6": "Willing to share progress — quarterly results and a brief update, so that support can continue through your studies.",
+        "closeNote": "Close, but not exactly? Apply anyway. Our bar is a little more generous than the headline above — especially on grades — so it's worth applying even if you don't match every line exactly. Applying lets us assess your eligibility; it doesn't guarantee assistance."
       },
       "how": {
         "title": "How it works",
         "rolling": "No fixed deadline — reviewed on a rolling basis",
         "step1Title": "Apply",
-        "step1Desc": "Sign in with Google, confirm your HalaTuju profile, and submit.",
-        "step2Title": "We confirm",
-        "step2Desc": "You get an email confirming we've received your application.",
-        "step3Title": "Shortlisting",
-        "step3Desc": "We check your results and need against the criteria.",
+        "step1Desc": "Sign in with Google, confirm your HalaTuju profile, and submit. About 5–10 minutes.",
+        "step2Title": "We confirm — same day",
+        "step2Desc": "You'll receive an email acknowledging your application on the day you submit it.",
+        "step3Title": "Shortlisting — within 48 hours",
+        "step3Desc": "We check your results and household income against the criteria and let you know whether you've been shortlisted.",
         "step4Title": "Complete your profile",
-        "step4Desc": "If shortlisted, finish your quiz, share more, and upload documents.",
-        "step5Title": "A quick chat",
-        "step5Desc": "We may arrange a short phone call to get to know you.",
+        "step4Desc": "If shortlisted, we'll ask you to share a few more details and upload supporting documents (IC, results slip, proof of household income). We'll tell you exactly what's needed.",
+        "step5Title": "A short interview",
+        "step5Desc": "A brief phone call, usually 20 minutes, in your preferred language. This is to get to know you, not to test you.",
         "step6Title": "Ready for sponsors",
-        "step6Desc": "With your consent, we prepare a profile for sponsors to consider.",
-        "step7Title": "Matched & awarded",
-        "step7Desc": "When a sponsor chooses to support you, we arrange the assistance.",
+        "step6Desc": "With your written consent, we prepare a confidential profile for sponsors to consider.",
+        "step7Title": "Matched and awarded",
+        "step7Desc": "Once a sponsor chooses to support you, MyNadi Foundation arranges the assistance and administers the funds. From application to award typically takes up to two months.",
         "step8Title": "Staying supported",
-        "step8Desc": "Once awarded, you keep your progress updated so support continues."
+        "step8Desc": "Each quarter, you upload your results and a short progress note. As long as you're progressing, the support continues."
       },
       "faq": {
         "title": "Questions",
         "q1": "Do I need to have used HalaTuju before?",
-        "a1": "No. If you're new, the same Google sign-in creates your account. If you've already done the HalaTuju quiz, we'll use your profile so you don't retype anything.",
-        "q2": "Who can apply?",
-        "a2": "The programme is open to Malaysian citizens from low-income (B40) households who meet the academic criteria and are continuing their studies at a public institution.",
-        "q3": "Is this a loan? Do I have to pay it back?",
-        "a3": "No. It is education assistance from a sponsor — nothing to repay, no interest.",
-        "q4": "Is it guaranteed if I qualify?",
-        "a4": "No. This is a pilot with limited places and strict criteria. Applying lets us assess you; it doesn't guarantee assistance.",
-        "q5": "Who can see my personal details?",
-        "a5": "Your private details (IC, contact, exact address) are never shown to sponsors. Sponsors only see a profile, and only after you consent. If you're under 18, a parent or guardian must give that consent.",
-        "q6": "What documents will I need?",
-        "a6": "After you're shortlisted: your IC, SPM/STPM results slip, and proof of household income or aid (e.g. STR, EPF statement). We'll tell you exactly what's needed.",
-        "q7": "What levels does it cover?",
-        "a7": "Public post-secondary study — both pre-university (Matrikulasi, Foundation/Asasi at an IPTA or polytechnic, STPM) and tertiary (IPTA, polytechnic/ILKA).",
-        "q8": "Does it cover private colleges (IPTS)?",
-        "a8": "Not in this pilot — it supports study at public institutions only. Foundation or Asasi must be at a public institution (IPTA or polytechnic).",
-        "q9": "Is there a deadline?",
-        "a9": "Not for this pilot — applications are reviewed on a rolling basis. We'll keep you updated after you apply.",
-        "q10": "Is there a cost to apply?",
-        "a10": "No. Applying is free, and takes about 5–10 minutes."
+        "a1": "No. If you're new, the same Google sign-in creates your account. If you've already done the HalaTuju course-matching quiz, we'll use what's in your profile so you don't have to retype anything.",
+        "q2": "Is this a loan? Do I have to pay it back?",
+        "a2": "No. It is education assistance from a sponsor — nothing to repay, no interest. Our hope is that those who are supported today will, in time, support others tomorrow.",
+        "q3": "Is it guaranteed if I qualify?",
+        "a3": "No. This is a pilot with limited places and strict criteria. Applying lets us assess you; it does not guarantee assistance.",
+        "q4": "Who can see my personal details?",
+        "a4": "Your private details — your IC, contact details, and home address — are never shown to sponsors. Sponsors only see a profile, and only after you have given your consent. If you are under 18, a parent or guardian must give that consent on your behalf.",
+        "q5": "What documents will I need?",
+        "a5": "Only after you've been shortlisted: your IC, your SPM or STPM results slip, and proof of household income or aid (such as your STR letter, an EPF statement, or a payslip). We'll tell you exactly what's needed at that stage — there is nothing to upload when you first apply.",
+        "q6": "What levels does it cover?",
+        "a6": "Public post-secondary study only — both pre-university (Matrikulasi, Foundation/Asasi at an IPTA or polytechnic, or STPM) and tertiary (IPTA, polytechnic, or ILKA).",
+        "q7": "Does it cover private colleges (IPTS)?",
+        "a7": "Not in this pilot. The programme supports study at public institutions only. Foundation or Asasi programmes must also be at a public institution (an IPTA or polytechnic) to qualify.",
+        "q8": "Is there a deadline?",
+        "a8": "Not for this pilot — applications are reviewed on a rolling basis. You'll receive an acknowledgement on the same day you apply, and we aim to confirm shortlisting within 48 hours. From application to being matched with a sponsor typically takes up to two months.",
+        "q9": "Is there a cost to apply?",
+        "a9": "No. Applying is free and takes about 5–10 minutes."
+      },
+      "donor": {
+        "title": "Want to support a student?",
+        "body": "This programme exists because individuals in the community choose to fund the studies of specific students. If you'd like to know more about supporting a student — whether for a quarter, a year, or the full course of their studies — we'd be glad to hear from you.",
+        "fundsPre": "Funds are administered by ",
+        "fundsPost": ", a registered Malaysian NGO.",
+        "cta": "Get in touch"
+      },
+      "about": {
+        "title": "About this programme",
+        "body": "The B40 Assistance Programme is coordinated by HalaTuju in partnership with MyNadi Foundation, which administers the funds, and a network of community organisations — including CUMIG, Sri Murugan Centre and others — that refer and support students.",
+        "contact": "Questions or feedback? Email"
       },
       "cta": {
         "heading": "Ready to apply?",
