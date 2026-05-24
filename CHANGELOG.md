@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 Redesign · Sprint 12a: apply-form desktop responsiveness (2026-05-24)
+
+The desktop layout for the apply form (the item deferred from S9). Frontend only; on `feature/b40-redesign`, not deployed.
+
+### Changed
+- `/scholarship/apply` is now responsive on desktop: on `lg` it becomes a **two-column layout** — a left vertical
+  **step-nav rail** (the five sections, active highlighted, completed ticked) beside the active section card +
+  Back/Continue — using the horizontal space the mobile single column left empty. The mobile **bottom tab bar is
+  now `lg:hidden`** (the rail replaces it on desktop), and the container widens (`max-w-2xl` → `lg:max-w-4xl`).
+- Mobile is unchanged (single column, progress, section card, bottom tab bar). The change is contained to the
+  page's layout shell — section content and the mobile flow are untouched.
+
+### Notes
+- The `/scholarship/application` cards (received/accepted) already read fine centred at `max-w-2xl` — left as-is.
+  `ScholarshipNextSteps` (post-shortlist follow-up) wasn't touched; can get a desktop pass later if needed.
+
+### Tests
+- `next build` clean. Frontend jest unchanged (49 — layout only). Backend unchanged (1100). No i18n change, no migration.
+
 ## [Unreleased] — B40 Redesign · Sprint 11b: applicant application states + login banner (2026-05-24)
 
 The applicant-facing half of S11. Frontend only; on `feature/b40-redesign`, not deployed.

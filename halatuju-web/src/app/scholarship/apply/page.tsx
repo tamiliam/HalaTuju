@@ -265,7 +265,7 @@ export default function ScholarshipApplyPage() {
 
   function wrap(children: React.ReactNode) {
     return (
-      <main className="container mx-auto px-6 py-10 max-w-2xl">
+      <main className="container mx-auto px-6 py-10 max-w-2xl lg:max-w-4xl">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">{t('scholarship.apply.title')}</h1>
         <p className="text-gray-600 mb-6">{t('scholarship.apply.intro')}</p>
         {children}
@@ -628,50 +628,74 @@ export default function ScholarshipApplyPage() {
         </div>
       </div>
 
-      {/* Progress */}
-      <div className="mb-1 flex gap-1.5">
-        {TAB_ORDER.map((k, i) => (
-          <span key={k} className={`h-1.5 flex-1 rounded-full ${i <= tabIndex ? 'bg-primary-500' : 'bg-gray-200'}`} />
-        ))}
-      </div>
-      <p className="text-xs text-gray-500 mb-4">
-        {t('scholarship.apply.step')} {tabIndex + 1}/5 · {t(`scholarship.apply.section.${tab}`)}
-      </p>
+      {/* On desktop: a left step-nav rail beside the active step (uses the horizontal
+          space the mobile single column left empty). On mobile: the bottom tab bar below. */}
+      <div className="lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-8 lg:items-start">
+        <aside className="hidden lg:block">
+          <nav className="sticky top-6 space-y-1">
+            {TAB_ORDER.map((k, i) => {
+              const active = k === tab
+              const done = i < tabIndex
+              return (
+                <button key={k} type="button" onClick={() => setTab(k)}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors ${active ? 'bg-primary-50 font-medium text-primary-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${active ? 'bg-primary-500 text-white' : done ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-400'}`}>
+                    {done ? '✓' : i + 1}
+                  </span>
+                  {t(`scholarship.apply.section.${k}`)}
+                </button>
+              )
+            })}
+          </nav>
+        </aside>
 
-      {/* Active section card */}
-      <div className="bg-white border rounded-2xl p-5 shadow-sm mb-4">
-        <h2 className="font-semibold text-gray-900 mb-3">{tabIndex + 1}. {t(`scholarship.apply.section.${tab}`)}</h2>
-        {sections[tab]}
-      </div>
+        <div>
+          {/* Progress */}
+          <div className="mb-1 flex gap-1.5">
+            {TAB_ORDER.map((k, i) => (
+              <span key={k} className={`h-1.5 flex-1 rounded-full ${i <= tabIndex ? 'bg-primary-500' : 'bg-gray-200'}`} />
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 mb-4">
+            {t('scholarship.apply.step')} {tabIndex + 1}/5 · {t(`scholarship.apply.section.${tab}`)}
+          </p>
 
-      {/* Validation / submit error — shown on whichever tab the error sent the user to */}
-      {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
-          <p className="text-sm text-red-600">{error}</p>
+          {/* Active section card */}
+          <div className="bg-white border rounded-2xl p-5 shadow-sm mb-4">
+            <h2 className="font-semibold text-gray-900 mb-3">{tabIndex + 1}. {t(`scholarship.apply.section.${tab}`)}</h2>
+            {sections[tab]}
+          </div>
+
+          {/* Validation / submit error — shown on whichever tab the error sent the user to */}
+          {error && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
+          {/* Commit-on-submit: nothing is saved until the application is submitted */}
+          {isLast && (
+            <p className="mb-3 text-center text-xs text-gray-400">{t('scholarship.apply.commitNote')}</p>
+          )}
+
+          {/* Linear nav */}
+          <div className="flex gap-3 mb-4">
+            {tabIndex > 0 && (
+              <button type="button" onClick={goBack} className="btn-secondary flex-1">{t('scholarship.apply.back')}</button>
+            )}
+            {isLast ? (
+              <button type="submit" disabled={submitting} className="btn-primary flex-1 disabled:opacity-50">
+                {submitting ? t('scholarship.apply.submitting') : t('scholarship.apply.submit')}
+              </button>
+            ) : (
+              <button type="button" onClick={goNext} className="btn-primary flex-1">{t('scholarship.apply.continue')}</button>
+            )}
+          </div>
         </div>
-      )}
-
-      {/* Commit-on-submit: nothing is saved until the application is submitted */}
-      {isLast && (
-        <p className="mb-3 text-center text-xs text-gray-400">{t('scholarship.apply.commitNote')}</p>
-      )}
-
-      {/* Linear nav */}
-      <div className="flex gap-3 mb-4">
-        {tabIndex > 0 && (
-          <button type="button" onClick={goBack} className="btn-secondary flex-1">{t('scholarship.apply.back')}</button>
-        )}
-        {isLast ? (
-          <button type="submit" disabled={submitting} className="btn-primary flex-1 disabled:opacity-50">
-            {submitting ? t('scholarship.apply.submitting') : t('scholarship.apply.submit')}
-          </button>
-        ) : (
-          <button type="button" onClick={goNext} className="btn-primary flex-1">{t('scholarship.apply.continue')}</button>
-        )}
       </div>
 
-      {/* Bottom tab bar */}
-      <nav className="sticky bottom-0 bg-white border-t flex justify-around py-2 -mx-6 px-2">
+      {/* Bottom tab bar (mobile only — replaced by the left rail on desktop) */}
+      <nav className="sticky bottom-0 bg-white border-t flex justify-around py-2 -mx-6 px-2 lg:hidden">
         <Link href="/scholarship" className="flex flex-col items-center gap-0.5 px-2 py-1 min-w-[56px]">
           <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" />

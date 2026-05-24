@@ -318,12 +318,11 @@ Bring in the legacy form's support questions — they double as **mentoring / su
 - Acceptance: admin verify+accept locks NRIC + advances (S11a ✅); student sees correct state (S11b); green.
 - Complexity: High (~18 files; split into ~9 + ~5).
 
-**S12 — Vision OCR + desktop responsiveness + config + deploy.**
-- Scope: Google Vision OCR on MyKad upload (instant feedback + re-upload, surfaced to admin); desktop-responsive apply +
-  application pages; cohort `b40-2026` config (income_ceiling 5860, t20 12679, delay 60m, weights, pass-mark); wire
-  Cloud Scheduler → `send_pending_decision_emails`; reset test data; **single deploy**; prod smoke-test.
-- Acceptance: Vision feedback works; responsive verified; scheduler runs; end-to-end prod smoke passes.
-- Complexity: Medium-High (~15 files).
+**S12 — desktop + deploy + Vision (SPLIT 2026-05-24).** *Vision OCR moved to a post-launch fast-follow (it's a soft assist; admin verify-&-accept is the real gate — user's call). Launch path = desktop → gated deploy.*
+- **S12a — apply-form desktop responsiveness (frontend).** — ✅ **built 2026-05-24, build green, desktop + mobile approved via screenshot** (commit at sprint close). `lg` two-column layout: left step-nav rail + section card; container `max-w-2xl`→`lg:max-w-4xl`; bottom tab bar `lg:hidden`. Mobile unchanged. (Application cards already fine; `ScholarshipNextSteps` not touched.)
+- **S12b — GATED DEPLOY (the only deploy).** — ⏳ next. Cohort `b40-2026` config (income_ceiling 5860, per_capita_ceiling 1584, min_spm_a_count 4, min_spm_bplus_count 5, min_stpm_pngk 2.9, success/decline delay 2/48) + wire Cloud Scheduler → `send_pending_decision_emails` + reset test data + **single deploy** (scholarship 0007–0009 + courses 0048 hit prod) + prod smoke. **Requires explicit deploy authorisation at deploy time.**
+- **S13 — Vision OCR (post-launch fast-follow).** MyKad upload → instant NRIC match feedback (soft, never a hard block), surfaced to admin. New Google Cloud Vision API key + **cost sign-off** before paid calls.
+- Acceptance: responsive verified (S12a ✅); cohort + scheduler live + prod smoke passes (S12b); Vision feedback works (S13).
 
 **Total: 6 sprints.** Order = dependency + risk: foundation (S7) → engine (S8, riskiest) → frontend (S9–S10) → admin/lock (S11)
 → integration + deploy (S12). **S8 is the only sprint gated on the 6 policy calls** — so we can start **S7 now** and settle the
