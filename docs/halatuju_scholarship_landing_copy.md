@@ -2,6 +2,10 @@
 
 **Page:** `https://halatuju.xyz/scholarship`
 **Last updated:** 25 May 2026
+**Status:** ✅ This copy is **live** as of 25 May 2026 (deployed across en/ms/ta). The page now reflects this document.
+Implementation decisions taken at port time: donor "Get in touch" → `mailto:info@halatuju.xyz` (subject "Sponsor
+enquiry"), no separate form; Section 44(6) line **omitted** (pending MyNadi confirmation); the partner "Concerned UM
+Indian Graduates" is shown as the **acronym "CUMIG" only**, to keep the word "Indian" off the public page.
 **Voice:** Warm, plain-spoken, speaks directly to the reader (student or sponsor). Section headings frame the student's own questions ("Can I apply?", "How it works"). No jargon, no scholarship-pitch puffery.
 
 Sections below appear in the order they should render on the page. Square-bracketed items in **bold** like **[Apply now →]** are calls-to-action and should render as buttons or prominent links.

@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] — Post-deploy: /scholarship copy + layout fixes (2026-05-25)
+
+Small production follow-ups after the B40 redesign went live. All `halatuju-web` only; deployed to halatuju.xyz via
+push to `main` (3 commits: `6706837`, `9d7224d`, plus the earlier OG/hero fixes).
+
+### Changed
+- **"Can I apply?" section restructured** — a single shared heading now spans two columns: the requirements
+  checklist (left) and the "Please note" callout kept as-is (right). Heading reworded to first-person **"Can I apply?"**
+  to match the copy doc (en/ms/ta).
+- **Landing copy aligned with `docs/halatuju_scholarship_landing_copy.md`** across **en/ms/ta** — the page had still
+  been running the older pre-doc wording. Reworked hero sub, lead paragraphs (dropped the "our community / self-help"
+  framing), value cards; **Please note 5 → 7 bullets** (added Limited places, Trust w/ light verification, Under 18);
+  **Can I apply 5 → 6 requirements** (added 20-min interview + quarterly-progress lines, DOSM citation, "Solid academic
+  record"); How-it-works timing ("same day", "within 48 hours", MyNadi named, "up to two months"); FAQ replaced with
+  the approved 9-question set.
+
+### Added
+- **"Want to support a student?"** donor section — **Get in touch** → `mailto:info@halatuju.xyz?subject=Sponsor enquiry`;
+  "Funds are administered by MyNadi Foundation" with a link to yayasanmynadi.org. **Section 44(6) tax line omitted**
+  until MyNadi's status is confirmed.
+- **"About this programme"** section — partners credited; the partner whose registered name contains "Indian" is shown
+  as the **acronym "CUMIG" only**, to keep the word off the public page (MyNadi 44(6) non-discrimination).
+
+### Verified
+- i18n parity 1118 keys across en/ms/ta (0 warnings); production build clean.
+
 ## [2.1.0] — B40 Redesign · Sprint 12b: DEPLOYED to production (2026-05-25)
 
 The B40 redesign (S7–S12a) is **live in production**. `feature/b40-redesign` merged to `main` (release merge
