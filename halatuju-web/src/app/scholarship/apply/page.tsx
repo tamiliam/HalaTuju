@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
+import SchoolSelect from '@/components/SchoolSelect'
 import {
   submitScholarshipApplication,
   getMyScholarshipApplications,
@@ -19,6 +20,7 @@ import {
   profileAcademicSummary,
   buildApplicationPayload,
   applyFormError,
+  formatNric,
   nricChanged,
   stashApplyForm,
   popApplyStash,
@@ -338,7 +340,7 @@ export default function ScholarshipApplyPage() {
         </div>
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.school')}>{t('scholarship.apply.field.school')}</FieldLabel>
-          <input className="input" value={form.school} onChange={(e) => update('school', e.target.value)} />
+          <SchoolSelect value={form.school} onChange={(v) => update('school', v)} />
         </div>
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.ic')}>{t('scholarship.apply.field.ic')}</FieldLabel>
@@ -352,7 +354,8 @@ export default function ScholarshipApplyPage() {
             </div>
           ) : (
             <input className="input" value={form.nric} placeholder="XXXXXX-XX-XXXX"
-              onChange={(e) => update('nric', e.target.value)} />
+              inputMode="numeric" autoComplete="off"
+              onChange={(e) => update('nric', formatNric(e.target.value))} />
           )}
         </div>
         <div>
@@ -633,6 +636,14 @@ export default function ScholarshipApplyPage() {
       <div className="lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-8 lg:items-start">
         <aside className="hidden lg:block">
           <nav className="sticky top-6 space-y-1">
+            <Link href="/scholarship"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700">
+              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V10" />
+              </svg>
+              {t('scholarship.apply.tab.home')}
+            </Link>
+            <div className="my-1 border-t border-gray-100" />
             {TAB_ORDER.map((k, i) => {
               const active = k === tab
               const done = i < tabIndex

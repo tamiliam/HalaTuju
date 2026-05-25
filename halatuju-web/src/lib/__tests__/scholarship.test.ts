@@ -4,6 +4,7 @@ import {
   profileAcademicSummary,
   buildApplicationPayload,
   applyFormError,
+  formatNric,
   nricChanged,
   fundingTotal,
   emptyDetailsForm,
@@ -217,6 +218,24 @@ describe('applyFormError', () => {
   it('surfaces the earliest-tab problem first', () => {
     // both name and consent are wrong → About Me wins (earlier tab)
     expect(applyFormError(baseForm({ name: '', consentToContact: false }))).toBe('name')
+  })
+})
+
+describe('formatNric', () => {
+  it('inserts dashes as digits are typed', () => {
+    expect(formatNric('0')).toBe('0')
+    expect(formatNric('050202')).toBe('050202')
+    expect(formatNric('05020202')).toBe('050202-02')
+    expect(formatNric('050202022022')).toBe('050202-02-2022')
+  })
+  it('strips non-digits and caps at 12 digits', () => {
+    expect(formatNric('050202-02-2022')).toBe('050202-02-2022') // idempotent
+    expect(formatNric('05 0202 02 2022')).toBe('050202-02-2022')
+    expect(formatNric('050202022022999')).toBe('050202-02-2022') // overflow trimmed
+    expect(formatNric('abc')).toBe('')
+  })
+  it('produces a value applyFormError accepts once 12 digits are present', () => {
+    expect(applyFormError(baseForm({ nric: formatNric('050202022022') }))).not.toBe('nric')
   })
 })
 

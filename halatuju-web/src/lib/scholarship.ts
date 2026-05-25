@@ -49,6 +49,17 @@ export const MALAYSIAN_STATES = [
 // NRIC format XXXXXX-XX-XXXX (the claim endpoint does the full age/state checks).
 const NRIC_RE = /^\d{6}-\d{2}-\d{4}$/
 
+/**
+ * Format raw NRIC keystrokes/paste into the canonical XXXXXX-XX-XXXX mask:
+ * keep digits only, cap at 12, and insert dashes after the 6th and 8th digit.
+ * Idempotent — re-running on an already-masked value returns it unchanged — so it
+ * can be applied on every onChange. The output is exactly what NRIC_RE expects.
+ */
+export function formatNric(raw: string): string {
+  const d = raw.replace(/\D/g, '').slice(0, 12)
+  return [d.slice(0, 6), d.slice(6, 8), d.slice(8, 12)].filter(Boolean).join('-')
+}
+
 // ── My Plans + My Support (Sprint 10) ────────────────────────────────────
 // UPU / destination intent. 'ipts' (IPTS-only) is the engine's disqualifier;
 // the form never blocks on it — the backend declines silently (S8 gate).
