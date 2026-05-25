@@ -451,7 +451,7 @@
       "verified": "Verified",
       "locked": "Locked",
       "orgPlaceholder": "Select an organisation",
-      "schoolSearchPlaceholder": "Start typing your school's name…",
+      "schoolSearchPlaceholder": "Start typing, e.g. SMK Vivekananda",
       "schoolNotListed": "Can't find your school? Just type its name.",
       "schoolNoMatch": "No match — we'll use what you've typed.",
       "statePlaceholder": "Select your state",
@@ -477,7 +477,7 @@
       },
       "tip": {
         "name": "Your full name as in your IC.",
-        "school": "The school where you sat for SPM.",
+        "school": "The school where you sat for SPM or STPM.",
         "ic": "Used to confirm your identity. You can edit it until it's verified.",
         "org": "The organisation or coordinator who told you about this programme.",
         "state": "The state where you normally live.",

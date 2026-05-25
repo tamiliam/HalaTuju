@@ -451,7 +451,7 @@
       "verified": "Disahkan",
       "locked": "Dikunci",
       "orgPlaceholder": "Pilih organisasi",
-      "schoolSearchPlaceholder": "Mula taip nama sekolah anda…",
+      "schoolSearchPlaceholder": "Mula taip, cth. SMK Vivekananda",
       "schoolNotListed": "Tak jumpa sekolah anda? Taip sahaja namanya.",
       "schoolNoMatch": "Tiada padanan — kami akan guna apa yang anda taip.",
       "statePlaceholder": "Pilih negeri anda",
@@ -477,7 +477,7 @@
       },
       "tip": {
         "name": "Nama penuh anda seperti dalam IC.",
-        "school": "Sekolah tempat anda menduduki SPM.",
+        "school": "Sekolah tempat anda menduduki SPM atau STPM.",
         "ic": "Digunakan untuk mengesahkan identiti anda. Anda boleh menyuntingnya sehingga ia disahkan.",
         "org": "Organisasi atau penyelaras yang memberitahu anda tentang program ini.",
         "state": "Negeri tempat anda biasa tinggal.",
