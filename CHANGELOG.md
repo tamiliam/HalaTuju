@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.4] — Apply-form: one tooltip, phone mask, per-step validation (2026-05-25)
+
+### Fixed
+- **Duplicate tooltip** — the `i` bubble dropped its native `title` attribute, which had been showing a second, drab
+  browser tooltip on hover. Hover (desktop) and click/tap (mobile) now open the same custom popover.
+
+### Added
+- **Phone auto-mask** — phone and parent-phone fields format to `0XX-XXX XXXX` as digits are typed (`formatPhone`),
+  matching the NRIC mask; pre-filled profile values are masked on load too.
+- **Validation on Continue** — each step is validated when the student clicks Continue (not only at final submit):
+  advancing is blocked while the current/earlier step has an error, which is surfaced there. Phone is now
+  format-validated (9–11 digits, leading 0); parent phone is optional but validated when present (`parentPhone` error).
+
+### Tests
+- +8 unit tests (`formatPhone`, `isValidPhone`, phone/parent-phone validation). i18n parity **1121 → 1122** keys.
+
 ## [2.1.3] — Apply-form: friendlier help bubble (2026-05-25)
 
 ### Changed
