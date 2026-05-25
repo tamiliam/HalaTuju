@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.3] — Apply-form: friendlier help bubble (2026-05-25)
+
+### Changed
+- The field help `i` bubble is restyled on-brand and extracted to `components/InfoTip.tsx`: a primary-tinted `i` with a
+  ring, and a white rounded popover card with a soft primary border, shadow, caret and a lightbulb icon — replacing the
+  flat grey `i` + hard dark-grey tooltip. Adds an optional `defaultOpen` prop. Applies to every apply-form field tooltip.
+
 ## [2.1.2] — Apply-form: home link, IC mask, searchable school field (2026-05-25)
 
 Three usability fixes on `/scholarship/apply` (raised from the live form). All `halatuju-web`; deployed via push
