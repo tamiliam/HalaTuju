@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import SchoolSelect from '@/components/SchoolSelect'
+import InfoTip from '@/components/InfoTip'
 import {
   submitScholarshipApplication,
   getMyScholarshipApplications,
@@ -45,27 +46,6 @@ const ERROR_TAB: Record<string, TabKey> = {
   org: 'personal', state: 'personal', phone: 'personal',
   income: 'family',
   consent: 'support',
-}
-
-/** An `i` info bubble — tap/click toggles a small popover (works on mobile + desktop). */
-function InfoTip({ text }: { text: string }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <span className="relative inline-flex align-middle">
-      <button
-        type="button" aria-label={text} title={text}
-        onClick={() => setOpen((v) => !v)} onBlur={() => setOpen(false)}
-        className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold leading-none text-gray-600 hover:bg-gray-300"
-      >
-        i
-      </button>
-      {open && (
-        <span role="tooltip" className="absolute left-1/2 top-6 z-20 w-56 -translate-x-1/2 rounded-lg bg-gray-900 px-3 py-2 text-xs font-normal leading-snug text-white shadow-lg">
-          {text}
-        </span>
-      )}
-    </span>
-  )
 }
 
 /** Field label with an optional required `*` and an optional `i` tooltip. */
