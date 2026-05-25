@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.5] — Apply-form: My Family ordering + required household size (2026-05-25)
+
+### Changed
+- **Field order in My Family** — "Number of people in your household" now comes *before* "Combined monthly household
+  income", so the student counts the household first and then totals that group's income (the old order asked them to
+  "add up the income of everyone you counted" before they'd counted anyone).
+- **Tips work in concert** — the household tip now ends "Next, you'll total this group's monthly income"; the income
+  tip now reads "everyone you counted **above**". (en/ms/ta)
+
+### Added
+- **Household size is now required** (`min 1`) — it's needed for the per-capita income calculation. New `householdSize`
+  validation + error message (en/ms/ta), surfaced on the My Family step. (+1 test)
+
 ## [2.1.4] — Apply-form: one tooltip, phone mask, per-step validation (2026-05-25)
 
 ### Fixed

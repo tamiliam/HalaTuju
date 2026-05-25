@@ -211,6 +211,11 @@ describe('applyFormError', () => {
     expect(applyFormError(baseForm({ homeState: '' }))).toBe('state')
     expect(applyFormError(baseForm({ phone: '' }))).toBe('phone')
   })
+  it('requires household size of at least 1 (per-capita needs it)', () => {
+    expect(applyFormError(baseForm({ householdSize: '' }))).toBe('householdSize')
+    expect(applyFormError(baseForm({ householdSize: '0' }))).toBe('householdSize')
+    expect(applyFormError(baseForm({ householdSize: '4' }))).toBeNull()
+  })
   it('requires household income', () => {
     expect(applyFormError(baseForm({ householdIncome: '' }))).toBe('income')
   })

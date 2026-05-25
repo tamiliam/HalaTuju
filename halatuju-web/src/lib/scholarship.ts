@@ -304,7 +304,10 @@ export function applyFormError(form: ApplyFormState): string | null {
   if (!form.referringOrg) return 'org'
   if (!form.homeState) return 'state'
   if (!isValidPhone(form.phone)) return 'phone'
-  // My Family — exact household income required (drives per-capita need).
+  // My Family — household size + income both required; together they drive the
+  // per-capita need calc (income ÷ size), so size must be at least 1.
+  const size = toIntOrNull(form.householdSize)
+  if (size === null || size < 1) return 'householdSize'
   if (toIntOrNull(form.householdIncome) === null) return 'income'
   // Parent/guardian phone is optional, but if given it must be a valid number.
   if (form.parentPhone.trim() && !isValidPhone(form.parentPhone)) return 'parentPhone'

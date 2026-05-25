@@ -46,7 +46,7 @@ const TAB_ORDER: TabKey[] = ['personal', 'family', 'results', 'plans', 'support'
 const ERROR_TAB: Record<string, TabKey> = {
   name: 'personal', school: 'personal', nric: 'personal', nricTaken: 'personal',
   org: 'personal', state: 'personal', phone: 'personal',
-  income: 'family', parentPhone: 'family',
+  householdSize: 'family', income: 'family', parentPhone: 'family',
   consent: 'support',
 }
 
@@ -370,15 +370,18 @@ export default function ScholarshipApplyPage() {
     ),
     family: (
       <div className="space-y-4">
+        {/* Household size first — the student counts who's in the home, then totals
+            that group's income (which the income tip refers back to). Both feed the
+            per-capita need calc, so both are required. */}
+        <div>
+          <FieldLabel required tip={t('scholarship.apply.tip.household')}>{t('scholarship.apply.householdSizeLabel')}</FieldLabel>
+          <input type="number" min={1} className="input" value={form.householdSize}
+            onChange={(e) => update('householdSize', e.target.value)} />
+        </div>
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.income')}>{t('scholarship.apply.incomeLabel')}</FieldLabel>
           <input type="number" min={0} className="input" value={form.householdIncome}
             onChange={(e) => update('householdIncome', e.target.value)} />
-        </div>
-        <div>
-          <FieldLabel tip={t('scholarship.apply.tip.household')}>{t('scholarship.apply.householdSizeLabel')}</FieldLabel>
-          <input type="number" min={1} className="input" value={form.householdSize}
-            onChange={(e) => update('householdSize', e.target.value)} />
         </div>
         <div className="flex items-center justify-between gap-3">
           <span className="flex items-center text-sm text-gray-700">{t('scholarship.apply.strLabel')}<InfoTip text={t('scholarship.apply.tip.str')} /></span>
