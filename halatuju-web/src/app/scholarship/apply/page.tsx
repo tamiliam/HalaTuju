@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import SchoolSelect from '@/components/SchoolSelect'
 import InfoTip from '@/components/InfoTip'
+import Toggle from '@/components/Toggle'
 import {
   submitScholarshipApplication,
   getMyScholarshipApplications,
@@ -57,21 +58,6 @@ function FieldLabel({ children, required, tip }: { children: React.ReactNode; re
       {required && <span className="ml-0.5 text-red-500" aria-hidden>*</span>}
       {tip && <InfoTip text={tip} />}
     </span>
-  )
-}
-
-/** Minimal iOS-style toggle (no external dep, keyboard-accessible). */
-function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
-  return (
-    <button
-      type="button" role="switch" aria-checked={on} aria-label={label}
-      onClick={() => onChange(!on)}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-        on ? 'bg-primary-500' : 'bg-gray-300'
-      }`}
-    >
-      <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${on ? 'translate-x-5' : 'translate-x-0.5'}`} />
-    </button>
   )
 }
 
@@ -602,11 +588,12 @@ export default function ScholarshipApplyPage() {
             placeholder={t('scholarship.apply.anythingElsePlaceholder')}
             onChange={(e) => update('anythingElse', e.target.value)} />
         </div>
-        <label className="flex items-start gap-2 text-sm text-gray-700">
-          <input type="checkbox" className="mt-1" checked={form.consentToContact}
-            onChange={(e) => update('consentToContact', e.target.checked)} />
-          <span>{t('scholarship.apply.consentLabel')}<span className="ml-0.5 text-red-500" aria-hidden>*</span></span>
-        </label>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm text-gray-700">
+            {t('scholarship.apply.consentLabel')}<span className="ml-0.5 text-red-500" aria-hidden>*</span>
+          </span>
+          <Toggle on={form.consentToContact} onChange={(v) => update('consentToContact', v)} label={t('scholarship.apply.consentLabel')} />
+        </div>
       </div>
     ),
   }
