@@ -254,6 +254,14 @@ describe('formatPhone', () => {
     expect(formatPhone('012 345 6789')).toBe('012-345 6789') // spaces normalised
     expect(formatPhone('0123456789999')).toBe('012-3456 7899') // 13 digits -> 11
   })
+  it('is landline-aware (area code 2 or 3 digits by region)', () => {
+    expect(formatPhone('0312345678')).toBe('03-1234 5678')  // Klang Valley
+    expect(formatPhone('041234567')).toBe('04-123 4567')    // Penang
+    expect(formatPhone('092345678')).toBe('09-234 5678')    // East coast
+    expect(formatPhone('088123456')).toBe('088-123 456')    // Sabah/Sarawak 08X
+    expect(formatPhone('03-1234 5678')).toBe('03-1234 5678') // idempotent
+    expect(formatPhone('088-123 456')).toBe('088-123 456')  // idempotent
+  })
 })
 
 describe('isValidPhone', () => {

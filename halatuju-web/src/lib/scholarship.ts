@@ -61,16 +61,32 @@ export function formatNric(raw: string): string {
 }
 
 /**
- * Format raw phone keystrokes/paste into a readable Malaysian style: digits only,
- * capped at 11, grouped as `0XX-XXX XXXX` (or `0XX-XXXX XXXX` for 11 digits — the
- * last group is always the final 4). Idempotent, so safe to run on every onChange.
+ * Format raw phone keystrokes/paste into a readable Malaysian style, aware of
+ * both mobile and landline numbering (area codes are 2 or 3 digits by region):
+ *   012-345 6789 / 011-2345 6789  — mobile (01X)
+ *   03-1234 5678                  — Klang Valley
+ *   04-123 4567                   — other peninsular (04/05/06/07/09)
+ *   088-123 456                   — Sabah/Sarawak (08X)
+ * Digits only, capped at 11, idempotent — safe to run on every onChange.
  */
 export function formatPhone(raw: string): string {
   const d = raw.replace(/\D/g, '').slice(0, 11)
-  if (d.length <= 3) return d
-  const rest = d.slice(3)
-  if (rest.length <= 4) return `${d.slice(0, 3)}-${rest}`
-  return `${d.slice(0, 3)}-${rest.slice(0, rest.length - 4)} ${rest.slice(rest.length - 4)}`
+  if (!d) return ''
+  const areaLen = d.startsWith('01') ? 3       // mobile 01X
+    : d.startsWith('03') ? 2                    // Klang Valley
+    : d.startsWith('08') ? 3                    // Sabah/Sarawak 08X
+    : d.startsWith('0') ? 2                     // 04/05/06/07/09 …
+    : Math.min(3, d.length)                     // defensive (no leading 0)
+  if (d.length <= areaLen) return d
+  return `${d.slice(0, areaLen)}-${groupSubscriber(d.slice(areaLen))}`
+}
+
+/** Group the subscriber digits (after the area code) for display. */
+function groupSubscriber(s: string): string {
+  if (s.length <= 5) return s
+  if (s.length === 6) return `${s.slice(0, 3)} ${s.slice(3)}`   // 08X landline: 3+3
+  if (s.length === 8) return `${s.slice(0, 4)} ${s.slice(4)}`   // 03 / 011: 4+4
+  return `${s.slice(0, s.length - 4)} ${s.slice(s.length - 4)}` // else: rest + final 4
 }
 
 // A Malaysian phone number is 9–11 digits starting with 0 (mobile 01X… or a
