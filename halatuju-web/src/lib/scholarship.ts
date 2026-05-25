@@ -60,6 +60,25 @@ export function formatNric(raw: string): string {
   return [d.slice(0, 6), d.slice(6, 8), d.slice(8, 12)].filter(Boolean).join('-')
 }
 
+/**
+ * Format raw phone keystrokes/paste into a readable Malaysian style: digits only,
+ * capped at 11, grouped as `0XX-XXX XXXX` (or `0XX-XXXX XXXX` for 11 digits — the
+ * last group is always the final 4). Idempotent, so safe to run on every onChange.
+ */
+export function formatPhone(raw: string): string {
+  const d = raw.replace(/\D/g, '').slice(0, 11)
+  if (d.length <= 3) return d
+  const rest = d.slice(3)
+  if (rest.length <= 4) return `${d.slice(0, 3)}-${rest}`
+  return `${d.slice(0, 3)}-${rest.slice(0, rest.length - 4)} ${rest.slice(rest.length - 4)}`
+}
+
+// A Malaysian phone number is 9–11 digits starting with 0 (mobile 01X… or a
+// landline 0X…). We validate on the digits, ignoring the display dashes/spaces.
+export function isValidPhone(s: string): boolean {
+  return /^0\d{8,10}$/.test(s.replace(/\D/g, ''))
+}
+
 // ── My Plans + My Support (Sprint 10) ────────────────────────────────────
 // UPU / destination intent. 'ipts' (IPTS-only) is the engine's disqualifier;
 // the form never blocks on it — the backend declines silently (S8 gate).
@@ -127,16 +146,18 @@ export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFo
   return {
     name: profile?.name ?? '',
     school: profile?.school ?? '',
-    nric: profile?.nric ?? '',
+    // Pre-filled values are masked too, so an older unformatted profile value
+    // still displays as XXXXXX-XX-XXXX / 0XX-XXX XXXX.
+    nric: formatNric(profile?.nric ?? ''),
     referringOrg: (profile?.referral_source as ReferringOrg) ?? '',
     homeState: profile?.preferred_state ?? '',
-    phone: profile?.contact_phone ?? '',
+    phone: formatPhone(profile?.contact_phone ?? ''),
     householdIncome: profile?.household_income != null ? String(profile.household_income) : '',
     householdSize: profile?.household_size != null ? String(profile.household_size) : '',
     receivesStr: !!profile?.receives_str,
     receivesJkm: !!profile?.receives_jkm,
     parentName: guardian?.name ?? '',
-    parentPhone: guardian?.phone ?? '',
+    parentPhone: formatPhone(guardian?.phone ?? ''),
     callLanguage: (profile?.preferred_call_language as CallLanguage) ?? '',
     pathwaysConsidered: [],
     topChoices: [],
@@ -266,9 +287,11 @@ export function applyFormError(form: ApplyFormState): string | null {
   if (!NRIC_RE.test(form.nric.trim())) return 'nric'
   if (!form.referringOrg) return 'org'
   if (!form.homeState) return 'state'
-  if (!form.phone.trim()) return 'phone'
+  if (!isValidPhone(form.phone)) return 'phone'
   // My Family — exact household income required (drives per-capita need).
   if (toIntOrNull(form.householdIncome) === null) return 'income'
+  // Parent/guardian phone is optional, but if given it must be a valid number.
+  if (form.parentPhone.trim() && !isValidPhone(form.parentPhone)) return 'parentPhone'
   // My Support — consent required to apply.
   if (!form.consentToContact) return 'consent'
   return null

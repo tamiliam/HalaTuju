@@ -398,7 +398,8 @@
         "nricTaken": "Nombor IC ini sudah dikaitkan dengan akaun lain. Sila semak semula.",
         "org": "Sila beritahu kami siapa yang merujuk anda.",
         "state": "Sila pilih negeri anda.",
-        "phone": "Sila masukkan nombor telefon anda."
+        "phone": "Sila masukkan nombor telefon yang sah, cth. 012-345 6789.",
+        "parentPhone": "Sila masukkan nombor telefon yang sah untuk ibu bapa atau penjaga anda, atau biarkan kosong."
       },
       "gate": {
         "readFreely": "Baca semuanya dengan bebas — anda hanya perlu log masuk apabila bersedia untuk memohon.",

@@ -11,9 +11,15 @@ import { useState } from 'react'
 export default function InfoTip({ text, defaultOpen = false }: { text: string; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <span className="relative inline-flex align-middle">
+    // Hover (desktop) and click/tap (mobile) both open the SAME custom popover.
+    // No native `title` — that produced a second, drab browser tooltip on hover.
+    <span
+      className="relative inline-flex align-middle"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
       <button
-        type="button" aria-label={text} title={text}
+        type="button" aria-label={text}
         onClick={() => setOpen((v) => !v)} onBlur={() => setOpen(false)}
         className="ml-1 inline-flex h-[18px] w-[18px] items-center justify-center rounded-full bg-primary-100 text-[11px] font-bold leading-none text-primary-700 ring-1 ring-inset ring-primary-200 transition-colors hover:bg-primary-200 hover:text-primary-800"
       >

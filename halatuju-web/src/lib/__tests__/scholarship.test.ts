@@ -5,6 +5,8 @@ import {
   buildApplicationPayload,
   applyFormError,
   formatNric,
+  formatPhone,
+  isValidPhone,
   nricChanged,
   fundingTotal,
   emptyDetailsForm,
@@ -236,6 +238,46 @@ describe('formatNric', () => {
   })
   it('produces a value applyFormError accepts once 12 digits are present', () => {
     expect(applyFormError(baseForm({ nric: formatNric('050202022022') }))).not.toBe('nric')
+  })
+})
+
+describe('formatPhone', () => {
+  it('groups digits as 0XX-XXX XXXX as they are typed', () => {
+    expect(formatPhone('01')).toBe('01')
+    expect(formatPhone('0123')).toBe('012-3')
+    expect(formatPhone('0123456')).toBe('012-3456')
+    expect(formatPhone('0123456789')).toBe('012-345 6789')   // 10 digits
+    expect(formatPhone('01123456789')).toBe('011-2345 6789') // 11 digits
+  })
+  it('strips non-digits, is idempotent, and caps at 11 digits', () => {
+    expect(formatPhone('012-345 6789')).toBe('012-345 6789') // idempotent
+    expect(formatPhone('012 345 6789')).toBe('012-345 6789') // spaces normalised
+    expect(formatPhone('0123456789999')).toBe('012-3456 7899') // 13 digits -> 11
+  })
+})
+
+describe('isValidPhone', () => {
+  it('accepts 9–11 digit numbers starting with 0', () => {
+    expect(isValidPhone('012-345 6789')).toBe(true)
+    expect(isValidPhone('011-2345 6789')).toBe(true)
+    expect(isValidPhone('03-1234 5678')).toBe(true)
+  })
+  it('rejects too-short, non-zero-leading, or empty', () => {
+    expect(isValidPhone('')).toBe(false)
+    expect(isValidPhone('12345')).toBe(false)
+    expect(isValidPhone('12-345 6789')).toBe(false) // no leading 0
+  })
+})
+
+describe('applyFormError — phone + parent phone', () => {
+  it('rejects an invalid or empty applicant phone', () => {
+    expect(applyFormError(baseForm({ phone: '' }))).toBe('phone')
+    expect(applyFormError(baseForm({ phone: '12345' }))).toBe('phone')
+  })
+  it('parent phone is optional but validated when present', () => {
+    expect(applyFormError(baseForm({ parentPhone: '' }))).toBeNull()
+    expect(applyFormError(baseForm({ parentPhone: '012-345 6789' }))).toBeNull()
+    expect(applyFormError(baseForm({ parentPhone: '123' }))).toBe('parentPhone')
   })
 })
 

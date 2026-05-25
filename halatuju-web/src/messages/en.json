@@ -398,7 +398,8 @@
         "nricTaken": "This IC number is already linked to another account. Please check it.",
         "org": "Please tell us who referred you.",
         "state": "Please select your home state.",
-        "phone": "Please enter your phone number."
+        "phone": "Please enter a valid phone number, e.g. 012-345 6789.",
+        "parentPhone": "Please enter a valid phone number for your parent or guardian, or leave it blank."
       },
       "gate": {
         "readFreely": "Read everything freely — you only need to sign in when you're ready to apply.",

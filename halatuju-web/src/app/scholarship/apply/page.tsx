@@ -22,6 +22,7 @@ import {
   buildApplicationPayload,
   applyFormError,
   formatNric,
+  formatPhone,
   nricChanged,
   stashApplyForm,
   popApplyStash,
@@ -44,7 +45,7 @@ const TAB_ORDER: TabKey[] = ['personal', 'family', 'results', 'plans', 'support'
 const ERROR_TAB: Record<string, TabKey> = {
   name: 'personal', school: 'personal', nric: 'personal', nricTaken: 'personal',
   org: 'personal', state: 'personal', phone: 'personal',
-  income: 'family',
+  income: 'family', parentPhone: 'family',
   consent: 'support',
 }
 
@@ -297,8 +298,20 @@ export default function ScholarshipApplyPage() {
   const academic = profileAcademicSummary(profile)
   const tabIndex = TAB_ORDER.indexOf(tab)
   const isLast = tabIndex === TAB_ORDER.length - 1
-  const goNext = () => setTab(TAB_ORDER[Math.min(tabIndex + 1, TAB_ORDER.length - 1)])
-  const goBack = () => setTab(TAB_ORDER[Math.max(tabIndex - 1, 0)])
+  // Validate on Continue: block advancing while an error sits in the current
+  // (or an earlier) step, and surface it there. Errors that belong only to a
+  // later step don't block — the student fixes those when they reach them.
+  const goNext = () => {
+    const errKey = applyFormError(form)
+    if (errKey && TAB_ORDER.indexOf(ERROR_TAB[errKey] ?? 'personal') <= tabIndex) {
+      setError(t(`scholarship.apply.error.${errKey}`))
+      setTab(ERROR_TAB[errKey] ?? 'personal')
+      return
+    }
+    setError(null)
+    setTab(TAB_ORDER[Math.min(tabIndex + 1, TAB_ORDER.length - 1)])
+  }
+  const goBack = () => { setError(null); setTab(TAB_ORDER[Math.max(tabIndex - 1, 0)]) }
 
   const ProfileBadge = (
     <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
@@ -365,7 +378,7 @@ export default function ScholarshipApplyPage() {
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.phone')}>{t('scholarship.apply.field.phone')}</FieldLabel>
           <input className="input" inputMode="tel" placeholder="01X-XXX XXXX" value={form.phone}
-            onChange={(e) => update('phone', e.target.value)} />
+            onChange={(e) => update('phone', formatPhone(e.target.value))} />
         </div>
       </div>
     ),
@@ -398,7 +411,7 @@ export default function ScholarshipApplyPage() {
         <div>
           <FieldLabel tip={t('scholarship.apply.tip.parentPhone')}>{t('scholarship.apply.field.parentPhone')}</FieldLabel>
           <input className="input" inputMode="tel" placeholder="01X-XXX XXXX" value={form.parentPhone}
-            onChange={(e) => update('parentPhone', e.target.value)} />
+            onChange={(e) => update('parentPhone', formatPhone(e.target.value))} />
         </div>
         <div>
           <FieldLabel tip={t('scholarship.apply.tip.callLang')}>{t('scholarship.apply.field.callLang')}</FieldLabel>
