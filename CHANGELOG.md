@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] — Apply-form: home link, IC mask, searchable school field (2026-05-25)
+
+Three usability fixes on `/scholarship/apply` (raised from the live form). All `halatuju-web`; deployed via push
+to `main` (`9aa5d9e`).
+
+### Added
+- **Searchable School field** — the free-text School input is now a search-as-you-type field over all **2,480
+  Malaysian secondary schools** (`PERINGKAT = Menengah`: SMK, SBP, SMKA, KV, KT6, SM SABK, etc.), each shown with its
+  state, sourced from the MOE directory `SenaraiSekolahWeb_April2026.xlsx` (kept in `/docs` for provenance). Includes a
+  **"can't find your school? just type it"** free-text fallback so a missing/misspelled school never blocks an
+  applicant. New `src/data/secondary-schools.{json,ts}` (+ `searchSchools` helper) and `components/SchoolSelect.tsx`.
+  The field still stores the school **name** (no backend/schema change).
+- **Home link on desktop** — the apply form's desktop step-rail now has a Home link back to `/scholarship` (the mobile
+  bottom bar already had one; desktop had no way back).
+
+### Changed
+- **IC number auto-masks** to `XXXXXX-XX-XXXX` as digits are typed (`formatNric`). Previously a student could type 12
+  bare digits that silently failed the `NRIC_RE` check on submit; the mask produces exactly the format the validator
+  and the claim endpoint require.
+
+### Tests
+- +6 unit tests (`formatNric`, `searchSchools`, school-data integrity). i18n parity **1118 → 1121** keys
+  (`schoolSearchPlaceholder` / `schoolNotListed` / `schoolNoMatch`, en/ms/ta). Production build clean
+  (`/scholarship/apply` 8 kB → 37.6 kB from the route-split school list).
+
 ## [2.1.1] — Post-deploy: /scholarship copy + layout fixes (2026-05-25)
 
 Small production follow-ups after the B40 redesign went live. All `halatuju-web` only; deployed to halatuju.xyz via
