@@ -32,6 +32,10 @@ to `main` (`9aa5d9e`).
   bare digits that silently failed the `NRIC_RE` check on submit; the mask produces exactly the format the validator
   and the claim endpoint require.
 
+### Follow-ups (same day)
+- School field tip now reads "where you sat for SPM **or STPM**" (was SPM only); the search placeholder shows a
+  sample name — "Start typing, e.g. SMK Vivekananda" (a real entry) — so the SMK abbreviation/format is clear. (en/ms/ta)
+
 ### Tests
 - +6 unit tests (`formatNric`, `searchSchools`, school-data integrity). i18n parity **1118 → 1121** keys
   (`schoolSearchPlaceholder` / `schoolNotListed` / `schoolNoMatch`, en/ms/ta). Production build clean
