@@ -21,6 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Tests
 - +8 unit tests (`formatPhone`, `isValidPhone`, phone/parent-phone validation). i18n parity **1121 → 1122** keys.
 
+### Follow-ups (same day)
+- **Landline-aware phone mask** — `formatPhone` now detects the Malaysian area-code length by prefix (mobile 01X and
+  Sabah/Sarawak 08X = 3 digits; 03/04/05/06/07/09 = 2) and groups accordingly: `03-1234 5678`, `04-123 4567`,
+  `088-123 456`, `012-345 6789`. (+1 test)
+- **Consent control is now a toggle** — the consent on the Support step matches the STR/JKM toggle switches in My
+  Family (label left, switch right) instead of a lone checkbox. `Toggle` extracted to `components/Toggle.tsx`.
+
 ## [2.1.3] — Apply-form: friendlier help bubble (2026-05-25)
 
 ### Changed
