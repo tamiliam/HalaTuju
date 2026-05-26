@@ -9,15 +9,13 @@ import SchoolSelect from '@/components/SchoolSelect'
 import InfoTip from '@/components/InfoTip'
 import Toggle from '@/components/Toggle'
 import PathwaySelect from '@/components/PathwaySelect'
+import ProgrammePicker from '@/components/ProgrammePicker'
 import {
   submitScholarshipApplication,
   getMyScholarshipApplications,
   claimNric,
   checkEligibility,
-  getSavedCourses,
-  fetchFieldTaxonomy,
-  type SavedCourseWithStatus,
-  type FieldTaxonomyEntry,
+  type EligibleCourse,
 } from '@/lib/api'
 import {
   profileToApplyDefaults,
@@ -25,6 +23,8 @@ import {
   buildApplicationPayload,
   applyFormError,
   eligiblePathways,
+  programmesForPathway,
+  isProgrammePathway,
   formatNric,
   formatPhone,
   nricChanged,
@@ -38,6 +38,7 @@ import {
   OTHER_SCHOLARSHIP_OPTIONS,
   type ApplyFormState,
   type PathwayCertainty,
+  type ChosenProgramme,
 } from '@/lib/scholarship'
 
 type TabKey = 'personal' | 'family' | 'results' | 'plans' | 'support'
@@ -89,12 +90,10 @@ export default function ScholarshipApplyPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<TabKey>('personal')
-  // My Plans data: the student's saved courses (top-3 source) + field taxonomy.
-  const [savedCourses, setSavedCourses] = useState<SavedCourseWithStatus[]>([])
-  const [fieldGroups, setFieldGroups] = useState<FieldTaxonomyEntry[]>([])
-  // Plans redesign: the eligible-only pathway dropdown is driven by the live
-  // eligibility engine (pathway_stats), fetched once the profile is ready.
+  // Plans redesign: the eligible-only pathway dropdown + course picker are driven by
+  // the live eligibility engine (pathway_stats + eligible_courses), fetched once ready.
   const [pathwayStats, setPathwayStats] = useState<Record<string, number> | null>(null)
+  const [eligibleCourses, setEligibleCourses] = useState<EligibleCourse[]>([])
   const [pathwayLoading, setPathwayLoading] = useState(false)
   // Once the form is populated (from a stash on return, or from the profile),
   // don't let the profile effect overwrite the student's in-progress edits.
@@ -128,27 +127,16 @@ export default function ScholarshipApplyPage() {
     }
   }, [profile])
 
-  // My Plans data: saved courses (top-3 picker, exam-type aware) + field taxonomy.
-  useEffect(() => {
-    if (status !== 'ready' || !token) return
-    const qualification = profile?.exam_type === 'stpm' ? 'STPM' : 'SPM'
-    getSavedCourses({ token, qualification })
-      .then((res) => setSavedCourses(res.saved_courses || []))
-      .catch(() => setSavedCourses([]))
-    fetchFieldTaxonomy({ token })
-      .then((res) => setFieldGroups(res.groups || []))
-      .catch(() => setFieldGroups([]))
-  }, [status, token, profile?.exam_type])
-
-  // Plans step (SPM leavers): the eligible-only pathway dropdown is fed by the live
-  // eligibility engine. STPM students go to the degree branch (P5), so skip the call.
+  // Plans step (SPM leavers): the eligible-only pathway dropdown + the course picker
+  // are both fed by one eligibility call (pathway_stats + eligible_courses). STPM
+  // students go to the degree branch (P5), so skip the call.
   useEffect(() => {
     if (status !== 'ready' || !token || !profile) return
-    if (profile.exam_type === 'stpm') { setPathwayStats({}); return }
+    if (profile.exam_type === 'stpm') { setPathwayStats({}); setEligibleCourses([]); return }
     setPathwayLoading(true)
     checkEligibility(profile, { token })
-      .then((res) => setPathwayStats(res.pathway_stats || {}))
-      .catch(() => setPathwayStats(null))
+      .then((res) => { setPathwayStats(res.pathway_stats || {}); setEligibleCourses(res.eligible_courses || []) })
+      .catch(() => { setPathwayStats(null); setEligibleCourses([]) })
       .finally(() => setPathwayLoading(false))
   }, [status, token, profile])
 
@@ -197,8 +185,14 @@ export default function ScholarshipApplyPage() {
   )
   // Every eligible pathway is a public institution, so a chosen pathway implies a
   // public (non-IPTS) destination — derive upu_status rather than asking again.
+  // Changing pathway clears any course chosen under the previous one.
   const setPathway = (key: string) => setForm((p) => ({
-    ...p, chosenPathway: key, upuStatus: key ? 'public_other' : '',
+    ...p, chosenPathway: key, upuStatus: key ? 'public_other' : '', chosenProgramme: null, fieldOfStudy: '',
+  }))
+  // Picking the one decided course also derives the field of study from it (no
+  // separate field question) — the course's field is the field they're aiming for.
+  const setProgramme = (c: ChosenProgramme | null) => setForm((p) => ({
+    ...p, chosenProgramme: c, fieldOfStudy: c?.fieldKey ?? '',
   }))
   const toggleScholarship = (key: string) => setForm((p) => ({
     ...p,
@@ -206,16 +200,6 @@ export default function ScholarshipApplyPage() {
       ? p.otherScholarships.filter((k) => k !== key)
       : [...p.otherScholarships, key],
   }))
-  // Pick top-3 from saved courses; rank = selection order, capped at 3.
-  const toggleTopChoice = (sc: SavedCourseWithStatus) => setForm((p) => {
-    if (p.topChoices.some((c) => c.courseId === sc.course_id)) {
-      return { ...p, topChoices: p.topChoices.filter((c) => c.courseId !== sc.course_id) }
-    }
-    if (p.topChoices.length >= 3) return p
-    return { ...p, topChoices: [...p.topChoices, { courseId: sc.course_id, courseName: sc.course, institution: sc.institution_name || '' }] }
-  })
-  const topChoiceRank = (id: string) => form.topChoices.findIndex((c) => c.courseId === id) + 1
-  const fieldName = (g: FieldTaxonomyEntry) => (locale === 'ms' ? g.name_ms : locale === 'ta' ? g.name_ta : g.name_en)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -516,54 +500,27 @@ export default function ScholarshipApplyPage() {
           </p>
         )}
 
-        {/* Decided pathway (SPM) → field + top-3 courses. Legacy controls: P3 collapses
-            these into one course dropdown filtered to the chosen pathway. */}
-        {form.pathwayCertainty === 'sure' && examType !== 'stpm' && (<>
-        {/* Field of study */}
-        <div>
-          <FieldLabel tip={t('scholarship.apply.tip.field')}>{t('scholarship.apply.fieldLabel')}</FieldLabel>
-          <select className="input" value={form.fieldOfStudy} onChange={(e) => update('fieldOfStudy', e.target.value)}>
-            <option value="">{t('scholarship.apply.fieldPlaceholder')}</option>
-            {fieldGroups.map((g) => (<option key={g.key} value={g.key}>{fieldName(g)}</option>))}
-          </select>
-        </div>
-
-        {/* Top-3 course choices — from the student's saved courses */}
-        <div>
-          <FieldLabel tip={t('scholarship.apply.tip.topChoices')}>{t('scholarship.apply.topChoicesLabel')}</FieldLabel>
-          {savedCourses.length === 0 ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-center">
-              <p className="mb-2 text-sm text-gray-600">{t('scholarship.apply.noSavedCourses')}</p>
-              <Link href="/dashboard" className="text-sm font-medium text-primary-600 hover:underline">
-                {t('scholarship.apply.browseCourses')}
-              </Link>
+        {/* Decided pathway → the one course. Programme pathways (poly/asasi/university/
+            kkom/pismp/iljtm/ilkbs) reveal an eligible-only course combobox; matric/stpm
+            take the stream/track → institution flow (P4 stub for now). */}
+        {form.pathwayCertainty === 'sure' && examType !== 'stpm' && form.chosenPathway && (
+          isProgrammePathway(form.chosenPathway) ? (
+            <div>
+              <FieldLabel required tip={t('scholarship.apply.plan.programmeTip')}>{t('scholarship.apply.plan.programmeLabel')}</FieldLabel>
+              <ProgrammePicker
+                key={form.chosenPathway}
+                courses={programmesForPathway(eligibleCourses, form.chosenPathway)}
+                value={form.chosenProgramme}
+                onChange={setProgramme}
+                loading={pathwayLoading}
+              />
             </div>
           ) : (
-            <>
-              <p className="mb-2 text-xs text-gray-400">{t('scholarship.apply.topChoicesHint')}</p>
-              <div className="space-y-2">
-                {savedCourses.map((sc) => {
-                  const rank = topChoiceRank(sc.course_id)
-                  const on = rank > 0
-                  const full = form.topChoices.length >= 3 && !on
-                  return (
-                    <button key={sc.course_id} type="button" disabled={full} onClick={() => toggleTopChoice(sc)}
-                      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left ${on ? 'border-primary-500 bg-primary-50' : full ? 'border-gray-200 opacity-50' : 'border-gray-300'}`}>
-                      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${on ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                        {on ? rank : '+'}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium text-gray-900">{sc.course}</span>
-                        {sc.institution_name && <span className="block truncate text-xs text-gray-400">{sc.institution_name}</span>}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            </>
-          )}
-        </div>
-        </>)}
+            <p className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+              {t('scholarship.apply.plan.institutionStub')}
+            </p>
+          )
+        )}
 
         {/* Other scholarships — independent funding-overlap signal, shown once answered. */}
         {form.pathwayCertainty !== '' && (

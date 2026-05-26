@@ -83,7 +83,14 @@ the student is eligible for**, reusing HalaTuju's live eligibility engine.
 - **Acceptance:** opens with one question; Sure shows only eligible pathways; reveal + validation +
   mobile work; nothing else visible until triggered.
 
-### P3 — Sure: programme-list pathways  (medium)
+### P3 — Sure: programme-list pathways  ✅ DONE (2026-05-26)
+- Shipped: programme pathways (asasi/university/poly/kkom/pismp/iljtm/ilkbs) reveal `<ProgrammePicker>` — a
+  single-select type-to-search course combobox over the eligible courses (`programmesForPathway()` filters
+  `eligible_courses` from the same `/eligibility/check/` call by `pathway_type`, A–Z). Selecting stores
+  `chosen_programme` (JSON) + derives `field_of_study`. matric/stpm → institution stub (P4). `applyFormError`
+  requires the course on a decided programme pathway (matric/stpm + STPM-students exempt). **Deleted** the gated
+  field-of-study select + top-3 picker + their fetches + 8 dead i18n keys. 84 FE tests, `next build` clean
+  (apply 36.1 kB), i18n parity 1125. On branch, not deployed.
 - **Goal:** Asasi / University / Poly / Kolej Komuniti / PISMP / ILJTM / ILKBS → eligible programme picker → field.
 - **Scope:** ProgrammePicker (eligible programmes for chosen pathway_type), field reveal, store
   chosen_programme, i18n ×3, tests.

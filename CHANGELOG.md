@@ -40,6 +40,24 @@ Context-aware, progressive-disclosure rebuild of the apply-form Plans step. Buil
 - Tests: +6 (eligible-pathways helper from P2a + certainty/chosen-pathway validation + payload mapping).
   Frontend suite **76 passed**; `next build` clean; i18n parity 1126 keys. Branch only — not deployed.
 
+### P3 — Decided-course picker for programme pathways (frontend, 2026-05-26)
+- When a student picks a **programme pathway** (Foundation / Public university / Polytechnic / Community
+  college / Teaching-PISMP / ILJTM / ILKBS), the "decided" branch now reveals a **single-select, type-to-search
+  course combobox** showing **only the courses that pathway makes them eligible for** (A–Z, with institution
+  counts). New `<ProgrammePicker>` component (School-field UX, but constrained to the eligible list — no free text).
+- Courses come from the **same `/eligibility/check/` call** P2 already makes — the page now also keeps
+  `eligible_courses` and filters by `pathway_type` (`programmesForPathway()` helper). No new endpoint/fetch.
+- **Matriculation & STPM** pathways show a short institution stub (their stream→school / track→college flow is P4).
+- Picking a course stores `chosen_programme` (the P1 JSON field) and **derives `field_of_study`** from the
+  course — no separate field question. `applyFormError` now requires the course on a decided programme pathway
+  (matric/STPM exempt — P4; STPM students exempt — P5).
+- **Removed** (delete-as-you-replace): the field-of-study `<select>` + the top-3 saved-courses picker that P2
+  parked under "decided", their data fetches (`getSavedCourses` / `fetchFieldTaxonomy`), and 8 now-dead i18n keys
+  (×3 locales). The one course dropdown replaces both.
+- Tests: +8 (`programmesForPathway` filter/sort, `isProgrammePathway`, course requirement + matric/STPM exemptions,
+  `chosen_programme` mapping). Frontend suite **84 passed**; `next build` clean (`/scholarship/apply` 36.1 kB);
+  i18n parity 1125 keys. Branch only — not deployed.
+
 ## [2.1.5] — Apply-form: My Family ordering + required household size (2026-05-25)
 
 ### Changed

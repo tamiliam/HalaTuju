@@ -3,7 +3,7 @@
  *
  * Logic lives here (node-testable) so the page component stays a thin renderer.
  */
-import type { StudentProfile, ScholarshipApplication } from '@/lib/api'
+import type { StudentProfile, ScholarshipApplication, EligibleCourse } from '@/lib/api'
 
 // SPM grades that count as an "A" for the shortlist (A+, A and A- all count,
 // matching the backend's count_spm_a_grades and the B40 candidate profiles).
@@ -109,6 +109,36 @@ export interface EligiblePathway { key: PathwayKey; count: number }
 // progressive-disclosure split at the top of the Plans step.
 export type PathwayCertainty = '' | 'sure' | 'uncertain'
 
+// ── Plans redesign P3: eligible-programme course picker (the decided course) ──
+// Pathways whose "decided" branch is a programme list (→ course combobox). The two
+// institution pathways (matric, stpm) take the stream→school / track→college flow (P4).
+export const PROGRAMME_PATHWAYS = ['asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs'] as const
+export function isProgrammePathway(key: string): boolean {
+  return (PROGRAMME_PATHWAYS as readonly string[]).includes(key)
+}
+
+/** The single decided programme (Sure branch). Persisted as JSON in `chosen_programme`. */
+export interface ChosenProgramme {
+  courseId: string
+  courseName: string
+  fieldKey: string
+}
+
+/**
+ * The eligible programmes for a chosen pathway: the student's eligible courses
+ * (already narrowed by the engine to what their results qualify them for) filtered
+ * to that `pathway_type`, sorted alphabetically by name. Feeds the course combobox.
+ */
+export function programmesForPathway(
+  courses: EligibleCourse[] | null | undefined,
+  pathwayKey: string,
+): EligibleCourse[] {
+  if (!courses || !pathwayKey) return []
+  return courses
+    .filter((c) => c.pathway_type === pathwayKey)
+    .sort((a, b) => a.course_name.localeCompare(b.course_name))
+}
+
 /**
  * From an eligibility response's `pathway_stats` ({pathway_type: count}), return the
  * pathways the student qualifies for (count > 0) in a fixed display order, each with
@@ -175,6 +205,7 @@ export interface ApplyFormState {
   // routes to the exploration branch (P5). chosenPathway is a PATHWAY_ORDER key.
   pathwayCertainty: PathwayCertainty
   chosenPathway: string             // PathwayKey when certainty === 'sure'
+  chosenProgramme: ChosenProgramme | null  // the single decided course (programme pathways)
   pathwaysConsidered: string[]      // pathway keys (non-exclusive) — Uncertain leanings (P5)
   topChoices: TopChoice[]           // ranked top-3 (from saved courses)
   upuStatus: UpuStatus              // derived from the chosen public pathway
@@ -212,6 +243,7 @@ export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFo
     callLanguage: (profile?.preferred_call_language as CallLanguage) ?? '',
     pathwayCertainty: '',
     chosenPathway: '',
+    chosenProgramme: null,
     pathwaysConsidered: [],
     topChoices: [],
     upuStatus: '',
@@ -268,6 +300,7 @@ export interface ApplicationPayload {
   // My Plans + My Support (Sprint 10; Plans redesign adds certainty + chosen pathway)
   pathway_certainty: string
   chosen_pathway: string
+  chosen_programme: Record<string, unknown>
   pathways_considered: string[]
   top_choices: { rank: number; course_id: string; course_name: string; institution: string }[]
   upu_status: string
@@ -311,6 +344,9 @@ export function buildApplicationPayload(form: ApplyFormState): ApplicationPayloa
     // My Plans + My Support — rank is derived from the top-3 selection order.
     pathway_certainty: form.pathwayCertainty,
     chosen_pathway: form.chosenPathway,
+    chosen_programme: form.chosenProgramme
+      ? { course_id: form.chosenProgramme.courseId, course_name: form.chosenProgramme.courseName, field_key: form.chosenProgramme.fieldKey }
+      : {},
     pathways_considered: form.pathwaysConsidered,
     top_choices: form.topChoices.map((c, i) => ({
       rank: i + 1, course_id: c.courseId, course_name: c.courseName, institution: c.institution,
@@ -361,6 +397,10 @@ export function applyFormError(form: ApplyFormState, examType?: Qualification): 
   // pick a pathway from the eligible-only dropdown.
   if (!form.pathwayCertainty) return 'pathwayCertainty'
   if (form.pathwayCertainty === 'sure' && examType !== 'stpm' && !form.chosenPathway) return 'chosenPathway'
+  // A decided programme-pathway (poly/asasi/university/kkom/pismp/iljtm/ilkbs) needs the one
+  // chosen course; the institution pathways (matric/stpm) take the P4 stream/track flow instead.
+  if (form.pathwayCertainty === 'sure' && examType !== 'stpm'
+      && isProgrammePathway(form.chosenPathway) && !form.chosenProgramme) return 'chosenProgramme'
   // My Support — consent required to apply.
   if (!form.consentToContact) return 'consent'
   return null

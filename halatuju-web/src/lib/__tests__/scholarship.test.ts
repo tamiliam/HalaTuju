@@ -9,6 +9,8 @@ import {
   isValidPhone,
   eligiblePathways,
   PATHWAY_ORDER,
+  programmesForPathway,
+  isProgrammePathway,
   nricChanged,
   fundingTotal,
   emptyDetailsForm,
@@ -27,7 +29,7 @@ import {
   APPLY_RETURN_KEY,
   type ApplyFormState,
 } from '@/lib/scholarship'
-import type { StudentProfile, ScholarshipApplication } from '@/lib/api'
+import type { StudentProfile, ScholarshipApplication, EligibleCourse } from '@/lib/api'
 
 function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
   return {
@@ -49,6 +51,7 @@ function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
     // My Plans
     pathwayCertainty: 'sure',
     chosenPathway: 'poly',
+    chosenProgramme: { courseId: 'C1', courseName: 'Diploma in Engineering', fieldKey: 'engineering' },
     pathwaysConsidered: [],
     topChoices: [],
     upuStatus: '',
@@ -176,6 +179,14 @@ describe('buildApplicationPayload', () => {
     expect(p.pathway_certainty).toBe('sure')
     expect(p.chosen_pathway).toBe('poly')
   })
+  it('maps the chosen programme to a JSON object (and {} when none)', () => {
+    const p = buildApplicationPayload(baseForm({
+      chosenProgramme: { courseId: 'DKA', courseName: 'Diploma Kejuruteraan Awam', fieldKey: 'engineering' },
+    })) as Record<string, unknown>
+    expect(p.chosen_programme).toEqual({ course_id: 'DKA', course_name: 'Diploma Kejuruteraan Awam', field_key: 'engineering' })
+    const none = buildApplicationPayload(baseForm({ chosenProgramme: null })) as Record<string, unknown>
+    expect(none.chosen_programme).toEqual({})
+  })
   it('maps My Plans + My Support (ranks top-3 by order, trims text, empty form_data)', () => {
     const p = buildApplicationPayload(baseForm({
       pathwaysConsidered: ['matrik', 'stpm'],
@@ -257,6 +268,49 @@ describe('applyFormError — Plans pathway question', () => {
     expect(applyFormError(baseForm({ householdIncome: '', pathwayCertainty: '' }))).toBe('income')
     // pathway question is earlier than consent → pathway wins
     expect(applyFormError(baseForm({ pathwayCertainty: '', consentToContact: false }))).toBe('pathwayCertainty')
+  })
+  it('a decided programme pathway needs the one chosen course', () => {
+    expect(applyFormError(baseForm({ chosenPathway: 'poly', chosenProgramme: null }))).toBe('chosenProgramme')
+    expect(applyFormError(baseForm({ chosenPathway: 'poly', chosenProgramme: { courseId: 'C1', courseName: 'X', fieldKey: 'f' } }))).toBeNull()
+  })
+  it('institution pathways (matric/stpm) do NOT require a course here — that is the P4 flow', () => {
+    expect(applyFormError(baseForm({ chosenPathway: 'matric', chosenProgramme: null }))).toBeNull()
+    expect(applyFormError(baseForm({ chosenPathway: 'stpm', chosenProgramme: null }))).toBeNull()
+  })
+  it('STPM students are exempt from the course requirement (their degree picker is P5)', () => {
+    expect(applyFormError(baseForm({ chosenPathway: 'poly', chosenProgramme: null }), 'stpm')).toBeNull()
+  })
+})
+
+describe('isProgrammePathway', () => {
+  it('is true for the seven programme-list pathways', () => {
+    for (const k of ['asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs']) {
+      expect(isProgrammePathway(k)).toBe(true)
+    }
+  })
+  it('is false for the institution pathways (matric/stpm) and unknowns', () => {
+    expect(isProgrammePathway('matric')).toBe(false)
+    expect(isProgrammePathway('stpm')).toBe(false)
+    expect(isProgrammePathway('')).toBe(false)
+    expect(isProgrammePathway('foo')).toBe(false)
+  })
+})
+
+describe('programmesForPathway', () => {
+  const courses = [
+    { course_id: '1', course_name: 'Zoology', pathway_type: 'university' },
+    { course_id: '2', course_name: 'Accounting', pathway_type: 'poly' },
+    { course_id: '3', course_name: 'Botany', pathway_type: 'university' },
+    { course_id: '4', course_name: 'Welding', pathway_type: 'poly' },
+  ] as unknown as EligibleCourse[]
+  it('filters to the chosen pathway and sorts alphabetically by name', () => {
+    expect(programmesForPathway(courses, 'poly').map((c) => c.course_name)).toEqual(['Accounting', 'Welding'])
+    expect(programmesForPathway(courses, 'university').map((c) => c.course_name)).toEqual(['Botany', 'Zoology'])
+  })
+  it('returns [] for a pathway with no eligible courses, or null/empty input', () => {
+    expect(programmesForPathway(courses, 'pismp')).toEqual([])
+    expect(programmesForPathway(null, 'poly')).toEqual([])
+    expect(programmesForPathway(courses, '')).toEqual([])
   })
 })
 
