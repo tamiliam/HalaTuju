@@ -55,6 +55,9 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
             'field_of_study', 'pathways_considered', 'top_choices', 'upu_status',
             'other_scholarships', 'other_scholarships_text',
             'help_university', 'help_scholarship', 'anything_else',
+            # Plans redesign (context-aware step) — all optional/additive
+            'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
+            'chosen_programme', 'uncertainty_reasons', 'uncertainty_note',
         ]
 
     def validate_consent_to_contact(self, value):
@@ -121,6 +124,8 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'field_of_study', 'pathways_considered', 'top_choices', 'upu_status',
             'other_scholarships', 'other_scholarships_text',
             'help_university', 'help_scholarship', 'anything_else', 'mentoring_candidate',
+            'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
+            'chosen_programme', 'uncertainty_reasons', 'uncertainty_note',
             'status', 'bucket', 'shortlist_reason',
             'acknowledged_at', 'submitted_at', 'updated_at',
             'aspirations', 'plans', 'fears', 'justification',

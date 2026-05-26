@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 "Your Plans" step redesign (branch: feature/plans-redesign)
+
+Context-aware, progressive-disclosure rebuild of the apply-form Plans step. Building on a feature branch;
+**not deployed** until the feature completes (one migrate-first + deploy at the end). See
+`.claude/plans/b40-plans-step-redesign.md`.
+
+### P1 — storage foundation (backend, 2026-05-26)
+- **7 new optional fields** on `ScholarshipApplication` (migration `0010_plans_redesign_fields`):
+  `pathway_certainty`, `chosen_pathway`, `pre_u_track`, `pre_u_institution`, `chosen_programme` (json),
+  `uncertainty_reasons` (json), `uncertainty_note`. All blank/default → backward-compatible.
+- Wired through the intake (`ApplicationCreateSerializer`), read (`ApplicationReadSerializer`), and admin
+  serializers, plus `services._APP_FIELDS` + `build_intake_snapshot` (persisted + frozen in the audit snapshot).
+- **Engine unchanged**: shortlisting still gates on `intends_tertiary_2026` + `upu_status=='ipts'`; the new
+  fields don't touch the decision or the `courses` eligibility engine (reused read-only by later sprints).
+- Tests: +2 (sure + uncertain branch round-trip, snapshot, read serializer). Scholarship suite **95 passed**;
+  migration applies cleanly on SQLite.
+
 ## [2.1.5] — Apply-form: My Family ordering + required household size (2026-05-25)
 
 ### Changed
