@@ -364,18 +364,30 @@
       "householdSizeLabel": "Bilangan ahli isi rumah",
       "strLabel": "Keluarga saya menerima STR (Sumbangan Tunai Rahmah).",
       "jkmLabel": "Keluarga saya menerima bantuan JKM.",
-      "pathwayLabel": "Laluan yang dihasratkan",
-      "pathwayPlaceholder": "Pilih satu laluan",
-      "pathway": {
-        "asasi": "Asasi",
-        "matrik": "Matrikulasi",
-        "stpm": "STPM (Tingkatan 6)",
-        "pismp": "PISMP (Perguruan)",
-        "diploma": "Diploma",
-        "degree": "Ijazah Sarjana Muda",
-        "other": "Lain-lain / belum pasti"
+      "plan": {
+        "question": "Adakah anda sudah tahu laluan yang akan diambil?",
+        "sure": "Ya, saya sudah putuskan",
+        "uncertain": "Saya masih menimbang",
+        "tip": "Pilih laluan yang telah anda putuskan. Kami hanya tunjukkan laluan yang layak berdasarkan keputusan anda.",
+        "pathwayLabel": "Laluan mana yang anda pilih?",
+        "pathwayPlaceholder": "Pilih laluan anda",
+        "eligibleCount": "{count} layak",
+        "loading": "Mencari laluan yang anda layak…",
+        "noPathways": "Setelah keputusan anda dimasukkan, kami akan tunjukkan laluan yang anda layak. Tambah keputusan dalam langkah sebelumnya.",
+        "uncertainStub": "Tidak mengapa — ramai pelajar masih menimbang pilihan mereka. Kami akan bantu anda menerokainya.",
+        "stpmStub": "Kami akan tunjukkan program ijazah yang anda layak di sini, berdasarkan keputusan STPM anda.",
+        "pathway": {
+          "matric": "Matrikulasi",
+          "stpm": "STPM (Tingkatan 6)",
+          "asasi": "Asasi",
+          "university": "Ijazah universiti awam",
+          "poly": "Politeknik",
+          "kkom": "Kolej Komuniti",
+          "pismp": "Perguruan (PISMP / IPG)",
+          "iljtm": "Institut latihan kemahiran (ILJTM)",
+          "ilkbs": "Institut kemahiran belia (ILKBS)"
+        }
       },
-      "intendLabel": "Saya berhasrat melanjutkan pengajian tertiari tahun ini.",
       "notesLabel": "Beritahu kami secara ringkas mengapa anda memerlukan bantuan dan apa yang membantu",
       "notesPlaceholder": "Rancangan, harapan atau keadaan anda…",
       "consentLabel": "Saya bersetuju untuk dihubungi mengenai permohonan ini.",
@@ -400,7 +412,9 @@
         "org": "Sila beritahu kami siapa yang merujuk anda.",
         "state": "Sila pilih negeri anda.",
         "phone": "Sila masukkan nombor telefon yang sah, cth. 012-345 6789.",
-        "parentPhone": "Sila masukkan nombor telefon yang sah untuk ibu bapa atau penjaga anda, atau biarkan kosong."
+        "parentPhone": "Sila masukkan nombor telefon yang sah untuk ibu bapa atau penjaga anda, atau biarkan kosong.",
+        "pathwayCertainty": "Beritahu kami sama ada anda sudah putuskan laluan.",
+        "chosenPathway": "Sila pilih laluan yang telah anda putuskan."
       },
       "gate": {
         "readFreely": "Baca semuanya dengan bebas — anda hanya perlu log masuk apabila bersedia untuk memohon.",
@@ -491,17 +505,12 @@
         "parentName": "Nama ibu bapa atau penjaga anda.",
         "parentPhone": "Nombor untuk ibu bapa atau penjaga anda.",
         "callLang": "Bahasa apa yang patut kami gunakan jika kami menelefon anda?",
-        "pathways": "Pilih semua laluan selepas SPM yang anda fikirkan — anda boleh pilih lebih daripada satu.",
-        "upu": "Memberitahu kami destinasi anda. Biasiswa ini untuk laluan awam/kerajaan.",
         "field": "Bidang umum yang anda ingin pelajari.",
         "topChoices": "Pilih sehingga 3 daripada kursus yang anda simpan, mengikut keutamaan. Ia menunjukkan anda telah memikirkannya.",
         "otherScholarships": "Beritahu kami jika anda sudah ada atau memohon pembiayaan lain — ia membantu kami mengutamakan.",
         "helpUniversity": "Memilih kursus, mengisi borang, penyata diri.",
         "helpScholarship": "Temu duga olok-olok, maklum balas permohonan."
       },
-      "pathwaysLabel": "Laluan yang anda pertimbangkan",
-      "upuLabel": "Di mana anda merancang untuk menyambung?",
-      "iptsNote": "Bantuan ini untuk laluan awam — ia terlalu kecil untuk menampung yuran swasta (IPTS). Jika anda juga mempertimbangkan pilihan awam, pilih itu di atas.",
       "fieldLabel": "Bidang pengajian yang anda sasarkan",
       "fieldPlaceholder": "Pilih bidang",
       "topChoicesLabel": "3 pilihan kursus utama anda",
@@ -514,12 +523,6 @@
       "helpScholarshipLabel": "Mahukan bantuan dengan permohonan biasiswa & temu duga?",
       "anythingElseLabel": "Apa-apa lagi yang anda ingin kami tahu? (pilihan)",
       "anythingElsePlaceholder": "Keadaan istimewa, kebimbangan, atau soalan…",
-      "upu": {
-        "applied": "Saya telah memohon melalui UPU",
-        "public_other": "STPM / Matrikulasi / PISMP / TVET",
-        "ipts": "Kolej/universiti swasta (IPTS)",
-        "unknown": "Saya tidak pasti apa itu UPU"
-      },
       "help": {
         "yes": "Ya",
         "no": "Tidak",

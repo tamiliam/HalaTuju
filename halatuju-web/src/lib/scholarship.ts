@@ -105,6 +105,10 @@ export type PathwayKey = typeof PATHWAY_ORDER[number]
 
 export interface EligiblePathway { key: PathwayKey; count: number }
 
+// Has the student decided on a pathway, or are they still exploring? Drives the
+// progressive-disclosure split at the top of the Plans step.
+export type PathwayCertainty = '' | 'sure' | 'uncertain'
+
 /**
  * From an eligibility response's `pathway_stats` ({pathway_type: count}), return the
  * pathways the student qualifies for (count > 0) in a fixed display order, each with
@@ -166,9 +170,14 @@ export interface ApplyFormState {
   parentPhone: string
   callLanguage: CallLanguage
   // My Plans
-  pathwaysConsidered: string[]      // pathway keys (non-exclusive)
+  // Plans redesign: the step opens by asking whether the student has decided on
+  // a pathway. 'sure' reveals a single-select eligible-pathway dropdown; 'uncertain'
+  // routes to the exploration branch (P5). chosenPathway is a PATHWAY_ORDER key.
+  pathwayCertainty: PathwayCertainty
+  chosenPathway: string             // PathwayKey when certainty === 'sure'
+  pathwaysConsidered: string[]      // pathway keys (non-exclusive) — Uncertain leanings (P5)
   topChoices: TopChoice[]           // ranked top-3 (from saved courses)
-  upuStatus: UpuStatus
+  upuStatus: UpuStatus              // derived from the chosen public pathway
   fieldOfStudy: string              // field-taxonomy key
   otherScholarships: string[]       // scholarship keys
   otherScholarshipsText: string
@@ -201,6 +210,8 @@ export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFo
     parentName: guardian?.name ?? '',
     parentPhone: formatPhone(guardian?.phone ?? ''),
     callLanguage: (profile?.preferred_call_language as CallLanguage) ?? '',
+    pathwayCertainty: '',
+    chosenPathway: '',
     pathwaysConsidered: [],
     topChoices: [],
     upuStatus: '',
@@ -254,7 +265,9 @@ export interface ApplicationPayload {
   receives_jkm: boolean
   intends_tertiary_2026: boolean
   consent_to_contact: boolean
-  // My Plans + My Support (Sprint 10)
+  // My Plans + My Support (Sprint 10; Plans redesign adds certainty + chosen pathway)
+  pathway_certainty: string
+  chosen_pathway: string
   pathways_considered: string[]
   top_choices: { rank: number; course_id: string; course_name: string; institution: string }[]
   upu_status: string
@@ -296,6 +309,8 @@ export function buildApplicationPayload(form: ApplyFormState): ApplicationPayloa
     intends_tertiary_2026: form.intendsTertiary2026,
     consent_to_contact: form.consentToContact,
     // My Plans + My Support — rank is derived from the top-3 selection order.
+    pathway_certainty: form.pathwayCertainty,
+    chosen_pathway: form.chosenPathway,
     pathways_considered: form.pathwaysConsidered,
     top_choices: form.topChoices.map((c, i) => ({
       rank: i + 1, course_id: c.courseId, course_name: c.courseName, institution: c.institution,
@@ -318,11 +333,15 @@ export function nricChanged(form: ApplyFormState, profile?: StudentProfile | nul
 
 /**
  * Returns the i18n error sub-key for the first validation problem, or null if the
- * form is ready to submit. Ordered by tab (About Me → My Family → consent) so the
- * earliest-section problem surfaces first. The full NRIC age/state checks and the
- * academic floor are enforced server-side (claim endpoint / profile), not here.
+ * form is ready to submit. Ordered by tab (About Me → My Family → My Plans →
+ * consent) so the earliest-section problem surfaces first. The full NRIC age/state
+ * checks and the academic floor are enforced server-side (claim endpoint / profile).
+ *
+ * `examType` lets the Plans check be context-aware: an SPM leaver who has decided
+ * must pick a pathway from the dropdown, whereas an STPM student's "decided" branch
+ * is a degree picker (built in P5), so the pathway requirement is skipped for them.
  */
-export function applyFormError(form: ApplyFormState): string | null {
+export function applyFormError(form: ApplyFormState, examType?: Qualification): string | null {
   // About Me — all required.
   if (!form.name.trim()) return 'name'
   if (!form.school.trim()) return 'school'
@@ -337,6 +356,11 @@ export function applyFormError(form: ApplyFormState): string | null {
   if (toIntOrNull(form.householdIncome) === null) return 'income'
   // Parent/guardian phone is optional, but if given it must be a valid number.
   if (form.parentPhone.trim() && !isValidPhone(form.parentPhone)) return 'parentPhone'
+  // My Plans — the student must answer whether they've decided; "uncertain" is a
+  // valid answer (it never traps an unsure student). A decided SPM leaver must then
+  // pick a pathway from the eligible-only dropdown.
+  if (!form.pathwayCertainty) return 'pathwayCertainty'
+  if (form.pathwayCertainty === 'sure' && examType !== 'stpm' && !form.chosenPathway) return 'chosenPathway'
   // My Support — consent required to apply.
   if (!form.consentToContact) return 'consent'
   return null

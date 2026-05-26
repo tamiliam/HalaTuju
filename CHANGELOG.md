@@ -22,6 +22,24 @@ Context-aware, progressive-disclosure rebuild of the apply-form Plans step. Buil
 - Tests: +2 (sure + uncertain branch round-trip, snapshot, read serializer). Scholarship suite **95 passed**;
   migration applies cleanly on SQLite.
 
+### P2 — Plans-step shell + eligible-pathway dropdown (frontend, 2026-05-26)
+- The "Your Plans" step now opens with **one question — "Do you know which pathway you'll take?"** →
+  *Yes, I've decided* / *I'm still deciding*. Nothing else shows until it's answered (progressive disclosure).
+- **Decided (SPM leavers)** reveals a single-select **eligible-only pathway dropdown** — each option shows
+  its eligible-programme count (e.g. *"Polytechnic — 85 eligible"*), fed live by the eligibility engine
+  (`/eligibility/check/` → `pathway_stats` → `eligiblePathways()` in fixed order). New `<PathwaySelect>` component.
+  STPM students see a degree-branch stub; *Still deciding* shows an exploration stub (both built in P5).
+- **State + validation**: `ApplyFormState` gains `pathwayCertainty` + `chosenPathway`; payload adds
+  `pathway_certainty` + `chosen_pathway` (P1 fields). `applyFormError` is now exam-type-aware — the pathway
+  question is required (but *"still deciding"* is always a valid answer), and a decided SPM leaver must pick a
+  pathway; STPM students are exempted (degree picker lands in P5). `upu_status` is **derived** from the chosen
+  public pathway (no separate UPU question); `intends_tertiary_2026` stays true by default.
+- **Replaced** the multi-select pathway chips, the UPU radio, and the "I intend to continue" checkbox + their
+  i18n keys (×3 locales). Field-of-study + top-3 course pickers stay gated under "decided" pending P3 (which
+  collapses them into one pathway-filtered course dropdown); "other scholarships" kept as an independent signal.
+- Tests: +6 (eligible-pathways helper from P2a + certainty/chosen-pathway validation + payload mapping).
+  Frontend suite **76 passed**; `next build` clean; i18n parity 1126 keys. Branch only — not deployed.
+
 ## [2.1.5] — Apply-form: My Family ordering + required household size (2026-05-25)
 
 ### Changed

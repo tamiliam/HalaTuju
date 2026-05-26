@@ -66,7 +66,17 @@ the student is eligible for**, reusing HalaTuju's live eligibility engine.
 - **Acceptance:** endpoint returns correct eligible-only pathways+programmes for SPM and STPM test
   profiles; migration applies; model round-trips new fields. **Main risk lives here** (engine reuse).
 
-### P2 — Shell: progressive-disclosure container + Sure/Uncertain + pathway picker  (medium)
+### P2 — Shell: progressive-disclosure container + Sure/Uncertain + pathway picker  ✅ DONE (2026-05-26)
+- Shipped: Plans tab opens with the one question; **Decided** (SPM) reveals the eligible-only `<PathwaySelect>`
+  dropdown (counts, fixed order, fed by `/eligibility/check/` → `eligiblePathways()`); STPM + Uncertain show
+  P5 stubs. `ApplyFormState` +`pathwayCertainty`/`chosenPathway`; payload +`pathway_certainty`/`chosen_pathway`;
+  `applyFormError(form, examType)` requires the question (uncertain always valid) + a pathway for decided SPM
+  (STPM exempt). `upu_status` derived from the chosen public pathway; `intends_tertiary_2026` stays true.
+  Removed chips + UPU radio + intends checkbox + their i18n. Field/top-3 stay gated under "decided" (→P3);
+  other-scholarships kept as an independent signal. 76 FE tests; `next build` clean; i18n parity 1126.
+  Verified via a throwaway `preview-plans` route (3 states), since deleted. On branch, not deployed.
+- **P2 decision:** kept field-of-study + top-3 pickers gated beneath the dropdown rather than deleting now —
+  P3 replaces both with the single pathway-filtered course dropdown (true delete-as-you-replace there).
 - **Goal:** replace the current Plans tab with the reveal shell; Sure reveals eligible-only pathway
   buttons (from P1); Uncertain reveals a stub (built in P5). State + per-step validation.
 - **Scope:** apply/page.tsx (Plans rewrite), PathwaySelect component, lib state, i18n shell ×3, tests.

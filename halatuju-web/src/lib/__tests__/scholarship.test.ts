@@ -47,6 +47,8 @@ function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
     parentPhone: '',
     callLanguage: '',
     // My Plans
+    pathwayCertainty: 'sure',
+    chosenPathway: 'poly',
     pathwaysConsidered: [],
     topChoices: [],
     upuStatus: '',
@@ -169,6 +171,11 @@ describe('buildApplicationPayload', () => {
     expect(p.household_income).toBeNull()
     expect(p.household_size).toBeNull()
   })
+  it('maps the decided pathway (certainty + chosen pathway)', () => {
+    const p = buildApplicationPayload(baseForm({ pathwayCertainty: 'sure', chosenPathway: 'poly' })) as Record<string, unknown>
+    expect(p.pathway_certainty).toBe('sure')
+    expect(p.chosen_pathway).toBe('poly')
+  })
   it('maps My Plans + My Support (ranks top-3 by order, trims text, empty form_data)', () => {
     const p = buildApplicationPayload(baseForm({
       pathwaysConsidered: ['matrik', 'stpm'],
@@ -227,6 +234,29 @@ describe('applyFormError', () => {
   it('surfaces the earliest-tab problem first', () => {
     // both name and consent are wrong → About Me wins (earlier tab)
     expect(applyFormError(baseForm({ name: '', consentToContact: false }))).toBe('name')
+  })
+})
+
+describe('applyFormError — Plans pathway question', () => {
+  it('requires the student to answer whether they have decided', () => {
+    expect(applyFormError(baseForm({ pathwayCertainty: '' }))).toBe('pathwayCertainty')
+  })
+  it('"uncertain" is always a valid answer (never traps an unsure student)', () => {
+    expect(applyFormError(baseForm({ pathwayCertainty: 'uncertain', chosenPathway: '' }))).toBeNull()
+  })
+  it('a decided SPM leaver must pick a pathway', () => {
+    expect(applyFormError(baseForm({ pathwayCertainty: 'sure', chosenPathway: '' }))).toBe('chosenPathway')
+    expect(applyFormError(baseForm({ pathwayCertainty: 'sure', chosenPathway: 'poly' }))).toBeNull()
+  })
+  it('exempts STPM students from the pathway requirement (their degree branch is separate)', () => {
+    expect(applyFormError(baseForm({ pathwayCertainty: 'sure', chosenPathway: '' }), 'stpm')).toBeNull()
+    expect(applyFormError(baseForm({ pathwayCertainty: 'sure', chosenPathway: '' }), 'spm')).toBe('chosenPathway')
+  })
+  it('the Plans question sits between My Family and consent in error order', () => {
+    // income (My Family) is earlier than the pathway question → income wins
+    expect(applyFormError(baseForm({ householdIncome: '', pathwayCertainty: '' }))).toBe('income')
+    // pathway question is earlier than consent → pathway wins
+    expect(applyFormError(baseForm({ pathwayCertainty: '', consentToContact: false }))).toBe('pathwayCertainty')
   })
 })
 

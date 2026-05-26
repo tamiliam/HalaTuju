@@ -8,10 +8,12 @@ import { useT } from '@/lib/i18n'
 import SchoolSelect from '@/components/SchoolSelect'
 import InfoTip from '@/components/InfoTip'
 import Toggle from '@/components/Toggle'
+import PathwaySelect from '@/components/PathwaySelect'
 import {
   submitScholarshipApplication,
   getMyScholarshipApplications,
   claimNric,
+  checkEligibility,
   getSavedCourses,
   fetchFieldTaxonomy,
   type SavedCourseWithStatus,
@@ -22,21 +24,20 @@ import {
   profileAcademicSummary,
   buildApplicationPayload,
   applyFormError,
+  eligiblePathways,
   formatNric,
   formatPhone,
   nricChanged,
   stashApplyForm,
   popApplyStash,
   clearApplyReturn,
-  PATHWAY_OPTIONS,
   REFERRING_ORG_OPTIONS,
   CALL_LANGUAGE_OPTIONS,
   MALAYSIAN_STATES,
-  UPU_OPTIONS,
   HELP_OPTIONS,
   OTHER_SCHOLARSHIP_OPTIONS,
   type ApplyFormState,
-  type TopChoice,
+  type PathwayCertainty,
 } from '@/lib/scholarship'
 
 type TabKey = 'personal' | 'family' | 'results' | 'plans' | 'support'
@@ -47,6 +48,7 @@ const ERROR_TAB: Record<string, TabKey> = {
   name: 'personal', school: 'personal', nric: 'personal', nricTaken: 'personal',
   org: 'personal', state: 'personal', phone: 'personal',
   householdSize: 'family', income: 'family', parentPhone: 'family',
+  pathwayCertainty: 'plans', chosenPathway: 'plans',
   consent: 'support',
 }
 
@@ -90,9 +92,16 @@ export default function ScholarshipApplyPage() {
   // My Plans data: the student's saved courses (top-3 source) + field taxonomy.
   const [savedCourses, setSavedCourses] = useState<SavedCourseWithStatus[]>([])
   const [fieldGroups, setFieldGroups] = useState<FieldTaxonomyEntry[]>([])
+  // Plans redesign: the eligible-only pathway dropdown is driven by the live
+  // eligibility engine (pathway_stats), fetched once the profile is ready.
+  const [pathwayStats, setPathwayStats] = useState<Record<string, number> | null>(null)
+  const [pathwayLoading, setPathwayLoading] = useState(false)
   // Once the form is populated (from a stash on return, or from the profile),
   // don't let the profile effect overwrite the student's in-progress edits.
   const populatedRef = useRef(false)
+  // Context for the Plans step: SPM leavers get the eligible-pathway dropdown;
+  // STPM students get the degree branch (P5), so the pathway requirement is skipped.
+  const examType: 'spm' | 'stpm' = profile?.exam_type === 'stpm' ? 'stpm' : 'spm'
 
   // Returning from the My Results → onboarding detour: restore the stashed
   // in-progress edits and land back on the Results tab. Runs once on mount,
@@ -131,6 +140,18 @@ export default function ScholarshipApplyPage() {
       .catch(() => setFieldGroups([]))
   }, [status, token, profile?.exam_type])
 
+  // Plans step (SPM leavers): the eligible-only pathway dropdown is fed by the live
+  // eligibility engine. STPM students go to the degree branch (P5), so skip the call.
+  useEffect(() => {
+    if (status !== 'ready' || !token || !profile) return
+    if (profile.exam_type === 'stpm') { setPathwayStats({}); return }
+    setPathwayLoading(true)
+    checkEligibility(profile, { token })
+      .then((res) => setPathwayStats(res.pathway_stats || {}))
+      .catch(() => setPathwayStats(null))
+      .finally(() => setPathwayLoading(false))
+  }, [status, token, profile])
+
   // A returning applicant has nothing to fill in here — send them to their
   // application page (which shows status / the follow-up steps). Keeps the
   // form for first-time applicants only and avoids a 409 on resubmit.
@@ -167,11 +188,17 @@ export default function ScholarshipApplyPage() {
   }
 
   // ── My Plans helpers ──
-  const togglePathway = (key: string) => setForm((p) => ({
-    ...p,
-    pathwaysConsidered: p.pathwaysConsidered.includes(key)
-      ? p.pathwaysConsidered.filter((k) => k !== key)
-      : [...p.pathwaysConsidered, key],
+  // Top split: has the student decided? Switching away from "decided" clears the
+  // chosen pathway and its derived destination so stale state never lingers.
+  const setCertainty = (c: PathwayCertainty) => setForm((p) =>
+    c === 'sure'
+      ? { ...p, pathwayCertainty: c }
+      : { ...p, pathwayCertainty: c, chosenPathway: '', upuStatus: '' }
+  )
+  // Every eligible pathway is a public institution, so a chosen pathway implies a
+  // public (non-IPTS) destination — derive upu_status rather than asking again.
+  const setPathway = (key: string) => setForm((p) => ({
+    ...p, chosenPathway: key, upuStatus: key ? 'public_other' : '',
   }))
   const toggleScholarship = (key: string) => setForm((p) => ({
     ...p,
@@ -192,7 +219,7 @@ export default function ScholarshipApplyPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const errKey = applyFormError(form)
+    const errKey = applyFormError(form, examType)
     if (errKey) {
       setError(t(`scholarship.apply.error.${errKey}`))
       setTab(ERROR_TAB[errKey] ?? 'personal')
@@ -288,7 +315,7 @@ export default function ScholarshipApplyPage() {
   // (or an earlier) step, and surface it there. Errors that belong only to a
   // later step don't block — the student fixes those when they reach them.
   const goNext = () => {
-    const errKey = applyFormError(form)
+    const errKey = applyFormError(form, examType)
     if (errKey && TAB_ORDER.indexOf(ERROR_TAB[errKey] ?? 'personal') <= tabIndex) {
       setError(t(`scholarship.apply.error.${errKey}`))
       setTab(ERROR_TAB[errKey] ?? 'personal')
@@ -448,48 +475,50 @@ export default function ScholarshipApplyPage() {
     ),
     plans: (
       <div className="space-y-5">
-        {/* Continuing to tertiary study — engine hard gate */}
-        <label className="flex items-start gap-2 text-sm text-gray-700">
-          <input type="checkbox" className="mt-1" checked={form.intendsTertiary2026}
-            onChange={(e) => update('intendsTertiary2026', e.target.checked)} />
-          {t('scholarship.apply.intendLabel')}
-        </label>
-
-        {/* Pathways considering (non-exclusive multi-select) */}
+        {/* The whole step turns on one question — nothing else shows until it's answered. */}
         <div>
-          <FieldLabel tip={t('scholarship.apply.tip.pathways')}>{t('scholarship.apply.pathwaysLabel')}</FieldLabel>
-          <div className="flex flex-wrap gap-2">
-            {PATHWAY_OPTIONS.map((opt) => {
-              const on = form.pathwaysConsidered.includes(opt)
+          <FieldLabel required tip={t('scholarship.apply.plan.tip')}>{t('scholarship.apply.plan.question')}</FieldLabel>
+          <div className="grid grid-cols-2 gap-3">
+            {(['sure', 'uncertain'] as const).map((c) => {
+              const on = form.pathwayCertainty === c
               return (
-                <button key={opt} type="button" onClick={() => togglePathway(opt)}
-                  className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
-                  {t(`scholarship.apply.pathway.${opt}`)}
+                <button key={c} type="button" onClick={() => setCertainty(c)}
+                  className={`rounded-xl border p-3 text-center text-sm font-medium transition-colors ${on ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-300 text-gray-600 hover:border-gray-400'}`}>
+                  {t(`scholarship.apply.plan.${c}`)}
                 </button>
               )
             })}
           </div>
         </div>
 
-        {/* UPU / destination intent (IPTS-only is out of scope) */}
-        <div>
-          <FieldLabel tip={t('scholarship.apply.tip.upu')}>{t('scholarship.apply.upuLabel')}</FieldLabel>
-          <div className="space-y-2">
-            {UPU_OPTIONS.map((opt) => (
-              <label key={opt} className="flex items-start gap-2 text-sm text-gray-700">
-                <input type="radio" name="upu" className="mt-1" checked={form.upuStatus === opt}
-                  onChange={() => update('upuStatus', opt)} />
-                {t(`scholarship.apply.upu.${opt}`)}
-              </label>
-            ))}
+        {/* Decided → eligible-only pathway dropdown (SPM leavers). STPM students get the
+            degree branch (P5); the course picker for the chosen pathway lands in P3. */}
+        {form.pathwayCertainty === 'sure' && (examType === 'stpm' ? (
+          <p className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+            {t('scholarship.apply.plan.stpmStub')}
+          </p>
+        ) : (
+          <div>
+            <FieldLabel required tip={t('scholarship.apply.plan.tip')}>{t('scholarship.apply.plan.pathwayLabel')}</FieldLabel>
+            <PathwaySelect
+              pathways={eligiblePathways(pathwayStats)}
+              value={form.chosenPathway}
+              onChange={setPathway}
+              loading={pathwayLoading}
+            />
           </div>
-          {form.upuStatus === 'ipts' && (
-            <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
-              {t('scholarship.apply.iptsNote')}
-            </p>
-          )}
-        </div>
+        ))}
 
+        {/* Still deciding → exploration branch (leanings + reasons + free text land in P5). */}
+        {form.pathwayCertainty === 'uncertain' && (
+          <p className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+            {t('scholarship.apply.plan.uncertainStub')}
+          </p>
+        )}
+
+        {/* Decided pathway (SPM) → field + top-3 courses. Legacy controls: P3 collapses
+            these into one course dropdown filtered to the chosen pathway. */}
+        {form.pathwayCertainty === 'sure' && examType !== 'stpm' && (<>
         {/* Field of study */}
         <div>
           <FieldLabel tip={t('scholarship.apply.tip.field')}>{t('scholarship.apply.fieldLabel')}</FieldLabel>
@@ -534,8 +563,10 @@ export default function ScholarshipApplyPage() {
             </>
           )}
         </div>
+        </>)}
 
-        {/* Other scholarships applied/held → funding-overlap signal */}
+        {/* Other scholarships — independent funding-overlap signal, shown once answered. */}
+        {form.pathwayCertainty !== '' && (
         <div>
           <FieldLabel tip={t('scholarship.apply.tip.otherScholarships')}>{t('scholarship.apply.otherScholarshipsLabel')}</FieldLabel>
           <div className="mb-2 flex flex-wrap gap-2">
@@ -553,6 +584,7 @@ export default function ScholarshipApplyPage() {
             placeholder={t('scholarship.apply.otherScholarshipsPlaceholder')}
             onChange={(e) => update('otherScholarshipsText', e.target.value)} />
         </div>
+        )}
       </div>
     ),
     support: (
