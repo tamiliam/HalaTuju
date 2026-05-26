@@ -133,6 +133,7 @@ export default function AuthGateModal() {
         if (p.state) syncData.preferred_state = p.state
         if (p.colorblind) syncData.colorblind = p.colorblind
         if (p.disability) syncData.disability = p.disability
+        if (typeof p.coqScore === 'number') syncData.coq_score = p.coqScore
       }
       const signals = localStorage.getItem(KEY_QUIZ_SIGNALS)
       if (signals) syncData.student_signals = JSON.parse(signals)

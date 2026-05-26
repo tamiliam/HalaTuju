@@ -104,6 +104,16 @@ export default function ProfileInputPage() {
       const muetBand = localStorage.getItem(KEY_MUET_BAND)
       if (muetBand) syncPayload.muet_band = parseInt(muetBand)
 
+      // Co-curricular (CoQ) score — entered in the grades step, kept on the
+      // localStorage profile; persist it to the DB like any other result.
+      const profStr = localStorage.getItem(KEY_PROFILE)
+      if (profStr) {
+        try {
+          const p = JSON.parse(profStr)
+          if (typeof p.coqScore === 'number') syncPayload.coq_score = p.coqScore
+        } catch { /* ignore */ }
+      }
+
       try {
         await syncProfile(syncPayload, { token })
         await refreshProfile()

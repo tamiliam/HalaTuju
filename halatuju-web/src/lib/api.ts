@@ -538,6 +538,7 @@ export interface SyncProfileData {
   stpm_grades?: Record<string, string>
   stpm_cgpa?: number
   muet_band?: number
+  coq_score?: number
 }
 
 export async function syncProfile(

@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.2] — Persist `coq_score` to the profile (co-curricular score now stored, not just local) (2026-05-27)
+
+Follow-up to 2.2.1, fixing the *root* gap rather than just tolerating it. `coq_score` was collected at onboarding
+but only kept in `localStorage` and **never synced**, so it was `null` for 100% of DB profiles (2.2.1 just defaulted
+the null). The profile-sync payload now includes `coq_score` (both the onboarding sync and the auth-gate sync read it
+from the saved profile); the backend already persisted it via `ProfileUpdateSerializer`. +1 sync regression test
+(`test_sync_persists_coq_score`). A localStorage↔sync parity audit confirmed `coq` was the *only* un-synced field.
+**Forward-only** — existing profiles persist `coq` on their next onboarding/sync (no backfill; nothing server-side
+reads `coq`, so no decision impact). Merit stays a computed-on-the-fly derivative (correctly **not** stored).
+Frontend (`halatuju-web`) + a backend test.
+
 ## [2.2.1] — Hotfix: eligibility 400 on null `coq_score` blanked the Plans pathway dropdown (2026-05-27)
 
 Hotfix for the 2.2.0 Plans redesign. The apply page posts the **full** student profile to `/eligibility/check/`;

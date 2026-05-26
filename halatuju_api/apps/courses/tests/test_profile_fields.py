@@ -267,6 +267,19 @@ class TestProfileSyncStpmFields:
         assert profile.muet_band == 4
         assert profile.spm_prereq_grades == {'bm': 'A'}
 
+    def test_sync_persists_coq_score(self):
+        """CoQ (co-curricular) score is entered in onboarding and must persist to the
+        DB like any other result — the apply form reads it from the profile. Regression
+        for the 2.2.0 gap where coq_score was collected client-side but never synced."""
+        request = self._sync_request({
+            'grades': {'bm': 'A', 'eng': 'B', 'math': 'A'},
+            'coq_score': 7.5,
+        }, user_id='sync-coq-user')
+        response = ProfileSyncView().post(request)
+        assert response.status_code == 200
+        profile = StudentProfile.objects.get(supabase_user_id='sync-coq-user')
+        assert profile.coq_score == 7.5
+
     def test_sync_updates_existing_profile_stpm_fields(self):
         StudentProfile.objects.create(
             supabase_user_id='sync-stpm-update',
