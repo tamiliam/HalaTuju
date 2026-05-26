@@ -382,7 +382,30 @@
         "programmeNoMatch": "Tiada padanan — cuba perkataan lain.",
         "programmeAtN": "{n} institusi",
         "noProgrammes": "Kami tidak menemui kursus yang anda layak untuk laluan ini. Cuba laluan lain, atau beritahu kami lebih lanjut pada langkah seterusnya.",
-        "institutionStub": "Seterusnya, kami akan bantu anda memilih institusi untuk laluan ini. (Akan datang.)",
+        "trackLabel": "Trek matrikulasi yang mana?",
+        "trackTip": "Pilih trek yang anda layak dan telah putuskan — ia menentukan kolej yang boleh anda pilih.",
+        "track": {
+          "sains": "Sains",
+          "kejuruteraan": "Kejuruteraan",
+          "sains_komputer": "Sains Komputer",
+          "perakaunan": "Perakaunan"
+        },
+        "noTracks": "Kami tidak dapat memadankan trek matrikulasi dengan keputusan anda. Cuba laluan lain, atau beritahu kami lebih lanjut pada langkah seterusnya.",
+        "collegeLabel": "Kolej matrikulasi yang mana?",
+        "collegePlaceholder": "Mula menaip kolej, cth. KM Perak",
+        "collegeTip": "Pilih kolej matrikulasi yang telah anda putuskan — hanya yang menawarkan trek anda ditunjukkan.",
+        "streamLabel": "Aliran yang mana?",
+        "streamTip": "Pilih aliran Tingkatan 6 anda — ia menentukan sekolah yang boleh anda pilih. Pilih \"Belum pasti\" jika anda belum putuskan.",
+        "stream": {
+          "sains": "Sains",
+          "sains_sosial": "Sains Sosial",
+          "not_sure": "Belum pasti"
+        },
+        "schoolLabel": "Sekolah Tingkatan 6 yang mana?",
+        "schoolPlaceholder": "Mula menaip nama sekolah",
+        "schoolTip": "Pilih pusat Tingkatan 6 yang telah anda putuskan — hanya yang menawarkan aliran anda ditunjukkan.",
+        "institutionNoMatch": "Tiada padanan — cuba perkataan lain.",
+        "institutionMore": "Menunjukkan padanan pertama — terus menaip untuk menyempitkan.",
         "pathway": {
           "matric": "Matrikulasi",
           "stpm": "STPM (Tingkatan 6)",

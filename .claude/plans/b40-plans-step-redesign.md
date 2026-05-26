@@ -96,7 +96,12 @@ the student is eligible for**, reusing HalaTuju's live eligibility engine.
   chosen_programme, i18n ×3, tests.
 - **Acceptance:** each pathway reveals only eligible programmes; field saved; round-trips.
 
-### P4 — Sure: institution pathways (STPM + Matriculation)  (medium-high)
+### P4 — Sure: institution pathways (STPM + Matriculation)  ✅ DONE (2026-05-26)
+- Shipped: matric → eligible-track chips (`eligibleMatricTracks` from `/calculate/pathways/`) → college picker
+  (`collegesForTrack`); STPM → stream chips (Sains/Sains Sosial/Not sure) → school picker (`stpmSchoolsForStream`
+  over the 584 centres). New generic `<InstitutionPicker>` (type-to-search name combobox) reused for both. Stores
+  `pre_u_track` + `pre_u_institution`; `applyFormError` requires both on a decided matric/STPM pathway (STPM-students
+  exempt). `field_of_study` left empty for pre-U (no degree yet). 93 FE tests, build clean, i18n 1144. On branch.
 - **Goal:** Form 6 → stream → school(by stream) → field; Matriculation → track(eligible) → college(by track) → field.
 - **Scope:** Stream/Track selectors + School/College pickers (reuse SchoolSelect pattern), reveal
   logic, store stpm_stream/school + matric_track/college, i18n ×3, tests.

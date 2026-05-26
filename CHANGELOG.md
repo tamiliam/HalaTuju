@@ -58,6 +58,22 @@ Context-aware, progressive-disclosure rebuild of the apply-form Plans step. Buil
   `chosen_programme` mapping). Frontend suite **84 passed**; `next build` clean (`/scholarship/apply` 36.1 kB);
   i18n parity 1125 keys. Branch only — not deployed.
 
+### P4 — Institution pathways: Matriculation track→college + STPM stream→school (frontend, 2026-05-26)
+- The two non-programme pathways now have their decided sub-flows (replacing the P3 institution stub):
+  - **Matriculation** → **track** chips (only the tracks the student qualifies for, from `/calculate/pathways/`
+    via `eligibleMatricTracks()`) → **college** picker (`MATRIC_COLLEGES` filtered to that track by `collegesForTrack()`).
+  - **STPM / Form 6** → **stream** chips (Sains / Sains Sosial / *Not sure*) → **school** picker (the 584 Form 6
+    centres in `stpm-schools.json`, filtered to that stream by `stpmSchoolsForStream()`).
+- New generic `<InstitutionPicker>` (type-to-search name combobox, capped list + "keep typing" hint) — reused for
+  both the college list and the 584-school list. Matric track eligibility comes from an extra `/calculate/pathways/`
+  call fired alongside the existing eligibility call (SPM leavers only).
+- Storage: track/stream → `pre_u_track`, college/school → `pre_u_institution` (P1 fields). `applyFormError` requires
+  both on a decided matric/STPM pathway (STPM students still exempt — their degree picker is P5). `field_of_study`
+  is intentionally left empty for pre-U pathways (no degree chosen yet; the track/stream is the signal).
+- Tests: +9 (`isInstitutionPathway`, `eligibleMatricTracks`, `collegesForTrack`, `stpmSchoolsForStream`, the
+  track/stream + institution validation, payload mapping). Frontend suite **93 passed**; `next build` clean
+  (`/scholarship/apply` 37.2 kB); i18n parity 1144 keys. Branch only — not deployed.
+
 ## [2.1.5] — Apply-form: My Family ordering + required household size (2026-05-25)
 
 ### Changed

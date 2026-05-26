@@ -11,6 +11,9 @@ import {
   PATHWAY_ORDER,
   programmesForPathway,
   isProgrammePathway,
+  isInstitutionPathway,
+  eligibleMatricTracks,
+  STPM_STREAMS,
   nricChanged,
   fundingTotal,
   emptyDetailsForm,
@@ -29,7 +32,9 @@ import {
   APPLY_RETURN_KEY,
   type ApplyFormState,
 } from '@/lib/scholarship'
-import type { StudentProfile, ScholarshipApplication, EligibleCourse } from '@/lib/api'
+import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult } from '@/lib/api'
+import { collegesForTrack } from '@/data/matric-colleges'
+import { stpmSchoolsForStream, STPM_SCHOOLS } from '@/data/stpm-schools'
 
 function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
   return {
@@ -52,6 +57,8 @@ function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
     pathwayCertainty: 'sure',
     chosenPathway: 'poly',
     chosenProgramme: { courseId: 'C1', courseName: 'Diploma in Engineering', fieldKey: 'engineering' },
+    preUTrack: '',
+    preUInstitution: '',
     pathwaysConsidered: [],
     topChoices: [],
     upuStatus: '',
@@ -187,6 +194,11 @@ describe('buildApplicationPayload', () => {
     const none = buildApplicationPayload(baseForm({ chosenProgramme: null })) as Record<string, unknown>
     expect(none.chosen_programme).toEqual({})
   })
+  it('maps the institution pathway (pre-U track/stream + institution)', () => {
+    const p = buildApplicationPayload(baseForm({ chosenPathway: 'matric', preUTrack: 'sains', preUInstitution: 'KM Perak' })) as Record<string, unknown>
+    expect(p.pre_u_track).toBe('sains')
+    expect(p.pre_u_institution).toBe('KM Perak')
+  })
   it('maps My Plans + My Support (ranks top-3 by order, trims text, empty form_data)', () => {
     const p = buildApplicationPayload(baseForm({
       pathwaysConsidered: ['matrik', 'stpm'],
@@ -273,12 +285,76 @@ describe('applyFormError — Plans pathway question', () => {
     expect(applyFormError(baseForm({ chosenPathway: 'poly', chosenProgramme: null }))).toBe('chosenProgramme')
     expect(applyFormError(baseForm({ chosenPathway: 'poly', chosenProgramme: { courseId: 'C1', courseName: 'X', fieldKey: 'f' } }))).toBeNull()
   })
-  it('institution pathways (matric/stpm) do NOT require a course here — that is the P4 flow', () => {
-    expect(applyFormError(baseForm({ chosenPathway: 'matric', chosenProgramme: null }))).toBeNull()
-    expect(applyFormError(baseForm({ chosenPathway: 'stpm', chosenProgramme: null }))).toBeNull()
+  it('institution pathways (matric/stpm) need a track + institution, not a course', () => {
+    // no course required (chosenProgramme stays null); the track + institution are
+    expect(applyFormError(baseForm({ chosenPathway: 'matric', chosenProgramme: null, preUTrack: 'sains', preUInstitution: 'KM Perak' }))).toBeNull()
+    expect(applyFormError(baseForm({ chosenPathway: 'stpm', chosenProgramme: null, preUTrack: 'sains', preUInstitution: 'SMK X' }))).toBeNull()
   })
   it('STPM students are exempt from the course requirement (their degree picker is P5)', () => {
     expect(applyFormError(baseForm({ chosenPathway: 'poly', chosenProgramme: null }), 'stpm')).toBeNull()
+  })
+  it('a decided institution pathway needs the track/stream, then the college/school', () => {
+    expect(applyFormError(baseForm({ chosenPathway: 'matric', preUTrack: '', preUInstitution: '' }))).toBe('preUTrack')
+    expect(applyFormError(baseForm({ chosenPathway: 'matric', preUTrack: 'sains', preUInstitution: '' }))).toBe('preUInstitution')
+    expect(applyFormError(baseForm({ chosenPathway: 'matric', preUTrack: 'sains', preUInstitution: 'KM Perak' }))).toBeNull()
+    expect(applyFormError(baseForm({ chosenPathway: 'stpm', preUTrack: '', preUInstitution: '' }))).toBe('preUTrack')
+    // "not sure" stream is valid; a school is still required
+    expect(applyFormError(baseForm({ chosenPathway: 'stpm', preUTrack: 'not_sure', preUInstitution: 'SMK X' }))).toBeNull()
+  })
+  it('STPM students are exempt from the institution requirement too (P5)', () => {
+    expect(applyFormError(baseForm({ chosenPathway: 'matric', preUTrack: '', preUInstitution: '' }), 'stpm')).toBeNull()
+  })
+})
+
+describe('isInstitutionPathway', () => {
+  it('is true only for matriculation + STPM', () => {
+    expect(isInstitutionPathway('matric')).toBe(true)
+    expect(isInstitutionPathway('stpm')).toBe(true)
+    expect(isInstitutionPathway('poly')).toBe(false)
+    expect(isInstitutionPathway('')).toBe(false)
+  })
+})
+
+describe('eligibleMatricTracks', () => {
+  const pathways = [
+    { pathway: 'matric', trackId: 'sains', eligible: true },
+    { pathway: 'matric', trackId: 'kejuruteraan', eligible: false },
+    { pathway: 'matric', trackId: 'perakaunan', eligible: true },
+    { pathway: 'stpm', trackId: 'sains', eligible: true },
+  ] as unknown as PathwayResult[]
+  it('returns eligible matric track ids in order, ignoring ineligible + stpm', () => {
+    expect(eligibleMatricTracks(pathways)).toEqual(['sains', 'perakaunan'])
+  })
+  it('handles null/empty', () => {
+    expect(eligibleMatricTracks(null)).toEqual([])
+    expect(eligibleMatricTracks([])).toEqual([])
+  })
+})
+
+describe('STPM_STREAMS', () => {
+  it('offers science, social science, and a not-sure escape', () => {
+    expect(STPM_STREAMS).toEqual(['sains', 'sains_sosial', 'not_sure'])
+  })
+})
+
+describe('collegesForTrack (matric data)', () => {
+  it('returns only colleges offering the track', () => {
+    const eng = collegesForTrack('kejuruteraan')
+    expect(eng.length).toBeGreaterThan(0)
+    expect(eng.every((c) => (c.tracks as string[]).includes('kejuruteraan'))).toBe(true)
+    // science is offered far more widely than the engineering-only colleges
+    expect(collegesForTrack('sains').length).toBeGreaterThan(eng.length)
+    expect(collegesForTrack('nope')).toEqual([])
+  })
+})
+
+describe('stpmSchoolsForStream (STPM data)', () => {
+  it('filters by stream label, and returns every centre for not_sure', () => {
+    const sains = stpmSchoolsForStream('sains')
+    expect(sains.length).toBeGreaterThan(0)
+    expect(sains.every((s) => s.streams.includes('Sains'))).toBe(true)
+    expect(stpmSchoolsForStream('sains_sosial').every((s) => s.streams.includes('Sains Sosial'))).toBe(true)
+    expect(stpmSchoolsForStream('not_sure').length).toBe(STPM_SCHOOLS.length)
   })
 })
 

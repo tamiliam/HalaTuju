@@ -10,11 +10,13 @@ import InfoTip from '@/components/InfoTip'
 import Toggle from '@/components/Toggle'
 import PathwaySelect from '@/components/PathwaySelect'
 import ProgrammePicker from '@/components/ProgrammePicker'
+import InstitutionPicker from '@/components/InstitutionPicker'
 import {
   submitScholarshipApplication,
   getMyScholarshipApplications,
   claimNric,
   checkEligibility,
+  calculatePathways,
   type EligibleCourse,
 } from '@/lib/api'
 import {
@@ -25,6 +27,9 @@ import {
   eligiblePathways,
   programmesForPathway,
   isProgrammePathway,
+  isInstitutionPathway,
+  eligibleMatricTracks,
+  STPM_STREAMS,
   formatNric,
   formatPhone,
   nricChanged,
@@ -40,6 +45,8 @@ import {
   type PathwayCertainty,
   type ChosenProgramme,
 } from '@/lib/scholarship'
+import { collegesForTrack } from '@/data/matric-colleges'
+import { stpmSchoolsForStream } from '@/data/stpm-schools'
 
 type TabKey = 'personal' | 'family' | 'results' | 'plans' | 'support'
 const TAB_ORDER: TabKey[] = ['personal', 'family', 'results', 'plans', 'support']
@@ -49,7 +56,8 @@ const ERROR_TAB: Record<string, TabKey> = {
   name: 'personal', school: 'personal', nric: 'personal', nricTaken: 'personal',
   org: 'personal', state: 'personal', phone: 'personal',
   householdSize: 'family', income: 'family', parentPhone: 'family',
-  pathwayCertainty: 'plans', chosenPathway: 'plans',
+  pathwayCertainty: 'plans', chosenPathway: 'plans', chosenProgramme: 'plans',
+  preUTrack: 'plans', preUInstitution: 'plans',
   consent: 'support',
 }
 
@@ -94,6 +102,7 @@ export default function ScholarshipApplyPage() {
   // the live eligibility engine (pathway_stats + eligible_courses), fetched once ready.
   const [pathwayStats, setPathwayStats] = useState<Record<string, number> | null>(null)
   const [eligibleCourses, setEligibleCourses] = useState<EligibleCourse[]>([])
+  const [matricTracks, setMatricTracks] = useState<string[]>([])   // eligible matric track ids (P4)
   const [pathwayLoading, setPathwayLoading] = useState(false)
   // Once the form is populated (from a stash on return, or from the profile),
   // don't let the profile effect overwrite the student's in-progress edits.
@@ -127,16 +136,19 @@ export default function ScholarshipApplyPage() {
     }
   }, [profile])
 
-  // Plans step (SPM leavers): the eligible-only pathway dropdown + the course picker
-  // are both fed by one eligibility call (pathway_stats + eligible_courses). STPM
-  // students go to the degree branch (P5), so skip the call.
+  // Plans step (SPM leavers): one eligibility call feeds the pathway dropdown + the
+  // course picker (pathway_stats + eligible_courses); /calculate/pathways/ feeds the
+  // eligible matriculation tracks. STPM students go to the degree branch (P5), skip both.
   useEffect(() => {
     if (status !== 'ready' || !token || !profile) return
-    if (profile.exam_type === 'stpm') { setPathwayStats({}); setEligibleCourses([]); return }
+    if (profile.exam_type === 'stpm') { setPathwayStats({}); setEligibleCourses([]); setMatricTracks([]); return }
     setPathwayLoading(true)
-    checkEligibility(profile, { token })
-      .then((res) => { setPathwayStats(res.pathway_stats || {}); setEligibleCourses(res.eligible_courses || []) })
-      .catch(() => { setPathwayStats(null); setEligibleCourses([]) })
+    Promise.all([
+      checkEligibility(profile, { token })
+        .then((res) => { setPathwayStats(res.pathway_stats || {}); setEligibleCourses(res.eligible_courses || []) }),
+      calculatePathways(profile.grades || {}, profile.coq_score ?? 0, null, { token })
+        .then((res) => setMatricTracks(eligibleMatricTracks(res.pathways))),
+    ]).catch(() => { setPathwayStats(null); setEligibleCourses([]); setMatricTracks([]) })
       .finally(() => setPathwayLoading(false))
   }, [status, token, profile])
 
@@ -187,13 +199,18 @@ export default function ScholarshipApplyPage() {
   // public (non-IPTS) destination — derive upu_status rather than asking again.
   // Changing pathway clears any course chosen under the previous one.
   const setPathway = (key: string) => setForm((p) => ({
-    ...p, chosenPathway: key, upuStatus: key ? 'public_other' : '', chosenProgramme: null, fieldOfStudy: '',
+    ...p, chosenPathway: key, upuStatus: key ? 'public_other' : '',
+    chosenProgramme: null, fieldOfStudy: '', preUTrack: '', preUInstitution: '',
   }))
   // Picking the one decided course also derives the field of study from it (no
   // separate field question) — the course's field is the field they're aiming for.
   const setProgramme = (c: ChosenProgramme | null) => setForm((p) => ({
     ...p, chosenProgramme: c, fieldOfStudy: c?.fieldKey ?? '',
   }))
+  // Institution pathways (P4): track/stream → college/school. Changing the track or
+  // stream clears the institution, since the college/school list then changes.
+  const setPreUTrack = (key: string) => setForm((p) => ({ ...p, preUTrack: key, preUInstitution: '' }))
+  const setPreUInstitution = (name: string) => setForm((p) => ({ ...p, preUInstitution: name }))
   const toggleScholarship = (key: string) => setForm((p) => ({
     ...p,
     otherScholarships: p.otherScholarships.includes(key)
@@ -515,10 +532,70 @@ export default function ScholarshipApplyPage() {
                 loading={pathwayLoading}
               />
             </div>
+          ) : form.chosenPathway === 'matric' ? (
+            <div className="space-y-4">
+              <div>
+                <FieldLabel required tip={t('scholarship.apply.plan.trackTip')}>{t('scholarship.apply.plan.trackLabel')}</FieldLabel>
+                {pathwayLoading ? (
+                  <p className="text-sm text-gray-400">{t('scholarship.apply.plan.loading')}</p>
+                ) : matricTracks.length === 0 ? (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-gray-600">{t('scholarship.apply.plan.noTracks')}</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {matricTracks.map((tr) => {
+                      const on = form.preUTrack === tr
+                      return (
+                        <button key={tr} type="button" onClick={() => setPreUTrack(tr)}
+                          className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                          {t(`scholarship.apply.plan.track.${tr}`)}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+              {form.preUTrack && (
+                <div>
+                  <FieldLabel required tip={t('scholarship.apply.plan.collegeTip')}>{t('scholarship.apply.plan.collegeLabel')}</FieldLabel>
+                  <InstitutionPicker
+                    key={`m-${form.preUTrack}`}
+                    options={collegesForTrack(form.preUTrack).map((c) => ({ name: c.name, hint: c.state }))}
+                    value={form.preUInstitution}
+                    onChange={setPreUInstitution}
+                    placeholder={t('scholarship.apply.plan.collegePlaceholder')}
+                  />
+                </div>
+              )}
+            </div>
           ) : (
-            <p className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-              {t('scholarship.apply.plan.institutionStub')}
-            </p>
+            <div className="space-y-4">
+              <div>
+                <FieldLabel required tip={t('scholarship.apply.plan.streamTip')}>{t('scholarship.apply.plan.streamLabel')}</FieldLabel>
+                <div className="flex flex-wrap gap-2">
+                  {STPM_STREAMS.map((s) => {
+                    const on = form.preUTrack === s
+                    return (
+                      <button key={s} type="button" onClick={() => setPreUTrack(s)}
+                        className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                        {t(`scholarship.apply.plan.stream.${s}`)}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+              {form.preUTrack && (
+                <div>
+                  <FieldLabel required tip={t('scholarship.apply.plan.schoolTip')}>{t('scholarship.apply.plan.schoolLabel')}</FieldLabel>
+                  <InstitutionPicker
+                    key={`s-${form.preUTrack}`}
+                    options={stpmSchoolsForStream(form.preUTrack).map((s) => ({ name: s.name, hint: s.state }))}
+                    value={form.preUInstitution}
+                    onChange={setPreUInstitution}
+                    placeholder={t('scholarship.apply.plan.schoolPlaceholder')}
+                  />
+                </div>
+              )}
+            </div>
           )
         )}
 

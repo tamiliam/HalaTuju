@@ -3,7 +3,7 @@
  *
  * Logic lives here (node-testable) so the page component stays a thin renderer.
  */
-import type { StudentProfile, ScholarshipApplication, EligibleCourse } from '@/lib/api'
+import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult } from '@/lib/api'
 
 // SPM grades that count as an "A" for the shortlist (A+, A and A- all count,
 // matching the backend's count_spm_a_grades and the B40 candidate profiles).
@@ -139,6 +139,27 @@ export function programmesForPathway(
     .sort((a, b) => a.course_name.localeCompare(b.course_name))
 }
 
+// ── Plans redesign P4: institution pathways (Matriculation + STPM Form 6) ──
+// The two pathways whose decided branch is an institution (track/stream → college/school),
+// not a course list. They store onto pre_u_track + pre_u_institution.
+export function isInstitutionPathway(key: string): boolean {
+  return key === 'matric' || key === 'stpm'
+}
+
+// STPM Form 6 streams (fixed). "not_sure" is a valid answer — the student still names a
+// school. Keys map to the school data's stream labels (Sains / Sains Sosial).
+export const STPM_STREAMS = ['sains', 'sains_sosial', 'not_sure'] as const
+
+/**
+ * The matriculation tracks the student qualifies for, from a /calculate/pathways/
+ * response — the matric entries flagged eligible, in the engine's order. Track ids
+ * (sains/kejuruteraan/sains_komputer/perakaunan) match the college data's track keys.
+ */
+export function eligibleMatricTracks(pathways: PathwayResult[] | null | undefined): string[] {
+  if (!pathways) return []
+  return pathways.filter((p) => p.pathway === 'matric' && p.eligible).map((p) => p.trackId)
+}
+
 /**
  * From an eligibility response's `pathway_stats` ({pathway_type: count}), return the
  * pathways the student qualifies for (count > 0) in a fixed display order, each with
@@ -206,6 +227,8 @@ export interface ApplyFormState {
   pathwayCertainty: PathwayCertainty
   chosenPathway: string             // PathwayKey when certainty === 'sure'
   chosenProgramme: ChosenProgramme | null  // the single decided course (programme pathways)
+  preUTrack: string                 // matric track / STPM stream (institution pathways)
+  preUInstitution: string           // matric college / STPM school name
   pathwaysConsidered: string[]      // pathway keys (non-exclusive) — Uncertain leanings (P5)
   topChoices: TopChoice[]           // ranked top-3 (from saved courses)
   upuStatus: UpuStatus              // derived from the chosen public pathway
@@ -244,6 +267,8 @@ export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFo
     pathwayCertainty: '',
     chosenPathway: '',
     chosenProgramme: null,
+    preUTrack: '',
+    preUInstitution: '',
     pathwaysConsidered: [],
     topChoices: [],
     upuStatus: '',
@@ -301,6 +326,8 @@ export interface ApplicationPayload {
   pathway_certainty: string
   chosen_pathway: string
   chosen_programme: Record<string, unknown>
+  pre_u_track: string
+  pre_u_institution: string
   pathways_considered: string[]
   top_choices: { rank: number; course_id: string; course_name: string; institution: string }[]
   upu_status: string
@@ -347,6 +374,8 @@ export function buildApplicationPayload(form: ApplyFormState): ApplicationPayloa
     chosen_programme: form.chosenProgramme
       ? { course_id: form.chosenProgramme.courseId, course_name: form.chosenProgramme.courseName, field_key: form.chosenProgramme.fieldKey }
       : {},
+    pre_u_track: form.preUTrack,
+    pre_u_institution: form.preUInstitution,
     pathways_considered: form.pathwaysConsidered,
     top_choices: form.topChoices.map((c, i) => ({
       rank: i + 1, course_id: c.courseId, course_name: c.courseName, institution: c.institution,
@@ -401,6 +430,12 @@ export function applyFormError(form: ApplyFormState, examType?: Qualification): 
   // chosen course; the institution pathways (matric/stpm) take the P4 stream/track flow instead.
   if (form.pathwayCertainty === 'sure' && examType !== 'stpm'
       && isProgrammePathway(form.chosenPathway) && !form.chosenProgramme) return 'chosenProgramme'
+  // A decided institution pathway (matriculation / STPM) needs the track-or-stream and
+  // then the college-or-school.
+  if (form.pathwayCertainty === 'sure' && examType !== 'stpm' && isInstitutionPathway(form.chosenPathway)) {
+    if (!form.preUTrack) return 'preUTrack'
+    if (!form.preUInstitution) return 'preUInstitution'
+  }
   // My Support — consent required to apply.
   if (!form.consentToContact) return 'consent'
   return null

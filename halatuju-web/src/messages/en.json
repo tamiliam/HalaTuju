@@ -382,7 +382,30 @@
         "programmeNoMatch": "No match — try a different word.",
         "programmeAtN": "{n} institutions",
         "noProgrammes": "We couldn't find eligible courses for this pathway. Try another pathway, or tell us more in the next step.",
-        "institutionStub": "Next, we'll help you choose your institution for this pathway. (Coming soon.)",
+        "trackLabel": "Which matriculation track?",
+        "trackTip": "Pick the track you qualify for and have decided on — it sets which colleges you can choose from.",
+        "track": {
+          "sains": "Science",
+          "kejuruteraan": "Engineering",
+          "sains_komputer": "Computer Science",
+          "perakaunan": "Accounting"
+        },
+        "noTracks": "We couldn't match a matriculation track to your results. Try another pathway, or tell us more in the next step.",
+        "collegeLabel": "Which matriculation college?",
+        "collegePlaceholder": "Start typing a college, e.g. KM Perak",
+        "collegeTip": "Choose the matriculation college you've decided on — only those offering your track are shown.",
+        "streamLabel": "Which stream?",
+        "streamTip": "Pick your Form 6 stream — it sets which schools you can choose from. Choose \"Not sure yet\" if you haven't decided.",
+        "stream": {
+          "sains": "Science (Sains)",
+          "sains_sosial": "Social Science (Sains Sosial)",
+          "not_sure": "Not sure yet"
+        },
+        "schoolLabel": "Which Form 6 school?",
+        "schoolPlaceholder": "Start typing a school name",
+        "schoolTip": "Choose the Form 6 centre you've decided on — only those offering your stream are shown.",
+        "institutionNoMatch": "No match — try a different word.",
+        "institutionMore": "Showing the first matches — keep typing to narrow down.",
         "pathway": {
           "matric": "Matriculation",
           "stpm": "STPM (Form 6)",
