@@ -74,6 +74,21 @@ Context-aware, progressive-disclosure rebuild of the apply-form Plans step. Buil
   track/stream + institution validation, payload mapping). Frontend suite **93 passed**; `next build` clean
   (`/scholarship/apply` 37.2 kB); i18n parity 1144 keys. Branch only — not deployed.
 
+### P5 — STPM-student degree picker + Uncertain branch (frontend, 2026-05-26)
+- **Post-STPM students** (`exam_type === 'stpm'`) now get a real **degree picker** instead of the stub — their
+  decided branch skips the SPM pathway step and reuses `<ProgrammePicker>` over the degrees from
+  `/stpm/eligibility/check/` (mapped + sorted A–Z by `stpmDegreesToCourses()`, university shown as the institution).
+  Stores `chosen_programme` + derives field. New validation: a decided STPM student must pick a degree.
+- **"Still deciding" branch** is now built out (was a stub): optional **leaning chips** (eligible pathways →
+  `pathways_considered`, SPM leavers only), **"Where are you right now?" reason chips** (→ `uncertainty_reasons`:
+  exploring / waiting for results / want advice / family / finance), and a free-text line (→ `uncertainty_note`).
+  All optional — "uncertain" never blocks the application.
+- **Mentoring stays coordinator-set** (per the model's design): the reasons are captured + surfaced on the admin
+  detail, and the coordinator flags `mentoring_candidate` from them (not auto-set at intake).
+- Tests: +6 (`stpmDegreesToCourses`, `UNCERTAINTY_REASONS`, STPM degree requirement, uncertain-never-blocks,
+  reasons/note payload). Frontend suite **97 passed**; `next build` clean (`/scholarship/apply` 37.5 kB); i18n
+  parity 1156 keys. **Branch complete — ready for the gated ship (migrate-first → merge → deploy).**
+
 ## [2.1.5] — Apply-form: My Family ordering + required household size (2026-05-25)
 
 ### Changed

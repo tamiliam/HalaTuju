@@ -3,7 +3,7 @@
  *
  * Logic lives here (node-testable) so the page component stays a thin renderer.
  */
-import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult } from '@/lib/api'
+import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse } from '@/lib/api'
 
 // SPM grades that count as an "A" for the shortlist (A+, A and A- all count,
 // matching the backend's count_spm_a_grades and the B40 candidate profiles).
@@ -160,6 +160,36 @@ export function eligibleMatricTracks(pathways: PathwayResult[] | null | undefine
   return pathways.filter((p) => p.pathway === 'matric' && p.eligible).map((p) => p.trackId)
 }
 
+// ── Plans redesign P5: STPM-student degree branch + Uncertain branch ──
+// "Where are you right now?" reasons for the Uncertain branch (multi-select, optional).
+// Stored in uncertainty_reasons; a coordinator decides mentoring from them (not auto-set).
+export const UNCERTAINTY_REASONS = ['exploring', 'results', 'guidance', 'family', 'finance'] as const
+
+/**
+ * Map STPM eligible degrees to the course shape <ProgrammePicker> consumes, sorted
+ * alphabetically — the university becomes the institution line. Lets the SPM course
+ * combobox be reused for the post-STPM-student degree pick (no pathway step for them).
+ */
+export function stpmDegreesToCourses(degrees: StpmEligibleCourse[] | null | undefined): EligibleCourse[] {
+  if (!degrees) return []
+  return degrees
+    .map((d) => ({
+      course_id: d.course_id,
+      course_name: d.course_name,
+      level: 'Degree',
+      field: d.field,
+      field_key: d.field_key,
+      source_type: 'stpm',
+      pathway_type: 'stpm',
+      merit_cutoff: null,
+      student_merit: null,
+      merit_label: null,
+      merit_color: null,
+      institution_name: d.university,
+    } as EligibleCourse))
+    .sort((a, b) => a.course_name.localeCompare(b.course_name))
+}
+
 /**
  * From an eligibility response's `pathway_stats` ({pathway_type: count}), return the
  * pathways the student qualifies for (count > 0) in a fixed display order, each with
@@ -229,7 +259,9 @@ export interface ApplyFormState {
   chosenProgramme: ChosenProgramme | null  // the single decided course (programme pathways)
   preUTrack: string                 // matric track / STPM stream (institution pathways)
   preUInstitution: string           // matric college / STPM school name
-  pathwaysConsidered: string[]      // pathway keys (non-exclusive) — Uncertain leanings (P5)
+  uncertaintyReasons: string[]      // Uncertain branch — "where are you right now?" (optional)
+  uncertaintyNote: string           // Uncertain branch — free text (optional)
+  pathwaysConsidered: string[]      // pathway keys (non-exclusive) — Uncertain leanings
   topChoices: TopChoice[]           // ranked top-3 (from saved courses)
   upuStatus: UpuStatus              // derived from the chosen public pathway
   fieldOfStudy: string              // field-taxonomy key
@@ -269,6 +301,8 @@ export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFo
     chosenProgramme: null,
     preUTrack: '',
     preUInstitution: '',
+    uncertaintyReasons: [],
+    uncertaintyNote: '',
     pathwaysConsidered: [],
     topChoices: [],
     upuStatus: '',
@@ -328,6 +362,8 @@ export interface ApplicationPayload {
   chosen_programme: Record<string, unknown>
   pre_u_track: string
   pre_u_institution: string
+  uncertainty_reasons: string[]
+  uncertainty_note: string
   pathways_considered: string[]
   top_choices: { rank: number; course_id: string; course_name: string; institution: string }[]
   upu_status: string
@@ -376,6 +412,8 @@ export function buildApplicationPayload(form: ApplyFormState): ApplicationPayloa
       : {},
     pre_u_track: form.preUTrack,
     pre_u_institution: form.preUInstitution,
+    uncertainty_reasons: form.uncertaintyReasons,
+    uncertainty_note: form.uncertaintyNote.trim(),
     pathways_considered: form.pathwaysConsidered,
     top_choices: form.topChoices.map((c, i) => ({
       rank: i + 1, course_id: c.courseId, course_name: c.courseName, institution: c.institution,
@@ -436,6 +474,9 @@ export function applyFormError(form: ApplyFormState, examType?: Qualification): 
     if (!form.preUTrack) return 'preUTrack'
     if (!form.preUInstitution) return 'preUInstitution'
   }
+  // A decided STPM student picks a degree directly (no SPM pathway/track step).
+  if (form.pathwayCertainty === 'sure' && examType === 'stpm' && !form.chosenProgramme) return 'chosenProgramme'
+  // The Uncertain branch is intentionally non-blocking — leanings/reasons/note are optional.
   // My Support — consent required to apply.
   if (!form.consentToContact) return 'consent'
   return null

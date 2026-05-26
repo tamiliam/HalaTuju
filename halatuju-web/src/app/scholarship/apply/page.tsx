@@ -17,6 +17,7 @@ import {
   claimNric,
   checkEligibility,
   calculatePathways,
+  checkStpmEligibility,
   type EligibleCourse,
 } from '@/lib/api'
 import {
@@ -30,6 +31,8 @@ import {
   isInstitutionPathway,
   eligibleMatricTracks,
   STPM_STREAMS,
+  stpmDegreesToCourses,
+  UNCERTAINTY_REASONS,
   formatNric,
   formatPhone,
   nricChanged,
@@ -136,13 +139,29 @@ export default function ScholarshipApplyPage() {
     }
   }, [profile])
 
-  // Plans step (SPM leavers): one eligibility call feeds the pathway dropdown + the
-  // course picker (pathway_stats + eligible_courses); /calculate/pathways/ feeds the
-  // eligible matriculation tracks. STPM students go to the degree branch (P5), skip both.
+  // Plans step. SPM leavers: one eligibility call feeds the pathway dropdown + course
+  // picker (pathway_stats + eligible_courses), and /calculate/pathways/ feeds the eligible
+  // matriculation tracks. STPM students skip all that — their decided branch is a degree
+  // picker fed by /stpm/eligibility/check/ (mapped into eligibleCourses).
   useEffect(() => {
     if (status !== 'ready' || !token || !profile) return
-    if (profile.exam_type === 'stpm') { setPathwayStats({}); setEligibleCourses([]); setMatricTracks([]); return }
     setPathwayLoading(true)
+    if (profile.exam_type === 'stpm') {
+      checkStpmEligibility({
+        stpm_grades: profile.stpm_grades || {},
+        spm_grades: profile.grades || {},
+        cgpa: profile.stpm_cgpa ?? 0,
+        muet_band: profile.muet_band ?? 0,
+        gender: profile.gender,
+        nationality: profile.nationality,
+        colorblind: profile.colorblind,
+      }, { token })
+        .then((res) => setEligibleCourses(stpmDegreesToCourses(res.eligible_courses)))
+        .catch(() => setEligibleCourses([]))
+        .finally(() => setPathwayLoading(false))
+      setPathwayStats({}); setMatricTracks([])
+      return
+    }
     Promise.all([
       checkEligibility(profile, { token })
         .then((res) => { setPathwayStats(res.pathway_stats || {}); setEligibleCourses(res.eligible_courses || []) }),
@@ -211,6 +230,19 @@ export default function ScholarshipApplyPage() {
   // stream clears the institution, since the college/school list then changes.
   const setPreUTrack = (key: string) => setForm((p) => ({ ...p, preUTrack: key, preUInstitution: '' }))
   const setPreUInstitution = (name: string) => setForm((p) => ({ ...p, preUInstitution: name }))
+  // Uncertain branch (P5): optional pathway leanings + "where are you right now?" reasons.
+  const toggleLeaning = (key: string) => setForm((p) => ({
+    ...p,
+    pathwaysConsidered: p.pathwaysConsidered.includes(key)
+      ? p.pathwaysConsidered.filter((k) => k !== key)
+      : [...p.pathwaysConsidered, key],
+  }))
+  const toggleReason = (key: string) => setForm((p) => ({
+    ...p,
+    uncertaintyReasons: p.uncertaintyReasons.includes(key)
+      ? p.uncertaintyReasons.filter((k) => k !== key)
+      : [...p.uncertaintyReasons, key],
+  }))
   const toggleScholarship = (key: string) => setForm((p) => ({
     ...p,
     otherScholarships: p.otherScholarships.includes(key)
@@ -495,9 +527,16 @@ export default function ScholarshipApplyPage() {
         {/* Decided → eligible-only pathway dropdown (SPM leavers). STPM students get the
             degree branch (P5); the course picker for the chosen pathway lands in P3. */}
         {form.pathwayCertainty === 'sure' && (examType === 'stpm' ? (
-          <p className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-            {t('scholarship.apply.plan.stpmStub')}
-          </p>
+          // STPM students have no SPM pathway step — they pick their degree directly.
+          <div>
+            <FieldLabel required tip={t('scholarship.apply.plan.degreeTip')}>{t('scholarship.apply.plan.degreeLabel')}</FieldLabel>
+            <ProgrammePicker
+              courses={eligibleCourses}
+              value={form.chosenProgramme}
+              onChange={setProgramme}
+              loading={pathwayLoading}
+            />
+          </div>
         ) : (
           <div>
             <FieldLabel required tip={t('scholarship.apply.plan.tip')}>{t('scholarship.apply.plan.pathwayLabel')}</FieldLabel>
@@ -510,11 +549,50 @@ export default function ScholarshipApplyPage() {
           </div>
         ))}
 
-        {/* Still deciding → exploration branch (leanings + reasons + free text land in P5). */}
+        {/* Still deciding → exploration branch: optional leanings + reasons + free text.
+            Everything here is optional — "uncertain" never blocks the application. */}
         {form.pathwayCertainty === 'uncertain' && (
-          <p className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-            {t('scholarship.apply.plan.uncertainStub')}
-          </p>
+          <div className="space-y-5">
+            <p className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
+              {t('scholarship.apply.plan.uncertainIntro')}
+            </p>
+            {examType !== 'stpm' && eligiblePathways(pathwayStats).length > 0 && (
+              <div>
+                <FieldLabel tip={t('scholarship.apply.plan.leaningTip')}>{t('scholarship.apply.plan.leaningLabel')}</FieldLabel>
+                <div className="flex flex-wrap gap-2">
+                  {eligiblePathways(pathwayStats).map((p) => {
+                    const on = form.pathwaysConsidered.includes(p.key)
+                    return (
+                      <button key={p.key} type="button" onClick={() => toggleLeaning(p.key)}
+                        className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                        {t(`scholarship.apply.plan.pathway.${p.key}`)}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+            <div>
+              <FieldLabel tip={t('scholarship.apply.plan.reasonTip')}>{t('scholarship.apply.plan.reasonLabel')}</FieldLabel>
+              <div className="flex flex-wrap gap-2">
+                {UNCERTAINTY_REASONS.map((r) => {
+                  const on = form.uncertaintyReasons.includes(r)
+                  return (
+                    <button key={r} type="button" onClick={() => toggleReason(r)}
+                      className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
+                      {t(`scholarship.apply.plan.reason.${r}`)}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div>
+              <FieldLabel>{t('scholarship.apply.plan.uncertainNoteLabel')}</FieldLabel>
+              <textarea className="input" rows={3} value={form.uncertaintyNote}
+                placeholder={t('scholarship.apply.plan.uncertainNotePlaceholder')}
+                onChange={(e) => update('uncertaintyNote', e.target.value)} />
+            </div>
+          </div>
         )}
 
         {/* Decided pathway → the one course. Programme pathways (poly/asasi/university/

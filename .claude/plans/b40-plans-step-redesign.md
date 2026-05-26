@@ -107,7 +107,13 @@ the student is eligible for**, reusing HalaTuju's live eligibility engine.
   logic, store stpm_stream/school + matric_track/college, i18n ×3, tests.
 - **Acceptance:** streams/tracks limited to eligible; schools/colleges filtered correctly; saved.
 
-### P5 — STPM-student Sure branch + Uncertain branch + ship  (medium)
+### P5 — STPM-student Sure branch + Uncertain branch + ship  🔨 BUILD DONE (2026-05-26); SHIP gated
+- Shipped (build): (a) STPM students → degree picker (`<ProgrammePicker>` over `/stpm/eligibility/check/` via
+  `stpmDegreesToCourses`, A–Z; validation requires a degree). (b) Uncertain → optional leaning chips
+  (`pathways_considered`) + reason chips (`uncertainty_reasons`: exploring/results/guidance/family/finance) + free
+  text (`uncertainty_note`); never blocks. Mentoring stays coordinator-set (reasons captured + surfaced, not
+  auto-flagged). 97 FE tests, build clean, i18n 1156. **(c) SHIP still pending — gated on user approval:** full
+  regression → migrate-first 0010 against prod → merge → push (auto-deploy) → verify halatuju.xyz.
 - **Goal:** (a) post-STPM Sure → degree programme picker (stream+eligibility) → field. (b) Uncertain:
   optional leanings + reason chips (route mentoring_candidate) + free text. (c) feature complete →
   merge branch → migrate-first → deploy.
