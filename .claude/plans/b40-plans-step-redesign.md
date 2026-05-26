@@ -24,6 +24,17 @@ the student is eligible for**, reusing HalaTuju's live eligibility engine.
   reason chips (each routes follow-up; guidance/family → `mentoring_candidate`) + one free-text line.
 - **Every control earns its place** by generating a decision-gate or profile signal.
 
+## Design refinements (2026-05-26, from user; after Stitch mock)
+- **Sure = exactly ONE decided course.** Both selectors are **single-select dropdowns**, not chips:
+  - **Pathway dropdown** — single-select, eligible pathways only, each option shows its eligible count
+    (e.g. "Polytechnic — 85 eligible"). Dropdown over chips so single-select is unambiguous.
+  - **Course dropdown** — single-select, type-to-search combobox (reuse the School-field pattern),
+    filtered to the chosen pathway + the student's stream, **sorted alphabetically**. One course selected.
+- **Multiples only in the Uncertain branch** (leanings + considering several). Sure never multi-selects.
+- **No schema change** — `chosen_programme` (single, Sure) + `top_choices` (multi, Uncertain) from P1 already fit.
+- Stitch mock of the Sure flow approved (chips → dropdowns is the only change): project `10844973747787673276`,
+  screen `e68088d3…`.
+
 ## Reused infrastructure (already exists — no rebuild)
 - Eligibility: `/eligibility/check/` (SPM), `/stpm/eligibility/check/`, `/calculate/pathways/` (matric/stpm tracks).
 - `course_pathway_map` (pathway_type incl. iljtm/ilkbs split) computed at app startup.
@@ -32,7 +43,7 @@ the student is eligible for**, reusing HalaTuju's live eligibility engine.
   `upu_status`, `anything_else`, **`mentoring_candidate`**, `form_data`.
 - Engine gate unchanged: `intends_tertiary_2026` + `upu_status=='ipts'` still drive shortlisting.
 
-## Sprint roadmap (6 sprints)
+## Sprint roadmap (5 sprints)
 
 ### Lessons applied (from docs/lessons.md)
 - **Migration clash:** checked `max()` on main = 0009 → new migration is **0010** (no clash).
