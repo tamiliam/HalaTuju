@@ -95,6 +95,32 @@ export function isValidPhone(s: string): boolean {
   return /^0\d{8,10}$/.test(s.replace(/\D/g, ''))
 }
 
+// ── Plans redesign: eligible-pathway dropdown (context-aware Plans step) ──
+// Display order for the "Sure" branch pathway dropdown (SPM leavers). Mirrors the
+// backend pathway_type taxonomy; iljtm/ilkbs are already split server-side.
+export const PATHWAY_ORDER = [
+  'matric', 'stpm', 'asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs',
+] as const
+export type PathwayKey = typeof PATHWAY_ORDER[number]
+
+export interface EligiblePathway { key: PathwayKey; count: number }
+
+/**
+ * From an eligibility response's `pathway_stats` ({pathway_type: count}), return the
+ * pathways the student qualifies for (count > 0) in a fixed display order, each with
+ * its eligible-programme count. Drives the single-select pathway dropdown. Unknown
+ * keys (e.g. the un-split 'tvet' fallback) are ignored — only the 9 known pathways show.
+ */
+export function eligiblePathways(pathwayStats?: Record<string, number> | null): EligiblePathway[] {
+  if (!pathwayStats) return []
+  const out: EligiblePathway[] = []
+  for (const key of PATHWAY_ORDER) {
+    const count = pathwayStats[key] || 0
+    if (count > 0) out.push({ key, count })
+  }
+  return out
+}
+
 // ── My Plans + My Support (Sprint 10) ────────────────────────────────────
 // UPU / destination intent. 'ipts' (IPTS-only) is the engine's disqualifier;
 // the form never blocks on it — the backend declines silently (S8 gate).

@@ -7,6 +7,8 @@ import {
   formatNric,
   formatPhone,
   isValidPhone,
+  eligiblePathways,
+  PATHWAY_ORDER,
   nricChanged,
   fundingTotal,
   emptyDetailsForm,
@@ -291,6 +293,28 @@ describe('applyFormError — phone + parent phone', () => {
     expect(applyFormError(baseForm({ parentPhone: '' }))).toBeNull()
     expect(applyFormError(baseForm({ parentPhone: '012-345 6789' }))).toBeNull()
     expect(applyFormError(baseForm({ parentPhone: '123' }))).toBe('parentPhone')
+  })
+})
+
+describe('eligiblePathways', () => {
+  it('returns count>0 pathways in fixed display order, with counts', () => {
+    const res = eligiblePathways({
+      poly: 85, asasi: 6, matric: 3, university: 49, kkom: 53, iljtm: 48, ilkbs: 35, stpm: 2,
+    })
+    expect(res.map((p) => p.key)).toEqual(
+      ['matric', 'stpm', 'asasi', 'university', 'poly', 'kkom', 'iljtm', 'ilkbs'])
+    expect(res.find((p) => p.key === 'poly')!.count).toBe(85)
+  })
+  it('drops zero/absent pathways and unknown keys (e.g. un-split tvet)', () => {
+    expect(eligiblePathways({ poly: 0, tvet: 10, pismp: 3 })).toEqual([{ key: 'pismp', count: 3 }])
+  })
+  it('handles null/empty input', () => {
+    expect(eligiblePathways(null)).toEqual([])
+    expect(eligiblePathways({})).toEqual([])
+  })
+  it('only ever emits keys from PATHWAY_ORDER', () => {
+    const keys = eligiblePathways({ matric: 1, foo: 9, bar: 2 }).map((p) => p.key)
+    expect(keys.every((k) => (PATHWAY_ORDER as readonly string[]).includes(k))).toBe(true)
   })
 })
 
