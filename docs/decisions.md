@@ -751,3 +751,21 @@ pathway-filtered course dropdown replaces them — a deliberate one-sprint defer
 
 **Revisit if:** the eligibility engine can't return `pathway_stats` cheaply enough for an inline call, or a future
 cohort funds private (IPTS) pathways (which would reintroduce a real destination question rather than a derived one).
+
+## Uncertain-branch reasons captured, but mentoring stays coordinator-set — plans-redesign P5, 2026-05-27
+
+**Decision:** The "Still deciding" branch collects `uncertainty_reasons` (e.g. *want advice / family / finance*) and
+surfaces them on the admin scholarship detail, but does **not** auto-set `mentoring_candidate` at intake. The
+coordinator flags mentoring after reviewing the reasons.
+
+**Alternatives considered:** Auto-flag `mentoring_candidate=true` at submit when the reasons include guidance/family/finance.
+
+**Rationale:** `mentoring_candidate` is, by the model's existing design, **coordinator-set, not applicant-collected**
+(it's absent from `ApplicationCreateSerializer`; services.py says so explicitly). Auto-setting it would mean adding a
+backend write path on a deploy-day ship sprint, for marginal benefit. Capturing the reasons gives the coordinator the
+signal to decide; the applicant never directly sets a staff flag. Kept the P5 ship frontend-only.
+
+**Trade-offs:** Mentoring routing is one manual coordinator step rather than automatic. Low cost given volumes.
+
+**Revisit if:** intake volume makes manual mentoring triage a bottleneck — then auto-flag server-side from the reason
+keys (a small, safe `services.py` change), keeping the coordinator able to override.

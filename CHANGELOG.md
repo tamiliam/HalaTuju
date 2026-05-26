@@ -5,11 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — B40 "Your Plans" step redesign (branch: feature/plans-redesign)
+## [2.2.0] — B40 apply-form "Your Plans" redesign — DEPLOYED TO PROD (2026-05-27)
 
-Context-aware, progressive-disclosure rebuild of the apply-form Plans step. Building on a feature branch;
-**not deployed** until the feature completes (one migrate-first + deploy at the end). See
-`.claude/plans/b40-plans-step-redesign.md`.
+Context-aware, progressive-disclosure rebuild of the apply-form Plans step (P1–P5), built on
+`feature/plans-redesign` and shipped in one coordinated deploy. **Merged `acdb2a4` → `main`; both Cloud Run
+services deployed (`halatuju-api-00156`, `halatuju-web-00205`, builds SUCCESS); live + verified on halatuju.xyz**
+(served bundle carries the new strings; `/eligibility/check/` + `/fields/` 200). Migration `0010` (7 optional
+fields) was applied **migrate-first** to prod and verified (7/7 columns on `scholarship_applications`, correct
+`jsonb`/`text`/`varchar` types) before the push — additive, zero-downtime. 97 frontend + 1105 backend tests green.
+The step now opens with one question (Decided / Still deciding) and reveals only eligible options; every control
+generates a decision or profile signal. (The wider B40 programme remains **not promoted** — separate launch task:
+wire Cloud Scheduler → `send_pending_decision_emails`.) Per-sprint detail below.
 
 ### P1 — storage foundation (backend, 2026-05-26)
 - **7 new optional fields** on `ScholarshipApplication` (migration `0010_plans_redesign_fields`):
