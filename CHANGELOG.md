@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] — Hotfix: eligibility 400 on null `coq_score` blanked the Plans pathway dropdown (2026-05-27)
+
+Hotfix for the 2.2.0 Plans redesign. The apply page posts the **full** student profile to `/eligibility/check/`;
+`coq_score` is `null` for **100% of prod profiles (601/601)**, and `EligibilityRequestSerializer` rejected null
+`coq_score` with HTTP 400 — so the call failed and the Plans-step pathway dropdown showed the empty *"once your
+results are in…"* state for **every SPM applicant** (476 with grades), even though their results were fine.
+Fix: `EligibilityRequestSerializer.to_internal_value` now **strips nulls** so optional fields fall back to their
+declared defaults (`coq_score`→5.0, `colorblind`→False, …) instead of erroring — one place, covers the whole class.
+Backend-only, no migration. +1 regression test (full profile with null optionals → 200 + pathways); 100 courses +
+serializer tests pass. **Root cause was missed in 2.2.0 because previews used mocked `pathway_stats` and the
+post-deploy check sent a minimal payload, never the real full-profile call.** Deployed to `halatuju-api`.
+
 ## [2.2.0] — B40 apply-form "Your Plans" redesign — DEPLOYED TO PROD (2026-05-27)
 
 Context-aware, progressive-disclosure rebuild of the apply-form Plans step (P1–P5), built on

@@ -218,9 +218,19 @@ class EligibilityRequestSerializer(serializers.Serializer):
         return mapping.get(value.lower(), value)
 
     def to_internal_value(self, data):
-        """Validate and pass through boolean colorblind/disability fields."""
-        result = super().to_internal_value(data)
-        return result
+        """Drop explicit nulls before validation.
+
+        The apply form posts the **full** student profile, where optional fields
+        (`coq_score`, `colorblind`, `student_merit`, …) are legitimately ``null``
+        for students who never set them. DRF would reject those with "may not be
+        null" and 400 the whole eligibility check. Stripping nulls lets each field
+        fall back to its declared default instead — e.g. a null `coq_score` becomes
+        the 5.0 default rather than blocking the request. (`grades` is required, so
+        a null/absent `grades` still correctly errors.)
+        """
+        if hasattr(data, 'items'):
+            data = {k: v for k, v in data.items() if v is not None}
+        return super().to_internal_value(data)
 
 
 class EligibilityResponseSerializer(serializers.Serializer):

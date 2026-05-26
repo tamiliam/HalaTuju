@@ -48,6 +48,28 @@ class TestEligibilityEndpoint(TestCase):
         # Perfect student should get many courses
         self.assertGreater(data['total_count'], 100)
 
+    def test_full_profile_with_null_optionals_does_not_400(self):
+        """Regression (B40 plans-redesign): the apply form posts the FULL profile,
+        where optional fields (coq_score, colorblind, …) are null for students who
+        never set them — 100% of prod profiles have coq_score=null. A null must fall
+        back to the field default, not 400 the whole eligibility check (which blanked
+        the Plans-step pathway dropdown for every SPM applicant)."""
+        response = self.client.post(self.url, {
+            'grades': {'bm': 'A-', 'bio': 'B', 'eng': 'B+', 'phy': 'B+',
+                       'chem': 'A+', 'hist': 'B+', 'math': 'A+', 'addmath': 'A+'},
+            'gender': 'male',
+            'nationality': 'malaysian',
+            'colorblind': None,
+            'disability': None,
+            'coq_score': None,
+            'student_merit': None,
+        }, format='json')
+        self.assertEqual(response.status_code, 200, response.content)
+        data = response.json()
+        # Strong grades → real eligibility + pathways, NOT the empty/blocked state
+        self.assertGreater(data['total_count'], 50)
+        self.assertTrue(data.get('pathway_stats'))
+
     def test_empty_grades_returns_few_courses(self):
         """A student with no grades (The Ghost) should get very few courses."""
         response = self.client.post(self.url, {
