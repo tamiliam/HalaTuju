@@ -169,6 +169,37 @@ class ScholarshipApplication(models.Model):
         default=False,
         help_text="Flagged for mentoring (lost/unfocused); coordinator-facing, NOT a reject signal")
 
+    # ── Plans redesign (context-aware, progressive disclosure) ────────────────
+    # Source of truth for the student's stated pathway plan, captured on the
+    # apply-form "Your Plans" step. All optional/additive (older clients keep
+    # working). The decision gate still reads intends_tertiary_2026 + upu_status
+    # ('ipts'-only disqualifies); upu_status is derived from chosen_pathway in the
+    # frontend, so these fields don't change the shortlisting engine.
+    pathway_certainty = models.CharField(
+        max_length=10, blank=True, default='',
+        choices=[('sure', 'Knows pathway'), ('uncertain', 'Still deciding')],
+        help_text="Top split: does the student already know their pathway?")
+    chosen_pathway = models.CharField(
+        max_length=20, blank=True, default='',
+        help_text="When sure: the pathway_type (matric/stpm/asasi/university/poly/"
+                  "kkom/pismp/iljtm/ilkbs), or 'ipts'/'none' (→ upu_status='ipts').")
+    pre_u_track = models.CharField(
+        max_length=30, blank=True, default='',
+        help_text="STPM bidang (sains/sains_sosial/not_sure) or Matric track "
+                  "(sains/kejuruteraan/sains_komputer/perakaunan).")
+    pre_u_institution = models.CharField(
+        max_length=255, blank=True, default='',
+        help_text="Chosen STPM school or Matriculation college name.")
+    chosen_programme = models.JSONField(
+        default=dict, blank=True,
+        help_text="Single chosen programme when sure: {course_id, course_name, institution, source}.")
+    uncertainty_reasons = models.JSONField(
+        default=list, blank=True,
+        help_text="When uncertain: reason keys ['waiting','guidance','financial','family','appeal','other'].")
+    uncertainty_note = models.TextField(
+        blank=True, default='',
+        help_text="When uncertain: 'where are you right now?' free text (Plans step).")
+
     # Workflow
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default='submitted',

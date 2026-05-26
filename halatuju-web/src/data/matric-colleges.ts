@@ -24,3 +24,10 @@ export const MATRIC_COLLEGES: MatricCollege[] = [
   { id: 'kmkph', name: 'KMK Pahang', state: 'Pahang', tracks: ['kejuruteraan'], phone: '09-4677103', website: 'kmkph.matrik.edu.my' },
   { id: 'kmkj', name: 'KMK Johor', state: 'Johor', tracks: ['kejuruteraan'], phone: '07-6881629', website: 'kmkj.matrik.edu.my' },
 ]
+
+export type MatricTrack = MatricCollege['tracks'][number]
+
+/** The matriculation colleges that offer a given track (B40 apply form, P4). */
+export function collegesForTrack(track: string): MatricCollege[] {
+  return MATRIC_COLLEGES.filter((c) => (c.tracks as string[]).includes(track))
+}

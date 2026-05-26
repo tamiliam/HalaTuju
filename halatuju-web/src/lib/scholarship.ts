@@ -3,7 +3,7 @@
  *
  * Logic lives here (node-testable) so the page component stays a thin renderer.
  */
-import type { StudentProfile, ScholarshipApplication } from '@/lib/api'
+import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse } from '@/lib/api'
 
 // SPM grades that count as an "A" for the shortlist (A+, A and A- all count,
 // matching the backend's count_spm_a_grades and the B40 candidate profiles).
@@ -95,6 +95,117 @@ export function isValidPhone(s: string): boolean {
   return /^0\d{8,10}$/.test(s.replace(/\D/g, ''))
 }
 
+// ── Plans redesign: eligible-pathway dropdown (context-aware Plans step) ──
+// Display order for the "Sure" branch pathway dropdown (SPM leavers). Mirrors the
+// backend pathway_type taxonomy; iljtm/ilkbs are already split server-side.
+export const PATHWAY_ORDER = [
+  'matric', 'stpm', 'asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs',
+] as const
+export type PathwayKey = typeof PATHWAY_ORDER[number]
+
+export interface EligiblePathway { key: PathwayKey; count: number }
+
+// Has the student decided on a pathway, or are they still exploring? Drives the
+// progressive-disclosure split at the top of the Plans step.
+export type PathwayCertainty = '' | 'sure' | 'uncertain'
+
+// ── Plans redesign P3: eligible-programme course picker (the decided course) ──
+// Pathways whose "decided" branch is a programme list (→ course combobox). The two
+// institution pathways (matric, stpm) take the stream→school / track→college flow (P4).
+export const PROGRAMME_PATHWAYS = ['asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs'] as const
+export function isProgrammePathway(key: string): boolean {
+  return (PROGRAMME_PATHWAYS as readonly string[]).includes(key)
+}
+
+/** The single decided programme (Sure branch). Persisted as JSON in `chosen_programme`. */
+export interface ChosenProgramme {
+  courseId: string
+  courseName: string
+  fieldKey: string
+}
+
+/**
+ * The eligible programmes for a chosen pathway: the student's eligible courses
+ * (already narrowed by the engine to what their results qualify them for) filtered
+ * to that `pathway_type`, sorted alphabetically by name. Feeds the course combobox.
+ */
+export function programmesForPathway(
+  courses: EligibleCourse[] | null | undefined,
+  pathwayKey: string,
+): EligibleCourse[] {
+  if (!courses || !pathwayKey) return []
+  return courses
+    .filter((c) => c.pathway_type === pathwayKey)
+    .sort((a, b) => a.course_name.localeCompare(b.course_name))
+}
+
+// ── Plans redesign P4: institution pathways (Matriculation + STPM Form 6) ──
+// The two pathways whose decided branch is an institution (track/stream → college/school),
+// not a course list. They store onto pre_u_track + pre_u_institution.
+export function isInstitutionPathway(key: string): boolean {
+  return key === 'matric' || key === 'stpm'
+}
+
+// STPM Form 6 streams (fixed). "not_sure" is a valid answer — the student still names a
+// school. Keys map to the school data's stream labels (Sains / Sains Sosial).
+export const STPM_STREAMS = ['sains', 'sains_sosial', 'not_sure'] as const
+
+/**
+ * The matriculation tracks the student qualifies for, from a /calculate/pathways/
+ * response — the matric entries flagged eligible, in the engine's order. Track ids
+ * (sains/kejuruteraan/sains_komputer/perakaunan) match the college data's track keys.
+ */
+export function eligibleMatricTracks(pathways: PathwayResult[] | null | undefined): string[] {
+  if (!pathways) return []
+  return pathways.filter((p) => p.pathway === 'matric' && p.eligible).map((p) => p.trackId)
+}
+
+// ── Plans redesign P5: STPM-student degree branch + Uncertain branch ──
+// "Where are you right now?" reasons for the Uncertain branch (multi-select, optional).
+// Stored in uncertainty_reasons; a coordinator decides mentoring from them (not auto-set).
+export const UNCERTAINTY_REASONS = ['exploring', 'results', 'guidance', 'family', 'finance'] as const
+
+/**
+ * Map STPM eligible degrees to the course shape <ProgrammePicker> consumes, sorted
+ * alphabetically — the university becomes the institution line. Lets the SPM course
+ * combobox be reused for the post-STPM-student degree pick (no pathway step for them).
+ */
+export function stpmDegreesToCourses(degrees: StpmEligibleCourse[] | null | undefined): EligibleCourse[] {
+  if (!degrees) return []
+  return degrees
+    .map((d) => ({
+      course_id: d.course_id,
+      course_name: d.course_name,
+      level: 'Degree',
+      field: d.field,
+      field_key: d.field_key,
+      source_type: 'stpm',
+      pathway_type: 'stpm',
+      merit_cutoff: null,
+      student_merit: null,
+      merit_label: null,
+      merit_color: null,
+      institution_name: d.university,
+    } as EligibleCourse))
+    .sort((a, b) => a.course_name.localeCompare(b.course_name))
+}
+
+/**
+ * From an eligibility response's `pathway_stats` ({pathway_type: count}), return the
+ * pathways the student qualifies for (count > 0) in a fixed display order, each with
+ * its eligible-programme count. Drives the single-select pathway dropdown. Unknown
+ * keys (e.g. the un-split 'tvet' fallback) are ignored — only the 9 known pathways show.
+ */
+export function eligiblePathways(pathwayStats?: Record<string, number> | null): EligiblePathway[] {
+  if (!pathwayStats) return []
+  const out: EligiblePathway[] = []
+  for (const key of PATHWAY_ORDER) {
+    const count = pathwayStats[key] || 0
+    if (count > 0) out.push({ key, count })
+  }
+  return out
+}
+
 // ── My Plans + My Support (Sprint 10) ────────────────────────────────────
 // UPU / destination intent. 'ipts' (IPTS-only) is the engine's disqualifier;
 // the form never blocks on it — the backend declines silently (S8 gate).
@@ -140,9 +251,19 @@ export interface ApplyFormState {
   parentPhone: string
   callLanguage: CallLanguage
   // My Plans
-  pathwaysConsidered: string[]      // pathway keys (non-exclusive)
+  // Plans redesign: the step opens by asking whether the student has decided on
+  // a pathway. 'sure' reveals a single-select eligible-pathway dropdown; 'uncertain'
+  // routes to the exploration branch (P5). chosenPathway is a PATHWAY_ORDER key.
+  pathwayCertainty: PathwayCertainty
+  chosenPathway: string             // PathwayKey when certainty === 'sure'
+  chosenProgramme: ChosenProgramme | null  // the single decided course (programme pathways)
+  preUTrack: string                 // matric track / STPM stream (institution pathways)
+  preUInstitution: string           // matric college / STPM school name
+  uncertaintyReasons: string[]      // Uncertain branch — "where are you right now?" (optional)
+  uncertaintyNote: string           // Uncertain branch — free text (optional)
+  pathwaysConsidered: string[]      // pathway keys (non-exclusive) — Uncertain leanings
   topChoices: TopChoice[]           // ranked top-3 (from saved courses)
-  upuStatus: UpuStatus
+  upuStatus: UpuStatus              // derived from the chosen public pathway
   fieldOfStudy: string              // field-taxonomy key
   otherScholarships: string[]       // scholarship keys
   otherScholarshipsText: string
@@ -175,6 +296,13 @@ export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFo
     parentName: guardian?.name ?? '',
     parentPhone: formatPhone(guardian?.phone ?? ''),
     callLanguage: (profile?.preferred_call_language as CallLanguage) ?? '',
+    pathwayCertainty: '',
+    chosenPathway: '',
+    chosenProgramme: null,
+    preUTrack: '',
+    preUInstitution: '',
+    uncertaintyReasons: [],
+    uncertaintyNote: '',
     pathwaysConsidered: [],
     topChoices: [],
     upuStatus: '',
@@ -228,7 +356,14 @@ export interface ApplicationPayload {
   receives_jkm: boolean
   intends_tertiary_2026: boolean
   consent_to_contact: boolean
-  // My Plans + My Support (Sprint 10)
+  // My Plans + My Support (Sprint 10; Plans redesign adds certainty + chosen pathway)
+  pathway_certainty: string
+  chosen_pathway: string
+  chosen_programme: Record<string, unknown>
+  pre_u_track: string
+  pre_u_institution: string
+  uncertainty_reasons: string[]
+  uncertainty_note: string
   pathways_considered: string[]
   top_choices: { rank: number; course_id: string; course_name: string; institution: string }[]
   upu_status: string
@@ -270,6 +405,15 @@ export function buildApplicationPayload(form: ApplyFormState): ApplicationPayloa
     intends_tertiary_2026: form.intendsTertiary2026,
     consent_to_contact: form.consentToContact,
     // My Plans + My Support — rank is derived from the top-3 selection order.
+    pathway_certainty: form.pathwayCertainty,
+    chosen_pathway: form.chosenPathway,
+    chosen_programme: form.chosenProgramme
+      ? { course_id: form.chosenProgramme.courseId, course_name: form.chosenProgramme.courseName, field_key: form.chosenProgramme.fieldKey }
+      : {},
+    pre_u_track: form.preUTrack,
+    pre_u_institution: form.preUInstitution,
+    uncertainty_reasons: form.uncertaintyReasons,
+    uncertainty_note: form.uncertaintyNote.trim(),
     pathways_considered: form.pathwaysConsidered,
     top_choices: form.topChoices.map((c, i) => ({
       rank: i + 1, course_id: c.courseId, course_name: c.courseName, institution: c.institution,
@@ -292,11 +436,15 @@ export function nricChanged(form: ApplyFormState, profile?: StudentProfile | nul
 
 /**
  * Returns the i18n error sub-key for the first validation problem, or null if the
- * form is ready to submit. Ordered by tab (About Me → My Family → consent) so the
- * earliest-section problem surfaces first. The full NRIC age/state checks and the
- * academic floor are enforced server-side (claim endpoint / profile), not here.
+ * form is ready to submit. Ordered by tab (About Me → My Family → My Plans →
+ * consent) so the earliest-section problem surfaces first. The full NRIC age/state
+ * checks and the academic floor are enforced server-side (claim endpoint / profile).
+ *
+ * `examType` lets the Plans check be context-aware: an SPM leaver who has decided
+ * must pick a pathway from the dropdown, whereas an STPM student's "decided" branch
+ * is a degree picker (built in P5), so the pathway requirement is skipped for them.
  */
-export function applyFormError(form: ApplyFormState): string | null {
+export function applyFormError(form: ApplyFormState, examType?: Qualification): string | null {
   // About Me — all required.
   if (!form.name.trim()) return 'name'
   if (!form.school.trim()) return 'school'
@@ -311,6 +459,24 @@ export function applyFormError(form: ApplyFormState): string | null {
   if (toIntOrNull(form.householdIncome) === null) return 'income'
   // Parent/guardian phone is optional, but if given it must be a valid number.
   if (form.parentPhone.trim() && !isValidPhone(form.parentPhone)) return 'parentPhone'
+  // My Plans — the student must answer whether they've decided; "uncertain" is a
+  // valid answer (it never traps an unsure student). A decided SPM leaver must then
+  // pick a pathway from the eligible-only dropdown.
+  if (!form.pathwayCertainty) return 'pathwayCertainty'
+  if (form.pathwayCertainty === 'sure' && examType !== 'stpm' && !form.chosenPathway) return 'chosenPathway'
+  // A decided programme-pathway (poly/asasi/university/kkom/pismp/iljtm/ilkbs) needs the one
+  // chosen course; the institution pathways (matric/stpm) take the P4 stream/track flow instead.
+  if (form.pathwayCertainty === 'sure' && examType !== 'stpm'
+      && isProgrammePathway(form.chosenPathway) && !form.chosenProgramme) return 'chosenProgramme'
+  // A decided institution pathway (matriculation / STPM) needs the track-or-stream and
+  // then the college-or-school.
+  if (form.pathwayCertainty === 'sure' && examType !== 'stpm' && isInstitutionPathway(form.chosenPathway)) {
+    if (!form.preUTrack) return 'preUTrack'
+    if (!form.preUInstitution) return 'preUInstitution'
+  }
+  // A decided STPM student picks a degree directly (no SPM pathway/track step).
+  if (form.pathwayCertainty === 'sure' && examType === 'stpm' && !form.chosenProgramme) return 'chosenProgramme'
+  // The Uncertain branch is intentionally non-blocking — leanings/reasons/note are optional.
   // My Support — consent required to apply.
   if (!form.consentToContact) return 'consent'
   return null

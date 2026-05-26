@@ -5,6 +5,90 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — B40 "Your Plans" step redesign (branch: feature/plans-redesign)
+
+Context-aware, progressive-disclosure rebuild of the apply-form Plans step. Building on a feature branch;
+**not deployed** until the feature completes (one migrate-first + deploy at the end). See
+`.claude/plans/b40-plans-step-redesign.md`.
+
+### P1 — storage foundation (backend, 2026-05-26)
+- **7 new optional fields** on `ScholarshipApplication` (migration `0010_plans_redesign_fields`):
+  `pathway_certainty`, `chosen_pathway`, `pre_u_track`, `pre_u_institution`, `chosen_programme` (json),
+  `uncertainty_reasons` (json), `uncertainty_note`. All blank/default → backward-compatible.
+- Wired through the intake (`ApplicationCreateSerializer`), read (`ApplicationReadSerializer`), and admin
+  serializers, plus `services._APP_FIELDS` + `build_intake_snapshot` (persisted + frozen in the audit snapshot).
+- **Engine unchanged**: shortlisting still gates on `intends_tertiary_2026` + `upu_status=='ipts'`; the new
+  fields don't touch the decision or the `courses` eligibility engine (reused read-only by later sprints).
+- Tests: +2 (sure + uncertain branch round-trip, snapshot, read serializer). Scholarship suite **95 passed**;
+  migration applies cleanly on SQLite.
+
+### P2 — Plans-step shell + eligible-pathway dropdown (frontend, 2026-05-26)
+- The "Your Plans" step now opens with **one question — "Do you know which pathway you'll take?"** →
+  *Yes, I've decided* / *I'm still deciding*. Nothing else shows until it's answered (progressive disclosure).
+- **Decided (SPM leavers)** reveals a single-select **eligible-only pathway dropdown** — each option shows
+  its eligible-programme count (e.g. *"Polytechnic — 85 eligible"*), fed live by the eligibility engine
+  (`/eligibility/check/` → `pathway_stats` → `eligiblePathways()` in fixed order). New `<PathwaySelect>` component.
+  STPM students see a degree-branch stub; *Still deciding* shows an exploration stub (both built in P5).
+- **State + validation**: `ApplyFormState` gains `pathwayCertainty` + `chosenPathway`; payload adds
+  `pathway_certainty` + `chosen_pathway` (P1 fields). `applyFormError` is now exam-type-aware — the pathway
+  question is required (but *"still deciding"* is always a valid answer), and a decided SPM leaver must pick a
+  pathway; STPM students are exempted (degree picker lands in P5). `upu_status` is **derived** from the chosen
+  public pathway (no separate UPU question); `intends_tertiary_2026` stays true by default.
+- **Replaced** the multi-select pathway chips, the UPU radio, and the "I intend to continue" checkbox + their
+  i18n keys (×3 locales). Field-of-study + top-3 course pickers stay gated under "decided" pending P3 (which
+  collapses them into one pathway-filtered course dropdown); "other scholarships" kept as an independent signal.
+- Tests: +6 (eligible-pathways helper from P2a + certainty/chosen-pathway validation + payload mapping).
+  Frontend suite **76 passed**; `next build` clean; i18n parity 1126 keys. Branch only — not deployed.
+
+### P3 — Decided-course picker for programme pathways (frontend, 2026-05-26)
+- When a student picks a **programme pathway** (Foundation / Public university / Polytechnic / Community
+  college / Teaching-PISMP / ILJTM / ILKBS), the "decided" branch now reveals a **single-select, type-to-search
+  course combobox** showing **only the courses that pathway makes them eligible for** (A–Z, with institution
+  counts). New `<ProgrammePicker>` component (School-field UX, but constrained to the eligible list — no free text).
+- Courses come from the **same `/eligibility/check/` call** P2 already makes — the page now also keeps
+  `eligible_courses` and filters by `pathway_type` (`programmesForPathway()` helper). No new endpoint/fetch.
+- **Matriculation & STPM** pathways show a short institution stub (their stream→school / track→college flow is P4).
+- Picking a course stores `chosen_programme` (the P1 JSON field) and **derives `field_of_study`** from the
+  course — no separate field question. `applyFormError` now requires the course on a decided programme pathway
+  (matric/STPM exempt — P4; STPM students exempt — P5).
+- **Removed** (delete-as-you-replace): the field-of-study `<select>` + the top-3 saved-courses picker that P2
+  parked under "decided", their data fetches (`getSavedCourses` / `fetchFieldTaxonomy`), and 8 now-dead i18n keys
+  (×3 locales). The one course dropdown replaces both.
+- Tests: +8 (`programmesForPathway` filter/sort, `isProgrammePathway`, course requirement + matric/STPM exemptions,
+  `chosen_programme` mapping). Frontend suite **84 passed**; `next build` clean (`/scholarship/apply` 36.1 kB);
+  i18n parity 1125 keys. Branch only — not deployed.
+
+### P4 — Institution pathways: Matriculation track→college + STPM stream→school (frontend, 2026-05-26)
+- The two non-programme pathways now have their decided sub-flows (replacing the P3 institution stub):
+  - **Matriculation** → **track** chips (only the tracks the student qualifies for, from `/calculate/pathways/`
+    via `eligibleMatricTracks()`) → **college** picker (`MATRIC_COLLEGES` filtered to that track by `collegesForTrack()`).
+  - **STPM / Form 6** → **stream** chips (Sains / Sains Sosial / *Not sure*) → **school** picker (the 584 Form 6
+    centres in `stpm-schools.json`, filtered to that stream by `stpmSchoolsForStream()`).
+- New generic `<InstitutionPicker>` (type-to-search name combobox, capped list + "keep typing" hint) — reused for
+  both the college list and the 584-school list. Matric track eligibility comes from an extra `/calculate/pathways/`
+  call fired alongside the existing eligibility call (SPM leavers only).
+- Storage: track/stream → `pre_u_track`, college/school → `pre_u_institution` (P1 fields). `applyFormError` requires
+  both on a decided matric/STPM pathway (STPM students still exempt — their degree picker is P5). `field_of_study`
+  is intentionally left empty for pre-U pathways (no degree chosen yet; the track/stream is the signal).
+- Tests: +9 (`isInstitutionPathway`, `eligibleMatricTracks`, `collegesForTrack`, `stpmSchoolsForStream`, the
+  track/stream + institution validation, payload mapping). Frontend suite **93 passed**; `next build` clean
+  (`/scholarship/apply` 37.2 kB); i18n parity 1144 keys. Branch only — not deployed.
+
+### P5 — STPM-student degree picker + Uncertain branch (frontend, 2026-05-26)
+- **Post-STPM students** (`exam_type === 'stpm'`) now get a real **degree picker** instead of the stub — their
+  decided branch skips the SPM pathway step and reuses `<ProgrammePicker>` over the degrees from
+  `/stpm/eligibility/check/` (mapped + sorted A–Z by `stpmDegreesToCourses()`, university shown as the institution).
+  Stores `chosen_programme` + derives field. New validation: a decided STPM student must pick a degree.
+- **"Still deciding" branch** is now built out (was a stub): optional **leaning chips** (eligible pathways →
+  `pathways_considered`, SPM leavers only), **"Where are you right now?" reason chips** (→ `uncertainty_reasons`:
+  exploring / waiting for results / want advice / family / finance), and a free-text line (→ `uncertainty_note`).
+  All optional — "uncertain" never blocks the application.
+- **Mentoring stays coordinator-set** (per the model's design): the reasons are captured + surfaced on the admin
+  detail, and the coordinator flags `mentoring_candidate` from them (not auto-set at intake).
+- Tests: +6 (`stpmDegreesToCourses`, `UNCERTAINTY_REASONS`, STPM degree requirement, uncertain-never-blocks,
+  reasons/note payload). Frontend suite **97 passed**; `next build` clean (`/scholarship/apply` 37.5 kB); i18n
+  parity 1156 keys. **Branch complete — ready for the gated ship (migrate-first → merge → deploy).**
+
 ## [2.1.5] — Apply-form: My Family ordering + required household size (2026-05-25)
 
 ### Changed

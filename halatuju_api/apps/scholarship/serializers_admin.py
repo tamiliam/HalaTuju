@@ -79,6 +79,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'pathways_considered', 'top_choices', 'upu_status', 'field_of_study',
             'other_scholarships', 'other_scholarships_text', 'help_university',
             'help_scholarship', 'anything_else',
+            # Plans redesign — surface the structured pathway plan for admin/coordinator
+            'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
+            'chosen_programme', 'uncertainty_reasons', 'uncertainty_note',
             'funding_need', 'documents', 'referees', 'consents', 'sponsor_profile',
             'intake_snapshot',
         ]

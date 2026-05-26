@@ -54,3 +54,60 @@ class TestApplicationIntakeFields:
         assert data['upu_status'] == 'public_other'
         assert data['pathways_considered'] == ['matrik', 'asasi', 'stpm']
         assert data['mentoring_candidate'] is False
+
+    def test_create_persists_plans_redesign_sure_branch(self):
+        cohort = ScholarshipCohort.objects.create(
+            code='b40-sure', name='B40 Test', year=2026, is_active=True, is_open=True)
+        profile = StudentProfile.objects.create(
+            supabase_user_id='plans-sure', nric='050202-02-2022', name='Sure Student')
+        validated = {
+            'consent_to_contact': True,
+            'pathway_certainty': 'sure',
+            'chosen_pathway': 'poly',
+            'chosen_programme': {
+                'course_id': 'P1', 'course_name': 'Diploma Hortikultur',
+                'institution': 'Politeknik Nilai', 'source': 'spm',
+            },
+            'field_of_study': 'engineering',
+        }
+        app = create_application(
+            profile=profile, cohort=cohort, validated_data=validated,
+            to_email='x@y.com', lang='en')
+        app.refresh_from_db()
+
+        assert app.pathway_certainty == 'sure'
+        assert app.chosen_pathway == 'poly'
+        assert app.chosen_programme['course_id'] == 'P1'
+        # Omitted fields fall back to model defaults (not None).
+        assert app.uncertainty_reasons == []
+        assert app.uncertainty_note == ''
+        assert app.pre_u_track == ''
+        # Frozen in the snapshot + surfaced by the read serializer.
+        assert app.intake_snapshot['application']['chosen_programme']['course_id'] == 'P1'
+        data = ApplicationReadSerializer(app).data
+        assert data['chosen_pathway'] == 'poly'
+        assert data['chosen_programme']['course_id'] == 'P1'
+
+    def test_create_persists_plans_redesign_uncertain_branch(self):
+        cohort = ScholarshipCohort.objects.create(
+            code='b40-unsure', name='B40 Test', year=2026, is_active=True, is_open=True)
+        profile = StudentProfile.objects.create(
+            supabase_user_id='plans-unsure', nric='050202-02-3033', name='Unsure Student')
+        validated = {
+            'consent_to_contact': True,
+            'pathway_certainty': 'uncertain',
+            'pathways_considered': ['stpm', 'asasi'],
+            'uncertainty_reasons': ['waiting', 'financial'],
+            'uncertainty_note': 'Waiting for UPU placement; depends on funding.',
+        }
+        app = create_application(
+            profile=profile, cohort=cohort, validated_data=validated,
+            to_email='x@y.com', lang='en')
+        app.refresh_from_db()
+
+        assert app.pathway_certainty == 'uncertain'
+        assert app.uncertainty_reasons == ['waiting', 'financial']
+        assert app.uncertainty_note.startswith('Waiting')
+        assert app.pathways_considered == ['stpm', 'asasi']
+        assert app.chosen_pathway == ''  # sure-only field stays at default
+        assert app.intake_snapshot['application']['uncertainty_reasons'] == ['waiting', 'financial']

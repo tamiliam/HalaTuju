@@ -7,6 +7,15 @@ import {
   formatNric,
   formatPhone,
   isValidPhone,
+  eligiblePathways,
+  PATHWAY_ORDER,
+  programmesForPathway,
+  isProgrammePathway,
+  isInstitutionPathway,
+  eligibleMatricTracks,
+  STPM_STREAMS,
+  stpmDegreesToCourses,
+  UNCERTAINTY_REASONS,
   nricChanged,
   fundingTotal,
   emptyDetailsForm,
@@ -25,7 +34,9 @@ import {
   APPLY_RETURN_KEY,
   type ApplyFormState,
 } from '@/lib/scholarship'
-import type { StudentProfile, ScholarshipApplication } from '@/lib/api'
+import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse } from '@/lib/api'
+import { collegesForTrack } from '@/data/matric-colleges'
+import { stpmSchoolsForStream, STPM_SCHOOLS } from '@/data/stpm-schools'
 
 function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
   return {
@@ -45,6 +56,13 @@ function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
     parentPhone: '',
     callLanguage: '',
     // My Plans
+    pathwayCertainty: 'sure',
+    chosenPathway: 'poly',
+    chosenProgramme: { courseId: 'C1', courseName: 'Diploma in Engineering', fieldKey: 'engineering' },
+    preUTrack: '',
+    preUInstitution: '',
+    uncertaintyReasons: [],
+    uncertaintyNote: '',
     pathwaysConsidered: [],
     topChoices: [],
     upuStatus: '',
@@ -167,6 +185,31 @@ describe('buildApplicationPayload', () => {
     expect(p.household_income).toBeNull()
     expect(p.household_size).toBeNull()
   })
+  it('maps the decided pathway (certainty + chosen pathway)', () => {
+    const p = buildApplicationPayload(baseForm({ pathwayCertainty: 'sure', chosenPathway: 'poly' })) as Record<string, unknown>
+    expect(p.pathway_certainty).toBe('sure')
+    expect(p.chosen_pathway).toBe('poly')
+  })
+  it('maps the chosen programme to a JSON object (and {} when none)', () => {
+    const p = buildApplicationPayload(baseForm({
+      chosenProgramme: { courseId: 'DKA', courseName: 'Diploma Kejuruteraan Awam', fieldKey: 'engineering' },
+    })) as Record<string, unknown>
+    expect(p.chosen_programme).toEqual({ course_id: 'DKA', course_name: 'Diploma Kejuruteraan Awam', field_key: 'engineering' })
+    const none = buildApplicationPayload(baseForm({ chosenProgramme: null })) as Record<string, unknown>
+    expect(none.chosen_programme).toEqual({})
+  })
+  it('maps the institution pathway (pre-U track/stream + institution)', () => {
+    const p = buildApplicationPayload(baseForm({ chosenPathway: 'matric', preUTrack: 'sains', preUInstitution: 'KM Perak' })) as Record<string, unknown>
+    expect(p.pre_u_track).toBe('sains')
+    expect(p.pre_u_institution).toBe('KM Perak')
+  })
+  it('maps the Uncertain branch (reasons + trimmed note)', () => {
+    const p = buildApplicationPayload(baseForm({
+      pathwayCertainty: 'uncertain', uncertaintyReasons: ['guidance', 'finance'], uncertaintyNote: '  still thinking  ',
+    })) as Record<string, unknown>
+    expect(p.uncertainty_reasons).toEqual(['guidance', 'finance'])
+    expect(p.uncertainty_note).toBe('still thinking')
+  })
   it('maps My Plans + My Support (ranks top-3 by order, trims text, empty form_data)', () => {
     const p = buildApplicationPayload(baseForm({
       pathwaysConsidered: ['matrik', 'stpm'],
@@ -225,6 +268,162 @@ describe('applyFormError', () => {
   it('surfaces the earliest-tab problem first', () => {
     // both name and consent are wrong → About Me wins (earlier tab)
     expect(applyFormError(baseForm({ name: '', consentToContact: false }))).toBe('name')
+  })
+})
+
+describe('applyFormError — Plans pathway question', () => {
+  it('requires the student to answer whether they have decided', () => {
+    expect(applyFormError(baseForm({ pathwayCertainty: '' }))).toBe('pathwayCertainty')
+  })
+  it('"uncertain" is always a valid answer (never traps an unsure student)', () => {
+    expect(applyFormError(baseForm({ pathwayCertainty: 'uncertain', chosenPathway: '' }))).toBeNull()
+  })
+  it('a decided SPM leaver must pick a pathway', () => {
+    expect(applyFormError(baseForm({ pathwayCertainty: 'sure', chosenPathway: '' }))).toBe('chosenPathway')
+    expect(applyFormError(baseForm({ pathwayCertainty: 'sure', chosenPathway: 'poly' }))).toBeNull()
+  })
+  it('exempts STPM students from the pathway requirement (their degree branch is separate)', () => {
+    expect(applyFormError(baseForm({ pathwayCertainty: 'sure', chosenPathway: '' }), 'stpm')).toBeNull()
+    expect(applyFormError(baseForm({ pathwayCertainty: 'sure', chosenPathway: '' }), 'spm')).toBe('chosenPathway')
+  })
+  it('the Plans question sits between My Family and consent in error order', () => {
+    // income (My Family) is earlier than the pathway question → income wins
+    expect(applyFormError(baseForm({ householdIncome: '', pathwayCertainty: '' }))).toBe('income')
+    // pathway question is earlier than consent → pathway wins
+    expect(applyFormError(baseForm({ pathwayCertainty: '', consentToContact: false }))).toBe('pathwayCertainty')
+  })
+  it('a decided programme pathway needs the one chosen course', () => {
+    expect(applyFormError(baseForm({ chosenPathway: 'poly', chosenProgramme: null }))).toBe('chosenProgramme')
+    expect(applyFormError(baseForm({ chosenPathway: 'poly', chosenProgramme: { courseId: 'C1', courseName: 'X', fieldKey: 'f' } }))).toBeNull()
+  })
+  it('institution pathways (matric/stpm) need a track + institution, not a course', () => {
+    // no course required (chosenProgramme stays null); the track + institution are
+    expect(applyFormError(baseForm({ chosenPathway: 'matric', chosenProgramme: null, preUTrack: 'sains', preUInstitution: 'KM Perak' }))).toBeNull()
+    expect(applyFormError(baseForm({ chosenPathway: 'stpm', chosenProgramme: null, preUTrack: 'sains', preUInstitution: 'SMK X' }))).toBeNull()
+  })
+  it('a decided institution pathway needs the track/stream, then the college/school', () => {
+    expect(applyFormError(baseForm({ chosenPathway: 'matric', preUTrack: '', preUInstitution: '' }))).toBe('preUTrack')
+    expect(applyFormError(baseForm({ chosenPathway: 'matric', preUTrack: 'sains', preUInstitution: '' }))).toBe('preUInstitution')
+    expect(applyFormError(baseForm({ chosenPathway: 'matric', preUTrack: 'sains', preUInstitution: 'KM Perak' }))).toBeNull()
+    expect(applyFormError(baseForm({ chosenPathway: 'stpm', preUTrack: '', preUInstitution: '' }))).toBe('preUTrack')
+    // "not sure" stream is valid; a school is still required
+    expect(applyFormError(baseForm({ chosenPathway: 'stpm', preUTrack: 'not_sure', preUInstitution: 'SMK X' }))).toBeNull()
+  })
+  it('STPM students are exempt from the SPM institution requirement (they pick a degree)', () => {
+    // no preU track/institution needed; instead a decided STPM student must pick a degree
+    expect(applyFormError(baseForm({ chosenPathway: '', preUTrack: '', preUInstitution: '', chosenProgramme: null }), 'stpm')).toBe('chosenProgramme')
+    expect(applyFormError(baseForm({ chosenPathway: '', preUTrack: '', preUInstitution: '', chosenProgramme: { courseId: 'D1', courseName: 'BSc', fieldKey: 'science' } }), 'stpm')).toBeNull()
+  })
+  it('the Uncertain branch never blocks (leanings/reasons/note all optional)', () => {
+    expect(applyFormError(baseForm({ pathwayCertainty: 'uncertain', chosenPathway: '', chosenProgramme: null, uncertaintyReasons: [], uncertaintyNote: '' }))).toBeNull()
+    expect(applyFormError(baseForm({ pathwayCertainty: 'uncertain', chosenPathway: '', chosenProgramme: null }), 'stpm')).toBeNull()
+  })
+})
+
+describe('stpmDegreesToCourses', () => {
+  const degrees = [
+    { course_id: 'z', course_name: 'Zoology', university: 'UM', field: 'science', field_key: 'science' },
+    { course_id: 'a', course_name: 'Accounting', university: 'USM', field: 'business', field_key: 'business' },
+  ] as unknown as StpmEligibleCourse[]
+  it('maps to the course shape (university → institution) and sorts A–Z', () => {
+    const out = stpmDegreesToCourses(degrees)
+    expect(out.map((c) => c.course_name)).toEqual(['Accounting', 'Zoology'])
+    expect(out[0].institution_name).toBe('USM')
+    expect(out[0].field_key).toBe('business')
+  })
+  it('handles null/empty', () => {
+    expect(stpmDegreesToCourses(null)).toEqual([])
+    expect(stpmDegreesToCourses([])).toEqual([])
+  })
+})
+
+describe('UNCERTAINTY_REASONS', () => {
+  it('lists the five "where are you right now?" reasons', () => {
+    expect(UNCERTAINTY_REASONS).toEqual(['exploring', 'results', 'guidance', 'family', 'finance'])
+  })
+})
+
+describe('isInstitutionPathway', () => {
+  it('is true only for matriculation + STPM', () => {
+    expect(isInstitutionPathway('matric')).toBe(true)
+    expect(isInstitutionPathway('stpm')).toBe(true)
+    expect(isInstitutionPathway('poly')).toBe(false)
+    expect(isInstitutionPathway('')).toBe(false)
+  })
+})
+
+describe('eligibleMatricTracks', () => {
+  const pathways = [
+    { pathway: 'matric', trackId: 'sains', eligible: true },
+    { pathway: 'matric', trackId: 'kejuruteraan', eligible: false },
+    { pathway: 'matric', trackId: 'perakaunan', eligible: true },
+    { pathway: 'stpm', trackId: 'sains', eligible: true },
+  ] as unknown as PathwayResult[]
+  it('returns eligible matric track ids in order, ignoring ineligible + stpm', () => {
+    expect(eligibleMatricTracks(pathways)).toEqual(['sains', 'perakaunan'])
+  })
+  it('handles null/empty', () => {
+    expect(eligibleMatricTracks(null)).toEqual([])
+    expect(eligibleMatricTracks([])).toEqual([])
+  })
+})
+
+describe('STPM_STREAMS', () => {
+  it('offers science, social science, and a not-sure escape', () => {
+    expect(STPM_STREAMS).toEqual(['sains', 'sains_sosial', 'not_sure'])
+  })
+})
+
+describe('collegesForTrack (matric data)', () => {
+  it('returns only colleges offering the track', () => {
+    const eng = collegesForTrack('kejuruteraan')
+    expect(eng.length).toBeGreaterThan(0)
+    expect(eng.every((c) => (c.tracks as string[]).includes('kejuruteraan'))).toBe(true)
+    // science is offered far more widely than the engineering-only colleges
+    expect(collegesForTrack('sains').length).toBeGreaterThan(eng.length)
+    expect(collegesForTrack('nope')).toEqual([])
+  })
+})
+
+describe('stpmSchoolsForStream (STPM data)', () => {
+  it('filters by stream label, and returns every centre for not_sure', () => {
+    const sains = stpmSchoolsForStream('sains')
+    expect(sains.length).toBeGreaterThan(0)
+    expect(sains.every((s) => s.streams.includes('Sains'))).toBe(true)
+    expect(stpmSchoolsForStream('sains_sosial').every((s) => s.streams.includes('Sains Sosial'))).toBe(true)
+    expect(stpmSchoolsForStream('not_sure').length).toBe(STPM_SCHOOLS.length)
+  })
+})
+
+describe('isProgrammePathway', () => {
+  it('is true for the seven programme-list pathways', () => {
+    for (const k of ['asasi', 'university', 'poly', 'kkom', 'pismp', 'iljtm', 'ilkbs']) {
+      expect(isProgrammePathway(k)).toBe(true)
+    }
+  })
+  it('is false for the institution pathways (matric/stpm) and unknowns', () => {
+    expect(isProgrammePathway('matric')).toBe(false)
+    expect(isProgrammePathway('stpm')).toBe(false)
+    expect(isProgrammePathway('')).toBe(false)
+    expect(isProgrammePathway('foo')).toBe(false)
+  })
+})
+
+describe('programmesForPathway', () => {
+  const courses = [
+    { course_id: '1', course_name: 'Zoology', pathway_type: 'university' },
+    { course_id: '2', course_name: 'Accounting', pathway_type: 'poly' },
+    { course_id: '3', course_name: 'Botany', pathway_type: 'university' },
+    { course_id: '4', course_name: 'Welding', pathway_type: 'poly' },
+  ] as unknown as EligibleCourse[]
+  it('filters to the chosen pathway and sorts alphabetically by name', () => {
+    expect(programmesForPathway(courses, 'poly').map((c) => c.course_name)).toEqual(['Accounting', 'Welding'])
+    expect(programmesForPathway(courses, 'university').map((c) => c.course_name)).toEqual(['Botany', 'Zoology'])
+  })
+  it('returns [] for a pathway with no eligible courses, or null/empty input', () => {
+    expect(programmesForPathway(courses, 'pismp')).toEqual([])
+    expect(programmesForPathway(null, 'poly')).toEqual([])
+    expect(programmesForPathway(courses, '')).toEqual([])
   })
 })
 
@@ -291,6 +490,28 @@ describe('applyFormError — phone + parent phone', () => {
     expect(applyFormError(baseForm({ parentPhone: '' }))).toBeNull()
     expect(applyFormError(baseForm({ parentPhone: '012-345 6789' }))).toBeNull()
     expect(applyFormError(baseForm({ parentPhone: '123' }))).toBe('parentPhone')
+  })
+})
+
+describe('eligiblePathways', () => {
+  it('returns count>0 pathways in fixed display order, with counts', () => {
+    const res = eligiblePathways({
+      poly: 85, asasi: 6, matric: 3, university: 49, kkom: 53, iljtm: 48, ilkbs: 35, stpm: 2,
+    })
+    expect(res.map((p) => p.key)).toEqual(
+      ['matric', 'stpm', 'asasi', 'university', 'poly', 'kkom', 'iljtm', 'ilkbs'])
+    expect(res.find((p) => p.key === 'poly')!.count).toBe(85)
+  })
+  it('drops zero/absent pathways and unknown keys (e.g. un-split tvet)', () => {
+    expect(eligiblePathways({ poly: 0, tvet: 10, pismp: 3 })).toEqual([{ key: 'pismp', count: 3 }])
+  })
+  it('handles null/empty input', () => {
+    expect(eligiblePathways(null)).toEqual([])
+    expect(eligiblePathways({})).toEqual([])
+  })
+  it('only ever emits keys from PATHWAY_ORDER', () => {
+    const keys = eligiblePathways({ matric: 1, foo: 9, bar: 2 }).map((p) => p.key)
+    expect(keys.every((k) => (PATHWAY_ORDER as readonly string[]).includes(k))).toBe(true)
   })
 })
 

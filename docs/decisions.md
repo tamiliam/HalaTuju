@@ -722,3 +722,32 @@ referrals still flow through the named partner orgs, so reach is unaffected in p
 
 **Revisit if:** MyNadi 44(6) status is declined and a different administering body without that constraint is used,
 or legal advice changes.
+
+## "Your Plans" step = one progressive-disclosure question, eligible-only, derived destination — plans-redesign P2, 2026-05-26
+
+**Decision:** The apply-form Plans step opens with a single question — *"Do you know which pathway you'll take?"* →
+**Decided / Still deciding** — and reveals everything else only after it's answered. The **Decided** branch (SPM
+leavers) offers a **single-select dropdown of only the pathways the student's results qualify them for**, each labelled
+with its eligible-programme count, sourced live from the existing `/eligibility/check/` engine (`pathway_stats` →
+`eligiblePathways()` in a fixed order). The question is **required to submit**, but *"still deciding"* is always a valid
+answer. `upu_status` is **derived** from the chosen (public) pathway rather than asked, and `intends_tertiary_2026`
+defaults true (the step presupposes continuation).
+
+**Alternatives considered:** (1) The previous flat layout — a multi-select pathway-chips control + a separate UPU
+radio + a manual field-of-study select + a top-3 saved-courses picker, all shown at once. (2) Show every pathway
+(eligible or not) and let the student pick freely. (3) Leave the step optional (no submission gate).
+
+**Rationale:** The flat layout asked overlapping questions and surfaced controls that generated no usable signal
+(the user's "every control must generate signal — for the gate OR the profile" test). Progressive disclosure keeps
+the step to one decision at a time; eligible-only prevents a student from "deciding" on something they can't enter
+and reuses the engine as the single source of truth; deriving `upu_status` removes a redundant destination question
+because every eligible pathway is a public institution (non-IPTS). Requiring the question (with "still deciding" as
+an escape hatch) guarantees a signal without ever trapping an unsure student.
+
+**Trade-offs:** Adds a per-step client call to `/eligibility/check/` on the Plans tab (acceptable — same endpoint the
+results pages already use). STPM students see a stub in P2 (their degree branch lands in P5). The legacy
+field-of-study + top-3 pickers are kept *gated under "Decided"* this sprint and only removed in P3 when the
+pathway-filtered course dropdown replaces them — a deliberate one-sprint deferral, not permanent.
+
+**Revisit if:** the eligibility engine can't return `pathway_stats` cheaply enough for an inline call, or a future
+cohort funds private (IPTS) pathways (which would reintroduce a real destination question rather than a derived one).

@@ -231,7 +231,7 @@ export async function searchCourses(
 export async function checkEligibility(
   profile: StudentProfile,
   options?: ApiOptions
-): Promise<{ eligible_courses: EligibleCourse[]; stats: Record<string, number>; insights: Insights }> {
+): Promise<{ eligible_courses: EligibleCourse[]; stats: Record<string, number>; pathway_stats: Record<string, number>; insights: Insights }> {
   return apiRequest('/api/v1/eligibility/check/', {
     method: 'POST',
     body: JSON.stringify(profile),
