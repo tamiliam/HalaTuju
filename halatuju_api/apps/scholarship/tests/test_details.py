@@ -61,10 +61,28 @@ class TestCompleteness(TestCase):
         self.profile.student_signals = {'x': {'y': 1}}
         self.profile.save()
         self.app.aspirations = 'Be an accountant'
-        self.app.justification = 'Family cannot fund'
+        self.app.plans = 'Study hard every day'
         self.app.save()
         FundingNeed.objects.create(application=self.app, laptop=2000)
         self.assertTrue(application_completeness(self.app)['complete'])
+
+    def test_details_done_requires_aspirations_and_plans(self):
+        # aspirations + plans both required — justification no longer counts
+        self.app.aspirations = 'Be an engineer'
+        self.app.plans = ''
+        self.app.justification = 'Family cannot fund'
+        self.app.save()
+        self.assertFalse(application_completeness(self.app)['details_done'])
+
+        self.app.aspirations = ''
+        self.app.plans = 'Study hard'
+        self.app.save()
+        self.assertFalse(application_completeness(self.app)['details_done'])
+
+        self.app.aspirations = 'Be an engineer'
+        self.app.plans = 'Study hard'
+        self.app.save()
+        self.assertTrue(application_completeness(self.app)['details_done'])
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -97,17 +115,51 @@ class TestDetailsApi(TestCase):
         resp = self.client.patch(
             f'/api/v1/scholarship/applications/{self.app_a.id}/',
             {
-                'aspirations': 'Become an auditor', 'justification': 'Low income family',
+                'aspirations': 'Become an auditor', 'plans': 'Work hard every day',
                 'funding_need': {'laptop': 2000, 'monthly_allowance': 300, 'allowance_months': 10},
             }, format='json',
         )
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
         self.assertEqual(body['aspirations'], 'Become an auditor')
+        self.assertEqual(body['plans'], 'Work hard every day')
         self.assertEqual(body['funding_need']['total'], 2000 + 300 * 10)
         self.assertTrue(body['completeness']['details_done'])
         self.assertTrue(body['completeness']['funding_done'])
         self.assertFalse(body['completeness']['quiz_done'])  # no quiz signals yet
+
+    def test_patch_saves_story_narrative_fields(self):
+        """All 5 new Your story fields persist and read back."""
+        self._auth(USER_A)
+        resp = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {
+                'first_in_family': True,
+                'parents_occupation': 'Factory worker',
+                'siblings_studying': True,
+                'family_context': 'Father ill; mother is the sole earner.',
+                'daily_life': 'Wake at 5am, help at home, then school.',
+            }, format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertTrue(body['first_in_family'])
+        self.assertEqual(body['parents_occupation'], 'Factory worker')
+        self.assertTrue(body['siblings_studying'])
+        self.assertEqual(body['family_context'], 'Father ill; mother is the sole earner.')
+        self.assertEqual(body['daily_life'], 'Wake at 5am, help at home, then school.')
+
+    def test_story_fields_defaults_are_correct(self):
+        """New boolean fields default False; text fields default empty string."""
+        self._auth(USER_A)
+        resp = self.client.get(f'/api/v1/scholarship/applications/{self.app_a.id}/')
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertFalse(body['first_in_family'])
+        self.assertFalse(body['siblings_studying'])
+        self.assertEqual(body['parents_occupation'], '')
+        self.assertEqual(body['family_context'], '')
+        self.assertEqual(body['daily_life'], '')
 
     def test_patch_funding_idempotent_update(self):
         self._auth(USER_A)

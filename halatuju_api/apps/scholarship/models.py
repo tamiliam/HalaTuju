@@ -264,6 +264,32 @@ class ScholarshipApplication(models.Model):
         blank=True, default='', help_text="Why the student needs assistance",
     )
 
+    # ── "Your story" guided narrative fields (S2 redesign) ──────────────────
+    # Collected on the 5-tab /scholarship/application Story tab (Card A + Card B).
+    # All additive and optional — older clients/applications keep working without them.
+    # Card A — About your family
+    first_in_family = models.BooleanField(
+        default=False,
+        help_text="I would be the first in my family to go to university.",
+    )
+    parents_occupation = models.CharField(
+        max_length=255, blank=True, default='',
+        help_text="What do your parents or guardians do for a living?",
+    )
+    siblings_studying = models.BooleanField(
+        default=False,
+        help_text="One or more of my siblings are also studying.",
+    )
+    family_context = models.TextField(
+        blank=True, default='',
+        help_text="Anything about your family's situation we should know?",
+    )
+    # Card B — About you (aspirations/plans/fears already above; daily_life is new)
+    daily_life = models.TextField(
+        blank=True, default='',
+        help_text="What is your daily life like? Any responsibilities such as work or caring for family?",
+    )
+
     # Truthfulness declaration + typed-name "signature" (captured at submit). The
     # student types their full name (as in their IC) to sign the declaration that
     # everything they've provided is true. declared_at stamps when they signed.

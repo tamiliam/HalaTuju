@@ -627,7 +627,26 @@
         "documents": "Documents",
         "consent": "Consent"
       },
-      "stepOf": "Step {n} of 5"
+      "stepOf": "Step {n} of 5",
+      "story": {
+        "langNote": "Tell us about yourself in your own words — in Bahasa Melayu, English, or Tamil, whichever you're most comfortable with. There are no wrong answers.",
+        "optional": "Optional",
+        "soiNote": "Have more to say? You can upload a Statement of Intent in the Documents step.",
+        "cardA": {
+          "title": "About your family",
+          "firstInFamily": "I would be the first in my family to go to university.",
+          "parentsOccupation": "What do your parents or guardians do for a living?",
+          "siblingsStudying": "One or more of my siblings are also studying.",
+          "familyContext": "Anything about your family's situation we should know? (who supports the family, any illness or hardship)"
+        },
+        "cardB": {
+          "title": "About you",
+          "aspirations": "What do you hope to become? Your dreams and aspirations.",
+          "plans": "How do you plan to get there?",
+          "dailyLife": "What is your daily life like? Any responsibilities such as work or caring for family?",
+          "fears": "What worries you most, or what support would help you the most?"
+        }
+      }
     },
     "docs": {
       "type": {

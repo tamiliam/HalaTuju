@@ -262,7 +262,7 @@ def application_completeness(application):
     """
     profile = application.profile
     quiz_done = bool(profile and profile.student_signals)
-    details_done = bool(application.aspirations.strip() and application.justification.strip())
+    details_done = bool(application.aspirations.strip() and application.plans.strip())
     try:
         funding_done = application.funding_need.total > 0
     except FundingNeed.DoesNotExist:
@@ -275,7 +275,11 @@ def application_completeness(application):
     }
 
 
-_DEEPER_FIELDS = ('aspirations', 'plans', 'fears', 'justification')
+_DEEPER_FIELDS = (
+    'aspirations', 'plans', 'fears', 'justification',
+    # "Your story" guided narrative fields (S2 redesign)
+    'first_in_family', 'parents_occupation', 'siblings_studying', 'family_context', 'daily_life',
+)
 
 
 def save_application_details(application, data):

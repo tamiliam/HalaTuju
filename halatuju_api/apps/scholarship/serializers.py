@@ -88,6 +88,12 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
     fears = serializers.CharField(required=False, allow_blank=True)
     justification = serializers.CharField(required=False, allow_blank=True)
     funding_need = FundingNeedSerializer(required=False)
+    # "Your story" guided narrative fields (S2 redesign)
+    first_in_family = serializers.BooleanField(required=False)
+    parents_occupation = serializers.CharField(required=False, allow_blank=True)
+    siblings_studying = serializers.BooleanField(required=False)
+    family_context = serializers.CharField(required=False, allow_blank=True)
+    daily_life = serializers.CharField(required=False, allow_blank=True)
 
 
 class ApplicationReadSerializer(serializers.ModelSerializer):
@@ -132,6 +138,9 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'status', 'bucket', 'shortlist_reason',
             'acknowledged_at', 'submitted_at', 'updated_at',
             'aspirations', 'plans', 'fears', 'justification',
+            # "Your story" guided narrative fields (S2 redesign)
+            'first_in_family', 'parents_occupation', 'siblings_studying',
+            'family_context', 'daily_life',
             'funding_need', 'completeness',
             'form_data', 'intake_snapshot',
         ]

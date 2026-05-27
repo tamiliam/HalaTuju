@@ -16,7 +16,6 @@ import {
 import ScholarshipDocuments from '@/components/ScholarshipDocuments'
 import ScholarshipConsent from '@/components/ScholarshipConsent'
 
-const TEXT_FIELDS = ['aspirations', 'justification', 'plans', 'fears'] as const
 const MONEY_FIELDS = ['tuitionGap', 'laptop', 'hostel', 'transport', 'books', 'other'] as const
 
 // SVG icon for each tab — mirrors the style in /apply's TabIcon.
@@ -121,24 +120,124 @@ export default function ScholarshipNextSteps({
     ),
 
     story: (
-      <form onSubmit={handleSave} className="space-y-4">
-        <div className="flex items-center gap-3 mb-1">
-          <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${c.details_done ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'}`} aria-hidden>
-            {c.details_done ? '✓' : '○'}
-          </span>
-          <p className="font-medium text-gray-900">{t('scholarship.nextSteps.step2Title')}</p>
-        </div>
-        {TEXT_FIELDS.map((field) => (
-          <div key={field}>
+      <form onSubmit={handleSave} className="space-y-5">
+        {/* Language note (the card title "2. Your story" already heads the section) */}
+        <p className="text-sm text-gray-600 italic">{t('scholarship.nextSteps.story.langNote')}</p>
+
+        {/* Card A — About your family */}
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
+          <h3 className="font-medium text-gray-900">{t('scholarship.nextSteps.story.cardA.title')}</h3>
+
+          {/* first_in_family */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              checked={form.firstInFamily}
+              onChange={(e) => update('firstInFamily', e.target.checked)}
+            />
+            <span className="text-sm text-gray-700">{t('scholarship.nextSteps.story.cardA.firstInFamily')}</span>
+          </label>
+
+          {/* parents_occupation */}
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t(`scholarship.nextSteps.${field}`)}
+              {t('scholarship.nextSteps.story.cardA.parentsOccupation')}
             </label>
-            <textarea
-              className="input" rows={2} value={form[field]}
-              onChange={(e) => update(field, e.target.value)}
+            <input
+              type="text"
+              className="input"
+              value={form.parentsOccupation}
+              onChange={(e) => update('parentsOccupation', e.target.value)}
             />
           </div>
-        ))}
+
+          {/* siblings_studying (optional) */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              checked={form.siblingsStudying}
+              onChange={(e) => update('siblingsStudying', e.target.checked)}
+            />
+            <span className="text-sm text-gray-700">
+              {t('scholarship.nextSteps.story.cardA.siblingsStudying')}
+              {' '}<span className="text-xs text-gray-400 font-normal">{t('scholarship.nextSteps.story.optional')}</span>
+            </span>
+          </label>
+
+          {/* family_context (optional) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('scholarship.nextSteps.story.cardA.familyContext')}
+              {' '}<span className="text-xs text-gray-400 font-normal">{t('scholarship.nextSteps.story.optional')}</span>
+            </label>
+            <textarea
+              className="input" rows={3}
+              value={form.familyContext}
+              onChange={(e) => update('familyContext', e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Card B — About you */}
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
+          <h3 className="font-medium text-gray-900">{t('scholarship.nextSteps.story.cardB.title')}</h3>
+
+          {/* aspirations */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('scholarship.nextSteps.story.cardB.aspirations')}
+            </label>
+            <textarea
+              className="input" rows={3}
+              value={form.aspirations}
+              onChange={(e) => update('aspirations', e.target.value)}
+            />
+          </div>
+
+          {/* plans */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('scholarship.nextSteps.story.cardB.plans')}
+            </label>
+            <textarea
+              className="input" rows={3}
+              value={form.plans}
+              onChange={(e) => update('plans', e.target.value)}
+            />
+          </div>
+
+          {/* daily_life (optional) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('scholarship.nextSteps.story.cardB.dailyLife')}
+              {' '}<span className="text-xs text-gray-400 font-normal">{t('scholarship.nextSteps.story.optional')}</span>
+            </label>
+            <textarea
+              className="input" rows={3}
+              value={form.dailyLife}
+              onChange={(e) => update('dailyLife', e.target.value)}
+            />
+          </div>
+
+          {/* fears (optional) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('scholarship.nextSteps.story.cardB.fears')}
+              {' '}<span className="text-xs text-gray-400 font-normal">{t('scholarship.nextSteps.story.optional')}</span>
+            </label>
+            <textarea
+              className="input" rows={3}
+              value={form.fears}
+              onChange={(e) => update('fears', e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Statement-of-intent note */}
+        <p className="text-xs text-gray-500">{t('scholarship.nextSteps.story.soiNote')}</p>
+
         {saveFeedback}
         <button type="submit" disabled={saving} className="btn-primary w-full disabled:opacity-50">
           {saving ? t('scholarship.nextSteps.saving') : t('scholarship.nextSteps.save')}

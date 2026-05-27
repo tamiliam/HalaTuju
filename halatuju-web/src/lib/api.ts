@@ -954,6 +954,12 @@ export interface ScholarshipApplication {
   plans: string
   fears: string
   justification: string
+  // "Your story" guided narrative fields (S2 redesign)
+  first_in_family: boolean
+  parents_occupation: string
+  siblings_studying: boolean
+  family_context: string
+  daily_life: string
   funding_need: FundingNeed | null
   completeness: ApplicationCompleteness
   form_data: Record<string, unknown>

@@ -565,10 +565,19 @@ export function clearApplyReturn(storage?: StorageLike): void {
 // ── STEP 2: deeper-info + funding-need form (Sprint 4b) ──────────────────
 
 export interface DetailsFormState {
+  // Card A — About your family (S2)
+  firstInFamily: boolean
+  parentsOccupation: string
+  siblingsStudying: boolean
+  familyContext: string
+  // Card B — About you (S2; aspirations/plans/fears pre-existing, daily_life new)
   aspirations: string
   plans: string
   fears: string
+  dailyLife: string
+  // Legacy field (kept for backward compatibility; no longer part of completeness)
   justification: string
+  // Funding need fields (on the Funding tab)
   tuitionGap: string
   laptop: string
   hostel: string
@@ -595,7 +604,18 @@ export function fundingTotal(f: DetailsFormState): number {
 
 export function emptyDetailsForm(): DetailsFormState {
   return {
-    aspirations: '', plans: '', fears: '', justification: '',
+    // Card A — About your family
+    firstInFamily: false,
+    parentsOccupation: '',
+    siblingsStudying: false,
+    familyContext: '',
+    // Card B — About you
+    aspirations: '',
+    plans: '',
+    fears: '',
+    dailyLife: '',
+    justification: '',
+    // Funding need
     tuitionGap: '', laptop: '', hostel: '', transport: '', books: '',
     monthlyAllowance: '', allowanceMonths: '', other: '', otherDesc: '',
   }
@@ -605,10 +625,18 @@ export function applicationToDetailsForm(app: ScholarshipApplication): DetailsFo
   const fn = app.funding_need
   const numStr = (n: number | undefined) => (n != null && n !== 0 ? String(n) : '')
   return {
+    // Card A — About your family (S2 narrative fields)
+    firstInFamily: !!app.first_in_family,
+    parentsOccupation: app.parents_occupation || '',
+    siblingsStudying: !!app.siblings_studying,
+    familyContext: app.family_context || '',
+    // Card B — About you
     aspirations: app.aspirations || '',
     plans: app.plans || '',
     fears: app.fears || '',
+    dailyLife: app.daily_life || '',
     justification: app.justification || '',
+    // Funding need
     tuitionGap: numStr(fn?.tuition_gap),
     laptop: numStr(fn?.laptop),
     hostel: numStr(fn?.hostel),
@@ -623,9 +651,16 @@ export function applicationToDetailsForm(app: ScholarshipApplication): DetailsFo
 
 export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown> {
   return {
+    // Card A — About your family (snake_case for the backend)
+    first_in_family: f.firstInFamily,
+    parents_occupation: f.parentsOccupation.trim(),
+    siblings_studying: f.siblingsStudying,
+    family_context: f.familyContext.trim(),
+    // Card B — About you
     aspirations: f.aspirations.trim(),
     plans: f.plans.trim(),
     fears: f.fears.trim(),
+    daily_life: f.dailyLife.trim(),
     justification: f.justification.trim(),
     funding_need: {
       tuition_gap: intOr0(f.tuitionGap),

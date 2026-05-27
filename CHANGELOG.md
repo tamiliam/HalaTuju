@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.1] — "Your story" guided section (Step-4 redesign, S2) (2026-05-27)
+
+Backend + frontend (migrate-first: `scholarship 0012`, applied to prod before deploy). Replaces the "story" tab's
+4 generic textareas with a **guided two-card section** — *About your family* + *About you* — that together form the
+basis of the student's statement of intent. Trimmed to high-signal, mostly-optional prompts (per the signal-vs-burden
+review): family = first-in-family tick, parents'/guardians' occupation, "siblings also studying" (optional), and an
+optional family-situation box; you = aspirations + plan (the keepers) + optional daily-life/responsibilities +
+optional "what worries you / what support would help". A visible note invites answers in **BM / English / Tamil**,
+and points to the Statement-of-Intent upload for "more to say". No profile data is re-asked (sibling count, income,
+etc. stay on the canonical profile).
+- Backend: 5 additive narrative fields on `ScholarshipApplication` (`first_in_family`, `parents_occupation`,
+  `siblings_studying`, `family_context`, `daily_life`; migration `0012`); details-PATCH + read serializers + tests.
+  **Story-complete** now = `aspirations` + `plans` filled (was aspirations + justification); everything else optional.
+- Frontend: the guided form in the Story tab; `DetailsFormState` + payload mapping; i18n ×3 (parity 1190).
+- Build clean; backend 101 / jest 88; UI screenshot-verified (mobile + desktop). No total/photo/funding change here
+  (those are S3/S4).
+
 ## [2.4.0] — Application follow-up → 5-tab shell (Step-4 redesign, S1) (2026-05-27)
 
 Frontend-only (web deploy). First sprint of the `/scholarship/application` (post-shortlist "complete your profile")

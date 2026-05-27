@@ -627,7 +627,26 @@
         "documents": "Dokumen",
         "consent": "Persetujuan"
       },
-      "stepOf": "Langkah {n} daripada 5"
+      "stepOf": "Langkah {n} daripada 5",
+      "story": {
+        "langNote": "Ceritakan tentang diri anda dengan kata-kata sendiri — dalam Bahasa Melayu, Bahasa Inggeris, atau Tamil, mana-mana yang anda lebih selesa. Tiada jawapan yang salah.",
+        "optional": "Pilihan",
+        "soiNote": "Ada lebih banyak yang ingin disampaikan? Anda boleh memuat naik Penyataan Niat dalam langkah Dokumen.",
+        "cardA": {
+          "title": "Tentang keluarga anda",
+          "firstInFamily": "Saya akan menjadi yang pertama dalam keluarga saya melanjutkan pengajian ke universiti.",
+          "parentsOccupation": "Apakah pekerjaan ibu bapa atau penjaga anda?",
+          "siblingsStudying": "Satu atau lebih adik-beradik saya juga sedang belajar.",
+          "familyContext": "Ada apa-apa tentang situasi keluarga anda yang kami perlu tahu? (siapa yang menyara keluarga, sebarang penyakit atau kesusahan)"
+        },
+        "cardB": {
+          "title": "Tentang diri anda",
+          "aspirations": "Apa yang anda harapkan untuk menjadi? Impian dan cita-cita anda.",
+          "plans": "Bagaimana anda merancang untuk mencapainya?",
+          "dailyLife": "Bagaimana kehidupan harian anda? Ada tanggungjawab seperti bekerja atau menjaga keluarga?",
+          "fears": "Apa yang paling membimbangkan anda, atau sokongan apa yang paling membantu anda?"
+        }
+      }
     },
     "docs": {
       "type": {

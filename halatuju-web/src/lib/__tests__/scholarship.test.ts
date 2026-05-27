@@ -648,12 +648,31 @@ describe('buildDetailsPayload', () => {
     expect(p.funding_need.monthly_allowance).toBe(300)
     expect(p.funding_need.allowance_months).toBe(10)
   })
+
+  it('includes all 5 new story snake_case fields', () => {
+    const f = {
+      ...emptyDetailsForm(),
+      firstInFamily: true,
+      parentsOccupation: '  Factory worker  ',
+      siblingsStudying: false,
+      familyContext: '  Father is ill  ',
+      dailyLife: '  Wake at 5am  ',
+    }
+    const p = buildDetailsPayload(f) as Record<string, unknown>
+    expect(p.first_in_family).toBe(true)
+    expect(p.parents_occupation).toBe('Factory worker')
+    expect(p.siblings_studying).toBe(false)
+    expect(p.family_context).toBe('Father is ill')
+    expect(p.daily_life).toBe('Wake at 5am')
+  })
 })
 
 describe('applicationToDetailsForm', () => {
   it('pre-fills from an application with a funding need (zeros blanked)', () => {
     const app = {
       aspirations: 'Teach', plans: '', fears: '', justification: 'Need help',
+      first_in_family: false, parents_occupation: '', siblings_studying: false,
+      family_context: '', daily_life: '',
       funding_need: {
         tuition_gap: 0, laptop: 2000, hostel: 0, transport: 0, books: 0,
         monthly_allowance: 300, allowance_months: 10, other: 0, other_desc: '', total: 5000,
@@ -665,12 +684,37 @@ describe('applicationToDetailsForm', () => {
     expect(f.laptop).toBe('2000')
     expect(f.tuitionGap).toBe('')
     expect(f.monthlyAllowance).toBe('300')
+    // new story fields
+    expect(f.firstInFamily).toBe(false)
+    expect(f.parentsOccupation).toBe('')
+    expect(f.dailyLife).toBe('')
+  })
+  it('reads back story narrative fields from an application', () => {
+    const app = {
+      aspirations: 'Be a nurse', plans: 'Study pharmacy', fears: '', justification: '',
+      first_in_family: true, parents_occupation: 'Rubber tapper',
+      siblings_studying: true, family_context: 'Mother is ill',
+      daily_life: 'Wake early, help at home',
+      funding_need: null,
+    } as unknown as ScholarshipApplication
+    const f = applicationToDetailsForm(app)
+    expect(f.firstInFamily).toBe(true)
+    expect(f.parentsOccupation).toBe('Rubber tapper')
+    expect(f.siblingsStudying).toBe(true)
+    expect(f.familyContext).toBe('Mother is ill')
+    expect(f.dailyLife).toBe('Wake early, help at home')
   })
   it('handles a null funding need', () => {
-    const app = { aspirations: '', plans: '', fears: '', justification: '', funding_need: null } as unknown as ScholarshipApplication
+    const app = {
+      aspirations: '', plans: '', fears: '', justification: '',
+      first_in_family: false, parents_occupation: '', siblings_studying: false,
+      family_context: '', daily_life: '',
+      funding_need: null,
+    } as unknown as ScholarshipApplication
     const f = applicationToDetailsForm(app)
     expect(f.laptop).toBe('')
     expect(f.aspirations).toBe('')
+    expect(f.firstInFamily).toBe(false)
   })
 })
 
