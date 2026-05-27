@@ -89,6 +89,9 @@ visual sign-off.
 - **S3 — How you'd use the support (simplified funding).** Backend FundingNeed redesign (category flags +
   `funding_note` + `programme_months`, **no total**) (+migration), serializer, details-PATCH, completeness(funding),
   tests; frontend (tick categories + length + open box, "a contribution" framing) + lib helpers + i18n×3.
+  **✅ DONE — shipped 2026-05-27 (v2.4.2; web `…00215-xsh`, api `…00169-tph`; migration `0013` migrate-first, 0 rows).**
+  `categories`/`funding_note`/`programme_months`; funding-complete = ≥1 category; "up to RM3,000", tick-only, no total;
+  legacy amount columns dead (TD-059). i18n 1209. **▶ NEXT: S4 — Documents** (Stitch-prototype first).
 - **S4 — Documents (compulsory/optional + explainers + income "any one" + utility bills + multi-upload).** Backend
   doc types + required-set completeness + tests; frontend rework + i18n×3.
 - **S5 — Completeness finalise + progress ("X of 5") + "what happens next" + desktop polish + ship.** Plus: record

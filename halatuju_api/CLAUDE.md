@@ -329,13 +329,15 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
 - **▶ IN PROGRESS: `/scholarship/application` (Step 4) REDESIGN** — 5-sprint, plan
   `docs/scholarship/application-redesign-plan.md`. **S1 ✅ (v2.4.0):** 5-tab shell (Quiz · Your story · Funding ·
   Documents · Consent; referee removed from student flow → coordinator verify-&-accept). **S2 ✅ (v2.4.1):** "Your
-  story" guided Family+You section — 5 additive narrative fields (migration `0012`, migrate-first), story-complete =
-  aspirations+plans, BM/EN/Tamil free-text + Statement-of-Intent pointer. **▶ NEXT = S3 funding** — **Stitch-prototype
-  the screen first**, then `FundingNeed` redesign: tick categories + open `funding_note` + `programme_months`,
-  **NO total**, framed "up to RM3,000 (may be lower)" (additive migration, migrate-first) → S4 documents (4 new doc
-  types salary_slip/water_bill/electricity_bill/offer_letter; compulsory = IC + results slip) → S5 completeness
-  finalise + desktop + referee-at-accept + **Tamil-aware AI sponsor-profile** (currently BM/EN only). Trims locked
-  (signal-vs-burden): photo optional, funding capped/no-total, most docs optional, story mostly-optional narrative.
+  story" guided Family+You section — 5 additive narrative fields (migration `0012`), story-complete = aspirations+plans.
+  **S3 ✅ (v2.4.2):** funding reframed → "how you'd use the support" — `FundingNeed` + `categories`/`funding_note`/
+  `programme_months` (migration `0013`, migrate-first), tick-only (NO total), "up to RM3,000", funding-complete = ≥1
+  category; legacy amount columns now dead (TD-059). **▶ NEXT = S4 documents** — **Stitch-prototype first**, then 4 new
+  doc types (salary_slip/water_bill/electricity_bill/offer_letter), compulsory = IC + results slip, rest optional
+  (income proof STR/salary/EPF, utility bills, statement of intent, offer letter, photo), per-type explainers +
+  multi-upload (likely no migration — `doc_type` is a choices change) → S5 completeness finalise (`complete` =
+  quiz+story+funding+compulsory-docs+consent) + progress + desktop + referee-at-accept + **Tamil-aware AI
+  sponsor-profile** (currently BM/EN only). Trims locked: photo optional, funding capped/no-total, most docs optional.
 - **▶ Queued: S13 (post-launch): Vision OCR** — MyKad upload → instant NRIC match feedback, surfaced to admin (soft,
   never a hard block; would also upgrade the 2.3.0 declaration signature from a self-consistency nudge to a real
   name check). New Google Cloud Vision API key + **cost sign-off required** before any paid calls. Frontend
