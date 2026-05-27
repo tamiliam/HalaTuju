@@ -104,6 +104,15 @@ visual sign-off.
   **▶ NEXT: S5 — Completeness finalise.**
 - **S5 — Completeness finalise + progress ("X of 5") + "what happens next" + desktop polish + ship.** Plus: record
   referee at verify-&-accept (admin side) and make the AI sponsor-profile generator language-aware (Tamil), or note
-  for Phase 2.
+  for Phase 2. **SPLIT into S5a (applicant-facing) + S5b (admin/AI).**
+  - **S5a ✅ DONE — shipped 2026-05-28 (v2.4.4; web `…00217-7t7`, api `…00173-4nm`; NO migration).** Closed the
+    completeness loop: `consent_done` + `complete` = quiz+story+funding+compulsory-docs+consent (supersedes S4's
+    interim). Read serializer exposes `notify_email`. `ScholarshipNextSteps` wires the real Documents + Consent ticks
+    (hardcoded false since S4) and, when complete, shows a green "You're all set!" banner + "What happens next" panel
+    (3-step timeline + the comms email). Progress "X of 5" + per-step ticks + desktop rail were already delivered in S1.
+    i18n 1235 (Tamil first-draft). Backend 1128 pytest; build clean. Stitch-prototyped + signed off first.
+  - **S5b — queued (admin + AI):** record referee at the admin verify-&-accept stage; make the AI sponsor-profile
+    generator **Tamil/BM-aware** (handle Tamil/BM input, produce profile in target language — currently BM/EN only).
+    Then **TD-059** — drop the dead `FundingNeed` amount columns (one migration + serializer/lib cleanup).
 
 Each sprint: tested, i18n-parity'd, migrate-first, deployed, live-verified.

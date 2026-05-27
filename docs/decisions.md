@@ -825,3 +825,27 @@ with no UI.
 **Revisit if:** S5's completeness finalise changes how `documents_done` feeds `complete`; or income-proof needs to
 become compulsory (then it would join the required-set and the gate logic); or `reference_letter` should be formally
 retired from the model in a later cleanup.
+
+## Completeness finalised: `complete` = 5-part rollup + `consent_done` (any active consent) — Step-4 redesign S5a, 2026-05-28
+
+**Decision:** `application_completeness.complete` is now `quiz and story and funding and documents and consent` — the
+full five-part gate. Added `consent_done = application.consents.filter(is_active=True).exists()`. This **supersedes the
+S4 interim decision** that `complete` excluded documents/consent. `notify_email` is exposed read-only on
+`ApplicationReadSerializer` (a declared `EmailField(read_only=True)`) so the applicant's "What happens next" panel can
+state where decision emails actually go.
+
+**Alternatives considered:** (a) keep `complete` excluding docs/consent and gate the sponsor stage elsewhere; (b)
+gate `consent_done` on the specific consent type `share_with_sponsors` rather than "any active consent"; (c) show the
+logged-in user's email in the panel instead of the application's `notify_email`.
+
+**Rationale:** Compulsory documents and consent are genuine prerequisites before a profile is sponsor-ready, so they
+belong in `complete`; S4 deferred them only to keep each redesign sprint independently shippable. "Any active consent"
+is equivalent today (the consent step records a single type) and robust to the type-string. The application's resolved
+`notify_email` is the truthful "where updates go" value (and read-only prevents the read serializer accepting a write).
+
+**Trade-offs:** If a second, independent consent type is ever introduced, `consent_done` would wrongly read as done on
+the unrelated consent — at that point gate it on the specific required type. `complete` becoming stricter is the intended
+direction; the S4 regression test was updated to the new contract (`test_complete_requires_documents_and_consent`).
+
+**Revisit if:** multiple consent types are introduced (make `consent_done` type-specific), or the sponsor stage needs a
+completeness definition distinct from the applicant's.

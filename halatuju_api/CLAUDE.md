@@ -339,11 +339,17 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   `django_migrations` row recorded on prod via MCP before push). `application_completeness` gains **`documents_done`**
   (IC + results slip both present); **`complete` deliberately unchanged** (still quiz+story+funding — the docs/consent
   gate lands in S5). `reference_letter` dropped from the student UI (kept in model choices for back-compat). i18n parity
-  1227; **Tamil copy is a first draft pending the user's refine.** **▶ NEXT = S5 — completeness finalise:** `complete` =
-  quiz+story+funding+**compulsory-docs**+**consent_done** (add `consent_done`); progress "X of 5" + "what happens next";
-  `ScholarshipNextSteps` desktop pass; record referee at the admin verify-&-accept stage; **Tamil-aware AI
-  sponsor-profile** generator (currently BM/EN only); then drop the dead `FundingNeed` amount columns (TD-059). Trims
-  locked: photo optional, funding capped/no-total, most docs optional.
+  1227; **Tamil copy is a first draft pending the user's refine.** **S5 was SPLIT → S5a (applicant) ✅ + S5b (admin/AI)
+  queued.** **S5a ✅ (v2.4.4, DEPLOYED 2026-05-28; web `…00217-7t7`, api `…00173-4nm`; NO migration):** completeness
+  loop closed — `application_completeness` gains **`consent_done`** (an active `Consent` exists) and **`complete` now =
+  quiz+story+funding+compulsory-docs+consent** (full 5-part rollup; supersedes S4's interim). Read serializer exposes
+  **`notify_email`** (read-only). `ScholarshipNextSteps` now wires the real **Documents + Consent step ticks** (were
+  hardcoded false since S4) and, when complete, shows a green **"You're all set!"** banner + a **"What happens next"**
+  panel (3-step timeline: review → we may call you in your preferred language → decision by email + the exact comms
+  email). i18n 1235 (Tamil first-draft). Progress "X of 5" + per-step ticks + desktop rail were already in S1.
+  **▶ NEXT = S5b (queued):** record referee at the admin verify-&-accept stage; make the **Tamil-aware AI sponsor-profile**
+  generator handle Tamil/BM input + output (currently BM/EN only). Then **TD-059** — drop the dead `FundingNeed` amount
+  columns. Trims locked: photo optional, funding capped/no-total, most docs optional.
 - **▶ Queued: S13 (post-launch): Vision OCR** — MyKad upload → instant NRIC match feedback, surfaced to admin (soft,
   never a hard block; would also upgrade the 2.3.0 declaration signature from a self-consistency nudge to a real
   name check). New Google Cloud Vision API key + **cost sign-off required** before any paid calls. Frontend
