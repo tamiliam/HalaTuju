@@ -60,7 +60,12 @@ export default function ProgrammePicker({
       <input
         className="input"
         value={query}
-        autoComplete="off"
+        // Chrome ignores autoComplete="off" for fields it guesses are address/contact
+        // and pops its saved-address list over our course menu. "new-password" reliably
+        // suppresses that (text input → no password UI); data-*ignore mute 1Password/LastPass.
+        autoComplete="new-password"
+        data-1p-ignore
+        data-lpignore="true"
         role="combobox"
         aria-expanded={open}
         aria-autocomplete="list"

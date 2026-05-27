@@ -52,7 +52,12 @@ export default function InstitutionPicker({
       <input
         className="input"
         value={query}
-        autoComplete="off"
+        // Chrome ignores autoComplete="off" for fields it guesses are address/contact
+        // (school/college names trigger this readily) and pops its saved-address list over
+        // ours. "new-password" suppresses that; data-*ignore mute 1Password/LastPass.
+        autoComplete="new-password"
+        data-1p-ignore
+        data-lpignore="true"
         role="combobox"
         aria-expanded={open}
         aria-autocomplete="list"

@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.6] — Stop Chrome address-autofill hijacking the course / institution comboboxes (2026-05-27)
+
+Frontend-only (one `halatuju-web` deploy). Reported on the live STPM top-3 picker: Chrome's saved-address
+autofill (postcodes / localities) popped up **over** the course list, covering it. Both `ProgrammePicker`
+and `InstitutionPicker` already set `autoComplete="off"`, but Chrome **ignores `off`** for fields it
+heuristically classifies as address/contact. Switched both to `autoComplete="new-password"` — Chrome won't
+autofill saved addresses into a new-password field, and since the inputs are `type="text"` no password UI
+fires. Added `data-1p-ignore` + `data-lpignore="true"` so the new-password hint doesn't attract 1Password /
+LastPass icons. Affects every course picker (decided + top-3 branches) and the matric-college / Form-6-school
+pickers. Build clean.
+
 ## [2.2.5] — STPM "still deciding" top-3 degree picker + PISMP in SPM leaning pills (2026-05-27)
 
 Frontend-only (one `halatuju-web` deploy, no api change):
