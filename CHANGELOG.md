@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] — Application follow-up → 5-tab shell (Step-4 redesign, S1) (2026-05-27)
+
+Frontend-only (web deploy). First sprint of the `/scholarship/application` (post-shortlist "complete your profile")
+redesign — see `docs/scholarship/application-redesign-plan.md`. The shortlisted view changes from one long scroll to
+a **5-tab sectioned shell** mirroring `/apply`: desktop left step-rail + active section card, mobile bottom tab bar,
+a progress bar + "Step N of 5" indicator. Tabs: **Quiz · Your story · Funding · Documents · Consent** — the Referee
+step is **dropped from the student flow** (it moves to the coordinator's verify-&-accept stage in a later sprint).
+Section *content* is ported in **unchanged** this sprint (the single details form is split across the Story + Funding
+tabs but still PATCHes the same payload via one shared form state — a Save button on each tab persists everything);
+Your story / Funding / Documents get their actual rework in S2–S4. New pure helpers `NEXT_STEP_ORDER` +
+`defaultNextTab` (opens on the first incomplete step) with 9 unit tests. Build clean; jest 86; i18n parity 1177.
+No backend/model change.
+
 ## [2.3.1] — Shortlist email links straight to "complete your profile" (2026-05-27)
 
 Backend-only (api deploy). Live testing showed the shortlist **invitation email** said *"we'll be in touch shortly

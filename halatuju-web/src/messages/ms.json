@@ -619,7 +619,15 @@
       "step5Title": "5. Tambah perujuk",
       "step5Body": "Seseorang yang boleh menjamin anda — guru, kaunselor, atau kenalan komuniti.",
       "step6Title": "6. Berikan persetujuan anda",
-      "step6Body": "Benarkan kami berkongsi profil anda dengan bakal penaja."
+      "step6Body": "Benarkan kami berkongsi profil anda dengan bakal penaja.",
+      "tab": {
+        "quiz": "Kuiz",
+        "story": "Kisah anda",
+        "funding": "Kewangan",
+        "documents": "Dokumen",
+        "consent": "Persetujuan"
+      },
+      "stepOf": "Langkah {n} daripada 5"
     },
     "docs": {
       "type": {

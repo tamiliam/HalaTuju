@@ -33,6 +33,8 @@ import {
   clearApplyReturn,
   APPLY_STASH_KEY,
   APPLY_RETURN_KEY,
+  NEXT_STEP_ORDER,
+  defaultNextTab,
   type ApplyFormState,
 } from '@/lib/scholarship'
 import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse } from '@/lib/api'
@@ -686,5 +688,39 @@ describe('DOC_TYPES', () => {
     expect(DOC_TYPES).toHaveLength(7)
     expect(DOC_TYPES).toContain('ic')
     expect(DOC_TYPES).toContain('reference_letter')
+  })
+})
+
+// ── S1: next-steps tabbed shell helpers ─────────────────────────────────
+
+describe('NEXT_STEP_ORDER', () => {
+  it('has exactly 5 tabs in the correct order', () => {
+    expect(NEXT_STEP_ORDER).toEqual(['quiz', 'story', 'funding', 'documents', 'consent'])
+  })
+
+  it('does not include referee', () => {
+    expect(NEXT_STEP_ORDER).not.toContain('referee')
+  })
+})
+
+describe('defaultNextTab', () => {
+  it('returns quiz when completeness is null', () => {
+    expect(defaultNextTab(null)).toBe('quiz')
+  })
+
+  it('returns quiz when quiz is not done', () => {
+    expect(defaultNextTab({ quiz_done: false, details_done: false, funding_done: false })).toBe('quiz')
+  })
+
+  it('returns story when quiz is done but details not done', () => {
+    expect(defaultNextTab({ quiz_done: true, details_done: false, funding_done: false })).toBe('story')
+  })
+
+  it('returns funding when quiz + story done but funding not done', () => {
+    expect(defaultNextTab({ quiz_done: true, details_done: true, funding_done: false })).toBe('funding')
+  })
+
+  it('falls back to quiz when all three known steps are done', () => {
+    expect(defaultNextTab({ quiz_done: true, details_done: true, funding_done: true })).toBe('quiz')
   })
 })

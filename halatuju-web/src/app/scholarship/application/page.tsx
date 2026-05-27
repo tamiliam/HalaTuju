@@ -43,11 +43,15 @@ export default function ScholarshipApplicationPage() {
   // contact email if set, otherwise the Google sign-in address).
   const commsEmail = profile?.contact_email || profile?.email || ''
 
+  // The shortlisted view needs the extra width for the desktop step-rail.
+  // Other status cards (received/accepted/none) keep the narrower max-w-2xl.
+  const isShortlisted = app?.status === 'shortlisted'
+
   function wrap(children: React.ReactNode) {
     return (
       <div className="flex min-h-screen flex-col">
         <AppHeader />
-        <main className="container mx-auto w-full max-w-2xl flex-1 px-6 py-10">
+        <main className={`container mx-auto w-full flex-1 px-6 py-10 ${isShortlisted ? 'max-w-2xl lg:max-w-4xl' : 'max-w-2xl'}`}>
           <h1 className="mb-6 text-2xl font-bold text-gray-900">{t('scholarship.application.title')}</h1>
           {children}
         </main>

@@ -619,7 +619,15 @@
       "step5Title": "5. Add a referee",
       "step5Body": "Someone who can vouch for you — a teacher, counsellor, or community contact.",
       "step6Title": "6. Give your consent",
-      "step6Body": "Allow us to share your profile with potential sponsors."
+      "step6Body": "Allow us to share your profile with potential sponsors.",
+      "tab": {
+        "quiz": "Quiz",
+        "story": "Your story",
+        "funding": "Funding",
+        "documents": "Documents",
+        "consent": "Consent"
+      },
+      "stepOf": "Step {n} of 5"
     },
     "docs": {
       "type": {

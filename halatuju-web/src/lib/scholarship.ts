@@ -641,6 +641,30 @@ export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown
   }
 }
 
+// ── Next-steps tabbed shell (Sprint S1) ─────────────────────────────────
+
+/**
+ * The 5 tabs shown to a shortlisted applicant on /scholarship/application.
+ * Referee has been moved to the admin verify-&-accept flow and is NOT in this list.
+ */
+export const NEXT_STEP_ORDER = ['quiz', 'story', 'funding', 'documents', 'consent'] as const
+export type NextStepKey = typeof NEXT_STEP_ORDER[number]
+
+/**
+ * Determine the initial tab: first incomplete step, falling back to 'quiz'.
+ * Documents and Consent have no completeness signal yet (added in S4/S5),
+ * so they are treated as always incomplete for the purpose of this default.
+ */
+export function defaultNextTab(
+  completeness: { quiz_done: boolean; details_done: boolean; funding_done: boolean } | null | undefined,
+): NextStepKey {
+  if (!completeness) return 'quiz'
+  if (!completeness.quiz_done) return 'quiz'
+  if (!completeness.details_done) return 'story'
+  if (!completeness.funding_done) return 'funding'
+  return 'quiz'
+}
+
 // ── Documents (Sprint 5b) ────────────────────────────────────────────────
 
 export const DOC_TYPES = [
