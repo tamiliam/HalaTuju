@@ -153,11 +153,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (profile.grades && Object.keys(profile.grades).length > 0) {
       localStorage.setItem(KEY_GRADES, JSON.stringify(profile.grades))
     }
-    const demo: Record<string, unknown> = {}
+    // Merge into the existing cached profile rather than overwriting it, so values
+    // set elsewhere (notably the grades step's coqScore) survive a profile refresh.
+    let demo: Record<string, unknown> = {}
+    try {
+      const existing = localStorage.getItem(KEY_PROFILE)
+      if (existing) demo = JSON.parse(existing)
+    } catch { /* malformed — start fresh */ }
     if (profile.gender) demo.gender = profile.gender
     if (profile.nationality) demo.nationality = profile.nationality
     if (profile.colorblind != null) demo.colorblind = profile.colorblind
     if (profile.disability != null) demo.disability = profile.disability
+    // CoQ is persisted on the profile as snake_case `coq_score`, but the app reads
+    // camelCase `coqScore` from this cache — map it so the stored co-curricular
+    // score round-trips back into the grades/edit form instead of resetting to 0.
+    if (profile.coq_score != null) demo.coqScore = profile.coq_score
     if (Object.keys(demo).length > 0) {
       localStorage.setItem(KEY_PROFILE, JSON.stringify(demo))
     }

@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.3] — `coq` round-trip fix + STPM names canonicalised + "Public University" copy (2026-05-27)
+
+Three frontend fixes, one `halatuju-web` deploy (no api change):
+- **`coq` now round-trips to the edit form.** 2.2.2 persisted `coq` to the DB, but the auth context's
+  profile-cache effect *overwrote* `KEY_PROFILE` on every refresh — dropping the camelCase `coqScore` and never
+  mapping the backend's snake_case `coq_score` back. So the grades/edit form re-read `0`. The cache now **merges**
+  (instead of overwriting) and maps `coq_score → coqScore`, so a stored co-curricular score shows on re-edit.
+- **STPM centre names canonicalised to the MOE secondary list (by code).** All 584 STPM centres matched a secondary
+  school by code (clean subset, zero gaps), but every name had drifted from the canonical MOE record (Title-Case copy
+  with casing/bracket/apostrophe inconsistencies + truncations, e.g. `Datin Onn → DATIN ONN JAFFAR`, `Munsyi → MUNSHI`).
+  Names now come from the canonical secondary list, so the STPM stream→school picker shows **identical** names to the
+  About Me School field (ALL-CAPS, as About Me already displays).
+- **"Public university degree" → "Public university"** in the Plans pathway dropdown (en/ms/ta).
+
+Build clean; i18n parity 1156; 74 lib tests pass. Forward-only for `coq` (existing profiles fill in on next sync).
+
 ## [2.2.2] — Persist `coq_score` to the profile (co-curricular score now stored, not just local) (2026-05-27)
 
 Follow-up to 2.2.1, fixing the *root* gap rather than just tolerating it. `coq_score` was collected at onboarding
