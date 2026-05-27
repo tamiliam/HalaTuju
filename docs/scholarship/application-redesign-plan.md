@@ -94,6 +94,14 @@ visual sign-off.
   legacy amount columns dead (TD-059). i18n 1209. **▶ NEXT: S4 — Documents** (Stitch-prototype first).
 - **S4 — Documents (compulsory/optional + explainers + income "any one" + utility bills + multi-upload).** Backend
   doc types + required-set completeness + tests; frontend rework + i18n×3.
+  **✅ DONE — shipped 2026-05-28 (v2.4.3; web `…00216-6pt`, api `…00171-cjf`; choices-only migration `0014`, no DDL,
+  row recorded on prod via MCP).** Stitch-prototyped + signed off first. `ApplicantDocument` +4 doc types
+  (`salary_slip`/`water_bill`/`electricity_bill`/`offer_letter`); `reference_letter` dropped from student UI (kept in
+  model). `application_completeness` gains `documents_done` (IC + results slip); **`complete` left unchanged** (docs +
+  consent fold in at S5). `ScholarshipDocuments` reworked: Required vs Optional sections, per-type explainers, combined
+  income-proof card (STR/salary/EPF selector, multi-file); `scholarship.ts` doc-type groups + `documentsComplete()`
+  (+jest). i18n parity 1227 (Tamil first-draft, pending user refine). Backend 112 pytest (scholarship); build clean.
+  **▶ NEXT: S5 — Completeness finalise.**
 - **S5 — Completeness finalise + progress ("X of 5") + "what happens next" + desktop polish + ship.** Plus: record
   referee at verify-&-accept (admin side) and make the AI sponsor-profile generator language-aware (Tamil), or note
   for Phase 2.

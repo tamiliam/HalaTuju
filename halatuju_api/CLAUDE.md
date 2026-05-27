@@ -332,12 +332,18 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   story" guided Family+You section — 5 additive narrative fields (migration `0012`), story-complete = aspirations+plans.
   **S3 ✅ (v2.4.2):** funding reframed → "how you'd use the support" — `FundingNeed` + `categories`/`funding_note`/
   `programme_months` (migration `0013`, migrate-first), tick-only (NO total), "up to RM3,000", funding-complete = ≥1
-  category; legacy amount columns now dead (TD-059). **▶ NEXT = S4 documents** — **Stitch-prototype first**, then 4 new
-  doc types (salary_slip/water_bill/electricity_bill/offer_letter), compulsory = IC + results slip, rest optional
-  (income proof STR/salary/EPF, utility bills, statement of intent, offer letter, photo), per-type explainers +
-  multi-upload (likely no migration — `doc_type` is a choices change) → S5 completeness finalise (`complete` =
-  quiz+story+funding+compulsory-docs+consent) + progress + desktop + referee-at-accept + **Tamil-aware AI
-  sponsor-profile** (currently BM/EN only). Trims locked: photo optional, funding capped/no-total, most docs optional.
+  category; legacy amount columns now dead (TD-059). **S4 ✅ (v2.4.3, DEPLOYED 2026-05-28; web `…00216-6pt`,
+  api `…00171-cjf`):** Documents tab reworked — **Required** (IC + results slip, each with explainer) vs **Optional**
+  (combined income-proof card = any one of STR/salary_slip/EPF, multi-file; water bill; electricity bill; statement of
+  intent; offer letter; photo). 4 new `ApplicantDocument` doc types via **choices-only migration `0014`** (no DDL —
+  `django_migrations` row recorded on prod via MCP before push). `application_completeness` gains **`documents_done`**
+  (IC + results slip both present); **`complete` deliberately unchanged** (still quiz+story+funding — the docs/consent
+  gate lands in S5). `reference_letter` dropped from the student UI (kept in model choices for back-compat). i18n parity
+  1227; **Tamil copy is a first draft pending the user's refine.** **▶ NEXT = S5 — completeness finalise:** `complete` =
+  quiz+story+funding+**compulsory-docs**+**consent_done** (add `consent_done`); progress "X of 5" + "what happens next";
+  `ScholarshipNextSteps` desktop pass; record referee at the admin verify-&-accept stage; **Tamil-aware AI
+  sponsor-profile** generator (currently BM/EN only); then drop the dead `FundingNeed` amount columns (TD-059). Trims
+  locked: photo optional, funding capped/no-total, most docs optional.
 - **▶ Queued: S13 (post-launch): Vision OCR** — MyKad upload → instant NRIC match feedback, surfaced to admin (soft,
   never a hard block; would also upgrade the 2.3.0 declaration signature from a self-consistency nudge to a real
   name check). New Google Cloud Vision API key + **cost sign-off required** before any paid calls. Frontend

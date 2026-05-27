@@ -793,3 +793,35 @@ e-consent already happens later in the shortlisted follow-up flow, so this is a 
 
 **Revisit if:** S13 Vision OCR lands (then the signed name can be cross-checked against the OCR'd MyKad name and the
 nudge can become a real verification signal), or legal counsel requires a binding e-signature flow.
+
+## Documents: 4 new doc types (choices-only) + combined income-proof card + `documents_done` decoupled from `complete` — Step-4 redesign S4, 2026-05-28
+
+**Decision:** Added four `ApplicantDocument` doc types (`salary_slip`, `water_bill`, `electricity_bill`, `offer_letter`)
+via a **choices-only migration** (`0014`, no DDL — recorded on prod as a `django_migrations` row via MCP). The Documents
+tab is split into **Required** (IC + results slip) vs **Optional**, with proof-of-household-income presented as **one
+visual card accepting any one of STR / salary slip / EPF** (a per-file type selector keeps each upload stored under its
+true `doc_type`; multi-file allowed). `application_completeness` gained `documents_done` (IC + results slip both
+present), but **`complete` was left unchanged** (still `quiz and details and funding`) — the documents/consent gate is
+deferred to S5. `reference_letter` was removed from the student UI but **kept in the model choices**.
+
+**Alternatives considered:** (a) three separate income-proof rows (STR / salary / EPF) instead of one combined card;
+(b) a single generic "income proof" doc type losing the STR/salary/EPF distinction; (c) fold compulsory documents into
+`complete` immediately in S4; (d) drop `reference_letter` from the model entirely.
+
+**Rationale:** Postgres doesn't enforce `choices`, so adding doc types needs no schema change — recording the migration
+row keeps Django's state consistent while sidestepping TD-058 (no `manage.py migrate`, no contenttypes failure). The
+combined income card lowers perceived burden (one "proof of income" ask, not three) while the per-file type selector
+preserves the distinct types verification needs downstream. Decoupling `documents_done` from `complete` keeps each
+redesign sprint independently shippable and avoids a half-built completeness rollup; S5 owns the final
+`complete = quiz + story + funding + compulsory-docs + consent`. Keeping `reference_letter` as a valid choice avoids a
+non-backward-compatible enum change for a near-zero-cost retention (the referee just moved to the admin verify-&-accept
+stage).
+
+**Trade-offs:** `complete` is briefly "true" without the compulsory documents present (acceptable — the pipeline is
+dormant and a regression test, `test_complete_not_affected_by_documents_done`, makes the interim state explicit). The
+income card's type selector is one extra tap per file vs. three fixed rows. `reference_letter` lingers as a model choice
+with no UI.
+
+**Revisit if:** S5's completeness finalise changes how `documents_done` feeds `complete`; or income-proof needs to
+become compulsory (then it would join the required-set and the gate logic); or `reference_letter` should be formally
+retired from the model in a later cleanup.
