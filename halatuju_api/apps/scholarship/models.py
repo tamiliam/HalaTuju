@@ -394,6 +394,10 @@ class ApplicantDocument(models.Model):
         ('str', 'STR Document'),
         ('statement_of_intent', 'Statement of Intent'),
         ('reference_letter', 'Reference Letter'),
+        ('salary_slip', 'Salary Slip'),
+        ('water_bill', 'Water Bill'),
+        ('electricity_bill', 'Electricity Bill'),
+        ('offer_letter', 'Offer Letter'),
     ]
     VERIFICATION_CHOICES = [
         ('pending', 'Pending'),

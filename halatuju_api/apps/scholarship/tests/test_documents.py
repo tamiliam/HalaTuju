@@ -107,3 +107,28 @@ class TestDocumentApi(TestCase):
     def test_documents_require_auth(self):
         resp = self.client.get('/api/v1/scholarship/documents/')
         self.assertEqual(resp.status_code, 401)
+
+    # ── S4: new doc types ────────────────────────────────────────────────
+    @patch('apps.scholarship.storage.create_signed_upload_url', return_value='https://signed.example/upload')
+    def test_sign_upload_accepts_salary_slip(self, _mock):
+        """salary_slip (new in S4) is a valid doc_type for sign-upload."""
+        self._auth(USER_A)
+        resp = self.client.post(
+            '/api/v1/scholarship/documents/sign-upload/',
+            {'doc_type': 'salary_slip'}, format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['doc_type'], 'salary_slip')
+
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://signed.example/dl')
+    def test_record_document_accepts_new_types(self, _mock):
+        """All four S4 doc types can be recorded via the document API."""
+        self._auth(USER_A)
+        for doc_type in ('salary_slip', 'water_bill', 'electricity_bill', 'offer_letter'):
+            resp = self.client.post('/api/v1/scholarship/documents/', {
+                'doc_type': doc_type,
+                'storage_path': f'{self.app_a.id}/{doc_type}/abc',
+                'original_filename': f'{doc_type}.pdf',
+                'size': 512,
+            }, format='json')
+            self.assertEqual(resp.status_code, 201, f'Expected 201 for doc_type={doc_type}, got {resp.status_code}')

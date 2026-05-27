@@ -677,9 +677,31 @@
         "epf": "EPF statement",
         "str": "STR document",
         "statement_of_intent": "Statement of intent",
-        "reference_letter": "Reference letter"
+        "reference_letter": "Reference letter",
+        "salary_slip": "Salary slip",
+        "water_bill": "Water bill",
+        "electricity_bill": "Electricity bill",
+        "offer_letter": "Offer letter"
       },
+      "help": {
+        "ic": "A photo of the front of your MyKad.",
+        "results_slip": "Your latest results slip.",
+        "income": "Any one is fine — your STR letter, a recent salary slip, or an EPF statement. You can add more than one if several people earn.",
+        "water_bill": "A recent bill helps us understand your household.",
+        "electricity_bill": "A recent bill helps us understand your household.",
+        "statement_of_intent": "A short letter about your goals, if you'd like to write one.",
+        "offer_letter": "If you already have a university or college offer.",
+        "photo": "A recent photo of yourself (optional)."
+      },
+      "income": {
+        "title": "Proof of household income"
+      },
+      "requiredPill": "Required",
+      "optionalPill": "Optional",
+      "requiredNote": "We need these two documents to process your application.",
+      "optionalNote": "These help us understand your situation better. Add what you have.",
       "choose": "Choose file",
+      "addMore": "Add more",
       "uploading": "Uploading…",
       "remove": "Remove",
       "uploadError": "Upload failed. Please try again.",

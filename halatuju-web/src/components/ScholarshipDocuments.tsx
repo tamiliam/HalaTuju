@@ -10,7 +10,234 @@ import {
   deleteDocument,
   type ApplicantDocument,
 } from '@/lib/api'
-import { DOC_TYPES, formatFileSize } from '@/lib/scholarship'
+import {
+  COMPULSORY_DOC_TYPES,
+  INCOME_PROOF_TYPES,
+  OTHER_OPTIONAL_DOC_TYPES,
+  formatFileSize,
+} from '@/lib/scholarship'
+
+// ── Shared sub-components ─────────────────────────────────────────────────
+
+function UploadedFileRow({
+  doc,
+  onDelete,
+  t,
+}: {
+  doc: ApplicantDocument
+  onDelete: (id: number) => void
+  t: (key: string) => string
+}) {
+  return (
+    <li className="flex items-center justify-between text-sm text-gray-600">
+      <span className="truncate">
+        {doc.download_url ? (
+          <a
+            href={doc.download_url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary-600 hover:underline"
+          >
+            {doc.original_filename || doc.doc_type}
+          </a>
+        ) : (
+          doc.original_filename || doc.doc_type
+        )}
+        {doc.size ? (
+          <span className="text-gray-400"> · {formatFileSize(doc.size)}</span>
+        ) : null}
+      </span>
+      <button
+        onClick={() => onDelete(doc.id)}
+        className="text-red-500 hover:underline ml-2 shrink-0"
+      >
+        {t('scholarship.docs.remove')}
+      </button>
+    </li>
+  )
+}
+
+function UploadTrigger({
+  docType,
+  busy,
+  onUpload,
+  label,
+}: {
+  docType: string
+  busy: boolean
+  onUpload: (docType: string, file: File) => void
+  label: string
+}) {
+  return (
+    <label className="text-sm text-primary-600 cursor-pointer hover:underline shrink-0">
+      {label}
+      <input
+        type="file"
+        className="hidden"
+        disabled={busy}
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) onUpload(docType, f)
+          e.target.value = ''
+        }}
+      />
+    </label>
+  )
+}
+
+// ── Single-type upload card ───────────────────────────────────────────────
+
+function SingleDocCard({
+  docType,
+  docs,
+  busyType,
+  onUpload,
+  onDelete,
+  t,
+}: {
+  docType: string
+  docs: ApplicantDocument[]
+  busyType: string | null
+  onUpload: (docType: string, file: File) => void
+  onDelete: (id: number) => void
+  t: (key: string) => string
+}) {
+  const busy = busyType === docType
+  const existing = docs.filter((d) => d.doc_type === docType)
+
+  return (
+    <div className="border rounded-lg p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <span className="text-sm font-medium text-gray-800">
+            {t(`scholarship.docs.type.${docType}`)}
+          </span>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {t(`scholarship.docs.help.${docType}`)}
+          </p>
+        </div>
+        <UploadTrigger
+          docType={docType}
+          busy={busy}
+          onUpload={onUpload}
+          label={
+            busy
+              ? t('scholarship.docs.uploading')
+              : existing.length > 0
+              ? t('scholarship.docs.addMore')
+              : t('scholarship.docs.choose')
+          }
+        />
+      </div>
+      {existing.length > 0 && (
+        <ul className="mt-2 space-y-1">
+          {existing.map((d) => (
+            <UploadedFileRow key={d.id} doc={d} onDelete={onDelete} t={t} />
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+// ── Combined income-proof card ────────────────────────────────────────────
+
+function IncomeProofCard({
+  docs,
+  busyType,
+  onUpload,
+  onDelete,
+  t,
+}: {
+  docs: ApplicantDocument[]
+  busyType: string | null
+  onUpload: (docType: string, file: File) => void
+  onDelete: (id: number) => void
+  t: (key: string) => string
+}) {
+  const incomeTypes = [...INCOME_PROOF_TYPES] as string[]
+  const existing = docs.filter((d) => incomeTypes.includes(d.doc_type))
+  const [activeType, setActiveType] = useState<string>(INCOME_PROOF_TYPES[0])
+  const busy = busyType === activeType
+
+  return (
+    <div className="border rounded-lg p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1">
+          <span className="text-sm font-medium text-gray-800">
+            {t('scholarship.docs.income.title')}
+          </span>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {t('scholarship.docs.help.income')}
+          </p>
+          {/* Type selector */}
+          <div className="flex flex-wrap gap-2 mt-2">
+            {INCOME_PROOF_TYPES.map((dt) => (
+              <button
+                key={dt}
+                onClick={() => setActiveType(dt)}
+                className={`text-xs px-2 py-1 rounded border transition-colors ${
+                  activeType === dt
+                    ? 'bg-primary-600 text-white border-primary-600'
+                    : 'text-gray-600 border-gray-300 hover:border-primary-400'
+                }`}
+              >
+                {t(`scholarship.docs.type.${dt}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <UploadTrigger
+          docType={activeType}
+          busy={busy}
+          onUpload={onUpload}
+          label={
+            busy ? t('scholarship.docs.uploading') : t('scholarship.docs.choose')
+          }
+        />
+      </div>
+      {existing.length > 0 && (
+        <ul className="mt-2 space-y-1">
+          {existing.map((d) => (
+            <li
+              key={d.id}
+              className="flex items-center justify-between text-sm text-gray-600"
+            >
+              <span className="truncate">
+                <span className="text-gray-400 text-xs mr-1">
+                  [{t(`scholarship.docs.type.${d.doc_type}`)}]
+                </span>
+                {d.download_url ? (
+                  <a
+                    href={d.download_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary-600 hover:underline"
+                  >
+                    {d.original_filename || d.doc_type}
+                  </a>
+                ) : (
+                  d.original_filename || d.doc_type
+                )}
+                {d.size ? (
+                  <span className="text-gray-400"> · {formatFileSize(d.size)}</span>
+                ) : null}
+              </span>
+              <button
+                onClick={() => onDelete(d.id)}
+                className="text-red-500 hover:underline ml-2 shrink-0"
+              >
+                {t('scholarship.docs.remove')}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────
 
 export default function ScholarshipDocuments({ token }: { token: string | null }) {
   const { t } = useT()
@@ -35,10 +262,10 @@ export default function ScholarshipDocuments({ token }: { token: string | null }
     try {
       const { upload_url, storage_path } = await signUploadDocument(docType, { token })
       await uploadFileToSignedUrl(upload_url, file)
-      await recordDocument({
-        doc_type: docType, storage_path,
-        original_filename: file.name, content_type: file.type, size: file.size,
-      }, { token })
+      await recordDocument(
+        { doc_type: docType, storage_path, original_filename: file.name, content_type: file.type, size: file.size },
+        { token },
+      )
       await refresh()
     } catch {
       setError(t('scholarship.docs.uploadError'))
@@ -58,47 +285,67 @@ export default function ScholarshipDocuments({ token }: { token: string | null }
   }
 
   return (
-    <div className="space-y-3">
-      {DOC_TYPES.map((dt) => {
-        const existing = docs.filter((d) => d.doc_type === dt)
-        return (
-          <div key={dt} className="border rounded-lg p-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium text-gray-800">{t(`scholarship.docs.type.${dt}`)}</span>
-              <label className="text-sm text-primary-600 cursor-pointer hover:underline">
-                {busyType === dt ? t('scholarship.docs.uploading') : t('scholarship.docs.choose')}
-                <input
-                  type="file" className="hidden" disabled={busyType === dt}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    if (f) handleUpload(dt, f)
-                    e.target.value = ''
-                  }}
-                />
-              </label>
-            </div>
-            {existing.length > 0 && (
-              <ul className="mt-2 space-y-1">
-                {existing.map((d) => (
-                  <li key={d.id} className="flex items-center justify-between text-sm text-gray-600">
-                    <span className="truncate">
-                      {d.download_url ? (
-                        <a href={d.download_url} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">
-                          {d.original_filename || d.doc_type}
-                        </a>
-                      ) : (d.original_filename || d.doc_type)}
-                      {d.size ? <span className="text-gray-400"> · {formatFileSize(d.size)}</span> : null}
-                    </span>
-                    <button onClick={() => handleDelete(d.id)} className="text-red-500 hover:underline ml-2">
-                      {t('scholarship.docs.remove')}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )
-      })}
+    <div className="space-y-5">
+
+      {/* ── Required ──────────────────────────────────────────────────── */}
+      <section>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+            {t('scholarship.docs.requiredPill')}
+          </span>
+          <span className="text-xs text-gray-500">
+            {t('scholarship.docs.requiredNote')}
+          </span>
+        </div>
+        <div className="space-y-3">
+          {COMPULSORY_DOC_TYPES.map((dt) => (
+            <SingleDocCard
+              key={dt}
+              docType={dt}
+              docs={docs}
+              busyType={busyType}
+              onUpload={handleUpload}
+              onDelete={handleDelete}
+              t={t}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* ── Optional ──────────────────────────────────────────────────── */}
+      <section>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+            {t('scholarship.docs.optionalPill')}
+          </span>
+          <span className="text-xs text-gray-500">
+            {t('scholarship.docs.optionalNote')}
+          </span>
+        </div>
+        <div className="space-y-3">
+          {/* Combined income-proof card */}
+          <IncomeProofCard
+            docs={docs}
+            busyType={busyType}
+            onUpload={handleUpload}
+            onDelete={handleDelete}
+            t={t}
+          />
+          {/* Individual optional cards */}
+          {OTHER_OPTIONAL_DOC_TYPES.map((dt) => (
+            <SingleDocCard
+              key={dt}
+              docType={dt}
+              docs={docs}
+              busyType={busyType}
+              onUpload={handleUpload}
+              onDelete={handleDelete}
+              t={t}
+            />
+          ))}
+        </div>
+      </section>
+
       {error && <p className="text-red-600 text-sm">{error}</p>}
     </div>
   )

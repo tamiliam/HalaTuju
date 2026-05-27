@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.3] — Documents — compulsory vs optional, with explainers (Step-4 redesign, S4) (2026-05-28)
+
+Backend + frontend (migrate-first: `scholarship 0014`, choices-only — no DDL, row recorded on prod before deploy).
+Reworks the Documents tab so the **two compulsory documents are clearly separated from the optional ones**, each with
+a one-line "what to upload / why" explainer, so B40 students aren't discouraged by an onerous-looking list.
+- **Required** (amber pill): Identity card (IC) + SPM/STPM results slip — *"We need these two to process your application."*
+- **Optional** (muted pill): a single **"Proof of household income"** card accepting **any one of** STR letter /
+  salary slip / EPF statement (multi-file — several earners welcome); plus latest water bill, latest electricity bill
+  (kept as a prosperity proxy), statement of intent, offer letter, photo. `reference_letter` dropped from the student
+  UI (referee moved to the admin verify-&-accept stage; kept in model choices for back-compat).
+- Backend: 4 new `ApplicantDocument` doc types (`salary_slip`, `water_bill`, `electricity_bill`, `offer_letter`) —
+  additive choices-only migration `0014`. `application_completeness` gains **`documents_done`** = IC **and** results
+  slip both present. `complete` is **deliberately unchanged** (still quiz + story + funding) — the documents/consent
+  gate lands in S5's completeness finalise. Serializers derive their choice list from the model, so the new types
+  validate automatically.
+- Frontend: `ScholarshipDocuments` reworked into Required/Optional sections + a combined income-proof card (STR /
+  salary slip / EPF selector, each file stored under its own type); `scholarship.ts` doc-type groups +
+  `documentsComplete()` helper (+jest); i18n ×3 (parity 1227) — Tamil copy is a first draft pending the user's review.
+- Build clean; backend 112 pytest; UI matches the Stitch-approved prototype.
+
 ## [2.4.2] — "How you'd use the support" — reframed funding (Step-4 redesign, S3) (2026-05-27)
 
 Backend + frontend (migrate-first: `scholarship 0013`). Reframes the funding tab away from itemised RM amounts.

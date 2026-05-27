@@ -23,6 +23,10 @@ import {
   applicationToDetailsForm,
   buildDetailsPayload,
   DOC_TYPES,
+  COMPULSORY_DOC_TYPES,
+  INCOME_PROOF_TYPES,
+  OTHER_OPTIONAL_DOC_TYPES,
+  documentsComplete,
   formatFileSize,
   REFERRING_ORG_OPTIONS,
   CALL_LANGUAGE_OPTIONS,
@@ -791,10 +795,63 @@ describe('formatFileSize', () => {
 })
 
 describe('DOC_TYPES', () => {
-  it('lists the seven supporting document types', () => {
-    expect(DOC_TYPES).toHaveLength(7)
+  it('lists all supporting document types including the four new S4 types', () => {
+    // 2 compulsory + 3 income proof + 5 other optional + reference_letter = 11
+    expect(DOC_TYPES).toHaveLength(11)
     expect(DOC_TYPES).toContain('ic')
     expect(DOC_TYPES).toContain('reference_letter')
+    expect(DOC_TYPES).toContain('salary_slip')
+    expect(DOC_TYPES).toContain('water_bill')
+    expect(DOC_TYPES).toContain('electricity_bill')
+    expect(DOC_TYPES).toContain('offer_letter')
+  })
+})
+
+describe('COMPULSORY_DOC_TYPES / INCOME_PROOF_TYPES / OTHER_OPTIONAL_DOC_TYPES', () => {
+  it('has ic and results_slip as compulsory', () => {
+    expect(COMPULSORY_DOC_TYPES).toContain('ic')
+    expect(COMPULSORY_DOC_TYPES).toContain('results_slip')
+    expect(COMPULSORY_DOC_TYPES).toHaveLength(2)
+  })
+
+  it('has three income proof types', () => {
+    expect(INCOME_PROOF_TYPES).toContain('str')
+    expect(INCOME_PROOF_TYPES).toContain('salary_slip')
+    expect(INCOME_PROOF_TYPES).toContain('epf')
+    expect(INCOME_PROOF_TYPES).toHaveLength(3)
+  })
+
+  it('has five other optional doc types', () => {
+    expect(OTHER_OPTIONAL_DOC_TYPES).toContain('water_bill')
+    expect(OTHER_OPTIONAL_DOC_TYPES).toContain('electricity_bill')
+    expect(OTHER_OPTIONAL_DOC_TYPES).toContain('offer_letter')
+    expect(OTHER_OPTIONAL_DOC_TYPES).toHaveLength(5)
+  })
+})
+
+describe('documentsComplete', () => {
+  it('returns true when both ic and results_slip are present', () => {
+    expect(documentsComplete(['ic', 'results_slip'])).toBe(true)
+  })
+
+  it('returns true with extra doc types alongside the two compulsory', () => {
+    expect(documentsComplete(['ic', 'results_slip', 'salary_slip', 'photo'])).toBe(true)
+  })
+
+  it('returns false when no documents are present', () => {
+    expect(documentsComplete([])).toBe(false)
+  })
+
+  it('returns false when only ic is present', () => {
+    expect(documentsComplete(['ic'])).toBe(false)
+  })
+
+  it('returns false when only results_slip is present', () => {
+    expect(documentsComplete(['results_slip'])).toBe(false)
+  })
+
+  it('returns false when neither compulsory type is present', () => {
+    expect(documentsComplete(['salary_slip', 'photo', 'epf'])).toBe(false)
   })
 })
 

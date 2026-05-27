@@ -269,10 +269,13 @@ def application_completeness(application):
         funding_done = bool(application.funding_need.categories)
     except FundingNeed.DoesNotExist:
         funding_done = False
+    present = set(application.documents.values_list('doc_type', flat=True))
+    documents_done = {'ic', 'results_slip'}.issubset(present)
     return {
         'quiz_done': quiz_done,
         'details_done': details_done,
         'funding_done': funding_done,
+        'documents_done': documents_done,
         'complete': quiz_done and details_done and funding_done,
     }
 

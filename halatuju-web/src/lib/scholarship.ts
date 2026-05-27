@@ -722,12 +722,39 @@ export function defaultNextTab(
   return 'quiz'
 }
 
-// ── Documents (Sprint 5b) ────────────────────────────────────────────────
+// ── Documents (Sprint 5b / S4 redesign) ─────────────────────────────────
 
+/** The two documents every applicant must provide. */
+export const COMPULSORY_DOC_TYPES = ['ic', 'results_slip'] as const
+
+/** Any one of these counts as proof of household income (combined card). */
+export const INCOME_PROOF_TYPES = ['str', 'salary_slip', 'epf'] as const
+
+/** Optional docs shown as individual cards (excluding the income group). */
+export const OTHER_OPTIONAL_DOC_TYPES = [
+  'water_bill', 'electricity_bill', 'statement_of_intent', 'offer_letter', 'photo',
+] as const
+
+/**
+ * Full union of all doc types known to the frontend.
+ * `reference_letter` is kept for back-compat (admin stage) but not shown in
+ * the student UI.
+ */
 export const DOC_TYPES = [
-  'ic', 'results_slip', 'photo', 'epf', 'str', 'statement_of_intent', 'reference_letter',
+  ...COMPULSORY_DOC_TYPES,
+  ...INCOME_PROOF_TYPES,
+  ...OTHER_OPTIONAL_DOC_TYPES,
+  'reference_letter',
 ] as const
 export type DocType = typeof DOC_TYPES[number]
+
+/**
+ * Returns true when an applicant has uploaded both compulsory documents
+ * (IC + results slip).
+ */
+export function documentsComplete(presentTypes: string[]): boolean {
+  return presentTypes.includes('ic') && presentTypes.includes('results_slip')
+}
 
 export function formatFileSize(bytes: number): string {
   if (!bytes || bytes < 0) return '0 KB'

@@ -4,7 +4,7 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.courses.models import StudentProfile
-from apps.scholarship.models import FundingNeed, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.models import ApplicantDocument, FundingNeed, ScholarshipApplication, ScholarshipCohort
 from apps.scholarship.services import application_completeness
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
@@ -49,7 +49,13 @@ class TestCompleteness(TestCase):
     def test_all_incomplete_initially(self):
         self.assertEqual(
             application_completeness(self.app),
-            {'quiz_done': False, 'details_done': False, 'funding_done': False, 'complete': False},
+            {
+                'quiz_done': False,
+                'details_done': False,
+                'funding_done': False,
+                'documents_done': False,
+                'complete': False,
+            },
         )
 
     def test_quiz_done_from_signals(self):
@@ -84,6 +90,34 @@ class TestCompleteness(TestCase):
         self.app.plans = 'Study hard'
         self.app.save()
         self.assertTrue(application_completeness(self.app)['details_done'])
+
+    def test_documents_done_false_when_no_docs(self):
+        """documents_done is False when no documents uploaded."""
+        self.assertFalse(application_completeness(self.app)['documents_done'])
+
+    def test_documents_done_false_when_only_ic(self):
+        """documents_done is False when only IC is present (results_slip missing)."""
+        ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
+        self.assertFalse(application_completeness(self.app)['documents_done'])
+
+    def test_documents_done_true_when_both_compulsory_present(self):
+        """documents_done is True when both ic and results_slip are uploaded."""
+        ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
+        ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
+        self.assertTrue(application_completeness(self.app)['documents_done'])
+
+    def test_complete_not_affected_by_documents_done(self):
+        """complete is still quiz_done & details_done & funding_done — documents_done does not gate it."""
+        self.profile.student_signals = {'x': {'y': 1}}
+        self.profile.save()
+        self.app.aspirations = 'Be an accountant'
+        self.app.plans = 'Study hard every day'
+        self.app.save()
+        FundingNeed.objects.create(application=self.app, categories=['living'])
+        result = application_completeness(self.app)
+        # complete is True even without documents — S5 will add the documents gate
+        self.assertTrue(result['complete'])
+        self.assertFalse(result['documents_done'])
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
