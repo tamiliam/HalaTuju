@@ -667,6 +667,16 @@
         "cat_other_desc": "Tell us what",
         "noteLabel": "Anything else you'd like us to know? (optional)",
         "noteHelper": "For example, how you're planning to fund your studies, or how you'd manage if this assistance doesn't come through."
+      },
+      "allSetTitle": "You're all set!",
+      "allSetIntro": "You've completed every step. There's nothing more to do right now.",
+      "whatNext": {
+        "title": "What happens next",
+        "step1": "We review your application and documents.",
+        "step2": "We may call you — in your preferred language — to check a few details.",
+        "step3": "You'll receive our decision by email.",
+        "emailNote": "We'll send all updates to {email} — do check your inbox (and spam folder).",
+        "yourEmail": "the email you signed up with"
       }
     },
     "docs": {

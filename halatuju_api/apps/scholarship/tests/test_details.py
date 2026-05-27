@@ -4,7 +4,9 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.courses.models import StudentProfile
-from apps.scholarship.models import ApplicantDocument, FundingNeed, ScholarshipApplication, ScholarshipCohort
+from apps.scholarship.models import (
+    ApplicantDocument, Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort,
+)
 from apps.scholarship.services import application_completeness
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
@@ -54,9 +56,22 @@ class TestCompleteness(TestCase):
                 'details_done': False,
                 'funding_done': False,
                 'documents_done': False,
+                'consent_done': False,
                 'complete': False,
             },
         )
+
+    def _make_complete(self):
+        """Set up all five completeness parts: quiz, story, funding, docs, consent."""
+        self.profile.student_signals = {'x': {'y': 1}}
+        self.profile.save()
+        self.app.aspirations = 'Be an accountant'
+        self.app.plans = 'Study hard every day'
+        self.app.save()
+        FundingNeed.objects.create(application=self.app, categories=['living'])
+        ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
+        ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
+        Consent.objects.create(application=self.app, version='t', is_active=True)
 
     def test_quiz_done_from_signals(self):
         self.profile.student_signals = {'field_interest': {'it': 5}}
@@ -64,13 +79,8 @@ class TestCompleteness(TestCase):
         self.assertTrue(application_completeness(self.app)['quiz_done'])
 
     def test_complete_when_all_present(self):
-        self.profile.student_signals = {'x': {'y': 1}}
-        self.profile.save()
-        self.app.aspirations = 'Be an accountant'
-        self.app.plans = 'Study hard every day'
-        self.app.save()
-        # S3: funding_done requires at least one category, not a positive total
-        FundingNeed.objects.create(application=self.app, categories=['living'])
+        # S5: complete = quiz + story + funding + compulsory docs + consent
+        self._make_complete()
         self.assertTrue(application_completeness(self.app)['complete'])
 
     def test_details_done_requires_aspirations_and_plans(self):
@@ -106,18 +116,37 @@ class TestCompleteness(TestCase):
         ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
         self.assertTrue(application_completeness(self.app)['documents_done'])
 
-    def test_complete_not_affected_by_documents_done(self):
-        """complete is still quiz_done & details_done & funding_done — documents_done does not gate it."""
+    def test_complete_requires_documents_and_consent(self):
+        """S5: complete now gates on compulsory documents AND an active consent."""
+        # quiz + story + funding only — not complete (docs + consent missing)
         self.profile.student_signals = {'x': {'y': 1}}
         self.profile.save()
         self.app.aspirations = 'Be an accountant'
         self.app.plans = 'Study hard every day'
         self.app.save()
         FundingNeed.objects.create(application=self.app, categories=['living'])
-        result = application_completeness(self.app)
-        # complete is True even without documents — S5 will add the documents gate
-        self.assertTrue(result['complete'])
-        self.assertFalse(result['documents_done'])
+        self.assertFalse(application_completeness(self.app)['complete'])
+
+        # + compulsory documents — still not complete (consent missing)
+        ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
+        ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
+        self.assertFalse(application_completeness(self.app)['complete'])
+
+        # + active consent — now complete
+        Consent.objects.create(application=self.app, version='t', is_active=True)
+        self.assertTrue(application_completeness(self.app)['complete'])
+
+    def test_consent_done_false_when_no_consent(self):
+        self.assertFalse(application_completeness(self.app)['consent_done'])
+
+    def test_consent_done_true_with_active_consent(self):
+        Consent.objects.create(application=self.app, version='t', is_active=True)
+        self.assertTrue(application_completeness(self.app)['consent_done'])
+
+    def test_consent_done_false_when_withdrawn(self):
+        """A withdrawn (inactive) consent does not count."""
+        Consent.objects.create(application=self.app, version='t', is_active=False)
+        self.assertFalse(application_completeness(self.app)['consent_done'])
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)

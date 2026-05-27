@@ -930,6 +930,8 @@ export interface ApplicationCompleteness {
   quiz_done: boolean
   details_done: boolean
   funding_done: boolean
+  documents_done: boolean
+  consent_done: boolean
   complete: boolean
 }
 
@@ -967,6 +969,7 @@ export interface ScholarshipApplication {
   daily_life: string
   funding_need: FundingNeed | null
   completeness: ApplicationCompleteness
+  notify_email?: string   // where decision/comms emails are sent (resolved at submit)
   form_data: Record<string, unknown>
   intake_snapshot?: Record<string, unknown>   // frozen audit copy of what was declared at submit
 }

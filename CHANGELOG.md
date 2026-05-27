@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.4] — Completeness finalise + "What happens next" (Step-4 redesign, S5a) (2026-05-28)
+
+Backend + frontend, **no migration**. Closes the completeness loop and gives the student a reassuring finish.
+- **Backend:** `application_completeness` gains **`consent_done`** (an active `Consent` row exists) and **`complete`
+  now = quiz + story + funding + compulsory-docs + consent** (the full 5-part rollup; supersedes S4's interim
+  "complete excludes docs/consent"). The read serializer now exposes **`notify_email`** (read-only — the address
+  decision/comms emails are actually sent to). Tests updated to the new contract + `consent_done` cases.
+- **Frontend:** `ScholarshipNextSteps` now wires the **real Documents + Consent step ticks** (S4 added
+  `documents_done` to the backend but the UI still hardcoded them to false). Once all five steps are done, the intro
+  banner switches to a green **"You're all set!"** state and a new **"What happens next"** panel appears — a 3-step
+  plain-language timeline (we review → we may call you in your preferred language → decision by email) plus a note
+  stating the exact email updates go to. i18n ×3 (parity 1235; Tamil copy first-draft pending user refine).
+- Progress bar, "Step X of 5", per-step ticks and the desktop 2-column rail were already delivered in S1 — this
+  sprint only wired the remaining signals and added the finish panel. Build clean; backend 1128 pytest.
+- **Deferred to S5b:** admin referee-at-verify-&-accept + Tamil-aware AI sponsor-profile. **TD-059** (drop dead
+  `FundingNeed` amount columns) still queued.
+
 ## [2.4.3] — Documents — compulsory vs optional, with explainers (Step-4 redesign, S4) (2026-05-28)
 
 Backend + frontend (migrate-first: `scholarship 0014`, choices-only — no DDL, row recorded on prod before deploy).

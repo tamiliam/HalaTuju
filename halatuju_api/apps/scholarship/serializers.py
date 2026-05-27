@@ -122,6 +122,8 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
     spm_a_count = serializers.SerializerMethodField()
     funding_need = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
+    # The address decision/comms emails are actually sent to (resolved at submit).
+    notify_email = serializers.EmailField(read_only=True)
 
     class Meta:
         model = ScholarshipApplication
@@ -144,7 +146,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             # "Your story" guided narrative fields (S2 redesign)
             'first_in_family', 'parents_occupation', 'siblings_studying',
             'family_context', 'daily_life',
-            'funding_need', 'completeness',
+            'funding_need', 'completeness', 'notify_email',
             'form_data', 'intake_snapshot',
         ]
 

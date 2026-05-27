@@ -667,6 +667,16 @@
         "cat_other_desc": "Sila nyatakan",
         "noteLabel": "Ada apa-apa lagi yang ingin anda maklumkan? (pilihan)",
         "noteHelper": "Contohnya, bagaimana anda merancang untuk membiayai pengajian anda, atau bagaimana anda akan mengurus jika bantuan ini tidak diterima."
+      },
+      "allSetTitle": "Semuanya selesai!",
+      "allSetIntro": "Anda telah melengkapkan setiap langkah. Tiada apa-apa lagi yang perlu dilakukan buat masa ini.",
+      "whatNext": {
+        "title": "Apa yang berlaku seterusnya",
+        "step1": "Kami menyemak permohonan dan dokumen anda.",
+        "step2": "Kami mungkin menghubungi anda — dalam bahasa pilihan anda — untuk mengesahkan beberapa butiran.",
+        "step3": "Anda akan menerima keputusan kami melalui e-mel.",
+        "emailNote": "Kami akan menghantar semua kemas kini ke {email} — sila semak peti masuk (dan folder spam) anda.",
+        "yourEmail": "e-mel yang anda daftar"
       }
     },
     "docs": {

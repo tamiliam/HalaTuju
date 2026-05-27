@@ -257,10 +257,14 @@ def release_decision(application):
 def application_completeness(application):
     """
     Report STEP 1A / STEP 2 progress for a (typically shortlisted) application:
-    quiz done (the linked profile has quiz signals), deeper info done, funding
-    need done. The sponsor stage (Phase 2) will gate on ``complete``.
+    quiz done (the linked profile has quiz signals), story done, funding done,
+    documents done (compulsory IC + results slip), consent done. The sponsor
+    stage (Phase 2) will gate on ``complete``.
 
     funding_done (S3 redesign): at least one category ticked in categories.
+    documents_done (S4): both compulsory documents (ic + results_slip) present.
+    consent_done (S5): an active Consent row exists.
+    complete (S5 finalise): all five parts done.
     """
     profile = application.profile
     quiz_done = bool(profile and profile.student_signals)
@@ -271,12 +275,15 @@ def application_completeness(application):
         funding_done = False
     present = set(application.documents.values_list('doc_type', flat=True))
     documents_done = {'ic', 'results_slip'}.issubset(present)
+    consent_done = application.consents.filter(is_active=True).exists()
     return {
         'quiz_done': quiz_done,
         'details_done': details_done,
         'funding_done': funding_done,
         'documents_done': documents_done,
-        'complete': quiz_done and details_done and funding_done,
+        'consent_done': consent_done,
+        'complete': (quiz_done and details_done and funding_done
+                     and documents_done and consent_done),
     }
 
 

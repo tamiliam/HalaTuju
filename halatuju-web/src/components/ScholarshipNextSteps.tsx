@@ -94,14 +94,13 @@ export default function ScholarshipNextSteps({
   void fundingTotal(form)
   const tabIndex = NEXT_STEP_ORDER.indexOf(tab)
 
-  // Completeness mapping: quiz and details/funding have backend signals.
-  // Documents + Consent have no completeness field yet (S4/S5) — show as neutral.
+  // Completeness mapping — every step now has a backend signal (S5).
   const stepDone: Record<NextStepKey, boolean> = {
     quiz: c.quiz_done,
     story: c.details_done,
     funding: c.funding_done,
-    documents: false,
-    consent: false,
+    documents: c.documents_done,
+    consent: c.consent_done,
   }
 
   // The shared save feedback — rendered inside whichever tab has the Save button.
@@ -384,14 +383,48 @@ export default function ScholarshipNextSteps({
 
   return (
     <div>
-      {/* Intro banner */}
+      {/* Intro banner — switches to a success state once everything is done */}
       <div className="bg-green-50 border border-green-200 rounded-xl p-5 mb-6">
-        <h2 className="font-semibold text-gray-900">{t('scholarship.nextSteps.title')}</h2>
-        <p className="text-sm text-gray-700 mt-1">{t('scholarship.nextSteps.intro')}</p>
-        {c.complete && (
-          <p className="text-sm font-medium text-green-700 mt-2">{t('scholarship.nextSteps.allDone')}</p>
+        {c.complete ? (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-white text-sm">✓</span>
+              <h2 className="font-semibold text-gray-900">{t('scholarship.nextSteps.allSetTitle')}</h2>
+            </div>
+            <p className="text-sm text-gray-700 mt-1">{t('scholarship.nextSteps.allSetIntro')}</p>
+          </>
+        ) : (
+          <>
+            <h2 className="font-semibold text-gray-900">{t('scholarship.nextSteps.title')}</h2>
+            <p className="text-sm text-gray-700 mt-1">{t('scholarship.nextSteps.intro')}</p>
+          </>
         )}
       </div>
+
+      {/* What happens next — shown once the application is complete */}
+      {c.complete && (
+        <div className="bg-white border rounded-2xl p-5 shadow-sm mb-6">
+          <h3 className="font-semibold text-gray-900 mb-3">{t('scholarship.nextSteps.whatNext.title')}</h3>
+          <ol className="space-y-3">
+            {['step1', 'step2', 'step3'].map((s, i) => (
+              <li key={s} className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700 text-xs font-semibold">
+                  {i + 1}
+                </span>
+                <span className="text-sm text-gray-700">{t(`scholarship.nextSteps.whatNext.${s}`)}</span>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-4 flex items-start gap-2 rounded-lg bg-primary-50 p-3">
+            <span className="text-primary-600 shrink-0" aria-hidden>✉️</span>
+            <p className="text-sm text-gray-700">
+              {t('scholarship.nextSteps.whatNext.emailNote', {
+                email: app.notify_email || t('scholarship.nextSteps.whatNext.yourEmail'),
+              })}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* On desktop: left step-rail beside the active section. On mobile: bottom tab bar. */}
       <div className="lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-8 lg:items-start">
