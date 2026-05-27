@@ -82,6 +82,10 @@ visual sign-off.
   narrative fields + migration, migrate-first).
 - **S2 — Your story (Family + You) guided section.** Backend narrative fields (+migration), serializers,
   completeness(story), tests; frontend section + i18n×3.
+  **✅ DONE — shipped 2026-05-27 (v2.4.1; web `…00214-kr4`, api `…00167-lzl`; migration `0012` migrate-first).**
+  5 additive narrative fields (`first_in_family`, `parents_occupation`, `siblings_studying`, `family_context`,
+  `daily_life`); story-complete = aspirations+plans; guided two-card form; i18n 1190. **▶ NEXT: S3 — How you'd use
+  the support** (Stitch-prototype first, then `FundingNeed` redesign + migration).
 - **S3 — How you'd use the support (simplified funding).** Backend FundingNeed redesign (category flags +
   `funding_note` + `programme_months`, **no total**) (+migration), serializer, details-PATCH, completeness(funding),
   tests; frontend (tick categories + length + open box, "a contribution" framing) + lib helpers + i18n×3.
