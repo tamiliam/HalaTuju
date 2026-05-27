@@ -326,10 +326,15 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   point the scheduler at that instead.)
 - Keep one existing prod app (`YOGASHINI KRISHNAN`, rejected, Phase-1 test era) — real person, kept on user's
   instruction (contact separately, not via the pipeline).
-- **▶ Next (immediate): `/scholarship/application` page review** — the post-submission home. Audit the shortlisted
-  "next steps" follow-up (`ScholarshipNextSteps`: quiz gate → deeper info + funding need → documents → referee →
-  consent) and the `accepted` state, the way the apply form was reviewed. No code started yet — map current behaviour
-  first. (User-requested next; raised 2026-05-27 right after the apply-flow polish closed.)
+- **▶ IN PROGRESS: `/scholarship/application` (Step 4) REDESIGN** — 5-sprint, plan
+  `docs/scholarship/application-redesign-plan.md`. **S1 ✅ DONE (v2.4.0, 2026-05-27):** one long scroll → **5-tab
+  shell** (Quiz · Your story · Funding · Documents · Consent; referee removed from student flow → coordinator
+  verify-&-accept). Content ported unchanged this sprint. **▶ NEXT = S2 "Your story"** (guided Family + You narrative
+  fields + additive migration, migrate-first) → S3 funding (`FundingNeed` redesign: category flags + `funding_note`
+  + `programme_months`, **no total**, "up to RM3,000") → S4 documents (4 new doc types salary_slip/water_bill/
+  electricity_bill/offer_letter; compulsory = IC + results slip) → S5 completeness finalise + desktop + referee-at-
+  accept + **Tamil-aware AI sponsor-profile** (currently BM/EN only). Trims locked (signal-vs-burden): photo optional,
+  funding capped/no-total, most docs optional, story mostly-optional narrative, BM/EN/Tamil free-text.
 - **▶ Queued: S13 (post-launch): Vision OCR** — MyKad upload → instant NRIC match feedback, surfaced to admin (soft,
   never a hard block; would also upgrade the 2.3.0 declaration signature from a self-consistency nudge to a real
   name check). New Google Cloud Vision API key + **cost sign-off required** before any paid calls. Frontend
