@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] — Shortlist email links straight to "complete your profile" (2026-05-27)
+
+Backend-only (api deploy). Live testing showed the shortlist **invitation email** said *"we'll be in touch shortly
+with what to do next"* with **no link** — leaving the student stuck at Step 4 with nowhere to go. The email now
+includes a direct **call-to-action link** to `{FRONTEND_URL}/scholarship/application` (the complete-your-profile
+page), with the documents note (IC, results slip, proof of household income) matching the "How it works" Step 4, in
+all three locales. The link is built in `emails._send` from `settings.FRONTEND_URL` (so the ack/decline bodies are
+unaffected). Separately, `FRONTEND_URL` now defaults to the **branded `https://halatuju.xyz`** (was the raw Cloud Run
+URL) and the live Cloud Run env var was updated to match — so both the shortlist link **and** the existing
+verify-email link are now branded. +1 test (shortlist body contains the link). The +48h decline email is unchanged
+(no link by design — it's a warm "not this round").
+
 ## [2.3.0] — Truthfulness declaration + typed-name signature before submit (2026-05-27)
 
 Backend + frontend (migrate-first: scholarship `0011`, applied to prod before deploy). Adds a final

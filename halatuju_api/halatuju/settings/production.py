@@ -88,4 +88,4 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'HalaTuju <noreply@halatuju.xyz>')
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://halatuju-web-bycx45sxsa-as.a.run.app')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://halatuju.xyz')

@@ -56,25 +56,33 @@ PASS_SUBJECTS = {
 PASS_BODIES = {
     'en': (
         "Dear {name},\n\n"
-        "Congratulations — you have been shortlisted for the {programme}. "
+        "Congratulations — you have been shortlisted for the {programme}.\n\n"
         "The next step is to complete your profile so that sponsors can get to "
-        "know you. We will be in touch shortly with what to do next.\n\n"
+        "know you. You'll share a few more details and upload a few supporting "
+        "documents (your IC, results slip, and proof of household income) — "
+        "we'll show you exactly what's needed.\n\n"
+        "Complete your profile here:\n{link}\n\n"
         "Warm regards,\nThe {programme} Team"
     ),
     'ms': (
         "Salam {name},\n\n"
-        "Tahniah — anda telah disenarai pendek untuk {programme}. Langkah "
-        "seterusnya ialah melengkapkan profil anda supaya penaja dapat "
-        "mengenali anda. Kami akan menghubungi anda tidak lama lagi dengan "
-        "langkah seterusnya.\n\n"
+        "Tahniah — anda telah disenarai pendek untuk {programme}.\n\n"
+        "Langkah seterusnya ialah melengkapkan profil anda supaya penaja dapat "
+        "mengenali anda. Anda akan berkongsi beberapa butiran tambahan dan memuat "
+        "naik beberapa dokumen sokongan (KP anda, slip keputusan, dan bukti "
+        "pendapatan isi rumah) — kami akan tunjukkan dengan tepat apa yang "
+        "diperlukan.\n\n"
+        "Lengkapkan profil anda di sini:\n{link}\n\n"
         "Salam hormat,\nPasukan {programme}"
     ),
     'ta': (
         "அன்புள்ள {name},\n\n"
-        "வாழ்த்துகள் — {programme}-க்கு நீங்கள் தேர்வுசெய்யப்பட்டுள்ளீர்கள். "
+        "வாழ்த்துகள் — {programme}-க்கு நீங்கள் தேர்வுசெய்யப்பட்டுள்ளீர்கள்.\n\n"
         "அடுத்த படியாக, ஆதரவாளர்கள் உங்களை அறிந்துகொள்ள உங்கள் சுயவிவரத்தை "
-        "நிறைவுசெய்யவும். அடுத்த படிகள் குறித்து விரைவில் உங்களைத் "
-        "தொடர்புகொள்வோம்.\n\n"
+        "நிறைவுசெய்யவும். சில கூடுதல் விவரங்களைப் பகிர்ந்து, சில ஆதார ஆவணங்களை "
+        "(உங்கள் அடையாள அட்டை, முடிவுச் சீட்டு, மற்றும் குடும்ப வருமானச் சான்று) "
+        "பதிவேற்றுவீர்கள் — என்ன தேவை என்பதைச் சரியாகக் காட்டுவோம்.\n\n"
+        "உங்கள் சுயவிவரத்தை இங்கே நிறைவுசெய்யவும்:\n{link}\n\n"
         "அன்புடன்,\n{programme} குழு"
     ),
 }
@@ -131,10 +139,14 @@ def _send(to_email, subjects, bodies, applicant_name, programme_name, lang):
         return False
     lang = normalise_lang(lang)
     name = applicant_name or _DEFAULT_NAME[lang]
+    # Link to the complete-your-profile page (the shortlist body uses {link}; the
+    # ack/decline bodies don't reference it, so the kwarg is harmlessly ignored).
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    link = f"{frontend}/scholarship/application"
     try:
         send_mail(
             subject=subjects[lang].format(programme=programme_name),
-            message=bodies[lang].format(name=name, programme=programme_name),
+            message=bodies[lang].format(name=name, programme=programme_name, link=link),
             from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
             recipient_list=[to_email],
         )

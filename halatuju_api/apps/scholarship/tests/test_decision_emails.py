@@ -43,6 +43,15 @@ class TestReleaseDueDecisions(TestCase):
         self.assertIsNotNone(app.shortlisted_at)
         self.assertEqual(len(mail.outbox), 1)
 
+    def test_shortlist_email_links_to_complete_profile(self):
+        # The invitation must hand the student straight to the complete-profile page,
+        # not leave them waiting for a follow-up.
+        self._scored('shortlisted', due_in_hours=-1)
+        call_command('send_pending_decision_emails')
+        body = mail.outbox[0].body
+        self.assertIn('/scholarship/application', body)
+        self.assertIn('complete your profile', body.lower())
+
     def test_skips_not_yet_due(self):
         app = self._scored('rejected', due_in_hours=5)    # due in the future
         call_command('send_pending_decision_emails')
