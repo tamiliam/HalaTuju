@@ -437,6 +437,14 @@
       "notesLabel": "Tell us briefly why you need assistance and what would help",
       "notesPlaceholder": "Your plans, hopes, or circumstances…",
       "consentLabel": "I consent to be contacted about this application.",
+      "declaration": {
+        "title": "Before you submit",
+        "body": "I declare that everything I've shared in this application is true and complete, to the best of my knowledge. I understand that the team may ask me for documents to confirm it, and that giving false or misleading information can lead to my application being rejected — or any assistance being withdrawn later.",
+        "signLabel": "Type your full name (as in your IC) to sign",
+        "signPlaceholder": "Your full name",
+        "signHelp": "This counts as your signature.",
+        "mismatch": "This doesn't match the name you entered in \"About Me\". Please check both are correct."
+      },
       "submit": "Submit application",
       "submitting": "Submitting…",
       "successTitle": "Application received",
@@ -446,6 +454,7 @@
       "statusLabel": "Status",
       "error": {
         "consent": "Please tick the consent box to apply.",
+        "declaration": "Please type your full name to sign the declaration.",
         "aCount": "Please enter how many A's you scored in SPM.",
         "pngk": "Please enter your STPM PNGK.",
         "householdSize": "Please enter how many people are in your household (at least 1).",

@@ -25,6 +25,7 @@ import {
   profileAcademicSummary,
   buildApplicationPayload,
   applyFormError,
+  declarationNameMismatch,
   eligiblePathways,
   PATHWAY_ORDER,
   programmesForPathway,
@@ -63,7 +64,7 @@ const ERROR_TAB: Record<string, TabKey> = {
   householdSize: 'family', income: 'family', parentPhone: 'family',
   pathwayCertainty: 'plans', chosenPathway: 'plans', chosenProgramme: 'plans',
   preUTrack: 'plans', preUInstitution: 'plans',
-  consent: 'support',
+  consent: 'support', declaration: 'support',
 }
 
 /** Field label with an optional required `*` and an optional `i` tooltip. */
@@ -795,6 +796,28 @@ export default function ScholarshipApplyPage() {
             {t('scholarship.apply.consentLabel')}<span className="ml-0.5 text-red-500" aria-hidden>*</span>
           </span>
           <Toggle on={form.consentToContact} onChange={(v) => update('consentToContact', v)} label={t('scholarship.apply.consentLabel')} />
+        </div>
+
+        {/* Truthfulness declaration + typed-name signature — the final, weightiest step
+            before submit. Typing your IC name + submitting IS the agreement. The name
+            match is a soft nudge only (declarationNameMismatch), never a hard block. */}
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <h3 className="mb-1 font-semibold text-gray-900">{t('scholarship.apply.declaration.title')}</h3>
+          <p className="text-sm text-gray-700">{t('scholarship.apply.declaration.body')}</p>
+          <div className="mt-3">
+            <FieldLabel required>{t('scholarship.apply.declaration.signLabel')}</FieldLabel>
+            <input
+              className="input"
+              value={form.declarationName}
+              placeholder={t('scholarship.apply.declaration.signPlaceholder')}
+              autoComplete="off"
+              onChange={(e) => update('declarationName', e.target.value)}
+            />
+            {declarationNameMismatch(form) && (
+              <p className="mt-1 text-sm text-amber-700">{t('scholarship.apply.declaration.mismatch')}</p>
+            )}
+            <p className="mt-1 text-xs text-gray-500">{t('scholarship.apply.declaration.signHelp')}</p>
+          </div>
         </div>
       </div>
     ),

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] — Truthfulness declaration + typed-name signature before submit (2026-05-27)
+
+Backend + frontend (migrate-first: scholarship `0011`, applied to prod before deploy). Adds a final
+attestation step to the B40 apply form, on the "Support" tab just above Submit:
+- **Declaration** (plain language, no legalese): "I declare that everything I've shared in this application
+  is true and complete… I understand the team may ask me for documents to confirm it, and that giving false or
+  misleading information can lead to my application being rejected — or any assistance being withdrawn later."
+- **Typed-name signature** (required): the student types their full name (as in their IC) to sign. Its value is
+  the deliberate act of assent + an audit record — **not** identity verification, since we only hold the name they
+  typed in About Me to compare against, never the official JPN record. So the match is a **soft nudge**: if the
+  signature doesn't loosely match (case/space-insensitive) the About Me name, we show a gentle warning but never
+  block submission.
+- **Audit trail:** new `declaration_name` (the signed name) + `declared_at` (server timestamp, stamped at submit)
+  on `ScholarshipApplication`. Accepted by the create serializer, exposed by the read serializer. `declared_at` is
+  only set when a signature is present (no signature → null).
+
+Backend: model + migration `0011` (additive) + `_APP_FIELDS` + `create_application` stamp; 97 scholarship tests
+(2 new). Frontend: `declarationName` in the form state/payload, required in `applyFormError`, soft
+`declarationNameMismatch` helper; declaration block on the Support tab (3 locales); 79 lib tests (4 new); i18n
+parity 1171. Build clean; declaration block + soft nudge verified locally (Playwright).
+
 ## [2.2.7] — Apply-flow polish: NRIC prefill, clearer "no results" prompt, real ending page (2026-05-27)
 
 Frontend-only (one `halatuju-web` deploy). Three issues from live new-user testing:

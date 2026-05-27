@@ -4,6 +4,7 @@ import {
   profileAcademicSummary,
   buildApplicationPayload,
   applyFormError,
+  declarationNameMismatch,
   formatNric,
   formatPhone,
   isValidPhone,
@@ -75,6 +76,7 @@ function baseForm(over: Partial<ApplyFormState> = {}): ApplyFormState {
     helpScholarship: '',
     anythingElse: '',
     consentToContact: true,
+    declarationName: 'Priya',   // matches `name` so a complete form passes with no mismatch
     ...over,
   }
 }
@@ -169,6 +171,7 @@ describe('buildApplicationPayload', () => {
     expect(p.receives_str).toBe(true)
     expect(p.intends_tertiary_2026).toBe(true)
     expect(p.consent_to_contact).toBe(true)
+    expect(p.declaration_name).toBe('Priya')   // typed signature, trimmed
     expect(p.form_data).toEqual({})
     // academic data + NRIC are never posted here (profile / claim path)
     expect(p.spm_a_count).toBeUndefined()
@@ -275,12 +278,32 @@ describe('applyFormError', () => {
   it('requires household income', () => {
     expect(applyFormError(baseForm({ householdIncome: '' }))).toBe('income')
   })
+  it('requires the signed declaration', () => {
+    expect(applyFormError(baseForm({ declarationName: '' }))).toBe('declaration')
+    expect(applyFormError(baseForm({ declarationName: '   ' }))).toBe('declaration')
+    // consent is checked before the declaration
+    expect(applyFormError(baseForm({ consentToContact: false, declarationName: '' }))).toBe('consent')
+  })
   it('requires consent', () => {
     expect(applyFormError(baseForm({ consentToContact: false }))).toBe('consent')
   })
   it('surfaces the earliest-tab problem first', () => {
     // both name and consent are wrong → About Me wins (earlier tab)
     expect(applyFormError(baseForm({ name: '', consentToContact: false }))).toBe('name')
+  })
+})
+
+describe('declarationNameMismatch', () => {
+  it('is false when the signature matches the name (case/space-insensitive)', () => {
+    expect(declarationNameMismatch(baseForm({ name: 'Priya', declarationName: 'Priya' }))).toBe(false)
+    expect(declarationNameMismatch(baseForm({ name: 'Priya  Devi', declarationName: ' priya devi ' }))).toBe(false)
+  })
+  it('is true when the signature differs from the name', () => {
+    expect(declarationNameMismatch(baseForm({ name: 'Priya Devi', declarationName: 'Priya' }))).toBe(true)
+  })
+  it('is false (no nudge) when either field is empty — the required-check handles empties', () => {
+    expect(declarationNameMismatch(baseForm({ name: 'Priya', declarationName: '' }))).toBe(false)
+    expect(declarationNameMismatch(baseForm({ name: '', declarationName: 'Priya' }))).toBe(false)
   })
 })
 

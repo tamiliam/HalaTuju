@@ -264,6 +264,20 @@ class ScholarshipApplication(models.Model):
         blank=True, default='', help_text="Why the student needs assistance",
     )
 
+    # Truthfulness declaration + typed-name "signature" (captured at submit). The
+    # student types their full name (as in their IC) to sign the declaration that
+    # everything they've provided is true. declared_at stamps when they signed.
+    # This is an attestation record, not identity proof — we only hold the name
+    # they typed in About Me to compare against, never the official JPN record.
+    declaration_name = models.CharField(
+        max_length=200, blank=True, default='',
+        help_text="Full name typed by the student as their signature on the truthfulness declaration",
+    )
+    declared_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the student signed the truthfulness declaration (at submit)",
+    )
+
     form_data = models.JSONField(
         default=dict, blank=True,
         help_text="Raw/extra intake fields from the native form",

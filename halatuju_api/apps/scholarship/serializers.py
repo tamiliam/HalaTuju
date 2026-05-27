@@ -58,6 +58,8 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
             # Plans redesign (context-aware step) — all optional/additive
             'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
             'chosen_programme', 'uncertainty_reasons', 'uncertainty_note',
+            # Truthfulness declaration signature (declared_at is stamped server-side)
+            'declaration_name',
         ]
 
     def validate_consent_to_contact(self, value):
@@ -126,6 +128,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'help_university', 'help_scholarship', 'anything_else', 'mentoring_candidate',
             'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
             'chosen_programme', 'uncertainty_reasons', 'uncertainty_note',
+            'declaration_name', 'declared_at',
             'status', 'bucket', 'shortlist_reason',
             'acknowledged_at', 'submitted_at', 'updated_at',
             'aspirations', 'plans', 'fears', 'justification',

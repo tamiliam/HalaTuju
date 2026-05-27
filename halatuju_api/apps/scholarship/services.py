@@ -41,6 +41,8 @@ _APP_FIELDS = (
     # Plans redesign (context-aware step) — all optional/additive
     'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
     'chosen_programme', 'uncertainty_reasons', 'uncertainty_note',
+    # Truthfulness declaration signature (declared_at stamped separately below)
+    'declaration_name',
 )
 
 
@@ -176,11 +178,14 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
     # 2. Create the application from per-application fields only; academic +
     #    financial data is read live from the profile by the shortlist engine.
     app_fields = {k: data[k] for k in _APP_FIELDS if k in data}
+    # Stamp when the truthfulness declaration was signed (only if a signature was given).
+    signed = (app_fields.get('declaration_name') or '').strip()
     application = ScholarshipApplication.objects.create(
         cohort=cohort, profile=profile,
         locale=lang if lang in ('en', 'ms', 'ta') else 'en',
         notify_email=to_email or '',
         intake_snapshot=build_intake_snapshot(profile, data),
+        declared_at=timezone.now() if signed else None,
         **app_fields,
     )
 

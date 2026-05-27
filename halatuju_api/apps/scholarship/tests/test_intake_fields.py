@@ -111,3 +111,32 @@ class TestApplicationIntakeFields:
         assert app.pathways_considered == ['stpm', 'asasi']
         assert app.chosen_pathway == ''  # sure-only field stays at default
         assert app.intake_snapshot['application']['uncertainty_reasons'] == ['waiting', 'financial']
+
+    def test_declaration_signature_persists_and_stamps_declared_at(self):
+        cohort = ScholarshipCohort.objects.create(
+            code='b40-decl', name='B40 Test', year=2026, is_active=True, is_open=True)
+        profile = StudentProfile.objects.create(
+            supabase_user_id='decl-user', nric='050202-02-4044', name='Sign Student')
+        app = create_application(
+            profile=profile, cohort=cohort,
+            validated_data={'consent_to_contact': True, 'declaration_name': 'Sign Student'},
+            to_email='x@y.com', lang='en')
+        app.refresh_from_db()
+
+        assert app.declaration_name == 'Sign Student'
+        assert app.declared_at is not None  # stamped at submit
+        assert ApplicationReadSerializer(app).data['declaration_name'] == 'Sign Student'
+
+    def test_no_signature_leaves_declared_at_null(self):
+        cohort = ScholarshipCohort.objects.create(
+            code='b40-nodecl', name='B40 Test', year=2026, is_active=True, is_open=True)
+        profile = StudentProfile.objects.create(
+            supabase_user_id='nodecl-user', nric='050202-02-5055', name='No Sign')
+        app = create_application(
+            profile=profile, cohort=cohort,
+            validated_data={'consent_to_contact': True},
+            to_email='x@y.com', lang='en')
+        app.refresh_from_db()
+
+        assert app.declaration_name == ''
+        assert app.declared_at is None

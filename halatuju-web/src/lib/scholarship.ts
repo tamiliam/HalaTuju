@@ -273,6 +273,7 @@ export interface ApplyFormState {
   helpScholarship: HelpChoice
   anythingElse: string
   consentToContact: boolean
+  declarationName: string   // typed full-name "signature" on the truthfulness declaration
 }
 
 export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFormState {
@@ -314,6 +315,7 @@ export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFo
     helpScholarship: '',
     anythingElse: '',
     consentToContact: false,
+    declarationName: '',   // never pre-filled — the student must actively sign
   }
 }
 
@@ -373,6 +375,7 @@ export interface ApplicationPayload {
   help_university: string
   help_scholarship: string
   anything_else: string
+  declaration_name: string   // typed signature; declared_at is stamped server-side
   form_data: Record<string, unknown>
 }
 
@@ -428,6 +431,7 @@ export function buildApplicationPayload(form: ApplyFormState): ApplicationPayloa
     help_university: form.helpUniversity,
     help_scholarship: form.helpScholarship,
     anything_else: form.anythingElse.trim(),
+    declaration_name: form.declarationName.trim(),
     form_data: {},
   }
 }
@@ -480,9 +484,28 @@ export function applyFormError(form: ApplyFormState, examType?: Qualification): 
   // A decided STPM student picks a degree directly (no SPM pathway/track step).
   if (form.pathwayCertainty === 'sure' && examType === 'stpm' && !form.chosenProgramme) return 'chosenProgramme'
   // The Uncertain branch is intentionally non-blocking — leanings/reasons/note are optional.
-  // My Support — consent required to apply.
+  // My Support — consent + the signed declaration are both required to apply. (The
+  // name-match is only a soft nudge — see declarationNameMismatch — so it never blocks.)
   if (!form.consentToContact) return 'consent'
+  if (!form.declarationName.trim()) return 'declaration'
   return null
+}
+
+/** Normalise a name for forgiving comparison: trim, collapse internal whitespace, lowercase. */
+function normaliseName(s: string): string {
+  return s.trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+/**
+ * True when a signature has been typed but doesn't loosely match the About Me name.
+ * Soft signal only — it surfaces a gentle nudge, it never blocks submission. We can't
+ * verify against the official IC name (we only hold what the student typed in About Me),
+ * so a mismatch is worth flagging but not worth trapping a genuine student over.
+ */
+export function declarationNameMismatch(form: ApplyFormState): boolean {
+  const signature = normaliseName(form.declarationName)
+  const name = normaliseName(form.name)
+  return !!signature && !!name && signature !== name
 }
 
 // ── My Results → onboarding round-trip (Sprint 9b) ───────────────────────

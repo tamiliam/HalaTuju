@@ -437,6 +437,14 @@
       "notesLabel": "Beritahu kami secara ringkas mengapa anda memerlukan bantuan dan apa yang membantu",
       "notesPlaceholder": "Rancangan, harapan atau keadaan anda…",
       "consentLabel": "Saya bersetuju untuk dihubungi mengenai permohonan ini.",
+      "declaration": {
+        "title": "Sebelum anda hantar",
+        "body": "Saya mengisytiharkan bahawa segala yang saya kongsikan dalam permohonan ini adalah benar dan lengkap, setakat pengetahuan saya. Saya faham pasukan ini mungkin meminta dokumen untuk mengesahkannya, dan memberikan maklumat palsu atau mengelirukan boleh menyebabkan permohonan saya ditolak — atau sebarang bantuan ditarik balik kemudian.",
+        "signLabel": "Taipkan nama penuh anda (seperti dalam KP) untuk menandatangani",
+        "signPlaceholder": "Nama penuh anda",
+        "signHelp": "Ini dikira sebagai tandatangan anda.",
+        "mismatch": "Ini tidak sepadan dengan nama yang anda masukkan dalam \"Tentang Saya\". Sila pastikan kedua-duanya betul."
+      },
       "submit": "Hantar permohonan",
       "submitting": "Menghantar…",
       "successTitle": "Permohonan diterima",
@@ -446,6 +454,7 @@
       "statusLabel": "Status",
       "error": {
         "consent": "Sila tandakan kotak persetujuan untuk memohon.",
+        "declaration": "Sila taipkan nama penuh anda untuk menandatangani perisytiharan.",
         "aCount": "Sila masukkan bilangan A yang anda peroleh dalam SPM.",
         "pngk": "Sila masukkan PNGK STPM anda.",
         "householdSize": "Sila masukkan bilangan orang dalam isi rumah anda (sekurang-kurangnya 1).",
