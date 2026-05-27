@@ -74,6 +74,12 @@ produce the profile in the target language (currently BM/EN only).
 visual sign-off.
 
 - **S1 — Tabbed shell (5 tabs) + port existing + live progress.** Frontend only; reuse `/apply` layout. No model change.
+  **✅ DONE — shipped 2026-05-27 (v2.4.0, web `halatuju-web-00213-mvf`).** `ScholarshipNextSteps` rewritten to the
+  5-tab shell; `NEXT_STEP_ORDER` + `defaultNextTab` in `scholarship.ts` (+9 jest); details form split across
+  Story/Funding tabs (shared state, one PATCH); Documents/Consent ported as-is; Referee dropped from student flow;
+  i18n 1177. Cosmetic carry-over: ported sections still show their old inner step headings (double-number) — cleared
+  when S2/S3 rework the section content. **▶ NEXT: S2 — "Your story" (Family + You) guided section** (backend
+  narrative fields + migration, migrate-first).
 - **S2 — Your story (Family + You) guided section.** Backend narrative fields (+migration), serializers,
   completeness(story), tests; frontend section + i18n×3.
 - **S3 — How you'd use the support (simplified funding).** Backend FundingNeed redesign (category flags +
