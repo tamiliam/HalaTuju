@@ -229,8 +229,13 @@ Supabase Security Advisor must show 0 errors before deploy.
 **v2.0 Released** (2026-03-20). Live at [halatuju.xyz](https://halatuju.xyz).
 **B40 redesign (S7–S12a) DEPLOYED to prod 2026-05-25** (apply-form rebuild + deterministic decision engine + admin
 verify-&-accept). Pipeline live but **dormant — site not promoted**; **wire the decision-email scheduler before promoting** (see Next Sprint).
+**Apply-flow "Your Plans" redesign + post-launch polish DEPLOYED (v2.2.0–2.3.0, 2026-05-27):** context-aware Plans
+step (P1–P5), then 8 post-launch fixes/additions from live new-user testing — `coq` round-trip, STPM eligibility
+0-bug fix, STPM top-3 picker, Chrome autofill fix, NRIC prefill, rebuilt `/scholarship/application`, and a
+truthfulness **declaration + typed-name signature** before submit (migration `scholarship 0011`). See
+`docs/retrospective-post-launch-apply-polish.md`.
 
-- 1103 backend tests, 49 frontend (jest) tests, 0 failures
+- 1110 backend tests, 102 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
@@ -306,8 +311,13 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   `python manage.py send_pending_decision_emails`** (~every 15 min). Until then, submitted apps score silently but
   the **+2h shortlist / +48h decline reveal emails never fire**. Also keep one existing prod app (`YOGASHINI KRISHNAN`,
   rejected, Phase-1 test era) — real person, kept on user's instruction (contact separately, not via the pipeline).
-- **▶ Next: S13 (post-launch): Vision OCR** — MyKad upload → instant NRIC match feedback, surfaced to admin (soft,
-  never a hard block). New Google Cloud Vision API key + **cost sign-off required** before any paid calls. Frontend
+- **▶ Next (immediate): `/scholarship/application` page review** — the post-submission home. Audit the shortlisted
+  "next steps" follow-up (`ScholarshipNextSteps`: quiz gate → deeper info + funding need → documents → referee →
+  consent) and the `accepted` state, the way the apply form was reviewed. No code started yet — map current behaviour
+  first. (User-requested next; raised 2026-05-27 right after the apply-flow polish closed.)
+- **▶ Queued: S13 (post-launch): Vision OCR** — MyKad upload → instant NRIC match feedback, surfaced to admin (soft,
+  never a hard block; would also upgrade the 2.3.0 declaration signature from a self-consistency nudge to a real
+  name check). New Google Cloud Vision API key + **cost sign-off required** before any paid calls. Frontend
   lessons: Jest node-env (test pure `lib/*.ts`); `next build` before done; EN/MS/TA parity; i18n in `src/messages/`;
   auth-gated pages → screenshot via a throwaway preview route.
 - **Gotcha (DEPLOY/MIGRATIONS):** the Cloud Run deploy triggers run **build → push → deploy only — they do NOT run

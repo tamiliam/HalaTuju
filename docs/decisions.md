@@ -769,3 +769,27 @@ signal to decide; the applicant never directly sets a staff flag. Kept the P5 sh
 
 **Revisit if:** intake volume makes manual mentoring triage a bottleneck — then auto-flag server-side from the reason
 keys (a small, safe `services.py` change), keeping the coordinator able to override.
+
+## Typed-name signature is a soft attestation, not an identity gate — Post-launch apply polish (2.3.0), 2026-05-27
+
+**Decision:** The pre-submit truthfulness declaration asks the student to type their full name (as in their IC) as a
+"signature" (required). The typed name is checked against the About Me name only as a **soft nudge** — a forgiving,
+case/space-insensitive comparison that shows a warning on mismatch but **never blocks submission**. The signed name +
+a server timestamp (`declaration_name`, `declared_at`) are stored on the application as an audit record.
+
+**Alternatives considered:** (a) declaration checkbox only, no signature; (b) require a strict/loose name match before
+submit; (c) verify the typed name against the official IC name.
+
+**Rationale:** We have **no access to the official JPN name** — the only thing to compare against is the name the
+student themselves typed in About Me, so a strict match would only enforce self-consistency while frustrating genuine
+students over `bin`/`binti`, spacing, or middle names. The real value of the typed signature is (1) the deliberate act
+of assent — friction that a checkbox lacks — and (2) an auditable attestation record (who signed what, when). Both are
+delivered without pretending to verify identity. True identity verification is the job of the deferred Vision OCR /
+MyKad-upload step (S13), not this field.
+
+**Trade-offs:** The signature does not prove identity and can't catch impersonation; it catches careless
+self-inconsistency only. Many applicants are minors, whose signature isn't legally binding anyway — formal guardian
+e-consent already happens later in the shortlisted follow-up flow, so this is a good-faith attestation at apply time.
+
+**Revisit if:** S13 Vision OCR lands (then the signed name can be cross-checked against the OCR'd MyKad name and the
+nudge can become a real verification signal), or legal counsel requires a binding e-signature flow.
