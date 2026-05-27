@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.4] — STPM eligibility fix (0 for all STPM students) + scholarship list + decided-branch note (2026-05-27)
+
+- **STPM eligibility bug (critical):** the apply form's degree picker showed "no eligible courses" for **every** STPM
+  student. Root cause: the STPM eligibility view (`/stpm/eligibility/check/`) passed **raw** profile demographics
+  (`male`/`malaysian`) to the engine, which compares against the Malay forms (`Lelaki`/`Warganegara`). All 1112 STPM
+  courses require Malaysian citizenship, so `malaysian` ≠ `Warganegara` excluded every course → 0. (The SPM path
+  normalises in its serializer; the STPM view didn't.) Fix: shared `normalize_gender`/`normalize_nationality` helpers
+  (extracted from the SPM serializer, now used by both) applied in the STPM view. Verified live: a real STPM student
+  goes from 0 → **601** eligible degrees. +1 regression test; 47 STPM/serializer/golden-master tests pass. (api)
+- **Other-scholarships list updated** to JPA, Khazanah, PETRONAS, Bank Negara Malaysia, Program Dermasiswa B40,
+  Maybank, Maxis, Sime Darby, Others (replaces MARA / Yayasan / Bank-corporate). (web, ×3 locales)
+- **"Anything you'd like to add?"** free-text now shows for the **Decided** branch too (not just "still deciding"),
+  so a decided student who can't find their exact course in the filtered list can tell us. (web)
+
+Build clean; i18n parity 1159; 74 FE + 47 STPM backend tests pass.
+
 ## [2.2.3] — `coq` round-trip fix + STPM names canonicalised + "Public University" copy (2026-05-27)
 
 Three frontend fixes, one `halatuju-web` deploy (no api change):

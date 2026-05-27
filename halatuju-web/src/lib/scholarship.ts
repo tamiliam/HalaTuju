@@ -217,7 +217,7 @@ export type HelpChoice = '' | 'yes' | 'no' | 'unsure'
 export const HELP_OPTIONS: Exclude<HelpChoice, ''>[] = ['yes', 'no', 'unsure']
 
 // Other scholarships applied/held → funding-overlap signal (labels via i18n).
-export const OTHER_SCHOLARSHIP_OPTIONS = ['jpa', 'petronas', 'mara', 'yayasan', 'bank_foundation', 'other'] as const
+export const OTHER_SCHOLARSHIP_OPTIONS = ['jpa', 'khazanah', 'petronas', 'bnm', 'dermasiswa_b40', 'maybank', 'maxis', 'sime_darby', 'other'] as const
 
 // A ranked course choice (rank derived from array order). Sourced from the
 // student's saved courses; shape mirrors the backend `top_choices` entries.

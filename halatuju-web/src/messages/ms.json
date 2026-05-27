@@ -566,10 +566,13 @@
       },
       "scholarship": {
         "jpa": "JPA",
-        "petronas": "Petronas",
-        "mara": "MARA",
-        "yayasan": "Yayasan / yayasan negeri",
-        "bank_foundation": "Yayasan bank / korporat",
+        "khazanah": "Khazanah",
+        "petronas": "PETRONAS",
+        "bnm": "Bank Negara Malaysia",
+        "dermasiswa_b40": "Program Dermasiswa B40",
+        "maybank": "Maybank",
+        "maxis": "Maxis",
+        "sime_darby": "Sime Darby",
         "other": "Lain-lain"
       }
     },

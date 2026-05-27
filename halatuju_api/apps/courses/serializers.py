@@ -165,6 +165,32 @@ class CourseRequirementSerializer(serializers.Serializer):
         }
 
 
+# Frontend → engine value maps. The engine compares against the Malay forms
+# ('Lelaki'/'Perempuan', 'Warganegara'/'Bukan Warganegara'), so every entry point
+# that feeds the engine raw profile values must normalise first. Shared so the SPM
+# serializer and the STPM view (which has no serializer) can't drift apart.
+GENDER_MAP = {
+    'male': 'Lelaki', 'female': 'Perempuan',
+    'lelaki': 'Lelaki', 'perempuan': 'Perempuan',
+    'ஆண்': 'Lelaki', 'பெண்': 'Perempuan',
+}
+NATIONALITY_MAP = {
+    'malaysian': 'Warganegara', 'non_malaysian': 'Bukan Warganegara',
+    'non-malaysian': 'Bukan Warganegara',
+    'warganegara': 'Warganegara', 'bukan warganegara': 'Bukan Warganegara',
+}
+
+
+def normalize_gender(value):
+    """Map a frontend/profile gender to the engine's value (idempotent)."""
+    return GENDER_MAP.get((value or '').lower(), value)
+
+
+def normalize_nationality(value):
+    """Map a frontend/profile nationality to the engine's value (idempotent)."""
+    return NATIONALITY_MAP.get((value or '').lower(), value)
+
+
 class EligibilityRequestSerializer(serializers.Serializer):
     """
     Serializer for eligibility check request.
@@ -196,26 +222,11 @@ class EligibilityRequestSerializer(serializers.Serializer):
 
     def validate_gender(self, value):
         """Normalize gender to engine format."""
-        mapping = {
-            'male': 'Lelaki',
-            'female': 'Perempuan',
-            'lelaki': 'Lelaki',
-            'perempuan': 'Perempuan',
-            'ஆண்': 'Lelaki',
-            'பெண்': 'Perempuan',
-        }
-        return mapping.get(value.lower(), value)
+        return normalize_gender(value)
 
     def validate_nationality(self, value):
         """Normalize nationality to engine format."""
-        mapping = {
-            'malaysian': 'Warganegara',
-            'non_malaysian': 'Bukan Warganegara',
-            'non-malaysian': 'Bukan Warganegara',
-            'warganegara': 'Warganegara',
-            'bukan warganegara': 'Bukan Warganegara',
-        }
-        return mapping.get(value.lower(), value)
+        return normalize_nationality(value)
 
     def to_internal_value(self, data):
         """Drop explicit nulls before validation.

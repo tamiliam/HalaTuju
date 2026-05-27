@@ -50,6 +50,8 @@ from .serializers import (
     EligibilityResponseSerializer,
     RankingRequestSerializer,
     ProfileUpdateSerializer,
+    normalize_gender,
+    normalize_nationality,
 )
 from .ranking_engine import get_ranked_results, get_credential_priority
 from .stpm_engine import calculate_stpm_cgpa, check_stpm_eligibility
@@ -1441,13 +1443,16 @@ class StpmEligibilityCheckView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Normalise demographics to the engine's values — the profile sends raw
+        # 'male'/'malaysian', but the engine compares against 'Lelaki'/'Warganegara'.
+        # Without this, every Malaysian-required course (all of them) is excluded → 0.
         results = check_stpm_eligibility(
             stpm_grades=stpm_grades,
             spm_grades=spm_grades,
             cgpa=float(cgpa),
             muet_band=int(muet_band),
-            gender=request.data.get('gender', ''),
-            nationality=request.data.get('nationality', 'Warganegara'),
+            gender=normalize_gender(request.data.get('gender', '')),
+            nationality=normalize_nationality(request.data.get('nationality', 'Warganegara')),
             colorblind=request.data.get('colorblind', False),
         )
 

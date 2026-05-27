@@ -586,12 +586,6 @@ export default function ScholarshipApplyPage() {
                 })}
               </div>
             </div>
-            <div>
-              <FieldLabel>{t('scholarship.apply.plan.uncertainNoteLabel')}</FieldLabel>
-              <textarea className="input" rows={3} value={form.uncertaintyNote}
-                placeholder={t('scholarship.apply.plan.uncertainNotePlaceholder')}
-                onChange={(e) => update('uncertaintyNote', e.target.value)} />
-            </div>
           </div>
         )}
 
@@ -675,6 +669,17 @@ export default function ScholarshipApplyPage() {
               )}
             </div>
           )
+        )}
+
+        {/* Free text — shown for BOTH branches once answered. Decided students who
+            can't find their exact course in the filtered list can tell us here. */}
+        {form.pathwayCertainty !== '' && (
+          <div>
+            <FieldLabel>{t('scholarship.apply.plan.uncertainNoteLabel')}</FieldLabel>
+            <textarea className="input" rows={3} value={form.uncertaintyNote}
+              placeholder={t('scholarship.apply.plan.uncertainNotePlaceholder')}
+              onChange={(e) => update('uncertaintyNote', e.target.value)} />
+          </div>
         )}
 
         {/* Other scholarships — independent funding-overlap signal, shown once answered. */}

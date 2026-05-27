@@ -34,6 +34,23 @@ class TestStpmEligibilityAPI:
         assert 'eligible_courses' in data
         assert len(data['eligible_courses']) > 0
 
+    def test_raw_profile_demographics_are_normalized(self):
+        """Regression: the apply form posts RAW profile values (gender 'male',
+        nationality 'malaysian'), but the engine compares against 'Lelaki'/'Warganegara'.
+        Every STPM course requires Malaysian citizenship, so without normalisation the
+        nationality mismatch excluded all of them → 0 eligible for every STPM student.
+        The view must normalise demographics before matching."""
+        resp = self.client.post('/api/v1/stpm/eligibility/check/', {
+            'stpm_grades': {'PA': 'A', 'MATH_T': 'A', 'PHYSICS': 'A', 'CHEMISTRY': 'A'},
+            'spm_grades': {'bm': 'A', 'eng': 'A', 'hist': 'A', 'math': 'A+'},
+            'cgpa': 3.89,
+            'muet_band': 4,
+            'gender': 'male',
+            'nationality': 'malaysian',
+        }, format='json')
+        assert resp.status_code == 200
+        assert resp.json()['total_eligible'] > 0
+
     def test_missing_required_fields(self):
         resp = self.client.post('/api/v1/stpm/eligibility/check/', {}, format='json')
         assert resp.status_code == 400
