@@ -373,7 +373,7 @@
         "pathwayPlaceholder": "Choose your pathway",
         "eligibleCount": "{count} eligible",
         "loading": "Finding the pathways you qualify for…",
-        "noPathways": "Once your results are in, we'll show the pathways you qualify for. Add them in the previous step.",
+        "noPathways": "We can't show your pathways yet — we don't have your exam results. Please go to the \"Your SPM / STPM Results\" step and add your results first, then come back here to choose a pathway.",
         "degreeLabel": "Which degree?",
         "degreeTip": "Search the degrees your STPM results qualify you for, and pick the one you've decided on — your field of study is taken from it.",
         "uncertainIntro": "That's completely fine — many students are still weighing their options. Anything you share below is optional and just helps us guide you.",
@@ -766,6 +766,9 @@
       "applyCta": "Start your application",
       "receivedTitle": "Application received",
       "receivedBody": "Thank you. We've received your application and will be in touch by email. There's nothing more to do for now.",
+      "emailNote": "We'll send any updates about your application to {email}. Please check that inbox (including the spam folder) from time to time.",
+      "browseCta": "Browse courses while you wait",
+      "homeCta": "Back to home",
       "acceptedTitle": "You've been accepted",
       "acceptedBody": "Congratulations — your application has been verified and confirmed. Our team will be in touch about the next steps for your award."
     },

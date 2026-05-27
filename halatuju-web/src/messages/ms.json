@@ -373,7 +373,7 @@
         "pathwayPlaceholder": "Pilih laluan anda",
         "eligibleCount": "{count} layak",
         "loading": "Mencari laluan yang anda layak…",
-        "noPathways": "Setelah keputusan anda dimasukkan, kami akan tunjukkan laluan yang anda layak. Tambah keputusan dalam langkah sebelumnya.",
+        "noPathways": "Kami belum boleh tunjukkan laluan anda — kami tiada keputusan peperiksaan anda. Sila pergi ke langkah \"Keputusan SPM / STPM Anda\" dan masukkan keputusan anda dahulu, kemudian kembali ke sini untuk memilih laluan.",
         "degreeLabel": "Ijazah yang mana?",
         "degreeTip": "Cari ijazah yang keputusan STPM anda melayakkan anda, dan pilih yang telah anda putuskan — bidang pengajian anda diambil daripadanya.",
         "uncertainIntro": "Tidak mengapa — ramai pelajar masih menimbang pilihan mereka. Apa-apa yang anda kongsi di bawah adalah pilihan dan hanya membantu kami membimbing anda.",
@@ -766,6 +766,9 @@
       "applyCta": "Mulakan permohonan anda",
       "receivedTitle": "Permohonan diterima",
       "receivedBody": "Terima kasih. Kami telah menerima permohonan anda dan akan menghubungi anda melalui e-mel. Tiada apa-apa lagi yang perlu dilakukan buat masa ini.",
+      "emailNote": "Kami akan menghantar sebarang kemas kini tentang permohonan anda ke {email}. Sila semak peti masuk itu (termasuk folder spam) dari semasa ke semasa.",
+      "browseCta": "Lihat kursus sementara menunggu",
+      "homeCta": "Kembali ke utama",
       "acceptedTitle": "Anda telah diterima",
       "acceptedBody": "Tahniah — permohonan anda telah disahkan. Pasukan kami akan menghubungi anda tentang langkah seterusnya untuk anugerah anda."
     },

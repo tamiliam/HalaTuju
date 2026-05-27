@@ -7,15 +7,20 @@ import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { getMyScholarshipApplications, type ScholarshipApplication } from '@/lib/api'
 import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
+import AppHeader from '@/components/AppHeader'
+import AppFooter from '@/components/AppFooter'
 
 /**
  * The post-submission home for an applicant. A shortlisted student completes
  * their follow-up (quiz, deeper info, documents, consent) here; anyone else
  * sees a neutral "received" status. Unauthenticated visitors are sent to apply.
+ *
+ * Wrapped in the standard AppHeader/AppFooter so it never looks like a dead-end
+ * page — the student keeps full site navigation after submitting.
  */
 export default function ScholarshipApplicationPage() {
   const { t } = useT()
-  const { status, token } = useAuth()
+  const { status, token, profile } = useAuth()
   const router = useRouter()
   const [app, setApp] = useState<ScholarshipApplication | null>(null)
   const [loading, setLoading] = useState(true)
@@ -34,12 +39,42 @@ export default function ScholarshipApplicationPage() {
     return () => { active = false }
   }, [status, token, router])
 
+  // Where our communications will go — the verified account email (the profile's
+  // contact email if set, otherwise the Google sign-in address).
+  const commsEmail = profile?.contact_email || profile?.email || ''
+
   function wrap(children: React.ReactNode) {
     return (
-      <main className="container mx-auto px-6 py-10 max-w-2xl">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('scholarship.application.title')}</h1>
-        {children}
-      </main>
+      <div className="flex min-h-screen flex-col">
+        <AppHeader />
+        <main className="container mx-auto w-full max-w-2xl flex-1 px-6 py-10">
+          <h1 className="mb-6 text-2xl font-bold text-gray-900">{t('scholarship.application.title')}</h1>
+          {children}
+        </main>
+        <AppFooter />
+      </div>
+    )
+  }
+
+  // Email note + onward navigation, shown under the status card so the page is
+  // never a dead end.
+  function nav() {
+    return (
+      <>
+        {commsEmail && (
+          <p className="mt-4 text-sm text-gray-500">
+            {t('scholarship.application.emailNote', { email: commsEmail })}
+          </p>
+        )}
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/search" className="btn-primary inline-block">
+            {t('scholarship.application.browseCta')}
+          </Link>
+          <Link href="/" className="inline-block rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            {t('scholarship.application.homeCta')}
+          </Link>
+        </div>
+      </>
     )
   }
 
@@ -49,8 +84,8 @@ export default function ScholarshipApplicationPage() {
 
   if (!app) {
     return wrap(
-      <div className="bg-white border rounded-2xl p-6 text-center shadow-sm">
-        <p className="text-gray-700 mb-4">{t('scholarship.application.none')}</p>
+      <div className="rounded-2xl border bg-white p-6 text-center shadow-sm">
+        <p className="mb-4 text-gray-700">{t('scholarship.application.none')}</p>
         <Link href="/scholarship/apply" className="btn-primary inline-block">
           {t('scholarship.application.applyCta')}
         </Link>
@@ -65,14 +100,15 @@ export default function ScholarshipApplicationPage() {
   // accepted — the admin has verified & confirmed this applicant.
   if (app.status === 'accepted') {
     return wrap(
-      <div className="bg-primary-50 border border-primary-200 rounded-2xl p-6">
-        <div className="flex items-center gap-2 mb-2">
-          <svg className="w-6 h-6 text-primary-600 shrink-0" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+      <div className="rounded-2xl border border-primary-200 bg-primary-50 p-6">
+        <div className="mb-2 flex items-center gap-2">
+          <svg className="h-6 w-6 shrink-0 text-primary-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <h2 className="font-semibold text-gray-900">{t('scholarship.application.acceptedTitle')}</h2>
         </div>
         <p className="text-gray-700">{t('scholarship.application.acceptedBody')}</p>
+        {nav()}
       </div>
     )
   }
@@ -80,9 +116,10 @@ export default function ScholarshipApplicationPage() {
   // submitted / rejected / withdrawn — keep it neutral (the decision email is
   // sent separately; we don't expose a raw "rejected" status here).
   return wrap(
-    <div className="bg-green-50 border border-green-200 rounded-2xl p-6">
-      <h2 className="font-semibold text-gray-900 mb-2">{t('scholarship.application.receivedTitle')}</h2>
+    <div className="rounded-2xl border border-green-200 bg-green-50 p-6">
+      <h2 className="mb-2 font-semibold text-gray-900">{t('scholarship.application.receivedTitle')}</h2>
       <p className="text-gray-700">{t('scholarship.application.receivedBody')}</p>
+      {nav()}
     </div>
   )
 }

@@ -133,9 +133,14 @@ export default function ScholarshipApplyPage() {
     }
   }, [])
 
-  // Pre-fill from the profile once it's available (skipped if we restored a stash).
+  // Pre-fill from the profile once it carries its NRIC (skipped if we restored a stash).
+  // Wait for the NRIC specifically: a brand-new user claims it at the auth gate *after*
+  // this page mounts, so the first profile snapshot has no NRIC. Seeding (and locking
+  // populatedRef) on that early snapshot would leave the NRIC box blank even though the
+  // gate has since saved it. Once the gate completes, the refetched profile has the NRIC
+  // and we seed the whole form — including a pre-filled, still-editable NRIC.
   useEffect(() => {
-    if (profile && !populatedRef.current) {
+    if (profile && profile.nric && !populatedRef.current) {
       setForm(profileToApplyDefaults(profile))
       populatedRef.current = true
     }

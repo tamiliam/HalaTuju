@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.7] — Apply-flow polish: NRIC prefill, clearer "no results" prompt, real ending page (2026-05-27)
+
+Frontend-only (one `halatuju-web` deploy). Three issues from live new-user testing:
+- **NRIC now pre-fills the apply form.** The NRIC the student gives at the sign-up gate was saved to the
+  profile but showed up blank on the apply form. Root cause: the form's profile-prefill locked itself on the
+  *first* profile snapshot, which for a brand-new user has no NRIC yet (it's claimed at the gate moments later).
+  The prefill now waits until the profile actually carries its NRIC before seeding, so the field arrives
+  pre-filled (and still editable, since it's unverified). Verified in prod DB that the NRIC was being persisted —
+  this was purely a frontend timing bug.
+- **Clearer prompt when results are missing.** A student who reaches "Your Plans" without exam results saw a
+  vague "add them in the previous step". Rewritten to name the step explicitly and urge action: "We can't show
+  your pathways yet — we don't have your exam results. Please go to the 'Your SPM / STPM Results' step and add
+  your results first…" (`plan.noPathways`, ×3 locales, step named per-language).
+- **The post-submission page is no longer a dead end.** `/scholarship/application` rendered a bare card with no
+  site chrome. It now uses the standard `AppHeader` + `AppFooter` (full nav + footer), states **which email** we'll
+  write to ("We'll send any updates… to {email}. Please check that inbox, including spam."), and offers "Browse
+  courses while you wait" + "Back to home" CTAs. Email falls back to the Google sign-in address when no separate
+  contact email is set. Applies to the received / accepted / none states alike.
+
+Verified locally (Playwright) that the application page renders with header, card, email note, CTAs, and footer.
+Build clean; i18n parity 1164; 75 lib tests pass.
+
 ## [2.2.6] — Stop Chrome address-autofill hijacking the course / institution comboboxes (2026-05-27)
 
 Frontend-only (one `halatuju-web` deploy). Reported on the live STPM top-3 picker: Chrome's saved-address
