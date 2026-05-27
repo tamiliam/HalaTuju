@@ -16,7 +16,25 @@ import {
 import ScholarshipDocuments from '@/components/ScholarshipDocuments'
 import ScholarshipConsent from '@/components/ScholarshipConsent'
 
-const MONEY_FIELDS = ['tuitionGap', 'laptop', 'hostel', 'transport', 'books', 'other'] as const
+// Category keys and their i18n keys for the funding tab (S3 redesign)
+const FUNDING_CATEGORIES = [
+  'living',
+  'transport',
+  'accommodation',
+  'books',
+  'device',
+  'tuition',
+  'other',
+] as const
+type FundingCategory = typeof FUNDING_CATEGORIES[number]
+
+// Programme-length options: display key → months value
+const PROGRAMME_LENGTH_OPTIONS: { key: string; months: number }[] = [
+  { key: 'length12', months: 12 },
+  { key: 'length24', months: 24 },
+  { key: 'length36', months: 36 },
+  { key: 'length48', months: 48 },
+]
 
 // SVG icon for each tab — mirrors the style in /apply's TabIcon.
 function StepIcon({ step, active }: { step: NextStepKey; active: boolean }) {
@@ -72,7 +90,8 @@ export default function ScholarshipNextSteps({
   }
 
   const c = app.completeness
-  const total = fundingTotal(form)
+  // fundingTotal is kept for potential future use; not currently rendered in the UI
+  void fundingTotal(form)
   const tabIndex = NEXT_STEP_ORDER.indexOf(tab)
 
   // Completeness mapping: quiz and details/funding have backend signals.
@@ -246,58 +265,101 @@ export default function ScholarshipNextSteps({
     ),
 
     funding: (
-      <form onSubmit={handleSave} className="space-y-4">
-        <div className="flex items-center gap-3 mb-1">
-          <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${c.funding_done ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'}`} aria-hidden>
-            {c.funding_done ? '✓' : '○'}
-          </span>
-          <p className="font-medium text-gray-900">{t('scholarship.nextSteps.step3Title')}</p>
+      <form onSubmit={handleSave} className="space-y-5">
+        {/* Info box — honest framing: "a contribution, not full funding" */}
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+          <p className="text-sm text-blue-800">{t('scholarship.nextSteps.funding.infoBox')}</p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          {MONEY_FIELDS.map((item) => (
-            <div key={item}>
-              <label className="block text-sm text-gray-700 mb-1">
-                {t(`scholarship.nextSteps.${item}`)}
-              </label>
-              <input
-                type="number" min={0} className="input" value={form[item]}
-                onChange={(e) => update(item, e.target.value)}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">
-              {t('scholarship.nextSteps.monthlyAllowance')}
-            </label>
-            <input
-              type="number" min={0} className="input" value={form.monthlyAllowance}
-              onChange={(e) => update('monthlyAllowance', e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">
-              {t('scholarship.nextSteps.allowanceMonths')}
-            </label>
-            <input
-              type="number" min={0} className="input" value={form.allowanceMonths}
-              onChange={(e) => update('allowanceMonths', e.target.value)}
-            />
-          </div>
-        </div>
+
+        {/* Intro */}
+        <p className="text-sm text-gray-700">{t('scholarship.nextSteps.funding.intro')}</p>
+
+        {/* Programme length dropdown */}
         <div>
-          <label className="block text-sm text-gray-700 mb-1">
-            {t('scholarship.nextSteps.otherDesc')}
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('scholarship.nextSteps.funding.lengthLabel')}
           </label>
-          <input
-            type="text" className="input" value={form.otherDesc}
-            onChange={(e) => update('otherDesc', e.target.value)}
-          />
+          <select
+            className="input"
+            value={form.programmeMonths}
+            onChange={(e) => update('programmeMonths', e.target.value)}
+          >
+            <option value=""></option>
+            {PROGRAMME_LENGTH_OPTIONS.map(({ key, months }) => (
+              <option key={key} value={String(months)}>
+                {t(`scholarship.nextSteps.funding.${key}`)}
+              </option>
+            ))}
+          </select>
         </div>
-        <p className="text-right font-semibold text-gray-900">
-          {t('scholarship.nextSteps.total')}: RM{total.toLocaleString()}
-        </p>
+
+        {/* Category checklist */}
+        <div>
+          <p className="text-sm font-medium text-gray-700 mb-2">
+            {t('scholarship.nextSteps.funding.categoriesLabel')}
+          </p>
+          <div className="space-y-2">
+            {FUNDING_CATEGORIES.map((cat) => {
+              const checked = form.fundingCategories.includes(cat)
+              const toggle = () => {
+                const next = checked
+                  ? form.fundingCategories.filter((c) => c !== cat)
+                  : [...form.fundingCategories, cat]
+                update('fundingCategories', next)
+              }
+              return (
+                <div key={cat}>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      checked={checked}
+                      onChange={toggle}
+                    />
+                    <span className="text-sm text-gray-700">
+                      {t(`scholarship.nextSteps.funding.cat_${cat}`)}
+                    </span>
+                  </label>
+                  {/* Tuition helper text */}
+                  {cat === 'tuition' && (
+                    <p className="ml-7 mt-0.5 text-xs text-gray-500">
+                      {t('scholarship.nextSteps.funding.cat_tuition_helper')}
+                    </p>
+                  )}
+                  {/* "Something else" text input — revealed when ticked */}
+                  {cat === 'other' && checked && (
+                    <div className="ml-7 mt-1">
+                      <input
+                        type="text"
+                        className="input text-sm"
+                        placeholder={t('scholarship.nextSteps.funding.cat_other_desc')}
+                        value={form.otherDesc}
+                        onChange={(e) => update('otherDesc', e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Open optional note */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('scholarship.nextSteps.funding.noteLabel')}
+          </label>
+          <textarea
+            className="input"
+            rows={3}
+            value={form.fundingNote}
+            onChange={(e) => update('fundingNote', e.target.value)}
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            {t('scholarship.nextSteps.funding.noteHelper')}
+          </p>
+        </div>
+
         {saveFeedback}
         <button type="submit" disabled={saving} className="btn-primary w-full disabled:opacity-50">
           {saving ? t('scholarship.nextSteps.saving') : t('scholarship.nextSteps.save')}

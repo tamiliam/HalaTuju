@@ -63,7 +63,8 @@ class TestCompleteness(TestCase):
         self.app.aspirations = 'Be an accountant'
         self.app.plans = 'Study hard every day'
         self.app.save()
-        FundingNeed.objects.create(application=self.app, laptop=2000)
+        # S3: funding_done requires at least one category, not a positive total
+        FundingNeed.objects.create(application=self.app, categories=['living'])
         self.assertTrue(application_completeness(self.app)['complete'])
 
     def test_details_done_requires_aspirations_and_plans(self):
@@ -116,7 +117,11 @@ class TestDetailsApi(TestCase):
             f'/api/v1/scholarship/applications/{self.app_a.id}/',
             {
                 'aspirations': 'Become an auditor', 'plans': 'Work hard every day',
-                'funding_need': {'laptop': 2000, 'monthly_allowance': 300, 'allowance_months': 10},
+                # S3: funding_done requires at least one category; include categories here
+                'funding_need': {
+                    'laptop': 2000, 'monthly_allowance': 300, 'allowance_months': 10,
+                    'categories': ['device', 'living'],
+                },
             }, format='json',
         )
         self.assertEqual(resp.status_code, 200)
@@ -199,3 +204,63 @@ class TestDetailsApi(TestCase):
             {'aspirations': 'x'}, format='json',
         )
         self.assertEqual(resp.status_code, 401)
+
+    # ── S3: funding redesign fields ───────────────────────────────────────────
+
+    def test_patch_saves_s3_funding_fields(self):
+        """categories, funding_note, programme_months and other_desc all persist."""
+        self._auth(USER_A)
+        resp = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {
+                'funding_need': {
+                    'categories': ['living', 'transport', 'books'],
+                    'programme_months': 36,
+                    'funding_note': 'I will try for PTPTN as well.',
+                    'other_desc': 'Glasses',
+                },
+            }, format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        fn = resp.json()['funding_need']
+        self.assertEqual(fn['categories'], ['living', 'transport', 'books'])
+        self.assertEqual(fn['programme_months'], 36)
+        self.assertEqual(fn['funding_note'], 'I will try for PTPTN as well.')
+        self.assertEqual(fn['other_desc'], 'Glasses')
+
+    def test_funding_done_true_when_categories_nonempty(self):
+        """funding_done is True when at least one category is ticked."""
+        self._auth(USER_A)
+        resp = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {'funding_need': {'categories': ['living']}}, format='json',
+        )
+        self.assertTrue(resp.json()['completeness']['funding_done'])
+
+    def test_funding_done_false_when_categories_empty(self):
+        """funding_done is False when categories list is empty."""
+        self._auth(USER_A)
+        # First set categories, then clear them
+        url = f'/api/v1/scholarship/applications/{self.app_a.id}/'
+        self.client.patch(url, {'funding_need': {'categories': ['living']}}, format='json')
+        resp = self.client.patch(url, {'funding_need': {'categories': []}}, format='json')
+        self.assertFalse(resp.json()['completeness']['funding_done'])
+
+    def test_funding_done_false_when_no_funding_need(self):
+        """funding_done is False when no FundingNeed row exists yet (DoesNotExist path)."""
+        # app_b has no funding_need yet
+        self._auth(USER_B)
+        resp = self.client.get(f'/api/v1/scholarship/applications/{self.app_b.id}/')
+        self.assertFalse(resp.json()['completeness']['funding_done'])
+
+    def test_s3_funding_fields_defaults_on_new_row(self):
+        """A newly created FundingNeed row has empty categories, blank funding_note, null programme_months."""
+        self._auth(USER_A)
+        resp = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {'funding_need': {'laptop': 0}}, format='json',
+        )
+        fn = resp.json()['funding_need']
+        self.assertEqual(fn['categories'], [])
+        self.assertEqual(fn['funding_note'], '')
+        self.assertIsNone(fn['programme_months'])

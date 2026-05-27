@@ -642,7 +642,7 @@ describe('fundingTotal', () => {
 describe('buildDetailsPayload', () => {
   it('maps form to snake_case with nested funding_need (trimmed)', () => {
     const f = { ...emptyDetailsForm(), aspirations: '  be a teacher ', laptop: '2000', allowanceMonths: '10', monthlyAllowance: '300' }
-    const p = buildDetailsPayload(f) as { aspirations: string; funding_need: Record<string, number> }
+    const p = buildDetailsPayload(f) as { aspirations: string; funding_need: Record<string, unknown> }
     expect(p.aspirations).toBe('be a teacher')
     expect(p.funding_need.laptop).toBe(2000)
     expect(p.funding_need.monthly_allowance).toBe(300)
@@ -665,6 +665,34 @@ describe('buildDetailsPayload', () => {
     expect(p.family_context).toBe('Father is ill')
     expect(p.daily_life).toBe('Wake at 5am')
   })
+
+  it('emits S3 funding fields: categories, funding_note, programme_months (trimmed, typed)', () => {
+    const f = {
+      ...emptyDetailsForm(),
+      fundingCategories: ['living', 'transport'],
+      fundingNote: '  I will try for PTPTN.  ',
+      programmeMonths: '36',
+      otherDesc: 'Glasses',
+    }
+    const p = buildDetailsPayload(f) as Record<string, unknown>
+    const fn = p.funding_need as Record<string, unknown>
+    expect(fn.categories).toEqual(['living', 'transport'])
+    expect(fn.funding_note).toBe('I will try for PTPTN.')
+    expect(fn.programme_months).toBe(36)
+    expect(fn.other_desc).toBe('Glasses')
+  })
+
+  it('converts blank programmeMonths to null', () => {
+    const f = { ...emptyDetailsForm(), programmeMonths: '' }
+    const fn = (buildDetailsPayload(f) as Record<string, unknown>).funding_need as Record<string, unknown>
+    expect(fn.programme_months).toBeNull()
+  })
+
+  it('sends empty categories when none ticked', () => {
+    const f = { ...emptyDetailsForm(), fundingCategories: [] }
+    const fn = (buildDetailsPayload(f) as Record<string, unknown>).funding_need as Record<string, unknown>
+    expect(fn.categories).toEqual([])
+  })
 })
 
 describe('applicationToDetailsForm', () => {
@@ -676,6 +704,7 @@ describe('applicationToDetailsForm', () => {
       funding_need: {
         tuition_gap: 0, laptop: 2000, hostel: 0, transport: 0, books: 0,
         monthly_allowance: 300, allowance_months: 10, other: 0, other_desc: '', total: 5000,
+        categories: [], funding_note: '', programme_months: null,
       },
     } as unknown as ScholarshipApplication
     const f = applicationToDetailsForm(app)
@@ -715,6 +744,40 @@ describe('applicationToDetailsForm', () => {
     expect(f.laptop).toBe('')
     expect(f.aspirations).toBe('')
     expect(f.firstInFamily).toBe(false)
+  })
+
+  it('reads back S3 funding fields from a funding_need row', () => {
+    const app = {
+      aspirations: '', plans: '', fears: '', justification: '',
+      first_in_family: false, parents_occupation: '', siblings_studying: false,
+      family_context: '', daily_life: '',
+      funding_need: {
+        tuition_gap: 0, laptop: 0, hostel: 0, transport: 0, books: 0,
+        monthly_allowance: 0, allowance_months: 0, other: 0, other_desc: 'Glasses',
+        total: 0,
+        categories: ['living', 'books'],
+        funding_note: 'I will apply for PTPTN.',
+        programme_months: 48,
+      },
+    } as unknown as ScholarshipApplication
+    const f = applicationToDetailsForm(app)
+    expect(f.fundingCategories).toEqual(['living', 'books'])
+    expect(f.fundingNote).toBe('I will apply for PTPTN.')
+    expect(f.programmeMonths).toBe('48')
+    expect(f.otherDesc).toBe('Glasses')
+  })
+
+  it('defaults S3 fields when funding_need is null', () => {
+    const app = {
+      aspirations: '', plans: '', fears: '', justification: '',
+      first_in_family: false, parents_occupation: '', siblings_studying: false,
+      family_context: '', daily_life: '',
+      funding_need: null,
+    } as unknown as ScholarshipApplication
+    const f = applicationToDetailsForm(app)
+    expect(f.fundingCategories).toEqual([])
+    expect(f.fundingNote).toBe('')
+    expect(f.programmeMonths).toBe('')
   })
 })
 

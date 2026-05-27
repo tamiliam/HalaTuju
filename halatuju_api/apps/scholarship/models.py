@@ -350,6 +350,21 @@ class FundingNeed(models.Model):
     allowance_months = models.IntegerField(default=0, help_text="Number of months of allowance")
     other = models.IntegerField(default=0)
     other_desc = models.CharField(max_length=200, blank=True, default='')
+    # ── S3 redesign fields (additive) ────────────────────────────────────────
+    # Reframes the funding tab as "how you'd use the support" (capped at RM3,000).
+    # The old amount fields above are kept (additive-only); the UI no longer renders them.
+    categories = models.JSONField(
+        default=list, blank=True,
+        help_text="Selected support categories: living/transport/accommodation/books/device/tuition/other",
+    )
+    funding_note = models.TextField(
+        blank=True, default='',
+        help_text="Open: how they'd use it / plan to fund studies / cope without",
+    )
+    programme_months = models.IntegerField(
+        null=True, blank=True,
+        help_text="Programme length in months",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

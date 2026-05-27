@@ -646,6 +646,27 @@
           "dailyLife": "What is your daily life like? Any responsibilities such as work or caring for family?",
           "fears": "What worries you most, or what support would help you the most?"
         }
+      },
+      "funding": {
+        "infoBox": "Our assistance is up to RM3,000 — the actual amount may be lower, depending on available funds and your needs.",
+        "intro": "Tick what the support would help with. There's no need to work out exact amounts.",
+        "lengthLabel": "How long is your programme?",
+        "length12": "1 year (Matriculation / Foundation)",
+        "length24": "2 years",
+        "length36": "3 years (Diploma)",
+        "length48": "4 years (Degree)",
+        "categoriesLabel": "What would the support help with? (tick all that apply)",
+        "cat_living": "Living costs (food, daily needs)",
+        "cat_transport": "Transport",
+        "cat_accommodation": "Accommodation (hostel or rent)",
+        "cat_books": "Books & stationery",
+        "cat_device": "Laptop or device",
+        "cat_tuition": "Tuition or fees",
+        "cat_tuition_helper": "Often covered for public institutions — tick only if you'll pay some.",
+        "cat_other": "Something else",
+        "cat_other_desc": "Tell us what",
+        "noteLabel": "Anything else you'd like us to know? (optional)",
+        "noteHelper": "For example, how you're planning to fund your studies, or how you'd manage if this assistance doesn't come through."
       }
     },
     "docs": {

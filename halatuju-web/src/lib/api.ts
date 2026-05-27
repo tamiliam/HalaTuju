@@ -909,6 +909,7 @@ export async function calculatePathways(
 // ── Scholarship (B40 Assistance Programme) ──────────────────────────────
 
 export interface FundingNeed {
+  // Legacy amount fields (kept; no longer rendered in the UI)
   tuition_gap: number
   laptop: number
   hostel: number
@@ -919,6 +920,10 @@ export interface FundingNeed {
   other: number
   other_desc: string
   total: number
+  // S3 redesign fields — "how you'd use the support"
+  categories: string[]
+  funding_note: string
+  programme_months: number | null
 }
 
 export interface ApplicationCompleteness {

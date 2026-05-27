@@ -259,12 +259,14 @@ def application_completeness(application):
     Report STEP 1A / STEP 2 progress for a (typically shortlisted) application:
     quiz done (the linked profile has quiz signals), deeper info done, funding
     need done. The sponsor stage (Phase 2) will gate on ``complete``.
+
+    funding_done (S3 redesign): at least one category ticked in categories.
     """
     profile = application.profile
     quiz_done = bool(profile and profile.student_signals)
     details_done = bool(application.aspirations.strip() and application.plans.strip())
     try:
-        funding_done = application.funding_need.total > 0
+        funding_done = bool(application.funding_need.categories)
     except FundingNeed.DoesNotExist:
         funding_done = False
     return {

@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.2] — "How you'd use the support" — reframed funding (Step-4 redesign, S3) (2026-05-27)
+
+Backend + frontend (migrate-first: `scholarship 0013`). Reframes the funding tab away from itemised RM amounts.
+Since assistance is **capped at RM3,000 (a contribution)**, asking a total or "how you'd cover the balance" only
+manufactured a discouraging gap — so both are gone. The tab now: states **"Our assistance is up to RM3,000 — the
+actual amount may be lower…"**; asks **programme length**; offers a **tick-only** checklist of what the support would
+help with (living, transport, accommodation, books, device, tuition *with "often covered" helper*, something-else);
+and an **optional open box** ("how you're planning to fund your studies, or how you'd manage if this doesn't come
+through"). No totals, no per-category amounts.
+- Backend: `FundingNeed` gains `categories` (JSON), `funding_note` (text), `programme_months` (int) — additive
+  migration `0013`, migrate-first (0 existing rows); serializer + details-PATCH + tests. **Funding-complete** now =
+  at least one category ticked (was total > 0).
+- Frontend: funding tab rewritten (tick categories + length + open box); `DetailsFormState`/payload mapping; i18n ×3
+  (parity 1209). Legacy amount fields kept as dead columns (unused).
+- Build clean; backend 106 / jest 93; UI screenshot-verified.
+
 ## [2.4.1] — "Your story" guided section (Step-4 redesign, S2) (2026-05-27)
 
 Backend + frontend (migrate-first: `scholarship 0012`, applied to prod before deploy). Replaces the "story" tab's

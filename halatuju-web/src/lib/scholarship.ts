@@ -577,7 +577,8 @@ export interface DetailsFormState {
   dailyLife: string
   // Legacy field (kept for backward compatibility; no longer part of completeness)
   justification: string
-  // Funding need fields (on the Funding tab)
+  // Legacy funding amount fields (kept so fundingTotal + old tests don't break;
+  // the Funding tab no longer renders them)
   tuitionGap: string
   laptop: string
   hostel: string
@@ -587,6 +588,10 @@ export interface DetailsFormState {
   allowanceMonths: string
   other: string
   otherDesc: string
+  // S3 redesign fields — "how you'd use the support"
+  fundingCategories: string[]
+  fundingNote: string
+  programmeMonths: string  // string for the <select>; converted to int|null in buildDetailsPayload
 }
 
 function intOr0(s: string): number {
@@ -615,9 +620,13 @@ export function emptyDetailsForm(): DetailsFormState {
     fears: '',
     dailyLife: '',
     justification: '',
-    // Funding need
+    // Legacy funding amount fields
     tuitionGap: '', laptop: '', hostel: '', transport: '', books: '',
     monthlyAllowance: '', allowanceMonths: '', other: '', otherDesc: '',
+    // S3 redesign fields
+    fundingCategories: [],
+    fundingNote: '',
+    programmeMonths: '',
   }
 }
 
@@ -636,7 +645,7 @@ export function applicationToDetailsForm(app: ScholarshipApplication): DetailsFo
     fears: app.fears || '',
     dailyLife: app.daily_life || '',
     justification: app.justification || '',
-    // Funding need
+    // Legacy funding amount fields
     tuitionGap: numStr(fn?.tuition_gap),
     laptop: numStr(fn?.laptop),
     hostel: numStr(fn?.hostel),
@@ -646,10 +655,18 @@ export function applicationToDetailsForm(app: ScholarshipApplication): DetailsFo
     allowanceMonths: numStr(fn?.allowance_months),
     other: numStr(fn?.other),
     otherDesc: fn?.other_desc || '',
+    // S3 redesign fields
+    fundingCategories: fn?.categories ?? [],
+    fundingNote: fn?.funding_note ?? '',
+    programmeMonths: fn?.programme_months != null ? String(fn.programme_months) : '',
   }
 }
 
 export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown> {
+  // Convert programmeMonths string to int or null
+  const pm = f.programmeMonths.trim()
+  const programmeMonthsInt = pm !== '' ? (parseInt(pm, 10) || null) : null
+
   return {
     // Card A — About your family (snake_case for the backend)
     first_in_family: f.firstInFamily,
@@ -663,6 +680,7 @@ export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown
     daily_life: f.dailyLife.trim(),
     justification: f.justification.trim(),
     funding_need: {
+      // Legacy amount fields (sent as-is; backend preserves them)
       tuition_gap: intOr0(f.tuitionGap),
       laptop: intOr0(f.laptop),
       hostel: intOr0(f.hostel),
@@ -672,6 +690,10 @@ export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown
       allowance_months: intOr0(f.allowanceMonths),
       other: intOr0(f.other),
       other_desc: f.otherDesc.trim(),
+      // S3 redesign fields
+      categories: f.fundingCategories,
+      funding_note: f.fundingNote.trim(),
+      programme_months: programmeMonthsInt,
     },
   }
 }
