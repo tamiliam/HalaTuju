@@ -12,9 +12,13 @@ import {
   publishSponsorProfile,
   verifyAcceptApplication,
   setMentoringCandidate,
+  addReferee,
+  deleteReferee,
   type AdminScholarshipDetail,
   type AdminSponsorProfile,
 } from '@/lib/admin-api'
+
+const EMPTY_REFEREE = { name: '', role: '', relationship: '', phone: '', email: '' }
 
 const VERIFY_ITEMS = ['nric', 'name', 'results', 'document'] as const
 
@@ -38,6 +42,7 @@ export default function AdminScholarshipDetailPage() {
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
   const [checklist, setChecklist] = useState<Record<string, boolean>>({})
+  const [refForm, setRefForm] = useState({ ...EMPTY_REFEREE })
 
   useEffect(() => {
     if (!token || !id) return
@@ -96,6 +101,30 @@ export default function AdminScholarshipDetailPage() {
     } catch { setError(t('admin.scholarship.mentorError')) } finally { setBusy('') }
   }
 
+  const refreshApp = async () => {
+    if (!token) return
+    setApp(await getScholarshipApplication(id, { token }))
+  }
+
+  const doAddReferee = async () => {
+    if (!token || !refForm.name.trim()) return
+    setBusy('ref'); setError('')
+    try {
+      await addReferee(id, refForm, { token })
+      setRefForm({ ...EMPTY_REFEREE })
+      await refreshApp()
+    } catch { setError(t('admin.scholarship.refError')) } finally { setBusy('') }
+  }
+
+  const doDeleteReferee = async (refId: number) => {
+    if (!token) return
+    setBusy('ref'); setError('')
+    try {
+      await deleteReferee(id, refId, { token })
+      await refreshApp()
+    } catch { setError(t('admin.scholarship.refError')) } finally { setBusy('') }
+  }
+
   if (error && !app) return <div className="text-red-600 mt-8">{error}</div>
   if (!app) return <div className="text-center text-gray-500 mt-8">{t('common.loading')}</div>
 
@@ -146,13 +175,40 @@ export default function AdminScholarshipDetailPage() {
           {app.documents.length === 0 && <li className="text-gray-400">{t('admin.scholarship.none')}</li>}
         </ul>
 
-        <h3 className="font-semibold text-sm mt-4 mb-2">{t('admin.scholarship.referees')}</h3>
+        <h3 className="font-semibold text-sm mt-4 mb-1">{t('admin.scholarship.referees')}</h3>
+        <p className="text-xs text-gray-400 mb-2">{t('admin.scholarship.refHint')}</p>
         <ul className="text-sm text-gray-600 space-y-1">
           {app.referees.map((r) => (
-            <li key={r.id}>{r.name}{r.role ? ` (${r.role})` : ''}{r.phone ? ` — ${r.phone}` : ''}</li>
+            <li key={r.id} className="flex items-start justify-between gap-2">
+              <span>
+                {r.name}{r.role ? ` (${r.role})` : ''}{r.relationship ? ` · ${r.relationship}` : ''}
+                {r.phone ? ` — ${r.phone}` : ''}{r.email ? ` · ${r.email}` : ''}
+              </span>
+              <button onClick={() => doDeleteReferee(r.id)} disabled={!!busy}
+                className="text-red-500 hover:underline text-xs shrink-0 disabled:opacity-50">
+                {t('admin.scholarship.refRemove')}
+              </button>
+            </li>
           ))}
           {app.referees.length === 0 && <li className="text-gray-400">{t('admin.scholarship.none')}</li>}
         </ul>
+        {/* Add referee (coordinator records it at verify-&-accept) */}
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <input value={refForm.name} onChange={(e) => setRefForm((f) => ({ ...f, name: e.target.value }))}
+            placeholder={t('admin.scholarship.refName')} className="border rounded-lg px-2 py-1 text-sm" />
+          <input value={refForm.role} onChange={(e) => setRefForm((f) => ({ ...f, role: e.target.value }))}
+            placeholder={t('admin.scholarship.refRole')} className="border rounded-lg px-2 py-1 text-sm" />
+          <input value={refForm.relationship} onChange={(e) => setRefForm((f) => ({ ...f, relationship: e.target.value }))}
+            placeholder={t('admin.scholarship.refRelationship')} className="border rounded-lg px-2 py-1 text-sm" />
+          <input value={refForm.phone} onChange={(e) => setRefForm((f) => ({ ...f, phone: e.target.value }))}
+            placeholder={t('admin.scholarship.refPhone')} className="border rounded-lg px-2 py-1 text-sm" />
+          <input value={refForm.email} onChange={(e) => setRefForm((f) => ({ ...f, email: e.target.value }))}
+            placeholder={t('admin.scholarship.refEmail')} className="border rounded-lg px-2 py-1 text-sm sm:col-span-2" />
+        </div>
+        <button onClick={doAddReferee} disabled={!!busy || !refForm.name.trim()}
+          className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
+          {busy === 'ref' ? t('admin.scholarship.refAdding') : t('admin.scholarship.refAdd')}
+        </button>
 
         <h3 className="font-semibold text-sm mt-4 mb-2">{t('admin.scholarship.consent')}</h3>
         <p className="text-sm text-gray-600">

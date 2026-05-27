@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.5] — Admin records the referee at verify-&-accept (Step-4 redesign, S5b) (2026-05-28)
+
+Backend + admin frontend, **no migration** (the `Referee` model already exists). The Step-4 redesign moved the referee
+out of the student flow; this lets the **coordinator record it at the verify-&-accept stage**, which previously had no UI.
+- **Backend:** new PartnerAdmin-scoped endpoints — `GET/POST /api/v1/admin/scholarship/applications/<pk>/referees/`
+  (list/add) and `DELETE …/referees/<ref_id>/` (remove, scoped to the application). Reuses `RefereeSerializer`. Tests
+  for add/list/delete, name-required, wrong-application 404, and admin-only access.
+- **Admin frontend:** the Referee section on `/admin/scholarship/[id]` is now interactive — lists referees with a
+  remove action and an add form (name, role, relationship, phone, email). New `addReferee`/`deleteReferee` admin-API
+  helpers. i18n ×3 (parity 1245).
+- Build clean; backend 1135 pytest. **Finding logged as TD-060:** the AI sponsor-profile generator (`profile_engine.py`)
+  references fields the profile-canonical refactor removed (`qualification`/`spm_a_count`/`household_income`/`stpm_pngk`)
+  plus legacy/dead ones — it would error if invoked. Its rebuild + Tamil/BM-awareness is **S5c** (next).
+
 ## [2.4.4] — Completeness finalise + "What happens next" (Step-4 redesign, S5a) (2026-05-28)
 
 Backend + frontend, **no migration**. Closes the completeness loop and gives the student a reassuring finish.

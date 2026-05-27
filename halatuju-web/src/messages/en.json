@@ -1280,7 +1280,17 @@
       "acceptError": "Couldn't accept. Please try again.",
       "notShortlisted": "Only a shortlisted application can be verified & accepted.",
       "mentoring": "Flag for mentoring (lost/unfocused — not a reject)",
-      "mentorError": "Couldn't update the mentoring flag."
+      "mentorError": "Couldn't update the mentoring flag.",
+      "refHint": "Record a referee — a teacher, counsellor, or referring-org contact who can vouch for the applicant.",
+      "refName": "Referee name",
+      "refRole": "Role (e.g. teacher)",
+      "refRelationship": "Relationship",
+      "refPhone": "Phone",
+      "refEmail": "Email",
+      "refAdd": "Add referee",
+      "refAdding": "Adding…",
+      "refRemove": "Remove",
+      "refError": "Could not save the referee. Please try again."
     },
     "students": "Students",
     "invite": "Invite",

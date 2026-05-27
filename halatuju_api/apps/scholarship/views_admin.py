@@ -12,8 +12,9 @@ from rest_framework.views import APIView
 
 from apps.courses.views_admin import PartnerAdminMixin
 
-from .models import ScholarshipApplication, SponsorProfile
+from .models import Referee, ScholarshipApplication, SponsorProfile
 from .profile_engine import generate_sponsor_profile
+from .serializers import RefereeSerializer
 from .serializers_admin import (
     AdminApplicationDetailSerializer,
     AdminApplicationListSerializer,
@@ -119,6 +120,45 @@ class AdminVerifyAcceptView(_AdminBase):
         app.verify_checklist = request.data.get('checklist', {}) or {}
         app.save(update_fields=['status', 'verified_at', 'verified_by', 'verify_checklist'])
         return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminApplicationRefereeView(_AdminBase):
+    """
+    GET  .../<pk>/referees/  — list referees recorded for an application.
+    POST .../<pk>/referees/  — coordinator records a referee at the verify-&-accept
+    stage (the referee was moved out of the student flow in the Step-4 redesign).
+    """
+    def get(self, request, pk):
+        if not self.get_admin(request):
+            return self._deny()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        refs = Referee.objects.filter(application=app)
+        return Response({'referees': RefereeSerializer(refs, many=True).data})
+
+    def post(self, request, pk):
+        if not self.get_admin(request):
+            return self._deny()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = RefereeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ref = Referee.objects.create(application=app, **serializer.validated_data)
+        return Response(RefereeSerializer(ref).data, status=status.HTTP_201_CREATED)
+
+
+class AdminRefereeDetailView(_AdminBase):
+    """DELETE .../<pk>/referees/<ref_id>/ — remove a referee from the application."""
+    def delete(self, request, pk, ref_id):
+        if not self.get_admin(request):
+            return self._deny()
+        ref = Referee.objects.filter(pk=ref_id, application_id=pk).first()
+        if ref is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        ref.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AdminGenerateProfileView(_AdminBase):

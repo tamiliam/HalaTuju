@@ -6,7 +6,9 @@ from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, StudentProfile
-from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort, SponsorProfile
+from apps.scholarship.models import (
+    Referee, ScholarshipApplication, ScholarshipCohort, SponsorProfile,
+)
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 ADMIN = 'admin-uid'
@@ -172,3 +174,64 @@ class TestAdminScholarship(TestCase):
         self.assertTrue(r.json()['mentoring_candidate'])
         self.app.refresh_from_db()
         self.assertTrue(self.app.mentoring_candidate)
+
+    # ── S5b: admin records the referee at verify-&-accept ───────────────────
+    def _referees_url(self):
+        return f'/api/v1/admin/scholarship/applications/{self.app.id}/referees/'
+
+    def test_admin_list_referees_empty(self):
+        self._auth(ADMIN)
+        r = self.client.get(self._referees_url())
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()['referees'], [])
+
+    def test_admin_add_referee(self):
+        self._auth(ADMIN)
+        r = self.client.post(
+            self._referees_url(),
+            {'name': 'Cikgu Devi', 'role': 'teacher', 'relationship': 'class teacher',
+             'phone': '0123456789', 'email': 'devi@smkx.edu.my'},
+            format='json',
+        )
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.json()['name'], 'Cikgu Devi')
+        self.assertEqual(Referee.objects.filter(application=self.app).count(), 1)
+
+    def test_admin_add_referee_requires_name(self):
+        self._auth(ADMIN)
+        r = self.client.post(self._referees_url(), {'role': 'teacher'}, format='json')
+        self.assertEqual(r.status_code, 400)
+
+    def test_admin_list_after_add(self):
+        Referee.objects.create(application=self.app, name='Mr Tan', role='counsellor')
+        self._auth(ADMIN)
+        r = self.client.get(self._referees_url())
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.json()['referees']), 1)
+        self.assertEqual(r.json()['referees'][0]['name'], 'Mr Tan')
+
+    def test_admin_delete_referee(self):
+        ref = Referee.objects.create(application=self.app, name='Mr Tan')
+        self._auth(ADMIN)
+        r = self.client.delete(f'{self._referees_url()}{ref.id}/')
+        self.assertEqual(r.status_code, 204)
+        self.assertFalse(Referee.objects.filter(pk=ref.id).exists())
+
+    def test_admin_delete_referee_wrong_application_404(self):
+        """A referee id that belongs to a different application is not deletable here."""
+        other_cohort = ScholarshipCohort.objects.create(code='c2', name='B40-2', year=2027)
+        other_app = ScholarshipApplication.objects.create(
+            cohort=other_cohort, profile=self.profile, status='shortlisted',
+        )
+        ref = Referee.objects.create(application=other_app, name='Someone Else')
+        self._auth(ADMIN)
+        r = self.client.delete(f'{self._referees_url()}{ref.id}/')
+        self.assertEqual(r.status_code, 404)
+        self.assertTrue(Referee.objects.filter(pk=ref.id).exists())
+
+    def test_referee_endpoints_require_admin(self):
+        self._auth(STUDENT)
+        self.assertEqual(self.client.get(self._referees_url()).status_code, 403)
+        self.assertEqual(
+            self.client.post(self._referees_url(), {'name': 'X'}, format='json').status_code, 403,
+        )

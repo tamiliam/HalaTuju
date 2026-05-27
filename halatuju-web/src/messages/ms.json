@@ -1280,7 +1280,17 @@
       "acceptError": "Tidak dapat menerima. Sila cuba lagi.",
       "notShortlisted": "Hanya permohonan yang disenarai pendek boleh disahkan & diterima.",
       "mentoring": "Tandakan untuk mentor (hilang arah — bukan penolakan)",
-      "mentorError": "Tidak dapat mengemas kini tanda mentor."
+      "mentorError": "Tidak dapat mengemas kini tanda mentor.",
+      "refHint": "Rekod perujuk — seorang guru, kaunselor, atau wakil organisasi perujuk yang boleh menjamin pemohon.",
+      "refName": "Nama perujuk",
+      "refRole": "Peranan (cth. guru)",
+      "refRelationship": "Hubungan",
+      "refPhone": "Telefon",
+      "refEmail": "E-mel",
+      "refAdd": "Tambah perujuk",
+      "refAdding": "Menambah…",
+      "refRemove": "Buang",
+      "refError": "Tidak dapat menyimpan perujuk. Sila cuba lagi."
     },
     "students": "Pelajar",
     "invite": "Jemputan",

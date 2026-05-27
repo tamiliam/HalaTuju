@@ -301,7 +301,7 @@ export interface AdminScholarshipDetail {
   submitted_at: string
   funding_need: ({ total: number } & Record<string, number | string>) | null
   documents: Array<{ id: number; doc_type: string; original_filename: string; size: number; verification_status: string; download_url: string | null }>
-  referees: Array<{ id: number; name: string; role: string; relationship: string; phone: string; email: string }>
+  referees: AdminReferee[]
   consents: Array<{ id: number; consent_type: string; version: string; granted_by: string; guardian_name: string; is_active: boolean; granted_at: string }>
   sponsor_profile: AdminSponsorProfile | null
 }
@@ -370,4 +370,33 @@ export async function setMentoringCandidate(id: number, value: boolean, options?
   return adminMutate<AdminScholarshipDetail>(
     `/api/v1/admin/scholarship/applications/${id}/`, 'PATCH', { mentoring_candidate: value }, options
   )
+}
+
+export interface AdminReferee {
+  id: number; name: string; role: string; relationship: string; phone: string; email: string
+}
+
+/** Coordinator records a referee for the application at the verify-&-accept stage. */
+export async function addReferee(
+  id: number,
+  payload: { name: string; role?: string; relationship?: string; phone?: string; email?: string },
+  options?: ApiOptions
+) {
+  return adminMutate<AdminReferee>(
+    `/api/v1/admin/scholarship/applications/${id}/referees/`, 'POST', payload, options
+  )
+}
+
+/** Remove a referee from the application (204 No Content on success). */
+export async function deleteReferee(id: number, refId: number, options?: ApiOptions): Promise<void> {
+  const headers: Record<string, string> = {}
+  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
+  const res = await fetch(
+    `${API_BASE}/api/v1/admin/scholarship/applications/${id}/referees/${refId}/`,
+    { method: 'DELETE', headers }
+  )
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}))
+    throw new Error(b.error || `Admin API error: ${res.status}`)
+  }
 }
