@@ -228,7 +228,7 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 **v2.0 Released** (2026-03-20). Live at [halatuju.xyz](https://halatuju.xyz).
 **B40 redesign (S7–S12a) DEPLOYED to prod 2026-05-25** (apply-form rebuild + deterministic decision engine + admin
-verify-&-accept). Pipeline live but **dormant — site not promoted**; **wire the decision-email scheduler before promoting** (see Next Sprint).
+verify-&-accept). **Decision-email scheduler NOW WIRED (2026-05-27)** — Cloud Run Job `release-decisions` + Cloud Scheduler `release-decisions-15m` (every 15 min) run `send_pending_decision_emails`; +2h/+48h reveal emails fire automatically (verified end-to-end). The old "wire before promoting" blocker is **cleared**; the programme is still not formally promoted but this gate is done.
 **Apply-flow "Your Plans" redesign + post-launch polish DEPLOYED (v2.2.0–2.3.0, 2026-05-27):** context-aware Plans
 step (P1–P5), then 8 post-launch fixes/additions from live new-user testing — `coq` round-trip, STPM eligibility
 0-bug fix, STPM top-3 picker, Chrome autofill fix, NRIC prefill, rebuilt `/scholarship/application`, and a
@@ -307,10 +307,15 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   `b40-2026` live; its thresholds corrected to the settled S8 values (legacy Phase-1 row had 5/3.0 → set to 4/2.9).
   Idempotent `seed_b40_2026_cohort` command added (1103 backend tests). See `retrospective-b40-sprint12b.md`.
   **Pipeline is functional but dormant — the site is not promoted.**
-- **⚠️ BEFORE PROMOTING the programme (must-do):** wire **Cloud Scheduler → a Cloud Run Job running
-  `python manage.py send_pending_decision_emails`** (~every 15 min). Until then, submitted apps score silently but
-  the **+2h shortlist / +48h decline reveal emails never fire**. Also keep one existing prod app (`YOGASHINI KRISHNAN`,
-  rejected, Phase-1 test era) — real person, kept on user's instruction (contact separately, not via the pipeline).
+- **✅ DONE (2026-05-27) — decision-email scheduler wired.** Cloud Run Job `release-decisions` (api image →
+  `python manage.py send_pending_decision_emails`, 2Gi/2cpu, env copied from `halatuju-api`) + Cloud Scheduler
+  `release-decisions-15m` (`*/15 * * * *`, Asia/KL, OAuth via App Engine SA, ENABLED), mirroring the existing
+  `sjktconnect-daily-check` job pattern in this same GCP project. Verified end-to-end (released a 2h-overdue shortlist
+  invitation + a scheduler-triggered run succeeded). Run manually: `gcloud run jobs execute release-decisions
+  --region asia-southeast1`. Submitted apps now reveal at +2h (shortlist) / +48h (decline) automatically. **Note:**
+  the acknowledgement email already sends synchronously at submit — only the *delayed reveal* needed the scheduler.
+- Keep one existing prod app (`YOGASHINI KRISHNAN`, rejected, Phase-1 test era) — real person, kept on user's
+  instruction (contact separately, not via the pipeline).
 - **▶ Next (immediate): `/scholarship/application` page review** — the post-submission home. Audit the shortlisted
   "next steps" follow-up (`ScholarshipNextSteps`: quiz gate → deeper info + funding need → documents → referee →
   consent) and the `accepted` state, the way the apply form was reviewed. No code started yet — map current behaviour
