@@ -314,6 +314,16 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   invitation + a scheduler-triggered run succeeded). Run manually: `gcloud run jobs execute release-decisions
   --region asia-southeast1`. Submitted apps now reveal at +2h (shortlist) / +48h (decline) automatically. **Note:**
   the acknowledgement email already sends synchronously at submit — only the *delayed reveal* needed the scheduler.
+- **✅ DONE (2026-05-27) — job auto-syncs on deploy (image).** The `halatuju-api` build trigger gained a 4th,
+  **non-fatal** step `SyncReleaseJob` (after Build/Push/Deploy) that runs `gcloud run jobs update release-decisions
+  --image <the just-built image>`. So every api deploy re-points the job to the current code automatically — no more
+  stale-image bug (which bit the 2.3.1 email-link fix). It's `|| echo`-guarded, so a sync failure never blocks the
+  service deploy. The step lives in the trigger's **inline build config** (no committed `cloudbuild.yaml`; edit via
+  `gcloud beta builds triggers export/import`). **ENV is NOT auto-synced** (rare): after changing a service env var
+  that the job also needs (e.g. `FRONTEND_URL`, DB password, email creds), mirror it onto the job manually:
+  `gcloud run jobs update release-decisions --region asia-southeast1 --update-env-vars KEY=VALUE`. (Future option to
+  kill staleness entirely: replace the job with a secret-guarded HTTP endpoint on the always-current service and
+  point the scheduler at that instead.)
 - Keep one existing prod app (`YOGASHINI KRISHNAN`, rejected, Phase-1 test era) — real person, kept on user's
   instruction (contact separately, not via the pipeline).
 - **▶ Next (immediate): `/scholarship/application` page review** — the post-submission home. Audit the shortlisted
