@@ -239,6 +239,19 @@ describe('buildApplicationPayload', () => {
     expect(p.anything_else).toBe('single parent')
     expect(p.form_data).toEqual({})
   })
+  it('drops empty top-3 slots and re-sequences ranks', () => {
+    // STPM "still deciding" picker holds 3 fixed slots; a student may leave gaps.
+    const p = buildApplicationPayload(baseForm({
+      topChoices: [
+        null,
+        { courseId: 'C2', courseName: 'Pharmacy', institution: 'USM' },
+        null,
+      ],
+    })) as Record<string, unknown>
+    expect(p.top_choices).toEqual([
+      { rank: 1, course_id: 'C2', course_name: 'Pharmacy', institution: 'USM' },
+    ])
+  })
 })
 
 describe('applyFormError', () => {

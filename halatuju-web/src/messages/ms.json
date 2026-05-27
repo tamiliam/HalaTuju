@@ -396,6 +396,8 @@
         "programmeNoMatch": "Tiada padanan — cuba perkataan lain.",
         "programmeAtN": "{n} institusi",
         "noProgrammes": "Kami tidak menemui kursus yang anda layak untuk laluan ini. Cuba laluan lain, atau beritahu kami lebih lanjut pada langkah seterusnya.",
+        "topProgrammesLabel": "3 program pilihan utama anda (pilihan)",
+        "topProgrammesTip": "Pilih sehingga tiga ijazah yang anda sedang pertimbangkan — daripada yang layak dengan keputusan STPM anda. Kami akan ambil kira walaupun anda belum putuskan.",
         "trackLabel": "Trek matrikulasi yang mana?",
         "trackTip": "Pilih trek yang anda layak dan telah putuskan — ia menentukan kolej yang boleh anda pilih.",
         "track": {

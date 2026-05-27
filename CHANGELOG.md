@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.5] — STPM "still deciding" top-3 degree picker + PISMP in SPM leaning pills (2026-05-27)
+
+Frontend-only (one `halatuju-web` deploy, no api change):
+- **STPM students who are "still deciding" now rank their top 3 degrees.** Previously the uncertain branch offered
+  STPM students only the SPM-style pathway pills, which don't fit them — an STPM student weighs *specific degrees*,
+  not pathways. They now get **3 ranked boxes (1st / 2nd / 3rd)**, each a type-to-search picker over the degrees their
+  STPM results qualify them for (same `ProgrammePicker` as the decided branch). Selections dedupe across boxes and
+  store as `top_choices` (rank + course + institution); empty slots are dropped and ranks re-sequenced on submit.
+  Every box generates decision/profile signal — consistent with "no control without signal".
+- **SPM leaning pills now show all 9 pathways, including PISMP.** The pills previously listed only *eligible*
+  pathways, which silently dropped PISMP (Teaching / IPG). Leanings are exploratory, not a commitment, so the full
+  menu (`PATHWAY_ORDER`) is shown — a student can lean towards a pathway even before qualifying.
+
+Verified locally (Playwright): all 9 pills incl. PISMP render; the 3 STPM boxes select, dedupe, and persist
+`top_choices` with institution + null gaps. Build clean; i18n parity 1161; 75 lib tests pass (+1 for null-slot filtering).
+
 ## [2.2.4] — STPM eligibility fix (0 for all STPM students) + scholarship list + decided-branch note (2026-05-27)
 
 - **STPM eligibility bug (critical):** the apply form's degree picker showed "no eligible courses" for **every** STPM

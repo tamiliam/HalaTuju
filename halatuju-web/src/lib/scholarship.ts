@@ -262,7 +262,7 @@ export interface ApplyFormState {
   uncertaintyReasons: string[]      // Uncertain branch — "where are you right now?" (optional)
   uncertaintyNote: string           // Uncertain branch — free text (optional)
   pathwaysConsidered: string[]      // pathway keys (non-exclusive) — Uncertain leanings
-  topChoices: TopChoice[]           // ranked top-3 (from saved courses)
+  topChoices: (TopChoice | null)[]  // Uncertain STPM students' top-3 degree picks (3 ranked slots; null = empty)
   upuStatus: UpuStatus              // derived from the chosen public pathway
   fieldOfStudy: string              // field-taxonomy key
   otherScholarships: string[]       // scholarship keys
@@ -415,9 +415,12 @@ export function buildApplicationPayload(form: ApplyFormState): ApplicationPayloa
     uncertainty_reasons: form.uncertaintyReasons,
     uncertainty_note: form.uncertaintyNote.trim(),
     pathways_considered: form.pathwaysConsidered,
-    top_choices: form.topChoices.map((c, i) => ({
-      rank: i + 1, course_id: c.courseId, course_name: c.courseName, institution: c.institution,
-    })),
+    // Drop empty slots; rank by surviving order (1st/2nd/3rd).
+    top_choices: form.topChoices
+      .filter((c): c is TopChoice => !!c && !!c.courseId)
+      .map((c, i) => ({
+        rank: i + 1, course_id: c.courseId, course_name: c.courseName, institution: c.institution,
+      })),
     upu_status: form.upuStatus,
     field_of_study: form.fieldOfStudy,
     other_scholarships: form.otherScholarships,

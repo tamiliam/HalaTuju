@@ -396,6 +396,8 @@
         "programmeNoMatch": "No match — try a different word.",
         "programmeAtN": "{n} institutions",
         "noProgrammes": "We couldn't find eligible courses for this pathway. Try another pathway, or tell us more in the next step.",
+        "topProgrammesLabel": "Your top 3 programmes (optional)",
+        "topProgrammesTip": "Pick up to three degrees you're weighing up — from the ones your STPM results qualify you for. We'll keep them in mind even if you haven't decided.",
         "trackLabel": "Which matriculation track?",
         "trackTip": "Pick the track you qualify for and have decided on — it sets which colleges you can choose from.",
         "track": {

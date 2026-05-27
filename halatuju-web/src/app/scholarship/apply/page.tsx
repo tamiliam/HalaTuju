@@ -26,6 +26,7 @@ import {
   buildApplicationPayload,
   applyFormError,
   eligiblePathways,
+  PATHWAY_ORDER,
   programmesForPathway,
   isProgrammePathway,
   isInstitutionPathway,
@@ -47,6 +48,7 @@ import {
   type ApplyFormState,
   type PathwayCertainty,
   type ChosenProgramme,
+  type TopChoice,
 } from '@/lib/scholarship'
 import { collegesForTrack } from '@/data/matric-colleges'
 import { stpmSchoolsForStream } from '@/data/stpm-schools'
@@ -243,6 +245,16 @@ export default function ScholarshipApplyPage() {
       ? p.uncertaintyReasons.filter((k) => k !== key)
       : [...p.uncertaintyReasons, key],
   }))
+  // Uncertain STPM students rank up to 3 degree choices into fixed slots (1st/2nd/3rd);
+  // empty slots are null and dropped on submit. Institution comes from the eligible list.
+  const setTopChoice = (i: number, prog: ChosenProgramme | null) => setForm((p) => {
+    const slots: (TopChoice | null)[] = [p.topChoices[0] ?? null, p.topChoices[1] ?? null, p.topChoices[2] ?? null]
+    slots[i] = prog
+      ? { courseId: prog.courseId, courseName: prog.courseName,
+          institution: eligibleCourses.find((c) => c.course_id === prog.courseId)?.institution_name ?? '' }
+      : null
+    return { ...p, topChoices: slots }
+  })
   const toggleScholarship = (key: string) => setForm((p) => ({
     ...p,
     otherScholarships: p.otherScholarships.includes(key)
@@ -556,20 +568,53 @@ export default function ScholarshipApplyPage() {
             <p className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
               {t('scholarship.apply.plan.uncertainIntro')}
             </p>
-            {examType !== 'stpm' && eligiblePathways(pathwayStats).length > 0 && (
+            {examType !== 'stpm' ? (
+              // SPM leavers lean towards pathways — show the full menu (incl. PISMP),
+              // not just eligible ones: leanings are exploratory, not a commitment.
               <div>
                 <FieldLabel tip={t('scholarship.apply.plan.leaningTip')}>{t('scholarship.apply.plan.leaningLabel')}</FieldLabel>
                 <div className="flex flex-wrap gap-2">
-                  {eligiblePathways(pathwayStats).map((p) => {
-                    const on = form.pathwaysConsidered.includes(p.key)
+                  {PATHWAY_ORDER.map((key) => {
+                    const on = form.pathwaysConsidered.includes(key)
                     return (
-                      <button key={p.key} type="button" onClick={() => toggleLeaning(p.key)}
+                      <button key={key} type="button" onClick={() => toggleLeaning(key)}
                         className={`rounded-full border px-3 py-1.5 text-sm ${on ? 'border-primary-500 bg-primary-50 font-medium text-primary-700' : 'border-gray-300 text-gray-600'}`}>
-                        {t(`scholarship.apply.plan.pathway.${p.key}`)}
+                        {t(`scholarship.apply.plan.pathway.${key}`)}
                       </button>
                     )
                   })}
                 </div>
+              </div>
+            ) : (
+              // STPM students weigh specific degrees — let them rank their top 3 from
+              // the programmes their results qualify them for.
+              <div>
+                <FieldLabel tip={t('scholarship.apply.plan.topProgrammesTip')}>{t('scholarship.apply.plan.topProgrammesLabel')}</FieldLabel>
+                {pathwayLoading ? (
+                  <p className="text-sm text-gray-400">{t('scholarship.apply.plan.loading')}</p>
+                ) : eligibleCourses.length === 0 ? (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-gray-600">{t('scholarship.apply.plan.noProgrammes')}</p>
+                ) : (
+                  <div className="space-y-2">
+                    {[0, 1, 2].map((i) => {
+                      const tc = form.topChoices[i]
+                      const takenIds = form.topChoices.filter((c, j) => j !== i && c).map((c) => (c as TopChoice).courseId)
+                      const opts = eligibleCourses.filter((c) => !takenIds.includes(c.course_id))
+                      return (
+                        <div key={`top-${i}`} className="flex items-center gap-2">
+                          <span className="w-5 shrink-0 text-sm font-medium text-gray-400">{i + 1}.</span>
+                          <div className="min-w-0 flex-1">
+                            <ProgrammePicker
+                              courses={opts}
+                              value={tc ? { courseId: tc.courseId, courseName: tc.courseName, fieldKey: '' } : null}
+                              onChange={(prog) => setTopChoice(i, prog)}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             )}
             <div>
