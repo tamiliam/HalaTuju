@@ -36,3 +36,6 @@ docs/scholarship/*.pdf
 docs/scholarship/*.xlsx
 docs/scholarship/*.txt
 docs/students_batch_1_clean.xlsx
+
+# Microsoft Office lock files (created while a doc is open)
+~$*
