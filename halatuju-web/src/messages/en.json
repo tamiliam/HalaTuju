@@ -728,6 +728,7 @@
       "optionalNote": "These help us understand your situation better. Add what you have.",
       "choose": "Choose file",
       "addMore": "Add more",
+      "replace": "Replace",
       "uploading": "Uploading…",
       "remove": "Remove",
       "uploadError": "Upload failed. Please try again.",

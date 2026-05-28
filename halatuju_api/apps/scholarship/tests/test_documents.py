@@ -82,6 +82,88 @@ class TestDocumentApi(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(ApplicantDocument.objects.filter(id=doc.id).exists())
 
+    @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
+    @patch('apps.scholarship.storage.delete_objects', return_value=True)
+    def test_single_instance_doctype_replaces_on_reupload(self, mock_storage_delete, _mock_vision):
+        """Post-S14: uploading a new IC sweeps the old one (DB + Storage)."""
+        # Existing IC + an unrelated income-proof doc (multi-instance, must NOT be touched).
+        old_ic = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='ic',
+            storage_path=f'{self.app_a.id}/ic/old-1',
+        )
+        old_ic_2 = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='ic',
+            storage_path=f'{self.app_a.id}/ic/old-2',
+        )
+        income = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='salary_slip',
+            storage_path=f'{self.app_a.id}/salary_slip/keep-1',
+        )
+
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'ic',
+            'storage_path': f'{self.app_a.id}/ic/new',
+            'original_filename': 'NRICF.jpeg', 'size': 200_000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)
+
+        # Only the new IC remains; the income-proof doc is untouched.
+        ic_rows = ApplicantDocument.objects.filter(application=self.app_a, doc_type='ic')
+        self.assertEqual(ic_rows.count(), 1)
+        self.assertEqual(ic_rows.first().storage_path, f'{self.app_a.id}/ic/new')
+        self.assertFalse(ApplicantDocument.objects.filter(id=old_ic.id).exists())
+        self.assertFalse(ApplicantDocument.objects.filter(id=old_ic_2.id).exists())
+        self.assertTrue(ApplicantDocument.objects.filter(id=income.id).exists())
+
+        # Storage was asked to sweep BOTH stale IC blobs in one call.
+        mock_storage_delete.assert_called_once()
+        swept = mock_storage_delete.call_args.args[0]
+        self.assertEqual(set(swept), {
+            f'{self.app_a.id}/ic/old-1', f'{self.app_a.id}/ic/old-2',
+        })
+
+    @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
+    @patch('apps.scholarship.storage.delete_objects', return_value=True)
+    def test_multi_instance_doctype_keeps_existing_on_reupload(self, mock_storage_delete, _mock_vision):
+        """Income-proof types (str / salary_slip / epf) MUST keep prior copies —
+        a student may submit several monthly salary slips."""
+        first = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='salary_slip',
+            storage_path=f'{self.app_a.id}/salary_slip/jan',
+        )
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'salary_slip',
+            'storage_path': f'{self.app_a.id}/salary_slip/feb',
+            'original_filename': 'feb.pdf', 'size': 50_000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)
+        rows = ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='salary_slip',
+        ).order_by('uploaded_at')
+        self.assertEqual(rows.count(), 2)
+        self.assertEqual([r.storage_path for r in rows], [
+            f'{self.app_a.id}/salary_slip/jan',
+            f'{self.app_a.id}/salary_slip/feb',
+        ])
+        self.assertTrue(ApplicantDocument.objects.filter(id=first.id).exists())
+        # Storage sweep is NOT called for multi-instance types.
+        mock_storage_delete.assert_not_called()
+
+    @patch('apps.scholarship.storage.delete_objects', return_value=True)
+    def test_delete_sweeps_storage(self, mock_storage_delete):
+        """Explicit DELETE on a doc also sweeps its Storage blob."""
+        doc = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='water_bill',
+            storage_path=f'{self.app_a.id}/water_bill/abc',
+        )
+        self._auth(USER_A)
+        resp = self.client.delete(f'/api/v1/scholarship/documents/{doc.id}/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(ApplicantDocument.objects.filter(id=doc.id).exists())
+        mock_storage_delete.assert_called_once_with([f'{self.app_a.id}/water_bill/abc'])
+
     def test_delete_cross_user_404(self):
         doc = ApplicantDocument.objects.create(application=self.app_b, doc_type='ic', storage_path='x')
         self._auth(USER_A)

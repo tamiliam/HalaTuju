@@ -177,12 +177,28 @@ class DocumentListCreateView(APIView):
         docs = ApplicantDocument.objects.filter(application=app) if app else ApplicantDocument.objects.none()
         return Response({'documents': ApplicantDocumentSerializer(docs, many=True).data})
 
+    # Post-S14 fix: single-instance doc types replace any existing copy on
+    # re-upload (avoids the "which IC is the real one?" ambiguity). The three
+    # income-proof types stay multi-instance — students may upload several
+    # monthly salary slips / EPF statements.
+    MULTI_INSTANCE_DOC_TYPES = frozenset({'str', 'salary_slip', 'epf'})
+
     def post(self, request):
         app = _current_application(request.user_id)
         if app is None:
             return Response({'error': 'No shortlisted application.'}, status=status.HTTP_403_FORBIDDEN)
         serializer = DocumentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        new_doc_type = serializer.validated_data['doc_type']
+        # For single-instance types, sweep older copies of the SAME type for
+        # this application first — DB row + Supabase Storage object together.
+        if new_doc_type not in self.MULTI_INSTANCE_DOC_TYPES:
+            stale = ApplicantDocument.objects.filter(application=app, doc_type=new_doc_type)
+            stale_paths = [d.storage_path for d in stale if d.storage_path]
+            if stale_paths:
+                from .storage import delete_objects
+                delete_objects(stale_paths)   # best-effort; leaves orphan blob if it fails (logged)
+            stale.delete()
         doc = ApplicantDocument.objects.create(application=app, **serializer.validated_data)
         # S13: auto-run Vision OCR on IC uploads (soft signal — never blocks).
         if doc.doc_type == 'ic':
@@ -201,6 +217,11 @@ class DocumentDetailView(APIView):
         ).first()
         if doc is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        # Best-effort sweep the Storage blob before deleting the DB row, so
+        # an explicit "Remove" click doesn't leave an orphan object behind.
+        if doc.storage_path:
+            from .storage import delete_objects
+            delete_objects([doc.storage_path])
         doc.delete()
         return Response({'status': 'deleted'})
 

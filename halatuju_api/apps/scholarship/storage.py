@@ -64,3 +64,36 @@ def create_signed_download_url(path, expires_in=3600):
     result = _post(f'/object/sign/{BUCKET}/{path}', {'expiresIn': expires_in})
     rel = (result or {}).get('signedURL') or (result or {}).get('signedUrl')
     return f'{_base_url()}/storage/v1{rel}' if rel else None
+
+
+def delete_objects(paths):
+    """Best-effort batch DELETE of private objects from the bucket. Returns
+    True on success, False on any failure (logged). No-op if paths is empty.
+
+    Used when a single-instance document type (IC / results_slip / etc.) gets
+    a fresh upload — the old object should not linger in Storage. Caller is
+    expected to also delete the matching DB row(s).
+    """
+    paths = [p for p in (paths or []) if p]
+    if not paths:
+        return True
+    base, key = _base_url(), _service_key()
+    if not base or not key:
+        logger.warning('Supabase Storage not configured (SUPABASE_URL / service key missing)')
+        return False
+    req = urllib.request.Request(
+        f'{base}/storage/v1/object/{BUCKET}',
+        data=json.dumps({'prefixes': paths}).encode(),
+        method='DELETE',
+        headers={
+            'Authorization': f'Bearer {key}',
+            'apikey': key,
+            'Content-Type': 'application/json',
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as _:
+            return True
+    except (urllib.error.URLError, ValueError, TimeoutError):
+        logger.warning('Supabase Storage DELETE failed for %s', paths, exc_info=True)
+        return False

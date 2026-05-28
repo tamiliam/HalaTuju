@@ -161,7 +161,9 @@ function SingleDocCard({
             busy
               ? t('scholarship.docs.uploading')
               : existing.length > 0
-              ? t('scholarship.docs.addMore')
+              // Single-instance doc types replace on re-upload (backend
+              // sweeps the old file + Storage blob). Be honest about it.
+              ? t('scholarship.docs.replace')
               : t('scholarship.docs.choose')
           }
         />
