@@ -104,14 +104,34 @@ _ADDRESS_PREFIX_NOISE = re.compile(
     flags=re.IGNORECASE,
 )
 
+# The 13 Malaysian states + 3 federal territories, as printed on MyKad
+# (uppercase, sometimes with the `W.P.` prefix). Matched against the line
+# directly after the postcode to pull the state through the "looks like a
+# one-word name" filter without false positives.
+_MY_STATES = frozenset({
+    'JOHOR', 'KEDAH', 'KELANTAN', 'MELAKA', 'NEGERI SEMBILAN',
+    'PAHANG', 'PERAK', 'PERLIS', 'PULAU PINANG', 'SABAH',
+    'SARAWAK', 'SELANGOR', 'TERENGGANU',
+    'KUALA LUMPUR', 'PUTRAJAYA', 'LABUAN',
+    'W.P. KUALA LUMPUR', 'W.P. PUTRAJAYA', 'W.P. LABUAN',
+    'WP KUALA LUMPUR', 'WP PUTRAJAYA', 'WP LABUAN',
+})
+
+
+def _is_likely_state(ln: str) -> bool:
+    """True iff ``ln`` reads as a Malaysian state line on a MyKad."""
+    upper = ln.strip().upper()
+    return upper in _MY_STATES
+
 
 def _extract_address(text: str) -> str:
     """
     Best-effort MyKad address extraction. The MyKad front shows the holder's
-    registered home address as 2-3 lines, ending in `<5-digit postcode> <state>`.
-    Strategy: find the line containing a 5-digit Malaysian postcode, then walk
-    UP to gather the 1-2 preceding lines that look like address (no NRIC, no
-    name, no labels). Returns ``''`` when no postcode-anchored block is found.
+    registered home address as 3 lines: street, ``<5-digit postcode> <city>``,
+    and ``<state>``. Strategy: find the line containing a 5-digit Malaysian
+    postcode; walk UP to gather the 1-2 preceding address lines, and also
+    pick up the very next line if it matches a known Malaysian state.
+    Returns ``''`` when no postcode-anchored block is found.
 
     Soft signal only — admin can spot e.g. an outdated registered address that
     differs from what the student typed in the Story tab. No verdict computed.
@@ -130,8 +150,8 @@ def _extract_address(text: str) -> str:
             break
     if postcode_idx < 0:
         return ''
-    # Walk up at most 3 lines (the address block is typically 2-3 lines tall).
     block: list[str] = []
+    # Walk up at most 3 lines (the address block is typically 2-3 lines tall).
     for j in range(max(0, postcode_idx - 3), postcode_idx + 1):
         ln = lines[j]
         if not ln:
@@ -148,6 +168,11 @@ def _extract_address(text: str) -> str:
         ln = _ADDRESS_PREFIX_NOISE.sub('', ln).strip()
         if ln:
             block.append(ln)
+    # Look one line DOWN for the state (MyKad puts it right after the postcode).
+    if postcode_idx + 1 < len(lines):
+        next_ln = lines[postcode_idx + 1].strip()
+        if next_ln and _is_likely_state(next_ln):
+            block.append(next_ln)
     # Deduplicate while preserving order (Vision occasionally repeats a line).
     seen: set = set()
     deduped: list[str] = []
