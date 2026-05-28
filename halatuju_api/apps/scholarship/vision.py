@@ -151,18 +151,24 @@ def _extract_address(text: str) -> str:
     if postcode_idx < 0:
         return ''
     block: list[str] = []
-    # Walk up at most 3 lines (the address block is typically 2-3 lines tall).
-    for j in range(max(0, postcode_idx - 3), postcode_idx + 1):
+    # Walk up at most 4 lines (address block can be 3-4 lines: street +
+    # taman/kampung + postcode/city + state). The state line is captured
+    # separately below (it lives BELOW the postcode line).
+    for j in range(max(0, postcode_idx - 4), postcode_idx + 1):
         ln = lines[j]
         if not ln:
             continue
-        # Skip the NRIC line + lines that are ALL-CAPS English letters (likely
-        # the name line — same heuristic _extract_name uses).
+        # Skip the NRIC line.
         if _NRIC_REGEX.search(ln):
             continue
-        letters_only = ''.join(ch for ch in ln if ch.isalpha())
-        if letters_only and letters_only.upper() == letters_only and not any(ch.isdigit() for ch in ln):
-            # All-caps no-digits line → almost certainly the name, drop it.
+        # Skip the name line. We identify it by the presence of a Malaysian
+        # parentage marker (A/L, A/P, BIN, BINTI, S/O, D/O, @) — addresses
+        # never have these. NOTE: this misses Chinese names without markers
+        # (e.g. "TAN AH KAU") which would slip into the address; acceptable
+        # soft-signal noise. The earlier "all-caps no-digits → drop" filter
+        # was too aggressive — it dropped legit address lines like
+        # "TAMAN SEMANGAT" / "KAMPUNG ABC" / "BANDAR XYZ".
+        if _NAME_NOISE.search(ln):
             continue
         # Strip a leading "Alamat" / "Address" label if Vision read one.
         ln = _ADDRESS_PREFIX_NOISE.sub('', ln).strip()

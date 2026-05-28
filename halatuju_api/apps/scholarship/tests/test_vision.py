@@ -131,6 +131,41 @@ KEDAH"""
         self.assertIn('KEDAH', result)
         self.assertNotIn('ELANJELIAN', result)
 
+    def test_picks_up_taman_line_above_postcode(self):
+        """The taman/kampung line is all-caps with no digits (same shape as a
+        Malaysian name) but must NOT be filtered out — it's part of the address.
+        Regression for the 'TAMAN SEMANGAT was dropped' field-report from
+        Elanjelian's real MyKad. The name is identified by parentage markers
+        (A/L, A/P, BIN, BINTI, S/O, D/O, @) — addresses never have those."""
+        text = """710829-02-5709
+ELANJELIAN A/L VENUGOPAL
+C65B JALAN SEJATI
+TAMAN SEMANGAT
+08000 SUNGAI PETANI
+KEDAH"""
+        result = _extract_address(text)
+        self.assertIn('C65B JALAN SEJATI', result)
+        self.assertIn('TAMAN SEMANGAT', result)
+        self.assertIn('08000 SUNGAI PETANI', result)
+        self.assertIn('KEDAH', result)
+        self.assertNotIn('ELANJELIAN', result)
+        self.assertNotIn('A/L', result)
+
+    def test_drops_malay_name_with_binti(self):
+        """Malay names with BIN/BINTI markers are correctly identified as the
+        name (not the address) by the parentage-marker filter."""
+        text = """030101-14-1234
+NUR AISYAH BINTI ABDULLAH
+NO 7 JALAN BUKIT
+TAMAN BAHAGIA
+40000 SHAH ALAM
+SELANGOR"""
+        result = _extract_address(text)
+        self.assertIn('NO 7 JALAN BUKIT', result)
+        self.assertIn('TAMAN BAHAGIA', result)
+        self.assertNotIn('NUR AISYAH', result)
+        self.assertNotIn('BINTI', result)
+
     def test_state_filter_rejects_non_state_word(self):
         """A random one-word all-caps line below the postcode must NOT be
         treated as a state (we'd otherwise pick up gibberish from the back of
