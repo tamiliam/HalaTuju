@@ -92,9 +92,11 @@ export default function ScholarshipNextSteps({
   const tabIndex = NEXT_STEP_ORDER.indexOf(tab)
 
   // Completeness mapping — every step now has a backend signal (S5).
+  // S14: story tick requires the narrative AND the address sub-section (both
+  // captured in the same tab; users see one consolidated done state).
   const stepDone: Record<NextStepKey, boolean> = {
     quiz: c.quiz_done,
-    story: c.details_done,
+    story: c.details_done && c.address_done,
     funding: c.funding_done,
     documents: c.documents_done,
     consent: c.consent_done,
@@ -192,6 +194,66 @@ export default function ScholarshipNextSteps({
               value={form.familyContext}
               onChange={(e) => update('familyContext', e.target.value)}
             />
+          </div>
+        </div>
+
+        {/* Card A.5 — Where you live (S14). State is read-only from /apply. */}
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
+          <h3 className="font-medium text-gray-900">{t('scholarship.nextSteps.story.cardAddress.title')}</h3>
+          <p className="text-xs text-gray-500">{t('scholarship.nextSteps.story.cardAddress.intro')}</p>
+
+          {/* address (street) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('scholarship.nextSteps.story.cardAddress.street')}
+            </label>
+            <textarea
+              className="input" rows={2}
+              placeholder={t('scholarship.nextSteps.story.cardAddress.streetPlaceholder')}
+              value={form.address}
+              onChange={(e) => update('address', e.target.value)}
+            />
+          </div>
+
+          {/* postal + city — two-column on wider screens */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('scholarship.nextSteps.story.cardAddress.postal')}
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={5}
+                placeholder="62100"
+                className="input"
+                value={form.postalCode}
+                onChange={(e) => update('postalCode', e.target.value.replace(/\D/g, '').slice(0, 5))}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('scholarship.nextSteps.story.cardAddress.city')}
+              </label>
+              <input
+                type="text"
+                className="input"
+                placeholder={t('scholarship.nextSteps.story.cardAddress.cityPlaceholder')}
+                value={form.city}
+                onChange={(e) => update('city', e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* state — read-only, sourced from /apply */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('scholarship.nextSteps.story.cardAddress.state')}
+            </label>
+            <div className="input flex items-center justify-between bg-gray-100 text-gray-600">
+              <span>{app.preferred_state || '—'}</span>
+              <span className="text-xs text-gray-400">{t('scholarship.nextSteps.story.cardAddress.fromApply')}</span>
+            </div>
           </div>
         </div>
 

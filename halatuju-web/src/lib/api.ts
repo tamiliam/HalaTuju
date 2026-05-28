@@ -923,6 +923,7 @@ export interface ApplicationCompleteness {
   funding_done: boolean
   documents_done: boolean
   consent_done: boolean
+  address_done: boolean
   complete: boolean
 }
 
@@ -958,6 +959,12 @@ export interface ScholarshipApplication {
   siblings_studying: boolean
   family_context: string
   daily_life: string
+  // Address pre-fill from the profile (S14) — round-trips through the details
+  // PATCH, but stored on the profile (state already came from /apply).
+  address: string
+  postal_code: string
+  city: string
+  preferred_state: string
   funding_need: FundingNeed | null
   completeness: ApplicationCompleteness
   notify_email?: string   // where decision/comms emails are sent (resolved at submit)

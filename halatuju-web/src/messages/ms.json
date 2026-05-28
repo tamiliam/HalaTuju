@@ -644,6 +644,17 @@
           "siblingsStudying": "Satu atau lebih adik-beradik saya juga sedang belajar.",
           "familyContext": "Ada apa-apa tentang situasi keluarga anda yang kami perlu tahu? (siapa yang menyara keluarga, sebarang penyakit atau kesusahan)"
         },
+        "cardAddress": {
+          "title": "Tempat tinggal anda",
+          "intro": "Kami perlukan alamat penuh anda untuk rekod dan untuk menghantar sebarang surat-menyurat fizikal.",
+          "street": "Alamat jalan",
+          "streetPlaceholder": "No. 12, Jalan ABC, Taman XYZ",
+          "postal": "Poskod",
+          "city": "Bandar / pekan",
+          "cityPlaceholder": "Sungai Petani",
+          "state": "Negeri",
+          "fromApply": "dari permohonan anda"
+        },
         "cardB": {
           "title": "Tentang diri anda",
           "aspirations": "Apa yang anda harapkan untuk menjadi? Impian dan cita-cita anda.",
@@ -930,6 +941,10 @@
     "phone": "Nombor Telefon",
     "familyIncome": "Pendapatan Bulanan Keluarga",
     "siblings": "Bilangan Adik-beradik",
+    "householdIncome": "Pendapatan bulanan isi rumah (RM)",
+    "householdIncomeHelper": "Jumlah pendapatan bulanan semua orang yang tinggal bersama anda — gaji, perniagaan, pencen, bantuan kerajaan. Anggaran boleh diterima.",
+    "householdSize": "Saiz isi rumah",
+    "householdSizeHelper": "Semua orang di rumah anda — ibu bapa/penjaga, anda, adik-beradik, datuk nenek atau saudara yang tinggal bersama.",
     "saveChanges": "Simpan Perubahan",
     "lastSaved": "Terakhir disimpan",
     "noCourses": "Simpan kursus dari papan pemuka untuk menjejak di sini",

@@ -89,6 +89,11 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
     siblings_studying = serializers.BooleanField(required=False)
     family_context = serializers.CharField(required=False, allow_blank=True)
     daily_life = serializers.CharField(required=False, allow_blank=True)
+    # Address — stored on the profile, captured in the Story tab (S14).
+    # State already came from /apply (profile.preferred_state).
+    address = serializers.CharField(required=False, allow_blank=True)
+    postal_code = serializers.CharField(required=False, allow_blank=True)
+    city = serializers.CharField(required=False, allow_blank=True)
 
 
 class ApplicationReadSerializer(serializers.ModelSerializer):
@@ -111,6 +116,12 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
     household_size = serializers.IntegerField(source='profile.household_size', read_only=True)
     receives_str = serializers.BooleanField(source='profile.receives_str', read_only=True)
     receives_jkm = serializers.BooleanField(source='profile.receives_jkm', read_only=True)
+    # Address pre-fill for the Story tab (writes round-trip via the details
+    # serializer below; state already comes from /apply as preferred_state).
+    address = serializers.CharField(source='profile.address', read_only=True, allow_blank=True)
+    postal_code = serializers.CharField(source='profile.postal_code', read_only=True, allow_blank=True)
+    city = serializers.CharField(source='profile.city', read_only=True, allow_blank=True)
+    preferred_state = serializers.CharField(source='profile.preferred_state', read_only=True, allow_blank=True)
     spm_a_count = serializers.SerializerMethodField()
     funding_need = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
@@ -138,6 +149,9 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             # "Your story" guided narrative fields (S2 redesign)
             'first_in_family', 'parents_occupation', 'siblings_studying',
             'family_context', 'daily_life',
+            # Address pre-fill (profile-derived, read-only here; written via
+            # ApplicationDetailsUpdateSerializer + save_application_details).
+            'address', 'postal_code', 'city', 'preferred_state',
             'funding_need', 'completeness', 'notify_email',
             'form_data', 'intake_snapshot',
         ]

@@ -38,13 +38,17 @@ class TestCompleteness(TestCase):
                 'funding_done': False,
                 'documents_done': False,
                 'consent_done': False,
+                'address_done': False,
                 'complete': False,
             },
         )
 
     def _make_complete(self):
-        """Set up all five completeness parts: quiz, story, funding, docs, consent."""
+        """Set up all six completeness parts: quiz, story, funding, docs, consent, address."""
         self.profile.student_signals = {'x': {'y': 1}}
+        self.profile.address = 'No. 12, Jalan ABC, Taman XYZ'
+        self.profile.postal_code = '62100'
+        self.profile.city = 'Putrajaya'
         self.profile.save()
         self.app.aspirations = 'Be an accountant'
         self.app.plans = 'Study hard every day'
@@ -97,9 +101,9 @@ class TestCompleteness(TestCase):
         ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
         self.assertTrue(application_completeness(self.app)['documents_done'])
 
-    def test_complete_requires_documents_and_consent(self):
-        """S5: complete now gates on compulsory documents AND an active consent."""
-        # quiz + story + funding only — not complete (docs + consent missing)
+    def test_complete_requires_documents_consent_and_address(self):
+        """S14: complete now gates on compulsory documents AND active consent AND address."""
+        # quiz + story + funding only — not complete (docs + consent + address missing)
         self.profile.student_signals = {'x': {'y': 1}}
         self.profile.save()
         self.app.aspirations = 'Be an accountant'
@@ -108,14 +112,46 @@ class TestCompleteness(TestCase):
         FundingNeed.objects.create(application=self.app, categories=['living'])
         self.assertFalse(application_completeness(self.app)['complete'])
 
-        # + compulsory documents — still not complete (consent missing)
+        # + compulsory documents — still not complete (consent + address missing)
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
         ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
         self.assertFalse(application_completeness(self.app)['complete'])
 
-        # + active consent — now complete
+        # + active consent — still not complete (address missing)
         Consent.objects.create(application=self.app, version='t', is_active=True)
+        self.assertFalse(application_completeness(self.app)['complete'])
+
+        # + address — now complete
+        self.profile.address = 'No. 12, Jalan ABC'
+        self.profile.postal_code = '62100'
+        self.profile.city = 'Putrajaya'
+        self.profile.save()
         self.assertTrue(application_completeness(self.app)['complete'])
+
+    def test_address_done_requires_street_postal_and_city(self):
+        """address_done is True only when street + postal + city all present (state is set on /apply)."""
+        # No address — False
+        self.assertFalse(application_completeness(self.app)['address_done'])
+
+        # Only street — still False
+        self.profile.address = 'No. 12'
+        self.profile.save()
+        self.assertFalse(application_completeness(self.app)['address_done'])
+
+        # Street + postal but no city — False
+        self.profile.postal_code = '62100'
+        self.profile.save()
+        self.assertFalse(application_completeness(self.app)['address_done'])
+
+        # All three — True
+        self.profile.city = 'Putrajaya'
+        self.profile.save()
+        self.assertTrue(application_completeness(self.app)['address_done'])
+
+        # Blank-string treated as empty
+        self.profile.address = '   '
+        self.profile.save()
+        self.assertFalse(application_completeness(self.app)['address_done'])
 
     def test_consent_done_false_when_no_consent(self):
         self.assertFalse(application_completeness(self.app)['consent_done'])
@@ -193,6 +229,33 @@ class TestDetailsApi(TestCase):
         self.assertTrue(body['siblings_studying'])
         self.assertEqual(body['family_context'], 'Father ill; mother is the sole earner.')
         self.assertEqual(body['daily_life'], 'Wake at 5am, help at home, then school.')
+
+    def test_patch_saves_address_to_profile(self):
+        """S14: address fields submitted via the details PATCH land on the profile,
+        and the address shows up pre-filled on the next read."""
+        self._auth(USER_A)
+        resp = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {
+                'address': 'No. 12, Jalan ABC, Taman XYZ',
+                'postal_code': '62100',
+                'city': 'Putrajaya',
+            }, format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        # Read serializer exposes the profile-sourced address fields
+        self.assertEqual(body['address'], 'No. 12, Jalan ABC, Taman XYZ')
+        self.assertEqual(body['postal_code'], '62100')
+        self.assertEqual(body['city'], 'Putrajaya')
+        # Profile is the actual home for the data
+        self.profile_a.refresh_from_db()
+        self.assertEqual(self.profile_a.address, 'No. 12, Jalan ABC, Taman XYZ')
+        self.assertEqual(self.profile_a.postal_code, '62100')
+        self.assertEqual(self.profile_a.city, 'Putrajaya')
+        # address_done now True; complete still False without quiz/story/funding/docs/consent
+        self.assertTrue(body['completeness']['address_done'])
+        self.assertFalse(body['completeness']['complete'])
 
     def test_story_fields_defaults_are_correct(self):
         """New boolean fields default False; text fields default empty string."""

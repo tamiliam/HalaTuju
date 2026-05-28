@@ -707,6 +707,26 @@ describe('buildDetailsPayload', () => {
     const fn = (buildDetailsPayload(f) as Record<string, unknown>).funding_need as Record<string, unknown>
     expect(fn.categories).toEqual([])
   })
+
+  it('includes trimmed address fields (S14) so the backend writes them to the profile', () => {
+    const f = {
+      ...emptyDetailsForm(),
+      address: '  No. 12, Jalan ABC, Taman XYZ  ',
+      postalCode: ' 62100 ',
+      city: ' Putrajaya ',
+    }
+    const p = buildDetailsPayload(f) as Record<string, unknown>
+    expect(p.address).toBe('No. 12, Jalan ABC, Taman XYZ')
+    expect(p.postal_code).toBe('62100')
+    expect(p.city).toBe('Putrajaya')
+  })
+
+  it('sends empty strings when address fields are blank (no nulls)', () => {
+    const p = buildDetailsPayload(emptyDetailsForm()) as Record<string, unknown>
+    expect(p.address).toBe('')
+    expect(p.postal_code).toBe('')
+    expect(p.city).toBe('')
+  })
 })
 
 describe('applicationToDetailsForm', () => {
@@ -787,6 +807,34 @@ describe('applicationToDetailsForm', () => {
     expect(f.fundingCategories).toEqual([])
     expect(f.fundingNote).toBe('')
     expect(f.programmeMonths).toBe('')
+  })
+
+  it('pre-fills S14 address fields from the profile-derived application response', () => {
+    const app = {
+      aspirations: '', plans: '', fears: '', justification: '',
+      first_in_family: false, parents_occupation: '', siblings_studying: false,
+      family_context: '', daily_life: '',
+      funding_need: null,
+      address: 'No. 12, Jalan ABC', postal_code: '62100', city: 'Putrajaya',
+      preferred_state: 'W.P. Putrajaya',
+    } as unknown as ScholarshipApplication
+    const f = applicationToDetailsForm(app)
+    expect(f.address).toBe('No. 12, Jalan ABC')
+    expect(f.postalCode).toBe('62100')
+    expect(f.city).toBe('Putrajaya')
+  })
+
+  it('defaults S14 address fields to empty when the application has no address yet', () => {
+    const app = {
+      aspirations: '', plans: '', fears: '', justification: '',
+      first_in_family: false, parents_occupation: '', siblings_studying: false,
+      family_context: '', daily_life: '',
+      funding_need: null,
+    } as unknown as ScholarshipApplication
+    const f = applicationToDetailsForm(app)
+    expect(f.address).toBe('')
+    expect(f.postalCode).toBe('')
+    expect(f.city).toBe('')
   })
 })
 

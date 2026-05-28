@@ -603,6 +603,12 @@ export interface DetailsFormState {
   fundingCategories: string[]
   fundingNote: string
   programmeMonths: string  // string for the <select>; converted to int|null in buildDetailsPayload
+  // Address (S14) — under "About your family" in the Story tab. Round-trips
+  // through the profile (the save endpoint writes it to profile.address/etc).
+  // State is sourced from /apply (profile.preferred_state) and not editable here.
+  address: string
+  postalCode: string
+  city: string
 }
 
 export function emptyDetailsForm(): DetailsFormState {
@@ -622,6 +628,10 @@ export function emptyDetailsForm(): DetailsFormState {
     fundingCategories: [],
     fundingNote: '',
     programmeMonths: '',
+    // Address
+    address: '',
+    postalCode: '',
+    city: '',
   }
 }
 
@@ -643,6 +653,10 @@ export function applicationToDetailsForm(app: ScholarshipApplication): DetailsFo
     fundingCategories: fn?.categories ?? [],
     fundingNote: fn?.funding_note ?? '',
     programmeMonths: fn?.programme_months != null ? String(fn.programme_months) : '',
+    // Address — pre-fill from the profile fields the read serializer exposes.
+    address: app.address || '',
+    postalCode: app.postal_code || '',
+    city: app.city || '',
   }
 }
 
@@ -668,6 +682,10 @@ export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown
       funding_note: f.fundingNote.trim(),
       programme_months: programmeMonthsInt,
     },
+    // Address — backend save_application_details writes these to the profile.
+    address: f.address.trim(),
+    postal_code: f.postalCode.trim(),
+    city: f.city.trim(),
   }
 }
 

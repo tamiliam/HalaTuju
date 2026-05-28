@@ -644,6 +644,17 @@
           "siblingsStudying": "One or more of my siblings are also studying.",
           "familyContext": "Anything about your family's situation we should know? (who supports the family, any illness or hardship)"
         },
+        "cardAddress": {
+          "title": "Where you live",
+          "intro": "We need your full home address for our records and to send any physical correspondence.",
+          "street": "Street address",
+          "streetPlaceholder": "No. 12, Jalan ABC, Taman XYZ",
+          "postal": "Postcode",
+          "city": "City / town",
+          "cityPlaceholder": "Sungai Petani",
+          "state": "State",
+          "fromApply": "from your application"
+        },
         "cardB": {
           "title": "About you",
           "aspirations": "What do you hope to become? Your dreams and aspirations.",
@@ -930,6 +941,10 @@
     "phone": "Phone Number",
     "familyIncome": "Family Monthly Income",
     "siblings": "Number of Siblings",
+    "householdIncome": "Household monthly income (RM)",
+    "householdIncomeHelper": "Total monthly income for everyone living with you — salaries, business, pensions, government aid. An estimate is fine.",
+    "householdSize": "Household size",
+    "householdSizeHelper": "Everyone in your home — parents/guardians, you, brothers and sisters, and grandparents or relatives living with you.",
     "saveChanges": "Save Changes",
     "lastSaved": "Last saved",
     "noCourses": "Save courses from the dashboard to track them here",

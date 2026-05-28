@@ -257,14 +257,16 @@ def release_decision(application):
 def application_completeness(application):
     """
     Report STEP 1A / STEP 2 progress for a (typically shortlisted) application:
-    quiz done (the linked profile has quiz signals), story done, funding done,
-    documents done (compulsory IC + results slip), consent done. The sponsor
-    stage (Phase 2) will gate on ``complete``.
+    quiz done (the linked profile has quiz signals), story done (incl. address),
+    funding done, documents done (compulsory IC + results slip), consent done.
+    The sponsor stage (Phase 2) will gate on ``complete``.
 
     funding_done (S3 redesign): at least one category ticked in categories.
     documents_done (S4): both compulsory documents (ic + results_slip) present.
     consent_done (S5): an active Consent row exists.
-    complete (S5 finalise): all five parts done.
+    address_done (S14): profile has street + postal_code + city (state already
+    came from /apply). Stored on the profile, captured in the Story tab.
+    complete (S14 finalise): all six parts done.
     """
     profile = application.profile
     quiz_done = bool(profile and profile.student_signals)
@@ -276,14 +278,21 @@ def application_completeness(application):
     present = set(application.documents.values_list('doc_type', flat=True))
     documents_done = {'ic', 'results_slip'}.issubset(present)
     consent_done = application.consents.filter(is_active=True).exists()
+    address_done = bool(
+        profile
+        and (profile.address or '').strip()
+        and (profile.postal_code or '').strip()
+        and (profile.city or '').strip()
+    )
     return {
         'quiz_done': quiz_done,
         'details_done': details_done,
         'funding_done': funding_done,
         'documents_done': documents_done,
         'consent_done': consent_done,
+        'address_done': address_done,
         'complete': (quiz_done and details_done and funding_done
-                     and documents_done and consent_done),
+                     and documents_done and consent_done and address_done),
     }
 
 
@@ -294,8 +303,16 @@ _DEEPER_FIELDS = (
 )
 
 
+_PROFILE_ADDRESS_FIELDS = ('address', 'postal_code', 'city')
+
+
 def save_application_details(application, data):
-    """Persist deeper-info fields and upsert the funding-need breakdown."""
+    """Persist deeper-info fields, upsert funding-need, and sync address to profile.
+
+    Address lives on the student profile (alongside preferred_state set during
+    /apply), not on the application. The Story tab on /scholarship/application
+    sends it here so the student saves everything with one button.
+    """
     deeper = {k: data[k] for k in _DEEPER_FIELDS if k in data}
     if deeper:
         for k, v in deeper.items():
@@ -304,6 +321,11 @@ def save_application_details(application, data):
     fn_data = data.get('funding_need')
     if fn_data is not None:
         FundingNeed.objects.update_or_create(application=application, defaults=fn_data)
+    addr = {k: data[k] for k in _PROFILE_ADDRESS_FIELDS if k in data}
+    if addr and application.profile:
+        for k, v in addr.items():
+            setattr(application.profile, k, v)
+        application.profile.save(update_fields=list(addr.keys()))
     return application
 
 

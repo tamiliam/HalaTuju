@@ -28,14 +28,6 @@ const MALAYSIAN_STATES = [
   'W.P. Kuala Lumpur', 'W.P. Putrajaya', 'W.P. Labuan',
 ]
 
-const INCOME_RANGES = [
-  '< RM1,000',
-  'RM1,001 – RM3,000',
-  'RM3,001 – RM5,000',
-  'RM5,001 – RM10,000',
-  '> RM10,000',
-]
-
 const STATUS_OPTIONS = [
   { value: 'interested', label: 'profile.status.interested', color: 'bg-gray-100 text-gray-600' },
   { value: 'planning', label: 'profile.status.planning', color: 'bg-blue-100 text-blue-700' },
@@ -90,10 +82,13 @@ export default function ProfilePage() {
   const [address, setAddress] = useState('')
   const [postalCode, setPostalCode] = useState('')
   const [city, setCity] = useState('')
-  const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
-  const [familyIncome, setFamilyIncome] = useState('')
-  const [siblings, setSiblings] = useState<string>('')
+  // Single source of truth for the family-finance answers, shared with /apply
+  // (form.householdIncome/householdSize → DB column household_income/household_size).
+  // The legacy free-text family_income range + siblings count are being retired
+  // (TD-061 will drop the columns in the next sprint after this backfill verifies).
+  const [householdIncome, setHouseholdIncome] = useState<string>('')
+  const [householdSize, setHouseholdSize] = useState<string>('')
   const [colorblind, setColorblind] = useState(false)
   const [disability, setDisability] = useState(false)
   const [angkaGiliran, setAngkaGiliran] = useState('')
@@ -129,10 +124,9 @@ export default function ProfilePage() {
       setAddress(profileData.address || '')
       setPostalCode(profileData.postal_code || '')
       setCity(profileData.city || '')
-      setPhone(profileData.phone || '')
       setEmail(profileData.email || session?.user?.email || '')
-      setFamilyIncome(profileData.family_income || '')
-      setSiblings(profileData.siblings != null ? String(profileData.siblings) : '')
+      setHouseholdIncome(profileData.household_income != null ? String(profileData.household_income) : '')
+      setHouseholdSize(profileData.household_size != null ? String(profileData.household_size) : '')
       setColorblind(!!profileData.colorblind)
       setDisability(!!profileData.disability)
       setAngkaGiliran(profileData.angka_giliran || '')
@@ -169,19 +163,18 @@ export default function ProfilePage() {
     try {
       await updateProfile({
         name,
-        nric,
+        // nric is read-only on PUT — only /apply's claim path can change it.
         ...(gender ? { gender } : {}),
         nationality,
         preferred_state: state,
         address,
         postal_code: postalCode,
         city,
-        phone,
         email,
         contact_email: contactEmail,
         contact_phone: contactPhone,
-        family_income: familyIncome,
-        siblings: siblings ? parseInt(siblings, 10) : null,
+        household_income: householdIncome ? parseInt(householdIncome, 10) : null,
+        household_size: householdSize ? parseInt(householdSize, 10) : null,
         colorblind,
         disability,
         angka_giliran: angkaGiliran,
@@ -204,7 +197,7 @@ export default function ProfilePage() {
   }
 
   const startEditing = (section: NonNullable<EditingSection>) => {
-    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, phone, email, familyIncome, siblings, colorblind, disability, angkaGiliran, contactEmail, contactPhone })
+    setSnapshot({ name, nric, gender, nationality, state, address, postalCode, city, email, householdIncome, householdSize, colorblind, disability, angkaGiliran, contactEmail, contactPhone })
     setEditingSection(section)
   }
 
@@ -216,10 +209,9 @@ export default function ProfilePage() {
     setAddress(snapshot.address as string || '')
     setPostalCode(snapshot.postalCode as string || '')
     setCity(snapshot.city as string || '')
-    setPhone(snapshot.phone as string || '')
     setEmail(snapshot.email as string || '')
-    setFamilyIncome(snapshot.familyIncome as string || '')
-    setSiblings(snapshot.siblings as string || '')
+    setHouseholdIncome(snapshot.householdIncome as string || '')
+    setHouseholdSize(snapshot.householdSize as string || '')
     setColorblind(snapshot.colorblind as boolean || false)
     setDisability(snapshot.disability as boolean || false)
     setAngkaGiliran(snapshot.angkaGiliran as string || '')
@@ -267,9 +259,11 @@ export default function ProfilePage() {
 
   // Incomplete field counts per section
   const identityIncomplete = countIncomplete([name, gender])
-  const contactDetailsIncomplete = (!contactEmailVerified ? 1 : 0) + (!contactPhoneVerified ? 1 : 0)
+  // contact_email is auto-defaulted server-side from the auth email (and treated
+  // as verified there), so it only counts as "incomplete" when truly absent.
+  const contactDetailsIncomplete = (!contactEmail || !contactEmailVerified ? 1 : 0) + (!contactPhoneVerified ? 1 : 0)
   const contactIncomplete = countIncomplete([state, address, postalCode, city])
-  const familyIncomplete = countIncomplete([familyIncome, siblings])
+  const familyIncomplete = countIncomplete([householdIncome, householdSize])
   const appIncomplete = countIncomplete([angkaGiliran])
 
   // Redirect to onboarding if guard resolves with no grades
@@ -697,28 +691,29 @@ export default function ProfilePage() {
             {editingSection === 'family' ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.familyIncome')}</label>
-                  <select
-                    value={familyIncome}
-                    onChange={e => setFamilyIncome(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
-                  >
-                    <option value="">—</option>
-                    {INCOME_RANGES.map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.siblings')}</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.householdIncome')}</label>
                   <input
                     type="number"
                     min="0"
-                    max="20"
-                    value={siblings}
-                    onChange={e => setSiblings(e.target.value)}
+                    inputMode="numeric"
+                    placeholder="2500"
+                    value={householdIncome}
+                    onChange={e => setHouseholdIncome(e.target.value)}
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                   />
+                  <p className="text-xs text-gray-400 mt-1">{t('profile.householdIncomeHelper')}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.householdSize')}</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={householdSize}
+                    onChange={e => setHouseholdSize(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">{t('profile.householdSizeHelper')}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('profile.colorBlindness')}</label>
@@ -782,12 +777,12 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <FieldLabel label={t('profile.familyIncome')} empty={!familyIncome} />
-                  <FieldValue value={familyIncome} t={t} />
+                  <FieldLabel label={t('profile.householdIncome')} empty={!householdIncome} />
+                  <FieldValue value={householdIncome ? `RM ${parseInt(householdIncome, 10).toLocaleString('en-MY')}` : ''} t={t} />
                 </div>
                 <div className="flex justify-between">
-                  <FieldLabel label={t('profile.siblings')} empty={!siblings} />
-                  <FieldValue value={siblings} t={t} />
+                  <FieldLabel label={t('profile.householdSize')} empty={!householdSize} />
+                  <FieldValue value={householdSize} t={t} />
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">{t('profile.colorBlindness')}</span>

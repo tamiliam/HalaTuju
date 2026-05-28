@@ -975,6 +975,16 @@ class ProfileView(APIView):
         # Email comes from Supabase Auth JWT, not the profile model
         email = getattr(request, 'supabase_user', {}).get('email', '')
 
+        # Contact email auto-defaults to the auth email when blank — the auth
+        # email is already verified (Google/Supabase). Student can override
+        # to a different contact email later, which then needs re-verification.
+        contact_email = profile.contact_email or email
+        contact_email_verified = (
+            profile.contact_email_verified
+            if profile.contact_email
+            else bool(email)
+        )
+
         return Response({
             'grades': profile.grades,
             'gender': profile.gender,
@@ -996,8 +1006,8 @@ class ProfileView(APIView):
             'city': profile.city,
             'phone': profile.phone,
             'email': email,
-            'contact_email': profile.contact_email,
-            'contact_email_verified': profile.contact_email_verified,
+            'contact_email': contact_email,
+            'contact_email_verified': contact_email_verified,
             'contact_phone': profile.contact_phone,
             'contact_phone_verified': profile.contact_phone_verified,
             'family_income': profile.family_income,

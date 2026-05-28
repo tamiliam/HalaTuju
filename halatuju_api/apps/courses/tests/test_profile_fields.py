@@ -513,3 +513,36 @@ class TestProfileContactAPI:
         ProfileView.as_view()(request)
         profile = StudentProfile.objects.get(supabase_user_id='contact-api-4')
         assert profile.contact_email_verified is True  # Should stay True
+
+    def test_get_profile_auto_defaults_contact_email_from_auth(self):
+        """When contact_email is blank, the GET response falls back to the auth email
+        and reports it as verified (the auth email is already verified by Supabase/Google).
+        The DB row is untouched — fallback is read-only and resolves at request time."""
+        StudentProfile.objects.create(supabase_user_id='cmail-fallback', contact_email='')
+        factory = RequestFactory()
+        request = factory.get('/api/v1/profile/')
+        request.user_id = 'cmail-fallback'
+        request.supabase_user = {'id': 'cmail-fallback', 'email': 'login@gmail.com'}
+        resp = ProfileView.as_view()(request)
+        assert resp.data['contact_email'] == 'login@gmail.com'
+        assert resp.data['contact_email_verified'] is True
+        # DB row stays empty — the fallback is computed, not persisted
+        profile = StudentProfile.objects.get(supabase_user_id='cmail-fallback')
+        assert profile.contact_email == ''
+
+    def test_get_profile_does_not_override_explicit_contact_email(self):
+        """A user-set contact_email beats the auth email; verified flag tracks the DB."""
+        StudentProfile.objects.create(
+            supabase_user_id='cmail-explicit',
+            contact_email='parent@example.com',
+            contact_email_verified=False,
+        )
+        factory = RequestFactory()
+        request = factory.get('/api/v1/profile/')
+        request.user_id = 'cmail-explicit'
+        request.supabase_user = {'id': 'cmail-explicit', 'email': 'login@gmail.com'}
+        resp = ProfileView.as_view()(request)
+        # Student-chosen contact email wins
+        assert resp.data['contact_email'] == 'parent@example.com'
+        # …and its verification status is the real DB flag (not auto-true)
+        assert resp.data['contact_email_verified'] is False
