@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] — S14: /profile schema consolidation + required address on /application (2026-05-29)
+
+Backend + frontend (no migration; data backfilled via Supabase MCP under the expand-contract pattern). Closes
+four /profile gaps surfaced during live user-testing: redundant income/siblings/phone fields that didn't sync with
+/apply, plus the missing physical address capture for shortlisted applicants.
+
+- **/profile family card.** Replaced the `family_income` range dropdown with an open RM input bound to
+  `household_income` (same column /apply already writes) and re-labelled "Number of Siblings" → "Household size"
+  on `household_size` (also shared with /apply). One source of truth for income + household composition.
+- **/profile Contact & Location.** Dropped the dead `phone` input (the visible Contact Phone in Contact Details
+  is the synced one). No behaviour change for users; the deprecated input is just gone.
+- **Contact Email auto-default.** `ProfileView.get` now falls back to the auth-user email when
+  `profile.contact_email` is blank, and reports it as verified (Google/Supabase already verified that mailbox).
+  Read-time fallback only — the DB row stays empty; a user-set contact email still wins and uses its real
+  verification flag.
+- **/application Story tab — new "Where you live" card.** Street + postcode + city inputs under the Family card.
+  State stays read-only ("from your application" — sourced from `profile.preferred_state`). One Save button
+  writes everything; `save_application_details` persists the address sub-fields to the profile (alongside the
+  narrative on the application). Pre-fills from `profile.address`/`postal_code`/`city` on next read.
+- **Completeness rule now 6-part.** `application_completeness` gains `address_done` (street + postcode + city
+  all non-blank); `complete = quiz + story + funding + docs + consent + address`. Story tab tick requires both
+  the narrative AND the address. Existing shortlisted applicants must add their address to reach "complete".
+- **Conflict policy doc'd** on `buildApplicationPayload`: last-write-wins on shared profile fields.
+- **TD-061 logged** (drop the three dead columns next session under expand-contract).
+- **Backfills run on prod via Supabase MCP** (before push): `household_income` populated from `family_income`
+  range midpoints (41 rows), `household_size = siblings + 2` (42 rows), phone-promotion no-op (all 6 dead-phone
+  rows already had `contact_phone`), contact_email auto-default is read-time so no DB write needed.
+- **i18n** parity 1276 keys × en/ms/ta — Tamil first-drafts for the new keys (`profile.householdIncome*`,
+  `householdSize*`, `scholarship.nextSteps.story.cardAddress.*`) **pending user refine**.
+- **Tests** — backend +3 (address_done, address PATCH writes to profile, contact_email auto-default ×2);
+  frontend +4 (buildDetailsPayload address, applicationToDetailsForm address pre-fill + defaults).
+  151/151 scholarship pytest + 106/106 jest, build green (EXIT=0).
+
 ## [2.5.0] — S13: Vision OCR for MyKad — soft signal at upload + verify-&-accept (2026-05-28)
 
 Backend + frontend + admin (additive migration `scholarship 0016`, migrate-first via Supabase MCP). When a student

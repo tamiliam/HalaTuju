@@ -934,3 +934,60 @@ this pattern doesn't apply and you must enable concurrently.
 
 **Revisit if:** Cloud Run gains true blue/green deploys (then enable + flip atomically), or if the API is free / no
 cost gate exists (then enable up-front), or if the feature has no acceptable graceful-degradation state.
+
+## Read-time auto-default for `contact_email` (not a DB backfill) — S14, 2026-05-29
+
+**Decision:** When `profile.contact_email` is blank, `ProfileView.get` returns the auth-user email and reports
+`contact_email_verified = true`. The DB row stays untouched. Only an *explicit* student-set contact email writes
+to the column (and resets the verified flag, which the existing PUT handler already does).
+
+**Alternatives considered:** (a) one-off backfill — `UPDATE … SET contact_email = email, contact_email_verified = true
+WHERE contact_email IS NULL OR contact_email = ''` (574 rows would have been mutated); (b) require contact_email
+explicitly during onboarding/profile — adds a step + blocks users with no contact email beyond their login email;
+(c) drop the `contact_email` column entirely and only use the auth email — loses the future support for "I want
+decision emails sent to my parent's address, not mine."
+
+**Rationale:** The intended product behaviour is *"the auth email is your contact email unless you say otherwise"*.
+That semantic is computed, not stored — a backfill would have set 574 rows to a value they didn't choose. With the
+read-time fallback, if we later change policy (e.g. require explicit consent before treating auth email as contact),
+the fix is one line in `ProfileView.get`. With a backfill, we'd have to disambiguate "they actively chose this" vs
+"we wrote it for them" — irreversible information loss. The fallback is also cheaper (no migration, no MCP run) and
+naturally handles future phone-signup users (no auth email → no fallback → they fill it in explicitly).
+
+**Trade-offs:** A tiny per-request branch in the GET handler. `contact_email_verified` returned as `true` for
+fallback users without a row write — clients that re-PUT the same value through the standard flow would see the
+verified flag reset by the existing "verified resets on contact_email change" guard, but in practice the UI shows
+the fallback as already-verified so there's no re-PUT. The DB row reads as empty in admin SQL — a small cognitive
+gap mitigated by the comment in the view.
+
+**Revisit if:** we add policy requiring opt-in for using auth email as contact (e.g. GDPR-style explicit consent),
+or if we observe many users complaining that decision emails go to an unintended address (because their fallback
+auth-email isn't the one they monitor).
+
+## Story tab Save also persists address to the profile (single transaction, one button) — S14, 2026-05-29
+
+**Decision:** The /application Story tab's address inputs (street + postcode + city) are submitted via the
+existing `PATCH /scholarship/applications/<id>/` (i.e. `ApplicationDetailsUpdateSerializer`), and
+`save_application_details` writes them to `application.profile` rather than the application itself. One Save
+button writes both the application narrative AND the profile address atomically.
+
+**Alternatives considered:** (a) call `updateProfile` from the Story tab in addition to `updateScholarshipDetails`
+— two requests, possible partial failures (story saved, address didn't), needs frontend retry/rollback logic;
+(b) make address fields on the application a true second source of truth (`ScholarshipApplication.address` columns)
+— violates the profile-canonical rule (S5c, TD-060 lesson) and forks the data the admin sees in /profile vs the
+application detail page.
+
+**Rationale:** Address fields conceptually belong to the person, not the application — a student's address is
+the same across cohort years. Keeping the column on `StudentProfile` matches the profile-canonical pattern (S5c).
+Routing the write through `save_application_details` preserves the one-button-save UX without introducing dual-write
+semantics in the frontend. The completeness rule (`address_done`) reads the profile, so it naturally reflects either
+a /apply submit or a /profile edit or a Story-tab save — three writers, one source of truth.
+
+**Trade-offs:** `ApplicationDetailsUpdateSerializer` now accepts fields that aren't on `ScholarshipApplication`,
+which is mildly misleading at the type level. Mitigated by a comment on the serializer + `save_application_details`
+docstring explaining the side-effect. If we later add another shared profile field that the Story tab needs to
+write, the pattern is established.
+
+**Revisit if:** the Story tab grows enough profile-write fields that the side-effect becomes the majority — at
+that point it might be cleaner to split into two endpoints (application vs profile delta) so the contract is
+explicit. Today the address is the only such field.
