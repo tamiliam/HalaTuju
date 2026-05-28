@@ -115,9 +115,16 @@ visual sign-off.
     referee at verify-&-accept: PartnerAdmin endpoints `GET/POST …/applications/<pk>/referees/` + `DELETE
     …/referees/<ref_id>/`; interactive Referee card on `/admin/scholarship/[id]`; `addReferee`/`deleteReferee` helpers;
     i18n 1245; backend 1135. Logged **TD-060** (AI generator references removed fields — would error if invoked).
-  - **S5c — queued (AI):** rebuild `profile_engine` to the current data model (profile-canonical reads + new
-    story/funding fields, drop the dead `fn.total`/`fears`/`justification`/`intended_pathway` usages) **and** make it
-    **Tamil/BM-aware** (handle Tamil/BM narrative input, produce profile in target language — currently BM/EN only). [TD-060]
+  - **S5c ✅ DONE — shipped 2026-05-28 (v2.4.6; web `…00219-8ck`, api `…00177-vm2`; NO migration; resolves TD-060).**
+    `profile_engine._build_prompt` rebuilt to the current data model (profile-canonical + "Your story" narrative +
+    `categories`/`funding_note`/`programme_months`, no dead total, + referees) and **language-aware** — understands
+    Malay/English/Tamil student input; `generate_sponsor_profile(application, language=None)` writes in a target
+    language (defaults to applicant locale; admin EN/BM selector; **Tamil output deferred to Phase 2**). New
+    `test_profile_engine.py` (8); Gemini mocked, no paid calls. i18n 1246; backend 1143.
   - **Then TD-059** — drop the dead `FundingNeed` amount columns (one migration + serializer/lib cleanup).
+
+**✅ The Step-4 redesign (S1–S5c) is COMPLETE** — applicant flow (5 tabs, completeness, "what happens next") + admin
+referee at verify-&-accept + a working, language-aware AI sponsor-profile generator. Remaining: TD-059 cleanup and the
+user's Tamil-copy refinements (S4 docs + S5a panel).
 
 Each sprint: tested, i18n-parity'd, migrate-first, deployed, live-verified.

@@ -849,3 +849,27 @@ direction; the S4 regression test was updated to the new contract (`test_complet
 
 **Revisit if:** multiple consent types are introduced (make `consent_done` type-specific), or the sponsor stage needs a
 completeness definition distinct from the applicant's.
+
+## AI sponsor-profile: language-aware via a prompt parameter (Tamil input understood, output EN/BM) — Step-4 redesign S5c, 2026-05-28
+
+**Decision:** `generate_sponsor_profile(application, language=None)` resolves an output language (default = applicant
+`locale`: en→English, ms→Malay; admin override via an EN/BM selector) and the prompt instructs the model to understand
+the student's narrative whether written in **Malay, English, or Tamil** and to write the profile in the target language.
+Tamil **output** is deferred to Phase 2. Language is a **prompt parameter only** — not stored on `SponsorProfile`
+(no migration). `_build_prompt` was also rebuilt to read the current profile-canonical + story + simplified-funding model.
+
+**Alternatives considered:** (a) store the chosen output language on `SponsorProfile` (a new column/migration); (b)
+support Tamil output now; (c) always output English; (d) detect input language and echo it as the output language.
+
+**Rationale:** The profile is **sponsor-facing** and sponsors read EN/BM, so Tamil output isn't needed yet — but B40
+students may genuinely write their story in Tamil, so understanding Tamil **input** is the real requirement and is
+handled now. Keeping language a prompt parameter avoids a migration and makes enabling Tamil output (or per-sponsor
+language) a one-line change. Defaulting to the applicant's locale gives a sensible default; the admin override covers
+the sponsor-audience case. Echoing the input language (d) is wrong — a Tamil-written story should still yield an EN/BM
+sponsor profile.
+
+**Trade-offs:** The generated language isn't persisted, so "what language was this draft?" isn't queryable (the admin
+regenerates if they want another language; `model_used` is recorded but not language). Acceptable while Phase 2 isn't live.
+
+**Revisit if:** Phase 2 needs sponsor profiles in Tamil (flip the deferral — add 'ta' to `LANGUAGE_NAMES`), or the
+output language needs to be persisted/filterable (add a column then).

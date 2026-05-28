@@ -354,10 +354,17 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   the redesign had removed referee from the student UI, leaving no admin path until now.) **Scoping finding → TD-060:** the
   AI sponsor-profile generator (`profile_engine.py`) references fields the profile-canonical refactor removed
   (`qualification`/`spm_a_count`/`household_income`/`stpm_pngk`) + legacy/dead ones — it would **error if invoked** (masked
-  only because the programme is dormant). **▶ NEXT = S5c:** rebuild `profile_engine` to the current data model
-  (profile-canonical reads + new story/funding fields) **and** make it **Tamil/BM-aware** (handle Tamil/BM narrative input,
-  output in the target language; currently BM/EN). Then **TD-059** — drop the dead `FundingNeed` amount columns. Trims
-  locked: photo optional, funding capped/no-total, most docs optional.
+  only because the programme is dormant). **S5c ✅ (v2.4.6, DEPLOYED 2026-05-28; web `…00219-8ck`, api `…00177-vm2`;
+  NO migration; resolves TD-060):** `profile_engine._build_prompt` rebuilt to the current data model (profile-canonical
+  academic/financial + "Your story" narrative + `categories`/`funding_note`/`programme_months` — no dead `total` — +
+  referees) and made **language-aware** — prompt understands Malay/English/Tamil student input; `generate_sponsor_profile
+  (application, language=None)` writes the profile in a target language (defaults to applicant locale en→English/ms→Malay;
+  admin EN/BM selector on `/admin/scholarship/[id]`; **Tamil output deferred to Phase 2** — one prompt-param away). New
+  `test_profile_engine.py` (8, pure builder + TD-060 regression); Gemini mocked, **no paid calls**. i18n 1246. **The
+  applicant + admin Step-4 redesign (S1–S5c) is COMPLETE.** **▶ NEXT = TD-059** — drop the dead `FundingNeed` amount
+  columns (one migration + `FundingNeedSerializer`/`DetailsFormState`/`fundingTotal` cleanup). Plus: user to refine the
+  S4-docs + S5a-panel **Tamil copy** (fold into a deploy); optional admin-triggered **live (billable) Gemini** generation
+  check. Trims locked: photo optional, funding capped/no-total, most docs optional.
 - **▶ Queued: S13 (post-launch): Vision OCR** — MyKad upload → instant NRIC match feedback, surfaced to admin (soft,
   never a hard block; would also upgrade the 2.3.0 declaration signature from a self-consistency nudge to a real
   name check). New Google Cloud Vision API key + **cost sign-off required** before any paid calls. Frontend
