@@ -419,7 +419,7 @@ function formatPhone(raw: string): string {
 
 const STPM_STREAM_MAP: Record<string, string> = {
   'stpm-sains': 'Sains',
-  'stpm-sains_sosial': 'Sains Sosial',
+  'stpm-sains-sosial': 'Sains Sosial',
 }
 
 const PAGE_SIZE = 50
