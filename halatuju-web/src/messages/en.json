@@ -755,7 +755,7 @@
         "seeQualify": "See if I qualify"
       },
       "overview": {
-        "p1": "Every year, promising students from low-income households earn a place at a Malaysian public institution — Matrikulasi, Foundation, STPM, polytechnic, IPTA or ILKA — only to find they lack the means to make the most of it. This programme exists to close that gap.",
+        "p1": "Every year, promising students from low-income households earn a place at Malaysian public institutions — to pursue Pre-university studies, Certificate, Diploma and Degree — only to find they lack the means to make the most of it. This programme exists to close that gap.",
         "p2": "The model is straightforward. Members of the community choose to support a student through their studies. It is assistance, not a loan — there is nothing to repay. Our hope is that those who are supported today will, in time, support others tomorrow."
       },
       "card1": {
@@ -764,7 +764,7 @@
       },
       "card2": {
         "title": "A community behind you",
-        "desc": "Funded by individuals who want you to succeed, not a faceless institution."
+        "desc": "Funded by individuals, not a faceless institution, who want you to succeed."
       },
       "card3": {
         "title": "Your privacy, your control",
@@ -792,9 +792,9 @@
         "item1": "Malaysian citizen who has just completed, or is completing, SPM or STPM.",
         "item2": "From a low-income household — combined monthly income at or below RM5,860, the national B40 threshold (DOSM, 2024).",
         "item3": "Solid academic record — at least 5 A's in SPM, or a PNGK of 3.0 or above in STPM.",
-        "item4": "Continuing at a Malaysian public institution — Matrikulasi, Foundation/Asasi, STPM, IPTA, polytechnic or ILKA.",
+        "item4": "Continuing at a Malaysian public institution — Asasi, Matrikulasi, STPM, Certificate, Diploma or Degree.",
         "item5": "Reachable for a short interview — usually a 20-minute phone call in English, Bahasa Malaysia, or Tamil.",
-        "item6": "Willing to share progress — quarterly results and a brief update, so that support can continue through your studies.",
+        "item6": "Willing to share progress — semester results and a brief update, so that support can continue through your studies.",
         "closeNote": "Close, but not exactly? Apply anyway. Our bar is a little more generous than the headline above — especially on grades — so it's worth applying even if you don't match every line exactly. Applying lets us assess your eligibility; it doesn't guarantee assistance."
       },
       "how": {
@@ -807,15 +807,15 @@
         "step3Title": "Shortlisting — within 48 hours",
         "step3Desc": "We check your results and household income against the criteria and let you know whether you've been shortlisted.",
         "step4Title": "Complete your profile",
-        "step4Desc": "If shortlisted, we'll ask you to share a few more details and upload supporting documents (IC, results slip, proof of household income). We'll tell you exactly what's needed.",
+        "step4Desc": "If shortlisted, we'll ask you to share a few more details and upload supporting documents (IC, results slip, proof of household income, etc.). We'll tell you exactly what's needed.",
         "step5Title": "A short interview",
         "step5Desc": "A brief phone call, usually 20 minutes, in your preferred language. This is to get to know you, not to test you.",
         "step6Title": "Ready for sponsors",
         "step6Desc": "With your written consent, we prepare a confidential profile for sponsors to consider.",
         "step7Title": "Matched and awarded",
-        "step7Desc": "Once a sponsor chooses to support you, MyNadi Foundation arranges the assistance and administers the funds. From application to award typically takes up to two months.",
+        "step7Desc": "Once a sponsor chooses to support you, Yayasan myNADI arranges the assistance and administers the funds. From application to award typically takes up to two months. (Partnership being finalised.)",
         "step8Title": "Staying supported",
-        "step8Desc": "Each quarter, you upload your results and a short progress note. As long as you're progressing, the support continues."
+        "step8Desc": "Each semester, you upload your results and a short progress note. As long as you're progressing, the support continues."
       },
       "faq": {
         "title": "Questions",
@@ -823,31 +823,31 @@
         "a1": "No. If you're new, the same Google sign-in creates your account. If you've already done the HalaTuju course-matching quiz, we'll use what's in your profile so you don't have to retype anything.",
         "q2": "Is this a loan? Do I have to pay it back?",
         "a2": "No. It is education assistance from a sponsor — nothing to repay, no interest. Our hope is that those who are supported today will, in time, support others tomorrow.",
-        "q3": "Is it guaranteed if I qualify?",
+        "q3": "Is the assistance guaranteed if I qualify?",
         "a3": "No. This is a pilot with limited places and strict criteria. Applying lets us assess you; it does not guarantee assistance.",
         "q4": "Who can see my personal details?",
         "a4": "Your private details — your IC, contact details, and home address — are never shown to sponsors. Sponsors only see a profile, and only after you have given your consent. If you are under 18, a parent or guardian must give that consent on your behalf.",
         "q5": "What documents will I need?",
         "a5": "Only after you've been shortlisted: your IC, your SPM or STPM results slip, and proof of household income or aid (such as your STR letter, an EPF statement, or a payslip). We'll tell you exactly what's needed at that stage — there is nothing to upload when you first apply.",
         "q6": "What levels does it cover?",
-        "a6": "Public post-secondary study only — both pre-university (Matrikulasi, Foundation/Asasi at an IPTA or polytechnic, or STPM) and tertiary (IPTA, polytechnic, or ILKA).",
+        "a6": "Public post-secondary study only — both pre-university (Asasi at a university or Polytechnic, Matrikulasi, or STPM) and tertiary (at a University, Polytechnic, Community College, IPGM, ILJTM or ILKBS).",
         "q7": "Does it cover private colleges (IPTS)?",
-        "a7": "Not in this pilot. The programme supports study at public institutions only. Foundation or Asasi programmes must also be at a public institution (an IPTA or polytechnic) to qualify.",
+        "a7": "No. The programme supports study at public institutions only. Foundation or Asasi programmes must also be at a public institution (IPTA) to qualify.",
         "q8": "Is there a deadline?",
-        "a8": "Not for this pilot — applications are reviewed on a rolling basis. You'll receive an acknowledgement on the same day you apply, and we aim to confirm shortlisting within 48 hours. From application to being matched with a sponsor typically takes up to two months.",
+        "a8": "Not at present — applications are reviewed on a rolling basis. You'll receive an acknowledgement on the same day you apply, and we aim to confirm shortlisting within 48 hours. From application to being matched with a sponsor typically takes up to two months.",
         "q9": "Is there a cost to apply?",
         "a9": "No. Applying is free and takes about 5–10 minutes."
       },
       "donor": {
         "title": "Want to support a student?",
-        "body": "This programme exists because individuals in the community choose to fund the studies of specific students. If you'd like to know more about supporting a student — whether for a quarter, a year, or the full course of their studies — we'd be glad to hear from you.",
-        "fundsPre": "Funds are administered by ",
-        "fundsPost": ", a registered Malaysian NGO.",
+        "body": "This programme exists because individuals in the community choose to fund the studies of specific students. If you'd like to know more about supporting a student — whether for a semester, a year, or the full course of their studies — we'd be glad to hear from you.",
+        "fundsPre": "Funds will be administered by ",
+        "fundsPost": ", a Malaysian non-profit organisation with Tax Exemption under Subsection 44(6) of the Income Tax Act 1967. (Partnership being finalised.)",
         "cta": "Get in touch"
       },
       "about": {
         "title": "About this programme",
-        "body": "The B40 Assistance Programme is coordinated by HalaTuju in partnership with MyNadi Foundation, which administers the funds, and a network of community organisations — including CUMIG, Sri Murugan Centre and others — that refer and support students.",
+        "body": "The B40 Assistance Programme is coordinated by HalaTuju, with Yayasan myNADI expected to administer the funds (partnership being finalised), and a network of community organisations — including Sri Murugan Centre (SMC), Concerned Universiti Malaya Indian Graduates (CUMIG) and others — that refer and support students.",
         "contact": "Questions or feedback? Email"
       },
       "cta": {

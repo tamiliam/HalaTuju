@@ -170,7 +170,7 @@ export default function ScholarshipLandingPage() {
             </a>
             <p className="text-sm text-gray-500 mt-4">
               {t('scholarship.landing.donor.fundsPre')}
-              <a href="https://www.yayasanmynadi.org/" target="_blank" rel="noopener noreferrer" className="text-primary-600 underline">MyNadi Foundation</a>
+              <a href="https://www.yayasanmynadi.org/" target="_blank" rel="noopener noreferrer" className="text-primary-600 underline">Yayasan myNADI</a>
               {t('scholarship.landing.donor.fundsPost')}
             </p>
           </div>
