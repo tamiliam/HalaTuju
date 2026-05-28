@@ -984,7 +984,8 @@
     "loadingQuiz": "Memuatkan kuiz...",
     "loadError": "Gagal memuatkan soalan kuiz. Sila cuba lagi.",
     "submitError": "Gagal menghantar kuiz. Sila cuba lagi.",
-    "goToQuestion": "Pergi ke soalan {n}"
+    "goToQuestion": "Pergi ke soalan {n}",
+    "returnToApplication": "Kembali ke permohonan saya"
   },
   "stpmQuiz": {
     "loading": "Memuatkan kuiz peribadi anda...",

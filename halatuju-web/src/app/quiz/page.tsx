@@ -30,7 +30,7 @@ export default function QuizPage() {
   // ?return=application sends the user back to /scholarship/application after
   // submit (used by the Quiz tab on the post-shortlist follow-up flow).
   const returnTo = searchParams?.get('return')
-  const { isAuthenticated, isLoading: authLoading, showAuthGate } = useAuth()
+  const { isAuthenticated, isLoading: authLoading, showAuthGate, token } = useAuth()
   const { t, locale } = useT()
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [currentStep, setCurrentStep] = useState(0)
@@ -163,7 +163,9 @@ export default function QuizPage() {
 
     setSubmitting(true)
     try {
-      const result = await submitQuiz(quizAnswers, lang)
+      // Pass the auth token so the backend can opportunistically persist
+      // student_signals to profile (drives /scholarship/application's quiz_done).
+      const result = await submitQuiz(quizAnswers, lang, token ? { token } : undefined)
       // Store signals in localStorage for dashboard to pick up
       localStorage.setItem(KEY_QUIZ_SIGNALS, JSON.stringify(result.student_signals))
       localStorage.setItem(KEY_SIGNAL_STRENGTH, JSON.stringify(result.signal_strength))
@@ -393,7 +395,9 @@ export default function QuizPage() {
               disabled={!allAnswered || submitting}
               className="btn-primary disabled:opacity-40"
             >
-              {submitting ? t('quiz.submitting') : t('quiz.seeResults')}
+              {submitting
+                ? t('quiz.submitting')
+                : t(returnTo === 'application' ? 'quiz.returnToApplication' : 'quiz.seeResults')}
             </button>
           ) : (
             <div /> /* Spacer for flex alignment */

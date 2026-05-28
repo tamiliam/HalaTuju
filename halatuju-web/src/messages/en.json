@@ -984,7 +984,8 @@
     "loadingQuiz": "Loading quiz...",
     "loadError": "Failed to load quiz questions. Please try again.",
     "submitError": "Failed to submit quiz. Please try again.",
-    "goToQuestion": "Go to question {n}"
+    "goToQuestion": "Go to question {n}",
+    "returnToApplication": "Return to my application"
   },
   "stpmQuiz": {
     "loading": "Loading your personalised quiz...",
