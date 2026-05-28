@@ -623,7 +623,12 @@ describe('option constants', () => {
   it('lists the legacy referring-org codes incl. cumig and other', () => {
     expect(REFERRING_ORG_OPTIONS).toContain('cumig')
     expect(REFERRING_ORG_OPTIONS).toContain('other')
-    expect(REFERRING_ORG_OPTIONS.length).toBe(9)
+    // 9 partner orgs (smc/cumig/ewrf/hyo/mhm/sathya_sai/tara/hss/pptm)
+    // + 5 individual/self/generic (pushparani/govind/halatuju/social/other) = 14
+    expect(REFERRING_ORG_OPTIONS.length).toBe(14)
+    for (const code of ['ewrf', 'hyo', 'mhm', 'hss', 'pptm']) {
+      expect(REFERRING_ORG_OPTIONS).toContain(code)
+    }
   })
   it('offers the four call languages and the 16 states', () => {
     expect(CALL_LANGUAGE_OPTIONS).toEqual(['en', 'ms', 'ta', 'mixed'])

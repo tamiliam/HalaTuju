@@ -28,7 +28,10 @@ export const PATHWAY_OPTIONS: IntendedPathway[] = [
 // come from i18n (`scholarship.apply.org.<code>`). A code that matches an active
 // PartnerOrganisation row links the FK server-side; the rest are generic sources.
 export const REFERRING_ORG_OPTIONS = [
-  'smc', 'cumig', 'pushparani', 'sathya_sai', 'halatuju', 'tara', 'govind', 'social', 'other',
+  // Partner organisations (Google-form order)
+  'smc', 'cumig', 'ewrf', 'hyo', 'mhm', 'sathya_sai', 'tara', 'hss', 'pptm',
+  // Individual coordinators + self-referral + generic catch-alls
+  'pushparani', 'govind', 'halatuju', 'social', 'other',
 ] as const
 export type ReferringOrg = typeof REFERRING_ORG_OPTIONS[number] | ''
 
