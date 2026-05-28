@@ -7,7 +7,6 @@ import { updateScholarshipDetails, type ScholarshipApplication } from '@/lib/api
 import {
   applicationToDetailsForm,
   buildDetailsPayload,
-  fundingTotal,
   NEXT_STEP_ORDER,
   defaultNextTab,
   type NextStepKey,
@@ -90,8 +89,6 @@ export default function ScholarshipNextSteps({
   }
 
   const c = app.completeness
-  // fundingTotal is kept for potential future use; not currently rendered in the UI
-  void fundingTotal(form)
   const tabIndex = NEXT_STEP_ORDER.indexOf(tab)
 
   // Completeness mapping — every step now has a backend signal (S5).

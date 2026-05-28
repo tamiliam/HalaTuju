@@ -21,25 +21,6 @@ def _token(uid, secret=TEST_JWT_SECRET):
     )
 
 
-class TestFundingNeedModel(TestCase):
-    def setUp(self):
-        self.cohort = ScholarshipCohort.objects.create(code='c', name='P', year=2026)
-        self.profile = StudentProfile.objects.create(supabase_user_id='m1', nric='080101-14-1234')
-        self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted',
-        )
-
-    def test_total_defaults_zero(self):
-        self.assertEqual(FundingNeed.objects.create(application=self.app).total, 0)
-
-    def test_total_sums_line_items_with_allowance(self):
-        fn = FundingNeed.objects.create(
-            application=self.app, tuition_gap=1000, laptop=2000, books=500,
-            monthly_allowance=300, allowance_months=10, other=200,
-        )
-        self.assertEqual(fn.total, 1000 + 2000 + 500 + 300 * 10 + 200)  # 6700
-
-
 class TestCompleteness(TestCase):
     def setUp(self):
         self.cohort = ScholarshipCohort.objects.create(code='c', name='P', year=2026)
@@ -180,18 +161,14 @@ class TestDetailsApi(TestCase):
             f'/api/v1/scholarship/applications/{self.app_a.id}/',
             {
                 'aspirations': 'Become an auditor', 'plans': 'Work hard every day',
-                # S3: funding_done requires at least one category; include categories here
-                'funding_need': {
-                    'laptop': 2000, 'monthly_allowance': 300, 'allowance_months': 10,
-                    'categories': ['device', 'living'],
-                },
+                'funding_need': {'categories': ['device', 'living']},
             }, format='json',
         )
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
         self.assertEqual(body['aspirations'], 'Become an auditor')
         self.assertEqual(body['plans'], 'Work hard every day')
-        self.assertEqual(body['funding_need']['total'], 2000 + 300 * 10)
+        self.assertEqual(body['funding_need']['categories'], ['device', 'living'])
         self.assertTrue(body['completeness']['details_done'])
         self.assertTrue(body['completeness']['funding_done'])
         self.assertFalse(body['completeness']['quiz_done'])  # no quiz signals yet
@@ -230,11 +207,14 @@ class TestDetailsApi(TestCase):
         self.assertEqual(body['daily_life'], '')
 
     def test_patch_funding_idempotent_update(self):
+        """Two PATCHes upsert a single FundingNeed row (no duplicates)."""
         self._auth(USER_A)
         url = f'/api/v1/scholarship/applications/{self.app_a.id}/'
-        self.client.patch(url, {'funding_need': {'laptop': 2000}}, format='json')
-        resp = self.client.patch(url, {'funding_need': {'laptop': 3500}}, format='json')
-        self.assertEqual(resp.json()['funding_need']['laptop'], 3500)
+        self.client.patch(url, {'funding_need': {'categories': ['living']}}, format='json')
+        resp = self.client.patch(
+            url, {'funding_need': {'categories': ['living', 'transport']}}, format='json',
+        )
+        self.assertEqual(resp.json()['funding_need']['categories'], ['living', 'transport'])
         self.assertEqual(FundingNeed.objects.filter(application=self.app_a).count(), 1)
 
     def test_patch_rejected_is_forbidden(self):
@@ -271,7 +251,7 @@ class TestDetailsApi(TestCase):
     # ── S3: funding redesign fields ───────────────────────────────────────────
 
     def test_patch_saves_s3_funding_fields(self):
-        """categories, funding_note, programme_months and other_desc all persist."""
+        """categories, funding_note, programme_months all persist."""
         self._auth(USER_A)
         resp = self.client.patch(
             f'/api/v1/scholarship/applications/{self.app_a.id}/',
@@ -280,7 +260,6 @@ class TestDetailsApi(TestCase):
                     'categories': ['living', 'transport', 'books'],
                     'programme_months': 36,
                     'funding_note': 'I will try for PTPTN as well.',
-                    'other_desc': 'Glasses',
                 },
             }, format='json',
         )
@@ -289,7 +268,6 @@ class TestDetailsApi(TestCase):
         self.assertEqual(fn['categories'], ['living', 'transport', 'books'])
         self.assertEqual(fn['programme_months'], 36)
         self.assertEqual(fn['funding_note'], 'I will try for PTPTN as well.')
-        self.assertEqual(fn['other_desc'], 'Glasses')
 
     def test_funding_done_true_when_categories_nonempty(self):
         """funding_done is True when at least one category is ticked."""
@@ -321,7 +299,8 @@ class TestDetailsApi(TestCase):
         self._auth(USER_A)
         resp = self.client.patch(
             f'/api/v1/scholarship/applications/{self.app_a.id}/',
-            {'funding_need': {'laptop': 0}}, format='json',
+            # an empty funding_need payload still triggers get_or_create
+            {'funding_need': {}}, format='json',
         )
         fn = resp.json()['funding_need']
         self.assertEqual(fn['categories'], [])

@@ -335,24 +335,16 @@ class ScholarshipApplication(models.Model):
 
 class FundingNeed(models.Model):
     """
-    Structured funding-need breakdown for one application — the "quantified ask"
-    a sponsor needs (the B40 analysis flagged its absence). Line items in RM.
+    "How you'd use the support" for one application — the S3 funding reframe
+    (v2.4.2). Assistance is capped at RM3,000; instead of asking for an itemised
+    total, the student ticks the categories the support would help with, may
+    add an open note (incl. how they'd cope without), and gives a rough
+    programme length. (The legacy per-line-item amount columns were dropped in
+    TD-059 cleanup.)
     """
     application = models.OneToOneField(
         ScholarshipApplication, on_delete=models.CASCADE, related_name='funding_need',
     )
-    tuition_gap = models.IntegerField(default=0, help_text="Tuition not covered by subsidy (RM)")
-    laptop = models.IntegerField(default=0)
-    hostel = models.IntegerField(default=0)
-    transport = models.IntegerField(default=0)
-    books = models.IntegerField(default=0)
-    monthly_allowance = models.IntegerField(default=0, help_text="Living allowance per month (RM)")
-    allowance_months = models.IntegerField(default=0, help_text="Number of months of allowance")
-    other = models.IntegerField(default=0)
-    other_desc = models.CharField(max_length=200, blank=True, default='')
-    # ── S3 redesign fields (additive) ────────────────────────────────────────
-    # Reframes the funding tab as "how you'd use the support" (capped at RM3,000).
-    # The old amount fields above are kept (additive-only); the UI no longer renders them.
     categories = models.JSONField(
         default=list, blank=True,
         help_text="Selected support categories: living/transport/accommodation/books/device/tuition/other",
@@ -371,15 +363,8 @@ class FundingNeed(models.Model):
     class Meta:
         db_table = 'funding_needs'
 
-    @property
-    def total(self):
-        return (
-            self.tuition_gap + self.laptop + self.hostel + self.transport
-            + self.books + self.monthly_allowance * self.allowance_months + self.other
-        )
-
     def __str__(self):
-        return f'FundingNeed for application #{self.application_id} (RM{self.total})'
+        return f'FundingNeed for application #{self.application_id}'
 
 
 class ApplicantDocument(models.Model):

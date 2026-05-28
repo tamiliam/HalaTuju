@@ -71,17 +71,9 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
 
 
 class FundingNeedSerializer(serializers.ModelSerializer):
-    total = serializers.IntegerField(read_only=True)
-
     class Meta:
         model = FundingNeed
-        fields = [
-            # Legacy amount fields (kept; no longer rendered in the UI)
-            'tuition_gap', 'laptop', 'hostel', 'transport', 'books',
-            'monthly_allowance', 'allowance_months', 'other', 'other_desc', 'total',
-            # S3 redesign fields — "how you'd use the support"
-            'categories', 'funding_note', 'programme_months',
-        ]
+        fields = ['categories', 'funding_note', 'programme_months']
 
 
 class ApplicationDetailsUpdateSerializer(serializers.Serializer):

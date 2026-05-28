@@ -18,7 +18,6 @@ import {
   stpmDegreesToCourses,
   UNCERTAINTY_REASONS,
   nricChanged,
-  fundingTotal,
   emptyDetailsForm,
   applicationToDetailsForm,
   buildDetailsPayload,
@@ -633,24 +632,11 @@ describe('option constants', () => {
   })
 })
 
-describe('fundingTotal', () => {
-  it('sums line items plus allowance × months', () => {
-    const f = { ...emptyDetailsForm(), laptop: '2000', books: '500', monthlyAllowance: '300', allowanceMonths: '10', other: '200' }
-    expect(fundingTotal(f)).toBe(2000 + 500 + 3000 + 200)
-  })
-  it('treats blanks as zero', () => {
-    expect(fundingTotal(emptyDetailsForm())).toBe(0)
-  })
-})
-
 describe('buildDetailsPayload', () => {
-  it('maps form to snake_case with nested funding_need (trimmed)', () => {
-    const f = { ...emptyDetailsForm(), aspirations: '  be a teacher ', laptop: '2000', allowanceMonths: '10', monthlyAllowance: '300' }
-    const p = buildDetailsPayload(f) as { aspirations: string; funding_need: Record<string, unknown> }
+  it('trims story text fields and maps them to snake_case', () => {
+    const f = { ...emptyDetailsForm(), aspirations: '  be a teacher ' }
+    const p = buildDetailsPayload(f) as { aspirations: string }
     expect(p.aspirations).toBe('be a teacher')
-    expect(p.funding_need.laptop).toBe(2000)
-    expect(p.funding_need.monthly_allowance).toBe(300)
-    expect(p.funding_need.allowance_months).toBe(10)
   })
 
   it('includes all 5 new story snake_case fields', () => {
@@ -676,14 +662,12 @@ describe('buildDetailsPayload', () => {
       fundingCategories: ['living', 'transport'],
       fundingNote: '  I will try for PTPTN.  ',
       programmeMonths: '36',
-      otherDesc: 'Glasses',
     }
     const p = buildDetailsPayload(f) as Record<string, unknown>
     const fn = p.funding_need as Record<string, unknown>
     expect(fn.categories).toEqual(['living', 'transport'])
     expect(fn.funding_note).toBe('I will try for PTPTN.')
     expect(fn.programme_months).toBe(36)
-    expect(fn.other_desc).toBe('Glasses')
   })
 
   it('converts blank programmeMonths to null', () => {
@@ -700,23 +684,21 @@ describe('buildDetailsPayload', () => {
 })
 
 describe('applicationToDetailsForm', () => {
-  it('pre-fills from an application with a funding need (zeros blanked)', () => {
+  it('pre-fills story + funding from an application with a funding need', () => {
     const app = {
       aspirations: 'Teach', plans: '', fears: '', justification: 'Need help',
       first_in_family: false, parents_occupation: '', siblings_studying: false,
       family_context: '', daily_life: '',
       funding_need: {
-        tuition_gap: 0, laptop: 2000, hostel: 0, transport: 0, books: 0,
-        monthly_allowance: 300, allowance_months: 10, other: 0, other_desc: '', total: 5000,
-        categories: [], funding_note: '', programme_months: null,
+        categories: ['living'], funding_note: 'note', programme_months: 12,
       },
     } as unknown as ScholarshipApplication
     const f = applicationToDetailsForm(app)
     expect(f.aspirations).toBe('Teach')
     expect(f.justification).toBe('Need help')
-    expect(f.laptop).toBe('2000')
-    expect(f.tuitionGap).toBe('')
-    expect(f.monthlyAllowance).toBe('300')
+    expect(f.fundingCategories).toEqual(['living'])
+    expect(f.fundingNote).toBe('note')
+    expect(f.programmeMonths).toBe('12')
     // new story fields
     expect(f.firstInFamily).toBe(false)
     expect(f.parentsOccupation).toBe('')
@@ -745,7 +727,8 @@ describe('applicationToDetailsForm', () => {
       funding_need: null,
     } as unknown as ScholarshipApplication
     const f = applicationToDetailsForm(app)
-    expect(f.laptop).toBe('')
+    expect(f.fundingCategories).toEqual([])
+    expect(f.fundingNote).toBe('')
     expect(f.aspirations).toBe('')
     expect(f.firstInFamily).toBe(false)
   })
@@ -756,9 +739,6 @@ describe('applicationToDetailsForm', () => {
       first_in_family: false, parents_occupation: '', siblings_studying: false,
       family_context: '', daily_life: '',
       funding_need: {
-        tuition_gap: 0, laptop: 0, hostel: 0, transport: 0, books: 0,
-        monthly_allowance: 0, allowance_months: 0, other: 0, other_desc: 'Glasses',
-        total: 0,
         categories: ['living', 'books'],
         funding_note: 'I will apply for PTPTN.',
         programme_months: 48,
@@ -768,7 +748,6 @@ describe('applicationToDetailsForm', () => {
     expect(f.fundingCategories).toEqual(['living', 'books'])
     expect(f.fundingNote).toBe('I will apply for PTPTN.')
     expect(f.programmeMonths).toBe('48')
-    expect(f.otherDesc).toBe('Glasses')
   })
 
   it('defaults S3 fields when funding_need is null', () => {

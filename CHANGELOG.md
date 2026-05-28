@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.7] — TD-059 cleanup: drop dead `FundingNeed` amount columns (2026-05-28)
+
+Backend + frontend cleanup, **destructive migration** (`scholarship 0015`). The S3 funding reframe (v2.4.2) left
+9 line-item amount columns on `FundingNeed` orphaned (no readers, no writers, no UI). This drops them.
+- **Backend:** `FundingNeed` loses `tuition_gap`, `laptop`, `hostel`, `transport`, `books`, `monthly_allowance`,
+  `allowance_months`, `other`, `other_desc` and the `total` property (and the `__str__` line that used it).
+  `FundingNeedSerializer.fields` shrinks to `categories`/`funding_note`/`programme_months` only. Stale model + payload
+  tests dropped or rewritten to use `categories`.
+- **Frontend:** `FundingNeed` interface, `DetailsFormState` (8 form fields removed) and the `fundingTotal` helper +
+  its jest tests; payload/form mappings in `applicationToDetailsForm`/`buildDetailsPayload` shrunk to the 3 kept
+  fields. `/admin/scholarship/[id]` no longer shows `RM${funding_need.total}` — shows the **ticked categories** list.
+- **Migration ordering — expand-contract (deploy-first, drop-after).** For a destructive change, dropping columns
+  before the deploy would 500 the currently-live `FundingNeedSerializer`. So: code shipped first (Django ignores
+  extra DB columns), then `DROP COLUMN ×9` applied on prod via Supabase MCP + `django_migrations` row recorded
+  (per the TD-058 workaround). 0 prod rows in `funding_needs` confirmed before the drop.
+- Build clean; backend 1141 pytest; jest 123; i18n unchanged (parity 1246). **Resolves TD-059.**
+
 ## [2.4.6] — AI sponsor-profile generator rebuilt + Tamil/BM-aware (Step-4 redesign, S5c) (2026-05-28)
 
 Backend + admin frontend, **no migration**. **Resolves TD-060.** `profile_engine.py` was building its Gemini prompt from

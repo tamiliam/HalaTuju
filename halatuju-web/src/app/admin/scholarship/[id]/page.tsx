@@ -158,7 +158,16 @@ export default function AdminScholarshipDetailPage() {
       <div className="bg-white rounded-xl border p-4 space-y-2">
         <Field label={t('admin.scholarship.aspirations')} value={app.aspirations} />
         <Field label={t('admin.scholarship.justification')} value={app.justification} />
-        {app.funding_need && <Field label={t('admin.scholarship.funding')} value={`RM${app.funding_need.total}`} />}
+        {app.funding_need && (
+          <Field
+            label={t('admin.scholarship.funding')}
+            value={
+              app.funding_need.categories?.length
+                ? app.funding_need.categories.join(', ')
+                : '—'
+            }
+          />
+        )}
       </div>
 
       {/* Documents / referees / consent */}

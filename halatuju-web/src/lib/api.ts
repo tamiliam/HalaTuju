@@ -909,18 +909,9 @@ export async function calculatePathways(
 // ── Scholarship (B40 Assistance Programme) ──────────────────────────────
 
 export interface FundingNeed {
-  // Legacy amount fields (kept; no longer rendered in the UI)
-  tuition_gap: number
-  laptop: number
-  hostel: number
-  transport: number
-  books: number
-  monthly_allowance: number
-  allowance_months: number
-  other: number
-  other_desc: string
-  total: number
-  // S3 redesign fields — "how you'd use the support"
+  // "How you'd use the support" — the S3 reframe (RM3,000 cap; tick-only categories
+  // plus an open note plus rough programme length). The legacy per-line-item amount
+  // fields were dropped in TD-059 cleanup.
   categories: string[]
   funding_note: string
   programme_months: number | null
