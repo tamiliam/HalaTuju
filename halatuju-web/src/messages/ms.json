@@ -694,7 +694,7 @@
         "offer_letter": "Surat tawaran"
       },
       "help": {
-        "ic": "Gambar bahagian hadapan MyKad anda.",
+        "ic": "Gambar bahagian depan MyKad anda. Kami akan menyemak secara automatik untuk membantu anda mengesan kesilapan menaip — gambar anda tidak disimpan di Google.",
         "results_slip": "Slip keputusan terkini anda.",
         "income": "Mana-mana satu pun boleh — surat STR, slip gaji terkini, atau penyata KWSP. Anda boleh tambah lebih daripada satu jika beberapa orang bekerja.",
         "water_bill": "Bil terkini membantu kami memahami keadaan isi rumah anda.",
@@ -715,7 +715,14 @@
       "uploading": "Memuat naik…",
       "remove": "Buang",
       "uploadError": "Muat naik gagal. Sila cuba lagi.",
-      "deleteError": "Tidak dapat membuang dokumen."
+      "deleteError": "Tidak dapat membuang dokumen.",
+      "vision": {
+        "good": "Kelihatan baik — NRIC dan nama anda sepadan dengan gambar.",
+        "name-soft": "NRIC anda sepadan tetapi kami membaca nama anda sedikit berbeza pada IC — sila semak semula.",
+        "nric-bad": "Hmm — NRIC yang kami baca pada gambar tidak sepadan dengan yang anda masukkan. Sila semak semula.",
+        "unreadable": "Kami tidak dapat membaca gambar secara automatik — tidak mengapa, pasukan akan menyemak secara manual.",
+        "note": "Hanya petunjuk — pasukan sentiasa menyemak dokumen anda."
+      }
     },
     "referee": {
       "name": "Nama perujuk",
@@ -729,7 +736,7 @@
     },
     "consent": {
       "draftNotice": "DERAF — kata-kata muktamad menunggu semakan undang-undang.",
-      "text": "Saya bersetuju membenarkan Program Bantuan B40 berkongsi profil dan maklumat sokongan saya dengan bakal penaja bagi tujuan pertimbangan bantuan kewangan. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa.",
+      "text": "Saya bersetuju membenarkan Program Bantuan B40 berkongsi profil dan maklumat sokongan saya dengan bakal penaja bagi tujuan pertimbangan bantuan kewangan. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa. Kami juga mungkin menjalankan OCR automatik (pengecaman teks) pada dokumen yang anda muat naik untuk membantu mengesan kesilapan menaip; keputusan ini hanyalah petunjuk lembut dan tidak menggantikan semakan manusia.",
       "guardianNotice": "Memandangkan anda berumur bawah 18 tahun, ibu bapa atau penjaga mesti memberikan persetujuan ini.",
       "guardianName": "Nama penjaga",
       "guardianRelationship": "Hubungan dengan anda",
@@ -1291,7 +1298,13 @@
       "refAdding": "Menambah…",
       "refRemove": "Buang",
       "refError": "Tidak dapat menyimpan perujuk. Sila cuba lagi.",
-      "genLang": "Bahasa output"
+      "genLang": "Bahasa output",
+      "visionTitle": "OCR Vision (petunjuk lembut)",
+      "visionRerun": "Jalankan semula Vision",
+      "visionRunning": "Menjalankan semula…",
+      "visionExtracted": "Diekstrak",
+      "visionDeclaration": "Nama pengakuan",
+      "visionError": "Tidak dapat menjalankan semula Vision."
     },
     "students": "Pelajar",
     "invite": "Jemputan",

@@ -694,7 +694,7 @@
         "offer_letter": "Offer letter"
       },
       "help": {
-        "ic": "A photo of the front of your MyKad.",
+        "ic": "A photo of the front of your MyKad. We'll check it automatically to help you spot typos — your photo isn't kept at Google.",
         "results_slip": "Your latest results slip.",
         "income": "Any one is fine — your STR letter, a recent salary slip, or an EPF statement. You can add more than one if several people earn.",
         "water_bill": "A recent bill helps us understand your household.",
@@ -715,7 +715,14 @@
       "uploading": "Uploading…",
       "remove": "Remove",
       "uploadError": "Upload failed. Please try again.",
-      "deleteError": "Could not remove the document."
+      "deleteError": "Could not remove the document.",
+      "vision": {
+        "good": "Looks good — your NRIC and name match the photo.",
+        "name-soft": "Your NRIC matches but we read your name slightly differently on the IC — please double-check.",
+        "nric-bad": "Hmm — the NRIC we read on the photo doesn't match what you entered. Please re-check.",
+        "unreadable": "We couldn't read the photo automatically — that's fine, the team will check it manually.",
+        "note": "Just a hint — the team always reviews your documents."
+      }
     },
     "referee": {
       "name": "Referee name",
@@ -729,7 +736,7 @@
     },
     "consent": {
       "draftNotice": "DRAFT — final wording pending legal review.",
-      "text": "I consent to the B40 Assistance Programme sharing my profile and supporting information with potential sponsors for the purpose of considering me for financial assistance. I understand I can withdraw this consent at any time.",
+      "text": "I consent to the B40 Assistance Programme sharing my profile and supporting information with potential sponsors for the purpose of considering me for financial assistance. I understand I can withdraw this consent at any time. We may also run automated OCR (text recognition) on the documents you upload to help spot typos; the results are a soft signal only and never replace human review.",
       "guardianNotice": "As you are under 18, a parent or guardian must give this consent.",
       "guardianName": "Guardian's name",
       "guardianRelationship": "Relationship to you",
@@ -1291,7 +1298,13 @@
       "refAdding": "Adding…",
       "refRemove": "Remove",
       "refError": "Could not save the referee. Please try again.",
-      "genLang": "Output language"
+      "genLang": "Output language",
+      "visionTitle": "Vision OCR (soft signal)",
+      "visionRerun": "Re-run Vision",
+      "visionRunning": "Re-running…",
+      "visionExtracted": "Extracted",
+      "visionDeclaration": "Declaration name",
+      "visionError": "Could not re-run Vision."
     },
     "students": "Students",
     "invite": "Invite",

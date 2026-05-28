@@ -12,9 +12,9 @@ from rest_framework.views import APIView
 
 from apps.courses.views_admin import PartnerAdminMixin
 
-from .models import Referee, ScholarshipApplication, SponsorProfile
+from .models import ApplicantDocument, Referee, ScholarshipApplication, SponsorProfile
 from .profile_engine import generate_sponsor_profile
-from .serializers import RefereeSerializer
+from .serializers import ApplicantDocumentSerializer, RefereeSerializer
 from .serializers_admin import (
     AdminApplicationDetailSerializer,
     AdminApplicationListSerializer,
@@ -159,6 +159,28 @@ class AdminRefereeDetailView(_AdminBase):
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         ref.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AdminRunVisionView(_AdminBase):
+    """
+    POST .../<pk>/documents/<doc_id>/re-run-vision/ — re-run Vision OCR on an
+    existing IC document. Soft signal only; the admin verify-&-accept stays
+    the real identity gate. Returns the updated document.
+    """
+    def post(self, request, pk, doc_id):
+        if not self.get_admin(request):
+            return self._deny()
+        doc = ApplicantDocument.objects.filter(pk=doc_id, application_id=pk).first()
+        if doc is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if doc.doc_type != 'ic':
+            return Response(
+                {'error': 'Vision OCR only runs on IC documents.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        from .vision import run_vision_for_document
+        run_vision_for_document(doc)
+        return Response(ApplicantDocumentSerializer(doc).data)
 
 
 class AdminGenerateProfileView(_AdminBase):

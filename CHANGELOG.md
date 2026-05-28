@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] — S13: Vision OCR for MyKad — soft signal at upload + verify-&-accept (2026-05-28)
+
+Backend + frontend + admin (additive migration `scholarship 0016`, migrate-first via Supabase MCP). When a student
+uploads their **IC**, Google Cloud Vision is auto-triggered server-side; the student sees an instant chip below the
+file row ("looks good" / "name slightly different" / "NRIC doesn't match" / "couldn't read"), and the admin sees the
+same signal as a row inside the verify-&-accept card. **Vision is a soft hint only — never a hard block.** The admin
+verify-&-accept (S11a) remains the real identity gate. Resolves the post-launch fast-follow flagged at S12 split.
+- **Backend (`apps/scholarship/vision.py` + `views`):** new `vision.py` with pure matchers (`nric_match`,
+  `name_match` returns match/partial/mismatch) + a graceful-degradation entry point (`run_vision_for_document`)
+  that fetches the image from Supabase Storage, calls Cloud Vision `document_text_detection`, extracts NRIC + name,
+  and writes 4 new `ApplicantDocument` fields (`vision_nric`, `vision_name`, `vision_run_at`, `vision_error`). The
+  IC `record-document` POST auto-triggers it; a new admin endpoint `POST .../documents/<id>/re-run-vision/` lets the
+  coordinator retry. **All Vision calls are mocked in tests** (8 pure-matcher tests + 3 IC auto-trigger tests + 4
+  admin re-run tests); **no paid calls** during build. The serializer also exposes server-computed
+  `vision_nric_verdict` / `vision_name_verdict` so the frontend doesn't reimplement the matchers (S5c-lesson).
+- **Migration `scholarship 0016`** — additive 4 columns; applied migrate-first via Supabase MCP (per the TD-058
+  workaround) before the push.
+- **Frontend (student):** the IC card helper now reads *"…we'll check it automatically to help you spot typos —
+  your photo isn't kept at Google."* A `VisionChip` renders below the IC file row in one of four variants (green
+  ✓ match · amber ⚠ name-soft · amber ⚠ NRIC-bad · neutral ⓘ unreadable), driven by the server verdicts.
+- **Frontend (admin):** a new "Vision OCR (soft signal)" row inside the verify-&-accept card — two coloured pills,
+  the raw extracted NRIC + name, a `Re-run Vision` link, and the declaration name shown for cross-check. Stitch was
+  skipped on the admin side (S5b precedent — internal admin UI doesn't go through Stitch).
+- **Consent text bump** — appended one sentence honestly disclosing automated OCR processing on uploaded documents
+  (still PDPA-aligned: data already collected; transient processing). Inline privacy hint in the IC card too.
+- **API key path deferred to post-deploy.** The Cloud Vision API isn't enabled yet — the new code degrades to
+  `vision_error="AI service not configured"` and the student sees the neutral "couldn't read" chip. **One real
+  end-to-end check is admin-triggered (billable) and waits for the user's explicit greenlight.**
+- Gates: backend **1162 pytest** (+21), `next build` **EXIT=0** (explicit exit-code check, TD-059 lesson), i18n
+  parity **1257** ×3. Tamil first-draft pending user refine (consistent with S4/S5a).
+
 ## [2.4.7] — TD-059 cleanup: drop dead `FundingNeed` amount columns (2026-05-28)
 
 Backend + frontend cleanup, **destructive migration** (`scholarship 0015`). The S3 funding reframe (v2.4.2) left

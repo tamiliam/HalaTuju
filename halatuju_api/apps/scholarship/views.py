@@ -184,6 +184,10 @@ class DocumentListCreateView(APIView):
         serializer = DocumentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         doc = ApplicantDocument.objects.create(application=app, **serializer.validated_data)
+        # S13: auto-run Vision OCR on IC uploads (soft signal — never blocks).
+        if doc.doc_type == 'ic':
+            from .vision import run_vision_for_document
+            run_vision_for_document(doc)
         return Response(ApplicantDocumentSerializer(doc).data, status=status.HTTP_201_CREATED)
 
 

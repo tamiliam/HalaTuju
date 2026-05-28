@@ -14,8 +14,10 @@ import {
   setMentoringCandidate,
   addReferee,
   deleteReferee,
+  reRunVision,
   type AdminScholarshipDetail,
   type AdminSponsorProfile,
+  type AdminApplicantDocument,
 } from '@/lib/admin-api'
 
 const EMPTY_REFEREE = { name: '', role: '', relationship: '', phone: '', email: '' }
@@ -124,6 +126,15 @@ export default function AdminScholarshipDetailPage() {
       await deleteReferee(id, refId, { token })
       await refreshApp()
     } catch { setError(t('admin.scholarship.refError')) } finally { setBusy('') }
+  }
+
+  const doReRunVision = async (docId: number) => {
+    if (!token) return
+    setBusy('vision'); setError('')
+    try {
+      await reRunVision(id, docId, { token })
+      await refreshApp()
+    } catch { setError(t('admin.scholarship.visionError')) } finally { setBusy('') }
   }
 
   if (error && !app) return <div className="text-red-600 mt-8">{error}</div>
@@ -267,6 +278,51 @@ export default function AdminScholarshipDetailPage() {
         ) : (
           <p className="text-sm text-gray-400">{t('admin.scholarship.notShortlisted')}</p>
         )}
+
+        {/* S13: Vision OCR (soft signal next to the manual checklist) */}
+        {(() => {
+          const ic = app.documents.find((d: AdminApplicantDocument) => d.doc_type === 'ic' && d.vision_run_at)
+          if (!ic) return null
+          const pill = (verdict: string) => {
+            const palette: Record<string, string> = {
+              match: 'bg-green-100 text-green-700',
+              partial: 'bg-amber-100 text-amber-700',
+              mismatch: 'bg-red-100 text-red-700',
+              unreadable: 'bg-gray-100 text-gray-600',
+            }
+            return palette[verdict] || 'bg-gray-100 text-gray-600'
+          }
+          return (
+            <div className="mt-2 border-t pt-3 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-gray-700">{t('admin.scholarship.visionTitle')}</span>
+                <button onClick={() => doReRunVision(ic.id)} disabled={!!busy}
+                  className="text-xs text-blue-600 hover:underline disabled:opacity-50">
+                  {busy === 'vision' ? t('admin.scholarship.visionRunning') : t('admin.scholarship.visionRerun')}
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className={`px-2 py-0.5 rounded-full ${pill(ic.vision_nric_verdict)}`}>
+                  NRIC {ic.vision_nric_verdict || '—'}
+                </span>
+                <span className={`px-2 py-0.5 rounded-full ${pill(ic.vision_name_verdict)}`}>
+                  Name {ic.vision_name_verdict || '—'}
+                </span>
+              </div>
+              {(ic.vision_nric || ic.vision_name) && (
+                <p className="text-xs text-gray-500 font-mono break-words">
+                  {t('admin.scholarship.visionExtracted')}: {ic.vision_nric || '—'} · {ic.vision_name || '—'}
+                </p>
+              )}
+              {ic.vision_error && <p className="text-xs text-amber-700">{ic.vision_error}</p>}
+              {app.declaration_name && ic.vision_name && (
+                <p className="text-xs text-gray-500">
+                  {t('admin.scholarship.visionDeclaration')}: <span className="font-medium">{app.declaration_name}</span>
+                </p>
+              )}
+            </div>
+          )
+        })()}
 
         <label className="mt-2 flex items-center gap-2 border-t pt-3 text-sm text-gray-700">
           <input type="checkbox" checked={app.mentoring_candidate} disabled={!!busy}

@@ -85,6 +85,40 @@ function UploadTrigger({
   )
 }
 
+// ── Vision OCR chip (S13 — soft signal under the IC upload) ──────────────
+
+function visionChipVariant(doc: ApplicantDocument): 'good' | 'name-soft' | 'nric-bad' | 'unreadable' | null {
+  if (!doc.vision_run_at) return null
+  const nv = doc.vision_nric_verdict
+  const mv = doc.vision_name_verdict
+  if (nv === 'unreadable' || mv === 'unreadable') return 'unreadable'
+  if (nv === 'mismatch') return 'nric-bad'
+  if (mv === 'mismatch') return 'name-soft'
+  if (nv === 'match') return 'good'   // mv is 'match' or 'partial' — both fine
+  return null
+}
+
+function VisionChip({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
+  const variant = visionChipVariant(doc)
+  if (!variant) return null
+  const palette: Record<string, string> = {
+    good: 'bg-green-50 text-green-800 ring-green-200',
+    'name-soft': 'bg-amber-50 text-amber-800 ring-amber-200',
+    'nric-bad': 'bg-amber-50 text-amber-800 ring-amber-200',
+    unreadable: 'bg-gray-50 text-gray-700 ring-gray-200',
+  }
+  const icon = variant === 'good' ? '✓' : variant === 'unreadable' ? 'ⓘ' : '⚠'
+  return (
+    <div className="mt-2">
+      <span className={`inline-flex items-start gap-1.5 rounded-full px-3 py-1.5 text-xs ring-1 ${palette[variant]}`}>
+        <span aria-hidden>{icon}</span>
+        <span>{t(`scholarship.docs.vision.${variant}`)}</span>
+      </span>
+      <p className="mt-1 text-xs text-gray-400">{t('scholarship.docs.vision.note')}</p>
+    </div>
+  )
+}
+
 // ── Single-type upload card ───────────────────────────────────────────────
 
 function SingleDocCard({
@@ -94,6 +128,7 @@ function SingleDocCard({
   onUpload,
   onDelete,
   t,
+  showVisionChip = false,
 }: {
   docType: string
   docs: ApplicantDocument[]
@@ -101,9 +136,11 @@ function SingleDocCard({
   onUpload: (docType: string, file: File) => void
   onDelete: (id: number) => void
   t: (key: string) => string
+  showVisionChip?: boolean
 }) {
   const busy = busyType === docType
   const existing = docs.filter((d) => d.doc_type === docType)
+  const visionDoc = showVisionChip ? existing.find((d) => d.vision_run_at) : null
 
   return (
     <div className="border rounded-lg p-3">
@@ -136,6 +173,7 @@ function SingleDocCard({
           ))}
         </ul>
       )}
+      {visionDoc && <VisionChip doc={visionDoc} t={t} />}
     </div>
   )
 }
@@ -307,6 +345,7 @@ export default function ScholarshipDocuments({ token }: { token: string | null }
               onUpload={handleUpload}
               onDelete={handleDelete}
               t={t}
+              showVisionChip={dt === 'ic'}
             />
           ))}
         </div>

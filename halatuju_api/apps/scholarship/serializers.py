@@ -161,17 +161,43 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
 
 class ApplicantDocumentSerializer(serializers.ModelSerializer):
     download_url = serializers.SerializerMethodField()
+    # S13: server-computed match verdicts (so client doesn't reimplement matchers).
+    vision_nric_verdict = serializers.SerializerMethodField()
+    vision_name_verdict = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantDocument
         fields = [
             'id', 'doc_type', 'original_filename', 'content_type', 'size',
             'verification_status', 'uploaded_at', 'download_url',
+            # S13: Vision OCR soft-signal fields (populated only for IC).
+            'vision_nric', 'vision_name', 'vision_run_at', 'vision_error',
+            'vision_nric_verdict', 'vision_name_verdict',
         ]
+        read_only_fields = ['vision_nric', 'vision_name', 'vision_run_at', 'vision_error']
 
     def get_download_url(self, obj):
         from .storage import create_signed_download_url
         return create_signed_download_url(obj.storage_path)
+
+    def get_vision_nric_verdict(self, obj):
+        """'match' / 'mismatch' / 'unreadable' — soft signal. Empty when Vision hasn't run."""
+        if obj.doc_type != 'ic' or obj.vision_run_at is None:
+            return ''
+        if obj.vision_error or not obj.vision_nric:
+            return 'unreadable'
+        from .vision import nric_match
+        return 'match' if nric_match(obj.vision_nric, getattr(obj.application.profile, 'nric', '') or '') else 'mismatch'
+
+    def get_vision_name_verdict(self, obj):
+        """'match' / 'partial' / 'mismatch' / 'unreadable' — soft signal. Empty when Vision hasn't run."""
+        if obj.doc_type != 'ic' or obj.vision_run_at is None:
+            return ''
+        if obj.vision_error or not obj.vision_name:
+            return 'unreadable'
+        from .vision import name_match
+        return name_match(obj.vision_name, getattr(obj.application.profile, 'name', '') or '')
+
 
 
 class SignUploadSerializer(serializers.Serializer):

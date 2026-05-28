@@ -7,7 +7,7 @@ from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, StudentProfile
 from apps.scholarship.models import (
-    Referee, ScholarshipApplication, ScholarshipCohort, SponsorProfile,
+    ApplicantDocument, Referee, ScholarshipApplication, ScholarshipCohort, SponsorProfile,
 )
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
@@ -235,3 +235,48 @@ class TestAdminScholarship(TestCase):
         self.assertEqual(
             self.client.post(self._referees_url(), {'name': 'X'}, format='json').status_code, 403,
         )
+
+    # ── S13: admin re-runs Vision OCR on an existing IC document ────────────
+    def _rerun_vision_url(self, doc_id):
+        return f'/api/v1/admin/scholarship/applications/{self.app.id}/documents/{doc_id}/re-run-vision/'
+
+    @patch('apps.scholarship.vision.run_vision_for_document')
+    def test_admin_rerun_vision_on_ic(self, mock_vision):
+        from django.utils import timezone as _tz
+
+        def update_doc(doc):
+            doc.vision_nric = '030101-14-1234'
+            doc.vision_name = 'PRIYA D/O KRISHNAN'
+            doc.vision_run_at = _tz.now()
+            doc.vision_error = ''
+            doc.save(update_fields=['vision_nric', 'vision_name', 'vision_run_at', 'vision_error'])
+            return {'nric': '030101-14-1234', 'name': 'PRIYA D/O KRISHNAN', 'error': None}
+        mock_vision.side_effect = update_doc
+        ic = ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='ic/abc')
+        self._auth(ADMIN)
+        r = self.client.post(self._rerun_vision_url(ic.id))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(mock_vision.called)
+        body = r.json()
+        self.assertEqual(body['vision_nric'], '030101-14-1234')
+        self.assertEqual(body['vision_name'], 'PRIYA D/O KRISHNAN')
+
+    def test_admin_rerun_vision_rejects_non_ic(self):
+        results = ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='r/abc')
+        self._auth(ADMIN)
+        r = self.client.post(self._rerun_vision_url(results.id))
+        self.assertEqual(r.status_code, 400)
+
+    def test_admin_rerun_vision_404_for_wrong_application(self):
+        other_cohort = ScholarshipCohort.objects.create(code='c3', name='B40-3', year=2028)
+        other_app = ScholarshipApplication.objects.create(cohort=other_cohort, profile=self.profile, status='shortlisted')
+        ic = ApplicantDocument.objects.create(application=other_app, doc_type='ic', storage_path='ic/zzz')
+        self._auth(ADMIN)
+        r = self.client.post(self._rerun_vision_url(ic.id))
+        self.assertEqual(r.status_code, 404)
+
+    def test_admin_rerun_vision_requires_admin(self):
+        ic = ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='ic/abc')
+        self._auth(STUDENT)
+        r = self.client.post(self._rerun_vision_url(ic.id))
+        self.assertEqual(r.status_code, 403)

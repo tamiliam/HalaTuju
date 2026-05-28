@@ -401,6 +401,13 @@ class ApplicantDocument(models.Model):
         max_length=20, choices=VERIFICATION_CHOICES, default='pending',
     )
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    # ── S13: Vision OCR (soft signal, never a hard block) ──────────────────
+    # Populated only for doc_type='ic'. The admin verify-&-accept stays the
+    # real identity gate; these fields are hints (and a UX nudge for typos).
+    vision_nric = models.CharField(max_length=20, blank=True, default='')
+    vision_name = models.CharField(max_length=200, blank=True, default='')
+    vision_run_at = models.DateTimeField(null=True, blank=True)
+    vision_error = models.CharField(max_length=200, blank=True, default='')
 
     class Meta:
         db_table = 'applicant_documents'

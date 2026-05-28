@@ -282,6 +282,8 @@ export interface AdminScholarshipDetail {
   verified_by: string
   verify_checklist: Record<string, boolean>
   profile_id: string | null
+  // S13: typed-name signature captured at submit (used as a comparison against Vision-read IC name)
+  declaration_name: string
   qualification: string
   spm_a_count: number | null
   stpm_pngk: number | null
@@ -300,7 +302,7 @@ export interface AdminScholarshipDetail {
   shortlist_reason: string
   submitted_at: string
   funding_need: { categories: string[]; funding_note: string; programme_months: number | null } | null
-  documents: Array<{ id: number; doc_type: string; original_filename: string; size: number; verification_status: string; download_url: string | null }>
+  documents: AdminApplicantDocument[]
   referees: AdminReferee[]
   consents: Array<{ id: number; consent_type: string; version: string; granted_by: string; guardian_name: string; is_active: boolean; granted_at: string }>
   sponsor_profile: AdminSponsorProfile | null
@@ -371,6 +373,30 @@ export async function verifyAcceptApplication(
 export async function setMentoringCandidate(id: number, value: boolean, options?: ApiOptions) {
   return adminMutate<AdminScholarshipDetail>(
     `/api/v1/admin/scholarship/applications/${id}/`, 'PATCH', { mentoring_candidate: value }, options
+  )
+}
+
+export interface AdminApplicantDocument {
+  id: number
+  doc_type: string
+  original_filename: string
+  size: number
+  verification_status: string
+  download_url: string | null
+  // S13: Vision OCR soft-signal fields (populated only for doc_type='ic')
+  vision_nric: string
+  vision_name: string
+  vision_run_at: string | null
+  vision_error: string
+  vision_nric_verdict: '' | 'match' | 'mismatch' | 'unreadable'
+  vision_name_verdict: '' | 'match' | 'partial' | 'mismatch' | 'unreadable'
+}
+
+/** Admin re-runs Vision OCR on an existing IC document (soft signal, never a gate). */
+export async function reRunVision(id: number, docId: number, options?: ApiOptions) {
+  return adminMutate<AdminApplicantDocument>(
+    `/api/v1/admin/scholarship/applications/${id}/documents/${docId}/re-run-vision/`,
+    'POST', {}, options
   )
 }
 

@@ -132,3 +132,71 @@ class TestDocumentApi(TestCase):
                 'size': 512,
             }, format='json')
             self.assertEqual(resp.status_code, 201, f'Expected 201 for doc_type={doc_type}, got {resp.status_code}')
+
+    # ── S13: Vision OCR auto-trigger on IC upload ───────────────────────────
+    @staticmethod
+    def _mock_vision_call(doc):
+        """Mimic vision.run_vision_for_document side effect (writes to the row)."""
+        from django.utils import timezone as _tz
+        doc.vision_nric = '030101-14-1234'
+        doc.vision_name = 'PRIYA A/P KRISHNAN'
+        doc.vision_run_at = _tz.now()
+        doc.vision_error = ''
+        doc.save(update_fields=['vision_nric', 'vision_name', 'vision_run_at', 'vision_error'])
+        return {'nric': '030101-14-1234', 'name': 'PRIYA A/P KRISHNAN', 'error': None}
+
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://signed.example/dl')
+    @patch('apps.scholarship.vision.run_vision_for_document')
+    def test_ic_upload_auto_runs_vision(self, mock_vision, _dl):
+        """Recording an IC document triggers run_vision_for_document; response carries the fields."""
+        mock_vision.side_effect = self._mock_vision_call
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'ic',
+            'storage_path': f'{self.app_a.id}/ic/abc',
+            'original_filename': 'mykad.jpg', 'size': 50_000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)
+        self.assertTrue(mock_vision.called)
+        body = resp.json()
+        self.assertEqual(body['vision_nric'], '030101-14-1234')
+        self.assertEqual(body['vision_name'], 'PRIYA A/P KRISHNAN')
+        self.assertEqual(body['vision_error'], '')
+        self.assertIsNotNone(body['vision_run_at'])
+
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://signed.example/dl')
+    @patch('apps.scholarship.vision.run_vision_for_document')
+    def test_non_ic_upload_does_not_run_vision(self, mock_vision, _dl):
+        """Vision is gated on doc_type='ic' — other types must not trigger a call."""
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'results_slip',
+            'storage_path': f'{self.app_a.id}/results_slip/abc',
+            'original_filename': 'results.pdf', 'size': 1000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)
+        self.assertFalse(mock_vision.called)
+        self.assertEqual(resp.json()['vision_nric'], '')
+
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://signed.example/dl')
+    @patch('apps.scholarship.vision.run_vision_for_document')
+    def test_ic_upload_survives_vision_failure(self, mock_vision, _dl):
+        """If Vision errors, the upload still succeeds; the error is recorded on the row."""
+        from django.utils import timezone as _tz
+
+        def boom(doc):
+            doc.vision_error = 'AI module not installed'
+            doc.vision_run_at = _tz.now()
+            doc.save(update_fields=['vision_error', 'vision_run_at'])
+            return {'nric': '', 'name': '', 'error': 'AI module not installed'}
+        mock_vision.side_effect = boom
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'ic',
+            'storage_path': f'{self.app_a.id}/ic/zzz',
+            'original_filename': 'mykad.jpg', 'size': 50_000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)   # upload not blocked
+        body = resp.json()
+        self.assertEqual(body['vision_nric'], '')
+        self.assertEqual(body['vision_error'], 'AI module not installed')

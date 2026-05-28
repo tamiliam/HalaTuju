@@ -18,6 +18,7 @@ from .views_admin import (
     AdminProfileEditView,
     AdminPublishProfileView,
     AdminRefereeDetailView,
+    AdminRunVisionView,
     AdminVerifyAcceptView,
 )
 
@@ -36,6 +37,7 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/verify-accept/', AdminVerifyAcceptView.as_view()),
     path('admin/scholarship/applications/<int:pk>/referees/', AdminApplicationRefereeView.as_view()),
     path('admin/scholarship/applications/<int:pk>/referees/<int:ref_id>/', AdminRefereeDetailView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/documents/<int:doc_id>/re-run-vision/', AdminRunVisionView.as_view()),
     path('admin/scholarship/applications/<int:pk>/generate-profile/', AdminGenerateProfileView.as_view()),
     path('admin/scholarship/applications/<int:pk>/profile/', AdminProfileEditView.as_view()),
     path('admin/scholarship/applications/<int:pk>/publish/', AdminPublishProfileView.as_view()),

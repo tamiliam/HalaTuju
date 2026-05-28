@@ -1006,6 +1006,14 @@ export interface ApplicantDocument {
   verification_status: string
   uploaded_at: string
   download_url: string | null
+  // S13: Vision OCR soft-signal fields (populated only for doc_type='ic')
+  vision_nric: string
+  vision_name: string
+  vision_run_at: string | null
+  vision_error: string
+  // Server-computed match verdicts (empty when Vision hasn't run)
+  vision_nric_verdict: '' | 'match' | 'mismatch' | 'unreadable'
+  vision_name_verdict: '' | 'match' | 'partial' | 'mismatch' | 'unreadable'
 }
 
 export interface Referee {
