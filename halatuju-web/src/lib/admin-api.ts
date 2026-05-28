@@ -299,7 +299,7 @@ export interface AdminScholarshipDetail {
   bucket: string
   shortlist_reason: string
   submitted_at: string
-  funding_need: ({ total: number } & Record<string, number | string>) | null
+  funding_need: { categories: string[]; funding_note: string; programme_months: number | null } | null
   documents: Array<{ id: number; doc_type: string; original_filename: string; size: number; verification_status: string; download_url: string | null }>
   referees: AdminReferee[]
   consents: Array<{ id: number; consent_type: string; version: string; granted_by: string; guardian_name: string; is_active: boolean; granted_at: string }>
