@@ -556,7 +556,7 @@
         "school": "The school where you sat for SPM or STPM.",
         "ic": "Used to confirm your identity. You can edit it until it's verified.",
         "org": "The organisation or coordinator who told you about this programme.",
-        "state": "The state where you normally live.",
+        "state": "The state where you normally live. We save this to your profile when you submit, so you only need to update it in one place.",
         "phone": "A number we can reach you on. Format: 01X-XXX XXXX.",
         "income": "Add up the monthly income of everyone you counted above — salaries, business, pensions, and government aid (not just your parents'). An estimate is fine.",
         "household": "Count everyone who normally lives in your home and shares income or expenses — your parents/guardians, you, your brothers and sisters, and grandparents or relatives living with you. Include a working sibling if they live at home and contribute; don't count family who live elsewhere. Next, you'll total this group's monthly income.",

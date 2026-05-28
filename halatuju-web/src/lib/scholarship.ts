@@ -393,6 +393,9 @@ export function buildApplicationPayload(form: ApplyFormState): ApplicationPayloa
   // Academic fields are intentionally absent — the backend reads them from the
   // profile. The About Me + My Family fields are synced to the profile
   // server-side. NRIC is committed separately via the validated claim path.
+  // Conflict policy for shared profile fields (preferred_state, contact_phone,
+  // referral_source, name, school): last write wins. Apply submit overwrites
+  // any value the student set earlier via /profile or /onboarding/profile.
   const guardians = form.parentName.trim() || form.parentPhone.trim()
     ? [{ name: form.parentName.trim(), phone: form.parentPhone.trim() }]
     : []
@@ -546,6 +549,22 @@ export function popApplyStash(storage?: StorageLike): ApplyFormState | null {
   const raw = s.getItem(APPLY_STASH_KEY)
   if (!raw) return null
   s.removeItem(APPLY_STASH_KEY)
+  try {
+    return JSON.parse(raw) as ApplyFormState
+  } catch {
+    return null
+  }
+}
+
+/** Non-destructive read of the stash. Onboarding pages visited during the
+ *  edit-results detour use this to prefer the in-progress apply edit over
+ *  the older profile value — so shared fields (homeState) don't appear to
+ *  re-prompt the student. The apply page still pops the stash on return. */
+export function peekApplyStash(storage?: StorageLike): ApplyFormState | null {
+  const s = storage ?? safeSession()
+  if (!s) return null
+  const raw = s.getItem(APPLY_STASH_KEY)
+  if (!raw) return null
   try {
     return JSON.parse(raw) as ApplyFormState
   } catch {

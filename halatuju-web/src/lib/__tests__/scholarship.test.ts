@@ -32,6 +32,7 @@ import {
   MALAYSIAN_STATES,
   stashApplyForm,
   popApplyStash,
+  peekApplyStash,
   hasApplyReturn,
   clearApplyReturn,
   APPLY_STASH_KEY,
@@ -602,6 +603,26 @@ describe('apply stash / return marker (My Results onboarding round-trip)', () =>
     expect(popApplyStash(s)).toBeNull()
     s.setItem(APPLY_STASH_KEY, '{not json')
     expect(popApplyStash(s)).toBeNull()
+  })
+
+  it('peeks the stash without consuming it (onboarding detour can read it then apply page still pops it)', () => {
+    const s = fakeStorage()
+    const form = baseForm({ homeState: 'Johor' })
+    stashApplyForm(form, s)
+    // peek twice — value stays
+    expect(peekApplyStash(s)?.homeState).toBe('Johor')
+    expect(peekApplyStash(s)?.homeState).toBe('Johor')
+    // pop still works after peeks
+    expect(popApplyStash(s)?.homeState).toBe('Johor')
+    expect(peekApplyStash(s)).toBeNull()
+  })
+
+  it('peekApplyStash returns null on missing / unparseable / no-storage', () => {
+    const s = fakeStorage()
+    expect(peekApplyStash(s)).toBeNull()
+    s.setItem(APPLY_STASH_KEY, '{not json')
+    expect(peekApplyStash(s)).toBeNull()
+    expect(peekApplyStash()).toBeNull()
   })
 
   it('clears the return marker', () => {

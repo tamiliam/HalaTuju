@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth-context'
 import { getProfile, syncProfile, type SyncProfileData } from '@/lib/api'
 import ProgressStepper from '@/components/ProgressStepper'
 import { KEY_PROFILE, KEY_GRADES, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
-import { hasApplyReturn, clearApplyReturn } from '@/lib/scholarship'
+import { hasApplyReturn, clearApplyReturn, peekApplyStash } from '@/lib/scholarship'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -51,6 +51,13 @@ export default function ProfileInputPage() {
         if (p.nationality) setNationality(p.nationality)
         if (p.colorblind !== undefined) setColorblind(!!p.colorblind)
         if (p.disability !== undefined) setDisability(!!p.disability)
+
+        // When the student got here from /apply's "edit results", the apply form's
+        // in-progress homeState is more recent than the profile's preferred_state
+        // (apply only commits on submit). Honour it so the same field doesn't
+        // appear to re-prompt with a stale value the student already changed.
+        const stash = peekApplyStash()
+        if (stash?.homeState) setState(stash.homeState)
       }).catch(() => {})
     }
   }, [token, isAnonymous])
