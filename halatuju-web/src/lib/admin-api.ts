@@ -336,9 +336,11 @@ export async function getScholarshipApplication(id: number, options?: ApiOptions
   return adminFetch<AdminScholarshipDetail>(`/api/v1/admin/scholarship/applications/${id}/`, options)
 }
 
-export async function generateSponsorProfile(id: number, options?: ApiOptions) {
+/** Generate the AI draft. `language` ('en'/'ms') sets the output language; defaults to the applicant's locale. */
+export async function generateSponsorProfile(id: number, language?: string, options?: ApiOptions) {
   return adminMutate<AdminSponsorProfile>(
-    `/api/v1/admin/scholarship/applications/${id}/generate-profile/`, 'POST', {}, options
+    `/api/v1/admin/scholarship/applications/${id}/generate-profile/`, 'POST',
+    language ? { language } : {}, options
   )
 }
 

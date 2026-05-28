@@ -168,7 +168,8 @@ class AdminGenerateProfileView(_AdminBase):
         app = self._get_application(pk)
         if app is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        result = generate_sponsor_profile(app)
+        # Optional output language ('en'/'ms'); defaults to the applicant's locale.
+        result = generate_sponsor_profile(app, language=request.data.get('language'))
         if 'error' in result:
             return Response({'error': result['error']}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         sp, _ = SponsorProfile.objects.get_or_create(application=app)

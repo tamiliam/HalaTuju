@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.6] — AI sponsor-profile generator rebuilt + Tamil/BM-aware (Step-4 redesign, S5c) (2026-05-28)
+
+Backend + admin frontend, **no migration**. **Resolves TD-060.** `profile_engine.py` was building its Gemini prompt from
+fields the profile-canonical refactor removed (`qualification`/`spm_a_count`/`household_income`/`stpm_pngk`) plus
+legacy/dead ones — it would have 500'd if an admin clicked "Generate". Rebuilt against the current data model **and**
+made language-aware.
+- **`_build_prompt` rewritten** to read profile-canonical academic/financial data (`profile.exam_type`,
+  `count_spm_a_grades(profile.grades)`, `profile.stpm_cgpa`, `household_income/size`, `receives_str/jkm`), the "Your
+  story" narrative (`aspirations`, `plans`, `first_in_family`, `parents_occupation`, `siblings_studying`,
+  `family_context`, `daily_life`), the pathway (`field_of_study` + `pathways_considered`), and the simplified funding
+  (`categories` + `funding_note` + `programme_months` — **not** the dead `total`/TD-059) + referees.
+- **Language-aware:** the prompt tells the model the student's own words may be in **Malay, English, or Tamil**
+  (understand all three) and to write the profile in a **target language**. `generate_sponsor_profile(application,
+  language=None)` defaults output to the applicant's locale (en→English, ms→Malay); the admin can override via a small
+  **EN / BM** selector on `/admin/scholarship/[id]`. (Tamil *output* deferred to Phase 2 — sponsors read EN/BM — but
+  it's now a one-line prompt-parameter change.)
+- **Tests:** new `test_profile_engine.py` (8) exercises the pure prompt builder — current fields present, multilingual
+  + target-language instructions present, no dead `total`, language resolution, and the **TD-060 regression** (no
+  `AttributeError` on a current-model application). Gemini stays mocked; **no live/paid calls** were made.
+- Build clean; backend 1143 pytest; i18n parity 1246. **Note:** a true end-to-end generation check is an
+  admin-triggered live (billable) Gemini call — run it when ready; the programme is still dormant.
+
 ## [2.4.5] — Admin records the referee at verify-&-accept (Step-4 redesign, S5b) (2026-05-28)
 
 Backend + admin frontend, **no migration** (the `Referee` model already exists). The Step-4 redesign moved the referee

@@ -1290,7 +1290,8 @@
       "refAdd": "Tambah perujuk",
       "refAdding": "Menambah…",
       "refRemove": "Buang",
-      "refError": "Tidak dapat menyimpan perujuk. Sila cuba lagi."
+      "refError": "Tidak dapat menyimpan perujuk. Sila cuba lagi.",
+      "genLang": "Bahasa output"
     },
     "students": "Pelajar",
     "invite": "Jemputan",

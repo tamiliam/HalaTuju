@@ -43,6 +43,7 @@ export default function AdminScholarshipDetailPage() {
   const [error, setError] = useState('')
   const [checklist, setChecklist] = useState<Record<string, boolean>>({})
   const [refForm, setRefForm] = useState({ ...EMPTY_REFEREE })
+  const [genLang, setGenLang] = useState('en')
 
   useEffect(() => {
     if (!token || !id) return
@@ -60,7 +61,7 @@ export default function AdminScholarshipDetailPage() {
     if (!token) return
     setBusy('gen'); setError('')
     try {
-      const p = await generateSponsorProfile(id, { token })
+      const p = await generateSponsorProfile(id, genLang, { token })
       setProfile(p); setMarkdown(p.current_markdown || p.draft_markdown)
     } catch { setError(t('admin.scholarship.genError')) } finally { setBusy('') }
   }
@@ -267,9 +268,17 @@ export default function AdminScholarshipDetailPage() {
 
       {/* AI sponsor profile */}
       <div className="bg-white rounded-xl border p-4 space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h2 className="font-semibold">{t('admin.scholarship.profileTitle')}</h2>
-          {profile && <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">{profile.status}</span>}
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-500">{t('admin.scholarship.genLang')}</label>
+            <select value={genLang} onChange={(e) => setGenLang(e.target.value)} disabled={!!busy}
+              className="border rounded-lg px-2 py-1 text-sm">
+              <option value="en">English</option>
+              <option value="ms">Bahasa Melayu</option>
+            </select>
+            {profile && <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">{profile.status}</span>}
+          </div>
         </div>
 
         {!profile ? (
