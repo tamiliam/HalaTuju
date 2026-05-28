@@ -24,7 +24,7 @@ class TestScholarshipModels(TestCase):
         self.assertEqual(self.cohort.min_spm_bplus_count, 5)
         self.assertEqual(self.cohort.min_stpm_pngk, 2.9)
         self.assertEqual(self.cohort.per_capita_ceiling, 1584)
-        self.assertEqual(self.cohort.success_delay_hours, 2)
+        self.assertEqual(self.cohort.success_delay_hours, 48)
         self.assertEqual(self.cohort.decline_delay_hours, 48)
         self.assertTrue(self.cohort.is_open)
 

@@ -64,7 +64,7 @@ class ScholarshipCohort(models.Model):
         help_text="DEPRECATED (pre-S8); the scheduler now uses success/decline_delay_hours",
     )
     success_delay_hours = models.IntegerField(
-        default=2,
+        default=48,
         help_text="Hours after submit before the shortlist (invitation) email + follow-up unlock (S8 delayed reveal)",
     )
     decline_delay_hours = models.IntegerField(

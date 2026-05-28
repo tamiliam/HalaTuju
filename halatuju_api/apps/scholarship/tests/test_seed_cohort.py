@@ -21,7 +21,7 @@ class TestSeedB40Cohort(TestCase):
         self.assertEqual(c.min_spm_bplus_count, 5)
         self.assertEqual(c.min_stpm_pngk, 2.9)
         self.assertEqual(c.per_capita_ceiling, 1584)
-        self.assertEqual(c.success_delay_hours, 2)
+        self.assertEqual(c.success_delay_hours, 48)
         self.assertEqual(c.decline_delay_hours, 48)
         self.assertIn('Created', out.getvalue())
 
