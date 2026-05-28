@@ -111,8 +111,13 @@ visual sign-off.
     (hardcoded false since S4) and, when complete, shows a green "You're all set!" banner + "What happens next" panel
     (3-step timeline + the comms email). Progress "X of 5" + per-step ticks + desktop rail were already delivered in S1.
     i18n 1235 (Tamil first-draft). Backend 1128 pytest; build clean. Stitch-prototyped + signed off first.
-  - **S5b — queued (admin + AI):** record referee at the admin verify-&-accept stage; make the AI sponsor-profile
-    generator **Tamil/BM-aware** (handle Tamil/BM input, produce profile in target language — currently BM/EN only).
-    Then **TD-059** — drop the dead `FundingNeed` amount columns (one migration + serializer/lib cleanup).
+  - **S5b ✅ DONE — shipped 2026-05-28 (v2.4.5; web `…00218-xgw`, api `…00175-cdj`; NO migration).** Admin records the
+    referee at verify-&-accept: PartnerAdmin endpoints `GET/POST …/applications/<pk>/referees/` + `DELETE
+    …/referees/<ref_id>/`; interactive Referee card on `/admin/scholarship/[id]`; `addReferee`/`deleteReferee` helpers;
+    i18n 1245; backend 1135. Logged **TD-060** (AI generator references removed fields — would error if invoked).
+  - **S5c — queued (AI):** rebuild `profile_engine` to the current data model (profile-canonical reads + new
+    story/funding fields, drop the dead `fn.total`/`fears`/`justification`/`intended_pathway` usages) **and** make it
+    **Tamil/BM-aware** (handle Tamil/BM narrative input, produce profile in target language — currently BM/EN only). [TD-060]
+  - **Then TD-059** — drop the dead `FundingNeed` amount columns (one migration + serializer/lib cleanup).
 
 Each sprint: tested, i18n-parity'd, migrate-first, deployed, live-verified.

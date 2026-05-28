@@ -347,9 +347,17 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   hardcoded false since S4) and, when complete, shows a green **"You're all set!"** banner + a **"What happens next"**
   panel (3-step timeline: review → we may call you in your preferred language → decision by email + the exact comms
   email). i18n 1235 (Tamil first-draft). Progress "X of 5" + per-step ticks + desktop rail were already in S1.
-  **▶ NEXT = S5b (queued):** record referee at the admin verify-&-accept stage; make the **Tamil-aware AI sponsor-profile**
-  generator handle Tamil/BM input + output (currently BM/EN only). Then **TD-059** — drop the dead `FundingNeed` amount
-  columns. Trims locked: photo optional, funding capped/no-total, most docs optional.
+  **S5b ✅ (v2.4.5, DEPLOYED 2026-05-28; web `…00218-xgw`, api `…00175-cdj`; NO migration):** admin records the referee
+  at verify-&-accept — new PartnerAdmin endpoints `GET/POST …/applications/<pk>/referees/` + `DELETE …/referees/<ref_id>/`
+  (reuse `RefereeSerializer`); the `/admin/scholarship/[id]` Referee card is now interactive (list + remove + add form);
+  `addReferee`/`deleteReferee` admin-api helpers; i18n 1245. (The `Referee` model + student-self endpoint already existed;
+  the redesign had removed referee from the student UI, leaving no admin path until now.) **Scoping finding → TD-060:** the
+  AI sponsor-profile generator (`profile_engine.py`) references fields the profile-canonical refactor removed
+  (`qualification`/`spm_a_count`/`household_income`/`stpm_pngk`) + legacy/dead ones — it would **error if invoked** (masked
+  only because the programme is dormant). **▶ NEXT = S5c:** rebuild `profile_engine` to the current data model
+  (profile-canonical reads + new story/funding fields) **and** make it **Tamil/BM-aware** (handle Tamil/BM narrative input,
+  output in the target language; currently BM/EN). Then **TD-059** — drop the dead `FundingNeed` amount columns. Trims
+  locked: photo optional, funding capped/no-total, most docs optional.
 - **▶ Queued: S13 (post-launch): Vision OCR** — MyKad upload → instant NRIC match feedback, surfaced to admin (soft,
   never a hard block; would also upgrade the 2.3.0 declaration signature from a self-consistency nudge to a real
   name check). New Google Cloud Vision API key + **cost sign-off required** before any paid calls. Frontend
