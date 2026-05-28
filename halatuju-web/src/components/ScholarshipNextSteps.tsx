@@ -322,18 +322,8 @@ export default function ScholarshipNextSteps({
                       {t('scholarship.nextSteps.funding.cat_tuition_helper')}
                     </p>
                   )}
-                  {/* "Something else" text input — revealed when ticked */}
-                  {cat === 'other' && checked && (
-                    <div className="ml-7 mt-1">
-                      <input
-                        type="text"
-                        className="input text-sm"
-                        placeholder={t('scholarship.nextSteps.funding.cat_other_desc')}
-                        value={form.otherDesc}
-                        onChange={(e) => update('otherDesc', e.target.value)}
-                      />
-                    </div>
-                  )}
+                  {/* "Something else" — the open free-text box below the categories
+                      (form.fundingNote) is where the student elaborates. */}
                 </div>
               )
             })}
