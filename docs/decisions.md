@@ -905,3 +905,32 @@ briefly see code-orphaned columns. Negligible at our scale.
 **Revisit if:** the deploy infrastructure gains true blue/green (then both orderings become trivially safe), or if a
 migration is both additive **and** destructive (model rename / column type change) — at that point think in atomic
 pairs: add-new-col → backfill → switch code → drop-old-col, each step its own deploy.
+
+## Ship-with-API-disabled-then-flip pattern for billable external APIs — S13, 2026-05-28
+
+**Decision:** For features behind paid external APIs (Cloud Vision, Gemini, etc.) on this cost-conscious project, the
+sequence is: **(1)** build the code with the SDK lazily imported and a graceful-degradation path ("AI service not
+configured" / "AI module not installed" → soft fallback rendered in the UI); **(2)** apply any additive migration via
+Supabase MCP migrate-first; **(3)** ship the code with the API still **disabled**, so production exercises the
+fallback for free; **(4)** **as a separate explicit step after user cost sign-off**, enable the API + grant the runtime
+SA the relevant role + run one cheap public-sample smoke (a Google-provided sample image) to verify project-level
+provisioning; **(5)** ask the user to do one real end-to-end test through the deployed UI. Used for S13 (Cloud Vision
+for MyKad OCR).
+
+**Alternatives considered:** (a) enable API up-front and ship code together — couples cost sign-off to a code-ready
+deadline; (b) deploy code + API together but behind a feature flag — adds plumbing for a single-purpose case; (c) keep
+the code behind a CLI tool only — defeats the UX benefit.
+
+**Rationale:** The user's project has an RM10/month budget alert and the rule "paid API calls or credits need
+approval." Decoupling code-shipping from API-enabling (a) lets the code/tests/migration land safely and verifiably,
+(b) exercises the fallback path in production for free, surfacing teething early, (c) makes the cost gate a single,
+explicit, easy-to-veto step, and (d) means the public-sample smoke separates "is the API alive at all" from "does my
+integration work" — much cheaper to diagnose. Production stays cost-neutral until the explicit flip.
+
+**Trade-offs:** A short window where the feature is "live but inert" — the UI shows the neutral fallback chip until
+the API flip. Acceptable when the fallback is honestly worded (S13: "we couldn't read the photo automatically — the
+team will check it manually"). If the fallback is *not* a graceful UX state (e.g. a 500 instead of a soft signal),
+this pattern doesn't apply and you must enable concurrently.
+
+**Revisit if:** Cloud Run gains true blue/green deploys (then enable + flip atomically), or if the API is free / no
+cost gate exists (then enable up-front), or if the feature has no acceptable graceful-degradation state.

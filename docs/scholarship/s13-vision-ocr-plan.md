@@ -1,6 +1,10 @@
 # S13 — Vision OCR for MyKad (post-launch, soft assist)
 
-**Status:** SCOPED, not started. Awaits your cost sign-off + design confirmations below.
+**Status:** ✅ **DONE — shipped 2026-05-28 (v2.5.0; web `…00221-qzp`, api `…00182-q84`).** Migration `0016` applied migrate-first via Supabase MCP; Cloud Vision API enabled on `gen-lang-client-0871147736`; runtime SA had `roles/editor`. End-to-end verified with a real MyKad upload — 3 billable Vision calls total all-sprint (free tier). Retrospective: [retrospective-s13-vision-ocr.md](../retrospective-s13-vision-ocr.md). Tiny deferred polish: `_extract_name` should blocklist MyKad header phrases — verdict already correct, only the displayed raw name is misattributed on back-only uploads.
+
+---
+
+**Original plan below** (preserved for context).
 **Sized:** one sprint, ~10–12 files, additive migration (4 columns on `ApplicantDocument`).
 **Risk posture:** soft signal only — **never a hard block**. The admin verify-&-accept stays the real identity gate (S11a, lock the NRIC). Vision exists to **reduce friction**, not to replace human judgement.
 
