@@ -58,6 +58,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     household_size = serializers.IntegerField(source='profile.household_size', read_only=True)
     receives_str = serializers.BooleanField(source='profile.receives_str', read_only=True)
     receives_jkm = serializers.BooleanField(source='profile.receives_jkm', read_only=True)
+    # Profile-stored address (S14) — surfaced so the admin Vision card can show
+    # it alongside `vision_address` (the MyKad-read address) for eyeball compare.
+    address = serializers.CharField(source='profile.address', read_only=True, allow_blank=True)
     spm_a_count = serializers.SerializerMethodField()
     funding_need = serializers.SerializerMethodField()
     sponsor_profile = serializers.SerializerMethodField()
@@ -72,6 +75,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'spm_a_count', 'stpm_pngk', 'household_income', 'household_size',
             'receives_str', 'receives_jkm', 'intended_pathway', 'intends_tertiary_2026',
             'aspirations', 'plans', 'fears', 'justification',
+            'address',
             'status', 'bucket', 'shortlist_reason', 'submitted_at',
             # S11a verify-&-accept + mentoring
             'mentoring_candidate', 'verified_at', 'verified_by', 'verify_checklist',

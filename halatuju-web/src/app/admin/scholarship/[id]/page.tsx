@@ -314,6 +314,21 @@ export default function AdminScholarshipDetailPage() {
                   {t('admin.scholarship.visionExtracted')}: {ic.vision_nric || '—'} · {ic.vision_name || '—'}
                 </p>
               )}
+              {/* Post-S14: surface MyKad address (no matcher — interviewer eyeballs it). */}
+              {ic.vision_address && (
+                <div className="mt-1 rounded-md border border-gray-200 bg-gray-50 p-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    {t('admin.scholarship.visionAddressTitle')}
+                  </p>
+                  <p className="text-xs text-gray-700 mt-0.5 break-words">{ic.vision_address}</p>
+                  {app.address && (
+                    <p className="text-[11px] text-gray-500 mt-1">
+                      {t('admin.scholarship.visionAddressVsProfile')}:{' '}
+                      <span className="text-gray-700">{app.address}</span>
+                    </p>
+                  )}
+                </div>
+              )}
               {ic.vision_error && <p className="text-xs text-amber-700">{ic.vision_error}</p>}
               {app.declaration_name && ic.vision_name && (
                 <p className="text-xs text-gray-500">

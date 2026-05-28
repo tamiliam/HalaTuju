@@ -95,18 +95,83 @@ def _extract_name(text: str, nric_match_str: str = '') -> str:
     return best
 
 
+_MY_POSTCODE = re.compile(r'\b\d{5}\b')
+
+# Words that prefix any MyKad address line — drop them so the displayed value
+# is just the address itself. Case-insensitive, anchored at the start of a line.
+_ADDRESS_PREFIX_NOISE = re.compile(
+    r'^(alamat|address)\s*[:\-]?\s*',
+    flags=re.IGNORECASE,
+)
+
+
+def _extract_address(text: str) -> str:
+    """
+    Best-effort MyKad address extraction. The MyKad front shows the holder's
+    registered home address as 2-3 lines, ending in `<5-digit postcode> <state>`.
+    Strategy: find the line containing a 5-digit Malaysian postcode, then walk
+    UP to gather the 1-2 preceding lines that look like address (no NRIC, no
+    name, no labels). Returns ``''`` when no postcode-anchored block is found.
+
+    Soft signal only — admin can spot e.g. an outdated registered address that
+    differs from what the student typed in the Story tab. No verdict computed.
+    """
+    if not text:
+        return ''
+    lines = [ln.strip() for ln in text.splitlines()]
+    # Find the postcode line.
+    postcode_idx = -1
+    for i, ln in enumerate(lines):
+        if not ln:
+            continue
+        m = _MY_POSTCODE.search(ln)
+        if m:
+            postcode_idx = i
+            break
+    if postcode_idx < 0:
+        return ''
+    # Walk up at most 3 lines (the address block is typically 2-3 lines tall).
+    block: list[str] = []
+    for j in range(max(0, postcode_idx - 3), postcode_idx + 1):
+        ln = lines[j]
+        if not ln:
+            continue
+        # Skip the NRIC line + lines that are ALL-CAPS English letters (likely
+        # the name line — same heuristic _extract_name uses).
+        if _NRIC_REGEX.search(ln):
+            continue
+        letters_only = ''.join(ch for ch in ln if ch.isalpha())
+        if letters_only and letters_only.upper() == letters_only and not any(ch.isdigit() for ch in ln):
+            # All-caps no-digits line → almost certainly the name, drop it.
+            continue
+        # Strip a leading "Alamat" / "Address" label if Vision read one.
+        ln = _ADDRESS_PREFIX_NOISE.sub('', ln).strip()
+        if ln:
+            block.append(ln)
+    # Deduplicate while preserving order (Vision occasionally repeats a line).
+    seen: set = set()
+    deduped: list[str] = []
+    for ln in block:
+        key = ln.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(ln)
+    return ', '.join(deduped)
+
+
 def extract_mykad(image_bytes: bytes) -> dict:
     """
     Call Google Cloud Vision DOCUMENT_TEXT_DETECTION on the given image bytes
-    and return ``{'nric': str, 'name': str, 'error': None}`` on success or
-    ``{'nric': '', 'name': '', 'error': str}`` otherwise. Never raises.
+    and return ``{'nric': str, 'name': str, 'address': str, 'error': None}`` on
+    success or the same shape with an ``error`` string otherwise. Never raises.
     """
     if not image_bytes:
-        return {'nric': '', 'name': '', 'error': 'empty image'}
+        return {'nric': '', 'name': '', 'address': '', 'error': 'empty image'}
     try:
         from google.cloud import vision  # type: ignore
     except ImportError:
-        return {'nric': '', 'name': '', 'error': 'AI module not installed'}
+        return {'nric': '', 'name': '', 'address': '', 'error': 'AI module not installed'}
 
     api_key = getattr(settings, 'GOOGLE_CLOUD_VISION_API_KEY', '') or ''
     try:
@@ -118,14 +183,19 @@ def extract_mykad(image_bytes: bytes) -> dict:
         image = vision.Image(content=image_bytes)
         resp = client.document_text_detection(image=image)
         if resp.error and resp.error.message:
-            return {'nric': '', 'name': '', 'error': resp.error.message[:200]}
+            return {'nric': '', 'name': '', 'address': '', 'error': resp.error.message[:200]}
         text = resp.full_text_annotation.text if resp.full_text_annotation else ''
     except Exception as e:  # noqa: BLE001 — graceful: never propagate to a 500
         logger.warning('Vision OCR failed: %s', e)
-        return {'nric': '', 'name': '', 'error': str(e)[:200]}
+        return {'nric': '', 'name': '', 'address': '', 'error': str(e)[:200]}
 
     nric = _extract_nric(text)
-    return {'nric': nric, 'name': _extract_name(text, nric), 'error': None}
+    return {
+        'nric': nric,
+        'name': _extract_name(text, nric),
+        'address': _extract_address(text),
+        'error': None,
+    }
 
 
 def _fetch_image_bytes(storage_path: str) -> Optional[bytes]:
@@ -153,12 +223,13 @@ def run_vision_for_document(doc) -> dict:
     """
     image = _fetch_image_bytes(doc.storage_path)
     if image is None:
-        result = {'nric': '', 'name': '', 'error': 'could not fetch image'}
+        result = {'nric': '', 'name': '', 'address': '', 'error': 'could not fetch image'}
     else:
         result = extract_mykad(image)
     doc.vision_nric = result['nric'] or ''
     doc.vision_name = result['name'] or ''
+    doc.vision_address = result.get('address', '') or ''
     doc.vision_error = result['error'] or ''
     doc.vision_run_at = timezone.now()
-    doc.save(update_fields=['vision_nric', 'vision_name', 'vision_error', 'vision_run_at'])
+    doc.save(update_fields=['vision_nric', 'vision_name', 'vision_address', 'vision_error', 'vision_run_at'])
     return result

@@ -185,10 +185,15 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'id', 'doc_type', 'original_filename', 'content_type', 'size',
             'verification_status', 'uploaded_at', 'download_url',
             # S13: Vision OCR soft-signal fields (populated only for IC).
-            'vision_nric', 'vision_name', 'vision_run_at', 'vision_error',
+            # Post-S14: vision_address surfaced for admin cross-check, no matcher.
+            'vision_nric', 'vision_name', 'vision_address',
+            'vision_run_at', 'vision_error',
             'vision_nric_verdict', 'vision_name_verdict',
         ]
-        read_only_fields = ['vision_nric', 'vision_name', 'vision_run_at', 'vision_error']
+        read_only_fields = [
+            'vision_nric', 'vision_name', 'vision_address',
+            'vision_run_at', 'vision_error',
+        ]
 
     def get_download_url(self, obj):
         from .storage import create_signed_download_url

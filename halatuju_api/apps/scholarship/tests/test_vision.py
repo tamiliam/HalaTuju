@@ -6,7 +6,7 @@ Google Cloud Vision call itself is never made here.
 from django.test import TestCase
 
 from apps.scholarship.vision import (
-    _canonical_name_tokens, _canonical_nric, _extract_name, _extract_nric,
+    _canonical_name_tokens, _canonical_nric, _extract_address, _extract_name, _extract_nric,
     extract_mykad, name_match, nric_match,
 )
 
@@ -95,9 +95,60 @@ NO 12 JALAN MAHKOTA
         self.assertEqual(_extract_name(''), '')
 
 
+class TestExtractAddress(TestCase):
+    """Post-S14: pull the MyKad-printed home address (postcode-anchored, 2-3 lines).
+
+    Soft signal only — admin/interviewer eyeballs the surfaced text against
+    profile.address. No matcher / no verdict computed."""
+
+    def test_extracts_simple_two_line_block(self):
+        text = """MYKAD
+MALAYSIA
+030101-14-1234
+PRIYA A/P KRISHNAN
+NO 12 JALAN MAHKOTA
+40000 SHAH ALAM
+SELANGOR"""
+        # postcode anchor on the "40000 SHAH ALAM" line; the all-caps name is dropped.
+        result = _extract_address(text)
+        self.assertIn('NO 12 JALAN MAHKOTA', result)
+        self.assertIn('40000 SHAH ALAM', result)
+        self.assertNotIn('PRIYA', result)  # name skipped (no digits, all-caps letters)
+        self.assertNotIn('030101', result)  # NRIC skipped
+
+    def test_strips_alamat_label(self):
+        text = """710829-02-5709
+ELANJELIAN A/L VENUGOPAL
+Alamat: NO 5, JALAN BAHAGIA
+68000 AMPANG"""
+        result = _extract_address(text)
+        self.assertTrue(result.startswith('NO 5, JALAN BAHAGIA') or 'NO 5' in result)
+        self.assertNotIn('Alamat', result)  # the "Alamat:" prefix is dropped
+
+    def test_returns_empty_without_postcode(self):
+        # If Vision can't find a 5-digit postcode block, no address surfaces.
+        text = "MYKAD\nMALAYSIA\n030101-14-1234\nPRIYA A/P KRISHNAN"
+        self.assertEqual(_extract_address(text), '')
+
+    def test_empty_input(self):
+        self.assertEqual(_extract_address(''), '')
+        self.assertEqual(_extract_address(None), '')  # type: ignore
+
+    def test_deduplicates_repeated_lines(self):
+        # Vision occasionally repeats the same line in the layout pass.
+        text = """030101-14-1234
+NO 12 JALAN ABC
+NO 12 JALAN ABC
+40000 SHAH ALAM"""
+        result = _extract_address(text)
+        # Each unique line should appear once.
+        self.assertEqual(result.count('NO 12 JALAN ABC'), 1)
+
+
 class TestExtractMykadGraceful(TestCase):
     def test_empty_bytes(self):
         r = extract_mykad(b'')
         self.assertEqual(r['nric'], '')
         self.assertEqual(r['name'], '')
+        self.assertEqual(r['address'], '')
         self.assertIn('empty', r['error'].lower())

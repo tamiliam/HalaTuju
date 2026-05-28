@@ -1325,6 +1325,8 @@
       "visionRunning": "Re-running…",
       "visionExtracted": "Extracted",
       "visionDeclaration": "Declaration name",
+      "visionAddressTitle": "Address on IC (from photo)",
+      "visionAddressVsProfile": "Student-entered address",
       "visionError": "Could not re-run Vision."
     },
     "students": "Students",

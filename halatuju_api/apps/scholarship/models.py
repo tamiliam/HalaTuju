@@ -406,6 +406,11 @@ class ApplicantDocument(models.Model):
     # real identity gate; these fields are hints (and a UX nudge for typos).
     vision_nric = models.CharField(max_length=20, blank=True, default='')
     vision_name = models.CharField(max_length=200, blank=True, default='')
+    # S18 (post-S14): MyKad address from OCR. Surfaced to the admin verify-&-accept
+    # card alongside profile.address — no automated matcher (admin/interviewer
+    # eyeballs it). Useful when the registered IC address differs from where the
+    # student currently lives (e.g. relocated since IC issue).
+    vision_address = models.CharField(max_length=500, blank=True, default='')
     vision_run_at = models.DateTimeField(null=True, blank=True)
     vision_error = models.CharField(max_length=200, blank=True, default='')
 

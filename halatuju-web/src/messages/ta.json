@@ -1325,6 +1325,8 @@
       "visionRunning": "மீண்டும் இயக்குகிறது…",
       "visionExtracted": "எடுக்கப்பட்டது",
       "visionDeclaration": "அறிவிப்பு பெயர்",
+      "visionAddressTitle": "IC-யில் உள்ள முகவரி (படத்திலிருந்து)",
+      "visionAddressVsProfile": "மாணவர் உள்ளிட்ட முகவரி",
       "visionError": "Vision-ஐ மீண்டும் இயக்க முடியவில்லை."
     },
     "students": "மாணவர்கள்",

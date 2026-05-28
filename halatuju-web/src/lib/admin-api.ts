@@ -297,6 +297,9 @@ export interface AdminScholarshipDetail {
   plans: string
   fears: string
   justification: string
+  // Profile-derived address (post-S14) — used by the admin Vision card to
+  // cross-check what the student typed against the MyKad-read vision_address.
+  address: string
   status: string
   bucket: string
   shortlist_reason: string
@@ -384,8 +387,10 @@ export interface AdminApplicantDocument {
   verification_status: string
   download_url: string | null
   // S13: Vision OCR soft-signal fields (populated only for doc_type='ic')
+  // Post-S14: vision_address surfaced for admin cross-check, no matcher.
   vision_nric: string
   vision_name: string
+  vision_address: string
   vision_run_at: string | null
   vision_error: string
   vision_nric_verdict: '' | 'match' | 'mismatch' | 'unreadable'

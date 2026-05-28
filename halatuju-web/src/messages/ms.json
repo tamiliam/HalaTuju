@@ -1325,6 +1325,8 @@
       "visionRunning": "Menjalankan semula…",
       "visionExtracted": "Diekstrak",
       "visionDeclaration": "Nama pengakuan",
+      "visionAddressTitle": "Alamat pada IC (dari foto)",
+      "visionAddressVsProfile": "Alamat yang dimasukkan pelajar",
       "visionError": "Tidak dapat menjalankan semula Vision."
     },
     "students": "Pelajar",
