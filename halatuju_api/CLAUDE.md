@@ -361,10 +361,14 @@ On branch **`feature/b40-redesign`** (off `main`); **single deploy at S12**.
   (application, language=None)` writes the profile in a target language (defaults to applicant locale en→English/ms→Malay;
   admin EN/BM selector on `/admin/scholarship/[id]`; **Tamil output deferred to Phase 2** — one prompt-param away). New
   `test_profile_engine.py` (8, pure builder + TD-060 regression); Gemini mocked, **no paid calls**. i18n 1246. **The
-  applicant + admin Step-4 redesign (S1–S5c) is COMPLETE.** **▶ NEXT = TD-059** — drop the dead `FundingNeed` amount
-  columns (one migration + `FundingNeedSerializer`/`DetailsFormState`/`fundingTotal` cleanup). Plus: user to refine the
-  S4-docs + S5a-panel **Tamil copy** (fold into a deploy); optional admin-triggered **live (billable) Gemini** generation
-  check. Trims locked: photo optional, funding capped/no-total, most docs optional.
+  applicant + admin Step-4 redesign (S1–S5c) is COMPLETE.** **TD-059 ✅ RESOLVED (v2.4.7, DEPLOYED 2026-05-28;
+  api `…00179-v26`, web `…00220-7v9`; destructive migration `0015` applied via Supabase MCP under expand-contract
+  ordering — deploy-first / DROP-after; 0 prod rows pre-drop, 9 dead columns gone, `funding_needs` now 7 cols).
+  **Ship-day cost:** 3 deploys instead of 2 — two web type-check failures were waved through locally because `npm run
+  build` was piped to `grep` and the pipeline's exit code was grep's, masking npm's non-zero (lessons captured). **No
+  engineering work queued.** Pending: user to refine S4-docs + S5a-panel **Tamil copy** (fold into a deploy); optional
+  admin-triggered **live (billable) Gemini** generation check; S13 Vision OCR (queued separately below). Trims locked:
+  photo optional, funding capped/no-total, most docs optional.
 - **▶ Queued: S13 (post-launch): Vision OCR** — MyKad upload → instant NRIC match feedback, surfaced to admin (soft,
   never a hard block; would also upgrade the 2.3.0 declaration signature from a self-consistency nudge to a real
   name check). New Google Cloud Vision API key + **cost sign-off required** before any paid calls. Frontend

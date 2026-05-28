@@ -873,3 +873,35 @@ regenerates if they want another language; `model_used` is recorded but not lang
 
 **Revisit if:** Phase 2 needs sponsor profiles in Tamil (flip the deferral — add 'ta' to `LANGUAGE_NAMES`), or the
 output language needs to be persisted/filterable (add a column then).
+
+## Expand-contract ordering for destructive migrations (deploy-first, DROP-after) — TD-059, 2026-05-28
+
+**Decision:** For **additive** migrations on this live system (ADD COLUMN with default; widen a CharField choices set;
+etc.) the order is **migrate-first** — apply the DDL on prod before pushing the code, so old code keeps reading the new
+column as inert and new code finds the column already there. For **destructive** migrations (DROP COLUMN; tighten a
+column type; remove a choice the data still uses) the order **inverts** to **deploy-first / drop-after** (the classic
+expand-contract pattern): ship code that no longer references the column, wait for the new revision to be live on 100%
+traffic, then run the DROP via the Supabase MCP + record the `django_migrations` row.
+
+TD-059 dropped 9 `FundingNeed` amount columns using this ordering. The currently-live `FundingNeedSerializer` exposed
+those fields via `ModelSerializer`; dropping the columns first would have made every `GET application` 500 until the
+new code shipped. With deploy-first, Django simply ignored the (now-redundant) DB columns until they were dropped.
+
+**Alternatives considered:** (a) blue/green or per-route canary deploys (not set up on this single-revision Cloud Run
+service); (b) tombstone the columns first (rename to `_dead_*`) then drop later (extra migration, same risk window);
+(c) coordinate a single-window outage to drop simultaneously with deploy (manual, fragile, no real benefit at our scale).
+
+**Rationale:** Cloud Run's single-revision serving means there's no "old and new running side-by-side" window where
+either DDL order would be safe — one must complete before the other. Deploy-first is safe because Django ignores extra
+DB columns; migrate-first is safe for additive because the new column is inert until written. The TD-058 workaround
+(MCP `execute_sql` for the DDL + `django_migrations` row in one transaction) sidesteps `manage.py migrate`'s post_migrate
+contenttypes failure on this prod DB. **Pre-drop safety hold:** always re-confirm `SELECT COUNT(*)` immediately before
+the destructive DDL — don't trust earlier "0 rows" notes.
+
+**Trade-offs:** Two different orderings to remember (additive vs destructive). A destructive migration leaves the prod
+schema *behind* code state for the deploy window (a few minutes) — analytics/dashboards reading the DB directly may
+briefly see code-orphaned columns. Negligible at our scale.
+
+**Revisit if:** the deploy infrastructure gains true blue/green (then both orderings become trivially safe), or if a
+migration is both additive **and** destructive (model rename / column type change) — at that point think in atomic
+pairs: add-new-col → backfill → switch code → drop-old-col, each step its own deploy.

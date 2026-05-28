@@ -121,10 +121,17 @@ visual sign-off.
     Malay/English/Tamil student input; `generate_sponsor_profile(application, language=None)` writes in a target
     language (defaults to applicant locale; admin EN/BM selector; **Tamil output deferred to Phase 2**). New
     `test_profile_engine.py` (8); Gemini mocked, no paid calls. i18n 1246; backend 1143.
-  - **Then TD-059** — drop the dead `FundingNeed` amount columns (one migration + serializer/lib cleanup).
+  - **TD-059 ✅ RESOLVED — shipped 2026-05-28 (v2.4.7; web `…00220-7v9`, api `…00179-v26`; destructive migration
+    `0015` applied on prod via Supabase MCP under expand-contract — deploy-first / DROP-after; 0 prod rows pre-drop;
+    `funding_needs` now 7 cols).** Removed 9 dead amount columns + the `total` property; `FundingNeedSerializer`
+    shrunk to `categories`/`funding_note`/`programme_months`; frontend `DetailsFormState`/`fundingTotal`/payload
+    mappings cleaned; admin page now shows ticked categories (not `RM${total}`). Ship-day cost: 3 deploys (over
+    budget) — two web TS failures slipped through local because `npm run build` was piped to `grep` so npm's exit
+    code was masked. Lessons captured.
 
-**✅ The Step-4 redesign (S1–S5c) is COMPLETE** — applicant flow (5 tabs, completeness, "what happens next") + admin
-referee at verify-&-accept + a working, language-aware AI sponsor-profile generator. Remaining: TD-059 cleanup and the
-user's Tamil-copy refinements (S4 docs + S5a panel).
+**✅ The Step-4 redesign (S1–S5c) + TD-059 cleanup are COMPLETE** — applicant flow (5 tabs, completeness, "what
+happens next") + admin referee at verify-&-accept + a working, language-aware AI sponsor-profile generator + dead
+FundingNeed columns dropped. Pending (no engineering): user Tamil-copy refinements (S4 docs + S5a panel) + optional
+admin-triggered live (billable) Gemini generation check.
 
 Each sprint: tested, i18n-parity'd, migrate-first, deployed, live-verified.
