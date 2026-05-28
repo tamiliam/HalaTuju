@@ -7,11 +7,23 @@ Covers:
 - Engine unit tests (single/multi-select, weight splitting, Not Sure Yet,
   conditional Q2.5, signal strength, language parity, backward compat)
 """
+import jwt
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
+from apps.courses.models import StudentProfile
 from apps.courses.quiz_engine import process_quiz_answers, SIGNAL_TAXONOMY
 from apps.courses.quiz_data import QUESTION_IDS, QUIZ_QUESTIONS
+
+_TEST_JWT_SECRET = 'test-supabase-jwt-secret'
+
+
+def _token(uid, anonymous=False, secret=_TEST_JWT_SECRET):
+    payload = {'sub': uid, 'aud': 'authenticated',
+               'role': 'anon' if anonymous else 'authenticated'}
+    if anonymous:
+        payload['is_anonymous'] = True
+    return jwt.encode(payload, secret, algorithm='HS256')
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls')
@@ -154,6 +166,61 @@ class TestQuizSubmitEndpoint(TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('out of range', response.data['error'])
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=_TEST_JWT_SECRET)
+class TestQuizSubmitPersistence(TestCase):
+    """The /quiz/submit/ endpoint stays AllowAny but persists signals to the
+    caller's profile when the request is from a real (non-anonymous) signed-in
+    user — so /scholarship/application's completeness check sees the quiz as done."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.uid = 'persist-uid-1'
+        self.profile = StudentProfile.objects.create(
+            supabase_user_id=self.uid, nric='030101-14-1234',
+        )
+
+    def _answers(self):
+        return [
+            {'question_id': 'q1_field1', 'option_index': 0},
+            {'question_id': 'q2_field2', 'option_index': 0},
+            {'question_id': 'q2_5_heavy', 'option_index': 0},
+            {'question_id': 'q3_work', 'option_index': 0},
+            {'question_id': 'q4_environment', 'option_index': 0},
+            {'question_id': 'q5_learning', 'option_index': 0},
+            {'question_id': 'q6_values', 'option_index': 0},
+            {'question_id': 'q7_energy', 'option_index': 0},
+            {'question_id': 'q8_practical', 'option_index': 0},
+        ]
+
+    def test_signed_in_user_persists_signals_to_profile(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(self.uid)}')
+        r = self.client.post('/api/v1/quiz/submit/', {'answers': self._answers()}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('student_signals', r.data)
+        self.profile.refresh_from_db()
+        self.assertTrue(self.profile.student_signals, 'profile.student_signals must be populated')
+        self.assertEqual(self.profile.student_signals, r.data['student_signals'])
+
+    def test_anonymous_user_does_not_persist(self):
+        # No auth header → middleware leaves request.user_id unset → no profile lookup, no save.
+        r = self.client.post('/api/v1/quiz/submit/', {'answers': self._answers()}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.profile.refresh_from_db()
+        self.assertFalse(self.profile.student_signals)
+
+    def test_anonymous_supabase_session_does_not_persist(self):
+        """An is_anonymous=true JWT (browser-only sign-in) must NOT write to the profile."""
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(self.uid, anonymous=True)}')
+        r = self.client.post('/api/v1/quiz/submit/', {'answers': self._answers()}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.profile.refresh_from_db()
+        self.assertFalse(self.profile.student_signals)
+
+    # (No "signed-in but no profile" test: the NRIC-gate middleware blocks
+    # authenticated requests without a profile before they reach /quiz/submit,
+    # so that branch of the helper is purely defensive and not reachable in prod.)
 
 
 class TestQuizEngine(TestCase):

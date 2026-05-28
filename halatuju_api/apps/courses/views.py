@@ -640,7 +640,37 @@ class QuizSubmitView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        _persist_quiz_signals(request, result.get('student_signals'))
         return Response(result)
+
+
+def _persist_quiz_signals(request, student_signals):
+    """Opportunistically save quiz signals to the caller's profile.
+
+    The quiz endpoints are ``AllowAny`` so anonymous browsers can take the quiz
+    without an account; for signed-in (non-anonymous) callers we additionally
+    persist the resulting ``student_signals`` so downstream features that read
+    ``profile.student_signals`` — most notably the /scholarship/application
+    completeness check — see the quiz as done. Silent no-op when there's no
+    user, an anonymous user, no profile yet, or no signals to save.
+    """
+    if not student_signals:
+        return
+    user_id = getattr(request, 'user_id', None)
+    if not user_id:
+        return
+    supabase_user = getattr(request, 'supabase_user', None) or {}
+    if supabase_user.get('is_anonymous', False):
+        return
+    try:
+        profile = StudentProfile.objects.get(supabase_user_id=user_id)
+        profile.student_signals = student_signals
+        profile.save(update_fields=['student_signals'])
+    except StudentProfile.DoesNotExist:
+        return
+    except Exception as e:  # noqa: BLE001 — opportunistic save; never fail the request
+        import logging
+        logging.getLogger(__name__).warning('quiz signal persist failed: %s', e)
 
 
 class CourseListView(APIView):
@@ -2068,4 +2098,5 @@ class StpmQuizSubmitView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        _persist_quiz_signals(request, result.get('student_signals'))
         return Response(result)

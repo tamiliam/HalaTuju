@@ -124,7 +124,7 @@ export default function ScholarshipNextSteps({
         </div>
         <p className="text-sm text-gray-600">{t('scholarship.nextSteps.step1Body')}</p>
         {!c.quiz_done && (
-          <Link href="/quiz" className="btn-primary inline-block text-sm">
+          <Link href="/quiz?return=application" className="btn-primary inline-block text-sm">
             {t('scholarship.nextSteps.step1Cta')}
           </Link>
         )}

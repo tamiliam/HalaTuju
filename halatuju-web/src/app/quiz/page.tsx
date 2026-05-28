@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getQuizQuestions, submitQuiz, type QuizQuestion, type QuizAnswer } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
@@ -26,6 +26,10 @@ const ICON_EMOJI: Record<string, string> = {
 
 export default function QuizPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  // ?return=application sends the user back to /scholarship/application after
+  // submit (used by the Quiz tab on the post-shortlist follow-up flow).
+  const returnTo = searchParams?.get('return')
   const { isAuthenticated, isLoading: authLoading, showAuthGate } = useAuth()
   const { t, locale } = useT()
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
@@ -165,7 +169,7 @@ export default function QuizPage() {
       localStorage.setItem(KEY_SIGNAL_STRENGTH, JSON.stringify(result.signal_strength))
       // Reset report gate — new quiz unlocks report generation
       localStorage.removeItem(KEY_REPORT_GENERATED)
-      router.push('/dashboard')
+      router.push(returnTo === 'application' ? '/scholarship/application' : '/dashboard')
     } catch {
       setError(t('quiz.submitError'))
       setSubmitting(false)
