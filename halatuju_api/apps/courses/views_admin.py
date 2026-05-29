@@ -205,7 +205,7 @@ class PartnerStudentExportView(PartnerAdminMixin, APIView):
             'Name', 'IC', 'Angka Giliran', 'Email', 'Phone', 'School',
             'Gender', 'Nationality',
             'Address', 'Postal Code', 'City', 'State',
-            'Family Income', 'Siblings', 'Colorblind', 'Disability',
+            'Household Income', 'Household Size', 'Colorblind', 'Disability',
             'Exam Type', 'SPM Grades', 'STPM Grades', 'STPM CGPA', 'MUET Band',
             'Financial Pressure', 'Travel Willingness',
             'Referral Source', 'Referred By Org',
@@ -219,11 +219,11 @@ class PartnerStudentExportView(PartnerAdminMixin, APIView):
             org_name = s.referred_by_org.name if s.referred_by_org_id else ''
             writer.writerow([
                 s.name, s.nric, s.angka_giliran, ad.get('email', ''),
-                s.phone, s.school,
+                s.contact_phone, s.school,
                 s.gender, s.nationality,
                 s.address, s.postal_code, s.city, s.preferred_state,
-                s.family_income,
-                _fmt_int(s.siblings),
+                _fmt_int(s.household_income),
+                _fmt_int(s.household_size),
                 _fmt_bool(s.colorblind), _fmt_bool(s.disability),
                 s.exam_type,
                 _fmt_json(s.grades), _fmt_json(s.stpm_grades),

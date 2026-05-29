@@ -646,11 +646,10 @@ export function applicationToDetailsForm(app: ScholarshipApplication): DetailsFo
     // Card A — About your family (S2 narrative fields)
     firstInFamily: !!app.first_in_family,
     parentsOccupation: app.parents_occupation || '',
-    // S15: prefer the count; if older data only has the boolean, surface "1" as
-    // a best-effort starter so the field isn't blank for a known siblings_studying user.
+    // TD-061: count only (the legacy siblings_studying boolean is gone).
     siblingsStudyingCount: app.siblings_studying_count != null
       ? String(app.siblings_studying_count)
-      : (app.siblings_studying ? '1' : ''),
+      : '',
     familyContext: app.family_context || '',
     // Card B — About you
     aspirations: app.aspirations || '',

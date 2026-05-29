@@ -276,11 +276,8 @@ class ScholarshipApplication(models.Model):
         max_length=255, blank=True, default='',
         help_text="What do your parents or guardians do for a living?",
     )
-    siblings_studying = models.BooleanField(
-        default=False,
-        help_text="Legacy: one or more siblings are studying. Superseded by "
-                  "siblings_studying_count (S15); read fall-back only. TD-061.",
-    )
+    # TD-061: legacy `siblings_studying` boolean dropped — superseded by the
+    # count below (S15). (Column removed in scholarship/0022.)
     siblings_studying_count = models.PositiveSmallIntegerField(
         null=True, blank=True,
         help_text="How many of the applicant's siblings are currently studying. "

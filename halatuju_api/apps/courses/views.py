@@ -1004,14 +1004,15 @@ class ProfileView(APIView):
             'address': profile.address,
             'postal_code': profile.postal_code,
             'city': profile.city,
-            'phone': profile.phone,
             'email': email,
             'contact_email': contact_email,
             'contact_email_verified': contact_email_verified,
             'contact_phone': profile.contact_phone,
             'contact_phone_verified': profile.contact_phone_verified,
-            'family_income': profile.family_income,
-            'siblings': profile.siblings,
+            # TD-061: canonical financial fields (replace legacy family_income/
+            # siblings/phone). The /profile family card reads these.
+            'household_income': profile.household_income,
+            'household_size': profile.household_size,
             'exam_type': profile.exam_type,
             'stpm_grades': profile.stpm_grades,
             'stpm_cgpa': profile.stpm_cgpa,

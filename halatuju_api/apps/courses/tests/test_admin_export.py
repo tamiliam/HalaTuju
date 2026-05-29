@@ -24,7 +24,7 @@ EXPECTED_HEADER = [
     'Name', 'IC', 'Angka Giliran', 'Email', 'Phone', 'School',
     'Gender', 'Nationality',
     'Address', 'Postal Code', 'City', 'State',
-    'Family Income', 'Siblings', 'Colorblind', 'Disability',
+    'Household Income', 'Household Size', 'Colorblind', 'Disability',
     'Exam Type', 'SPM Grades', 'STPM Grades', 'STPM CGPA', 'MUET Band',
     'Financial Pressure', 'Travel Willingness',
     'Referral Source', 'Referred By Org',
@@ -68,7 +68,7 @@ class PartnerStudentExportExpandedColumnsTest(TestCase):
             nric='010101-01-1111',
             name='Anita Rao',
             angka_giliran='AB123C456',
-            phone='012-3456789',
+            contact_phone='012-3456789',
             school='SMK Damansara Jaya',
             gender='female',
             nationality='Warganegara',
@@ -76,8 +76,8 @@ class PartnerStudentExportExpandedColumnsTest(TestCase):
             postal_code='47301',
             city='Petaling Jaya',
             preferred_state='Selangor',
-            family_income='B40',
-            siblings=3,
+            household_income=2500,
+            household_size=5,
             colorblind=False,
             disability=False,
             exam_type='spm',
@@ -142,8 +142,8 @@ class PartnerStudentExportExpandedColumnsTest(TestCase):
         self.assertEqual(get('Postal Code'), '47301')
         self.assertEqual(get('City'), 'Petaling Jaya')
         self.assertEqual(get('State'), 'Selangor')
-        self.assertEqual(get('Family Income'), 'B40')
-        self.assertEqual(get('Siblings'), '3')
+        self.assertEqual(get('Household Income'), '2500')
+        self.assertEqual(get('Household Size'), '5')
         self.assertEqual(get('Colorblind'), 'No')
         self.assertEqual(get('Disability'), 'No')
         self.assertIn('"bm":"A"', get('SPM Grades'))
@@ -173,7 +173,7 @@ class PartnerStudentExportExpandedColumnsTest(TestCase):
         rows = self._read_csv(response)
         ghost = next(r for r in rows[1:] if r[EXPECTED_HEADER.index('IC')] == '' and r[EXPECTED_HEADER.index('Name')] == '')
         self.assertEqual(ghost[EXPECTED_HEADER.index('Email')], '')
-        self.assertEqual(ghost[EXPECTED_HEADER.index('Siblings')], '')
+        self.assertEqual(ghost[EXPECTED_HEADER.index('Household Size')], '')
         self.assertEqual(ghost[EXPECTED_HEADER.index('SPM Grades')], '')
 
     def test_auth_query_failure_does_not_break_export(self):

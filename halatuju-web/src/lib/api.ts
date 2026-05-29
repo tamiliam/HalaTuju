@@ -57,10 +57,7 @@ export interface StudentProfile {
   address?: string
   postal_code?: string
   city?: string
-  phone?: string
   email?: string
-  family_income?: string
-  siblings?: number | null
   angka_giliran?: string
   contact_email?: string
   contact_email_verified?: boolean
@@ -966,9 +963,7 @@ export interface ScholarshipApplication {
   // "Your story" guided narrative fields (S2 redesign)
   first_in_family: boolean
   parents_occupation: string
-  // S15: count is primary; the legacy boolean stays in the type for back-compat
-  // (older clients still emit it). TD-061 will drop both the column + this field.
-  siblings_studying: boolean
+  // TD-061: the legacy siblings_studying boolean is gone; only the count remains.
   siblings_studying_count: number | null
   family_context: string
   daily_life: string

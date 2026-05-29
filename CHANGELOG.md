@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.0] — TD-061 + TD-062: drop dead columns, orphan-blob cleanup (2026-05-30)
+
+**TD-062 — orphan Storage blob cleanup.** New `storage.list_objects(prefix)` helper + `manage.py cleanup_orphan_blobs` command: walks the `b40-documents` bucket's `{app}/{doc_type}/{uuid}` layout, diffs leaf paths against `ApplicantDocument.storage_path`, reports orphans (dry-run default; `--apply` deletes via the existing `delete_objects`). Sweeps the historical blobs leaked by pre-S15 "Remove" clicks. 3 tests (mocked Storage). Running `--apply` on prod is a separate manual step (needs the service-role key locally).
+
+**TD-061 — drop 4 dead columns under expand-contract.** Removed `StudentProfile.family_income` / `siblings` / `phone` and `ScholarshipApplication.siblings_studying` — all superseded (by `household_income` / `household_size` / `contact_phone` / `siblings_studying_count` respectively) in S14/S15 but never fully retired.
+
+- **Latent bug fixed in passing:** the `/profile` page reads & writes `household_income`/`household_size`, but the GET response and `ProfileUpdateSerializer` still carried the *legacy* `family_income`/`siblings` and **not** the canonical ones — so a student editing household income/size on `/profile` saw blanks and had their edit silently dropped (only `/apply` could write them). Repointing the endpoint to the canonical fields fixes that.
+- **Repointed everywhere the dead fields were still wired:** `/profile` GET + `ProfileUpdateSerializer`; both admin student serializers; the admin CSV export (headers "Household Income"/"Household Size", values from the canonical columns + `contact_phone`); the AI sponsor-profile prompt (`siblings_studying` → count-only, no boolean fallback); the scholarship details serializer + allowed-fields. Front-end: `StudentProfile`/`SyncProfileData`/admin types, the admin student list + detail pages, `useProfileCompleteness`, and `applicationToDetailsForm` (count-only).
+- **Expand-contract ordering (deploy-first / DROP-after):** this release ships the code with the model fields **removed** (Django ignores the still-present DB columns); the `DROP COLUMN`s (migrations `courses/0050` + `scholarship/0022`) are applied via Supabase MCP **after** the new revision is live on 100% traffic. Pre-drop `SELECT COUNT(*)` safety hold re-confirmed.
+- Tests: full backend **1249 pass**; jest 155; `next build` clean.
+
 ## [2.13.0] — TD-063: explicit stream subjects (back-end trusts the student's pick) (2026-05-30)
 
 Resolves TD-063 (FE/BE stream-pool duplication drift risk) by making the back-end **trust the student's own stream/aliran selection** instead of re-guessing the stream from its own copy of the pools.

@@ -4,7 +4,8 @@ import { getProfile } from '@/lib/api'
 
 const COMPLETENESS_FIELDS = [
   'name', 'nric', 'gender', 'preferred_state',
-  'family_income', 'siblings', 'address',
+  // TD-061: canonical financial fields (replaced legacy family_income/siblings).
+  'household_income', 'household_size', 'address',
   'postal_code', 'city',
   'angka_giliran',
 ] as const

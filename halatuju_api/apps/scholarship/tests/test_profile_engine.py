@@ -30,7 +30,7 @@ class TestProfilePrompt(TestCase):
             plans='Belajar rajin setiap hari',
             family_context='என் தந்தை ஒரு லாரி ஓட்டுநர்',  # Tamil narrative
             daily_life='I help at my family stall after school',  # English narrative
-            first_in_family=True, parents_occupation='Lorry driver', siblings_studying=True,
+            first_in_family=True, parents_occupation='Lorry driver', siblings_studying_count=2,
             field_of_study='Accounting', pathways_considered=['matriculation', 'stpm'],
         )
         FundingNeed.objects.create(
@@ -70,13 +70,14 @@ class TestProfilePrompt(TestCase):
         # The line is rendered "Siblings currently studying: 4"
         self.assertIn('Siblings currently studying: 4', prompt)
 
-    def test_prompt_siblings_falls_back_to_boolean(self):
-        """S15: with no count, the legacy boolean is rendered as Yes/No (back-compat)."""
+    def test_prompt_siblings_blank_when_count_unset(self):
+        """TD-061: no count → blank (the legacy boolean fallback is gone)."""
         self.app.siblings_studying_count = None
-        self.app.siblings_studying = True
-        self.app.save(update_fields=['siblings_studying_count', 'siblings_studying'])
+        self.app.save(update_fields=['siblings_studying_count'])
         prompt = _build_prompt(self.app)
-        self.assertIn('Siblings currently studying: yes', prompt)
+        self.assertIn('Siblings currently studying:', prompt)
+        # Renders an empty value, not 'yes'.
+        self.assertNotIn('Siblings currently studying: yes', prompt)
 
     def test_prompt_has_no_dead_total(self):
         """The dead FundingNeed `total` must not appear (TD-059)."""

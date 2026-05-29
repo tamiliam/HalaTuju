@@ -122,7 +122,7 @@ export default function AdminStudentList() {
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
               {s.gender && <span>{s.gender}</span>}
-              {s.phone && <span>{formatPhone(s.phone)}</span>}
+              {s.contact_phone && <span>{formatPhone(s.contact_phone)}</span>}
               <span>{new Date(s.created_at).toLocaleDateString('ms-MY')}</span>
             </div>
           </Link>
@@ -178,7 +178,7 @@ export default function AdminStudentList() {
                   </span>
                 </td>
                 <td className="px-4 py-3.5 text-gray-600">{s.school || '\u2014'}</td>
-                <td className="px-4 py-3.5 text-gray-600">{formatPhone(s.phone)}</td>
+                <td className="px-4 py-3.5 text-gray-600">{formatPhone(s.contact_phone)}</td>
                 {role?.is_super_admin && (
                   <td className="px-4 py-3.5">
                     <div className="text-gray-600">{s.referral_source || '\u2014'}</div>
