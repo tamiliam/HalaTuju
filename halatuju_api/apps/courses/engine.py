@@ -243,6 +243,32 @@ def check_merit_probability(student_merit, course_cutoff):
         return "Low", MERIT_COLORS['Low']
 
 
+# Stream subject pools — MUST mirror SPM_STREAM_POOLS in
+# halatuju-web/src/lib/subjects.ts. If a subject can be selected as a stream
+# subject in the frontend dropdown but is missing here, its grade silently
+# drops from the 30% stream weight (Sec2) to the 10% elective weight (Sec3).
+# Sciences appear in both SCIENCE and TECHNICAL pools, and a subject may live
+# in more than one pool (matches the official SPM elective grouping). Islamic-
+# stream subjects are intentionally excluded.
+SCIENCE_POOL = {'phy', 'chem', 'bio', 'addmath'}
+ARTS_POOL = {
+    'ekonomi', 'poa', 'business', 'geo', 'b_tamil', 'b_cina', 'lukisan',
+    'psv', 'keusahawanan', 'alat_muzik', 'apresiasi_tari',
+    'aural_teori_muzik', 'bahasa_arab', 'bahasa_arab_tinggi', 'bahasa_iban',
+    'bahasa_kadazandusun', 'bahasa_punjabi', 'bahasa_semai',
+    'bible_knowledge', 'lit_cina', 'lit_eng', 'lit_bm', 'lit_tamil',
+    'koreografi', 'lakonan', 'multimedia_kreatif', 'muzik_komputer',
+    'music', 'penulisan_skrip', 'produksi_seni', 'reka_bentuk_grafik',
+    'reka_bentuk_industri', 'reka_bentuk_kraf', 'sejarah_seni',
+    'seni_halus_2d', 'seni_halus_3d', 'sinografi', 'tarian',
+}
+TECHNICAL_POOL = {
+    'eng_civil', 'eng_mech', 'eng_elec', 'eng_draw', 'gkt', 'comp_sci',
+    'reka_cipta', 'kelestarian', 'pertanian', 'srt', 'sports_sci',
+    'addsci', 'phy', 'chem', 'bio', 'addmath',
+}
+
+
 def prepare_merit_inputs(grades):
     """
     Splits grades into Sec1 (4 core), Sec2 (2 stream), Sec3 (2 elective)
@@ -253,13 +279,6 @@ def prepare_merit_inputs(grades):
       Sec2 (Aliran/Stream, 30%): Best 2 from stream pool — max 36 pts
       Sec3 (Tambahan/Elective, 10%): Best 2 from remaining — max 36 pts
     """
-    # Stream subject pools (match frontend subjects.ts categories)
-    SCIENCE_POOL = {'phy', 'chem', 'bio', 'addmath'}
-    ARTS_POOL = {'ekonomi', 'poa', 'business', 'geo', 'b_tamil', 'b_cina',
-                 'lukisan', 'psv', 'keusahawanan'}
-    TECHNICAL_POOL = {'eng_civil', 'eng_mech', 'eng_elec', 'eng_draw', 'gkt',
-                      'comp_sci', 'multimedia', 'reka_cipta'}
-
     def get_g(s):
         return grades.get(s, 'G')
 

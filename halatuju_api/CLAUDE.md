@@ -235,7 +235,15 @@ step (P1–P5), then 8 post-launch fixes/additions from live new-user testing �
 truthfulness **declaration + typed-name signature** before submit (migration `scholarship 0011`). See
 `docs/retrospective-post-launch-apply-polish.md`.
 
-- 1224 backend tests, 112 frontend (jest) tests, 0 failures
+**S18 (v2.10.0, 2026-05-29) — SPM stream subject coverage** (core course-guide, off the B40 track): the apply-form
+Arts stream dropdown went 9→38 subjects and Technical 8→16 to match the official SPM list (Islamic-stream subjects
+excluded). `subjects.ts` subject model changed `category` (single) → `streams` (list) so a subject can sit in
+multiple stream pools while staying electable; backend merit pools (`SCIENCE_POOL`/`ARTS_POOL`/`TECHNICAL_POOL` in
+`engine.py`, now module-level) expanded to mirror it so the 30% stream weight recognises every selectable subject.
+**No migration** (grades stored by key, not enum). Golden master unchanged (5319). FE/BE pool duplication is TD-063
+(mitigated by linking comment + paired count tests). See `docs/retrospective-s18-stream-subject-coverage.md`.
+
+- 1231 backend tests, 154 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).

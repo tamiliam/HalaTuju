@@ -1170,3 +1170,15 @@ formal adoption) get routed through legal_guardian + letter, which may feel
 overwrought. Accepted trade-off — the bar is higher but defensible.
 
 **Revisit if:** real-use shows a frequent legitimate case the 6 codes don't cover.
+
+## Multi-stream subject model + mirrored backend merit pools — S18, 2026-05-29
+
+**Decision:** Changed `SpmSubject` in `subjects.ts` from a single `category` field to a `streams: StreamKey[]` list, letting a subject appear in more than one stream dropdown (e.g. sciences in both Science and Technical) while staying electable. The backend merit pools in `engine.py` (`SCIENCE_POOL`/`ARTS_POOL`/`TECHNICAL_POOL`) were expanded to mirror the frontend exactly and lifted to module-level constants.
+
+**Alternatives considered:** (1) Keep single `category` and pick one stream per subject — can't express the official grouping where sciences sit under both Science and Technical. (2) A separate `stream → ids` overlap map alongside `category` — two sources of truth for the same fact. (3) Derive the backend pools from the frontend at build time — no shared runtime between TS and Python; not worth a codegen step for two small sets.
+
+**Rationale:** The official SPM elective structure is genuinely many-to-many (a technical student takes Bio/Fizik/Kimia/Add Maths as stream subjects too). A `streams` list models that directly. Keeping the derived export names/shapes meant zero changes to the two consuming pages. The backend keeps its own copy because there is no shared TS↔Python runtime; the risk (silent drift causing a stream subject to score on the 10% weight instead of 30%) is mitigated by a code comment on both definitions plus paired tests asserting the counts (jest: 38 arts / 16 technical; pytest: same).
+
+**Trade-offs:** Two hand-maintained copies of the pools that must move together. Accepted because the alternative (codegen across languages) is heavier than the problem warrants, and tests + the linking comment catch drift.
+
+**Revisit if:** the pools change often, or a third consumer of pool membership appears — at that point extract a single language-neutral source (e.g. a JSON the build emits to both sides).

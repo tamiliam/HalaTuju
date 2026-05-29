@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] — S18: SPM stream subject coverage — full Arts & Technical lists (2026-05-29)
+
+A user reported that the SPM apply-form stream dropdowns offered far fewer subjects than the official SPM list. Root cause: the Arts pool listed only 9 subjects and Technical only 8, while `SUBJECT_NAMES` already had labels for ~26 of the missing Arts subjects — they were simply never added to the selectable pool. Worse, the backend merit engine kept its **own** hardcoded copy of these pools, so any subject in the dropdown but absent from the backend pool would silently score on the 10% elective weight instead of the 30% stream weight. This sprint brings both into line with the official source (Islamic-stream subjects excluded per the product's mainstream scope) and keeps frontend and backend pools in lockstep.
+
+### Changed
+- **Subject model (`subjects.ts`): single `category` → `streams` list.** A subject can now belong to more than one stream pool (e.g. the sciences appear under both Science and Technical, matching the official SPM elective grouping) while remaining electable. Derived exports (`SPM_CORE_SUBJECTS`, `SPM_STREAM_POOLS`, `SPM_ALL_ELECTIVE_SUBJECTS`, `SPM_PREREQ_STREAM_POOLS`) keep their names and shapes — **no consuming page changed.**
+- **Arts stream pool: 9 → 38 subjects.** Adds the full non-Islamic official list — languages (Arabic, Iban, Kadazandusun, Punjabi, Semai), literatures (English, Chinese, Tamil, Communicative Malay), performing & visual arts (Dance, Choreography, Acting, Scenography, Music subjects, 2D/3D Fine Art, Graphic/Industrial/Craft Design, Creative Multimedia, Script Writing, Performing Arts Production, Art History & Management), and Bible Knowledge.
+- **Technical stream pool: 8 → 16 subjects.** Now matches the official Science-Technology-Vocational grouping: the four engineering studies, Engineering Drawing, Technical Graphics, Computer Science, Inventions, plus Asas Kelestarian, Pertanian, Sains Rumah Tangga, Sains Sukan, Sains Tambahan, and the sciences (Bio/Fizik/Kimia/Add Maths). `Multimedia` moved out of Technical to elective-only (it maps to the Arts group in the source).
+- **Backend merit pools (`engine.py`) expanded to mirror the frontend** and lifted to module-level constants (`SCIENCE_POOL`, `ARTS_POOL`, `TECHNICAL_POOL`) so the 30% stream weight (Sec2) recognises every selectable stream subject. A code comment ties the two definitions together.
+
+### Added
+- Two new subject keys with labels: `bahasa_punjabi` (Punjabi Language) and `bible_knowledge` (Bible Knowledge).
+- `subjects.test.ts` (12 tests): pool composition counts, Islamic-exclusion, sciences-in-both-pools, the "selected-as-stream-subject disappears-from-electives" dedup invariant, and label coverage for every selectable subject.
+- `test_merit_pools.py` (7 tests): pool membership mirrors the frontend, and arts/technical stream subjects land in Sec2 (30%) not Sec3 (10%).
+
+### Notes
+- **No migration, no data backfill** — subject keys are not persisted as enums; grades are stored by key. Existing saved grades are unaffected.
+- Golden master unchanged (SPM 5319): the new keys aren't held by the baseline students, and the science/technical pool overlap resolves the stream tie to Science by ordering, so pure-science merit is identical. Verified, not assumed.
+
 ## [2.9.0] — S17: minor consent flow — re-voiced text, parent IC + guardianship letter, structured relationship (2026-05-29)
 
 The pre-S17 minor branch was a half-measure: it captured guardian name + free-text relationship + flipped the toggle label, but the consent body still read "I consent…" (student voice) and we trusted the typed guardian name with no identity verification. Lawyer review needs a defensible end-to-end flow. This sprint delivers that working model — single push, one migration, ready for legal sign-off.

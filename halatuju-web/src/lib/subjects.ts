@@ -3,7 +3,7 @@
  * Covers all codes used in complex_requirements and subject_group_req.
  */
 
-const SUBJECT_NAMES: Record<string, { bm: string; en: string }> = {
+export const SUBJECT_NAMES: Record<string, { bm: string; en: string }> = {
   // Core subjects
   bm: { bm: 'Bahasa Melayu', en: 'Bahasa Melayu' },
   eng: { bm: 'Bahasa Inggeris', en: 'English' },
@@ -25,9 +25,9 @@ const SUBJECT_NAMES: Record<string, { bm: string; en: string }> = {
   ekonomi: { bm: 'Ekonomi', en: 'Economics' },
   poa: { bm: 'Prinsip Perakaunan', en: 'Principles of Accounting' },
   business: { bm: 'Perniagaan', en: 'Business Studies' },
-  keusahawanan: { bm: 'Keusahawanan', en: 'Entrepreneurship' },
+  keusahawanan: { bm: 'Pengajian Keusahawanan', en: 'Entrepreneurship' },
   psv: { bm: 'Pendidikan Seni Visual', en: 'Visual Arts' },
-  music: { bm: 'Muzik', en: 'Music' },
+  music: { bm: 'Pendidikan Muzik', en: 'Music Education' },
   sports_sci: { bm: 'Sains Sukan', en: 'Sports Science' },
 
   // Technical / engineering
@@ -37,7 +37,7 @@ const SUBJECT_NAMES: Record<string, { bm: string; en: string }> = {
   eng_draw: { bm: 'Lukisan Kejuruteraan', en: 'Engineering Drawing' },
   lukisan_kejuruteraan: { bm: 'Lukisan Kejuruteraan', en: 'Engineering Drawing' },
   gkt: { bm: 'Grafik Komunikasi Teknikal', en: 'Technical Graphics' },
-  kelestarian: { bm: 'Sains Kelestarian', en: 'Sustainability Science' },
+  kelestarian: { bm: 'Asas Kelestarian', en: 'Sustainability Basics' },
   reka_cipta: { bm: 'Reka Cipta', en: 'Inventions' },
   srt: { bm: 'Sains Rumah Tangga', en: 'Home Science' },
   pertanian: { bm: 'Pertanian', en: 'Agriculture' },
@@ -48,12 +48,12 @@ const SUBJECT_NAMES: Record<string, { bm: string; en: string }> = {
   digital_gfx: { bm: 'Grafik Digital', en: 'Digital Graphics' },
 
   // Literature
-  lit_bm: { bm: 'Kesusasteraan Melayu', en: 'Malay Literature' },
+  lit_bm: { bm: 'Kesusasteraan Melayu Komunikatif', en: 'Communicative Malay Literature' },
   lit_eng: { bm: 'Kesusasteraan Inggeris', en: 'English Literature' },
   lit_cina: { bm: 'Kesusasteraan Cina', en: 'Chinese Literature' },
   lit_tamil: { bm: 'Kesusasteraan Tamil', en: 'Tamil Literature' },
   lukisan: { bm: 'Lukisan', en: 'Drawing' },
-  sejarah_seni: { bm: 'Sejarah Seni', en: 'Art History' },
+  sejarah_seni: { bm: 'Sejarah dan Pengurusan Seni', en: 'Art History & Management' },
 
   // Languages
   bahasa_arab: { bm: 'Bahasa Arab', en: 'Arabic' },
@@ -63,6 +63,8 @@ const SUBJECT_NAMES: Record<string, { bm: string; en: string }> = {
   bahasa_iban: { bm: 'Bahasa Iban', en: 'Iban Language' },
   bahasa_kadazandusun: { bm: 'Bahasa Kadazandusun', en: 'Kadazandusun Language' },
   bahasa_semai: { bm: 'Bahasa Semai', en: 'Semai Language' },
+  bahasa_punjabi: { bm: 'Bahasa Punjabi', en: 'Punjabi Language' },
+  bible_knowledge: { bm: 'Pengetahuan Bible', en: 'Bible Knowledge' },
   bahasa_perancis: { bm: 'Bahasa Perancis', en: 'French' },
   bahasa_jepun: { bm: 'Bahasa Jepun', en: 'Japanese' },
   bahasa_jerman: { bm: 'Bahasa Jerman', en: 'German' },
@@ -91,14 +93,14 @@ const SUBJECT_NAMES: Record<string, { bm: string; en: string }> = {
   multimedia_kreatif: { bm: 'Multimedia Kreatif', en: 'Creative Multimedia' },
   produksi_reka_tanda: { bm: 'Produksi Reka Tanda', en: 'Signage Production' },
   produksi_multimedia: { bm: 'Produksi Multimedia', en: 'Multimedia Production' },
-  produksi_seni: { bm: 'Produksi Seni', en: 'Arts Production' },
+  produksi_seni: { bm: 'Produksi Seni Persembahan', en: 'Performing Arts Production' },
   seni_halus_2d: { bm: 'Seni Halus 2D', en: '2D Fine Art' },
   seni_halus_3d: { bm: 'Seni Halus 3D', en: '3D Fine Art' },
   aural_teori_muzik: { bm: 'Aural & Teori Muzik', en: 'Music Theory & Aural' },
-  alat_muzik: { bm: 'Alat Muzik', en: 'Musical Instruments' },
+  alat_muzik: { bm: 'Alat Muzik Utama', en: 'Principal Musical Instrument' },
   muzik_komputer: { bm: 'Muzik Komputer', en: 'Computer Music' },
   tarian: { bm: 'Tarian', en: 'Dance' },
-  koreografi: { bm: 'Koreografi', en: 'Choreography' },
+  koreografi: { bm: 'Koreografi Tari', en: 'Dance Choreography' },
   apresiasi_tari: { bm: 'Apresiasi Tari', en: 'Dance Appreciation' },
   lakonan: { bm: 'Lakonan', en: 'Acting' },
   sinografi: { bm: 'Sinografi', en: 'Scenography' },
@@ -158,73 +160,111 @@ export function getSubjectName(code: string, locale: string): string {
 // IDs are engine keys (lowercase), matching backend engine.py
 // ---------------------------------------------------------------------------
 
+export type StreamKey = 'science' | 'arts' | 'technical'
+
 export interface SpmSubject {
-  id: string  // Engine key: 'math', 'eng', 'phy', etc.
-  category: 'core' | 'science' | 'arts' | 'technical' | 'elective'
+  id: string          // Engine key: 'math', 'eng', 'phy', etc.
+  core?: boolean      // true for the 4 compulsory subjects
+  // Stream dropdowns this subject appears in. A subject may belong to MORE
+  // THAN ONE stream (e.g. the sciences appear under both Science and
+  // Technical, matching the official SPM elective grouping). Omitted/empty =
+  // elective-only. Every non-core subject is always electable regardless of
+  // its streams (see SPM_ALL_ELECTIVE_SUBJECTS); a subject chosen as a stream
+  // subject is removed from the elective dropdown to prevent double-counting.
+  streams?: StreamKey[]
 }
 
 export const SPM_SUBJECTS: SpmSubject[] = [
   // Core (4 compulsory)
-  { id: 'bm', category: 'core' },
-  { id: 'eng', category: 'core' },
-  { id: 'math', category: 'core' },
-  { id: 'hist', category: 'core' },
-  // Science stream
-  { id: 'phy', category: 'science' },
-  { id: 'chem', category: 'science' },
-  { id: 'bio', category: 'science' },
-  { id: 'addmath', category: 'science' },
-  // Arts stream
-  { id: 'ekonomi', category: 'arts' },
-  { id: 'poa', category: 'arts' },
-  { id: 'business', category: 'arts' },
-  { id: 'geo', category: 'arts' },
-  { id: 'b_tamil', category: 'arts' },
-  { id: 'b_cina', category: 'arts' },
-  { id: 'lukisan', category: 'arts' },
-  { id: 'psv', category: 'arts' },
-  { id: 'keusahawanan', category: 'arts' },
-  // Technical stream
-  { id: 'eng_civil', category: 'technical' },
-  { id: 'eng_mech', category: 'technical' },
-  { id: 'eng_elec', category: 'technical' },
-  { id: 'eng_draw', category: 'technical' },
-  { id: 'gkt', category: 'technical' },
-  { id: 'comp_sci', category: 'technical' },
-  { id: 'multimedia', category: 'technical' },
-  { id: 'reka_cipta', category: 'technical' },
-  // Elective (not in any stream pool)
-  { id: 'islam', category: 'elective' },
-  { id: 'moral', category: 'elective' },
-  { id: 'sci', category: 'elective' },
-  { id: 'addsci', category: 'elective' },
-  { id: 'pertanian', category: 'elective' },
-  { id: 'srt', category: 'elective' },
-  { id: 'sports_sci', category: 'elective' },
-  { id: 'music', category: 'elective' },
-  { id: 'voc_construct', category: 'elective' },
-  { id: 'voc_weld', category: 'elective' },
-  { id: 'voc_auto', category: 'elective' },
-  { id: 'voc_elec_serv', category: 'elective' },
-  { id: 'voc_food', category: 'elective' },
-  { id: 'voc_catering', category: 'elective' },
-  { id: 'voc_tailoring', category: 'elective' },
+  { id: 'bm', core: true },
+  { id: 'eng', core: true },
+  { id: 'math', core: true },
+  { id: 'hist', core: true },
+  // Science stream — sciences also appear under Technical (official grouping)
+  { id: 'phy', streams: ['science', 'technical'] },
+  { id: 'chem', streams: ['science', 'technical'] },
+  { id: 'bio', streams: ['science', 'technical'] },
+  { id: 'addmath', streams: ['science', 'technical'] },
+  // Arts stream (full official list, Islamic-stream subjects excluded)
+  { id: 'ekonomi', streams: ['arts'] },
+  { id: 'poa', streams: ['arts'] },
+  { id: 'business', streams: ['arts'] },
+  { id: 'geo', streams: ['arts'] },
+  { id: 'b_tamil', streams: ['arts'] },
+  { id: 'b_cina', streams: ['arts'] },
+  { id: 'lukisan', streams: ['arts'] },
+  { id: 'psv', streams: ['arts'] },
+  { id: 'keusahawanan', streams: ['arts'] },
+  { id: 'alat_muzik', streams: ['arts'] },
+  { id: 'apresiasi_tari', streams: ['arts'] },
+  { id: 'aural_teori_muzik', streams: ['arts'] },
+  { id: 'bahasa_arab', streams: ['arts'] },
+  { id: 'bahasa_arab_tinggi', streams: ['arts'] },
+  { id: 'bahasa_iban', streams: ['arts'] },
+  { id: 'bahasa_kadazandusun', streams: ['arts'] },
+  { id: 'bahasa_punjabi', streams: ['arts'] },
+  { id: 'bahasa_semai', streams: ['arts'] },
+  { id: 'bible_knowledge', streams: ['arts'] },
+  { id: 'lit_cina', streams: ['arts'] },
+  { id: 'lit_eng', streams: ['arts'] },
+  { id: 'lit_bm', streams: ['arts'] },
+  { id: 'lit_tamil', streams: ['arts'] },
+  { id: 'koreografi', streams: ['arts'] },
+  { id: 'lakonan', streams: ['arts'] },
+  { id: 'multimedia_kreatif', streams: ['arts'] },
+  { id: 'muzik_komputer', streams: ['arts'] },
+  { id: 'music', streams: ['arts'] },
+  { id: 'penulisan_skrip', streams: ['arts'] },
+  { id: 'produksi_seni', streams: ['arts'] },
+  { id: 'reka_bentuk_grafik', streams: ['arts'] },
+  { id: 'reka_bentuk_industri', streams: ['arts'] },
+  { id: 'reka_bentuk_kraf', streams: ['arts'] },
+  { id: 'sejarah_seni', streams: ['arts'] },
+  { id: 'seni_halus_2d', streams: ['arts'] },
+  { id: 'seni_halus_3d', streams: ['arts'] },
+  { id: 'sinografi', streams: ['arts'] },
+  { id: 'tarian', streams: ['arts'] },
+  // Technical stream (full official Science-Technology-Vocational grouping)
+  { id: 'eng_civil', streams: ['technical'] },
+  { id: 'eng_mech', streams: ['technical'] },
+  { id: 'eng_elec', streams: ['technical'] },
+  { id: 'eng_draw', streams: ['technical'] },
+  { id: 'gkt', streams: ['technical'] },
+  { id: 'comp_sci', streams: ['technical'] },
+  { id: 'reka_cipta', streams: ['technical'] },
+  { id: 'kelestarian', streams: ['technical'] },
+  { id: 'pertanian', streams: ['technical'] },
+  { id: 'srt', streams: ['technical'] },
+  { id: 'sports_sci', streams: ['technical'] },
+  { id: 'addsci', streams: ['technical'] },
+  // Elective-only (not part of any stream pool)
+  { id: 'islam' },
+  { id: 'moral' },
+  { id: 'sci' },
+  { id: 'multimedia' },
+  { id: 'voc_construct' },
+  { id: 'voc_weld' },
+  { id: 'voc_auto' },
+  { id: 'voc_elec_serv' },
+  { id: 'voc_food' },
+  { id: 'voc_catering' },
+  { id: 'voc_tailoring' },
 ]
 
-export const SPM_CORE_SUBJECTS = SPM_SUBJECTS.filter(s => s.category === 'core')
+export const SPM_CORE_SUBJECTS = SPM_SUBJECTS.filter(s => s.core)
 export const SPM_STREAM_POOLS: Record<string, SpmSubject[]> = {
-  science: SPM_SUBJECTS.filter(s => s.category === 'science'),
-  arts: SPM_SUBJECTS.filter(s => s.category === 'arts'),
-  technical: SPM_SUBJECTS.filter(s => s.category === 'technical'),
+  science: SPM_SUBJECTS.filter(s => s.streams?.includes('science')),
+  arts: SPM_SUBJECTS.filter(s => s.streams?.includes('arts')),
+  technical: SPM_SUBJECTS.filter(s => s.streams?.includes('technical')),
 }
-export const SPM_ALL_ELECTIVE_SUBJECTS = SPM_SUBJECTS.filter(s => s.category !== 'core')
+export const SPM_ALL_ELECTIVE_SUBJECTS = SPM_SUBJECTS.filter(s => !s.core)
 
 // SPM stream pools for STPM prerequisite entry
 // 4 streams: science, arts, technical, vocational (no Islamic/agama)
 export const SPM_PREREQ_STREAM_POOLS: Record<string, SpmSubject[]> = {
-  science: SPM_SUBJECTS.filter(s => s.category === 'science'),
-  arts: SPM_SUBJECTS.filter(s => s.category === 'arts'),
-  technical: SPM_SUBJECTS.filter(s => s.category === 'technical'),
+  science: SPM_STREAM_POOLS.science,
+  arts: SPM_STREAM_POOLS.arts,
+  technical: SPM_STREAM_POOLS.technical,
   vocational: SPM_SUBJECTS.filter(s =>
     s.id.startsWith('voc_') || ['pertanian', 'srt'].includes(s.id)
   ),
