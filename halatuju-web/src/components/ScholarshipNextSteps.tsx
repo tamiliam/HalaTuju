@@ -377,27 +377,37 @@ export default function ScholarshipNextSteps({
             clear instruction + context rather than two stacked paragraphs). */}
         <InfoBox kind="info">{t('scholarship.nextSteps.funding.intro')}</InfoBox>
 
-        {/* Programme length — radios. Year-only labels (no level annotations);
-            see PROGRAMME_LENGTH_OPTIONS for why. Compulsory: funding_done
-            requires programme_months to be set. */}
+        {/* Programme length — horizontal pill row, just the number; "in years"
+            moved into the question label (avoids repeating "year(s)" five times).
+            Pills are radios under the hood (sr-only input wrapped in the label)
+            so keyboard / screen-reader behaviour matches a native radio group.
+            Compulsory: funding_done requires programme_months to be set. */}
         <div>
           <FieldLabel required>{t('scholarship.nextSteps.funding.lengthLabel')}</FieldLabel>
-          <div className="mt-1 space-y-2">
-            {PROGRAMME_LENGTH_OPTIONS.map(({ key, months }) => (
-              <label key={key} className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="programmeMonths"
-                  className="h-4 w-4 shrink-0 border-gray-300 text-primary-600 focus:ring-primary-500"
-                  value={String(months)}
-                  checked={form.programmeMonths === String(months)}
-                  onChange={(e) => update('programmeMonths', e.target.value)}
-                />
-                <span className="text-sm text-gray-700">
+          <div className="mt-2 flex flex-wrap gap-2">
+            {PROGRAMME_LENGTH_OPTIONS.map(({ key, months }) => {
+              const selected = form.programmeMonths === String(months)
+              return (
+                <label
+                  key={key}
+                  className={`cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium min-w-[3.5rem] text-center transition-colors ${
+                    selected
+                      ? 'border-primary-600 bg-primary-600 text-white'
+                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="programmeMonths"
+                    className="sr-only"
+                    value={String(months)}
+                    checked={selected}
+                    onChange={(e) => update('programmeMonths', e.target.value)}
+                  />
                   {t(`scholarship.nextSteps.funding.${key}`)}
-                </span>
-              </label>
-            ))}
+                </label>
+              )
+            })}
           </div>
         </div>
 
