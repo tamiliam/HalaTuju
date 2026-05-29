@@ -8,7 +8,19 @@ import {
 } from '@/lib/api'
 import Toggle from '@/components/Toggle'
 import FieldLabel from '@/components/FieldLabel'
+import InfoBox from '@/components/InfoBox'
 import { formatNric } from '@/lib/scholarship'
+
+/** Render text with **bold** markers as <strong>. Plain-text alternates
+ *  with bold segments split on `**…**`. Preserves whitespace (newlines) so
+ *  the surrounding `whitespace-pre-line` continues to work. */
+function renderRich(body: string): React.ReactNode[] {
+  return body.split(/\*\*([^*]+)\*\*/g).map((chunk, i) =>
+    i % 2 === 0
+      ? <span key={i}>{chunk}</span>
+      : <strong key={i}>{chunk}</strong>
+  )
+}
 
 /** S19 — the 7 structured codes that match Consent.GUARDIAN_RELATIONSHIPS on
  *  the backend. `father` / `mother` skip the guardianship-letter requirement;
@@ -145,18 +157,17 @@ export default function ScholarshipConsent({
     <form onSubmit={handleSubmit} className="space-y-3">
       {/* Student-directed info box (minor only) — addresses the logged-in
           student, asking them to hand the page to a parent/guardian. The
-          consent body below is parent-voice; this notice is the bridge. */}
-      {isMinor ? (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
-          {t('scholarship.consent.minorInfoNotice')}
-        </div>
-      ) : (
-        <p className="text-sm text-gray-700">{t('scholarship.consent.subtitle')}</p>
+          consent body below is parent-voice; this notice is the bridge.
+          Adult branch jumps straight to the consent body (no subtitle). */}
+      {isMinor && (
+        <InfoBox kind="info">{t('scholarship.consent.minorInfoNotice')}</InfoBox>
       )}
 
-      {/* Consent text body — voice + content differ for minors */}
+      {/* Consent text body — voice + content differ for minors. Bold markers
+          (`**…**`) in the i18n string render as <strong> — used for the
+          student's name, NRIC, and the programme name. */}
       <div className="bg-gray-50 border rounded-lg p-3 text-sm text-gray-700 max-h-48 overflow-y-auto whitespace-pre-line">
-        {consentBody}
+        {renderRich(consentBody)}
       </div>
 
       {isMinor && (
@@ -166,9 +177,7 @@ export default function ScholarshipConsent({
               live red-text mismatch warnings appear below the relevant
               input only when needed. */}
           {!hasParentIc && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-              {t('scholarship.consent.needParentIc')}
-            </div>
+            <InfoBox kind="warning">{t('scholarship.consent.needParentIc')}</InfoBox>
           )}
 
           {/* Guardian name */}
@@ -224,9 +233,7 @@ export default function ScholarshipConsent({
 
           {/* Non-parent guardians additionally need the guardianship letter. */}
           {needsLetter && !hasGuardianshipLetter && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-              {t('scholarship.consent.needGuardianshipLetter')}
-            </div>
+            <InfoBox kind="warning">{t('scholarship.consent.needGuardianshipLetter')}</InfoBox>
           )}
         </>
       )}

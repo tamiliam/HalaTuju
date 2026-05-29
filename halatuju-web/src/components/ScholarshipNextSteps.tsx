@@ -14,6 +14,7 @@ import {
 } from '@/lib/scholarship'
 import ScholarshipDocuments from '@/components/ScholarshipDocuments'
 import ScholarshipConsent from '@/components/ScholarshipConsent'
+import InfoBox from '@/components/InfoBox'
 import FieldLabel from '@/components/FieldLabel'
 import Toggle from '@/components/Toggle'
 
@@ -121,12 +122,8 @@ export default function ScholarshipNextSteps({
   // The shared save feedback — rendered inside whichever tab has the Save button.
   const saveFeedback = (
     <>
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-          <p className="text-sm text-red-600">{error}</p>
-        </div>
-      )}
-      {saved && <p className="text-green-700 text-sm">{t('scholarship.nextSteps.saved')}</p>}
+      {error && <InfoBox kind="block">{error}</InfoBox>}
+      {saved && <p className="text-sm text-green-800">{t('scholarship.nextSteps.saved')}</p>}
     </>
   )
 
@@ -371,9 +368,7 @@ export default function ScholarshipNextSteps({
     funding: (
       <form onSubmit={handleSave} className="space-y-5">
         {/* Info box — honest framing: "a contribution, not full funding" */}
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-          <p className="text-sm text-blue-800">{t('scholarship.nextSteps.funding.infoBox')}</p>
-        </div>
+        <InfoBox kind="info">{t('scholarship.nextSteps.funding.infoBox')}</InfoBox>
 
         {/* Intro */}
         <p className="text-sm text-gray-700">{t('scholarship.nextSteps.funding.intro')}</p>
