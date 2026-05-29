@@ -152,7 +152,7 @@ export default function ScholarshipNextSteps({
     story: (
       <form onSubmit={handleSave} className="space-y-5">
         {/* Language note (the card title "2. Your story" already heads the section) */}
-        <p className="text-sm text-gray-600 italic">{t('scholarship.nextSteps.story.langNote')}</p>
+        <InfoBox kind="info">{t('scholarship.nextSteps.story.langNote')}</InfoBox>
 
         {/* Card A — About your family */}
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
@@ -367,11 +367,10 @@ export default function ScholarshipNextSteps({
 
     funding: (
       <form onSubmit={handleSave} className="space-y-5">
-        {/* Info box — honest framing: "a contribution, not full funding" */}
-        <InfoBox kind="info">{t('scholarship.nextSteps.funding.infoBox')}</InfoBox>
-
-        {/* Intro */}
-        <p className="text-sm text-gray-700">{t('scholarship.nextSteps.funding.intro')}</p>
+        {/* Instruction-led info box (merged S20 — old `infoBox` framing now
+            folded into the single `intro` string so the student sees one
+            clear instruction + context rather than two stacked paragraphs). */}
+        <InfoBox kind="info">{t('scholarship.nextSteps.funding.intro')}</InfoBox>
 
         {/* Programme length dropdown */}
         <div>
@@ -458,14 +457,16 @@ export default function ScholarshipNextSteps({
 
     documents: (
       <div className="space-y-3">
-        <p className="text-sm text-gray-600">{t('scholarship.nextSteps.step4Body')}</p>
+        <InfoBox kind="info">{t('scholarship.nextSteps.step4Body')}</InfoBox>
         <ScholarshipDocuments token={token} />
       </div>
     ),
 
     consent: (
       <div className="space-y-3">
-        <p className="text-sm text-gray-600">{t('scholarship.nextSteps.step6Body')}</p>
+        {/* step6Body intro removed — the Consent component carries its own
+            student-directed info notice (for minors) + the consent body
+            itself, so a stacked "Allow us to share…" line was redundant. */}
         <ScholarshipConsent token={token} locale={locale} />
       </div>
     ),

@@ -620,7 +620,7 @@
       "saved": "Saved.",
       "saveError": "Could not save your details. Please try again.",
       "step4Title": "4. Upload your documents",
-      "step4Body": "IC, results slip, STR, and any supporting documents.",
+      "step4Body": "Please upload the required documents below — your IC, your latest results slip, and (for under-18s) your parent or guardian's IC. The optional documents help strengthen your application.",
       "step5Title": "5. Add a referee",
       "step5Body": "Someone who can vouch for you — a teacher, counsellor, or community contact.",
       "step6Title": "6. Give your consent",
@@ -696,7 +696,7 @@
       },
       "funding": {
         "infoBox": "Our assistance is up to RM3,000 — the actual amount may be lower, depending on available funds and your needs.",
-        "intro": "Tick what the support would help with. There's no need to work out exact amounts.",
+        "intro": "Tick below to show what this support would help you with. Our assistance is up to RM3,000 — the actual amount may be lower, depending on available funds and your needs. You don't need to work out exact amounts.",
         "lengthLabel": "How long is your programme?",
         "length12": "1 year (Matriculation / Foundation)",
         "length24": "2 years",
@@ -788,7 +788,7 @@
     },
     "consent": {
       "subtitle": "Please review and agree below to share your profile with potential sponsors.",
-      "minorInfoNotice": "As you are under 18 years of age, please ask your parent or legal guardian to read the following section carefully and give their consent to share your particulars with potential sponsors.",
+      "minorInfoNotice": "Please ask your parent or guardian to read the following section carefully and give their consent to share your particulars with potential sponsors.",
       "text": "I, the named applicant (**{student_name}**, NRIC **{student_nric}**), consent to the **B40 Assistance Programme** sharing my profile and supporting information with potential sponsors for the purpose of considering me for financial assistance. I understand I can withdraw this consent at any time.",
       "textMinor": "I confirm that I am the parent or guardian of **{student_name}** (NRIC: **{student_nric}**), who is under 18 years old.\n\nI give permission for the **B40 Assistance Programme** to share {his_or_her} profile and documents with sponsors. This is to help {him_or_her} get financial aid. I understand that I can cancel this permission at any time.",
       "fallback": {

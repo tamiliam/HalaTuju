@@ -620,7 +620,7 @@
       "saved": "Disimpan.",
       "saveError": "Tidak dapat menyimpan butiran anda. Sila cuba lagi.",
       "step4Title": "4. Muat naik dokumen anda",
-      "step4Body": "IC, slip keputusan, STR, dan apa-apa dokumen sokongan.",
+      "step4Body": "Sila muat naik dokumen wajib di bawah — IC anda, slip keputusan terkini anda, dan (untuk pelajar di bawah 18 tahun) IC ibu bapa atau penjaga anda. Dokumen pilihan di bawah membantu menguatkan permohonan anda.",
       "step5Title": "5. Tambah perujuk",
       "step5Body": "Seseorang yang boleh menjamin anda — guru, kaunselor, atau kenalan komuniti.",
       "step6Title": "6. Berikan persetujuan anda",
@@ -696,7 +696,7 @@
       },
       "funding": {
         "infoBox": "Bantuan kami adalah sehingga RM3,000 — jumlah sebenar mungkin lebih rendah, bergantung kepada dana yang ada dan keperluan anda.",
-        "intro": "Tandakan apa yang bantuan ini akan membantu. Anda tidak perlu mengira jumlah yang tepat.",
+        "intro": "Tandakan di bawah untuk menunjukkan bagaimana bantuan ini boleh membantu anda. Bantuan kami adalah sehingga RM3,000 — jumlah sebenar mungkin lebih rendah, bergantung kepada dana yang ada dan keperluan anda. Anda tidak perlu mengira jumlah yang tepat.",
         "lengthLabel": "Berapa lama program anda?",
         "length12": "1 tahun (Matrikulasi / Asasi)",
         "length24": "2 tahun",
@@ -788,7 +788,7 @@
     },
     "consent": {
       "subtitle": "Sila semak dan bersetuju di bawah untuk berkongsi profil anda dengan bakal penaja.",
-      "minorInfoNotice": "Memandangkan anda berumur di bawah 18 tahun, sila minta ibu bapa atau penjaga sah anda membaca bahagian berikut dengan teliti dan memberikan persetujuan mereka untuk berkongsi butiran anda dengan bakal penaja.",
+      "minorInfoNotice": "Sila minta ibu bapa atau penjaga anda membaca bahagian berikut dengan teliti dan memberikan persetujuan mereka untuk berkongsi butiran anda dengan bakal penaja.",
       "text": "Saya, pemohon yang dinamakan (**{student_name}**, NRIC **{student_nric}**), bersetuju **Program Bantuan B40** berkongsi profil dan maklumat sokongan saya dengan bakal penaja bagi tujuan pertimbangan bantuan kewangan. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa.",
       "textMinor": "Saya mengesahkan bahawa saya adalah ibu bapa atau penjaga **{student_name}** (NRIC: **{student_nric}**), yang berumur di bawah 18 tahun.\n\nSaya memberi kebenaran kepada **Program Bantuan B40** untuk berkongsi profil dan dokumen {his_or_her} dengan penaja. Ini adalah untuk membantu {him_or_her} mendapat bantuan kewangan. Saya faham saya boleh membatalkan kebenaran ini pada bila-bila masa.",
       "fallback": {
