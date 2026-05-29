@@ -1044,9 +1044,18 @@ export interface ConsentStatus {
     version: string
     granted_by: string
     guardian_name: string
+    guardian_nric: string
     is_active: boolean
     granted_at: string
   }[]
+  // S19 — student context for parent-voice consent text interpolation.
+  student_name: string
+  student_nric: string
+  student_gender: '' | 'male' | 'female'   // '' when NRIC unparseable; FE falls back to neutral pronoun
+  // S19 — parent_ic Vision OCR values for the FE's live name+NRIC mismatch check.
+  // Empty strings when parent_ic not uploaded yet or OCR hasn't run.
+  parent_ic_vision_nric: string
+  parent_ic_vision_name: string
 }
 
 export async function signUploadDocument(
@@ -1106,7 +1115,12 @@ export async function getConsentStatus(options?: ApiOptions): Promise<ConsentSta
 }
 
 export async function recordConsent(
-  payload: { consent_type?: string; locale?: string; granted_by?: string; guardian_name?: string; guardian_relationship?: string },
+  payload: {
+    consent_type?: string; locale?: string; granted_by?: string;
+    guardian_name?: string; guardian_relationship?: string;
+    // S19 — typed NRIC; validated against parent_ic Vision OCR at the view layer.
+    guardian_nric?: string;
+  },
   options?: ApiOptions
 ): Promise<unknown> {
   return apiRequest('/api/v1/scholarship/consent/', {

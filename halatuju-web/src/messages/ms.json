@@ -787,26 +787,42 @@
       "error": "Tidak dapat menambah perujuk."
     },
     "consent": {
-      "draftNotice": "DERAF — kata-kata muktamad menunggu semakan undang-undang.",
-      "text": "Saya bersetuju membenarkan Program Bantuan B40 berkongsi profil dan maklumat sokongan saya dengan bakal penaja bagi tujuan pertimbangan bantuan kewangan. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa. Kami juga mungkin menjalankan OCR automatik (pengecaman teks) pada dokumen yang anda muat naik untuk membantu mengesan kesilapan menaip; keputusan ini hanyalah petunjuk lembut dan tidak menggantikan semakan manusia.",
-      "guardianNotice": "Memandangkan anda berumur bawah 18 tahun, ibu bapa atau penjaga mesti memberikan persetujuan ini.",
-      "guardianName": "Nama penjaga",
-      "guardianRelationship": "Hubungan dengan anda",
-      "agree": "Saya telah membaca dan bersetuju dengan perkara di atas.",
-      "agreeGuardian": "Sebagai ibu bapa atau penjaga, saya telah membaca dan bersetuju dengan perkara di atas bagi pihak pemohon.",
-      "textMinor": "Saya adalah ibu bapa atau penjaga sah pemohon yang dinamakan, yang berumur di bawah 18 tahun. Bagi pihak mereka, saya bersetuju Program Bantuan B40 berkongsi profil dan maklumat sokongan mereka dengan penaja berpotensi untuk tujuan mempertimbangkan mereka untuk bantuan kewangan. Saya mengesahkan bahawa saya mempunyai kuasa undang-undang untuk memberikan persetujuan ini bagi pemohon. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa. Kami juga mungkin menjalankan OCR automatik (pengecaman teks) pada dokumen yang dimuat naik — termasuk foto IC ibu bapa/penjaga — untuk membantu mengesan ralat menaip dan mengesahkan identiti; keputusan adalah isyarat lembut sahaja dan tidak pernah menggantikan semakan manusia.",
+      "subtitle": "Sila semak dan bersetuju di bawah untuk berkongsi profil anda dengan bakal penaja.",
+      "subtitleMinor": "Memandangkan {student_name} berumur di bawah 18 tahun, sila semak dan bersetuju di bawah sebagai ibu bapa atau penjaga.",
+      "text": "Saya, pemohon yang dinamakan ({student_name}, NRIC {student_nric}), bersetuju Program Bantuan B40 berkongsi profil dan maklumat sokongan saya dengan bakal penaja bagi tujuan pertimbangan bantuan kewangan. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa.",
+      "textMinor": "Saya adalah ibu bapa atau penjaga sah {student_name} (NRIC {student_nric}), yang berumur di bawah 18 tahun. Bagi pihak {his_or_her}, saya bersetuju Program Bantuan B40 berkongsi profil dan maklumat sokongan {his_or_her} dengan penaja berpotensi bagi tujuan mempertimbangkan {he_or_she} untuk bantuan kewangan. Saya mengesahkan bahawa saya mempunyai kuasa undang-undang untuk memberikan persetujuan ini. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa.",
+      "fallback": {
+        "student": "pemohon"
+      },
+      "pronoun": {
+        "he": "dia",
+        "she": "dia",
+        "they": "mereka",
+        "his": "dia",
+        "her": "dia",
+        "their": "mereka"
+      },
+      "guardianNotice": "Sila masukkan butiran anda seperti yang tertera pada IC anda. Kami membandingkannya dengan foto IC yang anda muat naik dalam langkah Dokumen.",
+      "guardianName": "Nama penuh anda (seperti pada IC)",
       "guardianNamePlaceholder": "Seperti yang tertulis pada IC anda",
+      "guardianNric": "Nombor NRIC anda",
+      "guardianRelationship": "Hubungan anda dengan pemohon",
       "relationshipPlaceholder": "Pilih hubungan anda…",
       "relationship": {
         "father": "Bapa",
         "mother": "Ibu",
         "legal_guardian": "Penjaga sah (dilantik mahkamah)",
         "grandparent": "Datuk/nenek",
-        "older_sibling": "Adik-beradik lebih tua",
-        "other_relative": "Saudara lain"
+        "brother": "Abang",
+        "sister": "Kakak",
+        "relative": "Saudara"
       },
-      "needParentIc": "Sila muat naik foto IC ibu bapa/penjaga dalam langkah Dokumen sebelum menandatangani persetujuan ini.",
+      "needParentIc": "Sila muat naik foto IC anda dalam langkah Dokumen sebelum menandatangani persetujuan ini.",
       "needGuardianshipLetter": "Kerana anda bukan bapa atau ibu pemohon, sila muat naik surat penjagaan (perintah mahkamah ATAU surat kebenaran bertulis daripada ibu bapa) dalam langkah Dokumen sebelum menandatangani.",
+      "nameMismatch": "Nama yang anda taip tidak sepadan dengan IC yang anda muat naik. Sila semak kedua-duanya.",
+      "nricMismatch": "NRIC yang anda taip tidak sepadan dengan IC yang anda muat naik. Sila semak kedua-duanya.",
+      "agree": "Saya telah membaca dan bersetuju dengan perkara di atas.",
+      "agreeGuardian": "Sebagai ibu bapa atau penjaga, saya telah membaca dan bersetuju dengan perkara di atas bagi pihak pemohon.",
       "given": "Persetujuan diberikan. Terima kasih.",
       "submit": "Beri persetujuan",
       "saving": "Menyimpan…",

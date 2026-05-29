@@ -364,16 +364,16 @@ def save_application_details(application, data):
 # ── Consent / minor logic (Sprint 5a, hardened in S17) ──────────────────
 
 # DRAFT — replace the version string when the lawyer-reviewed consent text lands.
-# Bumped 2026-05-29 (S17) — the minor flow now collects parent_ic + optional
-# guardianship_letter and uses a structured guardian_relationship dropdown.
-# Any active 2026-draft-1 consents become outdated; the student/guardian
-# re-attests with the new flow on next visit. (Substantive identity change,
-# so re-consent is the honest path here.)
-CONSENT_VERSION = '2026-draft-2'
+# S19 (2026-05-29) — bumped to 2026-draft-3. The minor flow now interpolates
+# student name/NRIC/pronoun into the consent body, captures the guardian's own
+# NRIC, hard-gates on name+NRIC match against parent_ic OCR, and refines the
+# relationship list (older_sibling → brother+sister; other_relative → relative).
+# 0 existing consents on prod at bump time, so this is purely forward-looking.
+CONSENT_VERSION = '2026-draft-3'
 
 
-# S17 — structured guardian relationship codes. Father/mother only need the
-# parent's IC; everyone else also needs a guardianship_letter (pragmatic:
+# S17/S19 — structured guardian relationship codes. Father/mother only need
+# the parent's IC; everyone else also needs a guardianship_letter (pragmatic:
 # parent's authorisation letter OR court-issued guardianship order — both
 # accepted, the lawyer call). 'Other' was intentionally excluded.
 _PARENT_RELATIONSHIPS = frozenset({'father', 'mother'})
@@ -382,8 +382,23 @@ _PARENT_RELATIONSHIPS = frozenset({'father', 'mother'})
 def needs_guardianship_letter(relationship: str) -> bool:
     """True iff the relationship requires the additional guardianship_letter
     document on top of the parent_ic upload. Father/mother only need the IC;
-    legal_guardian / grandparent / older_sibling / other_relative need both."""
+    legal_guardian / grandparent / brother / sister / relative need both."""
     return bool(relationship) and relationship not in _PARENT_RELATIONSHIPS
+
+
+# S19 — Malaysian NRIC last digit encodes sex: odd = male, even = female.
+# Used to interpolate the right pronoun into the consent text without asking
+# the student to pick again (the profile.gender field exists, but deriving
+# from NRIC keeps the consent text self-consistent with the IC the parent
+# is signing about — no possibility of a mismatch between "his/her" and the
+# IC the admin reviews).
+def gender_from_nric(nric: str):
+    """Return 'male', 'female', or None when the NRIC is unparseable."""
+    digits = ''.join(c for c in (nric or '') if c.isdigit())
+    if len(digits) < 12:
+        return None
+    last = int(digits[-1])
+    return 'male' if last % 2 == 1 else 'female'
 
 
 def age_from_nric(nric):
@@ -409,7 +424,7 @@ def is_minor(profile):
 
 
 def record_consent(application, *, consent_type, locale, granted_by,
-                   guardian_name, guardian_relationship, ip):
+                   guardian_name, guardian_relationship, ip, guardian_nric=''):
     """Record a consent, superseding any prior active consent of the same type."""
     Consent.objects.filter(
         application=application, consent_type=consent_type, is_active=True,
@@ -422,5 +437,6 @@ def record_consent(application, *, consent_type, locale, granted_by,
         granted_by=granted_by,
         guardian_name=guardian_name,
         guardian_relationship=guardian_relationship,
+        guardian_nric=guardian_nric,
         ip_address=ip,
     )

@@ -253,10 +253,33 @@ class ConsentView(APIView):
     def get(self, request):
         app = _current_application(request.user_id)
         consents = Consent.objects.filter(application=app, is_active=True) if app else Consent.objects.none()
+        # S19: surface the bits the FE needs to render the parent-voice consent
+        # text (student name + masked NRIC + pronoun) and run the live name+NRIC
+        # mismatch check (parent_ic Vision OCR). Keeps the FE to one fetch.
+        from .services import gender_from_nric
+        profile = app.profile if app else None
+        student_nric = (getattr(profile, 'nric', '') or '') if profile else ''
+        gender = gender_from_nric(student_nric) if profile else None
+        parent_ic = None
+        if app:
+            parent_ic = next(
+                (d for d in app.documents.all()
+                 if d.doc_type == 'parent_ic' and d.vision_run_at and not d.vision_error),
+                None,
+            )
         return Response({
-            'is_minor': is_minor(app.profile) if app else False,
+            'is_minor': is_minor(profile) if profile else False,
             'consent_version': CONSENT_VERSION,
             'consents': ConsentSerializer(consents, many=True).data,
+            # Student context for the parent-voice consent text — pure interpolation
+            # values; the consent body itself lives in the FE i18n bundle.
+            'student_name': (getattr(profile, 'name', '') or '') if profile else '',
+            'student_nric': student_nric,
+            'student_gender': gender or '',  # '' if NRIC unparseable; FE falls back to "they/their"
+            # Parent IC Vision values for the FE's live mismatch check (only
+            # populated when parent_ic is uploaded + OCR has run).
+            'parent_ic_vision_nric': (parent_ic.vision_nric or '') if parent_ic else '',
+            'parent_ic_vision_name': (parent_ic.vision_name or '') if parent_ic else '',
         })
 
     def post(self, request):
@@ -267,22 +290,53 @@ class ConsentView(APIView):
         serializer.is_valid(raise_exception=True)
         d = serializer.validated_data
         if is_minor(app.profile):
+            # S17: guardian must give the consent (not the minor).
+            # S19: typed NRIC also required (alongside name + relationship).
             if (d['granted_by'] != 'guardian'
                     or not d['guardian_name'].strip()
-                    or not d['guardian_relationship'].strip()):
+                    or not d['guardian_relationship'].strip()
+                    or not d['guardian_nric'].strip()):
                 return Response(
                     {'error': 'A guardian must consent for applicants under 18 '
-                              '(name + relationship required).'},
+                              '(name + NRIC + relationship required).'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             # S17: the guardian's IC must already be uploaded — without it the
             # attested identity is unverifiable. Block at consent submit time.
-            present = set(app.documents.values_list('doc_type', flat=True))
+            present_qs = app.documents.all()
+            present = {d2.doc_type for d2 in present_qs}
             if 'parent_ic' not in present:
                 return Response(
                     {'error': 'parent_ic_required',
-                     'message': "Please upload the parent/guardian's IC photo "
-                                "in Documents (step 4) before signing this consent."},
+                     'message': "Please upload your IC photo in Documents "
+                                "(step 4) before signing this consent."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            # S19: hard-gate the typed name + NRIC against the parent_ic Vision
+            # OCR. Was a soft anomaly flag in S17; lawyers won't accept anyone
+            # being able to type a fake parent name in someone else's session,
+            # so this is now a 400 block. The FE pre-checks on the same data
+            # so the toggle stays disabled — backend is defence-in-depth.
+            from .vision import nric_match, name_match
+            parent_ic = next(
+                (d2 for d2 in present_qs
+                 if d2.doc_type == 'parent_ic' and d2.vision_run_at and not d2.vision_error),
+                None,
+            )
+            if parent_ic and parent_ic.vision_nric and not nric_match(
+                    d['guardian_nric'], parent_ic.vision_nric):
+                return Response(
+                    {'error': 'parent_ic_nric_mismatch',
+                     'message': "The NRIC you typed doesn't match the IC you "
+                                "uploaded. Please check both."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if (parent_ic and parent_ic.vision_name
+                    and name_match(parent_ic.vision_name, d['guardian_name']) != 'match'):
+                return Response(
+                    {'error': 'parent_ic_name_mismatch',
+                     'message': "The name you typed doesn't match the IC you "
+                                "uploaded. Please check both."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             # S17: for non-parent relationships, the guardianship letter (court
@@ -292,9 +346,10 @@ class ConsentView(APIView):
                     and 'guardianship_letter' not in present):
                 return Response(
                     {'error': 'guardianship_letter_required',
-                     'message': "For a non-parent guardian, please also upload "
-                                "the guardianship letter or parent's written "
-                                "authorisation before signing."},
+                     'message': "Because you are not the applicant's father "
+                                "or mother, please also upload the guardianship "
+                                "letter or parent's written authorisation "
+                                "before signing."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         consent = record_consent(
@@ -304,6 +359,7 @@ class ConsentView(APIView):
             granted_by=d['granted_by'],
             guardian_name=d['guardian_name'],
             guardian_relationship=d['guardian_relationship'],
+            guardian_nric=d.get('guardian_nric', ''),
             ip=request.META.get('REMOTE_ADDR'),
         )
         return Response(ConsentSerializer(consent).data, status=status.HTTP_201_CREATED)

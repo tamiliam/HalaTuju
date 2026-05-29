@@ -462,16 +462,19 @@ class Consent(models.Model):
     be granted by a guardian. Replaces the verbal consent the B40 analysis
     flagged as insufficient for PDPA."""
     GRANTED_BY = [('self', 'Self'), ('guardian', 'Guardian')]
-    # S17 — structured guardian relationship (replaces the prior free-text). 'Other'
-    # is intentionally excluded per legal review direction; if a relationship doesn't
-    # fit, the right path is a court-appointed legal_guardian with a letter.
+    # S19 — relationship list refined: older_sibling split into brother/sister
+    # (no "older" qualifier — the existing parent_ic_underage rule already
+    # blocks anyone <18 from acting as guardian, so age is enforced upstream);
+    # other_relative shortened to relative. 'Other' remains intentionally
+    # excluded — unusual cases route through legal_guardian + letter.
     GUARDIAN_RELATIONSHIPS = [
         ('father', 'Father'),
         ('mother', 'Mother'),
         ('legal_guardian', 'Legal guardian (court-appointed)'),
         ('grandparent', 'Grandparent'),
-        ('older_sibling', 'Older sibling'),
-        ('other_relative', 'Other relative'),
+        ('brother', 'Brother'),
+        ('sister', 'Sister'),
+        ('relative', 'Relative'),
     ]
     application = models.ForeignKey(
         ScholarshipApplication, on_delete=models.CASCADE, related_name='consents',
@@ -486,6 +489,11 @@ class Consent(models.Model):
     # rows that hold free text are kept as-is; they just won't pass the new validator
     # if re-saved. Backfill ad-hoc as needed; no migration needed for that.
     guardian_relationship = models.CharField(max_length=100, blank=True, default='')
+    # S19 — guardian's own NRIC (typed by them). Validated at consent submit
+    # against the OCR'd NRIC from the uploaded parent_ic; mismatch is a hard
+    # gate (not a soft anomaly flag). Stored in masked YYMMDD-PB-#### form
+    # for legibility; comparisons strip non-digits.
+    guardian_nric = models.CharField(max_length=20, blank=True, default='')
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     granted_at = models.DateTimeField(auto_now_add=True)

@@ -248,7 +248,8 @@ class ConsentSerializer(serializers.ModelSerializer):
         model = Consent
         fields = [
             'id', 'consent_type', 'version', 'locale', 'granted_by',
-            'guardian_name', 'guardian_relationship', 'is_active', 'granted_at',
+            'guardian_name', 'guardian_relationship', 'guardian_nric',
+            'is_active', 'granted_at',
         ]
 
 
@@ -268,6 +269,9 @@ class ConsentCreateSerializer(serializers.Serializer):
     granted_by = serializers.ChoiceField(choices=['self', 'guardian'], required=False, default='self')
     guardian_name = serializers.CharField(required=False, allow_blank=True, default='')
     guardian_relationship = serializers.CharField(required=False, allow_blank=True, default='')
+    # S19 — guardian's own NRIC (typed); validated against parent_ic Vision
+    # OCR at the view layer (hard gate, not just a soft anomaly flag).
+    guardian_nric = serializers.CharField(required=False, allow_blank=True, default='')
 
     def validate_guardian_relationship(self, value):
         if value and value not in self._RELATIONSHIPS:

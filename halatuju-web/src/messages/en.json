@@ -787,12 +787,25 @@
       "error": "Could not add the referee."
     },
     "consent": {
-      "draftNotice": "DRAFT — final wording pending legal review.",
-      "text": "I consent to the B40 Assistance Programme sharing my profile and supporting information with potential sponsors for the purpose of considering me for financial assistance. I understand I can withdraw this consent at any time. We may also run automated OCR (text recognition) on the documents you upload to help spot typos; the results are a soft signal only and never replace human review.",
-      "textMinor": "I am the parent or legal guardian of the named applicant, who is under 18 years of age. On their behalf, I consent to the B40 Assistance Programme sharing their profile and supporting information with potential sponsors for the purpose of considering them for financial assistance. I confirm that I have legal authority to give this consent for the applicant. I understand that I can withdraw this consent at any time. We may also run automated OCR (text recognition) on the documents uploaded — including the parent/guardian IC photo — to help spot typos and verify identity; the results are a soft signal only and never replace human review.",
-      "guardianNotice": "As the applicant is under 18, a parent or guardian must give this consent on their behalf.",
-      "guardianName": "Parent or guardian's name",
+      "subtitle": "Please review and agree below to share your profile with potential sponsors.",
+      "subtitleMinor": "As {student_name} is under 18, please review and agree below as their parent or guardian.",
+      "text": "I, the named applicant ({student_name}, NRIC {student_nric}), consent to the B40 Assistance Programme sharing my profile and supporting information with potential sponsors for the purpose of considering me for financial assistance. I understand I can withdraw this consent at any time.",
+      "textMinor": "I am the parent or legal guardian of {student_name} (NRIC {student_nric}), who is under 18 years of age. On {his_or_her} behalf, I consent to the B40 Assistance Programme sharing {his_or_her} profile and supporting information with potential sponsors for the purpose of considering {he_or_she} for financial assistance. I confirm that I have legal authority to give this consent. I understand that I can withdraw this consent at any time.",
+      "fallback": {
+        "student": "the applicant"
+      },
+      "pronoun": {
+        "he": "he",
+        "she": "she",
+        "they": "they",
+        "his": "his",
+        "her": "her",
+        "their": "their"
+      },
+      "guardianNotice": "Please enter your details exactly as they appear on your IC. We compare them to the IC photo you uploaded in the Documents step.",
+      "guardianName": "Your full name (as on IC)",
       "guardianNamePlaceholder": "As written on your IC",
+      "guardianNric": "Your NRIC number",
       "guardianRelationship": "Your relationship to the applicant",
       "relationshipPlaceholder": "Select your relationship…",
       "relationship": {
@@ -800,11 +813,14 @@
         "mother": "Mother",
         "legal_guardian": "Legal guardian (court-appointed)",
         "grandparent": "Grandparent",
-        "older_sibling": "Older sibling",
-        "other_relative": "Other relative"
+        "brother": "Brother",
+        "sister": "Sister",
+        "relative": "Relative"
       },
-      "needParentIc": "Please upload the parent/guardian's IC photo in the Documents step before signing this consent.",
+      "needParentIc": "Please upload your IC photo in the Documents step before signing this consent.",
       "needGuardianshipLetter": "Because you are not the applicant's father or mother, please also upload a guardianship letter (court order OR the parent's written authorisation) in the Documents step before signing.",
+      "nameMismatch": "The name you typed doesn't match the IC you uploaded. Please check both.",
+      "nricMismatch": "The NRIC you typed doesn't match the IC you uploaded. Please check both.",
       "agree": "I have read and agree to the above.",
       "agreeGuardian": "As parent or guardian, I have read and agree to the above on the applicant's behalf.",
       "given": "Consent given. Thank you.",
