@@ -1359,7 +1359,55 @@
       "visionDeclaration": "Declaration name",
       "visionAddressTitle": "Address on IC (from photo)",
       "visionAddressVsProfile": "Student-entered address",
-      "visionError": "Could not re-run Vision."
+      "visionError": "Could not re-run Vision.",
+      "anomaly": {
+        "title": "Pre-interview flags",
+        "intro": "Data inconsistencies the engine spotted. Use them to direct the interview — a flag is a question worth asking, not a verdict.",
+        "empty": "No automated flags. Use your judgement during the interview.",
+        "flagOne": "flag",
+        "flagMany": "flags",
+        "askLabel": "Ask",
+        "vision_nric_mismatch": {
+          "fact": "OCR read NRIC {ocr_nric}; the student typed {profile_nric}.",
+          "question": "Can you confirm your IC number? The photo we have shows a different number."
+        },
+        "vision_name_mismatch": {
+          "fact": "OCR read name “{ocr_name}”; the student typed “{profile_name}”.",
+          "question": "The name on your IC is slightly different from what you typed. Which is the version on your official documents?"
+        },
+        "address_state_mismatch": {
+          "fact": "IC shows {ic_state}; the student says they live in {profile_state}.",
+          "question": "Your IC shows you’re registered in {ic_state}, but you said you live in {profile_state}. Where are you living right now?"
+        },
+        "jkm_high_income": {
+          "fact": "Family receives JKM aid despite household income of RM {income}/month.",
+          "question": "JKM often supports families with disability or caregiving needs. Could you tell me what your family is receiving JKM for?"
+        },
+        "household_size_one": {
+          "fact": "Household size is 1 — unusual for a B40 student.",
+          "question": "You mentioned you live alone — can you tell me about that? Are you a student living away from family?"
+        },
+        "first_in_family_with_siblings_studying": {
+          "fact": "Student claims to be first-to-university, but {count} sibling(s) are studying.",
+          "question": "You'd be the first in your family to go to university, but {count} sibling(s) are also studying — are they younger and still in school, or already at university?"
+        },
+        "funding_other_without_note": {
+          "fact": "Student ticked “Other” under funding but left the note blank.",
+          "question": "You ticked ‘Other’ for funding — what did you have in mind?"
+        },
+        "declaration_name_mismatch": {
+          "fact": "Signed declaration name “{declaration}” differs from the profile name “{profile_name}”.",
+          "question": "The name you signed differs from your profile — small typo, or are these genuinely different names?"
+        },
+        "str_claimed_no_doc": {
+          "fact": "Student says family receives STR but no STR confirmation document was uploaded.",
+          "question": "You said your family receives STR — could you upload the STR confirmation? It helps us verify quickly."
+        },
+        "device_in_funding": {
+          "fact": "Student ticked “device” (laptop/tablet) under funding.",
+          "question": "RM 3,000 may not cover a laptop alongside other costs. If we can only support partially, how would you bridge the gap?"
+        }
+      }
     },
     "students": "Students",
     "invite": "Invite",

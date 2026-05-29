@@ -1359,7 +1359,55 @@
       "visionDeclaration": "Nama pengakuan",
       "visionAddressTitle": "Alamat pada IC (dari foto)",
       "visionAddressVsProfile": "Alamat yang dimasukkan pelajar",
-      "visionError": "Tidak dapat menjalankan semula Vision."
+      "visionError": "Tidak dapat menjalankan semula Vision.",
+      "anomaly": {
+        "title": "Penanda pra-temubual",
+        "intro": "Percanggahan data yang dikesan enjin. Gunakannya untuk mengarah temubual — penanda adalah soalan yang patut ditanya, bukan keputusan.",
+        "empty": "Tiada penanda automatik. Gunakan pertimbangan anda semasa temubual.",
+        "flagOne": "penanda",
+        "flagMany": "penanda",
+        "askLabel": "Tanya",
+        "vision_nric_mismatch": {
+          "fact": "OCR membaca NRIC {ocr_nric}; pelajar menaip {profile_nric}.",
+          "question": "Bolehkah anda sahkan nombor IC anda? Foto yang kami ada menunjukkan nombor yang berbeza."
+        },
+        "vision_name_mismatch": {
+          "fact": "OCR membaca nama “{ocr_name}”; pelajar menaip “{profile_name}”.",
+          "question": "Nama pada IC anda sedikit berbeza daripada apa yang anda taip. Yang manakah versi pada dokumen rasmi anda?"
+        },
+        "address_state_mismatch": {
+          "fact": "IC menunjukkan {ic_state}; pelajar menyatakan tinggal di {profile_state}.",
+          "question": "IC anda menunjukkan anda berdaftar di {ic_state}, tetapi anda berkata tinggal di {profile_state}. Di mana anda tinggal sekarang?"
+        },
+        "jkm_high_income": {
+          "fact": "Keluarga menerima bantuan JKM walaupun pendapatan isi rumah RM {income}/bulan.",
+          "question": "JKM sering menyokong keluarga dengan keperluan OKU atau penjagaan. Bolehkah anda kongsi apa yang keluarga anda terima JKM untuk?"
+        },
+        "household_size_one": {
+          "fact": "Saiz isi rumah ialah 1 — luar biasa untuk pelajar B40.",
+          "question": "Anda menyebut anda tinggal sendirian — bolehkah anda kongsi tentang itu? Adakah anda pelajar yang tinggal jauh dari keluarga?"
+        },
+        "first_in_family_with_siblings_studying": {
+          "fact": "Pelajar mendakwa pertama ke universiti, tetapi {count} adik-beradik sedang belajar.",
+          "question": "Anda akan menjadi yang pertama dalam keluarga ke universiti, tetapi {count} adik-beradik juga sedang belajar — adakah mereka masih bersekolah, atau sudah di universiti?"
+        },
+        "funding_other_without_note": {
+          "fact": "Pelajar menanda “Lain-lain” bawah pembiayaan tetapi nota dibiarkan kosong.",
+          "question": "Anda tanda ‘Lain-lain’ untuk pembiayaan — apa yang anda fikirkan?"
+        },
+        "declaration_name_mismatch": {
+          "fact": "Nama yang ditandatangani “{declaration}” berbeza daripada nama profil “{profile_name}”.",
+          "question": "Nama yang anda tandatangani berbeza daripada profil anda — kesilapan kecil atau memang nama yang berbeza?"
+        },
+        "str_claimed_no_doc": {
+          "fact": "Pelajar berkata keluarga menerima STR tetapi tiada dokumen pengesahan STR dimuat naik.",
+          "question": "Anda kata keluarga anda terima STR — bolehkah anda muat naik pengesahan STR? Ia membantu kami sahkan dengan cepat."
+        },
+        "device_in_funding": {
+          "fact": "Pelajar menanda “peranti” (komputer riba/tablet) bawah pembiayaan.",
+          "question": "RM 3,000 mungkin tidak cukup untuk komputer riba bersama kos lain. Jika kami hanya boleh sokong sebahagian, bagaimana anda akan tampung jurang itu?"
+        }
+      }
     },
     "students": "Pelajar",
     "invite": "Jemputan",

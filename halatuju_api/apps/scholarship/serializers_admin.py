@@ -64,6 +64,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     spm_a_count = serializers.SerializerMethodField()
     funding_need = serializers.SerializerMethodField()
     sponsor_profile = serializers.SerializerMethodField()
+    # Pre-interview deterministic flag list (S16 Phase A). Each entry is
+    # {code, params}; the frontend resolves human copy from its i18n bundle.
+    anomalies = serializers.SerializerMethodField()
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
     referees = RefereeSerializer(many=True, read_only=True)
     consents = ConsentSerializer(many=True, read_only=True)
@@ -87,6 +90,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
             'chosen_programme', 'uncertainty_reasons', 'uncertainty_note',
             'funding_need', 'documents', 'referees', 'consents', 'sponsor_profile',
+            'anomalies',
             'intake_snapshot',
         ]
 
@@ -111,3 +115,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             return SponsorProfileSerializer(obj.sponsor_profile).data
         except SponsorProfile.DoesNotExist:
             return None
+
+    def get_anomalies(self, obj):
+        """S16 Phase A: deterministic pre-interview flag list. Pure rules,
+        no LLM calls. Returns ``[]`` when nothing flags."""
+        from .anomaly_engine import detect_anomalies
+        return detect_anomalies(obj)

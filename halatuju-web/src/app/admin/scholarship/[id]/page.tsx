@@ -237,6 +237,43 @@ export default function AdminScholarshipDetailPage() {
         </p>
       </div>
 
+      {/* S16 Phase A: deterministic pre-interview flag list. Each flag = a
+          data inconsistency worth asking about during the interview. Empty
+          state when nothing flags — the engine is honest about silence. */}
+      <div className="bg-white rounded-xl border p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">{t('admin.scholarship.anomaly.title')}</h2>
+          {app.anomalies && app.anomalies.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+              {app.anomalies.length} {app.anomalies.length === 1 ? t('admin.scholarship.anomaly.flagOne') : t('admin.scholarship.anomaly.flagMany')}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-gray-500">{t('admin.scholarship.anomaly.intro')}</p>
+        {!app.anomalies || app.anomalies.length === 0 ? (
+          <p className="text-sm text-gray-400 italic">{t('admin.scholarship.anomaly.empty')}</p>
+        ) : (
+          <ul className="space-y-3">
+            {app.anomalies.map((a) => (
+              <li key={a.code} className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1.5">
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-600 shrink-0" aria-hidden>⚠</span>
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-800">
+                      {t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
+                    </p>
+                    <p className="text-sm text-gray-700 italic">
+                      <span className="font-semibold not-italic">{t('admin.scholarship.anomaly.askLabel')}:</span>{' '}
+                      {t(`admin.scholarship.anomaly.${a.code}.question`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {/* Verify & accept (human gate — locks the NRIC, advances → accepted) */}
       <div className="bg-white rounded-xl border p-4 space-y-3">
         <div className="flex items-center justify-between">

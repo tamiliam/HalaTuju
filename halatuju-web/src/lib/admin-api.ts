@@ -305,6 +305,9 @@ export interface AdminScholarshipDetail {
   shortlist_reason: string
   submitted_at: string
   funding_need: { categories: string[]; funding_note: string; programme_months: number | null } | null
+  // S16 Phase A: deterministic pre-interview flag list. {code, params}; the
+  // frontend resolves human copy from its i18n bundle (no server-side copy).
+  anomalies: AdminAnomaly[]
   documents: AdminApplicantDocument[]
   referees: AdminReferee[]
   consents: Array<{ id: number; consent_type: string; version: string; granted_by: string; guardian_name: string; is_active: boolean; granted_at: string }>
@@ -377,6 +380,15 @@ export async function setMentoringCandidate(id: number, value: boolean, options?
   return adminMutate<AdminScholarshipDetail>(
     `/api/v1/admin/scholarship/applications/${id}/`, 'PATCH', { mentoring_candidate: value }, options
   )
+}
+
+/** S16 Phase A: deterministic pre-interview flag (anomaly engine). The `code`
+ *  resolves to two i18n keys: `scholarship.admin.anomaly.{code}.fact` (the
+ *  observed inconsistency, with `params` interpolated) and `.question` (the
+ *  suggested interview question). */
+export interface AdminAnomaly {
+  code: string
+  params: Record<string, string | number>
 }
 
 export interface AdminApplicantDocument {
