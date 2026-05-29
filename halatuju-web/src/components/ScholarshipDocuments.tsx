@@ -100,6 +100,24 @@ function visionChipVariant(doc: ApplicantDocument): 'good' | 'name-soft' | 'nric
   return null
 }
 
+/** Render text containing a single `<link>…</link>` marker as a /profile link.
+ *  Falls back to plain text if the marker is absent (defensive against
+ *  translations that lose the tag). */
+function renderWithProfileLink(text: string) {
+  const m = text.match(/^([\s\S]*?)<link>([\s\S]*?)<\/link>([\s\S]*)$/)
+  if (!m) return text
+  const [, before, linkText, after] = m
+  return (
+    <>
+      {before}
+      <Link href="/profile" className="font-semibold underline hover:no-underline">
+        {linkText}
+      </Link>
+      {after}
+    </>
+  )
+}
+
 function VisionChip({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
   const variant = visionChipVariant(doc)
   if (!variant) return null
@@ -110,19 +128,13 @@ function VisionChip({ doc, t }: { doc: ApplicantDocument; t: (key: string) => st
     unreadable: 'bg-gray-50 text-gray-700 ring-gray-200',
   }
   const icon = variant === 'good' ? '✓' : variant === 'unreadable' ? 'ⓘ' : '⚠'
+  const text = t(`scholarship.docs.vision.${variant}`)
   return (
     <div className="mt-2">
       <span className={`inline-flex items-start gap-1.5 rounded-full px-3 py-1.5 text-xs ring-1 ${palette[variant]}`}>
         <span aria-hidden>{icon}</span>
-        <span>{t(`scholarship.docs.vision.${variant}`)}</span>
+        <span>{variant === 'name-soft' ? renderWithProfileLink(text) : text}</span>
       </span>
-      {variant === 'name-soft' && (
-        <p className="mt-1 text-xs">
-          <Link href="/profile" className="font-medium text-blue-700 underline hover:text-blue-900">
-            {t('scholarship.docs.vision.name-soft-action')}
-          </Link>
-        </p>
-      )}
       <p className="mt-1 text-xs text-gray-400">{t('scholarship.docs.vision.note')}</p>
     </div>
   )
