@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useT } from '@/lib/i18n'
 import { getConsentStatus, recordConsent, type ConsentStatus } from '@/lib/api'
+import Toggle from '@/components/Toggle'
 
 export default function ScholarshipConsent({
   token,
@@ -72,10 +73,18 @@ export default function ScholarshipConsent({
           />
         </>
       )}
-      <label className="flex items-start gap-2 text-sm text-gray-700">
-        <input type="checkbox" className="mt-1" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
-        {isMinor ? t('scholarship.consent.agreeGuardian') : t('scholarship.consent.agree')}
-      </label>
+      {/* S15: slide toggle for visual consistency with /apply + Story tab toggles.
+          Longer agreement text wraps on the left; the switch sits flush right. */}
+      <div className="flex items-start justify-between gap-3">
+        <span className="text-sm text-gray-700">
+          {isMinor ? t('scholarship.consent.agreeGuardian') : t('scholarship.consent.agree')}
+        </span>
+        <Toggle
+          on={checked}
+          onChange={setChecked}
+          label={isMinor ? t('scholarship.consent.agreeGuardian') : t('scholarship.consent.agree')}
+        />
+      </div>
       {error && <p className="text-red-600 text-sm">{error}</p>}
       <button
         type="submit"

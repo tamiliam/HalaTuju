@@ -278,7 +278,13 @@ class ScholarshipApplication(models.Model):
     )
     siblings_studying = models.BooleanField(
         default=False,
-        help_text="One or more of my siblings are also studying.",
+        help_text="Legacy: one or more siblings are studying. Superseded by "
+                  "siblings_studying_count (S15); read fall-back only. TD-061.",
+    )
+    siblings_studying_count = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        help_text="How many of the applicant's siblings are currently studying. "
+                  "A proxy for how much education-funding burden the family carries.",
     )
     family_context = models.TextField(
         blank=True, default='',

@@ -62,6 +62,22 @@ class TestProfilePrompt(TestCase):
         self.assertIn('என் தந்தை ஒரு லாரி ஓட்டுநர்', prompt)  # Tamil family context
         self.assertIn('Lorry driver', prompt)
 
+    def test_prompt_siblings_uses_count_when_set(self):
+        """S15: prompt prefers the integer count over the legacy boolean."""
+        self.app.siblings_studying_count = 4
+        self.app.save(update_fields=['siblings_studying_count'])
+        prompt = _build_prompt(self.app)
+        # The line is rendered "Siblings currently studying: 4"
+        self.assertIn('Siblings currently studying: 4', prompt)
+
+    def test_prompt_siblings_falls_back_to_boolean(self):
+        """S15: with no count, the legacy boolean is rendered as Yes/No (back-compat)."""
+        self.app.siblings_studying_count = None
+        self.app.siblings_studying = True
+        self.app.save(update_fields=['siblings_studying_count', 'siblings_studying'])
+        prompt = _build_prompt(self.app)
+        self.assertIn('Siblings currently studying: yes', prompt)
+
     def test_prompt_has_no_dead_total(self):
         """The dead FundingNeed `total` must not appear (TD-059)."""
         prompt = _build_prompt(self.app)

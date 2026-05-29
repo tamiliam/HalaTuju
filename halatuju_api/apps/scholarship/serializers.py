@@ -86,7 +86,11 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
     # "Your story" guided narrative fields (S2 redesign)
     first_in_family = serializers.BooleanField(required=False)
     parents_occupation = serializers.CharField(required=False, allow_blank=True)
+    # Legacy boolean still accepted for back-compat; new flow uses the count below.
     siblings_studying = serializers.BooleanField(required=False)
+    siblings_studying_count = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0, max_value=20,
+    )
     family_context = serializers.CharField(required=False, allow_blank=True)
     daily_life = serializers.CharField(required=False, allow_blank=True)
     # Address — stored on the profile, captured in the Story tab (S14).
@@ -147,7 +151,8 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'acknowledged_at', 'submitted_at', 'updated_at',
             'aspirations', 'plans', 'fears', 'justification',
             # "Your story" guided narrative fields (S2 redesign)
-            'first_in_family', 'parents_occupation', 'siblings_studying',
+            'first_in_family', 'parents_occupation',
+            'siblings_studying', 'siblings_studying_count',
             'family_context', 'daily_life',
             # Address pre-fill (profile-derived, read-only here; written via
             # ApplicationDetailsUpdateSerializer + save_application_details).

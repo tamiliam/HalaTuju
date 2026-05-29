@@ -641,8 +641,19 @@
           "title": "Tentang keluarga anda",
           "firstInFamily": "Saya akan menjadi yang pertama dalam keluarga saya melanjutkan pengajian ke universiti.",
           "parentsOccupation": "Apakah pekerjaan ibu bapa atau penjaga anda?",
+          "parentsOccupationPlaceholder": "Bapa saya pemandu lori; ibu saya menjahit di rumah.",
+          "parentsOccupationTipsTitle": "Perlukan idea?",
+          "parentsOccupationTip1": "Apa yang mereka lakukan setiap hari",
+          "parentsOccupationTip2": "Sama ada kerja itu tetap atau tidak menentu",
+          "parentsOccupationTip3": "Sesiapa lagi dalam rumah yang berpendapatan",
           "siblingsStudying": "Satu atau lebih adik-beradik saya juga sedang belajar.",
-          "familyContext": "Ada apa-apa tentang situasi keluarga anda yang kami perlu tahu? (siapa yang menyara keluarga, sebarang penyakit atau kesusahan)"
+          "siblingsCountLabel": "Berapa orang adik-beradik anda yang sedang belajar?",
+          "familyContext": "Ada apa-apa tentang situasi keluarga anda yang kami perlu tahu? (siapa yang menyara keluarga, sebarang penyakit atau kesusahan)",
+          "familyContextPlaceholder": "Kami berpindah ke rumah nenek selepas bapa saya hilang kerja tahun lepas.",
+          "familyContextTipsTitle": "Perlukan idea?",
+          "familyContextTip1": "Perubahan baru-baru ini di rumah",
+          "familyContextTip2": "Dengan siapa anda tinggal",
+          "familyContextTip3": "Apa-apa yang menyukarkan anda untuk belajar"
         },
         "cardAddress": {
           "title": "Tempat tinggal anda",
@@ -658,9 +669,29 @@
         "cardB": {
           "title": "Tentang diri anda",
           "aspirations": "Apa yang anda harapkan untuk menjadi? Impian dan cita-cita anda.",
+          "aspirationsPlaceholder": "Saya mahu menjadi jururawat dan bekerja di klinik tempatan kami.",
+          "aspirationsTipsTitle": "Perlukan idea?",
+          "aspirationsTip1": "Kerjaya atau peranan yang anda bayangkan",
+          "aspirationsTip2": "Mengapa ia bermakna bagi anda",
+          "aspirationsTip3": "Siapa atau apa yang memberi inspirasi",
           "plans": "Bagaimana anda merancang untuk mencapainya?",
+          "plansPlaceholder": "Habiskan Diploma Kejururawatan, kemudian bekerja dua tahun sebelum memohon Ijazah top-up.",
+          "plansTipsTitle": "Perlukan idea?",
+          "plansTip1": "Langkah pertama anda selepas SPM atau STPM",
+          "plansTip2": "Di mana anda akan belajar",
+          "plansTip3": "Apa yang anda akan lakukan selepas itu",
           "dailyLife": "Bagaimana kehidupan harian anda? Ada tanggungjawab seperti bekerja atau menjaga keluarga?",
-          "fears": "Apa yang paling membimbangkan anda, atau sokongan apa yang paling membantu anda?"
+          "dailyLifePlaceholder": "Saya membantu memasak dan menjaga dua adik kecil sebelum tuisyen setiap petang.",
+          "dailyLifeTipsTitle": "Perlukan idea?",
+          "dailyLifeTip1": "Bagaimana hari biasa anda",
+          "dailyLifeTip2": "Apa-apa yang anda buat untuk membantu keluarga",
+          "dailyLifeTip3": "Bagaimana anda mencari masa untuk belajar",
+          "fears": "Apa yang paling membimbangkan anda, atau sokongan apa yang paling membantu anda?",
+          "fearsPlaceholder": "Saya bimbang saya tidak mampu membeli buku teks.",
+          "fearsTipsTitle": "Perlukan idea?",
+          "fearsTip1": "Satu perkara yang anda fikirkan tentang belajar",
+          "fearsTip2": "Sesuatu yang mungkin menghalang anda",
+          "fearsTip3": "Apa yang akan membantu anda berasa lebih bersedia"
         }
       },
       "funding": {

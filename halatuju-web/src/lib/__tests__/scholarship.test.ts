@@ -670,16 +670,32 @@ describe('buildDetailsPayload', () => {
       ...emptyDetailsForm(),
       firstInFamily: true,
       parentsOccupation: '  Factory worker  ',
-      siblingsStudying: false,
       familyContext: '  Father is ill  ',
       dailyLife: '  Wake at 5am  ',
     }
     const p = buildDetailsPayload(f) as Record<string, unknown>
     expect(p.first_in_family).toBe(true)
     expect(p.parents_occupation).toBe('Factory worker')
-    expect(p.siblings_studying).toBe(false)
     expect(p.family_context).toBe('Father is ill')
     expect(p.daily_life).toBe('Wake at 5am')
+    // S15: the form no longer emits the legacy boolean; back-compat lives
+    // on the backend serializer only.
+    expect('siblings_studying' in p).toBe(false)
+  })
+
+  it('S15: emits siblings_studying_count as int|null (string-to-int conversion)', () => {
+    // empty string → null
+    let p = buildDetailsPayload(emptyDetailsForm()) as Record<string, unknown>
+    expect(p.siblings_studying_count).toBeNull()
+    // "3" → 3
+    p = buildDetailsPayload({ ...emptyDetailsForm(), siblingsStudyingCount: '3' }) as Record<string, unknown>
+    expect(p.siblings_studying_count).toBe(3)
+    // "0" → 0 (a valid answer — no siblings studying)
+    p = buildDetailsPayload({ ...emptyDetailsForm(), siblingsStudyingCount: '0' }) as Record<string, unknown>
+    expect(p.siblings_studying_count).toBe(0)
+    // whitespace stripped
+    p = buildDetailsPayload({ ...emptyDetailsForm(), siblingsStudyingCount: '  2  ' }) as Record<string, unknown>
+    expect(p.siblings_studying_count).toBe(2)
   })
 
   it('emits S3 funding fields: categories, funding_note, programme_months (trimmed, typed)', () => {
@@ -754,16 +770,47 @@ describe('applicationToDetailsForm', () => {
     const app = {
       aspirations: 'Be a nurse', plans: 'Study pharmacy', fears: '', justification: '',
       first_in_family: true, parents_occupation: 'Rubber tapper',
-      siblings_studying: true, family_context: 'Mother is ill',
+      siblings_studying: true, siblings_studying_count: 3,
+      family_context: 'Mother is ill',
       daily_life: 'Wake early, help at home',
       funding_need: null,
     } as unknown as ScholarshipApplication
     const f = applicationToDetailsForm(app)
     expect(f.firstInFamily).toBe(true)
     expect(f.parentsOccupation).toBe('Rubber tapper')
-    expect(f.siblingsStudying).toBe(true)
+    expect(f.siblingsStudyingCount).toBe('3')
     expect(f.familyContext).toBe('Mother is ill')
     expect(f.dailyLife).toBe('Wake early, help at home')
+  })
+
+  it('S15: pre-fills siblingsStudyingCount from app.siblings_studying_count when set', () => {
+    const app = {
+      aspirations: '', plans: '', fears: '', justification: '',
+      first_in_family: false, parents_occupation: '',
+      siblings_studying: false, siblings_studying_count: 0,
+      family_context: '', daily_life: '', funding_need: null,
+    } as unknown as ScholarshipApplication
+    expect(applicationToDetailsForm(app).siblingsStudyingCount).toBe('0')
+  })
+
+  it('S15: falls back to "1" when only the legacy boolean is true (older data)', () => {
+    const app = {
+      aspirations: '', plans: '', fears: '', justification: '',
+      first_in_family: false, parents_occupation: '',
+      siblings_studying: true, siblings_studying_count: null,
+      family_context: '', daily_life: '', funding_need: null,
+    } as unknown as ScholarshipApplication
+    expect(applicationToDetailsForm(app).siblingsStudyingCount).toBe('1')
+  })
+
+  it('S15: empty when neither count nor boolean indicates studying siblings', () => {
+    const app = {
+      aspirations: '', plans: '', fears: '', justification: '',
+      first_in_family: false, parents_occupation: '',
+      siblings_studying: false, siblings_studying_count: null,
+      family_context: '', daily_life: '', funding_need: null,
+    } as unknown as ScholarshipApplication
+    expect(applicationToDetailsForm(app).siblingsStudyingCount).toBe('')
   })
   it('handles a null funding need', () => {
     const app = {

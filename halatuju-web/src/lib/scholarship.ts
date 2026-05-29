@@ -590,7 +590,12 @@ export interface DetailsFormState {
   // Card A — About your family (S2)
   firstInFamily: boolean
   parentsOccupation: string
-  siblingsStudying: boolean
+  // S15: how many siblings are currently studying (proxy for family education
+  // burden). String for the <input> (empty = "not provided"); converts to
+  // int|null in buildDetailsPayload, mirroring programmeMonths. The legacy
+  // boolean is dropped from the form state; backend still accepts it for
+  // back-compat from older clients.
+  siblingsStudyingCount: string
   familyContext: string
   // Card B — About you (S2; aspirations/plans/fears pre-existing, daily_life new)
   aspirations: string
@@ -616,7 +621,7 @@ export function emptyDetailsForm(): DetailsFormState {
     // Card A — About your family
     firstInFamily: false,
     parentsOccupation: '',
-    siblingsStudying: false,
+    siblingsStudyingCount: '',
     familyContext: '',
     // Card B — About you
     aspirations: '',
@@ -641,7 +646,11 @@ export function applicationToDetailsForm(app: ScholarshipApplication): DetailsFo
     // Card A — About your family (S2 narrative fields)
     firstInFamily: !!app.first_in_family,
     parentsOccupation: app.parents_occupation || '',
-    siblingsStudying: !!app.siblings_studying,
+    // S15: prefer the count; if older data only has the boolean, surface "1" as
+    // a best-effort starter so the field isn't blank for a known siblings_studying user.
+    siblingsStudyingCount: app.siblings_studying_count != null
+      ? String(app.siblings_studying_count)
+      : (app.siblings_studying ? '1' : ''),
     familyContext: app.family_context || '',
     // Card B — About you
     aspirations: app.aspirations || '',
@@ -669,7 +678,12 @@ export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown
     // Card A — About your family (snake_case for the backend)
     first_in_family: f.firstInFamily,
     parents_occupation: f.parentsOccupation.trim(),
-    siblings_studying: f.siblingsStudying,
+    // S15: emit the count (int|null); the legacy boolean is no longer sent by
+    // this client — the backend keeps accepting it from older clients during
+    // the back-compat window (TD-061 will drop the column next session).
+    siblings_studying_count: f.siblingsStudyingCount.trim() !== ''
+      ? (parseInt(f.siblingsStudyingCount.trim(), 10) || 0)
+      : null,
     family_context: f.familyContext.trim(),
     // Card B — About you
     aspirations: f.aspirations.trim(),

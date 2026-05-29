@@ -14,6 +14,22 @@ import {
 } from '@/lib/scholarship'
 import ScholarshipDocuments from '@/components/ScholarshipDocuments'
 import ScholarshipConsent from '@/components/ScholarshipConsent'
+import FieldLabel from '@/components/FieldLabel'
+import Toggle from '@/components/Toggle'
+
+/** Small collapsible "Need ideas?" tips panel rendered below an open-ended
+ *  textarea. Native <details> for accessibility + zero JS. Three tip bullets
+ *  by convention — keeps the cheat-sheet short and encouraging. */
+function Tips({ title, tips }: { title: string; tips: string[] }) {
+  return (
+    <details className="mt-1 text-xs text-gray-500">
+      <summary className="cursor-pointer select-none text-primary-600 hover:underline">{title}</summary>
+      <ul className="mt-1.5 ml-4 list-disc space-y-0.5">
+        {tips.map((tip) => <li key={tip}>{tip}</li>)}
+      </ul>
+    </details>
+  )
+}
 
 // Category keys and their i18n keys for the funding tab (S3 redesign)
 const FUNDING_CATEGORIES = [
@@ -145,54 +161,66 @@ export default function ScholarshipNextSteps({
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
           <h3 className="font-medium text-gray-900">{t('scholarship.nextSteps.story.cardA.title')}</h3>
 
-          {/* first_in_family */}
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              checked={form.firstInFamily}
-              onChange={(e) => update('firstInFamily', e.target.checked)}
-            />
+          {/* first_in_family — slide toggle (S15) for consistency with /apply */}
+          <div className="flex items-center justify-between gap-3">
             <span className="text-sm text-gray-700">{t('scholarship.nextSteps.story.cardA.firstInFamily')}</span>
-          </label>
-
-          {/* parents_occupation */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('scholarship.nextSteps.story.cardA.parentsOccupation')}
-            </label>
-            <input
-              type="text"
-              className="input"
-              value={form.parentsOccupation}
-              onChange={(e) => update('parentsOccupation', e.target.value)}
+            <Toggle
+              on={form.firstInFamily}
+              onChange={(v) => update('firstInFamily', v)}
+              label={t('scholarship.nextSteps.story.cardA.firstInFamily')}
             />
           </div>
 
-          {/* siblings_studying (optional) */}
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              checked={form.siblingsStudying}
-              onChange={(e) => update('siblingsStudying', e.target.checked)}
-            />
-            <span className="text-sm text-gray-700">
-              {t('scholarship.nextSteps.story.cardA.siblingsStudying')}
-              {' '}<span className="text-xs text-gray-400 font-normal">{t('scholarship.nextSteps.story.optional')}</span>
-            </span>
-          </label>
-
-          {/* family_context (optional) */}
+          {/* parents_occupation */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('scholarship.nextSteps.story.cardA.familyContext')}
-              {' '}<span className="text-xs text-gray-400 font-normal">{t('scholarship.nextSteps.story.optional')}</span>
-            </label>
+            <FieldLabel>{t('scholarship.nextSteps.story.cardA.parentsOccupation')}</FieldLabel>
+            <input
+              type="text"
+              className="input"
+              placeholder={t('scholarship.nextSteps.story.cardA.parentsOccupationPlaceholder')}
+              value={form.parentsOccupation}
+              onChange={(e) => update('parentsOccupation', e.target.value)}
+            />
+            <Tips
+              title={t('scholarship.nextSteps.story.cardA.parentsOccupationTipsTitle')}
+              tips={[
+                t('scholarship.nextSteps.story.cardA.parentsOccupationTip1'),
+                t('scholarship.nextSteps.story.cardA.parentsOccupationTip2'),
+                t('scholarship.nextSteps.story.cardA.parentsOccupationTip3'),
+              ]}
+            />
+          </div>
+
+          {/* siblings_studying_count — open numeric (S15 replaces the boolean tick) */}
+          <div>
+            <FieldLabel>{t('scholarship.nextSteps.story.cardA.siblingsCountLabel')}</FieldLabel>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={2}
+              placeholder="0"
+              className="input w-24"
+              value={form.siblingsStudyingCount}
+              onChange={(e) => update('siblingsStudyingCount', e.target.value.replace(/\D/g, '').slice(0, 2))}
+            />
+          </div>
+
+          {/* family_context */}
+          <div>
+            <FieldLabel>{t('scholarship.nextSteps.story.cardA.familyContext')}</FieldLabel>
             <textarea
               className="input" rows={3}
+              placeholder={t('scholarship.nextSteps.story.cardA.familyContextPlaceholder')}
               value={form.familyContext}
               onChange={(e) => update('familyContext', e.target.value)}
+            />
+            <Tips
+              title={t('scholarship.nextSteps.story.cardA.familyContextTipsTitle')}
+              tips={[
+                t('scholarship.nextSteps.story.cardA.familyContextTip1'),
+                t('scholarship.nextSteps.story.cardA.familyContextTip2'),
+                t('scholarship.nextSteps.story.cardA.familyContextTip3'),
+              ]}
             />
           </div>
         </div>
@@ -202,11 +230,9 @@ export default function ScholarshipNextSteps({
           <h3 className="font-medium text-gray-900">{t('scholarship.nextSteps.story.cardAddress.title')}</h3>
           <p className="text-xs text-gray-500">{t('scholarship.nextSteps.story.cardAddress.intro')}</p>
 
-          {/* address (street) */}
+          {/* address (street) — required */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('scholarship.nextSteps.story.cardAddress.street')}
-            </label>
+            <FieldLabel required>{t('scholarship.nextSteps.story.cardAddress.street')}</FieldLabel>
             <textarea
               className="input" rows={2}
               placeholder={t('scholarship.nextSteps.story.cardAddress.streetPlaceholder')}
@@ -215,12 +241,10 @@ export default function ScholarshipNextSteps({
             />
           </div>
 
-          {/* postal + city — two-column on wider screens */}
+          {/* postal + city — two-column on wider screens, both required */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('scholarship.nextSteps.story.cardAddress.postal')}
-              </label>
+              <FieldLabel required>{t('scholarship.nextSteps.story.cardAddress.postal')}</FieldLabel>
               <input
                 type="text"
                 inputMode="numeric"
@@ -232,9 +256,7 @@ export default function ScholarshipNextSteps({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('scholarship.nextSteps.story.cardAddress.city')}
-              </label>
+              <FieldLabel required>{t('scholarship.nextSteps.story.cardAddress.city')}</FieldLabel>
               <input
                 type="text"
                 className="input"
@@ -247,9 +269,7 @@ export default function ScholarshipNextSteps({
 
           {/* state — read-only, sourced from /apply */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('scholarship.nextSteps.story.cardAddress.state')}
-            </label>
+            <FieldLabel>{t('scholarship.nextSteps.story.cardAddress.state')}</FieldLabel>
             <div className="input flex items-center justify-between bg-gray-100 text-gray-600">
               <span>{app.preferred_state || '—'}</span>
               <span className="text-xs text-gray-400">{t('scholarship.nextSteps.story.cardAddress.fromApply')}</span>
@@ -261,53 +281,79 @@ export default function ScholarshipNextSteps({
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
           <h3 className="font-medium text-gray-900">{t('scholarship.nextSteps.story.cardB.title')}</h3>
 
-          {/* aspirations */}
+          {/* aspirations — required */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('scholarship.nextSteps.story.cardB.aspirations')}
-            </label>
+            <FieldLabel required>{t('scholarship.nextSteps.story.cardB.aspirations')}</FieldLabel>
             <textarea
               className="input" rows={3}
+              placeholder={t('scholarship.nextSteps.story.cardB.aspirationsPlaceholder')}
               value={form.aspirations}
               onChange={(e) => update('aspirations', e.target.value)}
             />
+            <Tips
+              title={t('scholarship.nextSteps.story.cardB.aspirationsTipsTitle')}
+              tips={[
+                t('scholarship.nextSteps.story.cardB.aspirationsTip1'),
+                t('scholarship.nextSteps.story.cardB.aspirationsTip2'),
+                t('scholarship.nextSteps.story.cardB.aspirationsTip3'),
+              ]}
+            />
           </div>
 
-          {/* plans */}
+          {/* plans — required */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('scholarship.nextSteps.story.cardB.plans')}
-            </label>
+            <FieldLabel required>{t('scholarship.nextSteps.story.cardB.plans')}</FieldLabel>
             <textarea
               className="input" rows={3}
+              placeholder={t('scholarship.nextSteps.story.cardB.plansPlaceholder')}
               value={form.plans}
               onChange={(e) => update('plans', e.target.value)}
             />
-          </div>
-
-          {/* daily_life (optional) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('scholarship.nextSteps.story.cardB.dailyLife')}
-              {' '}<span className="text-xs text-gray-400 font-normal">{t('scholarship.nextSteps.story.optional')}</span>
-            </label>
-            <textarea
-              className="input" rows={3}
-              value={form.dailyLife}
-              onChange={(e) => update('dailyLife', e.target.value)}
+            <Tips
+              title={t('scholarship.nextSteps.story.cardB.plansTipsTitle')}
+              tips={[
+                t('scholarship.nextSteps.story.cardB.plansTip1'),
+                t('scholarship.nextSteps.story.cardB.plansTip2'),
+                t('scholarship.nextSteps.story.cardB.plansTip3'),
+              ]}
             />
           </div>
 
-          {/* fears (optional) */}
+          {/* daily_life */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('scholarship.nextSteps.story.cardB.fears')}
-              {' '}<span className="text-xs text-gray-400 font-normal">{t('scholarship.nextSteps.story.optional')}</span>
-            </label>
+            <FieldLabel>{t('scholarship.nextSteps.story.cardB.dailyLife')}</FieldLabel>
             <textarea
               className="input" rows={3}
+              placeholder={t('scholarship.nextSteps.story.cardB.dailyLifePlaceholder')}
+              value={form.dailyLife}
+              onChange={(e) => update('dailyLife', e.target.value)}
+            />
+            <Tips
+              title={t('scholarship.nextSteps.story.cardB.dailyLifeTipsTitle')}
+              tips={[
+                t('scholarship.nextSteps.story.cardB.dailyLifeTip1'),
+                t('scholarship.nextSteps.story.cardB.dailyLifeTip2'),
+                t('scholarship.nextSteps.story.cardB.dailyLifeTip3'),
+              ]}
+            />
+          </div>
+
+          {/* fears */}
+          <div>
+            <FieldLabel>{t('scholarship.nextSteps.story.cardB.fears')}</FieldLabel>
+            <textarea
+              className="input" rows={3}
+              placeholder={t('scholarship.nextSteps.story.cardB.fearsPlaceholder')}
               value={form.fears}
               onChange={(e) => update('fears', e.target.value)}
+            />
+            <Tips
+              title={t('scholarship.nextSteps.story.cardB.fearsTipsTitle')}
+              tips={[
+                t('scholarship.nextSteps.story.cardB.fearsTip1'),
+                t('scholarship.nextSteps.story.cardB.fearsTip2'),
+                t('scholarship.nextSteps.story.cardB.fearsTip3'),
+              ]}
             />
           </div>
         </div>

@@ -257,6 +257,53 @@ class TestDetailsApi(TestCase):
         self.assertTrue(body['completeness']['address_done'])
         self.assertFalse(body['completeness']['complete'])
 
+    def test_patch_saves_siblings_studying_count(self):
+        """S15: PATCH writes siblings_studying_count to the application."""
+        self._auth(USER_A)
+        resp = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {'siblings_studying_count': 3}, format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body['siblings_studying_count'], 3)
+        self.app_a.refresh_from_db()
+        self.assertEqual(self.app_a.siblings_studying_count, 3)
+
+    def test_patch_clears_siblings_studying_count_with_null(self):
+        """S15: PATCH null clears the count (student edited from N back to blank)."""
+        self.app_a.siblings_studying_count = 2
+        self.app_a.save()
+        self._auth(USER_A)
+        resp = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {'siblings_studying_count': None}, format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertIsNone(resp.json()['siblings_studying_count'])
+        self.app_a.refresh_from_db()
+        self.assertIsNone(self.app_a.siblings_studying_count)
+
+    def test_patch_rejects_negative_siblings_studying_count(self):
+        """S15: serializer rejects negative counts (data-entry guard)."""
+        self._auth(USER_A)
+        resp = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {'siblings_studying_count': -1}, format='json',
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    def test_legacy_siblings_studying_boolean_still_accepted(self):
+        """Back-compat: older clients still emit siblings_studying — must not 400."""
+        self._auth(USER_A)
+        resp = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {'siblings_studying': True}, format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.app_a.refresh_from_db()
+        self.assertTrue(self.app_a.siblings_studying)
+
     def test_story_fields_defaults_are_correct(self):
         """New boolean fields default False; text fields default empty string."""
         self._auth(USER_A)
@@ -265,6 +312,7 @@ class TestDetailsApi(TestCase):
         body = resp.json()
         self.assertFalse(body['first_in_family'])
         self.assertFalse(body['siblings_studying'])
+        self.assertIsNone(body['siblings_studying_count'])
         self.assertEqual(body['parents_occupation'], '')
         self.assertEqual(body['family_context'], '')
         self.assertEqual(body['daily_life'], '')

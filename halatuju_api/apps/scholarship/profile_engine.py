@@ -46,7 +46,7 @@ Household income (RM/month): {household_income}    Household size: {household_si
 Receives STR: {receives_str}    Receives JKM: {receives_jkm}
 First in family to university: {first_in_family}
 Parents'/guardians' occupation: {parents_occupation}
-Siblings also studying: {siblings_studying}
+Siblings currently studying: {siblings_studying}
 
 Pathway / programme: {pathway}
 
@@ -87,6 +87,16 @@ def _pathway(application):
     return '; '.join(bits) or 'not specified'
 
 
+def _siblings_studying_display(application):
+    """Render the siblings-studying signal for the prompt. Prefer the count
+    (S15) when set — it tells the AI how much education burden the family
+    carries; fall back to the legacy boolean when only that exists."""
+    count = getattr(application, 'siblings_studying_count', None)
+    if count is not None:
+        return str(count)
+    return _yesno(application.siblings_studying)
+
+
 def _funding(application):
     """(categories_str, programme_months, funding_note) from the simplified FundingNeed."""
     try:
@@ -125,7 +135,7 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         receives_jkm=_yesno(getattr(profile, 'receives_jkm', None) if profile else None),
         first_in_family=_yesno(application.first_in_family),
         parents_occupation=val(application.parents_occupation),
-        siblings_studying=_yesno(application.siblings_studying),
+        siblings_studying=_siblings_studying_display(application),
         pathway=_pathway(application),
         aspirations=val(application.aspirations),
         plans=val(application.plans),

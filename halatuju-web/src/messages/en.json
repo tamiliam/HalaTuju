@@ -641,8 +641,19 @@
           "title": "About your family",
           "firstInFamily": "I would be the first in my family to go to university.",
           "parentsOccupation": "What do your parents or guardians do for a living?",
+          "parentsOccupationPlaceholder": "My father drives a lorry; my mother sews from home.",
+          "parentsOccupationTipsTitle": "Need ideas?",
+          "parentsOccupationTip1": "What they do day to day",
+          "parentsOccupationTip2": "Whether the work is steady or irregular",
+          "parentsOccupationTip3": "Anyone else in the household who earns",
           "siblingsStudying": "One or more of my siblings are also studying.",
-          "familyContext": "Anything about your family's situation we should know? (who supports the family, any illness or hardship)"
+          "siblingsCountLabel": "How many of your siblings are also studying?",
+          "familyContext": "Anything about your family's situation we should know? (who supports the family, any illness or hardship)",
+          "familyContextPlaceholder": "We moved in with my grandmother after my father lost his job last year.",
+          "familyContextTipsTitle": "Need ideas?",
+          "familyContextTip1": "Recent changes at home",
+          "familyContextTip2": "Who you live with",
+          "familyContextTip3": "Anything that makes studying harder"
         },
         "cardAddress": {
           "title": "Where you live",
@@ -658,9 +669,29 @@
         "cardB": {
           "title": "About you",
           "aspirations": "What do you hope to become? Your dreams and aspirations.",
+          "aspirationsPlaceholder": "I want to become a nurse and work at our local clinic.",
+          "aspirationsTipsTitle": "Need ideas?",
+          "aspirationsTip1": "The work or role you imagine",
+          "aspirationsTip2": "Why this one is meaningful to you",
+          "aspirationsTip3": "Who or what inspired the choice",
           "plans": "How do you plan to get there?",
+          "plansPlaceholder": "Finish my Diploma in Nursing, then work two years before applying for a Degree top-up.",
+          "plansTipsTitle": "Need ideas?",
+          "plansTip1": "Your first step after SPM or STPM",
+          "plansTip2": "Where you would study",
+          "plansTip3": "What you would do after that",
           "dailyLife": "What is your daily life like? Any responsibilities such as work or caring for family?",
-          "fears": "What worries you most, or what support would help you the most?"
+          "dailyLifePlaceholder": "I help cook and look after my two younger siblings before tuition each evening.",
+          "dailyLifeTipsTitle": "Need ideas?",
+          "dailyLifeTip1": "What a typical weekday looks like",
+          "dailyLifeTip2": "Anything you do to help the family",
+          "dailyLifeTip3": "How you find time to study",
+          "fears": "What worries you most, or what support would help you the most?",
+          "fearsPlaceholder": "I worry I won't be able to afford the textbooks.",
+          "fearsTipsTitle": "Need ideas?",
+          "fearsTip1": "One thing on your mind about studying",
+          "fearsTip2": "Something that might get in the way",
+          "fearsTip3": "What would help you feel more ready"
         }
       },
       "funding": {

@@ -299,7 +299,10 @@ def application_completeness(application):
 _DEEPER_FIELDS = (
     'aspirations', 'plans', 'fears', 'justification',
     # "Your story" guided narrative fields (S2 redesign)
-    'first_in_family', 'parents_occupation', 'siblings_studying', 'family_context', 'daily_life',
+    'first_in_family', 'parents_occupation',
+    # siblings_studying kept for back-compat; siblings_studying_count is the new (S15) primary.
+    'siblings_studying', 'siblings_studying_count',
+    'family_context', 'daily_life',
 )
 
 

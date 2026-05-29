@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import SchoolSelect from '@/components/SchoolSelect'
 import InfoTip from '@/components/InfoTip'
+import FieldLabel from '@/components/FieldLabel'
 import Toggle from '@/components/Toggle'
 import PathwaySelect from '@/components/PathwaySelect'
 import ProgrammePicker from '@/components/ProgrammePicker'
@@ -65,17 +66,6 @@ const ERROR_TAB: Record<string, TabKey> = {
   pathwayCertainty: 'plans', chosenPathway: 'plans', chosenProgramme: 'plans',
   preUTrack: 'plans', preUInstitution: 'plans',
   consent: 'support', declaration: 'support',
-}
-
-/** Field label with an optional required `*` and an optional `i` tooltip. */
-function FieldLabel({ children, required, tip }: { children: React.ReactNode; required?: boolean; tip?: string }) {
-  return (
-    <span className="mb-1 flex items-center text-sm font-medium text-gray-700">
-      {children}
-      {required && <span className="ml-0.5 text-red-500" aria-hidden>*</span>}
-      {tip && <InfoTip text={tip} />}
-    </span>
-  )
 }
 
 function TabIcon({ tab, active }: { tab: TabKey; active: boolean }) {

@@ -956,7 +956,10 @@ export interface ScholarshipApplication {
   // "Your story" guided narrative fields (S2 redesign)
   first_in_family: boolean
   parents_occupation: string
+  // S15: count is primary; the legacy boolean stays in the type for back-compat
+  // (older clients still emit it). TD-061 will drop both the column + this field.
   siblings_studying: boolean
+  siblings_studying_count: number | null
   family_context: string
   daily_life: string
   // Address pre-fill from the profile (S14) — round-trips through the details
