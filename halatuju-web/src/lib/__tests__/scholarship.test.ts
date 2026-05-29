@@ -933,21 +933,34 @@ describe('COMPULSORY_DOC_TYPES / INCOME_PROOF_TYPES / OTHER_OPTIONAL_DOC_TYPES',
 })
 
 describe('documentsComplete', () => {
-  // S22: parent_ic is now compulsory for everyone (used by admin to verify
-  // STR/EPF supporting docs that are typically issued in a parent's name).
-  it('returns true when all three compulsory types are present', () => {
-    expect(documentsComplete(['ic', 'results_slip', 'parent_ic'])).toBe(true)
+  // S22: parent_ic compulsory for everyone. S23: + at least one income proof
+  // (STR / salary_slip / EPF) — STR recipients are nudged in the UI to also
+  // upload salary/EPF per working household member, but one is enough.
+  it('returns true when ic + results_slip + parent_ic + STR are present', () => {
+    expect(documentsComplete(['ic', 'results_slip', 'parent_ic', 'str'])).toBe(true)
   })
 
-  it('returns true with extra doc types alongside the three compulsory', () => {
-    expect(documentsComplete(['ic', 'results_slip', 'parent_ic', 'salary_slip', 'photo'])).toBe(true)
+  it('returns true when salary_slip stands in for STR as income proof', () => {
+    expect(documentsComplete(['ic', 'results_slip', 'parent_ic', 'salary_slip'])).toBe(true)
+  })
+
+  it('returns true when EPF stands in for STR as income proof', () => {
+    expect(documentsComplete(['ic', 'results_slip', 'parent_ic', 'epf'])).toBe(true)
+  })
+
+  it('returns true with multiple income proofs uploaded (encouraged for STR families)', () => {
+    expect(documentsComplete(['ic', 'results_slip', 'parent_ic', 'str', 'salary_slip', 'epf'])).toBe(true)
+  })
+
+  it('returns false when income proof is missing (S23 — was true pre-S23)', () => {
+    expect(documentsComplete(['ic', 'results_slip', 'parent_ic'])).toBe(false)
   })
 
   it('returns false when no documents are present', () => {
     expect(documentsComplete([])).toBe(false)
   })
 
-  it('returns false when only ic + results_slip (missing parent_ic)', () => {
+  it('returns false when only ic + results_slip (missing parent_ic and income proof)', () => {
     expect(documentsComplete(['ic', 'results_slip'])).toBe(false)
   })
 
@@ -955,15 +968,11 @@ describe('documentsComplete', () => {
     expect(documentsComplete(['ic'])).toBe(false)
   })
 
-  it('returns false when only results_slip is present', () => {
-    expect(documentsComplete(['results_slip'])).toBe(false)
+  it('returns false when parent_ic is missing but income proof present', () => {
+    expect(documentsComplete(['ic', 'results_slip', 'str'])).toBe(false)
   })
 
-  it('returns false when only parent_ic is present', () => {
-    expect(documentsComplete(['parent_ic'])).toBe(false)
-  })
-
-  it('returns false when none of the three compulsory types are present', () => {
+  it('returns false when only income proofs are present (compulsory docs missing)', () => {
     expect(documentsComplete(['salary_slip', 'photo', 'epf'])).toBe(false)
   })
 })

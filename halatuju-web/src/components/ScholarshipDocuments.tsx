@@ -384,6 +384,18 @@ export default function ScholarshipDocuments({ token }: { token: string | null }
             t={t}
             showVisionChip={false}
           />
+          {/* S23: proof of household income is now required (any one of
+              STR / salary slip / EPF satisfies it). STR families are
+              encouraged in the card explainer to ALSO upload salary/EPF
+              for each working household member, but one is enough to
+              pass completeness. */}
+          <IncomeProofCard
+            docs={docs}
+            busyType={busyType}
+            onUpload={handleUpload}
+            onDelete={handleDelete}
+            t={t}
+          />
         </div>
       </section>
 
@@ -398,15 +410,6 @@ export default function ScholarshipDocuments({ token }: { token: string | null }
           </span>
         </div>
         <div className="space-y-3">
-          {/* Combined income-proof card */}
-          <IncomeProofCard
-            docs={docs}
-            busyType={busyType}
-            onUpload={handleUpload}
-            onDelete={handleDelete}
-            t={t}
-          />
-          {/* Individual optional cards */}
           {OTHER_OPTIONAL_DOC_TYPES.map((dt) => (
             <SingleDocCard
               key={dt}

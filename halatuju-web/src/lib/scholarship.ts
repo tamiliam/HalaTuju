@@ -768,14 +768,21 @@ export type DocType = typeof DOC_TYPES[number]
 
 /**
  * Returns true when an applicant has uploaded the compulsory documents.
- * S22: parent_ic is now compulsory for everyone (the admin cross-checks
- * STR/EPF and similar supporting documents — usually issued in a parent's
- * name — against the parent's IC). The conditional `guardianship_letter`
- * for minors with non-parent guardians is enforced separately at the
- * consent submit step.
+ * S22: parent_ic is compulsory for everyone (the admin cross-checks STR/EPF
+ * and similar supporting documents — usually issued in a parent's name —
+ * against the parent's IC).
+ * S23: proof of household income is compulsory too — any one of
+ * INCOME_PROOF_TYPES satisfies it. STR recipients are nudged in the UI to
+ * also upload salary/EPF for each working household member, but one upload
+ * is enough to pass the completeness gate.
+ * The conditional `guardianship_letter` for minors with non-parent guardians
+ * is enforced separately at the consent submit step.
  */
 export function documentsComplete(presentTypes: string[]): boolean {
-  return ['ic', 'results_slip', 'parent_ic'].every((t) => presentTypes.includes(t))
+  const present = new Set(presentTypes)
+  const hasCompulsory = ['ic', 'results_slip', 'parent_ic'].every((t) => present.has(t))
+  const hasIncomeProof = INCOME_PROOF_TYPES.some((t) => present.has(t))
+  return hasCompulsory && hasIncomeProof
 }
 
 export function formatFileSize(bytes: number): string {

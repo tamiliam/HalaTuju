@@ -47,7 +47,8 @@ class TestCompleteness(TestCase):
 
     def _make_complete(self):
         """Set up all seven completeness parts: quiz, story, funding, docs
-        (S22: ic + results_slip + parent_ic), consent, address, guardian docs."""
+        (S22 + S23: ic + results_slip + parent_ic + one income proof), consent,
+        address, guardian docs."""
         self.profile.student_signals = {'x': {'y': 1}}
         self.profile.address = 'No. 12, Jalan ABC, Taman XYZ'
         self.profile.postal_code = '62100'
@@ -60,6 +61,7 @@ class TestCompleteness(TestCase):
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
         ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
         ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
+        ApplicantDocument.objects.create(application=self.app, doc_type='str', storage_path='s')
         Consent.objects.create(application=self.app, version='t', is_active=True)
 
     def test_quiz_done_from_signals(self):
@@ -99,17 +101,42 @@ class TestCompleteness(TestCase):
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
         self.assertFalse(application_completeness(self.app)['documents_done'])
 
-    def test_documents_done_true_when_all_three_compulsory_present(self):
-        """S22: documents_done is True when ic + results_slip + parent_ic are all uploaded."""
+    def test_documents_done_false_when_income_proof_missing(self):
+        """S23: ic + results_slip + parent_ic is no longer enough — income proof required too."""
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
         ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
         ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
+        self.assertFalse(application_completeness(self.app)['documents_done'])
+
+    def test_documents_done_true_with_str_income_proof(self):
+        """S23: ic + results_slip + parent_ic + STR satisfies documents_done."""
+        ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
+        ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
+        ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
+        ApplicantDocument.objects.create(application=self.app, doc_type='str', storage_path='s')
+        self.assertTrue(application_completeness(self.app)['documents_done'])
+
+    def test_documents_done_true_with_salary_slip_income_proof(self):
+        """S23: any one of {str, salary_slip, epf} satisfies the income-proof side."""
+        ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
+        ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
+        ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
+        ApplicantDocument.objects.create(application=self.app, doc_type='salary_slip', storage_path='ss')
+        self.assertTrue(application_completeness(self.app)['documents_done'])
+
+    def test_documents_done_true_with_epf_income_proof(self):
+        """S23: EPF on its own (no STR, no salary slip) is enough for the gate."""
+        ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
+        ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
+        ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
+        ApplicantDocument.objects.create(application=self.app, doc_type='epf', storage_path='e')
         self.assertTrue(application_completeness(self.app)['documents_done'])
 
     def test_documents_done_false_when_parent_ic_missing(self):
-        """S22: parent_ic is now compulsory for everyone (not just minors)."""
+        """S22: parent_ic is compulsory for everyone (not just minors)."""
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
         ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
+        ApplicantDocument.objects.create(application=self.app, doc_type='str', storage_path='s')
         self.assertFalse(application_completeness(self.app)['documents_done'])
 
     def test_complete_requires_documents_consent_and_address(self):
@@ -123,10 +150,12 @@ class TestCompleteness(TestCase):
         FundingNeed.objects.create(application=self.app, categories=['living'])
         self.assertFalse(application_completeness(self.app)['complete'])
 
-        # + compulsory documents — still not complete (consent + address missing)
+        # + compulsory documents (S23: ic + results_slip + parent_ic + one income proof)
+        # — still not complete (consent + address missing)
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
         ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
         ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
+        ApplicantDocument.objects.create(application=self.app, doc_type='str', storage_path='s')
         self.assertFalse(application_completeness(self.app)['complete'])
 
         # + active consent — still not complete (address missing)

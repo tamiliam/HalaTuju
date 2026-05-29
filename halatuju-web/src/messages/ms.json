@@ -745,7 +745,7 @@
       "help": {
         "ic": "Gambar bahagian depan MyKad anda. Kami akan menyemak secara automatik untuk membantu anda mengesan kesilapan menaip — gambar anda tidak disimpan di Google.",
         "results_slip": "Slip keputusan terkini anda.",
-        "income": "Mana-mana satu pun boleh — surat STR, slip gaji terkini, atau penyata KWSP. Anda boleh tambah lebih daripada satu jika beberapa orang bekerja.",
+        "income": "Jika keluarga anda penerima STR, sila muat naik tangkapan skrin portal STR yang memaparkan nama dan NRIC ibu bapa anda. Kami amat menggalakkan anda juga memuat naik slip gaji terkini dan/atau penyata KWSP bagi setiap ahli isi rumah yang bekerja.",
         "water_bill": "Bil terkini membantu kami memahami keadaan isi rumah anda.",
         "electricity_bill": "Bil terkini membantu kami memahami keadaan isi rumah anda.",
         "statement_of_intent": "Surat pendek tentang matlamat anda, jika anda ingin menulisnya.",
@@ -759,7 +759,7 @@
       },
       "requiredPill": "Wajib",
       "optionalPill": "Pilihan",
-      "requiredNote": "Kami memerlukan dua dokumen ini untuk memproses permohonan anda.",
+      "requiredNote": "Kami memerlukan dokumen ini untuk memproses permohonan anda.",
       "optionalNote": "Dokumen ini membantu kami memahami situasi anda dengan lebih baik. Tambah apa yang anda ada.",
       "choose": "Pilih fail",
       "addMore": "Tambah lagi",

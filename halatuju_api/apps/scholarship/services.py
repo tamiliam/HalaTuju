@@ -262,7 +262,9 @@ def application_completeness(application):
     The sponsor stage (Phase 2) will gate on ``complete``.
 
     funding_done (S3 redesign): at least one category ticked in categories.
-    documents_done (S4): both compulsory documents (ic + results_slip) present.
+    documents_done (S4 / S22 / S23): ic + results_slip + parent_ic + at least
+    one of {str, salary_slip, epf} (proof of household income; the income-proof
+    card on the Documents tab accepts any combination).
     consent_done (S5): an active Consent row exists.
     address_done (S14): profile has street + postal_code + city (state already
     came from /apply). Stored on the profile, captured in the Story tab.
@@ -282,7 +284,14 @@ def application_completeness(application):
     # S22: parent_ic now compulsory for everyone (not just minors). Used by the
     # admin to cross-check supporting docs like STR or EPF that are usually
     # issued in a parent's name.
-    documents_done = {'ic', 'results_slip', 'parent_ic'}.issubset(present)
+    # S23: proof of household income is now compulsory too — any one of
+    # {str, salary_slip, epf} satisfies it; STR recipients are nudged to ALSO
+    # upload salary/EPF for each working household member, but one is enough
+    # to pass the completeness gate.
+    documents_done = (
+        {'ic', 'results_slip', 'parent_ic'}.issubset(present)
+        and bool(present & {'str', 'salary_slip', 'epf'})
+    )
     consent_done = application.consents.filter(is_active=True).exists()
     address_done = bool(
         profile

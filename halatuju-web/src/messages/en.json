@@ -745,7 +745,7 @@
       "help": {
         "ic": "A photo of the front of your MyKad. We'll check it automatically to help you spot typos — your photo isn't kept at Google.",
         "results_slip": "Your latest results slip.",
-        "income": "Any one is fine — your STR letter, a recent salary slip, or an EPF statement. You can add more than one if several people earn.",
+        "income": "If your family is an STR recipient, please upload a screenshot of your STR portal showing your parent's name and NRIC. We strongly encourage you to also upload the latest salary slip and/or EPF statement for every working member of the household.",
         "water_bill": "A recent bill helps us understand your household.",
         "electricity_bill": "A recent bill helps us understand your household.",
         "statement_of_intent": "A short letter about your goals, if you'd like to write one.",
@@ -759,7 +759,7 @@
       },
       "requiredPill": "Required",
       "optionalPill": "Optional",
-      "requiredNote": "We need these two documents to process your application.",
+      "requiredNote": "We need these documents to process your application.",
       "optionalNote": "These help us understand your situation better. Add what you have.",
       "choose": "Choose file",
       "addMore": "Add more",
