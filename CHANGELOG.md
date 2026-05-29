@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] — S16 Phase A: deterministic anomaly engine for pre-interview flags (2026-05-29)
+
+First slice of the post-shortlist vision (`docs/scholarship/post-shortlist-vision.md`). Single focused sprint.
+
+- **Engine** (`apps/scholarship/anomaly_engine.py`). Pure module: 10 `_detect_*` functions registered in a `_DETECTORS` tuple, plus one `detect_anomalies(application) → list[dict]` aggregator returning JSON-ready `{code, params}` dicts. Each rule null-safe over missing profile / docs / funding_need. No LLM calls, no model writes — all deterministic. The 10 rules (per the user-calibrated taxonomy):
+  - `vision_nric_mismatch`, `vision_name_mismatch` — built on S13's OCR verdicts.
+  - `address_state_mismatch` — Vision-OCR'd state ≠ `profile.preferred_state`, with W.P. prefix normalisation.
+  - `jkm_high_income` — `receives_jkm=true` AND `household_income > RM3000`; question reframed to acknowledge disability/caregiving (JKM is family-applied, not student-applied — the user corrected my first framing).
+  - `household_size_one`, `first_in_family_with_siblings_studying` (question preempts the school-vs-university distinction).
+  - `funding_other_without_note`, `declaration_name_mismatch` (token-set via `vision.name_match`).
+  - `str_claimed_no_doc` — `receives_str=true` AND no `doc_type='str'` upload. New rule per user suggestion.
+  - `device_in_funding` — laptop won't fit in the RM 3,000 cap alone. New rule per user suggestion.
+- **Three suggestions deferred to Phase B** (need Gemini multimodal): utility-bill amount vs household size; SOI content-derived questions; "wrong" supporting doc detection. Honest scope.
+- **Admin UI** (`admin/scholarship/[id]/page.tsx`). New "Pre-interview flags" card above verify-&-accept; amber-tinted list, one entry per flag, each renders the observed fact + the suggested question via i18n with the engine's `params` interpolated. Empty-state: *"No automated flags. Use your judgement during the interview."* — the engine is honest about silence. Flag count chip in the card header.
+- **Backend wiring**: `AdminApplicationDetailSerializer` adds `anomalies = SerializerMethodField`, called per GET (no cache; the function is cheap and pure). Read-only.
+- **Frontend type**: new `AdminAnomaly { code, params }` interface in `admin-api.ts`; `AdminScholarshipDetail.anomalies: AdminAnomaly[]`.
+- **i18n**: 26 new keys per locale (5 UI scaffolding + 10 facts + 10 questions + 1 askLabel). Parity 1336 × en/ms/ta. Tamil first-draft mirrors queued for batch refine — **queue is now 8 batches / ~85+ strings**.
+- **Tests**: 23 new in `test_anomaly_engine.py` (one positive + one negative per rule + integration shape tests for empty input, dict shape, ordering stability). 193/193 scholarship pytest. Next build EXIT=0.
+- **Live preview for app #3** (Elanjelian, shortlisted): expected 2 flags on first load — `address_state_mismatch` (IC: KEDAH vs profile: Putrajaya) + `str_claimed_no_doc` (`receives_str=true`, no STR doc uploaded). First real-data validation of the engine.
+- **No migration**. No backfill needed.
+
 ## [2.7.0] — S15: Story tab polish + Vision MyKad address + single-instance docs (2026-05-29)
 
 Composite sprint after S14 ship. Four discrete pieces, all deployed; see retrospective for the journey.

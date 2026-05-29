@@ -1054,3 +1054,34 @@ postcode-only match), or if Phase A deterministic anomaly engine (per the
 post-shortlist vision) wants to flag address mismatches as gaps for the
 interview agenda (then derive a flag from the same data without committing
 a verdict to the IC document row).
+
+## Anomaly serialisation = code + params; copy lives in i18n bundle, not server — S16 Phase A, 2026-05-29
+
+**Decision:** The anomaly engine returns `[{code: str, params: dict}, …]`. The server-side
+module holds NO human copy; the frontend resolves `scholarship.admin.anomaly.{code}.fact`
+and `.question` from its i18n bundle, interpolating `params` into the matching template
+string. Adding a new rule = one Python function + one i18n entry per locale (`fact` +
+`question` under the code's namespace) + one test.
+
+**Alternatives considered:** (a) backend renders the fact + question as English strings,
+frontend just displays them — simplest but locks the language at the API surface and means
+admin language toggles can't switch the flag wording; (b) backend returns a flat dict with
+all i18n strings inlined for every flag — heavy payload + no way to edit copy without a
+backend deploy; (c) custom DRF field with locale-aware rendering — adds DRF complexity for
+the same outcome.
+
+**Rationale:** The admin already has a language toggle (the same `useT()` hook used across
+the app). Letting the FE resolve the copy via i18n keys lets a copy tweak land via a web
+deploy alone (no api roll), keeps the engine module purely about logic + facts, and means
+the same `{code, params}` shape is naturally consumable later by Phase D (Gemini v2) which
+will read flags + interview findings together. The params-as-template approach mirrors
+React-Intl / FormatJS conventions without their bundle weight.
+
+**Trade-offs:** Adding a rule requires touching two places (Python + JSON) which is mildly
+more friction than a backend-only string return. Mitigated by: the i18n bundle is where
+ALL user-facing copy lives anyway; we're consistent with the pattern, not bypassing it.
+
+**Revisit if:** we add anomaly-based logic that needs the rendered text server-side (e.g.
+Gemini reads a rendered prompt that mentions the anomalies). Then we'd duplicate the copy
+server-side (or call FE-render-time templates from the prompt builder). Today, anomalies
+are admin-display only — no server-side consumer needs the text.
