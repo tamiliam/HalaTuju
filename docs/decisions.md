@@ -1279,3 +1279,39 @@ naturally applies when they're shortlisted, no retroactive complaint.
 (could add an "I don't have a parent's IC — explain" alternative path), or if STR/EPF
 get phased out as income proofs (less need for the cross-check). Today the assumption
 holds.
+
+## Back-end trusts the student's explicit stream subjects for merit (Sec2) — TD-063, 2026-05-30
+
+**Decision:** The SPM merit engine (`prepare_merit_inputs`) now accepts the subjects the
+student explicitly studied in their stream/aliran and uses them for Sec2 (the 30% stream
+weight), instead of re-deriving the stream from its own copy of the pools. It falls back to
+the legacy count-heuristic only when no explicit list is present.
+
+**Why:** The FE/BE pool duplication (TD-063) existed *solely* because the back-end received a
+flat `{subject: grade}` dict with no stream label, so it had to guess the stream by counting
+which pool held the most subjects — which required `engine.py` to keep its own mirror of
+`subjects.ts`'s pools. The two copies could drift (the S18 bug: a dropdown subject missing
+from the back-end pool silently dropped from the 30% stream weight to the 10% elective weight).
+The student already *tells* the front-end their stream subjects; we were throwing that away.
+Passing it through removes the guess.
+
+**Why we kept the pools (didn't delete the second copy):** two data sources have no stream
+label — the golden-master fixtures and every profile saved before this change. For those the
+back-end must still classify, so the pools survive as a **fallback-only** classifier. The
+duplication isn't fully eliminated, but its blast radius shrinks to old/unlabelled data;
+for any labelled student the pools are bypassed and the S18 drift bug is impossible.
+
+**Why Sec2 = best-2 of the *full* designated list (not a hand-picked 2):** the differential
+audit showed that storing only a subset can *lower* a student's score (if the subset excludes
+a higher-grade in-stream subject). Storing the full aliran list (all subjects studied in the
+stream) makes the explicit path identical to the heuristic for single-stream students; it
+diverges only for genuine cross-stream students the heuristic was mis-classifying, where the
+explicit result is the correct one.
+
+**How we proved it safe:** golden master held at exactly 5319 (the no-label fallback is
+byte-identical), plus a differential audit (every grade combo both ways) captured as 6 unit
+tests in `test_merit_pools.py`. Rollout is forward-safe: unlabelled existing users keep
+scoring via the fallback (unchanged) until they next save grades.
+
+**Revisit if:** the fallback path ever needs to die (e.g. all profiles backfilled with a
+stream list) — then the pools could finally be deleted and TD-063 fully closed.

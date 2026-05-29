@@ -76,6 +76,10 @@ export interface StudentProfile {
   receives_str?: boolean
   receives_jkm?: boolean
   guardians?: { name?: string; phone?: string; relationship?: string; occupation?: string; income?: number }[]
+  // TD-063: the SPM subjects the student studied as their stream/aliran. When
+  // present, the merit engine uses these for the 30% Sec2 weight instead of
+  // guessing the stream from the pools. Sent through to /eligibility/check/.
+  stream_subjects?: string[]
 }
 
 export interface EligibleCourse {
@@ -539,6 +543,7 @@ export interface SyncProfileData {
   stpm_cgpa?: number
   muet_band?: number
   coq_score?: number
+  stream_subjects?: string[]
 }
 
 export async function syncProfile(
@@ -857,11 +862,16 @@ export interface PathwayResult {
 export async function calculateMerit(
   grades: Record<string, string>,
   coqScore: number,
+  streamSubjects?: string[],
   options?: ApiOptions
 ): Promise<MeritResult> {
   return apiRequest('/api/v1/calculate/merit/', {
     method: 'POST',
-    body: JSON.stringify({ grades, coq_score: coqScore }),
+    body: JSON.stringify({
+      grades, coq_score: coqScore,
+      // TD-063: omit when empty so the backend falls back to the heuristic.
+      ...(streamSubjects && streamSubjects.length ? { stream_subjects: streamSubjects } : {}),
+    }),
     ...options,
   })
 }

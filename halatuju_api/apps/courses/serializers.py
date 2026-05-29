@@ -296,7 +296,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             'nric', 'angka_giliran', 'address', 'postal_code', 'city',
             'phone', 'family_income', 'siblings',
             'exam_type', 'stpm_grades', 'stpm_cgpa', 'muet_band', 'coq_score',
-            'spm_prereq_grades', 'referral_source',
+            'spm_prereq_grades', 'stream_subjects', 'referral_source',
             'contact_email', 'contact_phone',
         ]
         # NRIC only changes via the validated claim endpoint (/profile/claim-nric/),

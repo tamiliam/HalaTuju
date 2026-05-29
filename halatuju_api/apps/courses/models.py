@@ -538,6 +538,13 @@ class StudentProfile(models.Model):
         default=dict, blank=True,
         help_text="SPM prerequisite grades for STPM students: {'bm': 'A', 'eng': 'B+', ...}"
     )
+    stream_subjects = models.JSONField(
+        default=list, blank=True,
+        help_text="The SPM subjects the student studied as their stream/aliran "
+                  "(e.g. ['phy','chem','bio','addmath']). When present, the merit "
+                  "engine uses these as the Sec2 (30% stream) candidates instead of "
+                  "guessing the stream from the pools (TD-063). Empty = fall back to "
+                  "the count-heuristic (existing/historical profiles).")
     referral_source = models.CharField(
         max_length=50, blank=True, null=True,
         help_text='Raw referral code or chip value (e.g. cumig, whatsapp, google)',

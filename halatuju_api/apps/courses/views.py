@@ -1018,6 +1018,7 @@ class ProfileView(APIView):
             'muet_band': profile.muet_band,
             'coq_score': profile.coq_score,
             'spm_prereq_grades': profile.spm_prereq_grades,
+            'stream_subjects': profile.stream_subjects,
         })
 
     def put(self, request):
@@ -1895,7 +1896,9 @@ class CalculateMeritView(APIView):
 
         coq_score = float(data.get('coq_score', 5.0))
 
-        sec1, sec2, sec3 = prepare_merit_inputs(mapped_grades)
+        # TD-063: honour explicit stream picks if sent; else fall back internally.
+        sec1, sec2, sec3 = prepare_merit_inputs(
+            mapped_grades, stream_subjects=data.get('stream_subjects'))
         result = calculate_merit_score(sec1, sec2, sec3, coq_score=coq_score)
 
         return Response({

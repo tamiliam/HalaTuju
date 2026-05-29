@@ -6,7 +6,7 @@ import { signInWithPhone, verifyOTP, signInWithGoogle } from '@/lib/supabase'
 import { syncProfile, claimNric, type SyncProfileData } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
-import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
+import { KEY_PENDING_AUTH_ACTION, KEY_RESUME_ACTION, KEY_GRADES, KEY_ALIRAN, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_REFERRAL_SOURCE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
 import IcInput from './IcInput'
 import { validateIc, formatIc } from '@/lib/ic-utils'
 
@@ -125,6 +125,9 @@ export default function AuthGateModal() {
     try {
       const grades = localStorage.getItem(KEY_GRADES)
       if (grades) syncData.grades = JSON.parse(grades)
+      // TD-063: persist the student's stream/aliran picks on login.
+      const aliran = localStorage.getItem(KEY_ALIRAN)
+      if (aliran) syncData.stream_subjects = JSON.parse(aliran)
       const prof = localStorage.getItem(KEY_PROFILE)
       if (prof) {
         const p = JSON.parse(prof)

@@ -70,3 +70,62 @@ class TestMeritStreamWeighting(SimpleTestCase):
         grades = {**CORES, 'phy': 'A+', 'chem': 'A', 'bio': 'B', 'addmath': 'A'}
         _sec1, sec2, _sec3 = prepare_merit_inputs(grades)
         self.assertEqual(sorted(sec2), sorted(['A+', 'A']))
+
+
+class TestExplicitStreamSubjects(SimpleTestCase):
+    """TD-063: when the student's stream picks are passed, the engine trusts
+    them and ignores the pools. Falls back to the heuristic when absent."""
+
+    def test_none_falls_back_to_heuristic(self):
+        # No explicit picks → identical to the legacy heuristic path.
+        grades = {**CORES, 'phy': 'A+', 'chem': 'A', 'bio': 'B', 'addmath': 'A'}
+        self.assertEqual(
+            prepare_merit_inputs(grades, stream_subjects=None),
+            prepare_merit_inputs(grades),
+        )
+
+    def test_empty_list_falls_back_to_heuristic(self):
+        grades = {**CORES, 'ekonomi': 'A', 'poa': 'B', 'geo': 'A'}
+        self.assertEqual(
+            prepare_merit_inputs(grades, stream_subjects=[]),
+            prepare_merit_inputs(grades),
+        )
+
+    def test_full_aliran_list_matches_heuristic(self):
+        # SAFETY PROPERTY: passing the full list of stream subjects the student
+        # studied yields the same Sec2/Sec3 as the heuristic (best-2 of pool).
+        grades = {**CORES, 'phy': 'C', 'chem': 'C', 'bio': 'A', 'addmath': 'A'}
+        _s1, sec2_explicit, sec3_explicit = prepare_merit_inputs(
+            grades, stream_subjects=['phy', 'chem', 'bio', 'addmath'])
+        _s1b, sec2_heur, sec3_heur = prepare_merit_inputs(grades)
+        self.assertEqual(sorted(sec2_explicit), sorted(sec2_heur))
+        self.assertEqual(sorted(sec3_explicit), sorted(sec3_heur))
+        self.assertEqual(sorted(sec2_explicit), sorted(['A', 'A']))  # best 2
+
+    def test_cross_stream_student_scored_on_their_real_stream(self):
+        # Heuristic mis-guesses the stream for a cross-stream student; the
+        # explicit pick scores their actual (stronger) stream subjects.
+        grades = {**CORES, 'phy': 'A', 'chem': 'B', 'ekonomi': 'A', 'poa': 'A'}
+        _s1, sec2_heur, _s3 = prepare_merit_inputs(grades)  # guesses sci/tech
+        _s1b, sec2_explicit, _s3b = prepare_merit_inputs(
+            grades, stream_subjects=['ekonomi', 'poa'])
+        self.assertEqual(sorted(sec2_explicit), sorted(['A', 'A']))
+        # The student's real stream (two A's) differs from the mis-guess (A + B).
+        self.assertNotEqual(sorted(sec2_heur), sorted(sec2_explicit))
+
+    def test_designated_subject_absent_from_pools_still_counts_as_stream(self):
+        # The S18 bug class, now impossible for labelled data: a stream subject
+        # missing from the back-end pools is still scored at the 30% weight when
+        # the student explicitly designates it.
+        grades = {**CORES, 'phy': 'A', 'not_in_any_pool': 'A+', 'geo': 'C'}
+        _s1, sec2, _s3 = prepare_merit_inputs(
+            grades, stream_subjects=['phy', 'not_in_any_pool'])
+        self.assertEqual(sorted(sec2), sorted(['A+', 'A']))
+
+    def test_core_subjects_ignored_in_explicit_list(self):
+        # A defensive list that accidentally includes a core subject must not
+        # pull it into Sec2 (core is always Sec1).
+        grades = {**CORES, 'phy': 'A', 'chem': 'B'}
+        _s1, sec2, _s3 = prepare_merit_inputs(
+            grades, stream_subjects=['math', 'phy', 'chem'])
+        self.assertEqual(sorted(sec2), sorted(['A', 'B']))  # math excluded

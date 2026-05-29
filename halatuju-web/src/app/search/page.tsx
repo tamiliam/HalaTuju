@@ -12,7 +12,7 @@ import { useSavedCourses } from '@/hooks/useSavedCourses'
 import { useFieldTaxonomy } from '@/hooks/useFieldTaxonomy'
 import clsx from 'clsx'
 import { useT } from '@/lib/i18n'
-import { KEY_PROFILE, KEY_GRADES, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_RESUME_ACTION, hasGrades, COURSE_PAGE_SIZE } from '@/lib/storage'
+import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_RESUME_ACTION, hasGrades, COURSE_PAGE_SIZE } from '@/lib/storage'
 
 export default function SearchPage() {
   return (
@@ -70,7 +70,13 @@ function SearchPageInner() {
       if (stored && gradesStr) {
         const parsedProfile = JSON.parse(stored)
         const parsedGrades = JSON.parse(gradesStr)
-        const profile: StudentProfile = { ...parsedProfile, grades: parsedGrades }
+        // TD-063: include the explicit stream picks for the merit weighting.
+        const aliranStr = localStorage.getItem(KEY_ALIRAN)
+        const streamSubjects = aliranStr ? JSON.parse(aliranStr) : undefined
+        const profile: StudentProfile = {
+          ...parsedProfile, grades: parsedGrades,
+          ...(streamSubjects && streamSubjects.length && { stream_subjects: streamSubjects }),
+        }
         if (Object.keys(profile.grades).length > 0) {
           const data = await checkEligibility(profile)
           for (const c of data.eligible_courses) {

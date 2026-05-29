@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.13.0] — TD-063: explicit stream subjects (back-end trusts the student's pick) (2026-05-30)
+
+Resolves TD-063 (FE/BE stream-pool duplication drift risk) by making the back-end **trust the student's own stream/aliran selection** instead of re-guessing the stream from its own copy of the pools.
+
+- **Root cause of the debt:** the merit engine receives a *flat* grades dict with no stream label, so it guessed the stream by counting which pool held the most subjects — which required `engine.py` to keep its own copy of `subjects.ts`'s pools. The two copies could drift (the S18 bug class: a dropdown subject missing from the back-end pool silently scored at the 10% elective weight instead of 30% stream weight).
+- **Fix:** `prepare_merit_inputs(grades, stream_subjects=None)` now takes the subjects the student explicitly studied in their stream. When present, **Sec2 (30% stream weight) = best 2 of those** — the pools are not consulted at all, so a subject missing from the back-end pool can no longer be mis-scored. When absent (golden-master fixtures, profiles saved before this change), it **falls back to the legacy count-heuristic**, so existing/historical flat-grade data scores identically.
+- **Persisted:** new `StudentProfile.stream_subjects` JSON field (migration `courses/0049`, additive, applied migrate-first via Supabase MCP). The front-end sends the student's `aliranSubjects` everywhere merit is computed — live merit on the grades page, eligibility on the dashboard + search, the stateless merit calculator — and persists them on profile sync + login. Returned on `GET /profile/` for cross-device rehydration.
+- **Pools are now fallback-only.** The `SCIENCE_POOL`/`ARTS_POOL`/`TECHNICAL_POOL` copies in `engine.py` remain solely to classify old/unlabelled data; for any student with an explicit selection they are bypassed, so the drift risk no longer reaches a labelled student. Linking comment + paired count tests kept for the fallback path.
+- **Rollout is safe:** existing logged-in students who haven't re-saved have an empty `stream_subjects` → fallback → **unchanged score**; they pick up the explicit path the next time they save grades.
+- **Verification:** golden master **unchanged at 5319** (proves the no-label path is byte-identical); a differential audit (now captured as 6 unit tests in `test_merit_pools.py`) confirmed the explicit path matches the heuristic for every single-stream student and diverges only for genuine cross-stream students the heuristic was mis-classifying — where the explicit score is the correct one. Courses pytest 983 pass, scholarship 215, jest 156, `next build` clean.
+
 ## [2.12.1] — S24: Funding tab UX polish (radios, * markers, tips) (2026-05-29)
 
 - **Programme length is now a radio group, not a dropdown — and labels are year-only** (no more "(Matriculation / Foundation)" / "(Diploma)" / "(Degree)" annotations). The same year-count maps to multiple programme levels (1y = matric OR foundation; 3y = diploma OR most degrees; 5y = PISMP OR 5-year degree like medicine/dentistry), so the level annotations were misleading. Added a 5-year option (was capped at 4 — PISMP and medical degrees fell outside the range).

@@ -44,7 +44,10 @@ def compute_student_merit(data):
     grades_for_merit = dict(data.get('grades', {}))
     if 'hist' in grades_for_merit:
         grades_for_merit['history'] = grades_for_merit.pop('hist')
-    sec1, sec2, sec3 = prepare_merit_inputs(grades_for_merit)
+    # TD-063: honour the student's explicit stream picks if the payload carries
+    # them; otherwise prepare_merit_inputs falls back to the count-heuristic.
+    sec1, sec2, sec3 = prepare_merit_inputs(
+        grades_for_merit, stream_subjects=data.get('stream_subjects'))
     coq_score = data.get('coq_score', 5.0)
     merit_result = calculate_merit_score(sec1, sec2, sec3, coq_score=coq_score)
     return merit_result['final_merit']

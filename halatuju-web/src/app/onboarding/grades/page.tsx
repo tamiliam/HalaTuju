@@ -216,7 +216,9 @@ export default function GradesInputPage() {
     const timer = setTimeout(async () => {
       setMeritLoading(true)
       try {
-        const result = await calculateMerit(grades, coqScore)
+        // TD-063: pass the student's explicit stream picks so the live merit
+        // uses the 30% weight for exactly those subjects (not a guessed stream).
+        const result = await calculateMerit(grades, coqScore, aliranSubjects.filter(Boolean))
         setMeritResult({
           academicMerit: result.academic_merit,
           finalMerit: result.final_merit,
@@ -229,7 +231,7 @@ export default function GradesInputPage() {
     }, 400)
 
     return () => clearTimeout(timer)
-  }, [grades, coqScore])
+  }, [grades, coqScore, aliranSubjects])
 
   const coreComplete = SPM_CORE_SUBJECTS.every((s) => grades[s.id])
 
