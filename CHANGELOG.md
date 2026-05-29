@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0] — S17: minor consent flow — re-voiced text, parent IC + guardianship letter, structured relationship (2026-05-29)
+
+The pre-S17 minor branch was a half-measure: it captured guardian name + free-text relationship + flipped the toggle label, but the consent body still read "I consent…" (student voice) and we trusted the typed guardian name with no identity verification. Lawyer review needs a defensible end-to-end flow. This sprint delivers that working model — single push, one migration, ready for legal sign-off.
+
+- **Re-voiced consent text for minors.** New `scholarship.consent.textMinor` i18n block — full parent-voice paragraph: *"I am the parent or legal guardian of the named applicant, who is under 18 years of age. On their behalf, I consent to… I confirm that I have legal authority to give this consent for the applicant."* Replaces the prior toggle-label-only minor cue.
+- **Structured `guardian_relationship` dropdown** (6 codes, no free-text): `father`, `mother`, `legal_guardian` (court-appointed), `grandparent`, `older_sibling`, `other_relative`. "Other" intentionally excluded per user direction — if no fit, the right path is a court-appointed `legal_guardian` with a letter. Backend rejects any value not in the structured list (`ConsentCreateSerializer.validate_guardian_relationship` → 400).
+- **Parent/guardian IC upload required for minors.** New doc type `parent_ic` on `ApplicantDocument.DOC_TYPES`. Auto-Vision-OCR'd on upload (reuses the S13 pipeline). Compulsory in the Documents tab when applicant is a minor; backend blocks consent POST with 400 `parent_ic_required` if missing.
+- **Guardianship letter required for non-parent guardians.** New doc type `guardianship_letter`. Pragmatic acceptance (per user direction): a court-issued guardianship order OR a parent's written authorisation letter — both count. Backend blocks consent POST with 400 `guardianship_letter_required` when `needs_guardianship_letter(relationship)` is true and the doc isn't uploaded. Shown in the Optional section of the Documents tab when minor (the relationship is picked only at consent time).
+- **Completeness rule now 7-part.** `application_completeness` gains `guardian_docs_done`: trivially true for adults; for minors requires `parent_ic` uploaded, AND if the latest active consent's relationship is non-parent also `guardianship_letter`. `complete = quiz + story + funding + docs + consent + address + guardian_docs`.
+- **2 new anomaly rules** (S16 Phase A engine):
+  - `parent_ic_name_mismatch` — Vision-OCR name on `parent_ic` differs from the typed guardian name on the consent (token-set via the existing `name_match`).
+  - `parent_ic_underage` — Vision-OCR NRIC on `parent_ic` indicates age < 18. The "guardian" is themselves a minor — hard signal for the admin.
+- **CONSENT_VERSION bumped** `2026-draft-1` → `2026-draft-2`. Existing active `2026-draft-1` consents become outdated; student/guardian re-attests with the new flow on next visit. Honest re-consent for a substantive identity change. **Prod check at sprint close: zero existing consent rows** (the live programme is still dormant), so the bump is purely forward-looking — no real applicants need to re-attest.
+- **Migration `scholarship/0020`** — choices-only (no DDL); applied as a direct `django_migrations` insert via Supabase MCP per the TD-058 workaround. `Consent.guardian_relationship` keeps its `CharField(100)` storage; choices enforced at the serializer + admin level. Pre-S17 free-text consent rows (none on prod) would stay readable.
+- **Admin verify-&-accept card** gains a "Parent/guardian IC (Vision OCR)" row when present — surfaces extracted NRIC + name + address + Re-run link. No automated verdict on this card; the new anomaly rules surface the verdicts in the Pre-interview flags card above.
+- **i18n** parity 1356 × en/ms/ta (+20 keys: consent textMinor + 6 relationship labels + relationshipPlaceholder + needParentIc/Letter + 2 doc-type labels + 2 doc-help + 1 admin parentIcTitle + 2 anomaly pairs). Tamil first-draft mirrors queued — **batch is now 9 deep**.
+- **Tests** — backend **1224 / 1224 pass** (+13 new: 4 TestGuardianDocsDone; 4 TestConsentApi for parent_ic_required + guardianship_letter_required + non-parent-with-letter OK + invalid-relationship rejected; 3 minor-relationship test updates; 4 anomaly tests for the two new rules). Frontend **jest 112 / 112** (+2: documentsComplete minor signature; DOC_TYPES length bump 11 → 13).
+- **1 deploy**; under budget.
+
 ## [2.8.0] — S16 Phase A: deterministic anomaly engine for pre-interview flags (2026-05-29)
 
 First slice of the post-shortlist vision (`docs/scholarship/post-shortlist-vision.md`). Single focused sprint.

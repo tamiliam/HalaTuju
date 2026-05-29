@@ -1085,3 +1085,88 @@ ALL user-facing copy lives anyway; we're consistent with the pattern, not bypass
 Gemini reads a rendered prompt that mentions the anomalies). Then we'd duplicate the copy
 server-side (or call FE-render-time templates from the prompt builder). Today, anomalies
 are admin-display only — no server-side consumer needs the text.
+
+## Pragmatic guardianship letter — court order OR parent's authorisation letter — S17, 2026-05-29
+
+**Decision:** For minor applicants where the consenting adult is NOT the father or mother
+(legal_guardian / grandparent / older_sibling / other_relative), a `guardianship_letter`
+document is required alongside the parent_ic. The doc type accepts **either** a
+court-issued guardianship order OR a written authorisation letter from the parent — both
+count. The lawyer will advise on the final requirement; the working model accepts both
+so the flow is reviewable end-to-end.
+
+**Alternatives considered:** (a) strict — only court-issued guardianship order accepted
+(legally tighter); (b) ultra-lenient — typed declaration with no doc upload required
+(weak PDPA defensibility); (c) require both docs (court order AND parent letter,
+belt-and-braces but exclusive).
+
+**Rationale:** B40 reality is parents are often absent — working abroad, deceased,
+separated, or simply unable to navigate official channels. Requiring a court-issued
+guardianship order would exclude legitimate applicants from grandparent-headed or
+older-sibling-headed households. A parent's written authorisation letter is common
+Malaysian practice for school enrolment and similar consent flows; it gives reasonable
+PDPA defensibility for a community-supported aid programme without making the bar
+impossible. The user explicitly named this trade-off (option b in the discussion).
+The lawyer review will confirm or tighten.
+
+**Trade-offs:** Lower legal rigour than option (a); a falsified authorisation letter
+won't be caught by the system (Vision OCR can read the IC but can't verify the letter's
+authenticity). Mitigated by the admin verify-&-accept step (S11a) — a human reads
+the letter before accepting. The anomaly engine surfaces the parent_ic Vision verdict
+for the admin to eyeball at the same time.
+
+**Revisit if:** lawyers want stricter (move to court-order-only for non-parent paths),
+or if real-use shows widespread fraudulent authorisation letters (then add a verification
+step — e.g. callback to the parent on a verified phone number).
+
+## View-time enforcement of doc upload prerequisites (defence-in-depth) — S17, 2026-05-29
+
+**Decision:** The Consent POST view enforces the doc upload requirements directly —
+returns 400 `parent_ic_required` if a minor's parent_ic isn't uploaded; 400
+`guardianship_letter_required` if non-parent + missing letter. The frontend ALSO
+pre-checks and shows amber warnings before submit, so the bad path is rare in normal
+use. Both layers exist.
+
+**Alternatives considered:** (a) completeness-only — let the consent record but mark
+the application incomplete; (b) FE-only gating — disable the submit button when
+prereqs missing; (c) view-only gating — let the FE try, surface backend errors.
+
+**Rationale:** Completeness-only (a) silently accepts a consent that's missing
+required evidence — bad for PDPA audit trail (the consent row exists but isn't
+backed by the docs it attests to). FE-only (b) is bypassable — a determined or
+buggy client can POST anyway. View-only (c) has poor UX — the student finds out
+about the missing doc only after clicking submit. The combination (FE warning +
+backend enforcement) gives both UX clarity and integrity.
+
+**Trade-offs:** Two places to maintain the same rule. Mitigated by: the rule is
+single-source on the backend (frontend just reflects what the backend will accept);
+if they diverge, the backend wins and the FE warning becomes "harmless" rather
+than wrong.
+
+**Revisit if:** we add async upload (file uploaded after consent click) — then
+the FE-side pre-check becomes a non-blocking hint rather than a gate, and the
+backend gating becomes the only enforcement. Today both are synchronous so the
+combination works.
+
+## No "Other" in the relationship dropdown — S17, 2026-05-29
+
+**Decision:** The 6-option relationship dropdown lists `father / mother /
+legal_guardian / grandparent / older_sibling / other_relative`. No "Other" /
+"None of the above" catch-all.
+
+**Alternatives considered:** (a) Include "Other" with a required free-text field
+to describe — gives flexibility; (b) Add a free-text override on top of the 6
+codes; (c) Stay as-is — closed list.
+
+**Rationale:** Per user direction. The closed list is itself a legal safety net —
+if no option fits, the right path is to route the applicant through
+`legal_guardian` (court-appointed) + a letter, which forces the proper paperwork.
+Allowing a free-text "Other" risks consenters claiming relationships that don't
+have any legal authority over the minor (e.g., neighbour, family friend, uncle
+without court appointment), with no clean way for the admin to flag.
+
+**Trade-offs:** Some legitimate-but-unusual cases (e.g., step-parent without
+formal adoption) get routed through legal_guardian + letter, which may feel
+overwrought. Accepted trade-off — the bar is higher but defensible.
+
+**Revisit if:** real-use shows a frequent legitimate case the 6 codes don't cover.
