@@ -751,7 +751,7 @@
         "statement_of_intent": "A short letter about your goals, if you'd like to write one.",
         "offer_letter": "If you already have a university or college offer.",
         "photo": "A recent photo of yourself (optional).",
-        "parent_ic": "A photo of the front of your parent or guardian's MyKad — they'll be giving consent on your behalf because you're under 18.",
+        "parent_ic": "A photo of your parent or guardian's IC. We use it to verify supporting documents like STR or EPF that are usually issued in your parent's name. (If you are under 18, your parent or guardian also signs the consent below.)",
         "guardianship_letter": "Only needed if the consent will be given by someone other than your father or mother — a court-issued guardianship order OR a written authorisation letter from your parent."
       },
       "income": {

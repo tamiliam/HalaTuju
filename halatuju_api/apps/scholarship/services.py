@@ -279,7 +279,10 @@ def application_completeness(application):
     except FundingNeed.DoesNotExist:
         funding_done = False
     present = set(application.documents.values_list('doc_type', flat=True))
-    documents_done = {'ic', 'results_slip'}.issubset(present)
+    # S22: parent_ic now compulsory for everyone (not just minors). Used by the
+    # admin to cross-check supporting docs like STR or EPF that are usually
+    # issued in a parent's name.
+    documents_done = {'ic', 'results_slip', 'parent_ic'}.issubset(present)
     consent_done = application.consents.filter(is_active=True).exists()
     address_done = bool(
         profile
@@ -303,25 +306,21 @@ def application_completeness(application):
 
 
 def _guardian_docs_done(application, profile, present_doc_types):
-    """S17 helper: are the minor-only guardian docs satisfied?
+    """S17 / S22 helper: are the minor-only guardian docs satisfied?
 
-    Adults: always True.
-    Minors: parent_ic upload required. AND if the latest active consent's
-    relationship is NOT father/mother, guardianship_letter required too. If
-    no active consent yet, we can't know the relationship, so the letter
-    check is deferred — we still require the parent_ic upload (which can be
-    uploaded in step 4 before consent at step 5). The consent serializer
-    refuses to record a non-parent relationship without the letter, so by
-    the time consent_done is true the doc must exist.
+    Adults: always True (parent_ic is now part of `documents_done`).
+    Minors: if the latest active consent's relationship is NOT father/mother,
+    a `guardianship_letter` is also required. If no active consent yet, the
+    letter check is deferred — but the consent serializer refuses to record
+    a non-parent relationship without the letter, so by the time consent_done
+    is true the doc must exist.
     """
     if not is_minor(profile):
         return True
-    if 'parent_ic' not in present_doc_types:
-        return False
     latest = application.consents.filter(is_active=True).order_by('-granted_at').first()
     if latest and needs_guardianship_letter(latest.guardian_relationship):
         return 'guardianship_letter' in present_doc_types
-    # No active consent yet OR active consent is a parent relationship → IC alone is enough.
+    # No active consent yet OR active consent is a parent relationship → no extra letter needed.
     return True
 
 

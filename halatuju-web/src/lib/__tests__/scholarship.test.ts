@@ -933,16 +933,22 @@ describe('COMPULSORY_DOC_TYPES / INCOME_PROOF_TYPES / OTHER_OPTIONAL_DOC_TYPES',
 })
 
 describe('documentsComplete', () => {
-  it('returns true when both ic and results_slip are present', () => {
-    expect(documentsComplete(['ic', 'results_slip'])).toBe(true)
+  // S22: parent_ic is now compulsory for everyone (used by admin to verify
+  // STR/EPF supporting docs that are typically issued in a parent's name).
+  it('returns true when all three compulsory types are present', () => {
+    expect(documentsComplete(['ic', 'results_slip', 'parent_ic'])).toBe(true)
   })
 
-  it('returns true with extra doc types alongside the two compulsory', () => {
-    expect(documentsComplete(['ic', 'results_slip', 'salary_slip', 'photo'])).toBe(true)
+  it('returns true with extra doc types alongside the three compulsory', () => {
+    expect(documentsComplete(['ic', 'results_slip', 'parent_ic', 'salary_slip', 'photo'])).toBe(true)
   })
 
   it('returns false when no documents are present', () => {
     expect(documentsComplete([])).toBe(false)
+  })
+
+  it('returns false when only ic + results_slip (missing parent_ic)', () => {
+    expect(documentsComplete(['ic', 'results_slip'])).toBe(false)
   })
 
   it('returns false when only ic is present', () => {
@@ -953,19 +959,12 @@ describe('documentsComplete', () => {
     expect(documentsComplete(['results_slip'])).toBe(false)
   })
 
-  it('returns false when neither compulsory type is present', () => {
+  it('returns false when only parent_ic is present', () => {
+    expect(documentsComplete(['parent_ic'])).toBe(false)
+  })
+
+  it('returns false when none of the three compulsory types are present', () => {
     expect(documentsComplete(['salary_slip', 'photo', 'epf'])).toBe(false)
-  })
-
-  // S17 — minor branch additionally requires parent_ic.
-  it('S17: minor needs parent_ic on top of ic + results_slip', () => {
-    expect(documentsComplete(['ic', 'results_slip'], true)).toBe(false)
-    expect(documentsComplete(['ic', 'results_slip', 'parent_ic'], true)).toBe(true)
-  })
-
-  it('S17: adult unaffected by parent_ic absence (isMinor defaults to false)', () => {
-    expect(documentsComplete(['ic', 'results_slip'])).toBe(true)
-    expect(documentsComplete(['ic', 'results_slip'], false)).toBe(true)
   })
 })
 

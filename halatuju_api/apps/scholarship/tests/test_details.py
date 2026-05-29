@@ -46,7 +46,8 @@ class TestCompleteness(TestCase):
         )
 
     def _make_complete(self):
-        """Set up all six completeness parts: quiz, story, funding, docs, consent, address."""
+        """Set up all seven completeness parts: quiz, story, funding, docs
+        (S22: ic + results_slip + parent_ic), consent, address, guardian docs."""
         self.profile.student_signals = {'x': {'y': 1}}
         self.profile.address = 'No. 12, Jalan ABC, Taman XYZ'
         self.profile.postal_code = '62100'
@@ -58,6 +59,7 @@ class TestCompleteness(TestCase):
         FundingNeed.objects.create(application=self.app, categories=['living'])
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
         ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
+        ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
         Consent.objects.create(application=self.app, version='t', is_active=True)
 
     def test_quiz_done_from_signals(self):
@@ -97,11 +99,18 @@ class TestCompleteness(TestCase):
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
         self.assertFalse(application_completeness(self.app)['documents_done'])
 
-    def test_documents_done_true_when_both_compulsory_present(self):
-        """documents_done is True when both ic and results_slip are uploaded."""
+    def test_documents_done_true_when_all_three_compulsory_present(self):
+        """S22: documents_done is True when ic + results_slip + parent_ic are all uploaded."""
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
         ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
+        ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
         self.assertTrue(application_completeness(self.app)['documents_done'])
+
+    def test_documents_done_false_when_parent_ic_missing(self):
+        """S22: parent_ic is now compulsory for everyone (not just minors)."""
+        ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
+        ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
+        self.assertFalse(application_completeness(self.app)['documents_done'])
 
     def test_complete_requires_documents_consent_and_address(self):
         """S14: complete now gates on compulsory documents AND active consent AND address."""
@@ -117,6 +126,7 @@ class TestCompleteness(TestCase):
         # + compulsory documents — still not complete (consent + address missing)
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
         ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
+        ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
         self.assertFalse(application_completeness(self.app)['complete'])
 
         # + active consent — still not complete (address missing)
@@ -455,21 +465,17 @@ class TestGuardianDocsDone(TestCase):
         app = self._make_adult_app()
         self.assertTrue(application_completeness(app)['guardian_docs_done'])
 
-    def test_minor_needs_parent_ic(self):
+    def test_minor_with_no_active_consent_is_done(self):
+        """S22: parent_ic moved to documents_done (universal). guardian_docs_done
+        for minors only checks the additional guardianship_letter, and only when
+        the consenting adult is non-parent. With no active consent yet, the
+        letter check is deferred → trivially True."""
         app = self._make_minor_app()
-        # No parent_ic uploaded yet → not done.
-        self.assertFalse(application_completeness(app)['guardian_docs_done'])
-        # Upload parent_ic → done (no active consent yet means letter is deferred).
-        ApplicantDocument.objects.create(
-            application=app, doc_type='parent_ic', storage_path='x/p',
-        )
         self.assertTrue(application_completeness(app)['guardian_docs_done'])
 
     def test_minor_non_parent_consent_requires_letter(self):
+        """S22: minor + non-parent guardian still needs the letter."""
         app = self._make_minor_app()
-        ApplicantDocument.objects.create(
-            application=app, doc_type='parent_ic', storage_path='x/p',
-        )
         # Active consent with grandparent relationship → letter required.
         Consent.objects.create(
             application=app, version='t', is_active=True,
@@ -485,9 +491,6 @@ class TestGuardianDocsDone(TestCase):
 
     def test_minor_father_consent_no_letter_needed(self):
         app = self._make_minor_app()
-        ApplicantDocument.objects.create(
-            application=app, doc_type='parent_ic', storage_path='x/p',
-        )
         Consent.objects.create(
             application=app, version='t', is_active=True,
             granted_by='guardian', guardian_name='Dad',

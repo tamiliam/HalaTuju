@@ -768,14 +768,14 @@ export type DocType = typeof DOC_TYPES[number]
 
 /**
  * Returns true when an applicant has uploaded the compulsory documents.
- * Adults: IC + results slip. Minors (S17): additionally parent_ic.
- * (Whether `guardianship_letter` is also required depends on the consenting
- * adult's relationship — checked separately at consent submit time.)
+ * S22: parent_ic is now compulsory for everyone (the admin cross-checks
+ * STR/EPF and similar supporting documents — usually issued in a parent's
+ * name — against the parent's IC). The conditional `guardianship_letter`
+ * for minors with non-parent guardians is enforced separately at the
+ * consent submit step.
  */
-export function documentsComplete(presentTypes: string[], isMinor = false): boolean {
-  const base = presentTypes.includes('ic') && presentTypes.includes('results_slip')
-  if (!isMinor) return base
-  return base && presentTypes.includes('parent_ic')
+export function documentsComplete(presentTypes: string[]): boolean {
+  return ['ic', 'results_slip', 'parent_ic'].every((t) => presentTypes.includes(t))
 }
 
 export function formatFileSize(bytes: number): string {

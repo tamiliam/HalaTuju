@@ -750,7 +750,7 @@
         "electricity_bill": "Bil terkini membantu kami memahami keadaan isi rumah anda.",
         "statement_of_intent": "Surat pendek tentang matlamat anda, jika anda ingin menulisnya.",
         "offer_letter": "Jika anda sudah menerima tawaran universiti atau kolej.",
-        "parent_ic": "Foto depan MyKad ibu bapa atau penjaga anda — mereka yang akan memberi persetujuan bagi pihak anda kerana anda di bawah umur 18 tahun.",
+        "parent_ic": "Foto IC ibu bapa atau penjaga anda. Kami menggunakannya untuk mengesahkan dokumen sokongan seperti STR atau KWSP yang biasanya dikeluarkan atas nama ibu bapa anda. (Jika anda di bawah 18 tahun, ibu bapa atau penjaga anda juga akan menandatangani persetujuan di bawah.)",
         "guardianship_letter": "Hanya diperlukan jika persetujuan diberi oleh seseorang selain bapa atau ibu anda — perintah penjagaan dari mahkamah ATAU surat kebenaran bertulis daripada ibu bapa anda.",
         "photo": "Gambar terkini anda (pilihan)."
       },

@@ -360,20 +360,22 @@ export default function ScholarshipDocuments({ token }: { token: string | null }
               showVisionChip={dt === 'ic'}
             />
           ))}
-          {/* S17: minors must upload the parent/guardian's IC. Vision OCR runs
-              on it automatically (same pipeline as the student's IC). */}
-          {isMinor && (
-            <SingleDocCard
-              key="parent_ic"
-              docType="parent_ic"
-              docs={docs}
-              busyType={busyType}
-              onUpload={handleUpload}
-              onDelete={handleDelete}
-              t={t}
-              showVisionChip={false}
-            />
-          )}
+          {/* S22: parent/guardian IC is now required for EVERYONE (not just
+              minors). The admin uses it to cross-check supporting docs like
+              STR or EPF — those are usually issued in a parent's name, and
+              comparing the IC name + NRIC catches mismatches that would
+              otherwise sneak past. Vision OCR runs on upload (same pipeline
+              as the student's IC). */}
+          <SingleDocCard
+            key="parent_ic"
+            docType="parent_ic"
+            docs={docs}
+            busyType={busyType}
+            onUpload={handleUpload}
+            onDelete={handleDelete}
+            t={t}
+            showVisionChip={false}
+          />
         </div>
       </section>
 
