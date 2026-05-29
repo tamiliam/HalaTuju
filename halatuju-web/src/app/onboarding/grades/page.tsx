@@ -161,7 +161,16 @@ export default function GradesInputPage() {
     }
   }
 
-  const streamPool = SPM_STREAM_POOLS[stream] || []
+  // Stream dropdown options, sorted alphabetically by display name (locale-aware,
+  // matching the elective dropdown). Pre-filled defaults read SPM_STREAM_POOLS
+  // directly elsewhere, so the canonical first subjects are unaffected.
+  const streamPool = useMemo(
+    () =>
+      [...(SPM_STREAM_POOLS[stream] || [])].sort((a, b) =>
+        getSubjectName(a.id, locale).localeCompare(getSubjectName(b.id, locale))
+      ),
+    [stream, locale]
+  )
   const selectedAliranIds = aliranSubjects.filter(Boolean)
   const coreIdsList = SPM_CORE_SUBJECTS.map((s) => s.id)
 

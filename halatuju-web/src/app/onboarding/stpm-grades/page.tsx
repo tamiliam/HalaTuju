@@ -159,10 +159,13 @@ export default function StpmGradesPage() {
     setSpmElektifSlots(prev => prev.map((s, i) => i === index ? newId : s))
   }
 
-  // Computed pools for SPM prereq stream/elective dropdowns
+  // Computed pools for SPM prereq stream/elective dropdowns.
+  // Stream options sorted alphabetically by display name (locale-aware).
   const spmStreamPool = useMemo(() => {
-    return SPM_PREREQ_STREAM_POOLS[spmStream] || []
-  }, [spmStream])
+    return [...(SPM_PREREQ_STREAM_POOLS[spmStream] || [])].sort((a, b) =>
+      getSubjectName(a.id, locale).localeCompare(getSubjectName(b.id, locale))
+    )
+  }, [spmStream, locale])
 
   const spmAllSelectedPrereq = useMemo(() => {
     const coreIds = SPM_PREREQ_COMPULSORY.map(s => s.id)
