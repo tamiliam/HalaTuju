@@ -200,8 +200,9 @@ class DocumentListCreateView(APIView):
                 delete_objects(stale_paths)   # best-effort; leaves orphan blob if it fails (logged)
             stale.delete()
         doc = ApplicantDocument.objects.create(application=app, **serializer.validated_data)
-        # S13: auto-run Vision OCR on IC uploads (soft signal — never blocks).
-        if doc.doc_type == 'ic':
+        # S13 + S17: auto-run Vision OCR on IC uploads (student's IC OR the
+        # parent/guardian IC for minor consent). Soft signal — never blocks.
+        if doc.doc_type in ('ic', 'parent_ic'):
             from .vision import run_vision_for_document
             run_vision_for_document(doc)
         return Response(ApplicantDocumentSerializer(doc).data, status=status.HTTP_201_CREATED)
@@ -272,6 +273,28 @@ class ConsentView(APIView):
                 return Response(
                     {'error': 'A guardian must consent for applicants under 18 '
                               '(name + relationship required).'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            # S17: the guardian's IC must already be uploaded — without it the
+            # attested identity is unverifiable. Block at consent submit time.
+            present = set(app.documents.values_list('doc_type', flat=True))
+            if 'parent_ic' not in present:
+                return Response(
+                    {'error': 'parent_ic_required',
+                     'message': "Please upload the parent/guardian's IC photo "
+                                "in Documents (step 4) before signing this consent."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            # S17: for non-parent relationships, the guardianship letter (court
+            # order OR parent's written authorisation) must be uploaded too.
+            from .services import needs_guardianship_letter
+            if (needs_guardianship_letter(d['guardian_relationship'])
+                    and 'guardianship_letter' not in present):
+                return Response(
+                    {'error': 'guardianship_letter_required',
+                     'message': "For a non-parent guardian, please also upload "
+                                "the guardianship letter or parent's written "
+                                "authorisation before signing."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         consent = record_consent(

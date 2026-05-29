@@ -258,7 +258,7 @@ def application_completeness(application):
     """
     Report STEP 1A / STEP 2 progress for a (typically shortlisted) application:
     quiz done (the linked profile has quiz signals), story done (incl. address),
-    funding done, documents done (compulsory IC + results slip), consent done.
+    funding done, documents done, consent done, guardian docs done.
     The sponsor stage (Phase 2) will gate on ``complete``.
 
     funding_done (S3 redesign): at least one category ticked in categories.
@@ -266,7 +266,10 @@ def application_completeness(application):
     consent_done (S5): an active Consent row exists.
     address_done (S14): profile has street + postal_code + city (state already
     came from /apply). Stored on the profile, captured in the Story tab.
-    complete (S14 finalise): all six parts done.
+    guardian_docs_done (S17): adults are trivially true; minors must additionally
+    upload parent_ic, and if the consenting adult is not father/mother also a
+    guardianship_letter. Determined by the latest active consent's relationship.
+    complete (S17 finalise): all seven parts done.
     """
     profile = application.profile
     quiz_done = bool(profile and profile.student_signals)
@@ -284,6 +287,7 @@ def application_completeness(application):
         and (profile.postal_code or '').strip()
         and (profile.city or '').strip()
     )
+    guardian_docs_done = _guardian_docs_done(application, profile, present)
     return {
         'quiz_done': quiz_done,
         'details_done': details_done,
@@ -291,9 +295,34 @@ def application_completeness(application):
         'documents_done': documents_done,
         'consent_done': consent_done,
         'address_done': address_done,
+        'guardian_docs_done': guardian_docs_done,
         'complete': (quiz_done and details_done and funding_done
-                     and documents_done and consent_done and address_done),
+                     and documents_done and consent_done and address_done
+                     and guardian_docs_done),
     }
+
+
+def _guardian_docs_done(application, profile, present_doc_types):
+    """S17 helper: are the minor-only guardian docs satisfied?
+
+    Adults: always True.
+    Minors: parent_ic upload required. AND if the latest active consent's
+    relationship is NOT father/mother, guardianship_letter required too. If
+    no active consent yet, we can't know the relationship, so the letter
+    check is deferred — we still require the parent_ic upload (which can be
+    uploaded in step 4 before consent at step 5). The consent serializer
+    refuses to record a non-parent relationship without the letter, so by
+    the time consent_done is true the doc must exist.
+    """
+    if not is_minor(profile):
+        return True
+    if 'parent_ic' not in present_doc_types:
+        return False
+    latest = application.consents.filter(is_active=True).order_by('-granted_at').first()
+    if latest and needs_guardianship_letter(latest.guardian_relationship):
+        return 'guardianship_letter' in present_doc_types
+    # No active consent yet OR active consent is a parent relationship → IC alone is enough.
+    return True
 
 
 _DEEPER_FIELDS = (
@@ -332,10 +361,29 @@ def save_application_details(application, data):
     return application
 
 
-# ── Consent / minor logic (Sprint 5a) ────────────────────────────────────
+# ── Consent / minor logic (Sprint 5a, hardened in S17) ──────────────────
 
 # DRAFT — replace the version string when the lawyer-reviewed consent text lands.
-CONSENT_VERSION = '2026-draft-1'
+# Bumped 2026-05-29 (S17) — the minor flow now collects parent_ic + optional
+# guardianship_letter and uses a structured guardian_relationship dropdown.
+# Any active 2026-draft-1 consents become outdated; the student/guardian
+# re-attests with the new flow on next visit. (Substantive identity change,
+# so re-consent is the honest path here.)
+CONSENT_VERSION = '2026-draft-2'
+
+
+# S17 — structured guardian relationship codes. Father/mother only need the
+# parent's IC; everyone else also needs a guardianship_letter (pragmatic:
+# parent's authorisation letter OR court-issued guardianship order — both
+# accepted, the lawyer call). 'Other' was intentionally excluded.
+_PARENT_RELATIONSHIPS = frozenset({'father', 'mother'})
+
+
+def needs_guardianship_letter(relationship: str) -> bool:
+    """True iff the relationship requires the additional guardianship_letter
+    document on top of the parent_ic upload. Father/mother only need the IC;
+    legal_guardian / grandparent / older_sibling / other_relative need both."""
+    return bool(relationship) and relationship not in _PARENT_RELATIONSHIPS
 
 
 def age_from_nric(nric):

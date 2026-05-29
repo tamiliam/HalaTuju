@@ -8,6 +8,7 @@ import {
   recordDocument,
   listDocuments,
   deleteDocument,
+  getConsentStatus,
   type ApplicantDocument,
 } from '@/lib/api'
 import {
@@ -284,6 +285,10 @@ export default function ScholarshipDocuments({ token }: { token: string | null }
   const [docs, setDocs] = useState<ApplicantDocument[]>([])
   const [busyType, setBusyType] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // S17: minors get an additional Required card (parent_ic) and an Optional
+  // card (guardianship_letter). is_minor is derived backend-side from the
+  // profile's NRIC year and surfaced on the consent status endpoint.
+  const [isMinor, setIsMinor] = useState(false)
 
   const refresh = useCallback(async () => {
     if (!token) return
@@ -294,6 +299,11 @@ export default function ScholarshipDocuments({ token }: { token: string | null }
   }, [token])
 
   useEffect(() => { refresh() }, [refresh])
+
+  useEffect(() => {
+    if (!token) return
+    getConsentStatus({ token }).then((s) => setIsMinor(!!s.is_minor)).catch(() => { /* ignore */ })
+  }, [token])
 
   const handleUpload = async (docType: string, file: File) => {
     if (!token) return
@@ -350,6 +360,20 @@ export default function ScholarshipDocuments({ token }: { token: string | null }
               showVisionChip={dt === 'ic'}
             />
           ))}
+          {/* S17: minors must upload the parent/guardian's IC. Vision OCR runs
+              on it automatically (same pipeline as the student's IC). */}
+          {isMinor && (
+            <SingleDocCard
+              key="parent_ic"
+              docType="parent_ic"
+              docs={docs}
+              busyType={busyType}
+              onUpload={handleUpload}
+              onDelete={handleDelete}
+              t={t}
+              showVisionChip={false}
+            />
+          )}
         </div>
       </section>
 
@@ -384,6 +408,21 @@ export default function ScholarshipDocuments({ token }: { token: string | null }
               t={t}
             />
           ))}
+          {/* S17: minors with a non-parent guardian (grandparent / legal
+              guardian / older sibling / other relative) must also upload
+              this. Shown as optional here because the relationship is only
+              picked on the Consent step; the consent POST blocks if missing. */}
+          {isMinor && (
+            <SingleDocCard
+              key="guardianship_letter"
+              docType="guardianship_letter"
+              docs={docs}
+              busyType={busyType}
+              onUpload={handleUpload}
+              onDelete={handleDelete}
+              t={t}
+            />
+          )}
         </div>
       </section>
 

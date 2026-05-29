@@ -738,7 +738,9 @@
         "salary_slip": "Slip gaji",
         "water_bill": "Bil air",
         "electricity_bill": "Bil elektrik",
-        "offer_letter": "Surat tawaran"
+        "offer_letter": "Surat tawaran",
+        "parent_ic": "IC ibu bapa/penjaga",
+        "guardianship_letter": "Surat penjagaan"
       },
       "help": {
         "ic": "Gambar bahagian depan MyKad anda. Kami akan menyemak secara automatik untuk membantu anda mengesan kesilapan menaip — gambar anda tidak disimpan di Google.",
@@ -748,6 +750,8 @@
         "electricity_bill": "Bil terkini membantu kami memahami keadaan isi rumah anda.",
         "statement_of_intent": "Surat pendek tentang matlamat anda, jika anda ingin menulisnya.",
         "offer_letter": "Jika anda sudah menerima tawaran universiti atau kolej.",
+        "parent_ic": "Foto depan MyKad ibu bapa atau penjaga anda — mereka yang akan memberi persetujuan bagi pihak anda kerana anda di bawah umur 18 tahun.",
+        "guardianship_letter": "Hanya diperlukan jika persetujuan diberi oleh seseorang selain bapa atau ibu anda — perintah penjagaan dari mahkamah ATAU surat kebenaran bertulis daripada ibu bapa anda.",
         "photo": "Gambar terkini anda (pilihan)."
       },
       "income": {
@@ -789,7 +793,20 @@
       "guardianName": "Nama penjaga",
       "guardianRelationship": "Hubungan dengan anda",
       "agree": "Saya telah membaca dan bersetuju dengan perkara di atas.",
-      "agreeGuardian": "Sebagai penjaga, saya telah membaca dan bersetuju dengan perkara di atas bagi pihak pemohon.",
+      "agreeGuardian": "Sebagai ibu bapa atau penjaga, saya telah membaca dan bersetuju dengan perkara di atas bagi pihak pemohon.",
+      "textMinor": "Saya adalah ibu bapa atau penjaga sah pemohon yang dinamakan, yang berumur di bawah 18 tahun. Bagi pihak mereka, saya bersetuju Program Bantuan B40 berkongsi profil dan maklumat sokongan mereka dengan penaja berpotensi untuk tujuan mempertimbangkan mereka untuk bantuan kewangan. Saya mengesahkan bahawa saya mempunyai kuasa undang-undang untuk memberikan persetujuan ini bagi pemohon. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa. Kami juga mungkin menjalankan OCR automatik (pengecaman teks) pada dokumen yang dimuat naik — termasuk foto IC ibu bapa/penjaga — untuk membantu mengesan ralat menaip dan mengesahkan identiti; keputusan adalah isyarat lembut sahaja dan tidak pernah menggantikan semakan manusia.",
+      "guardianNamePlaceholder": "Seperti yang tertulis pada IC anda",
+      "relationshipPlaceholder": "Pilih hubungan anda…",
+      "relationship": {
+        "father": "Bapa",
+        "mother": "Ibu",
+        "legal_guardian": "Penjaga sah (dilantik mahkamah)",
+        "grandparent": "Datuk/nenek",
+        "older_sibling": "Adik-beradik lebih tua",
+        "other_relative": "Saudara lain"
+      },
+      "needParentIc": "Sila muat naik foto IC ibu bapa/penjaga dalam langkah Dokumen sebelum menandatangani persetujuan ini.",
+      "needGuardianshipLetter": "Kerana anda bukan bapa atau ibu pemohon, sila muat naik surat penjagaan (perintah mahkamah ATAU surat kebenaran bertulis daripada ibu bapa) dalam langkah Dokumen sebelum menandatangani.",
       "given": "Persetujuan diberikan. Terima kasih.",
       "submit": "Beri persetujuan",
       "saving": "Menyimpan…",
@@ -1359,6 +1376,7 @@
       "visionDeclaration": "Nama pengakuan",
       "visionAddressTitle": "Alamat pada IC (dari foto)",
       "visionAddressVsProfile": "Alamat yang dimasukkan pelajar",
+      "parentIcTitle": "IC ibu bapa/penjaga (Vision OCR)",
       "visionError": "Tidak dapat menjalankan semula Vision.",
       "anomaly": {
         "title": "Penanda pra-temubual",
@@ -1406,6 +1424,14 @@
         "device_in_funding": {
           "fact": "Pelajar menanda “peranti” (komputer riba/tablet) bawah pembiayaan.",
           "question": "RM 3,000 mungkin tidak cukup untuk komputer riba bersama kos lain. Jika kami hanya boleh sokong sebahagian, bagaimana anda akan tampung jurang itu?"
+        },
+        "parent_ic_name_mismatch": {
+          "fact": "OCR IC ibu bapa membaca “{ocr_name}”; penjaga menaip “{typed_name}” pada persetujuan.",
+          "question": "Nama pada IC ibu bapa/penjaga berbeza daripada nama yang mereka taip pada persetujuan — bolehkah kami sahkan yang mana betul?"
+        },
+        "parent_ic_underage": {
+          "fact": "NRIC IC ibu bapa {ocr_nric} menunjukkan umur {age} — “penjaga” itu sendiri di bawah umur.",
+          "question": "IC ibu bapa/penjaga yang dimuat naik adalah milik seseorang di bawah 18 tahun — seorang di bawah umur tidak boleh secara sah memberi persetujuan bagi pihak orang di bawah umur yang lain. Sila sahkan IC siapa yang dimuat naik."
         }
       }
     },

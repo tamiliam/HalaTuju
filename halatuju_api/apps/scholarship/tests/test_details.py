@@ -39,6 +39,8 @@ class TestCompleteness(TestCase):
                 'documents_done': False,
                 'consent_done': False,
                 'address_done': False,
+                # S17: adult by default (no profile NRIC → not a minor) → trivially True.
+                'guardian_docs_done': True,
                 'complete': False,
             },
         )
@@ -417,3 +419,79 @@ class TestDetailsApi(TestCase):
         self.assertEqual(fn['categories'], [])
         self.assertEqual(fn['funding_note'], '')
         self.assertIsNone(fn['programme_months'])
+
+
+# ─── S17: minor consent flow (guardian docs + relationship choices) ─────────
+
+class TestGuardianDocsDone(TestCase):
+    """guardian_docs_done is True for adults, conditionally True for minors."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c-s17', name='M', year=2026)
+
+    def _make_minor_app(self):
+        """Profile with a 2010-born NRIC → age ~16 → minor."""
+        profile = StudentProfile.objects.create(
+            supabase_user_id='minor-s17',
+            name='Mark Benjamin',
+            nric='100318-14-0635',
+        )
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=profile, status='shortlisted',
+        )
+
+    def _make_adult_app(self):
+        profile = StudentProfile.objects.create(
+            supabase_user_id='adult-s17',
+            name='Adult Person',
+            nric='710101-14-1234',
+        )
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=profile, status='shortlisted',
+        )
+
+    def test_adult_is_trivially_done(self):
+        app = self._make_adult_app()
+        self.assertTrue(application_completeness(app)['guardian_docs_done'])
+
+    def test_minor_needs_parent_ic(self):
+        app = self._make_minor_app()
+        # No parent_ic uploaded yet → not done.
+        self.assertFalse(application_completeness(app)['guardian_docs_done'])
+        # Upload parent_ic → done (no active consent yet means letter is deferred).
+        ApplicantDocument.objects.create(
+            application=app, doc_type='parent_ic', storage_path='x/p',
+        )
+        self.assertTrue(application_completeness(app)['guardian_docs_done'])
+
+    def test_minor_non_parent_consent_requires_letter(self):
+        app = self._make_minor_app()
+        ApplicantDocument.objects.create(
+            application=app, doc_type='parent_ic', storage_path='x/p',
+        )
+        # Active consent with grandparent relationship → letter required.
+        Consent.objects.create(
+            application=app, version='t', is_active=True,
+            granted_by='guardian', guardian_name='Grandma',
+            guardian_relationship='grandparent',
+        )
+        self.assertFalse(application_completeness(app)['guardian_docs_done'])
+        # Upload guardianship_letter → done.
+        ApplicantDocument.objects.create(
+            application=app, doc_type='guardianship_letter', storage_path='x/l',
+        )
+        self.assertTrue(application_completeness(app)['guardian_docs_done'])
+
+    def test_minor_father_consent_no_letter_needed(self):
+        app = self._make_minor_app()
+        ApplicantDocument.objects.create(
+            application=app, doc_type='parent_ic', storage_path='x/p',
+        )
+        Consent.objects.create(
+            application=app, version='t', is_active=True,
+            granted_by='guardian', guardian_name='Dad',
+            guardian_relationship='father',
+        )
+        # Father relationship → no letter required → done.
+        self.assertTrue(application_completeness(app)['guardian_docs_done'])

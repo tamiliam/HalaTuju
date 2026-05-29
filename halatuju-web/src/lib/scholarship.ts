@@ -735,6 +735,18 @@ export const COMPULSORY_DOC_TYPES = ['ic', 'results_slip'] as const
 /** Any one of these counts as proof of household income (combined card). */
 export const INCOME_PROOF_TYPES = ['str', 'salary_slip', 'epf'] as const
 
+/**
+ * S17 — additional documents only relevant when the applicant is a minor:
+ * - `parent_ic` is COMPULSORY for any minor (the parent/guardian's IC).
+ * - `guardianship_letter` is COMPULSORY when the consenting adult is NOT the
+ *   father or mother (court-issued order or parent's written authorisation).
+ *
+ * Both surface in the Documents tab when `isMinor` so the student can upload
+ * them in advance, before reaching the Consent step. The Consent submit
+ * blocks (with a backend 400) until the relevant doc(s) are present.
+ */
+export const MINOR_GUARDIAN_DOC_TYPES = ['parent_ic', 'guardianship_letter'] as const
+
 /** Optional docs shown as individual cards (excluding the income group). */
 export const OTHER_OPTIONAL_DOC_TYPES = [
   'water_bill', 'electricity_bill', 'statement_of_intent', 'offer_letter', 'photo',
@@ -749,16 +761,21 @@ export const DOC_TYPES = [
   ...COMPULSORY_DOC_TYPES,
   ...INCOME_PROOF_TYPES,
   ...OTHER_OPTIONAL_DOC_TYPES,
+  ...MINOR_GUARDIAN_DOC_TYPES,
   'reference_letter',
 ] as const
 export type DocType = typeof DOC_TYPES[number]
 
 /**
- * Returns true when an applicant has uploaded both compulsory documents
- * (IC + results slip).
+ * Returns true when an applicant has uploaded the compulsory documents.
+ * Adults: IC + results slip. Minors (S17): additionally parent_ic.
+ * (Whether `guardianship_letter` is also required depends on the consenting
+ * adult's relationship — checked separately at consent submit time.)
  */
-export function documentsComplete(presentTypes: string[]): boolean {
-  return presentTypes.includes('ic') && presentTypes.includes('results_slip')
+export function documentsComplete(presentTypes: string[], isMinor = false): boolean {
+  const base = presentTypes.includes('ic') && presentTypes.includes('results_slip')
+  if (!isMinor) return base
+  return base && presentTypes.includes('parent_ic')
 }
 
 export function formatFileSize(bytes: number): string {

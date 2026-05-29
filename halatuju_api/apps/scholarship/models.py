@@ -389,6 +389,12 @@ class ApplicantDocument(models.Model):
         ('water_bill', 'Water Bill'),
         ('electricity_bill', 'Electricity Bill'),
         ('offer_letter', 'Offer Letter'),
+        # S17 — minor consent flow. parent_ic is compulsory when the applicant
+        # is under 18; guardianship_letter is compulsory when the consenting
+        # adult is NOT the father or mother (e.g. legal guardian, grandparent,
+        # older sibling, other relative).
+        ('parent_ic', 'Parent/Guardian IC'),
+        ('guardianship_letter', 'Guardianship Letter'),
     ]
     VERIFICATION_CHOICES = [
         ('pending', 'Pending'),
@@ -456,6 +462,17 @@ class Consent(models.Model):
     be granted by a guardian. Replaces the verbal consent the B40 analysis
     flagged as insufficient for PDPA."""
     GRANTED_BY = [('self', 'Self'), ('guardian', 'Guardian')]
+    # S17 — structured guardian relationship (replaces the prior free-text). 'Other'
+    # is intentionally excluded per legal review direction; if a relationship doesn't
+    # fit, the right path is a court-appointed legal_guardian with a letter.
+    GUARDIAN_RELATIONSHIPS = [
+        ('father', 'Father'),
+        ('mother', 'Mother'),
+        ('legal_guardian', 'Legal guardian (court-appointed)'),
+        ('grandparent', 'Grandparent'),
+        ('older_sibling', 'Older sibling'),
+        ('other_relative', 'Other relative'),
+    ]
     application = models.ForeignKey(
         ScholarshipApplication, on_delete=models.CASCADE, related_name='consents',
     )
@@ -464,6 +481,10 @@ class Consent(models.Model):
     locale = models.CharField(max_length=2, default='en')
     granted_by = models.CharField(max_length=20, choices=GRANTED_BY, default='self')
     guardian_name = models.CharField(max_length=200, blank=True, default='')
+    # S17: now a code from GUARDIAN_RELATIONSHIPS (no DB-level enum change — chars
+    # work; the choices list is enforced at the serializer + admin level). Pre-S17
+    # rows that hold free text are kept as-is; they just won't pass the new validator
+    # if re-saved. Backfill ad-hoc as needed; no migration needed for that.
     guardian_relationship = models.CharField(max_length=100, blank=True, default='')
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     is_active = models.BooleanField(default=True)

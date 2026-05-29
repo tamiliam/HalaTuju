@@ -248,3 +248,54 @@ class TestAnomalyShape(_Base):
             'funding_other_without_note',
             'str_claimed_no_doc',
         ])
+
+
+# ─── S17: parent_ic anomalies ───────────────────────────────────────────────
+
+def _add_parent_ic(app, *, vision_nric='', vision_name=''):
+    return ApplicantDocument.objects.create(
+        application=app, doc_type='parent_ic', storage_path=f'{app.id}/parent_ic/x',
+        vision_nric=vision_nric, vision_name=vision_name,
+        vision_run_at=timezone.now(), vision_error='',
+    )
+
+
+class TestParentIcNameMismatch(_Base):
+    def _add_guardian_consent(self, name='Grandma'):
+        from apps.scholarship.models import Consent
+        return Consent.objects.create(
+            application=self.app, version='t', is_active=True,
+            granted_by='guardian', guardian_name=name,
+            guardian_relationship='grandparent',
+        )
+
+    def test_flag_when_ocr_name_differs_from_typed_guardian(self):
+        self._add_guardian_consent(name='Grandma Lim')
+        _add_parent_ic(self.app, vision_nric='600101-14-0001', vision_name='Totally Different Person')
+        codes = [a['code'] for a in detect_anomalies(self.app)]
+        self.assertIn('parent_ic_name_mismatch', codes)
+
+    def test_no_flag_when_names_match(self):
+        self._add_guardian_consent(name='GRANDMA LIM')
+        _add_parent_ic(self.app, vision_nric='600101-14-0001', vision_name='Grandma Lim')
+        codes = [a['code'] for a in detect_anomalies(self.app)]
+        self.assertNotIn('parent_ic_name_mismatch', codes)
+
+    def test_no_flag_when_no_active_consent(self):
+        """Without a guardian consent row, there's no typed name to compare against."""
+        _add_parent_ic(self.app, vision_nric='600101-14-0001', vision_name='Anyone')
+        codes = [a['code'] for a in detect_anomalies(self.app)]
+        self.assertNotIn('parent_ic_name_mismatch', codes)
+
+
+class TestParentIcUnderage(_Base):
+    def test_flag_when_parent_ic_age_under_18(self):
+        # IC NRIC year 2010 → age ~16 (uploaded as the supposed parent's IC).
+        _add_parent_ic(self.app, vision_nric='100101-14-1111', vision_name='Some Name')
+        codes = [a['code'] for a in detect_anomalies(self.app)]
+        self.assertIn('parent_ic_underage', codes)
+
+    def test_no_flag_when_parent_ic_is_adult(self):
+        _add_parent_ic(self.app, vision_nric='710101-14-2222', vision_name='Adult Person')
+        codes = [a['code'] for a in detect_anomalies(self.app)]
+        self.assertNotIn('parent_ic_underage', codes)

@@ -376,6 +376,41 @@ export default function AdminScholarshipDetailPage() {
           )
         })()}
 
+        {/* S17: parent/guardian IC Vision row — shown when the minor uploaded
+            their parent's IC. No automated verdicts here (the anomaly engine
+            cross-checks against the typed guardian name + adult-age threshold
+            and surfaces flags in the Pre-interview flags card above). */}
+        {(() => {
+          const pic = app.documents.find(
+            (d: AdminApplicantDocument) => d.doc_type === 'parent_ic' && d.vision_run_at,
+          )
+          if (!pic) return null
+          return (
+            <div className="mt-2 border-t pt-3 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-gray-700">
+                  {t('admin.scholarship.parentIcTitle')}
+                </span>
+                <button onClick={() => doReRunVision(pic.id)} disabled={!!busy}
+                  className="text-xs text-blue-600 hover:underline disabled:opacity-50">
+                  {busy === 'vision' ? t('admin.scholarship.visionRunning') : t('admin.scholarship.visionRerun')}
+                </button>
+              </div>
+              {(pic.vision_nric || pic.vision_name) && (
+                <p className="text-xs text-gray-500 font-mono break-words">
+                  {t('admin.scholarship.visionExtracted')}: {pic.vision_nric || '—'} · {pic.vision_name || '—'}
+                </p>
+              )}
+              {pic.vision_address && (
+                <p className="text-[11px] text-gray-500 break-words">
+                  {pic.vision_address}
+                </p>
+              )}
+              {pic.vision_error && <p className="text-xs text-amber-700">{pic.vision_error}</p>}
+            </div>
+          )
+        })()}
+
         <label className="mt-2 flex items-center gap-2 border-t pt-3 text-sm text-gray-700">
           <input type="checkbox" checked={app.mentoring_candidate} disabled={!!busy}
             onChange={(e) => toggleMentoring(e.target.checked)} />

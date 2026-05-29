@@ -738,7 +738,9 @@
         "salary_slip": "Salary slip",
         "water_bill": "Water bill",
         "electricity_bill": "Electricity bill",
-        "offer_letter": "Offer letter"
+        "offer_letter": "Offer letter",
+        "parent_ic": "Parent/guardian IC",
+        "guardianship_letter": "Guardianship letter"
       },
       "help": {
         "ic": "A photo of the front of your MyKad. We'll check it automatically to help you spot typos — your photo isn't kept at Google.",
@@ -748,7 +750,9 @@
         "electricity_bill": "A recent bill helps us understand your household.",
         "statement_of_intent": "A short letter about your goals, if you'd like to write one.",
         "offer_letter": "If you already have a university or college offer.",
-        "photo": "A recent photo of yourself (optional)."
+        "photo": "A recent photo of yourself (optional).",
+        "parent_ic": "A photo of the front of your parent or guardian's MyKad — they'll be giving consent on your behalf because you're under 18.",
+        "guardianship_letter": "Only needed if the consent will be given by someone other than your father or mother — a court-issued guardianship order OR a written authorisation letter from your parent."
       },
       "income": {
         "title": "Proof of household income"
@@ -785,11 +789,24 @@
     "consent": {
       "draftNotice": "DRAFT — final wording pending legal review.",
       "text": "I consent to the B40 Assistance Programme sharing my profile and supporting information with potential sponsors for the purpose of considering me for financial assistance. I understand I can withdraw this consent at any time. We may also run automated OCR (text recognition) on the documents you upload to help spot typos; the results are a soft signal only and never replace human review.",
-      "guardianNotice": "As you are under 18, a parent or guardian must give this consent.",
-      "guardianName": "Guardian's name",
-      "guardianRelationship": "Relationship to you",
+      "textMinor": "I am the parent or legal guardian of the named applicant, who is under 18 years of age. On their behalf, I consent to the B40 Assistance Programme sharing their profile and supporting information with potential sponsors for the purpose of considering them for financial assistance. I confirm that I have legal authority to give this consent for the applicant. I understand that I can withdraw this consent at any time. We may also run automated OCR (text recognition) on the documents uploaded — including the parent/guardian IC photo — to help spot typos and verify identity; the results are a soft signal only and never replace human review.",
+      "guardianNotice": "As the applicant is under 18, a parent or guardian must give this consent on their behalf.",
+      "guardianName": "Parent or guardian's name",
+      "guardianNamePlaceholder": "As written on your IC",
+      "guardianRelationship": "Your relationship to the applicant",
+      "relationshipPlaceholder": "Select your relationship…",
+      "relationship": {
+        "father": "Father",
+        "mother": "Mother",
+        "legal_guardian": "Legal guardian (court-appointed)",
+        "grandparent": "Grandparent",
+        "older_sibling": "Older sibling",
+        "other_relative": "Other relative"
+      },
+      "needParentIc": "Please upload the parent/guardian's IC photo in the Documents step before signing this consent.",
+      "needGuardianshipLetter": "Because you are not the applicant's father or mother, please also upload a guardianship letter (court order OR the parent's written authorisation) in the Documents step before signing.",
       "agree": "I have read and agree to the above.",
-      "agreeGuardian": "As guardian, I have read and agree to the above on the applicant's behalf.",
+      "agreeGuardian": "As parent or guardian, I have read and agree to the above on the applicant's behalf.",
       "given": "Consent given. Thank you.",
       "submit": "Give consent",
       "saving": "Saving…",
@@ -1359,6 +1376,7 @@
       "visionDeclaration": "Declaration name",
       "visionAddressTitle": "Address on IC (from photo)",
       "visionAddressVsProfile": "Student-entered address",
+      "parentIcTitle": "Parent/guardian IC (Vision OCR)",
       "visionError": "Could not re-run Vision.",
       "anomaly": {
         "title": "Pre-interview flags",
@@ -1406,6 +1424,14 @@
         "device_in_funding": {
           "fact": "Student ticked “device” (laptop/tablet) under funding.",
           "question": "RM 3,000 may not cover a laptop alongside other costs. If we can only support partially, how would you bridge the gap?"
+        },
+        "parent_ic_name_mismatch": {
+          "fact": "Parent IC OCR read “{ocr_name}”; the guardian typed “{typed_name}” on the consent.",
+          "question": "The name on the parent/guardian's IC is different from the name they typed on the consent — can we verify which is correct?"
+        },
+        "parent_ic_underage": {
+          "fact": "Parent IC NRIC {ocr_nric} indicates age {age} — the “guardian” is themselves a minor.",
+          "question": "The uploaded parent/guardian IC belongs to someone under 18 — a minor cannot legally consent on another minor's behalf. Please verify whose IC was uploaded."
         }
       }
     },

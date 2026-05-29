@@ -66,12 +66,71 @@ class TestConsentApi(TestCase):
         self.assertEqual(resp.status_code, 400)
 
     def test_minor_with_guardian_ok(self):
+        # S17: parent_ic must be uploaded first; structured relationship code used.
+        from apps.scholarship.models import ApplicantDocument
+        ApplicantDocument.objects.create(
+            application=self.app_minor, doc_type='parent_ic', storage_path='x/p',
+        )
         self._auth(MINOR)
         resp = self.client.post('/api/v1/scholarship/consent/', {
-            'granted_by': 'guardian', 'guardian_name': 'Parent', 'guardian_relationship': 'Mother',
+            'granted_by': 'guardian', 'guardian_name': 'Parent', 'guardian_relationship': 'mother',
         }, format='json')
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.json()['guardian_name'], 'Parent')
+
+    def test_minor_rejected_without_parent_ic(self):
+        """S17: blocking 400 + error code so the FE can route the student back to step 4."""
+        self._auth(MINOR)
+        resp = self.client.post('/api/v1/scholarship/consent/', {
+            'granted_by': 'guardian', 'guardian_name': 'Parent', 'guardian_relationship': 'mother',
+        }, format='json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()['error'], 'parent_ic_required')
+
+    def test_minor_non_parent_rejected_without_letter(self):
+        """S17: grandparent/legal_guardian/etc. need the guardianship letter on top of the IC."""
+        from apps.scholarship.models import ApplicantDocument
+        ApplicantDocument.objects.create(
+            application=self.app_minor, doc_type='parent_ic', storage_path='x/p',
+        )
+        self._auth(MINOR)
+        resp = self.client.post('/api/v1/scholarship/consent/', {
+            'granted_by': 'guardian', 'guardian_name': 'Grandma',
+            'guardian_relationship': 'grandparent',
+        }, format='json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()['error'], 'guardianship_letter_required')
+
+    def test_minor_non_parent_ok_with_letter(self):
+        """Both docs uploaded + non-parent relationship → 201 accept."""
+        from apps.scholarship.models import ApplicantDocument
+        ApplicantDocument.objects.create(
+            application=self.app_minor, doc_type='parent_ic', storage_path='x/p',
+        )
+        ApplicantDocument.objects.create(
+            application=self.app_minor, doc_type='guardianship_letter', storage_path='x/l',
+        )
+        self._auth(MINOR)
+        resp = self.client.post('/api/v1/scholarship/consent/', {
+            'granted_by': 'guardian', 'guardian_name': 'Grandma',
+            'guardian_relationship': 'grandparent',
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.json()['guardian_relationship'], 'grandparent')
+
+    def test_invalid_relationship_rejected(self):
+        """Free-text gibberish is rejected by the serializer (400 with field error)."""
+        from apps.scholarship.models import ApplicantDocument
+        ApplicantDocument.objects.create(
+            application=self.app_minor, doc_type='parent_ic', storage_path='x/p',
+        )
+        self._auth(MINOR)
+        resp = self.client.post('/api/v1/scholarship/consent/', {
+            'granted_by': 'guardian', 'guardian_name': 'X',
+            'guardian_relationship': 'random-typed-text',
+        }, format='json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('guardian_relationship', resp.json())
 
     def test_consent_supersedes_prior(self):
         self._auth(ADULT)

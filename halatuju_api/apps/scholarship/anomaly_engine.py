@@ -25,6 +25,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Optional
 
 from .models import ApplicantDocument, FundingNeed
+from .services import age_from_nric, is_minor
 from .vision import _MY_STATES, name_match
 
 
@@ -67,6 +68,19 @@ def _latest_ic_doc(application) -> Optional[ApplicantDocument]:
         .order_by('-uploaded_at')
         .first()
     )
+
+
+def _latest_parent_ic_doc(application) -> Optional[ApplicantDocument]:
+    return (
+        application.documents
+        .filter(doc_type='parent_ic')
+        .order_by('-uploaded_at')
+        .first()
+    )
+
+
+def _latest_active_consent(application):
+    return application.consents.filter(is_active=True).order_by('-granted_at').first()
 
 
 def _funding_need(application) -> Optional[FundingNeed]:
@@ -229,6 +243,40 @@ def _detect_device_in_funding(application) -> Optional[Anomaly]:
     return Anomaly('device_in_funding', {})
 
 
+def _detect_parent_ic_name_mismatch(application) -> Optional[Anomaly]:
+    """S17: Vision-OCR name on the parent_ic upload differs from the guardian
+    name typed on the consent. Same name_match logic as the student's IC."""
+    pic = _latest_parent_ic_doc(application)
+    if pic is None or not pic.vision_run_at or pic.vision_error or not pic.vision_name:
+        return None
+    consent = _latest_active_consent(application)
+    if consent is None or consent.granted_by != 'guardian':
+        return None
+    typed = (consent.guardian_name or '').strip()
+    if not typed:
+        return None
+    verdict = name_match(pic.vision_name, typed)
+    if verdict == 'match':
+        return None
+    return Anomaly('parent_ic_name_mismatch', {
+        'ocr_name': pic.vision_name, 'typed_name': typed,
+    })
+
+
+def _detect_parent_ic_underage(application) -> Optional[Anomaly]:
+    """S17: the 'guardian' uploaded an IC of someone <18 — they cannot
+    legally consent for the minor applicant. Hard signal for the admin."""
+    pic = _latest_parent_ic_doc(application)
+    if pic is None or not pic.vision_run_at or pic.vision_error or not pic.vision_nric:
+        return None
+    age = age_from_nric(pic.vision_nric)
+    if age is None or age >= 18:
+        return None
+    return Anomaly('parent_ic_underage', {
+        'ocr_nric': pic.vision_nric, 'age': age,
+    })
+
+
 # ─── Aggregator ─────────────────────────────────────────────────────────────
 
 _DETECTORS = (
@@ -242,6 +290,9 @@ _DETECTORS = (
     _detect_declaration_name_mismatch,
     _detect_str_claimed_no_doc,
     _detect_device_in_funding,
+    # S17 — minor consent flow
+    _detect_parent_ic_name_mismatch,
+    _detect_parent_ic_underage,
 )
 
 

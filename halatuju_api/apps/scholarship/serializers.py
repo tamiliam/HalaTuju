@@ -253,8 +253,25 @@ class ConsentSerializer(serializers.ModelSerializer):
 
 
 class ConsentCreateSerializer(serializers.Serializer):
+    """Validates the consent attestation payload.
+
+    S17: when ``granted_by='guardian'``, ``guardian_relationship`` MUST be one
+    of the structured codes (no free-text gibberish accepted). The view layer
+    additionally enforces (a) guardian-only path when the applicant is a
+    minor, and (b) that the required parent_ic / guardianship_letter docs
+    have been uploaded before the consent can be recorded.
+    """
+    _RELATIONSHIPS = [code for code, _ in Consent.GUARDIAN_RELATIONSHIPS]
+
     consent_type = serializers.CharField(required=False, default='share_with_sponsors')
     locale = serializers.CharField(required=False, default='en')
     granted_by = serializers.ChoiceField(choices=['self', 'guardian'], required=False, default='self')
     guardian_name = serializers.CharField(required=False, allow_blank=True, default='')
     guardian_relationship = serializers.CharField(required=False, allow_blank=True, default='')
+
+    def validate_guardian_relationship(self, value):
+        if value and value not in self._RELATIONSHIPS:
+            raise serializers.ValidationError(
+                f'Must be one of: {", ".join(self._RELATIONSHIPS)}.'
+            )
+        return value

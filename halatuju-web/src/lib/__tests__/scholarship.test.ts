@@ -895,15 +895,18 @@ describe('formatFileSize', () => {
 })
 
 describe('DOC_TYPES', () => {
-  it('lists all supporting document types including the four new S4 types', () => {
-    // 2 compulsory + 3 income proof + 5 other optional + reference_letter = 11
-    expect(DOC_TYPES).toHaveLength(11)
+  it('lists all supporting document types including S4 + S17 additions', () => {
+    // 2 compulsory + 3 income proof + 5 other optional + 2 S17 minor guardian + reference_letter = 13
+    expect(DOC_TYPES).toHaveLength(13)
     expect(DOC_TYPES).toContain('ic')
     expect(DOC_TYPES).toContain('reference_letter')
     expect(DOC_TYPES).toContain('salary_slip')
     expect(DOC_TYPES).toContain('water_bill')
     expect(DOC_TYPES).toContain('electricity_bill')
     expect(DOC_TYPES).toContain('offer_letter')
+    // S17 — minor consent flow
+    expect(DOC_TYPES).toContain('parent_ic')
+    expect(DOC_TYPES).toContain('guardianship_letter')
   })
 })
 
@@ -952,6 +955,17 @@ describe('documentsComplete', () => {
 
   it('returns false when neither compulsory type is present', () => {
     expect(documentsComplete(['salary_slip', 'photo', 'epf'])).toBe(false)
+  })
+
+  // S17 — minor branch additionally requires parent_ic.
+  it('S17: minor needs parent_ic on top of ic + results_slip', () => {
+    expect(documentsComplete(['ic', 'results_slip'], true)).toBe(false)
+    expect(documentsComplete(['ic', 'results_slip', 'parent_ic'], true)).toBe(true)
+  })
+
+  it('S17: adult unaffected by parent_ic absence (isMinor defaults to false)', () => {
+    expect(documentsComplete(['ic', 'results_slip'])).toBe(true)
+    expect(documentsComplete(['ic', 'results_slip'], false)).toBe(true)
   })
 })
 
