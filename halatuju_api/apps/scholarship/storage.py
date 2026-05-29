@@ -66,6 +66,43 @@ def create_signed_download_url(path, expires_in=3600):
     return f'{_base_url()}/storage/v1{rel}' if rel else None
 
 
+def list_objects(prefix='', limit=1000):
+    """Best-effort listing of one level under ``prefix`` in the private bucket.
+
+    Returns a list of item dicts (Supabase shape: ``{name, id, metadata, ...}``)
+    or [] on failure / when unconfigured. Folders come back with ``id`` = None
+    (no file metadata); files have a non-null ``id``. Not recursive — the caller
+    walks levels. Used by the orphan-blob cleanup command (TD-062).
+    """
+    base, key = _base_url(), _service_key()
+    if not base or not key:
+        logger.warning('Supabase Storage not configured (SUPABASE_URL / service key missing)')
+        return []
+    payload = {
+        'prefix': prefix,
+        'limit': limit,
+        'offset': 0,
+        'sortBy': {'column': 'name', 'order': 'asc'},
+    }
+    req = urllib.request.Request(
+        f'{base}/storage/v1/object/list/{BUCKET}',
+        data=json.dumps(payload).encode(),
+        method='POST',
+        headers={
+            'Authorization': f'Bearer {key}',
+            'apikey': key,
+            'Content-Type': 'application/json',
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read().decode())
+            return result if isinstance(result, list) else []
+    except (urllib.error.URLError, ValueError, TimeoutError):
+        logger.warning('Supabase Storage list failed for prefix %r', prefix, exc_info=True)
+        return []
+
+
 def delete_objects(paths):
     """Best-effort batch DELETE of private objects from the bucket. Returns
     True on success, False on any failure (logged). No-op if paths is empty.

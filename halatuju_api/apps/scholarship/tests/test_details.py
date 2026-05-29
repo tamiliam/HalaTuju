@@ -259,7 +259,7 @@ class TestDetailsApi(TestCase):
             {
                 'first_in_family': True,
                 'parents_occupation': 'Factory worker',
-                'siblings_studying': True,
+                'siblings_studying_count': 2,
                 'family_context': 'Father ill; mother is the sole earner.',
                 'daily_life': 'Wake at 5am, help at home, then school.',
             }, format='json',
@@ -268,7 +268,7 @@ class TestDetailsApi(TestCase):
         body = resp.json()
         self.assertTrue(body['first_in_family'])
         self.assertEqual(body['parents_occupation'], 'Factory worker')
-        self.assertTrue(body['siblings_studying'])
+        self.assertEqual(body['siblings_studying_count'], 2)
         self.assertEqual(body['family_context'], 'Father ill; mother is the sole earner.')
         self.assertEqual(body['daily_life'], 'Wake at 5am, help at home, then school.')
 
@@ -335,16 +335,18 @@ class TestDetailsApi(TestCase):
         )
         self.assertEqual(resp.status_code, 400)
 
-    def test_legacy_siblings_studying_boolean_still_accepted(self):
-        """Back-compat: older clients still emit siblings_studying — must not 400."""
+    def test_legacy_siblings_studying_boolean_is_ignored(self):
+        """TD-061: the dropped siblings_studying boolean is no longer a field —
+        an older client sending it must not 400; it's simply ignored."""
         self._auth(USER_A)
         resp = self.client.patch(
             f'/api/v1/scholarship/applications/{self.app_a.id}/',
-            {'siblings_studying': True}, format='json',
+            {'siblings_studying': True, 'siblings_studying_count': 2}, format='json',
         )
         self.assertEqual(resp.status_code, 200)
-        self.app_a.refresh_from_db()
-        self.assertTrue(self.app_a.siblings_studying)
+        body = resp.json()
+        self.assertNotIn('siblings_studying', body)  # field gone from the serializer
+        self.assertEqual(body['siblings_studying_count'], 2)
 
     def test_story_fields_defaults_are_correct(self):
         """New boolean fields default False; text fields default empty string."""
@@ -353,7 +355,6 @@ class TestDetailsApi(TestCase):
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
         self.assertFalse(body['first_in_family'])
-        self.assertFalse(body['siblings_studying'])
         self.assertIsNone(body['siblings_studying_count'])
         self.assertEqual(body['parents_occupation'], '')
         self.assertEqual(body['family_context'], '')

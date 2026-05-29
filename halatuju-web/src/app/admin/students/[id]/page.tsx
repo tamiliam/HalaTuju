@@ -114,7 +114,7 @@ export default function AdminStudentDetail() {
             <span className="text-lg">&#128222;</span> {t('admin.contactSchool')}
           </h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.phone')}</dt><dd>{formatPhone(data.phone)}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.phone')}</dt><dd>{formatPhone(data.contact_phone)}</dd></div>
             <div><dt className="text-gray-500">{t('admin.address')}</dt><dd className="mt-1">{[data.address, [data.postal_code, data.city].filter(Boolean).join(' '), data.preferred_state].filter(Boolean).join(', ') || '\u2014'}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">{t('admin.school')}</dt><dd>{data.school || '\u2014'}</dd></div>
           </dl>
@@ -126,8 +126,8 @@ export default function AdminStudentDetail() {
             <span className="text-lg">&#128106;</span> {t('admin.familyBackground')}
           </h2>
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.familyIncome')}</dt><dd>{data.family_income || '\u2014'}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.siblings')}</dt><dd>{data.siblings ?? '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.householdIncome')}</dt><dd>{data.household_income != null ? `RM${data.household_income}` : '\u2014'}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">{t('admin.householdSize')}</dt><dd>{data.household_size ?? '\u2014'}</dd></div>
           </dl>
         </div>
 

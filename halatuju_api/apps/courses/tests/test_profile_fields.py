@@ -24,38 +24,41 @@ class TestProfileNewFields:
         p.refresh_from_db()
         assert p.address == '123 Jalan Merdeka, Petaling Jaya'
 
-    def test_profile_has_phone_field(self):
+    def test_profile_has_contact_phone_field(self):
+        # TD-061: contact_phone is the canonical phone (legacy `phone` dropped).
         p = StudentProfile.objects.create(
             supabase_user_id='test-phone',
-            phone='+60123456789',
+            contact_phone='+60123456789',
         )
         p.refresh_from_db()
-        assert p.phone == '+60123456789'
+        assert p.contact_phone == '+60123456789'
 
-    def test_profile_has_family_income_field(self):
+    def test_profile_has_household_income_field(self):
+        # TD-061: household_income replaces the legacy free-text family_income.
         p = StudentProfile.objects.create(
             supabase_user_id='test-income',
-            family_income='RM1,001-3,000',
+            household_income=2500,
         )
         p.refresh_from_db()
-        assert p.family_income == 'RM1,001-3,000'
+        assert p.household_income == 2500
 
-    def test_profile_has_siblings_field(self):
+    def test_profile_has_household_size_field(self):
+        # TD-061: household_size replaces the legacy siblings count.
         p = StudentProfile.objects.create(
             supabase_user_id='test-siblings',
-            siblings=3,
+            household_size=5,
         )
         p.refresh_from_db()
-        assert p.siblings == 3
+        assert p.household_size == 5
 
     def test_new_fields_default_blank(self):
         p = StudentProfile.objects.create(supabase_user_id='test-defaults')
         p.refresh_from_db()
         assert p.nric == ''
         assert p.address == ''
-        assert p.phone == ''
-        assert p.family_income == ''
-        assert p.siblings is None
+        assert p.contact_phone == ''
+        assert p.household_income is None
+        assert p.household_size is None
 
 
 @pytest.mark.django_db
@@ -119,33 +122,35 @@ class TestProfileAPINewFields:
             supabase_user_id='api-test-user',
             nric='010203-14-1234',
             address='Jalan Test',
-            phone='+60123456789',
-            family_income='RM1,001-3,000',
-            siblings=3,
+            contact_phone='+60123456789',
+            household_income=2500,
+            household_size=5,
         )
         request = _auth_request('GET')
         response = ProfileView().get(request)
         assert response.status_code == 200
         assert response.data['nric'] == '010203-14-1234'
         assert response.data['address'] == 'Jalan Test'
-        assert response.data['phone'] == '+60123456789'
-        assert response.data['family_income'] == 'RM1,001-3,000'
-        assert response.data['siblings'] == 3
+        assert response.data['contact_phone'] == '+60123456789'
+        # TD-061: canonical financial fields replace family_income/siblings.
+        assert response.data['household_income'] == 2500
+        assert response.data['household_size'] == 5
 
     def test_put_profile_updates_new_fields(self):
         StudentProfile.objects.create(supabase_user_id='api-test-user')
         request = _auth_request('PUT', data={
             'nric': '010203-14-1234',   # ignored — read-only via PUT (S7 soft-NRIC gap fix)
             'address': 'New Address',
-            'phone': '+60199999999',
-            'family_income': 'RM3,001-5,000',
-            'siblings': 5,
+            'contact_phone': '+60199999999',
+            'household_income': 3500,
+            'household_size': 6,
         })
         response = ProfileView().put(request)
         assert response.status_code == 200
         p = StudentProfile.objects.get(supabase_user_id='api-test-user')
         assert p.address == 'New Address'
-        assert p.siblings == 5
+        assert p.household_income == 3500
+        assert p.household_size == 6
         # NRIC is NOT settable via PUT — it changes only through the validated claim
         # endpoint (/profile/claim-nric/). Closes the soft-NRIC write gap.
         assert p.nric == ''

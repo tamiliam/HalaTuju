@@ -47,7 +47,7 @@ export interface StudentListItem {
   gender: string
   exam_type: string
   school: string
-  phone: string
+  contact_phone: string
   referral_source: string | null
   org_name: string | null
   created_at: string
@@ -66,13 +66,13 @@ export interface StudentDetailData {
   angka_giliran: string
   gender: string
   nationality: string
-  phone: string
+  contact_phone: string
   address: string
   postal_code: string
   city: string
   school: string
-  family_income: string
-  siblings: number | null
+  household_income: number | null
+  household_size: number | null
   colorblind: string
   disability: string
   exam_type: string

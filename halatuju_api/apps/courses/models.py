@@ -457,8 +457,8 @@ class StudentProfile(models.Model):
                                    help_text="5-digit Malaysian postcode")
     city = models.CharField(max_length=100, blank=True, default='',
                             help_text="City/town (auto-filled from postcode)")
-    phone = models.CharField(max_length=20, blank=True, default='',
-                             help_text="Phone number")
+    # TD-061: legacy `phone` dropped — contact_phone (below) is the canonical
+    # phone, synced with /apply. (Column removed in courses/0050.)
 
     # Contact details (separate from login credentials)
     contact_email = models.EmailField(blank=True, default='',
@@ -480,10 +480,9 @@ class StudentProfile(models.Model):
                                      help_text="University application ref: AB123C456")
 
     # Family background
-    family_income = models.CharField(max_length=30, blank=True, default='',
-                                     help_text="Family monthly income range (legacy/coarse)")
-    siblings = models.IntegerField(null=True, blank=True,
-                                   help_text="Number of siblings")
+    # TD-061: legacy `family_income` (coarse free-text range) + `siblings` count
+    # dropped — superseded by household_income/household_size below, which /apply
+    # and /profile both write. (Columns removed in courses/0050.)
     # Financial detail (canonical source for the B40 Assistance Programme; collected
     # once here and reused across application rounds — see apps/scholarship)
     household_income = models.IntegerField(

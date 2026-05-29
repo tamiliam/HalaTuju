@@ -793,21 +793,11 @@ describe('applicationToDetailsForm', () => {
     expect(applicationToDetailsForm(app).siblingsStudyingCount).toBe('0')
   })
 
-  it('S15: falls back to "1" when only the legacy boolean is true (older data)', () => {
+  it('TD-061: count is null → empty (the legacy boolean is no longer a fallback)', () => {
     const app = {
       aspirations: '', plans: '', fears: '', justification: '',
       first_in_family: false, parents_occupation: '',
-      siblings_studying: true, siblings_studying_count: null,
-      family_context: '', daily_life: '', funding_need: null,
-    } as unknown as ScholarshipApplication
-    expect(applicationToDetailsForm(app).siblingsStudyingCount).toBe('1')
-  })
-
-  it('S15: empty when neither count nor boolean indicates studying siblings', () => {
-    const app = {
-      aspirations: '', plans: '', fears: '', justification: '',
-      first_in_family: false, parents_occupation: '',
-      siblings_studying: false, siblings_studying_count: null,
+      siblings_studying_count: null,
       family_context: '', daily_life: '', funding_need: null,
     } as unknown as ScholarshipApplication
     expect(applicationToDetailsForm(app).siblingsStudyingCount).toBe('')

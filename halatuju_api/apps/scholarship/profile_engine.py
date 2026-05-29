@@ -88,13 +88,11 @@ def _pathway(application):
 
 
 def _siblings_studying_display(application):
-    """Render the siblings-studying signal for the prompt. Prefer the count
-    (S15) when set — it tells the AI how much education burden the family
-    carries; fall back to the legacy boolean when only that exists."""
+    """Render the siblings-studying signal for the prompt: the count (S15) of
+    how many siblings are studying — tells the AI how much education burden the
+    family carries. Blank when unknown. (TD-061 dropped the legacy boolean.)"""
     count = getattr(application, 'siblings_studying_count', None)
-    if count is not None:
-        return str(count)
-    return _yesno(application.siblings_studying)
+    return str(count) if count is not None else ''
 
 
 def _funding(application):

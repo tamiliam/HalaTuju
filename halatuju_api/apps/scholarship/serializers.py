@@ -86,8 +86,7 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
     # "Your story" guided narrative fields (S2 redesign)
     first_in_family = serializers.BooleanField(required=False)
     parents_occupation = serializers.CharField(required=False, allow_blank=True)
-    # Legacy boolean still accepted for back-compat; new flow uses the count below.
-    siblings_studying = serializers.BooleanField(required=False)
+    # TD-061: the legacy siblings_studying boolean is gone; only the count remains.
     siblings_studying_count = serializers.IntegerField(
         required=False, allow_null=True, min_value=0, max_value=20,
     )
@@ -152,7 +151,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'aspirations', 'plans', 'fears', 'justification',
             # "Your story" guided narrative fields (S2 redesign)
             'first_in_family', 'parents_occupation',
-            'siblings_studying', 'siblings_studying_count',
+            'siblings_studying_count',
             'family_context', 'daily_life',
             # Address pre-fill (profile-derived, read-only here; written via
             # ApplicationDetailsUpdateSerializer + save_application_details).

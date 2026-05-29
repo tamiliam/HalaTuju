@@ -294,7 +294,12 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             'student_signals', 'preferred_state', 'preferred_call_language',
             'name', 'school',
             'nric', 'angka_giliran', 'address', 'postal_code', 'city',
-            'phone', 'family_income', 'siblings',
+            # TD-061: household_income/household_size are the canonical financial
+            # fields (shared with /apply). They replace the legacy free-text
+            # family_income range + siblings count, which used to be listed here
+            # but were never readable/writable in tandem with the /profile UI —
+            # the page reads/writes household_* (this fixes that latent gap too).
+            'household_income', 'household_size',
             'exam_type', 'stpm_grades', 'stpm_cgpa', 'muet_band', 'coq_score',
             'spm_prereq_grades', 'stream_subjects', 'referral_source',
             'contact_email', 'contact_phone',
