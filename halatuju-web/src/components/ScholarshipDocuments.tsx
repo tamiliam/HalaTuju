@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import {
   signUploadDocument,
@@ -115,6 +116,13 @@ function VisionChip({ doc, t }: { doc: ApplicantDocument; t: (key: string) => st
         <span aria-hidden>{icon}</span>
         <span>{t(`scholarship.docs.vision.${variant}`)}</span>
       </span>
+      {variant === 'name-soft' && (
+        <p className="mt-1 text-xs">
+          <Link href="/profile" className="font-medium text-blue-700 underline hover:text-blue-900">
+            {t('scholarship.docs.vision.name-soft-action')}
+          </Link>
+        </p>
+      )}
       <p className="mt-1 text-xs text-gray-400">{t('scholarship.docs.vision.note')}</p>
     </div>
   )

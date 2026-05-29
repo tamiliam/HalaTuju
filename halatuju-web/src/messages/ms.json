@@ -770,7 +770,8 @@
       "deleteError": "Tidak dapat membuang dokumen.",
       "vision": {
         "good": "Kelihatan baik — NRIC dan nama anda sepadan dengan gambar.",
-        "name-soft": "NRIC anda sepadan tetapi kami membaca nama anda sedikit berbeza pada IC — sila semak semula.",
+        "name-soft": "NRIC anda sepadan tetapi nama pada IC anda dibaca sedikit berbeza. Nama pada IC anda adalah yang rasmi — sila kemas kini profil anda supaya sepadan dengan IC.",
+        "name-soft-action": "Kemas kini nama anda dalam profil",
         "nric-bad": "Hmm — NRIC yang kami baca pada gambar tidak sepadan dengan yang anda masukkan. Sila semak semula.",
         "unreadable": "Kami tidak dapat membaca gambar secara automatik — tidak mengapa, pasukan akan menyemak secara manual.",
         "note": "Hanya petunjuk — pasukan sentiasa menyemak dokumen anda."

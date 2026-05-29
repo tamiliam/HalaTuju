@@ -770,7 +770,8 @@
       "deleteError": "Could not remove the document.",
       "vision": {
         "good": "Looks good — your NRIC and name match the photo.",
-        "name-soft": "Your NRIC matches but we read your name slightly differently on the IC — please double-check.",
+        "name-soft": "Your NRIC matches but the name on your IC reads slightly differently. The name on your IC is the official one — please update your profile to match it exactly.",
+        "name-soft-action": "Edit your name in your profile",
         "nric-bad": "Hmm — the NRIC we read on the photo doesn't match what you entered. Please re-check.",
         "unreadable": "We couldn't read the photo automatically — that's fine, the team will check it manually.",
         "note": "Just a hint — the team always reviews your documents."

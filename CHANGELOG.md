@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.1] — Name-mismatch chip directs to /profile (2026-05-29)
+
+- **Vision OCR name-soft chip on the Documents tab now tells the student where to fix it.** When Vision reads the name on the IC slightly differently from the typed name, the most likely cause is a typo at /apply, not a problem with the IC. New copy: *"Your NRIC matches but the name on your IC reads slightly differently. The name on your IC is the official one — please update your profile to match it exactly."* + a *"Edit your name in your profile"* link below the chip pointing to `/profile`. Applies only to the `name-soft` variant (NRIC mismatch left unchanged; NRIC is locked once admin-verified anyway). i18n parity 1370 × en/ms/ta (+1 new `name-soft-action` key; Tamil first-draft queued). Frontend-only; tests 154/154 pass; web-only deploy.
+
 ## [2.10.1] — Stream dropdowns sorted alphabetically (2026-05-29)
 
 - **Stream-subject dropdowns now list options alphabetically by display name** (locale-aware), matching the elective dropdown. Applies to both the SPM grades page (`onboarding/grades`) and the STPM SPM-prerequisite page (`onboarding/stpm-grades`). With the Arts pool now at 38 subjects (S18), a sorted list is much easier to scan. Pre-filled default stream subjects are unaffected — they still read the canonical pool order. Frontend-only; no test or backend change.
