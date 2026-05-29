@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.1] — S24: Funding tab UX polish (radios, * markers, tips) (2026-05-29)
+
+- **Programme length is now a radio group, not a dropdown — and labels are year-only** (no more "(Matriculation / Foundation)" / "(Diploma)" / "(Degree)" annotations). The same year-count maps to multiple programme levels (1y = matric OR foundation; 3y = diploma OR most degrees; 5y = PISMP OR 5-year degree like medicine/dentistry), so the level annotations were misleading. Added a 5-year option (was capped at 4 — PISMP and medical degrees fell outside the range).
+- **Programme length is now compulsory.** `funding_done` rule extended on both sides: `categories non-empty AND programme_months IS NOT NULL`. Marked with `*` via the shared `FieldLabel` component. Without a length the admin can't size the assistance.
+- **Categories label now carries `*`** for visual parity with the length question. The "at least one tick" rule already existed in `funding_done`; the marker just surfaces it.
+- **"Anything else" textarea polished:** dropped the "(optional)" suffix (convention across the form is no "(optional)" — required fields wear `*`, everything else is implicitly optional). Added placeholder ghost text ("If this assistance doesn't come through, I'll take a part-time job and apply again next year.") + a collapsible "Need ideas?" tips panel with 3 bullets matching the Story tab pattern. Bullets folded in the user-suggested example: "How you would manage if this assistance doesn't come through."
+- **i18n parity** 1379 × en/ms/ta (+ `length60` + `notePlaceholder` + `noteTipsTitle` + `noteTip1/2/3` — 7 new keys; `length12/24/36/48` text shortened; Tamil first-draft for the new keys queued).
+- **Tests:** backend `+2` (`test_funding_done_true_when_categories_and_months_set` rename + `test_funding_done_false_when_programme_months_null`); existing tests/`_make_complete` helper extended with `programme_months=36`. Scholarship `test_details.py` 39/39 pass. Frontend jest 156/156 pass; `next build` clean.
+
 ## [2.12.0] — S23: income proof now required (2026-05-29)
 
 - **Proof of household income is now a required document.** Previously the income-proof card (STR / salary slip / EPF) sat in the Optional section; an applicant could mark Documents as complete without uploading any income evidence. Any one of `{str, salary_slip, epf}` satisfies the gate — STR families are encouraged in the card explainer to ALSO upload a salary slip and/or EPF statement for every working household member, but one upload is enough to pass completeness.

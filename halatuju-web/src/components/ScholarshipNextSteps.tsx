@@ -44,12 +44,17 @@ const FUNDING_CATEGORIES = [
 ] as const
 type FundingCategory = typeof FUNDING_CATEGORIES[number]
 
-// Programme-length options: display key → months value
+// Programme-length options: display key → months value. Five-year covers PISMP
+// and 5-year degrees (medicine, dentistry, pharmacy). Labels are year-only by
+// design — the same year-count maps to different programme levels (e.g. 1y =
+// matric OR foundation; 3y = diploma OR most degrees; 5y = PISMP OR med-degree),
+// so labelling a row "1 year (Matriculation / Foundation)" was misleading.
 const PROGRAMME_LENGTH_OPTIONS: { key: string; months: number }[] = [
   { key: 'length12', months: 12 },
   { key: 'length24', months: 24 },
   { key: 'length36', months: 36 },
   { key: 'length48', months: 48 },
+  { key: 'length60', months: 60 },
 ]
 
 // SVG icon for each tab — mirrors the style in /apply's TabIcon.
@@ -372,30 +377,33 @@ export default function ScholarshipNextSteps({
             clear instruction + context rather than two stacked paragraphs). */}
         <InfoBox kind="info">{t('scholarship.nextSteps.funding.intro')}</InfoBox>
 
-        {/* Programme length dropdown */}
+        {/* Programme length — radios. Year-only labels (no level annotations);
+            see PROGRAMME_LENGTH_OPTIONS for why. Compulsory: funding_done
+            requires programme_months to be set. */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('scholarship.nextSteps.funding.lengthLabel')}
-          </label>
-          <select
-            className="input"
-            value={form.programmeMonths}
-            onChange={(e) => update('programmeMonths', e.target.value)}
-          >
-            <option value=""></option>
+          <FieldLabel required>{t('scholarship.nextSteps.funding.lengthLabel')}</FieldLabel>
+          <div className="mt-1 space-y-2">
             {PROGRAMME_LENGTH_OPTIONS.map(({ key, months }) => (
-              <option key={key} value={String(months)}>
-                {t(`scholarship.nextSteps.funding.${key}`)}
-              </option>
+              <label key={key} className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="programmeMonths"
+                  className="h-4 w-4 shrink-0 border-gray-300 text-primary-600 focus:ring-primary-500"
+                  value={String(months)}
+                  checked={form.programmeMonths === String(months)}
+                  onChange={(e) => update('programmeMonths', e.target.value)}
+                />
+                <span className="text-sm text-gray-700">
+                  {t(`scholarship.nextSteps.funding.${key}`)}
+                </span>
+              </label>
             ))}
-          </select>
+          </div>
         </div>
 
-        {/* Category checklist */}
+        {/* Category checklist — at least one tick required (funding_done rule). */}
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">
-            {t('scholarship.nextSteps.funding.categoriesLabel')}
-          </p>
+          <FieldLabel required>{t('scholarship.nextSteps.funding.categoriesLabel')}</FieldLabel>
           <div className="space-y-2">
             {FUNDING_CATEGORIES.map((cat) => {
               const checked = form.fundingCategories.includes(cat)
@@ -432,20 +440,24 @@ export default function ScholarshipNextSteps({
           </div>
         </div>
 
-        {/* Open optional note */}
+        {/* Open note — optional, but no "(optional)" suffix per convention. */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('scholarship.nextSteps.funding.noteLabel')}
-          </label>
+          <FieldLabel>{t('scholarship.nextSteps.funding.noteLabel')}</FieldLabel>
           <textarea
             className="input"
             rows={3}
+            placeholder={t('scholarship.nextSteps.funding.notePlaceholder')}
             value={form.fundingNote}
             onChange={(e) => update('fundingNote', e.target.value)}
           />
-          <p className="mt-1 text-xs text-gray-500">
-            {t('scholarship.nextSteps.funding.noteHelper')}
-          </p>
+          <Tips
+            title={t('scholarship.nextSteps.funding.noteTipsTitle')}
+            tips={[
+              t('scholarship.nextSteps.funding.noteTip1'),
+              t('scholarship.nextSteps.funding.noteTip2'),
+              t('scholarship.nextSteps.funding.noteTip3'),
+            ]}
+          />
         </div>
 
         {saveFeedback}

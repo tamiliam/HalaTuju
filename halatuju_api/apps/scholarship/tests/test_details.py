@@ -57,7 +57,7 @@ class TestCompleteness(TestCase):
         self.app.aspirations = 'Be an accountant'
         self.app.plans = 'Study hard every day'
         self.app.save()
-        FundingNeed.objects.create(application=self.app, categories=['living'])
+        FundingNeed.objects.create(application=self.app, categories=['living'], programme_months=36)
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
         ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
         ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
@@ -147,7 +147,7 @@ class TestCompleteness(TestCase):
         self.app.aspirations = 'Be an accountant'
         self.app.plans = 'Study hard every day'
         self.app.save()
-        FundingNeed.objects.create(application=self.app, categories=['living'])
+        FundingNeed.objects.create(application=self.app, categories=['living'], programme_months=36)
         self.assertFalse(application_completeness(self.app)['complete'])
 
         # + compulsory documents (S23: ic + results_slip + parent_ic + one income proof)
@@ -238,7 +238,8 @@ class TestDetailsApi(TestCase):
             f'/api/v1/scholarship/applications/{self.app_a.id}/',
             {
                 'aspirations': 'Become an auditor', 'plans': 'Work hard every day',
-                'funding_need': {'categories': ['device', 'living']},
+                # S23: programme_months now compulsory for funding_done.
+                'funding_need': {'categories': ['device', 'living'], 'programme_months': 36},
             }, format='json',
         )
         self.assertEqual(resp.status_code, 200)
@@ -421,22 +422,30 @@ class TestDetailsApi(TestCase):
         self.assertEqual(fn['programme_months'], 36)
         self.assertEqual(fn['funding_note'], 'I will try for PTPTN as well.')
 
-    def test_funding_done_true_when_categories_nonempty(self):
-        """funding_done is True when at least one category is ticked."""
+    def test_funding_done_true_when_categories_and_months_set(self):
+        """S23: funding_done is True when at least one category AND programme_months set."""
+        self._auth(USER_A)
+        resp = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {'funding_need': {'categories': ['living'], 'programme_months': 36}}, format='json',
+        )
+        self.assertTrue(resp.json()['completeness']['funding_done'])
+
+    def test_funding_done_false_when_categories_empty(self):
+        """funding_done is False when categories list is empty (even with programme_months)."""
+        self._auth(USER_A)
+        url = f'/api/v1/scholarship/applications/{self.app_a.id}/'
+        self.client.patch(url, {'funding_need': {'categories': ['living'], 'programme_months': 36}}, format='json')
+        resp = self.client.patch(url, {'funding_need': {'categories': []}}, format='json')
+        self.assertFalse(resp.json()['completeness']['funding_done'])
+
+    def test_funding_done_false_when_programme_months_null(self):
+        """S23: funding_done is False when programme_months is missing, even with a category."""
         self._auth(USER_A)
         resp = self.client.patch(
             f'/api/v1/scholarship/applications/{self.app_a.id}/',
             {'funding_need': {'categories': ['living']}}, format='json',
         )
-        self.assertTrue(resp.json()['completeness']['funding_done'])
-
-    def test_funding_done_false_when_categories_empty(self):
-        """funding_done is False when categories list is empty."""
-        self._auth(USER_A)
-        # First set categories, then clear them
-        url = f'/api/v1/scholarship/applications/{self.app_a.id}/'
-        self.client.patch(url, {'funding_need': {'categories': ['living']}}, format='json')
-        resp = self.client.patch(url, {'funding_need': {'categories': []}}, format='json')
         self.assertFalse(resp.json()['completeness']['funding_done'])
 
     def test_funding_done_false_when_no_funding_need(self):

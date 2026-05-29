@@ -261,7 +261,8 @@ def application_completeness(application):
     funding done, documents done, consent done, guardian docs done.
     The sponsor stage (Phase 2) will gate on ``complete``.
 
-    funding_done (S3 redesign): at least one category ticked in categories.
+    funding_done (S3 redesign + S23): at least one category ticked AND
+    programme_months set.
     documents_done (S4 / S22 / S23): ic + results_slip + parent_ic + at least
     one of {str, salary_slip, epf} (proof of household income; the income-proof
     card on the Documents tab accepts any combination).
@@ -277,7 +278,11 @@ def application_completeness(application):
     quiz_done = bool(profile and profile.student_signals)
     details_done = bool(application.aspirations.strip() and application.plans.strip())
     try:
-        funding_done = bool(application.funding_need.categories)
+        fn = application.funding_need
+        # S23: programme_months is now compulsory too (the radio group on the
+        # Funding tab). The exact figure isn't load-bearing; what matters is
+        # the student picked one — otherwise admin can't size the assistance.
+        funding_done = bool(fn.categories) and fn.programme_months is not None
     except FundingNeed.DoesNotExist:
         funding_done = False
     present = set(application.documents.values_list('doc_type', flat=True))
