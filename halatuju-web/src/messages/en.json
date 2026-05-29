@@ -788,9 +788,9 @@
     },
     "consent": {
       "subtitle": "Please review and agree below to share your profile with potential sponsors.",
-      "subtitleMinor": "As {student_name} is under 18, please review and agree below as their parent or guardian.",
+      "minorInfoNotice": "As you are under 18 years of age, please ask your parent or legal guardian to read the following section carefully and give their consent to share your particulars with potential sponsors.",
       "text": "I, the named applicant ({student_name}, NRIC {student_nric}), consent to the B40 Assistance Programme sharing my profile and supporting information with potential sponsors for the purpose of considering me for financial assistance. I understand I can withdraw this consent at any time.",
-      "textMinor": "I am the parent or legal guardian of {student_name} (NRIC {student_nric}), who is under 18 years of age. On {his_or_her} behalf, I consent to the B40 Assistance Programme sharing {his_or_her} profile and supporting information with potential sponsors for the purpose of considering {he_or_she} for financial assistance. I confirm that I have legal authority to give this consent. I understand that I can withdraw this consent at any time.",
+      "textMinor": "I confirm that I am the parent or guardian of {student_name} (NRIC: {student_nric}), who is under 18 years old.\n\nI give permission for the B40 Assistance Programme to share {his_or_her} profile and documents with sponsors. This is to help {him_or_her} get financial aid. I understand that I can cancel this permission at any time.",
       "fallback": {
         "student": "the applicant"
       },
@@ -800,9 +800,10 @@
         "they": "they",
         "his": "his",
         "her": "her",
-        "their": "their"
+        "their": "their",
+        "him": "him",
+        "them": "them"
       },
-      "guardianNotice": "Please enter your details exactly as they appear on your IC. We compare them to the IC photo you uploaded in the Documents step.",
       "guardianName": "Your full name (as on IC)",
       "guardianNamePlaceholder": "As written on your IC",
       "guardianNric": "Your NRIC number",

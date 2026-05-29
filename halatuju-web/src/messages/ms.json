@@ -788,9 +788,9 @@
     },
     "consent": {
       "subtitle": "Sila semak dan bersetuju di bawah untuk berkongsi profil anda dengan bakal penaja.",
-      "subtitleMinor": "Memandangkan {student_name} berumur di bawah 18 tahun, sila semak dan bersetuju di bawah sebagai ibu bapa atau penjaga.",
+      "minorInfoNotice": "Memandangkan anda berumur di bawah 18 tahun, sila minta ibu bapa atau penjaga sah anda membaca bahagian berikut dengan teliti dan memberikan persetujuan mereka untuk berkongsi butiran anda dengan bakal penaja.",
       "text": "Saya, pemohon yang dinamakan ({student_name}, NRIC {student_nric}), bersetuju Program Bantuan B40 berkongsi profil dan maklumat sokongan saya dengan bakal penaja bagi tujuan pertimbangan bantuan kewangan. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa.",
-      "textMinor": "Saya adalah ibu bapa atau penjaga sah {student_name} (NRIC {student_nric}), yang berumur di bawah 18 tahun. Bagi pihak {his_or_her}, saya bersetuju Program Bantuan B40 berkongsi profil dan maklumat sokongan {his_or_her} dengan penaja berpotensi bagi tujuan mempertimbangkan {he_or_she} untuk bantuan kewangan. Saya mengesahkan bahawa saya mempunyai kuasa undang-undang untuk memberikan persetujuan ini. Saya faham saya boleh menarik balik persetujuan ini pada bila-bila masa.",
+      "textMinor": "Saya mengesahkan bahawa saya adalah ibu bapa atau penjaga {student_name} (NRIC: {student_nric}), yang berumur di bawah 18 tahun.\n\nSaya memberi kebenaran kepada Program Bantuan B40 untuk berkongsi profil dan dokumen {his_or_her} dengan penaja. Ini adalah untuk membantu {him_or_her} mendapat bantuan kewangan. Saya faham saya boleh membatalkan kebenaran ini pada bila-bila masa.",
       "fallback": {
         "student": "pemohon"
       },
@@ -800,9 +800,10 @@
         "they": "mereka",
         "his": "dia",
         "her": "dia",
-        "their": "mereka"
+        "their": "mereka",
+        "him": "dia",
+        "them": "mereka"
       },
-      "guardianNotice": "Sila masukkan butiran anda seperti yang tertera pada IC anda. Kami membandingkannya dengan foto IC yang anda muat naik dalam langkah Dokumen.",
       "guardianName": "Nama penuh anda (seperti pada IC)",
       "guardianNamePlaceholder": "Seperti yang tertulis pada IC anda",
       "guardianNric": "Nombor NRIC anda",

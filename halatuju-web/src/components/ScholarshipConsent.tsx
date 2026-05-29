@@ -95,11 +95,17 @@ export default function ScholarshipConsent({
       : gender === 'female'
         ? t('scholarship.consent.pronoun.her')
         : t('scholarship.consent.pronoun.their')
+    const pronounObjective = gender === 'male'
+      ? t('scholarship.consent.pronoun.him')
+      : gender === 'female'
+        ? t('scholarship.consent.pronoun.her')
+        : t('scholarship.consent.pronoun.them')
     return t(isMinor ? 'scholarship.consent.textMinor' : 'scholarship.consent.text', {
       student_name: studentName,
       student_nric: studentNric,
       he_or_she: pronounSubject,
       his_or_her: pronounPossessive,
+      him_or_her: pronounObjective,
     })
   }, [isMinor, status, t])
 
@@ -137,12 +143,16 @@ export default function ScholarshipConsent({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      {/* Section subtitle — student vs parent voice */}
-      <p className="text-sm text-gray-700">
-        {isMinor
-          ? t('scholarship.consent.subtitleMinor', { student_name: status?.student_name || '' })
-          : t('scholarship.consent.subtitle')}
-      </p>
+      {/* Student-directed info box (minor only) — addresses the logged-in
+          student, asking them to hand the page to a parent/guardian. The
+          consent body below is parent-voice; this notice is the bridge. */}
+      {isMinor ? (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+          {t('scholarship.consent.minorInfoNotice')}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-700">{t('scholarship.consent.subtitle')}</p>
+      )}
 
       {/* Consent text body — voice + content differ for minors */}
       <div className="bg-gray-50 border rounded-lg p-3 text-sm text-gray-700 max-h-48 overflow-y-auto whitespace-pre-line">
@@ -151,7 +161,15 @@ export default function ScholarshipConsent({
 
       {isMinor && (
         <>
-          <p className="text-sm text-gray-700">{t('scholarship.consent.guardianNotice')}</p>
+          {/* Parent-IC missing → blocking warning before the inputs.
+              When the IC is uploaded, this section disappears entirely;
+              live red-text mismatch warnings appear below the relevant
+              input only when needed. */}
+          {!hasParentIc && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              {t('scholarship.consent.needParentIc')}
+            </div>
+          )}
 
           {/* Guardian name */}
           <div>
@@ -204,12 +222,7 @@ export default function ScholarshipConsent({
             </select>
           </div>
 
-          {/* Prerequisite-doc warnings — point the student back to Documents step */}
-          {!hasParentIc && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-              {t('scholarship.consent.needParentIc')}
-            </div>
-          )}
+          {/* Non-parent guardians additionally need the guardianship letter. */}
           {needsLetter && !hasGuardianshipLetter && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
               {t('scholarship.consent.needGuardianshipLetter')}
