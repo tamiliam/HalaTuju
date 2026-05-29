@@ -9,6 +9,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Stream-subject dropdowns now list options alphabetically by display name** (locale-aware), matching the elective dropdown. Applies to both the SPM grades page (`onboarding/grades`) and the STPM SPM-prerequisite page (`onboarding/stpm-grades`). With the Arts pool now at 38 subjects (S18), a sorted list is much easier to scan. Pre-filled default stream subjects are unaffected — they still read the canonical pool order. Frontend-only; no test or backend change.
 
+## [2.11.0] — S19: minor consent flow hardening + UX iteration round (2026-05-29)
+
+Composite sprint after S18 ship. Six commits, one headline (minor consent v2) plus four
+copy/UX iterations the user drove through live, plus a follow-up policy change on
+`parent_ic` requirement. All shipped to prod incrementally.
+
+- **Minor consent v2** (`7a9e8cb`). Pre-S19 the minor branch trusted typed values
+  unconditionally; this iteration closes the gap. Added: parent NRIC field (masked
+  `XXXXXX-XX-XXXX`, stored in new `Consent.guardian_nric` column via migration
+  `scholarship/0021`); structured 7-option relationship dropdown (father, mother,
+  legal_guardian, grandparent, brother, sister, relative — "older_sibling" split into
+  brother+sister; "other_relative" shortened to relative; no "Other" per user); consent
+  text body interpolates `{student_name}`, `{student_nric}`, and pronouns derived from
+  the student's NRIC last digit (`gender_from_nric` helper); **hard-gate** name + NRIC
+  match against `parent_ic` Vision OCR (was a soft anomaly flag in S17 — now blocks
+  consent POST with 400 `parent_ic_nric_mismatch` / `parent_ic_name_mismatch`); FE
+  pre-checks live and disables the toggle on mismatch; OCR-disclosure paragraph removed
+  from consent body (stays in Documents step where OCR actually happens). `CONSENT_VERSION`
+  bumped `2026-draft-2` → `2026-draft-3` (0 pre-existing consents on prod, forward-only).
+- **Layout iteration** (`abdfab5`). User feedback after seeing S19 in the browser: simpler
+  parent-voice body in B40 language (two short paragraphs); moved the subtitle into a
+  student-directed blue info-box ("As you are under 18, please ask your parent or guardian
+  to read the following section…"); removed the redundant guardianNotice line; moved the
+  `needParentIc` warning UP into that slot, conditional on `!hasParentIc` (hide when
+  uploaded). DRAFT label removed from both adult and minor branches (still a working
+  model, but the DRAFT banner no longer fits).
+- **InfoBox + bold consent body** (`cf9b1d4`). New `components/InfoBox.tsx` locks the
+  box-colour convention across `/application`: green=success, blue=info, amber=warning,
+  red=block; fixed `rounded-lg p-3 text-sm` + `text-{color}-800` body. Applied to consent
+  warnings + funding intro + save-error block. Adult subtitle dropped (consent body is
+  self-explanatory). Consent body renders `**bold**` markers (markdown style) as
+  `<strong>` — used for student name, NRIC, and the programme name. Tiny `renderRich`
+  helper, 5 lines.
+- **Box-ify all tab intros** (`d6c0505`). Every `/application` step now opens with one
+  instruction-led blue InfoBox where applicable (Story langNote, Funding intro merged
+  from two stacked paragraphs, Documents step4Body rewritten as instruction). step6Body
+  intro on Consent tab removed (redundant). minorInfoNotice trimmed (dropped "As you are
+  under 18 years of age," prefix — the consent body itself states the under-18 fact).
+- **parent_ic universal compulsory** (`35d61b3`). Per user direction: even adult applicants
+  need to upload parent's IC, because the admin cross-checks supporting docs like STR or
+  EPF (typically issued in a parent's name) against the parent's IC. `documents_done` now
+  requires `{ic, results_slip, parent_ic}` universally; `guardian_docs_done` simplified
+  (parent_ic moved out; minor branch only checks the conditional `guardianship_letter`).
+  Help text rewritten universal × en/ms/ta. Forward-looking, not retroactive — 12 currently
+  submitted apps are all pre-decision-reveal so they see the "received" status card not
+  the Documents tab; only Elanjelian (test) is at /application today.
+
+**Tests** — backend **1236 / 1236 pass** (+12 from 1224 at S17 close: 4 TestGuardianDocsDone
+restructure, 4 new TestConsentApi for NRIC-mismatch/name-mismatch/missing-nric/hyphen-strip
++ 3 minor relationship test updates + 1 new TestGuardianDocsDone case for parent_ic moved
+out). Frontend **jest 154 / 154** (documentsComplete suite rewritten in-place to drop the
+isMinor flag tests).
+**Migration applied via Supabase MCP** (TD-058 workaround): `scholarship/0021` — additive
+`ADD COLUMN guardian_nric` + choices-only `AlterField` for new GUARDIAN_RELATIONSHIPS list.
+**i18n** parity 1369 × en/ms/ta. Tamil first-draft mirrors queued (queue now 10 batches).
+**Deploys**: 6 (one per commit). All small; total under-budget.
+
 ## [2.10.0] — S18: SPM stream subject coverage — full Arts & Technical lists (2026-05-29)
 
 A user reported that the SPM apply-form stream dropdowns offered far fewer subjects than the official SPM list. Root cause: the Arts pool listed only 9 subjects and Technical only 8, while `SUBJECT_NAMES` already had labels for ~26 of the missing Arts subjects — they were simply never added to the selectable pool. Worse, the backend merit engine kept its **own** hardcoded copy of these pools, so any subject in the dropdown but absent from the backend pool would silently score on the 10% elective weight instead of the 30% stream weight. This sprint brings both into line with the official source (Islamic-stream subjects excluded per the product's mainstream scope) and keeps frontend and backend pools in lockstep.

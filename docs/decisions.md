@@ -1182,3 +1182,100 @@ overwrought. Accepted trade-off — the bar is higher but defensible.
 **Trade-offs:** Two hand-maintained copies of the pools that must move together. Accepted because the alternative (codegen across languages) is heavier than the problem warrants, and tests + the linking comment catch drift.
 
 **Revisit if:** the pools change often, or a third consumer of pool membership appears — at that point extract a single language-neutral source (e.g. a JSON the build emits to both sides).
+
+## Hard-gate (400) vs soft-anomaly-flag for parent_ic identity mismatch — S19, 2026-05-29
+
+**Decision:** When the minor flow's typed parent name OR typed parent NRIC does not match
+the `parent_ic` Vision OCR values, block the consent POST with HTTP 400
+(`parent_ic_name_mismatch` / `parent_ic_nric_mismatch`). FE pre-checks and disables the
+toggle to surface the failure inline; backend re-checks as defence-in-depth.
+
+**Alternatives considered:** (a) keep as soft anomaly flags only (current S17 behaviour —
+admin sees them in Pre-interview flags card but applicant can still submit); (b) hard-gate
+only on NRIC mismatch (deterministic), keep name mismatch as soft flag (token-set match is
+fuzzier); (c) hard-gate both as proposed.
+
+**Rationale:** User asked: "It may not be enough for the parent/guardian to type the name
+as it is not their account." Soft flags assume a careful admin reviews every Pre-interview
+flag; at scale the admin will skim and trust-but-not-verify. Hard-gating both fields at
+consent submit means the legal attestation in the DB matches the IC photo in the record
+EVERY time, not just when an admin notices. Token-set name match (with parentage-marker
+stripping) gives enough leniency for typos / middle-name omissions that legitimate cases
+pass; outright different names / NRICs get blocked. The bar for "fraud" goes from "lie
+in a text field" to "upload a fake IC document with matching forged name + NRIC" — a much
+higher cost.
+
+**Trade-offs:** A small UX cost — a parent who types their name slightly differently from
+their IC has to fix the typo. The FE shows red inline text under the field as soon as
+the mismatch is detected, so the failure mode is immediate + actionable, not a confused
+form submission. Token-set fuzziness covers the most common typo cases (extra spaces,
+case, missing middle name).
+
+**Revisit if:** legitimate-mismatch reports come in (e.g. parent's IC has unusual
+characters Vision misreads). Could move to a partial-allowance mode (partial → soft flag,
+total mismatch → block) but the S17 verdict already supports `partial`, so this is a
+one-line adjustment if needed.
+
+## InfoBox component as the convention enforcement mechanism — S19, 2026-05-29
+
+**Decision:** Extracted `components/InfoBox.tsx` (4 semantic kinds: success / info /
+warning / block; locked palette `bg-{color}-50 border-{color}-200 text-{color}-800` +
+`rounded-lg p-3 text-sm`). All in-form messaging boxes across `/application` now go
+through it. Top-of-card section banners (the "You've been shortlisted!" / "All set!"
+intros) keep their distinct `rounded-xl p-5` style — different role.
+
+**Alternatives considered:** (a) Keep inline `className` strings, write a comment
+documenting the convention — relies on every dev remembering; (b) Tailwind plugin /
+@apply layer — heavier infrastructure; (c) the chosen component approach.
+
+**Rationale:** User explicitly named the convention they want enforced
+("if so, let's be consistent across the forms"). When a user names a convention, the
+right move is to encode it in code, not docs — a component is the cheapest enforcement
+mechanism and self-documents via its prop types. The four `kind` values are also the
+natural semantic vocabulary (success/info/warning/block) — useful for screen readers in
+the future too.
+
+**Trade-offs:** Slightly more verbose at call sites (`<InfoBox kind="info">…</InfoBox>` vs
+`<div className="...">…</div>`). Mitigated by being meaningfully shorter than the inline
+class strings it replaces. The component is intentionally minimal — no icons, no
+dismissible variant, no inline action button — so it stays one tight artefact. Add
+variants only when a real use case shows up.
+
+**Revisit if:** we need a dismissible info box, an inline action button inside the box,
+or a different size variant — at that point the component grows props. Don't speculate;
+let real use drive shape.
+
+## parent_ic as universal compulsory (admin cross-check, not just minor consent) — S19, 2026-05-29
+
+**Decision:** `parent_ic` document is now required for ALL applicants, not just minors.
+`documents_done` rule extended to `{ic, results_slip, parent_ic}`. Documents tab renders
+the parent_ic card unconditionally. Help text rewritten to explain universal use:
+"A photo of your parent or guardian's IC. We use it to verify supporting documents like
+STR or EPF that are usually issued in your parent's name. (If you are under 18, your
+parent or guardian also signs the consent below.)"
+
+**Alternatives considered:** (a) Keep parent_ic minor-only (S17 behaviour) and add a
+soft-flag anomaly when adult applicants upload STR/EPF without a parent_ic — gentler but
+makes the admin's cross-check inconsistent; (b) Make parent_ic compulsory only when an
+income-proof doc is uploaded — conditional rules add complexity for marginal benefit;
+(c) the chosen path — universal compulsory.
+
+**Rationale:** Per user: even for 18+ applicants, the admin cross-checks STR/EPF (which
+are typically issued in a parent's name) against the parent's IC to confirm legitimacy.
+Without the parent_ic, the admin has to guess "is the surname on this STR the applicant's
+parent?" — a clean cross-check turns the guess into a 2-second eyeball. Universal
+compulsory is also the simplest mental model for the student ("upload these 3 documents")
+and the simplest completeness rule for the backend.
+
+**Trade-offs:** Self-supporting adults with no living parent or estranged-parent
+situations would need to upload a substitute (any household-head IC) and explain via the
+admin verify step. The admin verify-&-accept gate (S11a) already handles such
+case-by-case judgement, so this is an existing safety valve. The change is forward-
+looking — at sprint close 12 applications were `submitted` (pre-decision-reveal, still
+seeing the "received" status card not the Documents tab), so the new requirement
+naturally applies when they're shortlisted, no retroactive complaint.
+
+**Revisit if:** real-use reports show the no-parent / estranged-parent case is common
+(could add an "I don't have a parent's IC — explain" alternative path), or if STR/EPF
+get phased out as income proofs (less need for the cross-check). Today the assumption
+holds.

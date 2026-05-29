@@ -243,7 +243,30 @@ multiple stream pools while staying electable; backend merit pools (`SCIENCE_POO
 **No migration** (grades stored by key, not enum). Golden master unchanged (5319). FE/BE pool duplication is TD-063
 (mitigated by linking comment + paired count tests). See `docs/retrospective-s18-stream-subject-coverage.md`.
 
-- 1231 backend tests, 154 frontend (jest) tests, 0 failures
+**S19 (v2.11.0, 2026-05-29) — Minor consent flow hardening + UX iteration round** (composite, 6 commits): pre-S19
+the minor branch trusted typed parent name + relationship unconditionally; this iteration closes the gap. Added
+typed parent NRIC field (masked `XXXXXX-XX-XXXX`, stored in new `Consent.guardian_nric` column via migration
+`scholarship/0021`); structured 7-option relationship dropdown (father/mother/legal_guardian/grandparent/brother/
+sister/relative — older_sibling split + other_relative shortened); consent text body interpolates
+`{student_name}` / `{student_nric}` / pronouns derived from the student's NRIC last digit (new `gender_from_nric`
+helper); **hard-gate** name + NRIC match against `parent_ic` Vision OCR (was a soft anomaly flag in S17 — now blocks
+consent POST with 400 `parent_ic_nric_mismatch` / `parent_ic_name_mismatch`); `CONSENT_VERSION` bump `2026-draft-2`
+→ `2026-draft-3` (0 pre-existing consents on prod, forward-only). Plus four UX iterations driven by user feedback
+through the session: layout cleanup (B40-language simpler text + student-directed blue info-box + amber warning
+moved up); new `components/InfoBox.tsx` locking the 4-colour convention across /application (green=success,
+blue=info, amber=warning, red=block); every step now opens with one instruction-led blue InfoBox where applicable;
+**parent_ic now compulsory for EVERYONE** (not just minors) so admin can cross-check STR/EPF docs (typically
+issued in a parent's name) against the parent's IC — `documents_done` extended to require all three, forward-only
+(all 12 currently-submitted apps are pre-decision-reveal, no retroactive impact). DRAFT label removed from both
+adult + minor consent branches (still a working model but the DRAFT banner no longer fits). Tests: **1236 backend
+pytest** (+12) + **154 jest**. i18n parity 1369 (+12 net keys). Migration `0021` applied migrate-first via Supabase
+MCP. 6 deploys (one per commit, all small). Tamil-pending queue now 10 batches / ~125+ strings — especially worth
+a refine session before the lawyer meeting since the consent text IS the legal artefact being reviewed.
+Retrospective `docs/retrospective-s19-minor-consent-v2-and-ux-iteration.md`. **3 design decisions logged**:
+hard-gate vs soft-flag for parent_ic mismatch; InfoBox component as convention enforcement; parent_ic universal
+compulsory.
+
+- 1236 backend tests, 154 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
