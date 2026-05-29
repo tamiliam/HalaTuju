@@ -8,7 +8,7 @@ import { useT } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth-context'
 import { getProfile, syncProfile, type SyncProfileData } from '@/lib/api'
 import ProgressStepper from '@/components/ProgressStepper'
-import { KEY_PROFILE, KEY_GRADES, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
+import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
 import { hasApplyReturn, clearApplyReturn, peekApplyStash } from '@/lib/scholarship'
 
 const MALAYSIAN_STATES = [
@@ -94,6 +94,13 @@ export default function ProfileInputPage() {
       const gradesStr = localStorage.getItem(KEY_GRADES)
       if (gradesStr) {
         try { syncPayload.grades = JSON.parse(gradesStr) } catch { /* ignore */ }
+      }
+
+      // TD-063: persist the student's stream/aliran picks so the merit engine
+      // uses them (instead of guessing the stream) on every server recompute.
+      const aliranStr = localStorage.getItem(KEY_ALIRAN)
+      if (aliranStr) {
+        try { syncPayload.stream_subjects = JSON.parse(aliranStr) } catch { /* ignore */ }
       }
 
       // Include STPM data

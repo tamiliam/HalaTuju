@@ -269,7 +269,7 @@ TECHNICAL_POOL = {
 }
 
 
-def prepare_merit_inputs(grades):
+def prepare_merit_inputs(grades, stream_subjects=None):
     """
     Splits grades into Sec1 (4 core), Sec2 (2 stream), Sec3 (2 elective)
     for UPU-style merit calculation.
@@ -278,6 +278,19 @@ def prepare_merit_inputs(grades):
       Sec1 (Teras/Core, 40%): BM, BI, Math, Sejarah — fixed 4, max 72 pts
       Sec2 (Aliran/Stream, 30%): Best 2 from stream pool — max 36 pts
       Sec3 (Tambahan/Elective, 10%): Best 2 from remaining — max 36 pts
+
+    Stream identification (TD-063):
+      - If ``stream_subjects`` is given (the subjects the student explicitly
+        designated as their stream/aliran on the grades page), Sec2 is the
+        best 2 of THOSE — the back-end trusts the student's own selection and
+        does not consult the stream pools at all. This is authoritative: a
+        designated subject scores at the 30% weight even if it is absent from
+        the back-end pools (which is exactly the S18 drift bug, now impossible
+        for labelled data).
+      - If ``stream_subjects`` is None/empty (the golden-master fixtures and
+        any profile saved before the field existed), it falls back to the
+        legacy count-heuristic — pick the pool with the most subjects taken.
+        This keeps existing/historical flat-grade data scoring identically.
     """
     def get_g(s):
         return grades.get(s, 'G')
@@ -285,26 +298,31 @@ def prepare_merit_inputs(grades):
     # Section 1: 4 fixed core subjects (BM, BI, Math, Sejarah)
     sec1 = [get_g('bm'), get_g('eng'), get_g('math'), get_g('history')]
 
-    # Determine stream from subjects taken
     student_keys = set(grades.keys())
     core_keys = {'bm', 'eng', 'math', 'history'}
 
-    science_present = student_keys & SCIENCE_POOL
-    arts_present = student_keys & ARTS_POOL
-    technical_present = student_keys & TECHNICAL_POOL
+    # Determine the candidate stream subjects.
+    explicit = [s for s in (stream_subjects or []) if s in grades and s not in core_keys]
+    if explicit:
+        # Trust the student's explicit designation (TD-063).
+        stream_candidates = explicit
+    else:
+        # Fallback: legacy count-heuristic over the pools.
+        science_present = student_keys & SCIENCE_POOL
+        arts_present = student_keys & ARTS_POOL
+        technical_present = student_keys & TECHNICAL_POOL
+        stream_counts = [
+            (len(science_present), SCIENCE_POOL),
+            (len(arts_present), ARTS_POOL),
+            (len(technical_present), TECHNICAL_POOL),
+        ]
+        stream_counts.sort(key=lambda x: x[0], reverse=True)
+        primary_stream_pool = stream_counts[0][1]
+        stream_candidates = [k for k in student_keys if k in primary_stream_pool]
 
-    # Pick the stream pool with the most subjects taken
-    stream_counts = [
-        (len(science_present), SCIENCE_POOL),
-        (len(arts_present), ARTS_POOL),
-        (len(technical_present), TECHNICAL_POOL),
-    ]
-    stream_counts.sort(key=lambda x: x[0], reverse=True)
-    primary_stream_pool = stream_counts[0][1]
-
-    # Section 2: Best 2 from the student's primary stream pool
-    stream_keys = [k for k in student_keys if k in primary_stream_pool]
-    stream_keys.sort(
+    # Section 2: Best 2 from the stream candidates (by grade).
+    stream_keys = sorted(
+        stream_candidates,
         key=lambda k: MERIT_GRADE_POINTS.get(grades[k], 0), reverse=True
     )
     sec2_keys = stream_keys[:2]

@@ -26,7 +26,7 @@ import ScholarshipBanner from '@/components/ScholarshipBanner'
 import { useT } from '@/lib/i18n'
 import PathwayCards, { type PathwaySummary } from '@/components/PathwayCards'
 import { useToast } from '@/components/Toast'
-import { KEY_RESUME_ACTION, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_PROFILE, KEY_GRADES, KEY_MERIT, KEY_QUIZ_SIGNALS, KEY_REPORT_GENERATED, KEY_STPM_QUIZ_SIGNALS, COURSE_PAGE_SIZE } from '@/lib/storage'
+import { KEY_RESUME_ACTION, KEY_EXAM_TYPE, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_SPM_PREREQ, KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_MERIT, KEY_QUIZ_SIGNALS, KEY_REPORT_GENERATED, KEY_STPM_QUIZ_SIGNALS, COURSE_PAGE_SIZE } from '@/lib/storage'
 import type { StpmResultFraming } from '@/lib/api'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
 
@@ -110,6 +110,10 @@ export default function DashboardPage() {
         const parsedGrades = JSON.parse(grades)
         const parsedProfile = JSON.parse(profileData)
         const savedMerit = localStorage.getItem(KEY_MERIT)
+        // TD-063: carry the student's explicit stream picks into the eligibility
+        // check so merit uses them; absent → backend falls back to the heuristic.
+        const aliranStr = localStorage.getItem(KEY_ALIRAN)
+        const streamSubjects = aliranStr ? JSON.parse(aliranStr) : undefined
 
         setProfile({
           grades: parsedGrades,
@@ -118,6 +122,7 @@ export default function DashboardPage() {
           colorblind: !!parsedProfile.colorblind,
           disability: !!parsedProfile.disability,
           coq_score: parsedProfile.coqScore ?? 5.0,
+          ...(streamSubjects && streamSubjects.length && { stream_subjects: streamSubjects }),
           ...(savedMerit && { student_merit: parseFloat(savedMerit) }),
         })
       }
