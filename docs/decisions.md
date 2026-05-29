@@ -991,3 +991,66 @@ write, the pattern is established.
 **Revisit if:** the Story tab grows enough profile-write fields that the side-effect becomes the majority — at
 that point it might be cleaner to split into two endpoints (application vs profile delta) so the contract is
 explicit. Today the address is the only such field.
+
+## Single-instance doc types: replace on re-upload (not append) — S15, 2026-05-29
+
+**Decision:** For all `ApplicantDocument` doc types EXCEPT the income-proof bundle
+(`str`, `salary_slip`, `epf`), uploading a new file deletes any existing rows of the
+same type for the same application + sweeps their Supabase Storage blobs in the same
+transaction. The list lives in `views.DocumentListCreateView.MULTI_INSTANCE_DOC_TYPES`.
+The three income-proof types stay multi-instance because students legitimately
+submit several monthly slips.
+
+**Alternatives considered:** (a) make multi-instance a model attribute / choices
+field — adds schema + UI complexity for a small rule; (b) require user to click
+Remove before Upload — extra step + same orphan-blob risk on Remove; (c) keep all
+uploads, surface them all in the admin with "most recent wins" — leaves the admin
+to guess which is authoritative, exactly the problem reported; (d) custom UI
+"replace" button — confusing because the "Add more" affordance was already wired
+to the same endpoint.
+
+**Rationale:** The bug surfaced from real use: a student uploaded multiple IC photos
+during testing, leaving the admin with no way to know which to trust. The view-layer
+rule (a `frozenset` in the POST handler) is the simplest place that doesn't require
+schema/serializer/UI changes. It also lets us patch the related orphan-Storage bug
+on `DocumentDetailView.delete` in the same PR — every doc removal now sweeps Storage.
+
+**Trade-offs:** The decision lives in code, not the model, so a future doc type
+needs the dev to remember to classify it. Mitigated by the comment on
+`MULTI_INSTANCE_DOC_TYPES` listing what's in it and why. Historical orphan Storage
+blobs from pre-fix Remove clicks aren't cleaned up automatically — captured as
+TD-062 (low priority; storage is cheap).
+
+**Revisit if:** we add a fourth multi-instance doc type and the list grows hard to
+reason about (then promote to a model attribute), or if a doc type's semantics
+become "versioned" (where keeping history matters).
+
+## Vision OCR fields: surface as evidence text, no automated matcher for address — S15, 2026-05-29
+
+**Decision:** `vision_address` is surfaced verbatim on the admin verify-&-accept
+card alongside `profile.address` for eyeball cross-check. No matcher computed,
+no verdict pill (unlike S13's `vision_nric_verdict` / `vision_name_verdict`).
+The interviewer flags the mismatch manually if it warrants asking.
+
+**Alternatives considered:** (a) postcode-only match indicator (cheap, useful for
+"Selangor postcode vs Sabah IC" outliers); (b) full token-set address matcher
+similar to `name_match`; (c) Gemini multimodal pass on the IC for structured
+extraction.
+
+**Rationale:** Aligns with the post-shortlist vision (`docs/scholarship/
+post-shortlist-vision.md`): surface signal for the interviewer to interpret,
+don't automate the judgement. Addresses have too many legitimate-divergence
+modes (registered IC address vs current rented room; spelling drift between
+JPN's records and student's typing) for a binary matcher to be honest. The
+interviewer is the right place to ask "is this still where you live?" once.
+
+**Trade-offs:** Admin still has to read two strings and compare. Acceptable
+because the strings sit one above the other in the same card. If volume grows
+to where this is genuinely painful, the postcode-only match indicator is the
+cheapest enhancement (postcodes are deterministic + low-noise).
+
+**Revisit if:** the admin says they want a soft verdict pill (then add the
+postcode-only match), or if Phase A deterministic anomaly engine (per the
+post-shortlist vision) wants to flag address mismatches as gaps for the
+interview agenda (then derive a flag from the same data without committing
+a verdict to the IC document row).

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] — S15: Story tab polish + Vision MyKad address + single-instance docs (2026-05-29)
+
+Composite sprint after S14 ship. Four discrete pieces, all deployed; see retrospective for the journey.
+
+- **Story tab polish on /application** (`53afbad`). Live-testing feedback converted to four UX/UX-data items:
+  - **Tick boxes → slide toggles** on `firstInFamily` + the Consent agreement, matching /apply's `Toggle` (STR/JKM). `FieldLabel` extracted from /apply to `src/components/FieldLabel.tsx` so /application reuses the same `*` convention.
+  - **Siblings: boolean → numeric.** "One or more of my siblings are also studying" replaced by "How many of your siblings are also studying?" — useful proxy for family education burden. Backend: migration `scholarship/0019` adds `siblings_studying_count: PositiveSmallIntegerField(null=True, blank=True)`; legacy `siblings_studying` boolean kept for back-compat (joins TD-061 contract). `profile_engine._build_prompt` prefers the count over the boolean.
+  - **Placeholder ghost text + collapsible "Need ideas?" tips** on all 6 open textareas (parentsOccupation, familyContext, aspirations, plans, dailyLife, fears). Native `<details>` panels with 3 short bullets each. Tone deliberately first-person + slightly imperfect — student should think *"I can write better than that"*.
+  - **Asterisk convention.** Required Story-tab fields (aspirations, plans, street, postal, city) gain `*` via `FieldLabel required`; optional fields drop the "(Optional)" suffix. Matches /apply.
+- **Vision OCR for MyKad address surface** (`69cb1d0`, `0fb08a3`, `4baae5f`). Building on S13's MyKad name+NRIC OCR: now also extract the home address from the IC photo. Migration `scholarship/0018` adds `vision_address: CharField(max_length=500)`; new `_extract_address` helper in `vision.py` uses a postcode-anchor heuristic to walk up the OCR text, drops the NRIC + name lines, strips "Alamat" labels, and now also picks up the state line below the postcode + the taman/kampung line above. Soft signal only — no matcher, no verdict; admin verify-&-accept card surfaces the extracted address alongside the student-entered `profile.address` for eyeball cross-check at interview time. The heuristic-tuning journey took 3 deploys against the real MyKad — first miss (state below postcode), second miss (TAMAN SEMANGAT dropped as "looks like a name"), final pass captures all 4 lines.
+- **Single-instance doc-type replace on re-upload** (`2ee7d5d`). Previously, a student could upload multiple IC photos and the system kept all of them — leaving the admin to guess which was authoritative. Now: `DocumentListCreateView.POST` sweeps any existing rows of the same single-instance doc type (DB + Supabase Storage blob) before creating the new one. The three income-proof types (STR / salary_slip / EPF) intentionally stay multi-instance for monthly slip stacking. Explicit `DELETE` also sweeps the Storage blob (was leaking blobs on every Remove click). UI label flips from "Add more" → "Replace" for single-instance types. TD-062 logged for the orphan Storage blobs that pre-fix Remove clicks left behind (sweep when convenient).
+- **Post-shortlist vision doc** (`87404e1`). Direction-setting `docs/scholarship/post-shortlist-vision.md` — four user types (student done; admin needs role categories; sponsor + mentor to do), funnel through interview/sponsorship/in-programme, three-engine gap model (deterministic rules + Vision OCR + Gemini), two-stage profile (draft → interview findings → final), standardisation north star. Recommended Phase A = deterministic anomaly engine as the first slice.
+
+**Tests** — backend 1188 (+19: 5 vision address extraction, 3 docs single-instance, 6 details siblings count, 2 profile_engine count fallback, +3 from related); frontend jest 110 (+4: siblings count round-trip + prefill behaviour).
+**i18n** parity 1310 × en/ms/ta (+34 keys; Tamil first-draft mirrors queued for batch refine — pending queue is now 7 batches).
+**Migrations applied via Supabase MCP** (migrate-first per TD-058 workaround): `scholarship/0018_applicantdocument_vision_address`, `scholarship/0019_scholarshipapplication_siblings_studying_count`. Both additive, 0 rows touched.
+**Deploys**: 5 over the sprint (3 Vision address tuning + 1 single-instance docs + 1 S15 polish). The 3 Vision deploys were a heuristic-tuning loop against real-data feedback — captured as a lesson (test fixtures alone can't validate OCR heuristics; user-driven verification is essential).
+
 ## [2.6.0] — S14: /profile schema consolidation + required address on /application (2026-05-29)
 
 Backend + frontend (no migration; data backfilled via Supabase MCP under the expand-contract pattern). Closes
