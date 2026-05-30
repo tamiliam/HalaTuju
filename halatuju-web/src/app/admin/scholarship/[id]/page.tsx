@@ -248,6 +248,15 @@ export default function AdminScholarshipDetailPage() {
         // (a chosen course), so Pre-U track doesn't apply.
         const isInstitutionPathway = app.chosen_pathway === 'matric' || app.chosen_pathway === 'stpm'
         const upuLabel = app.upu_status ? t(`admin.scholarship.upu.${app.upu_status}`) : '—'
+        // Human labels for the stored codes — reuse the apply-form's own i18n maps so
+        // the admin sees the same words the student did (matric→Matriculation, etc.).
+        const callLangLabel = app.preferred_call_language ? t(`scholarship.apply.callLang.${app.preferred_call_language}`) : null
+        const pathwayLabel = (code?: string | null) => (code ? t(`scholarship.apply.pathway.${code}`) : null)
+        // pre_u_track holds a matric TRACK (sains/kejuruteraan…) for matric, or an STPM
+        // STREAM (sains/sains_sosial/not_sure) for STPM — different i18n namespaces.
+        const preUTrackLabel = app.pre_u_track
+          ? t(`scholarship.apply.${app.chosen_pathway === 'stpm' ? 'stream' : 'track'}.${app.pre_u_track}`)
+          : null
         // Link a course back to its HalaTuju public page (opens in a new tab so
         // the admin doesn't lose the application). STPM degrees live under /stpm.
         const courseHref = (cid?: string) => (cid ? (isStpm ? `/stpm/${cid}` : `/course/${cid}`) : null)
@@ -274,7 +283,7 @@ export default function AdminScholarshipDetailPage() {
                     student verifies it; otherwise the verified Google login email. */}
                 <Field label={t('admin.scholarship.email')} value={app.verified_email} />
                 <Field label={t('admin.scholarship.address')} value={addr} />
-                <Field label={t('admin.scholarship.callLanguage')} value={app.preferred_call_language?.toUpperCase()} />
+                <Field label={t('admin.scholarship.callLanguage')} value={callLangLabel} />
               </dl>
             </Card>
 
@@ -306,8 +315,8 @@ export default function AdminScholarshipDetailPage() {
               <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {isInstitutionPathway ? (
                   <>
-                    <Field label={t('admin.scholarship.chosenPathway')} value={app.chosen_pathway} />
-                    <Field label={t('admin.scholarship.preUTrack')} value={app.pre_u_track} />
+                    <Field label={t('admin.scholarship.chosenPathway')} value={pathwayLabel(app.chosen_pathway)} />
+                    <Field label={t('admin.scholarship.preUTrack')} value={preUTrackLabel} />
                     <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} />
                   </>
                 ) : (
@@ -315,10 +324,13 @@ export default function AdminScholarshipDetailPage() {
                     label={t('admin.scholarship.chosenProgramme')}
                     value={app.chosen_programme?.course_name
                       ? courseLink(app.chosen_programme.course_id as string | undefined, app.chosen_programme.course_name as string)
-                      : app.chosen_pathway}
+                      : pathwayLabel(app.chosen_pathway)}
                   />
                 )}
-                <Field label={t('admin.scholarship.fieldOfStudy')} value={app.field_of_study} />
+                {/* Field of study is DERIVED from the chosen course (never asked), so it's
+                    blank for institution pathways (matric/STPM pick a track, not a course).
+                    Only show it where it carries meaning — a chosen programme. */}
+                {!isInstitutionPathway && <Field label={t('admin.scholarship.fieldOfStudy')} value={app.field_of_study} />}
                 <Field label={t('admin.scholarship.upuStatus')} value={upuLabel} />
               </dl>
               {app.top_choices?.length > 0 && (
