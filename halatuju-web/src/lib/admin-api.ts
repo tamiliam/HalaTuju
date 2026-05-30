@@ -326,6 +326,45 @@ export interface AdminScholarshipDetail {
   // Profile-derived address (post-S14) — used by the admin Vision card to
   // cross-check what the student typed against the MyKad-read vision_address.
   address: string
+  // Complete-profile view: contact + family + academic detail (profile-sourced)
+  postal_code: string
+  city: string
+  preferred_state: string
+  contact_phone: string
+  contact_email: string
+  preferred_call_language: string
+  referral_source: string | null
+  guardians: Array<{ name?: string; phone?: string; relationship?: string }>
+  muet_band: number | null
+  coq_score: number | null
+  grades: Record<string, string>
+  stpm_grades: Record<string, string>
+  spm_prereq_grades: Record<string, string>
+  // "Your story" narrative (S2) + support + declaration
+  first_in_family: boolean
+  parents_occupation: string
+  siblings_studying_count: number | null
+  family_context: string
+  daily_life: string
+  consent_to_contact: boolean
+  declared_at: string | null
+  // My Plans + My Support intake (were exposed by the serializer; now typed)
+  pathway_certainty: string
+  chosen_pathway: string
+  chosen_programme: Record<string, unknown> | null
+  pre_u_track: string
+  pre_u_institution: string
+  uncertainty_reasons: string[]
+  uncertainty_note: string
+  pathways_considered: string[]
+  top_choices: Array<{ rank: number; course_id: string; course_name: string; institution: string }>
+  upu_status: string
+  field_of_study: string
+  other_scholarships: string[]
+  other_scholarships_text: string
+  help_university: string
+  help_scholarship: string
+  anything_else: string
   status: string
   bucket: string
   shortlist_reason: string

@@ -77,6 +77,22 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # Profile-stored address (S14) — surfaced so the admin Vision card can show
     # it alongside `vision_address` (the MyKad-read address) for eyeball compare.
     address = serializers.CharField(source='profile.address', read_only=True, allow_blank=True)
+    # Complete-profile view — the remaining profile-sourced fields the student
+    # entered at /apply (contact, family, academic detail). All read-only mirrors.
+    postal_code = serializers.CharField(source='profile.postal_code', read_only=True, allow_blank=True)
+    city = serializers.CharField(source='profile.city', read_only=True, allow_blank=True)
+    preferred_state = serializers.CharField(source='profile.preferred_state', read_only=True, allow_blank=True)
+    contact_phone = serializers.CharField(source='profile.contact_phone', read_only=True, allow_blank=True)
+    contact_email = serializers.CharField(source='profile.contact_email', read_only=True, allow_blank=True)
+    preferred_call_language = serializers.CharField(source='profile.preferred_call_language', read_only=True, allow_blank=True)
+    referral_source = serializers.CharField(source='profile.referral_source', read_only=True, allow_null=True)
+    guardians = serializers.JSONField(source='profile.guardians', read_only=True)
+    # Academic detail (rendered SPM/STPM-aware on the admin page).
+    muet_band = serializers.IntegerField(source='profile.muet_band', read_only=True)
+    coq_score = serializers.FloatField(source='profile.coq_score', read_only=True)
+    grades = serializers.JSONField(source='profile.grades', read_only=True)
+    stpm_grades = serializers.JSONField(source='profile.stpm_grades', read_only=True)
+    spm_prereq_grades = serializers.JSONField(source='profile.spm_prereq_grades', read_only=True)
     spm_a_count = serializers.SerializerMethodField()
     funding_need = serializers.SerializerMethodField()
     sponsor_profile = serializers.SerializerMethodField()
@@ -98,7 +114,14 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'spm_a_count', 'stpm_pngk', 'household_income', 'household_size',
             'receives_str', 'receives_jkm', 'intended_pathway', 'intends_tertiary_2026',
             'aspirations', 'plans', 'fears', 'justification',
-            'address',
+            'address', 'postal_code', 'city', 'preferred_state',
+            'contact_phone', 'contact_email', 'preferred_call_language', 'referral_source', 'guardians',
+            # Academic detail (FE renders SPM vs STPM by qualification)
+            'muet_band', 'coq_score', 'grades', 'stpm_grades', 'spm_prereq_grades',
+            # "Your story" narrative (S2) + support + declaration
+            'first_in_family', 'parents_occupation', 'siblings_studying_count',
+            'family_context', 'daily_life', 'consent_to_contact',
+            'declaration_name', 'declared_at',
             'status', 'bucket', 'shortlist_reason', 'submitted_at',
             # Phase C handoff + interview funnel
             'profile_completed_at', 'completeness', 'interview_session',

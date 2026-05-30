@@ -39,7 +39,35 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
       <dt className="text-xs text-gray-400 uppercase tracking-wider">{label}</dt>
-      <dd className="text-sm text-gray-800">{value === null || value === undefined || value === '' ? '—' : value}</dd>
+      <dd className="text-sm text-gray-800 break-words">{value === null || value === undefined || value === '' ? '—' : value}</dd>
+    </div>
+  )
+}
+
+function Card({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="bg-white rounded-xl border p-4">
+      <h2 className="font-semibold mb-3">{title}</h2>
+      {children}
+    </div>
+  )
+}
+
+const yn = (v: boolean | null | undefined) => (v === true ? 'Yes' : v === false ? 'No' : '—')
+const joinOr = (a?: string[] | null) => (a && a.length ? a.join(', ') : '—')
+
+/** Grade dict → readable chips (subject key uppercased · grade). */
+function Grades({ grades }: { grades?: Record<string, string> | null }) {
+  const entries = Object.entries(grades || {}).filter(([, g]) => g)
+  if (!entries.length) return <span className="text-gray-400 text-sm">—</span>
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {entries.map(([k, g]) => (
+        <span key={k} className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-2 py-0.5 text-xs">
+          <span className="text-gray-500 uppercase">{k.replace(/_/g, ' ')}</span>
+          <span className="font-semibold text-gray-800">{g}</span>
+        </span>
+      ))}
     </div>
   )
 }
@@ -212,36 +240,137 @@ export default function AdminScholarshipDetailPage() {
         {app.bucket && <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Bucket {app.bucket}</span>}
       </div>
 
-      {/* Applicant + intake */}
-      <div className="bg-white rounded-xl border p-4">
-        <h2 className="font-semibold mb-3">{t('admin.scholarship.applicant')}</h2>
-        <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <Field label={t('admin.scholarship.school')} value={app.school} />
-          <Field label={t('admin.scholarship.qualification')} value={app.qualification?.toUpperCase()} />
-          <Field label="SPM A" value={app.spm_a_count} />
-          <Field label="STPM PNGK" value={app.stpm_pngk} />
-          <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM${app.household_income}` : null} />
-          <Field label="STR" value={app.receives_str ? 'Yes' : 'No'} />
-          <Field label={t('admin.scholarship.pathway')} value={app.intended_pathway} />
-        </dl>
-        {app.shortlist_reason && <p className="text-xs text-amber-700 mt-3">{app.shortlist_reason}</p>}
-      </div>
+      {(() => {
+        const isSpm = app.qualification === 'spm'
+        const isStpm = app.qualification === 'stpm'
+        const hasStory = !!(app.aspirations || app.plans || app.fears || app.justification
+          || app.daily_life || app.first_in_family || app.parents_occupation
+          || app.siblings_studying_count || app.family_context)
+        const addr = [app.address, [app.postal_code, app.city].filter(Boolean).join(' '), app.preferred_state]
+          .filter(Boolean).join(', ')
+        const guardian = (app.guardians && app.guardians[0]) || null
+        return (
+          <>
+            {/* Academic — SPM/STPM-aware: only the relevant qualification's fields */}
+            <Card title={t('admin.scholarship.sec.academic')}>
+              <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <Field label={t('admin.scholarship.school')} value={app.school} />
+                <Field label={t('admin.scholarship.qualification')} value={app.qualification?.toUpperCase()} />
+                {isSpm && <Field label="SPM A" value={app.spm_a_count} />}
+                {isStpm && <Field label="STPM PNGK" value={app.stpm_pngk} />}
+                {isStpm && <Field label="MUET" value={app.muet_band} />}
+                <Field label={t('admin.scholarship.coq')} value={app.coq_score} />
+              </dl>
+              <div className="mt-3">
+                <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+                  {isStpm ? t('admin.scholarship.stpmGrades') : t('admin.scholarship.spmGrades')}
+                </dt>
+                <Grades grades={isStpm ? app.stpm_grades : app.grades} />
+                {isStpm && Object.keys(app.spm_prereq_grades || {}).length > 0 && (
+                  <div className="mt-2">
+                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.spmPrereq')}</dt>
+                    <Grades grades={app.spm_prereq_grades} />
+                  </div>
+                )}
+              </div>
+              {app.shortlist_reason && <p className="text-xs text-amber-700 mt-3">{app.shortlist_reason}</p>}
+            </Card>
 
-      {/* Deeper info + funding */}
-      <div className="bg-white rounded-xl border p-4 space-y-2">
-        <Field label={t('admin.scholarship.aspirations')} value={app.aspirations} />
-        <Field label={t('admin.scholarship.justification')} value={app.justification} />
-        {app.funding_need && (
-          <Field
-            label={t('admin.scholarship.funding')}
-            value={
-              app.funding_need.categories?.length
-                ? app.funding_need.categories.join(', ')
-                : '—'
-            }
-          />
-        )}
-      </div>
+            {/* Contact & identity */}
+            <Card title={t('admin.scholarship.sec.contact')}>
+              <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <Field label={t('admin.scholarship.applicant')} value={app.name} />
+                <Field label="NRIC" value={app.nric} />
+                <Field label={t('admin.scholarship.phone')} value={app.contact_phone} />
+                <Field label={t('admin.scholarship.email')} value={app.contact_email} />
+                <Field label={t('admin.scholarship.callLanguage')} value={app.preferred_call_language?.toUpperCase()} />
+                <Field label={t('admin.scholarship.referralSource')} value={app.referral_source} />
+                <Field label={t('admin.scholarship.address')} value={addr} />
+              </dl>
+            </Card>
+
+            {/* Family & finances */}
+            <Card title={t('admin.scholarship.sec.family')}>
+              <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM${app.household_income}` : null} />
+                <Field label={t('admin.scholarship.householdSize')} value={app.household_size} />
+                <Field label="STR" value={yn(app.receives_str)} />
+                <Field label="JKM" value={yn(app.receives_jkm)} />
+                <Field label={t('admin.scholarship.guardianName')} value={guardian?.name} />
+                <Field label={t('admin.scholarship.guardianPhone')} value={guardian?.phone} />
+              </dl>
+            </Card>
+
+            {/* My Plans */}
+            <Card title={t('admin.scholarship.sec.plans')}>
+              <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <Field label={t('admin.scholarship.intendsTertiary')} value={yn(app.intends_tertiary_2026)} />
+                <Field label={t('admin.scholarship.pathwayCertainty')} value={app.pathway_certainty} />
+                <Field label={t('admin.scholarship.chosenPathway')} value={app.chosen_pathway} />
+                <Field label={t('admin.scholarship.chosenProgramme')} value={(app.chosen_programme?.course_name as string) || ''} />
+                <Field label={t('admin.scholarship.preUTrack')} value={app.pre_u_track} />
+                <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} />
+                <Field label={t('admin.scholarship.fieldOfStudy')} value={app.field_of_study} />
+                <Field label={t('admin.scholarship.upuStatus')} value={app.upu_status} />
+                <Field label={t('admin.scholarship.pathwaysConsidered')} value={joinOr(app.pathways_considered)} />
+                <Field label={t('admin.scholarship.otherScholarships')} value={joinOr(app.other_scholarships)} />
+              </dl>
+              {app.other_scholarships_text && <Field label={t('admin.scholarship.otherScholarshipsText')} value={app.other_scholarships_text} />}
+              {app.top_choices?.length > 0 && (
+                <div className="mt-3">
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.topChoices')}</dt>
+                  <ol className="list-decimal ml-5 text-sm text-gray-800">
+                    {app.top_choices.map((c) => <li key={c.rank}>{c.course_name}{c.institution ? ` — ${c.institution}` : ''}</li>)}
+                  </ol>
+                </div>
+              )}
+              {app.uncertainty_reasons?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.uncertaintyReasons')} value={joinOr(app.uncertainty_reasons)} /></div>}
+              {app.uncertainty_note && <Field label={t('admin.scholarship.uncertaintyNote')} value={app.uncertainty_note} />}
+            </Card>
+
+            {/* My Support */}
+            <Card title={t('admin.scholarship.sec.support')}>
+              <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <Field label={t('admin.scholarship.helpUniversity')} value={app.help_university} />
+                <Field label={t('admin.scholarship.helpScholarship')} value={app.help_scholarship} />
+                <Field label={t('admin.scholarship.consentToContact')} value={yn(app.consent_to_contact)} />
+                <Field label={t('admin.scholarship.declarationName')} value={app.declaration_name} />
+              </dl>
+              {app.anything_else && <div className="mt-2"><Field label={t('admin.scholarship.anythingElse')} value={app.anything_else} /></div>}
+            </Card>
+
+            {/* Your story — post-shortlist narrative; shown only when the student has filled it */}
+            {hasStory && (
+              <Card title={t('admin.scholarship.sec.story')}>
+                <div className="space-y-2">
+                  <Field label={t('admin.scholarship.aspirations')} value={app.aspirations} />
+                  <Field label={t('admin.scholarship.plans')} value={app.plans} />
+                  <Field label={t('admin.scholarship.fears')} value={app.fears} />
+                  <Field label={t('admin.scholarship.dailyLife')} value={app.daily_life} />
+                  <Field label={t('admin.scholarship.justification')} value={app.justification} />
+                  <dl className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-1">
+                    <Field label={t('admin.scholarship.firstInFamily')} value={yn(app.first_in_family)} />
+                    <Field label={t('admin.scholarship.parentsOccupation')} value={app.parents_occupation} />
+                    <Field label={t('admin.scholarship.siblingsStudying')} value={app.siblings_studying_count} />
+                  </dl>
+                  <Field label={t('admin.scholarship.familyContext')} value={app.family_context} />
+                </div>
+              </Card>
+            )}
+
+            {/* Funding */}
+            {app.funding_need && (
+              <Card title={t('admin.scholarship.sec.funding')}>
+                <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <Field label={t('admin.scholarship.funding')} value={joinOr(app.funding_need.categories)} />
+                  <Field label={t('admin.scholarship.programmeMonths')} value={app.funding_need.programme_months} />
+                </dl>
+                {app.funding_need.funding_note && <div className="mt-2"><Field label={t('admin.scholarship.fundingNote')} value={app.funding_need.funding_note} /></div>}
+              </Card>
+            )}
+          </>
+        )
+      })()}
 
       {/* Documents / referees / consent */}
       <div className="bg-white rounded-xl border p-4">
