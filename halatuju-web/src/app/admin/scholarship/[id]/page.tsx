@@ -270,7 +270,7 @@ export default function AdminScholarshipDetailPage() {
               <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <Field label="NRIC" value={app.nric} />
                 <Field label={t('admin.scholarship.phone')} value={app.contact_phone ? formatPhone(app.contact_phone) : null} />
-                <Field label={t('admin.scholarship.email')} value={app.contact_email} />
+                <Field label={t('admin.scholarship.email')} value={app.contact_email || app.notify_email} />
                 <Field label={t('admin.scholarship.address')} value={addr} />
                 <Field label={t('admin.scholarship.callLanguage')} value={app.preferred_call_language?.toUpperCase()} />
               </dl>

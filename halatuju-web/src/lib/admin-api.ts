@@ -333,6 +333,7 @@ export interface AdminScholarshipDetail {
   preferred_state: string
   contact_phone: string
   contact_email: string
+  notify_email: string
   preferred_call_language: string
   referral_source: string | null
   guardians: Array<{ name?: string; phone?: string; relationship?: string }>
