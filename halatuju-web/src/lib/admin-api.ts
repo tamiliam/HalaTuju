@@ -525,6 +525,13 @@ export interface AdminApplicantDocument {
   // Supporting-doc soft name/address presence checks (results slip, income, bills…)
   vision_name_match: '' | 'found' | 'not_found' | 'unreadable'
   vision_address_match: '' | 'found' | 'not_found' | 'unreadable'
+  // Document-assist: Gemini-extracted fields for admin verification.
+  vision_fields?: {
+    fields?: Record<string, string | string[]>
+    warnings?: string[]
+    student_verdict?: string
+    error?: string
+  }
 }
 
 /** Admin re-runs Vision OCR on an existing IC document (soft signal, never a gate). */

@@ -493,6 +493,19 @@ export default function AdminScholarshipDetailPage() {
                   addr {d.vision_address_match === 'found' ? '✓' : d.vision_address_match === 'unreadable' ? '?' : '✗'}
                 </span>
               )}
+              {/* Document-assist: Gemini-extracted fields for verification. */}
+              {d.vision_fields?.fields && Object.keys(d.vision_fields.fields).length > 0 && (
+                <div className="mt-1 rounded bg-gray-50 p-2 text-xs text-gray-600">
+                  <span className="font-medium text-gray-500">{t('admin.scholarship.extractFields.title')}: </span>
+                  {Object.entries(d.vision_fields.fields)
+                    .filter(([, v]) => v && (Array.isArray(v) ? v.length : String(v).trim()))
+                    .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+                    .join(' · ')}
+                  {d.vision_fields.warnings && d.vision_fields.warnings.length > 0 && (
+                    <span className="text-amber-600"> ⚠ {d.vision_fields.warnings.join('; ')}</span>
+                  )}
+                </div>
+              )}
             </li>
           ))}
           {app.documents.length === 0 && <li className="text-gray-400">{t('admin.scholarship.none')}</li>}

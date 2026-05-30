@@ -450,6 +450,14 @@ class ApplicantDocument(models.Model):
     # '' = not run / not applicable; else 'found' / 'not_found' / 'unreadable'.
     vision_name_match = models.CharField(max_length=12, blank=True, default='')
     vision_address_match = models.CharField(max_length=12, blank=True, default='')
+    # Document-assist: Gemini-extracted structured fields (admin-on-... no — runs
+    # automatically on upload for the weak-OCR supporting docs). Shape:
+    # {fields: {...per doc_type}, warnings: [...], student_verdict: 'ok'|
+    # 'name_mismatch'|'address_mismatch'|'wrong_doc'|'unreadable'|'review_manually',
+    # error: ''}. Empty dict = not run. SOFT signal, never blocks. Surfaced to the
+    # student (corrective nudge) + the admin (extracted values). Additive, 0-row-safe.
+    vision_fields = models.JSONField(default=dict, blank=True)
+    vision_fields_run_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'applicant_documents'

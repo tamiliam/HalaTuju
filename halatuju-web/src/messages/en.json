@@ -817,6 +817,16 @@
       "remove": "Remove",
       "uploadError": "Upload failed. Please try again.",
       "deleteError": "Could not remove the document.",
+      "assist": {
+        "ok": "Looks good — we read this document and the details match you.",
+        "name_mismatch": "The name on this document doesn't match you or your parent/guardian. Please check it's the right file.",
+        "address_mismatch": "The address on this bill doesn't match your home address. Please check it's the right bill.",
+        "wrong_doc": "This doesn't look like the right kind of document. Please check the file you uploaded.",
+        "unreadable": "We couldn't read this document clearly — our team will check it manually.",
+        "review_manually": "Received — our team will review this document."
+      },
+      "file_too_large": "Each file must be under 8 MB. Please upload a smaller or clearer photo.",
+      "doc_limit_reached": "You've reached the maximum number of documents. Please remove any you no longer need.",
       "match": {
         "good": "Looks good — we found the expected name on this document.",
         "name-missing": "We couldn't find your or your parent/guardian's name on this document. Please check it's the right file — the team will also review it.",
@@ -1511,6 +1521,9 @@
       "visionAddressVsProfile": "Student-entered address",
       "parentIcTitle": "Parent/guardian IC (Vision OCR)",
       "visionError": "Could not re-run Vision.",
+      "extractFields": {
+        "title": "Extracted"
+      },
       "anomaly": {
         "title": "Pre-interview flags",
         "intro": "Data inconsistencies the engine spotted. Use them to direct the interview — a flag is a question worth asking, not a verdict.",

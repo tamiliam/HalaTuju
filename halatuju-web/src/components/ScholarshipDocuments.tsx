@@ -19,6 +19,10 @@ import {
   formatFileSize,
 } from '@/lib/scholarship'
 
+// Per-file size cap (mirrors the server's MAX_DOC_SIZE_BYTES default — server is
+// authoritative; this gives the student instant feedback before any upload).
+const MAX_DOC_SIZE_BYTES = 8 * 1024 * 1024
+
 // ── Shared sub-components ─────────────────────────────────────────────────
 
 function UploadedFileRow({
@@ -152,25 +156,43 @@ function supportingChipVariant(doc: ApplicantDocument): 'good' | 'name-missing' 
   return 'good'   // name found; address found or not applicable
 }
 
+// Document-assist verdict (Gemini extraction) takes precedence over the
+// deterministic presence chip when it has run — it's richer + more specific.
+function assistTone(verdict: string): 'good' | 'warn' | 'info' {
+  if (verdict === 'ok') return 'good'
+  if (verdict === 'unreadable' || verdict === 'review_manually') return 'info'
+  return 'warn'   // name_mismatch / address_mismatch / wrong_doc
+}
+
 function SupportingDocChip({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
-  const variant = supportingChipVariant(doc)
-  if (!variant) return null
   const palette: Record<string, string> = {
     good: 'bg-green-50 text-green-800 ring-green-200',
+    warn: 'bg-amber-50 text-amber-800 ring-amber-200',
+    info: 'bg-gray-50 text-gray-700 ring-gray-200',
     'name-missing': 'bg-amber-50 text-amber-800 ring-amber-200',
     'address-missing': 'bg-amber-50 text-amber-800 ring-amber-200',
     unreadable: 'bg-gray-50 text-gray-700 ring-gray-200',
   }
-  const icon = variant === 'good' ? '✓' : variant === 'unreadable' ? 'ⓘ' : '⚠'
-  return (
+  const chip = (tone: string, icon: string, text: string) => (
     <div className="mt-2">
-      <span className={`inline-flex items-start gap-1.5 rounded-full px-3 py-1.5 text-xs ring-1 ${palette[variant]}`}>
+      <span className={`inline-flex items-start gap-1.5 rounded-full px-3 py-1.5 text-xs ring-1 ${palette[tone]}`}>
         <span aria-hidden>{icon}</span>
-        <span>{t(`scholarship.docs.match.${variant}`)}</span>
+        <span>{text}</span>
       </span>
       <p className="mt-1 text-xs text-gray-400">{t('scholarship.docs.vision.note')}</p>
     </div>
   )
+  // Prefer the Gemini doc-assist verdict when it ran.
+  const av = doc.vision_fields?.student_verdict
+  if (av) {
+    const tone = assistTone(av)
+    return chip(tone, tone === 'good' ? '✓' : tone === 'info' ? 'ⓘ' : '⚠', t(`scholarship.docs.assist.${av}`))
+  }
+  // Fallback: the deterministic name/address presence chip.
+  const variant = supportingChipVariant(doc)
+  if (!variant) return null
+  return chip(variant, variant === 'good' ? '✓' : variant === 'unreadable' ? 'ⓘ' : '⚠',
+    t(`scholarship.docs.match.${variant}`))
 }
 
 // ── Single-type upload card ───────────────────────────────────────────────
@@ -361,6 +383,11 @@ export default function ScholarshipDocuments({ token, onChange }: { token: strin
 
   const handleUpload = async (docType: string, file: File) => {
     if (!token) return
+    // Guardrail: per-file size cap — instant feedback, no wasted upload.
+    if (file.size > MAX_DOC_SIZE_BYTES) {
+      setError(t('scholarship.docs.file_too_large'))
+      return
+    }
     setBusyType(docType)
     setError(null)
     try {
@@ -372,8 +399,13 @@ export default function ScholarshipDocuments({ token, onChange }: { token: strin
       )
       await refresh()
       onChange?.()
-    } catch {
-      setError(t('scholarship.docs.uploadError'))
+    } catch (e) {
+      const code = (e as { code?: string })?.code
+      setError(
+        code === 'doc_limit_reached' ? t('scholarship.docs.doc_limit_reached')
+        : code === 'file_too_large' ? t('scholarship.docs.file_too_large')
+        : t('scholarship.docs.uploadError'),
+      )
     } finally {
       setBusyType(null)
     }

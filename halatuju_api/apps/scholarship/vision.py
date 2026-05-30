@@ -9,6 +9,7 @@ the testable core — they run pure and require no API key. The actual Vision
 call (``extract_mykad``) is mocked in tests and degrades gracefully to an
 error dict when the API is unavailable or the SDK isn't installed.
 """
+import json
 import logging
 import re
 from typing import Optional
@@ -335,13 +336,20 @@ def address_present(text: str, *, postcode: str = '', city: str = '') -> bool:
     return city_ok
 
 
-def run_vision_match_for_document(doc, *, names, postcode='', city='', check_address=False) -> dict:
+def ocr_document(doc) -> dict:
+    """Fetch + OCR a document once. Returns {text, error}. Pass the result to
+    run_vision_match_for_document / run_field_extraction_for_document as ``ocr=``
+    so the same upload OCRs only once."""
+    image = _fetch_image_bytes(doc.storage_path)
+    return {'text': '', 'error': 'could not fetch image'} if image is None else extract_text(image)
+
+
+def run_vision_match_for_document(doc, *, names, postcode='', city='', check_address=False, ocr=None) -> dict:
     """OCR a supporting document and record soft verdicts: does an expected name
     appear (``vision_name_match``), and — for bills — does the home address appear
     (``vision_address_match``)? Verdicts: 'found' / 'not_found' / 'unreadable'.
-    Never blocks, never raises."""
-    image = _fetch_image_bytes(doc.storage_path)
-    r = {'text': '', 'error': 'could not fetch image'} if image is None else extract_text(image)
+    Never blocks, never raises. Pass ``ocr`` to reuse a prior OCR pass."""
+    r = ocr if ocr is not None else ocr_document(doc)
     if r['error'] or not (r['text'] or '').strip():
         doc.vision_name_match = 'unreadable'
         doc.vision_address_match = 'unreadable' if check_address else ''
@@ -356,3 +364,142 @@ def run_vision_match_for_document(doc, *, names, postcode='', city='', check_add
     doc.vision_run_at = timezone.now()
     doc.save(update_fields=['vision_name_match', 'vision_address_match', 'vision_error', 'vision_run_at'])
     return {'name_match': doc.vision_name_match, 'address_match': doc.vision_address_match, 'error': doc.vision_error}
+
+
+# ── Document-assist: Gemini field extraction over messy supporting docs ────────
+# Gemini PICKS the fields from arbitrary layouts (better than token-presence on
+# the raw text); the deterministic matchers then DECIDE the verdict (so the
+# student-facing verdict can never be a Gemini hallucination). Runs automatically
+# on upload (see DocumentListCreateView), soft + never blocking.
+
+GEMINI_EXTRACT_DOC_TYPES = frozenset({
+    'salary_slip', 'epf', 'water_bill', 'electricity_bill', 'results_slip', 'offer_letter',
+})
+
+_STR = {'type': 'string'}
+
+
+def _doc_schema(props: dict) -> dict:
+    """An object schema with the given string fields + a shared warnings array."""
+    out = dict(props)
+    out['warnings'] = {'type': 'array', 'items': {'type': 'string'}}
+    return {'type': 'object', 'properties': out}
+
+
+_FIELD_SCHEMAS = {
+    'salary_slip': _doc_schema({'name': _STR, 'employer': _STR, 'gross_income': _STR,
+                                'net_income': _STR, 'period': _STR}),
+    'epf': _doc_schema({'name': _STR, 'employer': _STR, 'latest_balance': _STR,
+                        'last_contribution': _STR}),
+    'water_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR, 'billing_period': _STR}),
+    'electricity_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR, 'billing_period': _STR}),
+    'results_slip': _doc_schema({'candidate_name': _STR, 'exam': _STR,
+                                 'subjects': {'type': 'array', 'items': {'type': 'string'}}}),
+    'offer_letter': _doc_schema({'candidate_name': _STR, 'institution': _STR,
+                                 'programme': _STR, 'intake': _STR}),
+}
+
+# Which extracted field holds the person's name (for the deterministic verdict).
+_NAME_FIELD = {
+    'salary_slip': 'name', 'epf': 'name', 'water_bill': 'name', 'electricity_bill': 'name',
+    'results_slip': 'candidate_name', 'offer_letter': 'candidate_name',
+}
+
+
+def _call_gemini_json(prompt: str, schema: dict) -> dict:
+    """Structured-output Gemini call → parsed JSON dict, or {'_error': msg}. This is
+    the single seam tests @patch. Reuses profile_engine's model cascade + key guard."""
+    api_key = getattr(settings, 'GEMINI_API_KEY', '') or ''
+    if not api_key:
+        return {'_error': 'AI service not configured (missing API key)'}
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError:
+        return {'_error': 'AI module not installed'}
+    from .profile_engine import MODEL_CASCADE
+    client = genai.Client(api_key=api_key)
+    last_error = None
+    for model_name in MODEL_CASCADE:
+        try:
+            resp = client.models.generate_content(
+                model=model_name, contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type='application/json', response_schema=schema, temperature=0.1),
+            )
+            return json.loads(resp.text)
+        except Exception as e:  # noqa: BLE001 — graceful: never propagate to a 500
+            last_error = str(e)
+            logger.warning('Gemini JSON call failed with %s: %s', model_name, e)
+            continue
+    return {'_error': f'All AI models failed: {last_error}'}
+
+
+def extract_document_fields(ocr_text: str, doc_type: str) -> dict:
+    """Gemini extracts the per-doc-type fields from a supporting doc's OCR text.
+    Returns {fields, warnings, error}. No Gemini call when there's no text. Never raises."""
+    schema = _FIELD_SCHEMAS.get(doc_type)
+    if schema is None:
+        return {'fields': {}, 'warnings': [], 'error': f'no extractor for {doc_type}'}
+    if not (ocr_text or '').strip():
+        return {'fields': {}, 'warnings': [], 'error': 'no text'}
+    prompt = (
+        f'Here is the OCR text from a Malaysian {doc_type.replace("_", " ")}. '
+        'Extract the listed fields exactly as printed. If a field is missing or '
+        'unclear, leave it empty and add a short note to "warnings". Do NOT invent '
+        f'values.\n\nOCR TEXT:\n{(ocr_text or "")[:6000]}'
+    )
+    data = _call_gemini_json(prompt, schema)
+    if '_error' in data:
+        return {'fields': {}, 'warnings': [], 'error': data['_error']}
+    warnings = data.pop('warnings', []) or []
+    return {'fields': data, 'warnings': warnings, 'error': ''}
+
+
+def _any_field_filled(fields: dict) -> bool:
+    for v in fields.values():
+        if isinstance(v, str):
+            if v.strip():
+                return True
+        elif v:
+            return True
+    return False
+
+
+def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', check_address=False) -> str:
+    """Deterministic verdict from the Gemini-extracted fields (never hallucinated):
+    'ok' | 'name_mismatch' | 'address_mismatch' | 'wrong_doc'."""
+    if not _any_field_filled(fields):
+        return 'wrong_doc'   # nothing of the expected shape was found
+    extracted_name = (fields.get(_NAME_FIELD.get(doc_type, 'name')) or '').strip()
+    if extracted_name:
+        matched = any(name_match(extracted_name, n) in ('match', 'partial') for n in names if n)
+        if not matched:
+            return 'name_mismatch'
+    if check_address:
+        addr = (fields.get('address') or '').strip()
+        if addr and not address_present(addr, postcode=postcode, city=city):
+            return 'address_mismatch'
+    return 'ok'
+
+
+def run_field_extraction_for_document(doc, *, names, postcode='', city='', check_address=False, ocr=None) -> dict:
+    """Extract fields + a deterministic student-facing verdict, store on the doc.
+    Never blocks, never raises. Pass ``ocr`` to reuse a prior OCR pass."""
+    r = ocr if ocr is not None else ocr_document(doc)
+    if r['error'] or not (r['text'] or '').strip():
+        result = {'fields': {}, 'warnings': [], 'student_verdict': 'unreadable',
+                  'error': r['error'] or 'no text read'}
+    else:
+        ex = extract_document_fields(r['text'], doc.doc_type)
+        if ex['error']:
+            result = {'fields': {}, 'warnings': [], 'student_verdict': 'unreadable', 'error': ex['error']}
+        else:
+            verdict = doc_student_verdict(doc.doc_type, ex['fields'], names=names,
+                                          postcode=postcode, city=city, check_address=check_address)
+            result = {'fields': ex['fields'], 'warnings': ex['warnings'],
+                      'student_verdict': verdict, 'error': ''}
+    doc.vision_fields = result
+    doc.vision_fields_run_at = timezone.now()
+    doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])
+    return result

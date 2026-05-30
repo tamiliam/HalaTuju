@@ -817,6 +817,16 @@
       "remove": "Buang",
       "uploadError": "Muat naik gagal. Sila cuba lagi.",
       "deleteError": "Tidak dapat membuang dokumen.",
+      "assist": {
+        "ok": "Nampak baik — kami baca dokumen ini dan butirannya sepadan dengan anda.",
+        "name_mismatch": "Nama pada dokumen ini tidak sepadan dengan anda atau ibu bapa/penjaga anda. Sila pastikan ia fail yang betul.",
+        "address_mismatch": "Alamat pada bil ini tidak sepadan dengan alamat rumah anda. Sila pastikan ia bil yang betul.",
+        "wrong_doc": "Ini nampaknya bukan jenis dokumen yang betul. Sila semak fail yang anda muat naik.",
+        "unreadable": "Kami tidak dapat membaca dokumen ini dengan jelas — pasukan kami akan menyemaknya secara manual.",
+        "review_manually": "Diterima — pasukan kami akan menyemak dokumen ini."
+      },
+      "file_too_large": "Setiap fail mestilah di bawah 8 MB. Sila muat naik gambar yang lebih kecil atau lebih jelas.",
+      "doc_limit_reached": "Anda telah mencapai bilangan dokumen maksimum. Sila buang mana-mana yang anda tidak perlukan lagi.",
       "match": {
         "good": "Nampak baik — kami jumpa nama yang dijangka pada dokumen ini.",
         "name-missing": "Kami tidak dapat menemui nama anda atau ibu bapa/penjaga anda pada dokumen ini. Sila pastikan ia fail yang betul — pasukan kami juga akan menyemaknya.",
@@ -1511,6 +1521,9 @@
       "visionAddressVsProfile": "Alamat yang dimasukkan pelajar",
       "parentIcTitle": "IC ibu bapa/penjaga (Vision OCR)",
       "visionError": "Tidak dapat menjalankan semula Vision.",
+      "extractFields": {
+        "title": "Diekstrak"
+      },
       "anomaly": {
         "title": "Penanda pra-temubual",
         "intro": "Percanggahan data yang dikesan enjin. Gunakannya untuk mengarah temubual — penanda adalah soalan yang patut ditanya, bukan keputusan.",

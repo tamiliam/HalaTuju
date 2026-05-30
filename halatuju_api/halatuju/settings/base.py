@@ -119,6 +119,17 @@ ADMIN_NOTIFY_EMAIL = os.environ.get('ADMIN_NOTIFY_EMAIL', '')
 # api service runs scheduled management commands without a separate Cloud Run Job).
 CRON_SECRET = os.environ.get('CRON_SECRET', '')
 
+# Supporting-document upload guardrails (cost + abuse). Env-overridable.
+MAX_DOC_SIZE_BYTES = int(os.environ.get('MAX_DOC_SIZE_BYTES', str(8 * 1024 * 1024)))   # 8 MB/file
+MAX_DOCS_PER_APPLICATION = int(os.environ.get('MAX_DOCS_PER_APPLICATION', '40'))
+# Document-assist (Gemini field extraction on upload): hourly cap per application —
+# beyond it the upload still succeeds + Vision/deterministic feedback still run, but
+# the billable Gemini call is skipped (student sees a "we'll review manually" note).
+DOC_ASSIST_RATE_LIMIT_PER_HOUR = int(os.environ.get('DOC_ASSIST_RATE_LIMIT_PER_HOUR', '15'))
+# When True, only call Gemini if the free deterministic presence check is uncertain
+# (saves cost). Default False = always extract (richer data for the admin).
+DOC_ASSIST_ONLY_WHEN_UNCERTAIN = os.environ.get('DOC_ASSIST_ONLY_WHEN_UNCERTAIN', '') == '1'
+
 # Logging configuration (structured JSON for Cloud Run)
 LOGGING = {
     'version': 1,

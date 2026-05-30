@@ -213,11 +213,14 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'vision_nric_verdict', 'vision_name_verdict',
             # Supporting-doc soft checks (name/address presence). Stored at upload.
             'vision_name_match', 'vision_address_match',
+            # Document-assist: Gemini-extracted fields + student verdict (stored).
+            'vision_fields', 'vision_fields_run_at',
         ]
         read_only_fields = [
             'vision_nric', 'vision_name', 'vision_address',
             'vision_run_at', 'vision_error',
             'vision_name_match', 'vision_address_match',
+            'vision_fields', 'vision_fields_run_at',
         ]
 
     def get_download_url(self, obj):

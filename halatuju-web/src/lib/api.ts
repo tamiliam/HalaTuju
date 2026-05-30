@@ -31,7 +31,11 @@ async function apiRequest<T>(
       window.dispatchEvent(new CustomEvent('nric-required'))
       throw new Error('NRIC verification required')
     }
-    throw new Error(error.message || `API error: ${response.status}`)
+    const err = new Error(error.message || `API error: ${response.status}`)
+    // Carry the backend error code (e.g. 'doc_limit_reached') so callers can
+    // map it to a localised message.
+    ;(err as Error & { code?: string }).code = error.error || error.code || ''
+    throw err
   }
 
   return response.json()
@@ -1078,6 +1082,15 @@ export interface ApplicantDocument {
   // (utility bills only) the home address? '' = not run / N/A. Soft, never blocks.
   vision_name_match: '' | 'found' | 'not_found' | 'unreadable'
   vision_address_match: '' | 'found' | 'not_found' | 'unreadable'
+  // Document-assist: Gemini-extracted fields + a soft student-facing verdict.
+  // {} when not run. student_verdict: ok/name_mismatch/address_mismatch/wrong_doc/
+  // unreadable/review_manually. Soft, never blocks.
+  vision_fields?: {
+    fields?: Record<string, string | string[]>
+    warnings?: string[]
+    student_verdict?: '' | 'ok' | 'name_mismatch' | 'address_mismatch' | 'wrong_doc' | 'unreadable' | 'review_manually'
+    error?: string
+  }
 }
 
 export interface Referee {

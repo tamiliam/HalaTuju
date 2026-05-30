@@ -240,6 +240,19 @@ class DocumentListCreateView(APIView):
         serializer = DocumentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         new_doc_type = serializer.validated_data['doc_type']
+        from django.conf import settings as _settings
+        # Guardrail 1: per-file size cap (the bytes go client→Storage via signed
+        # URL, so this validates the reported size).
+        if (serializer.validated_data.get('size') or 0) > _settings.MAX_DOC_SIZE_BYTES:
+            return Response({'error': 'file_too_large', 'max_mb': _settings.MAX_DOC_SIZE_BYTES // (1024 * 1024)},
+                            status=status.HTTP_400_BAD_REQUEST)
+        # Guardrail 2: per-application document cap. A single-instance re-upload
+        # replaces an existing doc, so it doesn't count toward growth.
+        replaces = (new_doc_type not in self.MULTI_INSTANCE_DOC_TYPES
+                    and ApplicantDocument.objects.filter(application=app, doc_type=new_doc_type).exists())
+        if not replaces and ApplicantDocument.objects.filter(application=app).count() >= _settings.MAX_DOCS_PER_APPLICATION:
+            return Response({'error': 'doc_limit_reached', 'max': _settings.MAX_DOCS_PER_APPLICATION},
+                            status=status.HTTP_400_BAD_REQUEST)
         # For single-instance types, sweep older copies of the SAME type for
         # this application first — DB row + Supabase Storage object together.
         if new_doc_type not in self.MULTI_INSTANCE_DOC_TYPES:
@@ -255,23 +268,47 @@ class DocumentListCreateView(APIView):
         if doc.doc_type in ('ic', 'parent_ic'):
             from .vision import run_vision_for_document
             run_vision_for_document(doc)
-        # Supporting docs: soft check that the student's OR a parent/guardian's
-        # name appears (and, for utility bills, the home address). Never blocks;
-        # surfaced to the student + the interviewer.
+        # Supporting docs: OCR once, then (a) the free name/address presence check
+        # and (b) automatic Gemini field-extraction with student feedback. Soft,
+        # never blocks. Gemini is guardrailed by the hourly per-application cap.
         elif doc.doc_type in SUPPORTING_NAME_CHECK_TYPES:
-            from .vision import run_vision_match_for_document
+            from . import vision as _vision
             profile = app.profile
             names = [getattr(profile, 'name', '') or '']
             names += [g.get('name', '') for g in (getattr(profile, 'guardians', None) or [])
                       if isinstance(g, dict)]
-            run_vision_match_for_document(
-                doc,
-                names=[n for n in names if n],
-                postcode=getattr(profile, 'postal_code', '') or '',
-                city=getattr(profile, 'city', '') or '',
-                check_address=doc.doc_type in BILL_DOC_TYPES,
-            )
+            names = [n for n in names if n]
+            postcode = getattr(profile, 'postal_code', '') or ''
+            city = getattr(profile, 'city', '') or ''
+            check_address = doc.doc_type in BILL_DOC_TYPES
+            ocr = _vision.ocr_document(doc)   # OCR once, shared by both checks
+            match = _vision.run_vision_match_for_document(
+                doc, names=names, postcode=postcode, city=city, check_address=check_address, ocr=ocr)
+            if doc.doc_type in _vision.GEMINI_EXTRACT_DOC_TYPES:
+                self._maybe_extract_fields(app, doc, _vision, ocr, names, postcode, city,
+                                           check_address, match, _settings)
         return Response(ApplicantDocumentSerializer(doc).data, status=status.HTTP_201_CREATED)
+
+    @staticmethod
+    def _maybe_extract_fields(app, doc, _vision, ocr, names, postcode, city, check_address, match, _settings):
+        """Run Gemini doc-assist if the cost knob + hourly throttle allow; otherwise
+        mark 'review_manually'. Never blocks the upload."""
+        from datetime import timedelta
+        from django.utils import timezone
+        uncertain = (match.get('name_match') in ('not_found', 'unreadable')
+                     or match.get('address_match') in ('not_found', 'unreadable'))
+        if getattr(_settings, 'DOC_ASSIST_ONLY_WHEN_UNCERTAIN', False) and not uncertain:
+            return  # clean upload + knob on → skip the billable call
+        recent = ApplicantDocument.objects.filter(
+            application=app, vision_fields_run_at__gte=timezone.now() - timedelta(hours=1)).count()
+        if recent >= getattr(_settings, 'DOC_ASSIST_RATE_LIMIT_PER_HOUR', 15):
+            doc.vision_fields = {'fields': {}, 'warnings': [],
+                                 'student_verdict': 'review_manually', 'error': 'rate_limited'}
+            doc.vision_fields_run_at = timezone.now()
+            doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])
+            return
+        _vision.run_field_extraction_for_document(
+            doc, names=names, postcode=postcode, city=city, check_address=check_address, ocr=ocr)
 
 
 class DocumentDetailView(APIView):
