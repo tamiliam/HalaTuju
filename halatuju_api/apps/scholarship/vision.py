@@ -264,3 +264,79 @@ def run_vision_for_document(doc) -> dict:
     doc.vision_run_at = timezone.now()
     doc.save(update_fields=['vision_nric', 'vision_name', 'vision_address', 'vision_error', 'vision_run_at'])
     return result
+
+
+# ── Generic supporting-document soft checks (S: results slip / income / bills) ──
+# Arbitrary documents aren't MyKad-structured, so instead of field extraction we
+# do a *presence* check on the full OCR text: does an expected name (or address)
+# appear anywhere? Tolerant + naturally soft — exactly right for a non-blocking
+# nudge to the student + the interviewer.
+
+def extract_text(image_bytes: bytes) -> dict:
+    """Generic full-text OCR (no MyKad parsing). ``{'text': str, 'error': str|None}``.
+    Never raises."""
+    if not image_bytes:
+        return {'text': '', 'error': 'empty image'}
+    try:
+        from google.cloud import vision  # type: ignore
+    except ImportError:
+        return {'text': '', 'error': 'AI module not installed'}
+    api_key = getattr(settings, 'GOOGLE_CLOUD_VISION_API_KEY', '') or ''
+    try:
+        client = (vision.ImageAnnotatorClient(client_options={'api_key': api_key})
+                  if api_key else vision.ImageAnnotatorClient())
+        resp = client.document_text_detection(image=vision.Image(content=image_bytes))
+        if resp.error and resp.error.message:
+            return {'text': '', 'error': resp.error.message[:200]}
+        return {'text': resp.full_text_annotation.text if resp.full_text_annotation else '', 'error': None}
+    except Exception as e:  # noqa: BLE001 — graceful: never propagate to a 500
+        logger.warning('Vision OCR (text) failed: %s', e)
+        return {'text': '', 'error': str(e)[:200]}
+
+
+def name_present(text: str, names) -> bool:
+    """True if any of ``names`` (token-set, MyKad connectors stripped) is fully
+    contained in the OCR ``text``. Order / case / extra words in the doc are fine."""
+    text_tokens = _canonical_name_tokens(text)
+    if not text_tokens:
+        return False
+    for n in names:
+        nt = _canonical_name_tokens(n)
+        if nt and nt.issubset(text_tokens):
+            return True
+    return False
+
+
+def address_present(text: str, *, postcode: str = '', city: str = '') -> bool:
+    """Soft home-address presence for utility bills. Postcode is the strong signal:
+    if the 5-digit postcode appears in the doc AND the city token appears, call it
+    found. With no postcode on file, require the city token alone (weak but soft)."""
+    text_tokens = _canonical_name_tokens(text)
+    city_ok = bool(city) and _canonical_name_tokens(city).issubset(text_tokens)
+    pc = re.sub(r'\D', '', postcode or '')
+    if pc:
+        return pc in re.sub(r'\D', '', text or '') and (city_ok or not city)
+    return city_ok
+
+
+def run_vision_match_for_document(doc, *, names, postcode='', city='', check_address=False) -> dict:
+    """OCR a supporting document and record soft verdicts: does an expected name
+    appear (``vision_name_match``), and — for bills — does the home address appear
+    (``vision_address_match``)? Verdicts: 'found' / 'not_found' / 'unreadable'.
+    Never blocks, never raises."""
+    image = _fetch_image_bytes(doc.storage_path)
+    r = {'text': '', 'error': 'could not fetch image'} if image is None else extract_text(image)
+    if r['error'] or not (r['text'] or '').strip():
+        doc.vision_name_match = 'unreadable'
+        doc.vision_address_match = 'unreadable' if check_address else ''
+        doc.vision_error = r['error'] or 'no text read'
+    else:
+        doc.vision_name_match = 'found' if name_present(r['text'], names) else 'not_found'
+        doc.vision_address_match = (
+            ('found' if address_present(r['text'], postcode=postcode, city=city) else 'not_found')
+            if check_address else ''
+        )
+        doc.vision_error = ''
+    doc.vision_run_at = timezone.now()
+    doc.save(update_fields=['vision_name_match', 'vision_address_match', 'vision_error', 'vision_run_at'])
+    return {'name_match': doc.vision_name_match, 'address_match': doc.vision_address_match, 'error': doc.vision_error}

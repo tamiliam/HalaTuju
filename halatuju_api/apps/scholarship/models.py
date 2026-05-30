@@ -442,6 +442,14 @@ class ApplicantDocument(models.Model):
     vision_address = models.CharField(max_length=500, blank=True, default='')
     vision_run_at = models.DateTimeField(null=True, blank=True)
     vision_error = models.CharField(max_length=200, blank=True, default='')
+    # Soft supporting-document checks: does the student's OR a parent/guardian's
+    # name appear in the document text (results_slip / str / salary_slip / epf /
+    # water_bill / electricity_bill / offer_letter), and — for utility bills — does
+    # the home address appear? Computed at upload against names + address on file.
+    # SOFT signal only (never blocks); surfaced to the student and the interviewer.
+    # '' = not run / not applicable; else 'found' / 'not_found' / 'unreadable'.
+    vision_name_match = models.CharField(max_length=12, blank=True, default='')
+    vision_address_match = models.CharField(max_length=12, blank=True, default='')
 
     class Meta:
         db_table = 'applicant_documents'

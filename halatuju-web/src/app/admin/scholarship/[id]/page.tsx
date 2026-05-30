@@ -475,6 +475,24 @@ export default function AdminScholarshipDetailPage() {
                 ? <a href={d.download_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{d.original_filename || 'view'}</a>
                 : (d.original_filename || '—')}{' '}
               <span className="text-gray-400">[{d.verification_status}]</span>
+              {/* Soft OCR name/address presence check (results slip, income docs,
+                  bills, offer letter). Never blocks — a flag for the reviewer. */}
+              {d.vision_name_match && (
+                <span className={`ml-1 rounded px-1.5 py-0.5 text-xs ${
+                  d.vision_name_match === 'found' ? 'bg-green-50 text-green-700'
+                  : d.vision_name_match === 'unreadable' ? 'bg-gray-100 text-gray-500'
+                  : 'bg-amber-50 text-amber-700'}`}>
+                  name {d.vision_name_match === 'found' ? '✓' : d.vision_name_match === 'unreadable' ? '?' : '✗'}
+                </span>
+              )}
+              {d.vision_address_match && (
+                <span className={`ml-1 rounded px-1.5 py-0.5 text-xs ${
+                  d.vision_address_match === 'found' ? 'bg-green-50 text-green-700'
+                  : d.vision_address_match === 'unreadable' ? 'bg-gray-100 text-gray-500'
+                  : 'bg-amber-50 text-amber-700'}`}>
+                  addr {d.vision_address_match === 'found' ? '✓' : d.vision_address_match === 'unreadable' ? '?' : '✗'}
+                </span>
+              )}
             </li>
           ))}
           {app.documents.length === 0 && <li className="text-gray-400">{t('admin.scholarship.none')}</li>}

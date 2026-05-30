@@ -522,6 +522,9 @@ export interface AdminApplicantDocument {
   vision_error: string
   vision_nric_verdict: '' | 'match' | 'mismatch' | 'unreadable'
   vision_name_verdict: '' | 'match' | 'partial' | 'mismatch' | 'unreadable'
+  // Supporting-doc soft name/address presence checks (results slip, income, bills…)
+  vision_name_match: '' | 'found' | 'not_found' | 'unreadable'
+  vision_address_match: '' | 'found' | 'not_found' | 'unreadable'
 }
 
 /** Admin re-runs Vision OCR on an existing IC document (soft signal, never a gate). */

@@ -140,6 +140,39 @@ function VisionChip({ doc, t }: { doc: ApplicantDocument; t: (key: string) => st
   )
 }
 
+// ── Supporting-doc soft chip (name/address presence, S) ──────────────────
+
+function supportingChipVariant(doc: ApplicantDocument): 'good' | 'name-missing' | 'address-missing' | 'unreadable' | null {
+  const nm = doc.vision_name_match
+  if (!nm) return null   // not a checked supporting doc, or Vision hasn't run
+  const am = doc.vision_address_match
+  if (nm === 'unreadable' || am === 'unreadable') return 'unreadable'
+  if (nm === 'not_found') return 'name-missing'
+  if (am === 'not_found') return 'address-missing'
+  return 'good'   // name found; address found or not applicable
+}
+
+function SupportingDocChip({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
+  const variant = supportingChipVariant(doc)
+  if (!variant) return null
+  const palette: Record<string, string> = {
+    good: 'bg-green-50 text-green-800 ring-green-200',
+    'name-missing': 'bg-amber-50 text-amber-800 ring-amber-200',
+    'address-missing': 'bg-amber-50 text-amber-800 ring-amber-200',
+    unreadable: 'bg-gray-50 text-gray-700 ring-gray-200',
+  }
+  const icon = variant === 'good' ? '✓' : variant === 'unreadable' ? 'ⓘ' : '⚠'
+  return (
+    <div className="mt-2">
+      <span className={`inline-flex items-start gap-1.5 rounded-full px-3 py-1.5 text-xs ring-1 ${palette[variant]}`}>
+        <span aria-hidden>{icon}</span>
+        <span>{t(`scholarship.docs.match.${variant}`)}</span>
+      </span>
+      <p className="mt-1 text-xs text-gray-400">{t('scholarship.docs.vision.note')}</p>
+    </div>
+  )
+}
+
 // ── Single-type upload card ───────────────────────────────────────────────
 
 function SingleDocCard({
@@ -197,6 +230,7 @@ function SingleDocCard({
         </ul>
       )}
       {visionDoc && <VisionChip doc={visionDoc} t={t} />}
+      {existing.map((d) => <SupportingDocChip key={`m${d.id}`} doc={d} t={t} />)}
     </div>
   )
 }
@@ -260,36 +294,36 @@ function IncomeProofCard({
       {existing.length > 0 && (
         <ul className="mt-2 space-y-1">
           {existing.map((d) => (
-            <li
-              key={d.id}
-              className="flex items-center justify-between text-sm text-gray-600"
-            >
-              <span className="truncate">
-                <span className="text-gray-400 text-xs mr-1">
-                  [{t(`scholarship.docs.type.${d.doc_type}`)}]
+            <li key={d.id}>
+              <div className="flex items-center justify-between text-sm text-gray-600">
+                <span className="truncate">
+                  <span className="text-gray-400 text-xs mr-1">
+                    [{t(`scholarship.docs.type.${d.doc_type}`)}]
+                  </span>
+                  {d.download_url ? (
+                    <a
+                      href={d.download_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary-600 hover:underline"
+                    >
+                      {d.original_filename || d.doc_type}
+                    </a>
+                  ) : (
+                    d.original_filename || d.doc_type
+                  )}
+                  {d.size ? (
+                    <span className="text-gray-400"> · {formatFileSize(d.size)}</span>
+                  ) : null}
                 </span>
-                {d.download_url ? (
-                  <a
-                    href={d.download_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-primary-600 hover:underline"
-                  >
-                    {d.original_filename || d.doc_type}
-                  </a>
-                ) : (
-                  d.original_filename || d.doc_type
-                )}
-                {d.size ? (
-                  <span className="text-gray-400"> · {formatFileSize(d.size)}</span>
-                ) : null}
-              </span>
-              <button
-                onClick={() => onDelete(d.id)}
-                className="text-red-500 hover:underline ml-2 shrink-0"
-              >
-                {t('scholarship.docs.remove')}
-              </button>
+                <button
+                  onClick={() => onDelete(d.id)}
+                  className="text-red-500 hover:underline ml-2 shrink-0"
+                >
+                  {t('scholarship.docs.remove')}
+                </button>
+              </div>
+              <SupportingDocChip doc={d} t={t} />
             </li>
           ))}
         </ul>

@@ -817,6 +817,12 @@
       "remove": "Buang",
       "uploadError": "Muat naik gagal. Sila cuba lagi.",
       "deleteError": "Tidak dapat membuang dokumen.",
+      "match": {
+        "good": "Nampak baik — kami jumpa nama yang dijangka pada dokumen ini.",
+        "name-missing": "Kami tidak dapat menemui nama anda atau ibu bapa/penjaga anda pada dokumen ini. Sila pastikan ia fail yang betul — pasukan kami juga akan menyemaknya.",
+        "address-missing": "Kami jumpa nama, tetapi alamat rumah pada bil ini tidak sepadan dengan profil anda. Sila semak — pasukan kami juga akan menyemaknya.",
+        "unreadable": "Kami tidak dapat membaca dokumen ini secara automatik — tidak mengapa, pasukan kami akan menyemaknya secara manual."
+      },
       "vision": {
         "good": "Kelihatan baik — NRIC dan nama anda sepadan dengan gambar.",
         "name-soft": "NRIC anda sepadan tetapi nama pada IC anda tidak. Sila kemas kini <link>profil</link> anda supaya sepadan dengan NRIC anda.",

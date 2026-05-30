@@ -1065,6 +1065,10 @@ export interface ApplicantDocument {
   // Server-computed match verdicts (empty when Vision hasn't run)
   vision_nric_verdict: '' | 'match' | 'mismatch' | 'unreadable'
   vision_name_verdict: '' | 'match' | 'partial' | 'mismatch' | 'unreadable'
+  // Supporting-doc soft checks: does the student's/parent's name appear, and
+  // (utility bills only) the home address? '' = not run / N/A. Soft, never blocks.
+  vision_name_match: '' | 'found' | 'not_found' | 'unreadable'
+  vision_address_match: '' | 'found' | 'not_found' | 'unreadable'
 }
 
 export interface Referee {

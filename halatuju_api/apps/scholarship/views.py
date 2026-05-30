@@ -205,6 +205,15 @@ class DocumentSignUploadView(APIView):
         return Response({'upload_url': url, 'storage_path': path, 'doc_type': doc_type})
 
 
+# Supporting docs that get a soft name-presence check on upload (the income docs,
+# results slip, offer letter, and utility bills). Utility bills additionally get a
+# soft home-address check. IC / parent_ic use the dedicated MyKad pipeline instead.
+BILL_DOC_TYPES = frozenset({'water_bill', 'electricity_bill'})
+SUPPORTING_NAME_CHECK_TYPES = frozenset({
+    'results_slip', 'str', 'salary_slip', 'epf', 'offer_letter',
+} | BILL_DOC_TYPES)
+
+
 class DocumentListCreateView(APIView):
     """GET list / POST record the caller's documents."""
     permission_classes = [SupabaseIsAuthenticated]
@@ -242,6 +251,22 @@ class DocumentListCreateView(APIView):
         if doc.doc_type in ('ic', 'parent_ic'):
             from .vision import run_vision_for_document
             run_vision_for_document(doc)
+        # Supporting docs: soft check that the student's OR a parent/guardian's
+        # name appears (and, for utility bills, the home address). Never blocks;
+        # surfaced to the student + the interviewer.
+        elif doc.doc_type in SUPPORTING_NAME_CHECK_TYPES:
+            from .vision import run_vision_match_for_document
+            profile = app.profile
+            names = [getattr(profile, 'name', '') or '']
+            names += [g.get('name', '') for g in (getattr(profile, 'guardians', None) or [])
+                      if isinstance(g, dict)]
+            run_vision_match_for_document(
+                doc,
+                names=[n for n in names if n],
+                postcode=getattr(profile, 'postal_code', '') or '',
+                city=getattr(profile, 'city', '') or '',
+                check_address=doc.doc_type in BILL_DOC_TYPES,
+            )
         return Response(ApplicantDocumentSerializer(doc).data, status=status.HTTP_201_CREATED)
 
 

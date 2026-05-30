@@ -817,6 +817,12 @@
       "remove": "Remove",
       "uploadError": "Upload failed. Please try again.",
       "deleteError": "Could not remove the document.",
+      "match": {
+        "good": "Looks good — we found the expected name on this document.",
+        "name-missing": "We couldn't find your or your parent/guardian's name on this document. Please check it's the right file — the team will also review it.",
+        "address-missing": "We found the name, but the home address on this bill doesn't match your profile. Please check — the team will also review it.",
+        "unreadable": "We couldn't read this document automatically — that's fine, the team will check it manually."
+      },
       "vision": {
         "good": "Looks good — your NRIC and name match the photo.",
         "name-soft": "Your NRIC matches but the name on your IC does not. Please update your <link>profile</link> to match your NRIC.",

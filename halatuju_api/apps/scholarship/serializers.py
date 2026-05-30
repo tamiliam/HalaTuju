@@ -211,10 +211,13 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'vision_nric', 'vision_name', 'vision_address',
             'vision_run_at', 'vision_error',
             'vision_nric_verdict', 'vision_name_verdict',
+            # Supporting-doc soft checks (name/address presence). Stored at upload.
+            'vision_name_match', 'vision_address_match',
         ]
         read_only_fields = [
             'vision_nric', 'vision_name', 'vision_address',
             'vision_run_at', 'vision_error',
+            'vision_name_match', 'vision_address_match',
         ]
 
     def get_download_url(self, obj):

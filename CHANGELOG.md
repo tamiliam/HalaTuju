@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **Soft OCR identity checks on supporting documents.** On upload, results slip / STR / salary slip / EPF / offer letter / utility bills now get a Google-Vision **full-text** read (generic, not MyKad-structured) and a tolerant **presence** check: does the student's *or* a parent/guardian's name appear? Utility bills also check whether the **home address** appears. Verdicts (`found` / `not_found` / `unreadable`) are **soft — never block** — and surfaced both to the **student** (a chip under each upload) and the **interviewer** (name/addr badges on the admin doc list). New `vision_name_match` / `vision_address_match` fields (**migration `scholarship/0025`** — apply migrate-first). New `extract_text` + `name_present` / `address_present` matchers (reuse the existing token canonicaliser). +7 backend tests. i18n en/ms/ta (parity 1518). Cost: +1 Vision call per uploaded supporting doc.
+
 - **`/application` Step-4 polish (batch).**
   - **Story:** "What is your daily life like?" and "What worries you most / what support would help?" are now **compulsory** (`*` + added to the story completeness gate). Home address still pre-fills from the profile when set.
   - **Funding:** the student's **decided study** (from /apply) now shows read-only between the info box and the programme-length question; programme-length label is now "How long is your programme? **(estimated, in years)**".
