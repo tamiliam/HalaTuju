@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.16.8] — Apply form: rename Support step to "Support I Need" (2026-05-30)
 
 - **Apply form — renamed the Support step.** "Support I'd Like From Us" → **Support I Need** (ms "Bantuan Yang Saya Perlukan"; ta "எனக்குத் தேவையான உதவி"). Shorter and first-person; drops the "us" so there's no pronoun-referent question at all. i18n-only, parity 1498.
 
