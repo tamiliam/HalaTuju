@@ -203,6 +203,14 @@ API (`views_admin.py`/`serializers_admin.py`, reusing `PartnerAdminMixin`) under
 (`src/app/admin/scholarship/page.tsx` + `[id]/page.tsx`, AI profile generate/edit/publish) and the
 admin scholarship client functions in `lib/admin-api.ts`. **Phase 1 build complete (all 6 sprints).**
 
+**Post-shortlist three-engine gap model (S13–v2.17.0):** `vision.py` (Google Cloud Vision OCR — IC NRIC/name/
+address extraction + soft full-text name/address presence checks on supporting docs + the shared
+`_call_gemini_json` seam + doc-assist field extraction, `vision_fields`), `anomaly_engine.py` (S16 — pure
+deterministic `detect_anomalies` → `{code, params}` flags, no LLM), and `gap_engine.py` (v2.17.0 Phase B — Gemini
+reads the typed narrative → 3–6 `{code, question, why}` interview gaps, `interview_gaps`). Profile draft/refine:
+`profile_engine.py`. Phase C added `InterviewSession` (findings keyed to anomaly/gap codes) + `PartnerAdmin.role`.
+All Gemini engines mock `_call_gemini_json`/`generate_*` in tests — no billable calls in CI.
+
 **Frontend (Sprint 2):** `halatuju-web/src/app/scholarship/apply/page.tsx` (single front-door
 application form), `src/lib/scholarship.ts` (pure form helpers, node-tested in
 `src/lib/__tests__/scholarship.test.ts`), `submit/getMyScholarshipApplications` in `lib/api.ts`,

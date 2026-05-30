@@ -1386,3 +1386,49 @@ so swapping "register interest" for real onboarding later is localised.
 
 **Revisit if:** Phase E (Sponsor model + Sponsorship M:N + `/sponsor` portal + auth)
 is scheduled — then the sponsor entry points at the real flow.
+
+## Doc-assist is automatic-on-upload + student-facing, not admin-on-demand — v2.17.0, 2026-05-31
+
+**Decision:** When a student uploads a weak-OCR supporting doc, Gemini extracts its fields automatically and the **student** immediately sees a soft, specific verdict so they can re-upload the right file. The interview gap-spotter, by contrast, is admin-on-demand.
+
+**Alternatives considered:** admin-on-demand extraction (a "re-extract" button on the admin doc list), mirroring the gap-spotter's trigger since both share the same Gemini plumbing.
+
+**Rationale:** The two features serve different users at different moments. Doc-assist's value is *self-correction at the moment of upload* — an admin-on-demand trigger would re-introduce the admin↔student round-trip the feature exists to eliminate. Gap-spotter's value is *admin interview prep*, which only the admin needs and only when interviewing.
+
+**Trade-offs:** Gemini runs on every supporting-doc upload (~$0.001 each) rather than only when an admin asks. Mitigated by guardrails (size/count/hourly throttle) + a cost knob (`DOC_ASSIST_ONLY_WHEN_UNCERTAIN`) that can restrict it to uploads the free deterministic check couldn't resolve.
+
+**Revisit if:** upload volume makes the per-upload cost material → flip `DOC_ASSIST_ONLY_WHEN_UNCERTAIN` on, or move extraction to a debounced/batched job.
+
+## Gemini extracts, deterministic matchers decide the verdict — v2.17.0, 2026-05-31
+
+**Decision:** In both Gemini features the model only *extracts* structured values; the soft verdict (name match / address match / wrong-doc; gap relevance) is computed by the existing deterministic matchers on the extracted values. The model never emits a verdict.
+
+**Alternatives considered:** let Gemini return the verdict directly (e.g. "this is the wrong document, confidence 0.8").
+
+**Rationale:** A model-emitted verdict can be a confident hallucination that wrongly blocks or misleads a student. Keeping the decision in the deterministic matchers means a misread degrades to a soft, correctable nudge, and the verdict logic stays unit-testable in isolation (no model in the assertion path).
+
+**Trade-offs:** The matchers can only decide on fields the prompt was told to extract; a novel signal needs a schema + matcher change, not just a prompt tweak.
+
+**Revisit if:** the deterministic matchers become the accuracy bottleneck (extraction is good but the match rules are too blunt) — then invest in the matchers, not in trusting the model's verdict.
+
+## Throttle the AI, never block the upload — v2.17.0, 2026-05-31
+
+**Decision:** Cost/abuse guardrails cap the *billable Gemini call*, not the upload. Per-file size (8 MB) and per-application count (40) return 400s, but the hourly AI throttle, when tripped, **skips Gemini** and lets the upload + free Vision/deterministic checks proceed (student sees "we'll review this manually").
+
+**Alternatives considered:** block/queue uploads once a rate limit is hit (simpler to reason about, protects cost harder).
+
+**Rationale:** A genuine student near a deadline must never be locked out by a cost-control mechanism. The expensive thing is the LLM call, so that is what gets throttled; the upload itself is cheap and must always succeed.
+
+**Trade-offs:** A burst of uploads in one hour gets the free checks but not the Gemini nudge until the window resets — acceptable, since the admin still sees the doc and the deterministic verdict.
+
+**Revisit if:** abuse (mass junk uploads) becomes real → add a soft per-application/day upload ceiling with a clear message, still never a hard lockout mid-application.
+
+## A gap carries its own dynamic text; only `code` is stable — v2.17.0, 2026-05-31
+
+**Decision:** Interview gaps are stored as `{code, question, why}` with the Gemini-written `question`/`why` shipped inline; only `code` (slugified, deduped) is stable. Anomalies, by contrast, are `{code, params}` whose human text is resolved from i18n on the frontend.
+
+**Alternatives considered:** i18n the gap text like anomalies; or store only a code and re-generate text on render.
+
+**Rationale:** A gap's question is dynamic (model-authored per applicant), so it can't be a fixed i18n string. But interview findings attach a verdict keyed by `code`, so the code must be stable across renders — hence slugify+dedupe+clamp in the engine. This lets the combined findings list merge anomalies (i18n label) and gaps (carried label) into one capture surface keyed uniformly by `code`, with no backend change to interview capture.
+
+**Revisit if:** gaps need to be translated for a non-admin audience → add a translation pass on the carried text, keyed by the stable `code`.
