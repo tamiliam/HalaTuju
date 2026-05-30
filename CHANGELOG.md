@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.3] — Admin: link chosen programme to its HalaTuju course page (2026-05-30)
+
+On the admin applicant detail, the chosen programme + each top-3 course choice are now **clickable links** to the public HalaTuju course page (opens in a new tab), so an admin can see the full course detail — institution, requirements, fees — when the course name alone isn't enough. Routes by qualification: SPM → `/course/<course_id>`, STPM → `/stpm/<course_id>` (the `course_id` is already on `chosen_programme` / `top_choices`). Frontend-only; `next build` clean.
+
 ## [2.16.2] — Admin applicant profile refinements (2026-05-30)
 
 Refines the complete-profile admin view (2.16.1) per review — reordered, de-cluttered, pathway-context-aware.
