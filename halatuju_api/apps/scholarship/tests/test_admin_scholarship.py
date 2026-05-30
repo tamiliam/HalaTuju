@@ -100,6 +100,25 @@ class TestAdminScholarship(TestCase):
         # all-A core (incl. History via the hist->history rename) → high merit
         self.assertGreater(body['merit_score'], 85)
 
+    def test_admin_detail_verified_email(self):
+        """The admin card shows only a VERIFIED email: a verified contact_email when
+        set, else the verified Google login email — never an unverified typed one."""
+        self._auth(ADMIN)
+        # 1) A verified contact email is shown directly.
+        StudentProfile.objects.filter(pk=self.profile.pk).update(
+            contact_email='me@verified.com', contact_email_verified=True)
+        body = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/').json()
+        self.assertEqual(body['verified_email'], 'me@verified.com')
+        # 2) An unverified typed contact email is NOT shown — it falls back to the
+        #    verified login email looked up from Supabase auth.users.
+        StudentProfile.objects.filter(pk=self.profile.pk).update(
+            contact_email='typed@unverified.com', contact_email_verified=False)
+        with patch('apps.courses.views_admin._fetch_auth_data',
+                   return_value={'stud-prof': {'email': 'login@gmail.com', 'last_sign_in': ''}}):
+            body = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/').json()
+        self.assertEqual(body['verified_email'], 'login@gmail.com')
+        self.assertNotEqual(body['verified_email'], 'typed@unverified.com')
+
     def test_admin_detail_complete_profile_fields(self):
         """Complete-profile view: every /apply field the student entered is in the
         admin detail response (contact/family/academic/plans/support/story)."""

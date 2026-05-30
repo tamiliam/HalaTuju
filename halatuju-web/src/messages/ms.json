@@ -474,7 +474,7 @@
         "signLabel": "Taipkan nama penuh anda (seperti dalam KP) untuk menandatangani",
         "signPlaceholder": "Nama penuh anda",
         "signHelp": "Ini dikira sebagai tandatangan anda.",
-        "mismatch": "Ini tidak sepadan dengan nama yang anda masukkan dalam \"Tentang Saya\". Sila pastikan kedua-duanya betul."
+        "mismatch": "Ini tidak sepadan dengan nama penuh anda dalam \"Tentang Saya\". Kedua-duanya mesti nama penuh anda sama seperti dalam IC sebelum anda boleh hantar."
       },
       "submit": "Hantar permohonan",
       "submitting": "Menghantar…",
@@ -500,7 +500,8 @@
         "phone": "Sila masukkan nombor telefon yang sah, cth. 012-345 6789.",
         "parentPhone": "Sila masukkan nombor telefon yang sah untuk ibu bapa atau penjaga anda, atau biarkan kosong.",
         "pathwayCertainty": "Beritahu kami sama ada anda sudah putuskan laluan.",
-        "chosenPathway": "Sila pilih laluan yang telah anda putuskan."
+        "chosenPathway": "Sila pilih laluan yang telah anda putuskan.",
+        "declarationMismatch": "Nama dalam perakuan anda mesti sepadan dengan nama penuh anda dalam \"Tentang Saya\". Sila pastikan kedua-duanya nama penuh anda sama seperti dalam IC."
       },
       "gate": {
         "readFreely": "Baca semuanya dengan bebas — anda hanya perlu log masuk apabila bersedia untuk memohon.",

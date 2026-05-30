@@ -293,6 +293,14 @@ describe('applyFormError', () => {
   it('requires consent', () => {
     expect(applyFormError(baseForm({ consentToContact: false }))).toBe('consent')
   })
+  it('hard-blocks when the declaration name does not match the About Me name', () => {
+    // Name entered twice and they differ → blocked (the Sharmila 1204 vs real-name case).
+    expect(applyFormError(baseForm({ name: 'Sharmila 1204', declarationName: 'Sharmila A/P Sanggar' }))).toBe('declarationMismatch')
+    // Forgiving on case/whitespace — those never trap a genuine student.
+    expect(applyFormError(baseForm({ name: 'Priya  Devi', declarationName: ' priya devi ' }))).toBeNull()
+    // Checked after the declaration-present gate (an empty signature is 'declaration', not a mismatch).
+    expect(applyFormError(baseForm({ name: 'Priya Devi', declarationName: '' }))).toBe('declaration')
+  })
   it('surfaces the earliest-tab problem first', () => {
     // both name and consent are wrong → About Me wins (earlier tab)
     expect(applyFormError(baseForm({ name: '', consentToContact: false }))).toBe('name')

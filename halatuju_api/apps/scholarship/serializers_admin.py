@@ -22,6 +22,33 @@ def _full_name(application):
     return getattr(application.profile, 'name', '') if application.profile else ''
 
 
+def _verified_email(application):
+    """The applicant's VERIFIED email, for admin display. A typed contact email
+    is only trusted once the student clicks "Verify" (contact_email_verified);
+    until then we show the Google/Supabase login email, which is always verified.
+    Returns '' if neither is available (admin then sees a dash) — we never show an
+    unverified address here. NOTE: `notify_email` is deliberately NOT a fallback —
+    it captures the comms email at submit and CAN be a custom unverified one."""
+    p = getattr(application, 'profile', None)
+    if p is None:
+        return ''
+    if p.contact_email and p.contact_email_verified:
+        return p.contact_email
+    # Fall back to the verified login email from Supabase auth.users. The admin is
+    # the caller here (not the student), so the login email isn't on the JWT — we
+    # look it up by the profile's supabase_user_id. One query, detail view only.
+    if getattr(p, 'supabase_user_id', None):
+        try:
+            from apps.courses.views_admin import _fetch_auth_data
+            auth = _fetch_auth_data([p.supabase_user_id]).get(p.supabase_user_id, {})
+            login_email = (auth.get('email') or '').strip()
+            if login_email:
+                return login_email
+        except Exception:  # pragma: no cover - auth.users absent in unit-test DB
+            pass
+    return ''
+
+
 class InterviewSessionSerializer(serializers.ModelSerializer):
     interviewer_name = serializers.CharField(source='interviewer.name', read_only=True, default=None)
 
@@ -105,6 +132,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     spm_prereq_grades = serializers.JSONField(source='profile.spm_prereq_grades', read_only=True)
     spm_a_count = serializers.SerializerMethodField()
     merit_score = serializers.SerializerMethodField()
+    verified_email = serializers.SerializerMethodField()
     funding_need = serializers.SerializerMethodField()
     sponsor_profile = serializers.SerializerMethodField()
     # Pre-interview deterministic flag list (S16 Phase A). Each entry is
@@ -126,7 +154,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'receives_str', 'receives_jkm', 'intended_pathway', 'intends_tertiary_2026',
             'aspirations', 'plans', 'fears', 'justification',
             'address', 'postal_code', 'city', 'preferred_state',
-            'contact_phone', 'contact_email', 'notify_email', 'preferred_call_language', 'referral_source', 'guardians',
+            'contact_phone', 'contact_email', 'notify_email', 'verified_email', 'preferred_call_language', 'referral_source', 'guardians',
             # Academic detail (FE renders SPM vs STPM by qualification)
             'muet_band', 'coq_score', 'grades', 'stpm_grades', 'spm_prereq_grades',
             # "Your story" narrative (S2) + support + declaration
@@ -183,6 +211,10 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         coq = p.coq_score if p.coq_score is not None else 0
         result = calculate_merit_score(s1, s2, s3, coq)
         return round(result['final_merit'], 1)
+
+    def get_verified_email(self, obj):
+        """The verified email to display on the admin card (see _verified_email)."""
+        return _verified_email(obj)
 
     def get_funding_need(self, obj):
         try:

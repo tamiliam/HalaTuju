@@ -474,7 +474,7 @@
         "signLabel": "Type your full name (as in your IC) to sign",
         "signPlaceholder": "Your full name",
         "signHelp": "This counts as your signature.",
-        "mismatch": "This doesn't match the name you entered in \"About Me\". Please check both are correct."
+        "mismatch": "This doesn't match your full name in \"About Me\". Both must be your full name exactly as in your IC before you can submit."
       },
       "submit": "Submit application",
       "submitting": "Submitting…",
@@ -500,7 +500,8 @@
         "phone": "Please enter a valid phone number, e.g. 012-345 6789.",
         "parentPhone": "Please enter a valid phone number for your parent or guardian, or leave it blank.",
         "pathwayCertainty": "Let us know whether you've decided on a pathway.",
-        "chosenPathway": "Please choose the pathway you've decided on."
+        "chosenPathway": "Please choose the pathway you've decided on.",
+        "declarationMismatch": "The name in your declaration must match your full name in \"About Me\". Please make sure both are your full name exactly as in your IC."
       },
       "gate": {
         "readFreely": "Read everything freely — you only need to sign in when you're ready to apply.",

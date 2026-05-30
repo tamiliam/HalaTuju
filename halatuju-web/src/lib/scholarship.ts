@@ -490,10 +490,13 @@ export function applyFormError(form: ApplyFormState, examType?: Qualification): 
   // A decided STPM student picks a degree directly (no SPM pathway/track step).
   if (form.pathwayCertainty === 'sure' && examType === 'stpm' && !form.chosenProgramme) return 'chosenProgramme'
   // The Uncertain branch is intentionally non-blocking — leanings/reasons/note are optional.
-  // My Support — consent + the signed declaration are both required to apply. (The
-  // name-match is only a soft nudge — see declarationNameMismatch — so it never blocks.)
+  // My Support — consent + the signed declaration are both required to apply.
   if (!form.consentToContact) return 'consent'
   if (!form.declarationName.trim()) return 'declaration'
+  // The full name is entered twice (About Me + declaration signature); they MUST
+  // match before submitting. This forces a real legal name into About Me — which
+  // otherwise pre-fills with the Google handle (e.g. 'Sharmila 1204'). Hard block.
+  if (declarationNameMismatch(form)) return 'declarationMismatch'
   return null
 }
 
@@ -504,9 +507,10 @@ function normaliseName(s: string): string {
 
 /**
  * True when a signature has been typed but doesn't loosely match the About Me name.
- * Soft signal only — it surfaces a gentle nudge, it never blocks submission. We can't
- * verify against the official IC name (we only hold what the student typed in About Me),
- * so a mismatch is worth flagging but not worth trapping a genuine student over.
+ * This is a HARD block on submit (see applyFormError → 'declarationMismatch'): the
+ * student enters their full name twice and both must agree. Comparison is forgiving
+ * (trim + collapse whitespace + lowercase) so casing/spacing never traps anyone, but
+ * a genuine name difference must be reconciled before applying.
  */
 export function declarationNameMismatch(form: ApplyFormState): boolean {
   const signature = normaliseName(form.declarationName)

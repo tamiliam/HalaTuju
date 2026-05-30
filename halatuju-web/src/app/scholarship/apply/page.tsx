@@ -66,6 +66,9 @@ const ERROR_TAB: Record<string, TabKey> = {
   pathwayCertainty: 'plans', chosenPathway: 'plans', chosenProgramme: 'plans',
   preUTrack: 'plans', preUInstitution: 'plans',
   consent: 'support', declaration: 'support',
+  // A name mismatch is fixed on the About Me name (the usual culprit — a pre-filled
+  // Google handle), so land the student there; an inline hint shows in both places.
+  declarationMismatch: 'personal',
 }
 
 function TabIcon({ tab, active }: { tab: TabKey; active: boolean }) {
@@ -384,6 +387,11 @@ export default function ScholarshipApplyPage() {
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.name')}>{t('scholarship.apply.field.name')}</FieldLabel>
           <input className="input" value={form.name} onChange={(e) => update('name', e.target.value)} />
+          {/* Mismatch with the declaration signature blocks submit — flag it here too,
+              since the About Me name (often a pre-filled handle) is the usual fix. */}
+          {declarationNameMismatch(form) && (
+            <p className="mt-1 text-sm text-red-600">{t('scholarship.apply.declaration.mismatch')}</p>
+          )}
         </div>
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.school')}>{t('scholarship.apply.field.school')}</FieldLabel>
@@ -789,8 +797,8 @@ export default function ScholarshipApplyPage() {
         </div>
 
         {/* Truthfulness declaration + typed-name signature — the final, weightiest step
-            before submit. Typing your IC name + submitting IS the agreement. The name
-            match is a soft nudge only (declarationNameMismatch), never a hard block. */}
+            before submit. Typing your IC name + submitting IS the agreement. The signature
+            must match the About Me name (declarationNameMismatch) — a hard block on submit. */}
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
           <h3 className="mb-1 font-semibold text-gray-900">{t('scholarship.apply.declaration.title')}</h3>
           <p className="text-sm text-gray-700">{t('scholarship.apply.declaration.body')}</p>
@@ -804,7 +812,7 @@ export default function ScholarshipApplyPage() {
               onChange={(e) => update('declarationName', e.target.value)}
             />
             {declarationNameMismatch(form) && (
-              <p className="mt-1 text-sm text-amber-700">{t('scholarship.apply.declaration.mismatch')}</p>
+              <p className="mt-1 text-sm text-red-600">{t('scholarship.apply.declaration.mismatch')}</p>
             )}
             <p className="mt-1 text-xs text-gray-500">{t('scholarship.apply.declaration.signHelp')}</p>
           </div>
