@@ -1,5 +1,6 @@
 """B40 Assistance Programme API — application intake (Phase 1, Sprint 1)."""
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -17,7 +18,9 @@ from .serializers import (
     DocumentCreateSerializer,
     RefereeSerializer,
     SignUploadSerializer,
+    SponsorInterestSerializer,
 )
+from .emails import send_sponsor_interest_admin_email
 from .services import (
     CONSENT_VERSION,
     IncompleteProfileError,
@@ -396,3 +399,20 @@ class ConsentView(APIView):
             ip=request.META.get('REMOTE_ADDR'),
         )
         return Response(ConsentSerializer(consent).data, status=status.HTTP_201_CREATED)
+
+
+class SponsorInterestView(APIView):
+    """POST /api/v1/sponsor-interest/ — public 'register interest in sponsoring'
+    lead capture (no auth; sponsors have no self-serve account yet). Stores the
+    lead + notifies the admin. Browse-first: this is an open endpoint."""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = SponsorInterestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        interest = serializer.save()
+        send_sponsor_interest_admin_email(
+            name=interest.name, email=interest.email,
+            organisation=interest.organisation, message=interest.message,
+        )
+        return Response(SponsorInterestSerializer(interest).data, status=status.HTTP_201_CREATED)

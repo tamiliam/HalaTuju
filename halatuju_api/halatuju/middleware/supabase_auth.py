@@ -162,6 +162,7 @@ class SupabaseIsAuthenticated(BasePermission):
 NRIC_GATE_EXACT = [
     '/api/v1/profile/',           # GET to check NRIC status
     '/api/v1/profile/claim-nric/',# POST to claim NRIC
+    '/api/v1/sponsor-interest/',  # public sponsor-interest lead capture (no NRIC)
 ]
 NRIC_GATE_PREFIX = [
     '/api/v1/admin/',             # All admin endpoints (prefix match)
