@@ -527,9 +527,6 @@ export default function ScholarshipNextSteps({
             student-directed info notice (for minors) + the consent body
             itself, so a stacked "Allow us to share…" line was redundant. */}
         <ScholarshipConsent token={token} locale={locale} />
-        {/* Tech-support fallback — always shown on the Consent step so a student
-            stuck by a technical issue has a human to reach. */}
-        <InfoBox kind="info">{t('scholarship.nextSteps.techSupport')}</InfoBox>
       </div>
     ),
   }
@@ -625,6 +622,11 @@ export default function ScholarshipNextSteps({
                 </button>
               )
             })}
+            {/* TEMP (testing only — remove when testing is done): tech-support help
+                placed in the menu so it's reachable on every step during testing. */}
+            <div className="pt-3">
+              <InfoBox kind="info">{t('scholarship.nextSteps.techSupport')}</InfoBox>
+            </div>
           </nav>
         </aside>
 
@@ -648,6 +650,12 @@ export default function ScholarshipNextSteps({
             {sections[tab]}
           </div>
         </div>
+      </div>
+
+      {/* TEMP (testing only — remove when done): tech-support on mobile, where the
+          left menu is hidden. */}
+      <div className="lg:hidden mt-4">
+        <InfoBox kind="info">{t('scholarship.nextSteps.techSupport')}</InfoBox>
       </div>
 
       {/* Bottom tab bar (mobile only) */}
