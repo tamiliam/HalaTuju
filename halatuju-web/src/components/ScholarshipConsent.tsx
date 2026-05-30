@@ -52,9 +52,11 @@ const nameSetsMatch = (a: string, b: string): boolean => {
 export default function ScholarshipConsent({
   token,
   locale,
+  onChange,
 }: {
   token: string | null
   locale: string
+  onChange?: () => void
 }) {
   const { t } = useT()
   const [status, setStatus] = useState<ConsentStatus | null>(null)
@@ -133,6 +135,7 @@ export default function ScholarshipConsent({
         guardian_nric: isMinor ? guardianNric : '',
       }, { token })
       setStatus(await getConsentStatus({ token }))
+      onChange?.()   // refresh the parent's status/completeness (consent_done flips)
     } catch {
       setError(t('scholarship.consent.error'))
       // Re-fetch so a backend "not ready" rejection refreshes the blocker checklist

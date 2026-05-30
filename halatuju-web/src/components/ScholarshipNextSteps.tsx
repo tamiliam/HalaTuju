@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
-import { updateScholarshipDetails, confirmScholarshipApplication, type ScholarshipApplication } from '@/lib/api'
+import { updateScholarshipDetails, confirmScholarshipApplication, getScholarshipApplication, type ScholarshipApplication } from '@/lib/api'
 import {
   applicationToDetailsForm,
   buildDetailsPayload,
@@ -105,6 +105,14 @@ export default function ScholarshipNextSteps({
 
   const update = <K extends keyof DetailsFormState>(key: K, value: DetailsFormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
+
+  // Refresh status + completeness after a document/consent change (which can flip
+  // status, e.g. deleting a compulsory doc un-confirms a profile_complete app).
+  // Only updates `app` — NOT `form` — so in-progress story/funding edits are kept.
+  const refreshApp = async () => {
+    if (!token) return
+    try { setApp(await getScholarshipApplication(app.id, { token })) } catch { /* ignore */ }
+  }
 
   const [confirming, setConfirming] = useState(false)
   const [confirmError, setConfirmError] = useState<string | null>(null)
@@ -531,7 +539,7 @@ export default function ScholarshipNextSteps({
     documents: (
       <div className="space-y-3">
         <InfoBox kind="info">{t('scholarship.nextSteps.step4Body')}</InfoBox>
-        <ScholarshipDocuments token={token} />
+        <ScholarshipDocuments token={token} onChange={refreshApp} />
       </div>
     ),
 
@@ -540,7 +548,7 @@ export default function ScholarshipNextSteps({
         {/* step6Body intro removed — the Consent component carries its own
             student-directed info notice (for minors) + the consent body
             itself, so a stacked "Allow us to share…" line was redundant. */}
-        <ScholarshipConsent token={token} locale={locale} />
+        <ScholarshipConsent token={token} locale={locale} onChange={refreshApp} />
       </div>
     ),
   }

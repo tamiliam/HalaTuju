@@ -334,7 +334,7 @@ function IncomeProofCard({
 
 // ── Main component ────────────────────────────────────────────────────────
 
-export default function ScholarshipDocuments({ token }: { token: string | null }) {
+export default function ScholarshipDocuments({ token, onChange }: { token: string | null; onChange?: () => void }) {
   const { t } = useT()
   const [docs, setDocs] = useState<ApplicantDocument[]>([])
   const [busyType, setBusyType] = useState<string | null>(null)
@@ -371,6 +371,7 @@ export default function ScholarshipDocuments({ token }: { token: string | null }
         { token },
       )
       await refresh()
+      onChange?.()
     } catch {
       setError(t('scholarship.docs.uploadError'))
     } finally {
@@ -383,6 +384,7 @@ export default function ScholarshipDocuments({ token }: { token: string | null }
     try {
       await deleteDocument(id, { token })
       await refresh()
+      onChange?.()
     } catch {
       setError(t('scholarship.docs.deleteError'))
     }

@@ -1021,6 +1021,15 @@ export async function getMyScholarshipApplications(
   return apiRequest('/api/v1/scholarship/applications/', options)
 }
 
+/** Fetch a single application (status + completeness + fields). Used to refresh
+ *  page state after a document/consent change without losing in-progress edits. */
+export async function getScholarshipApplication(
+  id: number,
+  options?: ApiOptions
+): Promise<ScholarshipApplication> {
+  return apiRequest(`/api/v1/scholarship/applications/${id}/`, { ...options })
+}
+
 export async function updateScholarshipDetails(
   id: number,
   payload: Record<string, unknown>,
