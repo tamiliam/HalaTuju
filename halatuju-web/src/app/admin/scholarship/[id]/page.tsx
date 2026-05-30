@@ -392,12 +392,12 @@ export default function AdminScholarshipDetailPage() {
                 )}
               </Card>
 
-              {/* Support required — help + consent (the appeal text is its own box below) */}
+              {/* Support required — help only. Consent-to-contact is omitted: it's a
+                  hard requirement to submit, so it's always "Yes" and adds no signal. */}
               <Card title={t('admin.scholarship.sec.support')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                   <Field label={t('admin.scholarship.helpUniversity')} value={helpLabel(app.help_university)} />
                   <Field label={t('admin.scholarship.helpScholarship')} value={helpLabel(app.help_scholarship)} />
-                  <Field label={t('admin.scholarship.consentToContact')} value={yn(app.consent_to_contact)} />
                 </dl>
               </Card>
               </div>
