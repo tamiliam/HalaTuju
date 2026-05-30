@@ -267,6 +267,29 @@ class AdminGenerateProfileView(_AdminBase):
         return Response(SponsorProfileSerializer(sp).data)
 
 
+class AdminSuggestGapsView(_AdminBase):
+    """Phase B: admin-on-demand Gemini interview gap-spotter. One Gemini call →
+    3-6 suggested interview questions stored on the application, shown beside the
+    deterministic pre-interview flags. Reviewer-gated (billable)."""
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        from .gap_engine import generate_interview_gaps
+        result = generate_interview_gaps(app, language=request.data.get('language'))
+        if 'error' in result:
+            return Response({'error': result['error']}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        app.interview_gaps = result['gaps']
+        app.interview_gaps_run_at = timezone.now()
+        app.save(update_fields=['interview_gaps', 'interview_gaps_run_at'])
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
 class AdminProfileEditView(_AdminBase):
     def put(self, request, pk):
         admin = self.get_admin(request)

@@ -9,6 +9,7 @@ import { formatPhone, formatAddress } from '@/lib/scholarship'
 import {
   getScholarshipApplication,
   generateSponsorProfile,
+  suggestInterviewGaps,
   saveSponsorProfile,
   publishSponsorProfile,
   verifyAcceptApplication,
@@ -127,6 +128,14 @@ export default function AdminScholarshipDetailPage() {
       const p = await generateSponsorProfile(id, genLang, { token })
       setProfile(p); setMarkdown(p.current_markdown || p.draft_markdown)
     } catch { setError(t('admin.scholarship.genError')) } finally { setBusy('') }
+  }
+
+  const doSuggestGaps = async () => {
+    if (!token) return
+    setBusy('gaps'); setError('')
+    try {
+      setApp(await suggestInterviewGaps(id, undefined, { token }))
+    } catch { setError(t('admin.scholarship.gaps.error')) } finally { setBusy('') }
   }
 
   const doSave = async () => {
@@ -556,13 +565,22 @@ export default function AdminScholarshipDetailPage() {
           data inconsistency worth asking about during the interview. Empty
           state when nothing flags — the engine is honest about silence. */}
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h2 className="font-semibold">{t('admin.scholarship.anomaly.title')}</h2>
-          {app.anomalies && app.anomalies.length > 0 && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-              {app.anomalies.length} {app.anomalies.length === 1 ? t('admin.scholarship.anomaly.flagOne') : t('admin.scholarship.anomaly.flagMany')}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {app.anomalies && app.anomalies.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                {app.anomalies.length} {app.anomalies.length === 1 ? t('admin.scholarship.anomaly.flagOne') : t('admin.scholarship.anomaly.flagMany')}
+              </span>
+            )}
+            {/* Phase B: admin-on-demand Gemini gap-spotter (billable — one call). */}
+            {canWrite && (
+              <button onClick={doSuggestGaps} disabled={!!busy}
+                className="px-2.5 py-1 rounded-lg text-xs bg-indigo-600 text-white disabled:opacity-50">
+                {busy === 'gaps' ? t('admin.scholarship.gaps.running') : t('admin.scholarship.gaps.button')}
+              </button>
+            )}
+          </div>
         </div>
         <p className="text-xs text-gray-500">{t('admin.scholarship.anomaly.intro')}</p>
         {!app.anomalies || app.anomalies.length === 0 ? (
@@ -586,6 +604,28 @@ export default function AdminScholarshipDetailPage() {
               </li>
             ))}
           </ul>
+        )}
+        {/* Phase B: Gemini-suggested interview gaps — carry their own dynamic
+            text (not i18n by code, unlike the deterministic flags above). */}
+        {app.interview_gaps && app.interview_gaps.length > 0 && (
+          <div className="space-y-2 border-t border-gray-100 pt-3">
+            <p className="text-xs font-medium text-gray-500">{t('admin.scholarship.gaps.title')}</p>
+            <ul className="space-y-2">
+              {app.interview_gaps.map((g) => (
+                <li key={g.code} className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
+                  <div className="flex items-start gap-2">
+                    <span className="shrink-0 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white" aria-hidden>
+                      {t('admin.scholarship.gaps.aiBadge')}
+                    </span>
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-800">{g.question}</p>
+                      {g.why && <p className="text-xs text-gray-500">{t('admin.scholarship.gaps.whyLabel')}: {g.why}</p>}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
 
@@ -614,39 +654,54 @@ export default function AdminScholarshipDetailPage() {
           )}
         </div>
         <p className="text-xs text-gray-500">{t('admin.scholarship.interview.intro')}</p>
-        {app.anomalies.length === 0 ? (
-          <p className="text-sm text-gray-400 italic">{t('admin.scholarship.interview.noFlags')}</p>
-        ) : (
-          <ul className="space-y-3">
-            {app.anomalies.map((a) => {
-              const f = findings[a.code] ?? { verdict: '', rationale: '' }
-              const setF = (patch: Partial<{ verdict: string; rationale: string }>) =>
-                setFindings((prev) => ({ ...prev, [a.code]: { ...f, ...patch } }))
-              return (
-                <li key={a.code} className="border rounded-lg p-3">
-                  <p className="text-sm text-gray-800">
-                    {t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {VERDICTS.map((v) => (
-                      <label key={v} className={`cursor-pointer rounded-full border px-3 py-1 text-xs ${f.verdict === v ? 'border-primary-600 bg-primary-600 text-white' : 'border-gray-300 text-gray-700'}`}>
-                        <input type="radio" name={`v-${a.code}`} className="sr-only" disabled={!canWrite}
-                          checked={f.verdict === v} onChange={() => setF({ verdict: v })} />
-                        {t(`admin.scholarship.interview.verdict.${v}`)}
-                      </label>
-                    ))}
-                  </div>
-                  <input
-                    value={f.rationale} maxLength={140} disabled={!canWrite}
-                    onChange={(e) => setF({ rationale: e.target.value })}
-                    placeholder={t('admin.scholarship.interview.rationalePlaceholder')}
-                    className="mt-2 w-full border rounded-lg px-3 py-1.5 text-sm"
-                  />
-                </li>
-              )
-            })}
-          </ul>
-        )}
+        {(() => {
+          // Capture verdicts on BOTH the deterministic flags (label = i18n fact)
+          // and the Gemini gaps (label = the gap's own question). Same findings
+          // dict, keyed by code — the backend stores any key.
+          const items = [
+            ...app.anomalies.map((a) => ({
+              code: a.code,
+              label: t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)]))),
+              ai: false,
+            })),
+            ...(app.interview_gaps || []).map((g) => ({ code: g.code, label: g.question, ai: true })),
+          ]
+          if (items.length === 0) {
+            return <p className="text-sm text-gray-400 italic">{t('admin.scholarship.interview.noFlags')}</p>
+          }
+          return (
+            <ul className="space-y-3">
+              {items.map((it) => {
+                const f = findings[it.code] ?? { verdict: '', rationale: '' }
+                const setF = (patch: Partial<{ verdict: string; rationale: string }>) =>
+                  setFindings((prev) => ({ ...prev, [it.code]: { ...f, ...patch } }))
+                return (
+                  <li key={it.code} className="border rounded-lg p-3">
+                    <p className="text-sm text-gray-800">
+                      {it.ai && <span className="mr-1 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
+                      {it.label}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {VERDICTS.map((v) => (
+                        <label key={v} className={`cursor-pointer rounded-full border px-3 py-1 text-xs ${f.verdict === v ? 'border-primary-600 bg-primary-600 text-white' : 'border-gray-300 text-gray-700'}`}>
+                          <input type="radio" name={`v-${it.code}`} className="sr-only" disabled={!canWrite}
+                            checked={f.verdict === v} onChange={() => setF({ verdict: v })} />
+                          {t(`admin.scholarship.interview.verdict.${v}`)}
+                        </label>
+                      ))}
+                    </div>
+                    <input
+                      value={f.rationale} maxLength={140} disabled={!canWrite}
+                      onChange={(e) => setF({ rationale: e.target.value })}
+                      placeholder={t('admin.scholarship.interview.rationalePlaceholder')}
+                      className="mt-2 w-full border rounded-lg px-3 py-1.5 text-sm"
+                    />
+                  </li>
+                )
+              })}
+            </ul>
+          )
+        })()}
         {/* Rubric */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {RUBRIC_DIMS.map((dim) => (

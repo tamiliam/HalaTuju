@@ -1524,6 +1524,14 @@
       "extractFields": {
         "title": "Diekstrak"
       },
+      "gaps": {
+        "button": "Cadang soalan temu duga (AI)",
+        "running": "Menjana…",
+        "error": "Tidak dapat menjana cadangan. Sila cuba lagi.",
+        "title": "Cadangan AI",
+        "aiBadge": "AI",
+        "whyLabel": "Mengapa"
+      },
       "anomaly": {
         "title": "Penanda pra-temubual",
         "intro": "Percanggahan data yang dikesan enjin. Gunakannya untuk mengarah temubual — penanda adalah soalan yang patut ditanya, bukan keputusan.",

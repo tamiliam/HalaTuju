@@ -376,6 +376,10 @@ export interface AdminScholarshipDetail {
   // S16 Phase A: deterministic pre-interview flag list. {code, params}; the
   // frontend resolves human copy from its i18n bundle (no server-side copy).
   anomalies: AdminAnomaly[]
+  // Phase B: Gemini-suggested interview gaps. Carry their OWN dynamic text
+  // (unlike anomalies which i18n by code). Empty until the admin generates them.
+  interview_gaps: Array<{ code: string; question: string; why: string }>
+  interview_gaps_run_at: string | null
   documents: AdminApplicantDocument[]
   referees: AdminReferee[]
   consents: Array<{ id: number; consent_type: string; version: string; granted_by: string; guardian_name: string; is_active: boolean; granted_at: string }>
@@ -463,6 +467,14 @@ export async function getScholarshipApplication(id: number, options?: ApiOptions
 export async function generateSponsorProfile(id: number, language?: string, options?: ApiOptions) {
   return adminMutate<AdminSponsorProfile>(
     `/api/v1/admin/scholarship/applications/${id}/generate-profile/`, 'POST',
+    language ? { language } : {}, options
+  )
+}
+
+/** Phase B: admin-on-demand Gemini interview gap-spotter. Returns the refreshed detail. */
+export async function suggestInterviewGaps(id: number, language?: string, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/suggest-gaps/`, 'POST',
     language ? { language } : {}, options
   )
 }

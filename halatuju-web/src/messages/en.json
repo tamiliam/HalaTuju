@@ -1524,6 +1524,14 @@
       "extractFields": {
         "title": "Extracted"
       },
+      "gaps": {
+        "button": "Suggest interview gaps (AI)",
+        "running": "Generating…",
+        "error": "Couldn't generate gaps. Please try again.",
+        "title": "AI-suggested gaps",
+        "aiBadge": "AI",
+        "whyLabel": "Why"
+      },
       "anomaly": {
         "title": "Pre-interview flags",
         "intro": "Data inconsistencies the engine spotted. Use them to direct the interview — a flag is a question worth asking, not a verdict.",

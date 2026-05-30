@@ -227,6 +227,13 @@ class ScholarshipApplication(models.Model):
     # read-only on the student's Step 4; does not change status.
     info_request_note = models.TextField(blank=True, default='')
     info_requested_at = models.DateTimeField(null=True, blank=True)
+    # Phase B: Gemini-suggested interview questions ("gaps") from the typed
+    # narrative — admin-on-demand only (never auto). Each item carries its own
+    # dynamic text: {code, question, why}. Stored (not recomputed) + shown beside
+    # the deterministic anomaly flags; captured into InterviewSession.findings by
+    # code. List, additive, 0-row-safe.
+    interview_gaps = models.JSONField(default=list, blank=True)
+    interview_gaps_run_at = models.DateTimeField(null=True, blank=True)
     decision_email_sent_at = models.DateTimeField(
         null=True, blank=True,
         help_text="When the pass/fail decision email was sent",

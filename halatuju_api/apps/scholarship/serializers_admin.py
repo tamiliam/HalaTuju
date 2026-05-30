@@ -140,6 +140,10 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     anomalies = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
     interview_session = serializers.SerializerMethodField()
+    # Phase B: Gemini interview gaps — a PLAIN read-only field (the GET never calls
+    # Gemini; gaps are produced + stored by the admin-on-demand suggest-gaps endpoint).
+    interview_gaps = serializers.JSONField(read_only=True)
+    interview_gaps_run_at = serializers.DateTimeField(read_only=True)
     assigned_to_id = serializers.IntegerField(source='assigned_to.id', read_only=True, default=None)
     assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True, default=None)
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
@@ -164,6 +168,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'status', 'bucket', 'shortlist_reason', 'submitted_at',
             # Phase C handoff + interview funnel
             'profile_completed_at', 'completeness', 'interview_session',
+            'interview_gaps', 'interview_gaps_run_at',
             'assigned_to_id', 'assigned_to_name', 'info_request_note', 'info_requested_at',
             # S11a verify-&-accept + mentoring
             'mentoring_candidate', 'verified_at', 'verified_by', 'verify_checklist',

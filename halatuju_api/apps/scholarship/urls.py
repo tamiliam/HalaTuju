@@ -27,6 +27,7 @@ from .views_admin import (
     AdminRequestInfoView,
     AdminRunVisionView,
     AdminSponsorInterestView,
+    AdminSuggestGapsView,
     AdminVerifyAcceptView,
 )
 
@@ -56,6 +57,7 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/referees/<int:ref_id>/', AdminRefereeDetailView.as_view()),
     path('admin/scholarship/applications/<int:pk>/documents/<int:doc_id>/re-run-vision/', AdminRunVisionView.as_view()),
     path('admin/scholarship/applications/<int:pk>/generate-profile/', AdminGenerateProfileView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/suggest-gaps/', AdminSuggestGapsView.as_view()),
     path('admin/scholarship/applications/<int:pk>/profile/', AdminProfileEditView.as_view()),
     path('admin/scholarship/applications/<int:pk>/publish/', AdminPublishProfileView.as_view()),
     # Phase C: interview capture + request-more-docs
