@@ -7,8 +7,26 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from .emails import send_acknowledgement_email, send_pass_email, send_fail_email
+from .emails import (
+    send_acknowledgement_email, send_pass_email, send_fail_email,
+    send_profile_complete_admin_email,
+)
 from .models import Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort
+
+
+class IncompleteProfileError(Exception):
+    """Raised when a student tries to confirm a Step-4 profile that isn't complete.
+    Carries the completeness dict so the view can tell the FE what's missing."""
+    def __init__(self, completeness):
+        self.completeness = completeness
+        super().__init__('Profile is not complete.')
+
+
+# Post-shortlist states in which the student can still edit Step 4 (add documents,
+# revise narrative). Completion is NOT a freeze — the student keeps these abilities
+# after confirming, and while an interview is in progress, so an admin can ask for
+# more documentation. Excludes terminal states (accepted/rejected/withdrawn).
+POST_SHORTLIST_EDITABLE = ('shortlisted', 'profile_complete', 'interviewing', 'interviewed')
 # count_spm_a_grades + the A-grade set now live with the shortlisting engine
 # (the single place that scores academics). Re-exported here for callers that
 # still import it from services.
@@ -252,6 +270,48 @@ def release_decision(application):
         application.decision_email_sent_at = now
         application.save(update_fields=['decision_email_sent_at'])
     return True
+
+
+def confirm_profile(application):
+    """Phase C: the student explicitly confirms a complete Step-4 profile.
+
+    Flips status shortlisted → profile_complete, stamps ``profile_completed_at``,
+    and notifies the admin. Idempotent: a second call on an already-confirmed (or
+    further-along) application is a no-op returning False. Raises
+    ``IncompleteProfileError`` (carrying the completeness dict) if the profile
+    isn't complete. Completion is NOT a freeze — the student keeps editing rights
+    (see POST_SHORTLIST_EDITABLE).
+    """
+    if application.status != 'shortlisted':
+        return False  # already confirmed / further along — idempotent no-op
+    completeness = application_completeness(application)
+    if not completeness['complete']:
+        raise IncompleteProfileError(completeness)
+    application.status = 'profile_complete'
+    application.profile_completed_at = timezone.now()
+    application.save(update_fields=['status', 'profile_completed_at'])
+    # Best-effort admin notification (never blocks the confirm).
+    name = getattr(application.profile, 'name', '') if application.profile else ''
+    send_profile_complete_admin_email(application_id=application.id, applicant_name=name,
+                                      programme_name=application.cohort.name)
+    return True
+
+
+def submit_interview(session):
+    """Phase C: finalise an interview session. Marks it submitted and advances the
+    application profile_complete/interviewing → interviewed. Idempotent on the
+    session status. Returns True if it advanced the application."""
+    now = timezone.now()
+    if session.status != 'submitted':
+        session.status = 'submitted'
+        session.submitted_at = now
+        session.save(update_fields=['status', 'submitted_at'])
+    app = session.application
+    if app.status in ('profile_complete', 'interviewing'):
+        app.status = 'interviewed'
+        app.save(update_fields=['status'])
+        return True
+    return False
 
 
 def application_completeness(application):

@@ -10,16 +10,26 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.courses.models import PartnerAdmin
 from apps.courses.views_admin import PartnerAdminMixin
 
-from .models import ApplicantDocument, Referee, ScholarshipApplication, SponsorProfile
+from .anomaly_engine import detect_anomalies
+from .emails import send_request_info_email
+from .models import (
+    ApplicantDocument, InterviewSession, Referee, ScholarshipApplication, SponsorProfile,
+)
 from .profile_engine import generate_sponsor_profile
 from .serializers import ApplicantDocumentSerializer, RefereeSerializer
 from .serializers_admin import (
     AdminApplicationDetailSerializer,
     AdminApplicationListSerializer,
+    InterviewSessionSerializer,
     SponsorProfileSerializer,
 )
+from .services import application_completeness, submit_interview
+
+_VALID_VERDICTS = {'resolved', 'still_unclear', 'new_concern'}
+_RATIONALE_MAX = 140
 
 
 class _AdminBase(PartnerAdminMixin, APIView):
@@ -28,21 +38,35 @@ class _AdminBase(PartnerAdminMixin, APIView):
     def _deny(self):
         return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
 
+    def _deny_role(self):
+        return Response({'error': 'Your admin role cannot perform this action.'},
+                        status=status.HTTP_403_FORBIDDEN)
+
     def _get_application(self, pk):
         return ScholarshipApplication.objects.select_related('profile', 'cohort').filter(pk=pk).first()
 
 
 class AdminApplicationListView(_AdminBase):
     def get(self, request):
-        if not self.get_admin(request):
+        admin = self.get_admin(request)
+        if not admin:
             return self._deny()
-        qs = ScholarshipApplication.objects.select_related('profile', 'cohort').order_by('-submitted_at')
+        qs = ScholarshipApplication.objects.select_related(
+            'profile', 'cohort', 'assigned_to').order_by('-submitted_at')
         status_f = request.GET.get('status')
         bucket_f = request.GET.get('bucket')
+        assigned_f = request.GET.get('assigned')
         if status_f:
             qs = qs.filter(status=status_f)
         if bucket_f:
             qs = qs.filter(bucket=bucket_f)
+        # Phase C: ?assigned=me|none|<admin_id>
+        if assigned_f == 'me':
+            qs = qs.filter(assigned_to=admin)
+        elif assigned_f == 'none':
+            qs = qs.filter(assigned_to__isnull=True)
+        elif assigned_f and assigned_f.isdigit():
+            qs = qs.filter(assigned_to_id=int(assigned_f))
         data = AdminApplicationListSerializer(qs, many=True).data
         return Response({'applications': data, 'total_count': len(data)})
 
@@ -57,15 +81,33 @@ class AdminApplicationDetailView(_AdminBase):
         return Response(AdminApplicationDetailSerializer(app).data)
 
     def patch(self, request, pk):
-        """Admin-editable per-application flags (currently the mentoring-candidate flag)."""
-        if not self.get_admin(request):
+        """Admin-editable per-application flags: mentoring-candidate, and (Phase C)
+        the assigned reviewer. Writes require reviewer/super (viewer is read-only)."""
+        admin = self.get_admin(request)
+        if not admin:
             return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
         app = self._get_application(pk)
         if app is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        fields = []
         if 'mentoring_candidate' in request.data:
             app.mentoring_candidate = bool(request.data['mentoring_candidate'])
-            app.save(update_fields=['mentoring_candidate'])
+            fields.append('mentoring_candidate')
+        if 'assigned_to' in request.data:
+            target_id = request.data['assigned_to']
+            if target_id in (None, '', 0):
+                app.assigned_to = None
+            else:
+                target = PartnerAdmin.objects.filter(pk=target_id, is_active=True).first()
+                if target is None:
+                    return Response({'error': 'No such active admin.', 'code': 'bad_assignee'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                app.assigned_to = target
+            fields.append('assigned_to')
+        if fields:
+            app.save(update_fields=fields)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 
@@ -86,12 +128,23 @@ class AdminVerifyAcceptView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
         app = self._get_application(pk)
         if app is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        if app.status != 'shortlisted':
+        # Must be a live pre-accept state (not already accepted/rejected/withdrawn).
+        if app.status not in ('shortlisted', 'profile_complete', 'interviewing', 'interviewed'):
             return Response(
-                {'error': 'Only a shortlisted application can be verified & accepted.'},
+                {'error': 'Only a live shortlisted/in-review application can be accepted.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        # HARD completeness gate (no override): all compulsory parts must be present.
+        completeness = application_completeness(app)
+        if not completeness['complete']:
+            return Response(
+                {'error': 'This applicant has not completed every required step yet.',
+                 'code': 'incomplete_profile', 'completeness': completeness},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         profile = app.profile
@@ -138,8 +191,11 @@ class AdminApplicationRefereeView(_AdminBase):
         return Response({'referees': RefereeSerializer(refs, many=True).data})
 
     def post(self, request, pk):
-        if not self.get_admin(request):
+        admin = self.get_admin(request)
+        if not admin:
             return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
         app = self._get_application(pk)
         if app is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -152,8 +208,11 @@ class AdminApplicationRefereeView(_AdminBase):
 class AdminRefereeDetailView(_AdminBase):
     """DELETE .../<pk>/referees/<ref_id>/ — remove a referee from the application."""
     def delete(self, request, pk, ref_id):
-        if not self.get_admin(request):
+        admin = self.get_admin(request)
+        if not admin:
             return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
         ref = Referee.objects.filter(pk=ref_id, application_id=pk).first()
         if ref is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -185,8 +244,11 @@ class AdminRunVisionView(_AdminBase):
 
 class AdminGenerateProfileView(_AdminBase):
     def post(self, request, pk):
-        if not self.get_admin(request):
+        admin = self.get_admin(request)
+        if not admin:
             return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
         app = self._get_application(pk)
         if app is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -206,8 +268,11 @@ class AdminGenerateProfileView(_AdminBase):
 
 class AdminProfileEditView(_AdminBase):
     def put(self, request, pk):
-        if not self.get_admin(request):
+        admin = self.get_admin(request)
+        if not admin:
             return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
         sp = SponsorProfile.objects.filter(application_id=pk).first()
         if sp is None:
             return Response({'error': 'No profile drafted yet'}, status=status.HTTP_404_NOT_FOUND)
@@ -221,8 +286,11 @@ class AdminProfileEditView(_AdminBase):
 
 class AdminPublishProfileView(_AdminBase):
     def post(self, request, pk):
-        if not self.get_admin(request):
+        admin = self.get_admin(request)
+        if not admin:
             return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
         sp = SponsorProfile.objects.filter(application_id=pk).first()
         if sp is None or not sp.current_markdown.strip():
             return Response({'error': 'Nothing to publish.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -230,3 +298,142 @@ class AdminPublishProfileView(_AdminBase):
         sp.published_at = timezone.now()
         sp.save()
         return Response(SponsorProfileSerializer(sp).data)
+
+
+# ── Phase C: interview capture + request-more-documentation ──────────────────
+
+def _interview_agenda(application):
+    """The anomaly codes that form the interview agenda (same flags the admin
+    'Pre-interview flags' card shows)."""
+    return [a['code'] for a in detect_anomalies(application)]
+
+
+def _validate_findings(findings):
+    """Validate a findings dict: each value must have a valid verdict + a rationale
+    within length. Returns an error string or None."""
+    if not isinstance(findings, dict):
+        return 'findings must be an object'
+    for code, val in findings.items():
+        if not isinstance(val, dict):
+            return f'finding {code} must be an object'
+        if val.get('verdict') not in _VALID_VERDICTS:
+            return f'finding {code} has an invalid verdict'
+        if len(val.get('rationale', '') or '') > _RATIONALE_MAX:
+            return f'finding {code} rationale exceeds {_RATIONALE_MAX} chars'
+    return None
+
+
+class AdminInterviewView(_AdminBase):
+    """
+    GET  .../<pk>/interview/ — the latest interview session, or an empty scaffold
+         (status null) carrying the agenda codes from the anomaly engine.
+    POST .../<pk>/interview/ — create/update the DRAFT session (findings/rubric/
+         note). Creating the first draft advances profile_complete → interviewing.
+    Reviewer/super only.
+    """
+    def get(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        session = app.interview_sessions.first()  # ordering = -created_at
+        data = InterviewSessionSerializer(session).data if session else None
+        return Response({'session': data, 'agenda': _interview_agenda(app)})
+
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        findings = request.data.get('findings', {}) or {}
+        err = _validate_findings(findings)
+        if err:
+            return Response({'error': err, 'code': 'bad_findings'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        session = app.interview_sessions.filter(status='draft').first()
+        if session is None:
+            session = InterviewSession(application=app, interviewer=admin,
+                                       started_at=timezone.now())
+        session.findings = findings
+        session.rubric = request.data.get('rubric', {}) or {}
+        session.overall_note = request.data.get('overall_note', '') or ''
+        if session.interviewer_id is None:
+            session.interviewer = admin
+        session.save()
+        # First interview activity moves the funnel forward.
+        if app.status == 'profile_complete':
+            app.status = 'interviewing'
+            app.save(update_fields=['status'])
+        return Response(InterviewSessionSerializer(session).data)
+
+
+class AdminInterviewSubmitView(_AdminBase):
+    """POST .../<pk>/interview/submit/ — finalise the draft session and advance the
+    application → interviewed. Reviewer/super only."""
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        session = app.interview_sessions.filter(status='draft').first()
+        if session is None:
+            return Response({'error': 'No draft interview to submit.', 'code': 'no_draft'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        err = _validate_findings(session.findings or {})
+        if err:
+            return Response({'error': err, 'code': 'bad_findings'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if session.interviewer_id is None:
+            session.interviewer = admin
+            session.save(update_fields=['interviewer'])
+        submit_interview(session)
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminAssignableAdminsView(_AdminBase):
+    """GET .../assignable-admins/ — active admins for the assignment dropdown."""
+    def get(self, request):
+        if not self.get_admin(request):
+            return self._deny()
+        admins = PartnerAdmin.objects.filter(is_active=True).order_by('name')
+        return Response({'admins': [
+            {'id': a.id, 'name': a.name, 'email': a.email,
+             'role': 'super' if a.is_super else a.role}
+            for a in admins
+        ]})
+
+
+class AdminRequestInfoView(_AdminBase):
+    """POST .../<pk>/request-info/ — the admin asks the student for more
+    documentation. Records a note on the application + emails the student. Does
+    NOT change status (the student keeps editing). Reviewer/super only."""
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        note = (request.data.get('note', '') or '').strip()
+        if not note:
+            return Response({'error': 'A note is required.', 'code': 'note_required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        app.info_request_note = note
+        app.info_requested_at = timezone.now()
+        app.save(update_fields=['info_request_note', 'info_requested_at'])
+        name = getattr(app.profile, 'name', '') if app.profile else ''
+        send_request_info_email(to_email=app.notify_email, applicant_name=name,
+                                programme_name=app.cohort.name, note=note, lang=app.locale)
+        return Response(AdminApplicationDetailSerializer(app).data)

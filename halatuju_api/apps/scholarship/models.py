@@ -95,6 +95,10 @@ class ScholarshipApplication(models.Model):
     STATUS_CHOICES = [
         ('submitted', 'Submitted'),
         ('shortlisted', 'Shortlisted'),
+        # Phase C post-shortlist funnel (between shortlisted and accepted):
+        ('profile_complete', 'Profile complete'),  # student confirmed a complete Step-4 profile
+        ('interviewing', 'Interviewing'),           # an interview session has been started
+        ('interviewed', 'Interviewed'),             # interview captured + submitted
         ('accepted', 'Accepted'),      # admin verified & accepted (S11a) — confirmed for award
         ('rejected', 'Rejected'),
         ('withdrawn', 'Withdrawn'),
@@ -215,6 +219,14 @@ class ScholarshipApplication(models.Model):
 
     # Shortlisting outcome + decision-email tracking (Sprint 3)
     shortlisted_at = models.DateTimeField(null=True, blank=True)
+    # Phase C: stamped when the student explicitly confirms a complete Step-4
+    # profile (status shortlisted → profile_complete). Completion is NOT a
+    # freeze — the student can still add documents afterwards.
+    profile_completed_at = models.DateTimeField(null=True, blank=True)
+    # Phase C: the admin's "please send more documentation" request. Surfaced
+    # read-only on the student's Step 4; does not change status.
+    info_request_note = models.TextField(blank=True, default='')
+    info_requested_at = models.DateTimeField(null=True, blank=True)
     decision_email_sent_at = models.DateTimeField(
         null=True, blank=True,
         help_text="When the pass/fail decision email was sent",
@@ -246,6 +258,14 @@ class ScholarshipApplication(models.Model):
     verify_checklist = models.JSONField(
         default=dict, blank=True,
         help_text="What the admin confirmed at accept: {nric, name, results, document: bool}",
+    )
+    # Phase C: which reviewer this application is assigned to (for the interview
+    # stage). Null = unassigned. SET_NULL so deactivating an admin doesn't delete
+    # applications.
+    assigned_to = models.ForeignKey(
+        'courses.PartnerAdmin', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='assigned_applications',
+        help_text="Phase C: the reviewer assigned to interview this applicant",
     )
     locale = models.CharField(
         max_length=2, default='en',
@@ -528,3 +548,43 @@ class SponsorProfile(models.Model):
 
     def __str__(self):
         return f'SponsorProfile #{self.application_id} ({self.status})'
+
+
+class InterviewSession(models.Model):
+    """Phase C: the structured record of a post-shortlist interview.
+
+    The interview agenda is generated from the deterministic anomaly engine
+    (apps/scholarship/anomaly_engine.detect_anomalies) — the same flags the admin
+    "Pre-interview flags" card shows. ``findings`` records a closed-ended verdict
+    + short rationale against each flag (and any manually-added concerns), so two
+    reviewers rating the same applicant converge (the standardisation north star
+    in docs/scholarship/post-shortlist-vision.md).
+    """
+    STATUS = [('draft', 'Draft'), ('submitted', 'Submitted')]
+    application = models.ForeignKey(
+        ScholarshipApplication, on_delete=models.CASCADE, related_name='interview_sessions',
+    )
+    interviewer = models.ForeignKey(
+        'courses.PartnerAdmin', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='interviews_conducted',
+    )
+    status = models.CharField(max_length=20, choices=STATUS, default='draft')
+    # findings: { "<anomaly_code>": {"verdict": "resolved|still_unclear|new_concern",
+    #             "rationale": "<=140 chars"} }. Keys are the codes from
+    # detect_anomalies(); manually-added concerns use synthetic "manual_<n>" codes.
+    findings = models.JSONField(default=dict, blank=True)
+    # rubric: fixed 1-5 dimensions, e.g. {"clarity_of_plan": 4, "financial_need": 5,
+    # "resilience": 3}. The inter-rater-reliability mechanism.
+    rubric = models.JSONField(default=dict, blank=True)
+    overall_note = models.TextField(blank=True, default='')
+    started_at = models.DateTimeField(null=True, blank=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'interview_sessions'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'InterviewSession #{self.application_id} ({self.status})'

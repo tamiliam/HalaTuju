@@ -258,6 +258,32 @@ export interface AdminScholarshipListItem {
   bucket: string
   shortlist_reason: string
   submitted_at: string
+  profile_completed_at: string | null
+  assigned_to_id: number | null
+  assigned_to_name: string | null
+}
+
+export interface AdminCompleteness {
+  quiz_done: boolean
+  details_done: boolean
+  funding_done: boolean
+  documents_done: boolean
+  consent_done: boolean
+  address_done: boolean
+  guardian_docs_done: boolean
+  complete: boolean
+}
+
+export interface AdminInterviewSession {
+  id: number
+  status: 'draft' | 'submitted'
+  findings: Record<string, { verdict: string; rationale: string }>
+  rubric: Record<string, number>
+  overall_note: string
+  interviewer_name: string | null
+  started_at: string | null
+  submitted_at: string | null
+  updated_at: string
 }
 
 export interface AdminSponsorProfile {
@@ -312,6 +338,14 @@ export interface AdminScholarshipDetail {
   referees: AdminReferee[]
   consents: Array<{ id: number; consent_type: string; version: string; granted_by: string; guardian_name: string; is_active: boolean; granted_at: string }>
   sponsor_profile: AdminSponsorProfile | null
+  // Phase C
+  profile_completed_at: string | null
+  completeness: AdminCompleteness
+  interview_session: AdminInterviewSession | null
+  assigned_to_id: number | null
+  assigned_to_name: string | null
+  info_request_note: string
+  info_requested_at: string | null
 }
 
 async function adminMutate<T>(path: string, method: string, body: unknown, options?: ApiOptions): Promise<T> {
@@ -328,16 +362,55 @@ async function adminMutate<T>(path: string, method: string, body: unknown, optio
 }
 
 export async function getScholarshipApplications(
-  filters: { status?: string; bucket?: string } = {},
+  filters: { status?: string; bucket?: string; assigned?: string } = {},
   options?: ApiOptions
 ) {
   const q = new URLSearchParams()
   if (filters.status) q.set('status', filters.status)
   if (filters.bucket) q.set('bucket', filters.bucket)
+  if (filters.assigned) q.set('assigned', filters.assigned)
   const qs = q.toString()
   return adminFetch<{ applications: AdminScholarshipListItem[]; total_count: number }>(
     `/api/v1/admin/scholarship/applications/${qs ? `?${qs}` : ''}`, options
   )
+}
+
+// ── Phase C: assignment, interview capture, request-more-docs ───────────────
+
+/** Assign (or unassign with null) a reviewer to an application. */
+export async function assignApplication(id: number, adminId: number | null, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/`, 'PATCH', { assigned_to: adminId }, options)
+}
+
+export async function getInterview(id: number, options?: ApiOptions) {
+  return adminFetch<{ session: AdminInterviewSession | null; agenda: string[] }>(
+    `/api/v1/admin/scholarship/applications/${id}/interview/`, options)
+}
+
+export async function saveInterview(
+  id: number,
+  payload: { findings: Record<string, { verdict: string; rationale: string }>; rubric: Record<string, number>; overall_note: string },
+  options?: ApiOptions,
+) {
+  return adminMutate<AdminInterviewSession>(
+    `/api/v1/admin/scholarship/applications/${id}/interview/`, 'POST', payload, options)
+}
+
+export async function submitInterview(id: number, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/interview/submit/`, 'POST', {}, options)
+}
+
+export async function requestMoreInfo(id: number, note: string, options?: ApiOptions) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/request-info/`, 'POST', { note }, options)
+}
+
+/** Active admins (for the assignment dropdown). Super admin only on the backend. */
+export async function getAssignableAdmins(options?: ApiOptions) {
+  return adminFetch<{ admins: Array<{ id: number; name: string; email: string; role: string }> }>(
+    `/api/v1/admin/scholarship/assignable-admins/`, options)
 }
 
 export async function getScholarshipApplication(id: number, options?: ApiOptions) {

@@ -122,7 +122,23 @@ class TestAdminScholarship(TestCase):
     def _verify_url(self):
         return f'/api/v1/admin/scholarship/applications/{self.app.id}/verify-accept/'
 
+    def _complete_app(self):
+        """Phase C: the accept-gate now hard-requires a complete profile.
+        Satisfy all 7 completeness parts on self.app."""
+        from apps.scholarship.models import Consent, FundingNeed
+        self.profile.student_signals = {'field_interest': {'it': 5}}
+        self.profile.address = 'No. 1 Jalan ABC'
+        self.profile.postal_code = '62100'
+        self.profile.city = 'Putrajaya'
+        self.profile.save()
+        ScholarshipApplication.objects.filter(pk=self.app.id).update(plans='Study hard')
+        FundingNeed.objects.create(application=self.app, categories=['living'], programme_months=36)
+        for dt in ('ic', 'results_slip', 'parent_ic', 'str'):
+            ApplicantDocument.objects.create(application=self.app, doc_type=dt, storage_path=f'x/{dt}')
+        Consent.objects.create(application=self.app, version='t', is_active=True)
+
     def test_verify_accept_locks_nric_and_advances(self):
+        self._complete_app()
         self._auth(ADMIN)
         r = self.client.post(
             self._verify_url(),
@@ -149,6 +165,8 @@ class TestAdminScholarship(TestCase):
 
     def test_verify_accept_nric_conflict(self):
         # Soft-NRIC: another profile already has this NRIC verified → 409 (TD-054).
+        # Must be complete to pass the Phase C accept-gate and reach the NRIC check.
+        self._complete_app()
         StudentProfile.objects.create(
             supabase_user_id='other-uid', nric='030101-14-1234', nric_verified=True,
         )

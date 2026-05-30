@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
-import { updateScholarshipDetails, type ScholarshipApplication } from '@/lib/api'
+import { updateScholarshipDetails, confirmScholarshipApplication, type ScholarshipApplication } from '@/lib/api'
 import {
   applicationToDetailsForm,
   buildDetailsPayload,
@@ -92,6 +92,9 @@ export default function ScholarshipNextSteps({
   const update = <K extends keyof DetailsFormState>(key: K, value: DetailsFormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
+  const [confirming, setConfirming] = useState(false)
+  const [confirmError, setConfirmError] = useState<string | null>(null)
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!token) return
@@ -107,6 +110,21 @@ export default function ScholarshipNextSteps({
       setError(t('scholarship.nextSteps.saveError'))
     } finally {
       setSaving(false)
+    }
+  }
+
+  // Phase C: the explicit "Confirm & submit" action (shortlisted → profile_complete).
+  const handleConfirm = async () => {
+    if (!token) return
+    setConfirming(true)
+    setConfirmError(null)
+    try {
+      const updated = await confirmScholarshipApplication(app.id, { token })
+      setApp(updated)
+    } catch {
+      setConfirmError(t('scholarship.nextSteps.confirmError'))
+    } finally {
+      setConfirming(false)
     }
   }
 
@@ -494,17 +512,45 @@ export default function ScholarshipNextSteps({
     ),
   }
 
+  const confirmed = app.status !== 'shortlisted'  // profile_complete or further along
+
   return (
     <div>
+      {/* Admin "please send more documentation" request — shown until resolved by the admin */}
+      {app.info_request_note && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+          <p className="text-sm font-medium text-amber-900">{t('scholarship.nextSteps.infoRequestTitle')}</p>
+          <p className="text-sm text-amber-800 mt-1 whitespace-pre-line">{app.info_request_note}</p>
+        </div>
+      )}
+
       {/* Intro banner — switches to a success state once everything is done */}
       <div className="bg-green-50 border border-green-200 rounded-xl p-5 mb-6">
         {c.complete ? (
           <>
             <div className="flex items-center gap-2">
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-white text-sm">✓</span>
-              <h2 className="font-semibold text-gray-900">{t('scholarship.nextSteps.allSetTitle')}</h2>
+              <h2 className="font-semibold text-gray-900">
+                {confirmed ? t('scholarship.nextSteps.confirmedTitle') : t('scholarship.nextSteps.allSetTitle')}
+              </h2>
             </div>
-            <p className="text-sm text-gray-700 mt-1">{t('scholarship.nextSteps.allSetIntro')}</p>
+            <p className="text-sm text-gray-700 mt-1">
+              {confirmed ? t('scholarship.nextSteps.confirmedIntro') : t('scholarship.nextSteps.allSetIntro')}
+            </p>
+            {/* The explicit "I'm done" action — only before confirming. */}
+            {!confirmed && (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  disabled={confirming}
+                  className="btn-primary disabled:opacity-50"
+                >
+                  {confirming ? t('scholarship.nextSteps.confirming') : t('scholarship.nextSteps.confirmCta')}
+                </button>
+                {confirmError && <p className="text-red-600 text-sm mt-2">{confirmError}</p>}
+              </div>
+            )}
           </>
         ) : (
           <>

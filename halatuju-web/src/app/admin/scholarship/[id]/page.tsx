@@ -15,10 +15,21 @@ import {
   addReferee,
   deleteReferee,
   reRunVision,
+  assignApplication,
+  getInterview,
+  saveInterview,
+  submitInterview,
+  requestMoreInfo,
+  getAssignableAdmins,
   type AdminScholarshipDetail,
   type AdminSponsorProfile,
   type AdminApplicantDocument,
+  type AdminInterviewSession,
 } from '@/lib/admin-api'
+
+const VERDICTS = ['resolved', 'still_unclear', 'new_concern'] as const
+const RUBRIC_DIMS = ['clarity_of_plan', 'financial_need', 'resilience'] as const
+const COMPLETENESS_PARTS = ['quiz_done', 'details_done', 'funding_done', 'documents_done', 'consent_done', 'address_done', 'guardian_docs_done'] as const
 
 const EMPTY_REFEREE = { name: '', role: '', relationship: '', phone: '', email: '' }
 
@@ -36,8 +47,9 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
 export default function AdminScholarshipDetailPage() {
   const params = useParams()
   const id = Number(params?.id)
-  const { token } = useAdminAuth()
+  const { token, role } = useAdminAuth()
   const { t } = useT()
+  const canWrite = (role?.role ?? (role?.is_super_admin ? 'super' : 'reviewer')) !== 'viewer'
   const [app, setApp] = useState<AdminScholarshipDetail | null>(null)
   const [profile, setProfile] = useState<AdminSponsorProfile | null>(null)
   const [markdown, setMarkdown] = useState('')
@@ -46,6 +58,19 @@ export default function AdminScholarshipDetailPage() {
   const [checklist, setChecklist] = useState<Record<string, boolean>>({})
   const [refForm, setRefForm] = useState({ ...EMPTY_REFEREE })
   const [genLang, setGenLang] = useState('en')
+  // Phase C
+  const [admins, setAdmins] = useState<Array<{ id: number; name: string }>>([])
+  const [findings, setFindings] = useState<Record<string, { verdict: string; rationale: string }>>({})
+  const [rubric, setRubric] = useState<Record<string, number>>({})
+  const [note, setNote] = useState('')
+  const [infoNote, setInfoNote] = useState('')
+
+  const loadInterviewState = (d: AdminScholarshipDetail) => {
+    const s = d.interview_session
+    setFindings(s?.findings ?? {})
+    setRubric(s?.rubric ?? {})
+    setNote(s?.overall_note ?? '')
+  }
 
   useEffect(() => {
     if (!token || !id) return
@@ -54,8 +79,10 @@ export default function AdminScholarshipDetailPage() {
         setApp(d)
         setProfile(d.sponsor_profile)
         setMarkdown(d.sponsor_profile?.current_markdown || '')
+        loadInterviewState(d)
       })
       .catch(() => setError(t('admin.scholarship.loadFailed')))
+    getAssignableAdmins({ token }).then((r) => setAdmins(r.admins)).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, id])
 
@@ -94,6 +121,41 @@ export default function AdminScholarshipDetailPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : t('admin.scholarship.acceptError'))
     } finally { setBusy('') }
+  }
+
+  const doAssign = async (adminId: number | null) => {
+    if (!token) return
+    setBusy('assign'); setError('')
+    try { setApp(await assignApplication(id, adminId, { token })) }
+    catch { setError(t('admin.scholarship.assignError')) } finally { setBusy('') }
+  }
+
+  const doSaveInterview = async () => {
+    if (!token) return
+    setBusy('iv'); setError('')
+    try {
+      await saveInterview(id, { findings, rubric, overall_note: note }, { token })
+      await refreshApp()
+    } catch { setError(t('admin.scholarship.interview.saveError')) } finally { setBusy('') }
+  }
+
+  const doSubmitInterview = async () => {
+    if (!token) return
+    setBusy('ivs'); setError('')
+    try {
+      await saveInterview(id, { findings, rubric, overall_note: note }, { token })
+      const d = await submitInterview(id, { token })
+      setApp(d); loadInterviewState(d)
+    } catch { setError(t('admin.scholarship.interview.submitError')) } finally { setBusy('') }
+  }
+
+  const doRequestInfo = async () => {
+    if (!token || !infoNote.trim()) return
+    setBusy('info'); setError('')
+    try {
+      setApp(await requestMoreInfo(id, infoNote.trim(), { token }))
+      setInfoNote('')
+    } catch { setError(t('admin.scholarship.requestInfoError')) } finally { setBusy('') }
   }
 
   const toggleMentoring = async (value: boolean) => {
@@ -274,6 +336,116 @@ export default function AdminScholarshipDetailPage() {
         )}
       </div>
 
+      {/* Phase C: assignment */}
+      <div className="bg-white rounded-xl border p-4 space-y-2">
+        <h2 className="font-semibold">{t('admin.scholarship.assignTitle')}</h2>
+        <select
+          value={app.assigned_to_id ?? ''}
+          disabled={!canWrite || !!busy}
+          onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
+          className="border rounded-lg px-3 py-2 text-sm w-full sm:w-auto"
+        >
+          <option value="">{t('admin.scholarship.unassigned')}</option>
+          {admins.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+      </div>
+
+      {/* Phase C: interview capture — verdict + rationale per pre-interview flag */}
+      <div className="bg-white rounded-xl border p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">{t('admin.scholarship.interview.title')}</h2>
+          {app.interview_session?.status === 'submitted' && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+              {t('admin.scholarship.interview.submitted')}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-gray-500">{t('admin.scholarship.interview.intro')}</p>
+        {app.anomalies.length === 0 ? (
+          <p className="text-sm text-gray-400 italic">{t('admin.scholarship.interview.noFlags')}</p>
+        ) : (
+          <ul className="space-y-3">
+            {app.anomalies.map((a) => {
+              const f = findings[a.code] ?? { verdict: '', rationale: '' }
+              const setF = (patch: Partial<{ verdict: string; rationale: string }>) =>
+                setFindings((prev) => ({ ...prev, [a.code]: { ...f, ...patch } }))
+              return (
+                <li key={a.code} className="border rounded-lg p-3">
+                  <p className="text-sm text-gray-800">
+                    {t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {VERDICTS.map((v) => (
+                      <label key={v} className={`cursor-pointer rounded-full border px-3 py-1 text-xs ${f.verdict === v ? 'border-primary-600 bg-primary-600 text-white' : 'border-gray-300 text-gray-700'}`}>
+                        <input type="radio" name={`v-${a.code}`} className="sr-only" disabled={!canWrite}
+                          checked={f.verdict === v} onChange={() => setF({ verdict: v })} />
+                        {t(`admin.scholarship.interview.verdict.${v}`)}
+                      </label>
+                    ))}
+                  </div>
+                  <input
+                    value={f.rationale} maxLength={140} disabled={!canWrite}
+                    onChange={(e) => setF({ rationale: e.target.value })}
+                    placeholder={t('admin.scholarship.interview.rationalePlaceholder')}
+                    className="mt-2 w-full border rounded-lg px-3 py-1.5 text-sm"
+                  />
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        {/* Rubric */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {RUBRIC_DIMS.map((dim) => (
+            <div key={dim}>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t(`admin.scholarship.interview.rubric.${dim}`)}</label>
+              <select value={rubric[dim] ?? ''} disabled={!canWrite}
+                onChange={(e) => setRubric((r) => ({ ...r, [dim]: Number(e.target.value) }))}
+                className="border rounded-lg px-2 py-1.5 text-sm w-full">
+                <option value="">—</option>
+                {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+          ))}
+        </div>
+        <textarea value={note} disabled={!canWrite} rows={2}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder={t('admin.scholarship.interview.notePlaceholder')}
+          className="w-full border rounded-lg px-3 py-2 text-sm" />
+        {canWrite && (
+          <div className="flex gap-2">
+            <button onClick={doSaveInterview} disabled={!!busy}
+              className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
+              {busy === 'iv' ? t('common.loading') : t('admin.scholarship.interview.saveDraft')}
+            </button>
+            <button onClick={doSubmitInterview} disabled={!!busy}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm disabled:opacity-50">
+              {busy === 'ivs' ? t('common.loading') : t('admin.scholarship.interview.submit')}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Phase C: request more documentation from the student */}
+      {canWrite && (
+        <div className="bg-white rounded-xl border p-4 space-y-2">
+          <h2 className="font-semibold">{t('admin.scholarship.requestInfoTitle')}</h2>
+          <p className="text-xs text-gray-500">{t('admin.scholarship.requestInfoIntro')}</p>
+          {app.info_request_note && (
+            <p className="text-xs text-gray-500 italic">
+              {t('admin.scholarship.requestInfoLast')}: {app.info_request_note}
+            </p>
+          )}
+          <textarea value={infoNote} rows={2} onChange={(e) => setInfoNote(e.target.value)}
+            placeholder={t('admin.scholarship.requestInfoPlaceholder')}
+            className="w-full border rounded-lg px-3 py-2 text-sm" />
+          <button onClick={doRequestInfo} disabled={!!busy || !infoNote.trim()}
+            className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
+            {busy === 'info' ? t('common.loading') : t('admin.scholarship.requestInfoSend')}
+          </button>
+        </div>
+      )}
+
       {/* Verify & accept (human gate — locks the NRIC, advances → accepted) */}
       <div className="bg-white rounded-xl border p-4 space-y-3">
         <div className="flex items-center justify-between">
@@ -290,13 +462,24 @@ export default function AdminScholarshipDetailPage() {
             {t('admin.scholarship.acceptedBy')} {app.verified_by || '—'}
             {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
           </p>
-        ) : app.status === 'shortlisted' ? (
+        ) : ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) ? (
           <>
+            {/* Phase C hard gate: cannot accept until every compulsory part is in. */}
+            {!app.completeness.complete && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+                <p className="font-medium text-amber-900">{t('admin.scholarship.incompleteTitle')}</p>
+                <ul className="mt-1 list-disc ml-5 text-amber-800">
+                  {COMPLETENESS_PARTS.filter((p) => !app.completeness[p]).map((p) => (
+                    <li key={p}>{t(`admin.scholarship.completeness.${p}`)}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <p className="text-sm text-gray-500">{t('admin.scholarship.verifyHint')}</p>
             <div className="space-y-2">
               {VERIFY_ITEMS.map((key) => (
                 <label key={key} className="flex items-start gap-2 text-sm text-gray-700">
-                  <input type="checkbox" className="mt-1" checked={!!checklist[key]}
+                  <input type="checkbox" className="mt-1" checked={!!checklist[key]} disabled={!canWrite}
                     onChange={(e) => setChecklist((c) => ({ ...c, [key]: e.target.checked }))} />
                   <span>
                     {t(`admin.scholarship.check_${key}`)}
@@ -307,7 +490,7 @@ export default function AdminScholarshipDetailPage() {
               ))}
             </div>
             <button onClick={doVerifyAccept}
-              disabled={!!busy || !VERIFY_ITEMS.every((k) => checklist[k])}
+              disabled={!!busy || !canWrite || !app.completeness.complete || !VERIFY_ITEMS.every((k) => checklist[k])}
               className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
               {busy === 'verify' ? t('admin.scholarship.accepting') : t('admin.scholarship.verifyAccept')}
             </button>

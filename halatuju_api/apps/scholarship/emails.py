@@ -168,3 +168,71 @@ def send_pass_email(to_email, applicant_name, programme_name, lang='en'):
 
 def send_fail_email(to_email, applicant_name, programme_name, lang='en'):
     return _send(to_email, FAIL_SUBJECTS, FAIL_BODIES, applicant_name, programme_name, lang)
+
+
+REQUEST_INFO_SUBJECTS = {
+    'en': 'Action needed on your {programme} application',
+    'ms': 'Tindakan diperlukan untuk permohonan {programme} anda',
+    'ta': 'உங்கள் {programme} விண்ணப்பத்திற்கு நடவடிக்கை தேவை',
+}
+REQUEST_INFO_BODIES = {
+    'en': ('Dear {name},\n\nWe are reviewing your {programme} application and need a '
+           'little more from you:\n\n{note}\n\nPlease sign in and add it to your '
+           'application here: {link}\n\nThank you.'),
+    'ms': ('Salam {name},\n\nKami sedang menyemak permohonan {programme} anda dan '
+           'memerlukan sedikit maklumat tambahan:\n\n{note}\n\nSila log masuk dan '
+           'tambahkannya pada permohonan anda di sini: {link}\n\nTerima kasih.'),
+    'ta': ('அன்புள்ள {name},\n\nஉங்கள் {programme} விண்ணப்பத்தை மதிப்பாய்வு செய்கிறோம், '
+           'சிறிது கூடுதல் தகவல் தேவை:\n\n{note}\n\nதயவுசெய்து உள்நுழைந்து உங்கள் '
+           'விண்ணப்பத்தில் இதைச் சேர்க்கவும்: {link}\n\nநன்றி.'),
+}
+
+
+def send_request_info_email(to_email, applicant_name, programme_name, note, lang='en'):
+    """Phase C: ask the student for more documentation. Trilingual; best-effort."""
+    if not to_email:
+        return False
+    lang = normalise_lang(lang)
+    name = applicant_name or _DEFAULT_NAME[lang]
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    link = f'{frontend}/scholarship/application'
+    try:
+        send_mail(
+            subject=REQUEST_INFO_SUBJECTS[lang].format(programme=programme_name),
+            message=REQUEST_INFO_BODIES[lang].format(
+                name=name, programme=programme_name, note=note, link=link),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            recipient_list=[to_email],
+        )
+        return True
+    except Exception:
+        logger.warning('Failed to send request-info email to %s', to_email, exc_info=True)
+        return False
+
+
+def send_profile_complete_admin_email(application_id, applicant_name, programme_name):
+    """Phase C: notify the admin that an applicant has confirmed a complete Step-4
+    profile and is ready for review. English-only (internal). Sent to
+    ``settings.ADMIN_NOTIFY_EMAIL``; skipped silently if that's unset so it never
+    blocks the student's confirm. Best-effort — swallows send failures."""
+    to_email = getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') or ''
+    if not to_email:
+        return False
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    name = applicant_name or 'An applicant'
+    try:
+        send_mail(
+            subject=f'[{programme_name}] Application #{application_id} ready for review',
+            message=(
+                f'{name} has confirmed a complete profile for {programme_name} '
+                f'(application #{application_id}) and is ready for review.\n\n'
+                f'Review it: {frontend}/admin/scholarship/{application_id}'
+            ),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            recipient_list=[to_email],
+        )
+        return True
+    except Exception:
+        logger.warning('Failed to send admin-notify email for application #%s',
+                       application_id, exc_info=True)
+        return False

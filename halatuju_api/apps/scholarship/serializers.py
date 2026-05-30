@@ -148,6 +148,8 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'declaration_name', 'declared_at',
             'status', 'bucket', 'shortlist_reason',
             'acknowledged_at', 'submitted_at', 'updated_at',
+            # Phase C: confirm-submit timestamp + the admin's request-more-docs note
+            'profile_completed_at', 'info_request_note', 'info_requested_at',
             'aspirations', 'plans', 'fears', 'justification',
             # "Your story" guided narrative fields (S2 redesign)
             'first_in_family', 'parents_occupation',

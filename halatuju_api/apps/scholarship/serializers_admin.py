@@ -1,13 +1,26 @@
 """Admin-facing serializers for the B40 Assistance Programme (Sprint 6a)."""
 from rest_framework import serializers
 
-from .models import FundingNeed, ScholarshipApplication, SponsorProfile
+from .models import (
+    FundingNeed, InterviewSession, ScholarshipApplication, SponsorProfile,
+)
 from .serializers import (
     ApplicantDocumentSerializer,
     ConsentSerializer,
     FundingNeedSerializer,
     RefereeSerializer,
 )
+
+
+class InterviewSessionSerializer(serializers.ModelSerializer):
+    interviewer_name = serializers.CharField(source='interviewer.name', read_only=True, default=None)
+
+    class Meta:
+        model = InterviewSession
+        fields = [
+            'id', 'status', 'findings', 'rubric', 'overall_note',
+            'interviewer_name', 'started_at', 'submitted_at', 'updated_at',
+        ]
 
 
 class SponsorProfileSerializer(serializers.ModelSerializer):
@@ -28,13 +41,16 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
     qualification = serializers.CharField(source='profile.exam_type', read_only=True)
     stpm_pngk = serializers.FloatField(source='profile.stpm_cgpa', read_only=True)
     spm_a_count = serializers.SerializerMethodField()
+    assigned_to_id = serializers.IntegerField(source='assigned_to.id', read_only=True, default=None)
+    assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True, default=None)
 
     class Meta:
         model = ScholarshipApplication
         fields = [
             'id', 'name', 'profile_id', 'cohort_code', 'qualification',
             'spm_a_count', 'stpm_pngk', 'status', 'bucket', 'shortlist_reason',
-            'submitted_at',
+            'submitted_at', 'profile_completed_at',
+            'assigned_to_id', 'assigned_to_name',
         ]
 
     def get_name(self, obj):
@@ -67,6 +83,10 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # Pre-interview deterministic flag list (S16 Phase A). Each entry is
     # {code, params}; the frontend resolves human copy from its i18n bundle.
     anomalies = serializers.SerializerMethodField()
+    completeness = serializers.SerializerMethodField()
+    interview_session = serializers.SerializerMethodField()
+    assigned_to_id = serializers.IntegerField(source='assigned_to.id', read_only=True, default=None)
+    assigned_to_name = serializers.CharField(source='assigned_to.name', read_only=True, default=None)
     documents = ApplicantDocumentSerializer(many=True, read_only=True)
     referees = RefereeSerializer(many=True, read_only=True)
     consents = ConsentSerializer(many=True, read_only=True)
@@ -80,6 +100,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'aspirations', 'plans', 'fears', 'justification',
             'address',
             'status', 'bucket', 'shortlist_reason', 'submitted_at',
+            # Phase C handoff + interview funnel
+            'profile_completed_at', 'completeness', 'interview_session',
+            'assigned_to_id', 'assigned_to_name', 'info_request_note', 'info_requested_at',
             # S11a verify-&-accept + mentoring
             'mentoring_candidate', 'verified_at', 'verified_by', 'verify_checklist',
             # S10 plans/support intake (surface for the admin review)
@@ -121,3 +144,14 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         no LLM calls. Returns ``[]`` when nothing flags."""
         from .anomaly_engine import detect_anomalies
         return detect_anomalies(obj)
+
+    def get_completeness(self, obj):
+        """Phase C: the 7-part completeness breakdown, so the admin can see
+        exactly which steps a student still owes (drives the accept-gate UI)."""
+        from .services import application_completeness
+        return application_completeness(obj)
+
+    def get_interview_session(self, obj):
+        """Phase C: the latest interview session (draft or submitted), or None."""
+        session = obj.interview_sessions.first()  # ordering = -created_at
+        return InterviewSessionSerializer(session).data if session else None

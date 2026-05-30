@@ -20,6 +20,9 @@ from .serializers import (
 )
 from .services import (
     CONSENT_VERSION,
+    IncompleteProfileError,
+    POST_SHORTLIST_EDITABLE,
+    confirm_profile,
     create_application,
     is_minor,
     record_consent,
@@ -122,8 +125,10 @@ class ApplicationDetailView(APIView):
         application = self._get_own(request, pk)
         if application is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        # Deeper info + funding need are a post-shortlist (STEP 2) step.
-        if application.status != 'shortlisted':
+        # Deeper info + funding need are a post-shortlist (STEP 2) step. Editing
+        # stays open through the whole post-shortlist funnel — confirming a profile
+        # is NOT a freeze (the student may add documents the admin asks for).
+        if application.status not in POST_SHORTLIST_EDITABLE:
             return Response(
                 {'error': 'Details can only be added once your application is shortlisted.'},
                 status=status.HTTP_403_FORBIDDEN,
@@ -134,11 +139,39 @@ class ApplicationDetailView(APIView):
         return Response(ApplicationReadSerializer(application).data)
 
 
+class ApplicationConfirmView(APIView):
+    """POST /api/v1/scholarship/applications/<id>/confirm/ — the student's explicit
+    "I'm done" action. Flips shortlisted → profile_complete (Phase C) if the
+    profile is complete; 400 with the completeness dict if not."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request, pk):
+        application = ScholarshipApplication.objects.filter(
+            pk=pk, profile_id=request.user_id
+        ).select_related('cohort', 'profile').first()
+        if application is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            confirm_profile(application)
+        except IncompleteProfileError as exc:
+            return Response(
+                {'error': 'Please complete every required step before submitting.',
+                 'code': 'incomplete_profile', 'completeness': exc.completeness},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(ApplicationReadSerializer(application).data)
+
+
 def _current_application(user_id):
-    """The caller's current shortlisted application (one per cohort; latest wins)."""
+    """The caller's current post-shortlist application (one per cohort; latest wins).
+
+    Spans the whole editable funnel (POST_SHORTLIST_EDITABLE), not just
+    'shortlisted', so the student can keep uploading documents after confirming
+    their profile and while an interview is in progress.
+    """
     return (
         ScholarshipApplication.objects
-        .filter(profile_id=user_id, status='shortlisted')
+        .filter(profile_id=user_id, status__in=POST_SHORTLIST_EDITABLE)
         .select_related('profile')
         .order_by('-submitted_at')
         .first()
