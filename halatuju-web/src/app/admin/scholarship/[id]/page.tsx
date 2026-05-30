@@ -248,6 +248,15 @@ export default function AdminScholarshipDetailPage() {
         // (a chosen course), so Pre-U track doesn't apply.
         const isInstitutionPathway = app.chosen_pathway === 'matric' || app.chosen_pathway === 'stpm'
         const upuLabel = app.upu_status ? t(`admin.scholarship.upu.${app.upu_status}`) : '—'
+        // Link a course back to its HalaTuju public page (opens in a new tab so
+        // the admin doesn't lose the application). STPM degrees live under /stpm.
+        const courseHref = (cid?: string) => (cid ? (isStpm ? `/stpm/${cid}` : `/course/${cid}`) : null)
+        const courseLink = (cid: string | undefined, name: string) => {
+          const href = courseHref(cid)
+          return href
+            ? <a href={href} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{name}</a>
+            : name
+        }
         const hasStory = !!(app.aspirations || app.plans || app.fears || app.justification
           || app.daily_life || app.first_in_family || app.parents_occupation
           || app.siblings_studying_count || app.family_context)
@@ -300,7 +309,12 @@ export default function AdminScholarshipDetailPage() {
                     <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} />
                   </>
                 ) : (
-                  <Field label={t('admin.scholarship.chosenProgramme')} value={(app.chosen_programme?.course_name as string) || app.chosen_pathway} />
+                  <Field
+                    label={t('admin.scholarship.chosenProgramme')}
+                    value={app.chosen_programme?.course_name
+                      ? courseLink(app.chosen_programme.course_id as string | undefined, app.chosen_programme.course_name as string)
+                      : app.chosen_pathway}
+                  />
                 )}
                 <Field label={t('admin.scholarship.fieldOfStudy')} value={app.field_of_study} />
                 <Field label={t('admin.scholarship.upuStatus')} value={upuLabel} />
@@ -309,7 +323,7 @@ export default function AdminScholarshipDetailPage() {
                 <div className="mt-3">
                   <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.topChoices')}</dt>
                   <ol className="list-decimal ml-5 text-sm text-gray-800">
-                    {app.top_choices.map((c) => <li key={c.rank}>{c.course_name}{c.institution ? ` — ${c.institution}` : ''}</li>)}
+                    {app.top_choices.map((c) => <li key={c.rank}>{courseLink(c.course_id, c.course_name)}{c.institution ? ` — ${c.institution}` : ''}</li>)}
                   </ol>
                 </div>
               )}
