@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **Admin applicant detail — relabelled the Support help fields.** "Help: university" → **University application**, "Help: scholarship" → **Scholarship application** (en/ms/ta). Labels render uppercase via the existing field styling. i18n-only.
 - **Admin applicant detail — removed the "Consent to contact" field.** Consent is a hard requirement to submit an application, so it is always "Yes" and carries no signal for the admin. Dropped the field from the Support card and removed the now-orphaned `admin.scholarship.consentToContact` i18n key from en/ms/ta (parity 1497). The submission-side consent logic (apply-form toggle, validation, payload) is untouched.
 - **Admin applicant detail — cards float (masonry) instead of a fixed grid.** The four summary cards were a row-major 2×2 grid, so Family & Finances was pinned to the second row beneath the tall Academic card, leaving a gap under the shorter About card. Restructured into two independent columns (left: About → Family & Finances; right: Academic → Support) so each column packs its cards top-down and Family floats up directly under About. Self-corrects whichever column is taller. Frontend-only, no migration. (Minor: on mobile the single-column order becomes About → Family → Academic → Support.)
 
