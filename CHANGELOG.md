@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.0] — Branded entry + sponsor-interest capture (2026-05-30)
+
+Replaces the no-op `/login` + single student-only auth modal with a branded entry surface for HalaTuju's user types — **without** regressing the open, browse-first course guide.
+
+- **Header**: a **"Log in"** dropdown (Student → existing Google + deferred-NRIC modal · Sponsor → register-interest · Partner → existing `/admin/login`) + a **"Sign Up"** button → a new `/get-started` chooser (Sign up as student / Register as a sponsor + "Already have an account? Log in"). Reuses `AuthGateModal` for all student auth; no new student auth path.
+- **Browse-first preserved (deliberate)**: the new entries are options, not gates. Anonymous quiz/eligibility/course-search stay open; NRIC stays a deferred soft-claim at save/apply. The NRIC gate's behaviour is unchanged — only `/api/v1/sponsor-interest/` was added to its whitelist.
+- **Sponsor = "register interest"** (no self-serve account yet — the real sponsor portal is a future Phase E). New public `POST /api/v1/sponsor-interest/` (`AllowAny`) + `SponsorInterest` model (`sponsor_interests` table, RLS-on/service-role-only like its siblings) stores the lead and emails the admin (`ADMIN_NOTIFY_EMAIL`). A `/sponsor/register-interest` page captures name/email/organisation/message. Admins can list leads via `GET /api/v1/admin/sponsor-interest/`.
+- **Admin/Partner stays invite-only** (already the case) — the entry just links to `/admin/login`. **Mentor** and **non-Google student login** are explicitly out of scope.
+- Tests: `+6` (`test_sponsor_interest.py`: public submit creates row + emails; missing name/email → 400; gate doesn't block the public path; admin list requires admin). Golden masters + NRIC-gate suites unchanged; jest 155; `next build` clean; i18n parity 1442 × en/ms/ta (Tamil first-draft).
+
 ## [2.15.0] — Phase C: post-shortlist handoff + interview layer (2026-05-30)
 
 Builds the admin side of the post-shortlist funnel (`docs/scholarship/post-shortlist-vision.md` Phase C) and — critically — hardens the **submit → next-step handoff** that exploration found unsound just as the first real batch of students reached Step 4.

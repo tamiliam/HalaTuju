@@ -36,7 +36,38 @@
   "header": {
     "myProfile": "My Profile",
     "myApplications": "My Applications",
-    "logout": "Log Out"
+    "logout": "Log Out",
+    "signUp": "Sign Up",
+    "login": {
+      "label": "Log in",
+      "student": "Student login",
+      "sponsor": "Sponsor login",
+      "partner": "Partner login"
+    }
+  },
+  "getStarted": {
+    "title": "Welcome to HalaTuju",
+    "tagline": "Find the right course, and apply for support to get there.",
+    "student": "Sign up as a student",
+    "or": "or",
+    "sponsor": "Register as a sponsor",
+    "haveAccount": "Already have an account?",
+    "partnerNote": "Partners and coordinators sign in by invitation."
+  },
+  "sponsorInterest": {
+    "title": "Sponsor a student's future",
+    "intro": "Tell us a little about you and we'll be in touch. Sponsor accounts are by invitation while we build the sponsor portal.",
+    "name": "Your name",
+    "email": "Email",
+    "organisation": "Organisation",
+    "message": "Anything you'd like us to know",
+    "messagePlaceholder": "e.g. fields or number of students you'd like to support",
+    "submit": "Register my interest",
+    "submitting": "Sending…",
+    "error": "Could not send. Please try again.",
+    "doneTitle": "Thank you!",
+    "doneBody": "We've received your interest and will be in touch soon.",
+    "backHome": "Back to home"
   },
   "footer": {
     "tagline": "Guiding Malaysian students to the right course.",

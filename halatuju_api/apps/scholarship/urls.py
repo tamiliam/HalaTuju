@@ -10,6 +10,7 @@ from .views import (
     DocumentListCreateView,
     DocumentSignUploadView,
     RefereeListCreateView,
+    SponsorInterestView,
 )
 from .views_admin import (
     AdminApplicationDetailView,
@@ -24,6 +25,7 @@ from .views_admin import (
     AdminRefereeDetailView,
     AdminRequestInfoView,
     AdminRunVisionView,
+    AdminSponsorInterestView,
     AdminVerifyAcceptView,
 )
 
@@ -36,8 +38,11 @@ urlpatterns = [
     path('scholarship/documents/<int:pk>/', DocumentDetailView.as_view()),
     path('scholarship/referees/', RefereeListCreateView.as_view()),
     path('scholarship/consent/', ConsentView.as_view()),
+    # Public sponsor-interest lead capture (no auth)
+    path('sponsor-interest/', SponsorInterestView.as_view()),
 
     # MyNadi admin (PartnerAdmin auth; /admin/ is NRIC-gate whitelisted)
+    path('admin/sponsor-interest/', AdminSponsorInterestView.as_view()),
     path('admin/scholarship/assignable-admins/', AdminAssignableAdminsView.as_view()),
     path('admin/scholarship/applications/', AdminApplicationListView.as_view()),
     path('admin/scholarship/applications/<int:pk>/', AdminApplicationDetailView.as_view()),

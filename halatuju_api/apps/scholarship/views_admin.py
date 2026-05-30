@@ -16,7 +16,8 @@ from apps.courses.views_admin import PartnerAdminMixin
 from .anomaly_engine import detect_anomalies
 from .emails import send_request_info_email
 from .models import (
-    ApplicantDocument, InterviewSession, Referee, ScholarshipApplication, SponsorProfile,
+    ApplicantDocument, InterviewSession, Referee, ScholarshipApplication,
+    SponsorInterest, SponsorProfile,
 )
 from .profile_engine import generate_sponsor_profile
 from .serializers import ApplicantDocumentSerializer, RefereeSerializer
@@ -398,6 +399,19 @@ class AdminInterviewSubmitView(_AdminBase):
             session.save(update_fields=['interviewer'])
         submit_interview(session)
         return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminSponsorInterestView(_AdminBase):
+    """GET .../admin/sponsor-interest/ — registered sponsor leads for follow-up."""
+    def get(self, request):
+        if not self.get_admin(request):
+            return self._deny()
+        rows = SponsorInterest.objects.all()
+        return Response({'interests': [
+            {'id': r.id, 'name': r.name, 'email': r.email, 'organisation': r.organisation,
+             'message': r.message, 'status': r.status, 'created_at': r.created_at}
+            for r in rows
+        ]})
 
 
 class AdminAssignableAdminsView(_AdminBase):

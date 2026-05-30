@@ -984,6 +984,18 @@ export interface ScholarshipApplication {
   intake_snapshot?: Record<string, unknown>   // frozen audit copy of what was declared at submit
 }
 
+/** Public 'register interest in sponsoring' lead capture (no auth). */
+export async function submitSponsorInterest(
+  payload: { name: string; email: string; organisation?: string; message?: string },
+  options?: ApiOptions
+): Promise<{ id: number; status: string }> {
+  return apiRequest('/api/v1/sponsor-interest/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    ...options,
+  })
+}
+
 export async function submitScholarshipApplication(
   payload: Record<string, unknown>,
   lang: string = 'en',

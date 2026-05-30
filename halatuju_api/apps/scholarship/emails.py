@@ -210,6 +210,29 @@ def send_request_info_email(to_email, applicant_name, programme_name, note, lang
         return False
 
 
+def send_sponsor_interest_admin_email(name, email, organisation, message):
+    """Notify the admin that someone registered interest in sponsoring. English,
+    to ``settings.ADMIN_NOTIFY_EMAIL``; skipped silently if unset. Best-effort."""
+    to_email = getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') or ''
+    if not to_email:
+        return False
+    try:
+        send_mail(
+            subject='New sponsor interest registered',
+            message=(
+                f'{name} ({email}) has registered interest in sponsoring.\n'
+                f'Organisation: {organisation or "—"}\n\n'
+                f'Message:\n{message or "—"}'
+            ),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            recipient_list=[to_email],
+        )
+        return True
+    except Exception:
+        logger.warning('Failed to send sponsor-interest email for %s', email, exc_info=True)
+        return False
+
+
 def send_profile_complete_admin_email(application_id, applicant_name, programme_name):
     """Phase C: notify the admin that an applicant has confirmed a complete Step-4
     profile and is ready for review. English-only (internal). Sent to

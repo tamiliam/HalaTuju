@@ -588,3 +588,24 @@ class InterviewSession(models.Model):
 
     def __str__(self):
         return f'InterviewSession #{self.application_id} ({self.status})'
+
+
+class SponsorInterest(models.Model):
+    """A public 'register your interest in sponsoring' lead. Sponsors do not yet
+    have self-serve accounts (that's a future Phase E); this captures the lead +
+    notifies the admin, who follows up. Submitted from the public entry page —
+    no auth required."""
+    STATUS = [('new', 'New'), ('contacted', 'Contacted')]
+    name = models.CharField(max_length=200)
+    email = models.EmailField()
+    organisation = models.CharField(max_length=200, blank=True, default='')
+    message = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS, default='new')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'sponsor_interests'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'SponsorInterest {self.email} ({self.status})'

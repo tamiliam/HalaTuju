@@ -18,14 +18,19 @@ export default function AppHeader() {
   const { session, isAuthenticated, isAnonymous, showAuthGate } = useAuth()
   const { incompleteCount } = useProfileCompleteness()
   const [profileOpen, setProfileOpen] = useState(false)
+  const [loginOpen, setLoginOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
+  const loginRef = useRef<HTMLDivElement>(null)
 
-  // Close profile dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setProfileOpen(false)
+      }
+      if (loginRef.current && !loginRef.current.contains(e.target as Node)) {
+        setLoginOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -194,9 +199,50 @@ export default function AppHeader() {
               )}
             </div>
           ) : (
-            <button onClick={() => showAuthGate('profile')} className="bg-primary-500 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-primary-600 transition-colors whitespace-nowrap">
-              {t('common.getStarted')}
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Log in dropdown — by user type */}
+              <div className="relative" ref={loginRef}>
+                <button
+                  onClick={() => setLoginOpen((v) => !v)}
+                  className="flex items-center gap-1 text-sm font-medium text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-50"
+                >
+                  {t('header.login.label')}
+                  <svg className={`w-4 h-4 text-gray-400 transition-transform ${loginOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {loginOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-20">
+                    <button
+                      onClick={() => { setLoginOpen(false); showAuthGate('profile') }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      {t('header.login.student')}
+                    </button>
+                    <Link
+                      href="/sponsor/register-interest"
+                      onClick={() => setLoginOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      {t('header.login.sponsor')}
+                    </Link>
+                    <a
+                      href="/admin/login"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      {t('header.login.partner')}
+                    </a>
+                  </div>
+                )}
+              </div>
+              {/* Sign Up → branded chooser */}
+              <button
+                onClick={() => router.push('/get-started')}
+                className="bg-primary-500 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-primary-600 transition-colors whitespace-nowrap"
+              >
+                {t('header.signUp')}
+              </button>
+            </div>
           )}
         </div>
 
@@ -292,13 +338,33 @@ export default function AppHeader() {
             )}
 
             {!isAuthenticated && (
-              <div className="border-t border-gray-100 pt-3 mt-2">
+              <div className="border-t border-gray-100 pt-3 mt-2 space-y-1">
                 <button
                   className="block w-full btn-primary text-sm text-center"
+                  onClick={() => { setMobileOpen(false); router.push('/get-started'); }}
+                >
+                  {t('header.signUp')}
+                </button>
+                <p className="px-3 pt-2 text-xs text-gray-400 font-medium">{t('header.login.label')}</p>
+                <button
+                  className="block w-full text-left px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
                   onClick={() => { setMobileOpen(false); showAuthGate('profile'); }}
                 >
-                  {t('common.getStarted')}
+                  {t('header.login.student')}
                 </button>
+                <Link
+                  href="/sponsor/register-interest"
+                  className="block px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {t('header.login.sponsor')}
+                </Link>
+                <a
+                  href="/admin/login"
+                  className="block px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+                >
+                  {t('header.login.partner')}
+                </a>
               </div>
             )}
 
