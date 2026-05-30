@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.16.6] — Admin applicant-detail polish (masonry, income/email, label cleanup) (2026-05-30)
 
 - **Admin applicant detail — income formatting + email link.** Household income now renders as `RM 2,400` (space after RM + thousands separators) instead of `RM2400`. The contact email is now a blue `mailto:` link so it reads as an email at a glance.
 - **Admin applicant detail — relabelled the Support help fields.** "Help: university" → **University application**, "Help: scholarship" → **Scholarship application** (en/ms/ta). Labels render uppercase via the existing field styling. i18n-only.
