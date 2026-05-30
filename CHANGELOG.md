@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **MyKad name OCR — skip card header/label lines.** `vision._extract_name` (which feeds the IC name used by the now-live consent identity gate) picked the *longest* all-caps line, so a card label like "WARGANEGARA MALAYSIA" could be grabbed instead of the name — risking a false `ic_name_mismatch` block. Added a header-phrase blocklist (KAD/PENGENALAN/MYKAD/MALAYSIA/WARGANEGARA/LELAKI/PEREMPUAN/ISLAM): a line made up *entirely* of those tokens is skipped, while a name that merely *contains* one (e.g. "NUR MALAYSIA BINTI ALI") is kept. +4 tests. No migration.
 - **Guardianship letter is now optional, not a hard block.** Under-18s with a non-parent guardian (grandparent / legal guardian / sibling / relative) no longer must upload a guardianship letter to consent — they *may* upload one, but it's optional. Removed the `guardianship_letter_required` 400 in `ConsentView`, dropped the letter from `guardian_docs_done` (now always True), and removed the FE block + warning. parent_ic stays compulsory for everyone.
 - **Tech-support box: email is now a `mailto:` link.**
 - **Consent step layout.** The outstanding-items checklist moved *below* the Give-consent button (was on top), so the consent text + action button lead. The **(temporary, testing-only)** tech-support box moved into the left step menu so it's reachable on every step (mobile fallback below the content, since the menu is hidden < lg). Marked `TEMP` in code for easy removal after testing.

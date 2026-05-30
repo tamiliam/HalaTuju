@@ -82,3 +82,33 @@ class TestRunVisionMatch(TestCase):
         doc.refresh_from_db()
         self.assertEqual(doc.vision_name_match, 'unreadable')
         self.assertEqual(doc.vision_address_match, 'unreadable')
+
+
+class TestExtractNameHeaderBlocklist(TestCase):
+    """_extract_name must pick the real name, not a MyKad header/label line."""
+
+    def _name(self, text, nric=''):
+        from apps.scholarship.vision import _extract_name
+        return _extract_name(text, nric)
+
+    def test_skips_header_phrases_picks_name(self):
+        # "WARGANEGARA MALAYSIA" (20 chars) is LONGER than "MUTHU RAMAN" (11) —
+        # the old heuristic would have grabbed it. The blocklist skips it.
+        text = ("KAD PENGENALAN\nMYKAD\n850101-14-5523\nMUTHU RAMAN\n"
+                "WARGANEGARA MALAYSIA\nLELAKI\nISLAM\nNO 12 JALAN ABC\n50000 KUALA LUMPUR")
+        self.assertEqual(self._name(text, '850101-14-5523'), 'MUTHU RAMAN')
+
+    def test_header_only_text_returns_empty(self):
+        text = "KAD PENGENALAN\nMYKAD\nWARGANEGARA MALAYSIA\nLELAKI"
+        self.assertEqual(self._name(text), '')
+
+    def test_normal_name_still_extracted(self):
+        # Regression: a plain card with a parentage marker still reads the name.
+        text = "KAD PENGENALAN\n030101-14-1234\nPRIYA A/L KRISHNAN\nWARGANEGARA MALAYSIA"
+        self.assertEqual(self._name(text, '030101-14-1234'), 'PRIYA A/L KRISHNAN')
+
+    def test_name_containing_malaysia_word_kept(self):
+        # A name that happens to include a blocklist word is NOT dropped (only
+        # lines made up ENTIRELY of header tokens are skipped).
+        text = "KAD PENGENALAN\nNUR MALAYSIA BINTI ALI\nWARGANEGARA MALAYSIA"
+        self.assertEqual(self._name(text), 'NUR MALAYSIA BINTI ALI')

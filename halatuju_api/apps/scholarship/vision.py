@@ -71,9 +71,20 @@ def _extract_nric(text: str) -> str:
     return m.group(1) if m else ''
 
 
+# MyKad header / label phrases printed on every card — never a person's name.
+# Without this, _extract_name's "longest all-caps line" heuristic can grab a card
+# label (e.g. "WARGANEGARA MALAYSIA", longer than a short name) instead of the
+# name. A line made up ENTIRELY of these tokens is a label, so it's skipped.
+_MYKAD_HEADER_TOKENS = frozenset({
+    'KAD', 'PENGENALAN', 'MYKAD', 'MALAYSIA', 'WARGANEGARA',
+    'LELAKI', 'PEREMPUAN', 'ISLAM',
+})
+
+
 def _extract_name(text: str, nric_match_str: str = '') -> str:
     """Best-effort: the longest line of ALL-CAPS letters (a typical MyKad
-    rendering of the name). Returns '' if no candidate found."""
+    rendering of the name), excluding the card's own header/label lines.
+    Returns '' if no candidate found."""
     if not text:
         return ''
     best = ''
@@ -89,6 +100,11 @@ def _extract_name(text: str, nric_match_str: str = '') -> str:
             continue
         letters = sum(1 for ch in line if ch.isalpha())
         if letters < 4 or letters / max(len(line), 1) < 0.6:
+            continue
+        # Skip MyKad header/label lines (e.g. "KAD PENGENALAN", "WARGANEGARA
+        # MALAYSIA") — a line whose every word is a known card label is not a name.
+        words = [w for w in re.split(r'[^A-Za-z]+', line) if w]
+        if words and all(w.upper() in _MYKAD_HEADER_TOKENS for w in words):
             continue
         if line.upper() == line and len(line) > len(best):
             best = line
