@@ -289,3 +289,48 @@ class TestRoleEndpoint(PhaseCBase):
         self._auth(SUPER)
         r = self.client.get('/api/v1/admin/role/')
         self.assertEqual(r.json()['role'], 'super')
+
+
+class TestStickyProfileCompleteRevert(PhaseCBase):
+    """A profile_complete application that's edited back to incomplete (e.g. a
+    compulsory doc removed) must roll back to 'shortlisted' — honest funnel."""
+
+    def _confirmed(self):
+        from django.utils import timezone
+        app = self._complete(self._make_app(status='profile_complete'))
+        app.profile_completed_at = timezone.now()
+        app.save(update_fields=['profile_completed_at'])
+        return app
+
+    def test_helper_reverts_when_incomplete(self):
+        from apps.scholarship.services import revert_if_profile_incomplete
+        app = self._confirmed()
+        ApplicantDocument.objects.filter(application=app, doc_type='results_slip').delete()
+        self.assertTrue(revert_if_profile_incomplete(app))
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'shortlisted')
+        self.assertIsNone(app.profile_completed_at)
+
+    def test_helper_noop_when_still_complete(self):
+        from apps.scholarship.services import revert_if_profile_incomplete
+        app = self._confirmed()
+        self.assertFalse(revert_if_profile_incomplete(app))
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'profile_complete')
+
+    def test_helper_does_not_touch_interviewing(self):
+        from apps.scholarship.services import revert_if_profile_incomplete
+        app = self._make_app(status='interviewing')  # incomplete + past confirm
+        self.assertFalse(revert_if_profile_incomplete(app))
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'interviewing')
+
+    def test_deleting_compulsory_doc_reverts_via_api(self):
+        app = self._confirmed()
+        ic = ApplicantDocument.objects.get(application=app, doc_type='ic')
+        self._auth(STUDENT)
+        r = self.client.delete(f'/api/v1/scholarship/documents/{ic.id}/')
+        self.assertEqual(r.status_code, 200)
+        app.refresh_from_db()
+        self.assertEqual(app.status, 'shortlisted')
+        self.assertIsNone(app.profile_completed_at)

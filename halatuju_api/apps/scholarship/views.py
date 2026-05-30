@@ -31,6 +31,7 @@ from .services import (
     is_minor,
     record_consent,
     resolve_open_cohort,
+    revert_if_profile_incomplete,
     save_application_details,
     score_application,
 )
@@ -140,6 +141,9 @@ class ApplicationDetailView(APIView):
         serializer = ApplicationDetailsUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         save_application_details(application, serializer.validated_data)
+        # If a confirmed profile was edited back to incomplete, un-confirm it so
+        # the funnel stays honest.
+        revert_if_profile_incomplete(application)
         return Response(ApplicationReadSerializer(application).data)
 
 
@@ -285,7 +289,11 @@ class DocumentDetailView(APIView):
         if doc.storage_path:
             from .storage import delete_objects
             delete_objects([doc.storage_path])
+        application = doc.application
         doc.delete()
+        # Removing a compulsory document can drop a confirmed profile below
+        # complete — un-confirm it so the status reflects reality.
+        revert_if_profile_incomplete(application)
         return Response({'status': 'deleted'})
 
 

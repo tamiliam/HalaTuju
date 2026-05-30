@@ -299,6 +299,24 @@ def confirm_profile(application):
     return True
 
 
+def revert_if_profile_incomplete(application):
+    """Honest-funnel guard: if a ``profile_complete`` application is edited back
+    into an incomplete state (e.g. the student deletes a compulsory document, or
+    clears a required story field), roll the status back to ``shortlisted`` and
+    clear ``profile_completed_at`` so the funnel never shows "complete" on an
+    incomplete profile. Only touches ``profile_complete`` — interviewing /
+    interviewed / accepted are the admin's to own. Returns True if it reverted.
+    """
+    if application.status != 'profile_complete':
+        return False
+    if application_completeness(application)['complete']:
+        return False
+    application.status = 'shortlisted'
+    application.profile_completed_at = None
+    application.save(update_fields=['status', 'profile_completed_at'])
+    return True
+
+
 def submit_interview(session):
     """Phase C: finalise an interview session. Marks it submitted and advances the
     application profile_complete/interviewing → interviewed. Idempotent on the
