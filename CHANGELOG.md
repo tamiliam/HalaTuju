@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.0] — Phase C: post-shortlist handoff + interview layer (2026-05-30)
+
+Builds the admin side of the post-shortlist funnel (`docs/scholarship/post-shortlist-vision.md` Phase C) and — critically — hardens the **submit → next-step handoff** that exploration found unsound just as the first real batch of students reached Step 4.
+
+**New status funnel:** `shortlisted → profile_complete → interviewing → interviewed → accepted` (plus `rejected`). `assigned_to` is an FK, not a status.
+
+- **Explicit "Confirm & submit" (handoff fix).** Step 4 had no "I'm done" action — completion was a silent computed-on-read state the admin couldn't see. New `POST …/applications/<id>/confirm/` (`confirm_profile` service) flips `shortlisted → profile_complete`, stamps `profile_completed_at`, and emails the admin (`ADMIN_NOTIFY_EMAIL`, skipped if unset). The student sees a Confirm button once all parts are done. **Completion is not a freeze** — `POST_SHORTLIST_EDITABLE` keeps Step 4 (incl. document upload via `_current_application`) open through the funnel so the student can add more if asked.
+- **Hard accept-gate.** `AdminVerifyAcceptView` now refuses to accept an application whose live `application_completeness` isn't complete (`400 incomplete_profile` with the breakdown) — no override. The admin detail page disables Accept and lists the missing parts.
+- **Request more documentation.** `POST …/request-info/` stores a note + emails the student (trilingual); the note shows as a banner on their Step 4. No status change.
+- **Admin roles.** `PartnerAdmin.role` ∈ {super, reviewer, viewer} (kept alongside `is_super_admin`, expand-contract; `is_super` property bridges them). `viewer` is read-only; write endpoints (accept, assign, interview, referee, generate/publish profile, request-info) require reviewer/super. `AdminRoleView` returns `role`.
+- **Assignment.** `ScholarshipApplication.assigned_to` FK + `?assigned=me|none|<id>` list filter + an assignment dropdown (`assignable-admins` endpoint) + an "Assigned to me" filter and Assigned column on the list.
+- **InterviewSession + capture UI.** New `interview_sessions` table (findings keyed to the anomaly `{code}` contract → `{verdict ∈ resolved|still_unclear|new_concern, rationale ≤140}`, plus a 1–5 rubric + overall note). The admin detail "Pre-interview flags" card gains a capture form; Save-draft (→ `interviewing`) and Submit (→ `interviewed`, `submit_interview` service). Verdict enum + rationale length validated server-side.
+- **Migrations** `courses/0051` (role) + `scholarship/0023` (assigned_to, profile_completed_at, status/verdict choices, info-request fields, InterviewSession) — additive, applied migrate-first via Supabase MCP; the new `interview_sessions` table gets RLS + an advisors pass.
+- Tests: **1270 backend** (+21 `test_phase_c.py`: confirm, hard-gate, role gating, assignment, interview draft/submit + validation, request-info), golden masters unchanged (SPM 5319 / STPM 2026); jest 155; `next build` clean; i18n parity 1417 × en/ms/ta (Tamil first-draft).
+
 ## [2.14.0] — TD-061 + TD-062: drop dead columns, orphan-blob cleanup (2026-05-30)
 
 **TD-062 — orphan Storage blob cleanup.** New `storage.list_objects(prefix)` helper + `manage.py cleanup_orphan_blobs` command: walks the `b40-documents` bucket's `{app}/{doc_type}/{uuid}` layout, diffs leaf paths against `ApplicantDocument.storage_path`, reports orphans (dry-run default; `--apply` deletes via the existing `delete_objects`). Sweeps the historical blobs leaked by pre-S15 "Remove" clicks. 3 tests (mocked Storage). Running `--apply` on prod is a separate manual step (needs the service-role key locally).

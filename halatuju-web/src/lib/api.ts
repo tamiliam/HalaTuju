@@ -956,6 +956,10 @@ export interface ScholarshipApplication {
   acknowledged_at: string | null
   submitted_at: string
   updated_at: string
+  // Phase C: explicit confirm-submit timestamp + the admin's request-more-docs note
+  profile_completed_at: string | null
+  info_request_note: string
+  info_requested_at: string | null
   aspirations: string
   plans: string
   fears: string
@@ -1006,6 +1010,19 @@ export async function updateScholarshipDetails(
   return apiRequest(`/api/v1/scholarship/applications/${id}/`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
+    ...options,
+  })
+}
+
+/** Phase C: the student's explicit "Confirm & submit" action. Resolves to the
+ *  updated application (status → profile_complete). Throws on 400
+ *  incomplete_profile (the error carries the completeness breakdown). */
+export async function confirmScholarshipApplication(
+  id: number,
+  options?: ApiOptions
+): Promise<ScholarshipApplication> {
+  return apiRequest(`/api/v1/scholarship/applications/${id}/confirm/`, {
+    method: 'POST',
     ...options,
   })
 }

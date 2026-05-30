@@ -61,6 +61,16 @@ class PartnerAdminMixin:
 
         return None
 
+    @staticmethod
+    def has_role(admin, *roles):
+        """Phase C role check. Treats a legacy super (is_super_admin=True) as
+        'super'. 'viewer' is read-only; 'reviewer' is the workhorse; 'super' can
+        do everything (so a super passes any role check)."""
+        if admin is None:
+            return False
+        effective = 'super' if admin.is_super else admin.role
+        return effective == 'super' or effective in roles
+
     def get_partner_students(self, request):
         admin = self.get_admin(request)
         if not admin:
@@ -89,6 +99,7 @@ class AdminRoleView(PartnerAdminMixin, APIView):
         return Response({
             'is_admin': True,
             'is_super_admin': admin.is_super_admin,
+            'role': 'super' if admin.is_super else admin.role,
             'org_name': admin.org.name if admin.org else None,
             'admin_name': admin.name,
         })

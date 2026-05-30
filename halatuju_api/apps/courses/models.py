@@ -402,6 +402,14 @@ class PartnerOrganisation(models.Model):
 
 class PartnerAdmin(models.Model):
     """Admin user for a partner organisation. Separate from StudentProfile."""
+    # Phase C role categories. Kept ALONGSIDE is_super_admin (expand-contract):
+    # is_super_admin is backfilled into role and still read by legacy code; a
+    # later TD drops it once role is the sole source of truth.
+    ROLE_CHOICES = [
+        ('super', 'Super admin'),      # everything + invite/role management
+        ('reviewer', 'Reviewer'),      # verify-accept, interview, referee, profile publish
+        ('viewer', 'Viewer'),          # read-only
+    ]
     supabase_user_id = models.CharField(
         max_length=100, unique=True, null=True, blank=True,
         help_text='Set on first login via UID or email match',
@@ -412,6 +420,10 @@ class PartnerAdmin(models.Model):
         help_text='NULL for super admin',
     )
     is_super_admin = models.BooleanField(default=False)
+    role = models.CharField(
+        max_length=20, choices=ROLE_CHOICES, default='reviewer',
+        help_text='Phase C: super/reviewer/viewer. Backfilled from is_super_admin.',
+    )
     is_active = models.BooleanField(default=True)
     name = models.CharField(max_length=200)
     email = models.EmailField(unique=True)
@@ -419,6 +431,11 @@ class PartnerAdmin(models.Model):
 
     class Meta:
         db_table = 'partner_admins'
+
+    @property
+    def is_super(self):
+        """True for a super admin via either the new role or the legacy flag."""
+        return self.role == 'super' or self.is_super_admin
 
     def __str__(self):
         org_name = self.org.name if self.org else 'Super Admin'

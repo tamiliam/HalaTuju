@@ -2,6 +2,7 @@
 from django.urls import path
 
 from .views import (
+    ApplicationConfirmView,
     ApplicationDetailView,
     ApplicationListCreateView,
     ConsentView,
@@ -14,10 +15,14 @@ from .views_admin import (
     AdminApplicationDetailView,
     AdminApplicationListView,
     AdminApplicationRefereeView,
+    AdminAssignableAdminsView,
     AdminGenerateProfileView,
+    AdminInterviewView,
+    AdminInterviewSubmitView,
     AdminProfileEditView,
     AdminPublishProfileView,
     AdminRefereeDetailView,
+    AdminRequestInfoView,
     AdminRunVisionView,
     AdminVerifyAcceptView,
 )
@@ -25,6 +30,7 @@ from .views_admin import (
 urlpatterns = [
     path('scholarship/applications/', ApplicationListCreateView.as_view()),
     path('scholarship/applications/<int:pk>/', ApplicationDetailView.as_view()),
+    path('scholarship/applications/<int:pk>/confirm/', ApplicationConfirmView.as_view()),
     path('scholarship/documents/sign-upload/', DocumentSignUploadView.as_view()),
     path('scholarship/documents/', DocumentListCreateView.as_view()),
     path('scholarship/documents/<int:pk>/', DocumentDetailView.as_view()),
@@ -32,6 +38,7 @@ urlpatterns = [
     path('scholarship/consent/', ConsentView.as_view()),
 
     # MyNadi admin (PartnerAdmin auth; /admin/ is NRIC-gate whitelisted)
+    path('admin/scholarship/assignable-admins/', AdminAssignableAdminsView.as_view()),
     path('admin/scholarship/applications/', AdminApplicationListView.as_view()),
     path('admin/scholarship/applications/<int:pk>/', AdminApplicationDetailView.as_view()),
     path('admin/scholarship/applications/<int:pk>/verify-accept/', AdminVerifyAcceptView.as_view()),
@@ -41,4 +48,8 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/generate-profile/', AdminGenerateProfileView.as_view()),
     path('admin/scholarship/applications/<int:pk>/profile/', AdminProfileEditView.as_view()),
     path('admin/scholarship/applications/<int:pk>/publish/', AdminPublishProfileView.as_view()),
+    # Phase C: interview capture + request-more-docs
+    path('admin/scholarship/applications/<int:pk>/interview/', AdminInterviewView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/interview/submit/', AdminInterviewSubmitView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/request-info/', AdminRequestInfoView.as_view()),
 ]
