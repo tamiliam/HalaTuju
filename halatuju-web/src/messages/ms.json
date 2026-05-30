@@ -655,7 +655,8 @@
       "saved": "Disimpan.",
       "saveError": "Tidak dapat menyimpan butiran anda. Sila cuba lagi.",
       "step4Title": "4. Muat naik dokumen anda",
-      "step4Body": "Sila muat naik dokumen wajib di bawah — IC anda, slip keputusan terkini anda, dan (untuk pelajar di bawah 18 tahun) IC ibu bapa atau penjaga anda. Dokumen pilihan di bawah membantu menguatkan permohonan anda.",
+      "step4Body": "Sila muat naik dokumen wajib di bawah — IC anda, slip keputusan terkini anda, dan IC ibu bapa atau penjaga anda. Dokumen pilihan di bawah membantu menguatkan permohonan anda.",
+      "techSupport": "Menghadapi masalah teknikal dengan permohonan ini? E-mel tamiliam@gmail.com atau hubungi 012-337 5709 dan terangkan masalah anda — kami sedia membantu.",
       "step5Title": "5. Tambah perujuk",
       "step5Body": "Seseorang yang boleh menjamin anda — guru, kaunselor, atau kenalan komuniti.",
       "step6Title": "6. Berikan persetujuan anda",
@@ -732,7 +733,8 @@
       "funding": {
         "infoBox": "Bantuan kami adalah sehingga RM3,000 — jumlah sebenar mungkin lebih rendah, bergantung kepada dana yang ada dan keperluan anda.",
         "intro": "Tandakan di bawah untuk menunjukkan bagaimana bantuan ini boleh membantu anda. Bantuan kami adalah sehingga RM3,000 — jumlah sebenar mungkin lebih rendah, bergantung kepada dana yang ada dan keperluan anda. Anda tidak perlu mengira jumlah yang tepat.",
-        "lengthLabel": "Berapa lama program anda? (dalam tahun)",
+        "chosenStudyLabel": "Pilihan pengajian anda",
+        "lengthLabel": "Berapa lama program anda? (anggaran, dalam tahun)",
         "length12": "1",
         "length24": "2",
         "length36": "3",
@@ -799,7 +801,7 @@
         "offer_letter": "Jika anda sudah menerima tawaran universiti atau kolej.",
         "parent_ic": "Foto IC ibu bapa atau penjaga anda. Kami menggunakannya untuk mengesahkan dokumen sokongan seperti STR atau KWSP yang biasanya dikeluarkan atas nama ibu bapa anda. (Jika anda di bawah 18 tahun, ibu bapa atau penjaga anda juga akan menandatangani persetujuan di bawah.)",
         "guardianship_letter": "Hanya diperlukan jika persetujuan diberi oleh seseorang selain bapa atau ibu anda — perintah penjagaan dari mahkamah ATAU surat kebenaran bertulis daripada ibu bapa anda.",
-        "photo": "Gambar terkini anda (pilihan)."
+        "photo": "Gambar terkini anda."
       },
       "income": {
         "title": "Bukti pendapatan isi rumah"

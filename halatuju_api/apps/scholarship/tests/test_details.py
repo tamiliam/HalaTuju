@@ -56,6 +56,8 @@ class TestCompleteness(TestCase):
         self.profile.save()
         self.app.aspirations = 'Be an accountant'
         self.app.plans = 'Study hard every day'
+        self.app.daily_life = 'Help at home each evening'
+        self.app.fears = 'Worried about textbook costs'
         self.app.save()
         FundingNeed.objects.create(application=self.app, categories=['living'], programme_months=36)
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
@@ -74,21 +76,27 @@ class TestCompleteness(TestCase):
         self._make_complete()
         self.assertTrue(application_completeness(self.app)['complete'])
 
-    def test_details_done_requires_aspirations_and_plans(self):
-        # aspirations + plans both required — justification no longer counts
+    def test_details_done_requires_aspirations_plans_daily_and_fears(self):
+        # aspirations + plans + daily_life + fears all required now.
         self.app.aspirations = 'Be an engineer'
         self.app.plans = ''
+        self.app.daily_life = 'Help at home'
+        self.app.fears = 'Textbook costs'
         self.app.justification = 'Family cannot fund'
         self.app.save()
         self.assertFalse(application_completeness(self.app)['details_done'])
 
-        self.app.aspirations = ''
         self.app.plans = 'Study hard'
+        self.app.daily_life = ''   # missing daily_life still blocks
         self.app.save()
         self.assertFalse(application_completeness(self.app)['details_done'])
 
-        self.app.aspirations = 'Be an engineer'
-        self.app.plans = 'Study hard'
+        self.app.daily_life = 'Help at home'
+        self.app.fears = ''        # missing fears still blocks
+        self.app.save()
+        self.assertFalse(application_completeness(self.app)['details_done'])
+
+        self.app.fears = 'Textbook costs'
         self.app.save()
         self.assertTrue(application_completeness(self.app)['details_done'])
 
@@ -146,6 +154,8 @@ class TestCompleteness(TestCase):
         self.profile.save()
         self.app.aspirations = 'Be an accountant'
         self.app.plans = 'Study hard every day'
+        self.app.daily_life = 'Help at home each evening'
+        self.app.fears = 'Worried about textbook costs'
         self.app.save()
         FundingNeed.objects.create(application=self.app, categories=['living'], programme_months=36)
         self.assertFalse(application_completeness(self.app)['complete'])
@@ -238,6 +248,7 @@ class TestDetailsApi(TestCase):
             f'/api/v1/scholarship/applications/{self.app_a.id}/',
             {
                 'aspirations': 'Become an auditor', 'plans': 'Work hard every day',
+                'daily_life': 'Help at home each evening', 'fears': 'Worried about fees',
                 # S23: programme_months now compulsory for funding_done.
                 'funding_need': {'categories': ['device', 'living'], 'programme_months': 36},
             }, format='json',

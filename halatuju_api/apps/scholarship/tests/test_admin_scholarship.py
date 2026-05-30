@@ -207,7 +207,8 @@ class TestAdminScholarship(TestCase):
         self.profile.postal_code = '62100'
         self.profile.city = 'Putrajaya'
         self.profile.save()
-        ScholarshipApplication.objects.filter(pk=self.app.id).update(plans='Study hard')
+        ScholarshipApplication.objects.filter(pk=self.app.id).update(
+            plans='Study hard', daily_life='Help at home', fears='Worried about fees')
         FundingNeed.objects.create(application=self.app, categories=['living'], programme_months=36)
         for dt in ('ic', 'results_slip', 'parent_ic', 'str'):
             ApplicantDocument.objects.create(application=self.app, doc_type=dt, storage_path=f'x/{dt}')

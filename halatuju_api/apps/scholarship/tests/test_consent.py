@@ -69,6 +69,7 @@ class TestConsentApi(TestCase):
         profile.address, profile.postal_code, profile.city = '1 Jalan Test', '50000', 'KL'
         profile.save()
         app.aspirations, app.plans = 'Become an engineer.', 'Study hard and apply.'
+        app.daily_life, app.fears = 'I help at home each evening.', 'I worry about textbook costs.'
         app.save()
         FundingNeed.objects.update_or_create(
             application=app, defaults={'categories': ['tuition'], 'programme_months': 24})

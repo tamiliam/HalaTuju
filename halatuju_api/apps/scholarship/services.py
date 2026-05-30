@@ -338,7 +338,13 @@ def application_completeness(application):
     """
     profile = application.profile
     quiz_done = bool(profile and profile.student_signals)
-    details_done = bool(application.aspirations.strip() and application.plans.strip())
+    # Story narrative: aspirations + plans + daily life + worries/support all
+    # required (the latter two made compulsory per request — they carry the
+    # need-context an interviewer relies on).
+    details_done = bool(
+        application.aspirations.strip() and application.plans.strip()
+        and application.daily_life.strip() and application.fears.strip()
+    )
     try:
         fn = application.funding_need
         # S23: programme_months is now compulsory too (the radio group on the

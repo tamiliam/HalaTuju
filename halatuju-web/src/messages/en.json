@@ -655,7 +655,8 @@
       "saved": "Saved.",
       "saveError": "Could not save your details. Please try again.",
       "step4Title": "4. Upload your documents",
-      "step4Body": "Please upload the required documents below — your IC, your latest results slip, and (for under-18s) your parent or guardian's IC. The optional documents help strengthen your application.",
+      "step4Body": "Please upload the required documents below — your IC, your latest results slip, and your parent or guardian's IC. The optional documents help strengthen your application.",
+      "techSupport": "Having technical trouble with this application? Email tamiliam@gmail.com or call 012-337 5709 and describe the problem — we'll be glad to help.",
       "step5Title": "5. Add a referee",
       "step5Body": "Someone who can vouch for you — a teacher, counsellor, or community contact.",
       "step6Title": "6. Give your consent",
@@ -732,7 +733,8 @@
       "funding": {
         "infoBox": "Our assistance is up to RM3,000 — the actual amount may be lower, depending on available funds and your needs.",
         "intro": "Tick below to show what this support would help you with. Our assistance is up to RM3,000 — the actual amount may be lower, depending on available funds and your needs. You don't need to work out exact amounts.",
-        "lengthLabel": "How long is your programme? (in years)",
+        "chosenStudyLabel": "Your chosen study",
+        "lengthLabel": "How long is your programme? (estimated, in years)",
         "length12": "1",
         "length24": "2",
         "length36": "3",
@@ -797,7 +799,7 @@
         "electricity_bill": "A recent bill helps us understand your household.",
         "statement_of_intent": "A short letter about your goals, if you'd like to write one.",
         "offer_letter": "If you already have a university or college offer.",
-        "photo": "A recent photo of yourself (optional).",
+        "photo": "A recent photo of yourself.",
         "parent_ic": "A photo of your parent or guardian's IC. We use it to verify supporting documents like STR or EPF that are usually issued in your parent's name. (If you are under 18, your parent or guardian also signs the consent below.)",
         "guardianship_letter": "Only needed if the consent will be given by someone other than your father or mother — a court-issued guardianship order OR a written authorisation letter from your parent."
       },

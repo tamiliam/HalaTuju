@@ -977,6 +977,13 @@ export interface ScholarshipApplication {
   postal_code: string
   city: string
   preferred_state: string
+  // Decided study (from /apply) — shown read-only on the Funding step so the
+  // student sees what they're funding. Empty/uncertain when still exploring.
+  pathway_certainty?: string
+  chosen_pathway?: string
+  chosen_programme?: { course_id?: string; course_name?: string; field_key?: string } | null
+  pre_u_track?: string
+  pre_u_institution?: string
   funding_need: FundingNeed | null
   completeness: ApplicationCompleteness
   notify_email?: string   // where decision/comms emails are sent (resolved at submit)

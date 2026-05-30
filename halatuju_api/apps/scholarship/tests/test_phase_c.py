@@ -62,6 +62,7 @@ class PhaseCBase(TestCase):
         return ScholarshipApplication.objects.create(
             cohort=self.cohort, profile=self.profile, status=status, bucket='A',
             aspirations='Be an auditor', plans='Study hard',
+            daily_life='Help at home each evening', fears='Worried about fees',
         )
 
     def _complete(self, app):

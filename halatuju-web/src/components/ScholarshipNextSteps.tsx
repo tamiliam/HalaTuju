@@ -339,9 +339,9 @@ export default function ScholarshipNextSteps({
             />
           </div>
 
-          {/* daily_life */}
+          {/* daily_life — required (S: compulsory narrative) */}
           <div>
-            <FieldLabel>{t('scholarship.nextSteps.story.cardB.dailyLife')}</FieldLabel>
+            <FieldLabel required>{t('scholarship.nextSteps.story.cardB.dailyLife')}</FieldLabel>
             <textarea
               className="input" rows={3}
               placeholder={t('scholarship.nextSteps.story.cardB.dailyLifePlaceholder')}
@@ -358,9 +358,9 @@ export default function ScholarshipNextSteps({
             />
           </div>
 
-          {/* fears */}
+          {/* fears (worries / support needed) — required */}
           <div>
-            <FieldLabel>{t('scholarship.nextSteps.story.cardB.fears')}</FieldLabel>
+            <FieldLabel required>{t('scholarship.nextSteps.story.cardB.fears')}</FieldLabel>
             <textarea
               className="input" rows={3}
               placeholder={t('scholarship.nextSteps.story.cardB.fearsPlaceholder')}
@@ -394,6 +394,25 @@ export default function ScholarshipNextSteps({
             folded into the single `intro` string so the student sees one
             clear instruction + context rather than two stacked paragraphs). */}
         <InfoBox kind="info">{t('scholarship.nextSteps.funding.intro')}</InfoBox>
+
+        {/* Decided study (from /apply) — read-only, so the student sees what they
+            are funding. Only when they committed to a choice; uncertain students
+            (still exploring) see nothing here. */}
+        {app.pathway_certainty === 'sure' && (() => {
+          const pathway = app.chosen_pathway
+            ? t(`scholarship.apply.plan.pathway.${app.chosen_pathway}`) : ''
+          const label = app.chosen_programme?.course_name
+            || [pathway, app.pre_u_track, app.pre_u_institution].filter(Boolean).join(' · ')
+            || pathway
+          return label ? (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-gray-400">
+                {t('scholarship.nextSteps.funding.chosenStudyLabel')}
+              </p>
+              <p className="mt-0.5 text-sm font-medium text-gray-800">{label}</p>
+            </div>
+          ) : null
+        })()}
 
         {/* Programme length — horizontal pill row, just the number; "in years"
             moved into the question label (avoids repeating "year(s)" five times).
@@ -508,6 +527,9 @@ export default function ScholarshipNextSteps({
             student-directed info notice (for minors) + the consent body
             itself, so a stacked "Allow us to share…" line was redundant. */}
         <ScholarshipConsent token={token} locale={locale} />
+        {/* Tech-support fallback — always shown on the Consent step so a student
+            stuck by a technical issue has a human to reach. */}
+        <InfoBox kind="info">{t('scholarship.nextSteps.techSupport')}</InfoBox>
       </div>
     ),
   }

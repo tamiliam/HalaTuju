@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **`/application` Step-4 polish (batch).**
+  - **Story:** "What is your daily life like?" and "What worries you most / what support would help?" are now **compulsory** (`*` + added to the story completeness gate). Home address still pre-fills from the profile when set.
+  - **Funding:** the student's **decided study** (from /apply) now shows read-only between the info box and the programme-length question; programme-length label is now "How long is your programme? **(estimated, in years)**".
+  - **Consent:** a **tech-support info box** ("Email tamiliam@gmail.com or call 012-337 5709…") now sits below the consent step so a stuck student has a human to reach.
+  - **Documents:** removed "(for under-18s)" from the intro (parent IC is required for everyone) and "(optional)" from the photo doc. (Income proof remains: any one of STR / salary slip / EPF satisfies it.)
+  - i18n en/ms/ta (parity 1514); story-gate test updates across consent/details/phase-c/admin suites (264 backend, jest 163). No migration.
+
 - **Consent is now a properly-gated final step (Step 4 / `/application`).** Previously an adult could give consent with nothing else done. Consent now requires the whole profile to be complete first, and the student's uploaded IC to be machine-readable and match their name + NRIC — and the Consent step **lists every outstanding item at once** so it can be fixed in one pass (the give-consent button stays disabled until the list is empty; the server enforces the same list).
   - New `consent_blockers(application)` (services.py) returns all unmet preconditions as codes: `quiz_incomplete`, `story_incomplete`, `address_incomplete`, `funding_incomplete`, `ic_missing`, `results_slip_missing`, `parent_ic_missing`, `income_proof_missing`, plus identity checks on the student's own IC — `ic_nric_mismatch`, `ic_name_mismatch`, `ic_unreadable` (poor image → re-upload) and `ic_service_down` (Vision errored → try later). NRIC must match exactly; a *partial* name (subset — same person, shorter/longer form) is allowed since the NRIC is the hard key.
   - `ConsentView` GET returns `blockers`; POST hard-blocks with `{error: 'consent_not_ready', blockers: [...]}`. Existing minor guardian-gate (parent IC name/NRIC match) unchanged. Reuses the existing Vision OCR fields (read once at upload, cached in the DB — no repeat OCR calls).
