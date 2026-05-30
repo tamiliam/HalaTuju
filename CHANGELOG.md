@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.5] — Apply-form first-person voice + admin "Student's note" merge (2026-05-30)
+
+Two polish items continuing the 2.16.x admin/apply pass.
+
+- **First-person voice on /apply** — the form mixed voices ("About Me", "My Family", but "Your Plans", "Your SPM / STPM Results", "Support You'd Like From Us"). Unified every section title + ownership label to the student's own voice: **My Plans**, **My SPM / STPM Results**, **Support I'd Like From Us**, "Number of people in **my** household", "Scholarships **I** have applied for or hold". Direct questions still address the student as "you" (the natural way a form asks) and the organisation stays "us" — so "you = student / us = HalaTuju" holds with no pronoun collision. Chose **"Support I'd Like From Us"** over the literal "From You" precisely to avoid "you" meaning two parties (student in the questions, org in the title) on one screen.
+- **Context-aware results title** — the Results step now names the exam the student actually sat: **"My SPM Results"** for SPM leavers, **"My STPM Results"** for STPM students, instead of the generic "My SPM / STPM Results". New `resultsSpm` / `resultsStpm` keys + a `sectionKey()` helper wired into all three render sites (sidebar nav, progress subtitle, card heading).
+- **Admin "Student's note"** — on the applicant detail page, the two free-text memos ("Anything you'd like to add?" from Plans + "Anything else you'd like us to know?" from Support) now sit in **one** box, each question labelled, instead of two separate cards (one of them mislabelled "Personal appeal"). The Plans block (chosen programme/pathway, top choices, considered pathways) is now nested into the Academic card under a divider rather than a standalone full-width card — tighter, fewer boxes.
+- Additive only — **no migration**. i18n parity **1498 × en/ms/ta** (Tamil first-draft, refine pending); jest **160**; `tsc` clean on both touched pages; `next build` clean.
+
 ## [2.16.4] — Admin: full name, login email, and a merit-calc bug fix (2026-05-30)
 
 Three fixes from reviewing an applicant whose card showed a username, no email, and a too-low merit:

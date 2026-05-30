@@ -392,7 +392,7 @@
       "aCountHelp": "A+, A dan A- semuanya dikira.",
       "pngkLabel": "PNGK STPM",
       "incomeLabel": "Jumlah pendapatan isi rumah bulanan (RM)",
-      "householdSizeLabel": "Bilangan ahli isi rumah",
+      "householdSizeLabel": "Bilangan ahli isi rumah saya",
       "strLabel": "Keluarga saya menerima STR (Sumbangan Tunai Rahmah).",
       "jkmLabel": "Keluarga saya menerima bantuan JKM.",
       "plan": {
@@ -404,7 +404,7 @@
         "pathwayPlaceholder": "Pilih laluan anda",
         "eligibleCount": "{count} layak",
         "loading": "Mencari laluan yang anda layak…",
-        "noPathways": "Kami belum boleh tunjukkan laluan anda — kami tiada keputusan peperiksaan anda. Sila pergi ke langkah \"Keputusan SPM / STPM Anda\" dan masukkan keputusan anda dahulu, kemudian kembali ke sini untuk memilih laluan.",
+        "noPathways": "Kami belum boleh tunjukkan laluan anda — kami tiada keputusan peperiksaan anda. Sila pergi ke langkah \"Keputusan SPM / STPM Saya\" dan masukkan keputusan anda dahulu, kemudian kembali ke sini untuk memilih laluan.",
         "degreeLabel": "Ijazah yang mana?",
         "degreeTip": "Cari ijazah yang keputusan STPM anda melayakkan anda, dan pilih yang telah anda putuskan — bidang pengajian anda diambil daripadanya.",
         "uncertainIntro": "Tidak mengapa — ramai pelajar masih menimbang pilihan mereka. Apa-apa yang anda kongsi di bawah adalah pilihan dan hanya membantu kami membimbing anda.",
@@ -522,9 +522,11 @@
       "section": {
         "personal": "Tentang Saya",
         "family": "Keluarga Saya",
-        "results": "Keputusan SPM / STPM Anda",
-        "plans": "Rancangan Anda",
-        "support": "Bantuan Yang Anda Mahukan"
+        "results": "Keputusan SPM / STPM Saya",
+        "resultsSpm": "Keputusan SPM Saya",
+        "resultsStpm": "Keputusan STPM Saya",
+        "plans": "Rancangan Saya",
+        "support": "Bantuan Yang Saya Mahukan"
       },
       "tab": {
         "personal": "Diri",
@@ -601,7 +603,7 @@
         "helpUniversity": "Memilih kursus, mengisi borang, penyata diri.",
         "helpScholarship": "Temu duga olok-olok, maklum balas permohonan."
       },
-      "otherScholarshipsLabel": "Biasiswa lain yang anda mohon atau pegang",
+      "otherScholarshipsLabel": "Biasiswa yang saya mohon atau pegang",
       "otherScholarshipsPlaceholder": "Lain-lain (sila nyatakan)",
       "helpUniversityLabel": "Mahukan bantuan dengan permohonan universiti?",
       "helpScholarshipLabel": "Mahukan bantuan dengan permohonan biasiswa & temu duga?",
@@ -1544,11 +1546,9 @@
         "academic": "Akademik",
         "contact": "Tentang",
         "family": "Keluarga & kewangan",
-        "plans": "Rancangan",
         "support": "Sokongan Diperlukan",
         "story": "Kisah Anda",
-        "funding": "Pembiayaan",
-        "personalAppeal": "Rayuan peribadi"
+        "funding": "Pembiayaan"
       },
       "coq": "Skor CoQ",
       "spmGrades": "Keputusan SPM",

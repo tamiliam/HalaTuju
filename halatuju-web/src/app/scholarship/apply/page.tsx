@@ -109,6 +109,11 @@ export default function ScholarshipApplyPage() {
   // Context for the Plans step: SPM leavers get the eligible-pathway dropdown;
   // STPM students get the degree branch (P5), so the pathway requirement is skipped.
   const examType: 'spm' | 'stpm' = profile?.exam_type === 'stpm' ? 'stpm' : 'spm'
+  // The Results step title names the actual exam the student sat — "My SPM Results"
+  // or "My STPM Results" — instead of the generic "My SPM / STPM Results". Other
+  // steps map to their key unchanged.
+  const sectionKey = (k: string) =>
+    k === 'results' ? (examType === 'stpm' ? 'resultsStpm' : 'resultsSpm') : k
 
   // Returning from the My Results → onboarding detour: restore the stashed
   // in-progress edits and land back on the Results tab. Runs once on mount,
@@ -864,7 +869,7 @@ export default function ScholarshipApplyPage() {
                   <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${active ? 'bg-primary-500 text-white' : done ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-400'}`}>
                     {done ? '✓' : i + 1}
                   </span>
-                  {t(`scholarship.apply.section.${k}`)}
+                  {t(`scholarship.apply.section.${sectionKey(k)}`)}
                 </button>
               )
             })}
@@ -879,12 +884,12 @@ export default function ScholarshipApplyPage() {
             ))}
           </div>
           <p className="text-xs text-gray-500 mb-4">
-            {t('scholarship.apply.step')} {tabIndex + 1}/5 · {t(`scholarship.apply.section.${tab}`)}
+            {t('scholarship.apply.step')} {tabIndex + 1}/5 · {t(`scholarship.apply.section.${sectionKey(tab)}`)}
           </p>
 
           {/* Active section card */}
           <div className="bg-white border rounded-2xl p-5 shadow-sm mb-4">
-            <h2 className="font-semibold text-gray-900 mb-3">{tabIndex + 1}. {t(`scholarship.apply.section.${tab}`)}</h2>
+            <h2 className="font-semibold text-gray-900 mb-3">{tabIndex + 1}. {t(`scholarship.apply.section.${sectionKey(tab)}`)}</h2>
             {sections[tab]}
           </div>
 

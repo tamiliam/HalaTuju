@@ -337,6 +337,39 @@ export default function AdminScholarshipDetailPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Plans — chosen programme/pathway nested into Academic (no sub-label;
+                    the divider sets it off). The free-text memos live in Student's note. */}
+                {hasPlans && (
+                  <div className="mt-4 border-t border-gray-100 pt-3">
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                      {isInstitutionPathway ? (
+                        <>
+                          <Field label={t('admin.scholarship.chosenPathway')} value={pathwayLabel(app.chosen_pathway)} />
+                          <Field label={t('admin.scholarship.preUTrack')} value={preUTrackLabel} />
+                          <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} />
+                        </>
+                      ) : (
+                        <Field
+                          label={t('admin.scholarship.chosenProgramme')}
+                          value={app.chosen_programme?.course_name
+                            ? courseLink(app.chosen_programme.course_id as string | undefined, app.chosen_programme.course_name as string)
+                            : pathwayLabel(app.chosen_pathway)}
+                        />
+                      )}
+                    </dl>
+                    {app.top_choices?.length > 0 && (
+                      <div className="mt-3">
+                        <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.topChoices')}</dt>
+                        <ol className="list-decimal ml-5 text-sm text-gray-800">
+                          {app.top_choices.map((c) => <li key={c.rank}>{courseLink(c.course_id, c.course_name)}{c.institution ? ` — ${c.institution}` : ''}</li>)}
+                        </ol>
+                      </div>
+                    )}
+                    {app.pathways_considered?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.pathwaysConsidered')} value={joinOr(app.pathways_considered)} /></div>}
+                    {app.uncertainty_reasons?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.uncertaintyReasons')} value={joinOr(app.uncertainty_reasons)} /></div>}
+                  </div>
+                )}
               </Card>
 
               {/* Family & finances */}
@@ -361,50 +394,26 @@ export default function AdminScholarshipDetailPage() {
               </Card>
             </div>
 
-            {/* Student's note — full-width memo, hidden when empty */}
-            {app.uncertainty_note && (
+            {/* Student's note — both free-text memos in one box, each question labelled.
+                "Anything you'd like to add?" (uncertainty_note, from Plans) +
+                "Anything else you'd like us to know?" (anything_else, from Support).
+                Hidden when the student wrote neither. */}
+            {(app.uncertainty_note || app.anything_else) && (
               <Card title={t('admin.scholarship.studentNote')}>
-                <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.uncertainty_note}</p>
-              </Card>
-            )}
-
-            {/* Plans — full-width (pathway-context-aware), hidden when there's nothing */}
-            {hasPlans && (
-              <Card title={t('admin.scholarship.sec.plans')}>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 md:grid-cols-3">
-                  {isInstitutionPathway ? (
-                    <>
-                      <Field label={t('admin.scholarship.chosenPathway')} value={pathwayLabel(app.chosen_pathway)} />
-                      <Field label={t('admin.scholarship.preUTrack')} value={preUTrackLabel} />
-                      <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} />
-                    </>
-                  ) : (
-                    <Field
-                      label={t('admin.scholarship.chosenProgramme')}
-                      value={app.chosen_programme?.course_name
-                        ? courseLink(app.chosen_programme.course_id as string | undefined, app.chosen_programme.course_name as string)
-                        : pathwayLabel(app.chosen_pathway)}
-                    />
+                <div className="space-y-3">
+                  {app.uncertainty_note && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.plan.uncertainNoteLabel')}</dt>
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.uncertainty_note}</p>
+                    </div>
                   )}
-                  {/* Field of study + UPU status are DERIVED (never asked) + low-info — not shown. */}
-                </dl>
-                {app.top_choices?.length > 0 && (
-                  <div className="mt-3">
-                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.topChoices')}</dt>
-                    <ol className="list-decimal ml-5 text-sm text-gray-800">
-                      {app.top_choices.map((c) => <li key={c.rank}>{courseLink(c.course_id, c.course_name)}{c.institution ? ` — ${c.institution}` : ''}</li>)}
-                    </ol>
-                  </div>
-                )}
-                {app.pathways_considered?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.pathwaysConsidered')} value={joinOr(app.pathways_considered)} /></div>}
-                {app.uncertainty_reasons?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.uncertaintyReasons')} value={joinOr(app.uncertainty_reasons)} /></div>}
-              </Card>
-            )}
-
-            {/* Personal appeal — full-width memo (the student's "anything else"), hidden when empty */}
-            {app.anything_else && (
-              <Card title={t('admin.scholarship.sec.personalAppeal')}>
-                <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.anything_else}</p>
+                  {app.anything_else && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.anythingElseLabel')}</dt>
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.anything_else}</p>
+                    </div>
+                  )}
+                </div>
               </Card>
             )}
 

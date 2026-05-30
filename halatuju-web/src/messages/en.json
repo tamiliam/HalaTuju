@@ -392,7 +392,7 @@
       "aCountHelp": "A+, A and A- all count.",
       "pngkLabel": "STPM PNGK (CGPA)",
       "incomeLabel": "Combined monthly household income (RM)",
-      "householdSizeLabel": "Number of people in your household",
+      "householdSizeLabel": "Number of people in my household",
       "strLabel": "My family receives STR (Sumbangan Tunai Rahmah).",
       "jkmLabel": "My family receives JKM assistance.",
       "plan": {
@@ -404,7 +404,7 @@
         "pathwayPlaceholder": "Choose your pathway",
         "eligibleCount": "{count} eligible",
         "loading": "Finding the pathways you qualify for…",
-        "noPathways": "We can't show your pathways yet — we don't have your exam results. Please go to the \"Your SPM / STPM Results\" step and add your results first, then come back here to choose a pathway.",
+        "noPathways": "We can't show your pathways yet — we don't have your exam results. Please go to the \"My SPM / STPM Results\" step and add your results first, then come back here to choose a pathway.",
         "degreeLabel": "Which degree?",
         "degreeTip": "Search the degrees your STPM results qualify you for, and pick the one you've decided on — your field of study is taken from it.",
         "uncertainIntro": "That's completely fine — many students are still weighing their options. Anything you share below is optional and just helps us guide you.",
@@ -522,9 +522,11 @@
       "section": {
         "personal": "About Me",
         "family": "My Family",
-        "results": "Your SPM / STPM Results",
-        "plans": "Your Plans",
-        "support": "Support You'd Like From Us"
+        "results": "My SPM / STPM Results",
+        "resultsSpm": "My SPM Results",
+        "resultsStpm": "My STPM Results",
+        "plans": "My Plans",
+        "support": "Support I'd Like From Us"
       },
       "tab": {
         "personal": "About",
@@ -601,7 +603,7 @@
         "helpUniversity": "Choosing courses, filling forms, personal statements.",
         "helpScholarship": "Mock interviews, feedback on applications."
       },
-      "otherScholarshipsLabel": "Other scholarships you've applied for or hold",
+      "otherScholarshipsLabel": "Scholarships I have applied for or hold",
       "otherScholarshipsPlaceholder": "Other (please specify)",
       "helpUniversityLabel": "Would you like help with university applications?",
       "helpScholarshipLabel": "Would you like help with scholarship applications & interviews?",
@@ -1544,11 +1546,9 @@
         "academic": "Academic",
         "contact": "About",
         "family": "Family & finances",
-        "plans": "Plans",
         "support": "Support Required",
         "story": "Your story",
-        "funding": "Funding",
-        "personalAppeal": "Personal appeal"
+        "funding": "Funding"
       },
       "coq": "CoQ score",
       "spmGrades": "SPM grades",

@@ -296,7 +296,8 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 Current state: post-shortlist funnel is live end-to-end (apply → reveal → Step 4 → **Confirm & submit** →
 admin **hard-gated** accept, with roles + assignment + **InterviewSession** capture). Branded entry + sponsor
-**register-interest** shipped; sponsors have no real account yet. 1276 pytest + 155 jest; golden masters intact.
+**register-interest** shipped; sponsors have no real account yet. 1276 pytest + 160 jest; golden masters intact.
+Latest: 2.16.5 apply-form first-person voice + admin "Student's note" merge (frontend polish, no migration).
 
 Pick one (recommended order):
 1. **Validate Phase C interactively** (recommended FIRST) — drive the real funnel via Playwright MCP against the
