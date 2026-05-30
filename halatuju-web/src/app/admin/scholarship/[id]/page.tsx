@@ -318,7 +318,9 @@ export default function AdminScholarshipDetailPage() {
                   <Field label={t('admin.scholarship.callLanguage')} value={callLangLabel} />
                   {/* Verified email only — shown once the student verifies it, else the
                       verified Google login email. Full-width rows. */}
-                  <div className="col-span-2"><Field label={t('admin.scholarship.email')} value={app.verified_email} /></div>
+                  <div className="col-span-2"><Field label={t('admin.scholarship.email')} value={app.verified_email
+                    ? <a href={`mailto:${app.verified_email}`} className="text-blue-600 hover:underline">{app.verified_email}</a>
+                    : null} /></div>
                   <div className="col-span-2"><Field label={t('admin.scholarship.address')} value={addr} /></div>
                 </dl>
               </Card>
@@ -326,7 +328,7 @@ export default function AdminScholarshipDetailPage() {
               {/* Family & finances — moved up under About (was below Academic) */}
               <Card title={t('admin.scholarship.sec.family')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM${app.household_income}` : null} />
+                  <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM ${Number(app.household_income).toLocaleString('en-US')}` : null} />
                   <Field label={t('admin.scholarship.householdSize')} value={app.household_size} />
                   <Field label="STR" value={yn(app.receives_str)} />
                   <Field label="JKM" value={yn(app.receives_jkm)} />
