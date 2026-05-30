@@ -7,6 +7,7 @@ import {
   declarationNameMismatch,
   formatNric,
   formatPhone,
+  formatAddress,
   isValidPhone,
   eligiblePathways,
   PATHWAY_ORDER,
@@ -501,6 +502,26 @@ describe('formatNric', () => {
   })
   it('produces a value applyFormError accepts once 12 digits are present', () => {
     expect(applyFormError(baseForm({ nric: formatNric('050202022022') }))).not.toBe('nric')
+  })
+})
+
+describe('formatAddress', () => {
+  it('drops blank parts and joins with ", "', () => {
+    expect(formatAddress(['', null, undefined])).toBe('')
+    expect(formatAddress(['Kedah'])).toBe('Kedah')
+    expect(formatAddress([null, '', 'Johor'])).toBe('Johor')
+  })
+  it('title-cases ALL-CAPS input while preserving numbers and short codes', () => {
+    // all-caps, no spaces after commas → clean, title-cased
+    expect(formatAddress(['TB 456,JALAN KEJORA 4,TAMAN KEJORA', '78000 ALOR GAJAH', 'MELAKA']))
+      .toBe('TB 456, Jalan Kejora 4, Taman Kejora, 78000 Alor Gajah, Melaka')
+    // short all-caps road codes (TBK) and number tokens (2/5) are kept verbatim
+    expect(formatAddress(['No.363, Jalan TBK 2/5, Taman Bukit Kepayang', '70200 Seremban', 'Negeri Sembilan']))
+      .toBe('No.363, Jalan TBK 2/5, Taman Bukit Kepayang, 70200 Seremban, Negeri Sembilan')
+  })
+  it('normalises comma spacing and collapses whitespace', () => {
+    expect(formatAddress(['No 2,  Laluan  Sri Pengkalan 14', '31450 Ipoh', 'Perak']))
+      .toBe('No 2, Laluan Sri Pengkalan 14, 31450 Ipoh, Perak')
   })
 })
 

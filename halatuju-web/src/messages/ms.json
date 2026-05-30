@@ -1542,12 +1542,13 @@
       },
       "sec": {
         "academic": "Akademik",
-        "contact": "Hubungan & identiti",
+        "contact": "Tentang",
         "family": "Keluarga & kewangan",
         "plans": "Rancangan",
         "support": "Sokongan Diperlukan",
         "story": "Kisah Anda",
-        "funding": "Pembiayaan"
+        "funding": "Pembiayaan",
+        "personalAppeal": "Rayuan peribadi"
       },
       "coq": "Skor CoQ",
       "spmGrades": "Keputusan SPM",

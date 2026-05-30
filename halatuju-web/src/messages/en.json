@@ -1542,12 +1542,13 @@
       },
       "sec": {
         "academic": "Academic",
-        "contact": "Contact & identity",
+        "contact": "About",
         "family": "Family & finances",
         "plans": "Plans",
         "support": "Support Required",
         "story": "Your story",
-        "funding": "Funding"
+        "funding": "Funding",
+        "personalAppeal": "Personal appeal"
       },
       "coq": "CoQ score",
       "spmGrades": "SPM grades",

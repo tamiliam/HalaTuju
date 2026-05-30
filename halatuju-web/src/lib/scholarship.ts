@@ -84,6 +84,33 @@ export function formatPhone(raw: string): string {
   return `${d.slice(0, areaLen)}-${groupSubscriber(d.slice(areaLen))}`
 }
 
+/** Title-case one address token. Tokens with a digit (house/road codes, postcodes)
+ * are left as typed, and short all-caps codes (≤3 letters: TBK, TB, KE) are kept
+ * uppercase; everything else becomes First-letter-upper. */
+function titleCaseToken(w: string): string {
+  if (/\d/.test(w)) return w
+  const letters = w.replace(/[^A-Za-z]/g, '')
+  if (letters && letters.length <= 3 && letters === letters.toUpperCase()) return w
+  if (w.length <= 1) return w.toUpperCase()
+  return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+}
+
+/** Regularise a free-typed Malaysian address for display: drop blank parts, join
+ * with ", ", normalise comma spacing, collapse whitespace, and title-case words
+ * (numbers + short codes preserved). Students type addresses very inconsistently
+ * (ALL CAPS, no spaces after commas, etc.) — this gives the admin a clean read. */
+export function formatAddress(parts: Array<string | null | undefined>): string {
+  const joined = parts.map((p) => (p || '').trim()).filter(Boolean).join(', ')
+  if (!joined) return ''
+  return joined
+    .replace(/\s*,\s*/g, ', ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .map(titleCaseToken)
+    .join(' ')
+}
+
 /** Group the subscriber digits (after the area code) for display. */
 function groupSubscriber(s: string): string {
   if (s.length <= 5) return s
