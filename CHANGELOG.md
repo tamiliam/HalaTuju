@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- **Admin applicant detail — cards float (masonry) instead of a fixed grid.** The four summary cards were a row-major 2×2 grid, so Family & Finances was pinned to the second row beneath the tall Academic card, leaving a gap under the shorter About card. Restructured into two independent columns (left: About → Family & Finances; right: Academic → Support) so each column packs its cards top-down and Family floats up directly under About. Self-corrects whichever column is taller. Frontend-only, no migration. (Minor: on mobile the single-column order becomes About → Family → Academic → Support.)
+
 ## [2.16.5] — Apply-form first-person voice + admin "Student's note" merge (2026-05-30)
 
 Two polish items continuing the 2.16.x admin/apply pass.

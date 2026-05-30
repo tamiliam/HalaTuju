@@ -304,8 +304,13 @@ export default function AdminScholarshipDetailPage() {
         const guardian = (app.guardians && app.guardians[0]) || null
         return (
           <div className="space-y-4">
-            {/* Four compact cards in a 2×2 grid (About | Academic / Family | Support) */}
+            {/* Two independent columns rather than a row-major grid, so each column
+                packs its cards top-down (masonry-style). Family floats up directly
+                under the shorter About card instead of waiting for the taller
+                Academic card opposite it. */}
             <div className="grid gap-4 md:grid-cols-2 md:items-start">
+              {/* Left column — About, then Family */}
+              <div className="space-y-4">
               {/* About — contact details (NRIC is in the header above) */}
               <Card title={t('admin.scholarship.sec.contact')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
@@ -318,6 +323,21 @@ export default function AdminScholarshipDetailPage() {
                 </dl>
               </Card>
 
+              {/* Family & finances — moved up under About (was below Academic) */}
+              <Card title={t('admin.scholarship.sec.family')}>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                  <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM${app.household_income}` : null} />
+                  <Field label={t('admin.scholarship.householdSize')} value={app.household_size} />
+                  <Field label="STR" value={yn(app.receives_str)} />
+                  <Field label="JKM" value={yn(app.receives_jkm)} />
+                  <Field label={t('admin.scholarship.guardianName')} value={guardian?.name} />
+                  <Field label={t('admin.scholarship.guardianPhone')} value={guardian?.phone ? formatPhone(guardian.phone) : null} />
+                </dl>
+              </Card>
+              </div>
+
+              {/* Right column — Academic (tall: grades + plans), then Support */}
+              <div className="space-y-4">
               {/* Academic — school / merit / grades. Plans + notes are their own boxes below. */}
               <Card title={t('admin.scholarship.sec.academic')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
@@ -372,18 +392,6 @@ export default function AdminScholarshipDetailPage() {
                 )}
               </Card>
 
-              {/* Family & finances */}
-              <Card title={t('admin.scholarship.sec.family')}>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM${app.household_income}` : null} />
-                  <Field label={t('admin.scholarship.householdSize')} value={app.household_size} />
-                  <Field label="STR" value={yn(app.receives_str)} />
-                  <Field label="JKM" value={yn(app.receives_jkm)} />
-                  <Field label={t('admin.scholarship.guardianName')} value={guardian?.name} />
-                  <Field label={t('admin.scholarship.guardianPhone')} value={guardian?.phone ? formatPhone(guardian.phone) : null} />
-                </dl>
-              </Card>
-
               {/* Support required — help + consent (the appeal text is its own box below) */}
               <Card title={t('admin.scholarship.sec.support')}>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
@@ -392,6 +400,7 @@ export default function AdminScholarshipDetailPage() {
                   <Field label={t('admin.scholarship.consentToContact')} value={yn(app.consent_to_contact)} />
                 </dl>
               </Card>
+              </div>
             </div>
 
             {/* Student's note — both free-text memos in one box, each question labelled.
