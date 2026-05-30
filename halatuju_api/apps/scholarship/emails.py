@@ -233,6 +233,35 @@ def send_sponsor_interest_admin_email(name, email, organisation, message):
         return False
 
 
+def send_vision_outage_alert_email(stats):
+    """Alert the admin that Google Vision OCR appears to be down — every recent
+    IC/parent-IC OCR attempt errored and none succeeded. Sent to
+    ``settings.ADMIN_NOTIFY_EMAIL`` (tamiliam@gmail.com); skipped silently if unset.
+    English-only (internal). Best-effort — swallows send failures."""
+    to_email = getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') or ''
+    if not to_email:
+        return False
+    try:
+        send_mail(
+            subject='[HalaTuju] Document OCR (Google Vision) may be down',
+            message=(
+                'Automated check: in the last {window_hours}h, every IC / parent-IC '
+                'OCR attempt failed with a service error and none succeeded '
+                '({service_failures} service failures across {attempts} attempts).\n\n'
+                'While this persists, shortlisted students cannot pass the consent '
+                'identity check (their IC can\'t be auto-verified). Please check the '
+                'Google Vision API status, quota and billing for the HalaTuju project.\n\n'
+                'This is an automated alert and will repeat daily until OCR recovers.'
+            ).format(**stats),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            recipient_list=[to_email],
+        )
+        return True
+    except Exception:
+        logger.warning('Failed to send Vision-outage alert email', exc_info=True)
+        return False
+
+
 def send_profile_complete_admin_email(application_id, applicant_name, programme_name):
     """Phase C: notify the admin that an applicant has confirmed a complete Step-4
     profile and is ready for review. English-only (internal). Sent to

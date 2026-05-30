@@ -11,7 +11,9 @@ from .emails import (
     send_acknowledgement_email, send_pass_email, send_fail_email,
     send_profile_complete_admin_email,
 )
-from .models import Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort
+from .models import (
+    ApplicantDocument, Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort,
+)
 
 
 class IncompleteProfileError(Exception):
@@ -431,6 +433,38 @@ def _ic_identity_blockers(application):
     if ic.vision_name and pname and name_match(ic.vision_name, pname) == 'mismatch':
         out.append('ic_name_mismatch')
     return out
+
+
+def detect_vision_outage(window_hours=24):
+    """Passive Google-Vision health signal from recent IC / parent_ic OCR outcomes.
+
+    Returns ``(is_down, stats)``. ``is_down`` is True when there were OCR attempts
+    in the window and EVERY one carried a service-level error with NOT ONE success
+    — i.e. the OCR *service* (not a single blurry image) has been failing for
+    everyone who tried. A poor image ('empty image' / read-nothing) is NOT counted
+    as a service failure, so a run of bad uploads alone never trips the alert.
+
+    Read-only; no Vision API calls (so the check itself costs nothing). Pair with a
+    daily scheduled run so the admin is alerted once a day while an outage persists.
+    """
+    from django.utils import timezone
+    from datetime import timedelta
+    cutoff = timezone.now() - timedelta(hours=window_hours)
+    docs = ApplicantDocument.objects.filter(
+        doc_type__in=['ic', 'parent_ic'], vision_run_at__gte=cutoff,
+    ).only('vision_error', 'vision_nric', 'vision_name')
+    attempts = successes = service_failures = 0
+    for d in docs:
+        attempts += 1
+        if not d.vision_error and (d.vision_nric or d.vision_name):
+            successes += 1
+        elif d.vision_error and d.vision_error != 'empty image':
+            service_failures += 1
+    is_down = attempts >= 1 and successes == 0 and service_failures >= 1
+    return is_down, {
+        'window_hours': window_hours, 'attempts': attempts,
+        'successes': successes, 'service_failures': service_failures,
+    }
 
 
 def consent_blockers(application):
