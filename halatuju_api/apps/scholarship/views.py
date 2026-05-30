@@ -26,6 +26,7 @@ from .services import (
     IncompleteProfileError,
     POST_SHORTLIST_EDITABLE,
     confirm_profile,
+    consent_blockers,
     create_application,
     is_minor,
     record_consent,
@@ -316,6 +317,10 @@ class ConsentView(APIView):
             # populated when parent_ic is uploaded + OCR has run).
             'parent_ic_vision_nric': (parent_ic.vision_nric or '') if parent_ic else '',
             'parent_ic_vision_name': (parent_ic.vision_name or '') if parent_ic else '',
+            # Every unmet precondition for giving consent (empty = ready). The FE
+            # renders these as a checklist and keeps the consent button disabled
+            # until it's empty; the POST enforces the same list (defence-in-depth).
+            'blockers': consent_blockers(app) if app else ['no_application'],
         })
 
     def post(self, request):
@@ -325,6 +330,16 @@ class ConsentView(APIView):
         serializer = ConsentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         d = serializer.validated_data
+        # Consent is the FINAL step: the profile must be complete, the required
+        # documents uploaded, and the uploaded IC must be readable + match the
+        # student's name/NRIC. Return ALL outstanding items at once so the student
+        # can fix them in one pass (the FE shows the same list). Hard block.
+        blockers = consent_blockers(app)
+        if blockers:
+            return Response(
+                {'error': 'consent_not_ready', 'blockers': blockers},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if is_minor(app.profile):
             # S17: guardian must give the consent (not the minor).
             # S19: typed NRIC also required (alongside name + relationship).

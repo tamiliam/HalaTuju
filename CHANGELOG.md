@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- **Consent is now a properly-gated final step (Step 4 / `/application`).** Previously an adult could give consent with nothing else done. Consent now requires the whole profile to be complete first, and the student's uploaded IC to be machine-readable and match their name + NRIC — and the Consent step **lists every outstanding item at once** so it can be fixed in one pass (the give-consent button stays disabled until the list is empty; the server enforces the same list).
+  - New `consent_blockers(application)` (services.py) returns all unmet preconditions as codes: `quiz_incomplete`, `story_incomplete`, `address_incomplete`, `funding_incomplete`, `ic_missing`, `results_slip_missing`, `parent_ic_missing`, `income_proof_missing`, plus identity checks on the student's own IC — `ic_nric_mismatch`, `ic_name_mismatch`, `ic_unreadable` (poor image → re-upload) and `ic_service_down` (Vision errored → try later). NRIC must match exactly; a *partial* name (subset — same person, shorter/longer form) is allowed since the NRIC is the hard key.
+  - `ConsentView` GET returns `blockers`; POST hard-blocks with `{error: 'consent_not_ready', blockers: [...]}`. Existing minor guardian-gate (parent IC name/NRIC match) unchanged. Reuses the existing Vision OCR fields (read once at upload, cached in the DB — no repeat OCR calls).
+  - Frontend `ScholarshipConsent` renders the blocker checklist and disables the consent toggle/button until ready. New i18n labels (en/ms/ta, parity 1512).
+  - No migration. Backend: scholarship suite 256 passing (8 new consent tests). jest 163; `next build` clean.
+  - **Follow-up (separate):** a scheduled outage check that emails tamiliam@gmail.com if Vision OCR stays down >1 day — needs the pending Cloud Scheduler (shared with the decision-emails job).
+
 ## [2.16.8] — Apply form: rename Support step to "Support I Need" (2026-05-30)
 
 - **Apply form — renamed the Support step.** "Support I'd Like From Us" → **Support I Need** (ms "Bantuan Yang Saya Perlukan"; ta "எனக்குத் தேவையான உதவி"). Shorter and first-person; drops the "us" so there's no pronoun-referent question at all. i18n-only, parity 1498.

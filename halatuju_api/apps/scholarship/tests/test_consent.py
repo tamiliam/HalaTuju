@@ -53,14 +53,62 @@ class TestConsentApi(TestCase):
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid)}')
 
+    def _make_ready(self, app, profile, *, parent_ic=True, ic_nric=None, ic_name=None):
+        """Bring an application to consent-ready (passes consent_blockers): quiz +
+        story + address + funding done, and ic + results_slip + parent_ic + income
+        proof uploaded, with the student's OWN ic OCR matching the profile name/NRIC.
+        Minor tests pass parent_ic=False and add their own OCR'd parent_ic for the
+        guardian gate."""
+        from django.utils import timezone
+        from apps.scholarship.models import ApplicantDocument, FundingNeed
+        if ic_name:
+            profile.name = ic_name
+        elif not profile.name:
+            profile.name = 'Student Name'
+        profile.student_signals = {'aptitude': 'science'}
+        profile.address, profile.postal_code, profile.city = '1 Jalan Test', '50000', 'KL'
+        profile.save()
+        app.aspirations, app.plans = 'Become an engineer.', 'Study hard and apply.'
+        app.save()
+        FundingNeed.objects.update_or_create(
+            application=app, defaults={'categories': ['tuition'], 'programme_months': 24})
+        now = timezone.now()
+        ApplicantDocument.objects.create(
+            application=app, doc_type='ic', storage_path='x/ic',
+            vision_nric=ic_nric or profile.nric, vision_name=ic_name or profile.name,
+            vision_run_at=now, vision_error='')
+        ApplicantDocument.objects.create(application=app, doc_type='results_slip', storage_path='x/r')
+        ApplicantDocument.objects.create(application=app, doc_type='str', storage_path='x/s')
+        if parent_ic:
+            ApplicantDocument.objects.create(application=app, doc_type='parent_ic', storage_path='x/pi')
+
+    def _ic_doc(self, app):
+        from apps.scholarship.models import ApplicantDocument
+        return ApplicantDocument.objects.filter(application=app, doc_type='ic').first()
+
     def test_adult_self_consent(self):
+        self._make_ready(self.app_adult, self.adult)
         self._auth(ADULT)
         resp = self.client.post('/api/v1/scholarship/consent/', {'locale': 'en'}, format='json')
         self.assertEqual(resp.status_code, 201)
         self.assertEqual(resp.json()['version'], CONSENT_VERSION)
         self.assertEqual(resp.json()['granted_by'], 'self')
 
+    def test_consent_blocked_until_profile_complete(self):
+        """The new gate: an incomplete application cannot give consent, and the
+        response lists every outstanding item at once."""
+        self._auth(ADULT)
+        resp = self.client.post('/api/v1/scholarship/consent/', {'locale': 'en'}, format='json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()['error'], 'consent_not_ready')
+        blockers = set(resp.json()['blockers'])
+        # All five outstanding categories surface together (not one at a time).
+        self.assertTrue({'quiz_incomplete', 'story_incomplete', 'funding_incomplete',
+                         'ic_missing', 'results_slip_missing'}.issubset(blockers))
+
     def test_minor_requires_guardian(self):
+        self._make_ready(self.app_minor, self.minor, parent_ic=False)
+        self._add_parent_ic_with_ocr(nric='700101-14-1234', name='Parent Name')
         self._auth(MINOR)
         resp = self.client.post('/api/v1/scholarship/consent/', {'granted_by': 'self'}, format='json')
         self.assertEqual(resp.status_code, 400)
@@ -78,6 +126,7 @@ class TestConsentApi(TestCase):
 
     def test_minor_with_guardian_ok(self):
         # S17/S19: parent_ic uploaded with OCR; typed name + NRIC must match.
+        self._make_ready(self.app_minor, self.minor, parent_ic=False)
         self._add_parent_ic_with_ocr(nric='700101-14-1234', name='Parent Name')
         self._auth(MINOR)
         resp = self.client.post('/api/v1/scholarship/consent/', {
@@ -90,7 +139,10 @@ class TestConsentApi(TestCase):
         self.assertEqual(resp.json()['guardian_nric'], '700101-14-1234')
 
     def test_minor_rejected_without_parent_ic(self):
-        """S17: blocking 400 + error code so the FE can route the student back to step 4."""
+        """parent_ic is part of the completeness gate now (compulsory for everyone),
+        so a missing parent_ic surfaces as a consent_not_ready blocker rather than
+        the old single 'parent_ic_required' error."""
+        self._make_ready(self.app_minor, self.minor, parent_ic=False)  # everything but parent_ic
         self._auth(MINOR)
         resp = self.client.post('/api/v1/scholarship/consent/', {
             'granted_by': 'guardian', 'guardian_name': 'Parent',
@@ -98,10 +150,12 @@ class TestConsentApi(TestCase):
             'guardian_nric': '700101-14-1234',
         }, format='json')
         self.assertEqual(resp.status_code, 400)
-        self.assertEqual(resp.json()['error'], 'parent_ic_required')
+        self.assertEqual(resp.json()['error'], 'consent_not_ready')
+        self.assertIn('parent_ic_missing', resp.json()['blockers'])
 
     def test_minor_non_parent_rejected_without_letter(self):
         """S17: grandparent/legal_guardian/etc. need the guardianship letter on top of the IC."""
+        self._make_ready(self.app_minor, self.minor, parent_ic=False)
         self._add_parent_ic_with_ocr(nric='500101-14-1234', name='Grandma')
         self._auth(MINOR)
         resp = self.client.post('/api/v1/scholarship/consent/', {
@@ -115,6 +169,7 @@ class TestConsentApi(TestCase):
     def test_minor_non_parent_ok_with_letter(self):
         """Both docs uploaded + non-parent relationship → 201 accept."""
         from apps.scholarship.models import ApplicantDocument
+        self._make_ready(self.app_minor, self.minor, parent_ic=False)
         self._add_parent_ic_with_ocr(nric='500101-14-1234', name='Grandma')
         ApplicantDocument.objects.create(
             application=self.app_minor, doc_type='guardianship_letter', storage_path='x/l',
@@ -146,6 +201,7 @@ class TestConsentApi(TestCase):
         """S19: typed parent NRIC must match the parent_ic Vision OCR.
         Was a soft anomaly flag in S17; lawyers won't accept anyone being
         able to type a fake parent NRIC in someone else's session."""
+        self._make_ready(self.app_minor, self.minor, parent_ic=False)
         self._add_parent_ic_with_ocr(nric='700101-14-1234', name='Parent Name')
         self._auth(MINOR)
         resp = self.client.post('/api/v1/scholarship/consent/', {
@@ -158,6 +214,7 @@ class TestConsentApi(TestCase):
 
     def test_minor_rejected_when_typed_name_mismatches_parent_ic(self):
         """S19: typed parent name must match (token-set) the parent_ic Vision OCR."""
+        self._make_ready(self.app_minor, self.minor, parent_ic=False)
         self._add_parent_ic_with_ocr(nric='700101-14-1234', name='Real Parent Name')
         self._auth(MINOR)
         resp = self.client.post('/api/v1/scholarship/consent/', {
@@ -170,6 +227,7 @@ class TestConsentApi(TestCase):
 
     def test_minor_rejected_when_guardian_nric_missing(self):
         """S19: guardian_nric is now required alongside name + relationship."""
+        self._make_ready(self.app_minor, self.minor, parent_ic=False)
         self._add_parent_ic_with_ocr()
         self._auth(MINOR)
         resp = self.client.post('/api/v1/scholarship/consent/', {
@@ -184,6 +242,7 @@ class TestConsentApi(TestCase):
     def test_nric_match_strips_hyphens(self):
         """S19: typed NRIC with hyphens must match Vision-OCR NRIC without
         hyphens (and vice versa) — comparison strips non-digits."""
+        self._make_ready(self.app_minor, self.minor, parent_ic=False)
         self._add_parent_ic_with_ocr(nric='700101141234', name='Parent Name')  # no hyphens
         self._auth(MINOR)
         resp = self.client.post('/api/v1/scholarship/consent/', {
@@ -194,6 +253,7 @@ class TestConsentApi(TestCase):
         self.assertEqual(resp.status_code, 201)
 
     def test_consent_supersedes_prior(self):
+        self._make_ready(self.app_adult, self.adult)
         self._auth(ADULT)
         self.client.post('/api/v1/scholarship/consent/', {}, format='json')
         self.client.post('/api/v1/scholarship/consent/', {}, format='json')
@@ -201,6 +261,76 @@ class TestConsentApi(TestCase):
             Consent.objects.filter(application=self.app_adult, is_active=True).count(), 1,
         )
         self.assertEqual(Consent.objects.filter(application=self.app_adult).count(), 2)
+
+    # ─── Consent-readiness gate: student IC identity (name + NRIC) ─────────
+
+    def test_ic_nric_mismatch_blocks_consent(self):
+        self._make_ready(self.app_adult, self.adult)
+        ic = self._ic_doc(self.app_adult)
+        ic.vision_nric = '999999-99-9999'   # doesn't match the profile NRIC
+        ic.save()
+        self._auth(ADULT)
+        resp = self.client.post('/api/v1/scholarship/consent/', {}, format='json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()['error'], 'consent_not_ready')
+        self.assertIn('ic_nric_mismatch', resp.json()['blockers'])
+
+    def test_ic_name_mismatch_blocks_consent(self):
+        self._make_ready(self.app_adult, self.adult)
+        ic = self._ic_doc(self.app_adult)
+        ic.vision_name = 'Totally Different Person'   # disjoint tokens → mismatch
+        ic.save()
+        self._auth(ADULT)
+        resp = self.client.post('/api/v1/scholarship/consent/', {}, format='json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('ic_name_mismatch', resp.json()['blockers'])
+
+    def test_ic_partial_name_does_not_block(self):
+        """A subset name (same person, shorter/longer form) passes — NRIC is the
+        hard identity key, so 'partial' is allowed."""
+        self._make_ready(self.app_adult, self.adult, ic_name='Priya Devi Kumar')
+        ic = self._ic_doc(self.app_adult)
+        ic.vision_name = 'Priya Kumar'   # subset of the profile name → 'partial'
+        ic.save()
+        self._auth(ADULT)
+        resp = self.client.post('/api/v1/scholarship/consent/', {}, format='json')
+        self.assertEqual(resp.status_code, 201)
+
+    def test_ic_unreadable_blocks_consent(self):
+        """OCR ran but read nothing usable (poor image) → re-upload."""
+        self._make_ready(self.app_adult, self.adult)
+        ic = self._ic_doc(self.app_adult)
+        ic.vision_nric, ic.vision_name, ic.vision_error = '', '', ''
+        ic.save()
+        self._auth(ADULT)
+        resp = self.client.post('/api/v1/scholarship/consent/', {}, format='json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('ic_unreadable', resp.json()['blockers'])
+
+    def test_ic_service_down_blocks_consent(self):
+        """A Vision service error (down / quota / config) → try later, not re-upload."""
+        self._make_ready(self.app_adult, self.adult)
+        ic = self._ic_doc(self.app_adult)
+        ic.vision_error = 'API quota exceeded'
+        ic.save()
+        self._auth(ADULT)
+        resp = self.client.post('/api/v1/scholarship/consent/', {}, format='json')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('ic_service_down', resp.json()['blockers'])
+
+    def test_ready_application_has_no_blockers(self):
+        self._make_ready(self.app_adult, self.adult)
+        self._auth(ADULT)
+        resp = self.client.get('/api/v1/scholarship/consent/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['blockers'], [])
+
+    def test_get_returns_blockers_when_incomplete(self):
+        self._auth(ADULT)
+        resp = self.client.get('/api/v1/scholarship/consent/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('blockers', resp.json())
+        self.assertIn('ic_missing', resp.json()['blockers'])
 
     def test_get_consent_status_minor(self):
         self._auth(MINOR)

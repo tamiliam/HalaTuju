@@ -398,6 +398,76 @@ def _guardian_docs_done(application, profile, present_doc_types):
     return True
 
 
+def _ic_identity_blockers(application):
+    """Identity gate on the student's OWN uploaded IC (doc_type='ic').
+
+    The IC is OCR'd once at upload (run_vision_for_document, synchronous), so by
+    consent time the vision_* fields are populated or carry an error. Returns the
+    relevant blocker code(s):
+      - 'ic_service_down'  : the OCR service errored (Vision down / quota / config)
+                             → re-uploading won't help; tell the student to retry later.
+      - 'ic_unreadable'    : OCR ran but couldn't read the IC (poor image) → re-upload.
+      - 'ic_nric_mismatch' : the IC's NRIC doesn't match the profile NRIC.
+      - 'ic_name_mismatch' : the IC's name is a different person's (disjoint tokens).
+    A 'partial' name (one set a subset of the other — same person, shorter/longer
+    form) is NOT blocked: the NRIC is the hard identity key. Empty profile NRIC/name
+    are skipped (can't compare). Caller guarantees an 'ic' document exists.
+    """
+    from .vision import nric_match, name_match
+    ic = application.documents.filter(doc_type='ic').order_by('-uploaded_at').first()
+    if ic is None or not ic.vision_run_at:
+        return ['ic_service_down']  # never processed — treat as a system issue
+    if ic.vision_error:
+        # 'empty image' = the stored file couldn't be read → re-upload; any other
+        # error (module/API/network) = the OCR service itself failed → retry later.
+        return ['ic_unreadable'] if ic.vision_error == 'empty image' else ['ic_service_down']
+    if not (ic.vision_nric or ic.vision_name):
+        return ['ic_unreadable']  # OCR succeeded but read nothing usable (poor image)
+    out = []
+    pnric = (getattr(application.profile, 'nric', '') or '').strip()
+    pname = (getattr(application.profile, 'name', '') or '').strip()
+    if ic.vision_nric and pnric and not nric_match(ic.vision_nric, pnric):
+        out.append('ic_nric_mismatch')
+    if ic.vision_name and pname and name_match(ic.vision_name, pname) == 'mismatch':
+        out.append('ic_name_mismatch')
+    return out
+
+
+def consent_blockers(application):
+    """Every gate that must pass BEFORE consent can be given, as a list of blocker
+    codes (empty list = ready). Consent is the final step: the profile must be
+    complete, the required documents uploaded, and the uploaded IC must be machine
+    -readable AND match the student's name + NRIC. Each code has a matching i18n
+    label on the frontend, so the student sees ALL outstanding items at once and
+    can fix them in one pass. The ConsentView POST enforces this list; the minor
+    guardian-field checks (typed name/NRIC vs the parent's IC) are separate and
+    run on the submitted consent data.
+    """
+    c = application_completeness(application)
+    blockers = []
+    if not c['quiz_done']:
+        blockers.append('quiz_incomplete')
+    if not c['details_done']:
+        blockers.append('story_incomplete')
+    if not c['address_done']:
+        blockers.append('address_incomplete')
+    if not c['funding_done']:
+        blockers.append('funding_incomplete')
+    present = set(application.documents.values_list('doc_type', flat=True))
+    if 'ic' not in present:
+        blockers.append('ic_missing')
+    if 'results_slip' not in present:
+        blockers.append('results_slip_missing')
+    if 'parent_ic' not in present:
+        blockers.append('parent_ic_missing')
+    if not (present & {'str', 'salary_slip', 'epf'}):
+        blockers.append('income_proof_missing')
+    # Identity check only once the IC is actually uploaded (else 'ic_missing' leads).
+    if 'ic' in present:
+        blockers.extend(_ic_identity_blockers(application))
+    return blockers
+
+
 _DEEPER_FIELDS = (
     'aspirations', 'plans', 'fears', 'justification',
     # "Your story" guided narrative fields (S2 redesign)

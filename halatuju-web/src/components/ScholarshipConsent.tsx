@@ -137,6 +137,9 @@ export default function ScholarshipConsent({
       setStatus(await getConsentStatus({ token }))
     } catch {
       setError(t('scholarship.consent.error'))
+      // Re-fetch so a backend "not ready" rejection refreshes the blocker checklist
+      // (e.g. if the readiness state changed since the tab was opened).
+      getConsentStatus({ token }).then(setStatus).catch(() => { /* ignore */ })
     } finally {
       setSaving(false)
     }
@@ -146,15 +149,36 @@ export default function ScholarshipConsent({
     return <p className="text-green-700 text-sm">{t('scholarship.consent.given')}</p>
   }
 
+  // Consent is the FINAL step: the backend returns every unmet precondition
+  // (profile incomplete, missing documents, IC unreadable / name-NRIC mismatch)
+  // as `blockers`. We list them all so the student can fix them in one pass, and
+  // keep the consent toggle + button disabled until the list is empty.
+  const blockers = status?.blockers ?? []
+  const notReady = blockers.length > 0
+
   const adultIncomplete = !checked
   const minorIncomplete =
     !checked || !guardianName.trim() || !guardianNric.trim() || !relationship
     || !hasParentIc || (needsLetter && !hasGuardianshipLetter)
     || nricMismatch || nameMismatch
-  const submitDisabled = saving || (isMinor ? minorIncomplete : adultIncomplete)
+  const submitDisabled = saving || notReady || (isMinor ? minorIncomplete : adultIncomplete)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
+      {/* Consent is the final step: until every other step + document is done and
+          the uploaded IC matches the student, list ALL outstanding items at once
+          so they can be fixed in one pass. The toggle + button stay disabled. */}
+      {notReady && (
+        <InfoBox kind="warning">
+          <p className="font-medium">{t('scholarship.consent.blockersHeading')}</p>
+          <ul className="mt-1.5 list-disc space-y-1 pl-5">
+            {blockers.map((b) => (
+              <li key={b}>{t(`scholarship.consent.blocker.${b}`)}</li>
+            ))}
+          </ul>
+        </InfoBox>
+      )}
+
       {/* Student-directed info box (minor only) — addresses the logged-in
           student, asking them to hand the page to a parent/guardian. The
           consent body below is parent-voice; this notice is the bridge.

@@ -1090,6 +1090,11 @@ export interface ConsentStatus {
   // Empty strings when parent_ic not uploaded yet or OCR hasn't run.
   parent_ic_vision_nric: string
   parent_ic_vision_name: string
+  // Every unmet precondition for giving consent (empty = ready). Consent is the
+  // final step: profile complete + required documents uploaded + the uploaded IC
+  // readable and matching the student's name/NRIC. The FE renders these as a
+  // checklist and keeps the consent button disabled until the list is empty.
+  blockers: string[]
 }
 
 export async function signUploadDocument(
