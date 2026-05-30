@@ -1377,6 +1377,7 @@
       "assignedToMe": "Assigned to me",
       "unassigned": "Unassigned",
       "assigned": "Assigned",
+      "reviewActions": "Review & actions",
       "assignTitle": "Assign a reviewer",
       "assignError": "Could not change the assignment.",
       "incompleteTitle": "Cannot accept yet — the applicant still owes:",
