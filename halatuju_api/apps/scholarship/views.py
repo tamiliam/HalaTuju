@@ -456,3 +456,39 @@ class SponsorInterestView(APIView):
             organisation=interest.organisation, message=interest.message,
         )
         return Response(SponsorInterestSerializer(interest).data, status=status.HTTP_201_CREATED)
+
+
+class CronRunView(APIView):
+    """Internal endpoint for Cloud Scheduler to run a whitelisted management command
+    inside the already-running api service (which holds all DB/email config), so we
+    avoid a separate Cloud Run Job that would have to replicate plain-env secrets.
+    Auth is a shared-secret header compared in constant time. Public route, but inert
+    without the secret. Never 500s the scheduler (that just causes retries)."""
+    permission_classes = [AllowAny]
+
+    JOBS = {
+        'vision-outage': 'alert_vision_outage',
+        'decision-emails': 'send_pending_decision_emails',
+    }
+
+    def post(self, request, job):
+        import hmac
+        import io
+        import logging
+        from django.conf import settings
+        from django.core.management import call_command
+
+        secret = getattr(settings, 'CRON_SECRET', '') or ''
+        provided = request.headers.get('X-Cron-Secret', '') or ''
+        if not secret or not hmac.compare_digest(secret, provided):
+            return Response({'error': 'forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        command = self.JOBS.get(job)
+        if not command:
+            return Response({'error': 'unknown job'}, status=status.HTTP_404_NOT_FOUND)
+        out = io.StringIO()
+        try:
+            call_command(command, stdout=out)
+        except Exception as e:  # noqa: BLE001 — report, never 500 into scheduler retries
+            logging.getLogger(__name__).warning('Cron job %s failed: %s', job, e, exc_info=True)
+            return Response({'job': job, 'error': str(e)[:300]}, status=status.HTTP_200_OK)
+        return Response({'job': job, 'output': out.getvalue()[:2000]})

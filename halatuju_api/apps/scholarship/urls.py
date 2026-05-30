@@ -6,6 +6,7 @@ from .views import (
     ApplicationDetailView,
     ApplicationListCreateView,
     ConsentView,
+    CronRunView,
     DocumentDetailView,
     DocumentListCreateView,
     DocumentSignUploadView,
@@ -40,6 +41,10 @@ urlpatterns = [
     path('scholarship/consent/', ConsentView.as_view()),
     # Public sponsor-interest lead capture (no auth)
     path('sponsor-interest/', SponsorInterestView.as_view()),
+
+    # Internal cron — Cloud Scheduler runs whitelisted commands via a shared
+    # secret header (X-Cron-Secret). Inert without the secret.
+    path('internal/cron/<str:job>/', CronRunView.as_view()),
 
     # MyNadi admin (PartnerAdmin auth; /admin/ is NRIC-gate whitelisted)
     path('admin/sponsor-interest/', AdminSponsorInterestView.as_view()),

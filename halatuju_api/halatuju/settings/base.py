@@ -110,6 +110,15 @@ SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 
+# Admin notifications. The env var was set on Cloud Run but never read into
+# settings, so getattr(settings, 'ADMIN_NOTIFY_EMAIL', '') silently returned ''
+# and every admin-notify email (sponsor interest, profile-complete, Vision-outage
+# alert) no-op'd. Reading it here makes those actually send.
+ADMIN_NOTIFY_EMAIL = os.environ.get('ADMIN_NOTIFY_EMAIL', '')
+# Shared secret guarding the internal cron endpoint (Cloud Scheduler → the running
+# api service runs scheduled management commands without a separate Cloud Run Job).
+CRON_SECRET = os.environ.get('CRON_SECRET', '')
+
 # Logging configuration (structured JSON for Cloud Run)
 LOGGING = {
     'version': 1,
