@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.1] — Complete applicant profile on the admin detail page (2026-05-30)
+
+The admin applicant detail page showed only a thin slice of what the student entered at /apply (school, qualification, SPM A, income, STR, intended_pathway). Investigation confirmed **no data was lost** — everything is stored; it just wasn't displayed. This surfaces all of it as a complete, grouped profile.
+
+- **`AdminApplicationDetailSerializer` extended** with the profile/application fields it wasn't exposing: contact (`contact_phone`, `contact_email`, `preferred_state`, `postal_code`, `city`, `preferred_call_language`, `referral_source`, `guardians`), academic detail (`muet_band`, `coq_score`, `grades`, `stpm_grades`, `spm_prereq_grades`), "Your story" narrative (`first_in_family`, `parents_occupation`, `siblings_studying_count`, `family_context`, `daily_life`), and `consent_to_contact` / `declaration_name` / `declared_at`. (`declaration_name` was already in the FE type but never sent — now populated.) The My Plans / My Support fields were already exposed but untyped on the FE; now typed.
+- **Admin detail page rebuilt** from two thin cards into grouped sections: **Academic · Contact & identity · Family & finances · My Plans · My Support · Your story · Funding**. The "Your story" card renders only when the student has filled it (post-shortlist).
+- **SPM/STPM-aware** (per request): the Academic section shows SPM A + SPM grades for SPM applicants, and STPM PNGK + MUET + STPM grades (+ SPM prerequisites) for STPM applicants — no more empty STPM fields on an SPM profile or vice versa.
+- Additive only — **no migration, no data change**. Backend test asserts the new fields are present; scholarship suite + golden masters unchanged; jest 155; `next build` clean; i18n parity 1489 × en/ms/ta (Tamil first-draft).
+
 ## [2.16.0] — Branded entry + sponsor-interest capture (2026-05-30)
 
 Replaces the no-op `/login` + single student-only auth modal with a branded entry surface for HalaTuju's user types — **without** regressing the open, browse-first course guide.

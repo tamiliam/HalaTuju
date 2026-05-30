@@ -80,6 +80,43 @@ class TestAdminScholarship(TestCase):
         self.assertIn('referees', body)
         self.assertIsNone(body['sponsor_profile'])
 
+    def test_admin_detail_complete_profile_fields(self):
+        """Complete-profile view: every /apply field the student entered is in the
+        admin detail response (contact/family/academic/plans/support/story)."""
+        # Populate the full set on the profile + application.
+        StudentProfile.objects.filter(pk=self.profile.pk).update(
+            contact_phone='012-3456789', contact_email='priya@example.com',
+            preferred_state='Melaka', preferred_call_language='ta',
+            referral_source='cumig', household_size=5,
+            guardians=[{'name': 'Mr Priya Sr', 'phone': '013-1112222'}],
+            muet_band=4, coq_score=8.0, stpm_grades={}, spm_prereq_grades={},
+        )
+        ScholarshipApplication.objects.filter(pk=self.app.id).update(
+            help_university='yes', help_scholarship='unsure', anything_else='Please help.',
+            consent_to_contact=True, declaration_name='Priya', intends_tertiary_2026=True,
+            pathway_certainty='sure', field_of_study='accounting',
+            first_in_family=True, parents_occupation='Lorry driver',
+            siblings_studying_count=2, family_context='Father ill', daily_life='Help at home',
+        )
+        self._auth(ADMIN)
+        body = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/').json()
+        # Class-B fields now exposed:
+        for key in ('contact_phone', 'contact_email', 'preferred_state', 'preferred_call_language',
+                    'referral_source', 'guardians', 'household_size', 'receives_jkm',
+                    'muet_band', 'coq_score', 'grades', 'stpm_grades',
+                    'consent_to_contact', 'declaration_name', 'declared_at',
+                    'first_in_family', 'parents_occupation', 'siblings_studying_count',
+                    'family_context', 'daily_life',
+                    'help_university', 'help_scholarship', 'anything_else',
+                    'pathway_certainty', 'field_of_study', 'intends_tertiary_2026'):
+            self.assertIn(key, body, f'{key} missing from admin detail')
+        self.assertEqual(body['contact_phone'], '012-3456789')
+        self.assertEqual(body['preferred_state'], 'Melaka')
+        self.assertEqual(body['guardians'][0]['name'], 'Mr Priya Sr')
+        self.assertEqual(body['siblings_studying_count'], 2)
+        self.assertTrue(body['consent_to_contact'])
+        self.assertEqual(body['help_university'], 'yes')
+
     @patch('apps.scholarship.views_admin.generate_sponsor_profile',
            return_value={'markdown': '# Priya\nA strong candidate.', 'model_used': 'gemini-2.5-flash'})
     def test_generate_profile(self, _mock):
