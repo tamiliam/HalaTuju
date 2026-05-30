@@ -45,13 +45,18 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
   )
 }
 
-function Card({ title, children }: { title: string; children: ReactNode }) {
+function Card({ title, children, className = '' }: { title: string; children: ReactNode; className?: string }) {
   return (
-    <div className="bg-white rounded-xl border p-4">
-      <h2 className="font-semibold mb-3">{title}</h2>
+    <div className={`mb-4 break-inside-avoid rounded-xl border border-gray-200 bg-white p-4 shadow-sm ${className}`}>
+      <h2 className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{title}</h2>
       {children}
     </div>
   )
+}
+
+/** Section heading for a group of panels (e.g. "Review & actions"). */
+function GroupLabel({ children }: { children: ReactNode }) {
+  return <h2 className="mb-2 mt-2 text-xs font-semibold uppercase tracking-wider text-gray-500">{children}</h2>
 }
 
 const yn = (v: boolean | null | undefined) => (v === true ? 'Yes' : v === false ? 'No' : '—')
@@ -232,15 +237,34 @@ export default function AdminScholarshipDetailPage() {
   if (!app) return <div className="text-center text-gray-500 mt-8">{t('common.loading')}</div>
 
   return (
-    <div className="space-y-6">
-      <Link href="/admin/scholarship" className="text-sm text-blue-600 hover:underline">‹ {t('admin.scholarship.back')}</Link>
+    <div className="mx-auto max-w-6xl space-y-4 pb-10">
+      {/* Header — applicant identity, status, and key facts at a glance */}
+      <header className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <Link href="/admin/scholarship" className="text-xs text-gray-400 hover:text-gray-600">‹ {t('admin.scholarship.back')}</Link>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">{app.name || '—'}</h1>
+          <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">{app.status}</span>
+          {app.bucket && (
+            <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-amber-100 px-1.5 text-xs font-bold text-amber-700">{app.bucket}</span>
+          )}
+          {app.qualification && (
+            <span className="rounded-full border border-gray-200 px-2 py-0.5 text-xs font-medium text-gray-500">{app.qualification.toUpperCase()}</span>
+          )}
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+          <span>NRIC <span className="font-mono text-gray-700">{app.nric || '—'}</span></span>
+          {app.merit_score != null && (
+            <span>{t('admin.scholarship.meritScore')} <span className="font-semibold text-gray-800">{app.merit_score}</span></span>
+          )}
+          {app.submitted_at && (
+            <span>{t('admin.scholarship.submitted')} {new Date(app.submitted_at).toLocaleDateString()}</span>
+          )}
+          <span>{t('admin.scholarship.assigned')} <span className="text-gray-700">{app.assigned_to_name || '—'}</span></span>
+        </div>
+      </header>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold">{app.name || '—'}</h1>
-        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">{app.status}</span>
-        {app.bucket && <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Bucket {app.bucket}</span>}
-      </div>
-
+      {/* Applicant info — compact masonry of read-only cards */}
+      <div className="columns-1 gap-4 md:columns-2 xl:columns-3">
       {(() => {
         const isStpm = app.qualification === 'stpm'
         // Pathway context: matric/stpm are INSTITUTION pathways (track + school);
@@ -278,7 +302,7 @@ export default function AdminScholarshipDetailPage() {
           <>
             {/* Contact & identity */}
             <Card title={t('admin.scholarship.sec.contact')}>
-              <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                 <Field label="NRIC" value={app.nric} />
                 <Field label={t('admin.scholarship.phone')} value={app.contact_phone ? formatPhone(app.contact_phone) : null} />
                 {/* Verified email only — a typed contact email is shown solely once the
@@ -292,7 +316,7 @@ export default function AdminScholarshipDetailPage() {
             {/* Academic — SPM/STPM-aware. Merit Score = the course-guide ranking
                 number (SPM: grades+CoQ; STPM: PNGK). */}
             <Card title={t('admin.scholarship.sec.academic')}>
-              <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                 <Field label={t('admin.scholarship.school')} value={app.school} />
                 <Field label={t('admin.scholarship.qualification')} value={app.qualification?.toUpperCase()} />
                 <Field label={t('admin.scholarship.meritScore')} value={app.merit_score} />
@@ -314,7 +338,7 @@ export default function AdminScholarshipDetailPage() {
               {/* Plans — merged into the Academic card (pathway-context-aware). */}
               <div className="mt-4 border-t border-gray-100 pt-3">
                 <dt className="text-xs text-gray-400 uppercase tracking-wider mb-2">{t('admin.scholarship.sec.plans')}</dt>
-                <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                   {isInstitutionPathway ? (
                     <>
                       <Field label={t('admin.scholarship.chosenPathway')} value={pathwayLabel(app.chosen_pathway)} />
@@ -347,7 +371,7 @@ export default function AdminScholarshipDetailPage() {
 
             {/* Family & finances */}
             <Card title={t('admin.scholarship.sec.family')}>
-              <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                 <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM${app.household_income}` : null} />
                 <Field label={t('admin.scholarship.householdSize')} value={app.household_size} />
                 <Field label="STR" value={yn(app.receives_str)} />
@@ -359,7 +383,7 @@ export default function AdminScholarshipDetailPage() {
 
             {/* Support */}
             <Card title={t('admin.scholarship.sec.support')}>
-              <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                 <Field label={t('admin.scholarship.helpUniversity')} value={helpLabel(app.help_university)} />
                 <Field label={t('admin.scholarship.helpScholarship')} value={helpLabel(app.help_scholarship)} />
                 <Field label={t('admin.scholarship.consentToContact')} value={yn(app.consent_to_contact)} />
@@ -376,7 +400,7 @@ export default function AdminScholarshipDetailPage() {
                   <Field label={t('admin.scholarship.fears')} value={app.fears} />
                   <Field label={t('admin.scholarship.dailyLife')} value={app.daily_life} />
                   <Field label={t('admin.scholarship.justification')} value={app.justification} />
-                  <dl className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-1">
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 pt-1">
                     <Field label={t('admin.scholarship.firstInFamily')} value={yn(app.first_in_family)} />
                     <Field label={t('admin.scholarship.parentsOccupation')} value={app.parents_occupation} />
                     <Field label={t('admin.scholarship.siblingsStudying')} value={app.siblings_studying_count} />
@@ -389,7 +413,7 @@ export default function AdminScholarshipDetailPage() {
             {/* Funding */}
             {app.funding_need && (
               <Card title={t('admin.scholarship.sec.funding')}>
-                <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
                   <Field label={t('admin.scholarship.funding')} value={joinOr(app.funding_need.categories)} />
                   <Field label={t('admin.scholarship.programmeMonths')} value={app.funding_need.programme_months} />
                 </dl>
@@ -399,9 +423,14 @@ export default function AdminScholarshipDetailPage() {
           </>
         )
       })()}
+      </div>
+
+      {/* Review & actions — interactive panels */}
+      <GroupLabel>{t('admin.scholarship.reviewActions')}</GroupLabel>
+      <div className="grid items-start gap-4 lg:grid-cols-2">
 
       {/* Documents / referees / consent */}
-      <div className="bg-white rounded-xl border p-4">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm lg:col-span-2">
         <h3 className="font-semibold text-sm mb-2">{t('admin.scholarship.documents')} ({app.documents.length})</h3>
         <ul className="text-sm text-gray-600 space-y-1">
           {app.documents.map((d) => (
@@ -459,7 +488,7 @@ export default function AdminScholarshipDetailPage() {
       {/* S16 Phase A: deterministic pre-interview flag list. Each flag = a
           data inconsistency worth asking about during the interview. Empty
           state when nothing flags — the engine is honest about silence. */}
-      <div className="bg-white rounded-xl border p-4 space-y-3">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold">{t('admin.scholarship.anomaly.title')}</h2>
           {app.anomalies && app.anomalies.length > 0 && (
@@ -494,7 +523,7 @@ export default function AdminScholarshipDetailPage() {
       </div>
 
       {/* Phase C: assignment */}
-      <div className="bg-white rounded-xl border p-4 space-y-2">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
         <h2 className="font-semibold">{t('admin.scholarship.assignTitle')}</h2>
         <select
           value={app.assigned_to_id ?? ''}
@@ -508,7 +537,7 @@ export default function AdminScholarshipDetailPage() {
       </div>
 
       {/* Phase C: interview capture — verdict + rationale per pre-interview flag */}
-      <div className="bg-white rounded-xl border p-4 space-y-3">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3 lg:col-span-2">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold">{t('admin.scholarship.interview.title')}</h2>
           {app.interview_session?.status === 'submitted' && (
@@ -585,7 +614,7 @@ export default function AdminScholarshipDetailPage() {
 
       {/* Phase C: request more documentation from the student */}
       {canWrite && (
-        <div className="bg-white rounded-xl border p-4 space-y-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
           <h2 className="font-semibold">{t('admin.scholarship.requestInfoTitle')}</h2>
           <p className="text-xs text-gray-500">{t('admin.scholarship.requestInfoIntro')}</p>
           {app.info_request_note && (
@@ -604,7 +633,7 @@ export default function AdminScholarshipDetailPage() {
       )}
 
       {/* Verify & accept (human gate — locks the NRIC, advances → accepted) */}
-      <div className="bg-white rounded-xl border p-4 space-y-3">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3 lg:col-span-2">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold">{t('admin.scholarship.verifyTitle')}</h2>
           {app.nric_verified && (
@@ -759,7 +788,7 @@ export default function AdminScholarshipDetailPage() {
       </div>
 
       {/* AI sponsor profile */}
-      <div className="bg-white rounded-xl border p-4 space-y-3">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3 lg:col-span-2">
         <div className="flex items-center justify-between gap-2">
           <h2 className="font-semibold">{t('admin.scholarship.profileTitle')}</h2>
           <div className="flex items-center gap-2">
@@ -798,6 +827,7 @@ export default function AdminScholarshipDetailPage() {
           </>
         )}
         {error && <p className="text-red-600 text-sm">{error}</p>}
+      </div>
       </div>
     </div>
   )
