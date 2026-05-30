@@ -299,7 +299,9 @@ export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFo
     receivesJkm: !!profile?.receives_jkm,
     parentName: guardian?.name ?? '',
     parentPhone: formatPhone(guardian?.phone ?? ''),
-    callLanguage: (profile?.preferred_call_language as CallLanguage) ?? '',
+    // Default to "Any (no preference)" (mixed) rather than an empty prompt — most
+    // B40 students have no strong preference; they can still change it.
+    callLanguage: (profile?.preferred_call_language as CallLanguage) || 'mixed',
     pathwayCertainty: '',
     chosenPathway: '',
     chosenProgramme: null,
@@ -314,8 +316,10 @@ export function profileToApplyDefaults(profile?: StudentProfile | null): ApplyFo
     otherScholarships: [],
     otherScholarshipsText: '',
     intendsTertiary2026: true,
-    helpUniversity: '',
-    helpScholarship: '',
+    // Default both support questions to "Not sure" — a neutral, low-pressure
+    // starting point the student can change to a clear Yes/No.
+    helpUniversity: 'unsure',
+    helpScholarship: 'unsure',
     anythingElse: '',
     consentToContact: false,
     declarationName: '',   // never pre-filled — the student must actively sign

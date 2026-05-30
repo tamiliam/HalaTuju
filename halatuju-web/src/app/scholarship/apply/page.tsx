@@ -212,8 +212,16 @@ export default function ScholarshipApplyPage() {
   // chosen pathway and its derived destination so stale state never lingers.
   const setCertainty = (c: PathwayCertainty) => setForm((p) =>
     c === 'sure'
-      ? { ...p, pathwayCertainty: c }
-      : { ...p, pathwayCertainty: c, chosenPathway: '', upuStatus: '' }
+      // Decided: a pathway pick is now compulsory; the undecided-only leanings/reasons
+      // don't apply, so clear them (they must not ride along in the payload).
+      ? { ...p, pathwayCertainty: c, pathwaysConsidered: [], uncertaintyReasons: [] }
+      // Undecided: pre-select sensible defaults — STPM (Form 6) + "still exploring" —
+      // if the student hasn't chosen any. They can change or clear them.
+      : {
+          ...p, pathwayCertainty: c, chosenPathway: '', upuStatus: '',
+          pathwaysConsidered: p.pathwaysConsidered.length ? p.pathwaysConsidered : ['stpm'],
+          uncertaintyReasons: p.uncertaintyReasons.length ? p.uncertaintyReasons : ['exploring'],
+        }
   )
   // Every eligible pathway is a public institution, so a chosen pathway implies a
   // public (non-IPTS) destination — derive upu_status rather than asking again.
@@ -482,7 +490,7 @@ export default function ScholarshipApplyPage() {
           <FieldLabel tip={t('scholarship.apply.tip.callLang')}>{t('scholarship.apply.field.callLang')}</FieldLabel>
           <select className="input" value={form.callLanguage}
             onChange={(e) => update('callLanguage', e.target.value as ApplyFormState['callLanguage'])}>
-            <option value="">{t('scholarship.apply.callLangPlaceholder')}</option>
+            {/* No empty placeholder — "Any (no preference)" (mixed) is the neutral default. */}
             {CALL_LANGUAGE_OPTIONS.map((c) => (
               <option key={c} value={c}>{t(`scholarship.apply.callLang.${c}`)}</option>
             ))}

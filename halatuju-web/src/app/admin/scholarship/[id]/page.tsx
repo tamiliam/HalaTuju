@@ -247,7 +247,6 @@ export default function AdminScholarshipDetailPage() {
         // everything else (asasi, university, poly, pismp…) is a PROGRAMME pathway
         // (a chosen course), so Pre-U track doesn't apply.
         const isInstitutionPathway = app.chosen_pathway === 'matric' || app.chosen_pathway === 'stpm'
-        const upuLabel = app.upu_status ? t(`admin.scholarship.upu.${app.upu_status}`) : '—'
         // Human labels for the stored codes — reuse the apply-form's own i18n maps so
         // the admin sees the same words the student did (matric→Matriculation, etc.).
         const callLangLabel = app.preferred_call_language ? t(`scholarship.apply.callLang.${app.preferred_call_language}`) : null
@@ -327,11 +326,10 @@ export default function AdminScholarshipDetailPage() {
                       : pathwayLabel(app.chosen_pathway)}
                   />
                 )}
-                {/* Field of study is DERIVED from the chosen course (never asked), so it's
-                    blank for institution pathways (matric/STPM pick a track, not a course).
-                    Only show it where it carries meaning — a chosen programme. */}
-                {!isInstitutionPathway && <Field label={t('admin.scholarship.fieldOfStudy')} value={app.field_of_study} />}
-                <Field label={t('admin.scholarship.upuStatus')} value={upuLabel} />
+                {/* Field of study + UPU status are both DERIVED, never asked: field of
+                    study comes from the chosen course (blank for matric/STPM track-pickers),
+                    and UPU status is always "public_other" once any pathway is picked. Both
+                    are low-information, so they're not shown here. */}
               </dl>
               {app.top_choices?.length > 0 && (
                 <div className="mt-3">

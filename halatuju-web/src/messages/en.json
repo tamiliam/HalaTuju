@@ -408,9 +408,9 @@
         "degreeLabel": "Which degree?",
         "degreeTip": "Search the degrees your STPM results qualify you for, and pick the one you've decided on — your field of study is taken from it.",
         "uncertainIntro": "That's completely fine — many students are still weighing their options. Anything you share below is optional and just helps us guide you.",
-        "leaningLabel": "Leaning towards any of these? (optional)",
+        "leaningLabel": "Leaning towards any of these?",
         "leaningTip": "Tap any pathways you're considering — we'll keep them in mind, even if you haven't decided.",
-        "reasonLabel": "Where are you right now? (optional)",
+        "reasonLabel": "Where are you right now?",
         "reasonTip": "Tell us what's on your mind — it helps us offer the right support.",
         "reason": {
           "exploring": "Still exploring what suits me",
@@ -419,7 +419,7 @@
           "family": "Family circumstances I'm working through",
           "finance": "Not sure what I can afford"
         },
-        "uncertainNoteLabel": "Anything you'd like to add? (optional)",
+        "uncertainNoteLabel": "Anything you'd like to add?",
         "uncertainNotePlaceholder": "Tell us what you're thinking…",
         "programmeLabel": "Which course?",
         "programmePlaceholder": "Start typing your course…",
@@ -427,7 +427,7 @@
         "programmeNoMatch": "No match — try a different word.",
         "programmeAtN": "{n} institutions",
         "noProgrammes": "We couldn't find eligible courses for this pathway. Try another pathway, or tell us more in the next step.",
-        "topProgrammesLabel": "Your top 3 programmes (optional)",
+        "topProgrammesLabel": "Your top 3 programmes",
         "topProgrammesTip": "Pick up to three degrees you're weighing up — from the ones your STPM results qualify you for. We'll keep them in mind even if you haven't decided.",
         "trackLabel": "Which matriculation track?",
         "trackTip": "Pick the track you qualify for and have decided on — it sets which colleges you can choose from.",
@@ -605,7 +605,7 @@
       "otherScholarshipsPlaceholder": "Other (please specify)",
       "helpUniversityLabel": "Would you like help with university applications?",
       "helpScholarshipLabel": "Would you like help with scholarship applications & interviews?",
-      "anythingElseLabel": "Anything else you'd like us to know? (optional)",
+      "anythingElseLabel": "Anything else you'd like us to know?",
       "anythingElsePlaceholder": "Special circumstances, concerns, or questions…",
       "help": {
         "yes": "Yes",

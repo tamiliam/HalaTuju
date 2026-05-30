@@ -138,6 +138,15 @@ describe('profileToApplyDefaults', () => {
     expect(d.parentName).toBe('')
     expect(d.householdIncome).toBe('')
     expect(d.receivesStr).toBe(false)
+    expect(d.receivesJkm).toBe(false)
+    // New neutral defaults: language = Any (no preference); support questions = Not sure.
+    expect(d.callLanguage).toBe('mixed')
+    expect(d.helpUniversity).toBe('unsure')
+    expect(d.helpScholarship).toBe('unsure')
+  })
+  it('defaults call language to "mixed" (Any) when the profile has none', () => {
+    const d = profileToApplyDefaults({ household_income: 1000 } as unknown as StudentProfile)
+    expect(d.callLanguage).toBe('mixed')
   })
 })
 

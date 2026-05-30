@@ -408,9 +408,9 @@
         "degreeLabel": "Ijazah yang mana?",
         "degreeTip": "Cari ijazah yang keputusan STPM anda melayakkan anda, dan pilih yang telah anda putuskan — bidang pengajian anda diambil daripadanya.",
         "uncertainIntro": "Tidak mengapa — ramai pelajar masih menimbang pilihan mereka. Apa-apa yang anda kongsi di bawah adalah pilihan dan hanya membantu kami membimbing anda.",
-        "leaningLabel": "Cenderung kepada mana-mana ini? (pilihan)",
+        "leaningLabel": "Cenderung kepada mana-mana ini?",
         "leaningTip": "Ketik mana-mana laluan yang anda pertimbangkan — kami akan mengingatinya, walaupun anda belum putuskan.",
-        "reasonLabel": "Di mana anda sekarang? (pilihan)",
+        "reasonLabel": "Di mana anda sekarang?",
         "reasonTip": "Beritahu kami apa yang ada di fikiran anda — ia membantu kami menawarkan sokongan yang tepat.",
         "reason": {
           "exploring": "Masih meneroka apa yang sesuai",
@@ -419,7 +419,7 @@
           "family": "Keadaan keluarga yang saya tangani",
           "finance": "Tidak pasti apa yang saya mampu"
         },
-        "uncertainNoteLabel": "Apa-apa yang ingin anda tambah? (pilihan)",
+        "uncertainNoteLabel": "Apa-apa yang ingin anda tambah?",
         "uncertainNotePlaceholder": "Beritahu kami apa yang anda fikirkan…",
         "programmeLabel": "Kursus yang mana?",
         "programmePlaceholder": "Mula menaip kursus anda…",
@@ -427,7 +427,7 @@
         "programmeNoMatch": "Tiada padanan — cuba perkataan lain.",
         "programmeAtN": "{n} institusi",
         "noProgrammes": "Kami tidak menemui kursus yang anda layak untuk laluan ini. Cuba laluan lain, atau beritahu kami lebih lanjut pada langkah seterusnya.",
-        "topProgrammesLabel": "3 program pilihan utama anda (pilihan)",
+        "topProgrammesLabel": "3 program pilihan utama anda",
         "topProgrammesTip": "Pilih sehingga tiga ijazah yang anda sedang pertimbangkan — daripada yang layak dengan keputusan STPM anda. Kami akan ambil kira walaupun anda belum putuskan.",
         "trackLabel": "Trek matrikulasi yang mana?",
         "trackTip": "Pilih trek yang anda layak dan telah putuskan — ia menentukan kolej yang boleh anda pilih.",
@@ -605,7 +605,7 @@
       "otherScholarshipsPlaceholder": "Lain-lain (sila nyatakan)",
       "helpUniversityLabel": "Mahukan bantuan dengan permohonan universiti?",
       "helpScholarshipLabel": "Mahukan bantuan dengan permohonan biasiswa & temu duga?",
-      "anythingElseLabel": "Apa-apa lagi yang anda ingin kami tahu? (pilihan)",
+      "anythingElseLabel": "Apa-apa lagi yang anda ingin kami tahu?",
       "anythingElsePlaceholder": "Keadaan istimewa, kebimbangan, atau soalan…",
       "help": {
         "yes": "Ya",
