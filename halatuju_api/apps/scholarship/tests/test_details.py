@@ -523,17 +523,18 @@ class TestGuardianDocsDone(TestCase):
         app = self._make_minor_app()
         self.assertTrue(application_completeness(app)['guardian_docs_done'])
 
-    def test_minor_non_parent_consent_requires_letter(self):
-        """S22: minor + non-parent guardian still needs the letter."""
+    def test_minor_non_parent_consent_letter_optional(self):
+        """The guardianship letter is now OPTIONAL — a non-parent guardian
+        (grandparent etc.) is complete without it."""
         app = self._make_minor_app()
-        # Active consent with grandparent relationship → letter required.
         Consent.objects.create(
             application=app, version='t', is_active=True,
             granted_by='guardian', guardian_name='Grandma',
             guardian_relationship='grandparent',
         )
-        self.assertFalse(application_completeness(app)['guardian_docs_done'])
-        # Upload guardianship_letter → done.
+        # No letter uploaded → still done (letter is optional now).
+        self.assertTrue(application_completeness(app)['guardian_docs_done'])
+        # Uploading one is still fine.
         ApplicantDocument.objects.create(
             application=app, doc_type='guardianship_letter', storage_path='x/l',
         )

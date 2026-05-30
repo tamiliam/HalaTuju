@@ -154,8 +154,9 @@ class TestConsentApi(TestCase):
         self.assertEqual(resp.json()['error'], 'consent_not_ready')
         self.assertIn('parent_ic_missing', resp.json()['blockers'])
 
-    def test_minor_non_parent_rejected_without_letter(self):
-        """S17: grandparent/legal_guardian/etc. need the guardianship letter on top of the IC."""
+    def test_minor_non_parent_ok_without_letter(self):
+        """The guardianship letter is now OPTIONAL — a non-parent guardian
+        (grandparent etc.) can consent without it (was a hard block before)."""
         self._make_ready(self.app_minor, self.minor, parent_ic=False)
         self._add_parent_ic_with_ocr(nric='500101-14-1234', name='Grandma')
         self._auth(MINOR)
@@ -164,8 +165,8 @@ class TestConsentApi(TestCase):
             'guardian_relationship': 'grandparent',
             'guardian_nric': '500101-14-1234',
         }, format='json')
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(resp.json()['error'], 'guardianship_letter_required')
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.json()['guardian_relationship'], 'grandparent')
 
     def test_minor_non_parent_ok_with_letter(self):
         """Both docs uploaded + non-parent relationship → 201 accept."""

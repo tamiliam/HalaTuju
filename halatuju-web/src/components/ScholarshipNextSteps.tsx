@@ -74,6 +74,20 @@ function StepIcon({ step, active }: { step: NextStepKey; active: boolean }) {
   )
 }
 
+/** Render the tech-support text with the email address as a mailto: link. */
+function renderTechSupport(text: string): React.ReactNode {
+  const email = 'tamiliam@gmail.com'
+  const i = text.indexOf(email)
+  if (i === -1) return text
+  return (
+    <>
+      {text.slice(0, i)}
+      <a href={`mailto:${email}`} className="font-medium underline hover:no-underline">{email}</a>
+      {text.slice(i + email.length)}
+    </>
+  )
+}
+
 export default function ScholarshipNextSteps({
   initialApp,
   token,
@@ -625,7 +639,7 @@ export default function ScholarshipNextSteps({
             {/* TEMP (testing only — remove when testing is done): tech-support help
                 placed in the menu so it's reachable on every step during testing. */}
             <div className="pt-3">
-              <InfoBox kind="info">{t('scholarship.nextSteps.techSupport')}</InfoBox>
+              <InfoBox kind="info">{renderTechSupport(t('scholarship.nextSteps.techSupport'))}</InfoBox>
             </div>
           </nav>
         </aside>
@@ -655,7 +669,7 @@ export default function ScholarshipNextSteps({
       {/* TEMP (testing only — remove when done): tech-support on mobile, where the
           left menu is hidden. */}
       <div className="lg:hidden mt-4">
-        <InfoBox kind="info">{t('scholarship.nextSteps.techSupport')}</InfoBox>
+        <InfoBox kind="info">{renderTechSupport(t('scholarship.nextSteps.techSupport'))}</InfoBox>
       </div>
 
       {/* Bottom tab bar (mobile only) */}

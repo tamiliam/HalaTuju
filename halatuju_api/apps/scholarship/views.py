@@ -415,19 +415,9 @@ class ConsentView(APIView):
                                 "uploaded. Please check both."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            # S17: for non-parent relationships, the guardianship letter (court
-            # order OR parent's written authorisation) must be uploaded too.
-            from .services import needs_guardianship_letter
-            if (needs_guardianship_letter(d['guardian_relationship'])
-                    and 'guardianship_letter' not in present):
-                return Response(
-                    {'error': 'guardianship_letter_required',
-                     'message': "Because you are not the applicant's father "
-                                "or mother, please also upload the guardianship "
-                                "letter or parent's written authorisation "
-                                "before signing."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            # Non-parent guardians (grandparent / legal guardian / sibling /
+            # relative) MAY upload a guardianship letter, but it is no longer
+            # required — the letter is optional, not a hard block.
         consent = record_consent(
             app,
             consent_type=d['consent_type'],

@@ -331,9 +331,9 @@ def application_completeness(application):
     consent_done (S5): an active Consent row exists.
     address_done (S14): profile has street + postal_code + city (state already
     came from /apply). Stored on the profile, captured in the Story tab.
-    guardian_docs_done (S17): adults are trivially true; minors must additionally
-    upload parent_ic, and if the consenting adult is not father/mother also a
-    guardianship_letter. Determined by the latest active consent's relationship.
+    guardian_docs_done: always True now — the guardianship letter (non-parent
+    guardian of a minor) is optional, not required. (parent_ic stays compulsory
+    for everyone via documents_done.)
     complete (S17 finalise): all seven parts done.
     """
     profile = application.profile
@@ -388,21 +388,11 @@ def application_completeness(application):
 
 
 def _guardian_docs_done(application, profile, present_doc_types):
-    """S17 / S22 helper: are the minor-only guardian docs satisfied?
-
-    Adults: always True (parent_ic is now part of `documents_done`).
-    Minors: if the latest active consent's relationship is NOT father/mother,
-    a `guardianship_letter` is also required. If no active consent yet, the
-    letter check is deferred — but the consent serializer refuses to record
-    a non-parent relationship without the letter, so by the time consent_done
-    is true the doc must exist.
+    """Always True now. The guardianship letter (for non-parent guardians of a
+    minor) used to be a hard requirement, but it is no longer required — a student
+    MAY upload one optionally. Kept as a function (and a completeness key) so the
+    shape of `application_completeness` is unchanged for the frontend.
     """
-    if not is_minor(profile):
-        return True
-    latest = application.consents.filter(is_active=True).order_by('-granted_at').first()
-    if latest and needs_guardianship_letter(latest.guardian_relationship):
-        return 'guardianship_letter' in present_doc_types
-    # No active consent yet OR active consent is a parent relationship → no extra letter needed.
     return True
 
 

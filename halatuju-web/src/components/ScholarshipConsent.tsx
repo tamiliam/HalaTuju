@@ -23,13 +23,11 @@ function renderRich(body: string): React.ReactNode[] {
 }
 
 /** S19 — the 7 structured codes that match Consent.GUARDIAN_RELATIONSHIPS on
- *  the backend. `father` / `mother` skip the guardianship-letter requirement;
- *  everything else needs it. */
+ *  the backend. (The guardianship letter is now optional for all of them.) */
 const GUARDIAN_RELATIONSHIPS = [
   'father', 'mother', 'legal_guardian', 'grandparent', 'brother', 'sister', 'relative',
 ] as const
 type GuardianRelationship = typeof GUARDIAN_RELATIONSHIPS[number]
-const PARENT_RELATIONSHIPS = new Set<GuardianRelationship>(['father', 'mother'])
 
 /** Digits-only canonical form for NRIC comparison (matches backend nric_match). */
 const canonicalNric = (s: string): string => s.replace(/\D/g, '')
@@ -77,8 +75,8 @@ export default function ScholarshipConsent({
   const isMinor = !!status?.is_minor
   const hasActive = !!status?.consents?.some((c) => c.is_active)
   const hasParentIc = documents.some((d) => d.doc_type === 'parent_ic')
-  const hasGuardianshipLetter = documents.some((d) => d.doc_type === 'guardianship_letter')
-  const needsLetter = isMinor && relationship !== '' && !PARENT_RELATIONSHIPS.has(relationship)
+  // A guardianship letter is OPTIONAL (a non-parent guardian may upload one but
+  // it is not required) — so it no longer gates consent.
 
   // S19 — live mismatch check against parent_ic Vision OCR values from the
   // status payload. Empty strings when OCR hasn't run / IC not uploaded yet.
@@ -159,7 +157,7 @@ export default function ScholarshipConsent({
   const adultIncomplete = !checked
   const minorIncomplete =
     !checked || !guardianName.trim() || !guardianNric.trim() || !relationship
-    || !hasParentIc || (needsLetter && !hasGuardianshipLetter)
+    || !hasParentIc
     || nricMismatch || nameMismatch
   const submitDisabled = saving || notReady || (isMinor ? minorIncomplete : adultIncomplete)
 
@@ -240,11 +238,6 @@ export default function ScholarshipConsent({
               ))}
             </select>
           </div>
-
-          {/* Non-parent guardians additionally need the guardianship letter. */}
-          {needsLetter && !hasGuardianshipLetter && (
-            <InfoBox kind="warning">{t('scholarship.consent.needGuardianshipLetter')}</InfoBox>
-          )}
         </>
       )}
 

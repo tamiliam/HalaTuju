@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **Guardianship letter is now optional, not a hard block.** Under-18s with a non-parent guardian (grandparent / legal guardian / sibling / relative) no longer must upload a guardianship letter to consent — they *may* upload one, but it's optional. Removed the `guardianship_letter_required` 400 in `ConsentView`, dropped the letter from `guardian_docs_done` (now always True), and removed the FE block + warning. parent_ic stays compulsory for everyone.
+- **Tech-support box: email is now a `mailto:` link.**
 - **Consent step layout.** The outstanding-items checklist moved *below* the Give-consent button (was on top), so the consent text + action button lead. The **(temporary, testing-only)** tech-support box moved into the left step menu so it's reachable on every step (mobile fallback below the content, since the menu is hidden < lg). Marked `TEMP` in code for easy removal after testing.
 - **/apply state list — federal territories now carry the "W.P." prefix** ("W.P. Kuala Lumpur" / "W.P. Putrajaya" / "W.P. Labuan"), matching the /profile + /onboarding lists which already used it (the /apply list was the inconsistent one). Backend `_normalize_state` strips "W.P." so anomaly-engine state matching is unaffected. Normalised the 1 existing short-form profile row to match.
 
