@@ -7,6 +7,7 @@ import {
   declarationNameMismatch,
   formatNric,
   formatPhone,
+  formatMoney2dp,
   formatAddress,
   isValidPhone,
   eligiblePathways,
@@ -291,6 +292,11 @@ describe('applyFormError', () => {
     expect(applyFormError(baseForm({ householdSize: '0' }))).toBe('householdSize')
     expect(applyFormError(baseForm({ householdSize: '4' }))).toBeNull()
   })
+  it('rejects a household size above 20', () => {
+    expect(applyFormError(baseForm({ householdSize: '21' }))).toBe('householdSizeMax')
+    expect(applyFormError(baseForm({ householdSize: '3000' }))).toBe('householdSizeMax')
+    expect(applyFormError(baseForm({ householdSize: '20' }))).toBeNull()
+  })
   it('requires household income', () => {
     expect(applyFormError(baseForm({ householdIncome: '' }))).toBe('income')
   })
@@ -545,6 +551,21 @@ describe('formatPhone', () => {
     expect(formatPhone('088123456')).toBe('088-123 456')    // Sabah/Sarawak 08X
     expect(formatPhone('03-1234 5678')).toBe('03-1234 5678') // idempotent
     expect(formatPhone('088-123 456')).toBe('088-123 456')  // idempotent
+  })
+})
+
+describe('formatMoney2dp', () => {
+  it('groups thousands and adds two decimals', () => {
+    expect(formatMoney2dp('3000')).toBe('3,000.00')
+    expect(formatMoney2dp('1234567')).toBe('1,234,567.00')
+    expect(formatMoney2dp('0')).toBe('0.00')
+    expect(formatMoney2dp(2400)).toBe('2,400.00')
+  })
+  it('returns empty for empty / nullish / non-numeric input', () => {
+    expect(formatMoney2dp('')).toBe('')
+    expect(formatMoney2dp(null)).toBe('')
+    expect(formatMoney2dp(undefined)).toBe('')
+    expect(formatMoney2dp('abc')).toBe('')
   })
 })
 

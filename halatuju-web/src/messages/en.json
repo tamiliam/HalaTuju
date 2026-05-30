@@ -489,6 +489,7 @@
         "aCount": "Please enter how many A's you scored in SPM.",
         "pngk": "Please enter your STPM PNGK.",
         "householdSize": "Please enter how many people are in your household (at least 1).",
+        "householdSizeMax": "Your household can't have more than 20 people.",
         "income": "Please enter your combined monthly household income.",
         "generic": "Something went wrong submitting your application. You may have already applied, or applications may be closed. Please try again later.",
         "name": "Please enter your full name.",

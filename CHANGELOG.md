@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- **Apply form (My Family) — household-size cap + income formatting.** The household-size field now rejects a value above **20** on submit (new `householdSizeMax` validation + error message, jumps to the My Family tab; the ≥1 rule is unchanged) and gains a `max={20}` hint. The combined monthly income field now displays as **`3,000.00`** (thousands separators + two decimals): it became a text input that shows raw digits while focused and the formatted value on blur, with only the raw digits stored for submission. New testable `formatMoney2dp` helper. i18n parity 1498 × en/ms/ta; jest 163.
+
 ## [2.16.6] — Admin applicant-detail polish (masonry, income/email, label cleanup) (2026-05-30)
 
 - **Admin applicant detail — income formatting + email link.** Household income now renders as `RM 2,400` (space after RM + thousands separators) instead of `RM2400`. The contact email is now a blue `mailto:` link so it reads as an email at a glance.

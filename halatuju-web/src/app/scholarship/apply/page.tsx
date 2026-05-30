@@ -38,6 +38,7 @@ import {
   UNCERTAINTY_REASONS,
   formatNric,
   formatPhone,
+  formatMoney2dp,
   nricChanged,
   stashApplyForm,
   popApplyStash,
@@ -62,7 +63,7 @@ const TAB_ORDER: TabKey[] = ['personal', 'family', 'results', 'plans', 'support'
 const ERROR_TAB: Record<string, TabKey> = {
   name: 'personal', school: 'personal', nric: 'personal', nricTaken: 'personal',
   org: 'personal', state: 'personal', phone: 'personal',
-  householdSize: 'family', income: 'family', parentPhone: 'family',
+  householdSize: 'family', householdSizeMax: 'family', income: 'family', parentPhone: 'family',
   pathwayCertainty: 'plans', chosenPathway: 'plans', chosenProgramme: 'plans',
   preUTrack: 'plans', preUInstitution: 'plans',
   consent: 'support', declaration: 'support',
@@ -97,6 +98,9 @@ export default function ScholarshipApplyPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<TabKey>('personal')
+  // Income field shows raw digits while focused (easy to edit) and a formatted
+  // "3,000.00" when blurred. The stored value (form.householdIncome) stays raw.
+  const [incomeFocused, setIncomeFocused] = useState(false)
   // Plans redesign: the eligible-only pathway dropdown + course picker are driven by
   // the live eligibility engine (pathway_stats + eligible_courses), fetched once ready.
   const [pathwayStats, setPathwayStats] = useState<Record<string, number> | null>(null)
@@ -464,13 +468,18 @@ export default function ScholarshipApplyPage() {
             per-capita need calc, so both are required. */}
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.household')}>{t('scholarship.apply.householdSizeLabel')}</FieldLabel>
-          <input type="number" min={1} className="input" value={form.householdSize}
+          <input type="number" min={1} max={20} className="input" value={form.householdSize}
             onChange={(e) => update('householdSize', e.target.value)} />
         </div>
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.income')}>{t('scholarship.apply.incomeLabel')}</FieldLabel>
-          <input type="number" min={0} className="input" value={form.householdIncome}
-            onChange={(e) => update('householdIncome', e.target.value)} />
+          {/* Text (not number) input so it can show grouped digits + two decimals
+              ("3,000.00"); raw digits only are stored. Formatted on blur, raw on focus. */}
+          <input type="text" inputMode="numeric" className="input"
+            value={incomeFocused ? form.householdIncome : formatMoney2dp(form.householdIncome)}
+            onFocus={() => setIncomeFocused(true)}
+            onBlur={() => setIncomeFocused(false)}
+            onChange={(e) => update('householdIncome', e.target.value.replace(/[^\d]/g, ''))} />
         </div>
         <div className="flex items-center justify-between gap-3">
           <span className="flex items-center text-sm text-gray-700">{t('scholarship.apply.strLabel')}<InfoTip text={t('scholarship.apply.tip.str')} /></span>

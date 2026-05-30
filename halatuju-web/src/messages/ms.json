@@ -489,6 +489,7 @@
         "aCount": "Sila masukkan bilangan A yang anda peroleh dalam SPM.",
         "pngk": "Sila masukkan PNGK STPM anda.",
         "householdSize": "Sila masukkan bilangan orang dalam isi rumah anda (sekurang-kurangnya 1).",
+        "householdSizeMax": "Isi rumah anda tidak boleh melebihi 20 orang.",
         "income": "Sila masukkan jumlah pendapatan isi rumah bulanan anda.",
         "generic": "Sesuatu telah berlaku semasa menghantar permohonan anda. Mungkin anda telah memohon, atau permohonan telah ditutup. Sila cuba sebentar lagi.",
         "name": "Sila masukkan nama penuh anda.",

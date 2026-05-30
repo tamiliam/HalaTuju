@@ -111,6 +111,16 @@ export function formatAddress(parts: Array<string | null | undefined>): string {
     .join(' ')
 }
 
+/** Format a raw amount (digit string or number) as money with thousands separators
+ * and exactly two decimals, e.g. "3000" → "3,000.00". Empty/non-numeric → "". Used
+ * for the household-income field display (the value stored stays the raw digits). */
+export function formatMoney2dp(raw: string | number | null | undefined): string {
+  if (raw === null || raw === undefined || raw === '') return ''
+  const n = Number(raw)
+  if (!Number.isFinite(n)) return ''
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 /** Group the subscriber digits (after the area code) for display. */
 function groupSubscriber(s: string): string {
   if (s.length <= 5) return s
@@ -500,6 +510,7 @@ export function applyFormError(form: ApplyFormState, examType?: Qualification): 
   // per-capita need calc (income ÷ size), so size must be at least 1.
   const size = toIntOrNull(form.householdSize)
   if (size === null || size < 1) return 'householdSize'
+  if (size > 20) return 'householdSizeMax'
   if (toIntOrNull(form.householdIncome) === null) return 'income'
   // Parent/guardian phone is optional, but if given it must be a valid number.
   if (form.parentPhone.trim() && !isValidPhone(form.parentPhone)) return 'parentPhone'
