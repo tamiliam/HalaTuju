@@ -1315,3 +1315,74 @@ scoring via the fallback (unchanged) until they next save grades.
 
 **Revisit if:** the fallback path ever needs to die (e.g. all profiles backfilled with a
 stream list) — then the pools could finally be deleted and TD-063 fully closed.
+
+## Phase C: post-shortlist funnel — status + hard gate + non-freeze — 2026-05-30
+
+**Decision:** The post-shortlist handoff uses an explicit student "Confirm & submit"
+that flips `shortlisted → profile_complete` (a real status + `profile_completed_at`
+timestamp), a **hard** accept-gate (admin cannot accept an incomplete profile — no
+override), and completion that is **not** a freeze (a `POST_SHORTLIST_EDITABLE`
+status set keeps Step 4 + document upload open after confirming).
+
+**Alternatives considered:** (a) passive completion (computed-on-read, no status,
+admin badge only) — rejected because admins can't query/filter it and there's no
+"I'm done" signal; (b) soft accept-gate with a `force` override — rejected by the
+user ("no point accepting a submission that would likely be rejected"); (c)
+freezing the form on confirm — rejected because the admin needs to be able to ask
+for more documents and the student must be able to add them.
+
+**Rationale:** A real status makes the funnel queryable/filterable and reuses the
+existing `?status=` admin filter with zero new code; the hard gate protects the
+imminent batch from accidental accept-of-incomplete; non-freeze supports the
+request-more-docs loop. The new status also establishes the slot the interview
+statuses (`interviewing`/`interviewed`) extend.
+
+**Trade-offs:** A confirmed app whose student later removes a compulsory doc keeps
+`profile_complete` status while the accept-gate (which reads *live* completeness)
+would block — a mild status/gate divergence accepted for simplicity (no auto-revert).
+
+**Revisit if:** the status/gate divergence confuses admins in practice (then add
+auto-revert in `save_application_details`), or real use shows the hard gate traps a
+legitimate exception (then reconsider a logged override).
+
+## PartnerAdmin role categories via expand-contract (keep is_super_admin) — 2026-05-30
+
+**Decision:** Added `PartnerAdmin.role ∈ {super, reviewer, viewer}` *alongside* the
+legacy `is_super_admin` boolean (backfilled), with an `is_super` bridge property and
+a `has_role()` helper, rather than replacing the boolean outright.
+
+**Alternatives considered:** migrate fully to `role` now (drop `is_super_admin`);
+or a unified `account_type` table across student/admin/sponsor.
+
+**Rationale:** Several call sites still read `is_super_admin`; expand-contract keeps
+them working while new code reads `role`. A unified account table is a large,
+unnecessary refactor — student (StudentProfile) and admin (PartnerAdmin) are
+separate tables keyed by `supabase_user_id`, and that pattern extends cleanly to a
+future Sponsor table.
+
+**Trade-offs:** Two role sources to keep in sync until `is_super_admin` is dropped
+(a future TD).
+
+**Revisit if:** all `is_super_admin` readers are migrated → drop the boolean.
+
+## Auth entry: preserve browse-first; sponsor = register-interest — 2026-05-30
+
+**Decision:** The new branded entry (Log in by type + Sign Up chooser) is an entry
+*option*, never a gate. The course guide stays browse-first (anonymous quiz/
+eligibility/search; NRIC a deferred soft-claim). "Sponsor" is a public
+**register-interest** lead capture (`SponsorInterest`), not a self-serve account.
+
+**Alternatives considered:** the proposed marketplace model (force sign-up + NRIC to
+enter, like an SME-financing platform); building real sponsor auth + portal now.
+
+**Rationale:** The student side is a public utility, not a two-sided marketplace —
+forcing registration would close the open guide and lose anonymous users. Sponsor
+login has no destination yet (no Sponsor model/portal — that's a future Phase E), so
+a sponsor "account" would be a door into an empty room; a lead capture delivers value
+(admin follow-up) without faking a product.
+
+**Trade-offs:** Sponsors get a form, not a login, until Phase E. The chooser is built
+so swapping "register interest" for real onboarding later is localised.
+
+**Revisit if:** Phase E (Sponsor model + Sponsorship M:N + `/sponsor` portal + auth)
+is scheduled — then the sponsor entry points at the real flow.

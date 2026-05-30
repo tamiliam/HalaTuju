@@ -266,17 +266,58 @@ Retrospective `docs/retrospective-s19-minor-consent-v2-and-ux-iteration.md`. **3
 hard-gate vs soft-flag for parent_ic mismatch; InfoBox component as convention enforcement; parent_ic universal
 compulsory.
 
-- 1236 backend tests, 154 frontend (jest) tests, 0 failures
+**Post-shortlist sprint (v2.12.0–2.16.0, 2026-05-30) — Phase C + supporting work.** One session, 4 merges; see
+`docs/retrospective-phase-c-sprint.md`. (1) **TD-063** (v2.13.0): merit engine trusts the student's explicit
+stream/aliran pick — `prepare_merit_inputs(grades, stream_subjects=None)`; FE/BE stream pools become fallback-only
+(S18 mis-score impossible for labelled data); new `StudentProfile.stream_subjects` (migration `courses/0049`).
+(2) **TD-061 + TD-062** (v2.14.0): dropped 4 dead cols (`family_income`/`siblings`/`phone`/`siblings_studying`)
+under expand-contract (`courses/0050` + `scholarship/0022`) — fixed a latent `/profile` household-income/size
+silent-drop bug; `cleanup_orphan_blobs` mgmt command. (3) **Phase C** (v2.15.0, headline): post-shortlist funnel
+`shortlisted → profile_complete → interviewing → interviewed → accepted`. Explicit "Confirm & submit"
+(`confirm_profile`, stamps `profile_completed_at`, emails admin via `ADMIN_NOTIFY_EMAIL`); **hard accept-gate** on
+incomplete profiles (no override) in `AdminVerifyAcceptView`; request-more-docs; `PartnerAdmin.role`
+{super,reviewer,viewer} (kept alongside `is_super_admin`; `is_super` bridge + `has_role()`); `assigned_to` FK +
+`?assigned=me|none|<id>`; new **`InterviewSession`** table (findings keyed to anomaly codes → `{verdict, rationale}`
++ 1–5 rubric) + capture UI extending the Pre-interview-flags card. **Completion is NOT a freeze** —
+`POST_SHORTLIST_EDITABLE` keeps Step 4 + document upload open. Migrations `courses/0051` + `scholarship/0023`.
+(4) **Branded entry + sponsor-interest** (v2.16.0): header "Log in" dropdown (Student/Sponsor/Partner) + "Sign Up" →
+`/get-started` chooser; `/sponsor/register-interest` → public `SponsorInterest` lead capture
+(`POST /api/v1/sponsor-interest/`, AllowAny, NRIC-gate-whitelisted) + admin email; admin list. **Browse-first
+preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **Out of scope (future): Phase D**
+(Gemini v2 refines profile with interview findings), **Phase E** (real sponsor portal + auth), **Phase F** (mentor).
+
+- 1276 backend tests, 155 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
+## Next Sprint (as of 2026-05-30, post-Phase-C)
+
+Current state: post-shortlist funnel is live end-to-end (apply → reveal → Step 4 → **Confirm & submit** →
+admin **hard-gated** accept, with roles + assignment + **InterviewSession** capture). Branded entry + sponsor
+**register-interest** shipped; sponsors have no real account yet. 1276 pytest + 155 jest; golden masters intact.
+
+Pick one (recommended order):
+1. **Validate Phase C interactively** (recommended FIRST) — drive the real funnel via Playwright MCP against the
+   shortlisted test account (Elanjelian): confirm → admin sees `profile_complete` → assign → interview → submit →
+   accept; verify the hard-gate + request-info + emails in a browser. Phase C shipped test-green but was never
+   click-tested, and the real batch is imminent.
+2. **Phase D** — second Gemini call: draft sponsor profile + `InterviewSession.findings` → refined "final" profile
+   (`profile_finalised_at`). Cheap/contained, reuses `profile_engine.py`. NOTE: its consumer (sponsor) is gated on
+   Phase E, so the refined artefact only reaches admins until then.
+3. **Tamil refine** — ~11 batches incl. all Phase C + entry strings; the consent text gates the lawyer meeting.
+
+Gotchas: migrate-first via Supabase MCP (deploy does NOT run `migrate`); new tables need RLS (service-role-only
+pattern); `ADMIN_NOTIFY_EMAIL` is set on `halatuju-api` (the confirm + sponsor-interest emails depend on it).
+Deferred: **Phase E** (real Sponsor model/auth/portal + `Sponsorship` M:N), **Phase F** (mentor), non-Google
+student login. Full history below under "Sprint History".
+
 ## Vision (post-shortlist interview-driven profile)
 
 Direction-setting note captured 2026-05-29: **`docs/scholarship/post-shortlist-vision.md`**. Four user types (student done; admin done + needs role categories; sponsor + mentor to do), funnel through interview + sponsor + in-programme, three-engine gap model (deterministic rules + Vision OCR + Gemini), two-stage profile (draft → interview findings → final), and the standardisation-over-exhaustiveness principle for the interview UX. Phased build A→F with **Phase A (deterministic anomaly engine) recommended as the first slice**. Read before scoping any post-shortlist work.
 
-## Next Sprint — B40 Redesign (decision engine + apply-form rebuild)
+## Sprint History — B40 Programme (decision engine + apply-form rebuild → post-shortlist)
 
 Phase 1 (apply → shortlist → decision emails → docs/referee/consent → AI sponsor profile + MyNadi admin)
 is **live on `main`** (deployed 2026-05-23, migrations 0001–0006 + courses 0047 applied to prod). The
