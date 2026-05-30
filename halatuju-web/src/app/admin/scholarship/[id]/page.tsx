@@ -256,6 +256,9 @@ export default function AdminScholarshipDetailPage() {
         const preUTrackLabel = app.pre_u_track
           ? t(`scholarship.apply.${app.chosen_pathway === 'stpm' ? 'stream' : 'track'}.${app.pre_u_track}`)
           : null
+        // Help answers: render the apply-form's own words (Yes / No / Not sure) rather
+        // than the raw 'yes'/'no'/'unsure' codes.
+        const helpLabel = (v?: string | null) => (v ? t(`scholarship.apply.help.${v}`) : null)
         // Link a course back to its HalaTuju public page (opens in a new tab so
         // the admin doesn't lose the application). STPM degrees live under /stpm.
         const courseHref = (cid?: string) => (cid ? (isStpm ? `/stpm/${cid}` : `/course/${cid}`) : null)
@@ -281,8 +284,8 @@ export default function AdminScholarshipDetailPage() {
                 {/* Verified email only — a typed contact email is shown solely once the
                     student verifies it; otherwise the verified Google login email. */}
                 <Field label={t('admin.scholarship.email')} value={app.verified_email} />
-                <Field label={t('admin.scholarship.address')} value={addr} />
                 <Field label={t('admin.scholarship.callLanguage')} value={callLangLabel} />
+                <Field label={t('admin.scholarship.address')} value={addr} />
               </dl>
             </Card>
 
@@ -307,41 +310,39 @@ export default function AdminScholarshipDetailPage() {
                   </div>
                 )}
               </div>
-            </Card>
 
-            {/* Plans — pathway-context-aware */}
-            <Card title={t('admin.scholarship.sec.plans')}>
-              <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {isInstitutionPathway ? (
-                  <>
-                    <Field label={t('admin.scholarship.chosenPathway')} value={pathwayLabel(app.chosen_pathway)} />
-                    <Field label={t('admin.scholarship.preUTrack')} value={preUTrackLabel} />
-                    <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} />
-                  </>
-                ) : (
-                  <Field
-                    label={t('admin.scholarship.chosenProgramme')}
-                    value={app.chosen_programme?.course_name
-                      ? courseLink(app.chosen_programme.course_id as string | undefined, app.chosen_programme.course_name as string)
-                      : pathwayLabel(app.chosen_pathway)}
-                  />
+              {/* Plans — merged into the Academic card (pathway-context-aware). */}
+              <div className="mt-4 border-t border-gray-100 pt-3">
+                <dt className="text-xs text-gray-400 uppercase tracking-wider mb-2">{t('admin.scholarship.sec.plans')}</dt>
+                <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {isInstitutionPathway ? (
+                    <>
+                      <Field label={t('admin.scholarship.chosenPathway')} value={pathwayLabel(app.chosen_pathway)} />
+                      <Field label={t('admin.scholarship.preUTrack')} value={preUTrackLabel} />
+                      <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} />
+                    </>
+                  ) : (
+                    <Field
+                      label={t('admin.scholarship.chosenProgramme')}
+                      value={app.chosen_programme?.course_name
+                        ? courseLink(app.chosen_programme.course_id as string | undefined, app.chosen_programme.course_name as string)
+                        : pathwayLabel(app.chosen_pathway)}
+                    />
+                  )}
+                  {/* Field of study + UPU status are DERIVED (never asked) + low-info — not shown. */}
+                </dl>
+                {app.top_choices?.length > 0 && (
+                  <div className="mt-3">
+                    <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.topChoices')}</dt>
+                    <ol className="list-decimal ml-5 text-sm text-gray-800">
+                      {app.top_choices.map((c) => <li key={c.rank}>{courseLink(c.course_id, c.course_name)}{c.institution ? ` — ${c.institution}` : ''}</li>)}
+                    </ol>
+                  </div>
                 )}
-                {/* Field of study + UPU status are both DERIVED, never asked: field of
-                    study comes from the chosen course (blank for matric/STPM track-pickers),
-                    and UPU status is always "public_other" once any pathway is picked. Both
-                    are low-information, so they're not shown here. */}
-              </dl>
-              {app.top_choices?.length > 0 && (
-                <div className="mt-3">
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.topChoices')}</dt>
-                  <ol className="list-decimal ml-5 text-sm text-gray-800">
-                    {app.top_choices.map((c) => <li key={c.rank}>{courseLink(c.course_id, c.course_name)}{c.institution ? ` — ${c.institution}` : ''}</li>)}
-                  </ol>
-                </div>
-              )}
-              {app.pathways_considered?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.pathwaysConsidered')} value={joinOr(app.pathways_considered)} /></div>}
-              {app.uncertainty_reasons?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.uncertaintyReasons')} value={joinOr(app.uncertainty_reasons)} /></div>}
-              {app.uncertainty_note && <div className="mt-2"><Field label={t('admin.scholarship.studentNote')} value={app.uncertainty_note} /></div>}
+                {app.pathways_considered?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.pathwaysConsidered')} value={joinOr(app.pathways_considered)} /></div>}
+                {app.uncertainty_reasons?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.uncertaintyReasons')} value={joinOr(app.uncertainty_reasons)} /></div>}
+                {app.uncertainty_note && <div className="mt-2"><Field label={t('admin.scholarship.studentNote')} value={app.uncertainty_note} /></div>}
+              </div>
             </Card>
 
             {/* Family & finances */}
@@ -359,8 +360,8 @@ export default function AdminScholarshipDetailPage() {
             {/* Support */}
             <Card title={t('admin.scholarship.sec.support')}>
               <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <Field label={t('admin.scholarship.helpUniversity')} value={app.help_university} />
-                <Field label={t('admin.scholarship.helpScholarship')} value={app.help_scholarship} />
+                <Field label={t('admin.scholarship.helpUniversity')} value={helpLabel(app.help_university)} />
+                <Field label={t('admin.scholarship.helpScholarship')} value={helpLabel(app.help_scholarship)} />
                 <Field label={t('admin.scholarship.consentToContact')} value={yn(app.consent_to_contact)} />
               </dl>
               {app.anything_else && <div className="mt-2"><Field label={t('admin.scholarship.anythingElse')} value={app.anything_else} /></div>}

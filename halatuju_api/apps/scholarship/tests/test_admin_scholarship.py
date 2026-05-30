@@ -62,7 +62,7 @@ class TestAdminScholarship(TestCase):
         r = self.client.get('/api/v1/admin/scholarship/applications/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json()['total_count'], 1)
-        self.assertEqual(r.json()['applications'][0]['name'], 'Priya')
+        self.assertEqual(r.json()['applications'][0]['name'], 'PRIYA')  # names upper-cased for admin
 
     def test_admin_list_filter_bucket(self):
         self._auth(ADMIN)
@@ -75,7 +75,7 @@ class TestAdminScholarship(TestCase):
         self.assertEqual(r.status_code, 200)
         body = r.json()
         self.assertEqual(body['aspirations'], 'Become an auditor')
-        self.assertEqual(body['name'], 'Priya')
+        self.assertEqual(body['name'], 'PRIYA')  # names upper-cased for admin
         self.assertIn('documents', body)
         self.assertIn('referees', body)
         self.assertIsNone(body['sponsor_profile'])

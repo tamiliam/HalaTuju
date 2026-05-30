@@ -13,13 +13,13 @@ from .serializers import (
 
 
 def _full_name(application):
-    """The applicant's full legal name. Prefer the declaration signature (typed
-    at submit, e.g. 'SHARMILA A/P SANGGAR') over profile.name — the latter is
-    often the Google display name / handle ('Sharmila 1204')."""
+    """The applicant's full legal name, UPPER-CASED for the admin views (students
+    type their signature inconsistently — some lowercase). Prefer the declaration
+    signature (typed at submit, e.g. 'SHARMILA A/P SANGGAR') over profile.name —
+    the latter is often the Google display name / handle ('Sharmila 1204')."""
     declared = (getattr(application, 'declaration_name', '') or '').strip()
-    if declared:
-        return declared
-    return getattr(application.profile, 'name', '') if application.profile else ''
+    name = declared or (getattr(application.profile, 'name', '') if application.profile else '')
+    return name.upper()
 
 
 def _verified_email(application):
