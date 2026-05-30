@@ -80,6 +80,26 @@ class TestAdminScholarship(TestCase):
         self.assertIn('referees', body)
         self.assertIsNone(body['sponsor_profile'])
 
+    def test_admin_detail_name_email_and_merit_history(self):
+        """Full name from the declaration signature (not the Google handle); email
+        falls back to the login/notify email; merit counts History ('hist' key)."""
+        StudentProfile.objects.filter(pk=self.profile.pk).update(
+            name='krisha1204', contact_email='', coq_score=7, stream_subjects=[],
+            grades={'bm': 'A', 'eng': 'A', 'math': 'A', 'hist': 'A',
+                    'phy': 'A', 'chem': 'A', 'bio': 'A', 'addmath': 'A'},
+        )
+        ScholarshipApplication.objects.filter(pk=self.app.id).update(
+            declaration_name='SHARMILA A/P SANGGAR', notify_email='login@example.com',
+        )
+        self._auth(ADMIN)
+        body = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/').json()
+        # declaration signature wins over the profile handle
+        self.assertEqual(body['name'], 'SHARMILA A/P SANGGAR')
+        # email falls back to the captured login email when contact_email is blank
+        self.assertEqual(body['notify_email'], 'login@example.com')
+        # all-A core (incl. History via the hist->history rename) → high merit
+        self.assertGreater(body['merit_score'], 85)
+
     def test_admin_detail_complete_profile_fields(self):
         """Complete-profile view: every /apply field the student entered is in the
         admin detail response (contact/family/academic/plans/support/story)."""

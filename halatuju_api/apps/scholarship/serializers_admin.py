@@ -12,6 +12,16 @@ from .serializers import (
 )
 
 
+def _full_name(application):
+    """The applicant's full legal name. Prefer the declaration signature (typed
+    at submit, e.g. 'SHARMILA A/P SANGGAR') over profile.name — the latter is
+    often the Google display name / handle ('Sharmila 1204')."""
+    declared = (getattr(application, 'declaration_name', '') or '').strip()
+    if declared:
+        return declared
+    return getattr(application.profile, 'name', '') if application.profile else ''
+
+
 class InterviewSessionSerializer(serializers.ModelSerializer):
     interviewer_name = serializers.CharField(source='interviewer.name', read_only=True, default=None)
 
@@ -54,7 +64,7 @@ class AdminApplicationListSerializer(serializers.ModelSerializer):
         ]
 
     def get_name(self, obj):
-        return getattr(obj.profile, 'name', '') if obj.profile else ''
+        return _full_name(obj)
 
     def get_spm_a_count(self, obj):
         from .shortlisting import count_spm_a_grades
@@ -116,7 +126,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'receives_str', 'receives_jkm', 'intended_pathway', 'intends_tertiary_2026',
             'aspirations', 'plans', 'fears', 'justification',
             'address', 'postal_code', 'city', 'preferred_state',
-            'contact_phone', 'contact_email', 'preferred_call_language', 'referral_source', 'guardians',
+            'contact_phone', 'contact_email', 'notify_email', 'preferred_call_language', 'referral_source', 'guardians',
             # Academic detail (FE renders SPM vs STPM by qualification)
             'muet_band', 'coq_score', 'grades', 'stpm_grades', 'spm_prereq_grades',
             # "Your story" narrative (S2) + support + declaration
@@ -142,7 +152,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         ]
 
     def get_name(self, obj):
-        return getattr(obj.profile, 'name', '') if obj.profile else ''
+        return _full_name(obj)
 
     def get_school(self, obj):
         return getattr(obj.profile, 'school', '') if obj.profile else ''
@@ -160,9 +170,14 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             return None
         if p.exam_type == 'stpm':
             return p.stpm_cgpa
-        grades = p.grades or {}
+        grades = dict(p.grades or {})
         if not grades:
             return None
+        # The engine's core uses 'history'; profiles store it as 'hist'. The
+        # eligibility flow renames it before scoring, so mirror that here —
+        # otherwise History is read as a fail (G) and the merit is understated.
+        if 'hist' in grades:
+            grades['history'] = grades.pop('hist')
         from apps.courses.engine import prepare_merit_inputs, calculate_merit_score
         s1, s2, s3 = prepare_merit_inputs(grades, getattr(p, 'stream_subjects', None) or None)
         coq = p.coq_score if p.coq_score is not None else 0

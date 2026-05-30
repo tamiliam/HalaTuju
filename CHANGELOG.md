@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.4] — Admin: full name, login email, and a merit-calc bug fix (2026-05-30)
+
+Three fixes from reviewing an applicant whose card showed a username, no email, and a too-low merit:
+
+- **Full name** — the admin title + list now use the **declaration signature** (the full legal name typed at submit, e.g. "SHARMILA A/P SANGGAR") in preference to `profile.name`, which is often the Google display name/handle ("Sharmila 1204"). New `_full_name()` helper used by both admin serializers.
+- **Email** — the Contact card now shows the applicant's **login/comms email** (`notify_email`, captured at submit from their Google account) when the optional `contact_email` is blank. (The applicant *did* log in with an email; it just wasn't being surfaced.) `notify_email` added to the admin serializer.
+- **Merit-score bug** — `get_merit_score` scored grades directly from `profile.grades`, which stores History under the key `hist`, while the engine's core expects `history`. So **History was read as a fail (G)** and merit was understated (e.g. 62.6 → **68.9** once History is counted). Fixed by applying the same `hist`→`history` rename the eligibility flow uses. Affects every applicant's displayed merit.
+- Additive only — no migration. Backend test covers all three; golden masters unchanged; jest 155; `next build` clean.
+
 ## [2.16.3] — Admin: link chosen programme to its HalaTuju course page (2026-05-30)
 
 On the admin applicant detail, the chosen programme + each top-3 course choice are now **clickable links** to the public HalaTuju course page (opens in a new tab), so an admin can see the full course detail — institution, requirements, fees — when the course name alone isn't enough. Routes by qualification: SPM → `/course/<course_id>`, STPM → `/stpm/<course_id>` (the `course_id` is already on `chosen_programme` / `top_choices`). Frontend-only; `next build` clean.
