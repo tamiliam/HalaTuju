@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- **Apply form — renamed the Support step.** "Support I'd Like From Us" → **Support I Need** (ms "Bantuan Yang Saya Perlukan"; ta "எனக்குத் தேவையான உதவி"). Shorter and first-person; drops the "us" so there's no pronoun-referent question at all. i18n-only, parity 1498.
+
 ## [2.16.7] — Apply form: household-size cap + income formatting (2026-05-30)
 
 - **Apply form (My Family) — household-size cap + income formatting.** The household-size field now rejects a value above **20** on submit (new `householdSizeMax` validation + error message, jumps to the My Family tab; the ≥1 rule is unchanged) and gains a `max={20}` hint. The combined monthly income field now displays as **`3,000.00`** (thousands separators + two decimals): it became a text input that shows raw digits while focused and the formatted value on blur, with only the raw digits stored for submission. New testable `formatMoney2dp` helper. i18n parity 1498 × en/ms/ta; jest 163.
