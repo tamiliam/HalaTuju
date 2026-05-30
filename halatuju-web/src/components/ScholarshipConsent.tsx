@@ -165,20 +165,6 @@ export default function ScholarshipConsent({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      {/* Consent is the final step: until every other step + document is done and
-          the uploaded IC matches the student, list ALL outstanding items at once
-          so they can be fixed in one pass. The toggle + button stay disabled. */}
-      {notReady && (
-        <InfoBox kind="warning">
-          <p className="font-medium">{t('scholarship.consent.blockersHeading')}</p>
-          <ul className="mt-1.5 list-disc space-y-1 pl-5">
-            {blockers.map((b) => (
-              <li key={b}>{t(`scholarship.consent.blocker.${b}`)}</li>
-            ))}
-          </ul>
-        </InfoBox>
-      )}
-
       {/* Student-directed info box (minor only) — addresses the logged-in
           student, asking them to hand the page to a parent/guardian. The
           consent body below is parent-voice; this notice is the bridge.
@@ -279,6 +265,20 @@ export default function ScholarshipConsent({
         className="btn-primary disabled:opacity-50">
         {saving ? t('scholarship.consent.saving') : t('scholarship.consent.submit')}
       </button>
+
+      {/* Outstanding-items checklist — placed BELOW the action button so the
+          consent text + Give-consent button stay the focus; the button is disabled
+          while this list is non-empty. */}
+      {notReady && (
+        <InfoBox kind="warning">
+          <p className="font-medium">{t('scholarship.consent.blockersHeading')}</p>
+          <ul className="mt-1.5 list-disc space-y-1 pl-5">
+            {blockers.map((b) => (
+              <li key={b}>{t(`scholarship.consent.blocker.${b}`)}</li>
+            ))}
+          </ul>
+        </InfoBox>
+      )}
     </form>
   )
 }

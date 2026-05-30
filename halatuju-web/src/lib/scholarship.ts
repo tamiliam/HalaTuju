@@ -46,7 +46,10 @@ export const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
   'Pahang', 'Perak', 'Perlis', 'Pulau Pinang', 'Sabah',
   'Sarawak', 'Selangor', 'Terengganu',
-  'Kuala Lumpur', 'Labuan', 'Putrajaya',
+  // Federal territories carry the official "W.P." (Wilayah Persekutuan) prefix —
+  // matches the /profile + /onboarding lists (which already use it). The backend
+  // anomaly engine's _normalize_state strips "W.P." so matching is unaffected.
+  'W.P. Kuala Lumpur', 'W.P. Putrajaya', 'W.P. Labuan',
 ] as const
 
 // NRIC format XXXXXX-XX-XXXX (the claim endpoint does the full age/state checks).
