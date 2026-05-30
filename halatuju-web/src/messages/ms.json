@@ -1542,7 +1542,7 @@
         "academic": "Akademik",
         "contact": "Hubungan & identiti",
         "family": "Keluarga & kewangan",
-        "plans": "Rancangan Saya",
+        "plans": "Rancangan",
         "support": "Sokongan Saya",
         "story": "Kisah Anda",
         "funding": "Pembiayaan"
@@ -1586,7 +1586,15 @@
       "siblingsStudying": "Adik-beradik belajar",
       "familyContext": "Konteks keluarga",
       "programmeMonths": "Tempoh program (bulan)",
-      "fundingNote": "Nota pembiayaan"
+      "fundingNote": "Nota pembiayaan",
+      "meritScore": "Skor merit",
+      "studentNote": "Nota pelajar",
+      "upu": {
+        "applied": "Memohon melalui UPU",
+        "public_other": "Institusi awam (bukan UPU)",
+        "ipts": "Swasta (IPTS)",
+        "unknown": "Tidak pasti"
+      }
     },
     "students": "Pelajar",
     "invite": "Jemputan",

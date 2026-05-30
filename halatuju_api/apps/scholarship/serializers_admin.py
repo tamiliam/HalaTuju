@@ -94,6 +94,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     stpm_grades = serializers.JSONField(source='profile.stpm_grades', read_only=True)
     spm_prereq_grades = serializers.JSONField(source='profile.spm_prereq_grades', read_only=True)
     spm_a_count = serializers.SerializerMethodField()
+    merit_score = serializers.SerializerMethodField()
     funding_need = serializers.SerializerMethodField()
     sponsor_profile = serializers.SerializerMethodField()
     # Pre-interview deterministic flag list (S16 Phase A). Each entry is
@@ -111,7 +112,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         model = ScholarshipApplication
         fields = [
             'id', 'name', 'school', 'nric', 'nric_verified', 'profile_id', 'qualification',
-            'spm_a_count', 'stpm_pngk', 'household_income', 'household_size',
+            'spm_a_count', 'merit_score', 'stpm_pngk', 'household_income', 'household_size',
             'receives_str', 'receives_jkm', 'intended_pathway', 'intends_tertiary_2026',
             'aspirations', 'plans', 'fears', 'justification',
             'address', 'postal_code', 'city', 'preferred_state',
@@ -149,6 +150,24 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     def get_spm_a_count(self, obj):
         from .shortlisting import count_spm_a_grades
         return count_spm_a_grades(getattr(obj.profile, 'grades', None)) if obj.profile else 0
+
+    def get_merit_score(self, obj):
+        """The course-guide merit (0-100) used for ranking — a single number that
+        rolls up grades + co-curriculum. SPM: computed academic+CoQ merit. STPM:
+        the PNGK (CGPA) is the merit indicator. None if there's nothing to score."""
+        p = obj.profile
+        if not p:
+            return None
+        if p.exam_type == 'stpm':
+            return p.stpm_cgpa
+        grades = p.grades or {}
+        if not grades:
+            return None
+        from apps.courses.engine import prepare_merit_inputs, calculate_merit_score
+        s1, s2, s3 = prepare_merit_inputs(grades, getattr(p, 'stream_subjects', None) or None)
+        coq = p.coq_score if p.coq_score is not None else 0
+        result = calculate_merit_score(s1, s2, s3, coq)
+        return round(result['final_merit'], 1)
 
     def get_funding_need(self, obj):
         try:

@@ -312,6 +312,7 @@ export interface AdminScholarshipDetail {
   declaration_name: string
   qualification: string
   spm_a_count: number | null
+  merit_score: number | null
   stpm_pngk: number | null
   household_income: number | null
   household_size: number | null

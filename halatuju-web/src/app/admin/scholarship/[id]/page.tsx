@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
+import { formatPhone } from '@/lib/scholarship'
 import {
   getScholarshipApplication,
   generateSponsorProfile,
@@ -241,8 +242,12 @@ export default function AdminScholarshipDetailPage() {
       </div>
 
       {(() => {
-        const isSpm = app.qualification === 'spm'
         const isStpm = app.qualification === 'stpm'
+        // Pathway context: matric/stpm are INSTITUTION pathways (track + school);
+        // everything else (asasi, university, poly, pismp…) is a PROGRAMME pathway
+        // (a chosen course), so Pre-U track doesn't apply.
+        const isInstitutionPathway = app.chosen_pathway === 'matric' || app.chosen_pathway === 'stpm'
+        const upuLabel = app.upu_status ? t(`admin.scholarship.upu.${app.upu_status}`) : '—'
         const hasStory = !!(app.aspirations || app.plans || app.fears || app.justification
           || app.daily_life || app.first_in_family || app.parents_occupation
           || app.siblings_studying_count || app.family_context)
@@ -251,15 +256,25 @@ export default function AdminScholarshipDetailPage() {
         const guardian = (app.guardians && app.guardians[0]) || null
         return (
           <>
-            {/* Academic — SPM/STPM-aware: only the relevant qualification's fields */}
+            {/* Contact & identity */}
+            <Card title={t('admin.scholarship.sec.contact')}>
+              <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <Field label="NRIC" value={app.nric} />
+                <Field label={t('admin.scholarship.phone')} value={app.contact_phone ? formatPhone(app.contact_phone) : null} />
+                <Field label={t('admin.scholarship.email')} value={app.contact_email} />
+                <Field label={t('admin.scholarship.address')} value={addr} />
+                <Field label={t('admin.scholarship.callLanguage')} value={app.preferred_call_language?.toUpperCase()} />
+              </dl>
+            </Card>
+
+            {/* Academic — SPM/STPM-aware. Merit Score = the course-guide ranking
+                number (SPM: grades+CoQ; STPM: PNGK). */}
             <Card title={t('admin.scholarship.sec.academic')}>
               <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <Field label={t('admin.scholarship.school')} value={app.school} />
                 <Field label={t('admin.scholarship.qualification')} value={app.qualification?.toUpperCase()} />
-                {isSpm && <Field label="SPM A" value={app.spm_a_count} />}
-                {isStpm && <Field label="STPM PNGK" value={app.stpm_pngk} />}
+                <Field label={t('admin.scholarship.meritScore')} value={app.merit_score} />
                 {isStpm && <Field label="MUET" value={app.muet_band} />}
-                <Field label={t('admin.scholarship.coq')} value={app.coq_score} />
               </dl>
               <div className="mt-3">
                 <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">
@@ -273,20 +288,34 @@ export default function AdminScholarshipDetailPage() {
                   </div>
                 )}
               </div>
-              {app.shortlist_reason && <p className="text-xs text-amber-700 mt-3">{app.shortlist_reason}</p>}
             </Card>
 
-            {/* Contact & identity */}
-            <Card title={t('admin.scholarship.sec.contact')}>
+            {/* Plans — pathway-context-aware */}
+            <Card title={t('admin.scholarship.sec.plans')}>
               <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <Field label={t('admin.scholarship.applicant')} value={app.name} />
-                <Field label="NRIC" value={app.nric} />
-                <Field label={t('admin.scholarship.phone')} value={app.contact_phone} />
-                <Field label={t('admin.scholarship.email')} value={app.contact_email} />
-                <Field label={t('admin.scholarship.callLanguage')} value={app.preferred_call_language?.toUpperCase()} />
-                <Field label={t('admin.scholarship.referralSource')} value={app.referral_source} />
-                <Field label={t('admin.scholarship.address')} value={addr} />
+                {isInstitutionPathway ? (
+                  <>
+                    <Field label={t('admin.scholarship.chosenPathway')} value={app.chosen_pathway} />
+                    <Field label={t('admin.scholarship.preUTrack')} value={app.pre_u_track} />
+                    <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} />
+                  </>
+                ) : (
+                  <Field label={t('admin.scholarship.chosenProgramme')} value={(app.chosen_programme?.course_name as string) || app.chosen_pathway} />
+                )}
+                <Field label={t('admin.scholarship.fieldOfStudy')} value={app.field_of_study} />
+                <Field label={t('admin.scholarship.upuStatus')} value={upuLabel} />
               </dl>
+              {app.top_choices?.length > 0 && (
+                <div className="mt-3">
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.topChoices')}</dt>
+                  <ol className="list-decimal ml-5 text-sm text-gray-800">
+                    {app.top_choices.map((c) => <li key={c.rank}>{c.course_name}{c.institution ? ` — ${c.institution}` : ''}</li>)}
+                  </ol>
+                </div>
+              )}
+              {app.pathways_considered?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.pathwaysConsidered')} value={joinOr(app.pathways_considered)} /></div>}
+              {app.uncertainty_reasons?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.uncertaintyReasons')} value={joinOr(app.uncertainty_reasons)} /></div>}
+              {app.uncertainty_note && <div className="mt-2"><Field label={t('admin.scholarship.studentNote')} value={app.uncertainty_note} /></div>}
             </Card>
 
             {/* Family & finances */}
@@ -297,44 +326,16 @@ export default function AdminScholarshipDetailPage() {
                 <Field label="STR" value={yn(app.receives_str)} />
                 <Field label="JKM" value={yn(app.receives_jkm)} />
                 <Field label={t('admin.scholarship.guardianName')} value={guardian?.name} />
-                <Field label={t('admin.scholarship.guardianPhone')} value={guardian?.phone} />
+                <Field label={t('admin.scholarship.guardianPhone')} value={guardian?.phone ? formatPhone(guardian.phone) : null} />
               </dl>
             </Card>
 
-            {/* My Plans */}
-            <Card title={t('admin.scholarship.sec.plans')}>
-              <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                <Field label={t('admin.scholarship.intendsTertiary')} value={yn(app.intends_tertiary_2026)} />
-                <Field label={t('admin.scholarship.pathwayCertainty')} value={app.pathway_certainty} />
-                <Field label={t('admin.scholarship.chosenPathway')} value={app.chosen_pathway} />
-                <Field label={t('admin.scholarship.chosenProgramme')} value={(app.chosen_programme?.course_name as string) || ''} />
-                <Field label={t('admin.scholarship.preUTrack')} value={app.pre_u_track} />
-                <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} />
-                <Field label={t('admin.scholarship.fieldOfStudy')} value={app.field_of_study} />
-                <Field label={t('admin.scholarship.upuStatus')} value={app.upu_status} />
-                <Field label={t('admin.scholarship.pathwaysConsidered')} value={joinOr(app.pathways_considered)} />
-                <Field label={t('admin.scholarship.otherScholarships')} value={joinOr(app.other_scholarships)} />
-              </dl>
-              {app.other_scholarships_text && <Field label={t('admin.scholarship.otherScholarshipsText')} value={app.other_scholarships_text} />}
-              {app.top_choices?.length > 0 && (
-                <div className="mt-3">
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.topChoices')}</dt>
-                  <ol className="list-decimal ml-5 text-sm text-gray-800">
-                    {app.top_choices.map((c) => <li key={c.rank}>{c.course_name}{c.institution ? ` — ${c.institution}` : ''}</li>)}
-                  </ol>
-                </div>
-              )}
-              {app.uncertainty_reasons?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.uncertaintyReasons')} value={joinOr(app.uncertainty_reasons)} /></div>}
-              {app.uncertainty_note && <Field label={t('admin.scholarship.uncertaintyNote')} value={app.uncertainty_note} />}
-            </Card>
-
-            {/* My Support */}
+            {/* Support */}
             <Card title={t('admin.scholarship.sec.support')}>
               <dl className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <Field label={t('admin.scholarship.helpUniversity')} value={app.help_university} />
                 <Field label={t('admin.scholarship.helpScholarship')} value={app.help_scholarship} />
                 <Field label={t('admin.scholarship.consentToContact')} value={yn(app.consent_to_contact)} />
-                <Field label={t('admin.scholarship.declarationName')} value={app.declaration_name} />
               </dl>
               {app.anything_else && <div className="mt-2"><Field label={t('admin.scholarship.anythingElse')} value={app.anything_else} /></div>}
             </Card>

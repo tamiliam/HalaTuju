@@ -1542,7 +1542,7 @@
         "academic": "Academic",
         "contact": "Contact & identity",
         "family": "Family & finances",
-        "plans": "My Plans",
+        "plans": "Plans",
         "support": "My Support",
         "story": "Your story",
         "funding": "Funding"
@@ -1586,7 +1586,15 @@
       "siblingsStudying": "Siblings studying",
       "familyContext": "Family context",
       "programmeMonths": "Programme length (months)",
-      "fundingNote": "Funding note"
+      "fundingNote": "Funding note",
+      "meritScore": "Merit score",
+      "studentNote": "Student's note",
+      "upu": {
+        "applied": "Applied via UPU",
+        "public_other": "Public institution (not via UPU)",
+        "ipts": "Private (IPTS)",
+        "unknown": "Not sure"
+      }
     },
     "students": "Students",
     "invite": "Invite",

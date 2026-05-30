@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.2] — Admin applicant profile refinements (2026-05-30)
+
+Refines the complete-profile admin view (2.16.1) per review — reordered, de-cluttered, pathway-context-aware.
+
+- **Box order** now Contact · Academic · Plans · Family & finances · Support (then Story/Funding when filled). Title shows the student's full name (`profile.name`, e.g. "KRISHA VYSNAVI A/P MUTHUKKUMAAR") — confirmed already correct.
+- **Contact:** removed the duplicate name (the title shows it) and "Referred by"; order is NRIC · Phone (now `formatPhone`-formatted) · Email · Address · Call language.
+- **Academic:** replaced "SPM A" + "CoQ score" with a single **Merit score** — the course-guide ranking number (new `merit_score` serializer field: SPM = computed academic+CoQ merit via the engine; STPM = PNGK). Removed the "income: per-capita …" shortlist-reason line. Still SPM/STPM-aware (MUET + STPM grades for STPM).
+- **Plans** (renamed from "My Plans"): now **pathway-context-aware** — institution pathways (matric/STPM) show Pre-U track + institution; programme pathways (asasi, university, …) show the chosen programme and hide the N/A Pre-U track. Removed "Intends tertiary" + "Decided?" (intermediate steps) and the empty "Other scholarships". **UPU status** now shows a readable label (e.g. `public_other` → "Public institution (not via UPU)"). `pathways_considered` / uncertainty rows show only when present.
+- **Investigation (the "still-deciding note on a decided student"):** the note is the uncertain-branch free-text, but `buildApplicationPayload` submits `uncertainty_note` **regardless of branch** (scholarship.ts), so a `sure`/decided applicant can still carry it — it's effectively a general note, mislabeled. Fix: relabel to **"Student's note"** and show it independent of branch. (A follow-up could clear `uncertainty_note` on the /apply form when the student is `sure`.)
+- **Support:** removed the declaration signature.
+- Additive only — no migration. Backend test + golden masters unchanged; jest 155; `next build` clean; i18n parity 1495 × en/ms/ta.
+
 ## [2.16.1] — Complete applicant profile on the admin detail page (2026-05-30)
 
 The admin applicant detail page showed only a thin slice of what the student entered at /apply (school, qualification, SPM A, income, STR, intended_pathway). Investigation confirmed **no data was lost** — everything is stored; it just wasn't displayed. This surfaces all of it as a complete, grouped profile.
