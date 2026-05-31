@@ -191,7 +191,10 @@ apps/scholarship/                  # Phase 1: intake & profile engine (no money 
 `scholarship_applications`. PRD + roadmap live in `docs/scholarship/`. Phase 1 = 6 sprints;
 Sprints 1-3 done. Sprint 3 added `shortlisting.py` (pure rules engine → A/B/FAIL),
 `management/commands/send_pending_decision_emails.py` (delayed fail email), and 4 model fields
-(`shortlisted_at`, `decision_email_sent_at`, `locale`, `notify_email`; migration 0002). Sprint 4a
+(`shortlisted_at`, `decision_email_sent_at`, `locale`, `notify_email`; migration 0002). (v2.19.0: the engine result
+now also carries a rejection `category` — merit/need/ineligible — which `score_application` persists to
+`rejection_category`; the admin buckets interview/contractual are set by `services.admin_reject`/`AdminRejectView`, and
+each bucket maps to its own decline email via `emails.send_decline_email(category=…)`.) Sprint 4a
 added the `FundingNeed` model (OneToOne → application, `funding_needs`, computed `total`), deeper-info
 fields (`aspirations`/`plans`/`fears`/`justification`), a `PATCH` details endpoint, and a
 `completeness` block on the read serializer (migration 0003). Sprint 5a added `ApplicantDocument`/

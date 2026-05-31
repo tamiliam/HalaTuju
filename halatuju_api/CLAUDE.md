@@ -226,6 +226,15 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Project Status
 
+**v2.19.0 (2026-05-31) — Four rejection buckets + differentiated decline emails.** Rejections are categorised
+(`ScholarshipApplication.rejection_category`, migration `0029`): **merit**/**need**/**ineligible** set automatically
+by the engine (it already recorded *why* — `evaluate()` now returns a `category`); **interview** (admin, reviewed-but-
+not-selected, from shortlisted onward) and **contractual** (admin, post-award, accepted only) set via a reviewer-gated
+`AdminRejectView` → `services.admin_reject()`. Each bucket sends its own suggestive trilingual decline email
+(`emails.send_decline_email(category=…)`); generic covers ineligible+contractual. Admin UI: "Decline (after review)" +
+"Decline (contractual)" buttons, a rejection-bucket badge, and the Review-&-actions panel hidden only for pre-shortlist
+buckets. 1373 pytest + 163 jest. See `docs/retrospective-v2.19-rejection-buckets.md`.
+
 **v2.18.0 (2026-05-31) — Phase D: Gemini v2 profile refine.** Second Gemini pass: an admin-on-demand "Refine with
 interview findings (AI)" button takes the draft sponsor profile + the **submitted** `InterviewSession` (verdicts +
 rationales + 1–5 rubric + overall note) → a refined **final profile (v2)** (`SponsorProfile.final_markdown`/
@@ -306,29 +315,31 @@ incomplete profiles (no override) in `AdminVerifyAcceptView`; request-more-docs;
 preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **Out of scope (future): Phase D**
 (Gemini v2 refines profile with interview findings), **Phase E** (real sponsor portal + auth), **Phase F** (mentor).
 
-- 1351 backend tests, 163 frontend (jest) tests, 0 failures
+- 1373 backend tests, 163 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-05-31, post-Phase-D)
+## Next Sprint (as of 2026-05-31, post-rejection-buckets)
 
-Current state: v2.18.0 shipped (2026-05-31). **All three post-shortlist buckets are functionally complete** —
-profile-generation (draft `generate_sponsor_profile` + Phase-D refine `refine_sponsor_profile`), document-reading
-(Vision OCR + doc-assist), interview-assist (deterministic anomaly engine + Gemini gap-spotter). Phase D's final
-profile is **admin-facing only** until Phase E gives sponsors a portal. 1351 pytest + 163 jest; golden masters intact.
-Migrations through `0028` applied migrate-first.
+Current state: v2.19.0 shipped (2026-05-31). Rejections are categorised (merit/need/ineligible auto from the engine;
+interview/contractual via admin `AdminRejectView`) with per-bucket suggestive decline emails. The three post-shortlist
+buckets remain functionally complete (profile draft+refine, Vision+doc-assist, deterministic+gap-spotter). Phase D's
+final profile is admin-facing only until Phase E. 1373 pytest + 163 jest; golden masters intact. Migrations through `0029`
+applied migrate-first.
 
 Pick one (recommended order):
-1. **User live-verify the post-shortlist AI features** (recommended FIRST) — on the Elanjelian app
-   (`admin@tamilfoundation.org`, app 16): doc-assist chip on a supporting-doc upload; gap-spotter "Suggest interview
-   gaps (AI)"; and now Phase D — draft a profile → submit an interview → "Refine with interview findings (AI)" →
-   the v2 panel populates. Confirm a page load WITHOUT clicking fires no Gemini call (Cloud Run logs). All test-green, not click-tested.
-2. **Phase E** — real Sponsor model + auth/portal + `Sponsorship` M:N; the sponsor reads the Phase-D **final** profile
+1. **User live-verify the post-shortlist features** (recommended FIRST) — on the Elanjelian app
+   (`admin@tamilfoundation.org`, app 16): the AI features (doc-assist chip, gap-spotter, Phase-D refine) AND the new
+   reject buckets (Decline-after-review on a shortlisted student → bucket badge + the right decline email; the four
+   engine/admin buckets each send their own email). All test-green, not click-tested.
+2. **Contractual reject flow (TD-068)** — the admin-typed reason + the post-award capture flow (sign-by deadline,
+   account-number) the user deferred; small follow-on to v2.19.0.
+3. **Phase E** — real Sponsor model + auth/portal + `Sponsorship` M:N; the sponsor reads the Phase-D **final** profile
    (the artefact already exists, it just has no reader yet). Larger slice (2 sprints in the roadmap).
-3. **Tamil refine** — ~12 batches incl. consent + all post-shortlist AI strings; the consent text gates the lawyer meeting.
-4. **Remove the TEMP tech-support box** once testing is done (TD-066; marked `TEMP` in code across /application steps).
+4. **Tamil refine** — ~13 batches incl. consent + the new decline-email + reject strings; the consent text gates the lawyer meeting.
+5. **Remove the TEMP tech-support box** once testing is done (TD-066; marked `TEMP` in code across /application steps).
 
 Gotchas: migrate-first via Supabase MCP (deploy does NOT run `migrate`); new tables need RLS (service-role-only
 pattern); `ADMIN_NOTIFY_EMAIL` is set on `halatuju-api` (the confirm + sponsor-interest emails depend on it);

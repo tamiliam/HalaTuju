@@ -1456,3 +1456,39 @@ is scheduled — then the sponsor entry points at the real flow.
 **Trade-offs:** One more indirection between the engine functions and the SDK — negligible.
 
 **Revisit if:** a future engine needs structured (JSON) prose output — then it belongs on the `_call_gemini_json` seam, not this one.
+
+## Rejections use one status + a rejection_category field, not distinct statuses — v2.19.0, 2026-05-31
+
+**Decision:** All four (well, five — incl. the engine 'ineligible' edge) rejection kinds keep `status='rejected'` and are distinguished by a new `rejection_category` field (merit/need/ineligible/interview/contractual). The category drives the decline email and the Review-&-actions visibility.
+
+**Alternatives considered:** introduce distinct statuses (e.g. `rejected_merit`, `not_selected`, `contractual_breach`); or a separate Rejection model.
+
+**Rationale:** `status` already means "where is this application in the funnel"; the *reason* it was rejected is a separate axis. A category field adds that axis without a funnel rewrite, without migrating existing `rejected` rows, and without every status check across the codebase having to learn five new values. The earlier Review-&-actions guard refined cleanly to "hide only the pre-shortlist categories".
+
+**Trade-offs:** Code that wants "was this a post-review rejection?" must check `status=='rejected' && category in {interview,contractual}` rather than read a single status. Acceptable — that check lives in one or two places.
+
+**Revisit if:** rejection grows its own lifecycle (appeals, reinstatement) that needs distinct states — then promote the categories to statuses or a Rejection model.
+
+## Engine rejection buckets are derived; only the human ones are admin actions — v2.19.0, 2026-05-31
+
+**Decision:** merit/need/ineligible are set automatically by the shortlisting engine (it returns a `category` alongside its verdict, persisted at submit). interview/contractual — genuine human judgements — are the only ones with an admin endpoint (`AdminRejectView`/`admin_reject`).
+
+**Alternatives considered:** make every rejection an explicit admin action; or have the admin pick the category for engine rejections too.
+
+**Rationale:** The engine already computed *why* it rejected (academic floor vs income vs hard gate) — re-deriving or re-entering that by hand would be redundant and error-prone. Reserving admin actions for the two buckets the engine genuinely can't decide (was the reviewed candidate good enough; did they complete post-award steps) keeps the human surface minimal and the automatic path free.
+
+**Trade-offs:** The mapping reason-string → category lives in the engine; a new hard-gate reason must remember to set a category (defaults to 'ineligible' generic email if mis-set).
+
+**Revisit if:** the engine gains rejection reasons that don't fit merit/need/ineligible.
+
+## Decline emails are suggestive of the reason, not blunt — v2.19.0, 2026-05-31
+
+**Decision:** The merit/need decline emails hint at the reason ("competitive on academic results" / "directed to students in the greatest financial need") rather than stating it plainly, and never say "you didn't qualify because X".
+
+**Alternatives considered:** a single generic decline for everyone (no disclosure); or blunt, explicit reason statements.
+
+**Rationale:** The user's call — for vulnerable B40 applicants, a generic non-answer is more frustrating than a gentle, honest hint, but a blunt "you weren't poor/strong enough" is needlessly harsh. Suggestive copy threads that: it tells them something real and points them at a next step (apply again / seminars) without a wounding verdict.
+
+**Trade-offs:** Suggestive copy is harder to translate faithfully (the hint must survive in ms/ta) and is a judgement call the user may want to tune. Tamil is a first draft pending refine.
+
+**Revisit if:** the user wants the reason stated explicitly, or wants to drop disclosure entirely.
