@@ -64,6 +64,16 @@ Decisions:
 - **Complexity:** Medium-High (new auth scope).
 
 ## Sprint E2 — Student opt-in + anonymised discovery pool *(PDPA-critical)*
+- **E2a ✅ DONE (v2.24.0, 2026-05-31) — BACKEND, flag-gated, dummy data, NOT live.** `SPONSOR_POOL_ENABLED` (default
+  OFF). **Eligibility = anon profile published + active `share_with_sponsors` consent** (consent IS the opt-in —
+  decided with user; no separate toggle). `pool.py` (`is_pool_eligible`/`eligible_pool_queryset`/`pool_ref`/
+  `academic_band`). **Generated (not scrubbed)** anon profile (`profile_engine.generate_anonymous_profile`, non-ident
+  inputs only — no name/school/referees) → admin generate→review→publish (regenerate un-publishes). **Allowlist**
+  `SponsorPoolCardSerializer`/`SponsorPoolDetailSerializer` (plain Serializer, explicit fields, zero passthrough,
+  leak-tested). Endpoints `/sponsor/pool/[/<id>/]` (flag + approved-sponsor gated) + admin `…/anon-profile/generate|publish/`
+  (reviewer-gated). Migration `0033` (additive `anon_*` on `sponsor_profiles`). 17 tests. **Conservative card:** alias ·
+  state · field · academic band · funding categories · months. **▶ E2b = FRONTEND** (sponsor browse UI + admin anon
+  controls), still flag-gated; then lawyer review gates flipping the flag on.
 - **Goal:** a student/guardian opts a published, consented profile into the pool; approved sponsors
   browse anonymised cards with filters; a sponsor-safe anonymous profile is generated.
 - **Scope:** pool opt-in + share-consent model (guardian consent for minors); eligibility rule

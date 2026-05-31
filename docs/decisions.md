@@ -1692,3 +1692,40 @@ identity server-side, logging the siblings out); (2) the student `clearAll()` bu
 sibling session keys (`halatuju_admin_session` / `halatuju_sponsor_session`). Together with PKCE, all three scopes are
 isolated in both directions. A new auth client must mirror all three (PKCE + local-scope signOut + not being caught by
 a sibling's bulk-clear).
+
+## Anonymised sponsor pool: eligibility, generated-not-scrubbed, allowlist boundary, master flag — Phase E Sprint E2a (v2.24.0), 2026-05-31
+
+**Decision:** The sponsor discovery pool is governed by four choices:
+1. **Eligibility = anon profile published AND an active `share_with_sponsors` consent** — the existing consent *is*
+   the opt-in (no separate toggle). `pool.is_pool_eligible` / `eligible_pool_queryset`.
+2. **The sponsor-safe profile is GENERATED, not scrubbed** — `generate_anonymous_profile` uses a *separate* prompt
+   (`_build_anon_prompt`) fed only non-identifying inputs (no name/school/referees placeholder exists in it), not a
+   redaction of the named profile. An admin generates → reviews → publishes it (regenerating un-publishes).
+3. **The hard safety boundary is an allowlist `Serializer`** (`SponsorPoolCardSerializer`/`SponsorPoolDetailSerializer`)
+   — plain `Serializer`, explicit derived fields, **zero model passthrough** — proven by planted-identifier leak tests.
+4. **A master flag `SPONSOR_POOL_ENABLED` (default OFF → 404)** gates every browse endpoint; the feature ships dark on
+   `main` and tests on synthetic data until the lawyer signs off.
+
+**Alternatives considered:** (1) a separate student opt-in toggle on top of consent (rejected — consent already
+captures the share intent; the user chose consent = opt-in). (2) Scrubbing the named profile / `final_markdown` with a
+denylist (rejected — a denylist re-includes by default; one missed field leaks a real student's identity). (3) A
+`ModelSerializer` with `fields=`/`exclude=` (rejected — same denylist failure mode; a new model field can slip
+through). (4) Building E2 on a feature branch until lawyer approval (rejected — branch rot; the flag's off-state is a
+safe no-op, so dark-on-main is better). (5) Showing richer quasi-identifiers (gender/age/school) on the card (rejected
+by the user for the conservative card — re-identification risk).
+
+**Rationale:** This is the one slice where a single mistake exposes a real (often minor) student's identity to an
+outside party, so the safety property must be **structural and tested**, not a review promise. Generated-not-scrubbed
+means identifiers are never in the pipeline to begin with for the structured fields; the allowlist serializer means a
+sponsor sees only what was deliberately added; the admin publish gate is a human backstop for the one soft surface
+(the generated blurb, which is fed semi-structured narrative — TD-074b); and the flag means all of this lands and is
+exercised safely while the legal gate is pending. The data model already supported it (`Consent` defaulted to
+`share_with_sponsors`; `SponsorProfile` already had a publish lifecycle).
+
+**Trade-offs:** The generated blurb is fed the student's free-text narrative, so its anonymity is model-trust +
+human-review, not structural (TD-074b — pre-publish identifier scan is the future hardening). The detail endpoint is
+keyed by the raw application id (TD-074a). The anon profile is generated from the application form, so it does not yet
+fold in Phase-D interview findings (TD-067 nuance).
+
+**Revisit if:** the lawyer requires a different card content / consent structure (adjust the allowlist + consent
+version); or real-pool scale needs filters/ref-keyed detail/a structural blurb guarantee (TD-074).

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.24.0] — Phase E Sprint E2a: anonymised sponsor discovery pool (backend, flag-gated) (2026-05-31)
+
+- **The PDPA-critical heart of the sponsor marketplace — built behind a master flag, on dummy data, NOT live.**
+  An approved sponsor can browse an anonymised pool of students; a sponsor **never** sees a name, NRIC, address,
+  phone, email, or school. **`SPONSOR_POOL_ENABLED` defaults OFF** — every browse endpoint 404s until the lawyer
+  signs off; this release ships the machinery with the door shut.
+  - **Eligibility (consent = opt-in):** a student is in the pool only when their **anonymous profile is published**
+    *and* an **active `share_with_sponsors` consent** exists (`pool.is_pool_eligible` / `eligible_pool_queryset`).
+    Each pooled student gets a stable, non-sequential alias (`pool_ref`, e.g. `S-A3F9C1`) + a coarse academic band.
+  - **Generated (not scrubbed) anonymous profile:** `profile_engine.generate_anonymous_profile` uses a **separate
+    prompt fed only non-identifying inputs** — no name/school/referees — instructed to say "the student" and omit any
+    names/places. An admin **generates → reviews → publishes** it (the human backstop); regenerating un-publishes.
+  - **Allowlist serializers are the hard safety boundary:** `SponsorPoolCardSerializer` (alias · state · field ·
+    academic band · funding categories · months) + `SponsorPoolDetailSerializer` (+ the anon blurb) are plain
+    `Serializer`s with **explicit derived fields and zero model passthrough**, so a new model field can never leak.
+    Dedicated tests plant a distinctive name/NRIC/address/phone/email/school and assert **none** appears in any
+    sponsor payload.
+  - **Endpoints:** `GET /api/v1/sponsor/pool/` + `/pool/<id>/` (flag-gated **and** approved-sponsor-only — pending
+    sponsor → 403); admin reviewer-gated `…/anon-profile/generate/` + `…/anon-profile/publish/`. **Migration `0033`**
+    (additive `anon_*` columns on `sponsor_profiles`, applied migrate-first via Supabase MCP, prod-verified).
+  - No frontend yet (E2b). 1428 pytest (+17, `test_sponsor_pool.py`) + 183 jest. The lawyer review gates flipping the
+    flag on, not the build. See `docs/retrospective-v2.24-sponsor-pool-e2a.md`.
+
 ## [2.23.2] — Logout isolation + student modal no longer overlays admin/sponsor (2026-05-31)
 
 - **Follow-up to v2.23.1's login-isolation fix — now the LOGOUT side is isolated too.** Logging out of the **student**

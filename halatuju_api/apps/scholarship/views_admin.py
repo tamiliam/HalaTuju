@@ -19,7 +19,9 @@ from .models import (
     ApplicantDocument, InterviewSession, Referee, ScholarshipApplication,
     Sponsor, SponsorInterest, SponsorProfile,
 )
-from .profile_engine import generate_sponsor_profile, refine_sponsor_profile
+from .profile_engine import (
+    generate_anonymous_profile, generate_sponsor_profile, refine_sponsor_profile,
+)
 from .serializers import ApplicantDocumentSerializer, RefereeSerializer
 from .serializers_admin import (
     AdminApplicationDetailSerializer,
@@ -325,6 +327,54 @@ class AdminFinaliseProfileView(_AdminBase):
         sp.final_model_used = result.get('model_used', '')
         sp.finalised_at = timezone.now()
         sp.save()
+        return Response(SponsorProfileSerializer(sp).data)
+
+
+class AdminGenerateAnonProfileView(_AdminBase):
+    """Phase E2: POST .../<pk>/anon-profile/generate/ — generate the ANONYMOUS,
+    sponsor-pool-facing profile (fed only non-identifying inputs). Reviewer-gated,
+    billable. Regenerating reverts it to unpublished (an admin must re-publish)."""
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        result = generate_anonymous_profile(app, language=request.data.get('language'))
+        if 'error' in result:
+            return Response({'error': result['error']}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        sp, _ = SponsorProfile.objects.get_or_create(application=app)
+        sp.anon_markdown = result['markdown']
+        sp.anon_model_used = result.get('model_used', '')
+        sp.anon_generated_at = timezone.now()
+        # A fresh generation must be re-reviewed before sponsors see it.
+        sp.anon_published = False
+        sp.anon_published_at = None
+        sp.save()
+        return Response(SponsorProfileSerializer(sp).data)
+
+
+class AdminPublishAnonProfileView(_AdminBase):
+    """Phase E2: POST .../<pk>/anon-profile/publish/ {publish: true|false} — the
+    human gate that makes the anonymous profile visible in the sponsor pool (with
+    an active share consent). Reviewer-gated. Requires a generated anon profile."""
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        sp = SponsorProfile.objects.filter(application_id=pk).first()
+        if sp is None or not sp.anon_markdown.strip():
+            return Response({'error': 'Generate an anonymous profile first.', 'code': 'no_anon'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        publish = request.data.get('publish', True)
+        sp.anon_published = bool(publish)
+        sp.anon_published_at = timezone.now() if publish else None
+        sp.save(update_fields=['anon_published', 'anon_published_at', 'updated_at'])
         return Response(SponsorProfileSerializer(sp).data)
 
 

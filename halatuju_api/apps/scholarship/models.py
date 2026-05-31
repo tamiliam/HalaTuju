@@ -589,6 +589,17 @@ class SponsorProfile(models.Model):
     model_used = models.CharField(max_length=50, blank=True, default='')
     generated_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
+    # ── Phase E2: the ANONYMOUS, sponsor-pool-facing profile ──────────────────
+    # GENERATED (not scrubbed) from non-identifying inputs only — it must never
+    # contain the student's name/school/town. Distinct from draft/edited/final
+    # (which are the NAMED admin-facing write-ups). `anon_published` is the
+    # sponsor-pool visibility gate: a profile appears in the pool only when it is
+    # anon-published AND the application has an active share_with_sponsors consent.
+    anon_markdown = models.TextField(blank=True, default='')
+    anon_model_used = models.CharField(max_length=50, blank=True, default='')
+    anon_generated_at = models.DateTimeField(null=True, blank=True)
+    anon_published = models.BooleanField(default=False)
+    anon_published_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

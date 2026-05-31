@@ -16,6 +16,8 @@ from .views import (
 )
 from .views_sponsor import (
     SponsorMeView,
+    SponsorPoolDetailView,
+    SponsorPoolListView,
     SponsorRegisterView,
 )
 from .views_admin import (
@@ -23,7 +25,9 @@ from .views_admin import (
     AdminApplicationListView,
     AdminApplicationRefereeView,
     AdminAssignableAdminsView,
+    AdminGenerateAnonProfileView,
     AdminGenerateProfileView,
+    AdminPublishAnonProfileView,
     AdminInterviewView,
     AdminInterviewSubmitView,
     AdminFinaliseProfileView,
@@ -56,6 +60,8 @@ urlpatterns = [
     # Phase E: sponsor accounts (authenticated self-registration + own status)
     path('sponsor/register/', SponsorRegisterView.as_view()),
     path('sponsor/me/', SponsorMeView.as_view()),
+    path('sponsor/pool/', SponsorPoolListView.as_view()),
+    path('sponsor/pool/<int:pk>/', SponsorPoolDetailView.as_view()),
 
     # Internal cron — Cloud Scheduler runs whitelisted commands via a shared
     # secret header (X-Cron-Secret). Inert without the secret.
@@ -79,6 +85,8 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/suggest-gaps/', AdminSuggestGapsView.as_view()),
     path('admin/scholarship/applications/<int:pk>/profile/', AdminProfileEditView.as_view()),
     path('admin/scholarship/applications/<int:pk>/publish/', AdminPublishProfileView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/anon-profile/generate/', AdminGenerateAnonProfileView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/anon-profile/publish/', AdminPublishAnonProfileView.as_view()),
     # Phase C: interview capture + request-more-docs
     path('admin/scholarship/applications/<int:pk>/interview/', AdminInterviewView.as_view()),
     path('admin/scholarship/applications/<int:pk>/interview/submit/', AdminInterviewSubmitView.as_view()),

@@ -269,3 +269,94 @@ def generate_sponsor_profile(application, language=None):
     target_language = _resolve_language(application, language)
     prompt = _build_prompt(application, target_language=target_language)
     return _call_gemini_text(prompt, target_language)
+
+
+# ── Phase E2: the ANONYMOUS, sponsor-pool-facing profile ──────────────────────
+# A *generated* (not scrubbed) non-identifying profile. It is fed ONLY
+# non-identifying inputs — note there is no `name`, `school`, or `referees`
+# placeholder below — and is firmly instructed never to surface any identifier.
+# A human (admin) reviews + publishes it before it ever reaches a sponsor; the
+# deterministic allowlist card is the hard boundary, this blurb is the soft one.
+ANON_PROMPT = """You are writing a CONFIDENTIAL, ANONYMOUS profile of a B40 student for a \
+prospective sponsor on a permanently-anonymous giving platform in Malaysia. The sponsor must \
+NEVER be able to identify the student.
+
+ABSOLUTE ANONYMITY RULES — follow exactly:
+- Refer to the person only as "the student". Never invent or include a name.
+- NEVER include any identifying detail: no person's name, no school/college name, no town/city/\
+street/address, no phone, no email, no IC number. If the student's own words below mention any \
+such detail, OMIT it — do not repeat it.
+- State-level region and field of study are fine; anything more specific is not.
+
+LANGUAGE — the student's own words may be in Malay, English, or Tamil (or a mix); understand them \
+whichever language they are in, and write the FINAL profile in {target_language}.
+
+Write factual, warm, concise prose (~250-350 words) in Markdown with these sections: Background, \
+Academic record, Pathway plan, Funding need, Why support matters. Use ONLY the information below; \
+do not invent facts. Where information is missing, say so briefly.
+
+Qualification: {qualification}    SPM A-count: {spm_a_count}    STPM PNGK: {stpm_pngk}
+Home state: {state}
+Household income (RM/month): {household_income}    Household size: {household_size}
+Receives STR: {receives_str}    Receives JKM: {receives_jkm}
+First in family to university: {first_in_family}
+Parents'/guardians' occupation: {parents_occupation}
+Siblings currently studying: {siblings_studying}
+
+Pathway / field: {pathway}
+
+Aspirations (student's words): {aspirations}
+Plan to get there (student's words): {plans}
+Family situation (student's words): {family_context}
+Daily life & responsibilities (student's words): {daily_life}
+
+Funding — what the support would help with: {funding_categories}
+Programme length (months): {programme_months}
+Anything else about funding (student's words): {funding_note}
+"""
+
+
+def _build_anon_prompt(application, target_language=DEFAULT_LANGUAGE):
+    """Build the anonymous-profile prompt. Deliberately omits name/school/referees."""
+    profile = application.profile
+
+    def val(v, fallback='not provided'):
+        return v if v not in (None, '') else fallback
+
+    def pval(attr, fallback='not provided'):
+        return val(getattr(profile, attr, None) if profile else None, fallback)
+
+    spm_a_count = count_spm_a_grades(getattr(profile, 'grades', None)) if profile else 0
+    cats_str, months, note = _funding(application)
+
+    return ANON_PROMPT.format(
+        target_language=target_language,
+        qualification=(pval('exam_type', 'n/a') or 'n/a'),
+        spm_a_count=spm_a_count,
+        stpm_pngk=pval('stpm_cgpa', 'n/a'),
+        state=pval('preferred_state'),
+        household_income=pval('household_income'),
+        household_size=pval('household_size'),
+        receives_str=_yesno(getattr(profile, 'receives_str', None) if profile else None),
+        receives_jkm=_yesno(getattr(profile, 'receives_jkm', None) if profile else None),
+        first_in_family=_yesno(application.first_in_family),
+        parents_occupation=val(application.parents_occupation),
+        siblings_studying=_siblings_studying_display(application),
+        pathway=_pathway(application),
+        aspirations=val(application.aspirations),
+        plans=val(application.plans),
+        family_context=val(application.family_context),
+        daily_life=val(application.daily_life),
+        funding_categories=cats_str,
+        programme_months=months,
+        funding_note=note,
+    )
+
+
+def generate_anonymous_profile(application, language=None):
+    """Generate the ANONYMOUS sponsor-pool profile. Same cascade + graceful-error
+    contract as generate_sponsor_profile, but fed only non-identifying inputs.
+    Returns {'markdown', 'model_used', 'language', ...} or {'error': ...}."""
+    target_language = _resolve_language(application, language)
+    prompt = _build_anon_prompt(application, target_language=target_language)
+    return _call_gemini_text(prompt, target_language)

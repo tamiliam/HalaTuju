@@ -226,6 +226,19 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Project Status
 
+**v2.24.0 (2026-05-31) — Phase E Sprint E2a: anonymised sponsor discovery pool (backend, flag-gated).** The
+PDPA-critical core, built behind `SPONSOR_POOL_ENABLED` (**default OFF** → browse endpoints 404) on **dummy data —
+NOT live**. A sponsor never sees name/NRIC/address/phone/email/school. **Eligibility (consent = opt-in):** pooled iff
+the **anonymous profile is published** AND an active `share_with_sponsors` consent exists (`pool.py`:
+`is_pool_eligible`/`eligible_pool_queryset`/`pool_ref` alias/`academic_band`). **Generated (not scrubbed) anon profile:**
+`profile_engine.generate_anonymous_profile` (separate prompt, non-identifying inputs only — no name/school/referees);
+admin generate→review→publish (regenerate un-publishes). **Allowlist serializers = hard boundary:**
+`SponsorPoolCardSerializer`/`SponsorPoolDetailSerializer` are plain `Serializer`s with explicit derived fields + zero
+model passthrough; leak tests assert no identifier appears. Endpoints `GET /sponsor/pool/[/<id>/]` (flag + approved-
+sponsor gated) + admin `…/anon-profile/generate/`+`/publish/` (reviewer-gated). **Migration `0033`** (additive `anon_*`
+on `sponsor_profiles`, migrate-first, prod-verified). No frontend yet (E2b). 1428 pytest (+17) + 183 jest. See
+`docs/retrospective-v2.24-sponsor-pool-e2a.md`.
+
 **v2.23.2 (2026-05-31) — Logout isolation + student modal no longer overlays admin/sponsor.** Follow-up to v2.23.1:
 the LOGOUT side is now isolated too. **(1)** `clearAll()` (student logout) was wiping **all** `halatuju_*` keys incl.
 `halatuju_admin_session`/`halatuju_sponsor_session` → now preserves them; and all three `signOut()` switched to
@@ -384,34 +397,32 @@ incomplete profiles (no override) in `AdminVerifyAcceptView`; request-more-docs;
 preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **Out of scope (future): Phase D**
 (Gemini v2 refines profile with interview findings), **Phase E** (real sponsor portal + auth), **Phase F** (mentor).
 
-- 1411 backend tests, 183 frontend (jest) tests, 0 failures
+- 1428 backend tests, 183 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-05-31, post Phase E Sprint E1)
+## Next Sprint (as of 2026-05-31, post Phase E Sprint E2a)
 
-Current state: v2.23.0 shipped (2026-05-31) — Phase E **Sprint E1 complete + self-serve auth (E1c)**. Sponsors have
-a real account: `/sponsor/login` (email/pw + Google) + `/sponsor/register` (full fields + PDPA consent); **isolated
-sponsor auth stack** (`sponsor-supabase.ts`, `SponsorAuthProvider`, `/sponsor/auth/callback`) mirroring admin —
-the E1 `KEY_SPONSOR_SIGNIN` hack is gone. `Sponsor` model + migrations `scholarship/0031` (table) + `0032`
-(phone/source/consent), both migrate-first. `/admin/sponsors` vetting UI. 1411 pytest + 178 jest; golden masters
-intact; courses migrations through `0052`, scholarship through **`0032`**, applied migrate-first.
+Current state: v2.24.0 shipped (2026-05-31) — Phase E **Sprint E2a: anonymised sponsor pool BACKEND**, flag-gated
+(`SPONSOR_POOL_ENABLED` default OFF) on dummy data, NOT live. Eligibility = anon profile published + active
+`share_with_sponsors` consent (`pool.py`); generated (not scrubbed) anon profile (`profile_engine.generate_anonymous_profile`);
+**allowlist** card/detail serializers (zero passthrough, leak-tested); browse endpoints `/sponsor/pool/[/<id>/]` +
+admin anon-profile generate/publish; migration `0033` (additive `anon_*` on `sponsor_profiles`, migrate-first).
+1428 pytest + 183 jest; golden masters intact; courses migrations through `0052`, scholarship through **`0033`**.
 
 Pick one (recommended order):
-0. **Live-verify Sprint E1 (recommended FIRST — not click-tested, TD-070).** Two flows headless can't exercise:
-   **(a) sponsor signup** — at `/sponsor/register`, create an email/password account (check the password rules +
-   re-enter + MY phone + source + consent gate), confirm email if prompted, land on `/sponsor` → "pending"; also try
-   the **Google** path → confirm the "complete your details" step asks phone/source/consent. **(b) admin vetting** —
-   in `/admin/sponsors` approve that sponsor → reload `/sponsor` → "browsing coming soon" shell; try reject/suspend;
-   confirm a **viewer** admin is blocked (403). Also eyeball the landing-page nav now shows `Log in ▾ | Sign Up`.
-1. **Phase E Sprint E2 — student opt-in + anonymised discovery pool (PDPA-critical).** The next roadmap slice
-   (`docs/scholarship/phase-e-sponsor-roadmap.md`): pool opt-in + share-consent (guardian for minors), the
-   **allowlist anonymised card + profile serializers** (the load-bearing safety property — dedicated leak tests),
-   sponsor-safe profile **generated** (not scrubbed) via `profile_engine`, sponsor browse UI. **MUST NOT go live to
-   real students until the lawyer signs off** (build/test on dummy data is fine). This also resolves TD-067 (wire a
-   reader for the Phase-D `final_markdown`).
+0. **Phase E Sprint E2b — the pool FRONTEND.** Sponsor browse UI (approved sponsor: cards grid → detail with the anon
+   blurb; `/sponsor` "browsing" shell becomes the real list) + admin "Generate / Publish anonymous profile" controls
+   on `/admin/scholarship/[id]` (mirror the named draft/publish card; reviewer-gated). Client fns: `getSponsorPool`/
+   `getSponsorPoolDetail` (api.ts), `generateAnonProfile`/`publishAnonProfile` (admin-api.ts). i18n. **Still flag-gated
+   + dummy data only** — nothing live to real students until lawyer sign-off. Then E3 (match→consent→sponsorship).
+   This also resolves TD-067 (the anon profile is the sponsor's reader for the Phase-D narrative).
+1. **Lawyer review** of the anonymised-card content + consent text — the gate to flipping `SPONSOR_POOL_ENABLED` on.
+   Until then E2 ships dark.
+2. **Live-verify Sprint E1/E1c + auth isolation (TD-070)** — sponsor signup (email/pw + Google → complete-details),
+   admin vetting (approve/reject/suspend; viewer 403), and the login+logout isolation across student/admin/sponsor.
 2. **User live-verify the post-shortlist AI features** (v2.17–v2.21) on the Elanjelian app — Cikgu Gopal coach,
    doc-assist, gap-spotter, Phase-D refine, decline emails, elective persistence. All test-green, not click-tested.
 3. **Tamil refine** — now ~15 batches incl. consent + decline-email + reject + coach + the new `sponsorPortal.*` /

@@ -118,6 +118,10 @@ ADMIN_NOTIFY_EMAIL = os.environ.get('ADMIN_NOTIFY_EMAIL', '')
 # Shared secret guarding the internal cron endpoint (Cloud Scheduler → the running
 # api service runs scheduled management commands without a separate Cloud Run Job).
 CRON_SECRET = os.environ.get('CRON_SECRET', '')
+# Phase E2: master switch for the anonymised sponsor discovery pool. OFF until the
+# lawyer signs off on exposing (anonymised) student data to sponsors. While off,
+# every sponsor-pool browse endpoint returns 404. Build + test run on dummy data.
+SPONSOR_POOL_ENABLED = os.environ.get('SPONSOR_POOL_ENABLED', '').lower() in ('1', 'true', 'yes')
 
 # Supporting-document upload guardrails (cost + abuse). Env-overridable.
 MAX_DOC_SIZE_BYTES = int(os.environ.get('MAX_DOC_SIZE_BYTES', str(8 * 1024 * 1024)))   # 8 MB/file

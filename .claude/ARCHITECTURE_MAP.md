@@ -238,6 +238,19 @@ sign-in → complete-details (Google/email-confirm gap) → pending/approved/ina
 student-client sign-in was removed** — sponsors never touch the student `AuthGateReason`/NRIC flow. E1 holds **zero
 student data**; anonymised browsing (E2) is lawyer-gated.
 
+**Phase E2a — anonymised discovery pool (v2.24.0, backend, flag-gated).** `apps/scholarship/pool.py` =
+eligibility/alias/academic-band (a student is poolable iff `SponsorProfile.anon_published` AND an active
+`share_with_sponsors` `Consent`). The sponsor-facing **anonymous** profile is a *generated* (not scrubbed) blurb:
+`profile_engine.generate_anonymous_profile` + `_build_anon_prompt` (a SEPARATE prompt from the named `_build_prompt` —
+no name/school/referees), stored in new `SponsorProfile.anon_*` columns (migration `0033`); admin generate→publish
+gates it. **The hard safety boundary is the allowlist serializers** `SponsorPoolCardSerializer` /
+`SponsorPoolDetailSerializer` (`serializers.py`) — plain `Serializer`s with explicit derived fields and **zero model
+passthrough**, so a new model field cannot leak; `test_sponsor_pool.py` asserts no name/NRIC/address/phone/email/school
+appears in any sponsor payload. Browse: `SponsorPoolListView`/`SponsorPoolDetailView` (`views_sponsor.py`,
+`/api/v1/sponsor/pool/[/<id>/]`) gated by **`settings.SPONSOR_POOL_ENABLED` (default OFF → 404)** AND
+`require_approved_sponsor`. Admin: `AdminGenerateAnonProfileView`/`AdminPublishAnonProfileView` (reviewer-gated).
+The whole pool is dark until the lawyer signs off (flip the env flag).
+
 **Three isolated Supabase clients + the PKCE invariant (v2.23.1):** student `getSupabase` (default storage key, mounted
 globally via `app/providers.tsx`), `getAdminSupabase` (`halatuju_admin_session`, mounted under `/admin/*`), and
 `getSponsorSupabase` (`halatuju_sponsor_session`, mounted under `/sponsor/*`). **All three set `flowType: 'pkce'` — this

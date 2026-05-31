@@ -1,6 +1,7 @@
 """Serializers for B40 Assistance Programme intake."""
 from rest_framework import serializers
 
+from . import pool
 from .models import (
     ApplicantDocument, Consent, FundingNeed, Referee, ScholarshipApplication,
     Sponsor, SponsorInterest,
@@ -37,6 +38,62 @@ class SponsorSerializer(serializers.ModelSerializer):
         consent) are all present — a Google sponsor lands without them and must
         complete this step before vetting proceeds."""
         return bool(obj.phone and obj.source and obj.consent_at)
+
+
+def _funding_need_or_none(application):
+    from .models import FundingNeed
+    try:
+        return application.funding_need
+    except FundingNeed.DoesNotExist:
+        return None
+
+
+class SponsorPoolCardSerializer(serializers.Serializer):
+    """Phase E2 — the ANONYMISED card a vetted sponsor sees. **Allowlist by
+    construction:** every field is an explicit, derived, non-identifying value and
+    nothing is passed through from the application/profile, so a new model field
+    can never leak to a sponsor by accident. Input is a ``ScholarshipApplication``.
+    (Tests assert no name/NRIC/address/phone/email/school appears in the output.)"""
+    # `id` is the application row id — used only as the opaque key to fetch the
+    # detail; it is not identifying. `ref` is the human-facing alias.
+    id = serializers.IntegerField(read_only=True)
+    ref = serializers.SerializerMethodField()
+    state = serializers.SerializerMethodField()
+    field = serializers.SerializerMethodField()
+    academic = serializers.SerializerMethodField()
+    funding_categories = serializers.SerializerMethodField()
+    programme_months = serializers.SerializerMethodField()
+
+    def get_ref(self, app):
+        return pool.pool_ref(app.id)
+
+    def get_state(self, app):
+        # State-level region only — street/postcode/city are never exposed.
+        return (getattr(app.profile, 'preferred_state', '') or '') if app.profile else ''
+
+    def get_field(self, app):
+        return app.field_of_study or ''
+
+    def get_academic(self, app):
+        return pool.academic_band(app.profile)
+
+    def get_funding_categories(self, app):
+        fn = _funding_need_or_none(app)
+        return fn.categories if (fn and isinstance(fn.categories, list)) else []
+
+    def get_programme_months(self, app):
+        fn = _funding_need_or_none(app)
+        return fn.programme_months if fn else None
+
+
+class SponsorPoolDetailSerializer(SponsorPoolCardSerializer):
+    """The card + the GENERATED anonymous blurb (admin-reviewed, anon-published).
+    Still an allowlist — only the anon_markdown is added, never the named profile."""
+    anon_profile = serializers.SerializerMethodField()
+
+    def get_anon_profile(self, app):
+        sp = getattr(app, 'sponsor_profile', None)
+        return (sp.anon_markdown or '') if sp else ''
 
 
 class ApplicationCreateSerializer(serializers.ModelSerializer):

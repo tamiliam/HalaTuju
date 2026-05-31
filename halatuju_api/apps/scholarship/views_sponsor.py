@@ -6,6 +6,7 @@ anonymised student pool. These endpoints govern the sponsor's OWN account only �
 nothing here exposes student data. All paths are under /api/v1/sponsor/ and are
 whitelisted from the NRIC gate (sponsors have no NRIC).
 """
+from django.conf import settings
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -13,9 +14,12 @@ from rest_framework.views import APIView
 
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 
+from . import pool
 from .emails import send_sponsor_interest_admin_email
-from .models import Sponsor
-from .serializers import SponsorSerializer
+from .models import ScholarshipApplication, Sponsor
+from .serializers import (
+    SponsorPoolCardSerializer, SponsorPoolDetailSerializer, SponsorSerializer,
+)
 
 # PDPA consent text version a sponsor accepts at registration. Bump when the
 # sponsor consent wording changes (separate from the student CONSENT_VERSION).
@@ -117,3 +121,41 @@ class SponsorMeView(SponsorMixin, APIView):
         if not sponsor:
             return Response({'registered': False})
         return Response(SponsorSerializer(sponsor).data)
+
+
+class _PoolBase(SponsorMixin, APIView):
+    """Shared gate for the Phase E2 anonymised pool: the whole pool is behind the
+    SPONSOR_POOL_ENABLED flag (off until lawyer sign-off), and only APPROVED
+    sponsors may browse. Returns (sponsor, error_response); error is None when OK."""
+    def _gate(self, request):
+        if not getattr(settings, 'SPONSOR_POOL_ENABLED', False):
+            # Don't reveal the feature exists while it's gated off.
+            return None, Response({'error': 'pool_not_available'}, status=status.HTTP_404_NOT_FOUND)
+        sponsor = self.require_approved_sponsor(request)
+        if not sponsor:
+            return None, Response({'error': 'not_approved'}, status=status.HTTP_403_FORBIDDEN)
+        return sponsor, None
+
+
+class SponsorPoolListView(_PoolBase):
+    """GET /api/v1/sponsor/pool/ — the anonymised student pool for an approved
+    sponsor. Each card is an allowlist of non-identifying fields only."""
+    def get(self, request):
+        _, err = self._gate(request)
+        if err:
+            return err
+        qs = pool.eligible_pool_queryset(ScholarshipApplication)
+        return Response({'students': SponsorPoolCardSerializer(qs, many=True).data})
+
+
+class SponsorPoolDetailView(_PoolBase):
+    """GET /api/v1/sponsor/pool/<pk>/ — one anonymised student (card + the
+    generated anonymous blurb). 404 unless the student is currently pool-eligible."""
+    def get(self, request, pk):
+        _, err = self._gate(request)
+        if err:
+            return err
+        app = pool.eligible_pool_queryset(ScholarshipApplication).filter(id=pk).first()
+        if not app:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(SponsorPoolDetailSerializer(app).data)

@@ -1,0 +1,263 @@
+"""Phase E2 — anonymised sponsor discovery pool.
+
+The load-bearing safety property: a sponsor NEVER sees a name/NRIC/address/phone/
+email/school. These tests assert that on every sponsor-facing surface, plus the
+eligibility rule, the SPONSOR_POOL_ENABLED gate, approved-sponsor gating, and the
+admin generate/publish flow. All on synthetic data; the AI call is mocked.
+"""
+import json
+from unittest.mock import patch
+
+import jwt
+from django.test import TestCase, override_settings
+from django.utils import timezone
+from rest_framework.test import APIClient
+
+from apps.courses.models import PartnerAdmin, StudentProfile
+from apps.scholarship import pool
+from apps.scholarship.models import (
+    Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort, SponsorProfile, Sponsor,
+)
+from apps.scholarship.profile_engine import _build_anon_prompt, _build_prompt
+from apps.scholarship.serializers import (
+    SponsorPoolCardSerializer, SponsorPoolDetailSerializer,
+)
+
+TEST_JWT_SECRET = 'test-supabase-jwt-secret'
+
+# Distinctive identifying values — if any appears in a sponsor-facing payload, it leaked.
+IDENTIFIERS = {
+    'name': 'Zxqvbn Identifiable',
+    'nric': '050505-10-9999',
+    'school': 'SMK Secret School',
+    'address': '99 Jalan Rahsia',
+    'city': 'Siretown',
+    'contact_phone': '012-9998888',
+    'contact_email': 'leak@secret.example',
+}
+
+
+def _token(uid, email='', anon=False):
+    return jwt.encode(
+        {'sub': uid, 'aud': 'authenticated', 'role': 'authenticated',
+         'email': email, 'is_anonymous': anon},
+        TEST_JWT_SECRET, algorithm='HS256')
+
+
+def _make_eligible_app(cohort, *, suffix='1', anon_published=True, consent=True):
+    """A fully pool-eligible application on synthetic data, with every identifying
+    field populated (so leak tests have something to catch)."""
+    profile = StudentProfile.objects.create(
+        supabase_user_id=f'pool-{suffix}',
+        grades={'bm': 'A', 'eng': 'A', 'math': 'A+', 'sci': 'B'},
+        exam_type='spm',
+        preferred_state='Kedah',
+        household_income=1500, household_size=5, receives_str=True, receives_jkm=False,
+        **IDENTIFIERS,
+    )
+    app = ScholarshipApplication.objects.create(
+        cohort=cohort, profile=profile, status='accepted',
+        field_of_study='engineering', first_in_family=True,
+        aspirations='I want to be an engineer.', plans='Study hard.',
+        parents_occupation='farmer',
+    )
+    FundingNeed.objects.create(application=app, categories=['tuition', 'accommodation'], programme_months=24)
+    SponsorProfile.objects.create(
+        application=app,
+        anon_markdown='The student is a determined SPM leaver pursuing engineering in their home state.',
+        anon_published=anon_published,
+    )
+    if consent:
+        Consent.objects.create(application=app, consent_type='share_with_sponsors', version='e2', is_active=True)
+    return app
+
+
+# ─── pure helpers ────────────────────────────────────────────────────────────
+
+class TestPoolHelpers(TestCase):
+    def test_pool_ref_stable_and_non_sequential(self):
+        self.assertEqual(pool.pool_ref(7), pool.pool_ref(7))
+        self.assertNotEqual(pool.pool_ref(7), pool.pool_ref(8))
+        self.assertTrue(pool.pool_ref(7).startswith('S-'))
+        self.assertNotIn('7', pool.pool_ref(7).replace('S-', ''))  # not the raw id
+
+    def test_academic_band_spm_and_stpm(self):
+        spm = StudentProfile(exam_type='spm', grades={'bm': 'A', 'eng': 'A'})
+        self.assertTrue(pool.academic_band(spm).startswith('SPM'))
+        stpm = StudentProfile(exam_type='stpm', stpm_cgpa=3.5)
+        self.assertIn('3.5', pool.academic_band(stpm))
+
+
+# ─── eligibility ─────────────────────────────────────────────────────────────
+
+class TestEligibility(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def test_eligible_with_published_and_consent(self):
+        app = _make_eligible_app(self.cohort)
+        self.assertTrue(pool.is_pool_eligible(app))
+        self.assertIn(app.id, list(pool.eligible_pool_queryset(ScholarshipApplication).values_list('id', flat=True)))
+
+    def test_not_eligible_without_anon_publish(self):
+        app = _make_eligible_app(self.cohort, anon_published=False)
+        self.assertFalse(pool.is_pool_eligible(app))
+        self.assertNotIn(app.id, list(pool.eligible_pool_queryset(ScholarshipApplication).values_list('id', flat=True)))
+
+    def test_not_eligible_without_consent(self):
+        app = _make_eligible_app(self.cohort, consent=False)
+        self.assertFalse(pool.is_pool_eligible(app))
+
+    def test_not_eligible_when_consent_withdrawn(self):
+        app = _make_eligible_app(self.cohort)
+        app.consents.update(is_active=False)
+        self.assertFalse(pool.is_pool_eligible(app))
+
+
+# ─── allowlist: no identifying field may leak ────────────────────────────────
+
+class TestAllowlistNoLeak(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def _assert_no_identifiers(self, payload):
+        blob = json.dumps(payload)
+        for label, value in IDENTIFIERS.items():
+            self.assertNotIn(value, blob, f'{label} leaked into sponsor payload')
+
+    def test_card_leaks_nothing(self):
+        app = _make_eligible_app(self.cohort)
+        data = SponsorPoolCardSerializer(app).data
+        self._assert_no_identifiers(data)
+        self.assertEqual(data['state'], 'Kedah')       # state-level region IS allowed
+        self.assertEqual(data['field'], 'engineering')
+
+    def test_detail_leaks_nothing(self):
+        app = _make_eligible_app(self.cohort)
+        data = SponsorPoolDetailSerializer(app).data
+        self._assert_no_identifiers(data)
+        self.assertIn('anon_profile', data)
+
+
+# ─── the anonymous prompt must not carry name/school ─────────────────────────
+
+class TestAnonPrompt(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def test_anon_prompt_excludes_name_and_school(self):
+        app = _make_eligible_app(self.cohort)
+        anon = _build_anon_prompt(app)
+        self.assertNotIn(IDENTIFIERS['name'], anon)
+        self.assertNotIn(IDENTIFIERS['school'], anon)
+        # …while the NAMED prompt does include them (sanity that they differ).
+        named = _build_prompt(app)
+        self.assertIn(IDENTIFIERS['name'], named)
+
+
+# ─── sponsor browse endpoints: flag + approval gating ────────────────────────
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestSponsorBrowse(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.app = _make_eligible_app(cls.cohort)
+        Sponsor.objects.create(supabase_user_id='spon-ok', name='S', email='s@x.com',
+                               phone='0123', source='friend', consent_at=timezone.now(), status='approved')
+        Sponsor.objects.create(supabase_user_id='spon-pending', name='P', email='p@x.com', status='pending')
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def _auth(self, uid):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid, "x@x.com")}')
+
+    @override_settings(SPONSOR_POOL_ENABLED=False)
+    def test_pool_404_when_flag_off(self):
+        self._auth('spon-ok')
+        self.assertEqual(self.client.get('/api/v1/sponsor/pool/').status_code, 404)
+
+    @override_settings(SPONSOR_POOL_ENABLED=True)
+    def test_approved_sponsor_sees_anonymised_cards(self):
+        self._auth('spon-ok')
+        r = self.client.get('/api/v1/sponsor/pool/')
+        self.assertEqual(r.status_code, 200)
+        students = r.json()['students']
+        self.assertTrue(any(s['ref'] == pool.pool_ref(self.app.id) for s in students))
+        self._assert_clean(r.json())
+
+    @override_settings(SPONSOR_POOL_ENABLED=True)
+    def test_pending_sponsor_forbidden(self):
+        self._auth('spon-pending')
+        self.assertEqual(self.client.get('/api/v1/sponsor/pool/').status_code, 403)
+
+    @override_settings(SPONSOR_POOL_ENABLED=True)
+    def test_detail_ok_and_clean(self):
+        self._auth('spon-ok')
+        r = self.client.get(f'/api/v1/sponsor/pool/{self.app.id}/')
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('anon_profile', r.json())
+        self._assert_clean(r.json())
+
+    @override_settings(SPONSOR_POOL_ENABLED=True)
+    def test_detail_404_for_ineligible(self):
+        ineligible = _make_eligible_app(self.cohort, suffix='2', anon_published=False)
+        self._auth('spon-ok')
+        self.assertEqual(self.client.get(f'/api/v1/sponsor/pool/{ineligible.id}/').status_code, 404)
+
+    def _assert_clean(self, payload):
+        blob = json.dumps(payload)
+        for value in IDENTIFIERS.values():
+            self.assertNotIn(value, blob)
+
+
+# ─── admin generate / publish the anonymous profile ──────────────────────────
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestAdminAnonProfile(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        PartnerAdmin.objects.create(supabase_user_id='rev', role='reviewer', is_active=True, name='Rev', email='r@x.com')
+        PartnerAdmin.objects.create(supabase_user_id='vie', role='viewer', is_active=True, name='Vie', email='v@x.com')
+
+    def setUp(self):
+        self.client = APIClient()
+        self.app = _make_eligible_app(self.cohort, anon_published=False)
+
+    def _auth(self, uid):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid, "x@x.com")}')
+
+    @patch('apps.scholarship.profile_engine._call_gemini_text',
+           return_value={'markdown': 'The student is anonymous.', 'model_used': 'mock', 'language': 'English'})
+    def test_reviewer_generate_then_publish(self, _mock):
+        self._auth('rev')
+        gen = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/anon-profile/generate/', {}, format='json')
+        self.assertEqual(gen.status_code, 200, gen.content)
+        sp = SponsorProfile.objects.get(application=self.app)
+        self.assertEqual(sp.anon_markdown, 'The student is anonymous.')
+        self.assertFalse(sp.anon_published)  # fresh generation is unpublished
+
+        pub = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/anon-profile/publish/',
+                               {'publish': True}, format='json')
+        self.assertEqual(pub.status_code, 200, pub.content)
+        sp.refresh_from_db()
+        self.assertTrue(sp.anon_published)
+        self.assertIsNotNone(sp.anon_published_at)
+
+    def test_publish_requires_generated_anon(self):
+        self._auth('rev')
+        # SponsorProfile exists (anon_markdown set by fixture) — clear it to test the gate.
+        SponsorProfile.objects.filter(application=self.app).update(anon_markdown='')
+        r = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/anon-profile/publish/', {}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'no_anon')
+
+    def test_viewer_forbidden(self):
+        self._auth('vie')
+        r = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/anon-profile/generate/', {}, format='json')
+        self.assertEqual(r.status_code, 403)
