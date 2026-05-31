@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { signInWithPhone, verifyOTP, signInWithGoogle } from '@/lib/supabase'
 import { syncProfile, claimNric, type SyncProfileData } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
@@ -14,6 +14,7 @@ type ModalStep = 'login' | 'otp' | 'ic'
 
 export default function AuthGateModal() {
   const router = useRouter()
+  const pathname = usePathname()
   const { t } = useT()
   const {
     authGateReason,
@@ -93,7 +94,10 @@ export default function AuthGateModal() {
     }
   }, [pendingProfileRedirect, status, profile, router])
 
-  if (!authGateReason) return null
+  // Never show the STUDENT auth gate over the admin / sponsor consoles — they have
+  // their own isolated auth. (The student AuthProvider is mounted globally; this
+  // keeps its modal from overlaying those pages — see TD-073.)
+  if (!authGateReason || pathname?.startsWith('/admin') || pathname?.startsWith('/sponsor')) return null
 
   const reasonKey =
     authGateReason === 'quiz'

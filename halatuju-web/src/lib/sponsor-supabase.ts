@@ -67,7 +67,9 @@ export async function sponsorResetPassword(email: string) {
 }
 
 export async function sponsorSignOut() {
-  const { error } = await getSponsorSupabase().auth.signOut()
+  // scope: 'local' — end only the sponsor session, not the user's student/admin
+  // sessions (same Supabase identity across the three isolated clients).
+  const { error } = await getSponsorSupabase().auth.signOut({ scope: 'local' })
   return { error }
 }
 

@@ -51,7 +51,9 @@ export async function adminResetPassword(email: string) {
 }
 
 export async function adminSignOut() {
-  const { error } = await getAdminSupabase().auth.signOut()
+  // scope: 'local' — end only the admin session, not the user's student/sponsor
+  // sessions (same Supabase identity across the three isolated clients).
+  const { error } = await getAdminSupabase().auth.signOut({ scope: 'local' })
   return { error }
 }
 

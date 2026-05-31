@@ -89,9 +89,14 @@ export const COURSE_PAGE_SIZE = 9
 // ── Helpers ──────────────────────────────────────────────────────────
 
 /** Remove all halatuju_* keys from localStorage. */
+/** Auth scopes that share the `halatuju_` prefix but belong to OTHER user types —
+ *  a student logout must NOT wipe the admin / sponsor sessions (they're isolated
+ *  Supabase clients with their own storage keys, incl. their PKCE verifiers). */
+const PRESERVE_ON_CLEAR = ['halatuju_admin_session', 'halatuju_sponsor_session']
+
 export function clearAll(): void {
   Object.keys(localStorage)
-    .filter(k => k.startsWith('halatuju_'))
+    .filter(k => k.startsWith('halatuju_') && !PRESERVE_ON_CLEAR.some(p => k.startsWith(p)))
     .forEach(k => localStorage.removeItem(k))
 }
 

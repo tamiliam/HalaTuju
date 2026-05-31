@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.23.2] — Logout isolation + student modal no longer overlays admin/sponsor (2026-05-31)
+
+- **Follow-up to v2.23.1's login-isolation fix — now the LOGOUT side is isolated too.** Logging out of the **student**
+  app was logging you out of the admin/sponsor consoles. Two causes, both fixed:
+  - `clearAll()` (run on student logout) deleted **every** `halatuju_*` localStorage key — including
+    `halatuju_admin_session` and `halatuju_sponsor_session`. It now **preserves** those two (and their PKCE verifiers).
+  - All three `signOut()` calls used Supabase's default **`global`** scope, which revokes *every* session for the
+    identity server-side (the three clients share one Google identity). All three now use **`scope: 'local'`**, so
+    each logout ends only its own session. Net: student / admin / sponsor logouts no longer affect each other.
+- **The student auth-gate modal ("Create Your Free Student Account") no longer overlays the admin/sponsor consoles.**
+  It's rendered globally in `Providers`, so it could appear over `/admin` + `/sponsor`; it now route-guards itself
+  (`usePathname`) and renders nothing on `/admin/*` and `/sponsor/*` (the visible half of TD-073). No migration; no i18n.
+  1411 pytest + 183 jest; `next build` clean.
+
 ## [2.23.1] — Auth session-isolation fix (PKCE) + sponsor/partner UX polish (2026-05-31)
 
 - **Security/correctness fix — cross-scope session leak closed (PKCE).** Logging into the Partner (admin) or Sponsor

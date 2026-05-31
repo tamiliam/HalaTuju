@@ -1685,3 +1685,10 @@ Supabase identity; cross-scope authority is still gated per-endpoint by role row
 
 **Revisit if:** the auth architecture moves to a single role-aware client, or a future client genuinely needs implicit
 flow (it shouldn't) — in which case the isolation must be re-proven, not assumed.
+
+**Addendum (v2.23.2) — logout side:** PKCE isolates *login*; isolating *logout* needs two more things, now in place:
+(1) all three clients call `signOut({ scope: 'local' })` (the default `'global'` revokes every session for the shared
+identity server-side, logging the siblings out); (2) the student `clearAll()` bulk localStorage wipe **excludes** the
+sibling session keys (`halatuju_admin_session` / `halatuju_sponsor_session`). Together with PKCE, all three scopes are
+isolated in both directions. A new auth client must mirror all three (PKCE + local-scope signOut + not being caught by
+a sibling's bulk-clear).

@@ -50,7 +50,10 @@ export async function signInWithGoogle() {
 }
 
 export async function signOut() {
-  const { error } = await getSupabase().auth.signOut()
+  // scope: 'local' — only end THIS (student) session. The default 'global' revokes
+  // every session for the user server-side, which would log out the admin/sponsor
+  // sessions too (same Supabase identity across the three isolated clients).
+  const { error } = await getSupabase().auth.signOut({ scope: 'local' })
   return { error }
 }
 

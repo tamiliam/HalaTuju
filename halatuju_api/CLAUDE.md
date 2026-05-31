@@ -226,6 +226,14 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Project Status
 
+**v2.23.2 (2026-05-31) — Logout isolation + student modal no longer overlays admin/sponsor.** Follow-up to v2.23.1:
+the LOGOUT side is now isolated too. **(1)** `clearAll()` (student logout) was wiping **all** `halatuju_*` keys incl.
+`halatuju_admin_session`/`halatuju_sponsor_session` → now preserves them; and all three `signOut()` switched to
+**`scope: 'local'`** (default `global` revokes every session for the shared Google identity). So student/admin/sponsor
+logouts no longer affect each other. **(2)** `AuthGateModal` (global in `Providers`) now route-guards via `usePathname`
+and renders nothing on `/admin/*` + `/sponsor/*` (the visible half of TD-073). No migration/i18n. 1411 pytest + 183
+jest; `next build` clean. See `docs/retrospective-v2.23.1-auth-isolation.md` (covers the auth-isolation arc).
+
 **v2.23.1 (2026-05-31) — Auth session-isolation fix (PKCE) + sponsor/partner UX polish.** **Fixed a cross-scope
 session leak:** Google login on the admin/sponsor console also created a Student session (implicit-flow `#access_token`
 hash read by the globally-mounted student `AuthProvider`); admin logout didn't clear it. **All three Supabase clients

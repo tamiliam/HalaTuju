@@ -65,3 +65,22 @@ student / admin / sponsor sessions isolated when they share an origin and the sa
   its test, 3 message files.
 - **Residual (TD-073):** the global student `AuthProvider` still mounts under `/admin` + `/sponsor` (anon-session noise
   + a harmless failed-exchange log) — the leak is closed; this is cosmetic.
+
+## Follow-up — v2.23.2 (logout isolation + modal overlay)
+
+User testing of v2.23.1 surfaced two more isolation gaps the login-side PKCE fix didn't cover:
+
+1. **Logout wasn't isolated** — logging out of the student app also logged out admin/sponsor.
+   - *Root cause (two):* (a) `clearAll()` on student logout deleted **every** `halatuju_*` localStorage key — including
+     the sibling scopes' session keys (`halatuju_admin_session` / `halatuju_sponsor_session`); (b) all three
+     `signOut()` used Supabase's default **`global`** scope, which revokes every session for the (shared) identity
+     server-side. *Fix:* `clearAll()` now preserves the two sibling session keys; all three signOuts use
+     `scope: 'local'`.
+   - *Lesson:* session isolation has a **logout half**, not just a login half — I fixed PKCE (login) but left the
+     default global-signOut + a prefix-greedy `clearAll` in place. When isolating multi-scope auth, audit *both*
+     directions.
+
+2. **Student auth modal overlaid `/admin` + `/sponsor`** (`AuthGateModal` is global in `Providers`). *Fix:* the modal
+   route-guards via `usePathname` and renders nothing on those paths. (Deeper provider-scoping stays TD-073.)
+
+*v2.23.2 numbers:* 1411 pytest + 183 jest, `next build` clean, no migration. 5 frontend files.
