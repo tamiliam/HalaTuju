@@ -570,12 +570,20 @@ describe('formatMoney2dp', () => {
 })
 
 describe('isValidPhone', () => {
-  it('accepts 9–11 digit numbers starting with 0', () => {
-    expect(isValidPhone('012-345 6789')).toBe(true)
-    expect(isValidPhone('011-2345 6789')).toBe(true)
-    expect(isValidPhone('03-1234 5678')).toBe(true)
+  it('accepts correctly-sized Malaysian numbers', () => {
+    expect(isValidPhone('012-345 6789')).toBe(true)   // 01X mobile = 10 digits
+    expect(isValidPhone('011-2345 6789')).toBe(true)  // 011 mobile = 11 digits
+    expect(isValidPhone('03-1234 5678')).toBe(true)   // KL landline = 10
+    expect(isValidPhone('04-123 4567')).toBe(true)    // peninsular landline = 9
+    expect(isValidPhone('088-123 456')).toBe(true)    // Sabah/Sarawak landline = 9
   })
-  it('rejects too-short, non-zero-leading, or empty', () => {
+  it('rejects a mobile with too few or too many digits', () => {
+    expect(isValidPhone('012-345 678')).toBe(false)    // 01X, 9 digits — too short
+    expect(isValidPhone('012-345 67890')).toBe(false)  // 01X, 11 digits — too long
+    expect(isValidPhone('011-234 5678')).toBe(false)   // 011, 10 digits — too short
+    expect(isValidPhone('011-2345 67890')).toBe(false) // 011, 12 digits — too long
+  })
+  it('rejects empty, non-zero-leading, or junk', () => {
     expect(isValidPhone('')).toBe(false)
     expect(isValidPhone('12345')).toBe(false)
     expect(isValidPhone('12-345 6789')).toBe(false) // no leading 0

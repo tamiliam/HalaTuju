@@ -132,10 +132,16 @@ function groupSubscriber(s: string): string {
   return `${s.slice(0, s.length - 4)} ${s.slice(s.length - 4)}` // else: rest + final 4
 }
 
-// A Malaysian phone number is 9–11 digits starting with 0 (mobile 01X… or a
-// landline 0X…). We validate on the digits, ignoring the display dashes/spaces.
+// Validate a Malaysian phone number on its digits (display dashes/spaces ignored):
+//   • mobile 01X — `011` is 11 digits (011-XXXX XXXX); every other 01X (010, 012–019)
+//     is 10 digits (01X-XXX XXXX). So a mobile with too few / too many digits fails.
+//   • landline 0[2–9] — 9 or 10 digits (03-XXXX XXXX / 0X-XXX XXXX / 08X-XXX XXX).
 export function isValidPhone(s: string): boolean {
-  return /^0\d{8,10}$/.test(s.replace(/\D/g, ''))
+  const d = s.replace(/\D/g, '')
+  if (d.startsWith('01')) {
+    return d.startsWith('011') ? d.length === 11 : d.length === 10
+  }
+  return /^0[2-9]/.test(d) && (d.length === 9 || d.length === 10)
 }
 
 // ── Plans redesign: eligible-pathway dropdown (context-aware Plans step) ──
