@@ -9,6 +9,7 @@ import { formatPhone, formatAddress } from '@/lib/scholarship'
 import {
   getScholarshipApplication,
   generateSponsorProfile,
+  finaliseSponsorProfile,
   suggestInterviewGaps,
   saveSponsorProfile,
   publishSponsorProfile,
@@ -136,6 +137,14 @@ export default function AdminScholarshipDetailPage() {
     try {
       setApp(await suggestInterviewGaps(id, undefined, { token }))
     } catch { setError(t('admin.scholarship.gaps.error')) } finally { setBusy('') }
+  }
+
+  const doFinalise = async () => {
+    if (!token) return
+    setBusy('final'); setError('')
+    try {
+      setProfile(await finaliseSponsorProfile(id, genLang, { token }))
+    } catch { setError(t('admin.scholarship.finalProfile.error')) } finally { setBusy('') }
   }
 
   const doSave = async () => {
@@ -945,7 +954,27 @@ export default function AdminScholarshipDetailPage() {
               <button onClick={doPublish} disabled={!!busy} className="px-3 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
                 {busy === 'pub' ? t('admin.scholarship.publishing') : t('admin.scholarship.publish')}
               </button>
+              <button onClick={doFinalise} disabled={!!busy || app?.interview_session?.status !== 'submitted'}
+                title={app?.interview_session?.status !== 'submitted' ? t('admin.scholarship.finalProfile.needInterview') : undefined}
+                className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm disabled:opacity-50">
+                {busy === 'final' ? t('admin.scholarship.finalProfile.running') : t('admin.scholarship.finalProfile.button')}
+              </button>
             </div>
+            {app?.interview_session?.status !== 'submitted' && (
+              <p className="text-xs text-gray-400">{t('admin.scholarship.finalProfile.needInterview')}</p>
+            )}
+            {profile.final_markdown && (
+              <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 p-3 space-y-1">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-indigo-900">{t('admin.scholarship.finalProfile.title')}</h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-600 text-white">{t('admin.scholarship.finalProfile.aiBadge')}</span>
+                </div>
+                <p className="text-[11px] text-indigo-700">
+                  {t('admin.scholarship.finalProfile.finalisedAt')}: {profile.finalised_at ? new Date(profile.finalised_at).toLocaleString() : '—'} · {profile.final_model_used || '—'}
+                </p>
+                <pre className="whitespace-pre-wrap text-sm text-gray-800 font-sans">{profile.final_markdown}</pre>
+              </div>
+            )}
           </>
         )}
         {error && <p className="text-red-600 text-sm">{error}</p>}

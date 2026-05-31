@@ -19,7 +19,7 @@ from .models import (
     ApplicantDocument, InterviewSession, Referee, ScholarshipApplication,
     SponsorInterest, SponsorProfile,
 )
-from .profile_engine import generate_sponsor_profile
+from .profile_engine import generate_sponsor_profile, refine_sponsor_profile
 from .serializers import ApplicantDocumentSerializer, RefereeSerializer
 from .serializers_admin import (
     AdminApplicationDetailSerializer,
@@ -263,6 +263,39 @@ class AdminGenerateProfileView(_AdminBase):
         sp.generated_at = timezone.now()
         if sp.status == 'published':
             sp.status = 'draft'  # regenerating a published profile reverts it to draft
+        sp.save()
+        return Response(SponsorProfileSerializer(sp).data)
+
+
+class AdminFinaliseProfileView(_AdminBase):
+    """Phase D: POST .../<pk>/finalise-profile/ — second Gemini pass that refines the
+    existing draft profile with the SUBMITTED interview's findings → ``final_markdown``.
+    Reviewer-gated, admin-on-demand. Requires both a draft and a submitted interview."""
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        sp = SponsorProfile.objects.filter(application=app).first()
+        if sp is None or not sp.current_markdown.strip():
+            return Response({'error': 'Draft a profile first.', 'code': 'no_draft'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        session = app.interview_sessions.filter(status='submitted').order_by('-submitted_at').first()
+        if session is None:
+            return Response({'error': 'Submit an interview first.', 'code': 'no_interview'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        result = refine_sponsor_profile(
+            app, draft=sp.current_markdown, session=session,
+            language=request.data.get('language'))
+        if 'error' in result:
+            return Response({'error': result['error']}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        sp.final_markdown = result['markdown']
+        sp.final_model_used = result.get('model_used', '')
+        sp.finalised_at = timezone.now()
         sp.save()
         return Response(SponsorProfileSerializer(sp).data)
 

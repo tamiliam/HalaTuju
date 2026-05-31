@@ -1524,6 +1524,15 @@
       "extractFields": {
         "title": "Extracted"
       },
+      "finalProfile": {
+        "button": "Refine with interview findings (AI)",
+        "running": "Refining…",
+        "title": "Final profile (v2 — with interview)",
+        "aiBadge": "AI",
+        "finalisedAt": "Finalised",
+        "needInterview": "Submit an interview first to refine the profile.",
+        "error": "Couldn't refine the profile. Please try again."
+      },
       "gaps": {
         "button": "Suggest interview gaps (AI)",
         "running": "Generating…",

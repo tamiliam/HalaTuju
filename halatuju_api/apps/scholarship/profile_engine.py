@@ -63,6 +63,37 @@ Referee(s): {referees}
 """
 
 
+def _call_gemini_text(prompt, target_language):
+    """Shared seam: run ``prompt`` through the model cascade and return
+    {'markdown', 'model_used', 'language', ...} or {'error': ...}. Both the draft
+    and the Phase-D refine go through this one function — tests patch it (no
+    billable call in CI), mirroring vision._call_gemini_json for the JSON engines."""
+    api_key = getattr(settings, 'GEMINI_API_KEY', '')
+    if not api_key:
+        return {'error': 'AI service not configured (missing API key)'}
+    try:
+        from google import genai
+    except ImportError:
+        return {'error': 'AI module not installed'}
+
+    client = genai.Client(api_key=api_key)
+    last_error = None
+    for model_name in MODEL_CASCADE:
+        try:
+            start = time.time()
+            response = client.models.generate_content(model=model_name, contents=prompt)
+            elapsed = int((time.time() - start) * 1000)
+            return {
+                'markdown': response.text, 'model_used': model_name,
+                'language': target_language, 'generation_time_ms': elapsed,
+            }
+        except Exception as e:
+            last_error = str(e)
+            logger.warning('Gemini text generation failed with %s: %s', model_name, e)
+            continue
+    return {'error': f'All AI models failed: {last_error}'}
+
+
 def _resolve_language(application, language):
     """Resolve the output language NAME. Accepts a locale code ('en'/'ms') or a
     full name; falls back to the applicant's locale, then English."""
@@ -149,6 +180,85 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
     )
 
 
+REFINE_PROMPT = """You are refining a confidential, sponsor-ready profile for a B40 student \
+applying for education financial assistance in Malaysia.
+
+You are given (1) a DRAFT profile written from the application form, and (2) the findings of a \
+real interview an officer conducted with the student. Produce a REFINED FINAL profile that folds \
+the interview's findings into the draft.
+
+LANGUAGE — read carefully:
+- The interview findings below may be written in Malay, English, or Tamil — or a mix. Understand \
+them whichever language they are in.
+- Write the FINAL profile in {target_language}, regardless of the language the findings are in.
+
+Rules:
+- Keep the same sections and warm, factual, concise tone (~300-400 words) as the draft, in Markdown.
+- Where the interview CONFIRMED or CLARIFIED something, update the profile to reflect what was learned.
+- Where the interview raised a NEW CONCERN, reflect it honestly and proportionately — do not hide it, \
+do not exaggerate it.
+- Use ONLY the draft and the interview findings below. Do NOT invent facts. If the interview did not \
+touch a section, keep the draft's wording for it.
+- This is the version a sponsor will read, so it must read as one coherent profile, not a draft with \
+notes bolted on.
+
+=== DRAFT PROFILE ===
+{draft}
+
+=== INTERVIEW FINDINGS ===
+{findings}
+
+Interviewer's rubric scores (1-5): {rubric}
+Interviewer's overall note: {overall_note}
+"""
+
+_VERDICT_LABELS = {
+    'resolved': 'resolved at interview',
+    'still_unclear': 'still unclear after interview',
+    'new_concern': 'new concern raised at interview',
+}
+
+
+def _render_interview(application, session):
+    """Render a submitted InterviewSession's findings/rubric/note as plain text for
+    the refine prompt. The interviewer's free-text rationale carries the meaning, so
+    anomaly codes need no i18n resolution; gap codes get their question for context."""
+    gaps_by_code = {}
+    for g in (application.interview_gaps or []):
+        if isinstance(g, dict) and g.get('code'):
+            gaps_by_code[g['code']] = g.get('question', '')
+
+    lines = []
+    for code, val in (session.findings or {}).items():
+        if not isinstance(val, dict):
+            continue
+        verdict = _VERDICT_LABELS.get(val.get('verdict', ''), val.get('verdict', '') or 'noted')
+        rationale = (val.get('rationale') or '').strip()
+        context = gaps_by_code.get(code, '')
+        prefix = f'On "{context}" — ' if context else ''
+        lines.append(f'- [{verdict}] {prefix}{rationale}'.rstrip())
+    findings_str = '\n'.join(lines) if lines else 'No specific findings recorded.'
+
+    rubric = session.rubric if isinstance(session.rubric, dict) else {}
+    rubric_str = ', '.join(f'{k}: {v}' for k, v in rubric.items()) or 'not scored'
+    note = (session.overall_note or '').strip() or 'none'
+    return findings_str, rubric_str, note
+
+
+def refine_sponsor_profile(application, draft, session, language=None):
+    """Second Gemini pass: refine ``draft`` with the submitted interview ``session``.
+    Returns {'markdown', 'model_used', 'language', ...} or {'error': ...}. Mirrors
+    generate_sponsor_profile (same cascade, same graceful-error contract)."""
+    target_language = _resolve_language(application, language)
+    findings_str, rubric_str, note = _render_interview(application, session)
+    prompt = REFINE_PROMPT.format(
+        target_language=target_language,
+        draft=(draft or '').strip() or 'not provided',
+        findings=findings_str, rubric=rubric_str, overall_note=note,
+    )
+    return _call_gemini_text(prompt, target_language)
+
+
 def generate_sponsor_profile(application, language=None):
     """Return {'markdown', 'model_used', 'language', ...} or {'error': ...}.
 
@@ -157,28 +267,5 @@ def generate_sponsor_profile(application, language=None):
     or Tamil — the model is told to understand all three.
     """
     target_language = _resolve_language(application, language)
-    api_key = getattr(settings, 'GEMINI_API_KEY', '')
-    if not api_key:
-        return {'error': 'AI service not configured (missing API key)'}
-    try:
-        from google import genai
-    except ImportError:
-        return {'error': 'AI module not installed'}
-
-    client = genai.Client(api_key=api_key)
     prompt = _build_prompt(application, target_language=target_language)
-    last_error = None
-    for model_name in MODEL_CASCADE:
-        try:
-            start = time.time()
-            response = client.models.generate_content(model=model_name, contents=prompt)
-            elapsed = int((time.time() - start) * 1000)
-            return {
-                'markdown': response.text, 'model_used': model_name,
-                'language': target_language, 'generation_time_ms': elapsed,
-            }
-        except Exception as e:
-            last_error = str(e)
-            logger.warning('Profile generation failed with %s: %s', model_name, e)
-            continue
-    return {'error': f'All AI models failed: {last_error}'}
+    return _call_gemini_text(prompt, target_language)

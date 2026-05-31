@@ -555,6 +555,12 @@ class SponsorProfile(models.Model):
     )
     draft_markdown = models.TextField(blank=True, default='')
     edited_markdown = models.TextField(blank=True, default='')
+    # Phase D: the "v2" profile — a second Gemini pass that refines the draft with
+    # the submitted interview findings. Admin-facing for now (the sponsor consumer
+    # is gated on Phase E). Kept separate from draft/edited so both stay visible.
+    final_markdown = models.TextField(blank=True, default='')
+    final_model_used = models.CharField(max_length=50, blank=True, default='')
+    finalised_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS, default='draft')
     model_used = models.CharField(max_length=50, blank=True, default='')
     generated_at = models.DateTimeField(null=True, blank=True)

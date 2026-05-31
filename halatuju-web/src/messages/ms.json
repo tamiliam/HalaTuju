@@ -1524,6 +1524,15 @@
       "extractFields": {
         "title": "Diekstrak"
       },
+      "finalProfile": {
+        "button": "Perhalusi dengan dapatan temu duga (AI)",
+        "running": "Memperhalusi…",
+        "title": "Profil akhir (v2 — dengan temu duga)",
+        "aiBadge": "AI",
+        "finalisedAt": "Dimuktamadkan",
+        "needInterview": "Hantar temu duga dahulu untuk memperhalusi profil.",
+        "error": "Tidak dapat memperhalusi profil. Sila cuba lagi."
+      },
       "gaps": {
         "button": "Cadang soalan temu duga (AI)",
         "running": "Menjana…",

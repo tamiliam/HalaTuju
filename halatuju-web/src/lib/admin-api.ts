@@ -295,6 +295,10 @@ export interface AdminSponsorProfile {
   generated_at: string | null
   published_at: string | null
   updated_at: string
+  // Phase D — the "v2" profile refined with interview findings (admin-facing for now).
+  final_markdown: string
+  final_model_used: string
+  finalised_at: string | null
 }
 
 export interface AdminScholarshipDetail {
@@ -467,6 +471,14 @@ export async function getScholarshipApplication(id: number, options?: ApiOptions
 export async function generateSponsorProfile(id: number, language?: string, options?: ApiOptions) {
   return adminMutate<AdminSponsorProfile>(
     `/api/v1/admin/scholarship/applications/${id}/generate-profile/`, 'POST',
+    language ? { language } : {}, options
+  )
+}
+
+/** Phase D: refine the draft profile with the submitted interview's findings (second Gemini pass). */
+export async function finaliseSponsorProfile(id: number, language?: string, options?: ApiOptions) {
+  return adminMutate<AdminSponsorProfile>(
+    `/api/v1/admin/scholarship/applications/${id}/finalise-profile/`, 'POST',
     language ? { language } : {}, options
   )
 }

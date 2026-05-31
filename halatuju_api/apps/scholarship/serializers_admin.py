@@ -68,6 +68,7 @@ class SponsorProfileSerializer(serializers.ModelSerializer):
         fields = [
             'draft_markdown', 'edited_markdown', 'current_markdown', 'status',
             'model_used', 'generated_at', 'published_at', 'updated_at',
+            'final_markdown', 'final_model_used', 'finalised_at',
         ]
 
 
