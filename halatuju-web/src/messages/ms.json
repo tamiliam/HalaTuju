@@ -151,6 +151,19 @@
     "inactiveBody": "Akaun penaja anda tidak aktif buat masa ini. Jika anda rasa ini satu kesilapan, sila hubungi kami.",
     "backHome": "Kembali ke laman utama"
   },
+  "sponsorPool": {
+    "browseTitle": "Pelajar yang memerlukan bantuan",
+    "browseIntro": "Setiap kad ialah seorang pelajar yang boleh anda bantu. Ketik satu untuk membaca kisah mereka.",
+    "anonymityNote": "Identiti dilindungi. Anda tidak akan melihat nama, IC, alamat, telefon, e-mel atau foto pelajar.",
+    "empty": "Tiada pelajar tersedia buat masa ini. Sila semak semula tidak lama lagi.",
+    "back": "Kembali ke semua pelajar",
+    "notAvailable": "Pelajar ini tidak tersedia untuk dilihat buat masa ini.",
+    "fieldLabel": "Bidang pengajian",
+    "academicLabel": "Akademik",
+    "fundingLabel": "Bantuan diperlukan",
+    "durationLabel": "Tempoh program",
+    "months": "bulan"
+  },
   "footer": {
     "tagline": "Membimbing pelajar Malaysia ke kursus yang tepat.",
     "quickLinks": "Pautan Pantas",
@@ -1645,6 +1658,20 @@
         "finalisedAt": "Dimuktamadkan",
         "needInterview": "Hantar temu duga dahulu untuk memperhalusi profil.",
         "error": "Tidak dapat memperhalusi profil. Sila cuba lagi."
+      },
+      "anonProfile": {
+        "title": "Profil tanpa nama (kumpulan penaja)",
+        "help": "Profil tanpa pengenalan yang boleh dibaca penaja. Jana, semak jika ada nama/tempat terbocor, kemudian terbitkan ke kumpulan.",
+        "generate": "Jana profil tanpa nama (AI)",
+        "regenerate": "Jana semula (AI)",
+        "generating": "Menjana…",
+        "publish": "Terbitkan ke kumpulan",
+        "unpublish": "Nyahterbit",
+        "unpublishing": "Menyahterbit…",
+        "publishedBadge": "Diterbitkan ke kumpulan",
+        "draftBadge": "Belum diterbitkan",
+        "genError": "Tidak dapat menjana profil tanpa nama. Sila cuba lagi.",
+        "pubError": "Tidak dapat mengemas kini profil tanpa nama. Sila cuba lagi."
       },
       "reject": {
         "declineReview": "Tolak (selepas semakan)",

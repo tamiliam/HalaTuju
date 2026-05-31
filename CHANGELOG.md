@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.25.0] — Phase E Sprint E2b: anonymised pool frontend (browse UI + admin anon controls) (2026-05-31)
+
+- **The pool frontend — completing Phase E2 end-to-end, still behind the OFF flag (dark deploy).** While
+  `SPONSOR_POOL_ENABLED` is off the pool API 404s, so an approved sponsor keeps seeing today's "browsing coming soon"
+  shell; the real UI appears only when the flag is flipped (post-lawyer). Built mirroring existing card/list patterns.
+  - **Sponsor browse:** the `/sponsor` approved state fetches the pool — on success renders an **anonymised cards
+    grid** (alias · state · field · academic band · funding categories); on 404/error degrades to the coming-soon
+    shell. New **`/sponsor/pool/[id]`** detail page: the non-identifying summary + the generated **anonymous blurb**
+    (react-markdown) + a clear "identities are protected" note.
+  - **Admin controls** on `/admin/scholarship/[id]`: a new "Anonymous profile (sponsor pool)" card (mirrors the
+    Final-profile panel) — **Generate (AI)** → preview `anon_markdown` → **Publish / Unpublish** + a "published to
+    pool" badge. Reviewer-gated (backend enforces).
+  - API clients `getSponsorPool`/`getSponsorPoolDetail` (api.ts) + `generateAnonProfile`/`publishAnonProfile`
+    (admin-api.ts; `anon_*` added to `AdminSponsorProfile`). i18n `sponsorPool.*` + `admin.scholarship.anonProfile.*`
+    (parity 1675; Tamil first-draft). No migration. 1428 pytest + 183 jest; `next build` clean. Not click-tested
+    (flag-gated; needs the flag on + dummy data + sponsor/admin sessions). Lawyer review gates flipping the flag on.
+
 ## [2.24.0] — Phase E Sprint E2a: anonymised sponsor discovery pool (backend, flag-gated) (2026-05-31)
 
 - **The PDPA-critical heart of the sponsor marketplace — built behind a master flag, on dummy data, NOT live.**

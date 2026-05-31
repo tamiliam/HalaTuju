@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { sponsorSignOut } from '@/lib/sponsor-supabase'
-import { registerSponsor } from '@/lib/api'
+import { registerSponsor, getSponsorPool, type SponsorPoolCard } from '@/lib/api'
 import { SPONSOR_SOURCES, formatMyMobile, isValidMyMobile } from '@/lib/sponsorAuth'
 import { KEY_SPONSOR_PENDING } from '@/lib/storage'
 
@@ -43,6 +43,23 @@ export default function SponsorPortalPage() {
     setSource(account?.source || stash.source || '')
     prefilled.current = true
   }, [needsDetails, account, session])
+
+  // ── Phase E2: the anonymised pool (approved sponsors only) ──────────────────
+  // The pool API 404s while SPONSOR_POOL_ENABLED is off → we fall back to the
+  // "browsing coming soon" shell. Any fetch error degrades to that same shell.
+  const [pool, setPool] = useState<SponsorPoolCard[] | null>(null)
+  const [poolUnavailable, setPoolUnavailable] = useState(false)
+
+  useEffect(() => {
+    if (account?.status !== 'approved' || !token) return
+    let cancelled = false
+    getSponsorPool({ token })
+      .then((d) => { if (!cancelled) setPool(d.students) })
+      .catch(() => { if (!cancelled) setPoolUnavailable(true) })
+    return () => { cancelled = true }
+  }, [account?.status, token])
+
+  const showBrowse = account?.status === 'approved' && !poolUnavailable
 
   const phoneInvalid = phone.length > 0 && !isValidMyMobile(phone)
   const canSubmit = !!name.trim() && isValidMyMobile(phone) && !!source && consent && !submitting
@@ -85,6 +102,40 @@ export default function SponsorPortalPage() {
         </div>
       </header>
 
+      {showBrowse ? (
+        /* ── Approved + pool enabled: the anonymised browse grid ── */
+        <main className="flex-1 container mx-auto px-6 py-8">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('sponsorPool.browseTitle')}</h1>
+          <p className="text-sm text-gray-600 mt-1">{t('sponsorPool.browseIntro')}</p>
+          <div className="mt-3 mb-6 rounded-lg bg-blue-50 border border-blue-100 px-4 py-2.5 text-xs text-blue-800">
+            {t('sponsorPool.anonymityNote')}
+          </div>
+          {pool === null ? (
+            <p className="text-center text-gray-500 mt-12">{t('common.loading')}</p>
+          ) : pool.length === 0 ? (
+            <div className="text-center text-gray-500 mt-12 rounded-xl bg-white border border-dashed px-6 py-10">
+              {t('sponsorPool.empty')}
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {pool.map((s) => (
+                <Link key={s.id} href={`/sponsor/pool/${s.id}`}
+                  className="block bg-white rounded-xl border p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-900">{s.ref}</span>
+                    {s.state && <span className="text-xs text-gray-500">{s.state}</span>}
+                  </div>
+                  <p className="text-sm text-gray-800 mt-2">{s.field || '—'}</p>
+                  {s.academic && <p className="text-xs text-gray-500 mt-1">{s.academic}</p>}
+                  {s.funding_categories.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-1">{s.funding_categories.join(' · ')}</p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          )}
+        </main>
+      ) : (
       <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border p-8">
           {isLoading ? (
@@ -163,6 +214,7 @@ export default function SponsorPortalPage() {
           )}
         </div>
       </main>
+      )}
     </div>
   )
 }

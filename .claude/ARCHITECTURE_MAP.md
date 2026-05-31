@@ -251,6 +251,14 @@ appears in any sponsor payload. Browse: `SponsorPoolListView`/`SponsorPoolDetail
 `require_approved_sponsor`. Admin: `AdminGenerateAnonProfileView`/`AdminPublishAnonProfileView` (reviewer-gated).
 The whole pool is dark until the lawyer signs off (flip the env flag).
 
+**Phase E2b — pool frontend (v2.25.0, dark deploy).** Sponsor browse: `app/sponsor/page.tsx` approved state fetches
+`getSponsorPool()` → an anonymised cards grid, or (on the flag-off 404 / any error) degrades to the "coming soon"
+shell — so the same dark deploy is safe on the frontend too. `app/sponsor/pool/[id]/page.tsx` = detail (summary +
+the generated anon blurb via `react-markdown`). Admin: a teal "Anonymous profile" card on
+`app/admin/scholarship/[id]/page.tsx` (Generate AI → preview → Publish/Unpublish + badge), wired to
+`generateAnonProfile`/`publishAnonProfile` (`lib/admin-api.ts`); `getSponsorPool`/`getSponsorPoolDetail` in
+`lib/api.ts`. i18n `sponsorPool.*` + `admin.scholarship.anonProfile.*`.
+
 **Three isolated Supabase clients + the PKCE invariant (v2.23.1):** student `getSupabase` (default storage key, mounted
 globally via `app/providers.tsx`), `getAdminSupabase` (`halatuju_admin_session`, mounted under `/admin/*`), and
 `getSponsorSupabase` (`halatuju_sponsor_session`, mounted under `/sponsor/*`). **All three set `flowType: 'pkce'` — this

@@ -1729,3 +1729,10 @@ fold in Phase-D interview findings (TD-067 nuance).
 
 **Revisit if:** the lawyer requires a different card content / consent structure (adjust the allowlist + consent
 version); or real-pool scale needs filters/ref-keyed detail/a structural blurb guarantee (TD-074).
+
+**Addendum (v2.25.0, E2b frontend):** the frontend pairs with the flag by **degrading to the pre-feature state on the
+gated error**. When the flag is off the pool API 404s; `/sponsor` catches that and shows the existing "coming soon"
+shell (not an error), and the admin card simply shows no published-to-pool state. So the whole feature (both tiers)
+ships to prod dark behind the single env flag, and flipping it lights up backend + frontend together. The browse grid
++ `/sponsor/pool/[id]` detail + admin Generate/Publish-anon controls were built mirroring existing patterns (user
+chose this over a Stitch round-trip, since the card grid + the admin card are low-novelty reuses).

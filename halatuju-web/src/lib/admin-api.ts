@@ -299,6 +299,12 @@ export interface AdminSponsorProfile {
   final_markdown: string
   final_model_used: string
   finalised_at: string | null
+  // Phase E2 — the ANONYMOUS, sponsor-pool-facing profile (generate -> publish).
+  anon_markdown: string
+  anon_model_used: string
+  anon_generated_at: string | null
+  anon_published: boolean
+  anon_published_at: string | null
 }
 
 export interface AdminScholarshipDetail {
@@ -506,6 +512,21 @@ export async function saveSponsorProfile(
 export async function publishSponsorProfile(id: number, options?: ApiOptions) {
   return adminMutate<AdminSponsorProfile>(
     `/api/v1/admin/scholarship/applications/${id}/publish/`, 'POST', {}, options
+  )
+}
+
+/** Phase E2: generate the ANONYMOUS sponsor-pool profile (non-identifying inputs only). */
+export async function generateAnonProfile(id: number, language?: string, options?: ApiOptions) {
+  return adminMutate<AdminSponsorProfile>(
+    `/api/v1/admin/scholarship/applications/${id}/anon-profile/generate/`, 'POST',
+    language ? { language } : {}, options
+  )
+}
+
+/** Phase E2: publish (or unpublish) the anonymous profile to the sponsor pool. */
+export async function publishAnonProfile(id: number, publish: boolean, options?: ApiOptions) {
+  return adminMutate<AdminSponsorProfile>(
+    `/api/v1/admin/scholarship/applications/${id}/anon-profile/publish/`, 'POST', { publish }, options
   )
 }
 

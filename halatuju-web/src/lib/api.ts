@@ -592,6 +592,32 @@ export async function registerSponsor(
   })
 }
 
+// Phase E2 — anonymised sponsor pool. The card holds ONLY non-identifying fields
+// (the backend allowlist serializer guarantees no name/NRIC/address/phone/email).
+export interface SponsorPoolCard {
+  id: number          // opaque key to fetch the detail; not identifying
+  ref: string         // human alias, e.g. "S-A3F9C1"
+  state: string
+  field: string
+  academic: string
+  funding_categories: string[]
+  programme_months: number | null
+}
+
+export interface SponsorPoolDetail extends SponsorPoolCard {
+  anon_profile: string  // generated anonymous blurb (markdown)
+}
+
+/** Browse the anonymised student pool (approved sponsor only). When the pool flag
+ *  is off the API 404s — callers treat that as "not available yet". */
+export async function getSponsorPool(options?: ApiOptions): Promise<{ students: SponsorPoolCard[] }> {
+  return apiRequest('/api/v1/sponsor/pool/', options)
+}
+
+export async function getSponsorPoolDetail(id: number, options?: ApiOptions): Promise<SponsorPoolDetail> {
+  return apiRequest(`/api/v1/sponsor/pool/${id}/`, options)
+}
+
 // STPM types
 export interface StpmEligibleCourse {
   course_id: string

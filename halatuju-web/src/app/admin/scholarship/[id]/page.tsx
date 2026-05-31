@@ -13,6 +13,8 @@ import {
   suggestInterviewGaps,
   saveSponsorProfile,
   publishSponsorProfile,
+  generateAnonProfile,
+  publishAnonProfile,
   verifyAcceptApplication,
   rejectApplication,
   setMentoringCandidate,
@@ -164,6 +166,23 @@ export default function AdminScholarshipDetailPage() {
       const p = await publishSponsorProfile(id, { token })
       setProfile(p)
     } catch { setError(t('admin.scholarship.publishError')) } finally { setBusy('') }
+  }
+
+  // ── Phase E2: the anonymous (sponsor-pool) profile ──────────────────────────
+  const doGenerateAnon = async () => {
+    if (!token) return
+    setBusy('anonGen'); setError('')
+    try {
+      setProfile(await generateAnonProfile(id, genLang, { token }))
+    } catch { setError(t('admin.scholarship.anonProfile.genError')) } finally { setBusy('') }
+  }
+
+  const doPublishAnon = async (publish: boolean) => {
+    if (!token) return
+    setBusy('anonPub'); setError('')
+    try {
+      setProfile(await publishAnonProfile(id, publish, { token }))
+    } catch { setError(t('admin.scholarship.anonProfile.pubError')) } finally { setBusy('') }
   }
 
   const doVerifyAccept = async () => {
@@ -1020,6 +1039,35 @@ export default function AdminScholarshipDetailPage() {
                 <pre className="whitespace-pre-wrap text-sm text-gray-800 font-sans">{profile.final_markdown}</pre>
               </div>
             )}
+            {/* Phase E2: the ANONYMOUS sponsor-pool profile (generate → review → publish) */}
+            <div className="mt-3 rounded-lg border border-teal-200 bg-teal-50 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-teal-900">{t('admin.scholarship.anonProfile.title')}</h3>
+                {profile.anon_published
+                  ? <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-600 text-white">{t('admin.scholarship.anonProfile.publishedBadge')}</span>
+                  : <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-200 text-gray-600">{t('admin.scholarship.anonProfile.draftBadge')}</span>}
+              </div>
+              <p className="text-[11px] text-teal-700">{t('admin.scholarship.anonProfile.help')}</p>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={doGenerateAnon} disabled={!!busy} className="px-3 py-2 bg-teal-600 text-white rounded-lg text-sm disabled:opacity-50">
+                  {busy === 'anonGen' ? t('admin.scholarship.anonProfile.generating')
+                    : (profile.anon_markdown ? t('admin.scholarship.anonProfile.regenerate') : t('admin.scholarship.anonProfile.generate'))}
+                </button>
+                {profile.anon_markdown && !profile.anon_published && (
+                  <button onClick={() => doPublishAnon(true)} disabled={!!busy} className="px-3 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
+                    {busy === 'anonPub' ? t('admin.scholarship.publishing') : t('admin.scholarship.anonProfile.publish')}
+                  </button>
+                )}
+                {profile.anon_published && (
+                  <button onClick={() => doPublishAnon(false)} disabled={!!busy} className="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm disabled:opacity-50">
+                    {busy === 'anonPub' ? t('admin.scholarship.anonProfile.unpublishing') : t('admin.scholarship.anonProfile.unpublish')}
+                  </button>
+                )}
+              </div>
+              {profile.anon_markdown && (
+                <pre className="whitespace-pre-wrap text-sm text-gray-800 font-sans bg-white rounded p-2 border">{profile.anon_markdown}</pre>
+              )}
+            </div>
           </>
         )}
         {error && <p className="text-red-600 text-sm">{error}</p>}

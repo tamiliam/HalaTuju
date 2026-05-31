@@ -72,8 +72,13 @@ Decisions:
   `SponsorPoolCardSerializer`/`SponsorPoolDetailSerializer` (plain Serializer, explicit fields, zero passthrough,
   leak-tested). Endpoints `/sponsor/pool/[/<id>/]` (flag + approved-sponsor gated) + admin `…/anon-profile/generate|publish/`
   (reviewer-gated). Migration `0033` (additive `anon_*` on `sponsor_profiles`). 17 tests. **Conservative card:** alias ·
-  state · field · academic band · funding categories · months. **▶ E2b = FRONTEND** (sponsor browse UI + admin anon
-  controls), still flag-gated; then lawyer review gates flipping the flag on.
+  state · field · academic band · funding categories · months.
+- **E2b ✅ DONE (v2.25.0, 2026-05-31) — FRONTEND, dark deploy.** `/sponsor` approved → anonymised cards grid (or
+  coming-soon shell on flag-off 404) + `/sponsor/pool/[id]` detail (summary + generated anon blurb via react-markdown +
+  anonymity note). Admin `/admin/scholarship/[id]` "Anonymous profile" card: Generate (AI) → preview → Publish/Unpublish
+  + badge (reviewer-gated). Client fns `getSponsorPool`/`getSponsorPoolDetail`/`generateAnonProfile`/`publishAnonProfile`;
+  i18n `sponsorPool.*`/`anonProfile.*`. No migration. **▶ Phase E2 COMPLETE end-to-end (behind the OFF flag).** Next:
+  lawyer review (gate to flipping the flag) + TD-074b pre-publish scan, then E3.
 - **Goal:** a student/guardian opts a published, consented profile into the pool; approved sponsors
   browse anonymised cards with filters; a sponsor-safe anonymous profile is generated.
 - **Scope:** pool opt-in + share-consent model (guardian consent for minors); eligibility rule
