@@ -1589,3 +1589,71 @@ anonymisation guarantees.
 
 **Revisit if:** never for the split itself; the open question (whether the sponsor reads `final_markdown` directly or
 an admin publishes a finalised version first) is settled in E2 per TD-067.
+
+## Sponsor auth = isolated Supabase client (mirrors admin) — supersedes E1's KEY_SPONSOR_SIGNIN — Phase E Sprint E1c (v2.23.0), 2026-05-31
+
+**Decision:** Sponsors authenticate through a dedicated, isolated Supabase client (`lib/sponsor-supabase.ts`, own
+`storageKey: 'halatuju_sponsor_session'`) + a `SponsorAuthProvider` + `/sponsor/login` / `/sponsor/register` /
+`/sponsor/auth/callback`, exactly mirroring the admin auth stack. **This supersedes the E1 (v2.22.0) decision** to do
+a direct Google OAuth on the *student* client flagged by `KEY_SPONSOR_SIGNIN`; that flag + its `/auth/callback` branch
+were removed.
+
+**Alternatives considered:** (1) Keep E1's approach (sponsor rides the student client, bypassing NRIC via a flag).
+(2) A full separate auth backend. (3) Isolated Supabase client mirroring admin (chosen).
+
+**Rationale:** E1c adds **email/password** sign-up/sign-in (the user wanted a real account, not Google-only). The
+student client auto-signs-in anonymously and is wired to the NRIC gate / `AuthGateModal`; layering a sponsor
+email/password session onto it is fragile and conceptually wrong. The project already settled this exact problem for
+admins ("Separate admin auth with isolated Supabase clients", 2026-03-16) — a distinct user-type gets its own client +
+provider + session key. Mirroring it gives email/password + Google + reset for free, keeps the sponsor session fully
+separate from student/admin, and made the login/register pages near-copies of the admin ones.
+
+**Trade-offs:** A third Supabase client + provider to maintain (student + admin + sponsor). The student `AuthProvider`
+still mounts globally (its anonymous sign-in runs on sponsor pages too) — harmless, different storage key. Worth it
+for the isolation.
+
+**Revisit if:** the three auth stacks should be unified behind one role-aware client/provider (only if a fourth scope
+arrives and the duplication actually bites).
+
+## Email/password primary + Google-then-complete-details for sponsors — Phase E Sprint E1c (v2.23.0), 2026-05-31
+
+**Decision:** A sponsor registers with the full field set (name, email, password, phone, source, PDPA consent) at
+`/sponsor/register`. Google is offered as an alternative but, since OAuth yields only name+email, a Google sponsor is
+routed to a **"complete your details"** step on the `/sponsor` portal that collects phone/source/consent before the
+account is created/completed. The **same** complete-details step also handles the email-confirmation gap (when Supabase
+returns no session at sign-up, the row is created after the user confirms + lands on the portal, pre-filled from a
+sessionStorage stash). The register endpoint both *creates* and *completes* (updates an incomplete row).
+
+**Alternatives considered:** (1) Google-only (E1). (2) Email/password only (no Google). (3) Collect everything at
+sign-up and block Google unless it can supply phone/source (it can't). (4) Email/password + Google, with one shared
+complete-details step (chosen).
+
+**Rationale:** The user explicitly wanted the additional info (phone/source/consent) captured *and* Google as an
+option. A Google sign-in physically cannot carry those fields, so a post-auth completion step is unavoidable — and the
+same step elegantly covers the "no session at email sign-up" case, so there's one code path for "signed in but details
+missing" (driven by `/sponsor/me`'s `profile_complete`).
+
+**Trade-offs:** A Google sponsor does two steps (OAuth, then details) instead of one. The register endpoint is
+idempotent-but-completing rather than create-only. Both are acceptable and keep the data-capture requirement intact.
+
+**Revisit if:** Turnstile/email-verification policy changes materially, or sponsors should be allowed in without
+phone/source (they shouldn't, per the requirement).
+
+## Shared AuthButtons for the logged-out header cluster — Phase E Sprint E1c (v2.23.0), 2026-05-31
+
+**Decision:** The logged-out `Log in ▾ {Student/Sponsor/Partner} | Sign Up` cluster lives in one component
+(`components/AuthButtons.tsx`) used by both `AppHeader` and the landing-page nav, rather than duplicating the dropdown
+markup. The landing page keeps its own nav shell (gradient, About link) — only the button cluster is shared.
+
+**Alternatives considered:** (1) Replace the landing nav wholesale with `<AppHeader/>` (loses the landing's bespoke
+look + the inline About). (2) Copy the dropdown markup into the landing nav. (3) Extract one shared cluster component
+(chosen).
+
+**Rationale:** The user wanted the landing buttons to match the dashboard's *without* changing the rest of the landing
+page. A shared component guarantees the two stay identical (no drift) and is a smaller change than swapping the whole
+header; copy-pasting the dropdown would have been the drift risk the user's "keep them consistent" ask is about.
+
+**Trade-offs:** `AuthButtons` calls `useAuth` internally (for the Student → auth-gate path), so it must render under
+the `AuthProvider` — true everywhere it's used. Negligible.
+
+**Revisit if:** the header and landing need genuinely different logged-out actions (then parameterise or split).

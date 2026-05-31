@@ -24,11 +24,19 @@ class SponsorSerializer(serializers.ModelSerializer):
     """Phase E: a sponsor's own account view (read-only). Drives the portal's
     pending/approved/rejected state. Excludes internal vetting fields."""
     is_approved = serializers.BooleanField(read_only=True)
+    profile_complete = serializers.SerializerMethodField()
 
     class Meta:
         model = Sponsor
-        fields = ['id', 'name', 'email', 'organisation', 'status', 'is_approved', 'created_at']
+        fields = ['id', 'name', 'email', 'phone', 'source', 'organisation',
+                  'status', 'is_approved', 'profile_complete', 'created_at']
         read_only_fields = fields
+
+    def get_profile_complete(self, obj):
+        """True when the required registration details (phone, source, PDPA
+        consent) are all present — a Google sponsor lands without them and must
+        complete this step before vetting proceeds."""
+        return bool(obj.phone and obj.source and obj.consent_at)
 
 
 class ApplicationCreateSerializer(serializers.ModelSerializer):

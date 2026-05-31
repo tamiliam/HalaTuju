@@ -568,9 +568,12 @@ export interface SponsorAccount {
   id?: number
   name?: string
   email?: string
+  phone?: string
+  source?: string
   organisation?: string
   status?: 'pending' | 'approved' | 'rejected' | 'suspended'
   is_approved?: boolean
+  profile_complete?: boolean         // false until phone + source + PDPA consent are set
   created_at?: string
 }
 
@@ -579,7 +582,7 @@ export async function getSponsorMe(options?: ApiOptions): Promise<SponsorAccount
 }
 
 export async function registerSponsor(
-  payload: { name: string; organisation?: string; note?: string },
+  payload: { name: string; phone: string; source: string; consent: boolean; organisation?: string; note?: string },
   options?: ApiOptions
 ): Promise<SponsorAccount> {
   return apiRequest('/api/v1/sponsor/register/', {

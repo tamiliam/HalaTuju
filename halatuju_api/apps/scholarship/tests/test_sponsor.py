@@ -24,30 +24,56 @@ class TestSponsorRegister(TestCase):
     def _auth(self, uid, email='', anon=False):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid, email, anon)}')
 
+    FULL = {'name': 'Alice', 'phone': '012-345 6789', 'source': 'google', 'consent': True}
+
     def test_register_creates_pending(self):
         self._auth('spon-1', 'a@x.com')
-        r = self.client.post('/api/v1/sponsor/register/', {'name': 'Alice', 'organisation': 'ACME'}, format='json')
+        r = self.client.post('/api/v1/sponsor/register/', {**self.FULL, 'organisation': 'ACME'}, format='json')
         self.assertEqual(r.status_code, 201, r.content)
         s = Sponsor.objects.get(supabase_user_id='spon-1')
         self.assertEqual((s.status, s.email, s.name, s.organisation), ('pending', 'a@x.com', 'Alice', 'ACME'))
+        self.assertEqual((s.phone, s.source), ('012-345 6789', 'google'))
+        self.assertIsNotNone(s.consent_at)
+        self.assertTrue(s.consent_version)
+        self.assertTrue(r.json()['profile_complete'])
 
-    def test_register_idempotent(self):
+    def test_register_idempotent_when_complete(self):
         self._auth('spon-2', 'b@x.com')
-        self.client.post('/api/v1/sponsor/register/', {'name': 'Bob'}, format='json')
-        r2 = self.client.post('/api/v1/sponsor/register/', {'name': 'Bob again'}, format='json')
+        self.client.post('/api/v1/sponsor/register/', {**self.FULL, 'name': 'Bob'}, format='json')
+        r2 = self.client.post('/api/v1/sponsor/register/', {**self.FULL, 'name': 'Bob again'}, format='json')
         self.assertEqual(r2.status_code, 200)
         self.assertEqual(Sponsor.objects.filter(supabase_user_id='spon-2').count(), 1)
         self.assertEqual(Sponsor.objects.get(supabase_user_id='spon-2').name, 'Bob')  # unchanged
 
-    def test_register_requires_name(self):
+    def test_register_completes_incomplete_sponsor(self):
+        # A legacy/Google row with no phone/source/consent is completed in place.
+        Sponsor.objects.create(supabase_user_id='spon-g', name='Gina', email='g@x.com', status='pending')
+        self._auth('spon-g', 'g@x.com')
+        r = self.client.post('/api/v1/sponsor/register/', {**self.FULL, 'name': 'Gina'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        s = Sponsor.objects.get(supabase_user_id='spon-g')
+        self.assertEqual((s.phone, s.source, s.status), ('012-345 6789', 'google', 'pending'))
+        self.assertIsNotNone(s.consent_at)
+        self.assertEqual(Sponsor.objects.filter(supabase_user_id='spon-g').count(), 1)
+
+    def test_register_missing_fields(self):
         self._auth('spon-3', 'c@x.com')
-        r = self.client.post('/api/v1/sponsor/register/', {}, format='json')
+        r = self.client.post('/api/v1/sponsor/register/', {'name': 'NoPhone', 'consent': True}, format='json')
         self.assertEqual(r.status_code, 400)
-        self.assertEqual(r.json()['error'], 'name_required')
+        self.assertEqual(r.json()['error'], 'missing_fields')
+        self.assertIn('phone', r.json()['fields'])
+        self.assertIn('source', r.json()['fields'])
+
+    def test_register_requires_consent(self):
+        self._auth('spon-4', 'd@x.com')
+        r = self.client.post('/api/v1/sponsor/register/',
+                             {'name': 'NoConsent', 'phone': '0123456789', 'source': 'friend'}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['error'], 'consent_required')
 
     def test_anonymous_cannot_register(self):
         self._auth('anon-1', '', anon=True)
-        r = self.client.post('/api/v1/sponsor/register/', {'name': 'Ghost'}, format='json')
+        r = self.client.post('/api/v1/sponsor/register/', {**self.FULL, 'name': 'Ghost'}, format='json')
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['error'], 'not_signed_in')
 
@@ -68,10 +94,20 @@ class TestSponsorMe(TestCase):
 
     def test_me_after_register(self):
         self._auth('spon-5', 'e@x.com')
-        self.client.post('/api/v1/sponsor/register/', {'name': 'Eve'}, format='json')
+        self.client.post('/api/v1/sponsor/register/',
+                         {'name': 'Eve', 'phone': '0123456789', 'source': 'event', 'consent': True}, format='json')
         r = self.client.get('/api/v1/sponsor/me/')
         self.assertEqual(r.status_code, 200)
         self.assertEqual((r.json()['status'], r.json()['name']), ('pending', 'Eve'))
+        self.assertTrue(r.json()['profile_complete'])
+
+    def test_me_incomplete_profile_flag(self):
+        # A row without phone/source/consent reports profile_complete=false.
+        Sponsor.objects.create(supabase_user_id='spon-6', name='Ivan', email='i@x.com', status='pending')
+        self._auth('spon-6', 'i@x.com')
+        r = self.client.get('/api/v1/sponsor/me/')
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(r.json()['profile_complete'])
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)

@@ -227,10 +227,16 @@ self-registering, admin-vetted real user; model in `apps/scholarship/models.py`,
 `scholarship/0031`) is **distinct** from `SponsorProfile` (the AI-drafted *student* write-up sponsors will eventually
 read). Sponsor endpoints: `views_sponsor.py` (`SponsorMixin`, `/api/v1/sponsor/register/` + `/me/`, allowlist
 `SponsorSerializer`) and admin vetting in `views_admin.py` (`/api/v1/admin/sponsors/` list + `<id>/review/`).
-NRIC-gate middleware whitelists `/api/v1/sponsor/`. **Frontend:** `app/sponsor/page.tsx` (6-state portal shell) +
-`app/admin/sponsors/page.tsx` (vetting table); sponsor sign-in is a direct Google OAuth flagged by `KEY_SPONSOR_SIGNIN`
-(read by `app/auth/callback`) — **not** the student `AuthGateReason`/NRIC flow. E1 holds **zero student data**;
-anonymised browsing (E2) is lawyer-gated.
+NRIC-gate middleware whitelists `/api/v1/sponsor/`. `Sponsor` also carries `phone`/`source`/`consent_at`/
+`consent_version` (migration `0032`) captured at registration. **Frontend (E1c, v2.23.0) — isolated sponsor auth
+stack, mirroring admin:** `lib/sponsor-supabase.ts` (own `storageKey 'halatuju_sponsor_session'`; email/password +
+Google + reset), `lib/sponsor-auth-context.tsx` (`SponsorAuthProvider`/`useSponsorAuth`, fetches `/sponsor/me`),
+`app/sponsor/layout.tsx` (wraps the provider), `app/sponsor/login` + `app/sponsor/register` (full fields, pure
+helpers in `lib/sponsorAuth.ts`) + `app/sponsor/auth/callback`. The `/sponsor` portal (`app/sponsor/page.tsx`) shows
+sign-in → complete-details (Google/email-confirm gap) → pending/approved/inactive. The shared logged-out cluster is
+`components/AuthButtons.tsx` (Log in ▾ + Sign Up), used by `AppHeader` + the landing nav. **The E1 `KEY_SPONSOR_SIGNIN`
+student-client sign-in was removed** — sponsors never touch the student `AuthGateReason`/NRIC flow. E1 holds **zero
+student data**; anonymised browsing (E2) is lawyer-gated.
 
 **Frontend (Sprint 2):** `halatuju-web/src/app/scholarship/apply/page.tsx` (single front-door
 application form), `src/lib/scholarship.ts` (pure form helpers, node-tested in

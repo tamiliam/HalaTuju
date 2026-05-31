@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSession } from '@/lib/supabase'
-import { KEY_PENDING_AUTH_ACTION, KEY_SPONSOR_SIGNIN } from '@/lib/storage'
+import { KEY_PENDING_AUTH_ACTION } from '@/lib/storage'
 
 export default function AuthCallback() {
   const router = useRouter()
@@ -18,19 +18,8 @@ export default function AuthCallback() {
     // dashboard, while the first login — paused on the NRIC step — happened to win
     // the race. Reading it here captures the destination before it can be removed.
     let dest = '/dashboard'
-    // A sponsor sign-in takes precedence and uses its OWN one-shot flag (not
-    // KEY_PENDING_AUTH_ACTION), so the auth-context resume effect never opens the
-    // student NRIC modal for a sponsor. Sponsors have no NRIC and don't need one.
-    let sponsorSignin = false
     try {
-      if (sessionStorage.getItem(KEY_SPONSOR_SIGNIN)) {
-        sponsorSignin = true
-        sessionStorage.removeItem(KEY_SPONSOR_SIGNIN)
-        dest = '/sponsor'
-      }
-    } catch { /* sessionStorage unavailable — ignore */ }
-    try {
-      const pending = !sponsorSignin && localStorage.getItem(KEY_PENDING_AUTH_ACTION)
+      const pending = localStorage.getItem(KEY_PENDING_AUTH_ACTION)
       if (pending) {
         const reason = JSON.parse(pending)?.reason
         if (reason === 'apply') dest = '/scholarship/apply'

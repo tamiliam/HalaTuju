@@ -6,6 +6,7 @@ anonymised student pool. These endpoints govern the sponsor's OWN account only �
 nothing here exposes student data. All paths are under /api/v1/sponsor/ and are
 whitelisted from the NRIC gate (sponsors have no NRIC).
 """
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,6 +16,10 @@ from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 from .emails import send_sponsor_interest_admin_email
 from .models import Sponsor
 from .serializers import SponsorSerializer
+
+# PDPA consent text version a sponsor accepts at registration. Bump when the
+# sponsor consent wording changes (separate from the student CONSENT_VERSION).
+SPONSOR_CONSENT_VERSION = '2026-sponsor-draft-1'
 
 
 class SponsorMixin:
@@ -35,8 +40,13 @@ class SponsorMixin:
 
 
 class SponsorRegisterView(SponsorMixin, APIView):
-    """POST /api/v1/sponsor/register/ — self-register as a sponsor (status=pending).
-    Idempotent: if already registered, returns the existing account unchanged."""
+    """POST /api/v1/sponsor/register/ — self-register / complete a sponsor account.
+
+    Requires the full registration details: name, phone, source ("how did you find
+    us"), and PDPA consent (the password/email are handled by Supabase Auth on the
+    client; the JWT proves the account). A Google sponsor lands without phone/source/
+    consent and completes them here — so this also UPDATES an existing *incomplete*
+    sponsor. An already-complete sponsor is an idempotent no-op (returns unchanged)."""
     def post(self, request):
         supa = getattr(request, 'supabase_user', None) or {}
         user_id = getattr(request, 'user_id', None)
@@ -45,19 +55,50 @@ class SponsorRegisterView(SponsorMixin, APIView):
             return Response({'error': 'not_signed_in'}, status=status.HTTP_400_BAD_REQUEST)
 
         existing = self.get_sponsor(request)
-        if existing:
+        # Already fully registered → idempotent no-op (don't re-validate / re-stamp).
+        if existing and existing.phone and existing.source and existing.consent_at:
             return Response(SponsorSerializer(existing).data)
 
-        name = (request.data.get('name') or '').strip()
-        if not name:
-            return Response({'error': 'name_required'}, status=status.HTTP_400_BAD_REQUEST)
+        data = request.data
+        name = (data.get('name') or (existing.name if existing else '') or '').strip()
+        phone = (data.get('phone') or '').strip()
+        source = (data.get('source') or '').strip()
+        consent = bool(data.get('consent'))
+
+        missing = [f for f, v in (('name', name), ('phone', phone), ('source', source)) if not v]
+        if missing:
+            return Response({'error': 'missing_fields', 'fields': missing},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if not consent:
+            return Response({'error': 'consent_required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        email = supa.get('email') or (data.get('email') or (existing.email if existing else '') or '').strip()
+        organisation = (data.get('organisation') or (existing.organisation if existing else '') or '').strip()
+        note = (data.get('note') or (existing.note if existing else '') or '').strip()
+
+        if existing:
+            # Complete-details path (e.g. after Google sign-in). Vetting state untouched.
+            existing.name = name
+            existing.email = existing.email or email
+            existing.phone = phone
+            existing.source = source
+            existing.organisation = organisation
+            existing.note = note
+            existing.consent_at = timezone.now()
+            existing.consent_version = SPONSOR_CONSENT_VERSION
+            existing.save()
+            return Response(SponsorSerializer(existing).data)
 
         sponsor = Sponsor.objects.create(
             supabase_user_id=user_id,
             name=name,
-            email=supa.get('email') or (request.data.get('email') or '').strip(),
-            organisation=(request.data.get('organisation') or '').strip(),
-            note=(request.data.get('note') or '').strip(),
+            email=email,
+            phone=phone,
+            source=source,
+            organisation=organisation,
+            note=note,
+            consent_at=timezone.now(),
+            consent_version=SPONSOR_CONSENT_VERSION,
             status='pending',
         )
         # Best-effort: alert the admin there's a new sponsor to vet.

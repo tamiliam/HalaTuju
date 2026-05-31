@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.23.0] — Phase E Sprint E1c: sponsor self-serve auth (email/password + Google) (2026-05-31)
+
+- **Sponsors now have a real self-serve account, not just a Google-only thin form.** Acting on live feedback after E1:
+  - **Dedicated login page** at `/sponsor/login` (styled like `/admin/login`) — email/password + Google + forgot-password.
+    The header's **Sponsor** menu (desktop + mobile) and the Sign-Up chooser now route here / to `/sponsor/register`
+    (previously the old `/sponsor/register-interest` lead form, now unlinked).
+  - **Full registration** at `/sponsor/register` with the requested fields: **Full name (as in NRIC/Passport), Email,
+    Password** (live rule checks: ≥8 chars · upper+lower · 1 number), **Re-enter password**, **Phone** (Malaysian +60
+    default), **Source** ("How did you find us?"), and **PDPA consent**. Google is offered too — a Google sponsor lands
+    on a **"complete your details"** step (phone/source/consent) since OAuth only yields name+email.
+  - **Isolated sponsor auth stack** (mirrors the admin pattern, supersedes E1's `KEY_SPONSOR_SIGNIN` student-client
+    hack): new `sponsor-supabase.ts` (own `storageKey: 'halatuju_sponsor_session'`, email/password + Google + reset),
+    `SponsorAuthProvider`, `/sponsor/auth/callback`. The sponsor session never touches the student NRIC/anonymous flow.
+  - **Backend:** `Sponsor` gains `phone`, `source`, `consent_at`, `consent_version` (**migration `scholarship/0032`**,
+    additive, applied migrate-first via Supabase MCP). The register endpoint now requires name+phone+source+consent and
+    also **completes** an incomplete (Google/legacy) row; `/sponsor/me` reports `profile_complete`; admin vetting shows
+    phone+source. Tests: sponsor suite 12 → 15.
+  - **Landing-page login buttons now match the dashboard** — extracted the `Log in ▾ {Student/Sponsor/Partner} | Sign Up`
+    cluster into a shared `components/AuthButtons.tsx` used by both `AppHeader` and the landing nav (the rest of the
+    landing page is unchanged). Pure `lib/sponsorAuth.ts` (`checkPassword`/`SPONSOR_SOURCES`) is node-env unit-tested.
+  - **Deferred (TD-071):** Cloudflare Turnstile on signup (shown in the mockup) — email confirmation + admin vetting gate
+    fakes for now. **MY-only phone** for now (TD-072). 1411 pytest + 178 jest; i18n parity 1650 (Tamil first-draft);
+    `next build` clean. **Not click-tested** (OAuth + admin flows — TD-070). See `docs/retrospective-v2.23-sponsor-auth.md`.
+
 ## [2.22.0] — Phase E Sprint E1: sponsor accounts + admin vetting (no student data) (2026-05-31)
 
 - **First slice of the safeguarded sponsor marketplace (`docs/scholarship/phase-e-sponsor-roadmap.md`).** Anyone can self-register as a sponsor, an admin vets them, and an approved sponsor lands in a portal shell. **Zero student data is exposed anywhere in this slice** — browsing the (anonymised) student pool arrives in E2, which stays gated on the lawyer review before any real student is shown.

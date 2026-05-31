@@ -500,7 +500,8 @@ class AdminSponsorInterestView(_AdminBase):
 
 def _sponsor_dict(s):
     return {
-        'id': s.id, 'name': s.name, 'email': s.email, 'organisation': s.organisation,
+        'id': s.id, 'name': s.name, 'email': s.email, 'phone': s.phone,
+        'source': s.source, 'organisation': s.organisation,
         'note': s.note, 'status': s.status, 'reviewed_at': s.reviewed_at,
         'reviewed_by': s.reviewed_by, 'created_at': s.created_at,
     }

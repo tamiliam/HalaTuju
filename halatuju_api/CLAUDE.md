@@ -226,6 +226,20 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Project Status
 
+**v2.23.0 (2026-05-31) — Phase E Sprint E1c: sponsor self-serve auth (email/password + Google).** Live-feedback
+follow-up to E1. **Dedicated `/sponsor/login`** (email/pw + Google + forgot, styled like `/admin/login`) + full
+**`/sponsor/register`** (Full name as in NRIC/Passport, Email, Password w/ live rule checks, Re-enter, Phone +60,
+Source, PDPA consent); Google sponsors hit a **"complete your details"** step (phone/source/consent). **Isolated
+sponsor auth stack** — `sponsor-supabase.ts` (`storageKey 'halatuju_sponsor_session'`), `SponsorAuthProvider`,
+`/sponsor/auth/callback` — mirrors the admin pattern and **supersedes E1's `KEY_SPONSOR_SIGNIN` student-client hack**
+(reverted). **Backend:** `Sponsor` + `phone`/`source`/`consent_at`/`consent_version` (**migration `scholarship/0032`**,
+additive, applied migrate-first via MCP); register requires name+phone+source+consent and completes incomplete rows;
+`/sponsor/me` exposes `profile_complete`. Header: shared `components/AuthButtons.tsx` (Log in ▾ + Sign Up) used by
+`AppHeader` **and the landing nav** (landing page otherwise unchanged); Sponsor menu → `/sponsor/login`, Sign-Up
+chooser → `/sponsor/register`. Pure `lib/sponsorAuth.ts` node-tested. Deferred: Turnstile (TD-071), MY-only phone +
+orphaned `/sponsor/register-interest` (TD-072). 1411 pytest + 178 jest; i18n parity 1650 (Tamil first-draft); `next
+build` clean. **Not click-tested** (TD-070). See `docs/retrospective-v2.23-sponsor-auth.md`.
+
 **v2.22.0 (2026-05-31) — Phase E Sprint E1: sponsor accounts + admin vetting (no student data).** First slice of
 the safeguarded sponsor marketplace (`docs/scholarship/phase-e-sponsor-roadmap.md`). Self-register → admin vets →
 approved sponsor lands in a portal shell. **Zero student data in this slice** (browsing arrives in E2, gated on
@@ -351,7 +365,7 @@ incomplete profiles (no override) in `AdminVerifyAcceptView`; request-more-docs;
 preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **Out of scope (future): Phase D**
 (Gemini v2 refines profile with interview findings), **Phase E** (real sponsor portal + auth), **Phase F** (mentor).
 
-- 1408 backend tests, 172 frontend (jest) tests, 0 failures
+- 1411 backend tests, 178 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
@@ -359,17 +373,20 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-05-31, post Phase E Sprint E1)
 
-Current state: v2.22.0 shipped (2026-05-31) — Phase E **Sprint E1 complete** (sponsor accounts + admin vetting,
-**no student data**). `Sponsor` model + migration `scholarship/0031` (table `sponsors`, migrate-first + RLS); sponsor
-self-service + admin-vetting endpoints; `/sponsor` portal shell + `/admin/sponsors` vetting UI. Sponsor sign-in is a
-direct Google OAuth that never touches the student NRIC modal (`KEY_SPONSOR_SIGNIN`). 1408 pytest + 172 jest; golden
-masters intact; courses migrations through `0052`, scholarship through **`0031`**, applied migrate-first.
+Current state: v2.23.0 shipped (2026-05-31) — Phase E **Sprint E1 complete + self-serve auth (E1c)**. Sponsors have
+a real account: `/sponsor/login` (email/pw + Google) + `/sponsor/register` (full fields + PDPA consent); **isolated
+sponsor auth stack** (`sponsor-supabase.ts`, `SponsorAuthProvider`, `/sponsor/auth/callback`) mirroring admin —
+the E1 `KEY_SPONSOR_SIGNIN` hack is gone. `Sponsor` model + migrations `scholarship/0031` (table) + `0032`
+(phone/source/consent), both migrate-first. `/admin/sponsors` vetting UI. 1411 pytest + 178 jest; golden masters
+intact; courses migrations through `0052`, scholarship through **`0032`**, applied migrate-first.
 
 Pick one (recommended order):
-0. **Live-verify Sprint E1 (recommended FIRST — E1 is not click-tested).** As an admin (`admin@tamilfoundation.org`):
-   sign in to `/sponsor` with a fresh Google account → register → confirm "pending"; then in `/admin/sponsors`
-   approve that sponsor → reload `/sponsor` → confirm the approved "browsing coming soon" shell; try reject/suspend.
-   Confirm a **viewer** admin gets blocked from approving (403). This is the TD-070 smoke that headless can't do.
+0. **Live-verify Sprint E1 (recommended FIRST — not click-tested, TD-070).** Two flows headless can't exercise:
+   **(a) sponsor signup** — at `/sponsor/register`, create an email/password account (check the password rules +
+   re-enter + MY phone + source + consent gate), confirm email if prompted, land on `/sponsor` → "pending"; also try
+   the **Google** path → confirm the "complete your details" step asks phone/source/consent. **(b) admin vetting** —
+   in `/admin/sponsors` approve that sponsor → reload `/sponsor` → "browsing coming soon" shell; try reject/suspend;
+   confirm a **viewer** admin is blocked (403). Also eyeball the landing-page nav now shows `Log in ▾ | Sign Up`.
 1. **Phase E Sprint E2 — student opt-in + anonymised discovery pool (PDPA-critical).** The next roadmap slice
    (`docs/scholarship/phase-e-sponsor-roadmap.md`): pool opt-in + share-consent (guardian for minors), the
    **allowlist anonymised card + profile serializers** (the load-bearing safety property — dedicated leak tests),

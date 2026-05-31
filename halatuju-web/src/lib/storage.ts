@@ -76,9 +76,10 @@ export const KEY_STPM_QUIZ_SIGNALS = 'halatuju_stpm_quiz_signals'
 /** STPM quiz branch: 'science' | 'arts' | 'mixed' */
 export const KEY_STPM_QUIZ_BRANCH = 'halatuju_stpm_quiz_branch'
 
-/** Sponsor sign-in flag — set before a sponsor's Google OAuth so /auth/callback
- *  routes back to /sponsor (not /dashboard) and the NRIC modal never opens. */
-export const KEY_SPONSOR_SIGNIN = 'halatuju_sponsor_signin'
+/** Sponsor registration details stashed before email/password sign-up, so the
+ *  portal's "complete your details" step can pre-fill them after the user
+ *  confirms their email (when no session is returned at sign-up time). */
+export const KEY_SPONSOR_PENDING = 'halatuju_sponsor_pending'
 
 // ── Display constants ────────────────────────────────────────────────
 

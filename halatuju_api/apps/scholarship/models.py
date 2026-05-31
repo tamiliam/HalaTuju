@@ -686,10 +686,16 @@ class Sponsor(models.Model):
     )
     name = models.CharField(max_length=200)
     email = models.EmailField()
+    phone = models.CharField(max_length=30, blank=True, default='')
+    # "How did you find us?" — self-reported acquisition channel (free dropdown).
+    source = models.CharField(max_length=50, blank=True, default='')
     organisation = models.CharField(max_length=200, blank=True, default='')
     # Light KYC context for the admin vetting decision (who they are / why they
     # want to sponsor). Never shown to students.
     note = models.TextField(blank=True, default='')
+    # PDPA consent captured at registration (Personal Data Protection Act 2010).
+    consent_at = models.DateTimeField(null=True, blank=True)
+    consent_version = models.CharField(max_length=30, blank=True, default='')
     status = models.CharField(max_length=20, choices=STATUS, default='pending')
     reviewed_at = models.DateTimeField(null=True, blank=True)
     reviewed_by = models.CharField(

@@ -46,8 +46,13 @@ Decisions:
 - **Shipped:** `Sponsor` model + migration `scholarship/0031` (table `sponsors`, migrate-first + RLS deny-by-default);
   `SponsorMixin`; `POST /sponsor/register/` + `GET /sponsor/me/`; admin `GET /admin/sponsors/[?status]` +
   `POST /admin/sponsors/<id>/review/`; **allowlist `SponsorSerializer`**; NRIC-gate whitelist. Frontend: `/sponsor`
-  portal (6 states) + `/admin/sponsors` vetting table + nav. Sponsor sign-in = direct Google OAuth via
-  `KEY_SPONSOR_SIGNIN`, never the student NRIC modal. 1408 pytest (+12) + 172 jest. **Not yet click-tested (TD-070).**
+  portal + `/admin/sponsors` vetting table + nav. 1408 pytest (+12) + 172 jest. **Not yet click-tested (TD-070).**
+- **E1c follow-up ✅ DONE (v2.23.0, 2026-05-31) — sponsor self-serve auth.** Real account: `/sponsor/login` (email/pw
+  + Google + forgot) + `/sponsor/register` (Full name as in NRIC/Passport, Email, Password w/ rules, Re-enter, Phone
+  +60, Source, PDPA consent); Google → "complete your details" step. **Isolated sponsor auth stack** (`sponsor-supabase.ts`,
+  `SponsorAuthProvider`, `/sponsor/auth/callback`) mirroring admin — **replaced E1's `KEY_SPONSOR_SIGNIN` student-client
+  hack**. `Sponsor` + phone/source/consent (migration `0032`). Shared `AuthButtons` (Log in ▾ + Sign Up) on header +
+  landing. Deferred: Turnstile (TD-071), MY-only phone + orphaned register-interest (TD-072). 1411 pytest + 178 jest.
 - **Goal:** anyone can self-register as a sponsor → "pending approval" → an admin approves/rejects →
   an approved sponsor logs into an (empty) portal shell. Zero student data exposed.
 - **Scope:** `Sponsor` model (supabase_user_id-keyed, status pending/approved/rejected/suspended) +

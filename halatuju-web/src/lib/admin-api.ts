@@ -615,6 +615,8 @@ export interface AdminSponsor {
   id: number
   name: string
   email: string
+  phone: string
+  source: string
   organisation: string
   note: string
   status: 'pending' | 'approved' | 'rejected' | 'suspended'

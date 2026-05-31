@@ -32,7 +32,7 @@ export default function GetStartedPage() {
           </div>
 
           <Link
-            href="/sponsor/register-interest"
+            href="/sponsor/register"
             className="block w-full text-center border border-primary-300 text-primary-700 font-semibold py-3 rounded-xl hover:bg-primary-50 transition-colors"
           >
             {t('getStarted.sponsor')}
