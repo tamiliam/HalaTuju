@@ -18,6 +18,7 @@ import {
   OTHER_OPTIONAL_DOC_TYPES,
   formatFileSize,
 } from '@/lib/scholarship'
+import DocumentHelpCoach from './DocumentHelpCoach'
 
 // Per-file size cap (mirrors the server's MAX_DOC_SIZE_BYTES default — server is
 // authoritative; this gives the student instant feedback before any upload).
@@ -204,6 +205,8 @@ function SingleDocCard({
   onUpload,
   onDelete,
   t,
+  token,
+  lang,
   showVisionChip = false,
 }: {
   docType: string
@@ -212,6 +215,8 @@ function SingleDocCard({
   onUpload: (docType: string, file: File) => void
   onDelete: (id: number) => void
   t: (key: string) => string
+  token: string | null
+  lang: string
   showVisionChip?: boolean
 }) {
   const busy = busyType === docType
@@ -251,8 +256,18 @@ function SingleDocCard({
           ))}
         </ul>
       )}
-      {visionDoc && <VisionChip doc={visionDoc} t={t} />}
-      {existing.map((d) => <SupportingDocChip key={`m${d.id}`} doc={d} t={t} />)}
+      {visionDoc && (
+        <>
+          <VisionChip doc={visionDoc} t={t} />
+          <DocumentHelpCoach doc={visionDoc} token={token} t={t} lang={lang} />
+        </>
+      )}
+      {existing.filter((d) => d !== visionDoc).map((d) => (
+        <div key={`m${d.id}`}>
+          <SupportingDocChip doc={d} t={t} />
+          <DocumentHelpCoach doc={d} token={token} t={t} lang={lang} />
+        </div>
+      ))}
     </div>
   )
 }
@@ -265,12 +280,16 @@ function IncomeProofCard({
   onUpload,
   onDelete,
   t,
+  token,
+  lang,
 }: {
   docs: ApplicantDocument[]
   busyType: string | null
   onUpload: (docType: string, file: File) => void
   onDelete: (id: number) => void
   t: (key: string) => string
+  token: string | null
+  lang: string
 }) {
   const incomeTypes = [...INCOME_PROOF_TYPES] as string[]
   const existing = docs.filter((d) => incomeTypes.includes(d.doc_type))
@@ -346,6 +365,7 @@ function IncomeProofCard({
                 </button>
               </div>
               <SupportingDocChip doc={d} t={t} />
+              <DocumentHelpCoach doc={d} token={token} t={t} lang={lang} />
             </li>
           ))}
         </ul>
@@ -357,7 +377,7 @@ function IncomeProofCard({
 // ── Main component ────────────────────────────────────────────────────────
 
 export default function ScholarshipDocuments({ token, onChange }: { token: string | null; onChange?: () => void }) {
-  const { t } = useT()
+  const { t, locale } = useT()
   const [docs, setDocs] = useState<ApplicantDocument[]>([])
   const [busyType, setBusyType] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -445,6 +465,8 @@ export default function ScholarshipDocuments({ token, onChange }: { token: strin
               onUpload={handleUpload}
               onDelete={handleDelete}
               t={t}
+              token={token}
+              lang={locale}
               showVisionChip={dt === 'ic'}
             />
           ))}
@@ -462,6 +484,8 @@ export default function ScholarshipDocuments({ token, onChange }: { token: strin
             onUpload={handleUpload}
             onDelete={handleDelete}
             t={t}
+            token={token}
+            lang={locale}
             showVisionChip={false}
           />
           {/* S23: proof of household income is now required (any one of
@@ -475,6 +499,8 @@ export default function ScholarshipDocuments({ token, onChange }: { token: strin
             onUpload={handleUpload}
             onDelete={handleDelete}
             t={t}
+            token={token}
+            lang={locale}
           />
         </div>
       </section>
@@ -499,6 +525,8 @@ export default function ScholarshipDocuments({ token, onChange }: { token: strin
               onUpload={handleUpload}
               onDelete={handleDelete}
               t={t}
+              token={token}
+              lang={locale}
             />
           ))}
           {/* S17: minors with a non-parent guardian (grandparent / legal
@@ -514,6 +542,8 @@ export default function ScholarshipDocuments({ token, onChange }: { token: strin
               onUpload={handleUpload}
               onDelete={handleDelete}
               t={t}
+              token={token}
+              lang={locale}
             />
           )}
         </div>

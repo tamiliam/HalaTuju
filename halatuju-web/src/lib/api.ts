@@ -1170,6 +1170,25 @@ export async function deleteDocument(id: number, options?: ApiOptions): Promise<
   return apiRequest(`/api/v1/scholarship/documents/${id}/`, { method: 'DELETE', ...options })
 }
 
+// "Cikgu Gopal" document-help coach. `source`: 'ai' = warm Gemini message;
+// 'fallback' = AI off/throttled → show pre-written i18n copy keyed by `verdict`;
+// 'none' = nothing to help with (good/unchecked doc). Soft, never blocks.
+export interface DocumentHelp {
+  message: string
+  source: 'ai' | 'fallback' | 'none'
+  verdict?: string
+  model_used?: string
+}
+
+export async function getDocumentHelp(
+  id: number,
+  lang?: string,
+  options?: ApiOptions
+): Promise<DocumentHelp> {
+  const q = lang ? `?lang=${encodeURIComponent(lang)}` : ''
+  return apiRequest(`/api/v1/scholarship/documents/${id}/help/${q}`, options)
+}
+
 export async function listReferees(options?: ApiOptions): Promise<{ referees: Referee[] }> {
   return apiRequest('/api/v1/scholarship/referees/', options)
 }
