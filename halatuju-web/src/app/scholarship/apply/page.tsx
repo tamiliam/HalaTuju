@@ -387,6 +387,21 @@ export default function ScholarshipApplyPage() {
   }
   const goBack = () => { setError(null); setTab(TAB_ORDER[Math.max(tabIndex - 1, 0)]) }
 
+  // Live-revalidate ONLY while an error is already showing (i.e. after a Continue/
+  // Submit attempt). As the student fixes fields, keep the red box in sync: update
+  // it to the current first outstanding field in this-or-an-earlier step, or clear
+  // it the moment the blocking error is resolved. We never surface a NEW error here
+  // for a step they haven't tried to pass — same gate as goNext. The functional
+  // setError(prev===next?prev:next) bails on an unchanged value, so this can't loop.
+  useEffect(() => {
+    if (!error) return
+    const errKey = applyFormError(form, examType)
+    const next = errKey && TAB_ORDER.indexOf(ERROR_TAB[errKey] ?? 'personal') <= tabIndex
+      ? t(`scholarship.apply.error.${errKey}`)
+      : null
+    setError((prev) => (prev === next ? prev : next))
+  }, [form, examType, tabIndex, error, t])
+
   const ProfileBadge = (
     <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 01.894.553l1.382 2.8 3.09.45a1 1 0 01.554 1.706l-2.236 2.18.528 3.078a1 1 0 01-1.451 1.054L10 12.347l-2.764 1.454a1 1 0 01-1.451-1.054l.528-3.078L4.077 7.49a1 1 0 01.554-1.706l3.09-.45 1.382-2.8A1 1 0 0110 2z"/></svg>
@@ -904,7 +919,7 @@ export default function ScholarshipApplyPage() {
 
           {/* Validation / submit error — shown on whichever tab the error sent the user to */}
           {error && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
+            <div role="alert" aria-live="assertive" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
