@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.21.0] — Elective subjects persist + cap raised 2 → 7 (2026-05-31)
+
+- **SPM electives now survive a logout/login, and a student may enter up to 7 of them** (was 2). Two related fixes shipped together.
+  - **Bug fixed: electives silently lost on logout/login.** Electives had no durable identity — *which* grade keys were electives lived only in browser localStorage (`KEY_ELEKTIF`), was never synced, and was never re-hydrated on login. On reload the grades form kept only `core ∪ aliran ∪ elektif` grades, so the electives were dropped — and a re-save propagated the loss to the DB. Fix: new `StudentProfile.elective_subjects` JSONField (**migration `0052`**, additive) — the durable record of which subjects are electives, mirroring `stream_subjects` (TD-063). Synced in `/profile/sync/`, returned by the profile GET, and **re-hydrated on login** (`auth-context` now restores `KEY_ELEKTIF` from `elective_subjects` *and* `KEY_ALIRAN` from `stream_subjects` — fixing the latent aliran case too).
+  - **Feature: elective cap 2 → 7.** Via a new `MAX_SPM_ELECTIVES` constant (single source). SPM has no official subject cap and high achievers sit many (11-A cases); the form now allows up to 7 electives. The **merit engine is unchanged** — Sec3 still scores only the *best 2* electives (`remaining.sort()[:2]`); more electives just enlarge the pool, so the golden master is untouched. Raising the cap also *improves* accuracy: high achievers can now enter their true best electives, and students no longer become wrongly ineligible when a course's required elective couldn't fit in 2 slots.
+  - **Migrate-first care (TD-025):** `StudentProfile.Meta.db_table = 'api_student_profiles'` (not the Django default) — the prod `ALTER` targets that table; a column first added to the legacy `student_profiles` table by mistake was caught pre-deploy and dropped. **No historical backfill:** 485/491 existing profiles have empty `stream_subjects`, so a grades-derived backfill would mislabel stream subjects as electives — the fix prevents future loss and deletes nothing.
+  - **Out of scope (TD-069):** the STPM flow's SPM-prerequisite electives use a separate subsystem (`spm_prereq_grades` + `halatuju_spm_elektif`) and stay capped at 2 — a follow-up.
+  - +7 backend tests (merit best-2 under 5/7 electives, sync round-trip, default empty); backend 1396, jest 171, `next build` clean.
+
 ## [2.20.0] — "Cikgu Gopal" document-help coach on the Documents tab (2026-05-31)
 
 - **A warm, encouraging helper now appears when a student's document upload comes back with a soft mismatch.** On the /application **Documents** tab, beneath the existing amber/grey chip (IC name/NRIC mismatch, supporting-doc name/address/wrong-doc/unreadable), a soft-blue **"Cikgu Gopal"** note explains *why* the document needs what it needs and gently nudges the student to re-upload — in their own language (en/ms/ta). It is **proactive** (fires only on a real mismatch, never under a green chip) and **never a chat box**.

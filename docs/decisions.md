@@ -1516,3 +1516,27 @@ is scheduled — then the sponsor entry points at the real flow.
 **Trade-offs:** Two copies of the "what to say" intent (the AI prompt's guidance + the static fallback strings) must both stay on-tone; the fallback is less personalised (no first name, generic phrasing).
 
 **Revisit if:** AI availability/cost changes materially — e.g. if calls become reliably free and instant, the static fallback could shrink to a single generic line; if cost becomes a problem, lean harder on the static copy.
+
+## Electives get an explicit field, not derive-on-reload — v2.21.0, 2026-05-31
+
+**Decision:** Persist *which* SPM subjects are electives in an explicit `StudentProfile.elective_subjects` JSONField (synced + re-hydrated on login), rather than deriving electives at load time as `grades − core − stream_subjects`.
+
+**Alternatives considered:** derive-on-reload (no migration; compute electives in the browser from the grades dict minus core minus the aliran picks).
+
+**Rationale:** The user chose the explicit field. It records the student's *intent* — a subject can be flagged elective even before a grade is entered, which derive-on-reload (which keys off grade presence) would miss. With the cap now at 7, an unambiguous stored list is also cleaner than re-deriving a larger set each load. It mirrors `stream_subjects` (TD-063), so the pattern is already established end-to-end.
+
+**Trade-offs:** A migration + a field to keep in sync with the grades dict (electives ⊆ grades keys). Derive-on-reload would have needed neither.
+
+**Revisit if:** the field and grades drift apart in practice (e.g. an elective with no grade lingering) — then reconcile on save, or revisit derive.
+
+## No historical backfill of elective_subjects — v2.21.0, 2026-05-31
+
+**Decision:** Existing profiles are left with `elective_subjects = []`; the fix is forward-only.
+
+**Alternatives considered:** backfill by deriving `grades − core − stream_subjects` for existing rows.
+
+**Rationale:** A dry-run showed 485 of 491 candidate profiles have empty `stream_subjects` (it only arrived in v2.13.0), so the derivation can't separate stream subjects from electives — it would mislabel phy/chem/etc. as electives for ~99% of rows. Mislabeling is worse than an empty field; the grades themselves are untouched in the DB, and labels repopulate correctly on the next onboarding save.
+
+**Trade-offs:** Students who entered electives pre-fix won't see them auto-restored on the grades form (their grades are still in the DB, just not labelled as electives). A per-student manual fix is possible if needed.
+
+**Revisit if:** `stream_subjects` coverage rises enough (e.g. after a season of the updated onboarding) that a clean derivation becomes possible for the remaining unlabelled rows.

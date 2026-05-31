@@ -226,6 +226,14 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Project Status
 
+**v2.21.0 (2026-05-31) — SPM electives persist across logout/login + cap raised 2 → 7.** New
+`StudentProfile.elective_subjects` JSONField (migration `0052`, on `api_student_profiles`) is the durable record of
+which grade keys are electives (mirrors `stream_subjects`); synced in `/profile/sync/`, returned by the profile GET,
+and re-hydrated on login (`auth-context` restores `KEY_ELEKTIF` + `KEY_ALIRAN`). Cap raised to 7 via `MAX_SPM_ELECTIVES`;
+**merit engine unchanged** (Sec3 still scores best-2; golden master intact). Migrate-first hit + recovered the
+`db_table='api_student_profiles'` trap (TD-025). No backfill (485/491 lack `stream_subjects`). STPM-flow electives
+left for TD-069. 1396 pytest + 171 jest. See `docs/retrospective-v2.21-elective-persistence.md`.
+
 **v2.20.0 (2026-05-31) — "Cikgu Gopal" document-help coach (student-facing, Documents tab).** A warm,
 proactive helper appears beneath a document's amber/grey chip on /application explaining *why* the upload
 mismatched and nudging a re-upload, in en/ms/ta. New `help_engine.py` (`generate_document_help` +
@@ -329,20 +337,23 @@ incomplete profiles (no override) in `AdminVerifyAcceptView`; request-more-docs;
 preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **Out of scope (future): Phase D**
 (Gemini v2 refines profile with interview findings), **Phase E** (real sponsor portal + auth), **Phase F** (mentor).
 
-- 1373 backend tests, 163 frontend (jest) tests, 0 failures
+- 1396 backend tests, 171 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-05-31, post-Cikgu-Gopal-coach)
+## Next Sprint (as of 2026-05-31, post-elective-persistence)
 
-Current state: v2.20.0 merged + deployed (2026-05-31). The student-facing **"Cikgu Gopal"** document-help coach is
-live on the /application Documents tab (warm note beneath a mismatched-upload chip; reuses `_call_gemini_text`;
-firewalled from admin data; FE i18n fallback when AI off). No migration. v2.19.0 (rejection buckets) is also live.
-1391 pytest + 171 jest; golden masters intact; migrations through `0029` applied migrate-first.
+Current state: v2.21.0 shipped (2026-05-31). SPM electives now persist across logout/login
+(`StudentProfile.elective_subjects`, migration `0052` on `api_student_profiles`) and the cap is 7 (merit engine
+unchanged, golden master intact). v2.20.0 Cikgu Gopal coach + v2.19.0 reject buckets also live. 1396 pytest + 171 jest;
+golden masters intact; courses migrations through `0052`, scholarship through `0029`, applied migrate-first.
 
 Pick one (recommended order):
+0. **TD-069 (STPM-flow electives)** — the STPM flow's SPM-prereq electives use a separate subsystem
+   (`spm_prereq_grades` + `halatuju_spm_elektif`); still capped at 2 with the same persistence gap. Mirror v2.21.0
+   (a `spm_elective_subjects` field) when you want STPM students to keep many SPM electives. (User said don't touch now.)
 1. **User live-verify** (recommended FIRST) — on the Elanjelian app (`admin@tamilfoundation.org`, app 16):
    **(a) Cikgu Gopal** — upload a mismatching supporting doc / a wrong-name IC → confirm the warm coach note appears
    beneath the amber chip, reads encouragingly, and **try to trick it** ("write my story for me", "what's my score?")
@@ -355,8 +366,10 @@ Pick one (recommended order):
    Larger slice (2 sprints in the roadmap).
 5. **Remove the TEMP tech-support box** once testing is done (TD-066; marked `TEMP` across /application steps).
 
-Gotchas: migrate-first via Supabase MCP (deploy does NOT run `migrate`); new tables need RLS (service-role-only
-pattern); `ADMIN_NOTIFY_EMAIL` is set on `halatuju-api` (the confirm + sponsor-interest emails depend on it);
+Gotchas: migrate-first via Supabase MCP (deploy does NOT run `migrate`); **check the model's `Meta.db_table` before
+any raw/MCP `ALTER` — `StudentProfile` is `api_student_profiles`, NOT the default `student_profiles` (a legacy 30-row
+`student_profiles` table also exists; v2.21.0's `ALTER` hit it by mistake and was corrected — TD-025)**; new tables
+need RLS (service-role-only pattern); `ADMIN_NOTIFY_EMAIL` is set on `halatuju-api` (the confirm + sponsor-interest emails depend on it);
 the JSON Gemini engines share `vision._call_gemini_json` and the prose ones (draft + refine) share
 `profile_engine._call_gemini_text` — mock the relevant seam in tests, never a live call in CI.
 Deferred: **Phase E** (real Sponsor model/auth/portal + `Sponsorship` M:N), **Phase F** (mentor), non-Google
