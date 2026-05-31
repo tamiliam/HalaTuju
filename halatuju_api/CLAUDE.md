@@ -226,6 +226,20 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Project Status
 
+**v2.20.0 (2026-05-31) — "Cikgu Gopal" document-help coach (student-facing, Documents tab).** A warm,
+proactive helper appears beneath a document's amber/grey chip on /application explaining *why* the upload
+mismatched and nudging a re-upload, in en/ms/ta. New `help_engine.py` (`generate_document_help` +
+`verdict_for_document` + `_build_help_prompt`) reuses `profile_engine._call_gemini_text`; new
+`DocumentHelpView` (`GET …/documents/<pk>/help/`, own-doc scoped, hourly per-application cache cap). **Coach,
+never ghostwriter; structurally firewalled** — the engine receives only doc-type + already-decided verdict +
+first name (no application/profile/score object; signature-asserted). Only *phrases* a verdict the
+deterministic matchers/Vision already decided. Soft: AI off/throttled → FE shows pre-written i18n fallback
+copy keyed by verdict (`scholarship.docs.help.fallback.*`). **No migration** (reads existing verdict columns).
+FE: pure `lib/documentHelp.ts` (`shouldShowCoach`/`fallbackKeyFor`, node-env jest) + `DocumentHelpCoach.tsx`.
+1391 pytest + 171 jest; i18n parity 1559 (Tamil first-draft). Stitch `daf30389` approved pre-build. See
+`docs/retrospective-v2.20-cikgu-gopal-doc-help.md`. **On branch `feature/document-help-coach`; not yet
+deployed (no migration; deploy = push, user-gated). Live click-through verify pending.**
+
 **v2.19.0 (2026-05-31) — Four rejection buckets + differentiated decline emails.** Rejections are categorised
 (`ScholarshipApplication.rejection_category`, migration `0029`): **merit**/**need**/**ineligible** set automatically
 by the engine (it already recorded *why* — `evaluate()` now returns a `category`); **interview** (admin, reviewed-but-

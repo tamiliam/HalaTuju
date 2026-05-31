@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.20.0] — "Cikgu Gopal" document-help coach on the Documents tab (2026-05-31)
+
+- **A warm, encouraging helper now appears when a student's document upload comes back with a soft mismatch.** On the /application **Documents** tab, beneath the existing amber/grey chip (IC name/NRIC mismatch, supporting-doc name/address/wrong-doc/unreadable), a soft-blue **"Cikgu Gopal"** note explains *why* the document needs what it needs and gently nudges the student to re-upload — in their own language (en/ms/ta). It is **proactive** (fires only on a real mismatch, never under a green chip) and **never a chat box**.
+  - **Coach, never ghostwriter.** The model is instructed to explain and encourage but to refuse to write the student's application answers/essays, and it has no access to (and must never reveal) scores or reviewer notes. Enforced by guardrail tests on the built prompt.
+  - **Structurally firewalled from admin data.** The engine (`help_engine.generate_document_help`) receives **only** a doc-type + the already-decided verdict code + the student's first name — there is no parameter through which a `SponsorProfile`, `InterviewSession`, score, or anomaly could reach it. Asserted by a signature test, not prompt-trust.
+  - **Only phrases, never decides.** The verdict is computed upstream by the existing deterministic matchers / Vision OCR (`vision.doc_student_verdict`, the IC nric/name matchers); the coach just puts a kind voice on it (consistent with the "Gemini extracts, matchers decide" decision).
+  - **Soft, never blocks; degrades gracefully.** New `GET /api/v1/scholarship/documents/<pk>/help/` (own-doc scoped) reuses the shared `profile_engine._call_gemini_text` Gemini seam on the free tier, with an hourly per-application cap. When the AI is unconfigured/throttled/errored, the frontend shows pre-written i18n **fallback copy** keyed by the verdict — the student is never left with a cold, silent chip.
+  - **No migration** — the coach stores nothing; it reads existing verdict columns. New `help_engine.py` + `DocumentHelpView` + `DocumentHelpCoach.tsx` + pure `lib/documentHelp.ts` (`shouldShowCoach`/`fallbackKeyFor`). Tests: **+18 backend** (engine + endpoint + guardrail/firewall, all Gemini mocked) → 1391 pytest; **+8 jest** (pure logic, node-env) → 171 jest; `next build` clean. i18n en/ms/ta `scholarship.docs.help.coachLabel` + `fallback.*` (parity 1559; **Tamil first-draft**, queued for refine). Stitch screen `daf30389` (HalaTuju B40 Assistance) approved before build.
+
 ## [2.19.0] — Four rejection buckets with differentiated decline emails (2026-05-31)
 
 - **Rejections are now categorised, and each bucket gets its own decline email** (suggestive of the reason, never blunt — a fully generic note is more frustrating). New `ScholarshipApplication.rejection_category` (+ `rejected_at`/`rejected_by`; **migration `0029`**, additive, migrate-first):
