@@ -69,6 +69,30 @@
     "doneBody": "Kami telah menerima minat anda dan akan menghubungi anda tidak lama lagi.",
     "backHome": "Kembali ke laman utama"
   },
+  "sponsorPortal": {
+    "loadFailed": "Tidak dapat memuatkan akaun penaja anda. Sila cuba lagi.",
+    "registerFailed": "Tidak dapat menghantar butiran anda. Sila cuba lagi.",
+    "signInTitle": "Log masuk penaja",
+    "signInBody": "Log masuk untuk memohon sebagai penaja. Setelah diluluskan, anda boleh menaja seorang pelajar.",
+    "signInGoogle": "Teruskan dengan Google",
+    "privacyNote": "Kami hanya menggunakan akaun anda untuk mengesahkan identiti anda. Identiti pelajar sentiasa dirahsiakan.",
+    "registerTitle": "Mohon untuk menjadi penaja",
+    "registerIntro": "Beritahu kami sedikit tentang diri anda. Pasukan kami akan menyemak dan menghubungi anda.",
+    "name": "Nama anda",
+    "organisation": "Organisasi",
+    "note": "Apa-apa yang ingin anda kongsikan",
+    "notePlaceholder": "cth. bidang atau bilangan pelajar yang ingin anda bantu",
+    "submitting": "Menghantar…",
+    "submit": "Hantar permohonan",
+    "pendingTitle": "Permohonan diterima",
+    "pendingBody": "Terima kasih. Pasukan kami sedang menyemak permohonan anda dan akan menghubungi anda melalui e-mel. Anda tidak perlu buat apa-apa lagi buat masa ini.",
+    "approvedTitle": "Anda telah diluluskan",
+    "approvedBody": "Selamat menyertai. Tidak lama lagi anda boleh menyemak pelajar yang memerlukan bantuan — sentiasa tanpa nama.",
+    "comingSoon": "Penyemakan pelajar akan datang tidak lama lagi. Kami akan e-mel anda sebaik sahaja ia sedia.",
+    "inactiveTitle": "Akaun tidak aktif",
+    "inactiveBody": "Akaun penaja anda tidak aktif buat masa ini. Jika anda rasa ini satu kesilapan, sila hubungi kami.",
+    "backHome": "Kembali ke laman utama"
+  },
   "footer": {
     "tagline": "Membimbing pelajar Malaysia ke kursus yang tepat.",
     "quickLinks": "Pautan Pantas",
@@ -1414,6 +1438,26 @@
     "accessRestored": "Akses dipulihkan"
   },
   "admin": {
+    "sponsors": {
+      "nav": "Penaja",
+      "title": "Permohonan penaja",
+      "desc": "Semak dan luluskan penaja sebelum mereka boleh menyemak pelajar.",
+      "loadFailed": "Tidak dapat memuatkan penaja.",
+      "actionFailed": "Tidak dapat mengemas kini penaja. Anda mungkin tiada kebenaran.",
+      "allStatuses": "Semua status",
+      "empty": "Tiada penaja yang sepadan.",
+      "name": "Nama",
+      "organisation": "Organisasi",
+      "email": "E-mel",
+      "status": "Status",
+      "registered": "Didaftar",
+      "actions": "Tindakan",
+      "action": {
+        "approve": "Luluskan",
+        "reject": "Tolak",
+        "suspend": "Gantung"
+      }
+    },
     "scholarship": {
       "nav": "Permohonan B40",
       "title": "Permohonan Bantuan B40",

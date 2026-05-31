@@ -76,6 +76,10 @@ export const KEY_STPM_QUIZ_SIGNALS = 'halatuju_stpm_quiz_signals'
 /** STPM quiz branch: 'science' | 'arts' | 'mixed' */
 export const KEY_STPM_QUIZ_BRANCH = 'halatuju_stpm_quiz_branch'
 
+/** Sponsor sign-in flag — set before a sponsor's Google OAuth so /auth/callback
+ *  routes back to /sponsor (not /dashboard) and the NRIC modal never opens. */
+export const KEY_SPONSOR_SIGNIN = 'halatuju_sponsor_signin'
+
 // ── Display constants ────────────────────────────────────────────────
 
 /** Number of course cards shown initially (anon and logged-in). Anon users hit auth gate on "Load More". */

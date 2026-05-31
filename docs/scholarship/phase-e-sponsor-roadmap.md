@@ -1,6 +1,7 @@
 # Phase E — Safeguarded Sponsor Marketplace (roadmap)
 
-**Status:** approved 2026-05-31. Sprint E1 in progress.
+**Status:** approved 2026-05-31. **Sprint E1 ✅ DONE (v2.22.0, 2026-05-31)** — sponsor accounts + admin vetting,
+no student data. ▶ next: **Sprint E2** (anonymised pool — PDPA-critical, lawyer-gated before real students).
 **Supersedes** the one-line "Phase E (2 sprints)" entry in `post-shortlist-vision.md` — the
 safeguarded marketplace is one slice larger (3 sprints).
 
@@ -41,7 +42,12 @@ Decisions:
 
 ---
 
-## Sprint E1 — Sponsor accounts + admin vetting *(no student data)*
+## Sprint E1 — Sponsor accounts + admin vetting *(no student data)* ✅ DONE (v2.22.0, 2026-05-31)
+- **Shipped:** `Sponsor` model + migration `scholarship/0031` (table `sponsors`, migrate-first + RLS deny-by-default);
+  `SponsorMixin`; `POST /sponsor/register/` + `GET /sponsor/me/`; admin `GET /admin/sponsors/[?status]` +
+  `POST /admin/sponsors/<id>/review/`; **allowlist `SponsorSerializer`**; NRIC-gate whitelist. Frontend: `/sponsor`
+  portal (6 states) + `/admin/sponsors` vetting table + nav. Sponsor sign-in = direct Google OAuth via
+  `KEY_SPONSOR_SIGNIN`, never the student NRIC modal. 1408 pytest (+12) + 172 jest. **Not yet click-tested (TD-070).**
 - **Goal:** anyone can self-register as a sponsor → "pending approval" → an admin approves/rejects →
   an approved sponsor logs into an (empty) portal shell. Zero student data exposed.
 - **Scope:** `Sponsor` model (supabase_user_id-keyed, status pending/approved/rejected/suspended) +

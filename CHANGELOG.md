@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.22.0] — Phase E Sprint E1: sponsor accounts + admin vetting (no student data) (2026-05-31)
+
+- **First slice of the safeguarded sponsor marketplace (`docs/scholarship/phase-e-sponsor-roadmap.md`).** Anyone can self-register as a sponsor, an admin vets them, and an approved sponsor lands in a portal shell. **Zero student data is exposed anywhere in this slice** — browsing the (anonymised) student pool arrives in E2, which stays gated on the lawyer review before any real student is shown.
+  - **Backend (E1a, committed `99c7937`):** new `Sponsor` model (`supabase_user_id`-keyed, status `pending`/`approved`/`rejected`/`suspended`; **migration `scholarship/0031`**, table `sponsors`, applied migrate-first via Supabase MCP with **RLS deny-by-default**). `SponsorMixin` mirrors `PartnerAdminMixin` (resolve sponsor by Supabase UID; `require_approved_sponsor` gate for E2+). Sponsor self-service: `POST /api/v1/sponsor/register/` (idempotent; rejects anonymous guests; emails the admin) + `GET /api/v1/sponsor/me/` (own account or `{registered:false}`). Admin vetting: `GET /api/v1/admin/sponsors/[?status]` + `POST /api/v1/admin/sponsors/<id>/review/ {approve|reject|suspend}` (reviewer-gated, stamps `reviewed_at`/`reviewed_by`). `SponsorSerializer` is an **allowlist** (id/name/email/organisation/status/is_approved/created_at — all read-only). NRIC-gate middleware whitelists `/api/v1/sponsor/` (sponsors have no NRIC). +12 tests (`test_sponsor.py`).
+  - **Frontend (E1b):** `/sponsor` portal — six states off `getSponsorMe()`: loading · signed-out (Google sign-in) · register form (name/organisation/note) · pending · approved (a "browsing coming soon" E2 shell) · inactive (rejected/suspended). `/admin/sponsors` vetting table (status filter) with per-row **Approve / Reject / Suspend** + a "Sponsors" admin nav link.
+  - **Sponsor sign-in bypasses the student NRIC modal.** A sponsor does a **direct Google sign-in** flagged by a one-shot `KEY_SPONSOR_SIGNIN` (sessionStorage) that `/auth/callback` reads to route back to `/sponsor` — it never sets `KEY_PENDING_AUTH_ACTION`, so the student auth-gate / NRIC-claim flow is never triggered for a sponsor. No change to the delicate `AuthGateModal`.
+  - **No migration in E1b** (frontend only). i18n `sponsorPortal.*` + `admin.sponsors.*` across en/ms/ta (parity **1598**; **Tamil first-draft**, queued for refine). Tests: **1408 backend** pytest (+12 from E1a) + **172 jest** (+1); `next build` clean, both new routes compiled, no `rules-of-hooks` errors.
+  - **Not yet click-tested interactively** — the sponsor Google-OAuth sign-in and the admin approve/reject can't run headless; needs a live smoke before E2 faces real sponsors (TD-070).
+
 ## [2.21.0] — Elective subjects persist + cap raised 2 → 7 (2026-05-31)
 
 - **SPM electives now survive a logout/login, and a student may enter up to 7 of them** (was 2). Two related fixes shipped together.

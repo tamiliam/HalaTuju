@@ -226,6 +226,20 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Project Status
 
+**v2.22.0 (2026-05-31) — Phase E Sprint E1: sponsor accounts + admin vetting (no student data).** First slice of
+the safeguarded sponsor marketplace (`docs/scholarship/phase-e-sponsor-roadmap.md`). Self-register → admin vets →
+approved sponsor lands in a portal shell. **Zero student data in this slice** (browsing arrives in E2, gated on
+lawyer review). **Backend (E1a, `99c7937`):** `Sponsor` model (`supabase_user_id`-keyed, status
+pending/approved/rejected/suspended; **migration `scholarship/0031`**, table `sponsors`, migrate-first + RLS
+deny-by-default); `SponsorMixin` (mirrors `PartnerAdminMixin`); `POST /sponsor/register/` (idempotent, rejects anon,
+emails admin) + `GET /sponsor/me/`; admin `GET /admin/sponsors/[?status]` + `POST /admin/sponsors/<id>/review/
+{approve|reject|suspend}` (reviewer-gated); **allowlist `SponsorSerializer`**; NRIC-gate whitelists `/api/v1/sponsor/`.
+**Frontend (E1b):** `/sponsor` portal (6 states off `getSponsorMe()`) + `/admin/sponsors` vetting table + nav link.
+**Sponsor sign-in does a direct Google OAuth flagged by `KEY_SPONSOR_SIGNIN` (sessionStorage) → `/auth/callback`
+routes to `/sponsor`, never touching the student NRIC modal.** No E1b migration. i18n `sponsorPortal.*` +
+`admin.sponsors.*` (parity 1598; Tamil first-draft). 1408 pytest + 172 jest; `next build` clean. **Not yet
+click-tested** (OAuth + admin flows — TD-070). See `docs/retrospective-v2.22-phase-e1-sponsor-portal.md`.
+
 **v2.21.0 (2026-05-31) — SPM electives persist across logout/login + cap raised 2 → 7.** New
 `StudentProfile.elective_subjects` JSONField (migration `0052`, on `api_student_profiles`) is the durable record of
 which grade keys are electives (mirrors `stream_subjects`); synced in `/profile/sync/`, returned by the profile GET,
@@ -337,43 +351,48 @@ incomplete profiles (no override) in `AdminVerifyAcceptView`; request-more-docs;
 preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **Out of scope (future): Phase D**
 (Gemini v2 refines profile with interview findings), **Phase E** (real sponsor portal + auth), **Phase F** (mentor).
 
-- 1396 backend tests, 171 frontend (jest) tests, 0 failures
+- 1408 backend tests, 172 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-05-31, post-elective-persistence)
+## Next Sprint (as of 2026-05-31, post Phase E Sprint E1)
 
-Current state: v2.21.0 shipped (2026-05-31). SPM electives now persist across logout/login
-(`StudentProfile.elective_subjects`, migration `0052` on `api_student_profiles`) and the cap is 7 (merit engine
-unchanged, golden master intact). v2.20.0 Cikgu Gopal coach + v2.19.0 reject buckets also live. 1396 pytest + 171 jest;
-golden masters intact; courses migrations through `0052`, scholarship through `0029`, applied migrate-first.
+Current state: v2.22.0 shipped (2026-05-31) — Phase E **Sprint E1 complete** (sponsor accounts + admin vetting,
+**no student data**). `Sponsor` model + migration `scholarship/0031` (table `sponsors`, migrate-first + RLS); sponsor
+self-service + admin-vetting endpoints; `/sponsor` portal shell + `/admin/sponsors` vetting UI. Sponsor sign-in is a
+direct Google OAuth that never touches the student NRIC modal (`KEY_SPONSOR_SIGNIN`). 1408 pytest + 172 jest; golden
+masters intact; courses migrations through `0052`, scholarship through **`0031`**, applied migrate-first.
 
 Pick one (recommended order):
-0. **TD-069 (STPM-flow electives)** — the STPM flow's SPM-prereq electives use a separate subsystem
-   (`spm_prereq_grades` + `halatuju_spm_elektif`); still capped at 2 with the same persistence gap. Mirror v2.21.0
-   (a `spm_elective_subjects` field) when you want STPM students to keep many SPM electives. (User said don't touch now.)
-1. **User live-verify** (recommended FIRST) — on the Elanjelian app (`admin@tamilfoundation.org`, app 16):
-   **(a) Cikgu Gopal** — upload a mismatching supporting doc / a wrong-name IC → confirm the warm coach note appears
-   beneath the amber chip, reads encouragingly, and **try to trick it** ("write my story for me", "what's my score?")
-   → it must deflect; a *clean* upload must stay silent. **(b)** the post-shortlist AI features + reject buckets from
-   v2.17–v2.19 (doc-assist, gap-spotter, Phase-D refine, decline emails). All test-green, not click-tested.
-2. **Tamil refine** — now ~14 batches incl. consent + decline-email + reject strings + the new
-   `scholarship.docs.help.fallback.*` coach copy; the consent text gates the lawyer meeting.
-3. **Contractual reject flow (TD-068)** — admin-typed reason + post-award capture (sign-by deadline, account-number).
-4. **Phase E** — real Sponsor model + auth/portal + `Sponsorship` M:N; the sponsor reads the Phase-D **final** profile.
-   Larger slice (2 sprints in the roadmap).
-5. **Remove the TEMP tech-support box** once testing is done (TD-066; marked `TEMP` across /application steps).
+0. **Live-verify Sprint E1 (recommended FIRST — E1 is not click-tested).** As an admin (`admin@tamilfoundation.org`):
+   sign in to `/sponsor` with a fresh Google account → register → confirm "pending"; then in `/admin/sponsors`
+   approve that sponsor → reload `/sponsor` → confirm the approved "browsing coming soon" shell; try reject/suspend.
+   Confirm a **viewer** admin gets blocked from approving (403). This is the TD-070 smoke that headless can't do.
+1. **Phase E Sprint E2 — student opt-in + anonymised discovery pool (PDPA-critical).** The next roadmap slice
+   (`docs/scholarship/phase-e-sponsor-roadmap.md`): pool opt-in + share-consent (guardian for minors), the
+   **allowlist anonymised card + profile serializers** (the load-bearing safety property — dedicated leak tests),
+   sponsor-safe profile **generated** (not scrubbed) via `profile_engine`, sponsor browse UI. **MUST NOT go live to
+   real students until the lawyer signs off** (build/test on dummy data is fine). This also resolves TD-067 (wire a
+   reader for the Phase-D `final_markdown`).
+2. **User live-verify the post-shortlist AI features** (v2.17–v2.21) on the Elanjelian app — Cikgu Gopal coach,
+   doc-assist, gap-spotter, Phase-D refine, decline emails, elective persistence. All test-green, not click-tested.
+3. **Tamil refine** — now ~15 batches incl. consent + decline-email + reject + coach + the new `sponsorPortal.*` /
+   `admin.sponsors.*` strings; the consent text gates the lawyer meeting.
+4. **Contractual reject flow (TD-068)** + **remove the TEMP tech-support box** (TD-066) + **TD-069** (STPM-flow
+   electives — user said don't touch yet).
 
-Gotchas: migrate-first via Supabase MCP (deploy does NOT run `migrate`); **check the model's `Meta.db_table` before
-any raw/MCP `ALTER` — `StudentProfile` is `api_student_profiles`, NOT the default `student_profiles` (a legacy 30-row
-`student_profiles` table also exists; v2.21.0's `ALTER` hit it by mistake and was corrected — TD-025)**; new tables
-need RLS (service-role-only pattern); `ADMIN_NOTIFY_EMAIL` is set on `halatuju-api` (the confirm + sponsor-interest emails depend on it);
-the JSON Gemini engines share `vision._call_gemini_json` and the prose ones (draft + refine) share
-`profile_engine._call_gemini_text` — mock the relevant seam in tests, never a live call in CI.
-Deferred: **Phase E** (real Sponsor model/auth/portal + `Sponsorship` M:N), **Phase F** (mentor), non-Google
-student login. Full history below under "Sprint History".
+Gotchas: migrate-first via Supabase MCP (deploy does NOT run `migrate`); **a new-model migration (like `0031`) needs
+the contenttypes/auth tables — applied via the TD-058 MCP workaround**; **check the model's `Meta.db_table` before
+any raw/MCP `ALTER` — `StudentProfile` is `api_student_profiles`, NOT the default (legacy 30-row `student_profiles`
+also exists — TD-025)**; new tables need RLS (service-role-only pattern, deny-by-default); **the sponsor serializer
+is an allowlist — never a denylist — so a new model field is invisible to sponsors until deliberately added**;
+`ADMIN_NOTIFY_EMAIL` on `halatuju-api` powers the confirm + sponsor-interest + sponsor-register emails; Gemini JSON
+engines share `vision._call_gemini_json`, prose ones share `profile_engine._call_gemini_text` — mock the seam, never
+a live call in CI.
+Deferred: **Phase E E2/E3** (anonymised pool → match→consent→sponsorship, lawyer-gated), **Phase F** (mentor),
+non-Google student login. Full history below under "Sprint History".
 
 ## Vision (post-shortlist interview-driven profile)
 

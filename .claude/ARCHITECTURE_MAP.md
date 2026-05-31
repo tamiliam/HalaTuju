@@ -222,6 +222,16 @@ soft signals to the verdict, mirroring the FE chip precedence. Served by `Docume
 (`GET …/documents/<pk>/help/`, own-doc scoped). **Structurally firewalled** — the engine receives only primitives,
 never an application/profile/score object (signature-asserted); it is the inverse wall to the admin-only gap-spotter.
 
+**Phase E — sponsor marketplace (E1, v2.22.0):** **Note the naming split** — `Sponsor` (the *account*: a
+self-registering, admin-vetted real user; model in `apps/scholarship/models.py`, table `sponsors`, migration
+`scholarship/0031`) is **distinct** from `SponsorProfile` (the AI-drafted *student* write-up sponsors will eventually
+read). Sponsor endpoints: `views_sponsor.py` (`SponsorMixin`, `/api/v1/sponsor/register/` + `/me/`, allowlist
+`SponsorSerializer`) and admin vetting in `views_admin.py` (`/api/v1/admin/sponsors/` list + `<id>/review/`).
+NRIC-gate middleware whitelists `/api/v1/sponsor/`. **Frontend:** `app/sponsor/page.tsx` (6-state portal shell) +
+`app/admin/sponsors/page.tsx` (vetting table); sponsor sign-in is a direct Google OAuth flagged by `KEY_SPONSOR_SIGNIN`
+(read by `app/auth/callback`) — **not** the student `AuthGateReason`/NRIC flow. E1 holds **zero student data**;
+anonymised browsing (E2) is lawyer-gated.
+
 **Frontend (Sprint 2):** `halatuju-web/src/app/scholarship/apply/page.tsx` (single front-door
 application form), `src/lib/scholarship.ts` (pure form helpers, node-tested in
 `src/lib/__tests__/scholarship.test.ts`), `submit/getMyScholarshipApplications` in `lib/api.ts`,

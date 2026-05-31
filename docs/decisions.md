@@ -1540,3 +1540,52 @@ is scheduled — then the sponsor entry points at the real flow.
 **Trade-offs:** Students who entered electives pre-fix won't see them auto-restored on the grades form (their grades are still in the DB, just not labelled as electives). A per-student manual fix is possible if needed.
 
 **Revisit if:** `stream_subjects` coverage rises enough (e.g. after a season of the updated onboarding) that a clean derivation becomes possible for the remaining unlabelled rows.
+
+## Sponsor sign-in via a dedicated one-shot flag, bypassing the student NRIC modal — Phase E Sprint E1 (v2.22.0), 2026-05-31
+
+**Decision:** A sponsor signs in with a **direct Google OAuth** from `/sponsor`, flagged by a one-shot
+`KEY_SPONSOR_SIGNIN` (sessionStorage) that `/auth/callback` reads to route back to `/sponsor`. It does **not** add a
+`'sponsor'` value to `AuthGateReason` and does **not** open `AuthGateModal`; it never sets `KEY_PENDING_AUTH_ACTION`.
+
+**Alternatives considered:** (1) Add a `'sponsor'` `AuthGateReason` and teach `AuthGateModal` to do Google sign-in but
+skip the NRIC-claim step for sponsors. (2) A full separate sponsor auth provider + isolated Supabase client (like the
+admin scope). (3) Direct Google OAuth + dedicated return flag (chosen).
+
+**Rationale:** The student auth flow (anonymous → Google → NRIC claim → resume pending action) is delicate and has
+been the subject of multiple bug-fix sprints; the shared `AuthProvider`'s resume effect opens the NRIC modal whenever
+`KEY_PENDING_AUTH_ACTION` is present after a non-anonymous login. Option 1 would weave a new branch through exactly
+that fragile modal. Option 2 is the right answer if/when sponsors need a fully isolated session (as admins do), but
+that's heavyweight for E1's shell. Option 3 reuses the existing single `AuthProvider` (a sponsor is just a
+non-anonymous Supabase user with no NRIC), and the isolated flag guarantees the student NRIC gate stays dormant for
+sponsors — the NRIC-gate **middleware** already whitelists `/api/v1/sponsor/`, so the backend is consistent.
+
+**Trade-offs:** A sponsor shares the student `AuthProvider`, so if a signed-in sponsor navigates to a *student* page,
+that page's own `showAuthGate` could prompt for NRIC — acceptable (they're a sponsor; they don't go there). If
+sponsors ever need true session isolation or a role-scoped client, promote to option 2.
+
+**Revisit if:** sponsors need an isolated auth client/session (security or multi-role), or a third login scope
+(Phase F mentor) makes a shared, generalised "post-login destination" mechanism worth building once.
+
+## Phase E Sprint E1 ships as a portal *shell* with no student data — Phase E Sprint E1 (v2.22.0), 2026-05-31
+
+**Decision:** E1 delivers only sponsor self-registration, admin vetting, and an approved-sponsor portal **shell**
+(an "browsing coming soon" panel). No anonymised student data, cards, or profiles are exposed; that is E2, gated on
+lawyer review.
+
+**Alternatives considered:** (1) Build sponsor accounts + a first cut of anonymised browsing together. (2) Defer the
+whole sponsor portal until the anonymisation/serializer work is ready. (3) Ship accounts + vetting as a standalone
+shell first (chosen).
+
+**Rationale:** The earlier "auth before its product is a door into an empty room" lesson said don't build a login
+with no destination. E1 gives the login exactly the minimum real destination — the sponsor's own account state and
+the admin's vetting queue — without touching any student data, so it ships freely (no PDPA exposure, no lawyer gate)
+while the load-bearing anonymisation work (allowlist card/profile serializers, generated sponsor-safe profile) gets
+its own focused, lawyer-gated sprint (E2). Bundling them would have put the safety-critical anonymisation under
+schedule pressure from the plumbing.
+
+**Trade-offs:** An approved sponsor briefly sees an empty shell (clearly labelled "coming soon"). The Phase-D
+`final_markdown` still has no reader (TD-067) until E2 wires it. Acceptable — the alternative risks rushing the
+anonymisation guarantees.
+
+**Revisit if:** never for the split itself; the open question (whether the sponsor reads `final_markdown` directly or
+an admin publishes a finalised version first) is settled in E2 per TD-067.
