@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
-import { formatPhone, formatAddress } from '@/lib/scholarship'
+import { formatPhone, formatAddress, isValidPhone } from '@/lib/scholarship'
 import {
   getScholarshipApplication,
   generateSponsorProfile,
@@ -239,6 +239,10 @@ export default function AdminScholarshipDetailPage() {
 
   const doAddReferee = async () => {
     if (!token || !refForm.name.trim()) return
+    // Referee phone is optional, but if given it must be a valid Malaysian number.
+    if (refForm.phone.trim() && !isValidPhone(refForm.phone)) {
+      setError(t('scholarship.apply.error.phone')); return
+    }
     setBusy('ref'); setError('')
     try {
       await addReferee(id, refForm, { token })
@@ -579,7 +583,7 @@ export default function AdminScholarshipDetailPage() {
             placeholder={t('admin.scholarship.refRole')} className="border rounded-lg px-2 py-1 text-sm" />
           <input value={refForm.relationship} onChange={(e) => setRefForm((f) => ({ ...f, relationship: e.target.value }))}
             placeholder={t('admin.scholarship.refRelationship')} className="border rounded-lg px-2 py-1 text-sm" />
-          <input value={refForm.phone} onChange={(e) => setRefForm((f) => ({ ...f, phone: e.target.value }))}
+          <input value={refForm.phone} onChange={(e) => setRefForm((f) => ({ ...f, phone: formatPhone(e.target.value) }))}
             placeholder={t('admin.scholarship.refPhone')} className="border rounded-lg px-2 py-1 text-sm" />
           <input value={refForm.email} onChange={(e) => setRefForm((f) => ({ ...f, email: e.target.value }))}
             placeholder={t('admin.scholarship.refEmail')} className="border rounded-lg px-2 py-1 text-sm sm:col-span-2" />

@@ -1141,6 +1141,7 @@
     "loginMethod": "Kaedah Log Masuk",
     "contactEmail": "Emel Hubungan",
     "contactPhone": "Telefon Hubungan",
+    "invalidPhone": "Sila masukkan nombor telefon yang sah, cth. 012-345 6789.",
     "verified": "Disahkan",
     "notVerified": "Belum disahkan",
     "verify": "Sahkan",

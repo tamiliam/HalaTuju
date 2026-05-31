@@ -15,6 +15,7 @@ import {
   sendVerificationEmail,
 } from '@/lib/api'
 import type { SavedCourseWithStatus } from '@/lib/api'
+import { isValidPhone, formatPhone } from '@/lib/scholarship'
 import AppHeader from '@/components/AppHeader'
 import { useToast } from '@/components/Toast'
 import { useOnboardingGuard } from '@/lib/useOnboardingGuard'
@@ -159,6 +160,12 @@ export default function ProfilePage() {
 
   const handleSave = async (): Promise<boolean> => {
     if (!token) return false
+    // Validate the contact phone (optional, but if given it must be a real Malaysian
+    // number — same rule as /apply: mobile 011=11 / other 01X=10 digits, landline 9-10).
+    if (contactPhone.trim() && !isValidPhone(contactPhone)) {
+      showToast(t('profile.invalidPhone'), 'error')
+      return false
+    }
     setSaving(true)
     try {
       await updateProfile({
@@ -505,8 +512,8 @@ export default function ProfilePage() {
                   <input
                     type="tel"
                     value={contactPhone}
-                    onChange={e => setContactPhone(e.target.value)}
-                    placeholder="+60 12-345 6789"
+                    onChange={e => setContactPhone(formatPhone(e.target.value))}
+                    placeholder="012-345 6789"
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
                   />
                   <p className="text-xs text-gray-400 mt-1">{t('profile.phoneVerifyNote')}</p>

@@ -1141,6 +1141,7 @@
     "loginMethod": "Login Method",
     "contactEmail": "Contact Email",
     "contactPhone": "Contact Phone",
+    "invalidPhone": "Please enter a valid phone number, e.g. 012-345 6789.",
     "verified": "Verified",
     "notVerified": "Not verified",
     "verify": "Verify",
