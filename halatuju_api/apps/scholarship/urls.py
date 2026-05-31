@@ -8,6 +8,7 @@ from .views import (
     ConsentView,
     CronRunView,
     DocumentDetailView,
+    DocumentHelpView,
     DocumentListCreateView,
     DocumentSignUploadView,
     RefereeListCreateView,
@@ -40,6 +41,7 @@ urlpatterns = [
     path('scholarship/documents/sign-upload/', DocumentSignUploadView.as_view()),
     path('scholarship/documents/', DocumentListCreateView.as_view()),
     path('scholarship/documents/<int:pk>/', DocumentDetailView.as_view()),
+    path('scholarship/documents/<int:pk>/help/', DocumentHelpView.as_view()),
     path('scholarship/referees/', RefereeListCreateView.as_view()),
     path('scholarship/consent/', ConsentView.as_view()),
     # Public sponsor-interest lead capture (no auth)

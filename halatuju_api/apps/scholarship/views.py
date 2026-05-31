@@ -334,6 +334,50 @@ class DocumentDetailView(APIView):
         return Response({'status': 'deleted'})
 
 
+class DocumentHelpView(APIView):
+    """GET a warm "Cikgu Gopal" helper message for one of the caller's documents.
+
+    Reacts to the document's already-decided soft verdict (mismatch / unreadable) with a
+    short, encouraging note that explains the fix — it never writes the student's answers
+    and never sees any admin/score data (the engine only receives doc-type + verdict +
+    first name). Soft by construction: nothing to help with → source 'none'; AI down or
+    throttled → source 'fallback' (the frontend shows pre-written copy keyed by `verdict`).
+    """
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def get(self, request, pk):
+        doc = ApplicantDocument.objects.filter(
+            pk=pk, application__profile_id=request.user_id,
+        ).select_related('application', 'application__profile').first()
+        if doc is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        from . import help_engine
+        verdict = help_engine.verdict_for_document(doc)
+        if not verdict:
+            return Response({'message': '', 'source': 'none'})
+
+        # Throttle the billable call (never block — decisions.md "throttle the AI").
+        # Per-application hourly cap via the default cache; degrade to the FE fallback copy.
+        from django.conf import settings as _settings
+        from django.core.cache import cache
+        from django.utils import timezone
+        cap = getattr(_settings, 'DOC_HELP_RATE_LIMIT_PER_HOUR', 20)
+        key = f'help_coach:{doc.application_id}:{timezone.now():%Y%m%d%H}'
+        if cache.get(key, 0) >= cap:
+            return Response({'message': '', 'source': 'fallback', 'verdict': verdict})
+        cache.set(key, cache.get(key, 0) + 1, 3600)
+
+        from .profile_engine import _resolve_language
+        language = _resolve_language(doc.application, request.query_params.get('lang'))
+        result = help_engine.generate_document_help(
+            doc.doc_type, verdict,
+            first_name=help_engine.first_name_of(doc), target_language=language,
+        )
+        result['verdict'] = verdict
+        return Response(result)
+
+
 class RefereeListCreateView(APIView):
     """GET list / POST add a referee for the caller's application."""
     permission_classes = [SupabaseIsAuthenticated]
