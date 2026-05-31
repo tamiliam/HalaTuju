@@ -14,6 +14,10 @@ from .views import (
     RefereeListCreateView,
     SponsorInterestView,
 )
+from .views_sponsor import (
+    SponsorMeView,
+    SponsorRegisterView,
+)
 from .views_admin import (
     AdminApplicationDetailView,
     AdminApplicationListView,
@@ -30,6 +34,8 @@ from .views_admin import (
     AdminRequestInfoView,
     AdminRunVisionView,
     AdminSponsorInterestView,
+    AdminSponsorListView,
+    AdminSponsorReviewView,
     AdminSuggestGapsView,
     AdminVerifyAcceptView,
 )
@@ -47,12 +53,19 @@ urlpatterns = [
     # Public sponsor-interest lead capture (no auth)
     path('sponsor-interest/', SponsorInterestView.as_view()),
 
+    # Phase E: sponsor accounts (authenticated self-registration + own status)
+    path('sponsor/register/', SponsorRegisterView.as_view()),
+    path('sponsor/me/', SponsorMeView.as_view()),
+
     # Internal cron — Cloud Scheduler runs whitelisted commands via a shared
     # secret header (X-Cron-Secret). Inert without the secret.
     path('internal/cron/<str:job>/', CronRunView.as_view()),
 
     # MyNadi admin (PartnerAdmin auth; /admin/ is NRIC-gate whitelisted)
     path('admin/sponsor-interest/', AdminSponsorInterestView.as_view()),
+    # Phase E: sponsor account vetting
+    path('admin/sponsors/', AdminSponsorListView.as_view()),
+    path('admin/sponsors/<int:pk>/review/', AdminSponsorReviewView.as_view()),
     path('admin/scholarship/assignable-admins/', AdminAssignableAdminsView.as_view()),
     path('admin/scholarship/applications/', AdminApplicationListView.as_view()),
     path('admin/scholarship/applications/<int:pk>/', AdminApplicationDetailView.as_view()),

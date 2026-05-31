@@ -662,3 +662,50 @@ class SponsorInterest(models.Model):
 
     def __str__(self):
         return f'SponsorInterest {self.email} ({self.status})'
+
+
+class Sponsor(models.Model):
+    """Phase E: a self-registered sponsor ACCOUNT (distinct from SponsorInterest,
+    the old public lead-capture). A sponsor signs in via Supabase Auth — like a
+    student — then registers here; an admin VETS them before they get any access
+    to the anonymised student pool ("open to apply, approved to browse").
+
+    Safety: a Sponsor never sees identifying student data (name/NRIC/address/phone/
+    email/photo) anywhere — the marketplace is permanently anonymous (P2P model).
+    This model only governs the sponsor's own account + vetting state.
+    """
+    STATUS = [
+        ('pending', 'Pending review'),   # self-registered, awaiting admin vetting
+        ('approved', 'Approved'),         # vetted — may browse the anonymised pool
+        ('rejected', 'Rejected'),         # vetting declined
+        ('suspended', 'Suspended'),       # access revoked after approval
+    ]
+    supabase_user_id = models.CharField(
+        max_length=100, unique=True,
+        help_text='Supabase Auth UID, set when the sponsor self-registers',
+    )
+    name = models.CharField(max_length=200)
+    email = models.EmailField()
+    organisation = models.CharField(max_length=200, blank=True, default='')
+    # Light KYC context for the admin vetting decision (who they are / why they
+    # want to sponsor). Never shown to students.
+    note = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS, default='pending')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.CharField(
+        max_length=254, blank=True, default='',
+        help_text='Email of the PartnerAdmin who vetted this sponsor',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'sponsors'
+        ordering = ['-created_at']
+
+    @property
+    def is_approved(self):
+        return self.status == 'approved'
+
+    def __str__(self):
+        return f'Sponsor {self.email} ({self.status})'

@@ -1,0 +1,77 @@
+# Phase E — Safeguarded Sponsor Marketplace (roadmap)
+
+**Status:** approved 2026-05-31. Sprint E1 in progress.
+**Supersedes** the one-line "Phase E (2 sprints)" entry in `post-shortlist-vision.md` — the
+safeguarded marketplace is one slice larger (3 sprints).
+
+## Product model (locked with user, 2026-05-31)
+
+A **P2P-style anonymous marketplace.** Sponsors discover and choose students to support, but
+**never** see anything that could identify a student — **no name, NRIC, street address, phone,
+email, or photo — ever, even after a match.** The platform holds the identity and intermediates
+(money will flow sponsor → programme → student in a later phase, keeping identity hidden end-to-end).
+
+Decisions:
+- **Sponsors self-register (open signup) but are admin-VETTED before any access** ("open to apply,
+  approved to browse"). No student data until a human approves the sponsor.
+- **Matching = sponsor browses & picks** (a marketplace), but only **anonymised** cards.
+- **Permanent anonymity**, enforced by an **allowlist** sponsor-facing serializer (never a denylist —
+  a new model field is invisible to sponsors until deliberately added). This is the load-bearing
+  safety property; dedicated tests assert no identifying field can leak.
+- **Sponsor-safe profile is GENERATED non-identifying, not scrubbed.** The Phase-D `final_markdown`
+  contains the student's name; for sponsors we generate a parallel anonymous profile via
+  `profile_engine` (fed only non-identifying inputs, instructed to say "the student"). Admin keeps
+  the named version; sponsor only ever sees the anonymous one.
+- **Consent = consent to the sponsorship arrangement**, not an identity reveal (there is none). For
+  minors, guardian consent. A profile only enters the pool when published + opted-in + consented.
+
+## Hard gates (cross-cutting)
+1. **Lawyer review before real-student exposure.** E1 has zero student data → ships freely. **E2/E3
+   may be built + tested on dummy data but must NOT go live to real students until the lawyer signs
+   off** (same review covering the consent text).
+2. **RLS + PDPA-minimal serializers on every new table** (service-role-only pattern, per
+   incident-001-rls). Migrate-first via Supabase MCP throughout. No PII in logs or anonymous views.
+
+## Lessons applied (from docs/lessons.md)
+- Mirror `PartnerAdmin` / `PartnerAdminMixin` for the sponsor auth scope (Supabase-user-id keyed).
+- **Check `Meta.db_table` before any raw/MCP SQL** — scholarship models use custom table names.
+- New tables need RLS (service-role pattern); apply migrate-first.
+- Frontend: hooks before any early return; one mockable seam for AI/external calls.
+- Allowlist > denylist for the sponsor serializer (safety).
+
+---
+
+## Sprint E1 — Sponsor accounts + admin vetting *(no student data)*
+- **Goal:** anyone can self-register as a sponsor → "pending approval" → an admin approves/rejects →
+  an approved sponsor logs into an (empty) portal shell. Zero student data exposed.
+- **Scope:** `Sponsor` model (supabase_user_id-keyed, status pending/approved/rejected/suspended) +
+  migration + RLS; `SponsorMixin` auth gate (mirror `PartnerAdminMixin`); self-signup + "my sponsor
+  status" endpoints; admin list/approve/reject endpoints + admin UI; sponsor portal shell (signup +
+  pending/approved states). i18n. Tests (auth gate, signup, approval transitions).
+- **Acceptance:** signup creates a *pending* sponsor; admin approval flips access; an unapproved
+  sponsor is blocked from any sponsor endpoint; tests green.
+- **Complexity:** Medium-High (new auth scope).
+
+## Sprint E2 — Student opt-in + anonymised discovery pool *(PDPA-critical)*
+- **Goal:** a student/guardian opts a published, consented profile into the pool; approved sponsors
+  browse anonymised cards with filters; a sponsor-safe anonymous profile is generated.
+- **Scope:** pool opt-in + share-consent model (guardian consent for minors); eligibility rule
+  (published + opted-in + consented); **allowlist anonymised card + profile serializers**;
+  sponsor-safe profile generation (`profile_engine`, non-identifying); sponsor browse/search
+  endpoint + UI; student opt-in toggle on /application. Migration + RLS.
+- **Acceptance:** only eligible students opt in; cards/profile leak **zero** identifying fields
+  (asserted); approved sponsors browse, unapproved can't.
+- **Complexity:** High (anonymisation correctness is load-bearing).
+
+## Sprint E3 — Match → consent → sponsorship + progress
+- **Goal:** sponsor expresses interest → student/guardian consents to the sponsorship → `Sponsorship`
+  created, app → `sponsored`, sponsor follows the **anonymous** profile + progress.
+- **Scope:** `Sponsorship` model; "express interest" endpoint; per-sponsor consent-to-sponsor request
+  + student approval screen; on consent → create Sponsorship + set status; sponsor "my students"
+  view (anonymous profile + status only); admin oversight of matches. Migration + RLS.
+- **Acceptance:** no sponsorship without consent; on consent the link exists + status flips; a sponsor
+  can never see a non-consented OR an identifying field (asserted); tests green.
+- **Complexity:** High.
+
+**Deferred (later phase):** money/pledges/disbursement, sponsor↔student messaging, progress feeds,
+multi-sponsor economics, mentor scope (Phase F).

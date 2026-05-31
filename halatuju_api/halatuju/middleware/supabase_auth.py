@@ -166,6 +166,7 @@ NRIC_GATE_EXACT = [
 ]
 NRIC_GATE_PREFIX = [
     '/api/v1/admin/',             # All admin endpoints (prefix match)
+    '/api/v1/sponsor/',          # Phase E: sponsor accounts (authenticated, but no NRIC — not students)
 ]
 
 

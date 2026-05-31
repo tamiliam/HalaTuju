@@ -17,7 +17,7 @@ from .anomaly_engine import detect_anomalies
 from .emails import send_request_info_email
 from .models import (
     ApplicantDocument, InterviewSession, Referee, ScholarshipApplication,
-    SponsorInterest, SponsorProfile,
+    Sponsor, SponsorInterest, SponsorProfile,
 )
 from .profile_engine import generate_sponsor_profile, refine_sponsor_profile
 from .serializers import ApplicantDocumentSerializer, RefereeSerializer
@@ -496,6 +496,51 @@ class AdminSponsorInterestView(_AdminBase):
              'message': r.message, 'status': r.status, 'created_at': r.created_at}
             for r in rows
         ]})
+
+
+def _sponsor_dict(s):
+    return {
+        'id': s.id, 'name': s.name, 'email': s.email, 'organisation': s.organisation,
+        'note': s.note, 'status': s.status, 'reviewed_at': s.reviewed_at,
+        'reviewed_by': s.reviewed_by, 'created_at': s.created_at,
+    }
+
+
+class AdminSponsorListView(_AdminBase):
+    """Phase E: GET .../admin/sponsors/[?status=pending] — self-registered sponsor
+    ACCOUNTS for vetting (distinct from the old sponsor-interest leads)."""
+    def get(self, request):
+        if not self.get_admin(request):
+            return self._deny()
+        qs = Sponsor.objects.all()
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return Response({'sponsors': [_sponsor_dict(s) for s in qs]})
+
+
+class AdminSponsorReviewView(_AdminBase):
+    """Phase E: POST .../admin/sponsors/<pk>/review/ {action: approve|reject|suspend}
+    — vet a sponsor account. Reviewer-gated; stamps who/when."""
+    _ACTION_STATUS = {'approve': 'approved', 'reject': 'rejected', 'suspend': 'suspended'}
+
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        sponsor = Sponsor.objects.filter(pk=pk).first()
+        if sponsor is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        new_status = self._ACTION_STATUS.get(request.data.get('action'))
+        if not new_status:
+            return Response({'error': 'bad_action'}, status=status.HTTP_400_BAD_REQUEST)
+        sponsor.status = new_status
+        sponsor.reviewed_at = timezone.now()
+        sponsor.reviewed_by = admin.email
+        sponsor.save(update_fields=['status', 'reviewed_at', 'reviewed_by', 'updated_at'])
+        return Response(_sponsor_dict(sponsor))
 
 
 class AdminAssignableAdminsView(_AdminBase):

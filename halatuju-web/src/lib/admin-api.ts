@@ -609,3 +609,27 @@ export async function deleteReferee(id: number, refId: number, options?: ApiOpti
     throw new Error(b.error || `Admin API error: ${res.status}`)
   }
 }
+
+// ── Phase E: sponsor account vetting ──
+export interface AdminSponsor {
+  id: number
+  name: string
+  email: string
+  organisation: string
+  note: string
+  status: 'pending' | 'approved' | 'rejected' | 'suspended'
+  reviewed_at: string | null
+  reviewed_by: string
+  created_at: string
+}
+
+export async function listSponsors(status?: string, options?: ApiOptions): Promise<{ sponsors: AdminSponsor[] }> {
+  const q = status ? `?status=${encodeURIComponent(status)}` : ''
+  return adminFetch(`/api/v1/admin/sponsors/${q}`, options)
+}
+
+export async function reviewSponsor(
+  id: number, action: 'approve' | 'reject' | 'suspend', options?: ApiOptions
+): Promise<AdminSponsor> {
+  return adminMutate(`/api/v1/admin/sponsors/${id}/review/`, 'POST', { action }, options)
+}

@@ -562,6 +562,33 @@ export async function syncProfile(
   })
 }
 
+// ── Phase E: sponsor account (self-registration + own status) ──
+export interface SponsorAccount {
+  registered?: false                 // present + false when the user hasn't registered
+  id?: number
+  name?: string
+  email?: string
+  organisation?: string
+  status?: 'pending' | 'approved' | 'rejected' | 'suspended'
+  is_approved?: boolean
+  created_at?: string
+}
+
+export async function getSponsorMe(options?: ApiOptions): Promise<SponsorAccount> {
+  return apiRequest('/api/v1/sponsor/me/', options)
+}
+
+export async function registerSponsor(
+  payload: { name: string; organisation?: string; note?: string },
+  options?: ApiOptions
+): Promise<SponsorAccount> {
+  return apiRequest('/api/v1/sponsor/register/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    ...options,
+  })
+}
+
 // STPM types
 export interface StpmEligibleCourse {
   course_id: string

@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from .models import (
     ApplicantDocument, Consent, FundingNeed, Referee, ScholarshipApplication,
-    SponsorInterest,
+    Sponsor, SponsorInterest,
 )
 
 
@@ -18,6 +18,17 @@ class SponsorInterestSerializer(serializers.ModelSerializer):
         if not (v or '').strip():
             raise serializers.ValidationError('Name is required.')
         return v.strip()
+
+
+class SponsorSerializer(serializers.ModelSerializer):
+    """Phase E: a sponsor's own account view (read-only). Drives the portal's
+    pending/approved/rejected state. Excludes internal vetting fields."""
+    is_approved = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = Sponsor
+        fields = ['id', 'name', 'email', 'organisation', 'status', 'is_approved', 'created_at']
+        read_only_fields = fields
 
 
 class ApplicationCreateSerializer(serializers.ModelSerializer):
