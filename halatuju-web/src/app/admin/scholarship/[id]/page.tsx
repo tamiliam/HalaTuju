@@ -479,7 +479,12 @@ export default function AdminScholarshipDetailPage() {
         )
       })()}
 
-      {/* Review & actions — interactive panels */}
+      {/* Review & actions — interactive panels. Hidden for rejected applicants:
+          they were declined before shortlisting, are out of the funnel, and will
+          never be interviewed/verified, so documents, referees, verify-accept,
+          interview capture and the sponsor profile are all irrelevant. The summary
+          cards above stay visible for record-keeping. */}
+      {app.status !== 'rejected' && (<>
       <GroupLabel>{t('admin.scholarship.reviewActions')}</GroupLabel>
       <div className="grid items-start gap-4 lg:grid-cols-2">
 
@@ -980,6 +985,7 @@ export default function AdminScholarshipDetailPage() {
         {error && <p className="text-red-600 text-sm">{error}</p>}
       </div>
       </div>
+      </>)}
     </div>
   )
 }
