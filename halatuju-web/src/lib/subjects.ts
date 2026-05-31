@@ -251,6 +251,12 @@ export const SPM_SUBJECTS: SpmSubject[] = [
   { id: 'voc_tailoring' },
 ]
 
+// Max elective/tambahan slots a student may add on the grades form. SPM has no
+// official subject cap and high achievers sit many (11+ A cases), so the form
+// allows up to 7 electives (the merit engine still scores only the best 2; the
+// rest persist for course-specific eligibility). Persisted in profile.elective_subjects.
+export const MAX_SPM_ELECTIVES = 7
+
 export const SPM_CORE_SUBJECTS = SPM_SUBJECTS.filter(s => s.core)
 export const SPM_STREAM_POOLS: Record<string, SpmSubject[]> = {
   science: SPM_SUBJECTS.filter(s => s.streams?.includes('science')),

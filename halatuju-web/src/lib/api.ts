@@ -81,6 +81,9 @@ export interface StudentProfile {
   // present, the merit engine uses these for the 30% Sec2 weight instead of
   // guessing the stream from the pools. Sent through to /eligibility/check/.
   stream_subjects?: string[]
+  // The SPM subjects picked as electives/tambahan — the durable record of which
+  // grade keys are electives, so the grades form survives a logout/login. Up to 7.
+  elective_subjects?: string[]
 }
 
 export interface EligibleCourse {
@@ -545,6 +548,7 @@ export interface SyncProfileData {
   muet_band?: number
   coq_score?: number
   stream_subjects?: string[]
+  elective_subjects?: string[]
 }
 
 export async function syncProfile(

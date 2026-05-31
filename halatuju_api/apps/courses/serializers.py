@@ -301,7 +301,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             # the page reads/writes household_* (this fixes that latent gap too).
             'household_income', 'household_size',
             'exam_type', 'stpm_grades', 'stpm_cgpa', 'muet_band', 'coq_score',
-            'spm_prereq_grades', 'stream_subjects', 'referral_source',
+            'spm_prereq_grades', 'stream_subjects', 'elective_subjects', 'referral_source',
             'contact_email', 'contact_phone',
         ]
         # NRIC only changes via the validated claim endpoint (/profile/claim-nric/),

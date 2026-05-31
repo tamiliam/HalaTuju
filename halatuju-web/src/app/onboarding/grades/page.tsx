@@ -12,6 +12,7 @@ import {
   SPM_CORE_SUBJECTS,
   SPM_STREAM_POOLS,
   SPM_ALL_ELECTIVE_SUBJECTS,
+  MAX_SPM_ELECTIVES,
 } from '@/lib/subjects'
 import { KEY_STREAM, KEY_ALIRAN, KEY_ELEKTIF, KEY_GRADES, KEY_PROFILE, KEY_MERIT } from '@/lib/storage'
 
@@ -183,7 +184,7 @@ export default function GradesInputPage() {
   }, [selectedAliranIds, locale])
 
   const addElektifSlot = () => {
-    if (elektifSlots.length < 2) {
+    if (elektifSlots.length < MAX_SPM_ELECTIVES) {
       setElektifSlots((prev) => [...prev, ''])
     }
   }
@@ -368,7 +369,7 @@ export default function GradesInputPage() {
                 onRemove={() => removeElektifSlot(index)}
               />
             ))}
-            {elektifSlots.length < 2 && (
+            {elektifSlots.length < MAX_SPM_ELECTIVES && (
               <button
                 onClick={addElektifSlot}
                 className="w-full py-3 rounded-xl border-2 border-dashed border-gray-300 text-gray-500 hover:border-primary-400 hover:text-primary-600 hover:shadow-sm transition-all text-sm font-medium"

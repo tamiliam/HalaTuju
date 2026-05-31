@@ -561,6 +561,15 @@ class StudentProfile(models.Model):
                   "engine uses these as the Sec2 (30% stream) candidates instead of "
                   "guessing the stream from the pools (TD-063). Empty = fall back to "
                   "the count-heuristic (existing/historical profiles).")
+    elective_subjects = models.JSONField(
+        default=list, blank=True,
+        help_text="The SPM subjects the student picked as electives/tambahan "
+                  "(e.g. ['ekonomi','poa']). The durable record of *which* subjects "
+                  "are electives — without it, the onboarding grades form can't "
+                  "reconstruct the elective selection after logout/login and drops "
+                  "those grades. Up to 7 (a student may sit many subjects). The merit "
+                  "engine still uses only the best 2 (Sec3, 10%); the rest persist for "
+                  "course-specific eligibility.")
     referral_source = models.CharField(
         max_length=50, blank=True, null=True,
         help_text='Raw referral code or chip value (e.g. cumig, whatsapp, google)',

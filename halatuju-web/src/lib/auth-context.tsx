@@ -12,7 +12,7 @@ import { getSession, getSupabase, signInAnonymously } from '@/lib/supabase'
 import { getProfile } from '@/lib/api'
 import type { StudentProfile } from '@/lib/api'
 import type { Session } from '@supabase/supabase-js'
-import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_PENDING_AUTH_ACTION } from '@/lib/storage'
+import { KEY_GRADES, KEY_PROFILE, KEY_QUIZ_SIGNALS, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE, KEY_PENDING_AUTH_ACTION, KEY_ALIRAN, KEY_ELEKTIF } from '@/lib/storage'
 
 export type AuthGateReason = 'quiz' | 'save' | 'report' | 'eligible' | 'profile' | 'loadmore' | 'apply' | null
 export type AuthStatus = 'loading' | 'anonymous' | 'needs-nric' | 'ready'
@@ -152,6 +152,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!profile) return
     if (profile.grades && Object.keys(profile.grades).length > 0) {
       localStorage.setItem(KEY_GRADES, JSON.stringify(profile.grades))
+    }
+    // Re-hydrate the stream/aliran + elective selections from the profile so the
+    // onboarding grades form can reconstruct which grade keys are stream vs elective
+    // after a logout/login. Without this, the form (which keys off these localStorage
+    // selections) drops the electives entirely — electives have no default fallback,
+    // unlike aliran which falls back to the stream pool.
+    if (Array.isArray(profile.stream_subjects) && profile.stream_subjects.length > 0) {
+      localStorage.setItem(KEY_ALIRAN, JSON.stringify(profile.stream_subjects))
+    }
+    if (Array.isArray(profile.elective_subjects) && profile.elective_subjects.length > 0) {
+      localStorage.setItem(KEY_ELEKTIF, JSON.stringify(profile.elective_subjects))
     }
     // Merge into the existing cached profile rather than overwriting it, so values
     // set elsewhere (notably the grades step's coqScore) survive a profile refresh.

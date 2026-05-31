@@ -1020,6 +1020,7 @@ class ProfileView(APIView):
             'coq_score': profile.coq_score,
             'spm_prereq_grades': profile.spm_prereq_grades,
             'stream_subjects': profile.stream_subjects,
+            'elective_subjects': profile.elective_subjects,
         })
 
     def put(self, request):

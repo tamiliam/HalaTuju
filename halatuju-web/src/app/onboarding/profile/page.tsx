@@ -8,7 +8,7 @@ import { useT } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth-context'
 import { getProfile, syncProfile, type SyncProfileData } from '@/lib/api'
 import ProgressStepper from '@/components/ProgressStepper'
-import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
+import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
 import { hasApplyReturn, clearApplyReturn, peekApplyStash } from '@/lib/scholarship'
 
 const MALAYSIAN_STATES = [
@@ -101,6 +101,14 @@ export default function ProfileInputPage() {
       const aliranStr = localStorage.getItem(KEY_ALIRAN)
       if (aliranStr) {
         try { syncPayload.stream_subjects = JSON.parse(aliranStr) } catch { /* ignore */ }
+      }
+
+      // Persist the elective picks too — the durable record of which subjects are
+      // electives, so the grades form can rebuild the selection after logout/login
+      // (without this the electives are dropped on reload). Up to 7.
+      const elektifStr = localStorage.getItem(KEY_ELEKTIF)
+      if (elektifStr) {
+        try { syncPayload.elective_subjects = JSON.parse(elektifStr) } catch { /* ignore */ }
       }
 
       // Include STPM data
