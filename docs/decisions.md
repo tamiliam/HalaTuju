@@ -1432,3 +1432,27 @@ is scheduled — then the sponsor entry points at the real flow.
 **Rationale:** A gap's question is dynamic (model-authored per applicant), so it can't be a fixed i18n string. But interview findings attach a verdict keyed by `code`, so the code must be stable across renders — hence slugify+dedupe+clamp in the engine. This lets the combined findings list merge anomalies (i18n label) and gaps (carried label) into one capture surface keyed uniformly by `code`, with no backend change to interview capture.
 
 **Revisit if:** gaps need to be translated for a non-admin audience → add a translation pass on the carried text, keyed by the stable `code`.
+
+## Phase D final profile is stored separate from the draft, gated on a submitted interview — v2.18.0, 2026-05-31
+
+**Decision:** The Phase-D refined profile lives in new `SponsorProfile.final_markdown`/`final_model_used`/`finalised_at` columns (not an overwrite of the draft), and `AdminFinaliseProfileView` only runs when a **submitted** `InterviewSession` exists.
+
+**Alternatives considered:** overwrite `draft_markdown` with the refined text (single field); or allow refining off a *draft* (unsubmitted) interview session.
+
+**Rationale:** Keeping draft + final separate means the admin can see what changed after the interview and the draft's existing edit/publish path stays untouched. Requiring a *submitted* interview ensures the findings feeding the v2 are final — a draft session's verdicts can still change, which would make the "final" profile a moving target.
+
+**Trade-offs:** The final profile currently has no edit/publish/reader path (TD-067) — it's an admin-visible artefact whose consumer (the sponsor) arrives in Phase E. We accept building the artefact ahead of its reader because it's cheap and the interview work would otherwise be lost; we do NOT build the reader yet (that would be a door into an empty room — see the sponsor-login decision).
+
+**Revisit if:** Phase E — decide whether the sponsor reads `final_markdown` directly or an admin reviews/edits/publishes it first (likely the latter; mirror the draft's edit+publish).
+
+## The raw prose Gemini call is one shared seam (`_call_gemini_text`) — v2.18.0, 2026-05-31
+
+**Decision:** Both `generate_sponsor_profile` (draft) and `refine_sponsor_profile` (Phase-D v2) route their model call through a single private `_call_gemini_text(prompt, target_language)` in `profile_engine.py`; the draft function was refactored onto it with no behaviour change.
+
+**Alternatives considered:** give the refine function its own inline cascade loop (copy of the draft's), as originally written.
+
+**Rationale:** Mirrors `vision._call_gemini_json` for the JSON engines — every prose AI call now mocks by patching one function, so CI has a single, reliable patch point and the model-cascade/error logic lives in one place. The original duplicate-loop approach also had no clean mock point (the draft imported the SDK locally), which is what surfaced the need.
+
+**Trade-offs:** One more indirection between the engine functions and the SDK — negligible.
+
+**Revisit if:** a future engine needs structured (JSON) prose output — then it belongs on the `_call_gemini_json` seam, not this one.

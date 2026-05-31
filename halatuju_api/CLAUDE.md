@@ -226,6 +226,16 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Project Status
 
+**v2.18.0 (2026-05-31) — Phase D: Gemini v2 profile refine.** Second Gemini pass: an admin-on-demand "Refine with
+interview findings (AI)" button takes the draft sponsor profile + the **submitted** `InterviewSession` (verdicts +
+rationales + 1–5 rubric + overall note) → a refined **final profile (v2)** (`SponsorProfile.final_markdown`/
+`final_model_used`/`finalised_at`, migration `0028`). Reviewer-gated (`AdminFinaliseProfileView`: 400 `no_draft`/
+`no_interview`, 503 on engine error); **no Gemini in any GET**. The raw model call is now a shared `_call_gemini_text`
+seam used by both the draft + refine functions. **Admin-facing only** — the sponsor consumer is gated on Phase E.
+**This closes the post-shortlist "three buckets": profile-generation (draft+refine), document-reading (Vision+doc-assist),
+interview-assist (deterministic+gap-spotter) are all functionally complete.** 1351 pytest + 163 jest. See
+`docs/retrospective-v2.18-phase-d-profile-refine.md`.
+
 **v2.17.0 (2026-05-31) — Gemini doc-assist + interview gap-spotter + consent-gating + supporting-doc OCR.**
 Composite post-shortlist sprint that **completes the three-engine gap model** (deterministic + Vision + Gemini):
 (1) consent is now a properly-gated final step (`consent_blockers` lists every unmet precondition; IC identity match);
@@ -296,34 +306,34 @@ incomplete profiles (no override) in `AdminVerifyAcceptView`; request-more-docs;
 preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **Out of scope (future): Phase D**
 (Gemini v2 refines profile with interview findings), **Phase E** (real sponsor portal + auth), **Phase F** (mentor).
 
-- 1340 backend tests, 163 frontend (jest) tests, 0 failures
+- 1351 backend tests, 163 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-05-31, post-Gemini-doc-assist+gap-spotter)
+## Next Sprint (as of 2026-05-31, post-Phase-D)
 
-Current state: v2.17.0 shipped (2026-05-31). The **three-engine gap model is now complete** — deterministic
-anomaly rules (Phase A) + Vision OCR (IC + supporting-doc soft checks) + **both Gemini pieces**: doc-assist
-(automatic on upload, **student-facing** self-correction; migration `0026`) and the interview **gap-spotter**
-(Phase B, admin-on-demand; migration `0027`). Consent is now a properly-gated final step (lists all blockers,
-IC identity match). 1340 pytest + 163 jest; golden masters intact. Migrations `0026`/`0027` applied migrate-first.
+Current state: v2.18.0 shipped (2026-05-31). **All three post-shortlist buckets are functionally complete** —
+profile-generation (draft `generate_sponsor_profile` + Phase-D refine `refine_sponsor_profile`), document-reading
+(Vision OCR + doc-assist), interview-assist (deterministic anomaly engine + Gemini gap-spotter). Phase D's final
+profile is **admin-facing only** until Phase E gives sponsors a portal. 1351 pytest + 163 jest; golden masters intact.
+Migrations through `0028` applied migrate-first.
 
 Pick one (recommended order):
-1. **User live-verify the two Gemini features** (recommended FIRST) — on the Elanjelian app (`admin@tamilfoundation.org`,
-   app 16): as the student, upload a salary slip / bill → student sees the soft "please check" chip + admin sees
-   extracted fields (~$0.001/upload); as a reviewer, click "Suggest interview gaps (AI)" → 3–6 gaps render + persist;
-   confirm a page load WITHOUT clicking fires no Gemini call (Cloud Run logs). Both shipped test-green, not click-tested.
-2. **Phase D** — second Gemini call: draft sponsor profile + `InterviewSession.findings` → refined "final" profile
-   (`profile_finalised_at`). Cheap/contained, reuses `profile_engine.py`. NOTE: its consumer (sponsor) is gated on
-   Phase E, so the refined artefact only reaches admins until then.
-3. **Tamil refine** — ~12 batches incl. all consent + Phase B/doc-assist strings; the consent text gates the lawyer meeting.
-4. **Remove the TEMP tech-support box** once testing is done (marked `TEMP` in code across /application steps).
+1. **User live-verify the post-shortlist AI features** (recommended FIRST) — on the Elanjelian app
+   (`admin@tamilfoundation.org`, app 16): doc-assist chip on a supporting-doc upload; gap-spotter "Suggest interview
+   gaps (AI)"; and now Phase D — draft a profile → submit an interview → "Refine with interview findings (AI)" →
+   the v2 panel populates. Confirm a page load WITHOUT clicking fires no Gemini call (Cloud Run logs). All test-green, not click-tested.
+2. **Phase E** — real Sponsor model + auth/portal + `Sponsorship` M:N; the sponsor reads the Phase-D **final** profile
+   (the artefact already exists, it just has no reader yet). Larger slice (2 sprints in the roadmap).
+3. **Tamil refine** — ~12 batches incl. consent + all post-shortlist AI strings; the consent text gates the lawyer meeting.
+4. **Remove the TEMP tech-support box** once testing is done (TD-066; marked `TEMP` in code across /application steps).
 
 Gotchas: migrate-first via Supabase MCP (deploy does NOT run `migrate`); new tables need RLS (service-role-only
 pattern); `ADMIN_NOTIFY_EMAIL` is set on `halatuju-api` (the confirm + sponsor-interest emails depend on it);
-both Gemini engines share the `vision._call_gemini_json` seam — mock it (`@patch`) in tests, never a live call in CI.
+the JSON Gemini engines share `vision._call_gemini_json` and the prose ones (draft + refine) share
+`profile_engine._call_gemini_text` — mock the relevant seam in tests, never a live call in CI.
 Deferred: **Phase E** (real Sponsor model/auth/portal + `Sponsorship` M:N), **Phase F** (mentor), non-Google
 student login. Full history below under "Sprint History".
 
