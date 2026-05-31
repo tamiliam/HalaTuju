@@ -208,6 +208,23 @@ export default function ScholarshipApplyPage() {
     []
   )
 
+  // Live-revalidate ONLY while an error is already showing (i.e. after a Continue/
+  // Submit attempt). As the student fixes fields, keep the red box in sync: update
+  // it to the current first outstanding field in this-or-an-earlier step, or clear
+  // it the moment the blocking error is resolved. We never surface a NEW error for a
+  // step they haven't tried to pass — same gate as goNext. The functional
+  // setError(prev===next?prev:next) bails on an unchanged value, so this can't loop.
+  // MUST stay above the early returns below (loading / sign-in gate) so the hook is
+  // unconditional — Rules of Hooks. (Computes the tab index from `tab` directly.)
+  useEffect(() => {
+    if (!error) return
+    const errKey = applyFormError(form, examType)
+    const next = errKey && TAB_ORDER.indexOf(ERROR_TAB[errKey] ?? 'personal') <= TAB_ORDER.indexOf(tab)
+      ? t(`scholarship.apply.error.${errKey}`)
+      : null
+    setError((prev) => (prev === next ? prev : next))
+  }, [form, examType, tab, error, t])
+
   // Edit/add results → run the full onboarding (grades, electives, co-curricular,
   // "a few more details"), then return here. Stash the in-progress edits first so
   // they survive the detour (the form only commits on submit).
@@ -387,20 +404,6 @@ export default function ScholarshipApplyPage() {
   }
   const goBack = () => { setError(null); setTab(TAB_ORDER[Math.max(tabIndex - 1, 0)]) }
 
-  // Live-revalidate ONLY while an error is already showing (i.e. after a Continue/
-  // Submit attempt). As the student fixes fields, keep the red box in sync: update
-  // it to the current first outstanding field in this-or-an-earlier step, or clear
-  // it the moment the blocking error is resolved. We never surface a NEW error here
-  // for a step they haven't tried to pass — same gate as goNext. The functional
-  // setError(prev===next?prev:next) bails on an unchanged value, so this can't loop.
-  useEffect(() => {
-    if (!error) return
-    const errKey = applyFormError(form, examType)
-    const next = errKey && TAB_ORDER.indexOf(ERROR_TAB[errKey] ?? 'personal') <= tabIndex
-      ? t(`scholarship.apply.error.${errKey}`)
-      : null
-    setError((prev) => (prev === next ? prev : next))
-  }, [form, examType, tabIndex, error, t])
 
   const ProfileBadge = (
     <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
