@@ -18,7 +18,7 @@ from .anomaly_engine import detect_anomalies
 from .emails import send_request_info_email
 from .models import (
     ApplicantDocument, InterviewSession, Referee, ScholarshipApplication,
-    Sponsor, SponsorInterest, SponsorProfile,
+    Sponsor, SponsorInterest, SponsorProfile, Sponsorship,
 )
 from .profile_engine import (
     generate_anonymous_profile, generate_sponsor_profile, refine_sponsor_profile,
@@ -602,6 +602,60 @@ class AdminSponsorReviewView(_AdminBase):
         sponsor.reviewed_by = admin.email
         sponsor.save(update_fields=['status', 'reviewed_at', 'reviewed_by', 'updated_at'])
         return Response(_sponsor_dict(sponsor))
+
+
+class AdminSetAwardAmountView(_AdminBase):
+    """Phase E3: POST .../applications/<pk>/award-amount/ {amount} — set (or clear,
+    with null/blank) the admin-approved award amount a sponsor funds in full.
+    Reviewer-gated. Gates fundability + shows on the anonymised pool card."""
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        from decimal import Decimal, InvalidOperation
+        raw = request.data.get('amount')
+        try:
+            amount = Decimal(str(raw)) if raw not in (None, '') else None
+        except (InvalidOperation, TypeError):
+            return Response({'error': 'invalid_amount'}, status=status.HTTP_400_BAD_REQUEST)
+        if amount is not None and amount <= 0:
+            return Response({'error': 'invalid_amount'}, status=status.HTTP_400_BAD_REQUEST)
+        app.award_amount = amount
+        app.save(update_fields=['award_amount'])
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+def _sponsorship_dict(s):
+    profile = getattr(s.application, 'profile', None)
+    return {
+        'id': s.id, 'status': s.status, 'amount': str(s.amount),
+        'offered_at': s.offered_at, 'accept_deadline': s.accept_deadline, 'decided_at': s.decided_at,
+        # Admin oversight sees BOTH sides (not anonymised) — this is the back office.
+        'sponsor': {'id': s.sponsor_id, 'name': s.sponsor.name, 'email': s.sponsor.email},
+        'application': {
+            'id': s.application_id,
+            'name': (getattr(profile, 'name', '') or '') if profile else '',
+            'ref': pool.pool_ref(s.application_id),
+        },
+    }
+
+
+class AdminSponsorshipListView(_AdminBase):
+    """Phase E3: GET .../admin/sponsorships/[?status] — oversight of all matches
+    (sponsor ↔ student + amount + status)."""
+    def get(self, request):
+        if not self.get_admin(request):
+            return self._deny()
+        qs = Sponsorship.objects.select_related('sponsor', 'application', 'application__profile')
+        st = request.query_params.get('status')
+        if st:
+            qs = qs.filter(status=st)
+        return Response({'sponsorships': [_sponsorship_dict(s) for s in qs]})
 
 
 class AdminAssignableAdminsView(_AdminBase):

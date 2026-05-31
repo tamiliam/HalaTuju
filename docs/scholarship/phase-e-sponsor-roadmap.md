@@ -89,7 +89,24 @@ Decisions:
   (asserted); approved sponsors browse, unapproved can't.
 - **Complexity:** High (anonymisation correctness is load-bearing).
 
-## Sprint E3 — Match → consent → sponsorship + progress
+## Sprint E3 — Match → consent → sponsorship
+**REDESIGNED 2026-06-01 (with the user) into a wallet/donation model — supersedes the "express interest" sketch below.**
+A sponsor **donates** into myNADI (final, never a bank refund) → spendable balance = donations − holding allocations.
+The sponsor **funds a student IN FULL** for an admin-set **award amount** (1:1, full-or-nothing for now; many-sponsor
+plumbing underneath) → award → the student/guardian **accepts** within a deadline → `Sponsorship` active, app
+`sponsored`. Decline/lapse → the amount returns to the sponsor's balance (no money leaves myNADI). Anonymity holds
+**both ways** (the student never sees the sponsor either — user's call). Money is a ledger; real toyyibPay + disbursement
++ tranches are a later, lawyer+gateway-gated slice.
+
+- **E3a ✅ DONE (v2.26.0, 2026-06-01) — BACKEND, dummy data, mocked money, dark.** `Donation` + `Sponsorship` models
+  (migration `0034`, migrate-first) + `award_amount` + `sponsored` status. `sponsorship.py`: `sponsor_balance` /
+  `is_fundable` / `fund_student` / `respond_to_award` (guardian gate, reuses `record_consent`) / `lapse_expired_offers`.
+  Endpoints: sponsor wallet/donate(mock)/fund/sponsorships/cancel (flag+approved gated); student `scholarship/award/`
+  GET+accept/decline; admin award-amount + `admin/sponsorships/` oversight. **Allowlist both ways, leak-tested.** Pool
+  excludes sponsored. +17 tests. **▶ E3b/E3c (TD-075):** real toyyibPay + disbursement + tranche schedule + lapse cron
+  + the frontend. Lawyer reviews the donation/award terms before any real money.
+
+### (Superseded sketch — kept for history)
 - **Goal:** sponsor expresses interest → student/guardian consents to the sponsorship → `Sponsorship`
   created, app → `sponsored`, sponsor follows the **anonymous** profile + progress.
 - **Scope:** `Sponsorship` model; "express interest" endpoint; per-sponsor consent-to-sponsor request

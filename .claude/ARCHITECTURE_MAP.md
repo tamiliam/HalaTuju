@@ -262,6 +262,19 @@ the generated anon blurb via `react-markdown`). Admin: a teal "Anonymous profile
 `generateAnonProfile`/`publishAnonProfile` (`lib/admin-api.ts`); `getSponsorPool`/`getSponsorPoolDetail` in
 `lib/api.ts`. i18n `sponsorPool.*` + `admin.scholarship.anonProfile.*`.
 
+**Phase E3a — sponsor wallet + match/consent (v2.26.0, backend, mocked money, flag-gated).** Money is a **ledger, not
+custody**: `Donation` (sponsor donates into myNADI — final, no bank refund) + `Sponsorship` (allocation: offered →
+active/lapsed/cancelled). `apps/scholarship/sponsorship.py` is the service layer — `sponsor_balance` = donations −
+holding allocations; `is_fundable`/`fund_student` (1:1 full-or-nothing, DB partial-unique `uniq_holding_sponsorship_per_app`);
+`respond_to_award` (accept/decline; minor → guardian gate, reuses `services.record_consent` with
+`consent_type='consent_to_sponsorship'`); `lapse_expired_offers`. `ScholarshipApplication.award_amount` (admin-set,
+gates fundability, on the pool card) + new `sponsored` status (excluded from the pool). **Anonymity both ways:**
+`SponsorSponsorshipSerializer` shows the anon student card (no identity); `StudentAwardSerializer` has **no sponsor
+field**; admin `_sponsorship_dict` (back office) sees both. Endpoints: sponsor wallet/donate(MOCK)/fund/sponsorships/
+cancel (`views_sponsor.py`, flag+approved gated); student `scholarship/award/` (`views.py` `StudentAwardView`); admin
+award-amount + `admin/sponsorships/` (`views_admin.py`). Migration `0034` (new `sponsor_donations`+`sponsorships`
+tables + RLS, migrate-first). **Real toyyibPay + disbursement + tranches = TD-075 (later, lawyer+gateway-gated).**
+
 **Three isolated Supabase clients + the PKCE invariant (v2.23.1):** student `getSupabase` (default storage key, mounted
 globally via `app/providers.tsx`), `getAdminSupabase` (`halatuju_admin_session`, mounted under `/admin/*`), and
 `getSponsorSupabase` (`halatuju_sponsor_session`, mounted under `/sponsor/*`). **All three set `flowType: 'pkce'` — this

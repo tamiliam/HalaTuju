@@ -63,9 +63,13 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     academic = serializers.SerializerMethodField()
     funding_categories = serializers.SerializerMethodField()
     programme_months = serializers.SerializerMethodField()
+    award_amount = serializers.SerializerMethodField()  # E3: admin-set; non-identifying
 
     def get_ref(self, app):
         return pool.pool_ref(app.id)
+
+    def get_award_amount(self, app):
+        return str(app.award_amount) if app.award_amount is not None else None
 
     def get_state(self, app):
         # State-level region only — street/postcode/city are never exposed.
@@ -94,6 +98,31 @@ class SponsorPoolDetailSerializer(SponsorPoolCardSerializer):
     def get_anon_profile(self, app):
         sp = getattr(app, 'sponsor_profile', None)
         return (sp.anon_markdown or '') if sp else ''
+
+
+class SponsorSponsorshipSerializer(serializers.Serializer):
+    """Phase E3 — a sponsor's own allocation: the ANONYMISED student card + the
+    money/status only. Allowlist: the student is the anon card, never identity."""
+    id = serializers.IntegerField(read_only=True)
+    status = serializers.CharField(read_only=True)
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    offered_at = serializers.DateTimeField(read_only=True)
+    accept_deadline = serializers.DateTimeField(read_only=True)
+    decided_at = serializers.DateTimeField(read_only=True)
+    student = serializers.SerializerMethodField()
+
+    def get_student(self, sponsorship):
+        return SponsorPoolCardSerializer(sponsorship.application).data
+
+
+class StudentAwardSerializer(serializers.Serializer):
+    """Phase E3 — a student's award offer: amount + deadline + status only.
+    Allowlist: NO sponsor field — the student never sees who the sponsor is."""
+    id = serializers.IntegerField(read_only=True)
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    status = serializers.CharField(read_only=True)
+    offered_at = serializers.DateTimeField(read_only=True)
+    accept_deadline = serializers.DateTimeField(read_only=True)
 
 
 class ApplicationCreateSerializer(serializers.ModelSerializer):

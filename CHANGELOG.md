@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.26.0] — Phase E Sprint E3a: sponsor wallet + match/consent (backend, no real money) (2026-06-01)
+
+- **The sponsorship match — a sponsor funds an anonymous student, the student/guardian accepts.** Built on dummy data,
+  behind the pool flag; **no real money is touched** — donations are mocked (no toyyibPay), and disbursement + tranches
+  are later, gated slices. Money is modelled as a **ledger**, never a custody/refund flow.
+  - **Wallet (donation) model:** a sponsor **donates** into myNADI (final — never a bank refund); their spendable
+    **balance = total donations − allocations that still hold** (`Donation` + `Sponsorship`; `sponsorship.sponsor_balance`).
+    A lapsed/cancelled allocation simply stops holding, so the amount returns to the balance to redirect — exactly the
+    behaviour the user described, with no money leaving myNADI.
+  - **Match flow (1:1, full-or-nothing for now; many-sponsor plumbing underneath):** an admin sets the
+    `ScholarshipApplication.award_amount`; a sponsor with enough balance **funds in full** → an `offered` `Sponsorship`
+    (award letter point) → the student (or **guardian** for under-18s, reusing the share-consent guardian gate) **accepts**
+    within a deadline → `active`, app → new **`sponsored`** status, and the student **leaves the pool**; decline/lapse →
+    the amount returns to the sponsor's balance. A DB partial-unique constraint enforces one holding sponsor per student.
+  - **Anonymity holds BOTH ways (and is tested):** the sponsor's view of their allocation leaks no student
+    name/NRIC/email/phone (allowlist card); the student's award view has **no sponsor field at all**. Admin oversight
+    (back office) sees both sides.
+  - **Endpoints:** sponsor `wallet` · `wallet/donate` (MOCK) · `pool/<id>/fund` · `sponsorships` · `cancel`
+    (flag + approved-sponsor gated); student `scholarship/award/` GET + accept/decline (guardian-gated); admin
+    `applications/<id>/award-amount/` + `admin/sponsorships/` oversight. **Migration `0034`** (additive `award_amount`
+    + new `sponsor_donations` + `sponsorships` tables + RLS, applied migrate-first via Supabase MCP, prod-verified).
+  - +17 tests (`test_sponsorship.py`); 1452 pytest + 183 jest. **Deferred (TD-075):** real toyyibPay donation-in +
+    disbursement-out + the tranche schedule (RM ×N with progress-gated release/withhold) + the lapse cron + partial /
+    multi-sponsor funding. See `docs/retrospective-v2.26-sponsorship-e3a.md`.
+
 ## [2.25.1] — Anon-profile pre-publish identifier scan (TD-074b) (2026-06-01)
 
 - **The anonymous sponsor blurb's anonymity is now structural, not just model-trust + human-review.** The blurb is

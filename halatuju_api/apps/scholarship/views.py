@@ -19,7 +19,9 @@ from .serializers import (
     RefereeSerializer,
     SignUploadSerializer,
     SponsorInterestSerializer,
+    StudentAwardSerializer,
 )
+from . import sponsorship as sponsorship_service
 from .emails import send_sponsor_interest_admin_email
 from .services import (
     CONSENT_VERSION,
@@ -571,3 +573,49 @@ class CronRunView(APIView):
             logging.getLogger(__name__).warning('Cron job %s failed: %s', job, e, exc_info=True)
             return Response({'job': job, 'error': str(e)[:300]}, status=status.HTTP_200_OK)
         return Response({'job': job, 'output': out.getvalue()[:2000]})
+
+
+def _award_application(user_id):
+    """The caller's application that currently has an OFFERED award (independent of
+    the editable-funnel scoping — an awardable student may be at 'accepted')."""
+    return (
+        ScholarshipApplication.objects
+        .filter(profile_id=user_id, sponsorships__status='offered')
+        .select_related('profile').distinct().first()
+    )
+
+
+class StudentAwardView(APIView):
+    """Phase E3 — the student's award offer. GET the current offer; POST to accept
+    or decline it. The sponsor's identity is never exposed (allowlist). For a minor,
+    a guardian must accept (name + NRIC + relationship), mirroring share-consent."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def get(self, request):
+        app = _award_application(request.user_id)
+        offer = sponsorship_service.current_offer(app) if app else None
+        return Response({
+            'offer': StudentAwardSerializer(offer).data if offer else None,
+            'is_minor': is_minor(app.profile) if (app and app.profile) else False,
+        })
+
+    def post(self, request):
+        app = _award_application(request.user_id)
+        if app is None:
+            return Response({'error': 'no_offer'}, status=status.HTTP_403_FORBIDDEN)
+        action = request.data.get('action')
+        if action not in ('accept', 'decline'):
+            return Response({'error': 'bad_action'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            sponsorship = sponsorship_service.respond_to_award(
+                app, action=action,
+                locale=request.data.get('locale', 'en'),
+                granted_by=request.data.get('granted_by', 'self'),
+                guardian_name=request.data.get('guardian_name', '') or '',
+                guardian_relationship=request.data.get('guardian_relationship', '') or '',
+                guardian_nric=request.data.get('guardian_nric', '') or '',
+                ip=request.META.get('REMOTE_ADDR'),
+            )
+        except sponsorship_service.SponsorshipError as e:
+            return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(StudentAwardSerializer(sponsorship).data)

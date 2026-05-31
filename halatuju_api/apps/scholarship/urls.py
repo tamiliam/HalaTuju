@@ -13,16 +13,24 @@ from .views import (
     DocumentSignUploadView,
     RefereeListCreateView,
     SponsorInterestView,
+    StudentAwardView,
 )
 from .views_sponsor import (
+    SponsorCancelOfferView,
+    SponsorDonateView,
+    SponsorFundView,
     SponsorMeView,
     SponsorPoolDetailView,
     SponsorPoolListView,
     SponsorRegisterView,
+    SponsorSponsorshipsView,
+    SponsorWalletView,
 )
 from .views_admin import (
     AdminApplicationDetailView,
     AdminApplicationListView,
+    AdminSetAwardAmountView,
+    AdminSponsorshipListView,
     AdminApplicationRefereeView,
     AdminAssignableAdminsView,
     AdminGenerateAnonProfileView,
@@ -54,6 +62,8 @@ urlpatterns = [
     path('scholarship/documents/<int:pk>/help/', DocumentHelpView.as_view()),
     path('scholarship/referees/', RefereeListCreateView.as_view()),
     path('scholarship/consent/', ConsentView.as_view()),
+    # Phase E3: the student's award offer (accept/decline; guardian-gated for minors)
+    path('scholarship/award/', StudentAwardView.as_view()),
     # Public sponsor-interest lead capture (no auth)
     path('sponsor-interest/', SponsorInterestView.as_view()),
 
@@ -62,6 +72,12 @@ urlpatterns = [
     path('sponsor/me/', SponsorMeView.as_view()),
     path('sponsor/pool/', SponsorPoolListView.as_view()),
     path('sponsor/pool/<int:pk>/', SponsorPoolDetailView.as_view()),
+    # Phase E3: wallet + funding (flag + approved-sponsor gated)
+    path('sponsor/wallet/', SponsorWalletView.as_view()),
+    path('sponsor/wallet/donate/', SponsorDonateView.as_view()),
+    path('sponsor/pool/<int:pk>/fund/', SponsorFundView.as_view()),
+    path('sponsor/sponsorships/', SponsorSponsorshipsView.as_view()),
+    path('sponsor/sponsorships/<int:pk>/cancel/', SponsorCancelOfferView.as_view()),
 
     # Internal cron — Cloud Scheduler runs whitelisted commands via a shared
     # secret header (X-Cron-Secret). Inert without the secret.
@@ -72,6 +88,9 @@ urlpatterns = [
     # Phase E: sponsor account vetting
     path('admin/sponsors/', AdminSponsorListView.as_view()),
     path('admin/sponsors/<int:pk>/review/', AdminSponsorReviewView.as_view()),
+    # Phase E3: match oversight + set the award amount
+    path('admin/sponsorships/', AdminSponsorshipListView.as_view()),
+    path('admin/scholarship/applications/<int:pk>/award-amount/', AdminSetAwardAmountView.as_view()),
     path('admin/scholarship/assignable-admins/', AdminAssignableAdminsView.as_view()),
     path('admin/scholarship/applications/', AdminApplicationListView.as_view()),
     path('admin/scholarship/applications/<int:pk>/', AdminApplicationDetailView.as_view()),

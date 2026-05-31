@@ -19,6 +19,8 @@ ALTER TABLE referees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE consents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sponsor_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sponsors ENABLE ROW LEVEL SECURITY;          -- Phase E (migration 0031)
+ALTER TABLE sponsor_donations ENABLE ROW LEVEL SECURITY; -- Phase E3 (migration 0034)
+ALTER TABLE sponsorships ENABLE ROW LEVEL SECURITY;      -- Phase E3 (migration 0034)
 
 -- No GRANTs / policies for anon or authenticated roles: direct PostgREST access
 -- is intentionally denied. If a future sprint needs direct client reads (e.g. a

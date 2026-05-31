@@ -101,6 +101,7 @@ class ScholarshipApplication(models.Model):
         ('interviewing', 'Interviewing'),           # an interview session has been started
         ('interviewed', 'Interviewed'),             # interview captured + submitted
         ('accepted', 'Accepted'),      # admin verified & accepted (S11a) — confirmed for award
+        ('sponsored', 'Sponsored'),    # Phase E3: a sponsor's award was accepted — student leaves the pool
         ('rejected', 'Rejected'),
         ('withdrawn', 'Withdrawn'),
     ]
@@ -137,6 +138,9 @@ class ScholarshipApplication(models.Model):
         help_text="Consent to be contacted about this application "
                   "(sponsor-sharing consent is collected later)",
     )
+    # Phase E3: the admin-approved award amount a sponsor funds in full. Non-identifying;
+    # shown on the anonymised pool card. Null until an admin sets it (gates fundability).
+    award_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     # ── Plans + Support intake (Sprint 7, apply-form rebuild) ──────────────────
     # Collected at apply; drive the sponsor profile + mentoring. Some feed the
@@ -726,3 +730,84 @@ class Sponsor(models.Model):
 
     def __str__(self):
         return f'Sponsor {self.email} ({self.status})'
+
+
+class Donation(models.Model):
+    """Phase E3: money a sponsor donates into myNADI (via toyyibPay; mocked until
+    the gateway is wired). A donation is FINAL — it is myNADI's money. It credits
+    the sponsor's internal **directed-giving balance** (donations − active
+    allocations); the sponsor can only redirect that balance within the platform,
+    never withdraw it to a bank. Outbound disbursement is a later, gated phase."""
+    sponsor = models.ForeignKey(
+        Sponsor, on_delete=models.CASCADE, related_name='donations',
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    # toyyibPay billCode/ref once real; 'mock' for dev/dummy donations.
+    reference = models.CharField(max_length=100, blank=True, default='mock')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'sponsor_donations'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Donation {self.amount} by sponsor={self.sponsor_id}'
+
+
+class Sponsorship(models.Model):
+    """Phase E3: a sponsor's ALLOCATION of their donated balance to one (anonymous)
+    student, for that student's admin-set award amount.
+
+    Flow (1:1, full-or-nothing for now; many-sponsor plumbing underneath):
+    sponsor funds in full → 'offered' (award letter issued) → student/guardian
+    accepts within the deadline → 'active' (app → 'sponsored', leaves the pool);
+    if not accepted in time → 'lapsed' and the amount returns to the sponsor's
+    balance (a lapsed/cancelled allocation simply stops being subtracted — no
+    bank refund). **Anonymity holds both ways:** the sponsor never sees the
+    student's identity (allowlist card/blurb), and the student never sees the
+    sponsor's identity (decided with the user). No tranches/disbursement this
+    slice — that is E3b."""
+    STATUS = [
+        ('offered', 'Offered'),     # funded in full; award letter issued; awaiting acceptance
+        ('active', 'Active'),        # student/guardian accepted; the match is live
+        ('lapsed', 'Lapsed'),        # not accepted in time → amount returned to balance
+        ('cancelled', 'Cancelled'),  # sponsor withdrew the offer before acceptance
+    ]
+    # Allocations that still hold the sponsor's balance (subtracted from donations).
+    HOLDING = ('offered', 'active')
+
+    sponsor = models.ForeignKey(
+        Sponsor, on_delete=models.CASCADE, related_name='sponsorships',
+    )
+    application = models.ForeignKey(
+        ScholarshipApplication, on_delete=models.CASCADE, related_name='sponsorships',
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS, default='offered')
+    # The consent recorded when the student/guardian accepted. Null until accepted —
+    # a Sponsorship is never 'active' without one.
+    consent = models.ForeignKey(
+        Consent, on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+    )
+    accept_deadline = models.DateTimeField(null=True, blank=True)
+    offered_at = models.DateTimeField(auto_now_add=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'sponsorships'
+        ordering = ['-offered_at']
+        constraints = [
+            # 1 sponsor per student (for now): at most one HOLDING (offered/active)
+            # sponsorship per application.
+            models.UniqueConstraint(
+                fields=['application'], condition=models.Q(status__in=['offered', 'active']),
+                name='uniq_holding_sponsorship_per_app'),
+        ]
+
+    @property
+    def is_active(self):
+        return self.status == 'active'
+
+    def __str__(self):
+        return f'Sponsorship #{self.id} sponsor={self.sponsor_id} app={self.application_id} {self.amount} ({self.status})'

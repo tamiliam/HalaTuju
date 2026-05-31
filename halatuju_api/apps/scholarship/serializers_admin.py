@@ -170,6 +170,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'family_context', 'daily_life', 'consent_to_contact',
             'declaration_name', 'declared_at',
             'status', 'bucket', 'shortlist_reason', 'submitted_at',
+            # Phase E3: admin-set award amount (gates fundability; shown on the pool card)
+            'award_amount',
             # Rejection bucket (merit/need/ineligible/interview/contractual) + stamps
             'rejection_category', 'rejected_at', 'rejected_by',
             # Phase C handoff + interview funnel

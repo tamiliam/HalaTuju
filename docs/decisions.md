@@ -1736,3 +1736,36 @@ shell (not an error), and the admin card simply shows no published-to-pool state
 ships to prod dark behind the single env flag, and flipping it lights up backend + frontend together. The browse grid
 + `/sponsor/pool/[id]` detail + admin Generate/Publish-anon controls were built mirroring existing patterns (user
 chose this over a Stitch round-trip, since the card grid + the admin card are low-novelty reuses).
+
+## Sponsor wallet = final donations + an internal directed-giving ledger (E3) — Phase E Sprint E3a (v2.26.0), 2026-06-01
+
+**Decision:** A sponsor's money is a **donation to myNADI** (final — never refundable to a bank), recorded as a
+`Donation`. Their spendable **balance = total donations − allocations that still hold** (offered/active
+`Sponsorship`s) — a ledger, not a mutable balance field. A sponsor funds a student **in full** for the admin-set
+`award_amount` (1:1, full-or-nothing for now; the per-sponsor-allocation shape is the many-sponsor plumbing for later).
+The student (or guardian for a minor) **accepts** within a deadline → `active`, app `sponsored`. Decline/lapse/cancel →
+the allocation stops holding, so the amount is back in the sponsor's balance to **redirect within the platform** — no
+money leaves myNADI. **Anonymity holds both ways** (the student never sees the sponsor either). E3a touches **no real
+money**: donations are mocked; toyyibPay (in) + disbursement (out) + tranches are a later, lawyer + gateway-gated slice.
+
+**Alternatives considered:** (1) Escrow: hold each sponsor's money and **refund to bank** on a timeout (rejected — that
+is third-party fund custody, regulated; the user reframed it away). (2) A mutable `balance` field debited/credited with
+refund transactions (rejected — drift + audit pain; a ledger is cleaner). (3) Many-sponsor partial crowdfunding with a
+funding deadline now (deferred by the user — avoids the "some-but-not-enough" + time-box complexity). (4) Sponsor
+visible to the student (rejected by the user — platform intermediates both sides). (5) Real toyyibPay + disbursement in
+this sprint (deferred — needs the lawyer's sign-off on the donation/award terms + a gateway account).
+
+**Rationale:** Framing money as a *final donation* + an *internal ledger* turns the regulated "hold + refund" problem
+into bookkeeping: the only real-money events are the inbound donation (later) and the outbound disbursement (later,
+human-gated), and "return to balance" is just a status change. The 1:1 full-or-nothing rule removes the time-boxed wait
+and partial-funding edge cases while keeping the data shape (per-sponsor allocation amounts summing toward an amount)
+open to many-sponsor later. Mocking money lets the whole flow + its anonymity guarantees land and be tested on dummy
+data, with the regulated rails as a clean follow-on. Acceptance reuses the existing `is_minor` + `record_consent`
+guardian gate.
+
+**Trade-offs:** The donate endpoint is a stub until toyyibPay is wired (TD-075a); there are no tranches yet (one block;
+TD-075b); the lapse cron isn't scheduled (TD-075c); award/decline emails aren't sent (TD-075e). The donation's
+finality (no bank refund) must be explicit in the donation terms + the lawyer's brief.
+
+**Revisit if:** the lawyer requires a different fund-flow or refund policy; or scale needs partial/multi-sponsor
+funding, tranche disbursement, or the 2-year reallocation window (TD-075).

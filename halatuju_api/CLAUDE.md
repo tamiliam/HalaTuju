@@ -226,6 +226,20 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Project Status
 
+**v2.26.0 (2026-06-01) — Phase E Sprint E3a: sponsor wallet + match/consent (backend, NO real money).** On dummy
+data, behind the pool flag; donations are **mocked** (no toyyibPay), disbursement + tranches are later gated slices,
+money is a **ledger** not custody. **Wallet:** sponsor donates into myNADI (final, never a bank refund); balance =
+donations − holding allocations (`sponsorship.py` `sponsor_balance`/`fund_student`/`respond_to_award`/`lapse_expired_offers`;
+`Donation` + `Sponsorship` models). **Match (1:1 full-or-nothing, many-sponsor plumbing underneath):** admin sets
+`ScholarshipApplication.award_amount` → sponsor funds in full → `offered` → student/**guardian** accepts → `active`,
+app → new **`sponsored`** status, leaves the pool; decline/lapse → amount back to balance. DB partial-unique = one
+holding sponsor per student. **Anonymity both ways, tested** (sponsor never sees student identity; student award view
+has NO sponsor field; admin sees both). Endpoints: sponsor wallet/donate(mock)/fund/sponsorships/cancel; student
+`scholarship/award/`; admin award-amount + `admin/sponsorships/`. **Migration `0034`** (additive `award_amount` + new
+`sponsor_donations`+`sponsorships` tables + RLS, migrate-first via MCP, prod-verified). +17 tests; 1452 pytest + 183
+jest. Deferred → TD-075 (toyyibPay + disbursement + tranches + lapse cron + partial funding). See
+`docs/retrospective-v2.26-sponsorship-e3a.md`.
+
 **v2.25.1 (2026-06-01) — Anon-profile pre-publish identifier scan (TD-074b).** Structural backstop on the generated
 anonymous blurb: `pool.scan_anon_for_identifiers(text, profile)` scans for the student's own identifying tokens
 (name/school distinctive tokens — generic SMK/Sekolah/… + bin/binti connectors stoplisted — city, NRIC, phone, email);
@@ -414,38 +428,34 @@ incomplete profiles (no override) in `AdminVerifyAcceptView`; request-more-docs;
 preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **Out of scope (future): Phase D**
 (Gemini v2 refines profile with interview findings), **Phase E** (real sponsor portal + auth), **Phase F** (mentor).
 
-- 1435 backend tests, 183 frontend (jest) tests, 0 failures
+- 1452 backend tests, 183 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-05-31, post Phase E Sprint E2b)
+## Next Sprint (as of 2026-06-01, post Phase E Sprint E3a)
 
-Current state: v2.25.0 shipped (2026-05-31) — Phase E **Sprint E2 COMPLETE** (E2a backend + E2b frontend): the whole
-anonymised discovery pool, end-to-end, behind `SPONSOR_POOL_ENABLED` (default OFF → **dark deploy**). Sponsor browse
-grid + `/sponsor/pool/[id]` detail + admin Generate/Publish-anon controls. Eligibility = anon profile published +
-active `share_with_sponsors` consent; allowlist serializers (leak-tested); generated (not scrubbed) anon profile.
-1428 pytest + 183 jest; golden masters intact; courses migrations through `0052`, scholarship through **`0033`**.
+Current state: v2.26.0 shipped (2026-06-01) — Phase E **Sprint E3a: sponsor wallet + match/consent BACKEND** (no real
+money). The whole donate→fund-in-full→award→accept/lapse state machine on dummy data, behind `SPONSOR_POOL_ENABLED`
+(OFF → dark). `Donation`+`Sponsorship` (migration `0034`, migrate-first); balance = donations − holding allocations;
+1:1 full-or-nothing now, many-sponsor plumbing underneath; anonymity both ways (tested). E2 (the pool, backend+frontend)
+also done + dark. 1452 pytest + 183 jest; golden masters intact; courses migrations through `0052`, scholarship through
+**`0034`**.
 
 Pick one (recommended order):
-0. **Lawyer review** of the anonymised-card content + the consent text — the **only remaining gate** to flipping
-   `SPONSOR_POOL_ENABLED` on (TD-074b's structural pre-publish identifier scan is now done, v2.25.1). Until the lawyer
-   signs off, E2 ships dark.
-1. **Local smoke of E2** (flag on + dummy data): set `SPONSOR_POOL_ENABLED=true`, seed an approved sponsor + a student
-   with a published anon profile + active consent → confirm the browse grid + detail render and leak nothing; admin
-   Generate→Publish round-trip. (Headless can't do this — TD-070 territory.)
-2. **Phase E Sprint E3 — match → consent → sponsorship.** The final E-slice (`docs/scholarship/phase-e-sponsor-roadmap.md`):
-   `Sponsorship` model; sponsor "express interest"; per-sponsor consent-to-sponsor request + student/guardian approval;
-   on consent → create Sponsorship + flip app status; sponsor "my students" (anonymous profile + status only); admin
-   oversight. Migration + RLS. **High complexity; lawyer-gated like E2.**
-3. **Live-verify E1/E1c + auth isolation (TD-070)**; **Tamil refine** (~16 batches incl. `sponsorPool.*`/`anonProfile.*`).
-2. **User live-verify the post-shortlist AI features** (v2.17–v2.21) on the Elanjelian app — Cikgu Gopal coach,
-   doc-assist, gap-spotter, Phase-D refine, decline emails, elective persistence. All test-green, not click-tested.
-3. **Tamil refine** — now ~15 batches incl. consent + decline-email + reject + coach + the new `sponsorPortal.*` /
-   `admin.sponsors.*` strings; the consent text gates the lawyer meeting.
-4. **Contractual reject flow (TD-068)** + **remove the TEMP tech-support box** (TD-066) + **TD-069** (STPM-flow
-   electives — user said don't touch yet).
+0. **Lawyer review** of the anonymised-card content + the consent text + **the donation/award terms** (the donation is
+   final/non-refundable-to-bank; the award conditions). This is the gate to flipping `SPONSOR_POOL_ENABLED` on AND to
+   wiring real money (TD-075). Until then, E2/E3 ship dark on mocked money.
+1. **Phase E Sprint E3b/E3c (TD-075) — the money + the rest of the flow.** Real **toyyibPay** donation-in + **disbursement**
+   out + the **tranche schedule** (RM ×N, progress-gated release/withhold → withheld returns to balance) + the **lapse
+   cron** (a scheduled `lapse_expired_offers`, mirror `release-decisions`) + the **E3 frontend** (sponsor wallet/donate/
+   fund/my-students; student award-accept; admin award-amount/oversight/tranche). Gated on the lawyer + gateway account.
+2. **Local smoke of E2/E3** (flag on + dummy data): seed an approved sponsor (mock-donate), set an award amount, fund a
+   student, accept as the student (+ minor/guardian path) → confirm anonymity both ways + the balance maths. (Headless
+   can't — TD-070.)
+3. **Tamil refine** (~16 batches incl. `sponsorPool.*`/`anonProfile.*`); **TD-068** (contractual reject) / **TD-066**
+   (remove TEMP box) / **TD-069** (STPM electives); live-verify E1/E1c + auth isolation (TD-070).
 
 Gotchas: migrate-first via Supabase MCP (deploy does NOT run `migrate`); **a new-model migration (like `0031`) needs
 the contenttypes/auth tables — applied via the TD-058 MCP workaround**; **check the model's `Meta.db_table` before

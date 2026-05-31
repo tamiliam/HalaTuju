@@ -53,6 +53,8 @@ def is_pool_eligible(application):
     sp = getattr(application, 'sponsor_profile', None)
     if sp is None or not sp.anon_published:
         return False
+    if application.status == 'sponsored':  # E3: sponsored students leave the pool
+        return False
     return has_active_share_consent(application)
 
 
@@ -127,6 +129,7 @@ def eligible_pool_queryset(model):
             consents__consent_type=SHARE_CONSENT_TYPE,
             consents__is_active=True,
         )
+        .exclude(status='sponsored')  # E3: a sponsored student leaves the pool
         .select_related('sponsor_profile', 'profile')
         .distinct()
     )

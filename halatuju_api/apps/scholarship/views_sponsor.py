@@ -6,6 +6,8 @@ anonymised student pool. These endpoints govern the sponsor's OWN account only �
 nothing here exposes student data. All paths are under /api/v1/sponsor/ and are
 whitelisted from the NRIC gate (sponsors have no NRIC).
 """
+from decimal import Decimal, InvalidOperation
+
 from django.conf import settings
 from django.utils import timezone
 from rest_framework import status
@@ -15,10 +17,12 @@ from rest_framework.views import APIView
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 
 from . import pool
+from . import sponsorship as sponsorship_service
 from .emails import send_sponsor_interest_admin_email
-from .models import ScholarshipApplication, Sponsor
+from .models import Donation, ScholarshipApplication, Sponsor, Sponsorship
 from .serializers import (
-    SponsorPoolCardSerializer, SponsorPoolDetailSerializer, SponsorSerializer,
+    SponsorPoolCardSerializer, SponsorPoolDetailSerializer,
+    SponsorSerializer, SponsorSponsorshipSerializer,
 )
 
 # PDPA consent text version a sponsor accepts at registration. Bump when the
@@ -159,3 +163,87 @@ class SponsorPoolDetailView(_PoolBase):
         if not app:
             return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
         return Response(SponsorPoolDetailSerializer(app).data)
+
+
+class SponsorWalletView(_PoolBase):
+    """GET /api/v1/sponsor/wallet/ — directed-giving balance + donations + the
+    sponsor's holding allocations."""
+    def get(self, request):
+        sponsor, err = self._gate(request)
+        if err:
+            return err
+        donations = [
+            {'amount': str(d.amount), 'reference': d.reference, 'created_at': d.created_at}
+            for d in sponsor.donations.all()
+        ]
+        holding = sponsor.sponsorships.filter(status__in=Sponsorship.HOLDING).select_related(
+            'application', 'application__profile', 'application__sponsor_profile')
+        return Response({
+            'balance': str(sponsorship_service.sponsor_balance(sponsor)),
+            'donations': donations,
+            'sponsorships': SponsorSponsorshipSerializer(holding, many=True).data,
+        })
+
+
+class SponsorDonateView(_PoolBase):
+    """POST /api/v1/sponsor/wallet/donate/ {amount} — **MOCK** donation (dev/dummy
+    only; the real toyyibPay integration is a later, gated step). A donation is
+    final and credits the sponsor's balance."""
+    def post(self, request):
+        sponsor, err = self._gate(request)
+        if err:
+            return err
+        try:
+            amount = Decimal(str(request.data.get('amount')))
+        except (InvalidOperation, TypeError):
+            return Response({'error': 'invalid_amount'}, status=status.HTTP_400_BAD_REQUEST)
+        if amount <= 0:
+            return Response({'error': 'invalid_amount'}, status=status.HTTP_400_BAD_REQUEST)
+        Donation.objects.create(sponsor=sponsor, amount=amount, reference='mock')
+        return Response({'balance': str(sponsorship_service.sponsor_balance(sponsor))},
+                        status=status.HTTP_201_CREATED)
+
+
+class SponsorFundView(_PoolBase):
+    """POST /api/v1/sponsor/pool/<pk>/fund/ — fund a student IN FULL for their
+    admin-set award amount → an 'offered' award (1:1, full-or-nothing for now)."""
+    def post(self, request, pk):
+        sponsor, err = self._gate(request)
+        if err:
+            return err
+        app = ScholarshipApplication.objects.filter(id=pk).first()
+        if app is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            sponsorship = sponsorship_service.fund_student(sponsor, app)
+        except sponsorship_service.SponsorshipError as e:
+            return Response({'error': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(SponsorSponsorshipSerializer(sponsorship).data, status=status.HTTP_201_CREATED)
+
+
+class SponsorSponsorshipsView(_PoolBase):
+    """GET /api/v1/sponsor/sponsorships/ — the sponsor's holding allocations
+    (offered/active), each as the anonymised student card + money/status."""
+    def get(self, request):
+        sponsor, err = self._gate(request)
+        if err:
+            return err
+        qs = sponsor.sponsorships.filter(status__in=Sponsorship.HOLDING).select_related(
+            'application', 'application__profile', 'application__sponsor_profile')
+        return Response({'sponsorships': SponsorSponsorshipSerializer(qs, many=True).data})
+
+
+class SponsorCancelOfferView(_PoolBase):
+    """POST /api/v1/sponsor/sponsorships/<pk>/cancel/ — withdraw an OFFERED award
+    before the student accepts; the amount returns to the sponsor's balance."""
+    def post(self, request, pk):
+        sponsor, err = self._gate(request)
+        if err:
+            return err
+        s = sponsor.sponsorships.filter(id=pk, status='offered').first()
+        if s is None:
+            return Response({'error': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
+        s.status = 'cancelled'
+        s.decided_at = timezone.now()
+        s.save(update_fields=['status', 'decided_at', 'updated_at'])
+        return Response(SponsorSponsorshipSerializer(s).data)
