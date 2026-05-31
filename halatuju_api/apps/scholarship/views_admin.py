@@ -27,7 +27,7 @@ from .serializers_admin import (
     InterviewSessionSerializer,
     SponsorProfileSerializer,
 )
-from .services import application_completeness, submit_interview
+from .services import admin_reject, application_completeness, submit_interview
 
 _VALID_VERDICTS = {'resolved', 'still_unclear', 'new_concern'}
 _RATIONALE_MAX = 140
@@ -173,6 +173,34 @@ class AdminVerifyAcceptView(_AdminBase):
         app.verified_by = admin.email
         app.verify_checklist = request.data.get('checklist', {}) or {}
         app.save(update_fields=['status', 'verified_at', 'verified_by', 'verify_checklist'])
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminRejectView(_AdminBase):
+    """POST .../<pk>/reject/ {category} — post-shortlist admin rejection (buckets 3 & 4).
+    'interview'  = reviewed but not selected (allowed from shortlisted/profile_complete/
+                   interviewing/interviewed) → extra-thankful email.
+    'contractual' = failed post-award steps (allowed only from 'accepted') → generic email.
+    Reviewer-gated. The engine buckets (merit/need/ineligible) are NOT settable here."""
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        category = request.data.get('category')
+        try:
+            admin_reject(app, admin, category)
+        except ValueError as e:
+            code = str(e)  # 'bad_status' | 'bad_category'
+            msg = ('Only an accepted applicant can be declined for contractual reasons.'
+                   if code == 'bad_status' and category == 'contractual'
+                   else 'This applicant cannot be declined from their current status.'
+                   if code == 'bad_status' else 'Unknown rejection category.')
+            return Response({'error': msg, 'code': code}, status=status.HTTP_400_BAD_REQUEST)
         return Response(AdminApplicationDetailSerializer(app).data)
 
 

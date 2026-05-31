@@ -1533,6 +1533,21 @@
         "needInterview": "Submit an interview first to refine the profile.",
         "error": "Couldn't refine the profile. Please try again."
       },
+      "reject": {
+        "declineReview": "Decline (after review)",
+        "declineContractual": "Decline (contractual)",
+        "confirmReview": "Decline this applicant? They were reviewed but not selected. A decline email will be sent to them now.",
+        "confirmContractual": "Decline this accepted applicant for contractual reasons? A decline email will be sent to them now.",
+        "running": "Declining…",
+        "error": "Couldn't decline this applicant. Please try again.",
+        "category": {
+          "merit": "Merit",
+          "need": "Need",
+          "ineligible": "Ineligible",
+          "interview": "Not selected",
+          "contractual": "Contractual"
+        }
+      },
       "gaps": {
         "button": "Suggest interview gaps (AI)",
         "running": "Generating…",

@@ -1533,6 +1533,21 @@
         "needInterview": "Hantar temu duga dahulu untuk memperhalusi profil.",
         "error": "Tidak dapat memperhalusi profil. Sila cuba lagi."
       },
+      "reject": {
+        "declineReview": "Tolak (selepas semakan)",
+        "declineContractual": "Tolak (kontrak)",
+        "confirmReview": "Tolak pemohon ini? Mereka telah disemak tetapi tidak terpilih. E-mel penolakan akan dihantar kepada mereka sekarang.",
+        "confirmContractual": "Tolak pemohon yang telah diterima ini atas sebab kontrak? E-mel penolakan akan dihantar kepada mereka sekarang.",
+        "running": "Menolak…",
+        "error": "Tidak dapat menolak pemohon ini. Sila cuba lagi.",
+        "category": {
+          "merit": "Merit",
+          "need": "Keperluan",
+          "ineligible": "Tidak layak",
+          "interview": "Tidak terpilih",
+          "contractual": "Kontrak"
+        }
+      },
       "gaps": {
         "button": "Cadang soalan temu duga (AI)",
         "running": "Menjana…",

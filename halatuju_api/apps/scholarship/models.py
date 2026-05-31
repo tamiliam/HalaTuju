@@ -266,6 +266,29 @@ class ScholarshipApplication(models.Model):
         default=dict, blank=True,
         help_text="What the admin confirmed at accept: {nric, name, results, document: bool}",
     )
+
+    # Rejection bucket — WHY/WHEN an application ended at status='rejected'. Pre-shortlist
+    # rejections (merit/need/ineligible) are set automatically by the engine at submit; the
+    # post-shortlist ones (interview/contractual) are set by an admin action. Drives which
+    # decline email is sent and whether the Review & actions panel stays visible (only the
+    # pre-shortlist buckets hide it — those applicants were never reviewed).
+    REJECTION_CATEGORIES = [
+        ('merit', 'Did not meet the academic/merit floor'),       # engine: academic floor
+        ('need', 'Did not meet the financial-need criteria'),     # engine: income test
+        ('ineligible', 'Out of scope / ineligible'),              # engine: consent/intent/IPTS gate
+        ('interview', 'Reviewed but not selected'),               # admin: post-shortlist decline
+        ('contractual', 'Failed post-award contractual steps'),   # admin: post-accept decline
+    ]
+    rejection_category = models.CharField(
+        max_length=20, choices=REJECTION_CATEGORIES, blank=True, default='',
+        help_text="Why the application was rejected; blank unless status='rejected'",
+    )
+    rejected_at = models.DateTimeField(null=True, blank=True)
+    rejected_by = models.CharField(
+        max_length=254, blank=True, default='',
+        help_text="Email of the PartnerAdmin who rejected (post-shortlist buckets only); blank for engine rejections",
+    )
+
     # Phase C: which reviewer this application is assigned to (for the interview
     # stage). Null = unassigned. SET_NULL so deactivating an admin doesn't delete
     # applications.

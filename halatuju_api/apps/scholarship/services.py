@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from .emails import (
     send_acknowledgement_email, send_pass_email, send_fail_email,
-    send_profile_complete_admin_email,
+    send_decline_email, send_profile_complete_admin_email,
 )
 from .models import (
     ApplicantDocument, Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort,
@@ -237,9 +237,12 @@ def score_application(application):
     application.verdict = result.verdict
     application.bucket = result.bucket
     application.shortlist_reason = result.reason
+    # Engine-set rejection bucket (merit/need/ineligible) — drives the decline email
+    # at reveal. Blank when shortlisted.
+    application.rejection_category = result.category
     application.decision_due_at = base + timedelta(hours=delay_h)
     application.save(update_fields=[
-        'verdict', 'bucket', 'shortlist_reason', 'decision_due_at',
+        'verdict', 'bucket', 'shortlist_reason', 'rejection_category', 'decision_due_at',
     ])
     return result
 
@@ -262,12 +265,55 @@ def release_decision(application):
     application.save(update_fields=['status', 'decision_released_at', 'shortlisted_at'])
 
     name = getattr(application.profile, 'name', '') if application.profile else ''
-    send = send_pass_email if application.verdict == 'shortlisted' else send_fail_email
-    if send(
-        to_email=application.notify_email,
-        applicant_name=name,
-        programme_name=application.cohort.name,
-        lang=application.locale,
+    common = dict(to_email=application.notify_email, applicant_name=name,
+                  programme_name=application.cohort.name, lang=application.locale)
+    if application.verdict == 'shortlisted':
+        sent = send_pass_email(**common)
+    else:
+        # Pre-shortlist decline: pick the bucket-specific email (merit/need) or the
+        # generic one (ineligible). The engine set rejection_category at score time.
+        sent = send_decline_email(category=application.rejection_category, **common)
+    if sent:
+        application.decision_email_sent_at = now
+        application.save(update_fields=['decision_email_sent_at'])
+    return True
+
+
+# Statuses from which an admin may decline a *reviewed* application (bucket 3,
+# 'interview'): anyone who cleared the engine and reached the post-shortlist funnel
+# but is not yet accepted. Poor documentation is grounds — no formal interview needed.
+INTERVIEW_REJECT_FROM = ('shortlisted', 'profile_complete', 'interviewing', 'interviewed')
+
+
+def admin_reject(application, admin, category):
+    """Post-shortlist admin rejection (buckets 3 & 4). Sets status='rejected', stamps
+    the category + who/when, and sends the bucket's decline email immediately:
+      - 'interview'   (reviewed but not selected) — allowed from a post-shortlist,
+                       not-yet-accepted status; sends the extra-thankful email.
+      - 'contractual' (failed post-award steps) — allowed only from 'accepted'; sends
+                       the generic decline email (admin-typed reason deferred).
+    Raises ValueError on a bad category/status combination. Returns True."""
+    if category == 'interview':
+        if application.status not in INTERVIEW_REJECT_FROM:
+            raise ValueError('bad_status')
+    elif category == 'contractual':
+        if application.status != 'accepted':
+            raise ValueError('bad_status')
+    else:
+        raise ValueError('bad_category')
+
+    now = timezone.now()
+    application.status = 'rejected'
+    application.rejection_category = category
+    application.rejected_at = now
+    application.rejected_by = getattr(admin, 'email', '') or ''
+    application.save(update_fields=['status', 'rejection_category', 'rejected_at', 'rejected_by'])
+
+    name = getattr(application.profile, 'name', '') if application.profile else ''
+    if send_decline_email(
+        to_email=application.notify_email or getattr(application.profile, 'contact_email', '') or '',
+        applicant_name=name, programme_name=application.cohort.name,
+        category=category, lang=application.locale,
     ):
         application.decision_email_sent_at = now
         application.save(update_fields=['decision_email_sent_at'])

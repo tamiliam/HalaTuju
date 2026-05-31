@@ -375,6 +375,10 @@ export interface AdminScholarshipDetail {
   status: string
   bucket: string
   shortlist_reason: string
+  // Rejection bucket: '' | 'merit' | 'need' | 'ineligible' | 'interview' | 'contractual'
+  rejection_category: string
+  rejected_at: string | null
+  rejected_by: string
   submitted_at: string
   funding_need: { categories: string[]; funding_note: string; programme_months: number | null } | null
   // S16 Phase A: deterministic pre-interview flag list. {code, params}; the
@@ -502,6 +506,17 @@ export async function saveSponsorProfile(
 export async function publishSponsorProfile(id: number, options?: ApiOptions) {
   return adminMutate<AdminSponsorProfile>(
     `/api/v1/admin/scholarship/applications/${id}/publish/`, 'POST', {}, options
+  )
+}
+
+/** Post-shortlist admin rejection. category: 'interview' (reviewed, not selected — from
+ * shortlisted onward) or 'contractual' (failed post-award steps — from accepted). Sends the
+ * bucket's decline email. */
+export async function rejectApplication(
+  id: number, category: 'interview' | 'contractual', options?: ApiOptions
+) {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/reject/`, 'POST', { category }, options
   )
 }
 

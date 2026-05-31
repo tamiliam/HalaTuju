@@ -167,6 +167,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'family_context', 'daily_life', 'consent_to_contact',
             'declaration_name', 'declared_at',
             'status', 'bucket', 'shortlist_reason', 'submitted_at',
+            # Rejection bucket (merit/need/ineligible/interview/contractual) + stamps
+            'rejection_category', 'rejected_at', 'rejected_by',
             # Phase C handoff + interview funnel
             'profile_completed_at', 'completeness', 'interview_session',
             'interview_gaps', 'interview_gaps_run_at',

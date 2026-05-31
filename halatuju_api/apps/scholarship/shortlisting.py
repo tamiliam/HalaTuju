@@ -44,9 +44,10 @@ def count_spm_strong_grades(grades):
 
 @dataclass
 class ShortlistResult:
-    verdict: str   # 'shortlisted' or 'rejected'
-    bucket: str    # 'A' (STR), 'B' (income test), or ''
-    reason: str    # human-readable explanation
+    verdict: str    # 'shortlisted' or 'rejected'
+    bucket: str     # 'A' (STR), 'B' (income test), or ''
+    reason: str     # human-readable explanation
+    category: str = ''  # rejection bucket when rejected: 'merit'|'need'|'ineligible' (engine); '' if shortlisted
 
 
 def _academic_ok(profile, cohort):
@@ -85,22 +86,22 @@ def evaluate(application, cohort):
     """Return a ShortlistResult for the application against the cohort thresholds."""
     profile = getattr(application, 'profile', None)
 
-    # 1. Hard gates
+    # 1. Hard gates → 'ineligible' (out of scope, not a merit/need shortfall)
     if not application.consent_to_contact:
-        return ShortlistResult('rejected', '', 'no consent to contact')
+        return ShortlistResult('rejected', '', 'no consent to contact', 'ineligible')
     if not application.intends_tertiary_2026:
-        return ShortlistResult('rejected', '', 'not intending tertiary study this year')
+        return ShortlistResult('rejected', '', 'not intending tertiary study this year', 'ineligible')
     if application.upu_status == 'ipts':
-        return ShortlistResult('rejected', '', 'IPTS-only — outside programme scope')
+        return ShortlistResult('rejected', '', 'IPTS-only — outside programme scope', 'ineligible')
 
-    # 2. Academic floor
+    # 2. Academic floor → 'merit'
     ok, why = _academic_ok(profile, cohort)
     if not ok:
-        return ShortlistResult('rejected', '', f'academic floor: {why}')
+        return ShortlistResult('rejected', '', f'academic floor: {why}', 'merit')
 
-    # 3. Income (STR fast-path, else per-capita)
+    # 3. Income (STR fast-path, else per-capita) → 'need'
     ok, bucket, why = _income_ok(profile, cohort)
     if not ok:
-        return ShortlistResult('rejected', '', f'income: {why}')
+        return ShortlistResult('rejected', '', f'income: {why}', 'need')
 
     return ShortlistResult('shortlisted', bucket, why)

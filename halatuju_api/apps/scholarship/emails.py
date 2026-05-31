@@ -126,6 +126,154 @@ FAIL_BODIES = {
 }
 
 
+# Bucket-specific decline copy. Tone is SUGGESTIVE of the reason (the user's call —
+# a fully generic note is more frustrating than a gentle hint), never blunt. The
+# generic FAIL_* above covers the 'ineligible' and 'contractual' buckets.
+
+# 1) MERIT — did not meet the academic floor. Hints at "competitive on results".
+MERIT_SUBJECTS = dict(FAIL_SUBJECTS)
+MERIT_BODIES = {
+    'en': (
+        "Dear {name},\n\n"
+        "Thank you for applying to the {programme}, and for the effort behind your "
+        "application.\n\n"
+        "After careful review, we are not able to offer you a place this round. "
+        "Selection this round was especially competitive on academic results, and we "
+        "could not take every strong application forward.\n\n"
+        "Please don't be discouraged — we warmly encourage you to keep building on "
+        "your studies and to apply again. You are also very welcome to join the "
+        "higher-education seminars we run, online and in person.\n\n"
+        "Warm regards,\nThe {programme} Team"
+    ),
+    'ms': (
+        "Salam {name},\n\n"
+        "Terima kasih kerana memohon {programme}, dan atas usaha di sebalik "
+        "permohonan anda.\n\n"
+        "Setelah penilaian teliti, kami tidak dapat menawarkan tempat kepada anda "
+        "pada pusingan ini. Persaingan pada pusingan ini amat sengit dari segi "
+        "keputusan akademik, dan kami tidak dapat meneruskan setiap permohonan yang "
+        "cemerlang.\n\n"
+        "Janganlah berkecil hati — kami menggalakkan anda terus mengukuhkan "
+        "pelajaran anda dan memohon semula. Anda juga dialu-alukan menyertai seminar "
+        "pendidikan tinggi yang kami anjurkan, dalam talian dan secara bersemuka.\n\n"
+        "Salam hormat,\nPasukan {programme}"
+    ),
+    'ta': (
+        "அன்புள்ள {name},\n\n"
+        "{programme}-க்கு விண்ணப்பித்ததற்கும், உங்கள் விண்ணப்பத்தின் பின்னணியில் "
+        "உள்ள முயற்சிக்கும் நன்றி.\n\n"
+        "கவனமான மதிப்பாய்வுக்குப் பிறகு, இந்தச் சுற்றில் உங்களுக்கு இடம் வழங்க "
+        "முடியவில்லை. இந்தச் சுற்று கல்வி முடிவுகளில் மிகவும் போட்டி நிறைந்ததாக "
+        "இருந்தது; ஒவ்வொரு சிறந்த விண்ணப்பத்தையும் முன்னெடுக்க முடியவில்லை.\n\n"
+        "மனம் தளராதீர்கள் — உங்கள் படிப்பைத் தொடர்ந்து வலுப்படுத்தி மீண்டும் "
+        "விண்ணப்பிக்க அன்புடன் ஊக்குவிக்கிறோம். நாங்கள் நடத்தும் உயர்கல்விக் "
+        "கருத்தரங்குகளில் — இணையவழியிலும் நேரிலும் — கலந்துகொள்ளவும் வரவேற்கிறோம்.\n\n"
+        "அன்புடன்,\n{programme} குழு"
+    ),
+}
+
+# 2) NEED — did not meet the financial-need criteria. Hints at "greatest need".
+NEED_SUBJECTS = dict(FAIL_SUBJECTS)
+NEED_BODIES = {
+    'en': (
+        "Dear {name},\n\n"
+        "Thank you for applying to the {programme}.\n\n"
+        "This programme is directed to students facing the greatest financial need. "
+        "After careful review, we are not able to offer you a place this round — "
+        "places this round were prioritised on that basis.\n\n"
+        "Please don't be discouraged. If your circumstances change you are warmly "
+        "welcome to apply again, and to join the higher-education seminars we run, "
+        "online and in person.\n\n"
+        "Warm regards,\nThe {programme} Team"
+    ),
+    'ms': (
+        "Salam {name},\n\n"
+        "Terima kasih kerana memohon {programme}.\n\n"
+        "Program ini ditujukan kepada pelajar yang menghadapi keperluan kewangan "
+        "yang paling mendesak. Setelah penilaian teliti, kami tidak dapat menawarkan "
+        "tempat kepada anda pada pusingan ini — tempat pada pusingan ini diutamakan "
+        "atas dasar tersebut.\n\n"
+        "Janganlah berkecil hati. Sekiranya keadaan anda berubah, anda dialu-alukan "
+        "untuk memohon semula, dan menyertai seminar pendidikan tinggi yang kami "
+        "anjurkan, dalam talian dan secara bersemuka.\n\n"
+        "Salam hormat,\nPasukan {programme}"
+    ),
+    'ta': (
+        "அன்புள்ள {name},\n\n"
+        "{programme}-க்கு விண்ணப்பித்ததற்கு நன்றி.\n\n"
+        "இந்தத் திட்டம் மிகக் கடுமையான நிதித் தேவை உள்ள மாணவர்களுக்காக "
+        "வடிவமைக்கப்பட்டுள்ளது. கவனமான மதிப்பாய்வுக்குப் பிறகு, இந்தச் சுற்றில் "
+        "உங்களுக்கு இடம் வழங்க முடியவில்லை — இந்தச் சுற்றில் இடங்கள் அந்த "
+        "அடிப்படையில் முன்னுரிமை வழங்கப்பட்டன.\n\n"
+        "மனம் தளராதீர்கள். உங்கள் சூழ்நிலை மாறினால், மீண்டும் விண்ணப்பிக்கவும், "
+        "நாங்கள் நடத்தும் உயர்கல்விக் கருத்தரங்குகளில் — இணையவழியிலும் நேரிலும் — "
+        "கலந்துகொள்ளவும் அன்புடன் வரவேற்கிறோம்.\n\n"
+        "அன்புடன்,\n{programme} குழு"
+    ),
+}
+
+# 3) INTERVIEW — reviewed (docs/interview) but not selected. Extra-thankful; limited
+# budget; only those who most strongly met BOTH need (primarily) and merit.
+INTERVIEW_SUBJECTS = {
+    'en': 'Thank you for your {programme} application',
+    'ms': 'Terima kasih atas permohonan {programme} anda',
+    'ta': 'உங்கள் {programme} விண்ணப்பத்திற்கு நன்றி',
+}
+INTERVIEW_BODIES = {
+    'en': (
+        "Dear {name},\n\n"
+        "Thank you for completing your {programme} application and for taking the "
+        "time to submit your documents for our review — we genuinely appreciate the "
+        "effort you put in.\n\n"
+        "With the limited funding available this round, we were only able to support "
+        "the students who most closely met both our financial-need and academic "
+        "criteria. After careful consideration, we are not able to offer you a place "
+        "this time.\n\n"
+        "This is in no way a reflection of your ability or potential, and we warmly "
+        "encourage you to apply again in future. You are also very welcome to join "
+        "the higher-education seminars we run, online and in person.\n\n"
+        "With our sincere thanks and very best wishes,\nThe {programme} Team"
+    ),
+    'ms': (
+        "Salam {name},\n\n"
+        "Terima kasih kerana melengkapkan permohonan {programme} anda dan kerana "
+        "meluangkan masa menghantar dokumen untuk semakan kami — kami amat "
+        "menghargai usaha anda.\n\n"
+        "Dengan dana yang terhad pada pusingan ini, kami hanya mampu membantu pelajar "
+        "yang paling hampir memenuhi kedua-dua kriteria keperluan kewangan dan "
+        "akademik. Setelah pertimbangan yang teliti, kami tidak dapat menawarkan "
+        "tempat kepada anda pada kali ini.\n\n"
+        "Ini sama sekali bukan gambaran tentang kebolehan atau potensi anda, dan kami "
+        "menggalakkan anda memohon semula pada masa hadapan. Anda juga dialu-alukan "
+        "menyertai seminar pendidikan tinggi yang kami anjurkan, dalam talian dan "
+        "secara bersemuka.\n\n"
+        "Dengan ucapan terima kasih yang ikhlas dan salam sejahtera,\nPasukan {programme}"
+    ),
+    'ta': (
+        "அன்புள்ள {name},\n\n"
+        "உங்கள் {programme} விண்ணப்பத்தை நிறைவு செய்ததற்கும், எங்கள் "
+        "மதிப்பாய்வுக்காக உங்கள் ஆவணங்களைச் சமர்ப்பிக்க நேரம் ஒதுக்கியதற்கும் "
+        "நன்றி — உங்கள் முயற்சியை நாங்கள் உண்மையாகவே பாராட்டுகிறோம்.\n\n"
+        "இந்தச் சுற்றில் கிடைத்த வரையறுக்கப்பட்ட நிதியுடன், நிதித் தேவை மற்றும் "
+        "கல்வி ஆகிய இரண்டு அளவுகோல்களையும் மிக நெருக்கமாகப் பூர்த்திசெய்த "
+        "மாணவர்களுக்கு மட்டுமே உதவ முடிந்தது. கவனமான பரிசீலனைக்குப் பிறகு, இந்த "
+        "முறை உங்களுக்கு இடம் வழங்க முடியவில்லை.\n\n"
+        "இது உங்கள் திறமை அல்லது ஆற்றலின் பிரதிபலிப்பு அல்ல; எதிர்காலத்தில் "
+        "மீண்டும் விண்ணப்பிக்க அன்புடன் ஊக்குவிக்கிறோம். நாங்கள் நடத்தும் "
+        "உயர்கல்விக் கருத்தரங்குகளில் — இணையவழியிலும் நேரிலும் — கலந்துகொள்ளவும் "
+        "வரவேற்கிறோம்.\n\n"
+        "எங்கள் உளமார்ந்த நன்றியுடனும் வாழ்த்துகளுடனும்,\n{programme} குழு"
+    ),
+}
+
+# category → (subjects, bodies). Anything not listed (ineligible, contractual, '') → generic FAIL.
+_DECLINE_TEMPLATES = {
+    'merit': (MERIT_SUBJECTS, MERIT_BODIES),
+    'need': (NEED_SUBJECTS, NEED_BODIES),
+    'interview': (INTERVIEW_SUBJECTS, INTERVIEW_BODIES),
+}
+
+
 def normalise_lang(lang):
     return lang if lang in ('en', 'ms', 'ta') else 'en'
 
@@ -168,6 +316,14 @@ def send_pass_email(to_email, applicant_name, programme_name, lang='en'):
 
 def send_fail_email(to_email, applicant_name, programme_name, lang='en'):
     return _send(to_email, FAIL_SUBJECTS, FAIL_BODIES, applicant_name, programme_name, lang)
+
+
+def send_decline_email(to_email, applicant_name, programme_name, category='', lang='en'):
+    """Send the right decline email for a rejection bucket. merit/need/interview each
+    get suggestive bucket-specific copy; ineligible/contractual/unknown fall back to
+    the generic warm decline (FAIL_*)."""
+    subjects, bodies = _DECLINE_TEMPLATES.get(category, (FAIL_SUBJECTS, FAIL_BODIES))
+    return _send(to_email, subjects, bodies, applicant_name, programme_name, lang)
 
 
 REQUEST_INFO_SUBJECTS = {

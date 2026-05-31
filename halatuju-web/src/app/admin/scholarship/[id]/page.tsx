@@ -14,6 +14,7 @@ import {
   saveSponsorProfile,
   publishSponsorProfile,
   verifyAcceptApplication,
+  rejectApplication,
   setMentoringCandidate,
   addReferee,
   deleteReferee,
@@ -175,6 +176,19 @@ export default function AdminScholarshipDetailPage() {
     } finally { setBusy('') }
   }
 
+  const doReject = async (category: 'interview' | 'contractual') => {
+    if (!token) return
+    const confirmKey = category === 'contractual'
+      ? 'admin.scholarship.reject.confirmContractual' : 'admin.scholarship.reject.confirmReview'
+    if (!window.confirm(t(confirmKey))) return
+    setBusy('reject'); setError('')
+    try {
+      setApp(await rejectApplication(id, category, { token }))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('admin.scholarship.reject.error'))
+    } finally { setBusy('') }
+  }
+
   const doAssign = async (adminId: number | null) => {
     if (!token) return
     setBusy('assign'); setError('')
@@ -262,6 +276,11 @@ export default function AdminScholarshipDetailPage() {
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
           <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">{app.name || '—'}</h1>
           <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">{app.status}</span>
+          {app.status === 'rejected' && app.rejection_category && (
+            <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
+              {t(`admin.scholarship.reject.category.${app.rejection_category}`)}
+            </span>
+          )}
           {app.bucket && (
             <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-amber-100 px-1.5 text-xs font-bold text-amber-700">{app.bucket}</span>
           )}
@@ -479,12 +498,13 @@ export default function AdminScholarshipDetailPage() {
         )
       })()}
 
-      {/* Review & actions — interactive panels. Hidden for rejected applicants:
-          they were declined before shortlisting, are out of the funnel, and will
-          never be interviewed/verified, so documents, referees, verify-accept,
-          interview capture and the sponsor profile are all irrelevant. The summary
-          cards above stay visible for record-keeping. */}
-      {app.status !== 'rejected' && (<>
+      {/* Review & actions — interactive panels. Hidden only for PRE-shortlist
+          rejections (merit/need/ineligible): those applicants were declined by the
+          engine before any human review, so documents/verify/interview/profile are
+          irrelevant. Post-shortlist rejections (interview/contractual) KEEP the
+          panel so the documents + interview record that justified the decision stay
+          visible. The summary cards above always show. */}
+      {!(app.status === 'rejected' && ['merit', 'need', 'ineligible'].includes(app.rejection_category)) && (<>
       <GroupLabel>{t('admin.scholarship.reviewActions')}</GroupLabel>
       <div className="grid items-start gap-4 lg:grid-cols-2">
 
@@ -780,10 +800,18 @@ export default function AdminScholarshipDetailPage() {
         </div>
 
         {app.status === 'accepted' ? (
-          <p className="text-sm text-gray-600">
-            {t('admin.scholarship.acceptedBy')} {app.verified_by || '—'}
-            {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
-          </p>
+          <>
+            <p className="text-sm text-gray-600">
+              {t('admin.scholarship.acceptedBy')} {app.verified_by || '—'}
+              {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
+            </p>
+            {canWrite && (
+              <button onClick={() => doReject('contractual')} disabled={!!busy}
+                className="mt-2 px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
+                {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
+              </button>
+            )}
+          </>
         ) : ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) ? (
           <>
             {/* Phase C hard gate: cannot accept until every compulsory part is in. */}
@@ -811,11 +839,19 @@ export default function AdminScholarshipDetailPage() {
                 </label>
               ))}
             </div>
-            <button onClick={doVerifyAccept}
-              disabled={!!busy || !canWrite || !app.completeness.complete || !VERIFY_ITEMS.every((k) => checklist[k])}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
-              {busy === 'verify' ? t('admin.scholarship.accepting') : t('admin.scholarship.verifyAccept')}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={doVerifyAccept}
+                disabled={!!busy || !canWrite || !app.completeness.complete || !VERIFY_ITEMS.every((k) => checklist[k])}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
+                {busy === 'verify' ? t('admin.scholarship.accepting') : t('admin.scholarship.verifyAccept')}
+              </button>
+              {canWrite && (
+                <button onClick={() => doReject('interview')} disabled={!!busy}
+                  className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
+                  {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineReview')}
+                </button>
+              )}
+            </div>
           </>
         ) : (
           <p className="text-sm text-gray-400">{t('admin.scholarship.notShortlisted')}</p>
