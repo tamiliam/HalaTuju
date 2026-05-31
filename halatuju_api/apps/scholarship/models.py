@@ -63,13 +63,14 @@ class ScholarshipCohort(models.Model):
         default=3,
         help_text="DEPRECATED (pre-S8); the scheduler now uses success/decline_delay_hours",
     )
-    success_delay_hours = models.IntegerField(
+    success_delay_hours = models.FloatField(
         default=48,
-        help_text="Hours after submit before the shortlist (invitation) email + follow-up unlock (S8 delayed reveal)",
+        help_text="Hours after submit before the shortlist (invitation) email + follow-up unlock (S8 delayed "
+                  "reveal). Float so sub-hour delays are possible (e.g. 0.9167 = 55 minutes).",
     )
-    decline_delay_hours = models.IntegerField(
+    decline_delay_hours = models.FloatField(
         default=48,
-        help_text="Hours after submit before the warm decline email (S8 delayed reveal)",
+        help_text="Hours after submit before the warm decline email (S8 delayed reveal). Float (see above).",
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

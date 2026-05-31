@@ -1,9 +1,10 @@
 """
 Release due B40 decisions: reveal the verdict (flip status + send the email) for
 applications whose ``decision_due_at`` has passed. Shortlist verdicts reveal at
-+success_delay_hours (default 2h), declines at +decline_delay_hours (default 48h) —
-both delays are baked into ``decision_due_at`` when the application is scored at
-submit. Idempotent: an already-released application is skipped.
++success_delay_hours, declines at +decline_delay_hours — per-cohort (b40-2026: 55 min
+shortlist / 48 h decline; model default 48). Both delays are FloatFields (sub-hour OK)
+baked into ``decision_due_at`` when the application is scored at submit. Idempotent: an
+already-released application is skipped.
 
 Schedule this (e.g. Cloud Scheduler → Cloud Run Job, every ~15 min) once deployed.
 

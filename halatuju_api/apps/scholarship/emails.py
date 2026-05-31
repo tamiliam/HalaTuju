@@ -47,7 +47,8 @@ ACK_BODIES = {
     ),
 }
 
-# ── Invitation / shortlisted (sent at +success_delay_hours, ~2h, by the scheduler) ──
+# ── Invitation / shortlisted (sent at +success_delay_hours by the scheduler; per-cohort,
+#    currently 55 min for b40-2026 — fast internal release; public criteria still say "within 2 days") ──
 PASS_SUBJECTS = {
     'en': 'Good news about your {programme} application',
     'ms': 'Berita baik tentang permohonan {programme} anda',
