@@ -509,7 +509,7 @@
         "helper": "New here? The same button creates your HalaTuju account. Already did the HalaTuju quiz? We'll use your profile so you never retype anything."
       },
       "field": {
-        "name": "Full name",
+        "name": "Full name (as in your IC)",
         "school": "School",
         "ic": "IC number",
         "email": "Contact email",
