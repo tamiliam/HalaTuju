@@ -215,7 +215,12 @@ refine: `profile_engine.py` — `generate_sponsor_profile` (draft from the form)
 (v2: draft + submitted `InterviewSession` findings → `SponsorProfile.final_markdown`), both routed through the shared
 `_call_gemini_text` seam. Phase C added `InterviewSession` (findings keyed to anomaly/gap codes) + `PartnerAdmin.role`.
 All Gemini engines mock one seam in tests (`vision._call_gemini_json` for JSON, `profile_engine._call_gemini_text`
-for prose) — no billable calls in CI.
+for prose) — no billable calls in CI. **Student-facing help (v2.20.0):** `help_engine.py` ("Cikgu Gopal") —
+`generate_document_help(doc_type, verdict, *, first_name, target_language)` phrases an already-decided document
+verdict into a warm 2-3 sentence coach note (reuses `_call_gemini_text`); `verdict_for_document` maps a doc's
+soft signals to the verdict, mirroring the FE chip precedence. Served by `DocumentHelpView`
+(`GET …/documents/<pk>/help/`, own-doc scoped). **Structurally firewalled** — the engine receives only primitives,
+never an application/profile/score object (signature-asserted); it is the inverse wall to the admin-only gap-spotter.
 
 **Frontend (Sprint 2):** `halatuju-web/src/app/scholarship/apply/page.tsx` (single front-door
 application form), `src/lib/scholarship.ts` (pure form helpers, node-tested in
