@@ -1492,3 +1492,27 @@ is scheduled — then the sponsor entry points at the real flow.
 **Trade-offs:** Suggestive copy is harder to translate faithfully (the hint must survive in ms/ta) and is a judgement call the user may want to tune. Tamil is a first draft pending refine.
 
 **Revisit if:** the user wants the reason stated explicitly, or wants to drop disclosure entirely.
+
+## Document-help coach is structurally firewalled from admin data, not prompt-trusted — v2.20.0, 2026-05-31
+
+**Decision:** The "Cikgu Gopal" help engine (`generate_document_help`) accepts only `doc_type`, `verdict`, `first_name`, and `target_language` — never an application/profile/`SponsorProfile`/`InterviewSession`/score object. A unit test asserts the function signature is exactly those four parameters. The verdict is derived separately (`verdict_for_document`, which reads the student's own doc/profile) and passed in as a plain string.
+
+**Alternatives considered:** pass the `ApplicantDocument` (or application) into the engine and rely on a strong system-prompt instruction ("never reveal scores or reviewer notes") to prevent leakage — simpler, fewer moving parts.
+
+**Rationale:** A prompt instruction is defeatable (prompt injection, a clever student question, a future prompt edit). If the admin/reviewer data never enters the function, there is nothing to leak regardless of what the model is asked — the guarantee holds by construction and is cheaply testable (assert the signature). This is the inverse of the admin-only gap-spotter wall.
+
+**Trade-offs:** The engine cannot offer richer, context-aware help (it doesn't know the student's story or history) — by design. Any future "smarter" help that needs more context must re-justify the wall.
+
+**Revisit if:** a future help feature genuinely needs more applicant context — then add only the specific student-owned fields, never the reviewer/score surface, and extend the signature test to lock the new boundary.
+
+## Hybrid AI message + deterministic i18n fallback for the coach — v2.20.0, 2026-05-31
+
+**Decision:** The coach shows a warm Gemini-generated message when available, but degrades to pre-written per-verdict i18n copy (`scholarship.docs.help.fallback.*`) whenever the AI is unconfigured, errored, or hourly-throttled. The endpoint returns `source: 'ai' | 'fallback' | 'none'` and the verdict, so the frontend always has something kind to show.
+
+**Alternatives considered:** (1) AI-only — show nothing when the AI is down. (2) Static-copy-only — no Gemini at all, just pre-written per-verdict text.
+
+**Rationale:** AI-only leaves a student staring at a cold chip exactly when they're stuck (AI outages/throttle happen). Static-only loses the warmth/personalisation that motivated the feature. The hybrid keeps the cost on the free tier (fires only on a mismatch, hourly-capped, throttle skips the billable call), guarantees a kind message with zero AI, and means a total Gemini failure is invisible to the student. Mirrors the v2.17.0 "throttle the AI, never block" stance.
+
+**Trade-offs:** Two copies of the "what to say" intent (the AI prompt's guidance + the static fallback strings) must both stay on-tone; the fallback is less personalised (no first name, generic phrasing).
+
+**Revisit if:** AI availability/cost changes materially — e.g. if calls become reliably free and instant, the static fallback could shrink to a single generic line; if cost becomes a problem, lean harder on the static copy.

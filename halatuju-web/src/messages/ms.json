@@ -801,7 +801,17 @@
         "offer_letter": "Jika anda sudah menerima tawaran universiti atau kolej.",
         "parent_ic": "Foto IC ibu bapa atau penjaga anda. Kami menggunakannya untuk mengesahkan dokumen sokongan seperti STR atau KWSP yang biasanya dikeluarkan atas nama ibu bapa anda. (Jika anda di bawah 18 tahun, ibu bapa atau penjaga anda juga akan menandatangani persetujuan di bawah.)",
         "guardianship_letter": "Hanya diperlukan jika persetujuan diberi oleh seseorang selain bapa atau ibu anda — perintah penjagaan dari mahkamah ATAU surat kebenaran bertulis daripada ibu bapa anda.",
-        "photo": "Gambar terkini anda."
+        "photo": "Gambar terkini anda.",
+        "coachLabel": "Cikgu Gopal · Pembantu",
+        "fallback": {
+          "name_mismatch": "Jangan risau — ini kerap berlaku! Kami tidak dapat memadankan nama pada dokumen ini dengan nama anda. Dokumen perlu menunjukkan nama anda dengan jelas supaya kami tahu ia milik anda. Semak anda memuat naik halaman yang betul, kemudian cuba lagi. Anda boleh!",
+          "nric_mismatch": "Jangan bimbang, ini mudah dibetulkan! Nombor KP yang kami baca tidak sepadan dengan yang ada dalam profil anda. Semak digit dalam profil anda, kemudian muat naik KP anda sekali lagi. Anda buat dengan baik.",
+          "address_mismatch": "Hampir siap! Kami tidak menemui alamat rumah anda pada bil ini. Bil utiliti membantu kami mengesahkan tempat tinggal anda, jadi pastikan alamat kelihatan jelas pada halaman yang dimuat naik, kemudian cuba lagi.",
+          "wrong_doc": "Hmm, ini nampaknya bukan dokumen yang kami jangkakan di sini — silap kecil yang mudah berlaku! Semak semula anda memilih fail yang betul, kemudian muat naik sekali lagi. Kami sedia membantu.",
+          "unreadable": "Kami menghadapi sedikit kesukaran membaca yang ini — mungkin kabur atau gelap. Cuba ambil gambar yang lebih jelas dan terang atau imbas semula, kemudian muat naik lagi. Tiada masalah, anda buat dengan baik!",
+          "review_manually": "Terima kasih kerana memuat naik ini! Kami tidak dapat menyemaknya secara automatik sekarang, tetapi jangan risau — seseorang akan menyemaknya. Tiada apa lagi yang perlu anda lakukan di sini.",
+          "generic": "Ada sesuatu yang kurang tepat dengan muat naik ini — tetapi jangan risau, ia mudah dibetulkan. Semak semula dan cuba muat naik sekali lagi. Anda buat dengan baik!"
+        }
       },
       "income": {
         "title": "Bukti pendapatan isi rumah"

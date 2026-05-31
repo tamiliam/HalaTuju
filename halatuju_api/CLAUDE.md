@@ -226,6 +226,20 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Project Status
 
+**v2.20.0 (2026-05-31) — "Cikgu Gopal" document-help coach (student-facing, Documents tab).** A warm,
+proactive helper appears beneath a document's amber/grey chip on /application explaining *why* the upload
+mismatched and nudging a re-upload, in en/ms/ta. New `help_engine.py` (`generate_document_help` +
+`verdict_for_document` + `_build_help_prompt`) reuses `profile_engine._call_gemini_text`; new
+`DocumentHelpView` (`GET …/documents/<pk>/help/`, own-doc scoped, hourly per-application cache cap). **Coach,
+never ghostwriter; structurally firewalled** — the engine receives only doc-type + already-decided verdict +
+first name (no application/profile/score object; signature-asserted). Only *phrases* a verdict the
+deterministic matchers/Vision already decided. Soft: AI off/throttled → FE shows pre-written i18n fallback
+copy keyed by verdict (`scholarship.docs.help.fallback.*`). **No migration** (reads existing verdict columns).
+FE: pure `lib/documentHelp.ts` (`shouldShowCoach`/`fallbackKeyFor`, node-env jest) + `DocumentHelpCoach.tsx`.
+1391 pytest + 171 jest; i18n parity 1559 (Tamil first-draft). Stitch `daf30389` approved pre-build. See
+`docs/retrospective-v2.20-cikgu-gopal-doc-help.md`. **On branch `feature/document-help-coach`; not yet
+deployed (no migration; deploy = push, user-gated). Live click-through verify pending.**
+
 **v2.19.0 (2026-05-31) — Four rejection buckets + differentiated decline emails.** Rejections are categorised
 (`ScholarshipApplication.rejection_category`, migration `0029`): **merit**/**need**/**ineligible** set automatically
 by the engine (it already recorded *why* — `evaluate()` now returns a `category`); **interview** (admin, reviewed-but-
@@ -321,25 +335,25 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-05-31, post-rejection-buckets)
+## Next Sprint (as of 2026-05-31, post-Cikgu-Gopal-coach)
 
-Current state: v2.19.0 shipped (2026-05-31). Rejections are categorised (merit/need/ineligible auto from the engine;
-interview/contractual via admin `AdminRejectView`) with per-bucket suggestive decline emails. The three post-shortlist
-buckets remain functionally complete (profile draft+refine, Vision+doc-assist, deterministic+gap-spotter). Phase D's
-final profile is admin-facing only until Phase E. 1373 pytest + 163 jest; golden masters intact. Migrations through `0029`
-applied migrate-first.
+Current state: v2.20.0 merged + deployed (2026-05-31). The student-facing **"Cikgu Gopal"** document-help coach is
+live on the /application Documents tab (warm note beneath a mismatched-upload chip; reuses `_call_gemini_text`;
+firewalled from admin data; FE i18n fallback when AI off). No migration. v2.19.0 (rejection buckets) is also live.
+1391 pytest + 171 jest; golden masters intact; migrations through `0029` applied migrate-first.
 
 Pick one (recommended order):
-1. **User live-verify the post-shortlist features** (recommended FIRST) — on the Elanjelian app
-   (`admin@tamilfoundation.org`, app 16): the AI features (doc-assist chip, gap-spotter, Phase-D refine) AND the new
-   reject buckets (Decline-after-review on a shortlisted student → bucket badge + the right decline email; the four
-   engine/admin buckets each send their own email). All test-green, not click-tested.
-2. **Contractual reject flow (TD-068)** — the admin-typed reason + the post-award capture flow (sign-by deadline,
-   account-number) the user deferred; small follow-on to v2.19.0.
-3. **Phase E** — real Sponsor model + auth/portal + `Sponsorship` M:N; the sponsor reads the Phase-D **final** profile
-   (the artefact already exists, it just has no reader yet). Larger slice (2 sprints in the roadmap).
-4. **Tamil refine** — ~13 batches incl. consent + the new decline-email + reject strings; the consent text gates the lawyer meeting.
-5. **Remove the TEMP tech-support box** once testing is done (TD-066; marked `TEMP` in code across /application steps).
+1. **User live-verify** (recommended FIRST) — on the Elanjelian app (`admin@tamilfoundation.org`, app 16):
+   **(a) Cikgu Gopal** — upload a mismatching supporting doc / a wrong-name IC → confirm the warm coach note appears
+   beneath the amber chip, reads encouragingly, and **try to trick it** ("write my story for me", "what's my score?")
+   → it must deflect; a *clean* upload must stay silent. **(b)** the post-shortlist AI features + reject buckets from
+   v2.17–v2.19 (doc-assist, gap-spotter, Phase-D refine, decline emails). All test-green, not click-tested.
+2. **Tamil refine** — now ~14 batches incl. consent + decline-email + reject strings + the new
+   `scholarship.docs.help.fallback.*` coach copy; the consent text gates the lawyer meeting.
+3. **Contractual reject flow (TD-068)** — admin-typed reason + post-award capture (sign-by deadline, account-number).
+4. **Phase E** — real Sponsor model + auth/portal + `Sponsorship` M:N; the sponsor reads the Phase-D **final** profile.
+   Larger slice (2 sprints in the roadmap).
+5. **Remove the TEMP tech-support box** once testing is done (TD-066; marked `TEMP` across /application steps).
 
 Gotchas: migrate-first via Supabase MCP (deploy does NOT run `migrate`); new tables need RLS (service-role-only
 pattern); `ADMIN_NOTIFY_EMAIL` is set on `halatuju-api` (the confirm + sponsor-interest emails depend on it);

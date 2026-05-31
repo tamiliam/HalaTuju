@@ -801,7 +801,17 @@
         "offer_letter": "If you already have a university or college offer.",
         "photo": "A recent photo of yourself.",
         "parent_ic": "A photo of your parent or guardian's IC. We use it to verify supporting documents like STR or EPF that are usually issued in your parent's name. (If you are under 18, your parent or guardian also signs the consent below.)",
-        "guardianship_letter": "Only needed if the consent will be given by someone other than your father or mother — a court-issued guardianship order OR a written authorisation letter from your parent."
+        "guardianship_letter": "Only needed if the consent will be given by someone other than your father or mother — a court-issued guardianship order OR a written authorisation letter from your parent.",
+        "coachLabel": "Cikgu Gopal · Helper",
+        "fallback": {
+          "name_mismatch": "No worries — this happens a lot! We couldn't match the name on this document to your name. Documents need to clearly show your name so we know they're yours. Check you've uploaded the right page, then try again. You've got this!",
+          "nric_mismatch": "Don't worry, this is an easy fix! The IC number we read didn't match the one in your profile. Have a quick look at your profile to check the digits, then upload your IC again. You're doing great.",
+          "address_mismatch": "Almost there! We couldn't find your home address on this bill. Utility bills help us confirm where you live, so make sure the address is clearly visible on the page you uploaded, then try again.",
+          "wrong_doc": "Hmm, this doesn't look like the document we expected here — an easy mix-up! Double-check you picked the right file, then upload again. Happy to help if you get stuck.",
+          "unreadable": "We had a little trouble reading this one — it might be blurry or a bit dark. Try a clearer, well-lit photo or a fresh scan, then upload again. No rush, you're doing well!",
+          "review_manually": "Thanks for uploading this! We couldn't auto-check it just now, but don't worry — a real person will take a look. There's nothing more you need to do here.",
+          "generic": "Something didn't look quite right with this upload — but it's nothing to worry about and easily fixed. Have another look and try uploading again. You're doing great!"
+        }
       },
       "income": {
         "title": "Proof of household income"
