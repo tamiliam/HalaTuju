@@ -226,6 +226,14 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Project Status
 
+**v2.25.1 (2026-06-01) — Anon-profile pre-publish identifier scan (TD-074b).** Structural backstop on the generated
+anonymous blurb: `pool.scan_anon_for_identifiers(text, profile)` scans for the student's own identifying tokens
+(name/school distinctive tokens — generic SMK/Sekolah/… + bin/binti connectors stoplisted — city, NRIC, phone, email);
+`AdminPublishAnonProfileView` **refuses to publish** on a leak (`400 anon_identifier_leak` + `fields`), admin must
+regenerate. Three layers now guard the soft surface (prompt → admin review → publish-block); the allowlist card stays
+the hard boundary. Closes one of the two pre-go-live pool gates (other = lawyer review). +7 tests; 1435 pytest + 183
+jest. Backend only, no migration.
+
 **v2.25.0 (2026-05-31) — Phase E Sprint E2b: anonymised pool FRONTEND (browse UI + admin anon controls).** Completes
 E2 end-to-end, still behind `SPONSOR_POOL_ENABLED` (OFF → pool API 404s → `/sponsor` shows the "coming soon" shell; the
 real UI appears only when flipped post-lawyer = **dark deploy**). Sponsor browse: `/sponsor` approved state → anonymised
@@ -406,7 +414,7 @@ incomplete profiles (no override) in `AdminVerifyAcceptView`; request-more-docs;
 preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **Out of scope (future): Phase D**
 (Gemini v2 refines profile with interview findings), **Phase E** (real sponsor portal + auth), **Phase F** (mentor).
 
-- 1428 backend tests, 183 frontend (jest) tests, 0 failures
+- 1435 backend tests, 183 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
@@ -421,9 +429,9 @@ active `share_with_sponsors` consent; allowlist serializers (leak-tested); gener
 1428 pytest + 183 jest; golden masters intact; courses migrations through `0052`, scholarship through **`0033`**.
 
 Pick one (recommended order):
-0. **Lawyer review** of the anonymised-card content + the consent text — the gate to flipping `SPONSOR_POOL_ENABLED`
-   on. Until then E2 ships dark. Before flipping for real students, also do **TD-074b** (a pre-publish identifier scan
-   on the generated blurb) for a structural — not just model-trust — guarantee on the soft surface.
+0. **Lawyer review** of the anonymised-card content + the consent text — the **only remaining gate** to flipping
+   `SPONSOR_POOL_ENABLED` on (TD-074b's structural pre-publish identifier scan is now done, v2.25.1). Until the lawyer
+   signs off, E2 ships dark.
 1. **Local smoke of E2** (flag on + dummy data): set `SPONSOR_POOL_ENABLED=true`, seed an approved sponsor + a student
    with a published anon profile + active consent → confirm the browse grid + detail render and leak nothing; admin
    Generate→Publish round-trip. (Headless can't do this — TD-070 territory.)

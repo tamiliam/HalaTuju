@@ -248,7 +248,10 @@ gates it. **The hard safety boundary is the allowlist serializers** `SponsorPool
 passthrough**, so a new model field cannot leak; `test_sponsor_pool.py` asserts no name/NRIC/address/phone/email/school
 appears in any sponsor payload. Browse: `SponsorPoolListView`/`SponsorPoolDetailView` (`views_sponsor.py`,
 `/api/v1/sponsor/pool/[/<id>/]`) gated by **`settings.SPONSOR_POOL_ENABLED` (default OFF → 404)** AND
-`require_approved_sponsor`. Admin: `AdminGenerateAnonProfileView`/`AdminPublishAnonProfileView` (reviewer-gated).
+`require_approved_sponsor`. Admin: `AdminGenerateAnonProfileView`/`AdminPublishAnonProfileView` (reviewer-gated). **TD-074b:**
+`AdminPublishAnonProfileView` runs `pool.scan_anon_for_identifiers(text, profile)` and **blocks publish** (`400
+anon_identifier_leak`) if the generated blurb contains the student's own name/school/city/NRIC/phone/email tokens — a
+structural backstop on the one soft (generated-text) surface.
 The whole pool is dark until the lawyer signs off (flip the env flag).
 
 **Phase E2b — pool frontend (v2.25.0, dark deploy).** Sponsor browse: `app/sponsor/page.tsx` approved state fetches

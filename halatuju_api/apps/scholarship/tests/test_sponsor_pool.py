@@ -158,6 +158,42 @@ class TestAnonPrompt(TestCase):
         self.assertIn(IDENTIFIERS['name'], named)
 
 
+# ─── TD-074b: the pre-publish identifier scan ────────────────────────────────
+
+class TestAnonScan(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def setUp(self):
+        self.profile = _make_eligible_app(self.cohort).profile  # carries the IDENTIFIERS
+
+    def test_clean_blurb_passes(self):
+        self.assertEqual(
+            pool.scan_anon_for_identifiers('The student is a determined SPM leaver in engineering.', self.profile), [])
+
+    def test_catches_name(self):
+        self.assertIn('name', pool.scan_anon_for_identifiers('The student, Zxqvbn, is bright.', self.profile))
+
+    def test_catches_school_distinctive_token(self):
+        # "Secret" is the distinctive part of "SMK Secret School" (SMK/School are generic).
+        self.assertIn('school', pool.scan_anon_for_identifiers('Studied at a Secret institution.', self.profile))
+
+    def test_catches_city(self):
+        self.assertIn('city', pool.scan_anon_for_identifiers('Lives in Siretown these days.', self.profile))
+
+    def test_catches_nric_phone_email(self):
+        txt = 'Reach 050505-10-9999 or 012-999 8888 or leak@secret.example'
+        f = pool.scan_anon_for_identifiers(txt, self.profile)
+        self.assertIn('nric', f)
+        self.assertIn('phone', f)
+        self.assertIn('email', f)
+
+    def test_empty_text_or_no_profile(self):
+        self.assertEqual(pool.scan_anon_for_identifiers('', self.profile), [])
+        self.assertEqual(pool.scan_anon_for_identifiers('anything', None), [])
+
+
 # ─── sponsor browse endpoints: flag + approval gating ────────────────────────
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
@@ -256,6 +292,19 @@ class TestAdminAnonProfile(TestCase):
         r = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/anon-profile/publish/', {}, format='json')
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.json()['code'], 'no_anon')
+
+    def test_publish_blocked_when_blurb_leaks_identifier(self):
+        # TD-074b: a blurb that contains the student's name cannot be published.
+        self._auth('rev')
+        SponsorProfile.objects.filter(application=self.app).update(
+            anon_markdown=f"The student {IDENTIFIERS['name'].split()[0]} is determined.")
+        r = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/anon-profile/publish/',
+                             {'publish': True}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'anon_identifier_leak')
+        self.assertIn('name', r.json()['fields'])
+        self.app.sponsor_profile.refresh_from_db()
+        self.assertFalse(self.app.sponsor_profile.anon_published)  # stayed unpublished
 
     def test_viewer_forbidden(self):
         self._auth('vie')

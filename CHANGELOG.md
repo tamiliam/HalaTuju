@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.25.1] — Anon-profile pre-publish identifier scan (TD-074b) (2026-06-01)
+
+- **The anonymous sponsor blurb's anonymity is now structural, not just model-trust + human-review.** The blurb is
+  generated from non-identifying inputs but is fed the student's free-text narrative, which could echo a name/school/
+  place. New `pool.scan_anon_for_identifiers(text, profile)` scans the generated blurb for the student's **own**
+  identifying tokens — name + school distinctive tokens (generic words like SMK/Sekolah/School and connectors
+  bin/binti/a-l are stoplisted to avoid false positives), city, NRIC, phone, email — and `AdminPublishAnonProfileView`
+  now **refuses to publish** (`400 anon_identifier_leak` + the offending `fields`) when any are found; the profile
+  stays unpublished and the admin must regenerate first. The scan errs toward blocking. Three layers now guard the
+  soft surface (prompt forbids → admin reviews → system blocks publish on leak); the allowlist card remains the hard
+  boundary. Closes one of the two pre-go-live gates for the pool flag (the other is the lawyer review). +7 tests;
+  1435 pytest. Backend only, no migration.
+
 ## [2.25.0] — Phase E Sprint E2b: anonymised pool frontend (browse UI + admin anon controls) (2026-05-31)
 
 - **The pool frontend — completing Phase E2 end-to-end, still behind the OFF flag (dark deploy).** While

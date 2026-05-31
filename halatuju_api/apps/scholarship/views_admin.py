@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from apps.courses.models import PartnerAdmin
 from apps.courses.views_admin import PartnerAdminMixin
 
+from . import pool
 from .anomaly_engine import detect_anomalies
 from .emails import send_request_info_email
 from .models import (
@@ -372,6 +373,15 @@ class AdminPublishAnonProfileView(_AdminBase):
             return Response({'error': 'Generate an anonymous profile first.', 'code': 'no_anon'},
                             status=status.HTTP_400_BAD_REQUEST)
         publish = request.data.get('publish', True)
+        if publish:
+            # TD-074b: structural backstop — refuse to publish a blurb that contains
+            # the student's own identifying tokens (name/school/city/NRIC/phone/email).
+            leaks = pool.scan_anon_for_identifiers(sp.anon_markdown, getattr(sp.application, 'profile', None))
+            if leaks:
+                return Response(
+                    {'error': 'The anonymous profile may contain identifying details — regenerate before publishing.',
+                     'code': 'anon_identifier_leak', 'fields': leaks},
+                    status=status.HTTP_400_BAD_REQUEST)
         sp.anon_published = bool(publish)
         sp.anon_published_at = timezone.now() if publish else None
         sp.save(update_fields=['anon_published', 'anon_published_at', 'updated_at'])

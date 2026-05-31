@@ -10,6 +10,7 @@ share_with_sponsors consent** (consent IS the opt-in). The whole pool is also
 gated behind the ``SPONSOR_POOL_ENABLED`` flag (off until lawyer sign-off).
 """
 import hashlib
+import re
 
 from .shortlisting import count_spm_a_grades
 
@@ -53,6 +54,66 @@ def is_pool_eligible(application):
     if sp is None or not sp.anon_published:
         return False
     return has_active_share_consent(application)
+
+
+# ── TD-074b: pre-publish identifier backstop ─────────────────────────────────
+# The anonymous blurb is GENERATED from non-identifying inputs, but it is fed the
+# student's free-text narrative, so a name/school/place could slip through despite
+# the prompt instruction. This scan is the STRUCTURAL gate: an admin cannot publish
+# an anonymous profile that contains the student's own identifying tokens.
+
+# Connectors/short tokens that are not identifying on their own.
+_NAME_CONNECTORS = {'bin', 'binti', 'a/l', 'a/p', 's/o', 'd/o', 'al', 'ap', 'so', 'do'}
+# Generic school-type words — common to thousands of schools, not identifying alone.
+_GENERIC_SCHOOL = {
+    'sekolah', 'menengah', 'kebangsaan', 'rendah', 'smk', 'smjk', 'sjk',
+    'sjkc', 'sjkt', 'college', 'kolej', 'school', 'agama', 'teknik', 'vokasional',
+    'islam', 'integrasi', 'harian', 'asrama', 'penuh',
+}
+
+
+def _distinct_tokens(value, stop):
+    """Lowercased word tokens (>=3 chars) from a name/school, minus generic stop words."""
+    out = []
+    for raw in re.split(r'[\s/]+', (value or '').lower()):
+        tok = raw.strip('.,()-\'"')
+        if len(tok) >= 3 and tok not in stop:
+            out.append(tok)
+    return out
+
+
+def scan_anon_for_identifiers(text, profile):
+    """Return the list of identifying FIELDS that appear in the anonymous blurb
+    (e.g. ['name', 'city']). Empty when clean. Used to BLOCK publish — a non-empty
+    result means the generated profile leaked something it must not."""
+    if not text or profile is None:
+        return []
+    low = text.lower()
+    digits = re.sub(r'\D', '', low)
+    found = []
+
+    for tok in _distinct_tokens(getattr(profile, 'name', ''), _NAME_CONNECTORS):
+        if re.search(rf'\b{re.escape(tok)}\b', low):
+            found.append('name')
+            break
+    for tok in _distinct_tokens(getattr(profile, 'school', ''), _GENERIC_SCHOOL):
+        if re.search(rf'\b{re.escape(tok)}\b', low):
+            found.append('school')
+            break
+
+    city = (getattr(profile, 'city', '') or '').strip().lower()
+    if len(city) >= 3 and re.search(rf'\b{re.escape(city)}\b', low):
+        found.append('city')
+
+    for field, attr, minlen in (('nric', 'nric', 6), ('phone', 'contact_phone', 7)):
+        d = re.sub(r'\D', '', getattr(profile, attr, '') or '')
+        if len(d) >= minlen and d in digits:
+            found.append(field)
+
+    email = (getattr(profile, 'contact_email', '') or '').strip().lower()
+    if email and email in low:
+        found.append('email')
+    return found
 
 
 def eligible_pool_queryset(model):
