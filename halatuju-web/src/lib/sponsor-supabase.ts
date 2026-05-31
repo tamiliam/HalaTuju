@@ -18,6 +18,9 @@ export function getSponsorSupabase(): SupabaseClient {
     _sponsorSupabase = createClient(url, key, {
       auth: {
         storageKey: 'halatuju_sponsor_session',
+        // PKCE so this OAuth session can't be read off the URL hash by the
+        // globally-mounted student client (which would leak sponsor → student).
+        flowType: 'pkce',
       },
     })
   }

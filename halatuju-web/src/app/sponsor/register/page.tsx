@@ -7,8 +7,7 @@ import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { sponsorSignUpWithPassword, sponsorSignInWithGoogle } from '@/lib/sponsor-supabase'
 import { registerSponsor } from '@/lib/api'
-import { checkPassword, SPONSOR_SOURCES } from '@/lib/sponsorAuth'
-import { formatPhone, isValidPhone } from '@/lib/scholarship'
+import { checkPassword, SPONSOR_SOURCES, formatMyMobile, isValidMyMobile } from '@/lib/sponsorAuth'
 import { KEY_SPONSOR_PENDING } from '@/lib/storage'
 
 const EMAIL_RE = /\S+@\S+\.\S+/
@@ -29,9 +28,11 @@ export default function SponsorRegisterPage() {
 
   const pw = checkPassword(password)
   const pwMatch = password.length > 0 && password === password2
+  const emailInvalid = email.length > 0 && !EMAIL_RE.test(email)
+  const phoneInvalid = phone.length > 0 && !isValidMyMobile(phone)
   const canSubmit =
     !!name.trim() && EMAIL_RE.test(email) && pw.allPass && pwMatch &&
-    isValidPhone(phone) && !!source && consent && !loading
+    isValidMyMobile(phone) && !!source && consent && !loading
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,7 +57,7 @@ export default function SponsorRegisterPage() {
       // Email confirmation disabled → we have a session; create the pending account now.
       try {
         await registerSponsor(
-          { name: name.trim(), phone, source, consent: true },
+          { name: name.trim(), phone: `+60 ${phone}`, source, consent: true },
           { token: data.session.access_token },
         )
         try { sessionStorage.removeItem(KEY_SPONSOR_PENDING) } catch { /* ignore */ }
@@ -114,16 +115,17 @@ export default function SponsorRegisterPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.fullName')} *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.fullName')} <span className="text-red-500">*</span></label>
                   <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.email')} *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.email')} <span className="text-red-500">*</span></label>
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+                  {emailInvalid && <p className="text-xs text-red-600 mt-1">{t('sponsorAuth.emailInvalid')}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.password')} *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.password')} <span className="text-red-500">*</span></label>
                   <div className="rounded-lg bg-blue-50/70 border border-blue-100 px-3 py-2 mb-2 text-xs text-gray-600">
                     <p className="font-medium text-gray-700 mb-1">{t('sponsorAuth.pwRulesTitle')}</p>
                     <ul className="space-y-0.5">
@@ -135,7 +137,7 @@ export default function SponsorRegisterPage() {
                   <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} autoComplete="new-password" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.reenterPassword')} *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.reenterPassword')} <span className="text-red-500">*</span></label>
                   <input type="password" value={password2} onChange={(e) => setPassword2(e.target.value)} className={inputCls} autoComplete="new-password" />
                   {password2.length > 0 && !pwMatch && (
                     <p className="text-xs text-red-600 mt-1">{t('sponsorAuth.pwMismatch')}</p>
@@ -143,18 +145,19 @@ export default function SponsorRegisterPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.phone')} *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.phone')} <span className="text-red-500">*</span></label>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600 whitespace-nowrap">
                       🇲🇾 +60
                     </span>
-                    <input inputMode="tel" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))}
-                      placeholder="012-345 6789" className={inputCls} />
+                    <input inputMode="tel" value={phone} onChange={(e) => setPhone(formatMyMobile(e.target.value))}
+                      placeholder="12-345 6789" className={inputCls} />
                   </div>
+                  {phoneInvalid && <p className="text-xs text-red-600 mt-1">{t('sponsorAuth.mobileInvalid')}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.source')} *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.source')} <span className="text-red-500">*</span></label>
                   <select value={source} onChange={(e) => setSource(e.target.value)} className={inputCls}>
                     <option value="">{t('sponsorAuth.sourcePlaceholder')}</option>
                     {SPONSOR_SOURCES.map((s) => <option key={s} value={s}>{t(`sponsorAuth.sourceOption.${s}`)}</option>)}

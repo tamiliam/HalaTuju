@@ -16,6 +16,9 @@ export function getAdminSupabase(): SupabaseClient {
     _adminSupabase = createClient(url, key, {
       auth: {
         storageKey: 'halatuju_admin_session',
+        // PKCE so this OAuth session can't be read off the URL hash by the
+        // globally-mounted student client (which would leak admin → student).
+        flowType: 'pkce',
       },
     })
   }

@@ -10,7 +10,13 @@ export function getSupabase(): SupabaseClient {
     if (!url || !key) {
       throw new Error('Supabase credentials not configured')
     }
-    _supabase = createClient(url, key)
+    // flowType: 'pkce' — OAuth returns a `?code=` that can only be exchanged with
+    // the code-verifier stored under THIS client's storage key. The default
+    // ('implicit') returns the session in the URL hash, which any mounted client
+    // (this student client is mounted globally, incl. on /admin/* + /sponsor/*
+    // callbacks) would happily read — leaking the admin/sponsor Google session into
+    // the student session. PKCE closes that bleed.
+    _supabase = createClient(url, key, { auth: { flowType: 'pkce' } })
   }
   return _supabase
 }

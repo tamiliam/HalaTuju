@@ -8,8 +8,7 @@ import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { sponsorSignOut } from '@/lib/sponsor-supabase'
 import { registerSponsor } from '@/lib/api'
-import { SPONSOR_SOURCES } from '@/lib/sponsorAuth'
-import { formatPhone, isValidPhone } from '@/lib/scholarship'
+import { SPONSOR_SOURCES, formatMyMobile, isValidMyMobile } from '@/lib/sponsorAuth'
 import { KEY_SPONSOR_PENDING } from '@/lib/storage'
 
 export default function SponsorPortalPage() {
@@ -40,12 +39,13 @@ export default function SponsorPortalPage() {
     } catch { /* ignore malformed stash */ }
     const metaName = (session?.user?.user_metadata?.full_name as string) || (session?.user?.user_metadata?.name as string) || ''
     setName(account?.name || stash.name || metaName || '')
-    setPhone(account?.phone || stash.phone || '')
+    setPhone(formatMyMobile(account?.phone || stash.phone || ''))
     setSource(account?.source || stash.source || '')
     prefilled.current = true
   }, [needsDetails, account, session])
 
-  const canSubmit = !!name.trim() && isValidPhone(phone) && !!source && consent && !submitting
+  const phoneInvalid = phone.length > 0 && !isValidMyMobile(phone)
+  const canSubmit = !!name.trim() && isValidMyMobile(phone) && !!source && consent && !submitting
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,7 +53,7 @@ export default function SponsorPortalPage() {
     setSubmitting(true)
     setError('')
     try {
-      await registerSponsor({ name: name.trim(), phone, source, consent: true }, { token })
+      await registerSponsor({ name: name.trim(), phone: `+60 ${phone}`, source, consent: true }, { token })
       try { sessionStorage.removeItem(KEY_SPONSOR_PENDING) } catch { /* ignore */ }
       await refreshAccount()
     } catch {
@@ -109,18 +109,19 @@ export default function SponsorPortalPage() {
               <p className="text-sm text-gray-600 mt-1">{t('sponsorPortal.completeBody')}</p>
               <form onSubmit={handleSubmit} className="mt-5 space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.fullName')} *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.fullName')} <span className="text-red-500">*</span></label>
                   <input value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.phone')} *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.phone')} <span className="text-red-500">*</span></label>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-600 whitespace-nowrap">🇲🇾 +60</span>
-                    <input inputMode="tel" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} placeholder="012-345 6789" className={inputCls} />
+                    <input inputMode="tel" value={phone} onChange={(e) => setPhone(formatMyMobile(e.target.value))} placeholder="12-345 6789" className={inputCls} />
                   </div>
+                  {phoneInvalid && <p className="text-xs text-red-600 mt-1">{t('sponsorAuth.mobileInvalid')}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.source')} *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('sponsorAuth.source')} <span className="text-red-500">*</span></label>
                   <select value={source} onChange={(e) => setSource(e.target.value)} className={inputCls}>
                     <option value="">{t('sponsorAuth.sourcePlaceholder')}</option>
                     {SPONSOR_SOURCES.map((s) => <option key={s} value={s}>{t(`sponsorAuth.sourceOption.${s}`)}</option>)}

@@ -226,6 +226,17 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Project Status
 
+**v2.23.1 (2026-05-31) — Auth session-isolation fix (PKCE) + sponsor/partner UX polish.** **Fixed a cross-scope
+session leak:** Google login on the admin/sponsor console also created a Student session (implicit-flow `#access_token`
+hash read by the globally-mounted student `AuthProvider`); admin logout didn't clear it. **All three Supabase clients
+now use `flowType: 'pkce'`** (`getSupabase`/`getAdminSupabase`/`getSponsorSupabase`) so a non-initiating client can't
+claim an OAuth session off the URL — closes the bleed (one Gmail = one Supabase identity, gated per-scope by role; the
+risk was on shared computers). Polish: student modal → "Create Your Free **Student** Account"; phone fields →
+"**Mobile number**" + `12-345 6789` placeholder + `formatMyMobile`/`isValidMyMobile` (node-tested) + inline email/mobile
+validation (sponsor phone stored `+60 …`); red required `*`. `/admin/login` → "**Partner Login**" / "For partner
+organisations and invited individuals" (badge "Partner"); footer "Admin" link removed. No migration. 1411 pytest + 183
+jest; i18n parity 1652; `next build` clean. See `docs/retrospective-v2.23.1-auth-isolation.md`.
+
 **v2.23.0 (2026-05-31) — Phase E Sprint E1c: sponsor self-serve auth (email/password + Google).** Live-feedback
 follow-up to E1. **Dedicated `/sponsor/login`** (email/pw + Google + forgot, styled like `/admin/login`) + full
 **`/sponsor/register`** (Full name as in NRIC/Passport, Email, Password w/ live rule checks, Re-enter, Phone +60,
@@ -365,7 +376,7 @@ incomplete profiles (no override) in `AdminVerifyAcceptView`; request-more-docs;
 preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **Out of scope (future): Phase D**
 (Gemini v2 refines profile with interview findings), **Phase E** (real sponsor portal + auth), **Phase F** (mentor).
 
-- 1411 backend tests, 178 frontend (jest) tests, 0 failures
+- 1411 backend tests, 183 frontend (jest) tests, 0 failures
 - Golden masters: SPM=5319, STPM=2026
 - CI/CD: Cloud Build continuous deployment from GitHub (push to `main` triggers deploy). **Triggers do NOT run
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).

@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.23.1] — Auth session-isolation fix (PKCE) + sponsor/partner UX polish (2026-05-31)
+
+- **Security/correctness fix — cross-scope session leak closed (PKCE).** Logging into the Partner (admin) or Sponsor
+  console with Google **also silently created a Student session in the same browser**, and logging out of admin didn't
+  clear it — so clicking "Dashboard" afterwards showed you logged in. **Root cause:** Supabase-js defaults to the
+  **implicit** OAuth flow, which returns the session in the URL *hash* (`#access_token=…`) — readable with no secret —
+  and the student `AuthProvider` is mounted **globally** (incl. on `/admin/auth/callback` + `/sponsor/auth/callback`)
+  with `detectSessionInUrl` on, so it grabbed the admin/sponsor Google session into the student storage key. **Fix:**
+  all three Supabase clients (student `getSupabase`, `getAdminSupabase`, `getSponsorSupabase`) now use
+  `flowType: 'pkce'` — the OAuth result comes back as a `?code=` that can only be exchanged with the code-verifier
+  stored under the *initiating* client's storage key, so a non-initiating client (the global student client on an
+  admin/sponsor callback) physically cannot claim the session. Not a privilege escalation (one Google account = one
+  Supabase identity, gated per-scope by role), but a real isolation bug on shared/public computers. **Note:** users
+  who already have a leaked student session must log out / clear storage once; the bleed cannot recur after this.
+- **Sponsor form + student modal polish (live feedback):**
+  - Student auth-gate modal title → **"Create Your Free Student Account"** (was "…Free Account").
+  - Phone fields now read **"Mobile number"** with the correct **`12-345 6789`** placeholder (the leading 0 is dropped
+    after the `+60` prefix); new `formatMyMobile`/`isValidMyMobile` helpers (node-unit-tested) format as you type and
+    **validate** the number, with inline error messages for **email** and **mobile** on the sponsor register form.
+    Sponsor phone is stored as `+60 12-345 6789`.
+  - Required-field `*` markers are now **red** on the sponsor register + complete-details forms.
+- **Partner login rename + footer cleanup:** `/admin/login` now reads **"Partner Login"** with subtitle **"For partner
+  organisations and invited individuals"** (was "Admin Login / Partner organisation portal") — so an invited volunteer
+  interviewer, not only an organisation, reads themselves into it; the top badge reads "Partner". The redundant
+  **"Admin" link in the site footer was removed** (the partner portal is still reachable via the header's Log in ▾ →
+  Partner). i18n en/ms/ta (parity 1652; Tamil first-draft). No migration. 1411 pytest + 183 jest; `next build` clean.
+
 ## [2.23.0] — Phase E Sprint E1c: sponsor self-serve auth (email/password + Google) (2026-05-31)
 
 - **Sponsors now have a real self-serve account, not just a Google-only thin form.** Acting on live feedback after E1:

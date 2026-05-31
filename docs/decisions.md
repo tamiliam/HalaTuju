@@ -1657,3 +1657,31 @@ header; copy-pasting the dropdown would have been the drift risk the user's "kee
 the `AuthProvider` — true everywhere it's used. Negligible.
 
 **Revisit if:** the header and landing need genuinely different logged-out actions (then parameterise or split).
+
+## PKCE flow on all browser Supabase clients (session isolation) — v2.23.1, 2026-05-31
+
+**Decision:** Every browser Supabase client — student `getSupabase`, `getAdminSupabase`, `getSponsorSupabase` — sets
+`auth.flowType: 'pkce'`. This is the load-bearing mechanism that keeps the three sessions isolated even though they
+share an origin and (often) the same Google identity.
+
+**Alternatives considered:** (1) Rely on the distinct `storageKey` per client for isolation (the prior, broken
+assumption). (2) Set `detectSessionInUrl: false` on the student client + handle `/auth/callback` with an explicit
+`exchangeCodeForSession`. (3) Scope the student `AuthProvider` so it doesn't mount under `/admin` + `/sponsor`.
+(4) PKCE on all clients (chosen).
+
+**Rationale:** A distinct `storageKey` does **not** isolate sessions under the supabase-js default (`implicit`): the
+OAuth session returns in the URL hash, which any mounted client reads regardless of storage key, and the student
+`AuthProvider` is mounted globally — so admin/sponsor Google logins bled into the student session (confirmed in code +
+by user repro). PKCE makes the session come back as a `?code=` that requires the verifier stored under the initiating
+client's key, so a non-initiating client physically cannot claim it. It's a one-line, library-standard change with no
+migration, no redirect-URL change, and it keeps every existing callback working (each client exchanges only the codes
+it initiated). Options 2 and 3 are real hardening but bigger and riskier on the critical student login path; they
+remain available as belt-and-suspenders (TD-073) but aren't needed for the security property.
+
+**Trade-offs:** The globally-mounted student client still *attempts* (and harmlessly fails) to read the `?code` on
+admin/sponsor callbacks — a benign "code verifier not found" with no session claimed (TD-073). One Gmail remains one
+Supabase identity; cross-scope authority is still gated per-endpoint by role rows (`StudentProfile`/`PartnerAdmin`/
+`Sponsor`), which is correct.
+
+**Revisit if:** the auth architecture moves to a single role-aware client, or a future client genuinely needs implicit
+flow (it shouldn't) — in which case the isolation must be re-proven, not assumed.

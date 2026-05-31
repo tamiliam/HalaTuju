@@ -98,7 +98,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md px-6">
         <div className="flex items-center justify-center gap-2 mb-8">
           <Image src="/logo-icon.png" alt="HalaTuju" width={90} height={48} />
-          <span className="text-lg font-bold text-blue-600">Admin</span>
+          <span className="text-lg font-bold text-blue-600">Partner</span>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">

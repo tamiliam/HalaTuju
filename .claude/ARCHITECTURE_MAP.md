@@ -238,6 +238,16 @@ sign-in → complete-details (Google/email-confirm gap) → pending/approved/ina
 student-client sign-in was removed** — sponsors never touch the student `AuthGateReason`/NRIC flow. E1 holds **zero
 student data**; anonymised browsing (E2) is lawyer-gated.
 
+**Three isolated Supabase clients + the PKCE invariant (v2.23.1):** student `getSupabase` (default storage key, mounted
+globally via `app/providers.tsx`), `getAdminSupabase` (`halatuju_admin_session`, mounted under `/admin/*`), and
+`getSponsorSupabase` (`halatuju_sponsor_session`, mounted under `/sponsor/*`). **All three set `flowType: 'pkce'` — this
+is load-bearing for session isolation.** With the supabase-js default (`implicit`), OAuth returns the session in the URL
+hash and the globally-mounted student client reads admin/sponsor Google logins off `/admin/auth/callback` +
+`/sponsor/auth/callback` into the student storage key (a real cross-scope bleed, fixed 2026-05-31). PKCE means the
+session comes back as `?code=` exchangeable only with the verifier under the *initiating* client's key, so a
+non-initiating client can't claim it. **Any new auth client must also use PKCE.** (One Google account = one Supabase
+identity; "roles" are app-level rows — `StudentProfile`/`PartnerAdmin`/`Sponsor` — keyed by `supabase_user_id`.)
+
 **Frontend (Sprint 2):** `halatuju-web/src/app/scholarship/apply/page.tsx` (single front-door
 application form), `src/lib/scholarship.ts` (pure form helpers, node-tested in
 `src/lib/__tests__/scholarship.test.ts`), `submit/getMyScholarshipApplications` in `lib/api.ts`,

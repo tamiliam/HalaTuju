@@ -343,7 +343,7 @@ export default function AuthGateModal() {
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="12 345 6789"
+                      placeholder="12-345 6789"
                       className="input rounded-l-none"
                       required
                     />
