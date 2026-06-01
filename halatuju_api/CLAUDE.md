@@ -451,13 +451,17 @@ post-shortlist signals into ONE four-fact verdict (Identity/Academic/Income/Path
 - **S1 ✅** `verdict_engine.py` (deterministic rollup) + officer scorecard card + serializer field. No migration.
 - **S2 ✅** grade OCR (`results: [{subject, grade}]`) + `academic_engine.py` (completeness + accuracy by normalised
   subject name). No migration (grades in `vision_fields`).
-- **▶ S3 NEXT — resolution-ticket backend** (IBKR-style: each unresolved verdict item → a discrete ticket closable by
-  doc/explanation/confirm; new `ResolutionItem` model → **needs a migration**, RLS deny-by-default, migrate-first via
-  MCP, contenttypes workaround for the new-model migration per TD-058). Then S4 student Action Centre, S5 officer panel
-  + documents-box redesign (Stitch-first) + final-profile loop.
-- Backend 1481 pytest (+35) + 183 jest; courses migrations through `0052`, scholarship through `0035`.
-- Gotchas carried in: changing a doc-assist extraction shape has a hidden FE renderer consumer (lessons.md); subject
-  map duplicated FE/BE (TD-078); billable real-slip OCR smoke deferred (user-run).
+- **S3 ✅** resolution-ticket backend — `ResolutionItem` (**migration `0036`**, on branch; NOT applied to prod) +
+  `resolution.py` (idempotent verdict-driven sync, auto-resolve, no-re-nag; 3 codes excluded) + student/officer
+  endpoints. Backend only.
+- **▶ S4 NEXT — student Action Centre (FRONTEND)** — the IBKR queue UI consuming `GET scholarship/resolution-items`
+  (open + resolved) with upload-or-explain-or-confirm per ticket. **UI sprint → Stitch-first** (mandatory rule). Then
+  S5 officer panel + documents-box redesign (Stitch) + final-profile loop.
+- Backend 1490 pytest (+9 in S3) + 183 jest; courses migrations through `0052`, scholarship through **`0036`**.
+- **Deploy note:** when the roadmap deploys, `0036` is a **new-model migration → needs the contenttypes/auth
+  workaround (TD-058) + RLS** (`sql/rls_policies.sql` updated), applied migrate-first via MCP before pushing `main`.
+- Gotchas carried in: doc-assist extraction shape has a hidden FE renderer consumer (lessons.md); subject map
+  duplicated FE/BE (TD-078); resolution sync writes on GET + no-re-nag (TD-079); billable real-slip OCR smoke (user-run).
 
 ---
 
