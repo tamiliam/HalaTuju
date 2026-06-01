@@ -143,6 +143,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # {code, params}; the frontend resolves human copy from its i18n bundle.
     anomalies = serializers.SerializerMethodField()
     verdict = serializers.SerializerMethodField()
+    resolution_items = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
     interview_session = serializers.SerializerMethodField()
     # Phase B: Gemini interview gaps — a PLAIN read-only field (the GET never calls
@@ -191,6 +192,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'funding_need', 'documents', 'referees', 'consents', 'sponsor_profile',
             'anomalies',
             'verdict',
+            'resolution_items',
             'intake_snapshot',
         ]
 
@@ -255,6 +257,14 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         LLM calls — mirrors get_anomalies."""
         from .verdict_engine import build_verdict
         return build_verdict(obj)
+
+    def get_resolution_items(self, obj):
+        """S3 resolution queue: sync the system tickets against the live verdict,
+        then return the OPEN items (system + officer) so the officer sees exactly
+        what the student still owes. The sync is idempotent + race-safe."""
+        from .resolution import sync_resolution_items
+        from .serializers import ResolutionItemSerializer
+        return ResolutionItemSerializer(sync_resolution_items(obj), many=True).data
 
     def get_completeness(self, obj):
         """Phase C: the 7-part completeness breakdown, so the admin can see

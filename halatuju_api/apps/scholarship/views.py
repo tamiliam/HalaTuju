@@ -287,6 +287,10 @@ class DocumentListCreateView(APIView):
             if doc.doc_type in _vision.GEMINI_EXTRACT_DOC_TYPES:
                 self._maybe_extract_fields(app, doc, _vision, ocr, names, postcode, city,
                                            check_address, match, _settings)
+        # S3: a new upload may clear a verdict gap → auto-resolve its ticket
+        # (and link the doc), or surface a fresh ticket. Idempotent, never blocks.
+        from .resolution import sync_resolution_items
+        sync_resolution_items(app)
         return Response(ApplicantDocumentSerializer(doc).data, status=status.HTTP_201_CREATED)
 
     @staticmethod
@@ -331,7 +335,59 @@ class DocumentDetailView(APIView):
         # Removing a compulsory document can drop a confirmed profile below
         # complete — un-confirm it so the status reflects reality.
         revert_if_profile_incomplete(application)
+        # S3: keep the ticket queue consistent after a deletion (idempotent). Note
+        # an already-resolved system ticket is NOT re-created if its gap returns
+        # (the no-re-nag rule); the gap still shows on the officer's verdict.
+        from .resolution import sync_resolution_items
+        sync_resolution_items(application)
         return Response({'status': 'deleted'})
+
+
+class ResolutionItemListView(APIView):
+    """GET the caller's resolution queue — the IBKR-style Action Centre (S3).
+    Syncs against the live verdict first, then returns the open items + the most
+    recently resolved, so the student sees what's left and what just cleared."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def get(self, request):
+        from .resolution import sync_resolution_items
+        from .serializers import ResolutionItemSerializer
+        app = _current_application(request.user_id)
+        if app is None:
+            return Response({'open': [], 'resolved': []})
+        sync_resolution_items(app)
+        items = list(app.resolution_items.all())  # ordered -created_at
+        openq = [i for i in items if i.status == 'open']
+        resolved = [i for i in items if i.status == 'resolved'][:10]
+        return Response({
+            'open': ResolutionItemSerializer(openq, many=True).data,
+            'resolved': ResolutionItemSerializer(resolved, many=True).data,
+        })
+
+
+class ResolutionItemResolveView(APIView):
+    """POST {text} to resolve a confirm/explanation ticket the caller owns. Doc
+    tickets resolve implicitly when the document is uploaded (the upload re-syncs
+    the queue), so this serves the confirm/explanation kinds only."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request, pk):
+        from .models import ResolutionItem
+        from .resolution import resolve_item
+        from .serializers import ResolutionItemSerializer
+        item = ResolutionItem.objects.filter(
+            pk=pk, application__profile_id=request.user_id, status='open',
+        ).select_related('application').first()
+        if item is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if item.kind == 'doc':
+            return Response({'error': 'upload_doc_instead', 'doc_type': item.doc_type},
+                            status=status.HTTP_400_BAD_REQUEST)
+        text = (request.data.get('text') or '').strip()
+        if item.kind == 'explanation' and not text:
+            return Response({'error': 'text_required'}, status=status.HTTP_400_BAD_REQUEST)
+        resolve_item(item, text=text, by='student')
+        return Response(ResolutionItemSerializer(item).data)
 
 
 class DocumentHelpView(APIView):

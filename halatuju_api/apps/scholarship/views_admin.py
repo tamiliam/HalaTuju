@@ -682,3 +682,52 @@ class AdminRequestInfoView(_AdminBase):
         send_request_info_email(to_email=app.notify_email, applicant_name=name,
                                 programme_name=app.cohort.name, note=note, lang=app.locale)
         return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminResolutionItemView(_AdminBase):
+    """POST .../<pk>/resolution-items/ — officer raises a manual resolution ticket
+    (the structured successor to request-info). Body: {kind, prompt, doc_type?,
+    fact?}. Reviewer/super only."""
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        kind = (request.data.get('kind') or '').strip()
+        prompt = (request.data.get('prompt') or '').strip()
+        if kind not in ('doc', 'confirm', 'explanation'):
+            return Response({'error': 'bad_kind'}, status=status.HTTP_400_BAD_REQUEST)
+        if not prompt:
+            return Response({'error': 'prompt_required'}, status=status.HTTP_400_BAD_REQUEST)
+        from .resolution import add_officer_item
+        add_officer_item(app, kind=kind, prompt=prompt,
+                         admin_email=getattr(admin, 'email', '') or '',
+                         doc_type=(request.data.get('doc_type') or '').strip(),
+                         fact=(request.data.get('fact') or 'other').strip())
+        return Response(AdminApplicationDetailSerializer(app).data)
+
+
+class AdminResolutionItemActionView(_AdminBase):
+    """POST .../resolution-items/<item_id>/<action>/ — officer waives or resolves
+    a ticket by hand. action ∈ {waive, resolve}. Reviewer/super only."""
+    def post(self, request, item_id, action):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        if action not in ('waive', 'resolve'):
+            return Response({'error': 'bad_action'}, status=status.HTTP_400_BAD_REQUEST)
+        from .models import ResolutionItem
+        item = ResolutionItem.objects.filter(pk=item_id).select_related('application').first()
+        if item is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        item.status = 'waived' if action == 'waive' else 'resolved'
+        item.resolved_by = getattr(admin, 'email', '') or 'officer'
+        item.resolved_at = timezone.now()
+        item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
+        return Response(AdminApplicationDetailSerializer(item.application).data)

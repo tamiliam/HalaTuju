@@ -12,6 +12,8 @@ from .views import (
     DocumentListCreateView,
     DocumentSignUploadView,
     RefereeListCreateView,
+    ResolutionItemListView,
+    ResolutionItemResolveView,
     StudentAwardView,
 )
 from .views_sponsor import (
@@ -43,6 +45,8 @@ from .views_admin import (
     AdminRejectView,
     AdminRefereeDetailView,
     AdminRequestInfoView,
+    AdminResolutionItemView,
+    AdminResolutionItemActionView,
     AdminRunVisionView,
     AdminSponsorListView,
     AdminSponsorReviewView,
@@ -62,6 +66,9 @@ urlpatterns = [
     path('scholarship/consent/', ConsentView.as_view()),
     # Phase E3: the student's award offer (accept/decline; guardian-gated for minors)
     path('scholarship/award/', StudentAwardView.as_view()),
+    # S3: the student's resolution queue (IBKR Action Centre)
+    path('scholarship/resolution-items/', ResolutionItemListView.as_view()),
+    path('scholarship/resolution-items/<int:pk>/resolve/', ResolutionItemResolveView.as_view()),
 
     # Phase E: sponsor accounts (authenticated self-registration + own status)
     path('sponsor/register/', SponsorRegisterView.as_view()),
@@ -105,4 +112,7 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/interview/', AdminInterviewView.as_view()),
     path('admin/scholarship/applications/<int:pk>/interview/submit/', AdminInterviewSubmitView.as_view()),
     path('admin/scholarship/applications/<int:pk>/request-info/', AdminRequestInfoView.as_view()),
+    # S3: officer-raised resolution tickets + waive/resolve
+    path('admin/scholarship/applications/<int:pk>/resolution-items/', AdminResolutionItemView.as_view()),
+    path('admin/scholarship/resolution-items/<int:item_id>/<str:action>/', AdminResolutionItemActionView.as_view()),
 ]

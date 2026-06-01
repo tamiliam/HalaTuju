@@ -3,8 +3,8 @@ from rest_framework import serializers
 
 from . import pool
 from .models import (
-    ApplicantDocument, Consent, FundingNeed, Referee, ScholarshipApplication,
-    Sponsor,
+    ApplicantDocument, Consent, FundingNeed, Referee, ResolutionItem,
+    ScholarshipApplication, Sponsor,
 )
 
 
@@ -336,6 +336,19 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             return 'unreadable'
         from .vision import name_match
         return name_match(obj.vision_name, getattr(obj.application.profile, 'name', '') or '')
+
+
+class ResolutionItemSerializer(serializers.ModelSerializer):
+    """A resolution ticket (S3). Read-only to the client; the `code` resolves to
+    `admin.scholarship.verdict.item.<code>` copy on the frontend (officer items
+    carry their own `prompt`)."""
+    class Meta:
+        model = ResolutionItem
+        fields = [
+            'id', 'fact', 'code', 'params', 'prompt', 'kind', 'doc_type',
+            'status', 'source', 'resolution_text', 'created_at', 'resolved_at',
+        ]
+        read_only_fields = fields
 
 
 

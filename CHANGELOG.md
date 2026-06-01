@@ -42,6 +42,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     redesign stays S5). 12 new tests (`test_academic_engine.py` pure + grade-aware verdict tests); full scholarship
     suite 445 green; `next build` clean. i18n +3 item codes × en/ms/ta (parity 1704). **Billable real-slip OCR smoke
     deferred** to a user-run step (existing docs re-extract on re-upload / admin re-run).
+- **Resolution tickets — the IBKR Action Centre backend (Sprint 3).** Each unresolved verdict item becomes a discrete,
+  independently-resolvable **`ResolutionItem`** (migration `0036`, table `resolution_items`, RLS deny-by-default) —
+  closable by a document, a typed explanation, or a one-tap confirm. New `resolution.py`: `CODE_TO_TICKET` maps the
+  ticketable verdict codes → `{fact, kind, doc_type}`; `sync_resolution_items` is **idempotent** (one `source='system'`
+  item per `(application, code)`, partial-unique-constrained + race-safe) and **auto-resolves** a ticket the moment its
+  gap clears (upload STR → income gap gone → ticket closes), **never re-nagging** an answered confirm. Three verdict
+  codes are deliberately **not** ticketed (confirmed with the user): `ic_service_down` (transient — auto-retries,
+  escalates to `ic_unreadable` if persistent), `grades_unverified` (a machine "not-read-yet" state), and
+  `str_present_unverified` (officer-side confirmation). Officers can raise manual tickets (`add_officer_item` — the
+  structured successor to `info_request_note`) and waive/resolve them. Endpoints: student `GET/POST
+  scholarship/resolution-items[/<id>/resolve/]`; officer `…/<pk>/resolution-items/` + `…/resolution-items/<id>/<action>/`.
+  Sync wired into document upload + delete; the admin detail serializer exposes the live open queue
+  (`AdminApplicationDetailSerializer.resolution_items`). **Real-data check:** Theresa auto-generates exactly 2 tickets
+  (upload STR + add 2 missing subjects); identity/pathway verified → none; `grades_unverified` correctly excluded.
+  9 new tests; full scholarship suite **454** green. **Backend only** — the student Action Centre UI is S4. Migration
+  is created on the branch (test DB applies it); **prod migrate-first happens only at deploy** (new-model →
+  contenttypes workaround + RLS per TD-058).
 
 ## [2.26.1] — Remove orphaned sponsor register-interest page + stack (TD-072b) (2026-06-01)
 
