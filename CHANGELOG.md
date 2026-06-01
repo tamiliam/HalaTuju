@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   references, zero view/trigger/RLS dependencies; backed up all 30 rows to
   `halatuju_api/docs/backups/student_profiles_legacy_backup_2026-06-01.json`. A mistaken bare `ALTER student_profiles`
   now errors loudly instead of silently succeeding. Closes **TD-025**.
+- **Purged the historical orphan document blobs (TD-062, fully closed).** Ran the `cleanup_orphan_blobs` sweep against
+  prod for the first time. To avoid the wrong-DB footgun, the known-paths set was pulled from the prod DB via Supabase
+  MCP (not a local connection) and diffed against a Storage-API bucket listing. Found **6 orphans, all under app `3/`**
+  (Elanjelian test account — 5×`ic` + 1×`parent_ic`, leftover from pre-fix `Remove` clicks that dropped the DB row but
+  not the blob); the 49 live documents all matched. Deleted the 6 after sign-off; re-verify: 49 bucket objects, 0
+  orphans. Going-forward delete path was already clean. Closes **TD-062**.
 
 ## [2.26.0] — Phase E Sprint E3a: sponsor wallet + match/consent (backend, no real money) (2026-06-01)
 
