@@ -142,6 +142,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # Pre-interview deterministic flag list (S16 Phase A). Each entry is
     # {code, params}; the frontend resolves human copy from its i18n bundle.
     anomalies = serializers.SerializerMethodField()
+    verdict = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
     interview_session = serializers.SerializerMethodField()
     # Phase B: Gemini interview gaps — a PLAIN read-only field (the GET never calls
@@ -189,6 +190,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'chosen_programme', 'uncertainty_reasons', 'uncertainty_note',
             'funding_need', 'documents', 'referees', 'consents', 'sponsor_profile',
             'anomalies',
+            'verdict',
             'intake_snapshot',
         ]
 
@@ -246,6 +248,13 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         no LLM calls. Returns ``[]`` when nothing flags."""
         from .anomaly_engine import detect_anomalies
         return detect_anomalies(obj)
+
+    def get_verdict(self, obj):
+        """S1 verification verdict: the four-fact rollup the coordinator audits
+        (identity / academic / income / pathway). Pure deterministic engine, no
+        LLM calls — mirrors get_anomalies."""
+        from .verdict_engine import build_verdict
+        return build_verdict(obj)
 
     def get_completeness(self, obj):
         """Phase C: the 7-part completeness breakdown, so the admin can see

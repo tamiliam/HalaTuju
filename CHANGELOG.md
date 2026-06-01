@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Verification Verdict engine + officer scorecard (Sprint 1 of the verification-verdict roadmap).** A new
+  deterministic engine (`apps/scholarship/verdict_engine.py`) rolls the scattered post-shortlist signals
+  (Vision OCR matchers, doc-assist fields, completeness, the anomaly engine) into ONE four-fact verdict the
+  coordinator **audits** instead of assembling: **Identity** (name + NRIC), **Academic** (results slip),
+  **Income (B40)**, **Pathway** (offer letter). Each fact carries a status — `verified` (green, the AI asserts) /
+  `review` (amber, confirm) / `recommend` (blue, a human places the verdict) / `gap` (red, action needed) — plus
+  an evidence list and an unresolved list (`{code, params}`, resolved on the frontend from
+  `admin.scholarship.verdict.*`). Pure + deterministic, **no LLM calls**; surfaced on `/admin/scholarship/[id]`
+  as a "Verification verdict" card above the Pre-interview flags.
+  - **Design rules encoded:** green is *expensive* (under-claim by default); the AI **resolves before it
+    escalates** (an OCR name truncation where the IC tokens are a subset of the typed name is settled silently,
+    not raised — the NRIC is the hard key); **income green needs a verified STR *document***, not the
+    self-declared flag (else it recommends and a human decides); **address is a coherence test** — only a
+    state-level divergence escalates, sub-state postcode drift is noise.
+  - Backend: `AdminApplicationDetailSerializer.verdict` (mirrors `anomalies`). No migration (reads existing
+    signals). 23 new tests in `test_verdict_engine.py` (per-fact statuses, the two design rules, a full
+    Theresa-shaped integration check); full scholarship suite green (433). Frontend: `AdminVerdictFact`/
+    `AdminVerdictItem` types + the scorecard render (reuses the existing admin card pattern; the polished
+    panel + Stitch redesign is Sprint 5). i18n `admin.scholarship.verdict.*` × en/ms/ta (parity 1701; Tamil
+    first-draft). Plan: `docs/scholarship/verification-verdict-plan.md`.
+
 ## [2.26.1] — Remove orphaned sponsor register-interest page + stack (TD-072b) (2026-06-01)
 
 ### Removed

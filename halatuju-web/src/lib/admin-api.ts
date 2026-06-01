@@ -390,6 +390,8 @@ export interface AdminScholarshipDetail {
   // S16 Phase A: deterministic pre-interview flag list. {code, params}; the
   // frontend resolves human copy from its i18n bundle (no server-side copy).
   anomalies: AdminAnomaly[]
+  // S1 verification verdict: the four-fact rollup the coordinator audits.
+  verdict: AdminVerdictFact[]
   // Phase B: Gemini-suggested interview gaps. Carry their OWN dynamic text
   // (unlike anomalies which i18n by code). Empty until the admin generates them.
   interview_gaps: Array<{ code: string; question: string; why: string }>
@@ -564,6 +566,22 @@ export async function setMentoringCandidate(id: number, value: boolean, options?
 export interface AdminAnomaly {
   code: string
   params: Record<string, string | number>
+}
+
+/** S1 verification verdict. One of four facts the coordinator AUDITS (does not
+ *  assemble). Each evidence/unresolved item's `code` resolves to
+ *  `admin.scholarship.verdict.item.{code}` in i18n (params interpolate).
+ *  status: verified (green, AI asserts) · review (amber, confirm) ·
+ *  recommend (blue, a human places the verdict) · gap (red, action needed). */
+export interface AdminVerdictItem {
+  code: string
+  params: Record<string, string | number>
+}
+export interface AdminVerdictFact {
+  fact: 'identity' | 'academic' | 'income' | 'pathway'
+  status: 'verified' | 'review' | 'recommend' | 'gap'
+  evidence: AdminVerdictItem[]
+  unresolved: AdminVerdictItem[]
 }
 
 export interface AdminApplicantDocument {

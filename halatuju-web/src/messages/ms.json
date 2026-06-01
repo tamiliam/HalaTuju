@@ -1791,6 +1791,53 @@
         "public_other": "Institusi awam (bukan UPU)",
         "ipts": "Swasta (IPTS)",
         "unknown": "Tidak pasti"
+      },
+      "verdict": {
+        "title": "Keputusan pengesahan",
+        "intro": "Apa yang disahkan oleh semakan, dan apa yang masih memerlukan anda. Audit sahaja — jangan bina semula.",
+        "evidenceLabel": "Disahkan",
+        "unresolvedLabel": "Perlu perhatian",
+        "fact": {
+          "identity": "Identiti",
+          "academic": "Akademik",
+          "income": "Pendapatan (B40)",
+          "pathway": "Laluan"
+        },
+        "status": {
+          "verified": "Disahkan",
+          "review": "Semak",
+          "recommend": "Cadangan",
+          "gap": "Perlu tindakan"
+        },
+        "item": {
+          "nric_match": "Nombor KP sepadan dengan kad pengenalan ({nric}).",
+          "name_match": "Nama sepadan merentas dokumen.",
+          "name_resolved_truncation": "Nama disahkan — OCR memendekkannya (terbaca “{ocr_name}”); nama penuh “{profile_name}” disokong oleh dokumen lain.",
+          "results_slip_name_ok": "Slip keputusan atas nama pelajar.",
+          "income_proof_epf": "Penyata KWSP diberikan.",
+          "income_proof_salary": "Slip gaji diberikan.",
+          "utility_bills_present": "Bil utiliti diberikan (petunjuk tahap kemampuan).",
+          "str_verified": "Dokumen STR disahkan — status B40 disahkan.",
+          "offer_programme": "Surat tawaran: {programme} di {institution}.",
+          "offer_name_ok": "Surat tawaran atas nama pelajar.",
+          "pathway_declared": "Laluan dinyatakan: {pathway} (belum ada surat tawaran).",
+          "ic_missing": "Tiada kad pengenalan dimuat naik.",
+          "ic_unreadable": "Kad pengenalan tidak dapat dibaca — minta foto yang lebih jelas.",
+          "ic_service_down": "Perkhidmatan membaca KP tidak tersedia — semak semula sebentar lagi.",
+          "nric_mismatch": "Kad pengenalan terbaca No KP {ocr_nric}; pelajar menaip {profile_nric}. Sahkan.",
+          "name_mismatch": "Nama pada KP “{ocr_name}” berbeza daripada nama yang ditaip “{profile_name}”. Sahkan.",
+          "address_state_mismatch": "KP didaftarkan di {ic_state}; pelajar berkata {profile_state}. Tanya yang mana terkini.",
+          "results_slip_missing": "Tiada slip keputusan dimuat naik.",
+          "results_slip_name_mismatch": "Slip keputusan atas nama berbeza. Sahkan.",
+          "results_slip_unreadable": "Slip keputusan tidak dapat dibaca — minta salinan yang lebih jelas.",
+          "grades_unverified": "Gred belum disemak silang dengan slip — semak sendiri (semakan automatik akan datang).",
+          "str_claimed_no_doc": "Pelajar berkata keluarga menerima STR tetapi belum memuat naik surat STR — minta surat itu.",
+          "str_present_unverified": "Dokumen STR ada tetapi belum dipadankan dengan isi rumah — sahkan.",
+          "income_proof_missing": "Tiada bukti pendapatan dimuat naik — minta STR, slip gaji, atau KWSP.",
+          "offer_name_mismatch": "Surat tawaran atas nama berbeza. Sahkan.",
+          "offer_unreadable": "Surat tawaran tidak dapat dibaca — minta salinan yang lebih jelas.",
+          "pathway_undeclared": "Belum memilih laluan."
+        }
       }
     },
     "students": "Pelajar",
