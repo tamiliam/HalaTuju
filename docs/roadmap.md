@@ -62,7 +62,7 @@ HalaTuju is feature-complete and live at [halatuju.xyz](https://halatuju.xyz).
 
 ### Low Priority / Cosmetic
 - **TD-024**: Rename `course` field to `name` on Course model
-- **TD-025**: Rename `api_student_profiles` table to `student_profiles`
+- ~~**TD-025**: Rename `api_student_profiles` table to `student_profiles`~~ ✅ **RESOLVED 2026-06-01** — dropped the dead legacy `student_profiles` table instead (kept the `api_` prefix as canonical; the collision footgun is gone)
 - **Interview badge** — Parse `#` from course names into proper UI indicator
 - **PISMP course-campus mapping** — Refine which courses are taught at which IPG campuses
 - **Course detail page** — Remaining items from `docs/Course Detail Page.pdf`

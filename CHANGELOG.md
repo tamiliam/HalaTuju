@@ -20,6 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Migration `0035_remove_sponsor_interest`** (DeleteModel) — destructive, so applied **deploy-first**:
     code pushed first, then `DROP TABLE sponsor_interests` via Supabase MCP (table empty, safe).
   - i18n parity holds at 1662 keys × 3 locales; 183 jest; scholarship 410. Closes **TD-072(b)**.
+- **Dropped the dead legacy `student_profiles` table (TD-025).** The Streamlit-era `public.student_profiles` (30 rows,
+  19 cols — `name`/`email`/`phone`/`grades`/`pin_hash`/…) was orphaned: the live `StudentProfile` model owns
+  `api_student_profiles` (618 rows), and the `api_` prefix existed *only* to avoid colliding with this dead table —
+  a footgun that caused a v2.21.0 near-miss (a raw `ALTER` silently hit the wrong table). Not a Django-managed table,
+  so dropped via Supabase MCP with **no migration/deploy**. Pre-drop: verified zero incoming FKs, zero live code
+  references, zero view/trigger/RLS dependencies; backed up all 30 rows to
+  `halatuju_api/docs/backups/student_profiles_legacy_backup_2026-06-01.json`. A mistaken bare `ALTER student_profiles`
+  now errors loudly instead of silently succeeding. Closes **TD-025**.
 
 ## [2.26.0] — Phase E Sprint E3a: sponsor wallet + match/consent (backend, no real money) (2026-06-01)
 
