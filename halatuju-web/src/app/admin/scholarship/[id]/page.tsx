@@ -566,7 +566,9 @@ export default function AdminScholarshipDetailPage() {
                   <span className="font-medium text-gray-500">{t('admin.scholarship.extractFields.title')}: </span>
                   {Object.entries(d.vision_fields.fields)
                     .filter(([, v]) => v && (Array.isArray(v) ? v.length : String(v).trim()))
-                    .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+                    .map(([k, v]) => `${k}: ${Array.isArray(v)
+                      ? v.map((x) => (x && typeof x === 'object' ? [x.subject, x.grade].filter(Boolean).join(' ') : x)).join(', ')
+                      : v}`)
                     .join(' · ')}
                   {d.vision_fields.warnings && d.vision_fields.warnings.length > 0 && (
                     <span className="text-amber-600"> ⚠ {d.vision_fields.warnings.join('; ')}</span>

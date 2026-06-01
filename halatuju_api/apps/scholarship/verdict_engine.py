@@ -148,25 +148,54 @@ def _verdict_identity(application):
 # ── Academic (results slip) ──────────────────────────────────────────────────
 
 def _verdict_academic(application):
-    """S1 confirms the slip is the student's (name match). Grade ACCURACY —
-    do the typed grades match the slip — is verified in S2; until then the fact
-    stays 'review', never 'verified' (honest under-claim)."""
+    """The slip must be the student's (name match), every subject on it must be
+    entered (completeness), and the typed grades must match the slip (accuracy).
+    All three clean → 'verified'. The slip's grades and the typed grades are two
+    independent readings: agreement is strong verification, a disagreement
+    pinpoints the one cell to check."""
+    from .academic_engine import compare_academics, read_slip
     evidence, unresolved = [], []
     slip = _latest_doc(application, 'results_slip')
     if slip is None:
         return _fact('academic', 'gap', evidence, [_item('results_slip_missing')])
 
     dv = _doc_assist_verdict(slip)
+    name_ok = True
     if dv == 'name_mismatch':
         unresolved.append(_item('results_slip_name_mismatch'))
+        name_ok = False
     elif dv in ('wrong_doc', 'unreadable') or slip.vision_name_match == 'not_found':
         unresolved.append(_item('results_slip_unreadable'))
+        name_ok = False
     else:
         evidence.append(_item('results_slip_name_ok'))
 
-    # Grade cross-check is a later step (S2) — flag it as the one thing still
-    # owed so the officer eyeballs the grades against the slip in the meantime.
-    unresolved.append(_item('grades_unverified'))
+    data = read_slip(slip)
+    if not data['names']:
+        # The slip hasn't been field-extracted yet (legacy upload) — grades
+        # unread, so honest under-claim: review until it's re-OCR'd.
+        unresolved.append(_item('grades_unverified'))
+        return _fact('academic', 'review', evidence, unresolved)
+
+    cmp = compare_academics(getattr(application.profile, 'grades', None), data)
+    if cmp['missing']:
+        unresolved.append(_item('academic_missing_subjects',
+                                entered=cmp['slip_count'] - len(cmp['missing']),
+                                total=cmp['slip_count'],
+                                subjects=', '.join(cmp['missing'])))
+    for m in cmp['mismatched']:
+        unresolved.append(_item('academic_grade_mismatch',
+                                subject=m['subject'], typed=m['typed'], slip=m['slip']))
+
+    if not cmp['have_grades']:
+        # Names extracted (so completeness is real) but no grades yet — accuracy
+        # still pending. Confirmed-complete is progress, but not 'verified'.
+        unresolved.append(_item('grades_unverified'))
+        return _fact('academic', 'review', evidence, unresolved)
+
+    if name_ok and cmp['complete'] and cmp['accurate']:
+        evidence.append(_item('grades_verified', count=cmp['slip_count']))
+        return _fact('academic', 'verified', evidence, unresolved)
     return _fact('academic', 'review', evidence, unresolved)
 
 

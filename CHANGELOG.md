@@ -28,6 +28,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `AdminVerdictItem` types + the scorecard render (reuses the existing admin card pattern; the polished
     panel + Stitch redesign is Sprint 5). i18n `admin.scholarship.verdict.*` × en/ms/ta (parity 1701; Tamil
     first-draft). Plan: `docs/scholarship/verification-verdict-plan.md`.
+- **Grade OCR + academic verification (Sprint 2).** The results-slip extractor now reads the **grade against each
+  subject** (`vision.py` `_FIELD_SCHEMAS['results_slip']` → `results: [{subject, grade}]`, plus a grade-specific
+  prompt hint), and a new `academic_engine.py` runs two checks the officer used to do by eye: **completeness**
+  (every subject on the slip is entered — Theresa: "8 of 10, missing Moral + Tamil Literature") and **accuracy**
+  (the typed grades match the slip — the typed and OCR'd grades are two independent readings; agreement is strong
+  verification, a disagreement pinpoints the one cell). Comparison is by **normalised subject name** (sidesteps the
+  `b_tamil`/`bahasa_tamil` key collision); `_SUBJECT_BM` mirrors `subjects.ts`. The Academic fact now reaches
+  **`verified`** when the slip is the student's, complete, and accurate — else `review` with the specific gaps.
+  - **Completeness works on already-extracted slips** (legacy `subjects` shape) with no re-OCR; accuracy needs the
+    new grade extraction. Grades live in the existing `vision_fields` JSON — **no migration**. Frontend: widened
+    `vision_fields.fields` type + a one-line renderer tweak so `{subject, grade}` pairs display cleanly (full doc-box
+    redesign stays S5). 12 new tests (`test_academic_engine.py` pure + grade-aware verdict tests); full scholarship
+    suite 445 green; `next build` clean. i18n +3 item codes × en/ms/ta (parity 1704). **Billable real-slip OCR smoke
+    deferred** to a user-run step (existing docs re-extract on re-upload / admin re-run).
 
 ## [2.26.1] — Remove orphaned sponsor register-interest page + stack (TD-072b) (2026-06-01)
 

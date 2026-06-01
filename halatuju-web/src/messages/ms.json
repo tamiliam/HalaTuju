@@ -1836,7 +1836,10 @@
           "income_proof_missing": "Tiada bukti pendapatan dimuat naik — minta STR, slip gaji, atau KWSP.",
           "offer_name_mismatch": "Surat tawaran atas nama berbeza. Sahkan.",
           "offer_unreadable": "Surat tawaran tidak dapat dibaca — minta salinan yang lebih jelas.",
-          "pathway_undeclared": "Belum memilih laluan."
+          "pathway_undeclared": "Belum memilih laluan.",
+          "academic_missing_subjects": "Memasukkan {entered} daripada {total} subjek pada slip — tiada: {subjects}. Minta pelajar menambahnya.",
+          "academic_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip menunjukkan {slip}. Semak.",
+          "grades_verified": "Kesemua {count} gred sepadan dengan slip keputusan."
         }
       }
     },

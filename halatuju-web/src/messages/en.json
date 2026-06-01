@@ -1836,7 +1836,10 @@
           "income_proof_missing": "No proof of income uploaded — request STR, salary slip, or EPF.",
           "offer_name_mismatch": "The offer letter is in a different name. Confirm.",
           "offer_unreadable": "The offer letter could not be read — ask for a clearer copy.",
-          "pathway_undeclared": "No pathway chosen yet."
+          "pathway_undeclared": "No pathway chosen yet.",
+          "academic_missing_subjects": "Entered {entered} of {total} subjects on the slip — missing: {subjects}. Ask the student to add them.",
+          "academic_grade_mismatch": "{subject}: typed {typed}, but the slip reads {slip}. Check.",
+          "grades_verified": "All {count} grades match the results slip."
         }
       }
     },

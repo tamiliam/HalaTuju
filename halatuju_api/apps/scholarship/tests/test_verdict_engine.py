@@ -155,6 +155,41 @@ class TestAcademic(_Base):
         self.assertIn('results_slip_name_mismatch', _codes(f['unresolved']))
 
 
+class TestAcademicGrades(_Base):
+    """S2: grade extraction → completeness + accuracy."""
+
+    def _slip(self, results):
+        return _add_doc(self.app, 'results_slip', student_verdict='ok',
+                        name_match='found', fields={'results': results})
+
+    def test_complete_and_accurate_is_verified(self):
+        self.profile.grades = {'bm': 'A-', 'eng': 'A+'}
+        self.profile.save()
+        self._slip([{'subject': 'Bahasa Melayu', 'grade': 'A-'},
+                    {'subject': 'Bahasa Inggeris', 'grade': 'A+'}])
+        f = _facts(self.app)['academic']
+        self.assertEqual(f['status'], 'verified')
+        self.assertIn('grades_verified', _codes(f['evidence']))
+
+    def test_missing_subjects_is_review(self):
+        self.profile.grades = {'bm': 'A-'}
+        self.profile.save()
+        self._slip([{'subject': 'Bahasa Melayu', 'grade': 'A-'},
+                    {'subject': 'Pendidikan Moral', 'grade': 'A'}])
+        f = _facts(self.app)['academic']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('academic_missing_subjects', _codes(f['unresolved']))
+
+    def test_grade_mismatch_is_review(self):
+        self.profile.grades = {'bm': 'A-', 'math': 'B+'}
+        self.profile.save()
+        self._slip([{'subject': 'Bahasa Melayu', 'grade': 'A-'},
+                    {'subject': 'Matematik', 'grade': 'A'}])
+        f = _facts(self.app)['academic']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('academic_grade_mismatch', _codes(f['unresolved']))
+
+
 # ── Income ───────────────────────────────────────────────────────────────────
 
 class TestIncome(_Base):
