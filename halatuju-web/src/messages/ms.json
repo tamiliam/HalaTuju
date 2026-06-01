@@ -929,7 +929,8 @@
         "nric-bad": "Hmm — NRIC yang kami baca pada gambar tidak sepadan dengan yang anda masukkan. Sila semak semula.",
         "unreadable": "Kami tidak dapat membaca gambar secara automatik — tidak mengapa, pasukan akan menyemak secara manual.",
         "note": "Hanya petunjuk — pasukan sentiasa menyemak dokumen anda."
-      }
+      },
+      "unsupportedFormat": "Kami hanya menerima foto atau PDF. Sila muat naik foto atau PDF dokumen anda yang jelas."
     },
     "referee": {
       "name": "Nama perujuk",

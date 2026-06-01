@@ -64,6 +64,15 @@ function UploadedFileRow({
   )
 }
 
+// Accept images + PDF only (mirrors the API allowlist; the file picker's `accept`
+// is just a hint, so re-check here). Rejects video/other junk (TD-080).
+const _ACCEPTED_UPLOAD_EXT = /\.(pdf|jpe?g|png|gif|bmp|webp|tiff?|heic|heif)$/i
+function isAcceptedUpload(file: File): boolean {
+  const mime = (file.type || '').toLowerCase()
+  if (mime.startsWith('image/') || mime === 'application/pdf') return true
+  return _ACCEPTED_UPLOAD_EXT.test(file.name || '')
+}
+
 function UploadTrigger({
   docType,
   busy,
@@ -80,6 +89,9 @@ function UploadTrigger({
       {label}
       <input
         type="file"
+        // Accept photos + PDFs (scan-to-PDF, EPF/payslip downloads). A hint only —
+        // the backend allowlist is the real guard (TD-080). Excludes video/junk.
+        accept="image/*,application/pdf,.pdf"
         className="hidden"
         disabled={busy}
         onChange={(e) => {
@@ -408,6 +420,11 @@ export default function ScholarshipDocuments({ token, onChange }: { token: strin
       setError(t('scholarship.docs.file_too_large'))
       return
     }
+    // Guardrail: images + PDF only (TD-080) — instant feedback, mirrors the API allowlist.
+    if (!isAcceptedUpload(file)) {
+      setError(t('scholarship.docs.unsupportedFormat'))
+      return
+    }
     setBusyType(docType)
     setError(null)
     try {
@@ -424,6 +441,7 @@ export default function ScholarshipDocuments({ token, onChange }: { token: strin
       setError(
         code === 'doc_limit_reached' ? t('scholarship.docs.doc_limit_reached')
         : code === 'file_too_large' ? t('scholarship.docs.file_too_large')
+        : code === 'unsupported_format' ? t('scholarship.docs.unsupportedFormat')
         : t('scholarship.docs.uploadError'),
       )
     } finally {

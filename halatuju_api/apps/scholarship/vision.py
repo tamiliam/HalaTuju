@@ -208,35 +208,103 @@ def _extract_address(text: str) -> str:
     return ', '.join(deduped)
 
 
-def extract_mykad(image_bytes: bytes) -> dict:
-    """
-    Call Google Cloud Vision DOCUMENT_TEXT_DETECTION on the given image bytes
-    and return ``{'nric': str, 'name': str, 'address': str, 'error': None}`` on
-    success or the same shape with an ``error`` string otherwise. Never raises.
-    """
-    if not image_bytes:
-        return {'nric': '', 'name': '', 'address': '', 'error': 'empty image'}
+# ── PDF document intake (document-intake hardening) ────────────────────────────
+# Students upload scan-to-PDF (CamScanner) and native digital PDFs (EPF, payslip,
+# offer letter). Google Vision's inline image OCR cannot decode PDF bytes ("Bad
+# image data."), so we handle PDFs ourselves:
+#   - DIGITAL PDF → read the embedded text layer (pypdf) — free, perfect fidelity.
+#   - SCANNED PDF → rasterise page 1 (pypdfium2 + Pillow) → feed the image to Vision.
+# Both libs are OPTIONAL: if absent (or the PDF is corrupt/encrypted), a PDF
+# degrades to "unreadable" — today's behaviour — rather than crashing.
+_PDF_MAGIC = b'%PDF-'
+_MIN_PDF_TEXT = 25      # chars of real text → treat as a digital PDF (skip Vision)
+_RASTER_DPI = 200
+
+
+def _is_pdf(content_type: str, data: bytes) -> bool:
+    if (content_type or '').lower().split(';')[0].strip() == 'application/pdf':
+        return True
+    return bool(data) and data[:5] == _PDF_MAGIC
+
+
+def _pdf_text_layer(data: bytes) -> str:
+    """The concatenated text layer of a PDF (all pages). '' if none / encrypted /
+    library missing — caller then falls back to rasterise+OCR."""
+    try:
+        import io
+        from pypdf import PdfReader
+        reader = PdfReader(io.BytesIO(data))
+        if reader.is_encrypted:
+            try:
+                reader.decrypt('')
+            except Exception:  # noqa: BLE001
+                return ''
+        return '\n'.join((p.extract_text() or '') for p in reader.pages).strip()
+    except Exception as e:  # noqa: BLE001
+        logger.warning('PDF text-layer extraction failed: %s', e)
+        return ''
+
+
+def _pdf_first_page_png(data: bytes) -> Optional[bytes]:
+    """Rasterise page 1 of a PDF to PNG bytes (~200 DPI). None on failure /
+    library missing. Page 1 only — bounds the Vision cost to 1 unit per doc."""
+    try:
+        import io
+
+        import pypdfium2 as pdfium
+        pdf = pdfium.PdfDocument(data)
+        try:
+            if len(pdf) == 0:
+                return None
+            pil = pdf[0].render(scale=_RASTER_DPI / 72.0).to_pil()
+            buf = io.BytesIO()
+            pil.convert('RGB').save(buf, format='PNG')
+            return buf.getvalue()
+        finally:
+            pdf.close()
+    except Exception as e:  # noqa: BLE001
+        logger.warning('PDF rasterise failed: %s', e)
+        return None
+
+
+def _vision_document_text(image_bytes: bytes) -> dict:
+    """Google Vision DOCUMENT_TEXT_DETECTION on *image* bytes → ``{'text', 'error'}``.
+    The single seam the OCR functions share (and tests patch). Graceful — returns
+    an error dict, never raises. ``error`` is None on success."""
     try:
         from google.cloud import vision  # type: ignore
     except ImportError:
-        return {'nric': '', 'name': '', 'address': '', 'error': 'AI module not installed'}
-
+        return {'text': '', 'error': 'AI module not installed'}
     api_key = getattr(settings, 'GOOGLE_CLOUD_VISION_API_KEY', '') or ''
     try:
-        if api_key:
-            client = vision.ImageAnnotatorClient(client_options={'api_key': api_key})
-        else:
-            # Falls back to Application Default Credentials (Cloud Run runtime SA).
-            client = vision.ImageAnnotatorClient()
-        image = vision.Image(content=image_bytes)
-        resp = client.document_text_detection(image=image)
+        client = (vision.ImageAnnotatorClient(client_options={'api_key': api_key})
+                  if api_key else vision.ImageAnnotatorClient())
+        resp = client.document_text_detection(image=vision.Image(content=image_bytes))
         if resp.error and resp.error.message:
-            return {'nric': '', 'name': '', 'address': '', 'error': resp.error.message[:200]}
-        text = resp.full_text_annotation.text if resp.full_text_annotation else ''
+            return {'text': '', 'error': resp.error.message[:200]}
+        return {'text': resp.full_text_annotation.text if resp.full_text_annotation else '', 'error': None}
     except Exception as e:  # noqa: BLE001 — graceful: never propagate to a 500
         logger.warning('Vision OCR failed: %s', e)
-        return {'nric': '', 'name': '', 'address': '', 'error': str(e)[:200]}
+        return {'text': '', 'error': str(e)[:200]}
 
+
+def extract_mykad(data: bytes, content_type: str = '') -> dict:
+    """
+    OCR a MyKad and return ``{'nric', 'name', 'address', 'error'}``. Accepts an
+    image OR a PDF (a scanned MyKad — never a text PDF, so it is rasterised to an
+    image first). Never raises.
+    """
+    if not data:
+        return {'nric': '', 'name': '', 'address': '', 'error': 'empty image'}
+    if _is_pdf(content_type, data):
+        img = _pdf_first_page_png(data)
+        if img is None:
+            return {'nric': '', 'name': '', 'address': '', 'error': 'Bad image data.'}
+        data = img
+    r = _vision_document_text(data)
+    if r['error']:
+        return {'nric': '', 'name': '', 'address': '', 'error': r['error']}
+    text = r['text']
     nric = _extract_nric(text)
     return {
         'nric': nric,
@@ -247,7 +315,8 @@ def extract_mykad(image_bytes: bytes) -> dict:
 
 
 def _fetch_image_bytes(storage_path: str) -> Optional[bytes]:
-    """Download the IC image from Supabase Storage. Returns None on failure."""
+    """Download a document's raw bytes from Supabase Storage (image OR PDF).
+    Returns None on failure."""
     if not storage_path:
         return None
     try:
@@ -273,7 +342,7 @@ def run_vision_for_document(doc) -> dict:
     if image is None:
         result = {'nric': '', 'name': '', 'address': '', 'error': 'could not fetch image'}
     else:
-        result = extract_mykad(image)
+        result = extract_mykad(image, doc.content_type)
     doc.vision_nric = result['nric'] or ''
     doc.vision_name = result['name'] or ''
     doc.vision_address = result.get('address', '') or ''
@@ -289,26 +358,21 @@ def run_vision_for_document(doc) -> dict:
 # appear anywhere? Tolerant + naturally soft — exactly right for a non-blocking
 # nudge to the student + the interviewer.
 
-def extract_text(image_bytes: bytes) -> dict:
-    """Generic full-text OCR (no MyKad parsing). ``{'text': str, 'error': str|None}``.
-    Never raises."""
-    if not image_bytes:
+def extract_text(data: bytes, content_type: str = '') -> dict:
+    """Generic full-text OCR. Accepts an image OR a PDF: a DIGITAL PDF is read via
+    its text layer (no Vision call — free); a SCANNED PDF is rasterised (page 1) →
+    Vision. ``{'text': str, 'error': str|None}``. Never raises."""
+    if not data:
         return {'text': '', 'error': 'empty image'}
-    try:
-        from google.cloud import vision  # type: ignore
-    except ImportError:
-        return {'text': '', 'error': 'AI module not installed'}
-    api_key = getattr(settings, 'GOOGLE_CLOUD_VISION_API_KEY', '') or ''
-    try:
-        client = (vision.ImageAnnotatorClient(client_options={'api_key': api_key})
-                  if api_key else vision.ImageAnnotatorClient())
-        resp = client.document_text_detection(image=vision.Image(content=image_bytes))
-        if resp.error and resp.error.message:
-            return {'text': '', 'error': resp.error.message[:200]}
-        return {'text': resp.full_text_annotation.text if resp.full_text_annotation else '', 'error': None}
-    except Exception as e:  # noqa: BLE001 — graceful: never propagate to a 500
-        logger.warning('Vision OCR (text) failed: %s', e)
-        return {'text': '', 'error': str(e)[:200]}
+    if _is_pdf(content_type, data):
+        text = _pdf_text_layer(data)
+        if len(text) >= _MIN_PDF_TEXT:
+            return {'text': text, 'error': None}   # digital PDF — no billable Vision call
+        img = _pdf_first_page_png(data)
+        if img is None:
+            return {'text': '', 'error': 'Bad image data.'}
+        data = img
+    return _vision_document_text(data)
 
 
 def name_present(text: str, names) -> bool:
@@ -341,7 +405,7 @@ def ocr_document(doc) -> dict:
     run_vision_match_for_document / run_field_extraction_for_document as ``ocr=``
     so the same upload OCRs only once."""
     image = _fetch_image_bytes(doc.storage_path)
-    return {'text': '', 'error': 'could not fetch image'} if image is None else extract_text(image)
+    return {'text': '', 'error': 'could not fetch image'} if image is None else extract_text(image, doc.content_type)
 
 
 def run_vision_match_for_document(doc, *, names, postcode='', city='', check_address=False, ocr=None) -> dict:
