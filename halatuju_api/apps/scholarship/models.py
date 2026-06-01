@@ -789,3 +789,82 @@ class Sponsorship(models.Model):
 
     def __str__(self):
         return f'Sponsorship #{self.id} sponsor={self.sponsor_id} app={self.application_id} {self.amount} ({self.status})'
+
+
+class ResolutionItem(models.Model):
+    """A discrete, independently-resolvable action raised against an application
+    (the IBKR model — see docs/scholarship/verification-verdict-plan.md, S3).
+
+    Most items are GENERATED from the verification verdict's ``unresolved`` list
+    (``verdict_engine.build_verdict``) by ``resolution.sync_resolution_items`` —
+    one ``source='system'`` item per (application, code), created once and
+    auto-resolved when the underlying gap clears. An officer may also raise a
+    ``source='officer'`` item by hand (the structured successor to the freeform
+    ``info_request_note``). Each item closes by a **document**, a typed
+    **explanation**, or a one-tap **confirm** — so the student clears the queue
+    self-service and a phone call stays the exception.
+    """
+    KIND = [
+        ('doc', 'Upload a document'),
+        ('confirm', 'Confirm / correct a value'),
+        ('explanation', 'Explain in your own words'),
+    ]
+    STATUS = [
+        ('open', 'Open'),
+        ('resolved', 'Resolved'),
+        ('waived', 'Waived'),     # officer decided it isn't needed
+    ]
+    SOURCE = [('system', 'System'), ('officer', 'Officer')]
+
+    application = models.ForeignKey(
+        ScholarshipApplication, on_delete=models.CASCADE, related_name='resolution_items',
+    )
+    # The verdict fact this item belongs to (identity/academic/income/pathway),
+    # or 'other' for an officer-raised item that isn't tied to a fact.
+    fact = models.CharField(max_length=20, default='other')
+    # The verdict item code (e.g. 'str_claimed_no_doc') or, for officer items,
+    # a synthetic 'officer_<n>'. Drives the i18n copy + the resolution UI (S4).
+    code = models.CharField(max_length=60)
+    # The verdict item's params, frozen for display (so the queue reads the same
+    # even if the underlying data later changes).
+    params = models.JSONField(default=dict, blank=True)
+    prompt = models.TextField(
+        blank=True, default='',
+        help_text='Officer-written ask (officer items); system items resolve copy from code via i18n.',
+    )
+    kind = models.CharField(max_length=20, choices=KIND, default='doc')
+    # For kind='doc': which ApplicantDocument.doc_type the student should upload.
+    doc_type = models.CharField(max_length=30, blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS, default='open')
+    source = models.CharField(max_length=20, choices=SOURCE, default='system')
+    # The student's response: a typed explanation/confirmation, and/or the
+    # document they uploaded to satisfy a 'doc' item.
+    resolution_text = models.TextField(blank=True, default='')
+    resolution_doc = models.ForeignKey(
+        ApplicantDocument, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='resolves_items',
+    )
+    created_by = models.CharField(
+        max_length=254, blank=True, default='',
+        help_text="Email of the PartnerAdmin for officer items; '' for system items.",
+    )
+    resolved_by = models.CharField(
+        max_length=254, blank=True, default='',
+        help_text="'student' / 'system' / a PartnerAdmin email.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'resolution_items'
+        ordering = ['-created_at']
+        constraints = [
+            # One SYSTEM item per (application, code), ever — generation is
+            # idempotent and never re-nags. Officer items aren't constrained.
+            models.UniqueConstraint(
+                fields=['application', 'code'], condition=models.Q(source='system'),
+                name='uniq_system_resolution_per_code'),
+        ]
+
+    def __str__(self):
+        return f'ResolutionItem #{self.id} app={self.application_id} {self.code} ({self.status})'

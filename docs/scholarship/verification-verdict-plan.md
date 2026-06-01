@@ -144,7 +144,14 @@ the **panel integration** that shows draft+caveats and wires to final.
   real docs, not just synthetic fixtures).
 - **Complexity:** Medium-High. Additive migration (migrate-first via MCP).
 
-### Sprint 3 — Resolution ticket model + auto-generation (backend)
+### Sprint 3 — Resolution ticket model + auto-generation (backend) ✅ DONE (2026-06-02)
+- **Shipped:** `ResolutionItem` model (migration `0036`, RLS) + `resolution.py` (`CODE_TO_TICKET`, idempotent
+  race-safe `sync_resolution_items` with auto-resolve + no-re-nag, `resolve_item`, `add_officer_item`); student
+  endpoints (list + resolve) + officer endpoints (add + waive/resolve); sync wired into doc upload/delete; admin
+  serializer exposes the live open queue. The 3 excluded codes (`ic_service_down`, `grades_unverified`,
+  `str_present_unverified`) confirmed with the user. 9 tests; scholarship suite **454** green. Real-data: Theresa →
+  2 tickets (STR upload + add 2 subjects). **Backend only** (S4 = student UI). Migration on branch; **prod
+  migrate-first at deploy** (new-model contenttypes workaround + RLS, TD-058).
 - **Goal:** Turn the verdict's gaps into discrete, independently-resolvable
   tickets (IBKR model).
 - **Scope:** new `ResolutionItem` model `{application, fact, code, prompt,
