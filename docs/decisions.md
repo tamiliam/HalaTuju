@@ -1769,3 +1769,32 @@ finality (no bank refund) must be explicit in the donation terms + the lawyer's 
 
 **Revisit if:** the lawyer requires a different fund-flow or refund policy; or scale needs partial/multi-sponsor
 funding, tranche disbursement, or the 2-year reallocation window (TD-075).
+
+## Verification verdict: a deterministic rollup, not a new AI pass — Verification-verdict S1, 2026-06-01
+**Decision:** The officer-facing four-fact verdict (Identity/Academic/Income/Pathway) is computed by a pure,
+deterministic engine (`verdict_engine.py`) that *composes signals already produced* (Vision matchers, doc-assist
+fields, completeness, the anomaly engine). No new Gemini call in the verdict path.
+**Alternatives considered:** a Gemini "summarise this application" pass that writes the verdict prose.
+**Rationale:** the verdict drives the coordinator's audit and (later) the income recommendation — it must be
+auditable, reproducible, and free; a hallucinated verdict is worse than scattered chips. The AI's role stays
+upstream (extraction) where a human-decided matcher converts its output to a verdict. The narrative/synthesis AI
+pass belongs later (S5, on the draft profile), cached, never in a GET.
+**Trade-offs:** the engine can only assert what the deterministic signals support — richer "judgement" prose waits
+for S5; under-claims by design (green is expensive).
+**Revisit if:** a fact genuinely needs free-text reasoning the rules can't express — then add a *cached* AI pass
+feeding the engine, never replacing it.
+
+## Academic comparison by normalised subject name + STR-gated income green — Verification-verdict S1/S2, 2026-06-02
+**Decision:** (a) Academic completeness/accuracy compares the slip against the typed grades by **normalised subject
+name**, not by grade key. (b) Income reaches `verified` (green) only on a **verified STR document** (uploaded +
+name-matched), never the self-declared `receives_str` flag; otherwise the engine `recommend`s and a human decides.
+**Alternatives considered:** (a) mapping OCR'd Malay names to a single canonical grade key — but the subject table
+has key collisions (`b_tamil`/`bahasa_tamil`, `eng_draw`/`lukisan_kejuruteraan`) so a reverse map is lossy. (b)
+trusting the STR checkbox for green.
+**Rationale:** (a) the profile and the slip are two independent readings of the same subjects; matching by
+normalised name tolerates which internal key the profile happens to use and pinpoints disagreements per subject.
+(b) STR is the gold B40 proof but the checkbox is unverified self-declaration; the document is the evidence.
+**Trade-offs:** (a) `_SUBJECT_BM` duplicates `subjects.ts` (TD-078). (b) honest under-claim means a genuinely-poor
+family with no STR letter sits at `recommend` until a human rules — by design (the human owns the income verdict).
+**Revisit if:** the subject taxonomy moves to a single shared source; or policy lets the AI assert B40 from
+triangulated proxies without a human.
