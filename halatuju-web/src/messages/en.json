@@ -1791,6 +1791,53 @@
         "public_other": "Public institution (not via UPU)",
         "ipts": "Private (IPTS)",
         "unknown": "Not sure"
+      },
+      "verdict": {
+        "title": "Verification verdict",
+        "intro": "What the checks confirm, and what still needs you. Audit it — don't rebuild it.",
+        "evidenceLabel": "Confirmed",
+        "unresolvedLabel": "Needs attention",
+        "fact": {
+          "identity": "Identity",
+          "academic": "Academic",
+          "income": "Income (B40)",
+          "pathway": "Pathway"
+        },
+        "status": {
+          "verified": "Verified",
+          "review": "Review",
+          "recommend": "Recommend",
+          "gap": "Action needed"
+        },
+        "item": {
+          "nric_match": "NRIC matches the IC ({nric}).",
+          "name_match": "Name matches across documents.",
+          "name_resolved_truncation": "Name confirmed — the OCR truncated it (read “{ocr_name}”); the full name “{profile_name}” is corroborated by the other documents.",
+          "results_slip_name_ok": "The results slip is in the student's name.",
+          "income_proof_epf": "EPF statement provided.",
+          "income_proof_salary": "Salary slip provided.",
+          "utility_bills_present": "Utility bills provided (a wealth-level proxy).",
+          "str_verified": "STR document verified — B40 status confirmed.",
+          "offer_programme": "Offer letter: {programme} at {institution}.",
+          "offer_name_ok": "Offer letter is in the student's name.",
+          "pathway_declared": "Pathway declared: {pathway} (no offer letter yet).",
+          "ic_missing": "No identity card uploaded.",
+          "ic_unreadable": "The identity card could not be read — ask for a clearer photo.",
+          "ic_service_down": "The ID-reading service was unavailable — re-check shortly.",
+          "nric_mismatch": "The IC reads NRIC {ocr_nric}; the student typed {profile_nric}. Confirm.",
+          "name_mismatch": "The IC name “{ocr_name}” differs from the typed name “{profile_name}”. Confirm.",
+          "address_state_mismatch": "The IC is registered in {ic_state}; the student says {profile_state}. Ask which is current.",
+          "results_slip_missing": "No results slip uploaded.",
+          "results_slip_name_mismatch": "The results slip is in a different name. Confirm.",
+          "results_slip_unreadable": "The results slip could not be read — ask for a clearer copy.",
+          "grades_unverified": "Grades not yet cross-checked against the slip — eyeball them (automated check coming).",
+          "str_claimed_no_doc": "Student says the family receives STR but hasn't uploaded the STR letter — request it.",
+          "str_present_unverified": "STR document present but not yet matched to the household — confirm.",
+          "income_proof_missing": "No proof of income uploaded — request STR, salary slip, or EPF.",
+          "offer_name_mismatch": "The offer letter is in a different name. Confirm.",
+          "offer_unreadable": "The offer letter could not be read — ask for a clearer copy.",
+          "pathway_undeclared": "No pathway chosen yet."
+        }
       }
     },
     "students": "Students",

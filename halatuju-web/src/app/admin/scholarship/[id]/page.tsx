@@ -31,6 +31,7 @@ import {
   type AdminSponsorProfile,
   type AdminApplicantDocument,
   type AdminInterviewSession,
+  type AdminVerdictItem,
 } from '@/lib/admin-api'
 
 const VERDICTS = ['resolved', 'still_unclear', 'new_concern'] as const
@@ -616,6 +617,62 @@ export default function AdminScholarshipDetailPage() {
         <p className="text-sm text-gray-600">
           {app.consents.some((c) => c.is_active) ? t('admin.scholarship.consentGiven') : t('admin.scholarship.consentNone')}
         </p>
+      </div>
+
+      {/* S1 Verification verdict — the four-fact rollup (identity / academic /
+          income / pathway) the coordinator AUDITS, not assembles. Status +
+          what's confirmed + what still needs them. Sits above the raw flags. */}
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+        <div>
+          <h2 className="font-semibold">{t('admin.scholarship.verdict.title')}</h2>
+          <p className="text-xs text-gray-500">{t('admin.scholarship.verdict.intro')}</p>
+        </div>
+        <ul className="space-y-2">
+          {(app.verdict || []).map((f) => {
+            const tone = {
+              verified: 'bg-green-100 text-green-700 border-green-200',
+              review: 'bg-amber-100 text-amber-700 border-amber-200',
+              recommend: 'bg-blue-100 text-blue-700 border-blue-200',
+              gap: 'bg-red-100 text-red-700 border-red-200',
+            }[f.status]
+            const resolve = (it: AdminVerdictItem) =>
+              t(`admin.scholarship.verdict.item.${it.code}`,
+                Object.fromEntries(Object.entries(it.params).map(([k, v]) => [k, String(v)])))
+            return (
+              <li key={f.fact} className="rounded-lg border border-gray-200 p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-sm">{t(`admin.scholarship.verdict.fact.${f.fact}`)}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${tone}`}>
+                    {t(`admin.scholarship.verdict.status.${f.status}`)}
+                  </span>
+                </div>
+                {f.evidence.length > 0 && (
+                  <ul className="space-y-1">
+                    {f.evidence.map((it, i) => (
+                      <li key={`e${i}`} className="flex items-start gap-1.5 text-sm text-gray-700">
+                        <span className="text-green-600 shrink-0" aria-hidden>✓</span>
+                        <span>{resolve(it)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {f.unresolved.length > 0 && (
+                  <div className="space-y-1 border-t border-gray-100 pt-2">
+                    <p className="text-xs font-medium text-gray-500">{t('admin.scholarship.verdict.unresolvedLabel')}</p>
+                    <ul className="space-y-1">
+                      {f.unresolved.map((it, i) => (
+                        <li key={`u${i}`} className="flex items-start gap-1.5 text-sm text-gray-800">
+                          <span className="text-amber-600 shrink-0" aria-hidden>•</span>
+                          <span>{resolve(it)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
       </div>
 
       {/* S16 Phase A: deterministic pre-interview flag list. Each flag = a
