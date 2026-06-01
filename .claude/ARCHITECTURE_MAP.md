@@ -222,6 +222,16 @@ soft signals to the verdict, mirroring the FE chip precedence. Served by `Docume
 (`GET …/documents/<pk>/help/`, own-doc scoped). **Structurally firewalled** — the engine receives only primitives,
 never an application/profile/score object (signature-asserted); it is the inverse wall to the admin-only gap-spotter.
 
+**Verification verdict (the synthesis layer, branch `feature/verification-verdict`, S1–S2):** `verdict_engine.py`
+(`build_verdict` → four facts Identity/Academic/Income/Pathway, each `{status, evidence[], unresolved[]}`; pure +
+deterministic, **no LLM** — composes `_ic_identity_blockers`, `application_completeness`, the Vision matchers, doc-assist
+verdicts and `detect_anomalies`) and `academic_engine.py` (S2 — `_SUBJECT_BM` mirrors `subjects.ts`; `read_slip` +
+`compare_academics` = completeness + accuracy by normalised subject name). Surfaced via
+`AdminApplicationDetailSerializer.verdict` as the "Verification verdict" scorecard above the Pre-interview flags.
+S2 extended the results-slip doc-assist schema to `results: [{subject, grade}]` (grade read per subject). No migration
+(reads existing signals / reuses `vision_fields`). Plan + roadmap: `docs/scholarship/verification-verdict-plan.md`
+(S3 resolution-ticket backend, S4 student Action Centre, S5 officer panel + documents-box redesign next).
+
 **Phase E — sponsor marketplace (E1, v2.22.0):** **Note the naming split** — `Sponsor` (the *account*: a
 self-registering, admin-vetted real user; model in `apps/scholarship/models.py`, table `sponsors`, migration
 `scholarship/0031`) is **distinct** from `SponsorProfile` (the AI-drafted *student* write-up sponsors will eventually

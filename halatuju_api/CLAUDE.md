@@ -443,7 +443,25 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-01, post Phase E Sprint E3a)
+## Next Sprint (as of 2026-06-02)
+
+**ACTIVE TRACK — Verification Verdict roadmap** (branch `feature/verification-verdict`, **committed, NOT pushed** —
+held until further along; push = deploy). Plan: `docs/scholarship/verification-verdict-plan.md`. Turns the scattered
+post-shortlist signals into ONE four-fact verdict (Identity/Academic/Income/Pathway) the coordinator AUDITS.
+- **S1 ✅** `verdict_engine.py` (deterministic rollup) + officer scorecard card + serializer field. No migration.
+- **S2 ✅** grade OCR (`results: [{subject, grade}]`) + `academic_engine.py` (completeness + accuracy by normalised
+  subject name). No migration (grades in `vision_fields`).
+- **▶ S3 NEXT — resolution-ticket backend** (IBKR-style: each unresolved verdict item → a discrete ticket closable by
+  doc/explanation/confirm; new `ResolutionItem` model → **needs a migration**, RLS deny-by-default, migrate-first via
+  MCP, contenttypes workaround for the new-model migration per TD-058). Then S4 student Action Centre, S5 officer panel
+  + documents-box redesign (Stitch-first) + final-profile loop.
+- Backend 1481 pytest (+35) + 183 jest; courses migrations through `0052`, scholarship through `0035`.
+- Gotchas carried in: changing a doc-assist extraction shape has a hidden FE renderer consumer (lessons.md); subject
+  map duplicated FE/BE (TD-078); billable real-slip OCR smoke deferred (user-run).
+
+---
+
+**OTHER TRACK — Phase E (sponsor marketplace), paused at E3a.** Lawyer-gated; resume per the ordered list below.
 
 Current state: v2.26.0 shipped (2026-06-01) — Phase E **Sprint E3a: sponsor wallet + match/consent BACKEND** (no real
 money). The whole donate→fund-in-full→award→accept/lapse state machine on dummy data, behind `SPONSOR_POOL_ENABLED`
