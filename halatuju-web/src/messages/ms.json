@@ -54,21 +54,6 @@
     "haveAccount": "Sudah ada akaun?",
     "partnerNote": "Rakan kongsi dan penyelaras log masuk melalui jemputan."
   },
-  "sponsorInterest": {
-    "title": "Tajai masa depan seorang pelajar",
-    "intro": "Beritahu kami sedikit tentang anda dan kami akan menghubungi anda. Akaun penaja adalah melalui jemputan sementara kami membina portal penaja.",
-    "name": "Nama anda",
-    "email": "E-mel",
-    "organisation": "Organisasi",
-    "message": "Apa-apa yang ingin anda maklumkan",
-    "messagePlaceholder": "cth. bidang atau bilangan pelajar yang ingin anda bantu",
-    "submit": "Daftar minat saya",
-    "submitting": "Menghantar…",
-    "error": "Tidak dapat menghantar. Sila cuba lagi.",
-    "doneTitle": "Terima kasih!",
-    "doneBody": "Kami telah menerima minat anda dan akan menghubungi anda tidak lama lagi.",
-    "backHome": "Kembali ke laman utama"
-  },
   "sponsorAuth": {
     "badge": "Penaja",
     "loginTitle": "Log masuk penaja",

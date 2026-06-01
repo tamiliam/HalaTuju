@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.26.1] — Remove orphaned sponsor register-interest page + stack (TD-072b) (2026-06-01)
+
+### Removed
+- **The pre-feature sponsor "register interest" lead form and its entire backend stack.** Superseded by the
+  self-serve sponsor auth + portal (E1c, v2.23.0); it had been orphaned since and held 0 rows in production.
+  Full removal (Option B): the `/sponsor/register-interest` page, `submitSponsorInterest` API helper, the
+  `sponsorInterest.*` i18n block in all three locales (en/ms/ta), `SponsorInterestView` +
+  `AdminSponsorInterestView` + their two routes, `SponsorInterestSerializer`, the `SponsorInterest` model
+  (table `sponsor_interests`), and the obsolete `test_sponsor_interest.py`.
+  - **Kept** `emails.send_sponsor_interest_admin_email` — now shared by the live `SponsorRegisterView`.
+  - **Migration `0035_remove_sponsor_interest`** (DeleteModel) — destructive, so applied **deploy-first**:
+    code pushed first, then `DROP TABLE sponsor_interests` via Supabase MCP (table empty, safe).
+  - i18n parity holds at 1662 keys × 3 locales; 183 jest; scholarship 410. Closes **TD-072(b)**.
+
 ## [2.26.0] — Phase E Sprint E3a: sponsor wallet + match/consent (backend, no real money) (2026-06-01)
 
 - **The sponsorship match — a sponsor funds an anonymous student, the student/guardian accepts.** Built on dummy data,

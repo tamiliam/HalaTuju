@@ -4,21 +4,8 @@ from rest_framework import serializers
 from . import pool
 from .models import (
     ApplicantDocument, Consent, FundingNeed, Referee, ScholarshipApplication,
-    Sponsor, SponsorInterest,
+    Sponsor,
 )
-
-
-class SponsorInterestSerializer(serializers.ModelSerializer):
-    """Public 'register interest in sponsoring' lead. name + email required."""
-    class Meta:
-        model = SponsorInterest
-        fields = ['id', 'name', 'email', 'organisation', 'message', 'status', 'created_at']
-        read_only_fields = ['id', 'status', 'created_at']
-
-    def validate_name(self, v):
-        if not (v or '').strip():
-            raise serializers.ValidationError('Name is required.')
-        return v.strip()
 
 
 class SponsorSerializer(serializers.ModelSerializer):

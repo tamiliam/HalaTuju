@@ -226,6 +226,15 @@ Supabase Security Advisor must show 0 errors before deploy.
 
 ## Project Status
 
+**v2.26.1 (2026-06-01) — Remove orphaned sponsor register-interest stack (TD-072b).** Full removal (Option B) of the
+v2.16 sponsor lead-capture stack, orphaned since self-serve auth (E1c, v2.23.0; prod table had 0 rows): deleted the
+`/sponsor/register-interest` page, `submitSponsorInterest` (api.ts), the `sponsorInterest.*` i18n block (en/ms/ta),
+`SponsorInterestView` + `AdminSponsorInterestView` + their 2 routes, `SponsorInterestSerializer`, the `SponsorInterest`
+model + `test_sponsor_interest.py`. **Kept** `emails.send_sponsor_interest_admin_email` — shared by the live
+`SponsorRegisterView`. **Migration `0035_remove_sponsor_interest`** (DeleteModel) — destructive, applied **deploy-first**:
+pushed code, then `DROP TABLE sponsor_interests` + recorded the migration row via Supabase MCP. 1446 pytest + 183 jest;
+i18n parity 1662×3. Closes TD-072(b). See `docs/retrospective-v2.26.1-register-interest-removal.md`.
+
 **v2.26.0 (2026-06-01) — Phase E Sprint E3a: sponsor wallet + match/consent (backend, NO real money).** On dummy
 data, behind the pool flag; donations are **mocked** (no toyyibPay), disbursement + tranches are later gated slices,
 money is a **ledger** not custody. **Wallet:** sponsor donates into myNADI (final, never a bank refund); balance =

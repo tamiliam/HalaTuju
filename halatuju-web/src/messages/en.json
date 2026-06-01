@@ -54,21 +54,6 @@
     "haveAccount": "Already have an account?",
     "partnerNote": "Partners and coordinators sign in by invitation."
   },
-  "sponsorInterest": {
-    "title": "Sponsor a student's future",
-    "intro": "Tell us a little about you and we'll be in touch. Sponsor accounts are by invitation while we build the sponsor portal.",
-    "name": "Your name",
-    "email": "Email",
-    "organisation": "Organisation",
-    "message": "Anything you'd like us to know",
-    "messagePlaceholder": "e.g. fields or number of students you'd like to support",
-    "submit": "Register my interest",
-    "submitting": "Sending…",
-    "error": "Could not send. Please try again.",
-    "doneTitle": "Thank you!",
-    "doneBody": "We've received your interest and will be in touch soon.",
-    "backHome": "Back to home"
-  },
   "sponsorAuth": {
     "badge": "Sponsor",
     "loginTitle": "Sponsor sign in",

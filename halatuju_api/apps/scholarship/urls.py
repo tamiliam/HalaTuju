@@ -12,7 +12,6 @@ from .views import (
     DocumentListCreateView,
     DocumentSignUploadView,
     RefereeListCreateView,
-    SponsorInterestView,
     StudentAwardView,
 )
 from .views_sponsor import (
@@ -45,7 +44,6 @@ from .views_admin import (
     AdminRefereeDetailView,
     AdminRequestInfoView,
     AdminRunVisionView,
-    AdminSponsorInterestView,
     AdminSponsorListView,
     AdminSponsorReviewView,
     AdminSuggestGapsView,
@@ -64,8 +62,6 @@ urlpatterns = [
     path('scholarship/consent/', ConsentView.as_view()),
     # Phase E3: the student's award offer (accept/decline; guardian-gated for minors)
     path('scholarship/award/', StudentAwardView.as_view()),
-    # Public sponsor-interest lead capture (no auth)
-    path('sponsor-interest/', SponsorInterestView.as_view()),
 
     # Phase E: sponsor accounts (authenticated self-registration + own status)
     path('sponsor/register/', SponsorRegisterView.as_view()),
@@ -84,7 +80,6 @@ urlpatterns = [
     path('internal/cron/<str:job>/', CronRunView.as_view()),
 
     # MyNadi admin (PartnerAdmin auth; /admin/ is NRIC-gate whitelisted)
-    path('admin/sponsor-interest/', AdminSponsorInterestView.as_view()),
     # Phase E: sponsor account vetting
     path('admin/sponsors/', AdminSponsorListView.as_view()),
     path('admin/sponsors/<int:pk>/review/', AdminSponsorReviewView.as_view()),
