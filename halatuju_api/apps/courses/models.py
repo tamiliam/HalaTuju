@@ -449,8 +449,10 @@ class StudentProfile(models.Model):
     Note: Authentication is handled by Supabase Auth.
     This model stores the student's academic profile and preferences.
 
-    Table name: 'api_student_profiles' to avoid conflict with existing
-    Streamlit 'student_profiles' table which has 29 users.
+    Table name: 'api_student_profiles'. The 'api_' prefix originally avoided a
+    collision with the legacy Streamlit 'student_profiles' table; that dead table
+    was dropped 2026-06-01 (TD-025). The prefix is retained as the canonical name
+    (a rename isn't worth the RLS/raw-SQL/migration churn).
     """
     # Supabase Auth user ID (from JWT 'sub' claim)
     supabase_user_id = models.CharField(max_length=100, primary_key=True)

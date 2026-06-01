@@ -1,0 +1,1316 @@
+{
+  "dumped_at": "2026-06-01T01:45:11.474493+00:00",
+  "table": "student_profiles",
+  "row_count": 30,
+  "columns": [
+    {
+      "column": "id",
+      "type": "uuid",
+      "nullable": "NO",
+      "default": "gen_random_uuid()",
+      "max_length": null
+    },
+    {
+      "column": "created_at",
+      "type": "timestamp with time zone",
+      "nullable": "YES",
+      "default": "now()",
+      "max_length": null
+    },
+    {
+      "column": "name",
+      "type": "text",
+      "nullable": "YES",
+      "default": null,
+      "max_length": null
+    },
+    {
+      "column": "email",
+      "type": "text",
+      "nullable": "YES",
+      "default": null,
+      "max_length": null
+    },
+    {
+      "column": "phone",
+      "type": "text",
+      "nullable": "YES",
+      "default": null,
+      "max_length": null
+    },
+    {
+      "column": "gender",
+      "type": "text",
+      "nullable": "YES",
+      "default": null,
+      "max_length": null
+    },
+    {
+      "column": "grades",
+      "type": "jsonb",
+      "nullable": "YES",
+      "default": null,
+      "max_length": null
+    },
+    {
+      "column": "eligible_count",
+      "type": "integer",
+      "nullable": "YES",
+      "default": null,
+      "max_length": null
+    },
+    {
+      "column": "source",
+      "type": "text",
+      "nullable": "YES",
+      "default": "'HalaTuju_v1'::text",
+      "max_length": null
+    },
+    {
+      "column": "pin_hash",
+      "type": "text",
+      "nullable": "YES",
+      "default": null,
+      "max_length": null
+    },
+    {
+      "column": "full_name",
+      "type": "text",
+      "nullable": "YES",
+      "default": null,
+      "max_length": null
+    },
+    {
+      "column": "last_login",
+      "type": "timestamp with time zone",
+      "nullable": "YES",
+      "default": null,
+      "max_length": null
+    },
+    {
+      "column": "student_signals",
+      "type": "jsonb",
+      "nullable": "YES",
+      "default": "'{}'::jsonb",
+      "max_length": null
+    },
+    {
+      "column": "ai_report",
+      "type": "text",
+      "nullable": "YES",
+      "default": null,
+      "max_length": null
+    },
+    {
+      "column": "address",
+      "type": "text",
+      "nullable": "NO",
+      "default": "''::text",
+      "max_length": null
+    },
+    {
+      "column": "postal_code",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": "''::character varying",
+      "max_length": 5
+    },
+    {
+      "column": "city",
+      "type": "character varying",
+      "nullable": "NO",
+      "default": "''::character varying",
+      "max_length": 100
+    },
+    {
+      "column": "colorblind",
+      "type": "boolean",
+      "nullable": "YES",
+      "default": "false",
+      "max_length": null
+    },
+    {
+      "column": "disability",
+      "type": "boolean",
+      "nullable": "YES",
+      "default": "false",
+      "max_length": null
+    }
+  ],
+  "rows": [
+    {
+      "id": "0e143732-b6e9-4b96-9c2c-5c929a93aac2",
+      "city": "",
+      "name": "Elanjelian",
+      "email": "murugu@gmail.co",
+      "phone": "0123375",
+      "gender": "Lelaki",
+      "grades": {
+        "bm": "C+",
+        "eng": "C+",
+        "sci": "C+",
+        "hist": "C",
+        "math": "C+"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": null,
+      "ai_report": null,
+      "full_name": null,
+      "colorblind": false,
+      "created_at": "2026-01-15T21:59:03.453688+00:00",
+      "disability": false,
+      "last_login": null,
+      "postal_code": "",
+      "eligible_count": 319,
+      "student_signals": {}
+    },
+    {
+      "id": "9cd4a964-ce6d-48a3-9d28-43dfb7bbe026",
+      "city": "",
+      "name": "Karnapiran",
+      "email": "erere",
+      "phone": "34343",
+      "gender": "Male",
+      "grades": {
+        "bm": "C",
+        "eng": "C",
+        "hist": "C",
+        "math": "C",
+        "moral": "C"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": null,
+      "ai_report": null,
+      "full_name": null,
+      "colorblind": false,
+      "created_at": "2026-01-17T08:16:25.850861+00:00",
+      "disability": false,
+      "last_login": null,
+      "postal_code": "",
+      "eligible_count": 701,
+      "student_signals": {}
+    },
+    {
+      "id": "9b84059c-7f90-4c61-86e6-a6d9a2b4a144",
+      "city": "",
+      "name": "Test User",
+      "email": "test@example.com",
+      "phone": "Google-Auth",
+      "gender": "Male",
+      "grades": {
+        "bm": "C",
+        "eng": "C",
+        "hist": "C",
+        "math": "C",
+        "moral": "C"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": null,
+      "ai_report": null,
+      "full_name": null,
+      "colorblind": false,
+      "created_at": "2026-01-17T08:41:35.068695+00:00",
+      "disability": false,
+      "last_login": null,
+      "postal_code": "",
+      "eligible_count": 701,
+      "student_signals": {}
+    },
+    {
+      "id": "f77c07b7-34a3-4add-9f16-726aff2d4a83",
+      "city": "",
+      "name": "dfd",
+      "email": "tamiliam@gmail.c",
+      "phone": "11232333333",
+      "gender": "Male",
+      "grades": {
+        "bm": "C",
+        "eng": "C",
+        "hist": "C",
+        "math": "C",
+        "moral": "C"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": null,
+      "ai_report": null,
+      "full_name": null,
+      "colorblind": false,
+      "created_at": "2026-01-17T08:50:35.998241+00:00",
+      "disability": false,
+      "last_login": null,
+      "postal_code": "",
+      "eligible_count": 701,
+      "student_signals": {}
+    },
+    {
+      "id": "9f53c430-251d-4309-8983-5ec1b81631d9",
+      "city": "",
+      "name": null,
+      "email": null,
+      "phone": "0123123123",
+      "gender": "Male",
+      "grades": {
+        "bm": "B",
+        "coq": 0,
+        "eng": "A",
+        "hist": "A",
+        "math": "B"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$hAQ7Ixhm5t7xRGLWtVVDtekAgx2.hh.6CUQxAbH7BHdBlxYvjc2bO",
+      "ai_report": null,
+      "full_name": "Manimuthi",
+      "colorblind": false,
+      "created_at": "2026-01-19T06:47:17.275102+00:00",
+      "disability": false,
+      "last_login": "2026-02-03T02:40:26.579907+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "city": "",
+        "state": "Johor",
+        "lang_pref": "en",
+        "financial_pressure": "Medium (some help, but careful)",
+        "travel_willingness": "Anywhere in Semenanjung Malaysia",
+        "environment_signals": {
+          "office_environment": 1
+        },
+        "value_tradeoff_signals": {
+          "income_risk_tolerant": 2
+        },
+        "work_preference_signals": {
+          "creative": 2
+        },
+        "energy_sensitivity_signals": {
+          "mental_fatigue_sensitive": 1
+        },
+        "learning_tolerance_signals": {
+          "rote_tolerant": 1
+        }
+      }
+    },
+    {
+      "id": "64fbea6a-f099-4781-ab6f-26d675202b6d",
+      "city": "",
+      "name": null,
+      "email": null,
+      "phone": "0123456777",
+      "gender": null,
+      "grades": {
+        "bm": "A+",
+        "bio": "A+",
+        "coq": 5,
+        "eng": "A-",
+        "geo": "A-",
+        "hist": "A-",
+        "math": "C",
+        "addmath": "A+",
+        "b_tamil": "A+"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$nI6PRQElguWpoe.SJ3R/ve4dqA/elgZ.I5ZelW3hpaVu1JOX0OM62",
+      "ai_report": null,
+      "full_name": "Ali bin Muthu",
+      "colorblind": false,
+      "created_at": "2026-01-17T13:00:10.614456+00:00",
+      "disability": false,
+      "last_login": "2026-02-04T00:21:11.026233+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "value_signals": {
+          "pathway_focus": 2,
+          "physical_fatigue": 1
+        },
+        "interest_signals": {
+          "office": 1,
+          "creative": 2
+        },
+        "learning_signals": {
+          "rote_tolerant": 1
+        },
+        "survival_signals": {
+          "proximity_priority": 3
+        }
+      }
+    },
+    {
+      "id": "df44aa19-08ed-4ebe-b858-655f2b76da75",
+      "city": "",
+      "name": null,
+      "email": "",
+      "phone": "0123455555",
+      "gender": "Female",
+      "grades": {
+        "bm": "D",
+        "eng": "D",
+        "sci": "D",
+        "hist": "D",
+        "math": "C",
+        "lang3": "A+",
+        "moral": "E",
+        "ekonomi": "B"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$JXAb577h63/HUNBwCDKQ4.8abiGDpStBBRBSpQO94mdcP737Qtn7C",
+      "ai_report": "{\"markdown\": \"Salam sejahtera Vanitha, saya Cikgu Gopal. Terima kasih sebab sudi kongsi keputusan SPM dan apa yang Vanitha rasa pasal kerja. Mari kita tengok sama-sama ya.\\n\\n**A. Cermin Diri (Fahamkan Diri Awak)**\\n\\nDari apa yang Cikgu faham, Vanitha ni jenis yang:\\n*   **Suka belajar sambil buat kerja:** Awak lebih faham kalau boleh terus dipraktikkan, bukan asyik baca buku saja.\\n*   **Suka kerja dalam suasana teratur:** Macam pejabat, spa atau klinik yang kemas, ada sistem dan tak kelam-kabut sangat.\\n*   **Suka bantu orang:** Tapi jenis yang buat orang rasa selesa atau gembira, bukan selesaikan masalah berat sangat.\\n*   **Pentingkan gaji/elaun:** Memang realistik! Kita kerja nak dapatkan duit kan?\\n*   **Tak suka kerja yang penat otak sangat:** Kalau kerja yang kena fikir berat sampai pening, awak cepat letih. Awak lebih sesuai kerja yang perlukan fokus dan kemahiran tangan, tapi kurang rumit teori.\\n\\n**B. Isyarat Akademik SPM (Apa Keputusan Awak Beritahu Kita)**\\n\\nIni keputusan SPM Vanitha:\\n*   **Bahasa Melayu (D) & Bahasa Inggeris (D):** Ini isyarat awak kena usaha lebih sikit dalam komunikasi. Untuk mana-mana kerja yang berdepan dengan pelanggan, percakapan yang jelas tu penting. Nota dan manual dalam diploma nanti pun banyak guna Bahasa Inggeris. Jadi, kena rajin baca dan fahamkan.\\n*   **Sains (D) & Pendidikan Moral (E):** Tak apa, subjek ni bukan penentu sangat untuk kursus ni. Tapi, asas kebersihan dan etika kerja tu sangat penting.\\n*   **Matematik (C):** Tahniah! Gred C ni bagus. Ia menunjukkan awak boleh faham kira-kira asas. Dalam terapi kecantikan, awak kena ukur, bancuh bahan ikut sukatan, atau kira harga produk. Math memang membantu.\\n*   **Ekonomi (B):** Ini satu lagi kekuatan Vanitha! Dapat B ni menunjukkan awak ada pemahaman asas tentang bisnes dan wang. Sangat berguna kalau nanti awak nak buka salon sendiri atau faham pasal kos produk.\\n*   **Bahasa Ketiga (A+):** Wah, ini sangat cemerlang! Awak ada kemahiran bahasa yang lain. Ini satu kelebihan besar tau! Mungkin boleh tarik pelanggan yang cakap bahasa tu, atau ada peluang kerja kat tempat yang perlukan kemahiran bahasa awak.\\n\\n**C. Kenapa Diploma Terapi Kecantikan Sesuai Untuk Awak**\\n\\nKursus ni nampak sangat sesuai dengan apa yang Vanitha suka:\\n*   **Kerja Harian:** Awak akan belajar jaga kulit muka, buat urutan badan, manikur, pedikur, rawatan rambut, dan banyak lagi. Ini semua kerja yang guna tangan, perlukan fokus, dan teliti.\\n*   **Suasana Kerja:** Selalunya dalam salon kecantikan, spa, atau klinik estetik. Tempat ni bersih, teratur, dan selesa \\u2013 sesuai dengan minat awak yang suka kerja tempat kemas.\\n*   **Belajar Sambil Buat:** Memang kena banyak praktikal. Sangat kena dengan Vanitha yang suka belajar dengan cara \\u2018buat sendiri\\u2019.\\n*   **Bantu Orang Rasa Gembira:** Bila pelanggan rasa cantik dan selesa, awak pun akan puas hati. Ini boleh bagi kepuasan kerja.\\n*   **Bukan Jualan Semata:** Walaupun ada jual produk, tugas utama awak lebih kepada beri rawatan, bukan paksa orang beli. Ini berbeza dengan kerja jualan yang asyik kejar target.\\n\\n**D. Cabaran & Pertukaran Realiti**\\n\\nDunia kerja ni ada cabaran dia, Vanitha. Untuk Diploma Terapi Kecantikan ni pun sama:\\n*   **Mula-mula Gaji Mungkin Tak Tinggi:** Gaji permulaan taklah \\u2018wow\\u2019 sangat. Tapi, bila dah ada pengalaman, kemahiran makin bagus, ada pelanggan tetap, dan pandai promote diri, gaji boleh naik. Ada juga yang dapat tips!\\n*   **Memerlukan Ketahanan Fizikal:** Kena berdiri lama, guna tangan dan bahu untuk urut. Walaupun tak penat otak sangat, tapi boleh penat badan.\\n*   **Kena Sentiasa Belajar Benda Baru:** Industri kecantikan cepat berubah. Ada je produk baru, teknik baru. Awak kena rajin ikut kursus pendek atau baca info terkini.\\n*   **Berdepan Pelbagai Jenis Pelanggan:** Ada pelanggan yang baik, ada yang cerewet. Awak kena sabar dan pandai layan.\\n*   **Proses Nak Jadi Mahir Ambil Masa:** Tak boleh terus jadi pakar dalam sebulan dua. Kena rajin praktis dan bina pengalaman.\\n\\n**E. Siapa Laluan Ini TAK Sesuai**\\n\\nLaluan Diploma Terapi Kecantikan ini mungkin kurang sesuai kalau:\\n*   Awak tak suka berdepan dengan ramai orang atau melayan kerenah pelanggan.\\n*   Awak tak suka kerja yang perlukan kemahiran tangan dan banyak praktikal.\\n*   Awak cepat bosan dengan kerja berulang, walaupun setiap pelanggan tu lain-lain.\\n*   Awak tak sabar nak dapat gaji besar dalam 1-2 tahun pertama kerja.\\n*   Awak tak suka jaga kebersihan diri dan tempat kerja dengan teliti.\\n\\n**F. Langkah Seterusnya (Boleh Buat Di Rumah)**\\n\\nCikgu cadangkan 3 langkah ni, Vanitha:\\n1.  **Tonton Video di YouTube/TikTok:** Cari \\\"Kerja Juruterapi Kecantikan Malaysia\\\", \\\"Suasana Kerja Salon\\\", \\\"Diploma Terapi Kecantikan\\\". Tonton video orang yang dah bekerja atau belajar kursus ni. Tengok betul-betul apa yang dia orang buat hari-hari.\\n2.  **Layari Laman Web Rasmi Kolej/Politeknik:** Semak syarat kemasukan untuk Diploma Terapi Kecantikan di politeknik atau kolej komuniti yang berdekatan. Tengok juga silibus dia, subjek apa yang akan dipelajari.\\n3.  **Tanya Orang Terdekat:** Cuba tanya senior sekolah atau kawan-kawan yang mungkin kenal sesiapa yang kerja di salon atau spa. Tanyakan mereka: \\\"Kerja ni seronok tak?\\\", \\\"Apa cabaran paling besar?\\\", \\\"Penat tak kerja ni?\\\".\\n\\nHarap ini dapat beri gambaran yang jelas untuk Vanitha ya. Fikir masak-masak, dan kalau ada apa-apa, boleh datang jumpa Cikgu lagi. All the best!\", \"counsellor_name\": \"Cikgu Gopal\", \"model_used\": \"gemini-2.5-flash\"}",
+      "full_name": "Vanitha",
+      "colorblind": false,
+      "created_at": "2026-01-21T00:02:52.764914+00:00",
+      "disability": false,
+      "last_login": "2026-02-03T02:38:25.725389+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "city": "",
+        "state": "Johor",
+        "financial_pressure": "Medium (some help, but careful)",
+        "travel_willingness": "No restrictions",
+        "environment_signals": {
+          "office_environment": 1
+        },
+        "value_tradeoff_signals": {
+          "meaning_priority": 2,
+          "allowance_priority": 3
+        },
+        "work_preference_signals": {
+          "people_helping": 2
+        },
+        "energy_sensitivity_signals": {
+          "mental_fatigue_sensitive": 1
+        },
+        "learning_tolerance_signals": {
+          "learning_by_doing": 1
+        }
+      }
+    },
+    {
+      "id": "c6092087-c98b-4c44-ab24-c9281faed2cd",
+      "city": "",
+      "name": null,
+      "email": null,
+      "phone": "0194733052",
+      "gender": "Male",
+      "grades": {
+        "bm": "B",
+        "eng": "C+",
+        "hist": "C",
+        "math": "C+",
+        "tech": "A-",
+        "ekonomi": "B",
+        "business": "B"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$aXJcNrR1LdiTGxSyr9NRGO3dBIcNEzinXukg.le9crlxexTnr4wZu",
+      "ai_report": null,
+      "full_name": "Vanitha Mohan",
+      "colorblind": false,
+      "created_at": "2026-01-18T14:43:57.131426+00:00",
+      "disability": false,
+      "last_login": "2026-01-18T14:43:57.427117+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "value_signals": {
+          "income_focus": 2,
+          "time_pressure_sensitive": 1
+        },
+        "interest_signals": {
+          "office": 1,
+          "people_helping": 2
+        },
+        "learning_signals": {
+          "project_based": 1
+        },
+        "survival_signals": {
+          "employment_guarantee": 2
+        }
+      }
+    },
+    {
+      "id": "59253d9a-9718-41a0-8bc1-750cf30a6944",
+      "city": "",
+      "name": null,
+      "email": null,
+      "phone": "0123456709",
+      "gender": "Male",
+      "grades": {
+        "bm": "A",
+        "coq": 0,
+        "eng": "A+",
+        "phy": "A+",
+        "sci": "C",
+        "hist": "A+",
+        "math": "C",
+        "addmath": "C"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$71UIU3bP6pTVCDvGm3Gy3.2NnkxBGcY61Tz/RRr6qFsbKxKybdDae",
+      "ai_report": null,
+      "full_name": "Ramu Manimudi",
+      "colorblind": false,
+      "created_at": "2026-01-21T23:01:59.007473+00:00",
+      "disability": false,
+      "last_login": "2026-01-21T23:01:59.159061+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "lang_pref": "en",
+        "environment_signals": {
+          "high_people_environment": 1
+        },
+        "value_tradeoff_signals": {
+          "stability_priority": 2,
+          "employment_guarantee": 2
+        },
+        "work_preference_signals": {
+          "hands_on": 2
+        },
+        "energy_sensitivity_signals": {
+          "mental_fatigue_sensitive": 1
+        },
+        "learning_tolerance_signals": {
+          "project_based": 1
+        }
+      }
+    },
+    {
+      "id": "87af127c-8e4e-4072-adab-a5a6a987dbb1",
+      "city": "",
+      "name": null,
+      "email": null,
+      "phone": "0123444444",
+      "gender": "Female",
+      "grades": {
+        "bm": "A",
+        "bio": "E",
+        "eng": "A",
+        "phy": "C",
+        "chem": "E",
+        "hist": "A+",
+        "math": "C",
+        "lang3": "A+",
+        "moral": "A+",
+        "addmath": "C"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$VzLlw.yNPKkc0.Kr9ujKz.NEZOQUAruRkkeQWhAMLm.nGmsX9acmC",
+      "ai_report": null,
+      "full_name": "Muniyamma Govindappan",
+      "colorblind": false,
+      "created_at": "2026-01-21T01:21:05.385772+00:00",
+      "disability": false,
+      "last_login": "2026-01-21T01:21:05.70618+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {}
+    },
+    {
+      "id": "871c7f9e-9258-4001-aeef-37dc804984e7",
+      "city": "",
+      "name": "ELANJELIAN VENUGOPAL",
+      "email": "tamiliam@gmail.com",
+      "phone": "0123375709",
+      "gender": "Male",
+      "grades": {
+        "bm": "A-",
+        "bio": "C+",
+        "eng": "A+",
+        "lit": "A-",
+        "phy": "A-",
+        "poa": "A-",
+        "sci": "A-",
+        "chem": "A",
+        "hist": "A+",
+        "math": "A+",
+        "lang3": "A",
+        "moral": "A-",
+        "addmath": "B+",
+        "ekonomi": "A",
+        "business": "A-"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$EFoWaoWOtrGoS2DmeFZGFumjOYN2SHhFc04BJYX7LQ0uurrPMbthi",
+      "ai_report": "{\"markdown\": \"Hi Arunagirinathan, I'm Cikgu Venu. Thanks for sharing your results and interests with me. Looking at your grades, you\\u2019ve worked very hard, and you should be proud of yourself. Let\\u2019s look at what's next.\\n\\n**A. Self-Reflection (Mirror)**\\nFrom what I see, you are a \\\"thinker.\\\" You prefer using your brain to solve problems rather than using your hands for heavy physical work. You also seem to prefer working in a quiet environment rather than a crowded place where you have to talk to strangers all day. You get bored if the work is exactly the same every single day. You need something that challenges your mind.\\n\\n**B. SPM Academic Signals**\\n*   **Mathematics (A+) & Add Maths (B+):** This is your biggest strength. You are very good with logic and numbers. You can handle courses that involve complex calculations.\\n*   **English (A+):** This is your \\\"Golden Ticket.\\\" In the professional world, especially in tech or finance, all the high-level manuals and software are in English. You won't struggle to learn new things.\\n*   **Biology (C+):** This is a clear signal. Even though you are smart, your heart isn't in life sciences. Avoid medicine or pharmacy; you\\u2019ll likely find it draining.\\n*   **Physics (A-) & Chemistry (A):** You have a very strong foundation in \\\"how things work.\\\" You are built for technical or analytical roles.\\n\\n**C. Why Computer Science / Software Engineering fits**\\nBased on your results and your dislike for physical fatigue, I suggest **Computer Science or Data Analytics.**\\n*   **Daily Work:** You sit at a desk, solve logic puzzles, and build systems. It\\u2019s \\\"brain tired,\\\" not \\\"body tired.\\\"\\n*   **Environment:** Usually an office or working from home. No need to deal with the sun or heavy lifting.\\n*   **The Fit:** It rewards your high Maths and English skills. It\\u2019s also perfect for someone who prefers working with systems rather than managing a big group of people.\\n\\n**D. Challenges & Trade-offs (Reality Check)**\\n*   **Eye Strain:** You will be staring at a screen for 8\\u201310 hours a day.\\n*   **Mental Burnout:** Sometimes you will be stuck on one small error for hours. It can be very frustrating.\\n*   **Never-ending Study:** The tech world changes fast. What you learn this year might be old in three years. You can never stop being a student.\\n\\n**E. Who This Path is NOT For**\\n*   You want to work outdoors or be active physically.\\n*   You hate sitting in one place for a long time.\\n*   You want a job where you \\\"leave work at the office\\\" and never think about it at home.\\n\\n**F. Next Steps**\\n1.  **YouTube:** Search for \\\"A day in the life of a Software Engineer Malaysia.\\\" See if the office life looks okay to you.\\n2.  **Check UPU / IPTS:** Look for \\\"Foundation in Computing\\\" or \\\"Diploma in Computer Science\\\" requirements. With your A+, you qualify for almost any top university.\\n3.  **Ask a senior:** Find someone who is studying IT or Computer Science. Ask them: \\\"Is the coding homework very stressful?\\\"\\n\\nYou have great results, Arunagirinathan. Use that brain of yours for a career that pays well for your logic, not your manual labor. All the best!\", \"counsellor_name\": \"Cikgu Venu\", \"model_used\": \"gemini-3-flash-preview\"}",
+      "full_name": "Arunagirinathan",
+      "colorblind": false,
+      "created_at": "2026-01-17T09:20:32.299342+00:00",
+      "disability": false,
+      "last_login": "2026-01-29T12:57:41.612191+00:00",
+      "postal_code": "",
+      "eligible_count": 701,
+      "student_signals": {
+        "environment_signals": {
+          "high_people_environment": 1
+        },
+        "value_tradeoff_signals": {
+          "pathway_priority": 2,
+          "proximity_priority": 3
+        },
+        "work_preference_signals": {
+          "people_helping": 2
+        },
+        "energy_sensitivity_signals": {
+          "physical_fatigue_sensitive": 1
+        },
+        "learning_tolerance_signals": {
+          "rote_tolerant": 1
+        }
+      }
+    },
+    {
+      "id": "89bb3dcd-49f0-4756-ada1-2663558b1f04",
+      "city": "",
+      "name": null,
+      "email": "rkumaravalu@gmail.com",
+      "phone": "0196736607",
+      "gender": "Female",
+      "grades": {
+        "bm": "A+",
+        "bio": "A+",
+        "eng": "A+",
+        "lit": "A+",
+        "phy": "A+",
+        "poa": "A+",
+        "chem": "A+",
+        "hist": "A+",
+        "math": "A+",
+        "lang3": "A+",
+        "moral": "A+",
+        "addmath": "A+"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$NuimMtkjLpxCj4CQjrbhiuwIe6BMCbQTHypb4vkksIpUpC2Lg/Qgu",
+      "ai_report": "{\"markdown\": \"Salam sejahtera Nantha, saya Cikgu Venu. Terima kasih sebab sudi kongsi keputusan SPM dan kecenderungan diri awak dengan cikgu.\\n\\nKeputusan awak ni, jujur cikgu cakap, memang \\\"level luar biasa\\\". Susah nak jumpa orang dapat A+ dalam semua subjek, terutama subjek berat macam Add Maths, Physics, dan Chemistry. Tapi, keputusan hebat saja tak cukup kalau kita tersalah pilih jalan yang tak kena dengan jiwa.\\n\\n**A. Cermin Diri (Self-Reflection)**\\nDari apa yang cikgu nampak, awak bukan jenis \\\"social butterfly\\\" yang suka bercakap dengan orang ramai sepanjang masa. Awak lebih selesa buat kerja sendiri atau dalam kumpulan kecil. Awak juga nampak lebih suka kerja yang dekat dengan tempat tinggal atau kawasan yang awak dah biasa (proximity). Awak berani ambil risiko sikit untuk dapat gaji yang stabil, tapi awak bukan jenis yang mahu kerja yang terlalu \\\"high pressure\\\" dari segi emosi atau kena layan kerenah orang.\\n\\n**B. Isyarat Akademik SPM**\\n- **Semua Subjek A+:** Ini bukti awak punya disiplin sangat tinggi. Awak boleh belajar apa saja subjek yang orang kata susah.\\n- **Add Maths & Physics A+:** Otak awak sangat kuat pada logik dan susunan langkah demi langkah. Awak tak ada masalah dengan benda yang teknikal dan rumit.\\n- **English A+:** Ini \\\"senjata\\\" paling besar awak. Dalam dunia kerja profesional, semua manual, nota, dan sistem guna English. Awak dah selangkah di depan kawan-kawan lain.\\n\\n**C. Kenapa Kejuruteraan Perisian (Software Engineering) Sesuai**\\nBerdasarkan keputusan gila awak ni, cikgu cadangkan awak ambil **Ijazah Sarjana Muda Sains Komputer (Kejuruteraan Perisian)**.\\n- **Kerja Sebenar:** Awak akan bina aplikasi, website, atau sistem bank/kilang. Kebanyakannya kerja depan komputer.\\n- **Suasana Kerja:** Biasanya dalam pejabat yang tenang dan beraircond. Sangat sesuai sebab awak tak berapa minat nak \\\"layan orang\\\" atau kerja luar yang panas.\\n- **Realiti Malaysia:** Syarikat teknologi sekarang banyak cari budak tempatan yang pandai \\\"coding\\\" dan fasih English. Gaji permulaan untuk bidang ni antara yang tertinggi untuk lepasan universiti.\\n\\n**D. Cabaran & Pertukaran Realiti**\\nWalaupun nampak hebat, ada benda yang awak kena tahu:\\n- **Duduk Lama:** Awak akan duduk depan skrin 8-10 jam sehari. Boleh jadi sakit belakang dan mata letih kalau tak jaga.\\n- **Otak Tak Berhenti:** Kadang-kadang sistem \\\"error\\\", awak akan balik rumah pun teringat-ingat cara nak betulkan.\\n- **Belajar Sampai Tua:** Bidang teknologi ni laju. Apa yang awak belajar tahun ni, mungkin dah lama 3 tahun lagi. Awak kena sentiasa baca benda baru.\\n\\n**E. Siapa Laluan Ini TAK Sesuai**\\n- Awak tak suka duduk diam dalam pejabat.\\n- Awak nak kerja yang setiap hari jumpa orang baru (macam jurujual atau pramugara).\\n- Awak jenis cepat putus asa kalau buat satu benda tapi tak jadi-jadi (coding banyak \\\"try and error\\\").\\n\\n**F. Langkah Seterusnya**\\nMemandangkan awak pelajar cemerlang, jangan tunggu lama. Buat benda ni kat rumah:\\n1. **YouTube:** Cari video \\\"A Day in the Life of a Software Engineer Malaysia\\\". Tengok betul tak gaya kerja tu macam yang awak nak.\\n2. **Semak Biasiswa:** Dengan Straight A+, awak jangan guna duit mak ayah. Terus cari biasiswa Petronas, Shell, atau JPA (Program Khas Jepun/Korea/Perancis). Search kat Google \\\"Biasiswa Lepasan SPM 2024\\\".\\n3. **Belajar Asas:** Cuba download apps macam \\\"Sololearn\\\" atau tengok tutorial \\\"Python for Beginners\\\" kat YouTube. Cuba buat satu kod mudah. Kalau awak rasa seronok, maksudnya ini memang jiwa awak.\\n\\nTahniah atas keputusan SPM awak, Nantha. Gunakan peluang ni sebaiknya untuk ubah nasib keluarga. Cuba dulu, baru tahu!\", \"counsellor_name\": \"Cikgu Venu\", \"model_used\": \"gemini-3-flash-preview\"}",
+      "full_name": "nantha",
+      "colorblind": false,
+      "created_at": "2026-01-29T12:57:31.051966+00:00",
+      "disability": false,
+      "last_login": "2026-01-29T12:57:31.361777+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "lang_pref": "bm",
+        "environment_signals": {
+          "high_people_environment": 1
+        },
+        "value_tradeoff_signals": {
+          "proximity_priority": 3,
+          "income_risk_tolerant": 2
+        },
+        "work_preference_signals": {
+          "people_helping": 2
+        },
+        "energy_sensitivity_signals": {},
+        "learning_tolerance_signals": {
+          "concept_first": 1
+        }
+      }
+    },
+    {
+      "id": "9bc3f6ab-c2f1-487b-a406-a553f0ca2ab2",
+      "city": "",
+      "name": "fdfd ere",
+      "email": "fdf@g.com",
+      "phone": "0123434567",
+      "gender": "Male",
+      "grades": {
+        "bm": "C",
+        "eng": "C",
+        "hist": "C",
+        "math": "C",
+        "moral": "C"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": null,
+      "ai_report": null,
+      "full_name": null,
+      "colorblind": false,
+      "created_at": "2026-01-17T09:06:25.657116+00:00",
+      "disability": false,
+      "last_login": null,
+      "postal_code": "",
+      "eligible_count": 701,
+      "student_signals": {}
+    },
+    {
+      "id": "8d5eee87-60bf-4080-8f85-1d42dcbc1789",
+      "city": "",
+      "name": "Vanitha Mohan",
+      "email": "athiragh@gmail.com",
+      "phone": "0123434567",
+      "gender": "Male",
+      "grades": {
+        "bm": "C",
+        "eng": "C",
+        "hist": "C",
+        "math": "C",
+        "moral": "C"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": null,
+      "ai_report": null,
+      "full_name": null,
+      "colorblind": false,
+      "created_at": "2026-01-17T09:11:37.140783+00:00",
+      "disability": false,
+      "last_login": null,
+      "postal_code": "",
+      "eligible_count": 701,
+      "student_signals": {}
+    },
+    {
+      "id": "20d7d26d-df9a-4387-8406-6dbea8b998bf",
+      "city": "",
+      "name": null,
+      "email": null,
+      "phone": "0123456789",
+      "gender": null,
+      "grades": {
+        "bm": "C",
+        "eng": "G",
+        "hist": "C",
+        "math": "C",
+        "moral": "C"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$STOgTBr4EYRANqjsNBIq/OxGq15t97fB6CbMQPscQ7XCaz0W9FqIm",
+      "ai_report": null,
+      "full_name": "Arunagiri",
+      "colorblind": false,
+      "created_at": "2026-01-17T11:43:35.060163+00:00",
+      "disability": false,
+      "last_login": null,
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {}
+    },
+    {
+      "id": "67386bff-44fa-45cf-9ca5-b504a19ceb76",
+      "city": "",
+      "name": null,
+      "email": null,
+      "phone": "0123454321",
+      "gender": "Male",
+      "grades": {
+        "bm": "A+",
+        "bio": "C+",
+        "eng": "A+",
+        "phy": "B+",
+        "chem": "B",
+        "hist": "B",
+        "math": "B",
+        "lang3": "B+",
+        "moral": "C+",
+        "addmath": "A"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$fpjq5JpvAraq6Wbo4Ah4o.tT2.J/YZQycutDkIwBAuuH5raa.Fivu",
+      "ai_report": null,
+      "full_name": "Sundaresan Manimudi",
+      "colorblind": false,
+      "created_at": "2026-01-19T09:30:09.620395+00:00",
+      "disability": false,
+      "last_login": "2026-01-19T15:43:20.752898+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "environment_signals": {
+          "field_environment": 1
+        },
+        "value_tradeoff_signals": {
+          "proximity_priority": 3,
+          "income_risk_tolerant": 2
+        },
+        "work_preference_signals": {
+          "hands_on": 2
+        },
+        "energy_sensitivity_signals": {
+          "mental_fatigue_sensitive": 1
+        },
+        "learning_tolerance_signals": {
+          "rote_tolerant": 1
+        }
+      }
+    },
+    {
+      "id": "f1d96f6e-acf5-4da8-ba60-e8acb6f1a637",
+      "city": "",
+      "name": null,
+      "email": null,
+      "phone": "0109001111",
+      "gender": "Female",
+      "grades": {
+        "bm": "A",
+        "hist": "A",
+        "math": "B+",
+        "moral": "A"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$pimd6pD75Le9w7i/xYPUsuR/6WGwRXXpEOLSLwIaIcxot2YSyoa32",
+      "ai_report": null,
+      "full_name": "Maha",
+      "colorblind": false,
+      "created_at": "2026-01-20T08:06:20.580772+00:00",
+      "disability": false,
+      "last_login": "2026-01-20T08:06:22.627707+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "environment_signals": {
+          "office_environment": 1
+        },
+        "value_tradeoff_signals": {
+          "pathway_priority": 2
+        },
+        "work_preference_signals": {
+          "creative": 2
+        },
+        "energy_sensitivity_signals": {
+          "physical_fatigue_sensitive": 1
+        },
+        "learning_tolerance_signals": {
+          "concept_first": 1
+        }
+      }
+    },
+    {
+      "id": "9a104f18-eded-4434-b839-e54c5ffd72a5",
+      "city": "",
+      "name": null,
+      "email": null,
+      "phone": "0123143910",
+      "gender": "Male",
+      "grades": {
+        "bm": "A",
+        "bio": "B",
+        "eng": "A",
+        "phy": "A-",
+        "chem": "B+",
+        "hist": "B+",
+        "math": "A",
+        "addmath": "A-"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$1CGPDLTcKjkL/W2BtRkL/eBR7FMmMKwNsE9y/Ac6N01FCftY.XHkq",
+      "ai_report": null,
+      "full_name": "Elan",
+      "colorblind": false,
+      "created_at": "2026-01-21T05:22:59.595938+00:00",
+      "disability": false,
+      "last_login": "2026-01-21T05:22:59.905415+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "environment_signals": {
+          "office_environment": 1
+        },
+        "value_tradeoff_signals": {
+          "stability_priority": 2
+        },
+        "work_preference_signals": {
+          "people_helping": 2
+        },
+        "energy_sensitivity_signals": {
+          "mental_fatigue_sensitive": 1
+        },
+        "learning_tolerance_signals": {
+          "rote_tolerant": 1
+        }
+      }
+    },
+    {
+      "id": "8bcab0a2-a831-4e58-9b4b-996a5bdb8f42",
+      "city": "",
+      "name": null,
+      "email": null,
+      "phone": "0123456666",
+      "gender": "Male",
+      "grades": {
+        "bm": "A",
+        "math": "A"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$0vrOwpv9YUsE0stbk6xRiuNPAU9N6068k0KEDbToB0PXCbh.2lDGS",
+      "ai_report": null,
+      "full_name": "Kathiravan Munusamy",
+      "colorblind": false,
+      "created_at": "2026-01-18T02:28:08.606652+00:00",
+      "disability": false,
+      "last_login": "2026-01-18T02:59:07.665482+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {}
+    },
+    {
+      "id": "03279c66-3cb7-4551-b718-dba7e1d575aa",
+      "city": "",
+      "name": null,
+      "email": "",
+      "phone": "0123456780",
+      "gender": "Male",
+      "grades": {
+        "bm": "A",
+        "bio": "C+",
+        "eng": "A+",
+        "lit": "A+",
+        "phy": "C",
+        "chem": "C",
+        "hist": "C+",
+        "math": "C",
+        "lang3": "A+",
+        "moral": "A+",
+        "addmath": "C"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$jMgiUpCWvzUbKS9B4T2cw.sO3MkyK9mCKFgnT1Fj.5NMken54A3Hm",
+      "ai_report": "{\"markdown\": \"Hi \\u0bae\\u0ba3\\u0bbf\\u0bae\\u0bc1\\u0b9f\\u0bbf \\u0b9a\\u0bc1\\u0ba8\\u0bcd\\u0ba4\\u0bbf\\u0bb0\\u0bae\\u0bcd, I\\u2019m Cikgu Venu. Thanks for sharing your results and interests with me. Let\\u2019s look at your future honestly, like brothers.\\n\\n**A. Self-Reflection (Mirror)**\\nFrom what I see, you are a \\\"maker.\\\" You like doing things with your hands and you want your work to mean something. You aren't the type to sit still and just follow boring rules all day. However, you don't have much patience for dealing with difficult people or huge crowds. You prefer focusing on the task in front of you.\\n\\n**B. SPM Academic Signals**\\n*   **English (A+) & Lit/Tamil (A+):** This is your superpower. You are very good at understanding deep ideas and communicating. This will help you a lot in design or management because you can explain your ideas clearly.\\n*   **Mathematics & Add Maths (C):** You have the basic logic, but you might struggle if a course is 100% about heavy formulas. You need a path that is more visual or practical.\\n*   **Physics, Chemistry, Biology (C/C+):** You understand how things work, but you probably find pure science a bit dry. You are better at \\\"applying\\\" science rather than just memorizing it.\\n\\n**C. Why This Course Fits (Industrial Design)**\\nI recommend you look closely at **Industrial Design**.\\n*   **The Work:** You design things we use every day\\u2014phones, chairs, or even water bottles.\\n*   **The Environment:** You spend time in a studio or workshop, not just a boring office. You get to build models and test them.\\n*   **Why it fits:** It uses your \\\"hands-on\\\" trait and your strong language skills to \\\"sell\\\" your designs. It\\u2019s better for you than Retail Management because retail requires talking to customers all day, which might drain your energy.\\n\\n**D. Challenges & Trade-offs (Reality Check)**\\n*   **Expensive Materials:** Studying design can be pricey because you need to buy materials for models.\\n*   **Long Nights:** You will have \\\"deadlines.\\\" Sometimes you have to stay up late to finish a project.\\n*   **Criticism:** Teachers will comment on your work. You cannot take it personally; you have to be thick-skinned.\\n\\n**E. Who This Path is NOT For**\\n*   If you want a \\\"9 to 5\\\" job where you stop thinking the moment you punch out.\\n*   If you hate drawing or using computer design software.\\n*   If you expect to earn a huge salary in your first year.\\n\\n**F. Next Steps**\\n1.  **YouTube it:** Search \\\"Industrial Design student life Malaysia\\\" or \\\"What is Industrial Design.\\\" See if the work looks fun to you.\\n2.  **Check Requirements:** Look at the UPU website or Polytechnic websites for \\\"Diploma Rekabentuk Industri.\\\" See if your \\\"C\\\" in Math fits their entry rules (usually it does).\\n3.  **Look Around:** Look at a chair or a plastic bottle. Ask yourself: \\\"Do I want to be the person who decides why it looks like this?\\\" If yes, this is for you.\\n\\nYou have the brains and the hands, \\u0bae\\u0ba3\\u0bbf\\u0bae\\u0bc1\\u0b9f\\u0bbf. Choose a path where you can build things. Good luck!\", \"counsellor_name\": \"Cikgu Venu\", \"model_used\": \"gemini-3-flash-preview\"}",
+      "full_name": "மணிமுடி சுந்திரம்",
+      "colorblind": false,
+      "created_at": "2026-01-24T00:28:23.232516+00:00",
+      "disability": false,
+      "last_login": "2026-01-24T00:28:23.512692+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "city": "",
+        "state": "Johor",
+        "lang_pref": "en",
+        "financial_pressure": "Medium (some help, but careful)",
+        "travel_willingness": "Anywhere in Semenanjung Malaysia",
+        "environment_signals": {
+          "office_environment": 1
+        },
+        "value_tradeoff_signals": {
+          "meaning_priority": 2,
+          "proximity_priority": 3
+        },
+        "work_preference_signals": {
+          "hands_on": 2
+        },
+        "energy_sensitivity_signals": {
+          "low_people_tolerance": 1
+        },
+        "learning_tolerance_signals": {
+          "rote_tolerant": 1
+        }
+      }
+    },
+    {
+      "id": "a972886e-0840-43c1-94c0-13d5813223e9",
+      "city": "",
+      "name": null,
+      "email": null,
+      "phone": "0124076084",
+      "gender": "Male",
+      "grades": {
+        "bm": "A+",
+        "eng": "A+",
+        "phy": "A+",
+        "chem": "A+",
+        "hist": "A+",
+        "math": "A+",
+        "moral": "A+",
+        "addmath": "A+"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$7Hvn1j9ozu8GH/ykX4auseS5tVe5IsXnJp0PI2A3LU8IcXw36SWWm",
+      "ai_report": "{\"markdown\": \"Salam sejahtera POOBALAN MURUGESAN, saya Cikgu Venu. Terima kasih sebab sudi kongsi keputusan SPM dan minat awak dengan saya.\\n\\nPertama sekali, tahniah! Keputusan semua A+ ni bukan benda main-main. Ini bukti awak seorang yang sangat berdisiplin dan otak memang tajam. Tapi ingat, dalam dunia kerja, sijil cuma \\\"tiket masuk\\\", perangai dan daya tahan yang akan tentukan awak bertahan atau tidak.\\n\\n**A. Cermin Diri**\\nBerdasarkan profil awak, awak ni jenis yang suka selesaikan masalah tapi awak tak berapa minat kalau kena buat kerja yang terlalu lasak kat tengah panas atau kerja yang \\\"comot\\\" tangan (hands-on). Awak lebih pentingkan kerja yang stabil dan ada elaun yang tetap. Awak juga jenis yang cepat rasa penat otak kalau kena fikir benda yang terlalu serabut tanpa rehat yang cukup.\\n\\n**B. Isyarat Akademik SPM**\\nKeputusan awak ni \\\"sempurna\\\". Tapi mari kita tengok apa maknanya untuk kerjaya:\\n*   **Add Maths & Physics (A+):** Awak ada \\\"lesen besar\\\" untuk masuk bidang kejuruteraan. Awak takkan ada masalah faham pengiraan berat dalam diploma nanti.\\n*   **English (A+):** Ini kekuatan paling besar awak. Manual teknikal kereta atau sistem pengurusan hotel semuanya dalam Bahasa Inggeris. Awak akan lebih cepat naik pangkat sebab boleh berkomunikasi dengan bos atau pelancong asing dengan senang.\\n*   **BM & Sejarah (A+):** Awak ada disiplin membaca yang tinggi. Awak boleh faham peraturan dan prosedur kerja yang panjang dengan mudah.\\n\\n**C. Kenapa Kursus Ini Sesuai (Realiti Sebenar)**\\n1.  **Diploma Kejuruteraan Mekanikal (Automotif):** Jangan bayangkan awak cuma tukang baiki kereta bawah pokok. Dengan keputusan awak, awak patut sasar jadi *Service Advisor* atau *Technical Specialist* di syarikat besar (seperti Toyota, Honda, atau Tesla). Kerja awak lebih kepada diagnos masalah guna komputer dan sistem.\\n2.  **Diploma Pengurusan Hotel:** Ini bidang yang sangat mementingkan kekemasan dan susunan kerja yang teratur. Awak sesuai di sini kalau awak suka persekitaran yang bersih, sejuk (air-cond), dan ada sistem yang jelas.\\n\\n**D. Cabaran & Pertukaran Realiti**\\n*   **Mekanikal:** Walaupun awak pandai, semester awal awak tetap kena masuk bengkel. Tangan akan kena minyak, baju akan kotor, dan kena berdiri lama. Gaji mula untuk diploma biasanya sekitar RM1,600 - RM2,000 sahaja.\\n*   **Hotel:** Awak kena sedia kerja \\\"shift\\\". Orang lain cuti raya atau Deepavali, awak mungkin kena kerja. Awak juga kena hadap macam-macam ragam pelanggan yang kadangkala tak masuk akal.\\n\\n**E. Siapa Laluan Ini TAK Sesuai**\\nLaluan ini tak sesuai kalau:\\n*   Awak rasa keputusan A+ bermakna awak tak payah buat kerja \\\"kuli\\\" masa praktikal nanti.\\n*   Awak nak kaya cepat dalam masa setahun (gaji teknikal/hotel naik berperingkat ikut pengalaman).\\n*   Awak jenis tak boleh ditegur bila buat salah dalam kerja teknikal.\\n\\n**F. Langkah Seterusnya (Boleh buat sekarang)**\\n1.  **YouTube:** Cari video \\\"Daily life of an Automotive Engineer Malaysia\\\" atau \\\"Hotel Management Career Malaysia\\\". Tengok betul-betul keadaan tempat kerja mereka.\\n2.  **Semak Biasiswa:** Dengan keputusan A+ semua, jangan sekadar cari kursus, cari biasiswa (seperti Petronas, YTP MARA, atau biasiswa universiti). Awak tak patut bebankan keluarga dengan hutang belajar.\\n3.  **Tanya Senior:** Cari kawan atau abang saudara yang kerja dalam bidang mekanikal atau hotel. Tanya satu soalan saja: \\\"Bang, apa benda paling penat dalam kerja ni?\\\"\\n\\nKeputusan awak hebat, Poobalan. Sekarang masanya pilih laluan yang buat awak rasa tenang untuk buat kerja tu setiap hari. All the best!\", \"counsellor_name\": \"Cikgu Venu\", \"model_used\": \"gemini-3-flash-preview\"}",
+      "full_name": "POOBALAN MURUGESAN",
+      "colorblind": false,
+      "created_at": "2026-01-22T00:03:10.573602+00:00",
+      "disability": false,
+      "last_login": "2026-01-22T00:03:10.862142+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "environment_signals": {
+          "field_environment": 1
+        },
+        "value_tradeoff_signals": {
+          "allowance_priority": 3,
+          "stability_priority": 2
+        },
+        "work_preference_signals": {
+          "problem_solving": 2
+        },
+        "energy_sensitivity_signals": {
+          "mental_fatigue_sensitive": 1
+        },
+        "learning_tolerance_signals": {
+          "learning_by_doing": 1
+        }
+      }
+    },
+    {
+      "id": "c14e0250-2cc5-40d3-a629-768665214837",
+      "city": "",
+      "name": null,
+      "email": null,
+      "phone": "0172167672",
+      "gender": "Male",
+      "grades": {
+        "bm": "C",
+        "eng": "D",
+        "sci": "D",
+        "hist": "D",
+        "math": "C",
+        "lang3": "C",
+        "moral": "D"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$uO/8U3Omyf3HsINjtDas5O2IHnbk8MW0Lg05oH0SnoTZoSpzOmhh6",
+      "ai_report": "{\"markdown\": \"Salam sejahtera Rani, saya Cikgu Venu. Terima kasih sebab sudi kongsi keputusan SPM dan minat awak dengan cikgu. Cikgu nak kita cakap terus-terang supaya awak tak tersalah pilih jalan.\\n\\n**A. Cermin Diri**\\nBerdasarkan profil awak, awak ni jenis yang suka kerja yang teratur dan tersusun. Awak bukan jenis yang suka \\\"main redah\\\" atau kerja yang kena buat keputusan mengejut setiap masa. Awak lebih selesa kalau ada jadual atau langkah-langkah yang jelas untuk diikuti. Awak juga sangat mementingkan jaminan kerja\\u2014awak nak pastikan apa yang awak belajar ni, nanti senang nak cari makan.\\n\\n**B. Isyarat Akademik SPM**\\nKeputusan SPM awak ni adalah \\\"isyarat\\\" jujur tentang kekuatan awak:\\n*   **Matematik (C):** Ini keputusan yang \\\"ngam-ngam\\\" tapi selamat. Awak boleh mengira, tapi jangan ambil bidang yang terlalu berat dengan fizik atau kejuruteraan. Bidang pengurusan atau logistik masih sesuai untuk awak.\\n*   **Bahasa Melayu (C):** Awak boleh berkomunikasi, tapi kena asah lagi cara menulis laporan ringkas nanti.\\n*   **Bahasa Inggeris (D):** Ini jujur cikgu cakap, Rani, awak kena usaha lebih. Dalam dunia kerja atau diploma, banyak manual, sistem komputer, dan emel guna English. Awak tak perlu jadi \\\"expert\\\" berpidato, tapi kena faham apa yang orang tulis.\\n*   **Sains, Sejarah, Moral (D):** Keputusan ni tunjuk awak kurang minat pada subjek yang banyak membaca teori atau menghafal fakta keras. Jadi, jangan paksa diri ambil bidang akademik yang terlalu berat buku (seperti undang-undang atau sains tulen).\\n\\n**C. Kenapa Diploma Pengurusan Logistik Sesuai (Realiti Sebenar)**\\nCikgu cadangkan awak tengok bidang **Logistik**. Kenapa?\\n*   **Kerja harian:** Awak akan jaga stok barang, susun jadual lori, atau uruskan dokumen barang masuk-keluar (macam kat gudang Shopee atau J&T).\\n*   **Suasana:** Banyak di pejabat dalam gudang atau hub pengedaran. Tak terlalu \\\"panas terik\\\" macam buruh binaan, tapi taklah \\\"sejuk goyang kaki\\\" macam pengurus besar.\\n*   **Kenapa bukan jualan (sales)?** Sebab awak suka kerja teratur. Logistik ni kerja belakang tabir. Awak tak payah paksa orang beli barang, awak cuma pastikan barang sampai dengan selamat dan kemas.\\n\\n**D. Cabaran & Pertukaran Realiti**\\nCikgu tak nak tipu awak, bidang ni ada \\\"harga\\\" yang kena bayar:\\n*   **Kerja Berulang:** Awak akan buat benda yang sama hari-hari. Kalau awak cepat bosan, awak akan rasa stress.\\n*   **Sistem Ketat:** Awak kena ikut peraturan. Kalau silap kunci masuk data, satu lori barang boleh hilang.\\n*   **Gaji Permulaan:** Sebagai lepasan diploma, gaji mungkin bermula RM1,600 - RM1,900. Dia takkan naik mendadak dalam setahun dua. Kena sabar.\\n\\n**E. Siapa Laluan Ini TAK Sesuai**\\nLaluan logistik/pengurusan ni tak sesuai kalau:\\n*   Awak jenis yang tak suka ikut peraturan atau \\\"sop\\\".\\n*   Awak jenis yang tak boleh duduk diam di satu tempat untuk tempoh lama.\\n*   Awak harap nak kerja yang \\\"glamor\\\" atau nampak hebat di media sosial.\\n\\n**F. Langkah Seterusnya (Buat Sekarang di Rumah)**\\n1.  **Buka YouTube:** Cari video \\\"Kerja Warehouse Assistant Malaysia\\\" atau \\\"Operation Clerk Logistics\\\". Tengok betul-betul mereka buat apa.\\n2.  **Semak Syarat:** Pergi ke website Politeknik (UPU). Cari \\\"Diploma Pengurusan Logistik dan Rangkaian Bekalan\\\". Tengok syarat minimum, biasanya Math C dan BM lulus dah boleh lepas.\\n3.  **Tanya Senior/Kenalan:** Kalau ada abang atau kakak jiran yang kerja kat gudang atau bahagian admin, tanya mereka: \\\"Kerja ni banyak pening kepala kat mana?\\\"\\n\\nFikir baik-baik, Rani. Biar mula perlahan, asalkan jalan tu betul dengan cara awak. Cuba dulu, okay?\", \"counsellor_name\": \"Cikgu Venu\", \"model_used\": \"gemini-3-flash-preview\"}",
+      "full_name": "Rani",
+      "colorblind": false,
+      "created_at": "2026-01-22T15:15:26.782222+00:00",
+      "disability": false,
+      "last_login": "2026-01-22T15:15:27.062652+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "environment_signals": {
+          "no_preference": 1
+        },
+        "value_tradeoff_signals": {
+          "meaning_priority": 2,
+          "employment_guarantee": 2
+        },
+        "work_preference_signals": {
+          "organising": 2
+        },
+        "energy_sensitivity_signals": {},
+        "learning_tolerance_signals": {
+          "learning_by_doing": 1
+        }
+      }
+    },
+    {
+      "id": "d4d68c86-1116-44dd-aa6b-78ecce82a284",
+      "city": "",
+      "name": null,
+      "email": "kkvguna@yahoo.co.uk",
+      "phone": "012-3260049",
+      "gender": "Male",
+      "grades": {
+        "bm": "D",
+        "eng": "D",
+        "psv": "C",
+        "hist": "D",
+        "math": "E",
+        "lang3": "C",
+        "moral": "D"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$hUzQl2lKBBq2RfTg7nfsXul7RjGaU2YwMf2wxwP6zOOOK.IistBv.",
+      "ai_report": "{\"markdown\": \"Salam sejahtera Ramu, saya Cikgu Venu. Terima kasih sebab sudi kongsi keputusan SPM dan minat awak dengan cikgu. Cikgu nak kita sembang jujur sebagai kawan, supaya awak tak tersilap pilih jalan.\\n\\n**A. Cermin Diri**\\nDaripada apa yang cikgu nampak, awak ni jenis yang suka bantu orang dan lebih suka kerja yang teratur. Awak bukan jenis yang suka kerja \\\"rushing\\\" atau kerja yang buat badan penat sangat sampai lembik. Awak lebih hargai kerja yang stabil dan ada makna dalam hidup awak.\\n\\n**B. Isyarat Akademik SPM**\\nCikgu kena berterus-terang tentang keputusan awak supaya awak bersedia:\\n*   **Matematik E:** Ini \\\"lampu kuning\\\" yang besar. Kursus teknologi atau teknikal banyak guna kira-kira. Kalau awak masuk, awak kena usaha dua kali ganda berbanding kawan lain sebab asas awak agak lemah.\\n*   **Bahasa Inggeris D:** Kebanyakan manual mesin dan nota belajar dalam English. Awak kena rajin buka kamus dalam telefon nanti, jangan malas.\\n*   **Seni C:** Ini bagus. Awak ada ketelitian. Dalam kerja teknikal, mata yang tajam untuk tengok benda halus sangat membantu.\\n*   **BM & Sejarah D:** Awak lulus, tapi kena perbaiki cara komunikasi sebab kerja nanti perlukan awak bercakap dengan orang lain.\\n\\n**C. Kenapa Kursus Ini Sesuai (Realiti Sebenar)**\\nCikgu cadangkan awak fokus pada **Diploma Teknologi Jaminan Kualiti (Quality Assurance)**.\\n*   **Kerja harian:** Awak akan periksa barang yang kilang buat (contoh: komponen elektronik atau plastik). Awak pastikan barang tu elok, tak rosak, dan ikut peraturan sebelum dijual.\\n*   **Suasana kerja:** Biasanya dalam kilang yang ada kipas besar atau aircond, dan keadaan yang bersih. Tak perlu berpanas di tapak binaan atau angkat besi berat macam kerja pomen.\\n*   **Kenapa sesuai:** Sebab awak suka benda yang ada peraturan jelas dan tak terlalu memenatkan fizikal.\\n\\n**D. Cabaran & Pertukaran Realiti**\\nAwak kena tahu realiti ini:\\n*   **Boleh jadi bosan:** Kerja ni berulang. Hari-hari buat benda yang sama.\\n*   **Kena tegas:** Kadang-kadang awak kena \\\"reject\\\" barang kawan sendiri kalau tak ikut spec. Awak kena berani tegur orang.\\n*   **Gaji lambat naik:** Gaji permulaan mungkin sekitar RM1,500 - RM1,800. Jangan harap terus jadi kaya. Kena ambil pengalaman dulu.\\n\\n**E. Laluan Ini TAK Sesuai Kalau:**\\n*   Awak jenis yang cepat bosan duduk lama-lama tengok barang.\\n*   Awak jenis yang suka buat kerja \\\"ikut suka hati\\\" tanpa ikut buku peraturan.\\n*   Awak nak gaji RM3,000 terus selepas habis belajar.\\n\\n**F. Langkah Seterusnya (Boleh buat sekarang)**\\n1.  **YouTube:** Cari video \\\"Kerja Quality Control Malaysia\\\". Lihat macam mana mereka pakai baju putih dan periksa barang.\\n2.  **Semak Syarat:** Buka website **ILP (Institut Latihan Perindustrian)** atau **Kolej Komuniti**. Cari kursus \\\"Jaminan Kualiti\\\" atau \\\"Mekatronik\\\". Tengok kalau keputusan Matematik E awak lepas untuk kemasukan sijil dulu sebelum diploma.\\n3.  **Tanya Senior:** Kalau ada abang atau jiran kerja kilang, tanya mereka: \\\"Kerja QA/QC ni susah tak kalau saya tak pandai sangat Matematik?\\\"\\n\\nIngat Ramu, keputusan SPM bukan penamat, tapi ia petunjuk untuk kita pilih jalan yang paling selamat untuk kita. Fikir masak-masak ya!\", \"counsellor_name\": \"Cikgu Venu\", \"model_used\": \"gemini-3-flash-preview\"}",
+      "full_name": "Ramu",
+      "colorblind": false,
+      "created_at": "2026-01-23T10:26:58.097722+00:00",
+      "disability": false,
+      "last_login": "2026-02-03T04:13:25.248881+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "environment_signals": {
+          "high_people_environment": 1
+        },
+        "value_tradeoff_signals": {
+          "meaning_priority": 2,
+          "employment_guarantee": 2
+        },
+        "work_preference_signals": {
+          "people_helping": 2
+        },
+        "energy_sensitivity_signals": {
+          "physical_fatigue_sensitive": 1
+        },
+        "learning_tolerance_signals": {
+          "project_based": 1
+        }
+      }
+    },
+    {
+      "id": "457ba501-3272-4679-9c4e-27f470ab9d64",
+      "city": "",
+      "name": null,
+      "email": "sathish.kumar@archerwell.com",
+      "phone": "0173740411",
+      "gender": "Male",
+      "grades": {
+        "bm": "C",
+        "coq": 0,
+        "eng": "C",
+        "hist": "C",
+        "math": "C"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$tUeuAY2yC2P8ZmvmCyUYHu0xaB04OOe05IXBRCEohsLmCwoScJR16",
+      "ai_report": "{\"markdown\": \"Salam sejahtera Sathish, saya Cikgu Venu. Terima kasih sebab sudi kongsi keputusan SPM dan minat awak dengan cikgu. Cikgu faham, lepas SPM ni mesti rasa pening nak pilih jalan mana, terutamanya bila kita nak pastikan lepas belajar terus dapat kerja untuk bantu keluarga.\\n\\n**A. Cermin Diri**\\nDaripada apa yang cikgu nampak, awak ni jenis yang \\\"buat kerja\\\". Awak lebih suka guna tangan, pegang alatan, dan nampak hasil depan mata daripada duduk diam fikir teori yang berat-berat. Awak juga jenis yang mementingkan kestabilan\\u2014maksudnya awak nak jalan yang selamat, belajar kemahiran yang orang sentiasa cari supaya senang dapat kerja tetap. Awak tak berapa suka kalau kerja tu terlalu kelam-kabut atau asyik kena kejar masa (rushing).\\n\\n**B. Isyarat Akademik SPM**\\nKeputusan SPM awak semuanya C. Ini jujur cikgu cakap:\\n*   **Matematik (C):** Awak faham asas, tapi dalam bidang Elektronik atau Mekatronik, banyak pengiraan voltan dan ukuran mesin. Awak layak masuk, tapi nanti kena bagi perhatian lebih dalam kelas pengiraan.\\n*   **Bahasa Inggeris (C):** Cikgu kena terus-terang, manual mesin dan nota teknikal banyak dalam BI. Awak tak perlu jadi pakar, tapi kena rajin buka kamus atau guna *Google Translate* untuk faham arahan kerja.\\n*   **BM & Sejarah (C):** Syabas sebab lulus. Ini tiket penting untuk awak mohon mana-mana institusi kerajaan seperti Politeknik atau ILP.\\n\\n**C. Kenapa Kursus Ini Sesuai (Realiti Sebenar)**\\nBidang Elektronik, Mekatronik, dan Komputer sangat laku di Malaysia sekarang, terutamanya di kawasan industri macam Pulau Pinang, Selangor, atau Johor.\\n*   **Kerja harian:** Awak mungkin akan jaga mesin di kilang, pasang litar komputer, atau baiki alat elektronik.\\n*   **Suasana kerja:** Biasanya dalam bengkel atau kilang yang ber-aircond (sebab mesin tak boleh panas). Tak adalah duduk kerusi empuk 8 jam, tapi taklah panas terik macam kerja tapak binaan.\\n*   **Kelebihan:** Awak belajar kemahiran yang spesifik. Orang luar tak boleh buat kerja awak kalau tak ada sijil/diploma ni.\\n\\n**D. Cabaran & Pertukaran Realiti**\\nJangan ingat jalan ni sentiasa indah. Ada harga yang kena bayar:\\n*   **Disiplin Tinggi:** Kerja ni kena ikut langkah satu-persatu. Salah sambung wayar, mesin boleh rosak atau litar pintas.\\n*   **Gaji Permulaan:** Mungkin bermula sekitar RM1,500 ke RM1,800. Nak gaji besar, kena tunggu 3-5 tahun lepas dah mahir.\\n*   **Kerja Berulang:** Kadang-kadang awak akan buat benda yang sama setiap hari sampai rasa bosan.\\n\\n**E. Siapa Laluan Ini TAK Sesuai**\\nLupakan niat nak ambil kursus ni kalau:\\n*   Awak jenis cuai dan tak suka ikut peraturan keselamatan.\\n*   Awak cepat bosan bila kena hadap mesin atau skrin komputer lama-lama.\\n*   Awak nak duit \\\"segera\\\" (macam buat *sales* atau *rider*). Ini jalan untuk kerjaya jangka masa panjang.\\n\\n**F. Langkah Seterusnya**\\nBuat 3 benda ni sekarang kat rumah:\\n1.  **YouTube:** Cari video \\\"Kerja Technician Kilang Malaysia\\\" atau \\\"Apa itu Mekatronik\\\". Tengok suasana kerja tu, awak minat tak?\\n2.  **Website:** Buka portal *e-Pengambilan Politeknik* atau *TVET MARA*. Tengok syarat minima. Keputusan C awak tu selalunya lepas untuk diploma teknikal.\\n3.  **Tanya Orang:** Kalau ada abang atau jiran kerja kilang atau kedai komputer, tanya dia: \\\"Abang, kerja ni penat tak? Apa benda paling susah?\\\"\\n\\nFikir masak-masak, Sathish. Ambil kemahiran ni biar sampai habis, insya-Allah masa depan awak cerah. Ada apa-apa nak tanya cikgu lagi?\", \"counsellor_name\": \"Cikgu Venu\", \"model_used\": \"gemini-3-flash-preview\"}",
+      "full_name": "sathish",
+      "colorblind": false,
+      "created_at": "2026-02-07T05:10:32.350735+00:00",
+      "disability": false,
+      "last_login": "2026-02-07T05:10:32.688187+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "environment_signals": {
+          "office_environment": 1
+        },
+        "value_tradeoff_signals": {
+          "meaning_priority": 2,
+          "employment_guarantee": 2
+        },
+        "work_preference_signals": {
+          "hands_on": 2
+        },
+        "energy_sensitivity_signals": {
+          "time_pressure_sensitive": 1
+        },
+        "learning_tolerance_signals": {
+          "concept_first": 1
+        }
+      }
+    },
+    {
+      "id": "feef7683-5869-4fae-8af0-1e884c35f7d2",
+      "city": "",
+      "name": null,
+      "email": "harreshmorthi@gmail.com",
+      "phone": "011-11467281",
+      "gender": "Male",
+      "grades": {
+        "bm": "A",
+        "eng": "A+",
+        "phy": "A+",
+        "chem": "A+",
+        "hist": "A+",
+        "math": "A+",
+        "tech": "A+",
+        "moral": "A+",
+        "addmath": "A+"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$L.zriymRbKr5zjwNBED15.2LLRCBmTxGbl5Q0owiyIPKELM6vFjR6",
+      "ai_report": "{\"markdown\": \"Hi Harresh, I'm Cikgu Venu. Thanks for sharing your results and interests with me. Looking at your slip, you should be very proud of yourself. Not many people get straight A+ results, especially in Add Maths and Physics.\\n\\n**A. Self-Reflection (Mirror)**\\nFrom what I see, you are a \\\"thinker\\\" who likes to solve problems. You aren't someone who just wants to sit still and follow a manual all day. You have the \\\"brain power\\\" to understand difficult concepts, and you are willing to take some risks if it means getting a better salary later. You prefer knowing \\\"why\\\" something happens rather than just \\\"how\\\" to do it.\\n\\n**B. SPM Academic Signals**\\n*   **Add Maths & Physics (A+):** This is a very strong signal. It means your logic is sharp. You are ready for high-level Engineering, Data Science, or even Actuarial Science. These subjects won't scare you.\\n*   **English (A+):** This is your \\\"Golden Ticket.\\\" In the real world, the big companies (MNCs) pay the most, and they communicate entirely in English. You can work anywhere in the world with this.\\n*   **Malay & History (A/A+):** This shows you have discipline. Even for subjects that require a lot of reading and memorizing, you didn't give up.\\n\\n**C. Why a High-Tech Engineering or Data Science Path fits**\\nWith your results, you shouldn't just look for a \\\"stable\\\" job. You should look for a \\\"specialist\\\" job. \\n*   **The Work:** You will be designing systems, writing complex code, or managing big data. \\n*   **The Environment:** Usually in high-tech offices or specialized labs. \\n*   **The Reality:** This path fits you better than basic sales because you have the mental stamina to handle \\\"heavy\\\" technical work that others find too hard.\\n\\n**D. Challenges & Trade-offs (Reality Check)**\\n*   **Mentally Tiring:** Your job won't be physically hard, but your brain will be \\\"fried\\\" by 5 PM. \\n*   **Non-stop Learning:** Because you are in a high-tech field, what you learn today might be old news in 3 years. You can never stop studying.\\n*   **High Competition:** You will be studying with the top 1% of students in Malaysia. You won't be the \\\"smartest\\\" in the room anymore.\\n\\n**E. Who This Path is NOT For**\\n*   You want an easy life where you don't have to think after work hours.\\n*   You prefer working with your hands (like repairing cars) rather than using a computer or math.\\n*   You want to start a business immediately and hate sitting in front of a screen.\\n\\n**F. Next Steps**\\n*   **YouTube:** Search for \\\"Day in the life of a Data Scientist in Malaysia\\\" or \\\"Software Engineer Malaysia salary.\\\" See if you like their daily routine.\\n*   **Official Website:** Go to the **UPU Online** portal or check **scholarship** websites (like Petronas, Shell, or JPA). With your results, you must aim for a scholarship.\\n*   **Ask someone:** Find a cousin or a neighbor who works in a tech company. Ask them: \\\"Is the work stressful or fun?\\\"\", \"counsellor_name\": \"Cikgu Venu\", \"model_used\": \"gemini-3-flash-preview\"}",
+      "full_name": "Harresh",
+      "colorblind": false,
+      "created_at": "2026-01-25T08:25:41.600962+00:00",
+      "disability": false,
+      "last_login": "2026-01-25T08:25:41.891077+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "environment_signals": {
+          "no_preference": 1
+        },
+        "value_tradeoff_signals": {
+          "income_risk_tolerant": 2
+        },
+        "work_preference_signals": {
+          "problem_solving": 2
+        },
+        "energy_sensitivity_signals": {},
+        "learning_tolerance_signals": {
+          "concept_first": 1
+        }
+      }
+    },
+    {
+      "id": "b929ffd4-5483-491a-85e4-d87b3abdd927",
+      "city": "",
+      "name": null,
+      "email": null,
+      "phone": "0123456788",
+      "gender": "Male",
+      "grades": {
+        "bm": "A",
+        "eng": "A",
+        "phy": "A",
+        "chem": "A",
+        "hist": "A",
+        "math": "A",
+        "addmath": "A"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$11ywLDjy7VICpUar8jmJCe7b1xhMo3.MEflBnpkc4.Ekvfh15Moq.",
+      "ai_report": "{\"markdown\": \"Salam sejahtera Arunagirinathan, saya Cikgu Gopal. Terima kasih banyak sebab sudi kongsi keputusan dan minat awak.\\n\\n**A. Cermin Diri (Self-Reflection)**\\nDari apa yang Cikgu tengok, awak ni jenis suka buat kerja yang ada hasil terus, yang boleh nampak depan mata. Tak berapa minat kalau asyik fikir teori semata. Awak lebih selesa kerja dalam suasana teratur macam studio atau pejabat, bukan yang kena merayau di tapak atau bawah panas. Paling penting, awak cari kerja yang stabil dan ada jaminan lepas habis belajar nanti. Nampaknya, awak tak berapa suka kerja yang terlalu memenatkan fizikal.\\n\\n**B. Isyarat Akademik SPM**\\nWah, keputusan SPM awak memang cemerlang Arunagirinathan! Semua A ni menunjukkan awak memang rajin dan bijak.\\n\\n*   **Bahasa Melayu & Sejarah A**: Awak pandai susun cerita dan faham mesej. Penting untuk animasi supaya cerita awak sampai pada penonton.\\n*   **Bahasa Inggeris A**: Ini sangat bagus! Banyak manual dan perisian animasi dalam English. Awak senang nak belajar benda baru dan faham arahan dari mana-mana sumber global.\\n*   **Matematik & Matematik Tambahan A**: Bermakna awak ada logik yang kuat, faham konsep pergerakan dan 'timing'. Penting untuk hasilkan animasi yang realistik dan cantik.\\n*   **Fizik & Kimia A**: Fizik ajar tentang pergerakan, daya, dan bagaimana objek berinteraksi. Boleh bantu awak buat animasi yang lebih dipercayai dari segi pergerakan watak.\\n\\nAsas akademik awak sangat kukuh. Awak akan lebih cepat tangkap benda baru, faham konsep teknikal dengan mudah, dan boleh fokus kepada bahagian kreativiti sebab asas awak dah padu.\\n\\n**C. Kenapa Kursus Ini Sesuai (Realiti Sebenar)**\\nKalau ambil Sijil Animasi 2D ni, kerja harian awak banyak akan melibatkan:\\n*   **Melukis & Gerakkan Watak**: Guna software komputer untuk lukis watak, latar belakang, dan hidupkan pergerakan setiap babak. Kena teliti setiap 'frame'.\\n*   **Rancang Cerita**: Buat 'storyboard' (lukisan macam komik) untuk rancang setiap babak dalam animasi.\\n\\nSuasana kerja selalunya dalam studio animasi, duduk depan komputer berjam-jam. Ini sesuai dengan awak yang tak minat kerja di tapak atau penat fizikal, dan lebih suka kerja teratur dalam pejabat/studio.\\n\\nKenapa Sijil Animasi ni mungkin lebih sesuai dari laluan kemahiran biasa atau jualan?\\n1.  **Spesifik & Kreatif**: Ini bukan kerja biasa, ia perlukan kemahiran khas dan sentuhan kreatif awak.\\n2.  **Persekitaran Teratur**: Banyak kerja studio yang sejuk dan selesa.\\n3.  **Industri Membesar**: Industri kreatif di Malaysia ni makin rancak, banyak syarikat buat kartun tempatan, iklan, atau video game. Ini boleh beri awak jaminan kerja yang awak cari.\\n4.  **Hands-on**: Memang sesuai dengan awak yang suka buat kerja yang boleh nampak hasil.\\n\\n**D. Cabaran & Pertukaran Realiti**\\nTapi, macam semua laluan, ada cabaran yang awak kena tahu:\\n*   **Kerja Ulang-ulang**: Animasi 2D banyak kena buat lukisan 'frame by frame'. Walaupun seronok, ada masanya ia jadi kerja yang berulang dan perlukan kesabaran tinggi.\\n*   **Masa Kerja & Deadline Ketat**: Kadang-kadang kena kerja lebih masa bila ada projek yang 'deadline' ketat.\\n*   **Gaji Permulaan**: Jangan harap gaji besar sangat masa mula-mula. Gaji permulaan selalunya sederhana, tapi ia akan naik bila awak dah ada pengalaman dan kemahiran bagus.\\n*   **Sentiasa Belajar**: Teknologi dan software sentiasa berubah. Awak kena rajin belajar dan ikut perkembangan baru, kalau tidak, kemahiran awak akan ketinggalan.\\n*   **Mata & Badan**: Sebab banyak duduk depan komputer, mata boleh penat dan badan boleh lenguh kalau tak jaga postur.\\n\\n**E. Siapa Laluan Ini TAK SESUAI**\\nLaluan Sijil Animasi 2D ni **TAK SESUAI** kalau:\\n*   Awak jenis yang cepat bosan dengan kerja yang perlukan ketelitian dan ulang-ulang.\\n*   Awak tak sabar nak tengok hasil, sebab animasi ni ambil masa lama untuk disiapkan.\\n*   Awak tak suka duduk lama depan komputer.\\n*   Awak harapkan gaji lumayan dan nak jadi kaya-raya dalam masa setahun dua.\\n*   Awak tak suka sentiasa belajar benda baru atau 'upgrade skill'.\\n\\n**F. Langkah Seterusnya**\\nBaiklah, sebelum awak buat keputusan muktamad, Cikgu ada beberapa langkah mudah yang awak boleh buat sendiri di rumah:\\n1.  **Cari Video di YouTube/TikTok**: Cuba search \\\"Hari-hari seorang animator Malaysia\\\", \\\"Belajar asas animasi 2D\\\", atau \\\"Studio animasi di Malaysia\\\". Tengok macam mana suasana kerja dia, apa yang dia orang buat.\\n2.  **Semak Laman Web Rasmi Institusi**: Pergi ke website Politeknik atau kolej komuniti yang tawarkan Sijil Animasi 2D. Tengok betul-betul apa subjek yang diajar, apa syarat kemasukan, dan adakah yuran dia berpatutan.\\n3.  **Tanya Orang Berpengalaman**: Kalau ada kenalan, senior sekolah, atau guru seni yang awak kenal bekerja dalam bidang kreatif, cuba tanya mereka: \\\"Cikgu/Abang/Kakak, macam mana nak mula dalam bidang animasi ni? Kerja dia penat tak?\\\" Dengar pengalaman sebenar dari mereka.\", \"counsellor_name\": \"Cikgu Gopal\", \"model_used\": \"gemini-2.5-flash\"}",
+      "full_name": "Arunagirinathan",
+      "colorblind": false,
+      "created_at": "2026-01-17T12:31:09.597836+00:00",
+      "disability": false,
+      "last_login": "2026-01-25T00:12:23.353571+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "environment_signals": {
+          "field_environment": 1
+        },
+        "value_tradeoff_signals": {
+          "stability_priority": 2,
+          "employment_guarantee": 2
+        },
+        "work_preference_signals": {
+          "hands_on": 2
+        },
+        "energy_sensitivity_signals": {
+          "physical_fatigue_sensitive": 1
+        },
+        "learning_tolerance_signals": {
+          "concept_first": 1
+        }
+      }
+    },
+    {
+      "id": "d5a3692a-abd9-42ac-a47f-3faaa131c2b9",
+      "city": "",
+      "name": null,
+      "email": "",
+      "phone": "0123123124",
+      "gender": "Male",
+      "grades": {
+        "bm": "B",
+        "coq": 0,
+        "eng": "B+",
+        "hist": "B",
+        "math": "B",
+        "b_cina": "A+"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$CROWEGwgHNP4liHFisuRx..v464sMffomUCCxZbLe3mERs6pClziy",
+      "ai_report": null,
+      "full_name": "ww",
+      "colorblind": false,
+      "created_at": "2026-02-03T03:14:11.243746+00:00",
+      "disability": false,
+      "last_login": "2026-02-03T03:14:11.530199+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {
+        "city": "Putrajaya",
+        "state": "WP Putrajaya",
+        "financial_pressure": "Medium (some help, but careful)",
+        "travel_willingness": "Anywhere in Semenanjung Malaysia"
+      }
+    },
+    {
+      "id": "e3c932bf-3538-44f1-a9eb-f7afee49d5ae",
+      "city": "",
+      "name": null,
+      "email": "",
+      "phone": "0112233445",
+      "gender": "Female",
+      "grades": {
+        "bm": "A",
+        "coq": 3.5,
+        "eng": "A",
+        "sci": "B",
+        "hist": "C+",
+        "math": "A-",
+        "addmath": "C+",
+        "b_tamil": "B+"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$.JEhPBxfw0q8kOT.62hjXexfsTZsNfTqlafBByRaVev57MfdJFyr2",
+      "ai_report": null,
+      "full_name": "Meow",
+      "colorblind": false,
+      "created_at": "2026-02-03T14:04:58.530224+00:00",
+      "disability": false,
+      "last_login": "2026-02-03T14:04:58.838124+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {}
+    },
+    {
+      "id": "839e37ba-5757-4500-b515-5947f629d7e7",
+      "city": "",
+      "name": null,
+      "email": "",
+      "phone": "0112233446",
+      "gender": "Female",
+      "grades": {
+        "bm": "C",
+        "bio": "D",
+        "coq": 6,
+        "eng": "B",
+        "hist": "C+",
+        "math": "C+",
+        "b_tamil": "B",
+        "voc_food": "A-",
+        "voc_catering": "B+"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$/SCJXrJz9xlwva.DX3oa..u0.CiLlKrg2Y19wtwgyNxRat3HnLHFm",
+      "ai_report": null,
+      "full_name": "Meow",
+      "colorblind": false,
+      "created_at": "2026-02-03T14:09:17.446982+00:00",
+      "disability": false,
+      "last_login": "2026-02-03T14:09:17.779079+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {}
+    },
+    {
+      "id": "f015cbfc-04a0-4574-9c67-2bcbf477b2bf",
+      "city": "",
+      "name": null,
+      "email": "",
+      "phone": "0123432345",
+      "gender": "Male",
+      "grades": {
+        "bm": "C",
+        "coq": 9,
+        "eng": "C",
+        "chem": "C+",
+        "hist": "C",
+        "math": "G",
+        "b_cina": "A+",
+        "addmath": "B"
+      },
+      "source": "HalaTuju_v1",
+      "address": "",
+      "pin_hash": "$2b$12$6QKO0wHwHBROglF5dJM.QenX0Nz94Hkae1988HyZy82McwK6Gz9Ci",
+      "ai_report": null,
+      "full_name": "Alo",
+      "colorblind": false,
+      "created_at": "2026-02-04T08:09:35.528242+00:00",
+      "disability": false,
+      "last_login": "2026-02-04T08:09:35.833322+00:00",
+      "postal_code": "",
+      "eligible_count": null,
+      "student_signals": {}
+    }
+  ]
+}

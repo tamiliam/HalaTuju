@@ -149,12 +149,10 @@
 **Risk if left:** Low — functionally fine, but confusing for new contributors.
 **Dependencies:** Would require migration + updates to engine, views, serializers, templates, frontend types. Too risky to change now.
 
-### [TD-025] StudentProfile table name uses 'api_' prefix
-**File(s):** `halatuju_api/apps/courses/models.py` (line 424)
-**What it is:** `db_table = 'api_student_profiles'` — the `api_` prefix was added to avoid collision with the legacy Streamlit `student_profiles` table. This is documented in the model docstring but is still a naming oddity.
-**What consistent looks like:** Use `student_profiles` once Streamlit is fully decommissioned.
-**Risk if left:** ~~Low~~ **Medium — has caused a near-miss.** In v2.21.0 a migrate-first `ALTER` targeted the default `student_profiles` (the legacy 30-row Streamlit table) instead of the live `api_student_profiles` (617 rows); caught pre-deploy (the real table lacked `stream_subjects`) and corrected, but a missed catch would have 500'd prod reading the new column. The two same-purpose-looking tables are an active footgun for any raw/MCP SQL. Mitigation in place: the `db_table` gotcha is now called out in `halatuju_api/CLAUDE.md`. Real fix: drop/rename the legacy `student_profiles` table once confirmed unused.
-**Dependencies:** Supabase RLS policies, migration needed.
+### [TD-025] StudentProfile table name uses 'api_' prefix ✅ RESOLVED (2026-06-01)
+**File(s):** `halatuju_api/apps/courses/models.py`
+**What it was:** `db_table = 'api_student_profiles'` — the `api_` prefix was added to avoid collision with the legacy Streamlit `student_profiles` table. The two same-purpose-looking tables were an active footgun: in v2.21.0 a migrate-first `ALTER` silently hit the wrong (legacy 30-row) table instead of the live `api_student_profiles` — caught pre-deploy, but a miss would have 500'd prod.
+**Resolution:** Dropped the dead legacy `public.student_profiles` table (30 Streamlit-era rows, 19 cols) via Supabase MCP — **not** a Django-managed table (the model owns `api_student_profiles`), so no migration/deploy. Pre-drop verified: zero incoming FKs, zero live code references (every runtime query uses `api_student_profiles`; bare `student_profiles` only appeared in docs/comments + the historical `courses/0001` migration that `0002` already renamed), zero view/trigger/RLS dependencies. The 30 rows were backed up first to `halatuju_api/docs/backups/student_profiles_legacy_backup_2026-06-01.json` (full schema + data). **The footgun is now gone:** a mistaken raw `ALTER student_profiles` would now error loudly ("relation does not exist") instead of silently succeeding against a real table. The `api_` prefix is retained as the canonical name (a rename was deemed not worth the churn — RLS policies, raw SQL, and migration history all reference `api_student_profiles`).
 
 ### [TD-026] Inconsistent response field names for course name ✅ RESOLVED (API Consistency Sprint, 2026-03-15)
 **File(s):** `halatuju_api/apps/courses/serializers.py`

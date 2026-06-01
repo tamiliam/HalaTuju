@@ -468,8 +468,10 @@ Pick one (recommended order):
 
 Gotchas: migrate-first via Supabase MCP (deploy does NOT run `migrate`); **a new-model migration (like `0031`) needs
 the contenttypes/auth tables — applied via the TD-058 MCP workaround**; **check the model's `Meta.db_table` before
-any raw/MCP `ALTER` — `StudentProfile` is `api_student_profiles`, NOT the default (legacy 30-row `student_profiles`
-also exists — TD-025)**; new tables need RLS (service-role-only pattern, deny-by-default); **the sponsor serializer
+any raw/MCP `ALTER` — `StudentProfile` is `api_student_profiles`, NOT the Django default `student_profiles` (the
+collision-causing legacy Streamlit `student_profiles` table was DROPPED 2026-06-01, TD-025 resolved — a mistaken bare
+`ALTER student_profiles` now errors loudly instead of silently hitting a real table, but the `db_table` override
+remains, so still confirm it)**; new tables need RLS (service-role-only pattern, deny-by-default); **the sponsor serializer
 is an allowlist — never a denylist — so a new model field is invisible to sponsors until deliberately added**;
 `ADMIN_NOTIFY_EMAIL` on `halatuju-api` powers the confirm + sponsor-interest + sponsor-register emails; Gemini JSON
 engines share `vision._call_gemini_json`, prose ones share `profile_engine._call_gemini_text` — mock the seam, never
