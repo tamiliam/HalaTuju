@@ -460,6 +460,19 @@ def _guardian_docs_done(application, profile, present_doc_types):
     return True
 
 
+# Vision errors that mean the FILE couldn't be decoded/fetched (a PDF/video/corrupt
+# upload, or a storage-fetch glitch) — re-uploading a clear photo/scan fixes it.
+# Distinct from a genuine OCR-SERVICE outage (quota/network/unconfigured), where
+# re-uploading won't help. Drives the ic_unreadable vs ic_service_down split AND is
+# excluded from the outage detector's service-failure count. (TD-080)
+_IC_DECODE_ERROR_MARKERS = ('empty image', 'bad image data', 'could not fetch')
+
+
+def _is_ic_decode_error(err: str) -> bool:
+    e = (err or '').lower()
+    return any(m in e for m in _IC_DECODE_ERROR_MARKERS)
+
+
 def _ic_identity_blockers(application):
     """Identity gate on the student's OWN uploaded IC (doc_type='ic').
 
@@ -480,9 +493,12 @@ def _ic_identity_blockers(application):
     if ic is None or not ic.vision_run_at:
         return ['ic_service_down']  # never processed — treat as a system issue
     if ic.vision_error:
-        # 'empty image' = the stored file couldn't be read → re-upload; any other
-        # error (module/API/network) = the OCR service itself failed → retry later.
-        return ['ic_unreadable'] if ic.vision_error == 'empty image' else ['ic_service_down']
+        # A decode/fetch error ("Bad image data." from a PDF/video, "empty image",
+        # "could not fetch") means the FILE is the problem → re-upload (ic_unreadable).
+        # A genuine service error (module/API/network/quota) → retry later
+        # (ic_service_down). Pre-TD-080 this lumped "Bad image data." into
+        # service_down, stranding PDF-IC students with a false "system down".
+        return ['ic_unreadable'] if _is_ic_decode_error(ic.vision_error) else ['ic_service_down']
     if not (ic.vision_nric or ic.vision_name):
         return ['ic_unreadable']  # OCR succeeded but read nothing usable (poor image)
     out = []
@@ -518,7 +534,7 @@ def detect_vision_outage(window_hours=24):
         attempts += 1
         if not d.vision_error and (d.vision_nric or d.vision_name):
             successes += 1
-        elif d.vision_error and d.vision_error != 'empty image':
+        elif d.vision_error and not _is_ic_decode_error(d.vision_error):
             service_failures += 1
     is_down = attempts >= 1 and successes == 0 and service_failures >= 1
     return is_down, {

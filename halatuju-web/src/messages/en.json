@@ -929,7 +929,8 @@
         "nric-bad": "Hmm — the NRIC we read on the photo doesn't match what you entered. Please re-check.",
         "unreadable": "We couldn't read the photo automatically — that's fine, the team will check it manually.",
         "note": "Just a hint — the team always reviews your documents."
-      }
+      },
+      "unsupportedFormat": "We can only accept a photo or a PDF. Please upload a clear photo or PDF of your document."
     },
     "referee": {
       "name": "Referee name",

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Document intake now accepts PDF (not just images) and rejects video/junk — fixes the live TD-080 dead-end.**
+  A PDF or video IC used to return Google Vision "Bad image data", which we mislabelled as `ic_service_down`
+  ("try again later") — a permanent block at consent (5 applicants stranded). And every PDF *supporting* doc
+  (EPF/payslip/offer letter — usually PDFs) silently yielded no OCR text, weakening the income/academic signals.
+  - **OCR is now content-type aware** (`vision.extract_text` + `extract_mykad`, via a shared `_vision_document_text`
+    seam): a **digital PDF** is read from its text layer (`pypdf` — free, no Vision call); a **scanned PDF** is
+    **rasterised, page 1** (`pypdfium2` + `Pillow`) and sent to Vision; images are unchanged. Libs are optional —
+    a PDF degrades to "unreadable" if absent. Permissive licences (no AGPL).
+  - **Upload format allowlist** (`DocumentListCreateView`): images + PDF only; video/other is rejected
+    (`unsupported_format`). Previously there was **no** format check — that's how a `.mp4` IC got through. Frontend
+    `accept="image/*,.pdf"` + a client pre-check + an `unsupportedFormat` message (en/ms/ta).
+  - **TD-080 error re-map** (`_ic_identity_blockers` + `detect_vision_outage`): a decode/fetch error ("Bad image
+    data."/"empty image"/"could not fetch") now → `ic_unreadable` ("re-upload a clear photo/scan"), reserving
+    `ic_service_down` for genuine outages.
+  - **No migration** (`content_type` already on `ApplicantDocument`). `requirements.txt` += `pypdf`/`pypdfium2`/`Pillow`.
+    15 new tests (`test_pdf_intake.py` — real-PDF lib checks + seam-mocked dispatch); scholarship suite 425 green;
+    `next build` clean; i18n parity 1663. Plan: `docs/scholarship/document-intake-hardening-plan.md`. **Deferred:**
+    a billable real-scanned-IC-PDF Vision smoke (user-run, around deploy).
+
 ## [2.26.1] — Remove orphaned sponsor register-interest page + stack (TD-072b) (2026-06-01)
 
 ### Removed
