@@ -36,10 +36,10 @@ HalaTuju is feature-complete and live at [halatuju.xyz](https://halatuju.xyz).
 | # | Issue | Impact | Notes |
 |---|-------|--------|-------|
 | 1 | Phone/OTP login shows "coming soon" | Students without Google accounts cannot register | WhatsApp OTP plan exists (`docs/plans/2026-03-09-whatsapp-otp-plan.md`). Requires Twilio (~RM12/month) |
-| 2 | Settings page is a stub | Only has language selector and "Reset All Data" | Low impact — functional but sparse |
+| 2 | Settings page is a stub (TD-076) | Only has language selector and "Reset All Data" | Low impact — functional but sparse. See TD-076 |
 | 3 | Report generation has no loading indicator | 10-15 sec Gemini delay feels like a hang | Quick UI fix needed |
 | 4 | 87 offerings missing tuition fee data | Fee info not available in source CSVs | Data limitation, not a bug |
-| 5 | Course `#` marker not rendered as badge | `#` in course name means "typically has interview" — still shown as raw text | Strip `#` and show interview badge |
+| 5 | Course `#` marker not rendered as badge (TD-077) | `#` in course name means "typically has interview" — still shown as raw text | Strip `#` and show interview badge. See TD-077 |
 | 6 | `course` field named `course` not `name` (TD-024) | `course.course` reads oddly | Low risk, cosmetic. Migration + multi-file update needed |
 | 7 | StudentProfile table uses `api_` prefix (TD-025) | Legacy naming from Streamlit coexistence | Low risk. Requires migration + RLS policy update |
 | 8 | Startup data load is all-or-nothing (TD-047) | If DB connection fails at startup, first request returns 503 | Cloud Run restarts handle this naturally |
