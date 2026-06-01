@@ -1798,3 +1798,26 @@ normalised name tolerates which internal key the profile happens to use and pinp
 family with no STR letter sits at `recommend` until a human rules — by design (the human owns the income verdict).
 **Revisit if:** the subject taxonomy moves to a single shared source; or policy lets the AI assert B40 from
 triangulated proxies without a human.
+
+## Resolution tickets: idempotent verdict-driven generation + no-re-nag — Verification-verdict S3, 2026-06-02
+**Decision:** Each unresolved verdict item becomes a discrete `ResolutionItem`. Generation
+(`resolution.sync_resolution_items`) is **idempotent**: at most one `source='system'` item per
+`(application, code)` (a partial `UniqueConstraint … WHERE source='system'` + an `IntegrityError` catch for races),
+created once and **auto-resolved** when the code leaves `verdict.unresolved`; a resolved item is **never re-created**
+even if its gap returns (the "no re-nag" rule). Three codes are deliberately excluded from the student queue
+(`ic_service_down`, `grades_unverified`, `str_present_unverified`). Officer-raised items (`add_officer_item`) are the
+structured successor to the freeform `info_request_note`.
+**Alternatives considered:** (a) generating tickets fresh each time (delete + recreate) — loses the student's
+in-progress responses and audit trail; (b) recreating a ticket whenever its gap reappears — re-nags the student about
+something they already answered; (c) a separate per-code "is this a student action?" flag on the verdict items — but
+the exclusion list is small and lives better next to the mapping.
+**Rationale:** the verdict is already the single source of truth (structured `{code, params}`), so generation is a
+thin map+reconcile; the unique constraint gives idempotency and the no-re-nag rule for free; sync is therefore safe to
+call from any surface (upload, delete, student GET, admin GET). Excluding the three codes keeps the student queue to
+things the student can actually act on (the whole point of "one short contact").
+**Trade-offs:** (a) `sync` **writes inside a GET** (the admin/student serializers persist tickets on read) — a mild
+REST impurity, race-guarded but a smell (TD-079). (b) a deleted compulsory document does **not** resurface its
+already-resolved ticket — the officer still sees the gap on the verdict, but the student isn't re-nagged (TD-079).
+**Revisit if:** re-opening a resolved ticket on a returning gap becomes necessary (then key dedup on open-status +
+add a re-open path); or the GET-side-effect causes trouble (then move sync to an explicit POST / a signal on
+upload+delete only).

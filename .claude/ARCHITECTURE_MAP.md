@@ -228,9 +228,17 @@ deterministic, **no LLM** — composes `_ic_identity_blockers`, `application_com
 verdicts and `detect_anomalies`) and `academic_engine.py` (S2 — `_SUBJECT_BM` mirrors `subjects.ts`; `read_slip` +
 `compare_academics` = completeness + accuracy by normalised subject name). Surfaced via
 `AdminApplicationDetailSerializer.verdict` as the "Verification verdict" scorecard above the Pre-interview flags.
-S2 extended the results-slip doc-assist schema to `results: [{subject, grade}]` (grade read per subject). No migration
-(reads existing signals / reuses `vision_fields`). Plan + roadmap: `docs/scholarship/verification-verdict-plan.md`
-(S3 resolution-ticket backend, S4 student Action Centre, S5 officer panel + documents-box redesign next).
+S2 extended the results-slip doc-assist schema to `results: [{subject, grade}]` (grade read per subject).
+**S3 — resolution tickets (the IBKR Action Centre backend):** `resolution.py` (`CODE_TO_TICKET` mapping +
+idempotent, race-safe `sync_resolution_items` with auto-resolve + no-re-nag, `resolve_item`, `add_officer_item`) +
+the `ResolutionItem` model (**migration `0036`**, table `resolution_items`, RLS deny-by-default; partial unique
+`uniq_system_resolution_per_code`). Each unresolved verdict item → a discrete ticket closable by doc/explanation/
+confirm; three codes deliberately excluded (`ic_service_down`/`grades_unverified`/`str_present_unverified`). Student
+endpoints `scholarship/resolution-items[/<id>/resolve/]`; officer `…/<pk>/resolution-items/` +
+`…/resolution-items/<id>/<action>/`; sync wired into doc upload/delete; `AdminApplicationDetailSerializer.resolution_items`
+exposes the live open queue. S1–S2 reuse existing `vision_fields` (no migration); **S3 is the roadmap's first
+migration**. Plan + roadmap: `docs/scholarship/verification-verdict-plan.md` (S4 student Action Centre UI, S5 officer
+panel + documents-box redesign next).
 
 **Phase E — sponsor marketplace (E1, v2.22.0):** **Note the naming split** — `Sponsor` (the *account*: a
 self-registering, admin-vetted real user; model in `apps/scholarship/models.py`, table `sponsors`, migration
