@@ -604,8 +604,9 @@ export interface AdminApplicantDocument {
   vision_name_match: '' | 'found' | 'not_found' | 'unreadable'
   vision_address_match: '' | 'found' | 'not_found' | 'unreadable'
   // Document-assist: Gemini-extracted fields for admin verification.
+  // S2: results_slip carries `results: [{subject, grade}]` (subject+grade pairs).
   vision_fields?: {
-    fields?: Record<string, string | string[]>
+    fields?: Record<string, string | string[] | Array<{ subject?: string; grade?: string }>>
     warnings?: string[]
     student_verdict?: string
     error?: string

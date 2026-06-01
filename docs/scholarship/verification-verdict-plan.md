@@ -122,7 +122,15 @@ the **panel integration** that shows draft+caveats and wires to final.
   the auto-resolution rules.
 - **Complexity:** Medium. No migration.
 
-### Sprint 2 — Grade OCR + academic verification
+### Sprint 2 — Grade OCR + academic verification ✅ DONE (2026-06-02)
+- **Shipped:** `vision.py` results-slip schema → `results: [{subject, grade}]` + grade prompt hint;
+  `academic_engine.py` (`_SUBJECT_BM` mirror of subjects.ts; `read_slip` supporting new + legacy shapes;
+  `compare_academics` = completeness + accuracy by normalised name); `_verdict_academic` rewritten → `verified`
+  when complete+accurate+name-ok, else `review` with specific gaps; widened `vision_fields.fields` FE type + a
+  renderer tweak; i18n +3 item codes (parity 1704). **No migration** (grades live in `vision_fields`). 12 new
+  tests; scholarship suite 445 green; `next build` clean. Real-data check: completeness fires on Theresa's existing
+  slip (8/10) with no re-OCR; accuracy pinpoints per-subject disagreements. **Billable real-slip OCR smoke** is a
+  user-run follow-up (docs re-extract on re-upload / admin re-run).
 - **Goal:** Read the actual grades off the results slip and check them — the
   prerequisite that doesn't exist today (current OCR reads subjects + name only).
 - **Scope:** extend results-slip doc-assist to extract `{subject → grade}`;

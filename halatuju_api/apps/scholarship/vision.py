@@ -393,8 +393,11 @@ _FIELD_SCHEMAS = {
                         'last_contribution': _STR}),
     'water_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR, 'billing_period': _STR}),
     'electricity_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR, 'billing_period': _STR}),
+    # S2: read the GRADE against each subject (not just the subject list) so the
+    # academic engine can verify the typed grades against the slip.
     'results_slip': _doc_schema({'candidate_name': _STR, 'exam': _STR,
-                                 'subjects': {'type': 'array', 'items': {'type': 'string'}}}),
+                                 'results': {'type': 'array', 'items': {'type': 'object',
+                                             'properties': {'subject': _STR, 'grade': _STR}}}}),
     'offer_letter': _doc_schema({'candidate_name': _STR, 'institution': _STR,
                                  'programme': _STR, 'intake': _STR}),
 }
@@ -403,6 +406,13 @@ _FIELD_SCHEMAS = {
 _NAME_FIELD = {
     'salary_slip': 'name', 'epf': 'name', 'water_bill': 'name', 'electricity_bill': 'name',
     'results_slip': 'candidate_name', 'offer_letter': 'candidate_name',
+}
+
+# Optional per-doc-type instruction appended to the extraction prompt.
+_DOC_HINTS = {
+    'results_slip': (' For "results", list EVERY subject row with its exact grade '
+                     'as printed (e.g. A+, A, A-, B+, B, C+, C, D, E, G) — one entry '
+                     'per subject.'),
 }
 
 
@@ -443,11 +453,12 @@ def extract_document_fields(ocr_text: str, doc_type: str) -> dict:
         return {'fields': {}, 'warnings': [], 'error': f'no extractor for {doc_type}'}
     if not (ocr_text or '').strip():
         return {'fields': {}, 'warnings': [], 'error': 'no text'}
+    hint = _DOC_HINTS.get(doc_type, '')
     prompt = (
         f'Here is the OCR text from a Malaysian {doc_type.replace("_", " ")}. '
         'Extract the listed fields exactly as printed. If a field is missing or '
         'unclear, leave it empty and add a short note to "warnings". Do NOT invent '
-        f'values.\n\nOCR TEXT:\n{(ocr_text or "")[:6000]}'
+        f'values.{hint}\n\nOCR TEXT:\n{(ocr_text or "")[:6000]}'
     )
     data = _call_gemini_json(prompt, schema)
     if '_error' in data:
