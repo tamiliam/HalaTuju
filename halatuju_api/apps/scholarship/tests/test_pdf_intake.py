@@ -151,3 +151,26 @@ class TestIcUnreadableRemap(TestCase):
     def test_genuine_service_error_stays_service_down(self):
         self.assertEqual(_ic_identity_blockers(self._app_with_ic('Vision API quota exceeded')),
                          ['ic_service_down'])
+
+    def _app_with_read_ic(self, *, vnric, vname, pnric, pname):
+        p = StudentProfile.objects.create(supabase_user_id=f'gate-{vnric}',
+                                          name=pname, nric=pnric)
+        app = ScholarshipApplication.objects.create(cohort=self.cohort, profile=p, status='shortlisted')
+        ApplicantDocument.objects.create(application=app, doc_type='ic', storage_path='x',
+                                         vision_nric=vnric, vision_name=vname, vision_run_at=timezone.now())
+        return app
+
+    def test_name_mismatch_does_not_block_when_nric_matches(self):
+        # Harish case: NRIC verified, but the name OCR'd as a locality. The NRIC is
+        # the hard key, so the name mismatch must NOT block consent.
+        app = self._app_with_read_ic(vnric='080923-06-0355', vname='TAMAN SRI LAYANG',
+                                     pnric='080923-06-0355', pname='Harish Rish')
+        self.assertNotIn('ic_name_mismatch', _ic_identity_blockers(app))
+
+    def test_name_mismatch_blocks_when_nric_also_fails(self):
+        # No NRIC verification → a disjoint name still blocks (genuine wrong-IC risk).
+        app = self._app_with_read_ic(vnric='111111-11-1111', vname='SOMEONE ELSE',
+                                     pnric='080923-06-0355', pname='Harish Rish')
+        blockers = _ic_identity_blockers(app)
+        self.assertIn('ic_nric_mismatch', blockers)
+        self.assertIn('ic_name_mismatch', blockers)
