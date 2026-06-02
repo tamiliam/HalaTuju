@@ -736,3 +736,102 @@ class AdminResolutionItemActionView(_AdminBase):
         item.resolved_at = timezone.now()
         item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
         return Response(AdminApplicationDetailSerializer(item.application).data)
+
+
+# ── S5: verdict audit / override capture ─────────────────────────────────────
+
+_OFFICER_FACT_VALUES = {'pass', 'fail', ''}
+_OFFICER_OVERALL_VALUES = {'accept', 'decline', 'hold', ''}
+
+
+class AdminRecordVerdictView(_AdminBase):
+    """POST .../<pk>/record-verdict/ — the officer records their four-fact verdict in
+    the review cockpit. Snapshots the AI's verdict (build_verdict) as-decided + stores
+    the officer's own decision + reason (the override-rate evidence). When ``finalise``
+    is truthy AND a draft profile + a submitted interview exist, it also runs the Phase-D
+    refine to produce the final profile in the same action (reusing AdminFinaliseProfileView's
+    preconditions; never duplicates the engine). Reviewer/super only."""
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        raw = request.data.get('officer_verdict')
+        if not isinstance(raw, dict):
+            return Response({'error': 'officer_verdict object required', 'code': 'verdict_required'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        from .audit import FACTS
+        officer_verdict = {}
+        for fact in FACTS:
+            val = (raw.get(fact) or '')
+            if val not in _OFFICER_FACT_VALUES:
+                return Response({'error': f'bad value for {fact}', 'code': 'bad_verdict'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            officer_verdict[fact] = val
+        overall = (raw.get('overall') or '')
+        if overall not in _OFFICER_OVERALL_VALUES:
+            return Response({'error': 'bad overall', 'code': 'bad_verdict'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        officer_verdict['overall'] = overall
+
+        from .verdict_engine import build_verdict
+        app.ai_verdict_snapshot = build_verdict(app)
+        app.officer_verdict = officer_verdict
+        app.verdict_reason = (request.data.get('reason') or '').strip()
+        app.verdict_decided_by = getattr(admin, 'email', '') or ''
+        app.verdict_decided_at = timezone.now()
+        app.save(update_fields=[
+            'ai_verdict_snapshot', 'officer_verdict', 'verdict_reason',
+            'verdict_decided_by', 'verdict_decided_at',
+        ])
+
+        finalise_result = None
+        if request.data.get('finalise'):
+            sp = SponsorProfile.objects.filter(application=app).first()
+            if sp is None or not sp.current_markdown.strip():
+                finalise_result = {'ok': False, 'code': 'no_draft'}
+            else:
+                session = (app.interview_sessions.filter(status='submitted')
+                           .order_by('-submitted_at').first())
+                if session is None:
+                    finalise_result = {'ok': False, 'code': 'no_interview'}
+                else:
+                    result = refine_sponsor_profile(
+                        app, draft=sp.current_markdown, session=session,
+                        language=request.data.get('language'))
+                    if 'error' in result:
+                        finalise_result = {'ok': False, 'code': 'engine_error'}
+                    else:
+                        sp.final_markdown = result['markdown']
+                        sp.final_model_used = result.get('model_used', '')
+                        sp.finalised_at = timezone.now()
+                        sp.save()
+                        finalise_result = {'ok': True}
+
+        data = AdminApplicationDetailSerializer(app).data
+        data['finalise_result'] = finalise_result
+        return Response(data)
+
+
+class AdminVerdictMetricsView(_AdminBase):
+    """GET .../verdict-metrics/?cohort=<id> — the override-rate roll-up ("how good is
+    the AI"): across applications whose verdict the officer has recorded, how often did
+    the human disagree with the AI's assertion, per fact. Read-only aggregate; any admin."""
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        from .audit import override_metrics
+        qs = (ScholarshipApplication.objects
+              .filter(verdict_decided_at__isnull=False)
+              .only('ai_verdict_snapshot', 'officer_verdict', 'cohort_id'))
+        cohort = request.query_params.get('cohort')
+        if cohort:
+            qs = qs.filter(cohort_id=cohort)
+        pairs = ((a.ai_verdict_snapshot, a.officer_verdict) for a in qs)
+        return Response(override_metrics(pairs))

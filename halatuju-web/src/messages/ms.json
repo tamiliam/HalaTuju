@@ -1921,6 +1921,52 @@
           "academic_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip menunjukkan {slip}. Semak.",
           "grades_verified": "Kesemua {count} gred sepadan dengan slip keputusan."
         }
+      },
+      "recordVerdict": {
+        "title": "Rekod keputusan anda",
+        "factPass": "Lulus",
+        "factFail": "Gagal",
+        "reasonLabel": "Sebab / nota",
+        "reasonPlaceholder": "Tambah nota yang menerangkan keputusan anda (pilihan).",
+        "save": "Simpan keputusan & jana profil akhir",
+        "aiSuggested": "AI cadangkan:",
+        "suggest": {
+          "yes": "ya",
+          "no": "tidak",
+          "unsure": "tidak pasti"
+        },
+        "finaliseOk": "Keputusan disimpan dan profil akhir dijana.",
+        "finaliseNoDraft": "Keputusan disimpan. Jana draf profil dahulu sebelum memuktamadkan.",
+        "finaliseNoInterview": "Hantar penemuan temu duga sebelum menyimpan keputusan.",
+        "tools": {
+          "poseQuery": "Ajukan pertanyaan bertulis",
+          "logCall": "Log hasil panggilan telefon",
+          "addFindings": "Tambah penemuan temu duga"
+        }
+      },
+      "caveats": {
+        "title": "Caveats untuk diselesaikan",
+        "empty": "Tiada caveat terbuka — semuanya baik.",
+        "ask": "Tanya",
+        "resolve": "Selesaikan",
+        "waitingStudent": "Menunggu pelajar"
+      },
+      "docsDrawer": {
+        "title": "Dokumen",
+        "subtitle": "Dikumpulkan mengikut fakta pengesahan",
+        "group": {
+          "identity": "IDENTITI",
+          "academic": "AKADEMIK",
+          "income": "PENDAPATAN",
+          "pathway": "LALUAN",
+          "other": "LAIN-LAIN"
+        },
+        "view": "Lihat",
+        "pill": {
+          "verified": "Disahkan",
+          "check": "Semak",
+          "unread": "Belum dibaca"
+        }
       }
     },
     "students": "Pelajar",

@@ -194,6 +194,9 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'verdict',
             'resolution_items',
             'intake_snapshot',
+            # S5 verdict audit / override capture (read-only; written via record-verdict).
+            'ai_verdict_snapshot', 'officer_verdict', 'verdict_reason',
+            'verdict_decided_by', 'verdict_decided_at',
         ]
 
     def get_name(self, obj):

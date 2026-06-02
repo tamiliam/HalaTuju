@@ -408,6 +408,45 @@ export interface AdminScholarshipDetail {
   assigned_to_name: string | null
   info_request_note: string
   info_requested_at: string | null
+  // Sprint 5 — Verification verdict cockpit fields
+  ai_verdict_snapshot: AdminVerdictFact[]
+  officer_verdict: {
+    identity?: string
+    academic?: string
+    income?: string
+    pathway?: string
+    overall?: string
+  }
+  verdict_reason: string
+  verdict_decided_by: string
+  verdict_decided_at: string | null
+  resolution_items: AdminResolutionItem[]
+}
+
+/** Admin-facing resolution item. Mirrors the student-facing ResolutionItem in
+ *  src/lib/api.ts but kept separate — do not cross-import. */
+export interface AdminResolutionItem {
+  id: number
+  fact: string
+  code: string
+  params: Record<string, string | number>
+  prompt: string
+  kind: 'doc' | 'confirm' | 'explanation'
+  doc_type: string
+  status: string
+  source: 'system' | 'officer'
+  resolution_text: string
+  created_at: string
+  resolved_at: string | null
+}
+
+/** Verdict metrics summary returned by GET /verdict-metrics/. */
+export interface VerdictMetrics {
+  applications: number
+  fact_decisions: number
+  overrides: number
+  override_rate: number
+  per_fact: Record<string, { decided: number; overrides: number }>
 }
 
 async function adminMutate<T>(path: string, method: string, body: unknown, options?: ApiOptions): Promise<T> {
@@ -648,6 +687,82 @@ export async function deleteReferee(id: number, refId: number, options?: ApiOpti
     const b = await res.json().catch(() => ({}))
     throw new Error(b.error || `Admin API error: ${res.status}`)
   }
+}
+
+// ── Sprint 5: Officer verdict + caveats ─────────────────────────────────────
+
+export interface RecordVerdictPayload {
+  officer_verdict: {
+    identity?: string
+    academic?: string
+    income?: string
+    pathway?: string
+    overall?: string
+  }
+  reason?: string
+  finalise?: boolean
+  language?: string
+}
+
+export interface RecordVerdictResult extends AdminScholarshipDetail {
+  finalise_result: { ok: boolean; code?: string } | null
+}
+
+/** Record the coordinator's verdict. May also trigger a final-profile
+ *  generation when `finalise: true` is passed. */
+export async function recordVerdict(
+  id: number,
+  payload: RecordVerdictPayload,
+  options?: ApiOptions,
+): Promise<RecordVerdictResult> {
+  return adminMutate<RecordVerdictResult>(
+    `/api/v1/admin/scholarship/applications/${id}/record-verdict/`,
+    'POST',
+    payload,
+    options,
+  )
+}
+
+/** Aggregate override-rate metrics for the verdict engine.
+ *  `cohort` is optional; omit to get the cross-cohort totals. */
+export async function getVerdictMetrics(
+  options?: ApiOptions,
+  cohort?: string,
+): Promise<VerdictMetrics> {
+  const qs = cohort ? `?cohort=${encodeURIComponent(cohort)}` : ''
+  return adminFetch<VerdictMetrics>(
+    `/api/v1/admin/scholarship/verdict-metrics/${qs}`,
+    options,
+  )
+}
+
+/** Coordinator raises a new resolution item (free-text or doc request) for the
+ *  student's Action Centre. */
+export async function raiseResolutionItem(
+  id: number,
+  payload: { kind: 'doc' | 'confirm' | 'explanation'; prompt: string; doc_type?: string; fact?: string },
+  options?: ApiOptions,
+): Promise<AdminScholarshipDetail> {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/applications/${id}/resolution-items/`,
+    'POST',
+    payload,
+    options,
+  )
+}
+
+/** Waive or resolve a resolution item on behalf of the coordinator. */
+export async function actionResolutionItem(
+  itemId: number,
+  action: 'waive' | 'resolve',
+  options?: ApiOptions,
+): Promise<AdminScholarshipDetail> {
+  return adminMutate<AdminScholarshipDetail>(
+    `/api/v1/admin/scholarship/resolution-items/${itemId}/${action}/`,
+    'POST',
+    {},
+    options,
+  )
 }
 
 // ── Phase E: sponsor account vetting ──

@@ -27,12 +27,22 @@ import {
   submitInterview,
   requestMoreInfo,
   getAssignableAdmins,
+  recordVerdict,
+  raiseResolutionItem,
+  actionResolutionItem,
   type AdminScholarshipDetail,
   type AdminSponsorProfile,
   type AdminApplicantDocument,
   type AdminInterviewSession,
   type AdminVerdictItem,
+  type AdminResolutionItem,
 } from '@/lib/admin-api'
+import {
+  factTileTone,
+  groupDocumentsByFact,
+  aiSuggestionFor,
+  documentPill,
+} from '@/lib/officerCockpit'
 
 const VERDICTS = ['resolved', 'still_unclear', 'new_concern'] as const
 const RUBRIC_DIMS = ['clarity_of_plan', 'financial_need', 'resilience'] as const
@@ -104,12 +114,28 @@ export default function AdminScholarshipDetailPage() {
   const [rubric, setRubric] = useState<Record<string, number>>({})
   const [note, setNote] = useState('')
   const [infoNote, setInfoNote] = useState('')
+  // Sprint 5 — Officer cockpit
+  const [officerVerdict, setOfficerVerdict] = useState<Record<string, string>>({})
+  const [verdictReason, setVerdictReason] = useState('')
+  const [verdictMsg, setVerdictMsg] = useState('')
 
   const loadInterviewState = (d: AdminScholarshipDetail) => {
     const s = d.interview_session
     setFindings(s?.findings ?? {})
     setRubric(s?.rubric ?? {})
     setNote(s?.overall_note ?? '')
+  }
+
+  const loadVerdictState = (d: AdminScholarshipDetail) => {
+    const v = d.officer_verdict ?? {}
+    setOfficerVerdict({
+      identity: v.identity ?? '',
+      academic: v.academic ?? '',
+      income: v.income ?? '',
+      pathway: v.pathway ?? '',
+      overall: v.overall ?? '',
+    })
+    setVerdictReason(d.verdict_reason ?? '')
   }
 
   useEffect(() => {
@@ -120,6 +146,7 @@ export default function AdminScholarshipDetailPage() {
         setProfile(d.sponsor_profile)
         setMarkdown(d.sponsor_profile?.current_markdown || '')
         loadInterviewState(d)
+        loadVerdictState(d)
       })
       .catch(() => setError(t('admin.scholarship.loadFailed')))
     getAssignableAdmins({ token }).then((r) => setAdmins(r.admins)).catch(() => {})
@@ -252,6 +279,54 @@ export default function AdminScholarshipDetailPage() {
     } catch { setError(t('admin.scholarship.mentorError')) } finally { setBusy('') }
   }
 
+  const doRecordVerdict = async (finalise: boolean) => {
+    if (!token) return
+    setBusy('verdict'); setError(''); setVerdictMsg('')
+    try {
+      const result = await recordVerdict(id, {
+        officer_verdict: officerVerdict,
+        reason: verdictReason || undefined,
+        finalise,
+        language: genLang,
+      }, { token })
+      setApp(result)
+      setProfile(result.sponsor_profile)
+      setMarkdown(result.sponsor_profile?.current_markdown || '')
+      loadVerdictState(result)
+      if (finalise) {
+        const fr = result.finalise_result
+        if (!fr) {
+          setVerdictMsg(t('admin.scholarship.recordVerdict.finaliseNoDraft'))
+        } else if (fr.ok) {
+          setVerdictMsg(t('admin.scholarship.recordVerdict.finaliseOk'))
+        } else {
+          setVerdictMsg(fr.code === 'no_interview'
+            ? t('admin.scholarship.recordVerdict.finaliseNoInterview')
+            : t('admin.scholarship.recordVerdict.finaliseNoDraft'))
+        }
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('admin.scholarship.acceptError'))
+    } finally { setBusy('') }
+  }
+
+  const doRaiseQuery = async () => {
+    if (!token || !infoNote.trim()) return
+    setBusy('raise'); setError('')
+    try {
+      setApp(await raiseResolutionItem(id, { kind: 'explanation', prompt: infoNote.trim(), fact: 'identity' }, { token }))
+      setInfoNote('')
+    } catch { setError(t('admin.scholarship.requestInfoError')) } finally { setBusy('') }
+  }
+
+  const doActionResolution = async (itemId: number, action: 'waive' | 'resolve') => {
+    if (!token) return
+    setBusy(`res${itemId}`); setError('')
+    try {
+      setApp(await actionResolutionItem(itemId, action, { token }))
+    } catch { setError(t('admin.scholarship.requestInfoError')) } finally { setBusy('') }
+  }
+
   const refreshApp = async () => {
     if (!token) return
     setApp(await getScholarshipApplication(id, { token }))
@@ -299,7 +374,21 @@ export default function AdminScholarshipDetailPage() {
         <Link href="/admin/scholarship" className="text-xs text-gray-400 hover:text-gray-600">‹ {t('admin.scholarship.back')}</Link>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
           <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">{app.name || '—'}</h1>
-          <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">{app.status}</span>
+          {/* Show "In review" amber pill when the application is in a review state */}
+          {['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) ? (
+            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">In review</span>
+          ) : (
+            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">{app.status}</span>
+          )}
+          {/* Primary action button — scrolls to the Record Verdict panel */}
+          {canWrite && ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) && (
+            <button
+              onClick={() => document.getElementById('record-verdict-panel')?.scrollIntoView({ behavior: 'smooth' })}
+              className="ml-auto rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700"
+            >
+              {t('admin.scholarship.recordVerdict.title')}
+            </button>
+          )}
           {app.status === 'rejected' && app.rejection_category && (
             <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
               {t(`admin.scholarship.reject.category.${app.rejection_category}`)}
@@ -530,521 +619,107 @@ export default function AdminScholarshipDetailPage() {
           visible. The summary cards above always show. */}
       {!(app.status === 'rejected' && ['merit', 'need', 'ineligible'].includes(app.rejection_category)) && (<>
       <GroupLabel>{t('admin.scholarship.reviewActions')}</GroupLabel>
-      <div className="grid items-start gap-4 lg:grid-cols-2">
 
-      {/* Documents / referees / consent */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm lg:col-span-2">
-        <h3 className="font-semibold text-sm mb-2">{t('admin.scholarship.documents')} ({app.documents.length})</h3>
-        <ul className="text-sm text-gray-600 space-y-1">
-          {app.documents.map((d) => (
-            <li key={d.id}>
-              {d.doc_type}: {d.download_url
-                ? <a href={d.download_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{d.original_filename || 'view'}</a>
-                : (d.original_filename || '—')}{' '}
-              <span className="text-gray-400">[{d.verification_status}]</span>
-              {/* Soft OCR name/address presence check (results slip, income docs,
-                  bills, offer letter). Never blocks — a flag for the reviewer. */}
-              {d.vision_name_match && (
-                <span className={`ml-1 rounded px-1.5 py-0.5 text-xs ${
-                  d.vision_name_match === 'found' ? 'bg-green-50 text-green-700'
-                  : d.vision_name_match === 'unreadable' ? 'bg-gray-100 text-gray-500'
-                  : 'bg-amber-50 text-amber-700'}`}>
-                  name {d.vision_name_match === 'found' ? '✓' : d.vision_name_match === 'unreadable' ? '?' : '✗'}
-                </span>
-              )}
-              {d.vision_address_match && (
-                <span className={`ml-1 rounded px-1.5 py-0.5 text-xs ${
-                  d.vision_address_match === 'found' ? 'bg-green-50 text-green-700'
-                  : d.vision_address_match === 'unreadable' ? 'bg-gray-100 text-gray-500'
-                  : 'bg-amber-50 text-amber-700'}`}>
-                  addr {d.vision_address_match === 'found' ? '✓' : d.vision_address_match === 'unreadable' ? '?' : '✗'}
-                </span>
-              )}
-              {/* Document-assist: Gemini-extracted fields for verification. */}
-              {d.vision_fields?.fields && Object.keys(d.vision_fields.fields).length > 0 && (
-                <div className="mt-1 rounded bg-gray-50 p-2 text-xs text-gray-600">
-                  <span className="font-medium text-gray-500">{t('admin.scholarship.extractFields.title')}: </span>
-                  {Object.entries(d.vision_fields.fields)
-                    .filter(([, v]) => v && (Array.isArray(v) ? v.length : String(v).trim()))
-                    .map(([k, v]) => `${k}: ${Array.isArray(v)
-                      ? v.map((x) => (x && typeof x === 'object' ? [x.subject, x.grade].filter(Boolean).join(' ') : x)).join(', ')
-                      : v}`)
-                    .join(' · ')}
-                  {d.vision_fields.warnings && d.vision_fields.warnings.length > 0 && (
-                    <span className="text-amber-600"> ⚠ {d.vision_fields.warnings.join('; ')}</span>
-                  )}
-                </div>
-              )}
-            </li>
-          ))}
-          {app.documents.length === 0 && <li className="text-gray-400">{t('admin.scholarship.none')}</li>}
-        </ul>
+      {/* ── COCKPIT: two-column layout — left (wider) + right sticky ───────────── */}
+      <div className="grid items-start gap-4 lg:grid-cols-[1fr_340px]">
 
-        <h3 className="font-semibold text-sm mt-4 mb-1">{t('admin.scholarship.referees')}</h3>
-        <p className="text-xs text-gray-400 mb-2">{t('admin.scholarship.refHint')}</p>
-        <ul className="text-sm text-gray-600 space-y-1">
-          {app.referees.map((r) => (
-            <li key={r.id} className="flex items-start justify-between gap-2">
-              <span>
-                {r.name}{r.role ? ` (${r.role})` : ''}{r.relationship ? ` · ${r.relationship}` : ''}
-                {r.phone ? ` — ${r.phone}` : ''}{r.email ? ` · ${r.email}` : ''}
-              </span>
-              <button onClick={() => doDeleteReferee(r.id)} disabled={!!busy}
-                className="text-red-500 hover:underline text-xs shrink-0 disabled:opacity-50">
-                {t('admin.scholarship.refRemove')}
-              </button>
-            </li>
-          ))}
-          {app.referees.length === 0 && <li className="text-gray-400">{t('admin.scholarship.none')}</li>}
-        </ul>
-        {/* Add referee (coordinator records it at verify-&-accept) */}
-        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <input value={refForm.name} onChange={(e) => setRefForm((f) => ({ ...f, name: e.target.value }))}
-            placeholder={t('admin.scholarship.refName')} className="border rounded-lg px-2 py-1 text-sm" />
-          <input value={refForm.role} onChange={(e) => setRefForm((f) => ({ ...f, role: e.target.value }))}
-            placeholder={t('admin.scholarship.refRole')} className="border rounded-lg px-2 py-1 text-sm" />
-          <input value={refForm.relationship} onChange={(e) => setRefForm((f) => ({ ...f, relationship: e.target.value }))}
-            placeholder={t('admin.scholarship.refRelationship')} className="border rounded-lg px-2 py-1 text-sm" />
-          <input value={refForm.phone} onChange={(e) => setRefForm((f) => ({ ...f, phone: formatPhone(e.target.value) }))}
-            placeholder={t('admin.scholarship.refPhone')} className="border rounded-lg px-2 py-1 text-sm" />
-          <input value={refForm.email} onChange={(e) => setRefForm((f) => ({ ...f, email: e.target.value }))}
-            placeholder={t('admin.scholarship.refEmail')} className="border rounded-lg px-2 py-1 text-sm sm:col-span-2" />
+      {/* ═══════════════════════ LEFT COLUMN ═══════════════════════════════════ */}
+      <div className="space-y-4">
+
+      {/* ── Verification verdict — four horizontal tiles ───────────────────────── */}
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div>
+            <h2 className="font-semibold">{t('admin.scholarship.verdict.title')}</h2>
+            <p className="text-xs text-gray-500">{t('admin.scholarship.verdict.intro')}</p>
+          </div>
         </div>
-        <button onClick={doAddReferee} disabled={!!busy || !refForm.name.trim()}
-          className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
-          {busy === 'ref' ? t('admin.scholarship.refAdding') : t('admin.scholarship.refAdd')}
-        </button>
-
-        <h3 className="font-semibold text-sm mt-4 mb-2">{t('admin.scholarship.consent')}</h3>
-        <p className="text-sm text-gray-600">
-          {app.consents.some((c) => c.is_active) ? t('admin.scholarship.consentGiven') : t('admin.scholarship.consentNone')}
-        </p>
-      </div>
-
-      {/* S1 Verification verdict — the four-fact rollup (identity / academic /
-          income / pathway) the coordinator AUDITS, not assembles. Status +
-          what's confirmed + what still needs them. Sits above the raw flags. */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
-        <div>
-          <h2 className="font-semibold">{t('admin.scholarship.verdict.title')}</h2>
-          <p className="text-xs text-gray-500">{t('admin.scholarship.verdict.intro')}</p>
-        </div>
-        <ul className="space-y-2">
+        {/* Horizontal tile row */}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {(app.verdict || []).map((f) => {
-            const tone = {
-              verified: 'bg-green-100 text-green-700 border-green-200',
-              review: 'bg-amber-100 text-amber-700 border-amber-200',
-              recommend: 'bg-blue-100 text-blue-700 border-blue-200',
-              gap: 'bg-red-100 text-red-700 border-red-200',
-            }[f.status]
+            const tone = factTileTone(f.status)
+            const tileColour = {
+              green: 'border-green-200 bg-green-50',
+              amber: 'border-amber-200 bg-amber-50',
+              blue: 'border-blue-200 bg-blue-50',
+              red: 'border-red-200 bg-red-50',
+            }[tone]
+            const dotColour = {
+              green: 'bg-green-500',
+              amber: 'bg-amber-500',
+              blue: 'bg-blue-500',
+              red: 'bg-red-500',
+            }[tone]
+            const labelColour = {
+              green: 'text-green-700',
+              amber: 'text-amber-700',
+              blue: 'text-blue-700',
+              red: 'text-red-700',
+            }[tone]
+            // Subtitle: first evidence item text, or first unresolved item text.
             const resolve = (it: AdminVerdictItem) =>
               t(`admin.scholarship.verdict.item.${it.code}`,
                 Object.fromEntries(Object.entries(it.params).map(([k, v]) => [k, String(v)])))
+            const subtitle = f.unresolved.length > 0
+              ? resolve(f.unresolved[0])
+              : f.evidence.length > 0
+              ? resolve(f.evidence[0])
+              : t(`admin.scholarship.verdict.status.${f.status}`)
             return (
-              <li key={f.fact} className="rounded-lg border border-gray-200 p-3 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-sm">{t(`admin.scholarship.verdict.fact.${f.fact}`)}</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${tone}`}>
-                    {t(`admin.scholarship.verdict.status.${f.status}`)}
+              <div key={f.fact} className={`rounded-lg border p-3 flex flex-col gap-1.5 ${tileColour}`}>
+                <div className="flex items-center gap-1.5">
+                  <span className={`h-2 w-2 rounded-full shrink-0 ${dotColour}`} aria-hidden />
+                  <span className={`text-xs font-semibold uppercase tracking-wide ${labelColour}`}>
+                    {t(`admin.scholarship.verdict.fact.${f.fact}`)}
                   </span>
                 </div>
-                {f.evidence.length > 0 && (
-                  <ul className="space-y-1">
-                    {f.evidence.map((it, i) => (
-                      <li key={`e${i}`} className="flex items-start gap-1.5 text-sm text-gray-700">
-                        <span className="text-green-600 shrink-0" aria-hidden>✓</span>
-                        <span>{resolve(it)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {f.unresolved.length > 0 && (
-                  <div className="space-y-1 border-t border-gray-100 pt-2">
-                    <p className="text-xs font-medium text-gray-500">{t('admin.scholarship.verdict.unresolvedLabel')}</p>
-                    <ul className="space-y-1">
-                      {f.unresolved.map((it, i) => (
-                        <li key={`u${i}`} className="flex items-start gap-1.5 text-sm text-gray-800">
-                          <span className="text-amber-600 shrink-0" aria-hidden>•</span>
-                          <span>{resolve(it)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </li>
+                <p className="text-[11px] text-gray-700 leading-tight line-clamp-2">{subtitle}</p>
+              </div>
             )
           })}
-        </ul>
+          {(app.verdict || []).length === 0 && (
+            <p className="col-span-4 text-sm text-gray-400 italic">{t('admin.scholarship.none')}</p>
+          )}
+        </div>
+        {/* Expanded evidence / unresolved — kept below tiles for detail */}
+        {(app.verdict || []).some((f) => f.evidence.length > 1 || f.unresolved.length > 0) && (
+          <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+            {(app.verdict || []).map((f) => {
+              const resolve = (it: AdminVerdictItem) =>
+                t(`admin.scholarship.verdict.item.${it.code}`,
+                  Object.fromEntries(Object.entries(it.params).map(([k, v]) => [k, String(v)])))
+              if (f.evidence.length <= 1 && f.unresolved.length === 0) return null
+              return (
+                <div key={`detail-${f.fact}`} className="text-xs text-gray-600">
+                  <span className="font-medium text-gray-500 uppercase text-[10px] tracking-wide">
+                    {t(`admin.scholarship.verdict.fact.${f.fact}`)}
+                  </span>
+                  {f.evidence.slice(1).map((it, i) => (
+                    <div key={`e${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
+                      <span className="text-green-600 shrink-0">✓</span>
+                      <span>{resolve(it)}</span>
+                    </div>
+                  ))}
+                  {f.unresolved.map((it, i) => (
+                    <div key={`u${i}`} className="ml-2 flex items-start gap-1 mt-0.5">
+                      <span className="text-amber-600 shrink-0">•</span>
+                      <span>{resolve(it)}</span>
+                    </div>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
-      {/* S16 Phase A: deterministic pre-interview flag list. Each flag = a
-          data inconsistency worth asking about during the interview. Empty
-          state when nothing flags — the engine is honest about silence. */}
+      {/* ── Draft sponsor profile ──────────────────────────────────────────────── */}
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="font-semibold">{t('admin.scholarship.anomaly.title')}</h2>
-          <div className="flex items-center gap-2">
-            {app.anomalies && app.anomalies.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-                {app.anomalies.length} {app.anomalies.length === 1 ? t('admin.scholarship.anomaly.flagOne') : t('admin.scholarship.anomaly.flagMany')}
-              </span>
-            )}
-            {/* Phase B: admin-on-demand Gemini gap-spotter (billable — one call). */}
-            {canWrite && (
-              <button onClick={doSuggestGaps} disabled={!!busy}
-                className="px-2.5 py-1 rounded-lg text-xs bg-indigo-600 text-white disabled:opacity-50">
-                {busy === 'gaps' ? t('admin.scholarship.gaps.running') : t('admin.scholarship.gaps.button')}
-              </button>
-            )}
+          <div>
+            <h2 className="font-semibold">{t('admin.scholarship.profileTitle')}</h2>
+            <p className="text-xs text-gray-400">{t('admin.scholarship.anonProfile.help')}</p>
           </div>
-        </div>
-        <p className="text-xs text-gray-500">{t('admin.scholarship.anomaly.intro')}</p>
-        {!app.anomalies || app.anomalies.length === 0 ? (
-          <p className="text-sm text-gray-400 italic">{t('admin.scholarship.anomaly.empty')}</p>
-        ) : (
-          <ul className="space-y-3">
-            {app.anomalies.map((a) => (
-              <li key={a.code} className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1.5">
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 shrink-0" aria-hidden>⚠</span>
-                  <div className="space-y-1">
-                    <p className="text-sm text-gray-800">
-                      {t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
-                    </p>
-                    <p className="text-sm text-gray-700 italic">
-                      <span className="font-semibold not-italic">{t('admin.scholarship.anomaly.askLabel')}:</span>{' '}
-                      {t(`admin.scholarship.anomaly.${a.code}.question`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
-                    </p>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-        {/* Phase B: Gemini-suggested interview gaps — carry their own dynamic
-            text (not i18n by code, unlike the deterministic flags above). */}
-        {app.interview_gaps && app.interview_gaps.length > 0 && (
-          <div className="space-y-2 border-t border-gray-100 pt-3">
-            <p className="text-xs font-medium text-gray-500">{t('admin.scholarship.gaps.title')}</p>
-            <ul className="space-y-2">
-              {app.interview_gaps.map((g) => (
-                <li key={g.code} className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
-                  <div className="flex items-start gap-2">
-                    <span className="shrink-0 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white" aria-hidden>
-                      {t('admin.scholarship.gaps.aiBadge')}
-                    </span>
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-800">{g.question}</p>
-                      {g.why && <p className="text-xs text-gray-500">{t('admin.scholarship.gaps.whyLabel')}: {g.why}</p>}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-
-      {/* Phase C: assignment */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
-        <h2 className="font-semibold">{t('admin.scholarship.assignTitle')}</h2>
-        <select
-          value={app.assigned_to_id ?? ''}
-          disabled={!canWrite || !!busy}
-          onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
-          className="border rounded-lg px-3 py-2 text-sm w-full sm:w-auto"
-        >
-          <option value="">{t('admin.scholarship.unassigned')}</option>
-          {admins.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-        </select>
-      </div>
-
-      {/* Phase C: interview capture — verdict + rationale per pre-interview flag */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3 lg:col-span-2">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold">{t('admin.scholarship.interview.title')}</h2>
-          {app.interview_session?.status === 'submitted' && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
-              {t('admin.scholarship.interview.submitted')}
-            </span>
-          )}
-        </div>
-        <p className="text-xs text-gray-500">{t('admin.scholarship.interview.intro')}</p>
-        {(() => {
-          // Capture verdicts on BOTH the deterministic flags (label = i18n fact)
-          // and the Gemini gaps (label = the gap's own question). Same findings
-          // dict, keyed by code — the backend stores any key.
-          const items = [
-            ...app.anomalies.map((a) => ({
-              code: a.code,
-              label: t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)]))),
-              ai: false,
-            })),
-            ...(app.interview_gaps || []).map((g) => ({ code: g.code, label: g.question, ai: true })),
-          ]
-          if (items.length === 0) {
-            return <p className="text-sm text-gray-400 italic">{t('admin.scholarship.interview.noFlags')}</p>
-          }
-          return (
-            <ul className="space-y-3">
-              {items.map((it) => {
-                const f = findings[it.code] ?? { verdict: '', rationale: '' }
-                const setF = (patch: Partial<{ verdict: string; rationale: string }>) =>
-                  setFindings((prev) => ({ ...prev, [it.code]: { ...f, ...patch } }))
-                return (
-                  <li key={it.code} className="border rounded-lg p-3">
-                    <p className="text-sm text-gray-800">
-                      {it.ai && <span className="mr-1 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
-                      {it.label}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {VERDICTS.map((v) => (
-                        <label key={v} className={`cursor-pointer rounded-full border px-3 py-1 text-xs ${f.verdict === v ? 'border-primary-600 bg-primary-600 text-white' : 'border-gray-300 text-gray-700'}`}>
-                          <input type="radio" name={`v-${it.code}`} className="sr-only" disabled={!canWrite}
-                            checked={f.verdict === v} onChange={() => setF({ verdict: v })} />
-                          {t(`admin.scholarship.interview.verdict.${v}`)}
-                        </label>
-                      ))}
-                    </div>
-                    <input
-                      value={f.rationale} maxLength={140} disabled={!canWrite}
-                      onChange={(e) => setF({ rationale: e.target.value })}
-                      placeholder={t('admin.scholarship.interview.rationalePlaceholder')}
-                      className="mt-2 w-full border rounded-lg px-3 py-1.5 text-sm"
-                    />
-                  </li>
-                )
-              })}
-            </ul>
-          )
-        })()}
-        {/* Rubric */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {RUBRIC_DIMS.map((dim) => (
-            <div key={dim}>
-              <label className="block text-xs font-medium text-gray-600 mb-1">{t(`admin.scholarship.interview.rubric.${dim}`)}</label>
-              <select value={rubric[dim] ?? ''} disabled={!canWrite}
-                onChange={(e) => setRubric((r) => ({ ...r, [dim]: Number(e.target.value) }))}
-                className="border rounded-lg px-2 py-1.5 text-sm w-full">
-                <option value="">—</option>
-                {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </div>
-          ))}
-        </div>
-        <textarea value={note} disabled={!canWrite} rows={2}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder={t('admin.scholarship.interview.notePlaceholder')}
-          className="w-full border rounded-lg px-3 py-2 text-sm" />
-        {canWrite && (
-          <div className="flex gap-2">
-            <button onClick={doSaveInterview} disabled={!!busy}
-              className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
-              {busy === 'iv' ? t('common.loading') : t('admin.scholarship.interview.saveDraft')}
-            </button>
-            <button onClick={doSubmitInterview} disabled={!!busy}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm disabled:opacity-50">
-              {busy === 'ivs' ? t('common.loading') : t('admin.scholarship.interview.submit')}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Phase C: request more documentation from the student */}
-      {canWrite && (
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
-          <h2 className="font-semibold">{t('admin.scholarship.requestInfoTitle')}</h2>
-          <p className="text-xs text-gray-500">{t('admin.scholarship.requestInfoIntro')}</p>
-          {app.info_request_note && (
-            <p className="text-xs text-gray-500 italic">
-              {t('admin.scholarship.requestInfoLast')}: {app.info_request_note}
-            </p>
-          )}
-          <textarea value={infoNote} rows={2} onChange={(e) => setInfoNote(e.target.value)}
-            placeholder={t('admin.scholarship.requestInfoPlaceholder')}
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
-          <button onClick={doRequestInfo} disabled={!!busy || !infoNote.trim()}
-            className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
-            {busy === 'info' ? t('common.loading') : t('admin.scholarship.requestInfoSend')}
-          </button>
-        </div>
-      )}
-
-      {/* Verify & accept (human gate — locks the NRIC, advances → accepted) */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3 lg:col-span-2">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold">{t('admin.scholarship.verifyTitle')}</h2>
-          {app.nric_verified && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-              {t('admin.scholarship.nricLocked')}
-            </span>
-          )}
-        </div>
-
-        {app.status === 'accepted' ? (
-          <>
-            <p className="text-sm text-gray-600">
-              {t('admin.scholarship.acceptedBy')} {app.verified_by || '—'}
-              {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
-            </p>
-            {canWrite && (
-              <button onClick={() => doReject('contractual')} disabled={!!busy}
-                className="mt-2 px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
-                {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
-              </button>
-            )}
-          </>
-        ) : ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) ? (
-          <>
-            {/* Phase C hard gate: cannot accept until every compulsory part is in. */}
-            {!app.completeness.complete && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
-                <p className="font-medium text-amber-900">{t('admin.scholarship.incompleteTitle')}</p>
-                <ul className="mt-1 list-disc ml-5 text-amber-800">
-                  {COMPLETENESS_PARTS.filter((p) => !app.completeness[p]).map((p) => (
-                    <li key={p}>{t(`admin.scholarship.completeness.${p}`)}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <p className="text-sm text-gray-500">{t('admin.scholarship.verifyHint')}</p>
-            <div className="space-y-2">
-              {VERIFY_ITEMS.map((key) => (
-                <label key={key} className="flex items-start gap-2 text-sm text-gray-700">
-                  <input type="checkbox" className="mt-1" checked={!!checklist[key]} disabled={!canWrite}
-                    onChange={(e) => setChecklist((c) => ({ ...c, [key]: e.target.checked }))} />
-                  <span>
-                    {t(`admin.scholarship.check_${key}`)}
-                    {key === 'nric' && <span className="ml-1 font-mono text-gray-500">{app.nric || '—'}</span>}
-                    {key === 'name' && <span className="ml-1 text-gray-500">{app.name || '—'}</span>}
-                  </span>
-                </label>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={doVerifyAccept}
-                disabled={!!busy || !canWrite || !app.completeness.complete || !VERIFY_ITEMS.every((k) => checklist[k])}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
-                {busy === 'verify' ? t('admin.scholarship.accepting') : t('admin.scholarship.verifyAccept')}
-              </button>
-              {canWrite && (
-                <button onClick={() => doReject('interview')} disabled={!!busy}
-                  className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
-                  {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineReview')}
-                </button>
-              )}
-            </div>
-          </>
-        ) : (
-          <p className="text-sm text-gray-400">{t('admin.scholarship.notShortlisted')}</p>
-        )}
-
-        {/* S13: Vision OCR (soft signal next to the manual checklist) */}
-        {(() => {
-          const ic = app.documents.find((d: AdminApplicantDocument) => d.doc_type === 'ic' && d.vision_run_at)
-          if (!ic) return null
-          const pill = (verdict: string) => {
-            const palette: Record<string, string> = {
-              match: 'bg-green-100 text-green-700',
-              partial: 'bg-amber-100 text-amber-700',
-              mismatch: 'bg-red-100 text-red-700',
-              unreadable: 'bg-gray-100 text-gray-600',
-            }
-            return palette[verdict] || 'bg-gray-100 text-gray-600'
-          }
-          return (
-            <div className="mt-2 border-t pt-3 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-700">{t('admin.scholarship.visionTitle')}</span>
-                <button onClick={() => doReRunVision(ic.id)} disabled={!!busy}
-                  className="text-xs text-blue-600 hover:underline disabled:opacity-50">
-                  {busy === 'vision' ? t('admin.scholarship.visionRunning') : t('admin.scholarship.visionRerun')}
-                </button>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className={`px-2 py-0.5 rounded-full ${pill(ic.vision_nric_verdict)}`}>
-                  NRIC {ic.vision_nric_verdict || '—'}
-                </span>
-                <span className={`px-2 py-0.5 rounded-full ${pill(ic.vision_name_verdict)}`}>
-                  Name {ic.vision_name_verdict || '—'}
-                </span>
-              </div>
-              {(ic.vision_nric || ic.vision_name) && (
-                <p className="text-xs text-gray-500 font-mono break-words">
-                  {t('admin.scholarship.visionExtracted')}: {ic.vision_nric || '—'} · {ic.vision_name || '—'}
-                </p>
-              )}
-              {/* Post-S14: surface MyKad address (no matcher — interviewer eyeballs it). */}
-              {ic.vision_address && (
-                <div className="mt-1 rounded-md border border-gray-200 bg-gray-50 p-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                    {t('admin.scholarship.visionAddressTitle')}
-                  </p>
-                  <p className="text-xs text-gray-700 mt-0.5 break-words">{ic.vision_address}</p>
-                  {app.address && (
-                    <p className="text-[11px] text-gray-500 mt-1">
-                      {t('admin.scholarship.visionAddressVsProfile')}:{' '}
-                      <span className="text-gray-700">{app.address}</span>
-                    </p>
-                  )}
-                </div>
-              )}
-              {ic.vision_error && <p className="text-xs text-amber-700">{ic.vision_error}</p>}
-              {app.declaration_name && ic.vision_name && (
-                <p className="text-xs text-gray-500">
-                  {t('admin.scholarship.visionDeclaration')}: <span className="font-medium">{app.declaration_name}</span>
-                </p>
-              )}
-            </div>
-          )
-        })()}
-
-        {/* S17: parent/guardian IC Vision row — shown when the minor uploaded
-            their parent's IC. No automated verdicts here (the anomaly engine
-            cross-checks against the typed guardian name + adult-age threshold
-            and surfaces flags in the Pre-interview flags card above). */}
-        {(() => {
-          const pic = app.documents.find(
-            (d: AdminApplicantDocument) => d.doc_type === 'parent_ic' && d.vision_run_at,
-          )
-          if (!pic) return null
-          return (
-            <div className="mt-2 border-t pt-3 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-700">
-                  {t('admin.scholarship.parentIcTitle')}
-                </span>
-                <button onClick={() => doReRunVision(pic.id)} disabled={!!busy}
-                  className="text-xs text-blue-600 hover:underline disabled:opacity-50">
-                  {busy === 'vision' ? t('admin.scholarship.visionRunning') : t('admin.scholarship.visionRerun')}
-                </button>
-              </div>
-              {(pic.vision_nric || pic.vision_name) && (
-                <p className="text-xs text-gray-500 font-mono break-words">
-                  {t('admin.scholarship.visionExtracted')}: {pic.vision_nric || '—'} · {pic.vision_name || '—'}
-                </p>
-              )}
-              {pic.vision_address && (
-                <p className="text-[11px] text-gray-500 break-words">
-                  {pic.vision_address}
-                </p>
-              )}
-              {pic.vision_error && <p className="text-xs text-amber-700">{pic.vision_error}</p>}
-            </div>
-          )
-        })()}
-
-        <label className="mt-2 flex items-center gap-2 border-t pt-3 text-sm text-gray-700">
-          <input type="checkbox" checked={app.mentoring_candidate} disabled={!!busy}
-            onChange={(e) => toggleMentoring(e.target.checked)} />
-          {t('admin.scholarship.mentoring')}
-        </label>
-      </div>
-
-      {/* AI sponsor profile */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3 lg:col-span-2">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="font-semibold">{t('admin.scholarship.profileTitle')}</h2>
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500">{t('admin.scholarship.genLang')}</label>
             <select value={genLang} onChange={(e) => setGenLang(e.target.value)} disabled={!!busy}
@@ -1131,7 +806,676 @@ export default function AdminScholarshipDetailPage() {
         )}
         {error && <p className="text-red-600 text-sm">{error}</p>}
       </div>
+
+      {/* ── Caveats to resolve (resolution_items — OPEN only) ─────────────────── */}
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+        <h2 className="font-semibold">{t('admin.scholarship.caveats.title')}</h2>
+        {(() => {
+          const items: AdminResolutionItem[] = app.resolution_items ?? []
+          if (items.length === 0) {
+            return <p className="text-sm text-gray-400 italic">{t('admin.scholarship.caveats.empty')}</p>
+          }
+          return (
+            <ul className="space-y-2">
+              {items.map((item) => {
+                const dotColour = item.source === 'officer' ? 'bg-indigo-400' : 'bg-amber-400'
+                const text = item.source === 'officer'
+                  ? (item.prompt || item.code)
+                  : t(`admin.scholarship.verdict.item.${item.code}`,
+                      Object.fromEntries(Object.entries(item.params).map(([k, v]) => [k, String(v)])))
+                return (
+                  <li key={item.id} className="flex items-start gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dotColour}`} aria-hidden />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-800 break-words">{text}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-400">
+                        <span className="rounded bg-gray-200 px-1.5 py-0.5">{item.fact}</span>
+                        <span className="rounded bg-gray-200 px-1.5 py-0.5">{item.kind}</span>
+                        {item.status !== 'open' && (
+                          <span className="rounded bg-amber-100 text-amber-700 px-1.5 py-0.5">
+                            {t('admin.scholarship.caveats.waitingStudent')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {canWrite && (
+                      <div className="flex shrink-0 gap-1">
+                        <button
+                          onClick={() => doActionResolution(item.id, 'waive')}
+                          disabled={!!busy}
+                          className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                        >
+                          {t('admin.scholarship.caveats.resolve')}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setInfoNote(item.prompt || '')
+                          }}
+                          disabled={!!busy}
+                          className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                        >
+                          {t('admin.scholarship.caveats.ask')}
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          )
+        })()}
       </div>
+
+      {/* ── Documents drawer — grouped by fact ────────────────────────────────── */}
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="mb-3">
+          <h2 className="font-semibold">{t('admin.scholarship.docsDrawer.title')} ({app.documents.length})</h2>
+          <p className="text-xs text-gray-400">{t('admin.scholarship.docsDrawer.subtitle')}</p>
+        </div>
+        {(() => {
+          const groups = groupDocumentsByFact(app.documents)
+          const sectionKeys = ['identity', 'academic', 'income', 'pathway', 'other'] as const
+          const pillClass = (p: 'verified' | 'check' | 'unread') => {
+            if (p === 'verified') return 'bg-green-100 text-green-700'
+            if (p === 'check') return 'bg-amber-100 text-amber-700'
+            return 'bg-gray-100 text-gray-500'
+          }
+          return (
+            <div className="space-y-4">
+              {sectionKeys.map((key) => {
+                const docs = groups[key]
+                if (docs.length === 0) return null
+                return (
+                  <div key={key}>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">
+                      {t(`admin.scholarship.docsDrawer.group.${key}`)}
+                    </p>
+                    <ul className="space-y-1.5">
+                      {docs.map((d) => {
+                        const p = documentPill(d)
+                        // Extracted fields summary line
+                        const fields = d.vision_fields?.fields
+                        const fieldSummary = fields && Object.keys(fields).length > 0
+                          ? Object.entries(fields)
+                              .filter(([, v]) => v && (Array.isArray(v) ? v.length : String(v).trim()))
+                              .map(([k, v]) => `${k}: ${Array.isArray(v)
+                                ? v.map((x) => (x && typeof x === 'object' ? [x.subject, x.grade].filter(Boolean).join(' ') : x)).join(', ')
+                                : v}`)
+                              .join(' · ')
+                          : ''
+                        return (
+                          <li key={d.id} className="flex items-start gap-2 rounded-lg border border-gray-100 p-2.5 hover:bg-gray-50">
+                            {/* File icon */}
+                            <span className="shrink-0 mt-0.5 text-gray-400 text-base" aria-hidden>
+                              {d.doc_type === 'ic' || d.doc_type === 'parent_ic' ? '🪪' : '📄'}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-sm font-medium text-gray-800 truncate max-w-[180px]">
+                                  {d.original_filename || d.doc_type}
+                                </span>
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${pillClass(p)}`}>
+                                  {t(`admin.scholarship.docsDrawer.pill.${p}`)}
+                                </span>
+                              </div>
+                              {fieldSummary && (
+                                <p className="text-[11px] text-gray-400 mt-0.5 truncate">{fieldSummary}</p>
+                              )}
+                              {d.vision_fields?.warnings && d.vision_fields.warnings.length > 0 && (
+                                <p className="text-[11px] text-amber-600 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
+                              )}
+                            </div>
+                            {d.download_url && (
+                              <a href={d.download_url} target="_blank" rel="noreferrer"
+                                className="shrink-0 text-xs text-blue-600 hover:underline mt-0.5">
+                                {t('admin.scholarship.docsDrawer.view')}
+                              </a>
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                )
+              })}
+              {app.documents.length === 0 && (
+                <p className="text-sm text-gray-400">{t('admin.scholarship.none')}</p>
+              )}
+            </div>
+          )
+        })()}
+      </div>
+
+      {/* ── Referees / consent (unchanged) ────────────────────────────────────── */}
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h3 className="font-semibold text-sm mb-1">{t('admin.scholarship.referees')}</h3>
+        <p className="text-xs text-gray-400 mb-2">{t('admin.scholarship.refHint')}</p>
+        <ul className="text-sm text-gray-600 space-y-1">
+          {app.referees.map((r) => (
+            <li key={r.id} className="flex items-start justify-between gap-2">
+              <span>
+                {r.name}{r.role ? ` (${r.role})` : ''}{r.relationship ? ` · ${r.relationship}` : ''}
+                {r.phone ? ` — ${r.phone}` : ''}{r.email ? ` · ${r.email}` : ''}
+              </span>
+              <button onClick={() => doDeleteReferee(r.id)} disabled={!!busy}
+                className="text-red-500 hover:underline text-xs shrink-0 disabled:opacity-50">
+                {t('admin.scholarship.refRemove')}
+              </button>
+            </li>
+          ))}
+          {app.referees.length === 0 && <li className="text-gray-400">{t('admin.scholarship.none')}</li>}
+        </ul>
+        {/* Add referee (coordinator records it at verify-&-accept) */}
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <input value={refForm.name} onChange={(e) => setRefForm((f) => ({ ...f, name: e.target.value }))}
+            placeholder={t('admin.scholarship.refName')} className="border rounded-lg px-2 py-1 text-sm" />
+          <input value={refForm.role} onChange={(e) => setRefForm((f) => ({ ...f, role: e.target.value }))}
+            placeholder={t('admin.scholarship.refRole')} className="border rounded-lg px-2 py-1 text-sm" />
+          <input value={refForm.relationship} onChange={(e) => setRefForm((f) => ({ ...f, relationship: e.target.value }))}
+            placeholder={t('admin.scholarship.refRelationship')} className="border rounded-lg px-2 py-1 text-sm" />
+          <input value={refForm.phone} onChange={(e) => setRefForm((f) => ({ ...f, phone: formatPhone(e.target.value) }))}
+            placeholder={t('admin.scholarship.refPhone')} className="border rounded-lg px-2 py-1 text-sm" />
+          <input value={refForm.email} onChange={(e) => setRefForm((f) => ({ ...f, email: e.target.value }))}
+            placeholder={t('admin.scholarship.refEmail')} className="border rounded-lg px-2 py-1 text-sm sm:col-span-2" />
+        </div>
+        <button onClick={doAddReferee} disabled={!!busy || !refForm.name.trim()}
+          className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
+          {busy === 'ref' ? t('admin.scholarship.refAdding') : t('admin.scholarship.refAdd')}
+        </button>
+
+        <h3 className="font-semibold text-sm mt-4 mb-2">{t('admin.scholarship.consent')}</h3>
+        <p className="text-sm text-gray-600">
+          {app.consents.some((c) => c.is_active) ? t('admin.scholarship.consentGiven') : t('admin.scholarship.consentNone')}
+        </p>
+      </div>
+
+      {/* S16 Phase A: deterministic pre-interview flag list */}
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-semibold">{t('admin.scholarship.anomaly.title')}</h2>
+          <div className="flex items-center gap-2">
+            {app.anomalies && app.anomalies.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                {app.anomalies.length} {app.anomalies.length === 1 ? t('admin.scholarship.anomaly.flagOne') : t('admin.scholarship.anomaly.flagMany')}
+              </span>
+            )}
+            {canWrite && (
+              <button onClick={doSuggestGaps} disabled={!!busy}
+                className="px-2.5 py-1 rounded-lg text-xs bg-indigo-600 text-white disabled:opacity-50">
+                {busy === 'gaps' ? t('admin.scholarship.gaps.running') : t('admin.scholarship.gaps.button')}
+              </button>
+            )}
+          </div>
+        </div>
+        <p className="text-xs text-gray-500">{t('admin.scholarship.anomaly.intro')}</p>
+        {!app.anomalies || app.anomalies.length === 0 ? (
+          <p className="text-sm text-gray-400 italic">{t('admin.scholarship.anomaly.empty')}</p>
+        ) : (
+          <ul className="space-y-3">
+            {app.anomalies.map((a) => (
+              <li key={a.code} className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1.5">
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-600 shrink-0" aria-hidden>⚠</span>
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-800">
+                      {t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
+                    </p>
+                    <p className="text-sm text-gray-700 italic">
+                      <span className="font-semibold not-italic">{t('admin.scholarship.anomaly.askLabel')}:</span>{' '}
+                      {t(`admin.scholarship.anomaly.${a.code}.question`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        {app.interview_gaps && app.interview_gaps.length > 0 && (
+          <div className="space-y-2 border-t border-gray-100 pt-3">
+            <p className="text-xs font-medium text-gray-500">{t('admin.scholarship.gaps.title')}</p>
+            <ul className="space-y-2">
+              {app.interview_gaps.map((g) => (
+                <li key={g.code} className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
+                  <div className="flex items-start gap-2">
+                    <span className="shrink-0 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white" aria-hidden>
+                      {t('admin.scholarship.gaps.aiBadge')}
+                    </span>
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-800">{g.question}</p>
+                      {g.why && <p className="text-xs text-gray-500">{t('admin.scholarship.gaps.whyLabel')}: {g.why}</p>}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      {/* Phase C: assignment */}
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
+        <h2 className="font-semibold">{t('admin.scholarship.assignTitle')}</h2>
+        <select
+          value={app.assigned_to_id ?? ''}
+          disabled={!canWrite || !!busy}
+          onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
+          className="border rounded-lg px-3 py-2 text-sm w-full sm:w-auto"
+        >
+          <option value="">{t('admin.scholarship.unassigned')}</option>
+          {admins.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+      </div>
+
+      {/* Phase C: interview capture */}
+      <div id="interview-section" className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">{t('admin.scholarship.interview.title')}</h2>
+          {app.interview_session?.status === 'submitted' && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+              {t('admin.scholarship.interview.submitted')}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-gray-500">{t('admin.scholarship.interview.intro')}</p>
+        {(() => {
+          const items = [
+            ...app.anomalies.map((a) => ({
+              code: a.code,
+              label: t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)]))),
+              ai: false,
+            })),
+            ...(app.interview_gaps || []).map((g) => ({ code: g.code, label: g.question, ai: true })),
+          ]
+          if (items.length === 0) {
+            return <p className="text-sm text-gray-400 italic">{t('admin.scholarship.interview.noFlags')}</p>
+          }
+          return (
+            <ul className="space-y-3">
+              {items.map((it) => {
+                const f = findings[it.code] ?? { verdict: '', rationale: '' }
+                const setF = (patch: Partial<{ verdict: string; rationale: string }>) =>
+                  setFindings((prev) => ({ ...prev, [it.code]: { ...f, ...patch } }))
+                return (
+                  <li key={it.code} className="border rounded-lg p-3">
+                    <p className="text-sm text-gray-800">
+                      {it.ai && <span className="mr-1 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
+                      {it.label}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {VERDICTS.map((v) => (
+                        <label key={v} className={`cursor-pointer rounded-full border px-3 py-1 text-xs ${f.verdict === v ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-700'}`}>
+                          <input type="radio" name={`v-${it.code}`} className="sr-only" disabled={!canWrite}
+                            checked={f.verdict === v} onChange={() => setF({ verdict: v })} />
+                          {t(`admin.scholarship.interview.verdict.${v}`)}
+                        </label>
+                      ))}
+                    </div>
+                    <input
+                      value={f.rationale} maxLength={140} disabled={!canWrite}
+                      onChange={(e) => setF({ rationale: e.target.value })}
+                      placeholder={t('admin.scholarship.interview.rationalePlaceholder')}
+                      className="mt-2 w-full border rounded-lg px-3 py-1.5 text-sm"
+                    />
+                  </li>
+                )
+              })}
+            </ul>
+          )
+        })()}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {RUBRIC_DIMS.map((dim) => (
+            <div key={dim}>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t(`admin.scholarship.interview.rubric.${dim}`)}</label>
+              <select value={rubric[dim] ?? ''} disabled={!canWrite}
+                onChange={(e) => setRubric((r) => ({ ...r, [dim]: Number(e.target.value) }))}
+                className="border rounded-lg px-2 py-1.5 text-sm w-full">
+                <option value="">—</option>
+                {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+          ))}
+        </div>
+        <textarea value={note} disabled={!canWrite} rows={2}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder={t('admin.scholarship.interview.notePlaceholder')}
+          className="w-full border rounded-lg px-3 py-2 text-sm" />
+        {canWrite && (
+          <div className="flex gap-2">
+            <button onClick={doSaveInterview} disabled={!!busy}
+              className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
+              {busy === 'iv' ? t('common.loading') : t('admin.scholarship.interview.saveDraft')}
+            </button>
+            <button onClick={doSubmitInterview} disabled={!!busy}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm disabled:opacity-50">
+              {busy === 'ivs' ? t('common.loading') : t('admin.scholarship.interview.submit')}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Phase C: request more documentation from the student */}
+      {canWrite && (
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
+          <h2 className="font-semibold">{t('admin.scholarship.requestInfoTitle')}</h2>
+          <p className="text-xs text-gray-500">{t('admin.scholarship.requestInfoIntro')}</p>
+          {app.info_request_note && (
+            <p className="text-xs text-gray-500 italic">
+              {t('admin.scholarship.requestInfoLast')}: {app.info_request_note}
+            </p>
+          )}
+          <textarea name="infoNote" value={infoNote} rows={2} onChange={(e) => setInfoNote(e.target.value)}
+            placeholder={t('admin.scholarship.requestInfoPlaceholder')}
+            className="w-full border rounded-lg px-3 py-2 text-sm" />
+          <div className="flex gap-2">
+            <button onClick={doRequestInfo} disabled={!!busy || !infoNote.trim()}
+              className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
+              {busy === 'info' ? t('common.loading') : t('admin.scholarship.requestInfoSend')}
+            </button>
+            <button onClick={doRaiseQuery} disabled={!!busy || !infoNote.trim()}
+              className="px-4 py-2 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
+              {busy === 'raise' ? t('common.loading') : t('admin.scholarship.caveats.ask')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Verify & accept */}
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">{t('admin.scholarship.verifyTitle')}</h2>
+          {app.nric_verified && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+              {t('admin.scholarship.nricLocked')}
+            </span>
+          )}
+        </div>
+
+        {app.status === 'accepted' ? (
+          <>
+            <p className="text-sm text-gray-600">
+              {t('admin.scholarship.acceptedBy')} {app.verified_by || '—'}
+              {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
+            </p>
+            {canWrite && (
+              <button onClick={() => doReject('contractual')} disabled={!!busy}
+                className="mt-2 px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
+                {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
+              </button>
+            )}
+          </>
+        ) : ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) ? (
+          <>
+            {!app.completeness.complete && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+                <p className="font-medium text-amber-900">{t('admin.scholarship.incompleteTitle')}</p>
+                <ul className="mt-1 list-disc ml-5 text-amber-800">
+                  {COMPLETENESS_PARTS.filter((p) => !app.completeness[p]).map((p) => (
+                    <li key={p}>{t(`admin.scholarship.completeness.${p}`)}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <p className="text-sm text-gray-500">{t('admin.scholarship.verifyHint')}</p>
+            <div className="space-y-2">
+              {VERIFY_ITEMS.map((key) => (
+                <label key={key} className="flex items-start gap-2 text-sm text-gray-700">
+                  <input type="checkbox" className="mt-1" checked={!!checklist[key]} disabled={!canWrite}
+                    onChange={(e) => setChecklist((c) => ({ ...c, [key]: e.target.checked }))} />
+                  <span>
+                    {t(`admin.scholarship.check_${key}`)}
+                    {key === 'nric' && <span className="ml-1 font-mono text-gray-500">{app.nric || '—'}</span>}
+                    {key === 'name' && <span className="ml-1 text-gray-500">{app.name || '—'}</span>}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={doVerifyAccept}
+                disabled={!!busy || !canWrite || !app.completeness.complete || !VERIFY_ITEMS.every((k) => checklist[k])}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
+                {busy === 'verify' ? t('admin.scholarship.accepting') : t('admin.scholarship.verifyAccept')}
+              </button>
+              {canWrite && (
+                <button onClick={() => doReject('interview')} disabled={!!busy}
+                  className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
+                  {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineReview')}
+                </button>
+              )}
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-gray-400">{t('admin.scholarship.notShortlisted')}</p>
+        )}
+
+        {/* S13: Vision OCR */}
+        {(() => {
+          const ic = app.documents.find((d: AdminApplicantDocument) => d.doc_type === 'ic' && d.vision_run_at)
+          if (!ic) return null
+          const vPill = (verdict: string) => {
+            const palette: Record<string, string> = {
+              match: 'bg-green-100 text-green-700',
+              partial: 'bg-amber-100 text-amber-700',
+              mismatch: 'bg-red-100 text-red-700',
+              unreadable: 'bg-gray-100 text-gray-600',
+            }
+            return palette[verdict] || 'bg-gray-100 text-gray-600'
+          }
+          return (
+            <div className="mt-2 border-t pt-3 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-gray-700">{t('admin.scholarship.visionTitle')}</span>
+                <button onClick={() => doReRunVision(ic.id)} disabled={!!busy}
+                  className="text-xs text-blue-600 hover:underline disabled:opacity-50">
+                  {busy === 'vision' ? t('admin.scholarship.visionRunning') : t('admin.scholarship.visionRerun')}
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className={`px-2 py-0.5 rounded-full ${vPill(ic.vision_nric_verdict)}`}>
+                  NRIC {ic.vision_nric_verdict || '—'}
+                </span>
+                <span className={`px-2 py-0.5 rounded-full ${vPill(ic.vision_name_verdict)}`}>
+                  Name {ic.vision_name_verdict || '—'}
+                </span>
+              </div>
+              {(ic.vision_nric || ic.vision_name) && (
+                <p className="text-xs text-gray-500 font-mono break-words">
+                  {t('admin.scholarship.visionExtracted')}: {ic.vision_nric || '—'} · {ic.vision_name || '—'}
+                </p>
+              )}
+              {ic.vision_address && (
+                <div className="mt-1 rounded-md border border-gray-200 bg-gray-50 p-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    {t('admin.scholarship.visionAddressTitle')}
+                  </p>
+                  <p className="text-xs text-gray-700 mt-0.5 break-words">{ic.vision_address}</p>
+                  {app.address && (
+                    <p className="text-[11px] text-gray-500 mt-1">
+                      {t('admin.scholarship.visionAddressVsProfile')}:{' '}
+                      <span className="text-gray-700">{app.address}</span>
+                    </p>
+                  )}
+                </div>
+              )}
+              {ic.vision_error && <p className="text-xs text-amber-700">{ic.vision_error}</p>}
+              {app.declaration_name && ic.vision_name && (
+                <p className="text-xs text-gray-500">
+                  {t('admin.scholarship.visionDeclaration')}: <span className="font-medium">{app.declaration_name}</span>
+                </p>
+              )}
+            </div>
+          )
+        })()}
+
+        {/* S17: parent/guardian IC Vision row */}
+        {(() => {
+          const pic = app.documents.find(
+            (d: AdminApplicantDocument) => d.doc_type === 'parent_ic' && d.vision_run_at,
+          )
+          if (!pic) return null
+          return (
+            <div className="mt-2 border-t pt-3 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-gray-700">
+                  {t('admin.scholarship.parentIcTitle')}
+                </span>
+                <button onClick={() => doReRunVision(pic.id)} disabled={!!busy}
+                  className="text-xs text-blue-600 hover:underline disabled:opacity-50">
+                  {busy === 'vision' ? t('admin.scholarship.visionRunning') : t('admin.scholarship.visionRerun')}
+                </button>
+              </div>
+              {(pic.vision_nric || pic.vision_name) && (
+                <p className="text-xs text-gray-500 font-mono break-words">
+                  {t('admin.scholarship.visionExtracted')}: {pic.vision_nric || '—'} · {pic.vision_name || '—'}
+                </p>
+              )}
+              {pic.vision_address && (
+                <p className="text-[11px] text-gray-500 break-words">{pic.vision_address}</p>
+              )}
+              {pic.vision_error && <p className="text-xs text-amber-700">{pic.vision_error}</p>}
+            </div>
+          )
+        })()}
+
+        <label className="mt-2 flex items-center gap-2 border-t pt-3 text-sm text-gray-700">
+          <input type="checkbox" checked={app.mentoring_candidate} disabled={!!busy}
+            onChange={(e) => toggleMentoring(e.target.checked)} />
+          {t('admin.scholarship.mentoring')}
+        </label>
+      </div>
+
+      </div>{/* end LEFT column */}
+
+      {/* ═══════════════════════ RIGHT COLUMN (sticky) ══════════════════════════ */}
+      <div id="record-verdict-panel" className="space-y-4 lg:sticky lg:top-4">
+
+      {/* ── Record your verdict ────────────────────────────────────────────────── */}
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
+        <h2 className="font-semibold">{t('admin.scholarship.recordVerdict.title')}</h2>
+
+        {/* Four fact rows — pass / fail toggle */}
+        <div className="space-y-2">
+          {(['identity', 'academic', 'income', 'pathway'] as const).map((fact) => (
+            <div key={fact} className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 p-2.5">
+              <span className="text-sm font-medium text-gray-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'pass' ? '' : 'pass' }))}
+                  disabled={!canWrite}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                    officerVerdict[fact] === 'pass'
+                      ? 'border-green-500 bg-green-500 text-white'
+                      : 'border-gray-300 text-gray-600 hover:border-green-400'
+                  } disabled:opacity-50`}
+                >
+                  {t('admin.scholarship.recordVerdict.factPass')}
+                </button>
+                <button
+                  onClick={() => setOfficerVerdict((v) => ({ ...v, [fact]: officerVerdict[fact] === 'fail' ? '' : 'fail' }))}
+                  disabled={!canWrite}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                    officerVerdict[fact] === 'fail'
+                      ? 'border-red-500 bg-red-500 text-white'
+                      : 'border-gray-300 text-gray-600 hover:border-red-400'
+                  } disabled:opacity-50`}
+                >
+                  {t('admin.scholarship.recordVerdict.factFail')}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Reason textarea */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            {t('admin.scholarship.recordVerdict.reasonLabel')}
+          </label>
+          <textarea
+            value={verdictReason}
+            rows={3}
+            disabled={!canWrite}
+            onChange={(e) => setVerdictReason(e.target.value)}
+            placeholder={t('admin.scholarship.recordVerdict.reasonPlaceholder')}
+            className="w-full border rounded-lg px-3 py-2 text-sm"
+          />
+        </div>
+
+        {/* Save button */}
+        {canWrite && (
+          <button
+            onClick={() => doRecordVerdict(true)}
+            disabled={!!busy}
+            className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+          >
+            {busy === 'verdict' ? t('common.loading') : t('admin.scholarship.recordVerdict.save')}
+          </button>
+        )}
+
+        {/* Feedback message */}
+        {verdictMsg && (
+          <p className="text-xs text-green-700 bg-green-50 rounded p-2">{verdictMsg}</p>
+        )}
+
+        {/* AI suggestion footer */}
+        {(() => {
+          const sugg = aiSuggestionFor(app.verdict || [])
+          const facts = ['identity', 'academic', 'income', 'pathway'] as const
+          return (
+            <p className="text-[11px] text-gray-400 border-t pt-2">
+              {t('admin.scholarship.recordVerdict.aiSuggested')}{' '}
+              {facts.map((f, i) => (
+                <span key={f}>
+                  {i > 0 && ', '}
+                  {t(`admin.scholarship.verdict.fact.${f}`)}{' '}
+                  <span className={
+                    sugg[f] === 'yes' ? 'text-green-600 font-medium'
+                    : sugg[f] === 'no' ? 'text-red-600 font-medium'
+                    : 'text-amber-600 font-medium'
+                  }>
+                    {t(`admin.scholarship.recordVerdict.suggest.${sugg[f]}`)}
+                  </span>
+                </span>
+              ))}{' — '}you decide.
+            </p>
+          )
+        })()}
+
+        {/* Tools group */}
+        <div className="space-y-1.5 border-t pt-3">
+          <button
+            onClick={() => {
+              document.querySelector<HTMLTextAreaElement>('[name="infoNote"]')?.focus()
+            }}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-left text-xs text-gray-600 hover:bg-gray-50"
+          >
+            {t('admin.scholarship.recordVerdict.tools.poseQuery')}
+          </button>
+          <button
+            onClick={() => {
+              // Log a phone call outcome via resolution raise
+              setInfoNote(t('admin.scholarship.recordVerdict.tools.logCall'))
+            }}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-left text-xs text-gray-600 hover:bg-gray-50"
+          >
+            {t('admin.scholarship.recordVerdict.tools.logCall')}
+          </button>
+          <button
+            onClick={() => {
+              // Scroll to interview section
+              document.getElementById('interview-section')?.scrollIntoView({ behavior: 'smooth' })
+            }}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-left text-xs text-gray-600 hover:bg-gray-50"
+          >
+            {t('admin.scholarship.recordVerdict.tools.addFindings')}
+          </button>
+        </div>
+
+        {error && <p className="text-red-600 text-xs">{error}</p>}
+      </div>
+
+      </div>{/* end RIGHT column */}
+
+      </div>{/* end cockpit grid */}
       </>)}
     </div>
   )

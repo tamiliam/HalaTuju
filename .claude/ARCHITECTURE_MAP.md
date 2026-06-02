@@ -241,8 +241,20 @@ migration**. **S4 — Student Action Centre (frontend):** `halatuju-web/src/comp
 queue at the top of `/application`, wired via `ScholarshipNextSteps`) + pure `src/lib/actionCentre.ts` (node-tested);
 `getResolutionItems`/`resolveResolutionItem` + the `ResolutionItem` type in `lib/api.ts`; per-code student i18n
 `scholarship.actionCentre.*`. doc=inline upload, explanation=reply, confirm=jump-to-tab; Cikgu-Gopal coach; all-done
-state; additive/non-blocking. Plan + roadmap: `docs/scholarship/verification-verdict-plan.md` (**S5 officer panel +
-documents-box redesign + final-profile loop next**).
+state; additive/non-blocking. **S5 — Officer Review Cockpit (the roadmap's LAST sprint):** the admin
+`/admin/scholarship/[id]` page becomes the two-stage hinge — verdict **tiles**, a **Caveats** panel (open
+`resolution_items` + officer Ask/Resolve), a redesigned **Documents drawer** (grouped by fact; replaces the messy
+flat list), and a sticky **Record-verdict** panel. Backend (additive, **migration `0037`**): 5 audit fields on
+`ScholarshipApplication` (`ai_verdict_snapshot`, `officer_verdict`, `verdict_reason`, `verdict_decided_by`,
+`verdict_decided_at`) + `AdminRecordVerdictView` (`…/<pk>/record-verdict/`; snapshots the AI verdict beside the
+officer's, and optionally fires Phase-D `refine_sponsor_profile` for the final profile in one action) +
+`AdminVerdictMetricsView` (`…/verdict-metrics/`) + pure `apps/scholarship/audit.py` (`compute_overrides`/
+`override_metrics` = the AI override rate). FE pure `halatuju-web/src/lib/officerCockpit.ts`
+(`factTileTone`/`groupDocumentsByFact`/`aiSuggestionFor`/`documentPill`, node-tested) +
+`recordVerdict`/`getVerdictMetrics`/`raiseResolutionItem`/`actionResolutionItem` + audit/`AdminResolutionItem`
+types in `lib/admin-api.ts`; admin i18n `admin.scholarship.{recordVerdict,caveats,docsDrawer}.*`. **Roadmap S1–S5
+COMPLETE; the whole branch deploys next** (migrate-first `0036` new-model + `0037` additive; TD-058 + RLS). Plan:
+`docs/scholarship/verification-verdict-plan.md`.
 
 **Phase E — sponsor marketplace (E1, v2.22.0):** **Note the naming split** — `Sponsor` (the *account*: a
 self-registering, admin-vetted real user; model in `apps/scholarship/models.py`, table `sponsors`, migration
