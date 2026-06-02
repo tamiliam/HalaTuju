@@ -1140,6 +1140,23 @@ export interface ApplicantDocument {
     student_verdict?: '' | 'ok' | 'name_mismatch' | 'address_mismatch' | 'wrong_doc' | 'unreadable' | 'review_manually'
     error?: string
   }
+  // Check-1 Academic: the three clinical checks for a results slip (name / subjects /
+  // results), server-computed against the student's own profile. null for other types.
+  academic_check?: AcademicCheck | null
+}
+
+export type SlipCheckStatus = 'match' | 'mismatch' | 'unreadable' | 'pending'
+
+export interface AcademicCheck {
+  name: SlipCheckStatus
+  subjects: SlipCheckStatus
+  results: SlipCheckStatus
+  candidate_name: string
+  exam: string
+  exam_year: string
+  missing: string[]
+  mismatched: { subject: string; typed: string; slip: string }[]
+  slip_count: number
 }
 
 export interface Referee {

@@ -93,9 +93,11 @@ export default function DocumentHelpCoach({
         ) : (
           <p className="mt-0.5 text-sm leading-relaxed text-primary-900/90 whitespace-pre-line">{body}</p>
         )}
-        {/* A name mismatch is bidirectional — the photo may be misread, OR the student
-            may have typed their name differently. Give them the direct path to fix the
-            typed name (the re-upload path is the upload button just above). */}
+        {/* Direct path to the profile when the fix lives there:
+            - IC name mismatch → edit the typed NAME (it may be a typo).
+            - Slip subjects/grades disagree → the slip is authoritative, so update the
+              PROFILE results to match it. (A wrong-file slip name mismatch gets NO
+              profile link — the fix is to re-upload your own slip, not edit anything.) */}
         {status !== 'loading' && verdict === 'name_mismatch' && (
           <Link
             href="/profile"
@@ -105,6 +107,16 @@ export default function DocumentHelpCoach({
             <span aria-hidden>→</span>
           </Link>
         )}
+        {status !== 'loading' &&
+          (verdict === 'slip_grade_mismatch' || verdict === 'slip_subjects_missing') && (
+            <Link
+              href="/profile"
+              className="mt-1.5 inline-flex items-center gap-1 text-sm font-semibold text-primary-700 underline underline-offset-2 hover:text-primary-800"
+            >
+              {t('scholarship.docs.help.editProfileResults')}
+              <span aria-hidden>→</span>
+            </Link>
+          )}
       </div>
     </div>
   )

@@ -884,6 +884,7 @@
         "photo": "Gambar terkini anda.",
         "coachLabel": "Cikgu Gopal · Pembantu",
         "editProfileName": "Betulkan nama anda dalam profil",
+        "editProfileResults": "Kemas kini keputusan anda dalam profil",
         "fallback": {
           "name_mismatch": "Jangan risau — ini kerap berlaku! Nama yang kami baca di sini tidak sepadan dengan nama dalam profil anda. Ini boleh berlaku dua cara: gambar mungkin kurang jelas, ATAU nama yang anda taip semasa mendaftar mungkin sedikit berbeza ejaannya. Jika gambar kurang jelas, muat naik yang lebih jelas; jika nama pada kad anda betul, betulkan ejaan dalam profil anda. Anda boleh!",
           "nric_mismatch": "Jangan bimbang, ini mudah dibetulkan! Nombor KP yang kami baca tidak sepadan dengan yang ada dalam profil anda. Semak digit dalam profil anda, kemudian muat naik KP anda sekali lagi. Anda buat dengan baik.",
@@ -891,6 +892,9 @@
           "wrong_doc": "Hmm, ini nampaknya bukan dokumen yang kami jangkakan di sini — silap kecil yang mudah berlaku! Semak semula anda memilih fail yang betul, kemudian muat naik sekali lagi. Kami sedia membantu.",
           "unreadable": "Kami menghadapi sedikit kesukaran membaca yang ini — mungkin kabur atau gelap. Cuba ambil gambar yang lebih jelas dan terang atau imbas semula, kemudian muat naik lagi. Tiada masalah, anda buat dengan baik!",
           "review_manually": "Terima kasih kerana memuat naik ini! Kami tidak dapat menyemaknya secara automatik sekarang, tetapi jangan risau — seseorang akan menyemaknya. Tiada apa lagi yang perlu anda lakukan di sini.",
+          "slip_name_mismatch": "Nama pada slip keputusan ini bukan nama anda — ia nampak seperti slip orang lain. Sila pastikan anda memuat naik slip keputusan anda sendiri; nama padanya mesti sepadan dengan nama anda. Anda boleh!",
+          "slip_subjects_missing": "Hampir siap! Slip keputusan anda menyenaraikan mata pelajaran yang belum anda tambah dalam profil. Sila tambah mata pelajaran yang tertinggal dalam profil anda supaya sepadan dengan slip — atau, jika anda tersilap fail, muat naik fail yang betul.",
+          "slip_grade_mismatch": "Semakan ringkas! Satu gred pada slip anda berbeza daripada yang anda masukkan. Slip anda ialah rekod rasmi, jadi sila kemas kini gred dalam profil anda supaya sepadan dengannya. Jika gambar kabur, anda boleh muat naik yang lebih jelas. Bagus setakat ini!",
           "generic": "Ada sesuatu yang kurang tepat dengan muat naik ini — tetapi jangan risau, ia mudah dibetulkan. Semak semula dan cuba muat naik sekali lagi. Anda buat dengan baik!"
         }
       },
@@ -941,6 +945,24 @@
         "mismatch": "Tidak sepadan — semak semula",
         "unreadable": "Tidak dapat dibaca",
         "none": "Belum dibaca"
+      },
+      "slipCheck": {
+        "name": "Nama",
+        "subjects": "Mata pelajaran",
+        "results": "Keputusan",
+        "exam": "Peperiksaan",
+        "fromSlip": "daripada slip anda",
+        "allEntered": "semua mata pelajaran dimasukkan",
+        "missing": "Belum dimasukkan",
+        "allMatch": "semua gred sepadan",
+        "youTyped": "anda masukkan",
+        "slipSays": "slip menyatakan",
+        "status": {
+          "match": "Sepadan",
+          "mismatch": "Tidak sepadan",
+          "unreadable": "Tidak dapat dibaca",
+          "pending": "Belum disemak"
+        }
       },
       "unsupportedFormat": "Kami hanya menerima foto atau PDF. Sila muat naik foto atau PDF dokumen anda yang jelas."
     },
