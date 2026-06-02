@@ -445,28 +445,33 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-02)
 
-**ACTIVE TRACK — Verification Verdict roadmap ✅ COMPLETE (S1–S5, 2026-06-02)** (branch
-`feature/verification-verdict`, **committed + pushed, NOT deployed** — push of the *branch* doesn't deploy; deploy
-triggers on `main`). Plan: `docs/scholarship/verification-verdict-plan.md`. Turns the scattered post-shortlist
-signals into ONE four-fact verdict (Identity/Academic/Income/Pathway) the coordinator AUDITS.
-- **S1–S4 ✅** verdict engine + scorecard · grade OCR + `academic_engine` · `ResolutionItem` backend (**migration
-  `0036`**) + idempotent sync · student Action Centre (`ActionCentre.tsx`).
-- **S5 ✅** Officer Review Cockpit — verdict **tiles** + Caveats panel + redesigned **Documents drawer** + sticky
-  **Record-verdict** panel (per-fact pass/fail + Save-&-generate-final). Backend (additive, **migration `0037`**):
-  5 audit fields on `ScholarshipApplication` + `AdminRecordVerdictView` (reuses `refine_sponsor_profile`) +
-  `AdminVerdictMetricsView` + pure `audit.py` (override rate). Pure `lib/officerCockpit.ts` (27 jest). Branch totals:
-  **1529 pytest** (+17) + **226 jest** (+27); i18n parity **1782**; scholarship migrations through **`0037`**,
-  courses through `0052`.
+**SHIPPED TO PROD (2026-06-02):**
+- **Verification Verdict roadmap S1–S5 ✅ DEPLOYED** (merged `feature/verification-verdict` → `main`; migrations `0036`
+  new-model via the TD-058 contenttypes workaround + RLS, `0037` additive ALTER, both applied migrate-first via Supabase
+  MCP). Scattered post-shortlist signals → ONE four-fact verdict (Identity/Academic/Income/Pathway) the coordinator
+  audits: verdict engine + scorecard · grade OCR + `academic_engine` · `ResolutionItem` + idempotent sync · student
+  Action Centre · Officer Review Cockpit (verdict tiles + Caveats + Documents drawer + Record-verdict panel; 5 audit
+  fields + `AdminRecordVerdictView`/`AdminVerdictMetricsView` + pure `audit.py`). Plan:
+  `docs/scholarship/verification-verdict-plan.md`.
+- **Check-1 Identity/IC OCR hardening ✅ DEPLOYED** (merged `check1/identity` → `main` `3d110a4`; **no migration**). Name
+  truncation + address card-label strip (deterministic) + **cost-gated Gemini IC second opinion** (`run_vision_for_document`
+  → `_should_gemini_ic` → image re-read → `_merge_ic_reads`, behind `IC_GEMINI_FALLBACK_ENABLED`) + bidirectional Cikgu
+  Gopal name-mismatch guidance (+/profile link). Plan: `docs/scholarship/check1-ic-hardening-plan.md`; retro:
+  `docs/retrospective-check1-identity.md`. Resolves TD-081 for the Identity fact.
 
-**▶ NEXT — DEPLOY the whole branch (the roadmap's final step; user-gated).** The branch is reconciled onto the
-hardened main (merge `fc2c7f3`). Migrate-first via Supabase MCP **before** pushing `main`:
-- **`0036`** = a **new-model migration → needs the contenttypes/auth workaround (TD-058) + RLS** (`sql/rls_policies.sql`).
-- **`0037`** = **additive `ALTER`** (5 columns on `scholarship_applications`) → the simpler MCP `execute_sql` path
-  (replicate Django DDL; for non-null defaults `ADD COLUMN … DEFAULT …` then `DROP DEFAULT`). No contenttypes step.
-- Then push `main` (Cloud Run build→deploy). Local smoke first: `manage.py runserver` + the admin cockpit renders.
-- Gotchas carried in: TD-078 (subject map FE/BE dup), TD-079 (resolution sync writes on GET), TD-082 (academic
-  confirm → Documents), TD-083 (verdict-metrics + `overall` built, not surfaced in UI); billable real-slip OCR smoke
-  (user-run); Tamil i18n is first-draft pending the user's refine (fold into the deploy).
+**▶ NEXT (planned, NOT started). Master plan: `docs/scholarship/application-processing-pipeline-plan.md`.**
+- **`/application` state machine** — form XOR queries (never stacked, keyed on `profile_completed_at`) + **Check 2** at
+  `/application` submit (gap queries + email + 5-day SLA). Plans: the master pipeline plan + `application-review-and-referee-plan.md`.
+- **Check-1 for Academic / Income / Pathway documents** — same "good feedback on every read" pass as Identity got (TD-081 residual).
+- **Reviewer-role sprint** — restricted reviewer role + assignment gate ("no queries OR 5 days"): `reviewer-role-scoped-access-plan.md`.
+- **Old/new cockpit consolidation** + **Tamil i18n refine** (first-draft strings across recent sprints).
+- **Live billable smoke** of the IC Gemini path with a real low-confidence MyKad (user-run — CI can't).
+
+**Carried gotchas:** TD-078 (subject map FE/BE dup), TD-079 (resolution sync writes on GET), TD-082 (academic confirm →
+Documents), TD-083 (verdict-metrics + `overall` built, not surfaced in UI). Migrate-first via Supabase MCP (deploy does
+NOT run `migrate`); new-model migrations need the TD-058 contenttypes workaround + RLS; confirm `Meta.db_table` before
+any raw ALTER; Gemini JSON engines share `vision._call_gemini_json` (now image-capable), prose ones share
+`profile_engine._call_gemini_text` — mock the seam, never a live call in CI.
 
 ---
 
