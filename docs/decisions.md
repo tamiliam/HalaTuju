@@ -1850,3 +1850,38 @@ application), or the override metric needs per-reviewer/per-cohort breakdowns th
 **Rationale:** The escalation criterion is exactly the case where the student would otherwise see a scary mismatch, so spend lands where it earns its keep; the conservative merge keeps the deterministic matchers as the source of truth for the student-facing verdict (the model only *fills/repairs*, never *overrides a good read*). One change improves names, NRIC, and address together.
 **Trade-offs:** (a) A genuine mismatch (real different person) still triggers one Gemini call — acceptable, it's rare and the second opinion confirms the mismatch rather than hiding it. (b) Image tokens cost more per call than text, but the volume is bounded by the low-confidence gate. (c) The merge can't fix a case where BOTH reads are wrong AND the profile is also wrong — out of scope (admin verify-&-accept remains the hard gate).
 **Revisit if:** Gemini call volume/cost shows up in the budget alerts (tighten the gate or flip the knob off), or marker-less-name volume is high enough that a cheaper text-pass tier is worth adding before the image escalation.
+
+## Results slip is the authoritative grade record (slip wins → fix profile) — Check-1 Academic, 2026-06-02
+**Decision:** When a typed grade disagrees with the results slip, the SLIP is treated as the source of truth: Cikgu Gopal tells the student to update their PROFILE grade to match the slip (or re-upload if the photo is blurry), never to change the slip.
+**Alternatives considered:** "Just flag, let the officer resolve" (neutral) — rejected because the slip is an official document and the typed grade is self-entered, so the correct direction is unambiguous and self-service is faster.
+**Rationale:** The official document outranks self-entry; making the student fix their own profile keeps the data clean before the officer ever looks.
+**Trade-offs:** Assumes the slip read is correct; a misread grade would wrongly nudge a profile edit — mitigated because the student sees both values and a blurry slip can be re-uploaded.
+**Revisit if:** OCR grade misreads become common enough that "trust the slip" misfires.
+
+## Deterministic band-strip over prompt-engineering (results slip) — Check-1 Academic, 2026-06-03
+**Decision:** Strip the SPM grade-band words (Cemerlang/Kepujian/…) from the extracted subject name with a deterministic regex (`academic_engine._split_band`) at read time, and do NOT instruct Gemini to drop them in the prompt.
+**Alternatives considered:** A prompt instruction telling Gemini to exclude band words — tried, then reverted: the one slip extracted under it returned an EMPTY results table, and the deterministic strip already makes the instruction redundant.
+**Rationale:** A deterministic post-processor is testable, model-independent, and can't degrade the rest of the extraction; a prompt tweak can.
+**Trade-offs:** The band map must track the SPM grade scale (10 bands) — small and stable.
+**Revisit if:** the SPM band vocabulary changes, or a non-SPM exam slip needs different handling.
+
+## Offer programme is surfaced, not gated — Check-1 Pathway, 2026-06-03
+**Decision:** On the offer letter, only Name + IC are hard identity checks; programme / institution / issuer / date / address are surfaced as soft data points, never matched against the declared pathway as a blocker.
+**Alternatives considered:** Cross-check the offer programme against the student's declared field/pathway and flag a mismatch — rejected: a student may legitimately receive (and prefer) a different/better offer than what they declared at apply time.
+**Rationale:** The offer is settled by the student's confirmation (below), not by agreement with an earlier declaration; blocking on programme drift would punish a normal, good outcome.
+**Trade-offs:** The system can't auto-detect an "off-plan" offer — acceptable; the officer sees the surfaced programme and the interview covers intent.
+**Revisit if:** sponsors require the funded programme to match a pre-approved field.
+
+## Final pathway is confirmed by the student, AI-raised, no officer — Check-1 Pathway, 2026-06-03
+**Decision:** When an offer's identity matches, the SYSTEM auto-raises a `pathway_confirm` Action-Centre query; the student's Yes writes the offer's programme+institution to `chosen_programme` and stamps `pathway_confirmed_at` (→ Pathway verdict 'verified'). No human officer raises it.
+**Alternatives considered:** (a) An officer manually asks at interview — rejected: it's deterministic and self-service, within the existing query window. (b) Auto-set chosen_programme from the offer without asking — rejected: the student must own "this is my final choice" (they may upload a better offer later).
+**Rationale:** Rides the existing ResolutionItem rails (system-raised, post-submission gated); confirmation is the student's to give and is cheap to capture.
+**Trade-offs:** Needs a confirmed-state column (`pathway_confirmed_at`) so the verdict doesn't depend on resolution items (which depend on the verdict) — one additive migration.
+**Revisit if:** a student needs to switch their confirmed pathway (re-confirm refreshes the snapshot; a full "unconfirm" flow is not built).
+
+## Documents organised by the four verification facts — 2026-06-03
+**Decision:** Group documents (student tab + officer drawer) and order the verdict by the four facts in one fixed order — Identity, Academic, Pathway, Income — and place the parent/guardian IC under Income (it confirms the earner the income docs are issued to).
+**Alternatives considered:** Keep the Required/Optional split (student) and parent-IC-under-Identity (officer) — rejected: a fact-aligned layout makes "what proves what" obvious and matches the verdict the officer audits.
+**Rationale:** One invariant — student sections == officer groups == verdict order — is easier to reason about and keeps the two audiences consistent.
+**Trade-offs:** "Income (compulsory)" is a section-level summary while a utility bill inside it is optional; the per-card explainer carries the nuance.
+**Revisit if:** the fact model changes (e.g. Income splits into income vs. relationship once that engine is built).

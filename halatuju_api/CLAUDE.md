@@ -443,29 +443,34 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-02)
+## Next Sprint (as of 2026-06-03)
 
-**SHIPPED TO PROD (2026-06-02):**
-- **Verification Verdict roadmap S1–S5 ✅ DEPLOYED** (merged `feature/verification-verdict` → `main`; migrations `0036`
-  new-model via the TD-058 contenttypes workaround + RLS, `0037` additive ALTER, both applied migrate-first via Supabase
-  MCP). Scattered post-shortlist signals → ONE four-fact verdict (Identity/Academic/Income/Pathway) the coordinator
-  audits: verdict engine + scorecard · grade OCR + `academic_engine` · `ResolutionItem` + idempotent sync · student
-  Action Centre · Officer Review Cockpit (verdict tiles + Caveats + Documents drawer + Record-verdict panel; 5 audit
-  fields + `AdminRecordVerdictView`/`AdminVerdictMetricsView` + pure `audit.py`). Plan:
-  `docs/scholarship/verification-verdict-plan.md`.
-- **Check-1 Identity/IC OCR hardening ✅ DEPLOYED** (merged `check1/identity` → `main` `3d110a4`; **no migration**). Name
-  truncation + address card-label strip (deterministic) + **cost-gated Gemini IC second opinion** (`run_vision_for_document`
-  → `_should_gemini_ic` → image re-read → `_merge_ic_reads`, behind `IC_GEMINI_FALLBACK_ENABLED`) + bidirectional Cikgu
-  Gopal name-mismatch guidance (+/profile link). Plan: `docs/scholarship/check1-ic-hardening-plan.md`; retro:
-  `docs/retrospective-check1-identity.md`. Resolves TD-081 for the Identity fact.
+**SHIPPED TO PROD — the Check-1 "good feedback on every document" arc (2026-06-02 → 06-03):**
+- **Verification Verdict roadmap S1–S5 ✅** (migrations `0036`/`0037`). Four-fact verdict the coordinator audits.
+- **Check-1 Identity/IC ✅** (`3d110a4`, no migration). Name-trunc + address card-label strip + cost-gated Gemini IC
+  second opinion (`IC_GEMINI_FALLBACK_ENABLED`) + bidirectional Gopal. Smoke-passed. Retro `retrospective-check1-identity.md`.
+- **Check-1 Academic/results-slip ✅** (`62339e9`+`177aed2`, no migration). Band-word "0 of 9" bug fix
+  (`academic_engine._split_band`) + `student_slip_check`/`ResultsSlipChecklist` (Name/Subjects/Results + exam year) + 3
+  Gopal slip verdicts (slip is the authoritative grade record → update profile). Retro `retrospective-check1-academic.md`.
+- **Check-1 Pathway/offer-letter ✅** (`3abe9a9`+`a0d997f`, **migration `0038` `pathway_confirmed_at`**). Differentiated
+  facts (Name+IC checks + Programme/Institution/Issuer/Date/Address data points; `pathway_engine.student_offer_check` +
+  `OfferLetterChecklist`) **+ AI-raised final-pathway confirmation**: a `pathway_confirm` Action-Centre query on a
+  Name+IC match → student's Yes writes `chosen_programme` + stamps `pathway_confirmed_at` → Pathway verdict 'verified'.
+  Programme is surfaced, NOT gated. Retro `retrospective-check1-pathway.md`.
+- **Documents organised by the four facts ✅** (`ece0cec`, no migration). Order Identity·Academic·Pathway·Income
+  everywhere; parent IC → Income in the officer grouping; student Documents tab regrouped into 5 fact sections with
+  status pills. Presentational only.
+- Totals: **557 scholarship pytest**, i18n **1843**; scholarship migrations through **`0038`**.
 
-**▶ NEXT (planned, NOT started). Master plan: `docs/scholarship/application-processing-pipeline-plan.md`.**
-- **`/application` state machine** — form XOR queries (never stacked, keyed on `profile_completed_at`) + **Check 2** at
-  `/application` submit (gap queries + email + 5-day SLA). Plans: the master pipeline plan + `application-review-and-referee-plan.md`.
-- **Check-1 for Academic / Income / Pathway documents** — same "good feedback on every read" pass as Identity got (TD-081 residual).
-- **Reviewer-role sprint** — restricted reviewer role + assignment gate ("no queries OR 5 days"): `reviewer-role-scoped-access-plan.md`.
-- **Old/new cockpit consolidation** + **Tamil i18n refine** (first-draft strings across recent sprints).
-- **Live billable smoke** of the IC Gemini path with a real low-confidence MyKad (user-run — CI can't).
+**▶ NEXT — the INCOME fact Check-1 (the last + hardest; TD-081 residual).** Not just reading the doc:
+- income **amount** (per-capita vs household size → the B40 test),
+- **earner identity** (the parent IC — name+NRIC),
+- **relationship** earner↔student: **father** auto-derivable via the student-IC patronymic; **mother** needs a
+  **Birth Certificate** (a NEW doc type); **guardian** needs the guardianship letter,
+- utility bills as a **soft hardship signal** (unpaid balance + modest monthly → hardship),
+- **policy Q:** relax income-proof from HARD-required (S23) to "provide if available" for informal-income families?
+**Other queued:** `/application` state machine + Check 2 (5-day SLA); reviewer-role sprint; old/new cockpit consolidation;
+Tamil i18n refine; richer pathway-aware Gopal (low priority, firewall-constrained).
 
 **Carried gotchas:** TD-078 (subject map FE/BE dup), TD-079 (resolution sync writes on GET), TD-082 (academic confirm →
 Documents), TD-083 (verdict-metrics + `overall` built, not surfaced in UI). Migrate-first via Supabase MCP (deploy does
