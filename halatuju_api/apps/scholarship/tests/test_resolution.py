@@ -4,16 +4,25 @@ Real-ORM fixtures (lesson #55). Covers generation, the mapping exclusions (the
 three codes deliberately NOT ticketed), idempotency, auto-resolve on gap-clear,
 the no-re-nag rule, student resolve, and officer-raised items.
 """
-from django.test import TestCase
+import jwt
+from django.test import TestCase, override_settings
 from django.utils import timezone
+from rest_framework.test import APIClient
 
 from apps.courses.models import StudentProfile
 from apps.scholarship.models import (
-    ApplicantDocument, ScholarshipApplication, ScholarshipCohort,
+    ApplicantDocument, ResolutionItem, ScholarshipApplication, ScholarshipCohort,
 )
 from apps.scholarship.resolution import (
     add_officer_item, resolve_item, sync_resolution_items,
 )
+
+_TEST_JWT_SECRET = 'test-supabase-jwt-secret'
+
+
+def _token(uid):
+    return jwt.encode({'sub': uid, 'aud': 'authenticated', 'role': 'authenticated'},
+                      _TEST_JWT_SECRET, algorithm='HS256')
 
 
 class _Base(TestCase):
@@ -154,3 +163,44 @@ class TestResolveAndOfficer(_Base):
         self.assertEqual(t.created_by, 'reviewer@x.org')
         # Officer items are returned in the open queue alongside system items.
         self.assertIn('officer_1', self._codes(sync_resolution_items(self.app)))
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=_TEST_JWT_SECRET)
+class TestStudentQueueViewGate(TestCase):
+    """The STUDENT /scholarship/resolution-items endpoint must show NOTHING until the
+    /application is submitted (consent) — even for tickets already in the DB. This is
+    the regression test for the Deploy-3 miss (the engine was gated but the VIEW queried
+    items directly). Either/or: form before submit, queries after."""
+    URL = '/api/v1/scholarship/resolution-items/'
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def setUp(self):
+        self.client = APIClient()
+        self.profile = StudentProfile.objects.create(supabase_user_id='res-view-stu', nric='030101-14-1234', name='Stu')
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='shortlisted')
+        # Two tickets already in the DB (as if generated prematurely under old behaviour).
+        for code, fact in (('ic_missing', 'identity'), ('results_slip_missing', 'academic')):
+            ResolutionItem.objects.create(application=self.app, source='system', code=code,
+                                          fact=fact, kind='doc', status='open')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("res-view-stu")}')
+
+    def test_no_queries_before_submission_even_with_existing_tickets(self):
+        # profile_completed_at is None → the queue is hidden (form-only state).
+        r = self.client.get(self.URL)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()['open'], [])
+        self.assertEqual(r.json()['resolved'], [])
+
+    def test_queries_appear_after_submission(self):
+        self.app.profile_completed_at = timezone.now()
+        self.app.status = 'profile_complete'
+        self.app.save(update_fields=['profile_completed_at', 'status'])
+        r = self.client.get(self.URL)
+        self.assertEqual(r.status_code, 200)
+        codes = sorted(i['code'] for i in r.json()['open'])
+        self.assertIn('ic_missing', codes)
+        self.assertIn('results_slip_missing', codes)
