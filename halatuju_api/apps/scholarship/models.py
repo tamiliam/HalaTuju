@@ -272,6 +272,12 @@ class ScholarshipApplication(models.Model):
         help_text="What the admin confirmed at accept: {nric, name, results, document: bool}",
     )
 
+    # Pathway Check-1: the student confirms (via an AI-raised Action-Centre query, no
+    # human officer) that the offer letter they uploaded IS their final chosen pathway.
+    # On confirm, the offer's programme+institution are written to chosen_programme and
+    # this is stamped — the Pathway fact then reads 'verified'.
+    pathway_confirmed_at = models.DateTimeField(null=True, blank=True)
+
     # Rejection bucket — WHY/WHEN an application ended at status='rejected'. Pre-shortlist
     # rejections (merit/need/ineligible) are set automatically by the engine at submit; the
     # post-shortlist ones (interview/contractual) are set by an admin action. Drives which

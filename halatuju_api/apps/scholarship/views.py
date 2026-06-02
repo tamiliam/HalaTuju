@@ -412,6 +412,11 @@ class ResolutionItemResolveView(APIView):
         if item.kind == 'explanation' and not text:
             return Response({'error': 'text_required'}, status=status.HTTP_400_BAD_REQUEST)
         resolve_item(item, text=text, by='student')
+        # The pathway confirmation is the one 'confirm' that also WRITES state: the
+        # student saying Yes settles their final chosen pathway (no human officer).
+        if item.code == 'pathway_confirm':
+            from .services import confirm_pathway
+            confirm_pathway(item.application)
         return Response(ResolutionItemSerializer(item).data)
 
 

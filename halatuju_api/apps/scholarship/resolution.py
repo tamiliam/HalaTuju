@@ -48,6 +48,10 @@ CODE_TO_TICKET = {
     'offer_unreadable':    {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
     'offer_name_mismatch': {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
     'pathway_undeclared':  {'fact': 'pathway', 'kind': 'explanation'},
+    # The AI-raised "is this offer your final chosen pathway?" confirmation. A 'confirm'
+    # kind: the student answers Yes (no officer), which writes the offer's programme to
+    # chosen_programme + stamps pathway_confirmed_at (see services.confirm_pathway).
+    'pathway_confirm':     {'fact': 'pathway', 'kind': 'confirm'},
 }
 
 
