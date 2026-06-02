@@ -35,24 +35,27 @@ export function factTileTone(status: AdminVerdictFact['status']): FactTileTone {
 
 // ── Document grouping ────────────────────────────────────────────────────────
 
-export type DocFact = 'identity' | 'academic' | 'income' | 'pathway' | 'other'
+export type DocFact = 'identity' | 'academic' | 'pathway' | 'income' | 'other'
 
 /** Map a document's doc_type to the verification fact it belongs to. */
 function docTypeToFact(docType: string): DocFact {
   switch (docType) {
     case 'ic':
-    case 'parent_ic':
       return 'identity'
     case 'results_slip':
       return 'academic'
+    case 'offer_letter':
+      return 'pathway'
+    // The parent/guardian IC sits with INCOME: the income docs (STR / salary slip /
+    // EPF) are issued in a parent's name, and the parent IC is what confirms that
+    // earner's identity. Utility bills lend credibility to the income claim.
+    case 'parent_ic':
     case 'str':
     case 'epf':
     case 'salary_slip':
     case 'water_bill':
     case 'electricity_bill':
       return 'income'
-    case 'offer_letter':
-      return 'pathway'
     default:
       return 'other'
   }
@@ -61,8 +64,8 @@ function docTypeToFact(docType: string): DocFact {
 export interface GroupedDocuments {
   identity: AdminApplicantDocument[]
   academic: AdminApplicantDocument[]
-  income: AdminApplicantDocument[]
   pathway: AdminApplicantDocument[]
+  income: AdminApplicantDocument[]
   other: AdminApplicantDocument[]
 }
 
@@ -76,8 +79,8 @@ export function groupDocumentsByFact(
   const groups: GroupedDocuments = {
     identity: [],
     academic: [],
-    income: [],
     pathway: [],
+    income: [],
     other: [],
   }
   for (const doc of documents) {
@@ -94,8 +97,8 @@ export type AiSuggest = 'yes' | 'no' | 'unsure'
 export interface AiSuggestions {
   identity: AiSuggest
   academic: AiSuggest
-  income: AiSuggest
   pathway: AiSuggest
+  income: AiSuggest
 }
 
 /** Derive a plain yes / no / unsure suggestion from each fact's AI status. */
@@ -114,8 +117,8 @@ export function aiSuggestionFor(verdictFacts: AdminVerdictFact[]): AiSuggestions
   const defaults: AiSuggestions = {
     identity: 'unsure',
     academic: 'unsure',
-    income: 'unsure',
     pathway: 'unsure',
+    income: 'unsure',
   }
   for (const f of verdictFacts) {
     const key = f.fact as keyof AiSuggestions

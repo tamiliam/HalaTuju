@@ -12,9 +12,7 @@ import {
   type ApplicantDocument,
 } from '@/lib/api'
 import {
-  COMPULSORY_DOC_TYPES,
   INCOME_PROOF_TYPES,
-  OTHER_OPTIONAL_DOC_TYPES,
   formatFileSize,
 } from '@/lib/scholarship'
 import DocumentHelpCoach from './DocumentHelpCoach'
@@ -629,57 +627,68 @@ export default function ScholarshipDocuments({ token, onChange }: { token: strin
     }
   }
 
-  return (
-    <div className="space-y-5">
+  // A doc card with the shared handlers closed over — keeps the sections tidy.
+  const card = (docType: string, extra: { showVisionChip?: boolean } = {}) => (
+    <SingleDocCard
+      key={docType}
+      docType={docType}
+      docs={docs}
+      busyType={busyType}
+      onUpload={handleUpload}
+      onDelete={handleDelete}
+      t={t}
+      token={token}
+      lang={locale}
+      {...extra}
+    />
+  )
 
-      {/* ── Required ──────────────────────────────────────────────────── */}
+  // Section header: title + a status pill (compulsory / important / optional) + note.
+  type SectionPill = 'compulsory' | 'important' | 'optional'
+  const pillClass: Record<SectionPill, string> = {
+    compulsory: 'bg-amber-100 text-amber-800',
+    important: 'bg-blue-100 text-blue-800',
+    optional: 'bg-gray-100 text-gray-600',
+  }
+  const sectionHead = (key: string, pill: SectionPill) => (
+    <div className="mb-2">
+      <div className="flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-gray-800">
+          {t(`scholarship.docs.section.${key}.title`)}
+        </h3>
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${pillClass[pill]}`}>
+          {t(`scholarship.docs.pill.${pill}`)}
+        </span>
+      </div>
+      <p className="text-xs text-gray-500 mt-0.5">{t(`scholarship.docs.section.${key}.note`)}</p>
+    </div>
+  )
+
+  // Documents are grouped by the four verification facts (matching the officer's
+  // verdict + Documents drawer) + an Other bucket:
+  //   Identity (IC) · Academic (results slip) · Pathway (offer letter) ·
+  //   Income (income proof + parent IC + utility bills) · Other (intent, photo).
+  return (
+    <div className="space-y-6">
       <section>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-            {t('scholarship.docs.requiredPill')}
-          </span>
-          <span className="text-xs text-gray-500">
-            {t('scholarship.docs.requiredNote')}
-          </span>
-        </div>
+        {sectionHead('identity', 'compulsory')}
+        <div className="space-y-3">{card('ic', { showVisionChip: true })}</div>
+      </section>
+
+      <section>
+        {sectionHead('academic', 'compulsory')}
+        <div className="space-y-3">{card('results_slip')}</div>
+      </section>
+
+      <section>
+        {sectionHead('pathway', 'important')}
+        <div className="space-y-3">{card('offer_letter')}</div>
+      </section>
+
+      <section>
+        {sectionHead('income', 'compulsory')}
         <div className="space-y-3">
-          {COMPULSORY_DOC_TYPES.map((dt) => (
-            <SingleDocCard
-              key={dt}
-              docType={dt}
-              docs={docs}
-              busyType={busyType}
-              onUpload={handleUpload}
-              onDelete={handleDelete}
-              t={t}
-              token={token}
-              lang={locale}
-              showVisionChip={dt === 'ic'}
-            />
-          ))}
-          {/* S22: parent/guardian IC is now required for EVERYONE (not just
-              minors). The admin uses it to cross-check supporting docs like
-              STR or EPF — those are usually issued in a parent's name, and
-              comparing the IC name + NRIC catches mismatches that would
-              otherwise sneak past. Vision OCR runs on upload (same pipeline
-              as the student's IC). */}
-          <SingleDocCard
-            key="parent_ic"
-            docType="parent_ic"
-            docs={docs}
-            busyType={busyType}
-            onUpload={handleUpload}
-            onDelete={handleDelete}
-            t={t}
-            token={token}
-            lang={locale}
-            showVisionChip={false}
-          />
-          {/* S23: proof of household income is now required (any one of
-              STR / salary slip / EPF satisfies it). STR families are
-              encouraged in the card explainer to ALSO upload salary/EPF
-              for each working household member, but one is enough to
-              pass completeness. */}
+          {/* Any one of STR / salary slip / EPF satisfies the income requirement. */}
           <IncomeProofCard
             docs={docs}
             busyType={busyType}
@@ -689,50 +698,22 @@ export default function ScholarshipDocuments({ token, onChange }: { token: strin
             token={token}
             lang={locale}
           />
+          {/* Parent/guardian IC — confirms the earner the income docs are issued to. */}
+          {card('parent_ic', { showVisionChip: false })}
+          {/* Utility bills — optional; they lend credibility to the income claim. */}
+          {card('water_bill')}
+          {card('electricity_bill')}
         </div>
       </section>
 
-      {/* ── Optional ──────────────────────────────────────────────────── */}
       <section>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-            {t('scholarship.docs.optionalPill')}
-          </span>
-          <span className="text-xs text-gray-500">
-            {t('scholarship.docs.optionalNote')}
-          </span>
-        </div>
+        {sectionHead('other', 'optional')}
         <div className="space-y-3">
-          {OTHER_OPTIONAL_DOC_TYPES.map((dt) => (
-            <SingleDocCard
-              key={dt}
-              docType={dt}
-              docs={docs}
-              busyType={busyType}
-              onUpload={handleUpload}
-              onDelete={handleDelete}
-              t={t}
-              token={token}
-              lang={locale}
-            />
-          ))}
-          {/* S17: minors with a non-parent guardian (grandparent / legal
-              guardian / older sibling / other relative) must also upload
-              this. Shown as optional here because the relationship is only
-              picked on the Consent step; the consent POST blocks if missing. */}
-          {isMinor && (
-            <SingleDocCard
-              key="guardianship_letter"
-              docType="guardianship_letter"
-              docs={docs}
-              busyType={busyType}
-              onUpload={handleUpload}
-              onDelete={handleDelete}
-              t={t}
-              token={token}
-              lang={locale}
-            />
-          )}
+          {card('statement_of_intent')}
+          {card('photo')}
+          {/* S17: a minor with a non-parent guardian uploads the guardianship letter
+              here; the relationship is picked on Consent and the POST blocks if missing. */}
+          {isMinor && card('guardianship_letter')}
         </div>
       </section>
 

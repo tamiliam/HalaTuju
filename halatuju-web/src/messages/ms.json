@@ -906,6 +906,33 @@
       "optionalPill": "Pilihan",
       "requiredNote": "Kami memerlukan dokumen ini untuk memproses permohonan anda.",
       "optionalNote": "Dokumen ini membantu kami memahami situasi anda dengan lebih baik. Tambah apa yang anda ada.",
+      "pill": {
+        "compulsory": "Wajib",
+        "important": "Penting",
+        "optional": "Pilihan"
+      },
+      "section": {
+        "identity": {
+          "title": "Identiti",
+          "note": "Bukti siapa anda."
+        },
+        "academic": {
+          "title": "Keputusan akademik",
+          "note": "Slip keputusan peperiksaan terkini anda."
+        },
+        "pathway": {
+          "title": "Laluan anda",
+          "note": "Surat tawaran universiti atau kolej anda, jika sudah ada."
+        },
+        "income": {
+          "title": "Pendapatan isi rumah",
+          "note": "Dokumen yang menunjukkan keperluan kewangan keluarga anda. Bil adalah pilihan tetapi membantu."
+        },
+        "other": {
+          "title": "Dokumen lain",
+          "note": "Tambahan yang berguna — muat naik apa yang anda ada."
+        }
+      },
       "choose": "Pilih fail",
       "addMore": "Tambah lagi",
       "replace": "Gantikan",

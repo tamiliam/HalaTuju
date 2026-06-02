@@ -279,12 +279,12 @@ def _verdict_pathway(application):
 
 def build_verdict(application) -> list[dict]:
     """The four-fact verification verdict in fixed order (identity, academic,
-    income, pathway). Pure + deterministic — safe to call inside a serializer
+    pathway, income). Pure + deterministic — safe to call inside a serializer
     GET. Each fact: ``{fact, status, evidence[], unresolved[]}`` where evidence
     and unresolved items are ``{code, params}`` dicts resolved on the frontend."""
     return [
         _verdict_identity(application),
         _verdict_academic(application),
-        _verdict_income(application),
         _verdict_pathway(application),
+        _verdict_income(application),
     ]
