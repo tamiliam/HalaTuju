@@ -75,7 +75,18 @@ def sync_resolution_items(application):
       - OPEN system item whose code has cleared   → auto-resolve it
       - already-resolved system items             → left as-is (no re-nag)
       - officer items                             → untouched
+
+    **Check 2 gate:** student-facing queries only exist AFTER the student submits
+    their post-shortlist ``/application`` (consent = ``profile_completed_at``).
+    Before that (just shortlisted, still filling in Step-4) there are NO queries —
+    the student works through the tabs normally. This enforces the intended
+    pipeline ``Apply → Shortlist → Consent → Check 2 → Query`` (not the premature
+    ``Apply → Shortlist → Query``). The officer still sees gaps via the verdict;
+    officer-raised items also wait for completion. See
+    ``docs/scholarship/application-processing-pipeline-plan.md``.
     """
+    if application.profile_completed_at is None:
+        return ResolutionItem.objects.none()
     wanted = _ticketable_unresolved(application)
     existing = {r.code: r for r in application.resolution_items.filter(source='system')}
     now = timezone.now()

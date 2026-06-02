@@ -27,9 +27,11 @@ class _Base(TestCase):
             nric='080115-05-0132', preferred_state='Melaka',
             household_income=1800, household_size=4, receives_str=False, receives_jkm=False,
         )
+        # Check-2 gate: queries only exist AFTER the student submits their /application
+        # (consent). These generation tests assume a submitted Step-4, so stamp it.
         self.app = ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=self.profile, status='shortlisted',
-            chosen_pathway='Matriculation',
+            cohort=self.cohort, profile=self.profile, status='profile_complete',
+            chosen_pathway='Matriculation', profile_completed_at=timezone.now(),
         )
 
     def _codes(self, items):
@@ -61,6 +63,17 @@ class TestGeneration(_Base):
         self.assertEqual(self._codes(items),
                          ['ic_missing', 'income_proof_missing', 'results_slip_missing'])
         self.assertTrue(all(i.kind == 'doc' and i.source == 'system' for i in items))
+
+    def test_no_queries_before_consent(self):
+        # Check-2 gate: a shortlisted-but-not-yet-submitted /application (no
+        # profile_completed_at) has the SAME gaps, but produces NO student queries —
+        # they appear only after consent. (Apply → Shortlist → Consent → Check 2 → Query.)
+        self.app.status = 'shortlisted'
+        self.app.profile_completed_at = None
+        self.app.save(update_fields=['status', 'profile_completed_at'])
+        self.assertEqual(list(sync_resolution_items(self.app)), [])
+        # …and nothing was written to the table prematurely.
+        self.assertEqual(self.app.resolution_items.count(), 0)
 
     def test_doc_ticket_carries_doc_type(self):
         items = {i.code: i for i in sync_resolution_items(self.app)}
