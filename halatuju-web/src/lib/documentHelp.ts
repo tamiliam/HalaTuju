@@ -43,3 +43,70 @@ export function fallbackKeyFor(verdict: string | undefined): string {
   const v = (HELP_VERDICTS as readonly string[]).includes(verdict || '') ? verdict : 'generic'
   return `scholarship.docs.help.fallback.${v}`
 }
+
+// ── Coach advice cache ───────────────────────────────────────────────────────
+// Cikgu Gopal must pop up only AFTER an upload, and his advice must STICK. We cache
+// the fetched advice keyed by a "verdict signal" that changes only on a (re-)upload
+// or re-run. So a plain page reload (same signal) re-renders the STORED advice with
+// no network call and no re-pop; Gopal re-fires only when the signal changes.
+// Storage-injectable so the node-env Jest can round-trip it with a Map-backed fake.
+
+export interface StorageLike {
+  getItem(key: string): string | null
+  setItem(key: string, value: string): void
+}
+
+function safeLocal(): StorageLike | null {
+  try {
+    return typeof window !== 'undefined' && window.localStorage ? window.localStorage : null
+  } catch {
+    return null
+  }
+}
+
+/** Changes whenever the document's verdict-relevant state changes (a re-upload /
+ *  re-run). Compose with the language at the call site for a per-language key. */
+export function helpSignal(doc: ApplicantDocument): string {
+  return [
+    doc.vision_run_at || '',
+    doc.vision_fields?.student_verdict || '',
+    doc.vision_name_match || '',
+    doc.vision_address_match || '',
+  ].join('|')
+}
+
+export interface CachedHelp {
+  source: 'ai' | 'fallback' | 'none'
+  message: string
+  verdict?: string
+}
+
+function helpCacheKey(docId: number, signal: string): string {
+  return `halatuju_doc_help_${docId}_${signal}`
+}
+
+export function readHelpCache(
+  docId: number, signal: string, storage: StorageLike | null = safeLocal(),
+): CachedHelp | null {
+  if (!storage) return null
+  try {
+    const raw = storage.getItem(helpCacheKey(docId, signal))
+    if (!raw) return null
+    const v = JSON.parse(raw)
+    if (v && (v.source === 'ai' || v.source === 'fallback' || v.source === 'none')) return v as CachedHelp
+    return null
+  } catch {
+    return null
+  }
+}
+
+export function writeHelpCache(
+  docId: number, signal: string, value: CachedHelp, storage: StorageLike | null = safeLocal(),
+): void {
+  if (!storage) return
+  try {
+    storage.setItem(helpCacheKey(docId, signal), JSON.stringify(value))
+  } catch {
+    /* quota / disabled — non-fatal */
+  }
+}

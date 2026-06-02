@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getDocumentHelp, type ApplicantDocument } from '@/lib/api'
-import { shouldShowCoach, fallbackKeyFor } from '@/lib/documentHelp'
+import { shouldShowCoach, fallbackKeyFor, helpSignal, readHelpCache, writeHelpCache } from '@/lib/documentHelp'
 
 // "Cikgu Gopal" — a warm helper note shown beneath a document's amber/grey chip.
 // Proactive (fires when there's a soft problem), never a chat box. Reacts to the
@@ -23,25 +23,36 @@ export default function DocumentHelpCoach({
   const [message, setMessage] = useState('')
   const [verdict, setVerdict] = useState<string | undefined>(undefined)
 
-  // Re-fetch when the doc's verdict signals change (e.g. after a re-upload).
-  const verdictSignal = `${doc.vision_run_at}|${doc.vision_fields?.student_verdict || ''}|${doc.vision_name_match}|${doc.vision_address_match}`
+  // Cache key: the per-language verdict signal. Only a (re-)upload changes the signal,
+  // so a plain page reload reuses the stored advice — Gopal sticks, never re-pops.
+  const cacheSignal = `${helpSignal(doc)}|${lang}`
 
   useEffect(() => {
     if (!show || !token) return
+    // Advice STICKS: if we already have advice for this exact signal, reuse it — no
+    // re-fetch, no re-pop on a plain reload. Gopal re-fires only after a real upload.
+    const cached = readHelpCache(doc.id, cacheSignal)
+    if (cached) {
+      setVerdict(cached.verdict)
+      setMessage(cached.message)
+      setStatus(cached.source)
+      return
+    }
     let cancelled = false
     setStatus('loading')
     getDocumentHelp(doc.id, lang, { token })
       .then((r) => {
         if (cancelled) return
-        setVerdict(r.verdict)
-        if (r.source === 'ai' && r.message) {
-          setMessage(r.message)
-          setStatus('ai')
-        } else if (r.source === 'none') {
-          setStatus('none')
-        } else {
-          setStatus('fallback')
-        }
+        const next =
+          r.source === 'ai' && r.message
+            ? { source: 'ai' as const, message: r.message, verdict: r.verdict }
+            : r.source === 'none'
+              ? { source: 'none' as const, message: '', verdict: r.verdict }
+              : { source: 'fallback' as const, message: '', verdict: r.verdict }
+        setVerdict(next.verdict)
+        setMessage(next.message)
+        setStatus(next.source)
+        writeHelpCache(doc.id, cacheSignal, next)
       })
       .catch(() => {
         if (!cancelled) setStatus('fallback')
@@ -50,7 +61,7 @@ export default function DocumentHelpCoach({
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [show, token, doc.id, lang, verdictSignal])
+  }, [show, token, doc.id, lang, cacheSignal])
 
   if (!show || status === 'none') return null
 

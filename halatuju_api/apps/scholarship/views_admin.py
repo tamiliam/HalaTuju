@@ -151,6 +151,15 @@ class AdminVerifyAcceptView(_AdminBase):
                  'code': 'incomplete_profile', 'completeness': completeness},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        # HARD audit gate (no override): the reviewer must have RECORDED their verdict
+        # (audited the AI's four-fact verdict) before a case can be closed/accepted.
+        # See the application-processing-pipeline plan, Check 3.
+        if app.verdict_decided_at is None:
+            return Response(
+                {'error': 'Record your verdict (review the AI’s checks) before accepting.',
+                 'code': 'verdict_not_recorded'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         profile = app.profile
         if profile is None:
             return Response({'error': 'Application has no linked profile.'},

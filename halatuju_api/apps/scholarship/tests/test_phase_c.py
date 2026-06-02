@@ -125,7 +125,10 @@ class TestAcceptGate(PhaseCBase):
         self.assertEqual(app.status, 'shortlisted')  # not accepted
 
     def test_accept_complete_succeeds(self):
+        from django.utils import timezone
         app = self._complete(self._make_app(status='profile_complete'))
+        # Check-3 audit gate: the reviewer must have recorded their verdict before close.
+        ScholarshipApplication.objects.filter(pk=app.id).update(verdict_decided_at=timezone.now())
         self._auth(SUPER)
         r = self.client.post(f'/api/v1/admin/scholarship/applications/{app.id}/verify-accept/')
         self.assertEqual(r.status_code, 200)

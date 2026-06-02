@@ -106,15 +106,22 @@ function UploadTrigger({
 
 // ── Vision OCR chip (S13 — soft signal under the IC upload) ──────────────
 
-function visionChipVariant(doc: ApplicantDocument): 'good' | 'name-soft' | 'nric-bad' | 'unreadable' | null {
-  if (!doc.vision_run_at) return null
+type VisionVariant = 'good' | 'name-soft' | 'nric-bad' | 'unreadable'
+
+/** One variant PER DISTINCT issue, so a bad NRIC *and* a name mismatch each get
+ *  their own box (we never mix two problems into one message). A fully-unreadable
+ *  IC is the one case that can't be split — it's a single box. */
+function visionChipVariants(doc: ApplicantDocument): VisionVariant[] {
+  if (!doc.vision_run_at) return []
   const nv = doc.vision_nric_verdict
   const mv = doc.vision_name_verdict
-  if (nv === 'unreadable' || mv === 'unreadable') return 'unreadable'
-  if (nv === 'mismatch') return 'nric-bad'
-  if (mv === 'mismatch') return 'name-soft'
-  if (nv === 'match') return 'good'   // mv is 'match' or 'partial' — both fine
-  return null
+  if (nv === 'unreadable' || mv === 'unreadable') return ['unreadable']
+  const out: VisionVariant[] = []
+  if (nv === 'mismatch') out.push('nric-bad')
+  if (mv === 'mismatch') out.push('name-soft')
+  if (out.length) return out          // one box per distinct problem
+  if (nv === 'match') return ['good']  // NRIC matched, name match/partial — all clear
+  return []
 }
 
 /** Render text containing a single `<link>…</link>` marker as a /profile link.
@@ -136,22 +143,27 @@ function renderWithProfileLink(text: string) {
 }
 
 function VisionChip({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
-  const variant = visionChipVariant(doc)
-  if (!variant) return null
-  const palette: Record<string, string> = {
+  const variants = visionChipVariants(doc)
+  if (!variants.length) return null
+  const palette: Record<VisionVariant, string> = {
     good: 'bg-green-50 text-green-800 ring-green-200',
     'name-soft': 'bg-amber-50 text-amber-800 ring-amber-200',
     'nric-bad': 'bg-amber-50 text-amber-800 ring-amber-200',
     unreadable: 'bg-gray-50 text-gray-700 ring-gray-200',
   }
-  const icon = variant === 'good' ? '✓' : variant === 'unreadable' ? 'ⓘ' : '⚠'
-  const text = t(`scholarship.docs.vision.${variant}`)
   return (
-    <div className="mt-2">
-      <span className={`inline-flex items-start gap-1.5 rounded-full px-3 py-1.5 text-xs ring-1 ${palette[variant]}`}>
-        <span aria-hidden>{icon}</span>
-        <span>{variant === 'name-soft' ? renderWithProfileLink(text) : text}</span>
-      </span>
+    <div className="mt-2 space-y-1.5">
+      {/* One box per distinct issue — never mix two problems into one message. */}
+      {variants.map((variant) => {
+        const icon = variant === 'good' ? '✓' : variant === 'unreadable' ? 'ⓘ' : '⚠'
+        const text = t(`scholarship.docs.vision.${variant}`)
+        return (
+          <span key={variant} className={`flex w-full items-start gap-1.5 rounded-2xl px-3 py-1.5 text-xs ring-1 ${palette[variant]}`}>
+            <span aria-hidden>{icon}</span>
+            <span>{variant === 'name-soft' ? renderWithProfileLink(text) : text}</span>
+          </span>
+        )
+      })}
       <p className="mt-1 text-xs text-gray-400">{t('scholarship.docs.vision.note')}</p>
     </div>
   )
