@@ -77,6 +77,36 @@ reviewer-query-raised. **Thank-you notices** punctuate every submit/all-answered
   "partial" (NRIC is the hard key) — **no work needed**; what looked like a repeat on the
   cockpit is the OLD anomaly box re-raising it (see the consolidation note).
 
+#### CHECK 1 — IC per-item display (user-specified design, 2026-06-02) — REPLACES the single chip
+The IC card must show **all three checked items as their own lines** — each with the
+**extracted value** and a **status badge** — then **Cikgu Gopal** below for the "what to
+do" detail. This replaces the current single yellow box (which (a) only showed the
+failing item, never what *passed*, and (b) overlapped with Gopal). Layout:
+```
+Identity card (IC)            [Replace]
+NRICF.pdf · 117 KB            [Remove]
+• IC No:   710829-02-5709                          [Match | Partial | Mismatch]
+• Name:    ELANJELIAN A/L VENUGOPAL                 [Match | Partial | Mismatch]
+• Address: C65B JALAN SEJATI, …, 08000 …, KEDAH     [data point — NOT a blocker]
+  ↳ CIKGU GOPAL — detailed advice (only when there is a real problem)
+```
+- **IC No** + **Name** are the real identity checks → real **Match / Partial / Mismatch**
+  badges (NRIC is the hard key; Name "partial" = OCR truncation, a pass).
+- **Address is a DATA POINT, not a blocker** (user, 2026-06-02): the **IC/MyKad address is
+  often outdated** and there are **other address sources**. So **never show a hard red
+  "Mismatch"** for it — show the extracted address for reference with a **neutral/soft**
+  treatment (e.g. "ℹ from your IC — we also check other sources"). A difference must **not**
+  fail the upload or read as an error.
+- **Implication for Check 2 (flag):** the existing **"Check your home state"** query was
+  generated from an address **state** mismatch — reconcile with "address is not a blocker":
+  likely **demote it from a required query** to (at most) a soft confirm, or drop it. Decide
+  when building Check 2.
+- **Backend:** the serializer already exposes the extracted `vision_nric`/`vision_name`/
+  `vision_address` + `vision_nric_verdict`/`vision_name_verdict`; **no address *verdict*
+  needed** (address is informational, so just display the value — don't compute a pass/fail).
+- **Scope:** IC + parent_ic only (3 fixed items). Supporting docs keep their own chip for now.
+  Frontend-led; reuses existing fields. Part of the **UI-polish batch**.
+
 ### CHECK 2 — at `/application` submit (take stock of gaps)
 - On submit, compute the four-fact gaps (`build_verdict`) and create **queries**
   (`sync_resolution_items`) on `/application` — each query is **upload-a-doc** or
