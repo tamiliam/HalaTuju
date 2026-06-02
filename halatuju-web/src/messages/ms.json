@@ -1127,6 +1127,85 @@
       "shortlistedBody": "Lengkapkan permohonan anda — ketik untuk teruskan.",
       "acceptedTitle": "Permohonan anda disahkan",
       "acceptedBody": "Anda telah diterima. Ketik untuk melihat butiran."
+    },
+    "actionCentre": {
+      "title": "Hampir siap, {name}",
+      "intro": "Beberapa perkara cepat lagi dan permohonan anda lengkap.",
+      "progressDone": "{done} daripada {total} selesai",
+      "percentComplete": "{pct}% Lengkap",
+      "toDo": "Untuk dibuat",
+      "upload": "Muat naik",
+      "uploading": "Memuat naik…",
+      "uploadError": "Maaf, muat naik itu tidak berjaya. Sila cuba lagi.",
+      "review": "Semak",
+      "send": "Hantar",
+      "sending": "Menghantar…",
+      "sendError": "Maaf, kami tidak dapat menghantarnya. Sila cuba lagi.",
+      "explanationPlaceholder": "Taip jawapan anda di sini…",
+      "allDone": "Semua selesai — permohonan anda lengkap!",
+      "coach": "Hai, saya Cikgu Gopal. Selesaikan perkara di atas satu demi satu — tidak perlu tergesa-gesa, dan setiap langkah mendekatkan anda. Jika ada yang kurang jelas, buat sebaik mungkin; kami sedia membantu.",
+      "item": {
+        "ic_missing": {
+          "title": "Muat naik IC anda",
+          "desc": "Kami masih perlukan foto atau imbasan jelas MyKad anda (depan)."
+        },
+        "ic_unreadable": {
+          "title": "IC anda sukar dibaca",
+          "desc": "Foto kabur atau terpotong. Sila muat naik yang lebih jelas."
+        },
+        "nric_mismatch": {
+          "title": "Semak nombor IC anda",
+          "desc": "Nombor pada IC tidak sepadan dengan profil anda. Sila semak semula."
+        },
+        "name_mismatch": {
+          "title": "Semak nama anda",
+          "desc": "Nama pada IC tidak sepadan dengan profil anda. Sila semak semula."
+        },
+        "address_state_mismatch": {
+          "title": "Semak negeri rumah anda",
+          "desc": "Negeri alamat anda tidak sepadan dengan pilihan anda. Sila semak semula."
+        },
+        "results_slip_missing": {
+          "title": "Muat naik slip keputusan",
+          "desc": "Kami perlukan slip keputusan SPM (atau STPM) untuk mengesahkan gred anda."
+        },
+        "results_slip_unreadable": {
+          "title": "Slip keputusan sukar dibaca",
+          "desc": "Imbasan kurang jelas. Sila muat naik salinan yang lebih jelas."
+        },
+        "results_slip_name_mismatch": {
+          "title": "Semak nama pada slip keputusan",
+          "desc": "Nama pada slip keputusan tidak sepadan dengan profil anda. Sila semak semula."
+        },
+        "academic_missing_subjects": {
+          "title": "Beberapa mata pelajaran tiada",
+          "desc": "Slip keputusan anda kekurangan beberapa mata pelajaran yang disenaraikan. Sila semak gred anda."
+        },
+        "academic_grade_mismatch": {
+          "title": "Semak gred anda",
+          "desc": "Sesetengah gred tidak sepadan dengan slip keputusan. Sila semak semula yang dimasukkan."
+        },
+        "str_claimed_no_doc": {
+          "title": "Muat naik bukti STR",
+          "desc": "Anda beritahu keluarga anda menerima STR — sila muat naik dokumen untuk mengesahkan."
+        },
+        "income_proof_missing": {
+          "title": "Muat naik bukti pendapatan",
+          "desc": "Kami perlukan satu dokumen pendapatan (slip gaji, KWSP, atau STR) untuk isi rumah anda."
+        },
+        "offer_unreadable": {
+          "title": "Surat tawaran sukar dibaca",
+          "desc": "Imbasan kurang jelas. Sila muat naik salinan yang lebih jelas."
+        },
+        "offer_name_mismatch": {
+          "title": "Semak nama pada surat tawaran",
+          "desc": "Nama pada surat tawaran tidak sepadan dengan profil anda. Sila semak semula."
+        },
+        "pathway_undeclared": {
+          "title": "Beritahu kami rancangan pengajian anda",
+          "desc": "Anda belum memilih apa yang ingin dipelajari. Sila tambah dalam Cerita anda."
+        }
+      }
     }
   },
   "authGate": {

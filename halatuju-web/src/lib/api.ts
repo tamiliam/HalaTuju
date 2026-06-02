@@ -1268,3 +1268,45 @@ export async function recordConsent(
     ...options,
   })
 }
+
+// ── Resolution tickets — the Student Action Centre (Sprint 4) ────────────
+// A self-service "things to finish" queue. The backend raises a ticket for each
+// verification gap (a missing/unreadable document, a mismatch the student must
+// explain, or a fact to re-check). Officers can also raise free-text tickets.
+// Each ticket carries a `kind` that decides how the student resolves it:
+//   doc         → upload the named `doc_type`
+//   explanation → type a short reply (POST /resolve/ with { text })
+//   confirm     → review/fix the relevant section; the ticket auto-clears
+//                 server-side once the underlying gap closes.
+export interface ResolutionItem {
+  id: number
+  fact: string
+  code: string
+  params: Record<string, string | number>
+  prompt: string
+  kind: 'doc' | 'confirm' | 'explanation'
+  doc_type: string
+  status: string
+  source: 'system' | 'officer'
+  resolution_text: string
+  created_at: string
+  resolved_at: string | null
+}
+
+export async function getResolutionItems(
+  options?: ApiOptions
+): Promise<{ open: ResolutionItem[]; resolved: ResolutionItem[] }> {
+  return apiRequest('/api/v1/scholarship/resolution-items', options)
+}
+
+export async function resolveResolutionItem(
+  id: number,
+  text: string,
+  options?: ApiOptions
+): Promise<ResolutionItem> {
+  return apiRequest(`/api/v1/scholarship/resolution-items/${id}/resolve/`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+    ...options,
+  })
+}

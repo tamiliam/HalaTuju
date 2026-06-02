@@ -168,7 +168,14 @@ the **panel integration** that shows draft+caveats and wires to final.
 - **Complexity:** Medium-High. New-model migration (contenttypes workaround,
   migrate-first via MCP).
 
-### Sprint 4 — Student Action Centre (frontend) + resolution flows
+### Sprint 4 — Student Action Centre (frontend) + resolution flows ✅ DONE (2026-06-02)
+- **Shipped:** `components/ActionCentre.tsx` (top of `/application`) + pure `lib/actionCentre.ts` (16 jest tests);
+  `getResolutionItems`/`resolveResolutionItem` + `ResolutionItem` in `lib/api.ts`; wired via `ScholarshipNextSteps`.
+  Three kinds (doc=inline upload, explanation=reply, confirm=jump-to-tab); progress bar; Cikgu-Gopal graduation-cap
+  coach; green all-done state; additive/non-blocking. Student i18n `scholarship.actionCentre.*` × en/ms/ta (parity
+  1750, Tamil first-draft). Stitch design approved (V1 + mascot). `next build` clean; jest 199 green. No
+  migration/backend change. Built by a delegated subagent; diff + build independently reviewed. **Next: S5** (officer
+  panel + documents-box redesign + final-profile loop).
 - **Goal:** Student self-service queue — the thing that makes the phone call
   unnecessary.
 - **Scope:** an "Action Centre / Things to resolve" surface on `/application`:

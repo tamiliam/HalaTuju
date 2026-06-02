@@ -14,9 +14,11 @@ import {
 } from '@/lib/scholarship'
 import ScholarshipDocuments from '@/components/ScholarshipDocuments'
 import ScholarshipConsent from '@/components/ScholarshipConsent'
+import ActionCentre from '@/components/ActionCentre'
 import InfoBox from '@/components/InfoBox'
 import FieldLabel from '@/components/FieldLabel'
 import Toggle from '@/components/Toggle'
+import type { ConfirmTarget } from '@/lib/actionCentre'
 
 /** Small collapsible "Need ideas?" tips panel rendered below an open-ended
  *  textarea. Native <details> for accessibility + zero JS. Three tip bullets
@@ -91,9 +93,11 @@ function renderTechSupport(text: string): React.ReactNode {
 export default function ScholarshipNextSteps({
   initialApp,
   token,
+  studentName,
 }: {
   initialApp: ScholarshipApplication
   token: string | null
+  studentName?: string
 }) {
   const { t, locale } = useT()
   const [app, setApp] = useState<ScholarshipApplication>(initialApp)
@@ -112,6 +116,23 @@ export default function ScholarshipNextSteps({
   const refreshApp = async () => {
     if (!token) return
     try { setApp(await getScholarshipApplication(app.id, { token })) } catch { /* ignore */ }
+  }
+
+  // Action Centre "Review" → switch to the section that resolves a `confirm`
+  // ticket and scroll the step card into view. The grades/results live in the
+  // Documents tab (results_slip), identity & income also in Documents, and the
+  // pathway narrative in "Your story".
+  const handleConfirmNav = (target: ConfirmTarget) => {
+    const tabFor: Record<ConfirmTarget, NextStepKey> = {
+      results: 'documents',
+      documents: 'documents',
+      story: 'story',
+    }
+    setTab(tabFor[target])
+    // Defer the scroll until the tab content has rendered.
+    setTimeout(() => {
+      document.getElementById('next-steps-active')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 50)
   }
 
   const [confirming, setConfirming] = useState(false)
@@ -557,6 +578,11 @@ export default function ScholarshipNextSteps({
 
   return (
     <div>
+      {/* Student Action Centre — the self-service "things to finish" queue, shown
+          ABOVE the step tabs. Additive: it renders nothing when there are no
+          tickets. "Review" on a confirm ticket switches to the relevant tab. */}
+      <ActionCentre token={token} studentName={studentName} onConfirm={handleConfirmNav} />
+
       {/* Admin "please send more documentation" request — shown until resolved by the admin */}
       {app.info_request_note && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
@@ -665,7 +691,7 @@ export default function ScholarshipNextSteps({
           </p>
 
           {/* Active section card */}
-          <div className="bg-white border rounded-2xl p-5 shadow-sm">
+          <div id="next-steps-active" className="bg-white border rounded-2xl p-5 shadow-sm scroll-mt-6">
             <h2 className="font-semibold text-gray-900 mb-4">
               {tabIndex + 1}. {t(`scholarship.nextSteps.tab.${tab}`)}
             </h2>
