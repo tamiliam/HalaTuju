@@ -1121,6 +1121,7 @@ export interface ApplicantDocument {
   // S13: Vision OCR soft-signal fields (populated only for doc_type='ic')
   vision_nric: string
   vision_name: string
+  vision_address: string  // extracted IC address — a soft data point (often outdated), not a check
   vision_run_at: string | null
   vision_error: string
   // Server-computed match verdicts (empty when Vision hasn't run)

@@ -930,6 +930,17 @@
         "unreadable": "We couldn't read the photo automatically — that's fine, the team will check it manually.",
         "note": "Just a hint — the team always reviews your documents."
       },
+      "icCheck": {
+        "icNo": "IC No",
+        "name": "Name",
+        "address": "Address",
+        "fromIc": "from your IC",
+        "match": "Match",
+        "partial": "Partial match",
+        "mismatch": "Mismatch — re-check",
+        "unreadable": "Couldn't read",
+        "none": "Not read yet"
+      },
       "unsupportedFormat": "We can only accept a photo or a PDF. Please upload a clear photo or PDF of your document."
     },
     "referee": {
@@ -1962,6 +1973,7 @@
           "other": "OTHER"
         },
         "view": "View",
+        "rerun": "Re-run",
         "pill": {
           "verified": "Verified",
           "check": "Check",

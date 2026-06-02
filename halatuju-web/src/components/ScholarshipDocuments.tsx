@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
+import { useState, useEffect, useCallback, type ReactNode } from 'react'
 import { useT } from '@/lib/i18n'
 import {
   signUploadDocument,
@@ -106,65 +105,62 @@ function UploadTrigger({
 
 // ── Vision OCR chip (S13 — soft signal under the IC upload) ──────────────
 
-type VisionVariant = 'good' | 'name-soft' | 'nric-bad' | 'unreadable'
+type ICCheckKind = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'none'
 
-/** One variant PER DISTINCT issue, so a bad NRIC *and* a name mismatch each get
- *  their own box (we never mix two problems into one message). A fully-unreadable
- *  IC is the one case that can't be split — it's a single box. */
-function visionChipVariants(doc: ApplicantDocument): VisionVariant[] {
-  if (!doc.vision_run_at) return []
-  const nv = doc.vision_nric_verdict
-  const mv = doc.vision_name_verdict
-  if (nv === 'unreadable' || mv === 'unreadable') return ['unreadable']
-  const out: VisionVariant[] = []
-  if (nv === 'mismatch') out.push('nric-bad')
-  if (mv === 'mismatch') out.push('name-soft')
-  if (out.length) return out          // one box per distinct problem
-  if (nv === 'match') return ['good']  // NRIC matched, name match/partial — all clear
-  return []
+function icVerdictKind(verdict: string): ICCheckKind {
+  if (verdict === 'match') return 'match'
+  if (verdict === 'partial') return 'partial'
+  if (verdict === 'mismatch') return 'mismatch'
+  if (verdict === 'unreadable') return 'unreadable'
+  return 'none'
 }
 
-/** Render text containing a single `<link>…</link>` marker as a /profile link.
- *  Falls back to plain text if the marker is absent (defensive against
- *  translations that lose the tag). */
-function renderWithProfileLink(text: string) {
-  const m = text.match(/^([\s\S]*?)<link>([\s\S]*?)<\/link>([\s\S]*)$/)
-  if (!m) return text
-  const [, before, linkText, after] = m
-  return (
-    <>
-      {before}
-      <Link href="/profile" className="font-semibold underline hover:no-underline">
-        {linkText}
-      </Link>
-      {after}
-    </>
-  )
-}
+/** Per-item IC checklist (replaces the old single chip): IC No / Name / Address, each
+ *  with the value Vision READ and its status — so the student sees what PASSED too.
+ *  Address is a SOFT data point: the MyKad address is often outdated and there are other
+ *  sources, so it is NEVER a hard "mismatch"/blocker — just shown for reference. Cikgu
+ *  Gopal (rendered below) gives the detailed "what to do" only when there's a real problem. */
+function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
+  if (!doc.vision_run_at) return null
 
-function VisionChip({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
-  const variants = visionChipVariants(doc)
-  if (!variants.length) return null
-  const palette: Record<VisionVariant, string> = {
-    good: 'bg-green-50 text-green-800 ring-green-200',
-    'name-soft': 'bg-amber-50 text-amber-800 ring-amber-200',
-    'nric-bad': 'bg-amber-50 text-amber-800 ring-amber-200',
-    unreadable: 'bg-gray-50 text-gray-700 ring-gray-200',
+  const badge = (kind: ICCheckKind) => {
+    const cls: Record<ICCheckKind, string> = {
+      match: 'bg-green-50 text-green-700 ring-green-200',
+      partial: 'bg-amber-50 text-amber-700 ring-amber-200',
+      mismatch: 'bg-red-50 text-red-700 ring-red-200',
+      unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
+      none: 'bg-gray-50 text-gray-500 ring-gray-200',
+    }
+    return (
+      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>
+        {t(`scholarship.docs.icCheck.${kind}`)}
+      </span>
+    )
   }
+
+  const row = (label: string, value: string, right: ReactNode) => (
+    <div className="flex items-start justify-between gap-2 py-1.5">
+      <p className="min-w-0 text-xs text-gray-700">
+        <span className="font-medium text-gray-600">{label}: </span>
+        <span className="break-words">{value || '—'}</span>
+      </p>
+      {right}
+    </div>
+  )
+
   return (
-    <div className="mt-2 space-y-1.5">
-      {/* One box per distinct issue — never mix two problems into one message. */}
-      {variants.map((variant) => {
-        const icon = variant === 'good' ? '✓' : variant === 'unreadable' ? 'ⓘ' : '⚠'
-        const text = t(`scholarship.docs.vision.${variant}`)
-        return (
-          <span key={variant} className={`flex w-full items-start gap-1.5 rounded-2xl px-3 py-1.5 text-xs ring-1 ${palette[variant]}`}>
-            <span aria-hidden>{icon}</span>
-            <span>{variant === 'name-soft' ? renderWithProfileLink(text) : text}</span>
-          </span>
-        )
-      })}
-      <p className="mt-1 text-xs text-gray-400">{t('scholarship.docs.vision.note')}</p>
+    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+      {row(t('scholarship.docs.icCheck.icNo'), doc.vision_nric, badge(icVerdictKind(doc.vision_nric_verdict)))}
+      {row(t('scholarship.docs.icCheck.name'), doc.vision_name, badge(icVerdictKind(doc.vision_name_verdict)))}
+      {doc.vision_address
+        ? row(
+            t('scholarship.docs.icCheck.address'),
+            doc.vision_address,
+            <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
+              {t('scholarship.docs.icCheck.fromIc')}
+            </span>,
+          )
+        : null}
     </div>
   )
 }
@@ -282,7 +278,7 @@ function SingleDocCard({
       )}
       {visionDoc && (
         <>
-          <VisionChip doc={visionDoc} t={t} />
+          <ICChecklist doc={visionDoc} t={t} />
           <DocumentHelpCoach doc={visionDoc} token={token} t={t} lang={lang} />
         </>
       )}

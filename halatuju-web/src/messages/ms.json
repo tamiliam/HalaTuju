@@ -930,6 +930,17 @@
         "unreadable": "Kami tidak dapat membaca gambar secara automatik — tidak mengapa, pasukan akan menyemak secara manual.",
         "note": "Hanya petunjuk — pasukan sentiasa menyemak dokumen anda."
       },
+      "icCheck": {
+        "icNo": "No. KP",
+        "name": "Nama",
+        "address": "Alamat",
+        "fromIc": "daripada KP anda",
+        "match": "Sepadan",
+        "partial": "Sepadan sebahagian",
+        "mismatch": "Tidak sepadan — semak semula",
+        "unreadable": "Tidak dapat dibaca",
+        "none": "Belum dibaca"
+      },
       "unsupportedFormat": "Kami hanya menerima foto atau PDF. Sila muat naik foto atau PDF dokumen anda yang jelas."
     },
     "referee": {
@@ -1962,6 +1973,7 @@
           "other": "LAIN-LAIN"
         },
         "view": "Lihat",
+        "rerun": "Jalankan semula",
         "pill": {
           "verified": "Disahkan",
           "check": "Semak",
