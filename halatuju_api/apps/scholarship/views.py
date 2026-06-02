@@ -217,6 +217,22 @@ SUPPORTING_NAME_CHECK_TYPES = frozenset({
     'results_slip', 'str', 'salary_slip', 'epf', 'offer_letter',
 } | BILL_DOC_TYPES)
 
+# Accepted upload formats: images (phone photos) + PDF (scan-to-PDF / digital docs
+# like EPF & payslips). Everything else (video, etc.) is rejected. Before this
+# there was NO format check — that's how a .mp4 IC got through (TD-080).
+_ALLOWED_UPLOAD_EXTENSIONS = frozenset({
+    '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tif', '.tiff', '.heic', '.heif',
+})
+
+
+def _is_allowed_upload(content_type, filename):
+    """True iff the upload is an image or a PDF (by MIME type or file extension)."""
+    ct = (content_type or '').lower().split(';')[0].strip()
+    if ct.startswith('image/') or ct == 'application/pdf':
+        return True
+    import os
+    return os.path.splitext(filename or '')[1].lower() in _ALLOWED_UPLOAD_EXTENSIONS
+
 
 class DocumentListCreateView(APIView):
     """GET list / POST record the caller's documents."""
@@ -240,6 +256,11 @@ class DocumentListCreateView(APIView):
         serializer = DocumentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         new_doc_type = serializer.validated_data['doc_type']
+        # Guardrail 0 (TD-080): accept images + PDF only — reject video/other junk.
+        if not _is_allowed_upload(serializer.validated_data.get('content_type'),
+                                  serializer.validated_data.get('original_filename')):
+            return Response({'error': 'unsupported_format', 'code': 'unsupported_format'},
+                            status=status.HTTP_400_BAD_REQUEST)
         from django.conf import settings as _settings
         # Guardrail 1: per-file size cap (the bytes go client→Storage via signed
         # URL, so this validates the reported size).
