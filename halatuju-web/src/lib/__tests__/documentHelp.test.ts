@@ -1,5 +1,14 @@
-import { shouldShowCoach, fallbackKeyFor, HELP_VERDICTS } from '@/lib/documentHelp'
+import {
+  shouldShowCoach, fallbackKeyFor, HELP_VERDICTS,
+  helpSignal, readHelpCache, writeHelpCache, type StorageLike, type CachedHelp,
+} from '@/lib/documentHelp'
 import type { ApplicantDocument } from '@/lib/api'
+
+/** Map-backed fake of the small Storage surface the cache uses (node env, no DOM). */
+function fakeStorage(): StorageLike & { map: Map<string, string> } {
+  const map = new Map<string, string>()
+  return { map, getItem: (k) => map.get(k) ?? null, setItem: (k, v) => { map.set(k, v) } }
+}
 
 // Minimal doc factory — only the fields shouldShowCoach reads.
 function doc(over: Partial<ApplicantDocument> = {}): ApplicantDocument {
@@ -57,5 +66,42 @@ describe('fallbackKeyFor', () => {
   it('defaults unknown/undefined to the generic warm copy', () => {
     expect(fallbackKeyFor(undefined)).toBe('scholarship.docs.help.fallback.generic')
     expect(fallbackKeyFor('weird')).toBe('scholarship.docs.help.fallback.generic')
+  })
+})
+
+describe('helpSignal + advice cache (Gopal sticks, only re-fires after a re-upload)', () => {
+  const aiHelp: CachedHelp = { source: 'ai', message: 'Try a clearer photo.', verdict: 'nric_mismatch' }
+
+  it('signal changes only when verdict-relevant state changes', () => {
+    const base = doc({ vision_run_at: 't1', vision_name_match: 'not_found' })
+    expect(helpSignal(base)).toBe(helpSignal(doc({ vision_run_at: 't1', vision_name_match: 'not_found' })))
+    // a re-upload (new vision_run_at) changes the signal → cache miss → Gopal re-fires
+    expect(helpSignal(base)).not.toBe(helpSignal(doc({ vision_run_at: 't2', vision_name_match: 'not_found' })))
+  })
+
+  it('round-trips cached advice for the same signal (reload reuses it, no re-fetch)', () => {
+    const s = fakeStorage()
+    writeHelpCache(7, 'sig-A', aiHelp, s)
+    expect(readHelpCache(7, 'sig-A', s)).toEqual(aiHelp)
+  })
+
+  it('misses on a different signal (a re-upload) and a different doc', () => {
+    const s = fakeStorage()
+    writeHelpCache(7, 'sig-A', aiHelp, s)
+    expect(readHelpCache(7, 'sig-B', s)).toBeNull()   // signal changed → re-fire
+    expect(readHelpCache(8, 'sig-A', s)).toBeNull()   // different document
+  })
+
+  it('is safe when storage is unavailable (SSR / disabled)', () => {
+    expect(readHelpCache(7, 'sig-A', null)).toBeNull()
+    expect(() => writeHelpCache(7, 'sig-A', aiHelp, null)).not.toThrow()
+  })
+
+  it('ignores corrupt / bad-shaped cache entries', () => {
+    const s = fakeStorage()
+    s.map.set('halatuju_doc_help_7_sig-A', '{not json')
+    expect(readHelpCache(7, 'sig-A', s)).toBeNull()
+    s.map.set('halatuju_doc_help_7_sig-B', JSON.stringify({ source: 'bogus' }))
+    expect(readHelpCache(7, 'sig-B', s)).toBeNull()
   })
 })

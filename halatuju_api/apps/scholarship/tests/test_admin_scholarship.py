@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import jwt
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, StudentProfile
@@ -207,8 +208,11 @@ class TestAdminScholarship(TestCase):
         self.profile.postal_code = '62100'
         self.profile.city = 'Putrajaya'
         self.profile.save()
+        # Check-3 audit gate: a case is only closeable once the reviewer has RECORDED
+        # their verdict (audited the AI). A complete, accept-ready fixture sets it.
         ScholarshipApplication.objects.filter(pk=self.app.id).update(
-            plans='Study hard', daily_life='Help at home', fears='Worried about fees')
+            plans='Study hard', daily_life='Help at home', fears='Worried about fees',
+            verdict_decided_at=timezone.now())
         FundingNeed.objects.create(application=self.app, categories=['living'], programme_months=36)
         for dt in ('ic', 'results_slip', 'parent_ic', 'str'):
             ApplicantDocument.objects.create(application=self.app, doc_type=dt, storage_path=f'x/{dt}')
@@ -231,6 +235,18 @@ class TestAdminScholarship(TestCase):
         self.assertTrue(body['verify_checklist']['document'])
         self.profile.refresh_from_db()
         self.assertTrue(self.profile.nric_verified)  # NRIC is now locked
+
+    def test_verify_accept_requires_recorded_verdict(self):
+        # Check-3 audit gate: complete profile but the reviewer never recorded their
+        # verdict → 400 verdict_not_recorded (hard, no override). NRIC stays unlocked.
+        self._complete_app()
+        ScholarshipApplication.objects.filter(pk=self.app.id).update(verdict_decided_at=None)
+        self._auth(ADMIN)
+        r = self.client.post(self._verify_url())
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json().get('code'), 'verdict_not_recorded')
+        self.profile.refresh_from_db()
+        self.assertFalse(self.profile.nric_verified)
 
     def test_verify_accept_only_shortlisted(self):
         ScholarshipApplication.objects.filter(pk=self.app.id).update(status='submitted')
