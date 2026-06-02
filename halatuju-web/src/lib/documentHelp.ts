@@ -11,6 +11,10 @@ export const HELP_VERDICTS = [
   'wrong_doc',
   'unreadable',
   'review_manually',
+  // Results-slip specific (the three academic checks).
+  'slip_name_mismatch',
+  'slip_subjects_missing',
+  'slip_grade_mismatch',
 ] as const
 
 /**
@@ -26,6 +30,18 @@ export function shouldShowCoach(doc: ApplicantDocument): boolean {
     const mv = doc.vision_name_verdict
     if (nv === 'unreadable' || mv === 'unreadable') return true
     if (nv === 'mismatch' || mv === 'mismatch') return true
+  }
+  // Results slip — the academic 3-check fully decides (it's set only for results_slip).
+  // Coach appears on any real problem, including a subjects/results mismatch the
+  // generic "name found" chip would miss.
+  if (doc.academic_check) {
+    const ac = doc.academic_check
+    return (
+      ac.name === 'mismatch' ||
+      ac.name === 'unreadable' ||
+      ac.subjects === 'mismatch' ||
+      ac.results === 'mismatch'
+    )
   }
   // Supporting docs — the Gemini doc-assist verdict takes precedence (matches the chip).
   const av = doc.vision_fields?.student_verdict
@@ -67,11 +83,15 @@ function safeLocal(): StorageLike | null {
 /** Changes whenever the document's verdict-relevant state changes (a re-upload /
  *  re-run). Compose with the language at the call site for a per-language key. */
 export function helpSignal(doc: ApplicantDocument): string {
+  const ac = doc.academic_check
   return [
     doc.vision_run_at || '',
     doc.vision_fields?.student_verdict || '',
     doc.vision_name_match || '',
     doc.vision_address_match || '',
+    // Results slip: the 3-check can change when the student edits their PROFILE
+    // (grades) without re-uploading, so fold it in to re-fire Gopal then too.
+    ac ? `${ac.name},${ac.subjects},${ac.results}` : '',
   ].join('|')
 }
 

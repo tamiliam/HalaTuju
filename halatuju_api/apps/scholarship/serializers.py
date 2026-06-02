@@ -292,6 +292,9 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     # S13: server-computed match verdicts (so client doesn't reimplement matchers).
     vision_nric_verdict = serializers.SerializerMethodField()
     vision_name_verdict = serializers.SerializerMethodField()
+    # Check-1 Academic: the three clinical checks for a results slip (name/subjects/
+    # results), server-computed against the student's own profile — null for other types.
+    academic_check = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantDocument
@@ -307,6 +310,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'vision_name_match', 'vision_address_match',
             # Document-assist: Gemini-extracted fields + student verdict (stored).
             'vision_fields', 'vision_fields_run_at',
+            # Check-1 Academic: results-slip 3-check (null unless doc_type=results_slip).
+            'academic_check',
         ]
         read_only_fields = [
             'vision_nric', 'vision_name', 'vision_address',
@@ -336,6 +341,16 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             return 'unreadable'
         from .vision import name_match
         return name_match(obj.vision_name, getattr(obj.application.profile, 'name', '') or '')
+
+    def get_academic_check(self, obj):
+        """{name, subjects, results, candidate_name, missing, mismatched, slip_count}
+        for a results slip — the three clinical checks against the student's own
+        profile. Null for every other doc type (the FE renders the IC/supporting
+        chips instead)."""
+        if obj.doc_type != 'results_slip':
+            return None
+        from .academic_engine import student_slip_check
+        return student_slip_check(obj)
 
 
 class ResolutionItemSerializer(serializers.ModelSerializer):

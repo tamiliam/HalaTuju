@@ -884,6 +884,7 @@
         "guardianship_letter": "Only needed if the consent will be given by someone other than your father or mother — a court-issued guardianship order OR a written authorisation letter from your parent.",
         "coachLabel": "Cikgu Gopal · Helper",
         "editProfileName": "Edit your name in your profile",
+        "editProfileResults": "Update your results on your profile",
         "fallback": {
           "name_mismatch": "No worries — this happens a lot! The name we read here didn't match the name saved in your profile. This can go two ways: the photo may be a little unclear, OR the name you typed when you registered may be spelled slightly differently. If the photo is unclear, upload a clearer one; if the name on your card is correct, fix the spelling on your profile. You've got this!",
           "nric_mismatch": "Don't worry, this is an easy fix! The IC number we read didn't match the one in your profile. Have a quick look at your profile to check the digits, then upload your IC again. You're doing great.",
@@ -891,6 +892,9 @@
           "wrong_doc": "Hmm, this doesn't look like the document we expected here — an easy mix-up! Double-check you picked the right file, then upload again. Happy to help if you get stuck.",
           "unreadable": "We had a little trouble reading this one — it might be blurry or a bit dark. Try a clearer, well-lit photo or a fresh scan, then upload again. No rush, you're doing well!",
           "review_manually": "Thanks for uploading this! We couldn't auto-check it just now, but don't worry — a real person will take a look. There's nothing more you need to do here.",
+          "slip_name_mismatch": "The name on this results slip isn't yours — it looks like it might be someone else's slip. Please make sure you upload your own results slip; the name on it must match your name. You've got this!",
+          "slip_subjects_missing": "Almost there! Your results slip lists a subject you haven't added to your profile yet. Please add the missing subject(s) on your profile so they match your slip — or, if you uploaded the wrong file, just upload the right one.",
+          "slip_grade_mismatch": "Quick check! A grade on your slip is different from what you entered. Your slip is the official record, so please update the grade on your profile to match it. If the photo is blurry, you can upload a clearer one instead. Well done so far!",
           "generic": "Something didn't look quite right with this upload — but it's nothing to worry about and easily fixed. Have another look and try uploading again. You're doing great!"
         }
       },
@@ -941,6 +945,24 @@
         "mismatch": "Mismatch — re-check",
         "unreadable": "Couldn't read",
         "none": "Not read yet"
+      },
+      "slipCheck": {
+        "name": "Name",
+        "subjects": "Subjects",
+        "results": "Results",
+        "exam": "Exam",
+        "fromSlip": "from your slip",
+        "allEntered": "all subjects entered",
+        "missing": "Not entered yet",
+        "allMatch": "all grades match",
+        "youTyped": "you entered",
+        "slipSays": "slip says",
+        "status": {
+          "match": "Match",
+          "mismatch": "Doesn't match",
+          "unreadable": "Couldn't read",
+          "pending": "Not checked yet"
+        }
       },
       "unsupportedFormat": "We can only accept a photo or a PDF. Please upload a clear photo or PDF of your document."
     },
