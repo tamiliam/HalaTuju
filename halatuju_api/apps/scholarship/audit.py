@@ -20,7 +20,7 @@ override a decision you didn't make.
 """
 from __future__ import annotations
 
-FACTS = ('identity', 'academic', 'income', 'pathway')
+FACTS = ('identity', 'academic', 'pathway', 'income')
 
 # The only verdict status where the AI ASSERTS the fact is good (under-claim design).
 _AI_ASSERTS = {'verified'}

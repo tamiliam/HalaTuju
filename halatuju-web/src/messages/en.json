@@ -906,6 +906,33 @@
       "optionalPill": "Optional",
       "requiredNote": "We need these documents to process your application.",
       "optionalNote": "These help us understand your situation better. Add what you have.",
+      "pill": {
+        "compulsory": "Compulsory",
+        "important": "Important",
+        "optional": "Optional"
+      },
+      "section": {
+        "identity": {
+          "title": "Identity",
+          "note": "Proof of who you are."
+        },
+        "academic": {
+          "title": "Academic results",
+          "note": "Your latest exam results slip."
+        },
+        "pathway": {
+          "title": "Your pathway",
+          "note": "Your university or college offer letter, if you already have one."
+        },
+        "income": {
+          "title": "Household income",
+          "note": "Documents that show your family's financial need. Bills are optional but help."
+        },
+        "other": {
+          "title": "Other documents",
+          "note": "Helpful extras — add what you have."
+        }
+      },
       "choose": "Choose file",
       "addMore": "Add more",
       "replace": "Replace",

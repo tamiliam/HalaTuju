@@ -73,7 +73,7 @@ class TestAuditPure(TestCase):
     def test_facts_order_fixed(self):
         r = audit.compute_overrides(_snapshot(), {})
         self.assertEqual([f['fact'] for f in r['facts']],
-                         ['identity', 'academic', 'income', 'pathway'])
+                         ['identity', 'academic', 'pathway', 'income'])
 
     def test_metrics_empty_is_zero_rate(self):
         m = audit.override_metrics([])
