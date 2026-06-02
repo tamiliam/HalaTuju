@@ -356,6 +356,16 @@ class TestAdminScholarship(TestCase):
         self.assertEqual(body['vision_nric'], '030101-14-1234')
         self.assertEqual(body['vision_name'], 'PRIYA D/O KRISHNAN')
 
+    @patch('apps.scholarship.vision.run_vision_for_document')
+    def test_admin_rerun_vision_on_parent_ic(self, mock_vision):
+        # Regression: parent-IC re-run used to 400 ("Could not re-run Vision").
+        mock_vision.return_value = {'nric': '', 'name': '', 'error': None}
+        pic = ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='pic/abc')
+        self._auth(ADMIN)
+        r = self.client.post(self._rerun_vision_url(pic.id))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(mock_vision.called)
+
     def test_admin_rerun_vision_rejects_non_ic(self):
         results = ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='r/abc')
         self._auth(ADMIN)

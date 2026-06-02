@@ -504,9 +504,16 @@ def _ic_identity_blockers(application):
     out = []
     pnric = (getattr(application.profile, 'nric', '') or '').strip()
     pname = (getattr(application.profile, 'name', '') or '').strip()
+    nric_verified = bool(ic.vision_nric and pnric and nric_match(ic.vision_nric, pnric))
     if ic.vision_nric and pnric and not nric_match(ic.vision_nric, pnric):
         out.append('ic_nric_mismatch')
-    if ic.vision_name and pname and name_match(ic.vision_name, pname) == 'mismatch':
+    # Name is a SOFT cross-check. When the NRIC already verifies identity, a name
+    # 'mismatch' is almost always an OCR name-extraction miss (the MyKad name line
+    # read imperfectly) — NOT a different person — so it must not block consent;
+    # the NRIC is the hard identity key. Only block on a name mismatch when the
+    # NRIC did NOT verify (a genuine wrong-IC risk). The admin still sees the soft
+    # name-mismatch chip either way.
+    if not nric_verified and ic.vision_name and pname and name_match(ic.vision_name, pname) == 'mismatch':
         out.append('ic_name_mismatch')
     return out
 

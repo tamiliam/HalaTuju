@@ -26,6 +26,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     15 new tests (`test_pdf_intake.py` — real-PDF lib checks + seam-mocked dispatch); scholarship suite 425 green;
     `next build` clean; i18n parity 1663. Plan: `docs/scholarship/document-intake-hardening-plan.md`. **Deferred:**
     a billable real-scanned-IC-PDF Vision smoke (user-run, around deploy).
+- **Document-intake follow-ups (surfaced re-running the stuck students' ICs):**
+  - **Parent/guardian IC re-run now works.** `AdminRunVisionView` rejected anything but `doc_type='ic'`, so every
+    parent-IC "Re-run Vision" 400'd ("Could not re-run Vision"). It now allows `ic` **and** `parent_ic` (both are
+    MyKad-structured and OCR'd on upload).
+  - **MyKad name extraction fixed — it was grabbing a locality as the name.** `_extract_name` used "longest all-caps
+    line," so a locality (e.g. `TAMAN SRI LAYANG`) could out-run the real name → a false name mismatch. It now anchors
+    on the **parentage marker** (A/L, A/P, S/O, D/O, BIN, BINTI), which appears in the name and never in an address;
+    falls back to the line right after the NRIC (e.g. Chinese names), then to longest. (Harish/Janani cases.)
+  - **A name mismatch no longer hard-blocks consent when the NRIC matches.** The NRIC is the hard identity key, so a
+    flaky name OCR shouldn't block an NRIC-verified student (`_ic_identity_blockers`); a name mismatch blocks only when
+    the NRIC *also* fails (a genuine wrong-IC). The admin still sees the soft name-mismatch chip.
+  - Backend only (no migration, no frontend). +7 tests; full backend suite 1468 green.
 
 ## [2.26.1] — Remove orphaned sponsor register-interest page + stack (TD-072b) (2026-06-01)
 

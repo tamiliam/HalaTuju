@@ -87,8 +87,25 @@ NO 12 JALAN MAHKOTA
         self.assertEqual(_extract_nric('030101 14 1234'), '030101 14 1234')
 
     def test_extracts_name(self):
-        # Longest all-caps non-numeric line that isn't the NRIC line.
+        # The parentage-marker line is the name (A/P), even with addresses present.
         self.assertEqual(_extract_name(self.SAMPLE_OCR, '030101-14-1234'), 'PRIYA A/P KRISHNAN')
+
+    def test_name_beats_longer_locality(self):
+        # Regression: a locality line LONGER than the name must NOT win — the
+        # parentage marker anchors the name. (The Harish "TAMAN SRI LAYANG" bug.)
+        ocr = ("MYKAD\nMALAYSIA\n080923-06-0355\nHARISH A/L SANGGAR\n"
+               "37 JALAN SRI LAYANG 3/7\nTAMAN SRI LAYANG SELATAN\n28400 MENTAKAB\nPAHANG")
+        self.assertEqual(_extract_name(ocr, '080923-06-0355'), 'HARISH A/L SANGGAR')
+
+    def test_name_ap_marker_over_long_address(self):
+        ocr = ("MYKAD\nMALAYSIA\n950505-05-5050\nJANANI A/P SURESH\n"
+               "NO 1 LORONG BESAR\nTAMAN MELATI INDAH PERMAI\n50000 KUALA LUMPUR")
+        self.assertEqual(_extract_name(ocr, '950505-05-5050'), 'JANANI A/P SURESH')
+
+    def test_name_without_marker_uses_line_after_nric(self):
+        # Chinese name, no parentage marker → first name-line right after the NRIC.
+        ocr = "MYKAD\nMALAYSIA\n900101-10-5555\nTAN AH KAU\nNO 5 JALAN BESAR\nKUALA LUMPUR"
+        self.assertEqual(_extract_name(ocr, '900101-10-5555'), 'TAN AH KAU')
 
     def test_no_text_returns_empty(self):
         self.assertEqual(_extract_nric(''), '')

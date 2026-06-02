@@ -82,34 +82,52 @@ _MYKAD_HEADER_TOKENS = frozenset({
 })
 
 
+# Parentage markers (A/L, A/P, S/O, D/O, BIN, BINTI) appear in the NAME on a MyKad
+# and NEVER in the address — the strongest anchor for the name line. OCR sometimes
+# spaces the slash, so tolerate "A / L".
+_PARENTAGE_MARKER = re.compile(r'\b(a\s*/\s*[lp]|s\s*/\s*o|d\s*/\s*o|bin|binti)\b', re.IGNORECASE)
+
+
+def _is_name_line(line: str) -> bool:
+    """A plausible MyKad name line: all-caps letters + spaces (no digits), not a
+    header/label, reasonable length."""
+    if not line or len(line) < 6 or any(ch.isdigit() for ch in line):
+        return False
+    letters = sum(1 for ch in line if ch.isalpha())
+    if letters < 4 or letters / max(len(line), 1) < 0.6:
+        return False
+    if line.upper() != line:
+        return False
+    words = [w for w in re.split(r'[^A-Za-z]+', line) if w]
+    return not (words and all(w.upper() in _MYKAD_HEADER_TOKENS for w in words))
+
+
 def _extract_name(text: str, nric_match_str: str = '') -> str:
-    """Best-effort: the longest line of ALL-CAPS letters (a typical MyKad
-    rendering of the name), excluding the card's own header/label lines.
-    Returns '' if no candidate found."""
+    """Find the holder's name on a MyKad. Most-reliable strategy first:
+      1. A line carrying a **parentage marker** (A/L, A/P, S/O, D/O, BIN, BINTI) —
+         that is the name; addresses/localities never carry these. Fixes the old
+         "longest all-caps line" trap where a locality like "TAMAN SRI LAYANG"
+         out-ran the real name.
+      2. Otherwise (e.g. a Chinese name with no marker) the first name-line right
+         AFTER the NRIC line — the MyKad prints the name directly under the NRIC.
+      3. Fallback: the longest all-caps name-line anywhere.
+    Returns '' if nothing plausible is found."""
     if not text:
         return ''
-    best = ''
-    for raw in text.splitlines():
-        line = raw.strip()
-        # MyKad names are uppercase letters + spaces + parentage markers.
-        if not line or any(ch.isdigit() for ch in line):
-            continue
-        # Skip the NRIC line and short labels.
-        if nric_match_str and nric_match_str in line:
-            continue
-        if len(line) < 6:
-            continue
-        letters = sum(1 for ch in line if ch.isalpha())
-        if letters < 4 or letters / max(len(line), 1) < 0.6:
-            continue
-        # Skip MyKad header/label lines (e.g. "KAD PENGENALAN", "WARGANEGARA
-        # MALAYSIA") — a line whose every word is a known card label is not a name.
-        words = [w for w in re.split(r'[^A-Za-z]+', line) if w]
-        if words and all(w.upper() in _MYKAD_HEADER_TOKENS for w in words):
-            continue
-        if line.upper() == line and len(line) > len(best):
-            best = line
-    return best
+    lines = [ln.strip() for ln in text.splitlines()]
+    candidates = [ln for ln in lines
+                  if _is_name_line(ln) and not (nric_match_str and nric_match_str in ln)]
+    if not candidates:
+        return ''
+    marked = [ln for ln in candidates if _PARENTAGE_MARKER.search(ln)]
+    if marked:
+        return max(marked, key=len)
+    nric_idx = next((i for i, ln in enumerate(lines) if _NRIC_REGEX.search(ln)), -1)
+    if nric_idx >= 0:
+        for ln in lines[nric_idx + 1:]:
+            if ln in candidates:
+                return ln
+    return max(candidates, key=len)
 
 
 _MY_POSTCODE = re.compile(r'\b\d{5}\b')
