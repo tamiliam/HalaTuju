@@ -237,8 +237,12 @@ confirm; three codes deliberately excluded (`ic_service_down`/`grades_unverified
 endpoints `scholarship/resolution-items[/<id>/resolve/]`; officer `…/<pk>/resolution-items/` +
 `…/resolution-items/<id>/<action>/`; sync wired into doc upload/delete; `AdminApplicationDetailSerializer.resolution_items`
 exposes the live open queue. S1–S2 reuse existing `vision_fields` (no migration); **S3 is the roadmap's first
-migration**. Plan + roadmap: `docs/scholarship/verification-verdict-plan.md` (S4 student Action Centre UI, S5 officer
-panel + documents-box redesign next).
+migration**. **S4 — Student Action Centre (frontend):** `halatuju-web/src/components/ActionCentre.tsx` (the IBKR
+queue at the top of `/application`, wired via `ScholarshipNextSteps`) + pure `src/lib/actionCentre.ts` (node-tested);
+`getResolutionItems`/`resolveResolutionItem` + the `ResolutionItem` type in `lib/api.ts`; per-code student i18n
+`scholarship.actionCentre.*`. doc=inline upload, explanation=reply, confirm=jump-to-tab; Cikgu-Gopal coach; all-done
+state; additive/non-blocking. Plan + roadmap: `docs/scholarship/verification-verdict-plan.md` (**S5 officer panel +
+documents-box redesign + final-profile loop next**).
 
 **Phase E — sponsor marketplace (E1, v2.22.0):** **Note the naming split** — `Sponsor` (the *account*: a
 self-registering, admin-vetted real user; model in `apps/scholarship/models.py`, table `sponsors`, migration

@@ -454,10 +454,15 @@ post-shortlist signals into ONE four-fact verdict (Identity/Academic/Income/Path
 - **S3 ✅** resolution-ticket backend — `ResolutionItem` (**migration `0036`**, on branch; NOT applied to prod) +
   `resolution.py` (idempotent verdict-driven sync, auto-resolve, no-re-nag; 3 codes excluded) + student/officer
   endpoints. Backend only.
-- **▶ S4 NEXT — student Action Centre (FRONTEND)** — the IBKR queue UI consuming `GET scholarship/resolution-items`
-  (open + resolved) with upload-or-explain-or-confirm per ticket. **UI sprint → Stitch-first** (mandatory rule). Then
-  S5 officer panel + documents-box redesign (Stitch) + final-profile loop.
-- Backend 1490 pytest (+9 in S3) + 183 jest; courses migrations through `0052`, scholarship through **`0036`**.
+- **S4 ✅** student Action Centre (frontend) — `ActionCentre.tsx` at the top of `/application` + pure
+  `lib/actionCentre.ts` (16 jest); doc=upload / explanation=reply / confirm=jump-to-tab; Cikgu-Gopal coach; all-done
+  state. Student i18n `scholarship.actionCentre.*`. No migration/backend change. (TD-082: academic confirm routes to
+  Documents, not a grades surface.)
+- **▶ S5 NEXT — officer panel + documents-box redesign + final-profile loop** — the officer cockpit (draft profile +
+  caveats → resolve → verdict → final profile, reusing Phase C/D) + rebuild the messy admin documents box + audit/
+  override capture. **UI sprint → Stitch-first.** The roadmap's LAST sprint; then the whole branch deploys.
+- **The verdict branch is reconciled onto the hardened main (merge `fc2c7f3`).** Branch test totals: 1512 pytest
+  (incl. the intake fixes) + 199 jest; courses migrations through `0052`, scholarship through **`0036`**.
 - **Deploy note:** when the roadmap deploys, `0036` is a **new-model migration → needs the contenttypes/auth
   workaround (TD-058) + RLS** (`sql/rls_policies.sql` updated), applied migrate-first via MCP before pushing `main`.
 - Gotchas carried in: doc-assist extraction shape has a hidden FE renderer consumer (lessons.md); subject map
