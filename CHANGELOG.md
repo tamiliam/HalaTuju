@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Check 1 — Identity/IC OCR hardening (one batch; branch `check1/identity`).** The Identity fact's
+  upload-time read now gives every student good feedback. **(1) Name truncation** — a parentage marker
+  (A/L · A/P · BIN · BINTI · S/O · D/O) at the END of the MyKad name line means the surname was line-broken;
+  it's now appended (*"THERESA ARUL MARY A/P" → "… A/P A.PHILIPS"*). **(2) Address card-label strip** — lines
+  that are entirely card chrome ("MyKad", "WARGANEGARA", "ISLAM"…) no longer leak into the surfaced home
+  address. **(3) ★ Gemini IC second opinion (cost-gated)** — `run_vision_for_document` keeps the free
+  deterministic read, then escalates to a Gemini **image** read ONLY when the read is low-confidence (a core
+  field missing, or it disagrees with the typed profile); the merge adopts Gemini's NRIC/name only when it
+  matches the profile and the cheap read didn't (address always prefers the cleaner value). Behind
+  `IC_GEMINI_FALLBACK_ENABLED` (default ON). This covers marker-less names + blurry-digit NRICs + noisy
+  addresses together; common clean uploads stay free. **(4) Cikgu Gopal name-mismatch guidance is now
+  bidirectional** — offers BOTH "upload a clearer photo" AND "fix the spelling on your profile" (it no longer
+  assumes the document is wrong), and the coach surfaces an "Edit your name in your profile" → `/profile` link.
+  No migration. +17 backend tests; i18n parity 1793 (en/ms/ta).
 - **Verification Verdict engine + officer scorecard (Sprint 1 of the verification-verdict roadmap).** A new
   deterministic engine (`apps/scholarship/verdict_engine.py`) rolls the scattered post-shortlist signals
   (Vision OCR matchers, doc-assist fields, completeness, the anomaly engine) into ONE four-fact verdict the

@@ -87,6 +87,36 @@ _MYKAD_HEADER_TOKENS = frozenset({
 # spaces the slash, so tolerate "A / L".
 _PARENTAGE_MARKER = re.compile(r'\b(a\s*/\s*[lp]|s\s*/\s*o|d\s*/\s*o|bin|binti)\b', re.IGNORECASE)
 
+# A parentage marker at the END of the name line means the surname was line-broken
+# onto the NEXT OCR line (e.g. "THERESA ARUL MARY A/P" then "A.PHILIPS"). When this
+# fires we append that next line so the full name is captured, not the truncated one.
+_TRAILING_PARENTAGE = re.compile(r'(?:a\s*/\s*[lp]|s\s*/\s*o|d\s*/\s*o|bin|binti)\s*$', re.IGNORECASE)
+
+
+def _with_trailing_surname(name: str, lines: list[str]) -> str:
+    """If ``name`` ends with a parentage marker (A/L, A/P, BIN, BINTI, S/O, D/O), the
+    surname spilled onto the next OCR line — append it. Resolves the truncated-IC name
+    ("THERESA ARUL MARY A/P" → "THERESA ARUL MARY A/P A.PHILIPS") deterministically,
+    at extraction time, so the value the student + admin SEE is the full name."""
+    if not _TRAILING_PARENTAGE.search(name):
+        return name
+    try:
+        idx = lines.index(name)
+    except ValueError:
+        return name
+    for ln in lines[idx + 1:]:
+        if not ln:
+            continue
+        # The continuation is a name fragment: ALL-CAPS letters, no digits, not a header
+        # token. Anything else (the NRIC / address block) means there is no surname line.
+        if any(ch.isdigit() for ch in ln) or ln.upper() != ln:
+            return name
+        words = [w for w in re.split(r'[^A-Za-z]+', ln) if w]
+        if not words or all(w.upper() in _MYKAD_HEADER_TOKENS for w in words):
+            return name
+        return f'{name} {ln}'.strip()
+    return name
+
 
 def _is_name_line(line: str) -> bool:
     """A plausible MyKad name line: all-caps letters + spaces (no digits), not a
@@ -121,7 +151,9 @@ def _extract_name(text: str, nric_match_str: str = '') -> str:
         return ''
     marked = [ln for ln in candidates if _PARENTAGE_MARKER.search(ln)]
     if marked:
-        return max(marked, key=len)
+        # A marker MID-line is the full name; a marker at the END means the surname
+        # was line-broken — append the next line (see _with_trailing_surname).
+        return _with_trailing_surname(max(marked, key=len), lines)
     nric_idx = next((i for i, ln in enumerate(lines) if _NRIC_REGEX.search(ln)), -1)
     if nric_idx >= 0:
         for ln in lines[nric_idx + 1:]:
@@ -157,6 +189,24 @@ def _is_likely_state(ln: str) -> bool:
     """True iff ``ln`` reads as a Malaysian state line on a MyKad."""
     upper = ln.strip().upper()
     return upper in _MY_STATES
+
+
+# Card-chrome labels printed on the MyKad face that the OCR can splice INTO the
+# address block (e.g. "MyKad", "WARGANEGARA", "ISLAM", "LELAKI"/"PEREMPUAN"). A
+# line made up ENTIRELY of these is the card's own label, never part of the home
+# address — drop it. (Field report: address read as "MyKad, C65B JALAN SEJATI…".)
+_ADDRESS_LABEL_TOKENS = frozenset({
+    'MYKAD', 'KAD', 'PENGENALAN', 'MALAYSIA', 'WARGANEGARA',
+    'LELAKI', 'PEREMPUAN', 'ISLAM', 'AGAMA',
+    'PENDAFTARAN', 'NEGARA',
+})
+
+
+def _is_card_label_line(ln: str) -> bool:
+    """True iff every word on the line is a MyKad card label (so the whole line is
+    card chrome, not address). Case-insensitive."""
+    words = [w for w in re.split(r'[^A-Za-z]+', ln or '') if w]
+    return bool(words) and all(w.upper() in _ADDRESS_LABEL_TOKENS for w in words)
 
 
 def _extract_address(text: str) -> str:
@@ -195,6 +245,9 @@ def _extract_address(text: str) -> str:
             continue
         # Skip the NRIC line.
         if _NRIC_REGEX.search(ln):
+            continue
+        # Skip card-chrome labels ("MyKad", "WARGANEGARA", "ISLAM", …) — never address.
+        if _is_card_label_line(ln):
             continue
         # Skip the name line. We identify it by the presence of a Malaysian
         # parentage marker (A/L, A/P, BIN, BINTI, S/O, D/O, @) — addresses
@@ -350,17 +403,116 @@ def _fetch_image_bytes(storage_path: str) -> Optional[bytes]:
         return None
 
 
+# ── IC Gemini second-opinion (cost-gated) ──────────────────────────────────────
+# The deterministic MyKad read (extract_mykad) is free but brittle: it can truncate
+# marker-less names, leak card labels into the address, and trip on a single
+# blurry/misread NRIC digit. When the cheap read is SHAKY (a core field missing, or
+# it disagrees with what the student typed), we ask Gemini to read the card IMAGE as
+# a clean second opinion. Cost-gated: it fires only on low-confidence reads, so the
+# common clean upload stays free. Reuses the mockable ``_call_gemini_json`` seam.
+_IC_GEMINI_SCHEMA = {'type': 'object', 'properties': {
+    'nric': {'type': 'string'}, 'name': {'type': 'string'}, 'address': {'type': 'string'}}}
+
+_IC_GEMINI_PROMPT = (
+    'This is a photo of a Malaysian MyKad identity card. Read it carefully and return: '
+    '"nric" = the holder\'s identity number (12 digits, formatted ######-##-####); '
+    '"name" = their FULL name EXACTLY as printed, including any parentage marker '
+    '(A/L, A/P, BIN, BINTI, S/O, D/O) AND the surname that follows it; '
+    '"address" = their home address only (street, postcode, city, state) WITHOUT card '
+    'labels such as "MyKad", "WARGANEGARA", "ISLAM", "LELAKI" or "PEREMPUAN". '
+    'If a field is unclear, leave it empty. Do NOT invent or guess.'
+)
+
+
+def _as_image_for_gemini(data: bytes, content_type: str):
+    """Return ``(image_bytes, mime_type)`` Gemini can read, or ``(None, '')``. A PDF
+    (scanned MyKad) is rasterised to PNG page 1 first."""
+    if not data:
+        return None, ''
+    if _is_pdf(content_type, data):
+        png = _pdf_first_page_png(data)
+        return (png, 'image/png') if png else (None, '')
+    ct = (content_type or '').lower().split(';')[0].strip()
+    return data, (ct if ct.startswith('image/') else 'image/jpeg')
+
+
+def _should_gemini_ic(result: dict, profile) -> bool:
+    """Escalate to the Gemini second opinion only when the deterministic read is
+    low-confidence: a core field is missing, OR it disagrees with the profile the
+    student typed (a likely OCR misread, not necessarily a real mismatch). A clean
+    read that matches the profile never escalates — keeping most uploads free."""
+    if not getattr(settings, 'IC_GEMINI_FALLBACK_ENABLED', True):
+        return False
+    nric = (result.get('nric') or '').strip()
+    name = (result.get('name') or '').strip()
+    if not nric or not name:
+        return True
+    p_nric = (getattr(profile, 'nric', '') or '') if profile else ''
+    p_name = (getattr(profile, 'name', '') or '') if profile else ''
+    if p_nric and not nric_match(nric, p_nric):
+        return True
+    if p_name and name_match(name, p_name) == 'mismatch':
+        return True
+    return False
+
+
+def _gemini_ic_second_opinion(data: bytes, content_type: str) -> dict:
+    """Ask Gemini to re-read the MyKad image → {'nric','name','address'} or {'_error'}.
+    Never raises (the seam degrades gracefully)."""
+    img, mime = _as_image_for_gemini(data, content_type)
+    if img is None:
+        return {'_error': 'no image for gemini'}
+    return _call_gemini_json(_IC_GEMINI_PROMPT, _IC_GEMINI_SCHEMA, image=img, mime_type=mime)
+
+
+def _merge_ic_reads(det: dict, g: dict, profile) -> dict:
+    """Fold the Gemini read into the deterministic one — conservatively. Gemini wins a
+    CORE field (nric/name) only when it agrees with the profile and the deterministic
+    read did not (or the deterministic read was empty); the soft address always prefers
+    the cleaner Gemini value when present. So a confident deterministic match is never
+    overridden by the model."""
+    p_nric = (getattr(profile, 'nric', '') or '') if profile else ''
+    p_name = (getattr(profile, 'name', '') or '') if profile else ''
+    out = dict(det)
+    gn = (g.get('nric') or '').strip()
+    if gn:
+        if not out.get('nric'):
+            out['nric'] = gn
+        elif p_nric and nric_match(gn, p_nric) and not nric_match(out['nric'], p_nric):
+            out['nric'] = gn   # Gemini recovered a digit the OCR misread
+    gname = (g.get('name') or '').strip()
+    if gname:
+        if not out.get('name'):
+            out['name'] = gname
+        elif (p_name and name_match(gname, p_name) != 'mismatch'
+              and name_match(out['name'], p_name) == 'mismatch'):
+            out['name'] = gname
+    gaddr = (g.get('address') or '').strip()
+    if gaddr:
+        out['address'] = gaddr   # cleaner read (no card labels / truncation)
+    return out
+
+
 def run_vision_for_document(doc) -> dict:
     """
     Run Vision on an ``ApplicantDocument`` (expected ``doc_type='ic'``) and
     persist the result on the row. Returns the result dict. Never raises;
     failures land in ``vision_error`` and the doc still saves.
+
+    When the deterministic read is low-confidence (see ``_should_gemini_ic``), a
+    cost-gated Gemini second opinion re-reads the card image and is merged in.
     """
     image = _fetch_image_bytes(doc.storage_path)
     if image is None:
         result = {'nric': '', 'name': '', 'address': '', 'error': 'could not fetch image'}
     else:
         result = extract_mykad(image, doc.content_type)
+        if not result.get('error'):
+            profile = getattr(doc.application, 'profile', None)
+            if _should_gemini_ic(result, profile):
+                g = _gemini_ic_second_opinion(image, doc.content_type)
+                if not g.get('_error'):
+                    result = _merge_ic_reads(result, g, profile)
     doc.vision_nric = result['nric'] or ''
     doc.vision_name = result['name'] or ''
     doc.vision_address = result.get('address', '') or ''
@@ -498,9 +650,12 @@ _DOC_HINTS = {
 }
 
 
-def _call_gemini_json(prompt: str, schema: dict) -> dict:
+def _call_gemini_json(prompt: str, schema: dict, *, image: Optional[bytes] = None,
+                      mime_type: str = 'image/jpeg') -> dict:
     """Structured-output Gemini call → parsed JSON dict, or {'_error': msg}. This is
-    the single seam tests @patch. Reuses profile_engine's model cascade + key guard."""
+    the single seam tests @patch. Reuses profile_engine's model cascade + key guard.
+    Pass ``image`` (raw bytes) for a multimodal read — Gemini sees the picture, not
+    just OCR text (used by the IC second-opinion to recover blurry digits)."""
     api_key = getattr(settings, 'GEMINI_API_KEY', '') or ''
     if not api_key:
         return {'_error': 'AI service not configured (missing API key)'}
@@ -511,11 +666,13 @@ def _call_gemini_json(prompt: str, schema: dict) -> dict:
         return {'_error': 'AI module not installed'}
     from .profile_engine import MODEL_CASCADE
     client = genai.Client(api_key=api_key)
+    contents = (prompt if image is None
+                else [types.Part.from_bytes(data=image, mime_type=mime_type), prompt])
     last_error = None
     for model_name in MODEL_CASCADE:
         try:
             resp = client.models.generate_content(
-                model=model_name, contents=prompt,
+                model=model_name, contents=contents,
                 config=types.GenerateContentConfig(
                     response_mime_type='application/json', response_schema=schema, temperature=0.1),
             )
