@@ -26,6 +26,42 @@ documents on `/application`.
 
 ---
 
+## 0b. The end-to-end flow (DEFINITIVE — user-specified 2026-06-02)
+
+```
+Apply → signed & submitted → Thank-you notice
+  → (if shortlisted) email with /application link, ~55 min later
+  → APPLICATION FORM (Step-4: Quiz / Story / Funding / Documents / Consent)
+  → Consent → Thank-you notice
+  → CHECK 2 (take stock of gaps)
+       → if queries: email with link → QUERIES PAGE
+            → (all queries answered) → Thank-you notice
+  → if NO queries, OR all answered, OR 5 days lapse (whichever first)
+       → Reviewer assigned
+            → reviewer raises a query → email with link → QUERIES PAGE
+                 → (answered) → Thank-you notice
+            → Reviewer decision
+```
+
+### THE EITHER/OR RULE (a MUST — this is the design law)
+The `/application` page shows the **application form** *or* the **queries page** —
+**NEVER both together**. It is a **state machine**, not a stack:
+
+| Page state | Condition | What renders |
+|---|---|---|
+| **Form** | not yet submitted (`profile_completed_at` is None) | the Step-4 tabs ONLY — **no** queries |
+| **(transition)** | on Consent → submit | a **Thank-you notice**, then Check 2 runs |
+| **Queries** | submitted AND open queries exist | the **queries page ONLY** — it **replaces** the form |
+| **Waiting / done** | submitted AND no open queries | a **Thank-you / status notice** (awaiting reviewer) — not the form, not queries |
+
+Queries reappear (queries page) if the **reviewer** raises one post-assignment, each
+time with an **email + link**. The current bug — the Action Centre rendered *above*
+the still-visible Step-4 form — violates this rule and must be replaced by the state
+machine. **Emails** fire at: shortlist reveal (55 min), Check-2 queries-raised, and
+reviewer-query-raised. **Thank-you notices** punctuate every submit/all-answered point.
+
+---
+
 ## 1. The pipeline (target)
 
 ### CHECK 1 — at upload, per document (immediate, robust)
