@@ -374,7 +374,11 @@ class ResolutionItemListView(APIView):
         from .resolution import sync_resolution_items
         from .serializers import ResolutionItemSerializer
         app = _current_application(request.user_id)
-        if app is None:
+        # Check-2 gate: NO student queries until the /application is submitted
+        # (consent = profile_completed_at). Before that the student works through the
+        # Step-4 tabs normally. This also hides any tickets generated prematurely
+        # under the old behaviour. (Apply → Shortlist → Consent → Check 2 → Query.)
+        if app is None or app.profile_completed_at is None:
             return Response({'open': [], 'resolved': []})
         sync_resolution_items(app)
         items = list(app.resolution_items.all())  # ordered -created_at
