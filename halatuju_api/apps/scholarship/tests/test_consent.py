@@ -278,14 +278,31 @@ class TestConsentApi(TestCase):
         self.assertIn('ic_nric_mismatch', resp.json()['blockers'])
 
     def test_ic_name_mismatch_blocks_consent(self):
+        # A name mismatch blocks ONLY when the NRIC ALSO fails (a genuinely wrong
+        # IC). With a matching NRIC the name mismatch is treated as a soft OCR miss
+        # and does not block — see test_ic_name_mismatch_with_nric_match_allowed.
         self._make_ready(self.app_adult, self.adult)
         ic = self._ic_doc(self.app_adult)
-        ic.vision_name = 'Totally Different Person'   # disjoint tokens → mismatch
+        ic.vision_nric = '999999-99-9999'             # NRIC also wrong → genuine wrong IC
+        ic.vision_name = 'Totally Different Person'    # disjoint tokens → mismatch
         ic.save()
         self._auth(ADULT)
         resp = self.client.post('/api/v1/scholarship/consent/', {}, format='json')
         self.assertEqual(resp.status_code, 400)
         self.assertIn('ic_name_mismatch', resp.json()['blockers'])
+
+    def test_ic_name_mismatch_with_nric_match_allowed(self):
+        # The hard key is the NRIC. A flaky name OCR (e.g. a locality picked up as
+        # the name) must NOT block a student whose NRIC verified.
+        self._make_ready(self.app_adult, self.adult)
+        ic = self._ic_doc(self.app_adult)
+        ic.vision_name = 'TAMAN SRI LAYANG'            # name OCR miss; NRIC still matches
+        ic.save()
+        self._auth(ADULT)
+        resp = self.client.post('/api/v1/scholarship/consent/', {}, format='json')
+        # Not blocked by the name; consent goes through (or fails only on other gates).
+        if resp.status_code == 400:
+            self.assertNotIn('ic_name_mismatch', resp.json().get('blockers', []))
 
     def test_ic_partial_name_does_not_block(self):
         """A subset name (same person, shorter/longer form) passes — NRIC is the

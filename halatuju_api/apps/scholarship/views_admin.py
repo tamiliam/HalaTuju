@@ -255,18 +255,23 @@ class AdminRefereeDetailView(_AdminBase):
 class AdminRunVisionView(_AdminBase):
     """
     POST .../<pk>/documents/<doc_id>/re-run-vision/ — re-run Vision OCR on an
-    existing IC document. Soft signal only; the admin verify-&-accept stays
-    the real identity gate. Returns the updated document.
+    existing IC or parent/guardian IC document. Soft signal only; the admin
+    verify-&-accept stays the real identity gate. Returns the updated document.
     """
+    # Both are MyKad-structured and OCR'd on upload (S13 + S17); run_vision_for_document
+    # (extract_mykad) handles either. Previously this gate allowed only 'ic', so every
+    # parent-IC re-run 400'd ("Could not re-run Vision").
+    _OCR_DOC_TYPES = ('ic', 'parent_ic')
+
     def post(self, request, pk, doc_id):
         if not self.get_admin(request):
             return self._deny()
         doc = ApplicantDocument.objects.filter(pk=doc_id, application_id=pk).first()
         if doc is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        if doc.doc_type != 'ic':
+        if doc.doc_type not in self._OCR_DOC_TYPES:
             return Response(
-                {'error': 'Vision OCR only runs on IC documents.'},
+                {'error': 'Vision OCR only runs on IC / parent-IC documents.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         from .vision import run_vision_for_document
