@@ -239,9 +239,12 @@ def _verdict_income(application):
 # ── Pathway (offer letter) ───────────────────────────────────────────────────
 
 def _verdict_pathway(application):
-    """An offer letter whose candidate name matches → 'verified'. No offer is
-    fine (many apply pre-offer) — the pathway is then merely declared, so the
-    fact stays 'review'."""
+    """The offer letter settles the FINAL chosen pathway. Identity on the letter
+    (name + IC — the IC is the strong check) must be the applicant's; then the
+    student confirms the offer's programme IS their final pathway (an AI-raised
+    Action-Centre query, no human officer). Confirmed → 'verified'. No offer is
+    fine (many apply pre-offer) — the pathway is then merely declared → 'review'."""
+    from .pathway_engine import student_offer_check
     evidence, unresolved = [], []
     offer = _latest_doc(application, 'offer_letter')
     chosen = (application.chosen_pathway or application.intended_pathway or '').strip()
@@ -252,20 +255,24 @@ def _verdict_pathway(application):
                          [_item('pathway_declared', pathway=chosen)], unresolved)
         return _fact('pathway', 'review', evidence, [_item('pathway_undeclared')])
 
-    dv = _doc_assist_verdict(offer)
-    if dv == 'name_mismatch':
+    chk = student_offer_check(offer)
+    # Identity guard: a wrong name OR IC means a wrong-person letter.
+    if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
         return _fact('pathway', 'review', evidence, [_item('offer_name_mismatch')])
-    if dv in ('wrong_doc', 'unreadable'):
+    # Couldn't read the identity off the letter at all.
+    if chk['name'] in ('unreadable', 'pending') and chk['ic'] in ('unreadable', 'pending'):
         return _fact('pathway', 'review', evidence, [_item('offer_unreadable')])
 
-    fields = _doc_assist_fields(offer)
-    inst = (fields.get('institution') or '').strip()
-    prog = (fields.get('programme') or '').strip()
-    if inst or prog:
+    prog, inst = chk['programme'], chk['institution']
+    # Confirmed as final → verified, showing the settled pathway.
+    if application.pathway_confirmed_at is not None:
+        evidence.append(_item('pathway_confirmed', programme=prog, institution=inst))
+        return _fact('pathway', 'verified', evidence, unresolved)
+    # Valid offer, identity OK, not yet confirmed → ask the student to confirm it.
+    if prog or inst:
         evidence.append(_item('offer_programme', institution=inst, programme=prog))
-    else:
-        evidence.append(_item('offer_name_ok'))
-    return _fact('pathway', 'verified', evidence, unresolved)
+    unresolved.append(_item('pathway_confirm', programme=prog, institution=inst))
+    return _fact('pathway', 'review', evidence, unresolved)
 
 
 # ── Aggregator ───────────────────────────────────────────────────────────────

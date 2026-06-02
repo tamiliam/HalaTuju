@@ -232,19 +232,63 @@ class TestIncome(_Base):
 # ── Pathway ──────────────────────────────────────────────────────────────────
 
 class TestPathway(_Base):
-    def test_offer_with_programme_is_verified(self):
-        _add_doc(self.app, 'offer_letter', student_verdict='ok',
-                 fields={'institution': 'KOLEJ MATRIKULASI MELAKA',
-                         'programme': 'PROGRAM MATRIKULASI'})
+    # An offer whose Name + IC match the applicant's profile.
+    _OWN_OFFER = {'candidate_name': 'THERESA ARUL MARY A/P A.PHILIPS',
+                  'candidate_nric': '080115-05-0132',
+                  'institution': 'KOLEJ MATRIKULASI MELAKA',
+                  'programme': 'PROGRAM MATRIKULASI'}
+
+    def test_valid_offer_unconfirmed_asks_to_confirm(self):
+        # New flow: a valid offer is NOT auto-verified — the student must confirm it
+        # is their FINAL pathway (an AI-raised query), so the fact stays 'review'.
+        _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._OWN_OFFER)
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'verified')
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('pathway_confirm', _codes(f['unresolved']))
         self.assertIn('offer_programme', _codes(f['evidence']))
 
+    def test_confirmed_offer_is_verified(self):
+        _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._OWN_OFFER)
+        self.app.pathway_confirmed_at = timezone.now()
+        self.app.save()
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'verified')
+        self.assertIn('pathway_confirmed', _codes(f['evidence']))
+        self.assertEqual(f['unresolved'], [])
+
     def test_offer_name_mismatch_is_review(self):
-        _add_doc(self.app, 'offer_letter', student_verdict='name_mismatch')
+        _add_doc(self.app, 'offer_letter', student_verdict='name_mismatch',
+                 fields={'candidate_name': 'SOMEONE ELSE', 'candidate_nric': '080115-05-0132'})
         f = _facts(self.app)['pathway']
         self.assertEqual(f['status'], 'review')
         self.assertIn('offer_name_mismatch', _codes(f['unresolved']))
+
+    def test_offer_ic_mismatch_is_review(self):
+        # IC is the strong identity check — a wrong NRIC flags even if the name is close.
+        _add_doc(self.app, 'offer_letter', student_verdict='ok',
+                 fields={'candidate_name': 'THERESA ARUL MARY A/P A.PHILIPS',
+                         'candidate_nric': '999999-99-9999'})
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('offer_name_mismatch', _codes(f['unresolved']))
+
+    def test_confirm_pathway_writes_chosen_programme_then_verified(self):
+        from apps.scholarship import services
+        _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._OWN_OFFER)
+        self.assertTrue(services.confirm_pathway(self.app))
+        self.app.refresh_from_db()
+        self.assertIsNotNone(self.app.pathway_confirmed_at)
+        self.assertEqual(self.app.chosen_programme.get('course_name'), 'PROGRAM MATRIKULASI')
+        self.assertEqual(self.app.chosen_programme.get('institution'), 'KOLEJ MATRIKULASI MELAKA')
+        self.assertEqual(self.app.chosen_programme.get('source'), 'offer_letter_confirmed')
+        # The verdict now reads verified.
+        self.assertEqual(_facts(self.app)['pathway']['status'], 'verified')
+
+    def test_confirm_pathway_no_offer_is_noop(self):
+        from apps.scholarship import services
+        self.assertFalse(services.confirm_pathway(self.app))
+        self.app.refresh_from_db()
+        self.assertIsNone(self.app.pathway_confirmed_at)
 
     def test_no_offer_but_declared_is_review(self):
         f = _facts(self.app)['pathway']
@@ -268,7 +312,9 @@ class TestTheresaIntegration(_Base):
                 address='TB 456 JALAN KEJORA 4, 76460 ALOR GAJAH, MELAKA')
         _add_doc(self.app, 'results_slip', student_verdict='ok', name_match='found')
         _add_doc(self.app, 'offer_letter', student_verdict='ok',
-                 fields={'institution': 'KOLEJ MATRIKULASI MELAKA',
+                 fields={'candidate_name': 'THERESA ARUL MARY A/P A.PHILIPS',
+                         'candidate_nric': '080115-05-0132',
+                         'institution': 'KOLEJ MATRIKULASI MELAKA',
                          'programme': 'PROGRAM MATRIKULASI'})
         _add_doc(self.app, 'epf', student_verdict='ok')
         _add_doc(self.app, 'water_bill', student_verdict='name_mismatch')
@@ -287,8 +333,10 @@ class TestTheresaIntegration(_Base):
         # Income: recommend (no verified STR), STR-claim flagged.
         self.assertEqual(facts['income']['status'], 'recommend')
         self.assertIn('str_claimed_no_doc', _codes(facts['income']['unresolved']))
-        # Pathway: verified (matriculation offer matches).
-        self.assertEqual(facts['pathway']['status'], 'verified')
+        # Pathway: review — the offer's identity matches, now awaiting the student's
+        # final-pathway confirmation (the AI-raised query).
+        self.assertEqual(facts['pathway']['status'], 'review')
+        self.assertIn('pathway_confirm', _codes(facts['pathway']['unresolved']))
 
     def test_order_is_fixed(self):
         self.assertEqual([f['fact'] for f in build_verdict(self.app)],
