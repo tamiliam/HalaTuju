@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Check 1 — Academic (results slip) hardening (one batch; branch `check1/academic`).** The second of the four facts
+  gets clinical upload feedback. **(1) BUG FIX — "Entered 0 of 9 subjects."** Gemini glued the SPM grade-**band** words
+  onto each subject (an SPM row prints the grade twice: `MATEMATIK … CEMERLANG TINGGI … A`), so `"MATEMATIK CEMERLANG
+  TINGGI"` never matched `"Matematik"` and every subject read as *missing*. `academic_engine._split_band` now strips a
+  trailing band phrase (`cemerlang|kepujian|lulus|gagal` + optional `tinggi|tertinggi|atas`) before matching and keeps a
+  band→letter map as a fallback for an unread grade; the Gemini `results_slip` prompt also nudges subject-name-only. It's
+  a **read-time** fix, so existing prod slips correct themselves with no re-OCR — and the officer verdict
+  (`_verdict_academic`) is fixed for free. **(2) Clinical 3-check** — new `student_slip_check` is the single source for
+  **Name · Subjects · Results** (+ the **exam year** as a soft data point) consumed by both a new `ResultsSlipChecklist`
+  (mirrors the IC `ICChecklist`) and Cikgu Gopal, so they can't disagree. **(3) Specific Gopal advice** — three new
+  verdict codes (`slip_name_mismatch` = "this may be someone else's slip, upload your own"; `slip_subjects_missing` =
+  "add the subject on your Profile"; `slip_grade_mismatch` = "the slip is the official record — update your Profile to
+  match it") with a `/profile` link for the subjects/grade fixes (none for the wrong-file name mismatch). No migration.
+  +27 backend tests; i18n parity 1811 (en/ms/ta).
 - **Check 1 — Identity/IC OCR hardening (one batch; branch `check1/identity`).** The Identity fact's
   upload-time read now gives every student good feedback. **(1) Name truncation** — a parentage marker
   (A/L · A/P · BIN · BINTI · S/O · D/O) at the END of the MyKad name line means the surname was line-broken;

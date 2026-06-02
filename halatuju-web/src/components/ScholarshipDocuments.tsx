@@ -165,6 +165,91 @@ function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => s
   )
 }
 
+// ── Results-slip clinical 3-check (Check-1 Academic) ─────────────────────
+// Mirrors the IC checklist: three rows the student can read at a glance —
+// Name · Subjects · Results — each with what we read + a pass/fail badge, plus
+// the exam (year) as a soft data point. Cikgu Gopal (below) gives the specific
+// "what to do" only when there's a real problem.
+
+type SlipStatus = 'match' | 'mismatch' | 'unreadable' | 'pending'
+
+function slipBadgeKind(s: SlipStatus): ICCheckKind {
+  if (s === 'match') return 'match'
+  if (s === 'mismatch') return 'mismatch'
+  if (s === 'unreadable') return 'unreadable'
+  return 'none' // pending
+}
+
+function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
+  const chk = doc.academic_check
+  if (!chk) return null
+
+  const badge = (s: SlipStatus) => {
+    const kind = slipBadgeKind(s)
+    const cls: Record<ICCheckKind, string> = {
+      match: 'bg-green-50 text-green-700 ring-green-200',
+      partial: 'bg-amber-50 text-amber-700 ring-amber-200',
+      mismatch: 'bg-red-50 text-red-700 ring-red-200',
+      unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
+      none: 'bg-gray-50 text-gray-500 ring-gray-200',
+    }
+    return (
+      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>
+        {t(`scholarship.docs.slipCheck.status.${s}`)}
+      </span>
+    )
+  }
+
+  const row = (label: string, value: string, right: ReactNode) => (
+    <div className="flex items-start justify-between gap-2 py-1.5">
+      <p className="min-w-0 text-xs text-gray-700">
+        <span className="font-medium text-gray-600">{label}: </span>
+        <span className="break-words">{value || '—'}</span>
+      </p>
+      {right}
+    </div>
+  )
+
+  const entered = chk.slip_count - chk.missing.length
+  const subjectsValue =
+    chk.subjects === 'match'
+      ? t('scholarship.docs.slipCheck.allEntered')
+      : chk.subjects === 'mismatch'
+        ? `${t('scholarship.docs.slipCheck.missing')}: ${chk.missing.join(', ')}`
+        : '—'
+  const resultsValue =
+    chk.results === 'match'
+      ? t('scholarship.docs.slipCheck.allMatch')
+      : chk.results === 'mismatch'
+        ? chk.mismatched
+            .map((m) => `${m.subject} (${t('scholarship.docs.slipCheck.youTyped')} ${m.typed}, ${t('scholarship.docs.slipCheck.slipSays')} ${m.slip})`)
+            .join('; ')
+        : '—'
+
+  return (
+    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+      {row(t('scholarship.docs.slipCheck.name'), chk.candidate_name, badge(chk.name))}
+      {row(
+        chk.subjects === 'match'
+          ? t('scholarship.docs.slipCheck.subjects')
+          : `${t('scholarship.docs.slipCheck.subjects')} (${entered}/${chk.slip_count})`,
+        subjectsValue,
+        badge(chk.subjects),
+      )}
+      {row(t('scholarship.docs.slipCheck.results'), resultsValue, badge(chk.results))}
+      {chk.exam_year || chk.exam
+        ? row(
+            t('scholarship.docs.slipCheck.exam'),
+            chk.exam || chk.exam_year,
+            <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
+              {t('scholarship.docs.slipCheck.fromSlip')}
+            </span>,
+          )
+        : null}
+    </div>
+  )
+}
+
 // ── Supporting-doc soft chip (name/address presence, S) ──────────────────
 
 function supportingChipVariant(doc: ApplicantDocument): 'good' | 'name-missing' | 'address-missing' | 'unreadable' | null {
@@ -284,7 +369,13 @@ function SingleDocCard({
       )}
       {existing.filter((d) => d !== visionDoc).map((d) => (
         <div key={`m${d.id}`}>
-          <SupportingDocChip doc={d} t={t} />
+          {/* The results slip gets the clinical 3-check (Name/Subjects/Results);
+              every other supporting doc keeps the single soft chip. */}
+          {d.doc_type === 'results_slip' && d.academic_check ? (
+            <ResultsSlipChecklist doc={d} t={t} />
+          ) : (
+            <SupportingDocChip doc={d} t={t} />
+          )}
           <DocumentHelpCoach doc={d} token={token} t={t} lang={lang} />
         </div>
       ))}
