@@ -115,11 +115,20 @@ class TestStudentSlipCheck(SimpleTestCase):
         m = next(x for x in chk['mismatched'] if 'MATEMATIK' in x['subject'].upper())
         self.assertEqual((m['typed'], m['slip']), ('B+', 'A'))
 
-    def test_pending_when_not_extracted(self):
+    def test_pending_when_not_extracted_or_skipped(self):
+        # review_manually = Gemini skipped (rate-limited) → genuinely pending.
         doc = _slip_doc([], ELANJELIAN_GRADES, student_verdict='review_manually')
         chk = student_slip_check(doc)
-        self.assertEqual(chk['subjects'], 'pending')
-        self.assertEqual(chk['results'], 'pending')
+        self.assertEqual((chk['subjects'], chk['results']), ('pending', 'pending'))
+
+    def test_extracted_but_empty_table_is_unreadable(self):
+        # The doc 191 case: Gemini ran (name read, name_mismatch) but the subject table
+        # came back EMPTY → "couldn't read", not "pending" (so the UI nudges a re-upload).
+        doc = _slip_doc([], ELANJELIAN_GRADES, student_verdict='name_mismatch',
+                        name_match='not_found')
+        chk = student_slip_check(doc)
+        self.assertEqual(chk['name'], 'mismatch')
+        self.assertEqual((chk['subjects'], chk['results']), ('unreadable', 'unreadable'))
 
     def test_exam_year_surfaced(self):
         chk = student_slip_check(_slip_doc(YESWINDRAN_BAND_RESULTS, ELANJELIAN_GRADES))

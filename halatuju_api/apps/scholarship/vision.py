@@ -644,14 +644,14 @@ _NAME_FIELD = {
 
 # Optional per-doc-type instruction appended to the extraction prompt.
 _DOC_HINTS = {
+    # Keep this hint minimal. We deliberately do NOT tell Gemini to drop the Malay
+    # achievement-band words (Cemerlang/Kepujian/…) from the subject — an earlier,
+    # stricter instruction coincided with a slip extracting an EMPTY results table,
+    # and the deterministic `academic_engine._split_band` already strips those bands
+    # at read time regardless of what Gemini returns. So: ask only for every row.
     'results_slip': (' For "results", list EVERY subject row with its exact grade '
                      'as printed (e.g. A+, A, A-, B+, B, C+, C, D, E, G) — one entry '
-                     'per subject. IMPORTANT: "subject" is the SUBJECT NAME ONLY '
-                     '(e.g. "Matematik", "Bahasa Melayu", "Sejarah"). Do NOT include '
-                     'the Malay achievement-band words printed next to it '
-                     '(Cemerlang, Kepujian, Lulus, Gagal, or the modifiers Tinggi, '
-                     'Tertinggi, Atas) — those describe the grade and belong in '
-                     '"grade", not in the subject name.'),
+                     'per subject.'),
 }
 
 

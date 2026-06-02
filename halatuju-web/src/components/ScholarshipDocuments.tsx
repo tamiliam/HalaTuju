@@ -230,9 +230,11 @@ function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
     <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
       {row(t('scholarship.docs.slipCheck.name'), chk.candidate_name, badge(chk.name))}
       {row(
-        chk.subjects === 'match'
-          ? t('scholarship.docs.slipCheck.subjects')
-          : `${t('scholarship.docs.slipCheck.subjects')} (${entered}/${chk.slip_count})`,
+        // Only show the "(entered/total)" count when there's a real subjects mismatch;
+        // for match / couldn't-read / pending it's noise (and "(0/0)" looks broken).
+        chk.subjects === 'mismatch'
+          ? `${t('scholarship.docs.slipCheck.subjects')} (${entered}/${chk.slip_count})`
+          : t('scholarship.docs.slipCheck.subjects'),
         subjectsValue,
         badge(chk.subjects),
       )}

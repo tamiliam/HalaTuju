@@ -40,7 +40,9 @@ export function shouldShowCoach(doc: ApplicantDocument): boolean {
       ac.name === 'mismatch' ||
       ac.name === 'unreadable' ||
       ac.subjects === 'mismatch' ||
-      ac.results === 'mismatch'
+      ac.results === 'mismatch' ||
+      ac.subjects === 'unreadable' ||
+      ac.results === 'unreadable'
     )
   }
   // Supporting docs — the Gemini doc-assist verdict takes precedence (matches the chip).
