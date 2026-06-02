@@ -171,10 +171,11 @@ function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => s
 // the exam (year) as a soft data point. Cikgu Gopal (below) gives the specific
 // "what to do" only when there's a real problem.
 
-type SlipStatus = 'match' | 'mismatch' | 'unreadable' | 'pending'
+type SlipStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'pending'
 
 function slipBadgeKind(s: SlipStatus): ICCheckKind {
   if (s === 'match') return 'match'
+  if (s === 'partial') return 'partial'
   if (s === 'mismatch') return 'mismatch'
   if (s === 'unreadable') return 'unreadable'
   return 'none' // pending
@@ -248,6 +249,71 @@ function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
             </span>,
           )
         : null}
+    </div>
+  )
+}
+
+// ── Offer-letter clinical facts (Check-1 Pathway) ────────────────────────
+// Mirrors the IC / slip checklists. Two real identity checks — Name and IC (the
+// IC is the strong one) — then the offer's facts as soft data points: programme,
+// institution, who issued it (tells the pathway type), the date, and address.
+
+type PathStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'pending'
+
+function pathBadgeKind(s: PathStatus): ICCheckKind {
+  if (s === 'match') return 'match'
+  if (s === 'partial') return 'partial'
+  if (s === 'mismatch') return 'mismatch'
+  if (s === 'unreadable') return 'unreadable'
+  return 'none' // pending
+}
+
+function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
+  const chk = doc.pathway_check
+  if (!chk) return null
+
+  const badge = (s: PathStatus) => {
+    const kind = pathBadgeKind(s)
+    const cls: Record<ICCheckKind, string> = {
+      match: 'bg-green-50 text-green-700 ring-green-200',
+      partial: 'bg-amber-50 text-amber-700 ring-amber-200',
+      mismatch: 'bg-red-50 text-red-700 ring-red-200',
+      unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
+      none: 'bg-gray-50 text-gray-500 ring-gray-200',
+    }
+    return (
+      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>
+        {t(`scholarship.docs.pathwayCheck.status.${s}`)}
+      </span>
+    )
+  }
+  const fromLetter = (
+    <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
+      {t('scholarship.docs.pathwayCheck.fromLetter')}
+    </span>
+  )
+  const row = (label: string, value: string, right: ReactNode) => (
+    <div className="flex items-start justify-between gap-2 py-1.5">
+      <p className="min-w-0 text-xs text-gray-700">
+        <span className="font-medium text-gray-600">{label}: </span>
+        <span className="break-words">{value || '—'}</span>
+      </p>
+      {right}
+    </div>
+  )
+  // Soft data point — only shown when the field was actually read.
+  const dataRow = (labelKey: string, value: string) =>
+    value ? row(t(`scholarship.docs.pathwayCheck.${labelKey}`), value, fromLetter) : null
+
+  return (
+    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+      {row(t('scholarship.docs.pathwayCheck.name'), chk.candidate_name, badge(chk.name))}
+      {row(t('scholarship.docs.pathwayCheck.ic'), chk.candidate_nric, badge(chk.ic))}
+      {dataRow('programme', chk.programme)}
+      {dataRow('institution', chk.institution)}
+      {dataRow('issuer', chk.issuer)}
+      {dataRow('date', chk.offer_date || chk.intake)}
+      {dataRow('address', chk.address)}
     </div>
   )
 }
@@ -371,10 +437,12 @@ function SingleDocCard({
       )}
       {existing.filter((d) => d !== visionDoc).map((d) => (
         <div key={`m${d.id}`}>
-          {/* The results slip gets the clinical 3-check (Name/Subjects/Results);
-              every other supporting doc keeps the single soft chip. */}
+          {/* The results slip + offer letter get clinical fact-checklists; every
+              other supporting doc keeps the single soft chip. */}
           {d.doc_type === 'results_slip' && d.academic_check ? (
             <ResultsSlipChecklist doc={d} t={t} />
+          ) : d.doc_type === 'offer_letter' && d.pathway_check ? (
+            <OfferLetterChecklist doc={d} t={t} />
           ) : (
             <SupportingDocChip doc={d} t={t} />
           )}

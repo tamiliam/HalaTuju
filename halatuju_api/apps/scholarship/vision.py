@@ -632,8 +632,12 @@ _FIELD_SCHEMAS = {
     'results_slip': _doc_schema({'candidate_name': _STR, 'exam': _STR,
                                  'results': {'type': 'array', 'items': {'type': 'object',
                                              'properties': {'subject': _STR, 'grade': _STR}}}}),
-    'offer_letter': _doc_schema({'candidate_name': _STR, 'institution': _STR,
-                                 'programme': _STR, 'intake': _STR}),
+    # Pathway Check-1: the offer letter's facts, differentiated. candidate_nric is the
+    # strong identity check (matched against the profile NRIC); issuer tells the pathway
+    # type (university / matriculation / polytechnic / Form Six); offer_date is for currency.
+    'offer_letter': _doc_schema({'candidate_name': _STR, 'candidate_nric': _STR,
+                                 'programme': _STR, 'institution': _STR, 'issuer': _STR,
+                                 'offer_date': _STR, 'intake': _STR, 'candidate_address': _STR}),
 }
 
 # Which extracted field holds the person's name (for the deterministic verdict).
@@ -652,6 +656,20 @@ _DOC_HINTS = {
     'results_slip': (' For "results", list EVERY subject row with its exact grade '
                      'as printed (e.g. A+, A, A-, B+, B, C+, C, D, E, G) — one entry '
                      'per subject.'),
+    'offer_letter': (' This is a Malaysian post-SPM offer letter — it may be a university '
+                     'degree/diploma, a polytechnic ("Politeknik"), a matriculation '
+                     '("Program Matrikulasi") or a Form Six ("Tingkatan Enam") offer. '
+                     '"candidate_name" = the offered student\'s full name; "candidate_nric" '
+                     '= their IC number, printed as "No. Kad Pengenalan" / "No. Pengenalan '
+                     'Diri" / "K/P" (keep the 12 digits); "programme" = the course or '
+                     'programme offered (a diploma/degree name, or "Program Matrikulasi", '
+                     'or "Tingkatan Enam Semester 1"); "institution" = the college / campus '
+                     '/ school the student must report to; "issuer" = the body that ISSUED '
+                     'the letter (the university, or "Bahagian Matrikulasi", or "Jabatan '
+                     'Pendidikan Politeknik dan Kolej Komuniti", or "Sektor Operasi '
+                     'Sekolah"); "offer_date" = the letter\'s print/issue date; "intake" = '
+                     'the session/intake (e.g. "Sesi 2026/2027"); "candidate_address" = the '
+                     'student\'s mailing address if shown. Leave a field empty if absent.'),
 }
 
 

@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Check 1 — Pathway (offer letter) facts, differentiated.** The offer letter now gets the same clinical fact-checklist
+  the IC and slip have, surfacing the facts the coordinator cares about. Two real identity checks — **Name** and **IC**
+  (`candidate_nric` matched against the profile NRIC; the IC is the strong one, since names can coincide but the NRIC
+  can't) — plus soft **data points**: **Programme · Institution · Issued-by · Date · Address**. The Gemini `offer_letter`
+  extraction was expanded (`+candidate_nric, issuer, offer_date, candidate_address`) with a prompt that understands all
+  Malaysian post-SPM offer types (university degree/diploma, polytechnic, matriculation, Form Six) — "issued-by" tells the
+  pathway type. New pure `pathway_engine.student_offer_check` is the single source for the FE `OfferLetterChecklist` and
+  Cikgu Gopal, so they can't disagree. Programme/institution are surfaced (not hard-checked) — a student may legitimately
+  change plans between applying and getting an offer. A minimal safe Gopal verdict (`offer_name_mismatch` = "this may be
+  someone else's offer letter, upload your own") replaces the previously-misleading IC-style "edit your profile name"
+  advice on a wrong-person letter; richer pathway-aware coaching is a later pass. No migration. +10 backend tests; i18n
+  parity 1825 (en/ms/ta).
+- **Check 1 — Academic (results slip) follow-up.** Reverted the band-word prompt instruction (one slip extracted an empty
+  table under it; the deterministic strip makes it redundant) and split "couldn't read" from "not checked yet" so a slip
+  that extracts no subject rows nudges a clearer re-upload. (Folded into the Academic entry below conceptually.)
 - **Check 1 — Academic (results slip) hardening (one batch; branch `check1/academic`).** The second of the four facts
   gets clinical upload feedback. **(1) BUG FIX — "Entered 0 of 9 subjects."** Gemini glued the SPM grade-**band** words
   onto each subject (an SPM row prints the grade twice: `MATEMATIK … CEMERLANG TINGGI … A`), so `"MATEMATIK CEMERLANG

@@ -895,6 +895,7 @@
           "slip_name_mismatch": "The name on this results slip isn't yours — it looks like it might be someone else's slip. Please make sure you upload your own results slip; the name on it must match your name. You've got this!",
           "slip_subjects_missing": "Almost there! Your results slip lists a subject you haven't added to your profile yet. Please add the missing subject(s) on your profile so they match your slip — or, if you uploaded the wrong file, just upload the right one.",
           "slip_grade_mismatch": "Quick check! A grade on your slip is different from what you entered. Your slip is the official record, so please update the grade on your profile to match it. If the photo is blurry, you can upload a clearer one instead. Well done so far!",
+          "offer_name_mismatch": "The name or IC number on this offer letter isn't yours — it looks like it might be someone else's letter. Please make sure you upload your own offer letter; the name and IC on it must match yours. You've got this!",
           "generic": "Something didn't look quite right with this upload — but it's nothing to worry about and easily fixed. Have another look and try uploading again. You're doing great!"
         }
       },
@@ -959,6 +960,23 @@
         "slipSays": "slip says",
         "status": {
           "match": "Match",
+          "mismatch": "Doesn't match",
+          "unreadable": "Couldn't read",
+          "pending": "Not checked yet"
+        }
+      },
+      "pathwayCheck": {
+        "name": "Name",
+        "ic": "IC number",
+        "programme": "Programme",
+        "institution": "Institution",
+        "issuer": "Issued by",
+        "date": "Date",
+        "address": "Address",
+        "fromLetter": "from your letter",
+        "status": {
+          "match": "Match",
+          "partial": "Partial match",
           "mismatch": "Doesn't match",
           "unreadable": "Couldn't read",
           "pending": "Not checked yet"

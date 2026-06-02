@@ -15,6 +15,8 @@ export const HELP_VERDICTS = [
   'slip_name_mismatch',
   'slip_subjects_missing',
   'slip_grade_mismatch',
+  // Offer-letter (pathway).
+  'offer_name_mismatch',
 ] as const
 
 /**
@@ -44,6 +46,11 @@ export function shouldShowCoach(doc: ApplicantDocument): boolean {
       ac.subjects === 'unreadable' ||
       ac.results === 'unreadable'
     )
+  }
+  // Offer letter — the Name/IC identity checks (set only for offer_letter).
+  if (doc.pathway_check) {
+    const pc = doc.pathway_check
+    return pc.name === 'mismatch' || pc.ic === 'mismatch'
   }
   // Supporting docs — the Gemini doc-assist verdict takes precedence (matches the chip).
   const av = doc.vision_fields?.student_verdict
@@ -86,14 +93,16 @@ function safeLocal(): StorageLike | null {
  *  re-run). Compose with the language at the call site for a per-language key. */
 export function helpSignal(doc: ApplicantDocument): string {
   const ac = doc.academic_check
+  const pc = doc.pathway_check
   return [
     doc.vision_run_at || '',
     doc.vision_fields?.student_verdict || '',
     doc.vision_name_match || '',
     doc.vision_address_match || '',
-    // Results slip: the 3-check can change when the student edits their PROFILE
-    // (grades) without re-uploading, so fold it in to re-fire Gopal then too.
+    // Results slip / offer letter: the check can change when the student edits their
+    // PROFILE (grades / name / NRIC) without re-uploading — fold it in to re-fire then.
     ac ? `${ac.name},${ac.subjects},${ac.results}` : '',
+    pc ? `${pc.name},${pc.ic}` : '',
   ].join('|')
 }
 

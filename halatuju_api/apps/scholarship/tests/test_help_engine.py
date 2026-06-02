@@ -139,6 +139,35 @@ class TestSlipVerdictRouting(TestCase):
         self.assertEqual(help_engine.verdict_for_document(doc), 'unreadable')
 
 
+class TestOfferVerdictRouting(TestCase):
+    """verdict_for_document on an offer letter: a wrong name OR IC → wrong-file coach."""
+
+    @staticmethod
+    def _offer_doc(student_verdict, fields, pname='Elan', pnric='710829-02-5709'):
+        return SimpleNamespace(
+            doc_type='offer_letter', vision_name_match='not_found',
+            vision_fields={'fields': fields, 'student_verdict': student_verdict},
+            application=SimpleNamespace(profile=SimpleNamespace(name=pname, nric=pnric)),
+        )
+
+    def test_ic_mismatch_flags_wrong_file(self):
+        doc = self._offer_doc('ok', {'candidate_name': 'Elan', 'candidate_nric': '999999-99-9999'})
+        self.assertEqual(help_engine.verdict_for_document(doc), 'offer_name_mismatch')
+
+    def test_name_mismatch_flags_wrong_file(self):
+        doc = self._offer_doc('name_mismatch',
+                              {'candidate_name': 'Someone Else', 'candidate_nric': '710829-02-5709'})
+        self.assertEqual(help_engine.verdict_for_document(doc), 'offer_name_mismatch')
+
+    def test_own_letter_no_coach(self):
+        doc = self._offer_doc('ok', {'candidate_name': 'Elan', 'candidate_nric': '710829-02-5709'})
+        self.assertEqual(help_engine.verdict_for_document(doc), '')
+
+    def test_not_extracted_no_coach(self):
+        doc = self._offer_doc(None, {})
+        self.assertEqual(help_engine.verdict_for_document(doc), '')
+
+
 class TestGuardrails(TestCase):
     """Task 4 — the hard rule: coach, never ghostwriter; never leak a score; firewalled."""
 
