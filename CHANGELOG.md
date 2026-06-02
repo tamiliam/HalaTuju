@@ -59,6 +59,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   9 new tests; full scholarship suite **454** green. **Backend only** — the student Action Centre UI is S4. Migration
   is created on the branch (test DB applies it); **prod migrate-first happens only at deploy** (new-model →
   contenttypes workaround + RLS per TD-058).
+- **Student Action Centre — the IBKR queue UI (Sprint 4, frontend).** A warm, self-service "things to finish"
+  surface at the **top of `/application`** (above the 5-step tabs) that consumes the S3 resolution endpoints and lets
+  a shortlisted student clear each gap **in place**: `doc` → inline upload (reuses the signed-URL upload flow),
+  `explanation` → a short typed reply (`POST …/resolve/`), `confirm` → a "Review" button that jumps to the relevant
+  tab (the ticket auto-clears server-side once the gap closes). Header "Almost there, {name}" + a progress bar, an
+  amber **"To do"** pill per card, a **Cikgu Gopal** coach bubble (graduation-cap mascot), and a green **"All done —
+  your application is complete!"** state when the queue empties. Additive + non-blocking. New
+  `components/ActionCentre.tsx` + pure `lib/actionCentre.ts` (**16 node-env jest tests**);
+  `getResolutionItems`/`resolveResolutionItem` + `ResolutionItem` type in `lib/api.ts`; wired via
+  `ScholarshipNextSteps`. Student i18n `scholarship.actionCentre.*` (per-code `item.<code>.{title,desc}` for all 15
+  system codes) × en/ms/ta (**parity 1750**, Tamil first-draft). Stitch design approved (spacious V1 cards +
+  graduation-cap mascot). `next build` clean; full jest suite 199 green. **No migration, no backend change.**
 
 ### Fixed
 - **Document intake now accepts PDF (not just images) and rejects video/junk — fixes the live TD-080 dead-end.**

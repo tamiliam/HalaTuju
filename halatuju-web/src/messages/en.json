@@ -1127,6 +1127,85 @@
       "shortlistedBody": "Complete your application — tap to continue.",
       "acceptedTitle": "Your application is confirmed",
       "acceptedBody": "You've been accepted. Tap to view the details."
+    },
+    "actionCentre": {
+      "title": "Almost there, {name}",
+      "intro": "A few quick things and your application is complete.",
+      "progressDone": "{done} of {total} done",
+      "percentComplete": "{pct}% Complete",
+      "toDo": "To do",
+      "upload": "Upload",
+      "uploading": "Uploading…",
+      "uploadError": "Sorry, that upload didn't work. Please try again.",
+      "review": "Review",
+      "send": "Send",
+      "sending": "Sending…",
+      "sendError": "Sorry, we couldn't send that. Please try again.",
+      "explanationPlaceholder": "Type your answer here…",
+      "allDone": "All done — your application is complete!",
+      "coach": "Hi, I'm Cikgu Gopal. Finish the items above one by one — there's no rush, and every step brings you closer. If anything is unclear, just do your best; we're here to help.",
+      "item": {
+        "ic_missing": {
+          "title": "Upload your IC",
+          "desc": "We still need a clear photo or scan of your MyKad (front)."
+        },
+        "ic_unreadable": {
+          "title": "Your IC was hard to read",
+          "desc": "The photo was blurry or cut off. Please upload a clearer one."
+        },
+        "nric_mismatch": {
+          "title": "Check your IC number",
+          "desc": "The number on your IC doesn't match what's on your profile. Please re-check."
+        },
+        "name_mismatch": {
+          "title": "Check your name",
+          "desc": "The name on your IC doesn't quite match your profile. Please re-check."
+        },
+        "address_state_mismatch": {
+          "title": "Check your home state",
+          "desc": "Your address state doesn't match what you chose. Please re-check."
+        },
+        "results_slip_missing": {
+          "title": "Upload your results slip",
+          "desc": "We need your SPM (or STPM) results slip to confirm your grades."
+        },
+        "results_slip_unreadable": {
+          "title": "Your results slip was hard to read",
+          "desc": "The scan was unclear. Please upload a clearer copy."
+        },
+        "results_slip_name_mismatch": {
+          "title": "Check the name on your results slip",
+          "desc": "The name on your results slip doesn't match your profile. Please re-check."
+        },
+        "academic_missing_subjects": {
+          "title": "Some subjects are missing",
+          "desc": "Your results slip is missing some subjects you listed. Please re-check your grades."
+        },
+        "academic_grade_mismatch": {
+          "title": "Check your grades",
+          "desc": "Some grades don't match your results slip. Please re-check what you entered."
+        },
+        "str_claimed_no_doc": {
+          "title": "Upload your STR proof",
+          "desc": "You told us your family receives STR — please upload the document to confirm."
+        },
+        "income_proof_missing": {
+          "title": "Upload proof of income",
+          "desc": "We need one income document (salary slip, EPF, or STR) for your household."
+        },
+        "offer_unreadable": {
+          "title": "Your offer letter was hard to read",
+          "desc": "The scan was unclear. Please upload a clearer copy."
+        },
+        "offer_name_mismatch": {
+          "title": "Check the name on your offer letter",
+          "desc": "The name on your offer letter doesn't match your profile. Please re-check."
+        },
+        "pathway_undeclared": {
+          "title": "Tell us your study plan",
+          "desc": "You haven't chosen what you plan to study yet. Please add it in Your story."
+        }
+      }
     }
   },
   "authGate": {
