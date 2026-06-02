@@ -1,0 +1,136 @@
+# Application Processing Pipeline — the 3 Checks (master plan)
+
+**Status:** PLANNED — **not started** (except the quick wins, which ride the pending
+cockpit-polish deploy). Written 2026-06-02 from a mapping workflow
+(`map-application-check-pipeline`) + the owner's decisions. This is the **authoritative
+pipeline** the other scholarship plans hang off.
+
+> The hard machinery for all three checks already exists. What's missing is the
+> **wiring and the gates** that make them a pipeline. We **extend** three systems we
+> already built (Vision/Gemini OCR at upload · ResolutionItem tickets + Action Centre ·
+> the S5 record-verdict AI-audit) — we do **not** rebuild.
+
+---
+
+## 0. The two submissions (settled — they do NOT collide)
+
+| Submission | Stage | Timing |
+|---|---|---|
+| **`/apply`** (pre-shortlist intake) | shortlist decision | ~55 min reveal (shortlist) / +48h (decline) — **unchanged** |
+| **`/application`** (post-shortlist Step-4: Story/Funding/Documents/Consent) | **Check 2** of this pipeline | **5-day** query window |
+
+The 5-day window applies **after `/application` submit**, which only **shortlisted**
+students reach — so queries are immediately actionable (no pre-shortlist visibility
+problem, no new interim status). Check 1 runs continuously as the student uploads
+documents on `/application`.
+
+---
+
+## 1. The pipeline (target)
+
+### CHECK 1 — at upload, per document (immediate, robust)
+- **Known docs (IC):** Python/OCR matchers first (`vision.extract_mykad`,
+  `name_match`/`nric_match`), Gemini only if needed. **Unknown/supporting docs:**
+  OCR + Gemini (`vision.extract_text` + `extract_document_fields`).
+- **Green box** on pass; **one yellow box per *distinct* issue** (a name problem and an
+  address problem are two boxes, never merged).
+- Any yellow → **Cikgu Gopal** advises — **only after an upload**, advice **sticks**
+  (no re-popup on page load), **plain-friendly tone** (no "dear"), and always calls it
+  the **"B40 Assistance Programme"** (never "HalaTuju Scholarship").
+- The **name truncation** ("THEEPICAA AP" → full) is **already** resolved here as a soft
+  "partial" (NRIC is the hard key) — **no work needed**; what looked like a repeat on the
+  cockpit is the OLD anomaly box re-raising it (see the consolidation note).
+
+### CHECK 2 — at `/application` submit (take stock of gaps)
+- On submit, compute the four-fact gaps (`build_verdict`) and create **queries**
+  (`sync_resolution_items`) on `/application` — each query is **upload-a-doc** or
+  **explanation** (the existing ResolutionItem kinds, shown by the S4 Action Centre).
+- **Email** the student that queries are waiting; give **~5 days** to respond.
+
+### CHECK 3 — assignment gate → review + AI audit → close
+- Assignable to a reviewer **only when** `open_queries == 0` **OR** `submitted_at + 5d`
+  has lapsed (**whichever first**). On lapse with gaps still open → **proceed as-is**
+  (gaps flagged for the reviewer), **not** auto-declined.
+- The assigned reviewer reviews the student **and audits the AI** (records the four-fact
+  pass/fail against the AI snapshot — `AdminRecordVerdictView`, the S5 build).
+- **Close/accept is HARD-blocked** unless the AI audit was recorded
+  (`verdict_decided_at IS NOT NULL`) — no override.
+
+---
+
+## 2. Gap analysis (what exists vs what's missing)
+
+| Stage | Status | Detail |
+|---|---|---|
+| C1 upload OCR/Gemini + name-truncation resolve | ✅ exists | synchronous at upload; partial-name auto-resolved |
+| C1 one box **per distinct issue** (IC) | 🟡 cheap | serializer already returns `vision_nric_verdict` AND `vision_name_verdict`; the UI (`visionChipVariant`) collapses to one — split it |
+| C1 supporting-doc per-issue boxes | 🟠 build | Gemini emits one dominant `student_verdict` code; needs a **list of issues** (backend + FE) |
+| C1 Gopal popup-on-load + advice sticks | 🟡 cheap | `DocumentHelpCoach` re-fetches on every verdict signal incl. load — gate on an upload event / cache by `vision_run_at` |
+| C1 Gopal tone ("dear") | 🟡 cheap | from `HELP_PROMPT` in `help_engine.py` (fallback i18n copy is already fine — don't touch) |
+| C1 programme-name bug | 🐞 1-line | `help_engine.py` `PROGRAMME_BRIEFING` says "HalaTuju runs a B40 … scholarship" → "The B40 Assistance Programme is …" |
+| C2 queries surface (tickets + Action Centre) | ✅ exists | reuse `ResolutionItem` + `ActionCentre.tsx` |
+| C2 generate queries **at submit** | ❌ build | today `sync_resolution_items` runs on doc upload/admin GET, not at submit — hook `build_verdict`+`sync` into the `/application` submit |
+| C2 **email** student to respond | ❌ build | `send_request_info_email` is admin-only; add a batched `send_query_raised_email` (one email per sync) |
+| C2 **5-day SLA** | ❌ build | add `query_response_sla_days` (default 5) on `ScholarshipCohort` + `response_deadline` on `ResolutionItem` (additive migration); surface on Action Centre; optional reminder scheduler |
+| C3 reviewer **audits the AI** | ✅ exists | `AdminRecordVerdictView` + `audit.py` override metrics (S5) |
+| C3 **assignment gate** | ❌ build | `AdminApplicationDetailView.patch` sets `assigned_to` with no checks — add `is_ready_for_assignment(app)` = `open_items empty OR submitted_at+SLA lapsed` |
+| C3 **must-audit-before-close** | ❌ 1-line | `AdminVerifyAcceptView` add a `400 verdict_not_recorded` guard when `verdict_decided_at IS NULL` (HARD, no override) |
+
+---
+
+## 3. How it ships (extends, doesn't rebuild)
+
+**A — Quick wins, ride the PENDING cockpit-polish deploy** (cheap, isolated, no migration):
+1. Programme-name bug (`help_engine.py`) → "B40 Assistance Programme".
+2. Gopal tone — soften `HELP_PROMPT`, hard rule "no pet names (dear/sayang)".
+3. Gopal popup — fire/show only on an actual upload + persist the shown advice (FE).
+4. IC **per-issue boxes** — render one box per failing verdict (serializer already
+   returns both; FE-only).
+5. **Must-audit-before-close** guard — the one-line `verdict_decided_at` precondition.
+   *(C3's hard close-gate; cheap, lands now.)*
+These fold in with the **layout fix (issue 1)** already on `fix/cockpit-polish`.
+
+**B — Reviewer-role sprint** (`reviewer-role-scoped-access-plan.md`): add **Check 3's
+assignment gate** here (`is_ready_for_assignment`, reusing `resolution.open_items` + the
+cohort SLA field) — it belongs with reviewer/assignment logic.
+
+**C — Check-2 submission sprint** (the one genuinely new piece): wire
+`build_verdict`+`sync_resolution_items` into the `/application` submit; add the SLA field +
+`response_deadline` + the batched query email (+ optional reminder job); surface the
+deadline on the Action Centre. Reuses `ResolutionItem` + `ActionCentre`.
+
+**Order:** do **C before finalising B's gate** — the gate depends on queries actually
+being created at submit and on the cohort SLA field, or `open_items` is always empty and
+the gate is a no-op.
+
+**Old/new consolidation (the cockpit repetition):** mostly **resolved by getting the
+pipeline right** — treat the **system-generated queries as the first-class Check-2
+output** (not an admin-only manual action), and **suppress the OLD anomaly/pre-interview
+display for anything the verdict already auto-resolved** (the name-truncation case). The
+remaining display merge (retire the standalone pre-interview-flags box; one decision
+surface) is tracked with the cockpit work.
+
+---
+
+## 4. Decisions (settled 2026-06-02)
+1. **No collision** — the 5-day window is on `/application` (post-shortlist); the 55-min
+   reveal is on `/apply` (pre-shortlist). Two different submissions.
+2. **Lapse = proceed-as-is** — after the window (5 days for now), the case becomes
+   assignable with gaps flagged for the reviewer; **not** auto-declined.
+3. **Audit gate is HARD** — accept/close is blocked until the AI audit is recorded; no
+   super-admin override.
+
+## 5. Still open (decide at sprint-planning, not blocking the map)
+- **Supporting-doc per-issue split** — worth the backend change now, or is the IC split
+  enough for the next deploy? *(Lean: IC split now; supporting-doc split later.)*
+- **Reminder emails** — single "queries raised" email for v1, or also "2 days left /
+  window closed" (needs a scheduler job + migration)? *(Lean: single email v1.)*
+- **Gopal persistence depth** — client-side "show once per upload" enough, or store the
+  advice on the document row (small migration, survives devices/audit)? *(Lean: client
+  v1.)*
+
+## 6. Related plans
+- `reviewer-role-scoped-access-plan.md` — hosts Check 3's gate + the restricted reviewer.
+- `application-review-and-referee-plan.md` — the `/application` review page sits at the
+  same submit moment Check 2 fires; referee is part of a complete application.
+- `verification-verdict-plan.md` — the S1–S5 spine these checks extend (deployed).
