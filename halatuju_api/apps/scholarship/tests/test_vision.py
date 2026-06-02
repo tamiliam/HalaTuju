@@ -107,6 +107,19 @@ NO 12 JALAN MAHKOTA
         ocr = "MYKAD\nMALAYSIA\n900101-10-5555\nTAN AH KAU\nNO 5 JALAN BESAR\nKUALA LUMPUR"
         self.assertEqual(_extract_name(ocr, '900101-10-5555'), 'TAN AH KAU')
 
+    def test_name_truncated_marker_appends_next_line(self):
+        # The Theresa case: OCR line-breaks the surname AFTER the A/P marker, so the
+        # name line ENDS with the marker and the surname is on the next line → append it.
+        ocr = ("MYKAD\nMALAYSIA\n080115-05-0132\nTHERESA ARUL MARY A/P\nA.PHILIPS\n"
+               "TB 456 JALAN KEJORA 4\n76460 MELAKA\nMELAKA")
+        self.assertEqual(_extract_name(ocr, '080115-05-0132'),
+                         'THERESA ARUL MARY A/P A.PHILIPS')
+
+    def test_name_marker_midline_does_not_append(self):
+        # A marker MID-line (full name on one line) must NOT pull in the next line.
+        ocr = "MYKAD\nMALAYSIA\n030101-14-1234\nPRIYA A/P KRISHNAN\nNO 9 JALAN X\n50000 KL"
+        self.assertEqual(_extract_name(ocr, '030101-14-1234'), 'PRIYA A/P KRISHNAN')
+
     def test_no_text_returns_empty(self):
         self.assertEqual(_extract_nric(''), '')
         self.assertEqual(_extract_name(''), '')

@@ -87,6 +87,36 @@ _MYKAD_HEADER_TOKENS = frozenset({
 # spaces the slash, so tolerate "A / L".
 _PARENTAGE_MARKER = re.compile(r'\b(a\s*/\s*[lp]|s\s*/\s*o|d\s*/\s*o|bin|binti)\b', re.IGNORECASE)
 
+# A parentage marker at the END of the name line means the surname was line-broken
+# onto the NEXT OCR line (e.g. "THERESA ARUL MARY A/P" then "A.PHILIPS"). When this
+# fires we append that next line so the full name is captured, not the truncated one.
+_TRAILING_PARENTAGE = re.compile(r'(?:a\s*/\s*[lp]|s\s*/\s*o|d\s*/\s*o|bin|binti)\s*$', re.IGNORECASE)
+
+
+def _with_trailing_surname(name: str, lines: list[str]) -> str:
+    """If ``name`` ends with a parentage marker (A/L, A/P, BIN, BINTI, S/O, D/O), the
+    surname spilled onto the next OCR line — append it. Resolves the truncated-IC name
+    ("THERESA ARUL MARY A/P" → "THERESA ARUL MARY A/P A.PHILIPS") deterministically,
+    at extraction time, so the value the student + admin SEE is the full name."""
+    if not _TRAILING_PARENTAGE.search(name):
+        return name
+    try:
+        idx = lines.index(name)
+    except ValueError:
+        return name
+    for ln in lines[idx + 1:]:
+        if not ln:
+            continue
+        # The continuation is a name fragment: ALL-CAPS letters, no digits, not a header
+        # token. Anything else (the NRIC / address block) means there is no surname line.
+        if any(ch.isdigit() for ch in ln) or ln.upper() != ln:
+            return name
+        words = [w for w in re.split(r'[^A-Za-z]+', ln) if w]
+        if not words or all(w.upper() in _MYKAD_HEADER_TOKENS for w in words):
+            return name
+        return f'{name} {ln}'.strip()
+    return name
+
 
 def _is_name_line(line: str) -> bool:
     """A plausible MyKad name line: all-caps letters + spaces (no digits), not a
@@ -121,7 +151,9 @@ def _extract_name(text: str, nric_match_str: str = '') -> str:
         return ''
     marked = [ln for ln in candidates if _PARENTAGE_MARKER.search(ln)]
     if marked:
-        return max(marked, key=len)
+        # A marker MID-line is the full name; a marker at the END means the surname
+        # was line-broken — append the next line (see _with_trailing_surname).
+        return _with_trailing_surname(max(marked, key=len), lines)
     nric_idx = next((i for i, ln in enumerate(lines) if _NRIC_REGEX.search(ln)), -1)
     if nric_idx >= 0:
         for ln in lines[nric_idx + 1:]:
