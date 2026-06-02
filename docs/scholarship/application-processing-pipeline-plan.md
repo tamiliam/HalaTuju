@@ -200,3 +200,38 @@ surface) is tracked with the cockpit work.
 - `application-review-and-referee-plan.md` — the `/application` review page sits at the
   same submit moment Check 2 fires; referee is part of a complete application.
 - `verification-verdict-plan.md` — the S1–S5 spine these checks extend (deployed).
+
+---
+
+## 7. UI-polish batch (QUEUED — build + deploy together, from live verification 2026-06-02)
+
+Front-end-led fixes found while the owner verified the deployed cockpit. Build as ONE
+batch (one deploy), separate from the bigger Check-2 state-machine sprint.
+
+1. **Cockpit layout overflow (REAL BUG).** The two-column grid
+   (`admin/scholarship/[id]/page.tsx:427` `lg:grid-cols-[1fr_340px]`) breaks for
+   applicants with **long verdict-tile text** (Theresa, PAVALAHARASI, NESHA): the left
+   column has **no `min-w-0`**, so long unbreakable content stops it shrinking and pushes
+   the **Record-verdict panel off-screen**. Fine for short-text applicants (THEEPICAA).
+   **Fix:** `min-w-0` on the left column (line 430) + the tile grid/tiles; wrap/clamp the
+   tile subtitle text (`break-words` / line-clamp). Verify on Theresa + a long-pathway case.
+2. **Record-verdict message colour.** Saving a partial verdict shows a **GREEN** box
+   "Verdict saved. Generate a draft profile first before finalising." Green implies done,
+   but the work is **incomplete** (not finalised). **Fix:** make this an **amber/yellow**
+   "saved, not yet finalised" state; reserve green for a truly finalised verdict. (Partial
+   saves stay allowed — only the signalling changes.) Owner's points 2 + 3.
+3. **Re-run extraction for the RESULTS SLIP (enables the grade-OCR check).** The admin
+   "Re-run Vision" is wired **only for `ic`/`parent_ic`** (`AdminRunVisionView._OCR_DOC_TYPES`),
+   so there's **no way to re-run the grade extraction on a results slip** → the billable
+   grade-OCR smoke (checklist #5) can't be done from the UI. **Fix:** add a results-slip
+   re-extraction action (re-run `run_field_extraction_for_document` / the doc-assist grade
+   read) with its own admin button. Small backend + a button.
+4. **IC per-item display** (already specced in §"CHECK 1 — IC per-item display"): IC No /
+   Name / Address as 3 lines with value + Match/Partial/Mismatch; **Address = soft data
+   point, not a blocker**; Gopal below. Front-end-led.
+
+**Deferred (cosmetic, owner said not now):** put the About/Academic data **above** the
+Review section (owner would prefer it on top; functionality is fine, so defer).
+
+**Separate (bigger) sprint:** the full `/application` **state machine** (form XOR queries
++ Check 2 emails + thank-you notices) per §0b — not part of this polish batch.
