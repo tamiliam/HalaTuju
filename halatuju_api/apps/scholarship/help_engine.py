@@ -36,6 +36,10 @@ VERDICT_GUIDANCE = {
     'wrong_doc':       "this file did not look like the kind of document expected in this slot",
     'unreadable':      "we could not read this document clearly — it may be blurry, dark, or low-resolution",
     'review_manually': "we could not auto-check this one right now; a reviewer will look at it by hand",
+    # Results-slip specific (the three academic checks: name / subjects / results).
+    'slip_name_mismatch':    "the name on this results slip is not the applicant's — it looks like it may be someone else's slip",
+    'slip_subjects_missing': "the results slip lists one or more subjects that were not entered in the applicant's profile",
+    'slip_grade_mismatch':   "one or more grades on the results slip differ from the grades the applicant typed into their profile",
 }
 
 # Per-verdict fix advice. Most verdicts just need a re-upload; a NAME mismatch is
@@ -51,6 +55,22 @@ VERDICT_FIX_HINT = {
         'correct, then the name they typed when registering may have a small spelling '
         'difference — they can fix it on their Profile page. Do NOT assume which one is '
         "wrong — the card might be right and the typed name wrong, or the other way round."
+    ),
+    'slip_name_mismatch': (
+        'This is almost always the WRONG FILE: kindly suggest they check they uploaded '
+        'THEIR OWN results slip (not a sibling\'s or friend\'s) — the name on the slip must '
+        'match their own name. Ask them to re-upload their own slip.'
+    ),
+    'slip_subjects_missing': (
+        'The fix is to make their profile match the slip: kindly tell them to add the '
+        'missing subject(s) on their Profile page so their entered subjects match the '
+        'results slip. (If the slip itself is the wrong file, they can re-upload instead.)'
+    ),
+    'slip_grade_mismatch': (
+        'The results slip is the official record, so the fix is to make the PROFILE match '
+        'the slip: kindly tell them to update the differing grade(s) on their Profile page '
+        'so they match the slip. Only if the photo is blurry should they upload a clearer '
+        'slip instead. Never suggest changing the slip itself.'
     ),
 }
 
@@ -138,8 +158,32 @@ def verdict_for_document(doc):
         if doc.vision_name and name_match(doc.vision_name, getattr(profile, 'name', '') or '') == 'mismatch':
             return 'name_mismatch'
         return ''
-    # Supporting docs — the Gemini doc-assist verdict takes precedence (it is the chip
-    # the frontend shows); fall back to the older soft full-text checks when it never ran.
+    # Results slip — the three clinical checks (name / subjects / results), most
+    # important first: a wrong-person slip, then a missing subject, then a grade that
+    # disagrees with the typed profile. Computed by the SAME engine the FE checklist
+    # uses (academic_engine.student_slip_check) so the coach and the checklist agree.
+    if doc.doc_type == 'results_slip':
+        fields = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+        sv = fields.get('student_verdict')
+        if not sv:
+            return ''                        # not field-extracted yet → no coach
+        if sv == 'wrong_doc':
+            return 'wrong_doc'
+        if sv in ('unreadable', 'review_manually'):
+            return sv
+        from .academic_engine import student_slip_check
+        chk = student_slip_check(doc)
+        if chk['name'] == 'mismatch':
+            return 'slip_name_mismatch'
+        if chk['name'] == 'unreadable':
+            return 'unreadable'
+        if chk['subjects'] == 'mismatch':
+            return 'slip_subjects_missing'
+        if chk['results'] == 'mismatch':
+            return 'slip_grade_mismatch'
+        return ''
+    # Other supporting docs — the Gemini doc-assist verdict takes precedence (it is the
+    # chip the frontend shows); fall back to the older soft full-text checks when it never ran.
     fields = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
     sv = fields.get('student_verdict')
     if sv:

@@ -52,6 +52,38 @@ _SUBJECT_BM = {
 }
 
 
+# SPM grade-BANDS. Every subject row on an SPM slip prints the grade twice — as a
+# Malay word-band AND as a letter — e.g. "MATEMATIK ... CEMERLANG TINGGI ... A".
+# Gemini sometimes glues the band words onto the subject ("MATEMATIK CEMERLANG
+# TINGGI"), which then fails to match the profile's "Matematik" → every subject
+# reads as "missing". So we STRIP a trailing band phrase from the subject name, and
+# keep the band→letter map as a fallback when the letter grade itself is unreadable.
+_BAND_TO_GRADE = {
+    'cemerlang tertinggi': 'A+', 'cemerlang tinggi': 'A', 'cemerlang': 'A-',
+    'kepujian tertinggi': 'B+', 'kepujian tinggi': 'B', 'kepujian atas': 'C+',
+    'kepujian': 'C', 'lulus atas': 'D', 'lulus': 'E', 'gagal': 'G',
+}
+# Trailing band phrase: a band word (cemerlang/kepujian/lulus/gagal) optionally
+# followed by a modifier (tertinggi/tinggi/atas). Anchored at the END so a real
+# subject like "Bahasa Arab Tinggi" is untouched (no band word precedes "Tinggi").
+_BAND_RE = re.compile(
+    r'\s+(cemerlang|kepujian|lulus|gagal)(?:\s+(tertinggi|tinggi|atas))?\s*$',
+    re.IGNORECASE,
+)
+
+
+def _split_band(name: str):
+    """Split a slip subject into ``(clean_subject, band_grade)``. ``band_grade`` is the
+    letter implied by the stripped band phrase ('' if none), used only as a fallback
+    when the OCR'd letter grade is missing."""
+    s = (name or '').strip()
+    m = _BAND_RE.search(s)
+    if not m:
+        return s, ''
+    phrase = ' '.join(p for p in (m.group(1), m.group(2)) if p).lower()
+    return s[:m.start()].strip(), _BAND_TO_GRADE.get(phrase, '')
+
+
 def _norm(name: str) -> str:
     """Lowercase, collapse runs of non-alphanumerics to single spaces, strip."""
     return re.sub(r'[^a-z0-9]+', ' ', (name or '').lower()).strip()
@@ -78,8 +110,11 @@ def read_slip(doc) -> dict:
     if isinstance(results, list) and results:
         for r in results:
             if isinstance(r, dict):
-                s = (r.get('subject') or '').strip()
-                g = (r.get('grade') or '').strip()
+                # Strip the SPM band words Gemini glues onto the subject
+                # ("MATEMATIK CEMERLANG TINGGI" → "MATEMATIK"); the band also
+                # gives us the grade letter as a fallback for an unread one.
+                s, band_grade = _split_band(r.get('subject') or '')
+                g = (r.get('grade') or '').strip() or band_grade
                 if s:
                     names.append(s)
                     if g:
@@ -87,7 +122,7 @@ def read_slip(doc) -> dict:
     else:
         subs = fields.get('subjects')
         if isinstance(subs, list):
-            names = [s.strip() for s in subs if isinstance(s, str) and s.strip()]
+            names = [_split_band(s)[0] for s in subs if isinstance(s, str) and s.strip()]
     return {'names': names, 'grades': grades}
 
 
@@ -120,4 +155,60 @@ def compare_academics(profile_grades, slip) -> dict:
         'have_grades': bool(slip['grades']),
         'complete': len(slip_norm) > 0 and not missing,
         'accurate': not mismatched,
+    }
+
+
+def _slip_name_status(doc) -> str:
+    """Name check for a results slip, from the doc-assist read: 'match' / 'mismatch'
+    / 'unreadable' / 'pending' (not yet field-extracted)."""
+    vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+    sv = vf.get('student_verdict')
+    if sv == 'name_mismatch':
+        return 'mismatch'
+    if sv in ('wrong_doc', 'unreadable') or doc.vision_name_match == 'unreadable':
+        return 'unreadable'
+    if sv == 'ok' or doc.vision_name_match == 'found':
+        return 'match'
+    if sv == 'review_manually':
+        return 'pending'
+    return 'pending'
+
+
+def student_slip_check(doc) -> dict:
+    """The clinical three-check read of ONE results slip against the student's own
+    profile — the single source the serializer (for the FE checklist) and the help
+    coach (to pick its advice) both consume, so they can never disagree.
+
+    Returns ``{name, subjects, results}`` each 'match' / 'mismatch' / 'unreadable'
+    / 'pending', plus ``{candidate_name, missing, mismatched, slip_count}`` detail.
+    Reads ONLY the student's own document + profile (no admin data)."""
+    name = _slip_name_status(doc)
+    data = read_slip(doc)
+    vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+    f = vf.get('fields', {}) if isinstance(vf.get('fields'), dict) else {}
+    candidate_name = (f.get('candidate_name') or '')
+    exam = (f.get('exam') or '').strip()              # e.g. "SIJIL PELAJARAN MALAYSIA TAHUN 2025"
+    em = re.search(r'\b(20\d{2})\b', exam)
+    exam_year = em.group(1) if em else ''             # soft data point — surfaced, not gated
+
+    if not data['names']:
+        # Slip not field-extracted yet (or unreadable) → subjects/results pending.
+        subjects = 'unreadable' if name == 'unreadable' else 'pending'
+        return {'name': name, 'subjects': subjects, 'results': 'pending',
+                'candidate_name': candidate_name, 'exam': exam, 'exam_year': exam_year,
+                'missing': [], 'mismatched': [], 'slip_count': 0}
+
+    profile = getattr(getattr(doc, 'application', None), 'profile', None)
+    cmp = compare_academics(getattr(profile, 'grades', None), data)
+    subjects = 'mismatch' if cmp['missing'] else 'match'
+    if not cmp['have_grades']:
+        results = 'pending'
+    elif cmp['mismatched']:
+        results = 'mismatch'
+    else:
+        results = 'match'
+    return {
+        'name': name, 'subjects': subjects, 'results': results,
+        'candidate_name': candidate_name, 'exam': exam, 'exam_year': exam_year,
+        'missing': cmp['missing'], 'mismatched': cmp['mismatched'], 'slip_count': cmp['slip_count'],
     }

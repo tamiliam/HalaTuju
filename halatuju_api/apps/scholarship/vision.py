@@ -646,7 +646,12 @@ _NAME_FIELD = {
 _DOC_HINTS = {
     'results_slip': (' For "results", list EVERY subject row with its exact grade '
                      'as printed (e.g. A+, A, A-, B+, B, C+, C, D, E, G) — one entry '
-                     'per subject.'),
+                     'per subject. IMPORTANT: "subject" is the SUBJECT NAME ONLY '
+                     '(e.g. "Matematik", "Bahasa Melayu", "Sejarah"). Do NOT include '
+                     'the Malay achievement-band words printed next to it '
+                     '(Cemerlang, Kepujian, Lulus, Gagal, or the modifiers Tinggi, '
+                     'Tertinggi, Atas) — those describe the grade and belong in '
+                     '"grade", not in the subject name.'),
 }
 
 
