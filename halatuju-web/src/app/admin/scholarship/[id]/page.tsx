@@ -413,203 +413,6 @@ export default function AdminScholarshipDetailPage() {
         </div>
       </header>
 
-      {/* Applicant info — three explicit columns (About+Family / Academic / Support…) */}
-      {(() => {
-        const isStpm = app.qualification === 'stpm'
-        // Pathway context: matric/stpm are INSTITUTION pathways (track + school);
-        // everything else (asasi, university, poly, pismp…) is a PROGRAMME pathway
-        // (a chosen course), so Pre-U track doesn't apply.
-        const isInstitutionPathway = app.chosen_pathway === 'matric' || app.chosen_pathway === 'stpm'
-        // Human labels for the stored codes — reuse the apply-form's own i18n maps so
-        // the admin sees the same words the student did (matric→Matriculation, etc.).
-        const callLangLabel = app.preferred_call_language ? t(`scholarship.apply.callLang.${app.preferred_call_language}`) : null
-        const pathwayLabel = (code?: string | null) => (code ? t(`scholarship.apply.plan.pathway.${code}`) : null)
-        // pre_u_track holds a matric TRACK (sains/kejuruteraan…) for matric, or an STPM
-        // STREAM (sains/sains_sosial/not_sure) for STPM — both under scholarship.apply.plan.
-        const preUTrackLabel = app.pre_u_track
-          ? t(`scholarship.apply.plan.${app.chosen_pathway === 'stpm' ? 'stream' : 'track'}.${app.pre_u_track}`)
-          : null
-        // Help answers: render the apply-form's own words (Yes / No / Not sure) rather
-        // than the raw 'yes'/'no'/'unsure' codes.
-        const helpLabel = (v?: string | null) => (v ? t(`scholarship.apply.help.${v}`) : null)
-        // Link a course back to its HalaTuju public page (opens in a new tab so
-        // the admin doesn't lose the application). STPM degrees live under /stpm.
-        const courseHref = (cid?: string) => (cid ? (isStpm ? `/stpm/${cid}` : `/course/${cid}`) : null)
-        const courseLink = (cid: string | undefined, name: string) => {
-          const href = courseHref(cid)
-          return href
-            ? <a href={href} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{name}</a>
-            : name
-        }
-        const hasStory = !!(app.aspirations || app.plans || app.fears || app.justification
-          || app.daily_life || app.first_in_family || app.parents_occupation
-          || app.siblings_studying_count || app.family_context)
-        const hasPlans = !!(app.chosen_pathway || app.chosen_programme?.course_name
-          || app.top_choices?.length || app.pathways_considered?.length || app.uncertainty_reasons?.length)
-        const addr = formatAddress([
-          app.address,
-          [app.postal_code, app.city].filter(Boolean).join(' '),
-          app.preferred_state,
-        ])
-        const guardian = (app.guardians && app.guardians[0]) || null
-        return (
-          <div className="space-y-4">
-            {/* Two independent columns rather than a row-major grid, so each column
-                packs its cards top-down (masonry-style). Family floats up directly
-                under the shorter About card instead of waiting for the taller
-                Academic card opposite it. */}
-            <div className="grid gap-4 md:grid-cols-2 md:items-start">
-              {/* Left column — About, then Family */}
-              <div className="space-y-4">
-              {/* About — contact details (NRIC is in the header above) */}
-              <Card title={t('admin.scholarship.sec.contact')}>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  <Field label={t('admin.scholarship.phone')} value={app.contact_phone ? formatPhone(app.contact_phone) : null} />
-                  <Field label={t('admin.scholarship.callLanguage')} value={callLangLabel} />
-                  {/* Verified email only — shown once the student verifies it, else the
-                      verified Google login email. Full-width rows. */}
-                  <div className="col-span-2"><Field label={t('admin.scholarship.email')} value={app.verified_email
-                    ? <a href={`mailto:${app.verified_email}`} className="text-blue-600 hover:underline">{app.verified_email}</a>
-                    : null} /></div>
-                  <div className="col-span-2"><Field label={t('admin.scholarship.address')} value={addr} /></div>
-                </dl>
-              </Card>
-
-              {/* Family & finances — moved up under About (was below Academic) */}
-              <Card title={t('admin.scholarship.sec.family')}>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM ${Number(app.household_income).toLocaleString('en-US')}` : null} />
-                  <Field label={t('admin.scholarship.householdSize')} value={app.household_size} />
-                  <Field label="STR" value={yn(app.receives_str)} />
-                  <Field label="JKM" value={yn(app.receives_jkm)} />
-                  <Field label={t('admin.scholarship.guardianName')} value={guardian?.name} />
-                  <Field label={t('admin.scholarship.guardianPhone')} value={guardian?.phone ? formatPhone(guardian.phone) : null} />
-                </dl>
-              </Card>
-              </div>
-
-              {/* Right column — Academic (tall: grades + plans), then Support */}
-              <div className="space-y-4">
-              {/* Academic — school / merit / grades. Plans + notes are their own boxes below. */}
-              <Card title={t('admin.scholarship.sec.academic')}>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  <Field label={t('admin.scholarship.school')} value={app.school} />
-                  <Field label={t('admin.scholarship.meritScore')} value={app.merit_score} />
-                  {isStpm && <Field label="MUET" value={app.muet_band} />}
-                </dl>
-                <div className="mt-3">
-                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">
-                    {isStpm ? t('admin.scholarship.stpmGrades') : t('admin.scholarship.spmGrades')}
-                  </dt>
-                  <Grades grades={isStpm ? app.stpm_grades : app.grades} />
-                  {isStpm && Object.keys(app.spm_prereq_grades || {}).length > 0 && (
-                    <div className="mt-2">
-                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.spmPrereq')}</dt>
-                      <Grades grades={app.spm_prereq_grades} />
-                    </div>
-                  )}
-                </div>
-
-                {/* Plans — chosen programme/pathway nested into Academic (no sub-label;
-                    the divider sets it off). The free-text memos live in Student's note. */}
-                {hasPlans && (
-                  <div className="mt-4 border-t border-gray-100 pt-3">
-                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                      {isInstitutionPathway ? (
-                        <>
-                          <Field label={t('admin.scholarship.chosenPathway')} value={pathwayLabel(app.chosen_pathway)} />
-                          <Field label={t('admin.scholarship.preUTrack')} value={preUTrackLabel} />
-                          <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} />
-                        </>
-                      ) : (
-                        <Field
-                          label={t('admin.scholarship.chosenProgramme')}
-                          value={app.chosen_programme?.course_name
-                            ? courseLink(app.chosen_programme.course_id as string | undefined, app.chosen_programme.course_name as string)
-                            : pathwayLabel(app.chosen_pathway)}
-                        />
-                      )}
-                    </dl>
-                    {app.top_choices?.length > 0 && (
-                      <div className="mt-3">
-                        <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.topChoices')}</dt>
-                        <ol className="list-decimal ml-5 text-sm text-gray-800">
-                          {app.top_choices.map((c) => <li key={c.rank}>{courseLink(c.course_id, c.course_name)}{c.institution ? ` — ${c.institution}` : ''}</li>)}
-                        </ol>
-                      </div>
-                    )}
-                    {app.pathways_considered?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.pathwaysConsidered')} value={joinOr(app.pathways_considered)} /></div>}
-                    {app.uncertainty_reasons?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.uncertaintyReasons')} value={joinOr(app.uncertainty_reasons)} /></div>}
-                  </div>
-                )}
-              </Card>
-
-              {/* Support required — help only. Consent-to-contact is omitted: it's a
-                  hard requirement to submit, so it's always "Yes" and adds no signal. */}
-              <Card title={t('admin.scholarship.sec.support')}>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-                  <Field label={t('admin.scholarship.helpUniversity')} value={helpLabel(app.help_university)} />
-                  <Field label={t('admin.scholarship.helpScholarship')} value={helpLabel(app.help_scholarship)} />
-                </dl>
-              </Card>
-              </div>
-            </div>
-
-            {/* Student's note — both free-text memos in one box, each question labelled.
-                "Anything you'd like to add?" (uncertainty_note, from Plans) +
-                "Anything else you'd like us to know?" (anything_else, from Support).
-                Hidden when the student wrote neither. */}
-            {(app.uncertainty_note || app.anything_else) && (
-              <Card title={t('admin.scholarship.studentNote')}>
-                <div className="space-y-3">
-                  {app.uncertainty_note && (
-                    <div>
-                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.plan.uncertainNoteLabel')}</dt>
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.uncertainty_note}</p>
-                    </div>
-                  )}
-                  {app.anything_else && (
-                    <div>
-                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.anythingElseLabel')}</dt>
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.anything_else}</p>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            )}
-
-            {/* Your story — full-width, post-shortlist; hidden until the student fills it */}
-            {hasStory && (
-              <Card title={t('admin.scholarship.sec.story')}>
-                <div className="space-y-2">
-                  <Field label={t('admin.scholarship.aspirations')} value={app.aspirations} />
-                  <Field label={t('admin.scholarship.plans')} value={app.plans} />
-                  <Field label={t('admin.scholarship.fears')} value={app.fears} />
-                  <Field label={t('admin.scholarship.dailyLife')} value={app.daily_life} />
-                  <Field label={t('admin.scholarship.justification')} value={app.justification} />
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 pt-1 md:grid-cols-3">
-                    <Field label={t('admin.scholarship.firstInFamily')} value={yn(app.first_in_family)} />
-                    <Field label={t('admin.scholarship.parentsOccupation')} value={app.parents_occupation} />
-                    <Field label={t('admin.scholarship.siblingsStudying')} value={app.siblings_studying_count} />
-                  </dl>
-                  <Field label={t('admin.scholarship.familyContext')} value={app.family_context} />
-                </div>
-              </Card>
-            )}
-
-            {/* Funding — full-width, hidden when empty */}
-            {app.funding_need && (
-              <Card title={t('admin.scholarship.sec.funding')}>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 md:grid-cols-3">
-                  <Field label={t('admin.scholarship.funding')} value={joinOr(app.funding_need.categories)} />
-                  <Field label={t('admin.scholarship.programmeMonths')} value={app.funding_need.programme_months} />
-                </dl>
-                {app.funding_need.funding_note && <div className="mt-2"><Field label={t('admin.scholarship.fundingNote')} value={app.funding_need.funding_note} /></div>}
-              </Card>
-            )}
-          </div>
-        )
-      })()}
 
       {/* Review & actions — interactive panels. Hidden only for PRE-shortlist
           rejections (merit/need/ineligible): those applicants were declined by the
@@ -1477,6 +1280,204 @@ export default function AdminScholarshipDetailPage() {
 
       </div>{/* end cockpit grid */}
       </>)}
+
+      {/* Applicant info — three explicit columns (About+Family / Academic / Support…) */}
+      {(() => {
+        const isStpm = app.qualification === 'stpm'
+        // Pathway context: matric/stpm are INSTITUTION pathways (track + school);
+        // everything else (asasi, university, poly, pismp…) is a PROGRAMME pathway
+        // (a chosen course), so Pre-U track doesn't apply.
+        const isInstitutionPathway = app.chosen_pathway === 'matric' || app.chosen_pathway === 'stpm'
+        // Human labels for the stored codes — reuse the apply-form's own i18n maps so
+        // the admin sees the same words the student did (matric→Matriculation, etc.).
+        const callLangLabel = app.preferred_call_language ? t(`scholarship.apply.callLang.${app.preferred_call_language}`) : null
+        const pathwayLabel = (code?: string | null) => (code ? t(`scholarship.apply.plan.pathway.${code}`) : null)
+        // pre_u_track holds a matric TRACK (sains/kejuruteraan…) for matric, or an STPM
+        // STREAM (sains/sains_sosial/not_sure) for STPM — both under scholarship.apply.plan.
+        const preUTrackLabel = app.pre_u_track
+          ? t(`scholarship.apply.plan.${app.chosen_pathway === 'stpm' ? 'stream' : 'track'}.${app.pre_u_track}`)
+          : null
+        // Help answers: render the apply-form's own words (Yes / No / Not sure) rather
+        // than the raw 'yes'/'no'/'unsure' codes.
+        const helpLabel = (v?: string | null) => (v ? t(`scholarship.apply.help.${v}`) : null)
+        // Link a course back to its HalaTuju public page (opens in a new tab so
+        // the admin doesn't lose the application). STPM degrees live under /stpm.
+        const courseHref = (cid?: string) => (cid ? (isStpm ? `/stpm/${cid}` : `/course/${cid}`) : null)
+        const courseLink = (cid: string | undefined, name: string) => {
+          const href = courseHref(cid)
+          return href
+            ? <a href={href} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{name}</a>
+            : name
+        }
+        const hasStory = !!(app.aspirations || app.plans || app.fears || app.justification
+          || app.daily_life || app.first_in_family || app.parents_occupation
+          || app.siblings_studying_count || app.family_context)
+        const hasPlans = !!(app.chosen_pathway || app.chosen_programme?.course_name
+          || app.top_choices?.length || app.pathways_considered?.length || app.uncertainty_reasons?.length)
+        const addr = formatAddress([
+          app.address,
+          [app.postal_code, app.city].filter(Boolean).join(' '),
+          app.preferred_state,
+        ])
+        const guardian = (app.guardians && app.guardians[0]) || null
+        return (
+          <div className="space-y-4">
+            {/* Two independent columns rather than a row-major grid, so each column
+                packs its cards top-down (masonry-style). Family floats up directly
+                under the shorter About card instead of waiting for the taller
+                Academic card opposite it. */}
+            <div className="grid gap-4 md:grid-cols-2 md:items-start">
+              {/* Left column — About, then Family */}
+              <div className="space-y-4">
+              {/* About — contact details (NRIC is in the header above) */}
+              <Card title={t('admin.scholarship.sec.contact')}>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                  <Field label={t('admin.scholarship.phone')} value={app.contact_phone ? formatPhone(app.contact_phone) : null} />
+                  <Field label={t('admin.scholarship.callLanguage')} value={callLangLabel} />
+                  {/* Verified email only — shown once the student verifies it, else the
+                      verified Google login email. Full-width rows. */}
+                  <div className="col-span-2"><Field label={t('admin.scholarship.email')} value={app.verified_email
+                    ? <a href={`mailto:${app.verified_email}`} className="text-blue-600 hover:underline">{app.verified_email}</a>
+                    : null} /></div>
+                  <div className="col-span-2"><Field label={t('admin.scholarship.address')} value={addr} /></div>
+                </dl>
+              </Card>
+
+              {/* Family & finances — moved up under About (was below Academic) */}
+              <Card title={t('admin.scholarship.sec.family')}>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                  <Field label={t('admin.scholarship.income')} value={app.household_income ? `RM ${Number(app.household_income).toLocaleString('en-US')}` : null} />
+                  <Field label={t('admin.scholarship.householdSize')} value={app.household_size} />
+                  <Field label="STR" value={yn(app.receives_str)} />
+                  <Field label="JKM" value={yn(app.receives_jkm)} />
+                  <Field label={t('admin.scholarship.guardianName')} value={guardian?.name} />
+                  <Field label={t('admin.scholarship.guardianPhone')} value={guardian?.phone ? formatPhone(guardian.phone) : null} />
+                </dl>
+              </Card>
+              </div>
+
+              {/* Right column — Academic (tall: grades + plans), then Support */}
+              <div className="space-y-4">
+              {/* Academic — school / merit / grades. Plans + notes are their own boxes below. */}
+              <Card title={t('admin.scholarship.sec.academic')}>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                  <Field label={t('admin.scholarship.school')} value={app.school} />
+                  <Field label={t('admin.scholarship.meritScore')} value={app.merit_score} />
+                  {isStpm && <Field label="MUET" value={app.muet_band} />}
+                </dl>
+                <div className="mt-3">
+                  <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+                    {isStpm ? t('admin.scholarship.stpmGrades') : t('admin.scholarship.spmGrades')}
+                  </dt>
+                  <Grades grades={isStpm ? app.stpm_grades : app.grades} />
+                  {isStpm && Object.keys(app.spm_prereq_grades || {}).length > 0 && (
+                    <div className="mt-2">
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.spmPrereq')}</dt>
+                      <Grades grades={app.spm_prereq_grades} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Plans — chosen programme/pathway nested into Academic (no sub-label;
+                    the divider sets it off). The free-text memos live in Student's note. */}
+                {hasPlans && (
+                  <div className="mt-4 border-t border-gray-100 pt-3">
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                      {isInstitutionPathway ? (
+                        <>
+                          <Field label={t('admin.scholarship.chosenPathway')} value={pathwayLabel(app.chosen_pathway)} />
+                          <Field label={t('admin.scholarship.preUTrack')} value={preUTrackLabel} />
+                          <Field label={t('admin.scholarship.preUInstitution')} value={app.pre_u_institution} />
+                        </>
+                      ) : (
+                        <Field
+                          label={t('admin.scholarship.chosenProgramme')}
+                          value={app.chosen_programme?.course_name
+                            ? courseLink(app.chosen_programme.course_id as string | undefined, app.chosen_programme.course_name as string)
+                            : pathwayLabel(app.chosen_pathway)}
+                        />
+                      )}
+                    </dl>
+                    {app.top_choices?.length > 0 && (
+                      <div className="mt-3">
+                        <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('admin.scholarship.topChoices')}</dt>
+                        <ol className="list-decimal ml-5 text-sm text-gray-800">
+                          {app.top_choices.map((c) => <li key={c.rank}>{courseLink(c.course_id, c.course_name)}{c.institution ? ` — ${c.institution}` : ''}</li>)}
+                        </ol>
+                      </div>
+                    )}
+                    {app.pathways_considered?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.pathwaysConsidered')} value={joinOr(app.pathways_considered)} /></div>}
+                    {app.uncertainty_reasons?.length > 0 && <div className="mt-2"><Field label={t('admin.scholarship.uncertaintyReasons')} value={joinOr(app.uncertainty_reasons)} /></div>}
+                  </div>
+                )}
+              </Card>
+
+              {/* Support required — help only. Consent-to-contact is omitted: it's a
+                  hard requirement to submit, so it's always "Yes" and adds no signal. */}
+              <Card title={t('admin.scholarship.sec.support')}>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                  <Field label={t('admin.scholarship.helpUniversity')} value={helpLabel(app.help_university)} />
+                  <Field label={t('admin.scholarship.helpScholarship')} value={helpLabel(app.help_scholarship)} />
+                </dl>
+              </Card>
+              </div>
+            </div>
+
+            {/* Student's note — both free-text memos in one box, each question labelled.
+                "Anything you'd like to add?" (uncertainty_note, from Plans) +
+                "Anything else you'd like us to know?" (anything_else, from Support).
+                Hidden when the student wrote neither. */}
+            {(app.uncertainty_note || app.anything_else) && (
+              <Card title={t('admin.scholarship.studentNote')}>
+                <div className="space-y-3">
+                  {app.uncertainty_note && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.plan.uncertainNoteLabel')}</dt>
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.uncertainty_note}</p>
+                    </div>
+                  )}
+                  {app.anything_else && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.anythingElseLabel')}</dt>
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.anything_else}</p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {/* Your story — full-width, post-shortlist; hidden until the student fills it */}
+            {hasStory && (
+              <Card title={t('admin.scholarship.sec.story')}>
+                <div className="space-y-2">
+                  <Field label={t('admin.scholarship.aspirations')} value={app.aspirations} />
+                  <Field label={t('admin.scholarship.plans')} value={app.plans} />
+                  <Field label={t('admin.scholarship.fears')} value={app.fears} />
+                  <Field label={t('admin.scholarship.dailyLife')} value={app.daily_life} />
+                  <Field label={t('admin.scholarship.justification')} value={app.justification} />
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 pt-1 md:grid-cols-3">
+                    <Field label={t('admin.scholarship.firstInFamily')} value={yn(app.first_in_family)} />
+                    <Field label={t('admin.scholarship.parentsOccupation')} value={app.parents_occupation} />
+                    <Field label={t('admin.scholarship.siblingsStudying')} value={app.siblings_studying_count} />
+                  </dl>
+                  <Field label={t('admin.scholarship.familyContext')} value={app.family_context} />
+                </div>
+              </Card>
+            )}
+
+            {/* Funding — full-width, hidden when empty */}
+            {app.funding_need && (
+              <Card title={t('admin.scholarship.sec.funding')}>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 md:grid-cols-3">
+                  <Field label={t('admin.scholarship.funding')} value={joinOr(app.funding_need.categories)} />
+                  <Field label={t('admin.scholarship.programmeMonths')} value={app.funding_need.programme_months} />
+                </dl>
+                {app.funding_need.funding_note && <div className="mt-2"><Field label={t('admin.scholarship.fundingNote')} value={app.funding_need.funding_note} /></div>}
+              </Card>
+            )}
+          </div>
+        )
+      })()}
     </div>
   )
 }
