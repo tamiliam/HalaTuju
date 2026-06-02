@@ -372,6 +372,38 @@ class ScholarshipApplication(models.Model):
                   "(profile + application fields). Audit evidence, NOT the live source.",
     )
 
+    # ── S5 verdict audit / override capture (Verification-verdict roadmap) ──────
+    # When the officer records their verdict in the review cockpit, we snapshot the
+    # AI's four-fact verdict (build_verdict) AS IT WAS at decision time and store the
+    # officer's own per-fact decision + reason beside it. This is the override-rate
+    # evidence ("how good is the AI"): a query over verdict_decided_at IS NOT NULL
+    # compares ai_verdict_snapshot vs officer_verdict per fact (see audit.py). Kept on
+    # the application (one snapshot = the final officer decision) — additive, NOT a new
+    # table, so it deploys via the simpler migrate-first ALTER (no contenttypes step).
+    # NOTE: distinct from the engine's shortlist `verdict` field above (different concept).
+    ai_verdict_snapshot = models.JSONField(
+        default=list, blank=True,
+        help_text="The four-fact verification verdict (build_verdict) captured when the "
+                  "officer recorded their decision. List of {fact,status,evidence,unresolved}.",
+    )
+    officer_verdict = models.JSONField(
+        default=dict, blank=True,
+        help_text="The officer's own four-fact decision at the cockpit: "
+                  "{identity,academic,income,pathway: 'pass'|'fail', overall: 'accept'|'decline'|'hold'}.",
+    )
+    verdict_reason = models.TextField(
+        blank=True, default='',
+        help_text="The officer's free-text reason/notes recorded with the verdict.",
+    )
+    verdict_decided_by = models.CharField(
+        max_length=254, blank=True, default='',
+        help_text="Email of the PartnerAdmin who recorded the verification verdict.",
+    )
+    verdict_decided_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the officer recorded their verification verdict (the audit anchor).",
+    )
+
     submitted_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

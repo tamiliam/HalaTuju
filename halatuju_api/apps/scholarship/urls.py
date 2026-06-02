@@ -44,10 +44,12 @@ from .views_admin import (
     AdminPublishProfileView,
     AdminRejectView,
     AdminRefereeDetailView,
+    AdminRecordVerdictView,
     AdminRequestInfoView,
     AdminResolutionItemView,
     AdminResolutionItemActionView,
     AdminRunVisionView,
+    AdminVerdictMetricsView,
     AdminSponsorListView,
     AdminSponsorReviewView,
     AdminSuggestGapsView,
@@ -115,4 +117,7 @@ urlpatterns = [
     # S3: officer-raised resolution tickets + waive/resolve
     path('admin/scholarship/applications/<int:pk>/resolution-items/', AdminResolutionItemView.as_view()),
     path('admin/scholarship/resolution-items/<int:item_id>/<str:action>/', AdminResolutionItemActionView.as_view()),
+    # S5: officer records the verification verdict (+ optional finalise) + override metrics
+    path('admin/scholarship/applications/<int:pk>/record-verdict/', AdminRecordVerdictView.as_view()),
+    path('admin/scholarship/verdict-metrics/', AdminVerdictMetricsView.as_view()),
 ]

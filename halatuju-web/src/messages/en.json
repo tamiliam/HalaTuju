@@ -1921,6 +1921,52 @@
           "academic_grade_mismatch": "{subject}: typed {typed}, but the slip reads {slip}. Check.",
           "grades_verified": "All {count} grades match the results slip."
         }
+      },
+      "recordVerdict": {
+        "title": "Record your verdict",
+        "factPass": "Pass",
+        "factFail": "Fail",
+        "reasonLabel": "Reason / notes",
+        "reasonPlaceholder": "Add a note explaining your decision (optional).",
+        "save": "Save verdict & generate final profile",
+        "aiSuggested": "AI suggested:",
+        "suggest": {
+          "yes": "yes",
+          "no": "no",
+          "unsure": "unsure"
+        },
+        "finaliseOk": "Verdict saved and final profile generated.",
+        "finaliseNoDraft": "Verdict saved. Generate a draft profile first before finalising.",
+        "finaliseNoInterview": "Submit the interview findings before saving a verdict.",
+        "tools": {
+          "poseQuery": "Pose written query",
+          "logCall": "Log phone-call outcome",
+          "addFindings": "Add interview findings"
+        }
+      },
+      "caveats": {
+        "title": "Caveats to resolve",
+        "empty": "No open caveats — all clear.",
+        "ask": "Ask",
+        "resolve": "Resolve",
+        "waitingStudent": "Waiting for student"
+      },
+      "docsDrawer": {
+        "title": "Documents",
+        "subtitle": "Grouped by verification fact",
+        "group": {
+          "identity": "IDENTITY",
+          "academic": "ACADEMIC",
+          "income": "INCOME",
+          "pathway": "PATHWAY",
+          "other": "OTHER"
+        },
+        "view": "View",
+        "pill": {
+          "verified": "Verified",
+          "check": "Check",
+          "unread": "Unread"
+        }
       }
     },
     "students": "Students",

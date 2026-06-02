@@ -71,6 +71,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ScholarshipNextSteps`. Student i18n `scholarship.actionCentre.*` (per-code `item.<code>.{title,desc}` for all 15
   system codes) × en/ms/ta (**parity 1750**, Tamil first-draft). Stitch design approved (spacious V1 cards +
   graduation-cap mascot). `next build` clean; full jest suite 199 green. **No migration, no backend change.**
+- **Officer Review Cockpit + verdict audit/override capture (Sprint 5 — the LAST sprint of the verification-verdict
+  roadmap).** The admin `/admin/scholarship/[id]` page becomes the two-stage hinge: the coordinator **audits** the
+  AI's four-fact verdict, clears leftover caveats, and records their own verdict which can trigger the final sponsor
+  profile.
+  - **Backend (additive — no new model):** five audit fields on `ScholarshipApplication` (**migration `0037`**):
+    `ai_verdict_snapshot` (the four-fact `build_verdict` snapshot captured at decision time), `officer_verdict`
+    (`{identity,academic,income,pathway: 'pass'|'fail', overall}`), `verdict_reason`, `verdict_decided_by`,
+    `verdict_decided_at`. New reviewer-gated `AdminRecordVerdictView` (`POST …/record-verdict/`) snapshots the AI
+    verdict beside the officer's decision and — when `finalise` is set and a draft profile + submitted interview
+    exist — runs the existing Phase-D refine to generate the final profile in one action (reuses
+    `refine_sponsor_profile`; never re-derives it). New `AdminVerdictMetricsView` (`GET …/verdict-metrics/`) +
+    pure `audit.py` (`compute_overrides`/`override_metrics`) compute the **override rate** ("how good is the AI":
+    where the human's pass/fail disagreed with the AI's `verified` assertion, per fact). Audit fields exposed
+    read-only on `AdminApplicationDetailSerializer`. 17 new tests (`test_verdict_audit.py`); full scholarship
+    suite **493** green; migration matches the model (`makemigrations --check` clean).
+  - **Frontend (cockpit redesign):** the four-fact verdict rendered as horizontal **status tiles**; a **Caveats to
+    resolve** panel (the open `resolution_items`) with officer **Ask** / **Resolve** actions; a redesigned
+    **Documents drawer** — grouped under Identity/Academic/Income/Pathway with a file icon, filename, extracted-field
+    line, status pill (Verified/Check/Unread) and View link (replaces the old flat list; preserves the doc-assist
+    fields + warnings); and a sticky **Record-your-verdict** panel — per-fact pass/fail toggles + reason + **"Save
+    verdict & generate final profile"**, a Tools group (pose query / log call / add findings), and an "AI suggested:
+    … — you decide" footer. New pure `lib/officerCockpit.ts` (`factTileTone`/`groupDocumentsByFact`/`aiSuggestionFor`/
+    `documentPill`, **27 node-env jest tests**); `recordVerdict`/`getVerdictMetrics`/`raiseResolutionItem`/
+    `actionResolutionItem` + the audit + `AdminResolutionItem` types in `lib/admin-api.ts`. Admin i18n
+    `admin.scholarship.{recordVerdict,caveats,docsDrawer}.*` × en/ms/ta (**parity 1782**, Tamil first-draft).
+    Stitch designs approved (cockpit layout A + the standalone documents drawer). `next build` clean; full jest
+    suite **226** green. Built by a delegated subagent; build/jest/i18n gates + the diff independently re-verified by
+    the orchestrator before commit. **The verdict roadmap (S1–S5) is now complete; the whole branch deploys next
+    (migrate-first: `0036` new-model + `0037` additive, per TD-058 + RLS).**
 
 ### Fixed
 - **Document intake now accepts PDF (not just images) and rejects video/junk — fixes the live TD-080 dead-end.**

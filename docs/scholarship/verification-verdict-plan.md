@@ -186,7 +186,18 @@ the **panel integration** that shows draft+caveats and wires to final.
   verdict flips Income/Academic forward. Pure-logic helpers node-tested.
 - **Complexity:** Medium. No migration.
 
-### Sprint 5 — Officer interview panel: draft profile + caveats + verdict → final
+### Sprint 5 — Officer interview panel: draft profile + caveats + verdict → final ✅ DONE (2026-06-02)
+- **Shipped:** the **Officer Review Cockpit** on `/admin/scholarship/[id]` (layout A, Stitch-approved). Backend
+  (additive, **migration `0037`**): five audit fields on `ScholarshipApplication` (`ai_verdict_snapshot`,
+  `officer_verdict`, `verdict_reason`, `verdict_decided_by`, `verdict_decided_at`) + `AdminRecordVerdictView`
+  (records the officer verdict beside the AI snapshot; optional one-action finalise reusing `refine_sponsor_profile`)
+  + `AdminVerdictMetricsView` + pure `audit.py` (override rate). Frontend: four-fact verdict **tiles**, **Caveats**
+  panel (open `resolution_items` + Ask/Resolve), redesigned **Documents drawer** (grouped by fact; replaces the messy
+  box), sticky **Record-verdict** panel (per-fact pass/fail + reason + Save-&-generate-final + tools + AI-suggested
+  footer); pure `lib/officerCockpit.ts` (27 jest). Audit fields exposed read-only on the admin serializer. **493**
+  scholarship pytest + **226** jest; i18n parity **1782** (Tamil first-draft). Migration matches the model.
+  TD-083 = verdict-metrics + `overall` built, not yet surfaced in UI. **The roadmap (S1–S5) is COMPLETE; the whole
+  branch deploys next (migrate-first `0036`+`0037`, TD-058 + RLS).**
 - **Goal:** The panel becomes the hinge: review the draft, clear the caveats,
   record a verdict, generate the final profile.
 - **Scope:** panel view extending `admin/scholarship/[id]`: (a) the **draft
@@ -205,6 +216,84 @@ the **panel integration** that shows draft+caveats and wires to final.
   **Stitch prototype first.**
 - **Complexity:** Medium (mostly wiring existing Phase C/D pieces + audit).
   Additive audit fields (migration).
+
+#### S5 — assets to reuse (do NOT rebuild)
+- **Draft / final profile:** `SponsorProfile` (`draft_markdown`/`edited_markdown`/
+  `current_markdown`/`final_markdown`, status flow) + `AdminFinaliseProfileView`
+  (the Phase-D "Refine with interview findings" trigger, migration `0028`) +
+  `profile_engine` (`generate_*`/`refine_*`/`_call_gemini_text`). The panel **wires**
+  these; it does not add a new AI pass.
+- **Caveats:** the open officer-side `ResolutionItem` queue + `verdict.unresolved[]`
+  (S1/S3) — already on `AdminApplicationDetailSerializer.resolution_items`/`.verdict`.
+- **Officer query / findings:** `resolution.add_officer_item` (S3, structured
+  successor to `info_request_note`) for a written query → student ticket; the
+  `InterviewSession` model + admin card (Phase C) for findings (verdict + rationale
+  + 1–5 rubric + overall note).
+- **Sponsor-facing preview = PII-stripped:** reuse the **allowlist** `Serializer`
+  pattern (`SponsorPoolCardSerializer`-style, decisions 2026-05-31; lessons #107/#108)
+  — never a `ModelSerializer` for anything a sponsor could see.
+
+#### S5 — audit/override capture (migration decision)
+- **Additive fields on the existing `ScholarshipApplication`**, NOT a new model:
+  `ai_verdict_snapshot` (JSON — the four-fact verdict at decision time),
+  `officer_verdict` (JSON — the officer's four-fact decision), `verdict_decided_by`,
+  `verdict_decided_at`. Override-rate = a query over `verdict_decided_at IS NOT NULL`.
+- **Why additive-on-existing, not a new table:** an additive `ALTER` deploys with
+  the simpler **MCP `execute_sql` migrate-first** pattern (lesson #71) and **avoids a
+  second new-model contenttypes/auth workaround** (TD-058) — `0036` already pays that
+  cost; don't double it. One snapshot per application is sufficient for the override
+  metric (we want the *final* officer decision vs the AI), and matches the
+  profile-canonical "store the decision where it's queried" posture. Migration
+  **`0037`** (additive; check `max()` on the branch first — lesson #32).
+
+#### S5 — lessons applied (from `docs/lessons.md`)
+- **Stitch-first is mandatory** (#50) and content-dense screens time out + persist
+  late (#72/#76/#77): generate **ONE** representative officer-panel screen + the
+  documents-drawer **pattern**, describe each repeating element once and summarise
+  the rest (#77), recover a timed-out gen via the preview URL's **`node-id` →
+  `get_screen`** (#116), and verify the returned content matches the ask (a timed-out
+  gen can persist as a stale duplicate, #76).
+- **Serializer fan-out** (#54/#81): before adding the verdict/audit fields, enumerate
+  every consumer of `AdminApplicationDetailSerializer`, and grep **both** FE type
+  homes (`lib/api.ts` **and** `lib/admin-api.ts`) so a model-shape change doesn't
+  break `next build` on the admin page.
+- **Pure-builder + node-env tests** (#47/#82/#55): any new panel logic goes in a pure
+  `lib/*.ts` (node-env jest, no DOM render) + a pure helper on the backend; the
+  override-rate calc is unit-tested as a pure function, and any engine fixture sets
+  **every** attribute it reads.
+- **Migrate-first / deploy doesn't migrate** (#61/#66/#71): `0037` applied to prod
+  **before** the branch pushes; the additive MCP `execute_sql` path (replicate
+  Django's DDL: `ADD COLUMN … DEFAULT …` then `DROP DEFAULT` for non-null defaults).
+- **Build-gate hygiene** (#80): capture `npm run build` to a file and read the
+  unmasked exit code — never pipe to `grep`. Don't run the full backend `pytest`
+  concurrently with `next build` on this 8 GB box (#83), and don't run `next build`
+  while a subagent holds a `next dev`/Playwright screenshot in the same `.next` (#74).
+- **Subagent delegation** (#73/#117): if the contained FE build is delegated, the
+  orchestrator **re-runs the gates itself** (`next build` to a log, jest,
+  `check-i18n`) and reads the diff before committing — the subagent's "verified" is a
+  claim, not evidence; spec it "no commit/push/deploy; save screenshots to a named
+  path; leave changes in the tree."
+- **i18n + British English** (#28/#99): all new officer + student copy in en/ms/ta
+  (parity via `check-i18n`), Tamil first-draft queued for refine; `PYTHONIOENCODING=
+  utf-8` for any inline Tamil print.
+- **TD-082 carried in:** an academic `confirm` ticket still routes to Documents, not
+  a grades surface — note it in the panel copy; tidy when the grades-edit surface lands.
+
+#### S5 — execution approach (recommended)
+1. **Stitch-first** — one officer-panel screen + documents-drawer pattern → user sign-off.
+2. **Backend slice (orchestrator):** migration `0037` (additive audit fields) +
+   serializer exposure + a reviewer-gated `AdminRecordVerdictView` (snapshots AI
+   verdict, stores officer verdict + reason, then triggers the existing finalise) +
+   pure override-rate helper + tests.
+3. **Frontend slice:** the officer cockpit TSX (draft + caveats + officer tools +
+   record-verdict → final) + the documents-drawer redesign + admin i18n. Given the
+   main-thread context budget, **delegate the contained FE build to one subagent**
+   (fresh context), then orchestrator re-runs all gates + reviews the diff before
+   commit. Backend stays with the orchestrator (it owns the migration + deploy).
+- **Budget flag:** S5 touches ~20–30 files (panel + drawer + audit + serializers +
+  i18n × 3 + tests) — the **upper edge** of the solo budget. The subagent split keeps
+  the main thread within context; if scope balloons, the documents-drawer redesign is
+  the natural carve-out to a fast-follow.
 
 ---
 

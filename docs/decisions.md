@@ -1821,3 +1821,25 @@ already-resolved ticket — the officer still sees the gap on the verdict, but t
 **Revisit if:** re-opening a resolved ticket on a returning gap becomes necessary (then key dedup on open-status +
 add a re-open path); or the GET-side-effect causes trouble (then move sync to an explicit POST / a signal on
 upload+delete only).
+
+## Verdict audit as additive fields on the application + record-verdict reuses the finalise engine — Verification-verdict S5, 2026-06-02
+**Decision:** (a) The officer's verdict-vs-AI audit is captured as **five additive fields on the existing
+`ScholarshipApplication`** (`ai_verdict_snapshot`, `officer_verdict`, `verdict_reason`, `verdict_decided_by`,
+`verdict_decided_at`; migration `0037`), NOT a new `VerdictAudit`/`VerdictDecision` table. The override-rate metric
+is a query over `verdict_decided_at IS NOT NULL` (pure `audit.py` `override_metrics`). (b) `AdminRecordVerdictView`
+records the audit and, when `finalise` is set and a draft profile + a submitted interview exist, calls the existing
+Phase-D `refine_sponsor_profile` to produce the final profile in the same request — it does not re-derive that logic.
+**Alternatives considered:** (a) a dedicated `VerdictAudit` log table (one row per decision); (b) the FE making two
+calls (record-verdict, then the existing finalise-profile) instead of one server action.
+**Rationale:** (a) an additive `ALTER` deploys via the simpler MCP `execute_sql` migrate-first path and **avoids a
+second new-model contenttypes/auth workaround** (TD-058) stacked on `0036`; one snapshot per application (the *final*
+officer decision vs the AI) is all the "how good is the AI" override rate needs, and it matches the
+profile-canonical "store the decision where it's queried" posture. (b) reusing `refine_sponsor_profile` keeps a
+single source of truth for the final-profile generation (cf. the recurring "don't fork the logic" lessons); the
+audit is still recorded even when finalise can't run (no draft / no interview), so the two concerns don't couple.
+**Trade-offs:** (a) only the latest decision is retained — no full per-decision history (acceptable for the override
+metric; add a log table later if an audit trail of *changes* is needed). (b) `record-verdict` does up to two things
+in one request (record + optional refine), but each is independently short-circuited and the refine path is the
+existing, tested one.
+**Revisit if:** a point-in-time *history* of officer decisions is needed (add a `VerdictAudit` log keyed to the
+application), or the override metric needs per-reviewer/per-cohort breakdowns the single snapshot can't express.
