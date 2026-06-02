@@ -681,7 +681,7 @@ export default function AdminScholarshipDetailPage() {
         </div>
         {(() => {
           const groups = groupDocumentsByFact(app.documents)
-          const sectionKeys = ['identity', 'academic', 'income', 'pathway', 'other'] as const
+          const sectionKeys = ['identity', 'academic', 'pathway', 'income', 'other'] as const
           const pillClass = (p: 'verified' | 'check' | 'unread') => {
             if (p === 'verified') return 'bg-green-100 text-green-700'
             if (p === 'check') return 'bg-amber-100 text-amber-700'
@@ -1169,7 +1169,7 @@ export default function AdminScholarshipDetailPage() {
 
         {/* Four fact rows — pass / fail toggle */}
         <div className="space-y-2">
-          {(['identity', 'academic', 'income', 'pathway'] as const).map((fact) => (
+          {(['identity', 'academic', 'pathway', 'income'] as const).map((fact) => (
             <div key={fact} className="flex items-center justify-between gap-2 rounded-lg border border-gray-100 p-2.5">
               <span className="text-sm font-medium text-gray-700">{t(`admin.scholarship.verdict.fact.${fact}`)}</span>
               <div className="flex gap-1.5">
@@ -1234,7 +1234,7 @@ export default function AdminScholarshipDetailPage() {
         {/* AI suggestion footer */}
         {(() => {
           const sugg = aiSuggestionFor(app.verdict || [])
-          const facts = ['identity', 'academic', 'income', 'pathway'] as const
+          const facts = ['identity', 'academic', 'pathway', 'income'] as const
           return (
             <p className="text-[11px] text-gray-400 border-t pt-2">
               {t('admin.scholarship.recordVerdict.aiSuggested')}{' '}

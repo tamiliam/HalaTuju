@@ -340,4 +340,4 @@ class TestTheresaIntegration(_Base):
 
     def test_order_is_fixed(self):
         self.assertEqual([f['fact'] for f in build_verdict(self.app)],
-                         ['identity', 'academic', 'income', 'pathway'])
+                         ['identity', 'academic', 'pathway', 'income'])

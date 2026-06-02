@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Document organisation now mirrors the four verification facts (Identity · Academic · Pathway · Income).**
+  (1) **Reordered** the verdict so Pathway comes before Income everywhere it renders — scorecard tiles, the Record-verdict
+  panel, the AI-suggestion footer, and the officer Documents drawer (`build_verdict`, `audit.FACTS`, the admin page's
+  three fact arrays, `officerCockpit` object orders). (2) **The parent/guardian IC moved from Identity to Income** in the
+  officer Documents grouping — the income docs (STR / salary slip / EPF) are issued in a parent's name and the parent IC
+  is what confirms that earner (display-only; verdict Identity logic still keys on the student's own IC). (3) **The
+  student Documents tab** is regrouped from Required/Optional into the five fact sections — **Identity** (compulsory: IC),
+  **Academic** (compulsory: results slip), **Pathway** (important: offer letter), **Income** (compulsory: income proof +
+  parent IC + utility bills) and **Other** (optional: statement of intent, photo) — each with a status pill. Presentational
+  only: no completeness change (the offer letter stays non-blocking; `documents_done` unchanged). No migration. i18n
+  parity 1843 (en/ms/ta).
+
 ### Added
 - **Pathway — AI-raised "final chosen pathway" confirmation (no human officer).** Once a student uploads an offer
   letter whose **Name + IC match** their profile, the system auto-raises a `pathway_confirm` query in the Action Centre
