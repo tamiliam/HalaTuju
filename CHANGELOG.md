@@ -102,6 +102,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     (migrate-first: `0036` new-model + `0037` additive, per TD-058 + RLS).**
 
 ### Fixed
+- **Officer cockpit polish + application-pipeline quick wins (verification-verdict 2nd deploy).** (1) The officer
+  cockpit (verdict tiles + the sticky **Record your verdict** panel) now renders **directly under the applicant
+  header** with the detailed applicant data below it, instead of floating beneath the data — so the officer audits
+  the verdict first and the Record panel sits top-right near the name. (2) **Cikgu Gopal** no longer calls the
+  programme "HalaTuju Scholarship" — it is the **B40 Assistance Programme**; his tone is toned down (plainer cikgu,
+  hard rule **no pet names** like "dear"); and his advice now **sticks** — a storage-injectable cache keyed by a
+  per-language verdict signal means a plain page reload re-renders the stored advice with no re-fetch/re-pop, and
+  Gopal only re-fires after an actual (re-)upload. (3) The student's **IC validation shows one box per distinct
+  issue** (a bad NRIC and a name mismatch are separate boxes, never merged). (4) **Hard audit gate** — an officer
+  can no longer verify-&-accept a case until they have **recorded their verdict** (audited the AI's four-fact
+  verdict); `verify-accept` returns `400 verdict_not_recorded` otherwise (no override). Backend **494** pytest +
+  **231** jest; i18n parity **1782**; `next build` clean. No migration. Plan:
+  `docs/scholarship/application-processing-pipeline-plan.md`.
 - **Document intake now accepts PDF (not just images) and rejects video/junk — fixes the live TD-080 dead-end.**
   A PDF or video IC used to return Google Vision "Bad image data", which we mislabelled as `ic_service_down`
   ("try again later") — a permanent block at consent (5 applicants stranded). And every PDF *supporting* doc
