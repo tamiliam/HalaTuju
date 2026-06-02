@@ -118,6 +118,7 @@ export default function AdminScholarshipDetailPage() {
   const [officerVerdict, setOfficerVerdict] = useState<Record<string, string>>({})
   const [verdictReason, setVerdictReason] = useState('')
   const [verdictMsg, setVerdictMsg] = useState('')
+  const [verdictMsgTone, setVerdictMsgTone] = useState<'ok' | 'warn'>('ok')
 
   const loadInterviewState = (d: AdminScholarshipDetail) => {
     const s = d.interview_session
@@ -295,14 +296,15 @@ export default function AdminScholarshipDetailPage() {
       loadVerdictState(result)
       if (finalise) {
         const fr = result.finalise_result
-        if (!fr) {
-          setVerdictMsg(t('admin.scholarship.recordVerdict.finaliseNoDraft'))
-        } else if (fr.ok) {
-          setVerdictMsg(t('admin.scholarship.recordVerdict.finaliseOk'))
+        if (fr && fr.ok) {
+          // The ONLY truly-complete outcome: verdict recorded AND final profile generated.
+          setVerdictMsg(t('admin.scholarship.recordVerdict.finaliseOk')); setVerdictMsgTone('ok')
         } else {
-          setVerdictMsg(fr.code === 'no_interview'
+          // Saved, but NOT finalised — work is incomplete. Amber, not green.
+          setVerdictMsg(fr?.code === 'no_interview'
             ? t('admin.scholarship.recordVerdict.finaliseNoInterview')
             : t('admin.scholarship.recordVerdict.finaliseNoDraft'))
+          setVerdictMsgTone('warn')
         }
       }
     } catch (e) {
@@ -424,10 +426,12 @@ export default function AdminScholarshipDetailPage() {
       <GroupLabel>{t('admin.scholarship.reviewActions')}</GroupLabel>
 
       {/* ── COCKPIT: two-column layout — left (wider) + right sticky ───────────── */}
-      <div className="grid items-start gap-4 lg:grid-cols-[1fr_340px]">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
 
       {/* ═══════════════════════ LEFT COLUMN ═══════════════════════════════════ */}
-      <div className="space-y-4">
+      {/* min-w-0 (via minmax(0,1fr) above + here): long verdict text must not stop
+          the column shrinking, or it pushes the 340px Record panel off-screen. */}
+      <div className="space-y-4 min-w-0">
 
       {/* ── Verification verdict — four horizontal tiles ───────────────────────── */}
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -469,14 +473,14 @@ export default function AdminScholarshipDetailPage() {
               ? resolve(f.evidence[0])
               : t(`admin.scholarship.verdict.status.${f.status}`)
             return (
-              <div key={f.fact} className={`rounded-lg border p-3 flex flex-col gap-1.5 ${tileColour}`}>
-                <div className="flex items-center gap-1.5">
+              <div key={f.fact} className={`min-w-0 rounded-lg border p-3 flex flex-col gap-1.5 ${tileColour}`}>
+                <div className="flex items-center gap-1.5 min-w-0">
                   <span className={`h-2 w-2 rounded-full shrink-0 ${dotColour}`} aria-hidden />
-                  <span className={`text-xs font-semibold uppercase tracking-wide ${labelColour}`}>
+                  <span className={`truncate text-xs font-semibold uppercase tracking-wide ${labelColour}`}>
                     {t(`admin.scholarship.verdict.fact.${f.fact}`)}
                   </span>
                 </div>
-                <p className="text-[11px] text-gray-700 leading-tight line-clamp-2">{subtitle}</p>
+                <p className="text-[11px] text-gray-700 leading-tight line-clamp-2 break-words">{subtitle}</p>
               </div>
             )
           })}
@@ -728,12 +732,20 @@ export default function AdminScholarshipDetailPage() {
                                 <p className="text-[11px] text-amber-600 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
                               )}
                             </div>
-                            {d.download_url && (
-                              <a href={d.download_url} target="_blank" rel="noreferrer"
-                                className="shrink-0 text-xs text-blue-600 hover:underline mt-0.5">
-                                {t('admin.scholarship.docsDrawer.view')}
-                              </a>
-                            )}
+                            <div className="shrink-0 flex flex-col items-end gap-0.5 mt-0.5">
+                              {d.download_url && (
+                                <a href={d.download_url} target="_blank" rel="noreferrer"
+                                  className="text-xs text-blue-600 hover:underline">
+                                  {t('admin.scholarship.docsDrawer.view')}
+                                </a>
+                              )}
+                              {/* Re-run the automatic read (IC OCR, or the results-slip
+                                  grade extraction) — available on every document, not just IC. */}
+                              <button onClick={() => doReRunVision(d.id)} disabled={busy === 'vision'}
+                                className="text-[11px] text-gray-500 hover:text-gray-700 hover:underline disabled:opacity-50">
+                                {busy === 'vision' ? t('common.loading') : t('admin.scholarship.docsDrawer.rerun')}
+                              </button>
+                            </div>
                           </li>
                         )
                       })}
@@ -1216,7 +1228,7 @@ export default function AdminScholarshipDetailPage() {
 
         {/* Feedback message */}
         {verdictMsg && (
-          <p className="text-xs text-green-700 bg-green-50 rounded p-2">{verdictMsg}</p>
+          <p className={`text-xs rounded p-2 ${verdictMsgTone === 'ok' ? 'text-green-700 bg-green-50' : 'text-amber-800 bg-amber-50'}`}>{verdictMsg}</p>
         )}
 
         {/* AI suggestion footer */}

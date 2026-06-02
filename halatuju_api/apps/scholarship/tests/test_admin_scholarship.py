@@ -382,10 +382,26 @@ class TestAdminScholarship(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertTrue(mock_vision.called)
 
-    def test_admin_rerun_vision_rejects_non_ic(self):
+    @patch('apps.scholarship.vision.run_field_extraction_for_document')
+    @patch('apps.scholarship.vision.run_vision_match_for_document')
+    @patch('apps.scholarship.vision.ocr_document')
+    def test_admin_rerun_vision_on_results_slip(self, mock_ocr, mock_match, mock_extract):
+        # Now SUPPORTED: re-run extracts the GRADES off the results slip (S2), forced
+        # past the throttle. (Previously this 400'd — re-run was IC-only.)
+        mock_ocr.return_value = {}
+        mock_match.return_value = {'name_match': 'found', 'address_match': ''}
         results = ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='r/abc')
         self._auth(ADMIN)
         r = self.client.post(self._rerun_vision_url(results.id))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(mock_match.called)
+        self.assertTrue(mock_extract.called)   # the grade read
+
+    def test_admin_rerun_vision_rejects_unsupported_type(self):
+        # A type with no automatic check (e.g. guardianship_letter) still 400s.
+        doc = ApplicantDocument.objects.create(application=self.app, doc_type='guardianship_letter', storage_path='g/abc')
+        self._auth(ADMIN)
+        r = self.client.post(self._rerun_vision_url(doc.id))
         self.assertEqual(r.status_code, 400)
 
     def test_admin_rerun_vision_404_for_wrong_application(self):

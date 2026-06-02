@@ -263,28 +263,43 @@ class AdminRefereeDetailView(_AdminBase):
 
 class AdminRunVisionView(_AdminBase):
     """
-    POST .../<pk>/documents/<doc_id>/re-run-vision/ — re-run Vision OCR on an
-    existing IC or parent/guardian IC document. Soft signal only; the admin
-    verify-&-accept stays the real identity gate. Returns the updated document.
+    POST .../<pk>/documents/<doc_id>/re-run-vision/ — re-run a document's automatic
+    read. **IC / parent-IC** → MyKad OCR (identity soft signal). **Supporting docs**
+    (results slip, income proofs, bills, offer letter) → the soft name/address match
+    PLUS the doc-assist field extraction — i.e. the results-slip **GRADES** read (S2).
+    This is an admin action and **FORCES** the (billable) extraction regardless of the
+    cost knob / hourly throttle (the admin clicked it deliberately). The verify-&-accept
+    stays the real identity gate. Returns the updated document.
     """
-    # Both are MyKad-structured and OCR'd on upload (S13 + S17); run_vision_for_document
-    # (extract_mykad) handles either. Previously this gate allowed only 'ic', so every
-    # parent-IC re-run 400'd ("Could not re-run Vision").
-    _OCR_DOC_TYPES = ('ic', 'parent_ic')
-
     def post(self, request, pk, doc_id):
         if not self.get_admin(request):
             return self._deny()
         doc = ApplicantDocument.objects.filter(pk=doc_id, application_id=pk).first()
         if doc is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-        if doc.doc_type not in self._OCR_DOC_TYPES:
-            return Response(
-                {'error': 'Vision OCR only runs on IC / parent-IC documents.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        from .vision import run_vision_for_document
-        run_vision_for_document(doc)
+        from . import vision as _vision
+        from .views import BILL_DOC_TYPES, SUPPORTING_NAME_CHECK_TYPES
+        if doc.doc_type in ('ic', 'parent_ic'):
+            _vision.run_vision_for_document(doc)
+        elif doc.doc_type in SUPPORTING_NAME_CHECK_TYPES:
+            # Replicate the upload-time supporting-doc processing (forced, not throttled).
+            profile = getattr(self._get_application(pk), 'profile', None)
+            names = [getattr(profile, 'name', '') or '']
+            names += [g.get('name', '') for g in (getattr(profile, 'guardians', None) or [])
+                      if isinstance(g, dict)]
+            names = [n for n in names if n]
+            postcode = getattr(profile, 'postal_code', '') or ''
+            city = getattr(profile, 'city', '') or ''
+            check_address = doc.doc_type in BILL_DOC_TYPES
+            ocr = _vision.ocr_document(doc)   # OCR once, shared by both checks
+            _vision.run_vision_match_for_document(
+                doc, names=names, postcode=postcode, city=city, check_address=check_address, ocr=ocr)
+            if doc.doc_type in _vision.GEMINI_EXTRACT_DOC_TYPES:
+                _vision.run_field_extraction_for_document(
+                    doc, names=names, postcode=postcode, city=city, check_address=check_address, ocr=ocr)
+        else:
+            return Response({'error': 'This document type has no automatic check to re-run.'},
+                            status=status.HTTP_400_BAD_REQUEST)
         return Response(ApplicantDocumentSerializer(doc).data)
 
 
