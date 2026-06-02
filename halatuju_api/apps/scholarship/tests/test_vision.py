@@ -3,12 +3,21 @@
 These exercise the canonicalisers + matchers + text-extraction regexes — the
 Google Cloud Vision call itself is never made here.
 """
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from apps.scholarship.vision import (
-    _canonical_name_tokens, _canonical_nric, _extract_address, _extract_name, _extract_nric,
+    _as_image_for_gemini, _canonical_name_tokens, _canonical_nric, _extract_address,
+    _extract_name, _extract_nric, _is_card_label_line, _merge_ic_reads, _should_gemini_ic,
     extract_mykad, name_match, nric_match,
 )
+
+
+class _FakeProfile:
+    """Minimal stand-in for a StudentProfile (no DB) — just the two fields the IC
+    confidence gate / merge read."""
+    def __init__(self, nric='', name=''):
+        self.nric = nric
+        self.name = name
 
 
 class TestNricMatch(TestCase):
@@ -106,6 +115,19 @@ NO 12 JALAN MAHKOTA
         # Chinese name, no parentage marker → first name-line right after the NRIC.
         ocr = "MYKAD\nMALAYSIA\n900101-10-5555\nTAN AH KAU\nNO 5 JALAN BESAR\nKUALA LUMPUR"
         self.assertEqual(_extract_name(ocr, '900101-10-5555'), 'TAN AH KAU')
+
+    def test_name_truncated_marker_appends_next_line(self):
+        # The Theresa case: OCR line-breaks the surname AFTER the A/P marker, so the
+        # name line ENDS with the marker and the surname is on the next line → append it.
+        ocr = ("MYKAD\nMALAYSIA\n080115-05-0132\nTHERESA ARUL MARY A/P\nA.PHILIPS\n"
+               "TB 456 JALAN KEJORA 4\n76460 MELAKA\nMELAKA")
+        self.assertEqual(_extract_name(ocr, '080115-05-0132'),
+                         'THERESA ARUL MARY A/P A.PHILIPS')
+
+    def test_name_marker_midline_does_not_append(self):
+        # A marker MID-line (full name on one line) must NOT pull in the next line.
+        ocr = "MYKAD\nMALAYSIA\n030101-14-1234\nPRIYA A/P KRISHNAN\nNO 9 JALAN X\n50000 KL"
+        self.assertEqual(_extract_name(ocr, '030101-14-1234'), 'PRIYA A/P KRISHNAN')
 
     def test_no_text_returns_empty(self):
         self.assertEqual(_extract_nric(''), '')
@@ -229,6 +251,119 @@ NO 12 JALAN ABC
         result = _extract_address(text)
         # Each unique line should appear once.
         self.assertEqual(result.count('NO 12 JALAN ABC'), 1)
+
+
+class TestAddressCardLabelStrip(TestCase):
+    """#2 — card-chrome labels ("MyKad", "WARGANEGARA", "ISLAM"…) must never leak into
+    the surfaced home address. Field report: 'Address: MyKad, C65B JALAN SEJATI…'."""
+
+    def test_is_card_label_line(self):
+        self.assertTrue(_is_card_label_line('MyKad'))
+        self.assertTrue(_is_card_label_line('WARGANEGARA MALAYSIA'))
+        self.assertTrue(_is_card_label_line('ISLAM'))
+        self.assertFalse(_is_card_label_line('C65B JALAN SEJATI'))
+        self.assertFalse(_is_card_label_line('TAMAN SEMANGAT'))
+        self.assertFalse(_is_card_label_line(''))
+
+    def test_drops_mykad_label_from_address(self):
+        # 'MyKad' sits in the up-walk window above the postcode and must be dropped.
+        text = """710829-02-5709
+ELANJELIAN A/L VENUGOPAL
+MyKad
+C65B JALAN SEJATI
+08000 SUNGAI PETANI
+KEDAH"""
+        result = _extract_address(text)
+        self.assertNotIn('MyKad', result)
+        self.assertNotIn('MYKAD', result.upper())
+        self.assertIn('C65B JALAN SEJATI', result)
+        self.assertIn('08000 SUNGAI PETANI', result)
+        self.assertIn('KEDAH', result)
+
+    def test_drops_warganegara_label_from_address(self):
+        text = """030101-14-1234
+WARGANEGARA
+NO 12 JALAN MAHKOTA
+40000 SHAH ALAM
+SELANGOR"""
+        result = _extract_address(text)
+        self.assertNotIn('WARGANEGARA', result.upper())
+        self.assertIn('NO 12 JALAN MAHKOTA', result)
+
+
+class TestIcGeminiFallbackHelpers(TestCase):
+    """#5 — the IC Gemini second opinion: pure confidence-gate + merge + image-prep."""
+
+    # ── _should_gemini_ic ────────────────────────────────────────────────────
+    def test_no_escalation_on_clean_matching_read(self):
+        result = {'nric': '030101-14-1234', 'name': 'PRIYA A/P KRISHNAN', 'address': 'X'}
+        self.assertFalse(_should_gemini_ic(result, _FakeProfile('030101-14-1234', 'Priya Krishnan')))
+
+    def test_escalates_when_nric_missing(self):
+        self.assertTrue(_should_gemini_ic({'nric': '', 'name': 'X Y'}, _FakeProfile()))
+
+    def test_escalates_when_name_missing(self):
+        self.assertTrue(_should_gemini_ic({'nric': '030101-14-1234', 'name': ''}, _FakeProfile()))
+
+    def test_escalates_on_nric_mismatch_vs_profile(self):
+        # A single misread digit (…1234 vs …1239) → likely OCR error → second opinion.
+        result = {'nric': '030101-14-1239', 'name': 'PRIYA A/P KRISHNAN'}
+        self.assertTrue(_should_gemini_ic(result, _FakeProfile('030101-14-1234', 'Priya Krishnan')))
+
+    def test_escalates_on_name_mismatch_vs_profile(self):
+        result = {'nric': '030101-14-1234', 'name': 'SOMEONE ELSE'}
+        self.assertTrue(_should_gemini_ic(result, _FakeProfile('030101-14-1234', 'Priya Krishnan')))
+
+    def test_no_escalation_without_profile_when_fields_present(self):
+        # Nothing to compare against, but both core fields read → stay free.
+        result = {'nric': '030101-14-1234', 'name': 'PRIYA A/P KRISHNAN'}
+        self.assertFalse(_should_gemini_ic(result, None))
+
+    @override_settings(IC_GEMINI_FALLBACK_ENABLED=False)
+    def test_knob_off_never_escalates(self):
+        self.assertFalse(_should_gemini_ic({'nric': '', 'name': ''}, _FakeProfile()))
+
+    # ── _merge_ic_reads ──────────────────────────────────────────────────────
+    def test_merge_fills_empty_core_fields(self):
+        det = {'nric': '', 'name': '', 'address': '', 'error': None}
+        g = {'nric': '030101-14-1234', 'name': 'PRIYA A/P KRISHNAN', 'address': 'NO 1, KL'}
+        out = _merge_ic_reads(det, g, _FakeProfile())
+        self.assertEqual(out['nric'], '030101-14-1234')
+        self.assertEqual(out['name'], 'PRIYA A/P KRISHNAN')
+        self.assertEqual(out['address'], 'NO 1, KL')
+
+    def test_merge_recovers_misread_nric_when_gemini_matches_profile(self):
+        det = {'nric': '030101-14-1239', 'name': 'PRIYA A/P KRISHNAN', 'address': '', 'error': None}
+        g = {'nric': '030101-14-1234', 'name': 'PRIYA A/P KRISHNAN', 'address': ''}
+        out = _merge_ic_reads(det, g, _FakeProfile('030101-14-1234', 'Priya Krishnan'))
+        self.assertEqual(out['nric'], '030101-14-1234')   # gemini wins — it matches profile
+
+    def test_merge_keeps_confident_det_nric_when_gemini_disagrees(self):
+        det = {'nric': '030101-14-1234', 'name': 'PRIYA A/P KRISHNAN', 'address': '', 'error': None}
+        g = {'nric': '999999-99-9999', 'name': 'PRIYA A/P KRISHNAN', 'address': ''}
+        out = _merge_ic_reads(det, g, _FakeProfile('030101-14-1234', 'Priya Krishnan'))
+        self.assertEqual(out['nric'], '030101-14-1234')   # det already matched → not overridden
+
+    def test_merge_address_always_prefers_gemini_clean_value(self):
+        det = {'nric': '030101-14-1234', 'name': 'X', 'address': 'MyKad, NO 1', 'error': None}
+        g = {'nric': '', 'name': '', 'address': 'NO 1, JALAN BERSIH, 50000 KL'}
+        out = _merge_ic_reads(det, g, _FakeProfile())
+        self.assertEqual(out['address'], 'NO 1, JALAN BERSIH, 50000 KL')
+
+    # ── _as_image_for_gemini ─────────────────────────────────────────────────
+    def test_image_passthrough_with_mime(self):
+        img, mime = _as_image_for_gemini(b'\xff\xd8\xff', 'image/jpeg')
+        self.assertEqual(img, b'\xff\xd8\xff')
+        self.assertEqual(mime, 'image/jpeg')
+
+    def test_image_defaults_mime_when_unknown(self):
+        _img, mime = _as_image_for_gemini(b'rawbytes', '')
+        self.assertEqual(mime, 'image/jpeg')
+
+    def test_empty_returns_none(self):
+        img, mime = _as_image_for_gemini(b'', 'image/png')
+        self.assertIsNone(img)
+        self.assertEqual(mime, '')
 
 
 class TestExtractMykadGraceful(TestCase):

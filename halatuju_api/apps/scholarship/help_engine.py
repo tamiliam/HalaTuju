@@ -30,12 +30,28 @@ PERSONA = 'Cikgu Gopal'
 # upstream (deterministic); this only tells Cikgu Gopal what to talk about. The set of keys
 # IS the contract the frontend shares (its fallback copy is keyed by the same codes).
 VERDICT_GUIDANCE = {
-    'name_mismatch':   "the name we read on this document did not match the applicant's name",
+    'name_mismatch':   "the name we read on this document did not match the name saved in the applicant's profile",
     'nric_mismatch':   "the IC number we read did not match the IC number in the applicant's profile",
     'address_mismatch': "the home address on this bill did not match the address on file",
     'wrong_doc':       "this file did not look like the kind of document expected in this slot",
     'unreadable':      "we could not read this document clearly — it may be blurry, dark, or low-resolution",
     'review_manually': "we could not auto-check this one right now; a reviewer will look at it by hand",
+}
+
+# Per-verdict fix advice. Most verdicts just need a re-upload; a NAME mismatch is
+# bidirectional — either the photo was misread OR the student typed their name
+# slightly differently when they registered — so Cikgu Gopal must offer BOTH paths.
+DEFAULT_FIX_HINT = ('Gently suggest the likely fix (for example, check you uploaded the '
+                    'right page/details clearly, then upload again).')
+VERDICT_FIX_HINT = {
+    'name_mismatch': (
+        'A name mismatch can happen TWO ways, so kindly offer BOTH fixes and let the '
+        'student decide which is right: (1) if the photo is blurry, dark, or cut off, '
+        'they should upload a clearer one; (2) if the name printed on the card is actually '
+        'correct, then the name they typed when registering may have a small spelling '
+        'difference — they can fix it on their Profile page. Do NOT assume which one is '
+        "wrong — the card might be right and the typed name wrong, or the other way round."
+    ),
 }
 
 # Friendly, plain-language label per document type (only the types that can get a coach note).
@@ -80,8 +96,8 @@ THE SITUATION RIGHT NOW:
 
 YOUR REPLY:
 - Write 2-3 short, plain, friendly sentences in {target_language}, addressed to the student by their first name.
-- Reassure them this is common and fixable, explain simply WHY this document needs what it needs, \
-and gently suggest the likely fix (e.g. check the right page/details, then upload again).
+- Reassure them this is common and fixable, and explain simply WHY this document needs what it needs.
+- {fix_hint}
 - End on an encouraging note.
 
 HARD RULES (these override everything else):
@@ -149,6 +165,7 @@ def _build_help_prompt(doc_type, verdict, first_name, target_language=DEFAULT_LA
         programme_briefing=PROGRAMME_BRIEFING,
         doc_label=_doc_label(doc_type),
         cause=VERDICT_GUIDANCE.get(verdict, ''),
+        fix_hint=VERDICT_FIX_HINT.get(verdict, DEFAULT_FIX_HINT),
         first_name=(first_name or '').strip() or 'there',
         target_language=target_language,
     )

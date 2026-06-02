@@ -883,8 +883,9 @@
         "parent_ic": "A photo of your parent or guardian's IC. We use it to verify supporting documents like STR or EPF that are usually issued in your parent's name. (If you are under 18, your parent or guardian also signs the consent below.)",
         "guardianship_letter": "Only needed if the consent will be given by someone other than your father or mother — a court-issued guardianship order OR a written authorisation letter from your parent.",
         "coachLabel": "Cikgu Gopal · Helper",
+        "editProfileName": "Edit your name in your profile",
         "fallback": {
-          "name_mismatch": "No worries — this happens a lot! We couldn't match the name on this document to your name. Documents need to clearly show your name so we know they're yours. Check you've uploaded the right page, then try again. You've got this!",
+          "name_mismatch": "No worries — this happens a lot! The name we read here didn't match the name saved in your profile. This can go two ways: the photo may be a little unclear, OR the name you typed when you registered may be spelled slightly differently. If the photo is unclear, upload a clearer one; if the name on your card is correct, fix the spelling on your profile. You've got this!",
           "nric_mismatch": "Don't worry, this is an easy fix! The IC number we read didn't match the one in your profile. Have a quick look at your profile to check the digits, then upload your IC again. You're doing great.",
           "address_mismatch": "Almost there! We couldn't find your home address on this bill. Utility bills help us confirm where you live, so make sure the address is clearly visible on the page you uploaded, then try again.",
           "wrong_doc": "Hmm, this doesn't look like the document we expected here — an easy mix-up! Double-check you picked the right file, then upload again. Happy to help if you get stuck.",
