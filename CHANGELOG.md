@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Pathway — AI-raised "final chosen pathway" confirmation (no human officer).** Once a student uploads an offer
+  letter whose **Name + IC match** their profile, the system auto-raises a `pathway_confirm` query in the Action Centre
+  — *"We can see your offer for {programme} at {institution}. Is this the pathway you'd like assistance for?"* — and the
+  student answers **Yes** in place. That writes the offer's programme + institution to `chosen_programme`
+  (`source: offer_letter_confirmed`) and stamps `pathway_confirmed_at` (migration `scholarship/0038`, additive), after
+  which the **Pathway verdict reads `verified`** (*"Final pathway confirmed by the student: …"*). Deliberately **not a
+  blocker**: a student who receives a better offer just uploads that one instead — whatever they confirm becomes the
+  final pathway. `_verdict_pathway` now uses `pathway_engine.student_offer_check` (Name + the strong **IC** check) for
+  the identity guard; a wrong-person letter → `offer_name_mismatch` (no confirmation offered). The Action Centre renders
+  the confirm query with a direct affirmative button (a new in-place resolve, distinct from the navigate-to-section
+  `confirm`). +6 backend tests; i18n parity 1830 (en/ms/ta).
 - **Check 1 — Pathway (offer letter) facts, differentiated.** The offer letter now gets the same clinical fact-checklist
   the IC and slip have, surfacing the facts the coordinator cares about. Two real identity checks — **Name** and **IC**
   (`candidate_nric` matched against the profile NRIC; the IC is the strong one, since names can coincide but the NRIC
