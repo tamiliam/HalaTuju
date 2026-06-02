@@ -282,3 +282,63 @@ class TestDocumentApi(TestCase):
         body = resp.json()
         self.assertEqual(body['vision_nric'], '')
         self.assertEqual(body['vision_error'], 'AI module not installed')
+
+
+class TestIcGeminiFallbackIntegration(TestCase):
+    """#5 — run_vision_for_document escalates a low-confidence MyKad read to the Gemini
+    second opinion (cost-gated) and merges it in. Vision + Gemini seams both mocked."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='gx', name='B40', year=2026)
+        cls.profile = StudentProfile.objects.create(supabase_user_id='gemini-ic-user',
+                                                    nric='030101-14-1234', name='Priya Krishnan')
+        cls.app = ScholarshipApplication.objects.create(cohort=cls.cohort, profile=cls.profile,
+                                                        status='shortlisted')
+
+    def _ic_doc(self):
+        return ApplicantDocument.objects.create(
+            application=self.app, doc_type='ic',
+            storage_path=f'{self.app.id}/ic/x', original_filename='mykad.jpg',
+            content_type='image/jpeg', size=50_000)
+
+    # A misread last digit (…1239) — OCR disagrees with the typed profile (…1234).
+    _MISREAD_OCR = {'text': 'MYKAD\nMALAYSIA\n030101-14-1239\nPRIYA A/P KRISHNAN\nNO 1 JALAN\n50000 KL',
+                    'error': None}
+    _CLEAN_OCR = {'text': 'MYKAD\nMALAYSIA\n030101-14-1234\nPRIYA A/P KRISHNAN\nNO 1 JALAN\n50000 KL',
+                  'error': None}
+
+    @patch('apps.scholarship.vision._call_gemini_json')
+    @patch('apps.scholarship.vision._vision_document_text')
+    @patch('apps.scholarship.vision._fetch_image_bytes', return_value=b'imgbytes')
+    def test_low_confidence_escalates_and_merges(self, _img, mock_ocr, mock_gemini):
+        from apps.scholarship.vision import run_vision_for_document
+        mock_ocr.return_value = self._MISREAD_OCR
+        mock_gemini.return_value = {'nric': '030101-14-1234', 'name': 'PRIYA A/P KRISHNAN',
+                                    'address': 'NO 1, JALAN BERSIH, 50000 KL'}
+        doc = self._ic_doc()
+        result = run_vision_for_document(doc)
+        self.assertTrue(mock_gemini.called)                 # escalated
+        self.assertEqual(result['nric'], '030101-14-1234')  # gemini recovered the digit
+        doc.refresh_from_db()
+        self.assertEqual(doc.vision_nric, '030101-14-1234')
+        self.assertEqual(doc.vision_address, 'NO 1, JALAN BERSIH, 50000 KL')
+
+    @patch('apps.scholarship.vision._call_gemini_json')
+    @patch('apps.scholarship.vision._vision_document_text')
+    @patch('apps.scholarship.vision._fetch_image_bytes', return_value=b'imgbytes')
+    def test_clean_read_does_not_call_gemini(self, _img, mock_ocr, mock_gemini):
+        from apps.scholarship.vision import run_vision_for_document
+        mock_ocr.return_value = self._CLEAN_OCR
+        run_vision_for_document(self._ic_doc())
+        mock_gemini.assert_not_called()                     # stayed free
+
+    @override_settings(IC_GEMINI_FALLBACK_ENABLED=False)
+    @patch('apps.scholarship.vision._call_gemini_json')
+    @patch('apps.scholarship.vision._vision_document_text')
+    @patch('apps.scholarship.vision._fetch_image_bytes', return_value=b'imgbytes')
+    def test_knob_off_never_calls_gemini(self, _img, mock_ocr, mock_gemini):
+        from apps.scholarship.vision import run_vision_for_document
+        mock_ocr.return_value = self._MISREAD_OCR
+        run_vision_for_document(self._ic_doc())
+        mock_gemini.assert_not_called()

@@ -63,6 +63,21 @@ class TestGenerateHelp(TestCase):
             self.assertIn(cause, p)
             self.assertIn('Ravi', p)
 
+    def test_name_mismatch_prompt_is_bidirectional(self):
+        """#6 — a name mismatch can be a misread photo OR a mistyped profile name; the
+        prompt must offer BOTH fixes (re-upload AND fix the profile), not assume the
+        document is the wrong one."""
+        p = help_engine._build_help_prompt('ic', 'name_mismatch', 'Theresa',
+                                           help_engine.DEFAULT_LANGUAGE).lower()
+        self.assertIn('profile', p)        # the edit-your-name path
+        self.assertIn('clearer', p)        # the re-upload path
+        self.assertIn('both', p)           # explicitly offers both
+
+    def test_non_name_verdict_uses_default_fix_hint(self):
+        p = help_engine._build_help_prompt('ic', 'unreadable', 'Theresa',
+                                           help_engine.DEFAULT_LANGUAGE)
+        self.assertIn(help_engine.DEFAULT_FIX_HINT, p)
+
 
 class TestGuardrails(TestCase):
     """Task 4 — the hard rule: coach, never ghostwriter; never leak a score; firewalled."""

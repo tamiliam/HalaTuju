@@ -133,6 +133,11 @@ DOC_ASSIST_RATE_LIMIT_PER_HOUR = int(os.environ.get('DOC_ASSIST_RATE_LIMIT_PER_H
 # When True, only call Gemini if the free deterministic presence check is uncertain
 # (saves cost). Default False = always extract (richer data for the admin).
 DOC_ASSIST_ONLY_WHEN_UNCERTAIN = os.environ.get('DOC_ASSIST_ONLY_WHEN_UNCERTAIN', '') == '1'
+# IC Gemini second opinion: when the cheap deterministic MyKad read is low-confidence
+# (missing core field, or it disagrees with the typed profile), re-read the card image
+# with Gemini. Already self-gated to shaky reads only; set to '0' to disable entirely
+# if cost ever spikes. Default ON.
+IC_GEMINI_FALLBACK_ENABLED = os.environ.get('IC_GEMINI_FALLBACK_ENABLED', '1') != '0'
 
 # Logging configuration (structured JSON for Cloud Run)
 LOGGING = {

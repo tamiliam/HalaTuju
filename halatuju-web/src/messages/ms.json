@@ -883,8 +883,9 @@
         "guardianship_letter": "Hanya diperlukan jika persetujuan diberi oleh seseorang selain bapa atau ibu anda — perintah penjagaan dari mahkamah ATAU surat kebenaran bertulis daripada ibu bapa anda.",
         "photo": "Gambar terkini anda.",
         "coachLabel": "Cikgu Gopal · Pembantu",
+        "editProfileName": "Betulkan nama anda dalam profil",
         "fallback": {
-          "name_mismatch": "Jangan risau — ini kerap berlaku! Kami tidak dapat memadankan nama pada dokumen ini dengan nama anda. Dokumen perlu menunjukkan nama anda dengan jelas supaya kami tahu ia milik anda. Semak anda memuat naik halaman yang betul, kemudian cuba lagi. Anda boleh!",
+          "name_mismatch": "Jangan risau — ini kerap berlaku! Nama yang kami baca di sini tidak sepadan dengan nama dalam profil anda. Ini boleh berlaku dua cara: gambar mungkin kurang jelas, ATAU nama yang anda taip semasa mendaftar mungkin sedikit berbeza ejaannya. Jika gambar kurang jelas, muat naik yang lebih jelas; jika nama pada kad anda betul, betulkan ejaan dalam profil anda. Anda boleh!",
           "nric_mismatch": "Jangan bimbang, ini mudah dibetulkan! Nombor KP yang kami baca tidak sepadan dengan yang ada dalam profil anda. Semak digit dalam profil anda, kemudian muat naik KP anda sekali lagi. Anda buat dengan baik.",
           "address_mismatch": "Hampir siap! Kami tidak menemui alamat rumah anda pada bil ini. Bil utiliti membantu kami mengesahkan tempat tinggal anda, jadi pastikan alamat kelihatan jelas pada halaman yang dimuat naik, kemudian cuba lagi.",
           "wrong_doc": "Hmm, ini nampaknya bukan dokumen yang kami jangkakan di sini — silap kecil yang mudah berlaku! Semak semula anda memilih fail yang betul, kemudian muat naik sekali lagi. Kami sedia membantu.",

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { getDocumentHelp, type ApplicantDocument } from '@/lib/api'
 import { shouldShowCoach, fallbackKeyFor, helpSignal, readHelpCache, writeHelpCache } from '@/lib/documentHelp'
 
@@ -91,6 +92,18 @@ export default function DocumentHelpCoach({
           </div>
         ) : (
           <p className="mt-0.5 text-sm leading-relaxed text-primary-900/90 whitespace-pre-line">{body}</p>
+        )}
+        {/* A name mismatch is bidirectional — the photo may be misread, OR the student
+            may have typed their name differently. Give them the direct path to fix the
+            typed name (the re-upload path is the upload button just above). */}
+        {status !== 'loading' && verdict === 'name_mismatch' && (
+          <Link
+            href="/profile"
+            className="mt-1.5 inline-flex items-center gap-1 text-sm font-semibold text-primary-700 underline underline-offset-2 hover:text-primary-800"
+          >
+            {t('scholarship.docs.help.editProfileName')}
+            <span aria-hidden>→</span>
+          </Link>
         )}
       </div>
     </div>
