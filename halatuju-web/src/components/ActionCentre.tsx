@@ -115,6 +115,22 @@ function ActionCard({
     }
   }
 
+  // pathway_confirm: the student answers Yes in place — the backend writes their
+  // final chosen pathway (no navigate, no officer).
+  const onAffirm = async () => {
+    if (!token) return
+    setBusy(true)
+    setError(null)
+    try {
+      await resolveResolutionItem(item.id, 'confirmed', { token })
+      onResolved()
+    } catch {
+      setError(t('scholarship.actionCentre.sendError'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
       <div className="flex items-start gap-4">
@@ -170,7 +186,18 @@ function ActionCard({
               </div>
             )}
 
-            {item.kind === 'confirm' && (
+            {item.kind === 'confirm' && item.code === 'pathway_confirm' && (
+              <button
+                type="button"
+                onClick={onAffirm}
+                disabled={busy}
+                className="w-full rounded-xl bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
+              >
+                {busy ? t('scholarship.actionCentre.sending') : t('scholarship.actionCentre.confirmPathwayYes')}
+              </button>
+            )}
+
+            {item.kind === 'confirm' && item.code !== 'pathway_confirm' && (
               <button
                 type="button"
                 onClick={() => onConfirm(confirmTargetFor(item.fact))}

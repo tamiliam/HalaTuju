@@ -1190,6 +1190,7 @@
       "uploading": "Memuat naik…",
       "uploadError": "Maaf, muat naik itu tidak berjaya. Sila cuba lagi.",
       "review": "Semak",
+      "confirmPathwayYes": "Ya, ini laluan akhir saya",
       "send": "Hantar",
       "sending": "Menghantar…",
       "sendError": "Maaf, kami tidak dapat menghantarnya. Sila cuba lagi.",
@@ -1256,6 +1257,10 @@
         "pathway_undeclared": {
           "title": "Beritahu kami rancangan pengajian anda",
           "desc": "Anda belum memilih apa yang ingin dipelajari. Sila tambah dalam Cerita anda."
+        },
+        "pathway_confirm": {
+          "title": "Sahkan laluan akhir anda",
+          "desc": "Kami dapat melihat tawaran anda untuk {programme} di {institution}. Adakah ini laluan yang anda ingin mohon bantuan? Sahkan untuk menetapkannya sebagai pilihan akhir anda — jika anda ada tawaran yang lebih baik, muat naik yang itu."
         }
       }
     }
@@ -1966,9 +1971,11 @@
           "str_claimed_no_doc": "Pelajar berkata keluarga menerima STR tetapi belum memuat naik surat STR — minta surat itu.",
           "str_present_unverified": "Dokumen STR ada tetapi belum dipadankan dengan isi rumah — sahkan.",
           "income_proof_missing": "Tiada bukti pendapatan dimuat naik — minta STR, slip gaji, atau KWSP.",
-          "offer_name_mismatch": "Surat tawaran atas nama berbeza. Sahkan.",
+          "offer_name_mismatch": "Surat tawaran atas nama atau KP yang berbeza. Sahkan.",
           "offer_unreadable": "Surat tawaran tidak dapat dibaca — minta salinan yang lebih jelas.",
           "pathway_undeclared": "Belum memilih laluan.",
+          "pathway_confirm": "Tawaran untuk {programme} di {institution} — menunggu pengesahan pelajar bahawa ini laluan akhir mereka.",
+          "pathway_confirmed": "Laluan akhir disahkan oleh pelajar: {programme} di {institution}.",
           "academic_missing_subjects": "Memasukkan {entered} daripada {total} subjek pada slip — tiada: {subjects}. Minta pelajar menambahnya.",
           "academic_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip menunjukkan {slip}. Semak.",
           "grades_verified": "Kesemua {count} gred sepadan dengan slip keputusan."

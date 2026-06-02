@@ -69,6 +69,7 @@ export const KNOWN_CODES = [
   'offer_unreadable',
   'offer_name_mismatch',
   'pathway_undeclared',
+  'pathway_confirm',
 ] as const
 
 export type KnownCode = (typeof KNOWN_CODES)[number]

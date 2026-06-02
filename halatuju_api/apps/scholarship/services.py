@@ -345,6 +345,30 @@ def confirm_profile(application):
     return True
 
 
+def confirm_pathway(application):
+    """Record the student's latest offer letter as their FINAL chosen pathway.
+
+    Driven by the student answering the AI-raised ``pathway_confirm`` Action-Centre
+    query Yes (no human officer). Writes the offer's programme + institution into
+    ``chosen_programme`` and stamps ``pathway_confirmed_at`` so the Pathway verdict
+    reads 'verified'. Idempotent-ish (re-confirming just refreshes the snapshot).
+    Returns False when there's no offer letter to confirm."""
+    from .models import ApplicantDocument
+    from .pathway_engine import student_offer_check
+    offer = (ApplicantDocument.objects.filter(application=application, doc_type='offer_letter')
+             .order_by('-uploaded_at').first())
+    if offer is None:
+        return False
+    chk = student_offer_check(offer)
+    cp = dict(application.chosen_programme) if isinstance(application.chosen_programme, dict) else {}
+    cp.update({'course_name': chk['programme'], 'institution': chk['institution'],
+               'source': 'offer_letter_confirmed'})
+    application.chosen_programme = cp
+    application.pathway_confirmed_at = timezone.now()
+    application.save(update_fields=['chosen_programme', 'pathway_confirmed_at'])
+    return True
+
+
 def revert_if_profile_incomplete(application):
     """Honest-funnel guard: if a ``profile_complete`` application is edited back
     into an incomplete state (e.g. the student deletes a compulsory document, or
