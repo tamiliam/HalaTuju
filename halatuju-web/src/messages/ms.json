@@ -895,6 +895,7 @@
           "slip_name_mismatch": "Nama pada slip keputusan ini bukan nama anda — ia nampak seperti slip orang lain. Sila pastikan anda memuat naik slip keputusan anda sendiri; nama padanya mesti sepadan dengan nama anda. Anda boleh!",
           "slip_subjects_missing": "Hampir siap! Slip keputusan anda menyenaraikan mata pelajaran yang belum anda tambah dalam profil. Sila tambah mata pelajaran yang tertinggal dalam profil anda supaya sepadan dengan slip — atau, jika anda tersilap fail, muat naik fail yang betul.",
           "slip_grade_mismatch": "Semakan ringkas! Satu gred pada slip anda berbeza daripada yang anda masukkan. Slip anda ialah rekod rasmi, jadi sila kemas kini gred dalam profil anda supaya sepadan dengannya. Jika gambar kabur, anda boleh muat naik yang lebih jelas. Bagus setakat ini!",
+          "offer_name_mismatch": "Nama atau nombor KP pada surat tawaran ini bukan milik anda — ia nampak seperti surat orang lain. Sila pastikan anda memuat naik surat tawaran anda sendiri; nama dan KP padanya mesti sepadan dengan anda. Anda boleh!",
           "generic": "Ada sesuatu yang kurang tepat dengan muat naik ini — tetapi jangan risau, ia mudah dibetulkan. Semak semula dan cuba muat naik sekali lagi. Anda buat dengan baik!"
         }
       },
@@ -959,6 +960,23 @@
         "slipSays": "slip menyatakan",
         "status": {
           "match": "Sepadan",
+          "mismatch": "Tidak sepadan",
+          "unreadable": "Tidak dapat dibaca",
+          "pending": "Belum disemak"
+        }
+      },
+      "pathwayCheck": {
+        "name": "Nama",
+        "ic": "Nombor KP",
+        "programme": "Program",
+        "institution": "Institusi",
+        "issuer": "Dikeluarkan oleh",
+        "date": "Tarikh",
+        "address": "Alamat",
+        "fromLetter": "daripada surat anda",
+        "status": {
+          "match": "Sepadan",
+          "partial": "Sepadan sebahagian",
           "mismatch": "Tidak sepadan",
           "unreadable": "Tidak dapat dibaca",
           "pending": "Belum disemak"

@@ -1143,9 +1143,12 @@ export interface ApplicantDocument {
   // Check-1 Academic: the three clinical checks for a results slip (name / subjects /
   // results), server-computed against the student's own profile. null for other types.
   academic_check?: AcademicCheck | null
+  // Check-1 Pathway: the offer-letter facts (name + IC checks + data points). null
+  // unless doc_type=offer_letter.
+  pathway_check?: PathwayCheck | null
 }
 
-export type SlipCheckStatus = 'match' | 'mismatch' | 'unreadable' | 'pending'
+export type SlipCheckStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'pending'
 
 export interface AcademicCheck {
   name: SlipCheckStatus
@@ -1157,6 +1160,19 @@ export interface AcademicCheck {
   missing: string[]
   mismatched: { subject: string; typed: string; slip: string }[]
   slip_count: number
+}
+
+export interface PathwayCheck {
+  name: SlipCheckStatus
+  ic: SlipCheckStatus
+  candidate_name: string
+  candidate_nric: string
+  programme: string
+  institution: string
+  issuer: string
+  offer_date: string
+  intake: string
+  address: string
 }
 
 export interface Referee {

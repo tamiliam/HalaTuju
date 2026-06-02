@@ -40,6 +40,8 @@ VERDICT_GUIDANCE = {
     'slip_name_mismatch':    "the name on this results slip is not the applicant's — it looks like it may be someone else's slip",
     'slip_subjects_missing': "the results slip lists one or more subjects that were not entered in the applicant's profile",
     'slip_grade_mismatch':   "one or more grades on the results slip differ from the grades the applicant typed into their profile",
+    # Offer-letter (pathway): the name and/or IC on the letter are not the applicant's.
+    'offer_name_mismatch':   "the name and/or IC number on this offer letter are not the applicant's — it looks like it may be someone else's offer letter",
 }
 
 # Per-verdict fix advice. Most verdicts just need a re-upload; a NAME mismatch is
@@ -71,6 +73,11 @@ VERDICT_FIX_HINT = {
         'the slip: kindly tell them to update the differing grade(s) on their Profile page '
         'so they match the slip. Only if the photo is blurry should they upload a clearer '
         'slip instead. Never suggest changing the slip itself.'
+    ),
+    'offer_name_mismatch': (
+        'This is almost always the WRONG FILE: kindly suggest they check they uploaded '
+        'THEIR OWN offer letter (not a sibling\'s or friend\'s) — the name and IC number on '
+        'the letter must be their own. Ask them to re-upload their own offer letter.'
     ),
 }
 
@@ -184,6 +191,22 @@ def verdict_for_document(doc):
         # Gemini read the slip but couldn't pull the subject table → ask for a clearer copy.
         if chk['subjects'] == 'unreadable' or chk['results'] == 'unreadable':
             return 'unreadable'
+        return ''
+    # Offer letter (pathway) — name + IC are the identity checks; a mismatch on either
+    # means a wrong-person letter. (Richer pathway-aware coaching is a later pass.)
+    if doc.doc_type == 'offer_letter':
+        fields = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+        sv = fields.get('student_verdict')
+        if not sv:
+            return ''
+        if sv == 'wrong_doc':
+            return 'wrong_doc'
+        if sv in ('unreadable', 'review_manually'):
+            return sv
+        from .pathway_engine import student_offer_check
+        chk = student_offer_check(doc)
+        if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
+            return 'offer_name_mismatch'
         return ''
     # Other supporting docs — the Gemini doc-assist verdict takes precedence (it is the
     # chip the frontend shows); fall back to the older soft full-text checks when it never ran.

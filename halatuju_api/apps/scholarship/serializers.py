@@ -295,6 +295,9 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     # Check-1 Academic: the three clinical checks for a results slip (name/subjects/
     # results), server-computed against the student's own profile — null for other types.
     academic_check = serializers.SerializerMethodField()
+    # Check-1 Pathway: the offer-letter facts (name + IC checks + data points) —
+    # null unless doc_type=offer_letter.
+    pathway_check = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantDocument
@@ -312,6 +315,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'vision_fields', 'vision_fields_run_at',
             # Check-1 Academic: results-slip 3-check (null unless doc_type=results_slip).
             'academic_check',
+            # Check-1 Pathway: offer-letter facts (null unless doc_type=offer_letter).
+            'pathway_check',
         ]
         read_only_fields = [
             'vision_nric', 'vision_name', 'vision_address',
@@ -351,6 +356,14 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             return None
         from .academic_engine import student_slip_check
         return student_slip_check(obj)
+
+    def get_pathway_check(self, obj):
+        """{name, ic, + data points} for an offer letter — the clinical facts against
+        the student's own profile. Null for every other doc type."""
+        if obj.doc_type != 'offer_letter':
+            return None
+        from .pathway_engine import student_offer_check
+        return student_offer_check(obj)
 
 
 class ResolutionItemSerializer(serializers.ModelSerializer):
