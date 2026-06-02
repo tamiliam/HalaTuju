@@ -59,11 +59,10 @@ describe('factTileTone', () => {
 // ── groupDocumentsByFact ──────────────────────────────────────────────────────
 
 describe('groupDocumentsByFact', () => {
-  it('places ic and parent_ic in identity', () => {
-    const docs = [doc({ doc_type: 'ic' }), doc({ id: 2, doc_type: 'parent_ic' })]
-    const groups = groupDocumentsByFact(docs)
-    expect(groups.identity).toHaveLength(2)
-    expect(groups.academic).toHaveLength(0)
+  it('places the student ic in identity', () => {
+    const groups = groupDocumentsByFact([doc({ doc_type: 'ic' })])
+    expect(groups.identity).toHaveLength(1)
+    expect(groups.income).toHaveLength(0)
   })
 
   it('places results_slip in academic', () => {
@@ -71,11 +70,14 @@ describe('groupDocumentsByFact', () => {
     expect(groups.academic).toHaveLength(1)
   })
 
-  it('places income docs in income', () => {
-    const incomeTypes = ['str', 'epf', 'salary_slip', 'water_bill', 'electricity_bill']
+  it('places income docs AND the parent ic in income', () => {
+    // The parent/guardian IC moved to income — it confirms the earner whose name
+    // the STR / salary slip / EPF are issued in.
+    const incomeTypes = ['parent_ic', 'str', 'epf', 'salary_slip', 'water_bill', 'electricity_bill']
     const docs = incomeTypes.map((t, i) => doc({ id: i, doc_type: t }))
     const groups = groupDocumentsByFact(docs)
-    expect(groups.income).toHaveLength(5)
+    expect(groups.income).toHaveLength(6)
+    expect(groups.identity).toHaveLength(0)
   })
 
   it('places offer_letter in pathway', () => {
