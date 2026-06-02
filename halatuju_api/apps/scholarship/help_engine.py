@@ -181,6 +181,9 @@ def verdict_for_document(doc):
             return 'slip_subjects_missing'
         if chk['results'] == 'mismatch':
             return 'slip_grade_mismatch'
+        # Gemini read the slip but couldn't pull the subject table → ask for a clearer copy.
+        if chk['subjects'] == 'unreadable' or chk['results'] == 'unreadable':
+            return 'unreadable'
         return ''
     # Other supporting docs — the Gemini doc-assist verdict takes precedence (it is the
     # chip the frontend shows); fall back to the older soft full-text checks when it never ran.

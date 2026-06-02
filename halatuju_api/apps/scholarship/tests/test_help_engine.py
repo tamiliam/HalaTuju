@@ -133,6 +133,11 @@ class TestSlipVerdictRouting(TestCase):
         doc = self._slip_doc(None, [], {'math': 'A'})
         self.assertEqual(help_engine.verdict_for_document(doc), '')
 
+    def test_unreadable_table_when_name_ok(self):
+        # Gemini ran (name ok) but read no subject rows → ask for a clearer copy.
+        doc = self._slip_doc('ok', [], {'math': 'A'})
+        self.assertEqual(help_engine.verdict_for_document(doc), 'unreadable')
+
 
 class TestGuardrails(TestCase):
     """Task 4 — the hard rule: coach, never ghostwriter; never leak a score; firewalled."""

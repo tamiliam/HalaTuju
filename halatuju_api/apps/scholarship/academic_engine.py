@@ -185,6 +185,7 @@ def student_slip_check(doc) -> dict:
     name = _slip_name_status(doc)
     data = read_slip(doc)
     vf = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
+    sv = vf.get('student_verdict')
     f = vf.get('fields', {}) if isinstance(vf.get('fields'), dict) else {}
     candidate_name = (f.get('candidate_name') or '')
     exam = (f.get('exam') or '').strip()              # e.g. "SIJIL PELAJARAN MALAYSIA TAHUN 2025"
@@ -192,9 +193,13 @@ def student_slip_check(doc) -> dict:
     exam_year = em.group(1) if em else ''             # soft data point — surfaced, not gated
 
     if not data['names']:
-        # Slip not field-extracted yet (or unreadable) → subjects/results pending.
-        subjects = 'unreadable' if name == 'unreadable' else 'pending'
-        return {'name': name, 'subjects': subjects, 'results': 'pending',
+        # No subject rows. Distinguish "extraction hasn't run / was skipped" (genuinely
+        # PENDING) from "Gemini ran but couldn't read the subject table" (UNREADABLE — the
+        # student should re-upload a clearer copy). A bare candidate-name with empty results
+        # is the latter.
+        pending = (not sv) or sv == 'review_manually'
+        s = 'pending' if pending else 'unreadable'
+        return {'name': name, 'subjects': s, 'results': s,
                 'candidate_name': candidate_name, 'exam': exam, 'exam_year': exam_year,
                 'missing': [], 'mismatched': [], 'slip_count': 0}
 
