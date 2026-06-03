@@ -1148,7 +1148,7 @@ export interface ApplicantDocument {
   pathway_check?: PathwayCheck | null
 }
 
-export type SlipCheckStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'pending'
+export type SlipCheckStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'uncertain' | 'pending'
 
 export interface AcademicCheck {
   name: SlipCheckStatus
@@ -1159,6 +1159,7 @@ export interface AcademicCheck {
   exam_year: string
   missing: string[]
   mismatched: { subject: string; typed: string; slip: string }[]
+  uncertain: { subject: string; typed: string; slip: string; band: string }[]
   slip_count: number
 }
 

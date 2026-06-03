@@ -169,7 +169,41 @@ class TestReadSlip(SimpleTestCase):
         self.assertEqual(d['grades'], {})
 
     def test_empty(self):
-        self.assertEqual(read_slip(_doc({})), {'names': [], 'grades': {}})
+        self.assertEqual(read_slip(_doc({})), {'names': [], 'grades': {}, 'bands': {}})
+
+
+class TestBandCrossCheck(SimpleTestCase):
+    """The slip prints each grade twice (letter + Malay band). When the two disagree
+    the read is unreliable → a would-be mismatch is downgraded to 'uncertain', so an
+    OCR row-transposition can never confidently assert a wrong grade."""
+
+    def test_band_captured_from_field(self):
+        d = read_slip(_doc({'results': [{'subject': 'Matematik', 'grade': 'A', 'band': 'Cemerlang Tinggi'}]}))
+        self.assertEqual(d['bands'], {'matematik': 'A'})
+
+    def test_letter_band_disagree_is_uncertain_not_mismatch(self):
+        # The Theresa/Theepicaa bug: letter reads A but the band says Cemerlang Tertinggi
+        # (A+); student typed A+. A confident mismatch would wrongly say "you typed A+,
+        # slip A". letter↔band disagree → UNCERTAIN, not a mismatch.
+        slip = read_slip(_doc({'results': [{'subject': 'Matematik', 'grade': 'A', 'band': 'Cemerlang Tertinggi'}]}))
+        cmp = compare_academics({'math': 'A+'}, slip)
+        self.assertEqual(cmp['mismatched'], [])
+        self.assertEqual(len(cmp['uncertain']), 1)
+        self.assertFalse(cmp['accurate'])
+
+    def test_letter_band_agree_real_mismatch_still_flags(self):
+        # Letter A and band Cemerlang Tinggi (A) AGREE → the slip clearly says A; student
+        # typed A+ → a CONFIDENT mismatch, not downgraded.
+        slip = read_slip(_doc({'results': [{'subject': 'Matematik', 'grade': 'A', 'band': 'Cemerlang Tinggi'}]}))
+        cmp = compare_academics({'math': 'A+'}, slip)
+        self.assertEqual(len(cmp['mismatched']), 1)
+        self.assertEqual(cmp['uncertain'], [])
+
+    def test_typed_matches_letter_no_flag(self):
+        # Typed A+ corroborates the letter A+ → match, regardless of a stray band read.
+        slip = read_slip(_doc({'results': [{'subject': 'Matematik', 'grade': 'A+', 'band': 'Cemerlang Tinggi'}]}))
+        cmp = compare_academics({'math': 'A+'}, slip)
+        self.assertEqual((cmp['mismatched'], cmp['uncertain']), ([], []))
 
 
 class TestCompareAcademics(SimpleTestCase):

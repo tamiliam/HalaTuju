@@ -186,6 +186,11 @@ def _verdict_academic(application):
     for m in cmp['mismatched']:
         unresolved.append(_item('academic_grade_mismatch',
                                 subject=m['subject'], typed=m['typed'], slip=m['slip']))
+    # The slip's letter and band disagree for this subject — the grade read can't be
+    # trusted, so surface it as "check by eye", NOT a confident mismatch.
+    for u in cmp['uncertain']:
+        unresolved.append(_item('academic_grade_uncertain',
+                                subject=u['subject'], typed=u['typed'], slip=u['slip'], band=u['band']))
 
     if not cmp['have_grades']:
         # Names extracted (so completeness is real) but no grades yet — accuracy
