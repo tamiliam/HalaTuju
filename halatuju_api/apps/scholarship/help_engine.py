@@ -40,6 +40,12 @@ VERDICT_GUIDANCE = {
     'slip_name_mismatch':    "the name on this results slip is not the applicant's — it looks like it may be someone else's slip",
     'slip_subjects_missing': "the results slip lists one or more subjects that were not entered in the applicant's profile",
     'slip_grade_mismatch':   "one or more grades on the results slip differ from the grades the applicant typed into their profile",
+    # Results-slip — a grade that could NOT be read with full confidence (a faint +/- or
+    # slight blur). Not a confident mismatch — we only ask the student to double-check.
+    'slip_grade_uncertain':  "we read the results slip, but one or more grades could not be read with full confidence (a faint +/- mark or a slight blur), so we could not be sure they match what the applicant typed",
+    # Results-slip — the photo was taken at an angle (skewed) AND that left part of it hard
+    # to read. The fix is a flat, straight-on retake — NOT a profile edit.
+    'slip_skewed_unclear':   "the results slip was photographed at an angle (skewed), which left part of it hard to read clearly",
     # Offer-letter (pathway): the name and/or IC on the letter are not the applicant's.
     'offer_name_mismatch':   "the name and/or IC number on this offer letter are not the applicant's — it looks like it may be someone else's offer letter",
     # Offer-letter (pathway): the offer is for a different college/programme than declared.
@@ -75,6 +81,21 @@ VERDICT_FIX_HINT = {
         'the slip: kindly tell them to update the differing grade(s) on their Profile page '
         'so they match the slip. Only if the photo is blurry should they upload a clearer '
         'slip instead. Never suggest changing the slip itself.'
+    ),
+    'slip_grade_uncertain': (
+        'Reassure them that nothing is wrong and nothing is blocked — we just could not be '
+        '100% sure of one grade. Kindly ask them to glance at their slip and confirm the '
+        'grades they entered match it: if a grade truly differs they can tidy it on their '
+        'Profile page, and if the photo was a little unclear a clearer, straight-on photo '
+        'helps. Do NOT assert that any grade is wrong — we are only asking them to '
+        'double-check.'
+    ),
+    'slip_skewed_unclear': (
+        'Kindly explain that a flat, straight-on, well-lit photo reads most accurately, and '
+        'suggest they retake the slip that way — lay it flat on a table, fill the frame, and '
+        'photograph it straight from above. Make clear nothing is blocked and they have done '
+        'nothing wrong (phones tilt the page all the time). Do NOT tell them to edit their '
+        'profile — the fix here is simply a straighter photo.'
     ),
     'offer_name_mismatch': (
         'This is almost always the WRONG FILE: kindly suggest they check they uploaded '
@@ -198,9 +219,15 @@ def verdict_for_document(doc):
             return 'slip_subjects_missing'
         if chk['results'] == 'mismatch':
             return 'slip_grade_mismatch'
-        # Gemini read the slip but couldn't pull the subject table → ask for a clearer copy.
+        # A grade we could not read with full confidence → ask the student to double-check
+        # (never a confident "you're wrong"). If the photo was also SKEWED, blame the photo
+        # and ask for a straight retake; otherwise just ask them to confirm the value.
+        if chk['results'] == 'uncertain':
+            return 'slip_skewed_unclear' if chk.get('was_skewed') else 'slip_grade_uncertain'
+        # The subject table couldn't be pulled → ask for a clearer copy; a straight retake if
+        # the slip was skewed, else the generic clearer-photo nudge.
         if chk['subjects'] == 'unreadable' or chk['results'] == 'unreadable':
-            return 'unreadable'
+            return 'slip_skewed_unclear' if chk.get('was_skewed') else 'unreadable'
         return ''
     # Offer letter (pathway) — name + IC are the identity checks; a mismatch on either
     # means a wrong-person letter. (Richer pathway-aware coaching is a later pass.)

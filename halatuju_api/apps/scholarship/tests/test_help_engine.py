@@ -98,6 +98,19 @@ class TestGenerateHelp(TestCase):
         self.assertIn('profile', p)
         self.assertIn('missing subject', p)
 
+    def test_slip_skewed_unclear_asks_for_a_straight_flat_photo(self):
+        p = help_engine._build_help_prompt('results_slip', 'slip_skewed_unclear', 'Ravi',
+                                           help_engine.DEFAULT_LANGUAGE).lower()
+        self.assertIn('straight', p)
+        self.assertIn('flat', p)
+        self.assertIn('nothing is blocked', p)       # reassuring, never a block
+
+    def test_slip_grade_uncertain_asks_to_double_check_never_asserts(self):
+        p = help_engine._build_help_prompt('results_slip', 'slip_grade_uncertain', 'Ravi',
+                                           help_engine.DEFAULT_LANGUAGE).lower()
+        self.assertIn('double-check', p)
+        self.assertIn('do not assert', p)            # never a confident "you're wrong"
+
 
 class TestSlipVerdictRouting(TestCase):
     """verdict_for_document picks the right slip verdict, most-important-first."""
@@ -137,6 +150,26 @@ class TestSlipVerdictRouting(TestCase):
         # Gemini ran (name ok) but read no subject rows → ask for a clearer copy.
         doc = self._slip_doc('ok', [], {'math': 'A'})
         self.assertEqual(help_engine.verdict_for_document(doc), 'unreadable')
+
+    def test_grade_uncertain_double_check_when_upright(self):
+        # Typed A+ vs slip A (differ ONLY by +/- → uncertain) on an upright slip →
+        # ask the student to double-check, NOT a confident mismatch.
+        doc = self._slip_doc('ok', self._RES, {'math': 'A+'})
+        self.assertEqual(help_engine.verdict_for_document(doc), 'slip_grade_uncertain')
+
+    def test_grade_uncertain_skewed_asks_for_straight_retake(self):
+        # Same doubtful read, but the photo was at an angle → blame the photo, ask for a
+        # flat straight-on retake (not a profile edit).
+        doc = self._slip_doc('ok', self._RES, {'math': 'A+'})
+        doc.vision_fields['fields']['skew_angle'] = 89.3
+        self.assertEqual(help_engine.verdict_for_document(doc), 'slip_skewed_unclear')
+
+    def test_clean_rotated_slip_is_not_nagged(self):
+        # THE ANTI-NAG RULE (Pavalaharasi): a rotated photo that nonetheless read CLEANLY
+        # (every grade matches) gets NO coach and NO retake nudge.
+        doc = self._slip_doc('ok', self._RES, {'math': 'A'})
+        doc.vision_fields['fields']['skew_angle'] = 89.3
+        self.assertEqual(help_engine.verdict_for_document(doc), '')
 
 
 class TestOfferVerdictRouting(TestCase):

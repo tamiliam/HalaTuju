@@ -108,7 +108,9 @@ export default function DocumentHelpCoach({
           </Link>
         )}
         {status !== 'loading' &&
-          (verdict === 'slip_grade_mismatch' || verdict === 'slip_subjects_missing') && (
+          (verdict === 'slip_grade_mismatch' ||
+            verdict === 'slip_subjects_missing' ||
+            verdict === 'slip_grade_uncertain') && (
             <Link
               href="/profile"
               className="mt-1.5 inline-flex items-center gap-1 text-sm font-semibold text-primary-700 underline underline-offset-2 hover:text-primary-800"
