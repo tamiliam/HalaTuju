@@ -1083,7 +1083,17 @@ class ProfileSyncView(APIView):
             supabase_user_id=request.user_id
         )
 
-        serializer = ProfileUpdateSerializer(profile, data=request.data, partial=True)
+        # Seed-only name. This browser sync pre-fills the name from the Google sign-in
+        # display name (which can be a handle like "Sharmila 1204"). It may SEED a blank
+        # profile, but must never OVERWRITE a name already on file — the real legal name
+        # is set deliberately at apply submit (the declaration signature), and a later
+        # re-sign-in through the auth gate must not clobber it back to the Google handle.
+        # Explicit edits still go through PUT /profile/, which is unaffected.
+        data = request.data.copy()
+        if (profile.name or '').strip():
+            data.pop('name', None)
+
+        serializer = ProfileUpdateSerializer(profile, data=data, partial=True)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

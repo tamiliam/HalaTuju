@@ -144,24 +144,34 @@ class TestProtectedEndpointsAcceptAuth(TestCase):
         self.assertEqual(get_resp.data['school'], 'SMK Damansara Jaya')
         self.assertEqual(get_resp.data['grades'], {'bm': 'A', 'eng': 'B+'})
 
-    def test_profile_sync_updates_existing(self):
-        # Create profile with NRIC (required by NricGateMiddleware)
+    def test_profile_sync_does_not_overwrite_existing_name(self):
+        # Seed-only name: the browser sync pre-fills the name from the Google sign-in
+        # handle, so it must NOT overwrite a name already on file (the real legal name
+        # is set deliberately at apply submit). Other fields still sync normally.
         StudentProfile.objects.create(
             supabase_user_id=TEST_USER_ID, nric='010101-01-1234',
-            name='Original Name', school='Original School',
+            name='SHARMILA A/P SANGGAR', school='Original School',
         )
-        # Update with sync
         response = self.client.post(
             '/api/v1/profile/sync/',
-            {'name': 'Updated Name'},
+            {'name': 'Sharmila 1204', 'school': 'New School'},
             format='json',
         )
         self.assertEqual(response.status_code, 200)
-        self.assertFalse(response.data['created'])
-        # Verify name updated, school preserved
         get_resp = self.client.get('/api/v1/profile/')
-        self.assertEqual(get_resp.data['name'], 'Updated Name')
-        self.assertEqual(get_resp.data['school'], 'Original School')
+        self.assertEqual(get_resp.data['name'], 'SHARMILA A/P SANGGAR')  # NOT clobbered
+        self.assertEqual(get_resp.data['school'], 'New School')          # other fields still sync
+
+    def test_profile_sync_seeds_blank_name(self):
+        # A profile with no name yet → the sync MAY seed it (seed-only, not overwrite).
+        StudentProfile.objects.create(
+            supabase_user_id=TEST_USER_ID, nric='010101-01-1234', name='',
+        )
+        response = self.client.post(
+            '/api/v1/profile/sync/', {'name': 'Seeded Name'}, format='json')
+        self.assertEqual(response.status_code, 200)
+        get_resp = self.client.get('/api/v1/profile/')
+        self.assertEqual(get_resp.data['name'], 'Seeded Name')
 
     def test_profile_put_accepts_name_school(self):
         # Create profile with NRIC
