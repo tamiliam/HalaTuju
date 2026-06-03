@@ -67,6 +67,7 @@ export const KNOWN_CODES = [
   'str_claimed_no_doc',
   'income_proof_missing',
   'offer_unreadable',
+  'offer_no_identity',
   'offer_name_mismatch',
   'pathway_undeclared',
   'pathway_confirm',
