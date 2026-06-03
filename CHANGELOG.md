@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     is never treated as a marker (only a standalone final token counts). Reuses the existing line-break recovery.
   - The verdict's name-truncation copy no longer over-claims "corroborated by the other documents" (the identity
     verdict never actually cross-checks them) — it now credits the NRIC, which is the real anchor.
+  - **`/profile/sync/` is now seed-only for the name.** The browser sync pre-fills the name from the Google sign-in
+    display name; it may seed a blank profile but never overwrites a name already on file. This closes the one path that
+    could otherwise undo the promotion — a student whose session lapses and who re-signs-in through the anonymous auth
+    gate would have re-pushed the Google handle. Explicit edits via `PUT /profile/` are unaffected.
 
 ### Changed
 - **Pathway — confirm ONLY on a real offer-vs-declared clash (no more redundant nag).** Replaces the always-ask
