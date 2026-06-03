@@ -11,6 +11,7 @@ error dict when the API is unavailable or the SDK isn't installed.
 """
 import json
 import logging
+import math
 import re
 from typing import Optional
 
@@ -428,9 +429,16 @@ def _vision_words(data: bytes, content_type: str = '') -> dict:
             ys = [v.y for v in vs]
             if not xs or not ys:
                 continue
+            # Full polygon + a baseline angle (top edge: vertex0→vertex1, in degrees) so a
+            # rotated/tilted slip can be reproduced exactly in a fixture. The deterministic
+            # parser reads only text/cx/cy/h — these extra keys are ignored by it.
+            poly = [[int(v.x), int(v.y)] for v in vs]
+            angle = None
+            if len(vs) >= 2:
+                angle = math.degrees(math.atan2(vs[1].y - vs[0].y, vs[1].x - vs[0].x))
             words.append({'text': ann.description,
                           'cx': sum(xs) / len(xs), 'cy': sum(ys) / len(ys),
-                          'h': max(ys) - min(ys)})
+                          'h': max(ys) - min(ys), 'poly': poly, 'angle': angle})
         return {'words': words, 'error': None}
     except Exception as e:  # noqa: BLE001 — graceful
         logger.warning('Vision word OCR failed: %s', e)
@@ -880,12 +888,19 @@ def _extract_slip_deterministic(doc, image):
         return None, {'reason': 'vision_error', 'error': wd['error']}
     if not wd.get('words'):
         return None, {'reason': 'no_words'}
+    # Full word geometry capture (text + box + angle) so each real slip can be frozen as a
+    # local test fixture and the parser fixed against real data. Temporary diagnostic —
+    # remove with the orientation-robust grouping fix.
+    capture = [{'text': w['text'], 'cx': round(w['cx'], 1), 'cy': round(w['cy'], 1),
+                'h': w['h'], 'poly': w.get('poly'),
+                'angle': (round(w['angle'], 1) if w.get('angle') is not None else None)}
+               for w in wd['words']]
     from .academic_engine import parse_spm_slip
     parsed = parse_spm_slip(wd['words'])
     if not parsed:
         return None, {'reason': 'parse_none', 'word_count': len(wd['words']),
-                      'sample': [w['text'] for w in wd['words'][:60]]}
-    return {'fields': parsed, 'warnings': [], 'error': ''}, {'reason': 'ok'}
+                      'sample': [w['text'] for w in wd['words'][:60]], 'capture': capture}
+    return {'fields': parsed, 'warnings': [], 'error': ''}, {'reason': 'ok', 'capture': capture}
 
 
 def run_field_extraction_for_document(doc, *, names, postcode='', city='', check_address=False, ocr=None) -> dict:
@@ -922,6 +937,10 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', check
                                       postcode=postcode, city=city, check_address=check_address)
         result = {'fields': ex['fields'], 'warnings': ex['warnings'],
                   'student_verdict': verdict, 'error': ''}
+    # One-time slip-OCR capture (full word geometry) for fixture-building. Stored regardless of
+    # whether the deterministic parse won or fell back to Gemini. Remove with the orientation fix.
+    if doc.doc_type == 'results_slip' and isinstance(locals().get('diag'), dict) and diag.get('capture'):
+        result['_slip_capture'] = {'reason': diag.get('reason'), 'words': diag['capture']}
     doc.vision_fields = result
     doc.vision_fields_run_at = timezone.now()
     doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])
