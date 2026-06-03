@@ -265,8 +265,20 @@ class TestCompareAcademics(SimpleTestCase):
 
 # ── Deterministic positional SPM-slip parser ──────────────────────────────────
 
+import math
+
+
 def _word(text, cx, cy, h=20):
     return {'text': text, 'cx': cx, 'cy': cy, 'h': h}
+
+
+def _rotate_words(words, deg):
+    """Rotate a synthetic word list by ``deg`` (around the origin) and stamp the
+    reading-direction angle — simulating a slip photographed sideways/skewed."""
+    th = math.radians(deg)
+    c, s = math.cos(th), math.sin(th)
+    return [{**w, 'cx': w['cx'] * c - w['cy'] * s, 'cy': w['cx'] * s + w['cy'] * c,
+             'angle': th} for w in words]
 
 
 def _slip_words(header, rows, *, first_row_y=400, row_gap=40):
@@ -328,6 +340,16 @@ class TestParseSpmSlip(SimpleTestCase):
         self.assertEqual(got['Pertanian'], 'A')
         self.assertEqual(got['Perniagaan'], 'B')
         self.assertEqual(got['Bahasa Tamil'], 'A-')
+
+    def test_rotated_or_skewed_slip_still_parses(self):
+        # Pavalaharasi's case: the slip is photographed sideways (≈90°) or skewed. The
+        # parser normalises by the reading angle, so rows still pair correctly.
+        upright = _slip_words(self.HEADER, self.SHARMILA)
+        for deg in (90, -90, 13):   # landscape both ways + a skew
+            got = {r['subject']: r['grade'] for r in parse_spm_slip(_rotate_words(upright, deg))['results']}
+            self.assertEqual(got['Pertanian'], 'A', f'deg={deg}')
+            self.assertEqual(got['Perniagaan'], 'B', f'deg={deg}')
+            self.assertEqual(got['Bahasa Tamil'], 'A-', f'deg={deg}')
 
     def test_band_kept_for_cross_check(self):
         sains = next(r for r in self._parse()['results'] if r['subject'] == 'Sains')

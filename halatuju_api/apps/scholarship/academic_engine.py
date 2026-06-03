@@ -22,6 +22,7 @@ silent 'verified'.
 """
 from __future__ import annotations
 
+import math
 import re
 
 # grade key → Bahasa-Melayu subject name (mirror of subjects.ts SUBJECT_NAMES).
@@ -149,26 +150,36 @@ def _match_known_subject(raw: str) -> str:
 
 
 def _group_rows(words, *, y_tol_frac=0.6):
-    """Cluster OCR words into visual ROWS by Y-coordinate — words at the same vertical
-    position are one row, returned left-to-right; rows top-to-bottom. Each word is a
-    dict ``{text, cx, cy, h}`` (centre x/y + height). This is what makes the parse
-    transposition-proof: pairing is by geometry, not by the model's reading order."""
+    """Cluster OCR words into visual ROWS so each subject pairs with the grade on its
+    own row — the transposition-proof core. Each word is ``{text, cx, cy, h, angle?}``
+    (centre x/y, character height, and the reading-direction angle from the OCR box).
+
+    **Orientation-aware:** a slip photographed sideways or skewed has its rows running
+    at an angle, so a naive Y-grouping fails. We first NORMALISE every word's centre by
+    the page's median reading angle (rotate by −θ), making the text upright in the
+    reading frame; then group by the normalised Y and order within a row by the
+    normalised X. Handles 90°/180° rotation and arbitrary skew with no extra OCR call."""
     usable = [w for w in (words or []) if (w.get('text') or '').strip()]
     if not usable:
         return []
-    heights = sorted((w.get('h') or 0) for w in usable)
+    angles = sorted(w.get('angle', 0.0) or 0.0 for w in usable)
+    theta = angles[len(angles) // 2]          # median reading angle = page rotation
+    c, s = math.cos(-theta), math.sin(-theta)
+    # (ny, nx, word): coordinates rotated into the upright reading frame.
+    items = [[w['cx'] * s + w['cy'] * c, w['cx'] * c - w['cy'] * s, w] for w in usable]
+    heights = sorted((w.get('h') or 0) for _, _, w in items)
     med_h = heights[len(heights) // 2] or 12
     tol = max(med_h * y_tol_frac, 6)
     rows: list[dict] = []
-    for w in sorted(usable, key=lambda w: w['cy']):
+    for ny, nx, w in sorted(items, key=lambda it: it[0]):
         for row in rows:
-            if abs(w['cy'] - row['cy']) <= tol:
-                row['ws'].append(w)
+            if abs(ny - row['ny']) <= tol:
+                row['items'].append((nx, w))
                 break
         else:
-            rows.append({'cy': w['cy'], 'ws': [w]})
-    rows.sort(key=lambda r: r['cy'])
-    return [sorted(r['ws'], key=lambda w: w['cx']) for r in rows]
+            rows.append({'ny': ny, 'items': [(nx, w)]})
+    rows.sort(key=lambda r: r['ny'])
+    return [[w for _nx, w in sorted(r['items'], key=lambda it: it[0])] for r in rows]
 
 
 def _parse_grade_row(row):
