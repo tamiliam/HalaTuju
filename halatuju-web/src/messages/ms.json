@@ -896,6 +896,7 @@
           "slip_subjects_missing": "Hampir siap! Slip keputusan anda menyenaraikan mata pelajaran yang belum anda tambah dalam profil. Sila tambah mata pelajaran yang tertinggal dalam profil anda supaya sepadan dengan slip — atau, jika anda tersilap fail, muat naik fail yang betul.",
           "slip_grade_mismatch": "Semakan ringkas! Satu gred pada slip anda berbeza daripada yang anda masukkan. Slip anda ialah rekod rasmi, jadi sila kemas kini gred dalam profil anda supaya sepadan dengannya. Jika gambar kabur, anda boleh muat naik yang lebih jelas. Bagus setakat ini!",
           "offer_name_mismatch": "Nama atau nombor KP pada surat tawaran ini bukan milik anda — ia nampak seperti surat orang lain. Sila pastikan anda memuat naik surat tawaran anda sendiri; nama dan KP padanya mesti sepadan dengan anda. Anda boleh!",
+          "offer_pathway_mismatch": "Berita baik — ini bukan masalah dan tidak sekali-kali menghalang permohonan anda! Kolej atau program pada surat tawaran anda nampak sedikit berbeza daripada pilihan pengajian yang anda masukkan sebelum ini. Jika tawaran ini memang ke mana anda akan pergi, itu tidak mengapa — anda tidak perlu ubah apa-apa sekarang. Apabila anda hantar, kami hanya akan minta anda mengesahkannya dan mengemas kini rekod anda supaya sepadan. Rancangan berubah, dan itu tidak mengapa!",
           "generic": "Ada sesuatu yang kurang tepat dengan muat naik ini — tetapi jangan risau, ia mudah dibetulkan. Semak semula dan cuba muat naik sekali lagi. Anda buat dengan baik!"
         }
       },
@@ -1003,6 +1004,7 @@
         "date": "Tarikh",
         "address": "Alamat",
         "fromLetter": "daripada surat anda",
+        "declaredNote": "Sebelum ini anda memilih:",
         "status": {
           "match": "Sepadan",
           "partial": "Sepadan sebahagian",
@@ -1288,8 +1290,8 @@
           "desc": "Anda belum memilih apa yang ingin dipelajari. Sila tambah dalam Cerita anda."
         },
         "pathway_confirm": {
-          "title": "Sahkan laluan akhir anda",
-          "desc": "Kami dapat melihat tawaran anda untuk {programme} di {institution}. Adakah ini laluan yang anda ingin mohon bantuan? Sahkan untuk menetapkannya sebagai pilihan akhir anda — jika anda ada tawaran yang lebih baik, muat naik yang itu."
+          "title": "Ini tempat anda akan pergi?",
+          "desc": "Surat tawaran anda adalah untuk {programme} di {institution}, yang nampak berbeza daripada pilihan pengajian yang anda masukkan sebelum ini. Jika tawaran ini ialah laluan akhir anda, sahkannya dan kami akan kemas kini rekod anda supaya sepadan. Jika anda ada tawaran yang lebih baik, muat naik yang itu."
         }
       }
     }
@@ -2003,7 +2005,7 @@
           "offer_name_mismatch": "Surat tawaran atas nama atau KP yang berbeza. Sahkan.",
           "offer_unreadable": "Surat tawaran tidak dapat dibaca — minta salinan yang lebih jelas.",
           "pathway_undeclared": "Belum memilih laluan.",
-          "pathway_confirm": "Tawaran untuk {programme} di {institution} — menunggu pengesahan pelajar bahawa ini laluan akhir mereka.",
+          "pathway_confirm": "Tawaran untuk {programme} di {institution} berbeza daripada laluan yang diisytiharkan — menunggu pengesahan pelajar yang mana satu akhir.",
           "pathway_confirmed": "Laluan akhir disahkan oleh pelajar: {programme} di {institution}.",
           "academic_missing_subjects": "Memasukkan {entered} daripada {total} subjek pada slip — tiada: {subjects}. Minta pelajar menambahnya.",
           "academic_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip menunjukkan {slip}. Semak.",

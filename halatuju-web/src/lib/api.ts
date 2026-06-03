@@ -1174,6 +1174,11 @@ export interface PathwayCheck {
   offer_date: string
   intake: string
   address: string
+  // Offer-vs-declared reconciliation (Check-1 pathway): does the offer match the
+  // college/programme the student declared at apply time?
+  pathway?: 'match' | 'mismatch' | 'unknown'
+  declared_programme?: string
+  declared_institution?: string
 }
 
 export interface Referee {

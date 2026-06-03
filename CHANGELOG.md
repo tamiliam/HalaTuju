@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Pathway — confirm ONLY on a real offer-vs-declared clash (no more redundant nag).** Replaces the always-ask
+  `pathway_confirm`. A new **lenient matcher** (`pathway_engine.offer_pathway_match` / `_distinctive_tokens` /
+  `_declared_pathway`) compares the offer letter's programme + institution against what the student declared at apply
+  time (`chosen_programme`, or the pre-U school/track), tolerating naming quirks (*"KM Melaka" ≈ "Kolej Matrikulasi
+  Melaka"*) and flagging a **mismatch only when genuinely off** — a different school (SMK Mentakab vs SMK Temerloh), a
+  different foundation field (Asasi Pintar vs Asasi Pertanian), or a different diploma at the same campus (Horticulture
+  vs Electricity at UPM). `student_offer_check` now returns `{pathway, declared_programme, declared_institution}`.
+  **Verdict** (`_verdict_pathway`): the offer agrees (or there's nothing specific to clash with) → **`verified`** (the
+  offer settles the pathway — no pointless confirmation); a genuine clash → the `pathway_confirm` query, reframed
+  *"Is this where you're going? Your offer is for {programme} at {institution}, which looks different from the study
+  choice you entered earlier…"* → the student's **Yes** realigns the record (`confirm_pathway`) and the fact reads
+  `verified`. **Check 1** surfaces the clash softly: `OfferLetterChecklist` marks the programme/institution rows red with
+  an *"Earlier you'd chosen: …"* note, and **Cikgu Gopal** gives a reassuring nudge (new `offer_pathway_mismatch`
+  verdict — *"this is not a problem and never blocks you… we'll ask you to confirm it when you submit"*; never a re-upload
+  or edit instruction). **Never a block.** No migration. i18n parity 1848 (en/ms/ta).
 - **Document organisation now mirrors the four verification facts (Identity · Academic · Pathway · Income).**
   (1) **Reordered** the verdict so Pathway comes before Income everywhere it renders — scorecard tiles, the Record-verdict
   panel, the AI-suggestion footer, and the officer Documents drawer (`build_verdict`, `audit.FACTS`, the admin page's

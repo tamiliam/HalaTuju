@@ -245,10 +245,17 @@ def _verdict_income(application):
 
 def _verdict_pathway(application):
     """The offer letter settles the FINAL chosen pathway. Identity on the letter
-    (name + IC — the IC is the strong check) must be the applicant's; then the
-    student confirms the offer's programme IS their final pathway (an AI-raised
-    Action-Centre query, no human officer). Confirmed → 'verified'. No offer is
-    fine (many apply pre-offer) — the pathway is then merely declared → 'review'."""
+    (name + IC — the IC is the strong check) must be the applicant's, then the
+    offer is reconciled against what the student declared at apply time:
+
+      - the offer agrees (or there's nothing specific to clash with) → 'verified':
+        the offer IS the evidence; nagging a student whose offer matches is pointless.
+      - the offer is for a genuinely DIFFERENT place/field than declared → ask the
+        student to confirm which is final (an AI-raised query, no human officer);
+        on Yes the record is realigned + stamped → 'verified'.
+
+    No offer is fine (many apply pre-offer) — the pathway is then merely declared
+    → 'review'."""
     from .pathway_engine import student_offer_check
     evidence, unresolved = [], []
     offer = _latest_doc(application, 'offer_letter')
@@ -269,15 +276,28 @@ def _verdict_pathway(application):
         return _fact('pathway', 'review', evidence, [_item('offer_unreadable')])
 
     prog, inst = chk['programme'], chk['institution']
-    # Confirmed as final → verified, showing the settled pathway.
+    # Already confirmed (the student answered the reconciliation query) → verified.
     if application.pathway_confirmed_at is not None:
         evidence.append(_item('pathway_confirmed', programme=prog, institution=inst))
         return _fact('pathway', 'verified', evidence, unresolved)
-    # Valid offer, identity OK, not yet confirmed → ask the student to confirm it.
+
     if prog or inst:
         evidence.append(_item('offer_programme', institution=inst, programme=prog))
-    unresolved.append(_item('pathway_confirm', programme=prog, institution=inst))
-    return _fact('pathway', 'review', evidence, unresolved)
+
+    # The offer is for a genuinely different place/field than declared → ask the
+    # student to confirm which is final (Check 2 backstop; record realigns on Yes).
+    if chk['pathway'] == 'mismatch':
+        unresolved.append(_item('pathway_confirm', programme=prog, institution=inst,
+                                declared_programme=chk['declared_programme'],
+                                declared_institution=chk['declared_institution']))
+        return _fact('pathway', 'review', evidence, unresolved)
+
+    # Offer agrees with the declaration (or nothing specific to clash with) AND we
+    # could read a programme/institution off it → the offer settles the pathway.
+    if prog or inst:
+        return _fact('pathway', 'verified', evidence, unresolved)
+    # Identity matched but the offer body didn't read a programme — under-claim.
+    return _fact('pathway', 'review', evidence, [_item('offer_unreadable')])
 
 
 # ── Aggregator ───────────────────────────────────────────────────────────────

@@ -143,11 +143,18 @@ class TestOfferVerdictRouting(TestCase):
     """verdict_for_document on an offer letter: a wrong name OR IC → wrong-file coach."""
 
     @staticmethod
-    def _offer_doc(student_verdict, fields, pname='Elan', pnric='710829-02-5709'):
+    def _offer_doc(student_verdict, fields, pname='Elan', pnric='710829-02-5709',
+                   declared=None):
+        declared = declared or {}
         return SimpleNamespace(
             doc_type='offer_letter', vision_name_match='not_found',
             vision_fields={'fields': fields, 'student_verdict': student_verdict},
-            application=SimpleNamespace(profile=SimpleNamespace(name=pname, nric=pnric)),
+            application=SimpleNamespace(
+                profile=SimpleNamespace(name=pname, nric=pnric),
+                chosen_programme={'course_name': declared.get('course_name', ''),
+                                  'institution': declared.get('institution', '')},
+                pre_u_track=declared.get('pre_u_track', ''),
+                pre_u_institution=declared.get('pre_u_institution', '')),
         )
 
     def test_ic_mismatch_flags_wrong_file(self):
@@ -162,6 +169,16 @@ class TestOfferVerdictRouting(TestCase):
     def test_own_letter_no_coach(self):
         doc = self._offer_doc('ok', {'candidate_name': 'Elan', 'candidate_nric': '710829-02-5709'})
         self.assertEqual(help_engine.verdict_for_document(doc), '')
+
+    def test_own_letter_clashing_pathway_soft_nudge(self):
+        # Identity is fine but the offer is for a different field than declared →
+        # the soft pathway-mismatch nudge (never the wrong-file one).
+        doc = self._offer_doc(
+            'ok',
+            {'candidate_name': 'Elan', 'candidate_nric': '710829-02-5709',
+             'programme': 'Diploma Kejuruteraan Elektrik', 'institution': 'UTeM'},
+            declared={'course_name': 'Diploma Senibina', 'institution': 'UTeM'})
+        self.assertEqual(help_engine.verdict_for_document(doc), 'offer_pathway_mismatch')
 
     def test_not_extracted_no_coach(self):
         doc = self._offer_doc(None, {})
