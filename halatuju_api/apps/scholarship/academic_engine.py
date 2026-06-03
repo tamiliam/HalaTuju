@@ -198,9 +198,19 @@ def _parse_grade_row(row):
         nxt = low[band_idx + 1] if band_idx + 1 < len(low) else ''
         band = (head + ' ' + nxt).strip() if nxt in _BAND_MODS else head
     # The letter grade must sit in the grade column (between the subject and the band),
-    # i.e. before the band word — not a stray letter inside the subject name.
-    letter = norm[grade_idx] if (grade_idx is not None and grade_idx < band_idx) else ''
-    grade = letter or _band_to_grade(band)
+    # i.e. before the band word — not a stray letter inside the subject name. OCR often
+    # splits "A+"/"A-" into "A" then "+"/"-" → reassemble.
+    letter = ''
+    if grade_idx is not None and grade_idx < band_idx:
+        letter = norm[grade_idx]
+        if len(letter) == 1 and grade_idx + 1 < band_idx and norm[grade_idx + 1] in ('+', '-'):
+            letter += norm[grade_idx + 1]
+    # The Malay word-BAND is the AUTHORITATIVE grade. It's distinctive text OCR reads
+    # reliably ("Cemerlang Tertinggi"), whereas the letter's +/- is a tiny mark that
+    # gets split, dropped, or spilled onto another line — so the letter alone reads
+    # "A" where the slip plainly says "A+ · Cemerlang Tertinggi". The letter is only a
+    # fallback when the band is somehow unrecognised.
+    grade = _band_to_grade(band) or letter
     if not grade:
         return None
     return {'subject': subject, 'grade': grade, 'band': band}

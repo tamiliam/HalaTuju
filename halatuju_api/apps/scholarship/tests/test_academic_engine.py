@@ -350,13 +350,21 @@ class TestParseSpmSlip(SimpleTestCase):
         # The oral-test row resolves to Bahasa Melayu and dedups against the real row.
         self.assertEqual(sum(1 for r in out['results'] if r['subject'] == 'Bahasa Melayu'), 1)
 
-    def test_letter_band_conflict_both_returned(self):
-        # Letter A vs band Cemerlang(=A-) → keep BOTH so the downstream compare can flag
-        # 'uncertain'; the parser never silently picks one.
-        rows = [('BAHASA MELAYU', 'A', 'CEMERLANG')] + self.SHARMILA[1:4]
+    def test_band_is_authoritative_over_letter(self):
+        # The Theepicaa case: OCR read the letter as "A" but the band "Cemerlang
+        # Tertinggi" = A+. The BAND wins — so a student who typed A+ matches the slip,
+        # rather than being wrongly told "our read shows A".
+        rows = [('BAHASA MELAYU', 'A', 'CEMERLANG TERTINGGI')] + self.SHARMILA[1:4]
         bm = next(r for r in self._parse(rows)['results'] if r['subject'] == 'Bahasa Melayu')
-        self.assertEqual(bm['grade'], 'A')
-        self.assertEqual(bm['band'], 'cemerlang')
+        self.assertEqual(bm['grade'], 'A+')   # band-derived, not the letter "A"
+        self.assertEqual(bm['band'], 'cemerlang tertinggi')
+
+    def test_split_plus_letter_reassembled(self):
+        # The OCR splits "A+" into "A" "+" — the letter is reassembled (and the band
+        # agrees), so the grade is A+, not A.
+        rows = [('BAHASA MELAYU', 'A +', 'CEMERLANG TERTINGGI')] + self.SHARMILA[1:4]
+        bm = next(r for r in self._parse(rows)['results'] if r['subject'] == 'Bahasa Melayu')
+        self.assertEqual(bm['grade'], 'A+')
 
     def test_band_only_row_uses_band_grade(self):
         # Letter unreadable, band present → grade derived from the band.
