@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from django.test import SimpleTestCase
 
 from apps.scholarship.academic_engine import (
-    _split_band, compare_academics, read_slip, student_slip_check,
+    _split_band, compare_academics, parse_spm_slip, read_slip, student_slip_check,
 )
 
 
@@ -259,3 +259,110 @@ class TestCompareAcademics(SimpleTestCase):
         cmp = compare_academics({'bm': 'A'}, slip)
         self.assertFalse(cmp['have_grades'])
         self.assertEqual(cmp['missing'], ['Pendidikan Moral'])
+
+
+# ── Deterministic positional SPM-slip parser ──────────────────────────────────
+
+def _word(text, cx, cy, h=20):
+    return {'text': text, 'cx': cx, 'cy': cy, 'h': h}
+
+
+def _slip_words(header, rows, *, first_row_y=400, row_gap=40):
+    """Build a synthetic SPM-slip word list. ``header`` = list of (text, y);
+    ``rows`` = list of (subject, letter, band) top-to-bottom. Subjects sit in the
+    LEFT column (x~100), the grade letter at x~500, the band at x~560+ — i.e. a real
+    two-column layout, so a correct parse can only come from positional pairing."""
+    words = []
+    for text, y in header:
+        for i, tok in enumerate(text.split()):
+            words.append(_word(tok, 100 + i * 45, y))
+    y = first_row_y
+    for subject, letter, band in rows:
+        for i, tok in enumerate(subject.split()):
+            words.append(_word(tok, 100 + i * 60, y))
+        if letter:
+            words.append(_word(letter, 500, y))
+        for j, tok in enumerate(band.split()):
+            words.append(_word(tok, 560 + j * 80, y))
+        y += row_gap
+    return words
+
+
+class TestParseSpmSlip(SimpleTestCase):
+    HEADER = [('SIJIL PELAJARAN MALAYSIA', 200),
+              ('SHARMILA A/P SANGGAR', 250), ('060412-06-0320', 300)]
+    # Sharmila's real slip — the bottom three rows are exactly what the Gemini read
+    # transposed (PERTANIAN↔PERNIAGAAN↔TAMIL). A positional parse must NOT.
+    SHARMILA = [
+        ('BAHASA MELAYU', 'A-', 'CEMERLANG'),
+        ('BAHASA INGGERIS', 'C+', 'KEPUJIAN ATAS'),
+        ('PENDIDIKAN MORAL', 'A+', 'CEMERLANG TERTINGGI'),
+        ('SEJARAH', 'B', 'KEPUJIAN TINGGI'),
+        ('MATEMATIK', 'A-', 'CEMERLANG'),
+        ('SAINS', 'B+', 'KEPUJIAN TERTINGGI'),
+        ('PERTANIAN', 'A', 'CEMERLANG TINGGI'),
+        ('PERNIAGAAN', 'B', 'KEPUJIAN TINGGI'),
+        ('BAHASA TAMIL', 'A-', 'CEMERLANG'),
+    ]
+
+    def _parse(self, rows=None, header=None):
+        return parse_spm_slip(_slip_words(header or self.HEADER, rows or self.SHARMILA))
+
+    def test_every_row_paired_correctly(self):
+        out = self._parse()
+        self.assertIsNotNone(out)
+        got = {r['subject']: r['grade'] for r in out['results']}
+        self.assertEqual(len(out['results']), 9)
+        # The transposition victims now read their OWN row's grade.
+        self.assertEqual(got['PERTANIAN'], 'A')
+        self.assertEqual(got['PERNIAGAAN'], 'B')
+        self.assertEqual(got['BAHASA TAMIL'], 'A-')
+
+    def test_parse_is_order_independent(self):
+        # Reverse the OCR word order — positional grouping must still pair by geometry.
+        words = list(reversed(_slip_words(self.HEADER, self.SHARMILA)))
+        got = {r['subject']: r['grade'] for r in parse_spm_slip(words)['results']}
+        self.assertEqual(got['PERTANIAN'], 'A')
+        self.assertEqual(got['PERNIAGAAN'], 'B')
+        self.assertEqual(got['BAHASA TAMIL'], 'A-')
+
+    def test_band_kept_for_cross_check(self):
+        sains = next(r for r in self._parse()['results'] if r['subject'] == 'SAINS')
+        self.assertEqual(sains['grade'], 'B+')
+        self.assertEqual(sains['band'], 'kepujian tertinggi')
+
+    def test_letter_band_conflict_both_returned(self):
+        # Letter A vs band Cemerlang(=A-) → keep BOTH so the downstream compare can flag
+        # 'uncertain'; the parser never silently picks one.
+        rows = [('BAHASA MELAYU', 'A', 'CEMERLANG')] + self.SHARMILA[1:4]
+        bm = next(r for r in self._parse(rows)['results'] if r['subject'] == 'BAHASA MELAYU')
+        self.assertEqual(bm['grade'], 'A')
+        self.assertEqual(bm['band'], 'cemerlang')
+
+    def test_band_only_row_uses_band_grade(self):
+        # Letter unreadable, band present → grade derived from the band.
+        rows = [('BAHASA MELAYU', '', 'CEMERLANG')] + self.SHARMILA[1:4]
+        bm = next(r for r in self._parse(rows)['results'] if r['subject'] == 'BAHASA MELAYU')
+        self.assertEqual(bm['grade'], 'A-')
+
+    def test_tidak_hadir_is_th(self):
+        rows = self.SHARMILA[:3] + [('PERDAGANGAN', '', 'TIDAK HADIR')]
+        perd = next(r for r in self._parse(rows)['results'] if r['subject'] == 'PERDAGANGAN')
+        self.assertEqual(perd['grade'], 'TH')
+
+    def test_name_and_exam_extracted(self):
+        out = self._parse()
+        self.assertEqual(out['candidate_name'], 'SHARMILA A/P SANGGAR')
+        self.assertIn('SIJIL PELAJARAN MALAYSIA', out['exam'])
+        self.assertIn('2025', out['exam'] + ' 2025')  # year optional; name line carried no year
+
+    def test_name_row_not_parsed_as_a_grade(self):
+        # The "A/P" in the name must never be mistaken for an "A" grade row.
+        subjects = {r['subject'] for r in self._parse()['results']}
+        self.assertNotIn('SHARMILA', subjects)
+
+    def test_non_spm_returns_none(self):
+        self.assertIsNone(parse_spm_slip([_word('STPM', 100, 100), _word('SLIP', 200, 100)]))
+
+    def test_too_few_rows_returns_none(self):
+        self.assertIsNone(self._parse(self.SHARMILA[:2]))

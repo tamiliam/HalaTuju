@@ -62,6 +62,7 @@ _BAND_TO_GRADE = {
     'cemerlang tertinggi': 'A+', 'cemerlang tinggi': 'A', 'cemerlang': 'A-',
     'kepujian tertinggi': 'B+', 'kepujian tinggi': 'B', 'kepujian atas': 'C+',
     'kepujian': 'C', 'lulus atas': 'D', 'lulus': 'E', 'gagal': 'G',
+    'tidak hadir': 'TH',
 }
 # Trailing band phrase: a band word (cemerlang/kepujian/lulus/gagal) optionally
 # followed by a modifier (tertinggi/tinggi/atas). Anchored at the END so a real
@@ -105,6 +106,122 @@ def _base_letter(g: str) -> str:
     OCR-unreliable bit (a faint '+', a 'Ter-' prefix on the band), so a mismatch
     that differs ONLY by the modifier is treated as uncertain, not asserted."""
     return _norm_grade(g).rstrip('+-')
+
+
+# ── Deterministic positional parse of an SPM results slip (OCR-first) ──────────
+# SPM slips are STANDARDISED: a two-column table of subject names and grades, each
+# grade printed twice — a letter (A-) AND a Malay word-band (Cemerlang). The reliable
+# way to read them is POSITIONALLY: group the OCR words into rows by their Y-coordinate
+# so each subject pairs with the grade ON ITS OWN ROW. This is immune to the row
+# transposition that free-form vision extraction suffers on a watermarked slip (where
+# it pairs a subject with a neighbouring row's grade — the live "PERTANIAN reads B"
+# bug). The band word is the authoritative, OCR-reliable grade signal; the letter
+# confirms it. ``parse_spm_slip`` returns None to fall back to Gemini when the image
+# doesn't parse as an SPM slip. Pure (takes a word list) → unit-testable, no live calls.
+
+_SLIP_NAME_MARKER = re.compile(r'\b(a\s*/\s*[lp]|s\s*/\s*o|d\s*/\s*o|bin|binti)\b', re.IGNORECASE)
+_GRADE_TOKENS = frozenset({'A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G', 'TH'})
+_BAND_HEADS = frozenset({'cemerlang', 'kepujian', 'lulus', 'gagal'})
+_BAND_MODS = frozenset({'tertinggi', 'tinggi', 'atas'})
+
+
+def _group_rows(words, *, y_tol_frac=0.6):
+    """Cluster OCR words into visual ROWS by Y-coordinate — words at the same vertical
+    position are one row, returned left-to-right; rows top-to-bottom. Each word is a
+    dict ``{text, cx, cy, h}`` (centre x/y + height). This is what makes the parse
+    transposition-proof: pairing is by geometry, not by the model's reading order."""
+    usable = [w for w in (words or []) if (w.get('text') or '').strip()]
+    if not usable:
+        return []
+    heights = sorted((w.get('h') or 0) for w in usable)
+    med_h = heights[len(heights) // 2] or 12
+    tol = max(med_h * y_tol_frac, 6)
+    rows: list[dict] = []
+    for w in sorted(usable, key=lambda w: w['cy']):
+        for row in rows:
+            if abs(w['cy'] - row['cy']) <= tol:
+                row['ws'].append(w)
+                break
+        else:
+            rows.append({'cy': w['cy'], 'ws': [w]})
+    rows.sort(key=lambda r: r['cy'])
+    return [sorted(r['ws'], key=lambda w: w['cx']) for r in rows]
+
+
+def _parse_grade_row(row):
+    """One slip row → ``{subject, grade, band}`` or None (not a graded subject row).
+    The grade column starts at the first letter-grade OR band word; everything to its
+    LEFT is the subject — so subject and grade stay row-aligned."""
+    toks = [w['text'] for w in row]
+    norm = [t.strip('()[].').strip().upper() for t in toks]
+    low = [t.lower() for t in norm]
+    grade_idx = next((i for i, t in enumerate(norm) if t in _GRADE_TOKENS), None)
+    band_idx = next((i for i, t in enumerate(low) if t in _BAND_HEADS or t == 'tidak'), None)
+    # Every SPM grade row prints a Malay word-band — requiring one excludes header /
+    # name rows (e.g. an OCR-split "A/P" in a name that looks like an "A" grade).
+    if band_idx is None:
+        return None
+    cut = min(i for i in (grade_idx, band_idx) if i is not None)
+    subject = ' '.join(toks[:cut]).strip(' .:-\t')
+    if len(_norm(subject)) < 3:
+        return None
+    head = low[band_idx]
+    if head == 'tidak':
+        band = 'tidak hadir'
+    else:
+        nxt = low[band_idx + 1] if band_idx + 1 < len(low) else ''
+        band = (head + ' ' + nxt).strip() if nxt in _BAND_MODS else head
+    # The letter grade must sit in the grade column (between the subject and the band),
+    # i.e. before the band word — not a stray letter inside the subject name.
+    letter = norm[grade_idx] if (grade_idx is not None and grade_idx < band_idx) else ''
+    grade = letter or _band_to_grade(band)
+    if not grade:
+        return None
+    return {'subject': subject, 'grade': grade, 'band': band}
+
+
+def _slip_name(rows):
+    """Candidate name — the top-area line carrying a parentage marker (a/p, a/l, bin,
+    binti); '' if none (a marker-less name) so the downstream name check is skipped
+    rather than fed a wrong value."""
+    for row in rows[:12]:
+        line = ' '.join(w['text'] for w in row).strip()
+        if _SLIP_NAME_MARKER.search(line) and not any(ch.isdigit() for ch in line):
+            return line
+    return ''
+
+
+def _slip_exam(rows):
+    text = ' '.join(w['text'] for row in rows for w in row)
+    if 'SIJIL PELAJARAN MALAYSIA' not in text.upper():
+        return ''
+    m = re.search(r'\b(20\d{2})\b', text)
+    return f'SIJIL PELAJARAN MALAYSIA TAHUN {m.group(1)}' if m else 'SIJIL PELAJARAN MALAYSIA'
+
+
+def parse_spm_slip(words):
+    """Deterministic positional parse of SPM-slip OCR words →
+    ``{candidate_name, exam, results: [{subject, grade, band}]}``, or **None** to fall
+    back to Gemini (not an SPM slip, or fewer than 3 subject rows recognised)."""
+    rows = _group_rows(words)
+    if not rows:
+        return None
+    full = ' '.join(w['text'] for row in rows for w in row).upper()
+    if 'SIJIL PELAJARAN MALAYSIA' not in full and 'LEMBAGA PEPERIKSAAN' not in full:
+        return None
+    results, seen = [], set()
+    for row in rows:
+        gr = _parse_grade_row(row)
+        if not gr:
+            continue
+        nn = _norm(gr['subject'])
+        if nn in seen:
+            continue
+        seen.add(nn)
+        results.append(gr)
+    if len(results) < 3:
+        return None
+    return {'candidate_name': _slip_name(rows), 'exam': _slip_exam(rows), 'results': results}
 
 
 def read_slip(doc) -> dict:
