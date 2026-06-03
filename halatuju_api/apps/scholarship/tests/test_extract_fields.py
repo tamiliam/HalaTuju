@@ -135,8 +135,8 @@ class TestRunFieldExtraction(TestCase):
         vision.run_field_extraction_for_document(doc, names=['Sharmila'])
         doc.refresh_from_db()
         got = {r['subject']: r['grade'] for r in doc.vision_fields['fields']['results']}
-        self.assertEqual(got['PERTANIAN'], 'A')      # paired by geometry, not transposed
-        self.assertEqual(got['PERNIAGAAN'], 'B')
+        self.assertEqual(got['Pertanian'], 'A')      # paired by geometry, not transposed
+        self.assertEqual(got['Perniagaan'], 'B')
         mock_gemini.assert_not_called()
 
     @patch('apps.scholarship.vision.extract_document_fields')
