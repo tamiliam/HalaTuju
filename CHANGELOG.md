@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **SPM results slip now reads correctly when the photo is sideways or tilted (orientation-robust positional parse).** The
+  deterministic parser pairs each subject with the grade on its own row by clustering OCR words on their **Y-coordinate** —
+  which only held when the slip was **upright**. A phone photo turned ~90° (or shot at a keystone angle) clustered into
+  nonsense, the parse was abandoned, and Gemini read it instead — re-introducing the exact grade **transposition** the
+  positional parse exists to prevent (this was the recurring "Pavalaharasi / Sharmila read wrong" bug). Fix: capture a
+  per-word **baseline angle** (`vision._vision_words`) and, in `academic_engine._group_rows`, estimate the slip's
+  dominant text angle and **de-rotate every word centroid** before grouping, so a rotated table becomes horizontal again
+  and each subject keeps its own row's grade. **Gated** — a slip within ±25° of upright is left untouched (so a normal
+  upright slip is never perturbed by OCR angle-noise, the cause of an earlier regression); only a clearly-rotated slip
+  (~±90°) is de-rotated, by its precise median angle (handles the keystone, where the tilt is ~89° not exactly 90°). Row
+  tolerance is derived from the inter-row gap so it scales to a 4000px-tall photo. Verified end-to-end against **four
+  real student slips** frozen as fixtures (`tests/fixtures/slips/`): two upright (unchanged), one cleanly rotated 90°, one
+  rotated-90°-with-keystone in the Type-2 format — all now parse with each subject correctly paired. Where a keystoned
+  photo truncates a band's modifier (a bare `Cemerlang` printed beside an `A`), the band-authoritative read (`A-`)
+  downstream becomes a soft "please check", never a confident wrong answer. The full-word-geometry capture is now kept
+  **only on a fallback** (a slip the parser still can't read), so a future unhandled format is debuggable without bloating
+  every successful slip. Backend only, no migration.
+
 ### Changed
 - **SPM results slip is now read deterministically by positional OCR (Gemini becomes the fallback).** The slip is a
   standardised two-column table whose grade is printed twice — a letter (`A-`) and a Malay word-band (`Cemerlang`).
