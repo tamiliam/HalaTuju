@@ -351,6 +351,22 @@ class TestParseSpmSlip(SimpleTestCase):
             self.assertEqual(got['Perniagaan'], 'B', f'deg={deg}')
             self.assertEqual(got['Bahasa Tamil'], 'A-', f'deg={deg}')
 
+    def test_type1_coded_format(self):
+        # Type 1: "Code  Subject  Letter  Word" (Theepicaa/Pavalaharasi).
+        rows = [('1103 BAHASA MELAYU', 'A+', 'CEMERLANG TERTINGGI'),
+                ('1119 BAHASA INGGERIS', 'A', 'CEMERLANG TINGGI'),
+                ('1449 MATEMATIK', 'A+', 'CEMERLANG TERTINGGI')]
+        got = {r['subject']: r['grade'] for r in self._parse(rows)['results']}
+        self.assertEqual(got, {'Bahasa Melayu': 'A+', 'Bahasa Inggeris': 'A', 'Matematik': 'A+'})
+
+    def test_type2_parenthesised_format(self):
+        # Type 2: "Subject  Letter  (Word)" — no code, band in parentheses (Sharmila).
+        rows = [('BAHASA MELAYU', 'A-', '( CEMERLANG )'),
+                ('BAHASA INGGERIS', 'C+', '( KEPUJIAN ATAS )'),
+                ('MATEMATIK', 'A', '( CEMERLANG TINGGI )')]
+        got = {r['subject']: r['grade'] for r in self._parse(rows)['results']}
+        self.assertEqual(got, {'Bahasa Melayu': 'A-', 'Bahasa Inggeris': 'C+', 'Matematik': 'A'})
+
     def test_band_kept_for_cross_check(self):
         sains = next(r for r in self._parse()['results'] if r['subject'] == 'Sains')
         self.assertEqual(sains['grade'], 'B+')
