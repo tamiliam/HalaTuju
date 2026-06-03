@@ -200,6 +200,19 @@ def create_application(*, profile, cohort, validated_data, to_email, lang='en'):
     app_fields = {k: data[k] for k in _APP_FIELDS if k in data}
     # Stamp when the truthfulness declaration was signed (only if a signature was given).
     signed = (app_fields.get('declaration_name') or '').strip()
+
+    # Promote the declaration signature — the name the student deliberately typed
+    # "as in their IC" on the truthfulness declaration — to the canonical profile
+    # name. It is the most reliable name we hold: the About Me field is pre-filled
+    # from the Google sign-in display name (often a handle like "Sharmila 1204") and
+    # can ride through unchanged, whereas the declaration is a deliberate, gated
+    # capture. Promoting it means profile.name carries the real legal name from
+    # submit onward, so every identity check, email and sponsor profile reads it
+    # correctly. Stored verbatim (the admin views upper-case it via _full_name).
+    if signed and profile is not None and (getattr(profile, 'name', '') or '').strip() != signed:
+        profile.name = signed
+        profile.save(update_fields=['name', 'updated_at'])
+
     application = ScholarshipApplication.objects.create(
         cohort=cohort, profile=profile,
         locale=lang if lang in ('en', 'ms', 'ta') else 'en',

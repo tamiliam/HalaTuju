@@ -129,6 +129,43 @@ NO 12 JALAN MAHKOTA
         ocr = "MYKAD\nMALAYSIA\n030101-14-1234\nPRIYA A/P KRISHNAN\nNO 9 JALAN X\n50000 KL"
         self.assertEqual(_extract_name(ocr, '030101-14-1234'), 'PRIYA A/P KRISHNAN')
 
+    def test_mangled_ap_marker_appends_and_normalises(self):
+        # The Theepicaa case: OCR dropped the SLASH, reading "A/P" as a bare "AP" at the
+        # end of the line. We must still follow to the next line AND restore the "A/P".
+        ocr = ("MYKAD\nMALAYSIA\n081119-05-0548\nTHEEPICAA AP\nSELVAVINAYAGAM\n"
+               "NO 3 JALAN MELOR\n08000 SUNGAI PETANI\nKEDAH")
+        self.assertEqual(_extract_name(ocr, '081119-05-0548'),
+                         'THEEPICAA A/P SELVAVINAYAGAM')
+
+    def test_mangled_al_marker_appends_and_normalises(self):
+        ocr = ("MYKAD\nMALAYSIA\n080923-06-0355\nHARISH AL\nSANGGAR\n"
+               "37 JALAN X\n28400 MENTAKAB\nPAHANG")
+        self.assertEqual(_extract_name(ocr, '080923-06-0355'), 'HARISH A/L SANGGAR')
+
+    def test_glued_name_ending_in_al_is_left_untouched(self):
+        # FAISAL / PRATAP end in "AL"/"AP" but GLUED — not a standalone marker token —
+        # so they must NEVER pull in the next line. (Names <6 chars are filtered out by
+        # _is_name_line before this even matters, so test with real ≥6-char names.)
+        for given in ('FAISAL', 'PRATAP', 'MUHAMMAD FAISAL'):
+            ocr = f"MYKAD\nMALAYSIA\n900101-10-5555\n{given}\nNO 5 JALAN BESAR\nKUALA LUMPUR"
+            self.assertEqual(_extract_name(ocr, '900101-10-5555'), given)
+
+    def test_trailing_marker_canonical_is_token_safe(self):
+        # The marker detector: real + spaced + mangled forms → canonical; glued → ''.
+        from apps.scholarship.vision import _trailing_marker_canonical as m
+        self.assertEqual(m('THERESA A/P'), 'A/P')
+        self.assertEqual(m('THERESA A / P'), 'A/P')
+        self.assertEqual(m('THEEPICAA AP'), 'A/P')
+        self.assertEqual(m('HARISH AL'), 'A/L')
+        self.assertEqual(m('AHMAD BIN'), 'BIN')
+        for glued in ('FAISAL', 'PRATAP', 'VIMAL', 'KAMAL', 'BILAL'):
+            self.assertEqual(m(glued), '', f'{glued} must not read as a marker')
+
+    def test_mangled_marker_with_no_continuation_left_as_is(self):
+        # A trailing "AP" with no plausible surname line after it → no append, no crash.
+        ocr = "MYKAD\nMALAYSIA\n900101-10-5555\nSITI AP\n900101-10-5555\nNO 5 JALAN\nKL"
+        self.assertEqual(_extract_name(ocr, '900101-10-5555'), 'SITI AP')
+
     def test_no_text_returns_empty(self):
         self.assertEqual(_extract_nric(''), '')
         self.assertEqual(_extract_name(''), '')

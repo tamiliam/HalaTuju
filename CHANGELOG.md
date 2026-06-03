@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Identity name now anchors on the deliberate "as in IC" declaration signature — not the Google handle.** Two
+  root-cause fixes after a live review (applicant whose IC, results slip and offer letter all read the correct name,
+  yet the verdict showed a fake "truncation" against the junk profile name `Sharmila 1204`):
+  - **`profile.name` is now set from `declaration_name` at submit** (`create_application`). The About Me name field is
+    pre-filled from the Google sign-in display name (which can be a handle like `Sharmila 1204`) and can ride through
+    unchanged; the truthfulness-declaration signature is the deliberate, gated "as in IC" capture, so it becomes the
+    canonical profile name from submit onward — and every identity check, email and sponsor profile reads the real
+    legal name. Stored verbatim (admin views upper-case via `_full_name`). One-off backfill applied to the single
+    pre-fix straggler. No standing code previously kept the two in sync (the earlier reconciliation was a manual sweep
+    that missed one row).
+  - **MyKad name extractor follows an OCR-mangled parentage marker.** When Vision drops the slash and reads `A/P` as a
+    bare trailing `AP` (likewise `AL`/`SO`/`DO`), the extractor now follows to the next line and restores the canonical
+    `A/P` (`THEEPICAA AP` → `THEEPICAA A/P SELVAVINAYAGAM`). Token-safe — a glued name like `FAISAL`/`PRATAP`/`VIMAL`
+    is never treated as a marker (only a standalone final token counts). Reuses the existing line-break recovery.
+  - The verdict's name-truncation copy no longer over-claims "corroborated by the other documents" (the identity
+    verdict never actually cross-checks them) — it now credits the NRIC, which is the real anchor.
+
 ### Changed
 - **Pathway — confirm ONLY on a real offer-vs-declared clash (no more redundant nag).** Replaces the always-ask
   `pathway_confirm`. A new **lenient matcher** (`pathway_engine.offer_pathway_match` / `_distinctive_tokens` /
