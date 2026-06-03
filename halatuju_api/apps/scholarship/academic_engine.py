@@ -246,26 +246,43 @@ def _slip_exam(rows):
     return f'SIJIL PELAJARAN MALAYSIA TAHUN {m.group(1)}' if m else 'SIJIL PELAJARAN MALAYSIA'
 
 
+def _row_is_orphan_subject(row):
+    """True if the row resolves to a known SPM subject but carries NO grade band — i.e.
+    the subject got separated from its grade (a skewed photo with far-apart columns).
+    A signal that the positional read is unreliable for this slip."""
+    toks = [w['text'] for w in row]
+    low = [t.strip('()[].').strip().lower() for t in toks]
+    if any(t in _BAND_HEADS or t == 'tidak' for t in low):
+        return False
+    return bool(_match_known_subject(' '.join(toks)))
+
+
 def parse_spm_slip(words):
     """Deterministic positional parse of SPM-slip OCR words →
     ``{candidate_name, exam, results: [{subject, grade, band}]}``, or **None** to fall
-    back to Gemini (not an SPM slip, or fewer than 3 subject rows recognised)."""
+    back to Gemini (not an SPM slip, fewer than 3 subject rows, or a misaligned read)."""
     rows = _group_rows(words)
     if not rows:
         return None
     full = ' '.join(w['text'] for row in rows for w in row).upper()
     if 'SIJIL PELAJARAN MALAYSIA' not in full and 'LEMBAGA PEPERIKSAAN' not in full:
         return None
-    results, seen = [], set()
+    results, seen, orphan_subjects = [], set(), 0
     for row in rows:
         gr = _parse_grade_row(row)
-        if not gr:
-            continue
-        nn = _norm(gr['subject'])
-        if nn in seen:
-            continue
-        seen.add(nn)
-        results.append(gr)
+        if gr:
+            nn = _norm(gr['subject'])
+            if nn in seen:
+                continue
+            seen.add(nn)
+            results.append(gr)
+        elif _row_is_orphan_subject(row):
+            orphan_subjects += 1
+    # A known subject on a row with NO grade means its grade got separated (column
+    # drift on a skewed photo) — the read is unreliable, so DEFER to the Gemini
+    # fallback rather than emit a confidently-wrong grade.
+    if orphan_subjects:
+        return None
     if len(results) < 3:
         return None
     # _debug_rows: the raw grouped OCR lines (top-to-bottom) — a temporary diagnostic so

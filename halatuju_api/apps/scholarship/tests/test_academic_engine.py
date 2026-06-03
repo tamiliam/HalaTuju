@@ -416,3 +416,11 @@ class TestParseSpmSlip(SimpleTestCase):
 
     def test_too_few_rows_returns_none(self):
         self.assertIsNone(self._parse(self.SHARMILA[:2]))
+
+    def test_orphan_subject_row_falls_back(self):
+        # Sharmila's skewed-photo case: a subject ("Bahasa Melayu") lands on a row with
+        # NO grade (its grade split onto another row). Rather than emit a wrong grade,
+        # the parse bails (→ None → Gemini fallback).
+        words = _slip_words(self.HEADER, self.SHARMILA[1:])   # 8 well-formed rows
+        words += [_word('BAHASA', 100, 380), _word('MELAYU', 160, 380)]  # orphan subject
+        self.assertIsNone(parse_spm_slip(words))
