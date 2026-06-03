@@ -2007,7 +2007,7 @@
           "pathway_confirmed": "Laluan akhir disahkan oleh pelajar: {programme} di {institution}.",
           "academic_missing_subjects": "Memasukkan {entered} daripada {total} subjek pada slip — tiada: {subjects}. Minta pelajar menambahnya.",
           "academic_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip menunjukkan {slip}. Semak.",
-          "academic_grade_uncertain": "{subject}: gred huruf dan jalur pada slip tidak sepadan (dibaca {slip}) — semak dengan mata; pelajar menaip {typed}.",
+          "academic_grade_uncertain": "{subject}: bacaan kami menunjukkan {slip}, tetapi pelajar menaip {typed} — bacaan A/A+ (±) yang kami tidak pasti. Semak dengan mata pada slip.",
           "grades_verified": "Kesemua {count} gred sepadan dengan slip keputusan."
         }
       },
