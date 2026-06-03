@@ -92,30 +92,68 @@ _PARENTAGE_MARKER = re.compile(r'\b(a\s*/\s*[lp]|s\s*/\s*o|d\s*/\s*o|bin|binti)\
 # fires we append that next line so the full name is captured, not the truncated one.
 _TRAILING_PARENTAGE = re.compile(r'(?:a\s*/\s*[lp]|s\s*/\s*o|d\s*/\s*o|bin|binti)\s*$', re.IGNORECASE)
 
+# OCR sometimes drops the slash entirely, so "...A/P" is read as a bare trailing "AP"
+# (likewise A/L→AL, S/O→SO, D/O→DO). These map a mangled FINAL token back to its
+# canonical printed form. Matched token-wise (the WHOLE last word), so a glued name
+# like VIMAL / KAMAL / BILAL / FAISAL never trips it — only a standalone trailing token.
+_MANGLED_MARKERS = {'ap': 'A/P', 'al': 'A/L', 'so': 'S/O', 'do': 'D/O'}
 
-def _with_trailing_surname(name: str, lines: list[str]) -> str:
-    """If ``name`` ends with a parentage marker (A/L, A/P, BIN, BINTI, S/O, D/O), the
-    surname spilled onto the next OCR line — append it. Resolves the truncated-IC name
-    ("THERESA ARUL MARY A/P" → "THERESA ARUL MARY A/P A.PHILIPS") deterministically,
-    at extraction time, so the value the student + admin SEE is the full name."""
-    if not _TRAILING_PARENTAGE.search(name):
-        return name
+
+def _trailing_marker_canonical(name: str) -> str:
+    """The canonical parentage marker a name ENDS with (real 'A/P', spaced 'A / P',
+    BIN/BINTI, or an OCR-mangled slash-less 'AP'/'AL'/'SO'/'DO'), else ''. Token-based
+    for the mangled forms so only a standalone final token counts."""
+    m = _TRAILING_PARENTAGE.search(name or '')
+    if m:
+        return re.sub(r'\s+', '', m.group(0)).upper()      # 'A/P', 'BIN', …
+    toks = (name or '').split()
+    if toks and toks[-1].lower() in _MANGLED_MARKERS:
+        return _MANGLED_MARKERS[toks[-1].lower()]
+    return ''
+
+
+def _replace_trailing_marker(name: str, canon: str) -> str:
+    """Rewrite the name's trailing marker to its canonical form (fixes the mangled
+    'AP' → 'A/P'; a no-op when it was already canonical)."""
+    if _TRAILING_PARENTAGE.search(name):
+        return _TRAILING_PARENTAGE.sub(canon, name).strip()
+    toks = name.split()
+    return ' '.join(toks[:-1] + [canon]) if toks else name
+
+
+def _continuation_surname(name: str, lines: list[str]) -> str:
+    """The next OCR line after ``name`` if it reads as a surname fragment (ALL-CAPS
+    letters, no digits, not a card header), else '' (no spilled surname)."""
     try:
         idx = lines.index(name)
     except ValueError:
-        return name
+        return ''
     for ln in lines[idx + 1:]:
         if not ln:
             continue
-        # The continuation is a name fragment: ALL-CAPS letters, no digits, not a header
-        # token. Anything else (the NRIC / address block) means there is no surname line.
         if any(ch.isdigit() for ch in ln) or ln.upper() != ln:
-            return name
+            return ''
         words = [w for w in re.split(r'[^A-Za-z]+', ln) if w]
         if not words or all(w.upper() in _MYKAD_HEADER_TOKENS for w in words):
-            return name
-        return f'{name} {ln}'.strip()
-    return name
+            return ''
+        return ln
+    return ''
+
+
+def _with_trailing_surname(name: str, lines: list[str]) -> str:
+    """If ``name`` ends with a parentage marker (A/L, A/P, BIN, BINTI, S/O, D/O — or the
+    OCR-mangled slash-less AP/AL/SO/DO), the surname spilled onto the next OCR line —
+    append it and normalise the marker. Resolves the truncated-IC name deterministically
+    ("THERESA ARUL MARY A/P" → "…A/P A.PHILIPS"; "THEEPICAA AP" → "THEEPICAA A/P
+    SELVAVINAYAGAM"), so the value the student + admin SEE is the full, clean name.
+    Only fires when a real continuation line exists — a dangling marker is left as-is."""
+    canon = _trailing_marker_canonical(name)
+    if not canon:
+        return name
+    surname = _continuation_surname(name, lines)
+    if not surname:
+        return name
+    return f'{_replace_trailing_marker(name, canon)} {surname}'.strip()
 
 
 def _is_name_line(line: str) -> bool:
@@ -149,7 +187,10 @@ def _extract_name(text: str, nric_match_str: str = '') -> str:
                   if _is_name_line(ln) and not (nric_match_str and nric_match_str in ln)]
     if not candidates:
         return ''
-    marked = [ln for ln in candidates if _PARENTAGE_MARKER.search(ln)]
+    # A line carrying a parentage marker — a real one ANYWHERE, or an OCR-mangled
+    # slash-less one (AP/AL/SO/DO) as the TRAILING token — is the name line.
+    marked = [ln for ln in candidates
+              if _PARENTAGE_MARKER.search(ln) or _trailing_marker_canonical(ln)]
     if marked:
         # A marker MID-line is the full name; a marker at the END means the surname
         # was line-broken — append the next line (see _with_trailing_surname).
@@ -158,8 +199,8 @@ def _extract_name(text: str, nric_match_str: str = '') -> str:
     if nric_idx >= 0:
         for ln in lines[nric_idx + 1:]:
             if ln in candidates:
-                return ln
-    return max(candidates, key=len)
+                return _with_trailing_surname(ln, lines)
+    return _with_trailing_surname(max(candidates, key=len), lines)
 
 
 _MY_POSTCODE = re.compile(r'\b\d{5}\b')

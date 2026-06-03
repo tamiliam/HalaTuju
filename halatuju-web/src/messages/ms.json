@@ -1980,7 +1980,7 @@
         "item": {
           "nric_match": "Nombor KP sepadan dengan kad pengenalan ({nric}).",
           "name_match": "Nama sepadan merentas dokumen.",
-          "name_resolved_truncation": "Nama disahkan — OCR memendekkannya (terbaca “{ocr_name}”); nama penuh “{profile_name}” disokong oleh dokumen lain.",
+          "name_resolved_truncation": "Nama disahkan melalui NRIC — nama bercetak pada IC terbaca pendek (“{ocr_name}”), bentuk ringkas bagi nama yang ditaip “{profile_name}”.",
           "results_slip_name_ok": "Slip keputusan atas nama pelajar.",
           "income_proof_epf": "Penyata KWSP diberikan.",
           "income_proof_salary": "Slip gaji diberikan.",

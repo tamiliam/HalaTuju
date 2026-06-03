@@ -1980,7 +1980,7 @@
         "item": {
           "nric_match": "NRIC matches the IC ({nric}).",
           "name_match": "Name matches across documents.",
-          "name_resolved_truncation": "Name confirmed — the OCR truncated it (read “{ocr_name}”); the full name “{profile_name}” is corroborated by the other documents.",
+          "name_resolved_truncation": "Name confirmed via NRIC — the IC's printed name was read short (“{ocr_name}”), a shortened form of the name on file “{profile_name}”.",
           "results_slip_name_ok": "The results slip is in the student's name.",
           "income_proof_epf": "EPF statement provided.",
           "income_proof_salary": "Salary slip provided.",

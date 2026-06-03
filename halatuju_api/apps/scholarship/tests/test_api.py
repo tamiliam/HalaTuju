@@ -84,6 +84,32 @@ class TestApplicationIntake(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('priya@example.com', mail.outbox[0].to)
 
+    def test_declaration_name_promoted_to_profile_name(self):
+        # The deliberate "as in IC" declaration signature becomes the canonical
+        # profile name. The About Me field is pre-filled from the Google sign-in
+        # handle (e.g. "Priya") and can't be trusted; the declaration is gated +
+        # deliberate, so it wins — and the frozen intake snapshot reflects it.
+        self._auth(_make_token(USER_A))
+        resp = self.client.post(
+            '/api/v1/scholarship/applications/',
+            self._payload(declaration_name='PRIYA A/P KRISHNAN'),
+            format='json',
+        )
+        self.assertEqual(resp.status_code, 201)
+        self.profile_a.refresh_from_db()
+        self.assertEqual(self.profile_a.name, 'PRIYA A/P KRISHNAN')
+        app = ScholarshipApplication.objects.get(id=resp.json()['id'])
+        self.assertEqual(app.intake_snapshot['profile']['name'], 'PRIYA A/P KRISHNAN')
+
+    def test_no_declaration_name_leaves_profile_name(self):
+        # Without a signature, profile.name is untouched (no junk overwrite).
+        self._auth(_make_token(USER_A))
+        resp = self.client.post(
+            '/api/v1/scholarship/applications/', self._payload(), format='json')
+        self.assertEqual(resp.status_code, 201)
+        self.profile_a.refresh_from_db()
+        self.assertEqual(self.profile_a.name, 'Priya')
+
     def test_failing_application_rejected_no_decision_email(self):
         # profile_b has no grades (0 A's -> academic fail) + RM9000 no STR (income fail) -> rejected
         self._auth(_make_token(USER_B))
