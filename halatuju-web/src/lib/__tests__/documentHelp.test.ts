@@ -49,6 +49,15 @@ describe('shouldShowCoach', () => {
     expect(shouldShowCoach(doc({ doc_type: 'ic', vision_nric_verdict: 'mismatch', vision_run_at: null }))).toBe(false)
   })
 
+  it('shows the coach for a results slip that read uncertain, not for a clean one', () => {
+    const slip = (results: string) =>
+      doc({ doc_type: 'results_slip',
+        academic_check: { name: 'match', subjects: 'match', results } } as Partial<ApplicantDocument>)
+    expect(shouldShowCoach(slip('uncertain'))).toBe(true)   // a grade we couldn't be sure of
+    expect(shouldShowCoach(slip('mismatch'))).toBe(true)
+    expect(shouldShowCoach(slip('match'))).toBe(false)      // clean read → no coach (incl. a clean rotated slip)
+  })
+
   it('falls back to deterministic presence checks when doc-assist did not run', () => {
     expect(shouldShowCoach(doc({ vision_name_match: 'not_found' }))).toBe(true)
     expect(shouldShowCoach(doc({ vision_name_match: 'found', vision_address_match: 'not_found' }))).toBe(true)

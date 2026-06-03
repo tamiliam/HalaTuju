@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Cikgu Gopal now gives pointed, situation-specific results-slip advice instead of generic encouragement.** The coach was
+  only ever handed a coarse verdict label (name/subjects/grade mismatch), so when a grade came back merely *uncertain* — the
+  common "please check" outcome — `verdict_for_document` fell through to nothing and Gopal either said a generic line or
+  stayed silent. Two facts the parser already has are now surfaced: the photo's **tilt angle** (`academic_engine.parse_spm_slip`
+  → `skew_angle`; `student_slip_check` → `was_skewed`) and the **uncertain-grade** state. Two new verdict codes route on them:
+  `slip_grade_uncertain` (read fine, one grade not fully sure → "glance at your slip and double-check, tidy it on your profile
+  if it differs" — never a confident "you're wrong") and `slip_skewed_unclear` (the photo was at an angle *and* that left
+  something unclear → "lay it flat, fill the frame, photograph straight from above"; no profile edit). **Anti-nag rule:** the
+  retake advice fires only when skew **coincides** with a doubtful read — a rotated photo that nonetheless read cleanly
+  (every grade matches) gets **no coach at all**. The **firewall is untouched** — Gopal still receives only a verdict code +
+  doc type + first name; no score/profile/reviewer data can reach him. Frontend: the coach now appears on `results === 'uncertain'`,
+  the two codes carry pre-written en/ms/ta fallback copy, and `slip_grade_uncertain` (not `slip_skewed_unclear`) gets the
+  "edit your profile" link. Backend + frontend, no migration; i18n parity 1850×3.
+
 ### Fixed
 - **SPM results slip now reads correctly when the photo is sideways or tilted (orientation-robust positional parse).** The
   deterministic parser pairs each subject with the grade on its own row by clustering OCR words on their **Y-coordinate** —

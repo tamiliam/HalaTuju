@@ -15,6 +15,10 @@ export const HELP_VERDICTS = [
   'slip_name_mismatch',
   'slip_subjects_missing',
   'slip_grade_mismatch',
+  // Results-slip — a grade read with low confidence (double-check), and a skewed photo
+  // that left it unclear (retake straight). Pointed alternatives to a confident mismatch.
+  'slip_grade_uncertain',
+  'slip_skewed_unclear',
   // Offer-letter (pathway).
   'offer_name_mismatch',
   'offer_pathway_mismatch',
@@ -44,6 +48,7 @@ export function shouldShowCoach(doc: ApplicantDocument): boolean {
       ac.name === 'unreadable' ||
       ac.subjects === 'mismatch' ||
       ac.results === 'mismatch' ||
+      ac.results === 'uncertain' ||   // a grade we couldn't be sure of → Gopal asks to double-check
       ac.subjects === 'unreadable' ||
       ac.results === 'unreadable'
     )
