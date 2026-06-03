@@ -191,13 +191,22 @@ class TestBandCrossCheck(SimpleTestCase):
         self.assertEqual(len(cmp['uncertain']), 1)
         self.assertFalse(cmp['accurate'])
 
-    def test_letter_band_agree_real_mismatch_still_flags(self):
-        # Letter A and band Cemerlang Tinggi (A) AGREE → the slip clearly says A; student
-        # typed A+ → a CONFIDENT mismatch, not downgraded.
-        slip = read_slip(_doc({'results': [{'subject': 'Matematik', 'grade': 'A', 'band': 'Cemerlang Tinggi'}]}))
+    def test_real_mismatch_different_base_letter_flags(self):
+        # A genuine difference (typed A+, slip C — base letters A vs C differ, band agrees)
+        # is a CONFIDENT mismatch, not downgraded.
+        slip = read_slip(_doc({'results': [{'subject': 'Matematik', 'grade': 'C', 'band': 'Kepujian'}]}))
         cmp = compare_academics({'math': 'A+'}, slip)
         self.assertEqual(len(cmp['mismatched']), 1)
         self.assertEqual(cmp['uncertain'], [])
+
+    def test_pm_only_difference_is_uncertain_even_when_letter_band_agree(self):
+        # The Fizik case: slip read A / Cemerlang Tinggi (letter+band AGREE, both A), but
+        # the real grade is A+. typed A+ vs slip A differ ONLY by the '+' → the OCR's
+        # blind spot → UNCERTAIN, never a confident "you typed A+ but slip says A".
+        slip = read_slip(_doc({'results': [{'subject': 'Fizik', 'grade': 'A', 'band': 'Cemerlang Tinggi'}]}))
+        cmp = compare_academics({'phy': 'A+'}, slip)
+        self.assertEqual(cmp['mismatched'], [])
+        self.assertEqual(len(cmp['uncertain']), 1)
 
     def test_typed_matches_letter_no_flag(self):
         # Typed A+ corroborates the letter A+ → match, regardless of a stray band read.
