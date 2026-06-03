@@ -738,12 +738,17 @@ _DOC_HINTS = {
     'results_slip': (' This is an SPM results slip — a TABLE with one row per subject '
                      '(code · subject name · LETTER grade · Malay BAND phrase). For EACH '
                      'subject row return {subject, grade, band}: "subject" = the subject '
-                     'NAME only; "grade" = the exact LETTER grade printed on THAT row '
-                     '(A+, A, A-, B+, B, C+, C, D, E, G); "band" = the Malay band phrase on '
-                     'THAT SAME row (Cemerlang Tertinggi, Cemerlang Tinggi, Cemerlang, '
-                     'Kepujian Tertinggi, Kepujian Tinggi, Kepujian Atas, Kepujian, Lulus '
-                     'Atas, Lulus, or Gagal). Read row by row and keep the grade AND band '
-                     'aligned to the correct subject — never shift them between rows.'),
+                     'NAME only (drop the leading code); "band" = the Malay band phrase on '
+                     'THAT SAME row; "grade" = the grade the BAND means, using this EXACT '
+                     'mapping (the band is the source of truth — the printed +/- letter is '
+                     'small and easy to misread): Cemerlang Tertinggi=A+, Cemerlang '
+                     'Tinggi=A, Cemerlang=A-, Kepujian Tertinggi=B+, Kepujian Tinggi=B, '
+                     'Kepujian Atas=C+, Kepujian=C, Lulus Atas=D, Lulus=E, Gagal=G, Tidak '
+                     'Hadir=TH. The printed letter MUST agree with the band — if they '
+                     'differ, trust the BAND. Read strictly row by row: the grade and band '
+                     'belong to the subject printed on the SAME line; NEVER carry a grade or '
+                     'band up or down to a different subject, even if the slip is faint or '
+                     'watermarked. Ignore the "Ujian Lisan" line and any watermark text.'),
     'offer_letter': (' This is a Malaysian post-SPM offer letter — it may be a university '
                      'degree/diploma, a polytechnic ("Politeknik"), a matriculation '
                      '("Program Matrikulasi") or a Form Six ("Tingkatan Enam") offer. '
@@ -859,24 +864,28 @@ def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', check_
 
 
 def _extract_slip_deterministic(doc, image):
-    """Positional OCR parse of an SPM results slip → ``{fields, warnings, error}``, or
-    None to fall back to Gemini (no image, an STPM slip, or the table didn't parse).
-    SPM only for now — STPM (no Malay word-bands) always returns None until its own
-    parser lands. Reading the table by Y/X geometry pairs each subject with the grade
-    on its own row, which the free-form Gemini read mis-transposes on a watermark."""
+    """``(result|None, diag)``. Positional OCR parse of an SPM results slip →
+    ``{fields, warnings, error}``, or None to fall back to Gemini (no image, an STPM
+    slip, or the table didn't parse). SPM only for now. ``diag`` records WHY a parse was
+    skipped/failed (incl. a sample of what Vision read) so a Gemini-fallback slip can be
+    diagnosed from the stored record. Reading the table by Y/X geometry pairs each
+    subject with the grade on its own row, which Gemini mis-transposes on a watermark."""
     if image is None:
-        return None
+        return None, {'reason': 'no_image'}
     exam_type = (getattr(getattr(doc.application, 'profile', None), 'exam_type', '') or '').lower()
     if exam_type and exam_type != 'spm':
-        return None
+        return None, {'reason': 'not_spm_exam', 'exam_type': exam_type}
     wd = _vision_words(image, doc.content_type)
-    if wd.get('error') or not wd.get('words'):
-        return None
+    if wd.get('error'):
+        return None, {'reason': 'vision_error', 'error': wd['error']}
+    if not wd.get('words'):
+        return None, {'reason': 'no_words'}
     from .academic_engine import parse_spm_slip
     parsed = parse_spm_slip(wd['words'])
     if not parsed:
-        return None
-    return {'fields': parsed, 'warnings': [], 'error': ''}
+        return None, {'reason': 'parse_none', 'word_count': len(wd['words']),
+                      'sample': [w['text'] for w in wd['words'][:60]]}
+    return {'fields': parsed, 'warnings': [], 'error': ''}, {'reason': 'ok'}
 
 
 def run_field_extraction_for_document(doc, *, names, postcode='', city='', check_address=False, ocr=None) -> dict:
@@ -889,14 +898,16 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', check
     Every other supporting doc reads the OCR text."""
     if doc.doc_type == 'results_slip':
         image = _fetch_image_bytes(doc.storage_path)
-        ex = _extract_slip_deterministic(doc, image)   # OCR-first (SPM); None → Gemini
-        if ex is not None:
-            pass
-        elif image is not None:
-            ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type)
-        else:
-            r = ocr if ocr is not None else ocr_document(doc)
-            ex = extract_document_fields(r.get('text', ''), doc.doc_type)
+        ex, diag = _extract_slip_deterministic(doc, image)   # OCR-first (SPM); None → Gemini
+        if ex is None:
+            if image is not None:
+                ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type)
+            else:
+                r = ocr if ocr is not None else ocr_document(doc)
+                ex = extract_document_fields(r.get('text', ''), doc.doc_type)
+            # Record WHY we fell back (+ what Vision read) so the slip can be diagnosed.
+            if isinstance(ex.get('fields'), dict):
+                ex['fields']['_slip_ocr_diag'] = diag
     else:
         r = ocr if ocr is not None else ocr_document(doc)
         if r['error'] or not (r['text'] or '').strip():

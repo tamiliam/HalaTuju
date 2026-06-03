@@ -286,7 +286,11 @@ def read_slip(doc) -> dict:
                 s, leaked_band = _split_band(r.get('subject') or '')
                 # The explicit band field (the slip's redundant 2nd grade encoding).
                 band_grade = _band_to_grade(r.get('band') or '') or leaked_band
-                g = (r.get('grade') or '').strip() or band_grade
+                # The Malay band is AUTHORITATIVE — it's distinctive text OCR reads
+                # reliably, whereas the letter's +/- is a tiny, easily-dropped mark. So
+                # the band's grade wins; the printed letter is only the fallback. (Applies
+                # to BOTH the deterministic parse and the Gemini fallback read.)
+                g = band_grade or (r.get('grade') or '').strip()
                 if s:
                     names.append(s)
                     nn = _norm(s)
