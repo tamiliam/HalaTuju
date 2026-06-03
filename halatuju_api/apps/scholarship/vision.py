@@ -629,9 +629,14 @@ _FIELD_SCHEMAS = {
     'electricity_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR, 'billing_period': _STR}),
     # S2: read the GRADE against each subject (not just the subject list) so the
     # academic engine can verify the typed grades against the slip.
+    # Check-1 fix: also read the Malay BAND phrase per subject (Cemerlang Tertinggi /
+    # Cemerlang Tinggi / …) — a SECOND, redundant encoding of the grade printed on the
+    # slip. The academic engine cross-checks letter↔band to catch row-transposition
+    # misreads (e.g. Matematik A vs Sains A+ swapped) and degrades to 'check' on conflict.
     'results_slip': _doc_schema({'candidate_name': _STR, 'exam': _STR,
                                  'results': {'type': 'array', 'items': {'type': 'object',
-                                             'properties': {'subject': _STR, 'grade': _STR}}}}),
+                                             'properties': {'subject': _STR, 'grade': _STR,
+                                                            'band': _STR}}}}),
     # Pathway Check-1: the offer letter's facts, differentiated. candidate_nric is the
     # strong identity check (matched against the profile NRIC); issuer tells the pathway
     # type (university / matriculation / polytechnic / Form Six); offer_date is for currency.
@@ -648,14 +653,19 @@ _NAME_FIELD = {
 
 # Optional per-doc-type instruction appended to the extraction prompt.
 _DOC_HINTS = {
-    # Keep this hint minimal. We deliberately do NOT tell Gemini to drop the Malay
-    # achievement-band words (Cemerlang/Kepujian/…) from the subject — an earlier,
-    # stricter instruction coincided with a slip extracting an EMPTY results table,
-    # and the deterministic `academic_engine._split_band` already strips those bands
-    # at read time regardless of what Gemini returns. So: ask only for every row.
-    'results_slip': (' For "results", list EVERY subject row with its exact grade '
-                     'as printed (e.g. A+, A, A-, B+, B, C+, C, D, E, G) — one entry '
-                     'per subject.'),
+    # The slip is a TABLE; each row prints the grade TWICE (a letter + a Malay band).
+    # Ask for both, ALIGNED to the same row — the academic engine cross-checks them to
+    # catch a row-transposition misread. (The deterministic `_split_band` still strips
+    # any band words that leak into the subject name.)
+    'results_slip': (' This is an SPM results slip — a TABLE with one row per subject '
+                     '(code · subject name · LETTER grade · Malay BAND phrase). For EACH '
+                     'subject row return {subject, grade, band}: "subject" = the subject '
+                     'NAME only; "grade" = the exact LETTER grade printed on THAT row '
+                     '(A+, A, A-, B+, B, C+, C, D, E, G); "band" = the Malay band phrase on '
+                     'THAT SAME row (Cemerlang Tertinggi, Cemerlang Tinggi, Cemerlang, '
+                     'Kepujian Tertinggi, Kepujian Tinggi, Kepujian Atas, Kepujian, Lulus '
+                     'Atas, Lulus, or Gagal). Read row by row and keep the grade AND band '
+                     'aligned to the correct subject — never shift them between rows.'),
     'offer_letter': (' This is a Malaysian post-SPM offer letter — it may be a university '
                      'degree/diploma, a polytechnic ("Politeknik"), a matriculation '
                      '("Program Matrikulasi") or a Form Six ("Tingkatan Enam") offer. '
@@ -707,22 +717,36 @@ def _call_gemini_json(prompt: str, schema: dict, *, image: Optional[bytes] = Non
     return {'_error': f'All AI models failed: {last_error}'}
 
 
-def extract_document_fields(ocr_text: str, doc_type: str) -> dict:
-    """Gemini extracts the per-doc-type fields from a supporting doc's OCR text.
-    Returns {fields, warnings, error}. No Gemini call when there's no text. Never raises."""
+def extract_document_fields(ocr_text: str, doc_type: str, *, image: Optional[bytes] = None,
+                            content_type: str = '') -> dict:
+    """Gemini extracts the per-doc-type fields. Pass ``image`` to read the document
+    VISUALLY (the model sees the real 2-D layout — used for the results slip, whose
+    table can't survive being flattened to OCR text); otherwise it reads ``ocr_text``.
+    Returns {fields, warnings, error}. Never raises."""
     schema = _FIELD_SCHEMAS.get(doc_type)
     if schema is None:
         return {'fields': {}, 'warnings': [], 'error': f'no extractor for {doc_type}'}
-    if not (ocr_text or '').strip():
-        return {'fields': {}, 'warnings': [], 'error': 'no text'}
     hint = _DOC_HINTS.get(doc_type, '')
-    prompt = (
-        f'Here is the OCR text from a Malaysian {doc_type.replace("_", " ")}. '
-        'Extract the listed fields exactly as printed. If a field is missing or '
-        'unclear, leave it empty and add a short note to "warnings". Do NOT invent '
-        f'values.{hint}\n\nOCR TEXT:\n{(ocr_text or "")[:6000]}'
-    )
-    data = _call_gemini_json(prompt, schema)
+    doc_label = doc_type.replace('_', ' ')
+    if image is not None:
+        img, mime = _as_image_for_gemini(image, content_type)
+        if img is None:
+            return {'fields': {}, 'warnings': [], 'error': 'no image for extraction'}
+        prompt = (
+            f'This is an image of a Malaysian {doc_label}. Read it carefully and extract '
+            'the listed fields exactly as printed. If a field is missing or unclear, leave '
+            f'it empty and add a short note to "warnings". Do NOT invent values.{hint}'
+        )
+        data = _call_gemini_json(prompt, schema, image=img, mime_type=mime)
+    else:
+        if not (ocr_text or '').strip():
+            return {'fields': {}, 'warnings': [], 'error': 'no text'}
+        prompt = (
+            f'Here is the OCR text from a Malaysian {doc_label}. Extract the listed fields '
+            'exactly as printed. If a field is missing or unclear, leave it empty and add a '
+            f'short note to "warnings". Do NOT invent values.{hint}\n\nOCR TEXT:\n{(ocr_text or "")[:6000]}'
+        )
+        data = _call_gemini_json(prompt, schema)
     if '_error' in data:
         return {'fields': {}, 'warnings': [], 'error': data['_error']}
     warnings = data.pop('warnings', []) or []
@@ -758,20 +782,31 @@ def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', check_
 
 def run_field_extraction_for_document(doc, *, names, postcode='', city='', check_address=False, ocr=None) -> dict:
     """Extract fields + a deterministic student-facing verdict, store on the doc.
-    Never blocks, never raises. Pass ``ocr`` to reuse a prior OCR pass."""
-    r = ocr if ocr is not None else ocr_document(doc)
-    if r['error'] or not (r['text'] or '').strip():
-        result = {'fields': {}, 'warnings': [], 'student_verdict': 'unreadable',
-                  'error': r['error'] or 'no text read'}
-    else:
-        ex = extract_document_fields(r['text'], doc.doc_type)
-        if ex['error']:
-            result = {'fields': {}, 'warnings': [], 'student_verdict': 'unreadable', 'error': ex['error']}
+    Never blocks, never raises. Pass ``ocr`` to reuse a prior OCR pass.
+
+    The **results slip** is read from the IMAGE (its table mis-transposes when read
+    from flattened OCR text); every other supporting doc reads the OCR text."""
+    if doc.doc_type == 'results_slip':
+        image = _fetch_image_bytes(doc.storage_path)
+        if image is not None:
+            ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type)
         else:
-            verdict = doc_student_verdict(doc.doc_type, ex['fields'], names=names,
-                                          postcode=postcode, city=city, check_address=check_address)
-            result = {'fields': ex['fields'], 'warnings': ex['warnings'],
-                      'student_verdict': verdict, 'error': ''}
+            r = ocr if ocr is not None else ocr_document(doc)
+            ex = extract_document_fields(r.get('text', ''), doc.doc_type)
+    else:
+        r = ocr if ocr is not None else ocr_document(doc)
+        if r['error'] or not (r['text'] or '').strip():
+            ex = {'fields': {}, 'warnings': [], 'error': r['error'] or 'no text read'}
+        else:
+            ex = extract_document_fields(r['text'], doc.doc_type)
+
+    if ex['error']:
+        result = {'fields': {}, 'warnings': [], 'student_verdict': 'unreadable', 'error': ex['error']}
+    else:
+        verdict = doc_student_verdict(doc.doc_type, ex['fields'], names=names,
+                                      postcode=postcode, city=city, check_address=check_address)
+        result = {'fields': ex['fields'], 'warnings': ex['warnings'],
+                  'student_verdict': verdict, 'error': ''}
     doc.vision_fields = result
     doc.vision_fields_run_at = timezone.now()
     doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])
