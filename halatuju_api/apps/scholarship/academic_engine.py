@@ -100,6 +100,13 @@ def _norm_grade(g: str) -> str:
     return re.sub(r'\s+', '', (g or '')).upper()
 
 
+def _base_letter(g: str) -> str:
+    """The SPM grade WITHOUT its +/- modifier: 'A+' / 'A-' → 'A'. The +/- is the
+    OCR-unreliable bit (a faint '+', a 'Ter-' prefix on the band), so a mismatch
+    that differs ONLY by the modifier is treated as uncertain, not asserted."""
+    return _norm_grade(g).rstrip('+-')
+
+
 def read_slip(doc) -> dict:
     """Pull subject names + grades out of a results_slip's doc-assist fields.
 
@@ -167,9 +174,12 @@ def compare_academics(profile_grades, slip) -> dict:
             continue  # not entered, or the typed grade matches the slip letter
         band_g = bands.get(nn)
         row = {'subject': slip_norm.get(nn, nn), 'typed': typed, 'slip': slip_g}
-        if band_g and _norm_grade(band_g) != _norm_grade(slip_g):
-            # The slip's own letter and band disagree → can't trust this grade read.
-            uncertain.append({**row, 'band': band_g})
+        band_conflict = bool(band_g) and _norm_grade(band_g) != _norm_grade(slip_g)
+        # A difference that is ONLY the +/- modifier (A+ vs A) sits in the OCR's blind
+        # spot — even a consistent letter+band misread can't be trusted there.
+        pm_only = _base_letter(typed) == _base_letter(slip_g)
+        if band_conflict or pm_only:
+            uncertain.append({**row, 'band': band_g or ''})
         else:
             mismatched.append(row)
     return {
