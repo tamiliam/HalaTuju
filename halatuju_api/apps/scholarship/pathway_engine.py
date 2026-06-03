@@ -41,6 +41,12 @@ _GENERIC_TOKENS = frozenset({
     'asasi', 'foundation', 'diploma', 'ijazah', 'sarjana', 'muda', 'degree', 'bachelor',
     'program', 'programme', 'sijil', 'certificate', 'persediaan', 'pengajian',
     'tingkatan', 'form', 'stpm', 'matrik', 'pra',
+    # enrolment-structure wording on an offer (a Form-6 offer reads "Tingkatan Enam
+    # Semester 1 Tahun 2026" — none of which is a FIELD, so it must not "clash" with a
+    # declared field like "sains sosial"). Cardinals cover "Semester Satu/Dua", "Tingkatan Enam".
+    'semester', 'sesi', 'session', 'intake', 'pengambilan', 'kemasukan', 'tawaran',
+    'tahun', 'year', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'lapan',
+    'sembilan', 'sepuluh',
     # connectors / filler
     'of', 'in', 'the', 'dan', 'and', 'di', 'ke', 'dengan', 'untuk', 'bagi',
     'with', 'for',

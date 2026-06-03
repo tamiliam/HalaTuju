@@ -132,6 +132,17 @@ class TestOfferPathwayMatch(SimpleTestCase):
         self.assertEqual(offer_pathway_match('Diploma', 'Politeknik',
                                              'Diploma', 'Politeknik'), 'unknown')
 
+    def test_form6_enrolment_wording_does_not_false_clash(self):
+        # Divashini: declared a Form-6 (STPM) Sains Sosial place; the offer's "programme"
+        # was read as the enrolment TYPE ("Tingkatan Enam Semester 1 Tahun 2026"), not a
+        # field. That structure wording must not "clash" with the declared field — the
+        # matching school (Pulau Sebang) carries it to a match, no false nag.
+        self.assertEqual(
+            offer_pathway_match('sains_sosial', 'SMK Pulau Sebang',
+                                'Tingkatan Enam Semester 1 Tahun 2026',
+                                'Sekolah Menengah Kebangsaan Pulau Sebang'),
+            'match')
+
 
 class TestStudentOfferCheckPathway(SimpleTestCase):
     """student_offer_check surfaces the offer-vs-declared reconciliation."""

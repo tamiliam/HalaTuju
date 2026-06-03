@@ -1283,6 +1283,10 @@
           "title": "Surat tawaran sukar dibaca",
           "desc": "Imbasan kurang jelas. Sila muat naik salinan yang lebih jelas."
         },
+        "offer_no_identity": {
+          "title": "Muat naik surat tawaran peribadi anda",
+          "desc": "Surat ini tidak menunjukkan nama atau KP anda — ia nampak seperti makluman umum. Sila muat naik surat tawaran sebenar yang dialamatkan kepada anda."
+        },
         "offer_name_mismatch": {
           "title": "Semak nama pada surat tawaran",
           "desc": "Nama pada surat tawaran tidak sepadan dengan profil anda. Sila semak semula."
@@ -2006,6 +2010,7 @@
           "income_proof_missing": "Tiada bukti pendapatan dimuat naik — minta STR, slip gaji, atau KWSP.",
           "offer_name_mismatch": "Surat tawaran atas nama atau KP yang berbeza. Sahkan.",
           "offer_unreadable": "Surat tawaran tidak dapat dibaca — minta salinan yang lebih jelas.",
+          "offer_no_identity": "Surat ini tiada nama atau KP pelajar — ia nampak seperti makluman umum, bukan surat tawaran peribadi. Minta surat tawaran sebenar yang dialamatkan kepada pelajar.",
           "pathway_undeclared": "Belum memilih laluan.",
           "pathway_confirm": "Tawaran untuk {programme} di {institution} berbeza daripada laluan yang diisytiharkan — menunggu pengesahan pelajar yang mana satu akhir.",
           "pathway_confirmed": "Laluan akhir disahkan oleh pelajar: {programme} di {institution}.",

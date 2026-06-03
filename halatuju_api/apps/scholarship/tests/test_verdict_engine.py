@@ -323,6 +323,29 @@ class TestPathway(_Base):
         self.assertEqual(f['status'], 'review')
         self.assertIn('offer_name_mismatch', _codes(f['unresolved']))
 
+    def test_offer_notice_without_identity_is_no_identity_not_unreadable(self):
+        # Sharvin: a general UTM NOTICE whose body read fine (issuer/institution/
+        # programme present) but carries NO candidate name or IC. That's a wrong /
+        # placeholder document, not a blurry scan — the officer is told "no identity
+        # on it", never the misleading "ask for a clearer copy".
+        _add_doc(self.app, 'offer_letter', student_verdict='ok',
+                 fields={'candidate_name': '', 'candidate_nric': '',
+                         'institution': 'Universiti Teknologi Malaysia',
+                         'programme': 'Program Asasi dan Diploma UTM'})
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('offer_no_identity', _codes(f['unresolved']))
+        self.assertNotIn('offer_unreadable', _codes(f['unresolved']))
+
+    def test_offer_blank_everything_is_unreadable(self):
+        # Genuinely nothing read (no identity AND no body) → still 'could not be read'.
+        _add_doc(self.app, 'offer_letter', student_verdict='ok',
+                 fields={'candidate_name': '', 'candidate_nric': '',
+                         'institution': '', 'programme': ''})
+        f = _facts(self.app)['pathway']
+        self.assertIn('offer_unreadable', _codes(f['unresolved']))
+        self.assertNotIn('offer_no_identity', _codes(f['unresolved']))
+
     def test_confirm_pathway_writes_chosen_programme_then_verified(self):
         from apps.scholarship import services
         _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._OWN_OFFER)
