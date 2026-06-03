@@ -248,13 +248,46 @@ def _slip_exam(rows):
 
 def _row_is_orphan_subject(row):
     """True if the row resolves to a known SPM subject but carries NO grade band — i.e.
-    the subject got separated from its grade (a skewed photo with far-apart columns).
-    A signal that the positional read is unreliable for this slip."""
+    the subject got separated from its grade (a skewed photo with far-apart columns)."""
     toks = [w['text'] for w in row]
     low = [t.strip('()[].').strip().lower() for t in toks]
     if any(t in _BAND_HEADS or t == 'tidak' for t in low):
         return False
     return bool(_match_known_subject(' '.join(toks)))
+
+
+def _row_has_band_no_subject(row):
+    """True if the row carries a grade band but NO known subject — a grade that got
+    separated from its subject onto its own line (the orphan-grade half of a split)."""
+    toks = [w['text'] for w in row]
+    norm = [t.strip('()[].').strip().upper() for t in toks]
+    low = [t.lower() for t in norm]
+    band_idx = next((i for i, t in enumerate(low) if t in _BAND_HEADS or t == 'tidak'), None)
+    if band_idx is None:
+        return False
+    grade_idx = next((i for i, t in enumerate(norm) if t in _GRADE_TOKENS), None)
+    cut = min([i for i in (grade_idx, band_idx) if i is not None], default=len(toks))
+    return not _match_known_subject(' '.join(toks[:cut]))
+
+
+def _merge_split_rows(rows):
+    """Stitch rows that OCR split on a skewed photo, so the standard row parser can
+    pair them: (1) a band-MODIFIER-only continuation ("ATAS )", "TINGGI )") folds into
+    the previous row (recovers "Kepujian" → "Kepujian Atas"); (2) an orphan SUBJECT row
+    immediately followed by an orphan GRADE row (the subject and its grade landed on
+    separate lines) are joined. A no-op on a cleanly-aligned slip."""
+    merged: list[list] = []
+    for ws in rows:
+        low = [w['text'].strip('()[].').strip().lower() for w in ws]
+        non_punct = [t for t in low if t and any(ch.isalnum() for ch in t)]
+        if merged and non_punct and all(t in _BAND_MODS for t in non_punct):
+            merged[-1] = merged[-1] + list(ws)
+            continue
+        if merged and _row_is_orphan_subject(merged[-1]) and _row_has_band_no_subject(ws):
+            merged[-1] = merged[-1] + list(ws)
+            continue
+        merged.append(list(ws))
+    return merged
 
 
 def parse_spm_slip(words):
@@ -264,6 +297,7 @@ def parse_spm_slip(words):
     rows = _group_rows(words)
     if not rows:
         return None
+    rows = _merge_split_rows(rows)   # recover subject/grade + band rows split by skew
     full = ' '.join(w['text'] for row in rows for w in row).upper()
     if 'SIJIL PELAJARAN MALAYSIA' not in full and 'LEMBAGA PEPERIKSAAN' not in full:
         return None
