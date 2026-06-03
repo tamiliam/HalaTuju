@@ -22,6 +22,7 @@ silent 'verified'.
 """
 from __future__ import annotations
 
+import math
 import re
 
 # grade key → Bahasa-Melayu subject name (mirror of subjects.ts SUBJECT_NAMES).
@@ -148,27 +149,77 @@ def _match_known_subject(raw: str) -> str:
     return ''
 
 
+def _dominant_angle(words) -> float:
+    """The slip's overall text-baseline angle (degrees), or 0.0 when near-upright.
+    Median over the per-word ``angle`` (robust to a few outliers — diagonal watermarks,
+    Jawi marks). Gated: a result within ±25° of horizontal is treated as upright (0.0)
+    so a clean, upright slip is NEVER rotated by OCR angle-noise (the earlier regression).
+    Only a clearly-rotated slip (~±90°) crosses the gate and gets de-rotated."""
+    angs = sorted(w['angle'] for w in words if w.get('angle') is not None)
+    if not angs:
+        return 0.0
+    med = angs[len(angs) // 2]
+    return med if abs(med) >= 25.0 else 0.0
+
+
+def _row_tol(axis_sorted) -> float:
+    """Row-merge tolerance for the de-rotated row axis — half the typical between-row
+    pitch (the median of the larger gaps), clamped to a sane band. Derived from the data
+    so it adapts to the slip's resolution (a phone photo can be 4000px tall)."""
+    gaps = sorted(b - a for a, b in zip(axis_sorted, axis_sorted[1:]) if b - a > 1.5)
+    if not gaps:
+        return 12.0
+    upper = gaps[len(gaps) // 2:]            # the larger gaps ≈ between-row pitch
+    pitch = upper[len(upper) // 2]
+    return max(min(pitch * 0.5, 40.0), 10.0)
+
+
 def _group_rows(words, *, y_tol_frac=0.6):
-    """Cluster OCR words into visual ROWS by Y-coordinate — words at the same vertical
-    position are one row, returned left-to-right; rows top-to-bottom. Each word is a
-    dict ``{text, cx, cy, h}`` (centre x/y + height). This is what makes the parse
-    transposition-proof: pairing is by geometry, not by the model's reading order."""
+    """Cluster OCR words into visual ROWS — words at the same row position are one row,
+    returned in reading order; rows top-to-bottom. Each word is a dict
+    ``{text, cx, cy, h, angle?}``. This is what makes the parse transposition-proof:
+    pairing is by geometry, not by the model's reading order.
+
+    Orientation-robust: an upright slip groups by raw Y (unchanged). A clearly-rotated
+    slip (phone photo turned sideways, ~±90°, possibly with keystone) is first DE-ROTATED
+    by its dominant text angle — the row axis ``y' = -cx·sinθ + cy·cosθ`` becomes
+    horizontal again, so each subject still pairs with the grade on its own row. Without
+    this, a rotated slip clusters by raw cy into nonsense and the whole parse is abandoned
+    to Gemini, which transposes grades on a watermark."""
     usable = [w for w in (words or []) if (w.get('text') or '').strip()]
     if not usable:
         return []
-    heights = sorted((w.get('h') or 0) for w in usable)
-    med_h = heights[len(heights) // 2] or 12
-    tol = max(med_h * y_tol_frac, 6)
-    rows: list[dict] = []
-    for w in sorted(usable, key=lambda w: w['cy']):
-        for row in rows:
-            if abs(w['cy'] - row['cy']) <= tol:
-                row['ws'].append(w)
-                break
-        else:
-            rows.append({'cy': w['cy'], 'ws': [w]})
-    rows.sort(key=lambda r: r['cy'])
-    return [sorted(r['ws'], key=lambda w: w['cx']) for r in rows]
+    theta = _dominant_angle(usable)
+    if theta == 0.0:
+        # Upright: group by raw Y, order by raw X (original behaviour — unchanged).
+        heights = sorted((w.get('h') or 0) for w in usable)
+        med_h = heights[len(heights) // 2] or 12
+        tol = max(med_h * y_tol_frac, 6)
+        rows: list[dict] = []
+        for w in sorted(usable, key=lambda w: w['cy']):
+            for row in rows:
+                if abs(w['cy'] - row['cy']) <= tol:
+                    row['ws'].append(w)
+                    break
+            else:
+                rows.append({'cy': w['cy'], 'ws': [w]})
+        rows.sort(key=lambda r: r['cy'])
+        return [sorted(r['ws'], key=lambda w: w['cx']) for r in rows]
+    # Rotated: de-rotate every centroid by the dominant angle, cluster on the row axis,
+    # read along the text axis. Single-linkage along the sorted row axis tolerates a
+    # row's internal spread (a keystone leaves the subject and its grade slightly offset)
+    # while still splitting cleanly at the larger between-row gap.
+    rad = math.radians(theta)
+    cos, sin = math.cos(rad), math.sin(rad)
+    proj = [(-w['cx'] * sin + w['cy'] * cos,    # row axis (top→bottom of the slip)
+             w['cx'] * cos + w['cy'] * sin,     # text axis (reading order within a row)
+             w) for w in usable]
+    proj.sort(key=lambda p: p[0])
+    tol = _row_tol([p[0] for p in proj])
+    rows_r = [[proj[0]]]
+    for prev, cur in zip(proj, proj[1:]):
+        (rows_r[-1].append(cur) if cur[0] - prev[0] <= tol else rows_r.append([cur]))
+    return [[w for _, _, w in sorted(r, key=lambda p: p[1])] for r in rows_r]
 
 
 def _parse_grade_row(row):
