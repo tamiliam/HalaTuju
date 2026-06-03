@@ -420,24 +420,17 @@ def _vision_words(data: bytes, content_type: str = '') -> dict:
         resp = client.document_text_detection(image=vision.Image(content=img))
         if resp.error and resp.error.message:
             return {'words': [], 'error': resp.error.message[:200]}
-        import math
         words = []
         # text_annotations[0] is the whole text; [1:] are individual words with boxes.
         for ann in resp.text_annotations[1:]:
             vs = ann.bounding_poly.vertices
-            if len(vs) < 4:
-                continue
             xs = [v.x for v in vs]
             ys = [v.y for v in vs]
-            # Vision orders the 4 vertices ALONG the text: v0→v1 is the reading direction
-            # (its angle = the word's rotation); v1→v2 is the character height. Both are
-            # rotation-invariant, so the parser can normalise a sideways/skewed slip.
-            dx, dy = vs[1].x - vs[0].x, vs[1].y - vs[0].y
-            char_h = math.hypot(vs[2].x - vs[1].x, vs[2].y - vs[1].y)
+            if not xs or not ys:
+                continue
             words.append({'text': ann.description,
                           'cx': sum(xs) / len(xs), 'cy': sum(ys) / len(ys),
-                          'h': char_h or (max(ys) - min(ys)),
-                          'angle': math.atan2(dy, dx)})
+                          'h': max(ys) - min(ys)})
         return {'words': words, 'error': None}
     except Exception as e:  # noqa: BLE001 — graceful
         logger.warning('Vision word OCR failed: %s', e)
