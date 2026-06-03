@@ -23,6 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "edit your profile" link. Backend + frontend, no migration; i18n parity 1850×3.
 
 ### Fixed
+- **Officer Academic verdict no longer falsely says "the results slip could not be read" for a cleanly-read slip.** The
+  officer verdict (`verdict_engine._verdict_academic`) decided slip readability partly from `slip.vision_name_match ==
+  'not_found'` — but that column is the *supporting-doc / IC* full-text heuristic, not the results-slip name check. A
+  results slip is name-checked the proper way (its candidate-name logic, surfaced as the sv-authoritative
+  `student_verdict`), and that column is left blank/`not_found` for some name spellings even when the slip read perfectly
+  — producing the self-contradictory "could not be read" **and** "entered 8 of 9 subjects" on the same student. Fixed by
+  using the slip's own `academic_engine._slip_name_status` (the exact signal the student checklist uses, so officer and
+  student now agree) instead of the wrong column. A clean slip with an odd-spelled name verifies; a missing subject still
+  surfaces only the missing-subjects nudge. No re-OCR needed — the verdict recomputes per request. Backend only, no migration.
+
 - **SPM results slip now reads correctly when the photo is sideways or tilted (orientation-robust positional parse).** The
   deterministic parser pairs each subject with the grade on its own row by clustering OCR words on their **Y-coordinate** —
   which only held when the slip was **upright**. A phone photo turned ~90° (or shot at a keystone angle) clustered into

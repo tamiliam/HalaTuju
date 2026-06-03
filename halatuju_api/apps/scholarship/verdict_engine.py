@@ -153,22 +153,26 @@ def _verdict_academic(application):
     All three clean → 'verified'. The slip's grades and the typed grades are two
     independent readings: agreement is strong verification, a disagreement
     pinpoints the one cell to check."""
-    from .academic_engine import compare_academics, read_slip
+    from .academic_engine import compare_academics, read_slip, _slip_name_status
     evidence, unresolved = [], []
     slip = _latest_doc(application, 'results_slip')
     if slip is None:
         return _fact('academic', 'gap', evidence, [_item('results_slip_missing')])
 
-    dv = _doc_assist_verdict(slip)
-    name_ok = True
-    if dv == 'name_mismatch':
+    # Name — use the slip's OWN sv-authoritative status (the candidate-name logic the
+    # student checklist uses), NOT the supporting-doc `vision_name_match` column. That
+    # column is an unreliable full-text heuristic for a results slip: a perfectly-read
+    # slip can carry 'not_found' there for some name spellings, and must never be mistaken
+    # for "the slip could not be read" (it falsely flagged Sharvani's clean, fully-read slip).
+    name_status = _slip_name_status(slip)
+    name_ok = name_status == 'match'
+    if name_status == 'mismatch':
         unresolved.append(_item('results_slip_name_mismatch'))
-        name_ok = False
-    elif dv in ('wrong_doc', 'unreadable') or slip.vision_name_match == 'not_found':
+    elif name_status == 'unreadable':
         unresolved.append(_item('results_slip_unreadable'))
-        name_ok = False
-    else:
+    elif name_status == 'match':
         evidence.append(_item('results_slip_name_ok'))
+    # 'pending' → the slip's name is not yet decided; make no claim either way.
 
     data = read_slip(slip)
     if not data['names']:

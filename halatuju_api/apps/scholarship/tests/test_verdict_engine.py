@@ -189,6 +189,35 @@ class TestAcademicGrades(_Base):
         self.assertEqual(f['status'], 'review')
         self.assertIn('academic_grade_mismatch', _codes(f['unresolved']))
 
+    def test_clean_slip_with_not_found_name_match_is_not_unreadable(self):
+        # Regression (Sharvani): a perfectly-read slip (sv='ok') whose supporting-doc
+        # vision_name_match happens to be 'not_found' must NOT be flagged "could not be
+        # read". The slip's OWN sv-authoritative name check governs → verified.
+        self.profile.grades = {'bm': 'A-', 'eng': 'A+'}
+        self.profile.save()
+        _add_doc(self.app, 'results_slip', student_verdict='ok', name_match='not_found',
+                 fields={'results': [{'subject': 'Bahasa Melayu', 'grade': 'A-'},
+                                     {'subject': 'Bahasa Inggeris', 'grade': 'A+'}]})
+        f = _facts(self.app)['academic']
+        self.assertNotIn('results_slip_unreadable', _codes(f['unresolved']))
+        self.assertIn('results_slip_name_ok', _codes(f['evidence']))
+        self.assertEqual(f['status'], 'verified')
+
+    def test_not_found_name_with_missing_subject_is_review_not_unreadable(self):
+        # Sharvani exactly: clean read + one subject not entered → review with the
+        # missing-subjects nudge ONLY; never the contradictory "could not be read".
+        self.profile.grades = {'bm': 'A-'}
+        self.profile.save()
+        _add_doc(self.app, 'results_slip', student_verdict='ok', name_match='not_found',
+                 fields={'results': [{'subject': 'Bahasa Melayu', 'grade': 'A-'},
+                                     {'subject': 'Matematik Tambahan', 'grade': 'G'}]})
+        f = _facts(self.app)['academic']
+        codes = _codes(f['unresolved'])
+        self.assertNotIn('results_slip_unreadable', codes)
+        self.assertIn('academic_missing_subjects', codes)
+        self.assertIn('results_slip_name_ok', _codes(f['evidence']))
+        self.assertEqual(f['status'], 'review')
+
 
 # ── Income ───────────────────────────────────────────────────────────────────
 
