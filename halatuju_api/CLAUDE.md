@@ -449,18 +449,23 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 - **Verification Verdict roadmap S1–S5 ✅** (migrations `0036`/`0037`). Four-fact verdict the coordinator audits.
 - **Check-1 Identity/IC ✅** (`3d110a4`, no migration). Name-trunc + address card-label strip + cost-gated Gemini IC
   second opinion (`IC_GEMINI_FALLBACK_ENABLED`) + bidirectional Gopal. Smoke-passed. Retro `retrospective-check1-identity.md`.
-- **Check-1 Academic/results-slip ✅** (`62339e9`+`177aed2`, no migration). Band-word "0 of 9" bug fix
-  (`academic_engine._split_band`) + `student_slip_check`/`ResultsSlipChecklist` (Name/Subjects/Results + exam year) + 3
-  Gopal slip verdicts (slip is the authoritative grade record → update profile). Retro `retrospective-check1-academic.md`.
-- **Check-1 Pathway/offer-letter ✅** (`3abe9a9`+`a0d997f`, **migration `0038` `pathway_confirmed_at`**). Differentiated
-  facts (Name+IC checks + Programme/Institution/Issuer/Date/Address data points; `pathway_engine.student_offer_check` +
-  `OfferLetterChecklist`) **+ AI-raised final-pathway confirmation**: a `pathway_confirm` Action-Centre query on a
-  Name+IC match → student's Yes writes `chosen_programme` + stamps `pathway_confirmed_at` → Pathway verdict 'verified'.
-  Programme is surfaced, NOT gated. Retro `retrospective-check1-pathway.md`.
+- **Check-1 Academic/results-slip ✅** (`62339e9`+`177aed2`; live-fixes `4391f54`+`b370503`, no migration). Band-word
+  "0 of 9" bug fix (`academic_engine._split_band`) + `student_slip_check`/`ResultsSlipChecklist` (Name/Subjects/Results
+  + exam year) + 3 Gopal slip verdicts (slip is the authoritative grade record → update profile). **Live-review fix:**
+  image-based Gemini slip read (fixes A↔A+ row transposition) + letter↔band cross-check + ±-only difference → `uncertain`
+  ("Please check"), never a confident wrong mismatch. Retros `retrospective-check1-academic.md` + `retrospective-check1-livefixes.md`.
+- **Check-1 Pathway/offer-letter ✅** (`3abe9a9`+`a0d997f`, **migration `0038` `pathway_confirmed_at`**; reconciliation
+  rework `6a54699`, no migration). Differentiated facts (Name+IC checks + Programme/Institution/Issuer/Date/Address data
+  points; `pathway_engine.student_offer_check` + `OfferLetterChecklist`) **+ AI-raised final-pathway confirmation**.
+  **Live-review rework:** the always-ask confirm is now a **lenient offer-vs-declared matcher** (`offer_pathway_match`) —
+  offer agrees / nothing to compare → Pathway verdict 'verified' (NO nag); a genuine clash (different school/field, naming-
+  quirk tolerant) → reframed `pathway_confirm` query + soft Gopal nudge (`offer_pathway_mismatch`) + red checklist rows;
+  the student's Yes (`confirm_pathway`) realigns `chosen_programme` + stamps `pathway_confirmed_at`. Editable self-edit in
+  Funding = Phase 2 (NOT built). Retros `retrospective-check1-pathway.md` + `retrospective-check1-livefixes.md`.
 - **Documents organised by the four facts ✅** (`ece0cec`, no migration). Order Identity·Academic·Pathway·Income
   everywhere; parent IC → Income in the officer grouping; student Documents tab regrouped into 5 fact sections with
   status pills. Presentational only.
-- Totals: **557 scholarship pytest**, i18n **1843**; scholarship migrations through **`0038`**.
+- Totals: **574 scholarship pytest** + 231 jest, i18n **1848**; scholarship migrations through **`0038`**.
 
 **▶ NEXT — the INCOME fact Check-1 (the last + hardest; TD-081 residual).** Not just reading the doc:
 - income **amount** (per-capita vs household size → the B40 test),
