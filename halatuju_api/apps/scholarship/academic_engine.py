@@ -22,7 +22,6 @@ silent 'verified'.
 """
 from __future__ import annotations
 
-import math
 import re
 
 # grade key → Bahasa-Melayu subject name (mirror of subjects.ts SUBJECT_NAMES).
@@ -150,36 +149,26 @@ def _match_known_subject(raw: str) -> str:
 
 
 def _group_rows(words, *, y_tol_frac=0.6):
-    """Cluster OCR words into visual ROWS so each subject pairs with the grade on its
-    own row — the transposition-proof core. Each word is ``{text, cx, cy, h, angle?}``
-    (centre x/y, character height, and the reading-direction angle from the OCR box).
-
-    **Orientation-aware:** a slip photographed sideways or skewed has its rows running
-    at an angle, so a naive Y-grouping fails. We first NORMALISE every word's centre by
-    the page's median reading angle (rotate by −θ), making the text upright in the
-    reading frame; then group by the normalised Y and order within a row by the
-    normalised X. Handles 90°/180° rotation and arbitrary skew with no extra OCR call."""
+    """Cluster OCR words into visual ROWS by Y-coordinate — words at the same vertical
+    position are one row, returned left-to-right; rows top-to-bottom. Each word is a
+    dict ``{text, cx, cy, h}`` (centre x/y + height). This is what makes the parse
+    transposition-proof: pairing is by geometry, not by the model's reading order."""
     usable = [w for w in (words or []) if (w.get('text') or '').strip()]
     if not usable:
         return []
-    angles = sorted(w.get('angle', 0.0) or 0.0 for w in usable)
-    theta = angles[len(angles) // 2]          # median reading angle = page rotation
-    c, s = math.cos(-theta), math.sin(-theta)
-    # (ny, nx, word): coordinates rotated into the upright reading frame.
-    items = [[w['cx'] * s + w['cy'] * c, w['cx'] * c - w['cy'] * s, w] for w in usable]
-    heights = sorted((w.get('h') or 0) for _, _, w in items)
+    heights = sorted((w.get('h') or 0) for w in usable)
     med_h = heights[len(heights) // 2] or 12
     tol = max(med_h * y_tol_frac, 6)
     rows: list[dict] = []
-    for ny, nx, w in sorted(items, key=lambda it: it[0]):
+    for w in sorted(usable, key=lambda w: w['cy']):
         for row in rows:
-            if abs(ny - row['ny']) <= tol:
-                row['items'].append((nx, w))
+            if abs(w['cy'] - row['cy']) <= tol:
+                row['ws'].append(w)
                 break
         else:
-            rows.append({'ny': ny, 'items': [(nx, w)]})
-    rows.sort(key=lambda r: r['ny'])
-    return [[w for _nx, w in sorted(r['items'], key=lambda it: it[0])] for r in rows]
+            rows.append({'cy': w['cy'], 'ws': [w]})
+    rows.sort(key=lambda r: r['cy'])
+    return [sorted(r['ws'], key=lambda w: w['cx']) for r in rows]
 
 
 def _parse_grade_row(row):
@@ -246,77 +235,26 @@ def _slip_exam(rows):
     return f'SIJIL PELAJARAN MALAYSIA TAHUN {m.group(1)}' if m else 'SIJIL PELAJARAN MALAYSIA'
 
 
-def _row_is_orphan_subject(row):
-    """True if the row resolves to a known SPM subject but carries NO grade band — i.e.
-    the subject got separated from its grade (a skewed photo with far-apart columns)."""
-    toks = [w['text'] for w in row]
-    low = [t.strip('()[].').strip().lower() for t in toks]
-    if any(t in _BAND_HEADS or t == 'tidak' for t in low):
-        return False
-    return bool(_match_known_subject(' '.join(toks)))
-
-
-def _row_has_band_no_subject(row):
-    """True if the row carries a grade band but NO known subject — a grade that got
-    separated from its subject onto its own line (the orphan-grade half of a split)."""
-    toks = [w['text'] for w in row]
-    norm = [t.strip('()[].').strip().upper() for t in toks]
-    low = [t.lower() for t in norm]
-    band_idx = next((i for i, t in enumerate(low) if t in _BAND_HEADS or t == 'tidak'), None)
-    if band_idx is None:
-        return False
-    grade_idx = next((i for i, t in enumerate(norm) if t in _GRADE_TOKENS), None)
-    cut = min([i for i in (grade_idx, band_idx) if i is not None], default=len(toks))
-    return not _match_known_subject(' '.join(toks[:cut]))
-
-
-def _merge_split_rows(rows):
-    """Stitch rows that OCR split on a skewed photo, so the standard row parser can
-    pair them: (1) a band-MODIFIER-only continuation ("ATAS )", "TINGGI )") folds into
-    the previous row (recovers "Kepujian" → "Kepujian Atas"); (2) an orphan SUBJECT row
-    immediately followed by an orphan GRADE row (the subject and its grade landed on
-    separate lines) are joined. A no-op on a cleanly-aligned slip."""
-    merged: list[list] = []
-    for ws in rows:
-        low = [w['text'].strip('()[].').strip().lower() for w in ws]
-        non_punct = [t for t in low if t and any(ch.isalnum() for ch in t)]
-        if merged and non_punct and all(t in _BAND_MODS for t in non_punct):
-            merged[-1] = merged[-1] + list(ws)
-            continue
-        if merged and _row_is_orphan_subject(merged[-1]) and _row_has_band_no_subject(ws):
-            merged[-1] = merged[-1] + list(ws)
-            continue
-        merged.append(list(ws))
-    return merged
-
-
 def parse_spm_slip(words):
     """Deterministic positional parse of SPM-slip OCR words →
     ``{candidate_name, exam, results: [{subject, grade, band}]}``, or **None** to fall
-    back to Gemini (not an SPM slip, fewer than 3 subject rows, or a misaligned read)."""
+    back to Gemini (not an SPM slip, or fewer than 3 subject rows recognised)."""
     rows = _group_rows(words)
     if not rows:
         return None
-    rows = _merge_split_rows(rows)   # recover subject/grade + band rows split by skew
     full = ' '.join(w['text'] for row in rows for w in row).upper()
     if 'SIJIL PELAJARAN MALAYSIA' not in full and 'LEMBAGA PEPERIKSAAN' not in full:
         return None
-    results, seen, orphan_subjects = [], set(), 0
+    results, seen = [], set()
     for row in rows:
         gr = _parse_grade_row(row)
-        if gr:
-            nn = _norm(gr['subject'])
-            if nn in seen:
-                continue
-            seen.add(nn)
-            results.append(gr)
-        elif _row_is_orphan_subject(row):
-            orphan_subjects += 1
-    # A known subject on a row with NO grade means its grade got separated (column
-    # drift on a skewed photo) — the read is unreliable, so DEFER to the Gemini
-    # fallback rather than emit a confidently-wrong grade.
-    if orphan_subjects:
-        return None
+        if not gr:
+            continue
+        nn = _norm(gr['subject'])
+        if nn in seen:
+            continue
+        seen.add(nn)
+        results.append(gr)
     if len(results) < 3:
         return None
     # _debug_rows: the raw grouped OCR lines (top-to-bottom) — a temporary diagnostic so

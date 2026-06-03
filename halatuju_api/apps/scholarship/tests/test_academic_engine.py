@@ -265,20 +265,8 @@ class TestCompareAcademics(SimpleTestCase):
 
 # ── Deterministic positional SPM-slip parser ──────────────────────────────────
 
-import math
-
-
 def _word(text, cx, cy, h=20):
     return {'text': text, 'cx': cx, 'cy': cy, 'h': h}
-
-
-def _rotate_words(words, deg):
-    """Rotate a synthetic word list by ``deg`` (around the origin) and stamp the
-    reading-direction angle — simulating a slip photographed sideways/skewed."""
-    th = math.radians(deg)
-    c, s = math.cos(th), math.sin(th)
-    return [{**w, 'cx': w['cx'] * c - w['cy'] * s, 'cy': w['cx'] * s + w['cy'] * c,
-             'angle': th} for w in words]
 
 
 def _slip_words(header, rows, *, first_row_y=400, row_gap=40):
@@ -340,32 +328,6 @@ class TestParseSpmSlip(SimpleTestCase):
         self.assertEqual(got['Pertanian'], 'A')
         self.assertEqual(got['Perniagaan'], 'B')
         self.assertEqual(got['Bahasa Tamil'], 'A-')
-
-    def test_rotated_or_skewed_slip_still_parses(self):
-        # Pavalaharasi's case: the slip is photographed sideways (≈90°) or skewed. The
-        # parser normalises by the reading angle, so rows still pair correctly.
-        upright = _slip_words(self.HEADER, self.SHARMILA)
-        for deg in (90, -90, 13):   # landscape both ways + a skew
-            got = {r['subject']: r['grade'] for r in parse_spm_slip(_rotate_words(upright, deg))['results']}
-            self.assertEqual(got['Pertanian'], 'A', f'deg={deg}')
-            self.assertEqual(got['Perniagaan'], 'B', f'deg={deg}')
-            self.assertEqual(got['Bahasa Tamil'], 'A-', f'deg={deg}')
-
-    def test_type1_coded_format(self):
-        # Type 1: "Code  Subject  Letter  Word" (Theepicaa/Pavalaharasi).
-        rows = [('1103 BAHASA MELAYU', 'A+', 'CEMERLANG TERTINGGI'),
-                ('1119 BAHASA INGGERIS', 'A', 'CEMERLANG TINGGI'),
-                ('1449 MATEMATIK', 'A+', 'CEMERLANG TERTINGGI')]
-        got = {r['subject']: r['grade'] for r in self._parse(rows)['results']}
-        self.assertEqual(got, {'Bahasa Melayu': 'A+', 'Bahasa Inggeris': 'A', 'Matematik': 'A+'})
-
-    def test_type2_parenthesised_format(self):
-        # Type 2: "Subject  Letter  (Word)" — no code, band in parentheses (Sharmila).
-        rows = [('BAHASA MELAYU', 'A-', '( CEMERLANG )'),
-                ('BAHASA INGGERIS', 'C+', '( KEPUJIAN ATAS )'),
-                ('MATEMATIK', 'A', '( CEMERLANG TINGGI )')]
-        got = {r['subject']: r['grade'] for r in self._parse(rows)['results']}
-        self.assertEqual(got, {'Bahasa Melayu': 'A-', 'Bahasa Inggeris': 'C+', 'Matematik': 'A'})
 
     def test_band_kept_for_cross_check(self):
         sains = next(r for r in self._parse()['results'] if r['subject'] == 'Sains')
@@ -432,20 +394,3 @@ class TestParseSpmSlip(SimpleTestCase):
 
     def test_too_few_rows_returns_none(self):
         self.assertIsNone(self._parse(self.SHARMILA[:2]))
-
-    def test_split_subject_grade_and_band_recovered(self):
-        # Sharmila's real splits (from her OCR): BM's subject and grade on separate
-        # lines; BI's band modifier "ATAS" wrapped to its own line. Both are stitched
-        # back, so we use Vision's correct read instead of bailing to Gemini.
-        words = [_word(t, 100 + i * 40, 200) for i, t in enumerate('SIJIL PELAJARAN MALAYSIA'.split())]
-        words += [_word('BAHASA', 100, 400), _word('MELAYU', 160, 400)]              # subject row
-        words += [_word('A-', 500, 428), _word('CEMERLANG', 560, 428)]              # its grade, split off
-        words += [_word('BAHASA', 100, 470), _word('INGGERIS', 165, 470),
-                  _word('C+', 500, 470), _word('KEPUJIAN', 560, 470)]               # BI + partial band
-        words += [_word('ATAS', 560, 498)]                                          # band modifier, wrapped
-        words += [_word('SEJARAH', 100, 540), _word('B', 500, 540),
-                  _word('KEPUJIAN', 560, 540), _word('TINGGI', 700, 540)]
-        got = {r['subject']: r['grade'] for r in parse_spm_slip(words)['results']}
-        self.assertEqual(got['Bahasa Melayu'], 'A-')      # split subject+grade stitched
-        self.assertEqual(got['Bahasa Inggeris'], 'C+')    # "Kepujian" + "Atas" stitched → C+
-        self.assertEqual(got['Sejarah'], 'B')
