@@ -169,11 +169,11 @@ function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => s
 // the exam (year) as a soft data point. Cikgu Gopal (below) gives the specific
 // "what to do" only when there's a real problem.
 
-type SlipStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'pending'
+type SlipStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'uncertain' | 'pending'
 
 function slipBadgeKind(s: SlipStatus): ICCheckKind {
   if (s === 'match') return 'match'
-  if (s === 'partial') return 'partial'
+  if (s === 'partial' || s === 'uncertain') return 'partial' // amber "please check"
   if (s === 'mismatch') return 'mismatch'
   if (s === 'unreadable') return 'unreadable'
   return 'none' // pending
@@ -223,7 +223,9 @@ function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
         ? chk.mismatched
             .map((m) => `${m.subject} (${t('scholarship.docs.slipCheck.youTyped')} ${m.typed}, ${t('scholarship.docs.slipCheck.slipSays')} ${m.slip})`)
             .join('; ')
-        : '—'
+        : chk.results === 'uncertain'
+          ? `${t('scholarship.docs.slipCheck.uncertainNote')}: ${(chk.uncertain || []).map((m) => m.subject).join(', ')}`
+          : '—'
 
   return (
     <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
@@ -256,11 +258,11 @@ function ResultsSlipChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
 // IC is the strong one) — then the offer's facts as soft data points: programme,
 // institution, who issued it (tells the pathway type), the date, and address.
 
-type PathStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'pending'
+type PathStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'uncertain' | 'pending'
 
 function pathBadgeKind(s: PathStatus): ICCheckKind {
   if (s === 'match') return 'match'
-  if (s === 'partial') return 'partial'
+  if (s === 'partial' || s === 'uncertain') return 'partial'
   if (s === 'mismatch') return 'mismatch'
   if (s === 'unreadable') return 'unreadable'
   return 'none' // pending

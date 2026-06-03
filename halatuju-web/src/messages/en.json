@@ -985,10 +985,12 @@
         "allMatch": "all grades match",
         "youTyped": "you entered",
         "slipSays": "slip says",
+        "uncertainNote": "We'll double-check these by hand",
         "status": {
           "match": "Match",
           "mismatch": "Doesn't match",
           "unreadable": "Couldn't read",
+          "uncertain": "Please check",
           "pending": "Not checked yet"
         }
       },
@@ -2005,6 +2007,7 @@
           "pathway_confirmed": "Final pathway confirmed by the student: {programme} at {institution}.",
           "academic_missing_subjects": "Entered {entered} of {total} subjects on the slip — missing: {subjects}. Ask the student to add them.",
           "academic_grade_mismatch": "{subject}: typed {typed}, but the slip reads {slip}. Check.",
+          "academic_grade_uncertain": "{subject}: the slip's letter grade and band disagree (read {slip}) — check it by eye; the student typed {typed}.",
           "grades_verified": "All {count} grades match the results slip."
         }
       },

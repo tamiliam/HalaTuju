@@ -985,10 +985,12 @@
         "allMatch": "semua gred sepadan",
         "youTyped": "anda masukkan",
         "slipSays": "slip menyatakan",
+        "uncertainNote": "Kami akan semak semula secara manual",
         "status": {
           "match": "Sepadan",
           "mismatch": "Tidak sepadan",
           "unreadable": "Tidak dapat dibaca",
+          "uncertain": "Sila semak",
           "pending": "Belum disemak"
         }
       },
@@ -2005,6 +2007,7 @@
           "pathway_confirmed": "Laluan akhir disahkan oleh pelajar: {programme} di {institution}.",
           "academic_missing_subjects": "Memasukkan {entered} daripada {total} subjek pada slip — tiada: {subjects}. Minta pelajar menambahnya.",
           "academic_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip menunjukkan {slip}. Semak.",
+          "academic_grade_uncertain": "{subject}: gred huruf dan jalur pada slip tidak sepadan (dibaca {slip}) — semak dengan mata; pelajar menaip {typed}.",
           "grades_verified": "Kesemua {count} gred sepadan dengan slip keputusan."
         }
       },
