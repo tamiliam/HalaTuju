@@ -7,15 +7,28 @@ from types import SimpleNamespace
 
 from django.test import SimpleTestCase
 
-from apps.scholarship.pathway_engine import student_offer_check
+from apps.scholarship.pathway_engine import (
+    offer_pathway_match, student_offer_check,
+)
 
 
 def _offer_doc(fields, *, pname='Elanjelian Venugopal', pnric='710829-02-5709',
-               student_verdict='ok'):
+               student_verdict='ok', declared=None):
+    """``declared`` (optional) is the application's declared pathway — either a
+    ``{'course_name','institution'}`` dict (chosen_programme) OR a
+    ``{'pre_u_track','pre_u_institution'}`` pair, mirrored onto the app namespace."""
+    declared = declared or {}
+    app = SimpleNamespace(
+        profile=SimpleNamespace(name=pname, nric=pnric),
+        chosen_programme={'course_name': declared.get('course_name', ''),
+                          'institution': declared.get('institution', '')},
+        pre_u_track=declared.get('pre_u_track', ''),
+        pre_u_institution=declared.get('pre_u_institution', ''),
+    )
     return SimpleNamespace(
         doc_type='offer_letter',
         vision_fields={'fields': fields, 'student_verdict': student_verdict},
-        application=SimpleNamespace(profile=SimpleNamespace(name=pname, nric=pnric)),
+        application=app,
     )
 
 
@@ -75,3 +88,71 @@ class TestStudentOfferCheck(SimpleTestCase):
                                              student_verdict='review_manually'))
         self.assertEqual(chk['name'], 'pending')
         self.assertEqual(chk['ic'], 'pending')
+
+
+class TestOfferPathwayMatch(SimpleTestCase):
+    """The lenient offer-vs-declared matcher: 'match' / 'mismatch' / 'unknown'.
+
+    The bar (per the user): mark a MISMATCH only when the offer is for a genuinely
+    different place or field; tolerate naming quirks; never nag on a match."""
+
+    def test_naming_quirk_is_match(self):
+        # "KM Melaka" (declared) ≈ "Kolej Matrikulasi Melaka" (offer) — both share
+        # the distinctive place token; the generic words don't matter.
+        self.assertEqual(
+            offer_pathway_match('', 'KM Melaka', '', 'Kolej Matrikulasi Melaka'),
+            'match')
+
+    def test_different_school_is_mismatch(self):
+        # Same STPM stream, but a genuinely different school.
+        self.assertEqual(
+            offer_pathway_match('', 'SMK Mentakab', '', 'SMK Temerloh'),
+            'mismatch')
+
+    def test_different_foundation_field_is_mismatch(self):
+        self.assertEqual(
+            offer_pathway_match('Asasi Pintar', '', 'Asasi Pertanian', ''),
+            'mismatch')
+
+    def test_same_institution_different_programme_is_mismatch(self):
+        # Both at UPM, but a different diploma field → still a real clash.
+        self.assertEqual(
+            offer_pathway_match('Diploma Electricity', 'UPM',
+                                'Diploma Horticulture', 'UPM'),
+            'mismatch')
+
+    def test_nothing_declared_is_unknown(self):
+        # Student declared only a pathway TYPE (no specific college/programme) → no
+        # conflict to detect.
+        self.assertEqual(offer_pathway_match('', '', 'Program Matrikulasi',
+                                             'Kolej Matrikulasi Melaka'), 'unknown')
+
+    def test_all_generic_is_unknown(self):
+        # Both sides are only qualification-type words → nothing distinctive to clash.
+        self.assertEqual(offer_pathway_match('Diploma', 'Politeknik',
+                                             'Diploma', 'Politeknik'), 'unknown')
+
+
+class TestStudentOfferCheckPathway(SimpleTestCase):
+    """student_offer_check surfaces the offer-vs-declared reconciliation."""
+
+    _OWN = dict(pname='Yeswindran Muraly', pnric='081227-02-0661')
+
+    def test_pathway_unknown_when_nothing_declared(self):
+        chk = student_offer_check(_offer_doc(YESWINDRAN_OFFER, **self._OWN))
+        self.assertEqual(chk['pathway'], 'unknown')
+
+    def test_pathway_match_on_naming_quirk(self):
+        chk = student_offer_check(_offer_doc(
+            YESWINDRAN_OFFER, **self._OWN,
+            declared={'pre_u_institution': 'UTeM Melaka'}))
+        # Offer institution "Universiti Teknikal Malaysia Melaka" shares "melaka".
+        self.assertEqual(chk['pathway'], 'match')
+
+    def test_pathway_mismatch_on_different_field(self):
+        chk = student_offer_check(_offer_doc(
+            YESWINDRAN_OFFER, **self._OWN,
+            declared={'course_name': 'Diploma Senibina', 'institution': 'UTeM'}))
+        # Offer is "Diploma Kejuruteraan Elektrik" — a different field → mismatch.
+        self.assertEqual(chk['pathway'], 'mismatch')
+        self.assertEqual(chk['declared_programme'], 'Diploma Senibina')

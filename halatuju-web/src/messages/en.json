@@ -896,6 +896,7 @@
           "slip_subjects_missing": "Almost there! Your results slip lists a subject you haven't added to your profile yet. Please add the missing subject(s) on your profile so they match your slip — or, if you uploaded the wrong file, just upload the right one.",
           "slip_grade_mismatch": "Quick check! A grade on your slip is different from what you entered. Your slip is the official record, so please update the grade on your profile to match it. If the photo is blurry, you can upload a clearer one instead. Well done so far!",
           "offer_name_mismatch": "The name or IC number on this offer letter isn't yours — it looks like it might be someone else's letter. Please make sure you upload your own offer letter; the name and IC on it must match yours. You've got this!",
+          "offer_pathway_mismatch": "Good news — this is not a problem at all and never blocks your application! The college or programme on your offer letter looks a little different from the study choice you entered earlier. If this offer is where you're really going, that's perfectly fine — you don't need to change anything now. When you submit, we'll simply ask you to confirm it and update your record to match. Plans change, and that's okay!",
           "generic": "Something didn't look quite right with this upload — but it's nothing to worry about and easily fixed. Have another look and try uploading again. You're doing great!"
         }
       },
@@ -1003,6 +1004,7 @@
         "date": "Date",
         "address": "Address",
         "fromLetter": "from your letter",
+        "declaredNote": "Earlier you'd chosen:",
         "status": {
           "match": "Match",
           "partial": "Partial match",
@@ -1288,8 +1290,8 @@
           "desc": "You haven't chosen what you plan to study yet. Please add it in Your story."
         },
         "pathway_confirm": {
-          "title": "Confirm your final pathway",
-          "desc": "We can see your offer for {programme} at {institution}. Is this the pathway you'd like assistance for? Confirm to set it as your final choice — if you have a better offer, upload that one instead."
+          "title": "Is this where you're going?",
+          "desc": "Your offer letter is for {programme} at {institution}, which looks different from the study choice you entered earlier. If this offer is your final pathway, confirm it and we'll update your record to match. If you have a better offer, upload that one instead."
         }
       }
     }
@@ -2003,7 +2005,7 @@
           "offer_name_mismatch": "The offer letter is in a different name or IC. Confirm.",
           "offer_unreadable": "The offer letter could not be read — ask for a clearer copy.",
           "pathway_undeclared": "No pathway chosen yet.",
-          "pathway_confirm": "Offer for {programme} at {institution} — awaiting the student's confirmation that this is their final pathway.",
+          "pathway_confirm": "Offer for {programme} at {institution} differs from the declared pathway — awaiting the student's confirmation of which is final.",
           "pathway_confirmed": "Final pathway confirmed by the student: {programme} at {institution}.",
           "academic_missing_subjects": "Entered {entered} of {total} subjects on the slip — missing: {subjects}. Ask the student to add them.",
           "academic_grade_mismatch": "{subject}: typed {typed}, but the slip reads {slip}. Check.",

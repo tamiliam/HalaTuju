@@ -42,6 +42,8 @@ VERDICT_GUIDANCE = {
     'slip_grade_mismatch':   "one or more grades on the results slip differ from the grades the applicant typed into their profile",
     # Offer-letter (pathway): the name and/or IC on the letter are not the applicant's.
     'offer_name_mismatch':   "the name and/or IC number on this offer letter are not the applicant's — it looks like it may be someone else's offer letter",
+    # Offer-letter (pathway): the offer is for a different college/programme than declared.
+    'offer_pathway_mismatch': "the college or programme on this offer letter looks different from the study choice the applicant entered earlier when they applied",
 }
 
 # Per-verdict fix advice. Most verdicts just need a re-upload; a NAME mismatch is
@@ -78,6 +80,14 @@ VERDICT_FIX_HINT = {
         'This is almost always the WRONG FILE: kindly suggest they check they uploaded '
         'THEIR OWN offer letter (not a sibling\'s or friend\'s) — the name and IC number on '
         'the letter must be their own. Ask them to re-upload their own offer letter.'
+    ),
+    'offer_pathway_mismatch': (
+        'This is NOT a problem and never blocks the application — reassure them firmly. '
+        'It is completely normal for plans to change. Explain gently that if THIS offer is '
+        'the path they are really taking, that is absolutely fine — they do not need to do '
+        'anything now; when they submit, we will simply ask them to confirm it and we will '
+        'update their record to match the offer. Do NOT tell them to re-upload or to edit '
+        'anything, and do NOT imply they made a mistake.'
     ),
 }
 
@@ -207,6 +217,10 @@ def verdict_for_document(doc):
         chk = student_offer_check(doc)
         if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
             return 'offer_name_mismatch'
+        # Identity is fine but the offer is for a different college/programme than
+        # declared — a SOFT nudge (never a block): "you may confirm this when you submit".
+        if chk['pathway'] == 'mismatch':
+            return 'offer_pathway_mismatch'
         return ''
     # Other supporting docs — the Gemini doc-assist verdict takes precedence (it is the
     # chip the frontend shows); fall back to the older soft full-text checks when it never ran.

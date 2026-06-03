@@ -17,6 +17,7 @@ export const HELP_VERDICTS = [
   'slip_grade_mismatch',
   // Offer-letter (pathway).
   'offer_name_mismatch',
+  'offer_pathway_mismatch',
 ] as const
 
 /**
@@ -47,10 +48,11 @@ export function shouldShowCoach(doc: ApplicantDocument): boolean {
       ac.results === 'unreadable'
     )
   }
-  // Offer letter — the Name/IC identity checks (set only for offer_letter).
+  // Offer letter — the Name/IC identity checks, plus a soft offer-vs-declared
+  // pathway mismatch (a gentle nudge, never a block). Set only for offer_letter.
   if (doc.pathway_check) {
     const pc = doc.pathway_check
-    return pc.name === 'mismatch' || pc.ic === 'mismatch'
+    return pc.name === 'mismatch' || pc.ic === 'mismatch' || pc.pathway === 'mismatch'
   }
   // Supporting docs — the Gemini doc-assist verdict takes precedence (matches the chip).
   const av = doc.vision_fields?.student_verdict
@@ -102,7 +104,7 @@ export function helpSignal(doc: ApplicantDocument): string {
     // Results slip / offer letter: the check can change when the student edits their
     // PROFILE (grades / name / NRIC) without re-uploading — fold it in to re-fire then.
     ac ? `${ac.name},${ac.subjects},${ac.results}` : '',
-    pc ? `${pc.name},${pc.ic}` : '',
+    pc ? `${pc.name},${pc.ic},${pc.pathway || ''}` : '',
   ].join('|')
 }
 

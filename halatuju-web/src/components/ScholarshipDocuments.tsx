@@ -305,15 +305,36 @@ function OfferLetterChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
   const dataRow = (labelKey: string, value: string) =>
     value ? row(t(`scholarship.docs.pathwayCheck.${labelKey}`), value, fromLetter) : null
 
+  // The offer is for a genuinely different college/programme than declared. We mark
+  // the two rows red (Check 1) — but it is NEVER a block: Cikgu Gopal reassures, and
+  // the student confirms which is final when they submit (Check 2).
+  const isMismatch = chk.pathway === 'mismatch'
+  const pathRow = (labelKey: string, value: string) =>
+    value
+      ? row(
+          t(`scholarship.docs.pathwayCheck.${labelKey}`),
+          value,
+          isMismatch ? badge('mismatch') : fromLetter,
+        )
+      : null
+
   return (
     <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
       {row(t('scholarship.docs.pathwayCheck.name'), chk.candidate_name, badge(chk.name))}
       {row(t('scholarship.docs.pathwayCheck.ic'), chk.candidate_nric, badge(chk.ic))}
-      {dataRow('programme', chk.programme)}
-      {dataRow('institution', chk.institution)}
+      {pathRow('programme', chk.programme)}
+      {pathRow('institution', chk.institution)}
       {dataRow('issuer', chk.issuer)}
       {dataRow('date', chk.offer_date || chk.intake)}
       {dataRow('address', chk.address)}
+      {isMismatch && (chk.declared_programme || chk.declared_institution) ? (
+        <p className="py-1.5 text-xs text-amber-700">
+          {t('scholarship.docs.pathwayCheck.declaredNote')}{' '}
+          <span className="font-medium">
+            {[chk.declared_programme, chk.declared_institution].filter(Boolean).join(' · ')}
+          </span>
+        </p>
+      ) : null}
     </div>
   )
 }

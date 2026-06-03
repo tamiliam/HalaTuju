@@ -238,14 +238,36 @@ class TestPathway(_Base):
                   'institution': 'KOLEJ MATRIKULASI MELAKA',
                   'programme': 'PROGRAM MATRIKULASI'}
 
-    def test_valid_offer_unconfirmed_asks_to_confirm(self):
-        # New flow: a valid offer is NOT auto-verified — the student must confirm it
-        # is their FINAL pathway (an AI-raised query), so the fact stays 'review'.
+    def test_offer_with_no_declared_clash_is_verified(self):
+        # The app declares only a pathway TYPE ('Matriculation'), no specific
+        # college/programme to clash with → the offer settles the pathway directly.
+        # No redundant "is this your pathway?" nag (the old always-ask is gone).
         _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._OWN_OFFER)
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'verified')
+        self.assertNotIn('pathway_confirm', _codes(f['unresolved']))
+        self.assertIn('offer_programme', _codes(f['evidence']))
+
+    def test_offer_matching_declared_is_verified_no_nag(self):
+        # Declared institution matches the offer (naming quirk) → verified, no query.
+        self.app.pre_u_institution = 'KM Melaka'
+        self.app.save()
+        _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._OWN_OFFER)
+        f = _facts(self.app)['pathway']
+        self.assertEqual(f['status'], 'verified')
+        self.assertNotIn('pathway_confirm', _codes(f['unresolved']))
+
+    def test_offer_clashing_with_declared_asks_to_confirm(self):
+        # Declared a genuinely different school → the offer clashes → the student is
+        # asked to confirm which is final (Check-2 backstop), so the fact is 'review'.
+        self.app.pre_u_institution = 'SMK Mentakab'
+        self.app.save()
+        clash = dict(self._OWN_OFFER, institution='SMK Temerloh',
+                     programme='Tingkatan Enam')
+        _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=clash)
         f = _facts(self.app)['pathway']
         self.assertEqual(f['status'], 'review')
         self.assertIn('pathway_confirm', _codes(f['unresolved']))
-        self.assertIn('offer_programme', _codes(f['evidence']))
 
     def test_confirmed_offer_is_verified(self):
         _add_doc(self.app, 'offer_letter', student_verdict='ok', fields=self._OWN_OFFER)
@@ -333,10 +355,11 @@ class TestTheresaIntegration(_Base):
         # Income: recommend (no verified STR), STR-claim flagged.
         self.assertEqual(facts['income']['status'], 'recommend')
         self.assertIn('str_claimed_no_doc', _codes(facts['income']['unresolved']))
-        # Pathway: review — the offer's identity matches, now awaiting the student's
-        # final-pathway confirmation (the AI-raised query).
-        self.assertEqual(facts['pathway']['status'], 'review')
-        self.assertIn('pathway_confirm', _codes(facts['pathway']['unresolved']))
+        # Pathway: verified — the offer's identity matches and it doesn't clash with
+        # any specific declared college/programme (she declared only a pathway type),
+        # so the offer settles the pathway with no redundant confirmation nag.
+        self.assertEqual(facts['pathway']['status'], 'verified')
+        self.assertNotIn('pathway_confirm', _codes(facts['pathway']['unresolved']))
 
     def test_order_is_fixed(self):
         self.assertEqual([f['fact'] for f in build_verdict(self.app)],
