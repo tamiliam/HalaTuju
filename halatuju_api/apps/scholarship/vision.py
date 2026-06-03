@@ -400,6 +400,43 @@ def _vision_document_text(image_bytes: bytes) -> dict:
         return {'text': '', 'error': str(e)[:200]}
 
 
+def _vision_words(data: bytes, content_type: str = '') -> dict:
+    """Google Vision DOCUMENT_TEXT_DETECTION → per-WORD boxes (kept, not flattened) for
+    positional table parsing — used by the results-slip deterministic reader to pair
+    each subject with the grade on its own row. Returns ``{'words': [{text, cx, cy, h}],
+    'error'}``; rasterises a PDF first. Graceful — never raises. (A separate seam from
+    ``_vision_document_text`` so tests can patch it independently.)"""
+    img, _mime = _as_image_for_gemini(data, content_type)
+    if img is None:
+        return {'words': [], 'error': 'no image'}
+    try:
+        from google.cloud import vision  # type: ignore
+    except ImportError:
+        return {'words': [], 'error': 'AI module not installed'}
+    api_key = getattr(settings, 'GOOGLE_CLOUD_VISION_API_KEY', '') or ''
+    try:
+        client = (vision.ImageAnnotatorClient(client_options={'api_key': api_key})
+                  if api_key else vision.ImageAnnotatorClient())
+        resp = client.document_text_detection(image=vision.Image(content=img))
+        if resp.error and resp.error.message:
+            return {'words': [], 'error': resp.error.message[:200]}
+        words = []
+        # text_annotations[0] is the whole text; [1:] are individual words with boxes.
+        for ann in resp.text_annotations[1:]:
+            vs = ann.bounding_poly.vertices
+            xs = [v.x for v in vs]
+            ys = [v.y for v in vs]
+            if not xs or not ys:
+                continue
+            words.append({'text': ann.description,
+                          'cx': sum(xs) / len(xs), 'cy': sum(ys) / len(ys),
+                          'h': max(ys) - min(ys)})
+        return {'words': words, 'error': None}
+    except Exception as e:  # noqa: BLE001 — graceful
+        logger.warning('Vision word OCR failed: %s', e)
+        return {'words': [], 'error': str(e)[:200]}
+
+
 def extract_mykad(data: bytes, content_type: str = '') -> dict:
     """
     OCR a MyKad and return ``{'nric', 'name', 'address', 'error'}``. Accepts an
@@ -821,15 +858,41 @@ def doc_student_verdict(doc_type, fields, *, names, postcode='', city='', check_
     return 'ok'
 
 
+def _extract_slip_deterministic(doc, image):
+    """Positional OCR parse of an SPM results slip → ``{fields, warnings, error}``, or
+    None to fall back to Gemini (no image, an STPM slip, or the table didn't parse).
+    SPM only for now — STPM (no Malay word-bands) always returns None until its own
+    parser lands. Reading the table by Y/X geometry pairs each subject with the grade
+    on its own row, which the free-form Gemini read mis-transposes on a watermark."""
+    if image is None:
+        return None
+    exam_type = (getattr(getattr(doc.application, 'profile', None), 'exam_type', '') or '').lower()
+    if exam_type and exam_type != 'spm':
+        return None
+    wd = _vision_words(image, doc.content_type)
+    if wd.get('error') or not wd.get('words'):
+        return None
+    from .academic_engine import parse_spm_slip
+    parsed = parse_spm_slip(wd['words'])
+    if not parsed:
+        return None
+    return {'fields': parsed, 'warnings': [], 'error': ''}
+
+
 def run_field_extraction_for_document(doc, *, names, postcode='', city='', check_address=False, ocr=None) -> dict:
     """Extract fields + a deterministic student-facing verdict, store on the doc.
     Never blocks, never raises. Pass ``ocr`` to reuse a prior OCR pass.
 
-    The **results slip** is read from the IMAGE (its table mis-transposes when read
-    from flattened OCR text); every other supporting doc reads the OCR text."""
+    The **results slip** is read DETERMINISTICALLY by positional OCR first (the
+    standardised SPM table parses by geometry, immune to row-transposition); only if
+    that can't lock onto the table does it fall back to reading the IMAGE with Gemini.
+    Every other supporting doc reads the OCR text."""
     if doc.doc_type == 'results_slip':
         image = _fetch_image_bytes(doc.storage_path)
-        if image is not None:
+        ex = _extract_slip_deterministic(doc, image)   # OCR-first (SPM); None → Gemini
+        if ex is not None:
+            pass
+        elif image is not None:
             ex = extract_document_fields('', doc.doc_type, image=image, content_type=doc.content_type)
         else:
             r = ocr if ocr is not None else ocr_document(doc)

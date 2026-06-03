@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **SPM results slip is now read deterministically by positional OCR (Gemini becomes the fallback).** The slip is a
+  standardised two-column table whose grade is printed twice — a letter (`A-`) and a Malay word-band (`Cemerlang`).
+  The free-form Gemini image read was **row-transposing** the lower rows on watermarked slips (e.g. pairing PERTANIAN
+  with PERNIAGAAN's grade) and, because the letter *and* band shift together, the letter↔band cross-check couldn't catch
+  it — producing confident-but-wrong "slip reads B" flags that changed on every re-run. New path: keep Google Vision's
+  per-word **bounding boxes** (`vision._vision_words`), group words into rows by **Y-coordinate** and columns by X
+  (`academic_engine.parse_spm_slip` / `_group_rows`), so each subject pairs with the grade **on its own row** — immune
+  to transposition and deterministic across re-runs. The band word is the authoritative grade (every row must carry one,
+  which also excludes header/name rows); the letter confirms it; a genuine letter↔band conflict still degrades to
+  "check by eye". Gemini (`extract_document_fields`) is used only when the positional parse can't lock onto the table
+  (`< 3` subject rows) or the slip isn't SPM. Added `Tidak Hadir → TH` to the band map. **STPM** (no Malay bands; a
+  ruled grid with grade-points) is a separate follow-up — its slip still routes to Gemini for now. Backend only, no
+  migration. _On branch `feature/slip-ocr-deterministic`; needs a live re-extract on real slips to verify before deploy._
+
 ### Fixed
 - **Identity name now anchors on the deliberate "as in IC" declaration signature — not the Google handle.** Two
   root-cause fixes after a live review (applicant whose IC, results slip and offer letter all read the correct name,

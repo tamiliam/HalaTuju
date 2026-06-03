@@ -108,6 +108,50 @@ class TestRunFieldExtraction(TestCase):
         self.assertEqual(doc.vision_fields['student_verdict'], 'unreadable')
         mock_ex.assert_not_called()
 
+    @staticmethod
+    def _spm_words():
+        rows = [('BAHASA MELAYU', 'A-', 'CEMERLANG'), ('SEJARAH', 'B', 'KEPUJIAN TINGGI'),
+                ('PERTANIAN', 'A', 'CEMERLANG TINGGI'), ('PERNIAGAAN', 'B', 'KEPUJIAN TINGGI')]
+        words = [{'text': t, 'cx': 100 + i * 40, 'cy': 100, 'h': 20}
+                 for i, t in enumerate('SIJIL PELAJARAN MALAYSIA'.split())]
+        y = 300
+        for subj, letter, band in rows:
+            words += [{'text': t, 'cx': 100 + i * 60, 'cy': y, 'h': 20}
+                      for i, t in enumerate(subj.split())]
+            words.append({'text': letter, 'cx': 500, 'cy': y, 'h': 20})
+            words += [{'text': t, 'cx': 560 + j * 80, 'cy': y, 'h': 20}
+                      for j, t in enumerate(band.split())]
+            y += 40
+        return words
+
+    @patch('apps.scholarship.vision.extract_document_fields')
+    @patch('apps.scholarship.vision._vision_words')
+    @patch('apps.scholarship.vision._fetch_image_bytes')
+    def test_results_slip_uses_deterministic_ocr_not_gemini(self, mock_img, mock_words, mock_gemini):
+        # SPM slip → positional OCR parse wins; Gemini (extract_document_fields) untouched.
+        mock_img.return_value = b'fake-image-bytes'
+        mock_words.return_value = {'words': self._spm_words(), 'error': None}
+        doc = self._doc('results_slip')
+        vision.run_field_extraction_for_document(doc, names=['Sharmila'])
+        doc.refresh_from_db()
+        got = {r['subject']: r['grade'] for r in doc.vision_fields['fields']['results']}
+        self.assertEqual(got['PERTANIAN'], 'A')      # paired by geometry, not transposed
+        self.assertEqual(got['PERNIAGAAN'], 'B')
+        mock_gemini.assert_not_called()
+
+    @patch('apps.scholarship.vision.extract_document_fields')
+    @patch('apps.scholarship.vision._vision_words')
+    @patch('apps.scholarship.vision._fetch_image_bytes')
+    def test_results_slip_falls_back_to_gemini_when_ocr_blank(self, mock_img, mock_words, mock_gemini):
+        # OCR found nothing parseable → fall back to the Gemini image read.
+        mock_img.return_value = b'fake-image-bytes'
+        mock_words.return_value = {'words': [], 'error': None}
+        mock_gemini.return_value = {'fields': {'results': [{'subject': 'X', 'grade': 'A'}]},
+                                    'warnings': [], 'error': ''}
+        doc = self._doc('results_slip')
+        vision.run_field_extraction_for_document(doc, names=['Sharmila'])
+        mock_gemini.assert_called_once()
+
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
 class TestUploadGuardrails(TestCase):
