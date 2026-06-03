@@ -173,23 +173,23 @@ class TestReadSlip(SimpleTestCase):
 
 
 class TestBandCrossCheck(SimpleTestCase):
-    """The slip prints each grade twice (letter + Malay band). When the two disagree
-    the read is unreliable → a would-be mismatch is downgraded to 'uncertain', so an
-    OCR row-transposition can never confidently assert a wrong grade."""
+    """The slip prints each grade twice (letter + Malay band). The BAND is authoritative
+    (distinctive text OCR reads reliably; the letter's +/- is a tiny, easily-dropped
+    mark). The slip grade is the band's grade; a ±-only difference vs the typed grade is
+    'uncertain' (the OCR blind spot), never a confident wrong assertion."""
 
     def test_band_captured_from_field(self):
         d = read_slip(_doc({'results': [{'subject': 'Matematik', 'grade': 'A', 'band': 'Cemerlang Tinggi'}]}))
         self.assertEqual(d['bands'], {'matematik': 'A'})
 
-    def test_letter_band_disagree_is_uncertain_not_mismatch(self):
-        # The Theresa/Theepicaa bug: letter reads A but the band says Cemerlang Tertinggi
-        # (A+); student typed A+. A confident mismatch would wrongly say "you typed A+,
-        # slip A". letter↔band disagree → UNCERTAIN, not a mismatch.
+    def test_band_resolves_dropped_modifier_to_a_match(self):
+        # The Theepicaa case: OCR dropped the "+" so the letter reads A, but the band
+        # "Cemerlang Tertinggi" = A+. The band wins → the slip grade is A+, which MATCHES
+        # the student's typed A+ (no flag) — not the wrong "our read shows A".
         slip = read_slip(_doc({'results': [{'subject': 'Matematik', 'grade': 'A', 'band': 'Cemerlang Tertinggi'}]}))
         cmp = compare_academics({'math': 'A+'}, slip)
-        self.assertEqual(cmp['mismatched'], [])
-        self.assertEqual(len(cmp['uncertain']), 1)
-        self.assertFalse(cmp['accurate'])
+        self.assertEqual((cmp['mismatched'], cmp['uncertain']), ([], []))
+        self.assertTrue(cmp['accurate'])
 
     def test_real_mismatch_different_base_letter_flags(self):
         # A genuine difference (typed A+, slip C — base letters A vs C differ, band agrees)
@@ -208,11 +208,13 @@ class TestBandCrossCheck(SimpleTestCase):
         self.assertEqual(cmp['mismatched'], [])
         self.assertEqual(len(cmp['uncertain']), 1)
 
-    def test_typed_matches_letter_no_flag(self):
-        # Typed A+ corroborates the letter A+ → match, regardless of a stray band read.
+    def test_typed_differs_from_band_by_modifier_is_uncertain(self):
+        # Band "Cemerlang Tinggi" = A is the slip grade; the student typed A+. They differ
+        # only by the modifier → 'uncertain' ("check by eye"), never a confident flag.
         slip = read_slip(_doc({'results': [{'subject': 'Matematik', 'grade': 'A+', 'band': 'Cemerlang Tinggi'}]}))
         cmp = compare_academics({'math': 'A+'}, slip)
-        self.assertEqual((cmp['mismatched'], cmp['uncertain']), ([], []))
+        self.assertEqual(cmp['mismatched'], [])
+        self.assertEqual(len(cmp['uncertain']), 1)
 
 
 class TestCompareAcademics(SimpleTestCase):
