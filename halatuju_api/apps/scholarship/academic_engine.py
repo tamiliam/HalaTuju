@@ -84,6 +84,12 @@ def _split_band(name: str):
     return s[:m.start()].strip(), _BAND_TO_GRADE.get(phrase, '')
 
 
+def _band_to_grade(phrase: str) -> str:
+    """The letter grade implied by a full Malay band phrase (the slip's redundant
+    second encoding of the grade), or '' if unrecognised. 'Cemerlang Tertinggi' → 'A+'."""
+    return _BAND_TO_GRADE.get(' '.join((phrase or '').lower().split()), '')
+
+
 def _norm(name: str) -> str:
     """Lowercase, collapse runs of non-alphanumerics to single spaces, strip."""
     return re.sub(r'[^a-z0-9]+', ' ', (name or '').lower()).strip()
@@ -106,31 +112,42 @@ def read_slip(doc) -> dict:
     fields = fields if isinstance(fields, dict) else {}
     names: list[str] = []
     grades: dict[str, str] = {}
+    bands: dict[str, str] = {}   # normname → grade implied by the slip's band phrase
     results = fields.get('results')
     if isinstance(results, list) and results:
         for r in results:
             if isinstance(r, dict):
-                # Strip the SPM band words Gemini glues onto the subject
-                # ("MATEMATIK CEMERLANG TINGGI" → "MATEMATIK"); the band also
-                # gives us the grade letter as a fallback for an unread one.
-                s, band_grade = _split_band(r.get('subject') or '')
+                # Strip any band words Gemini glued onto the subject ("MATEMATIK
+                # CEMERLANG TINGGI" → "MATEMATIK"); that leak also yields a band grade.
+                s, leaked_band = _split_band(r.get('subject') or '')
+                # The explicit band field (the slip's redundant 2nd grade encoding).
+                band_grade = _band_to_grade(r.get('band') or '') or leaked_band
                 g = (r.get('grade') or '').strip() or band_grade
                 if s:
                     names.append(s)
+                    nn = _norm(s)
                     if g:
-                        grades[_norm(s)] = g
+                        grades[nn] = g
+                    if band_grade:
+                        bands[nn] = band_grade
     else:
         subs = fields.get('subjects')
         if isinstance(subs, list):
             names = [_split_band(s)[0] for s in subs if isinstance(s, str) and s.strip()]
-    return {'names': names, 'grades': grades}
+    return {'names': names, 'grades': grades, 'bands': bands}
 
 
 def compare_academics(profile_grades, slip) -> dict:
     """Compare the slip's subjects/grades against what the student typed.
 
-    Returns ``{slip_count, missing: [readable names], mismatched: [{subject,
-    typed, slip}], have_grades: bool, complete: bool, accurate: bool}``."""
+    Returns ``{slip_count, missing, mismatched: [{subject, typed, slip}],
+    uncertain: [{subject, typed, slip, band}], have_grades, complete, accurate}``.
+
+    The slip prints each grade twice — a letter AND a Malay band. When the two
+    DISAGREE for a row, the read is unreliable for that subject, so a would-be
+    grade mismatch is downgraded to **uncertain** ("please check") rather than
+    asserted as a confident mismatch (guards against an OCR row-transposition
+    confidently telling the student a wrong grade)."""
     prof_by_name = {}
     for key, grade in (profile_grades or {}).items():
         nm = _SUBJECT_BM.get(key)
@@ -140,21 +157,29 @@ def compare_academics(profile_grades, slip) -> dict:
     slip_norm = {}  # normname → first readable form
     for n in slip['names']:
         slip_norm.setdefault(_norm(n), n)
+    bands = slip.get('bands', {})
 
     missing = sorted(orig for nn, orig in slip_norm.items() if nn not in prof_by_name)
-    mismatched = []
+    mismatched, uncertain = [], []
     for nn, slip_g in slip['grades'].items():
         typed = prof_by_name.get(nn)
-        if typed and _norm_grade(typed) != _norm_grade(slip_g):
-            mismatched.append({'subject': slip_norm.get(nn, nn),
-                               'typed': typed, 'slip': slip_g})
+        if not typed or _norm_grade(typed) == _norm_grade(slip_g):
+            continue  # not entered, or the typed grade matches the slip letter
+        band_g = bands.get(nn)
+        row = {'subject': slip_norm.get(nn, nn), 'typed': typed, 'slip': slip_g}
+        if band_g and _norm_grade(band_g) != _norm_grade(slip_g):
+            # The slip's own letter and band disagree → can't trust this grade read.
+            uncertain.append({**row, 'band': band_g})
+        else:
+            mismatched.append(row)
     return {
         'slip_count': len(slip_norm),
         'missing': missing,
         'mismatched': mismatched,
+        'uncertain': uncertain,
         'have_grades': bool(slip['grades']),
         'complete': len(slip_norm) > 0 and not missing,
-        'accurate': not mismatched,
+        'accurate': not mismatched and not uncertain,
     }
 
 
@@ -201,7 +226,7 @@ def student_slip_check(doc) -> dict:
         s = 'pending' if pending else 'unreadable'
         return {'name': name, 'subjects': s, 'results': s,
                 'candidate_name': candidate_name, 'exam': exam, 'exam_year': exam_year,
-                'missing': [], 'mismatched': [], 'slip_count': 0}
+                'missing': [], 'mismatched': [], 'uncertain': [], 'slip_count': 0}
 
     profile = getattr(getattr(doc, 'application', None), 'profile', None)
     cmp = compare_academics(getattr(profile, 'grades', None), data)
@@ -210,10 +235,13 @@ def student_slip_check(doc) -> dict:
         results = 'pending'
     elif cmp['mismatched']:
         results = 'mismatch'
+    elif cmp['uncertain']:
+        results = 'uncertain'   # letter↔band disagree → please check, not a confident mismatch
     else:
         results = 'match'
     return {
         'name': name, 'subjects': subjects, 'results': results,
         'candidate_name': candidate_name, 'exam': exam, 'exam_year': exam_year,
-        'missing': cmp['missing'], 'mismatched': cmp['mismatched'], 'slip_count': cmp['slip_count'],
+        'missing': cmp['missing'], 'mismatched': cmp['mismatched'],
+        'uncertain': cmp['uncertain'], 'slip_count': cmp['slip_count'],
     }
