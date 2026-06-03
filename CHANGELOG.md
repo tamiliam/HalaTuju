@@ -23,6 +23,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "edit your profile" link. Backend + frontend, no migration; i18n parity 1850×3.
 
 ### Fixed
+- **Pathway: a Form-6 / STPM offer no longer false-clashes with the declared pathway.** A student who declared an STPM
+  (Form 6) place saw "Offer … differs from the declared pathway — awaiting confirmation" even though the offer was for the
+  same school and stream. Cause: the offer's *programme* field is read as the enrolment **type** ("Tingkatan Enam Semester
+  1 Tahun 2026"), not the field of study, so the matcher (`pathway_engine.offer_pathway_match`) compared that structure
+  wording against the declared field ("Sains Sosial") and saw a false field-clash — overriding the institution, which
+  actually matched (same "Pulau Sebang" school). Fix: the enrolment-structure words (`semester`, `tahun`/`year`, `sesi`,
+  `intake`/`pengambilan`/`kemasukan`/`tawaran`, and the Malay cardinals `satu`…`sepuluh`) are now treated as **generic**
+  (non-distinctive), so a type-only offer programme contributes nothing to clash and the matching school carries it to a
+  clean match — no nag. A genuine same-institution-different-field clash (e.g. Diploma Electricity vs Horticulture at UPM)
+  is still flagged.
+- **Pathway: a readable letter with no name/IC is no longer mislabelled "could not be read — ask for a clearer copy".**
+  A general notice/memo (e.g. a UTM "your offer will be released later via SAM" letter) reads perfectly but carries no
+  candidate name or IC. The verdict mapped that to `offer_unreadable`, telling the officer to chase a clearer copy that
+  wouldn't help. New `offer_no_identity` reason fires when the body read (programme/institution present) but no identity
+  is on it: "this letter has no student name or IC — it looks like a general notice, not the personal offer letter; ask
+  for the actual offer letter." Truly-blank scans still read `offer_unreadable`. en/ms/ta officer + ticket copy added.
+
 - **Officer Academic verdict no longer falsely says "the results slip could not be read" for a cleanly-read slip.** The
   officer verdict (`verdict_engine._verdict_academic`) decided slip readability partly from `slip.vision_name_match ==
   'not_found'` — but that column is the *supporting-doc / IC* full-text heuristic, not the results-slip name check. A

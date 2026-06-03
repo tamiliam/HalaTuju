@@ -275,8 +275,14 @@ def _verdict_pathway(application):
     # Identity guard: a wrong name OR IC means a wrong-person letter.
     if chk['ic'] == 'mismatch' or chk['name'] == 'mismatch':
         return _fact('pathway', 'review', evidence, [_item('offer_name_mismatch')])
-    # Couldn't read the identity off the letter at all.
+    # No identity read off the letter. Distinguish a general NOTICE / wrong document
+    # (the body read fine — issuer/institution/programme present — but it carries no
+    # name or IC, e.g. a "your offer will be released later" memo) from a genuinely
+    # blurry scan. Telling the officer to "ask for a clearer copy" on a crisp notice
+    # is misleading; a clearer copy won't add a name that was never there.
     if chk['name'] in ('unreadable', 'pending') and chk['ic'] in ('unreadable', 'pending'):
+        if chk['programme'] or chk['institution']:
+            return _fact('pathway', 'review', evidence, [_item('offer_no_identity')])
         return _fact('pathway', 'review', evidence, [_item('offer_unreadable')])
 
     prog, inst = chk['programme'], chk['institution']

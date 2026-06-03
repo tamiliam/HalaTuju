@@ -46,6 +46,7 @@ CODE_TO_TICKET = {
     'income_proof_missing': {'fact': 'income', 'kind': 'doc', 'doc_type': 'str'},
     # Pathway
     'offer_unreadable':    {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
+    'offer_no_identity':   {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
     'offer_name_mismatch': {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
     'pathway_undeclared':  {'fact': 'pathway', 'kind': 'explanation'},
     # The AI-raised "is this offer your final chosen pathway?" confirmation. A 'confirm'
