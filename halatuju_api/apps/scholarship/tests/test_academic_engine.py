@@ -309,52 +309,70 @@ class TestParseSpmSlip(SimpleTestCase):
         return parse_spm_slip(_slip_words(header or self.HEADER, rows or self.SHARMILA))
 
     def test_every_row_paired_correctly(self):
+        # Subjects come back as canonical SPM names (matched, not literal OCR text).
         out = self._parse()
         self.assertIsNotNone(out)
         got = {r['subject']: r['grade'] for r in out['results']}
         self.assertEqual(len(out['results']), 9)
         # The transposition victims now read their OWN row's grade.
-        self.assertEqual(got['PERTANIAN'], 'A')
-        self.assertEqual(got['PERNIAGAAN'], 'B')
-        self.assertEqual(got['BAHASA TAMIL'], 'A-')
+        self.assertEqual(got['Pertanian'], 'A')
+        self.assertEqual(got['Perniagaan'], 'B')
+        self.assertEqual(got['Bahasa Tamil'], 'A-')
 
     def test_parse_is_order_independent(self):
         # Reverse the OCR word order — positional grouping must still pair by geometry.
         words = list(reversed(_slip_words(self.HEADER, self.SHARMILA)))
         got = {r['subject']: r['grade'] for r in parse_spm_slip(words)['results']}
-        self.assertEqual(got['PERTANIAN'], 'A')
-        self.assertEqual(got['PERNIAGAAN'], 'B')
-        self.assertEqual(got['BAHASA TAMIL'], 'A-')
+        self.assertEqual(got['Pertanian'], 'A')
+        self.assertEqual(got['Perniagaan'], 'B')
+        self.assertEqual(got['Bahasa Tamil'], 'A-')
 
     def test_band_kept_for_cross_check(self):
-        sains = next(r for r in self._parse()['results'] if r['subject'] == 'SAINS')
+        sains = next(r for r in self._parse()['results'] if r['subject'] == 'Sains')
         self.assertEqual(sains['grade'], 'B+')
         self.assertEqual(sains['band'], 'kepujian tertinggi')
+
+    def test_subject_codes_and_noise_resolved(self):
+        # Theepicaa's slip shape: subject CODES + watermark/OCR noise + an oral-test row.
+        # The parser resolves each row to the subject it IS, not the literal text.
+        rows = [
+            ('1103 BAHASA MELAYU', 'A+', 'CEMERLANG TERTINGGI'),
+            ('1119 BAHASA INGGERIS', 'A', 'CEMERLANG TINGGI'),
+            ('4541 KIMIA Malaysia', 'B', 'KEPUJIAN TINGGI'),
+            ('3472 MATEMATIK TAMBAHAN', 'C+', 'KEPUJIAN ATAS'),
+            ('UJIAN LISAN BAHASA MELAYU', '', 'KEPUJIAN'),
+        ]
+        out = self._parse(rows)
+        got = {r['subject']: r['grade'] for r in out['results']}
+        self.assertEqual(got['Bahasa Melayu'], 'A+')        # code "1103" stripped
+        self.assertEqual(got['Kimia'], 'B')                 # "Malaysia" noise ignored
+        self.assertEqual(got['Matematik Tambahan'], 'C+')   # longest-match wins over "Matematik"
+        # The oral-test row resolves to Bahasa Melayu and dedups against the real row.
+        self.assertEqual(sum(1 for r in out['results'] if r['subject'] == 'Bahasa Melayu'), 1)
 
     def test_letter_band_conflict_both_returned(self):
         # Letter A vs band Cemerlang(=A-) → keep BOTH so the downstream compare can flag
         # 'uncertain'; the parser never silently picks one.
         rows = [('BAHASA MELAYU', 'A', 'CEMERLANG')] + self.SHARMILA[1:4]
-        bm = next(r for r in self._parse(rows)['results'] if r['subject'] == 'BAHASA MELAYU')
+        bm = next(r for r in self._parse(rows)['results'] if r['subject'] == 'Bahasa Melayu')
         self.assertEqual(bm['grade'], 'A')
         self.assertEqual(bm['band'], 'cemerlang')
 
     def test_band_only_row_uses_band_grade(self):
         # Letter unreadable, band present → grade derived from the band.
         rows = [('BAHASA MELAYU', '', 'CEMERLANG')] + self.SHARMILA[1:4]
-        bm = next(r for r in self._parse(rows)['results'] if r['subject'] == 'BAHASA MELAYU')
+        bm = next(r for r in self._parse(rows)['results'] if r['subject'] == 'Bahasa Melayu')
         self.assertEqual(bm['grade'], 'A-')
 
     def test_tidak_hadir_is_th(self):
-        rows = self.SHARMILA[:3] + [('PERDAGANGAN', '', 'TIDAK HADIR')]
-        perd = next(r for r in self._parse(rows)['results'] if r['subject'] == 'PERDAGANGAN')
-        self.assertEqual(perd['grade'], 'TH')
+        rows = self.SHARMILA[:3] + [('SAINS', '', 'TIDAK HADIR')]
+        sains = next(r for r in self._parse(rows)['results'] if r['subject'] == 'Sains')
+        self.assertEqual(sains['grade'], 'TH')
 
     def test_name_and_exam_extracted(self):
         out = self._parse()
         self.assertEqual(out['candidate_name'], 'SHARMILA A/P SANGGAR')
         self.assertIn('SIJIL PELAJARAN MALAYSIA', out['exam'])
-        self.assertIn('2025', out['exam'] + ' 2025')  # year optional; name line carried no year
 
     def test_name_row_not_parsed_as_a_grade(self):
         # The "A/P" in the name must never be mistaken for an "A" grade row.

@@ -124,6 +124,29 @@ _GRADE_TOKENS = frozenset({'A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G',
 _BAND_HEADS = frozenset({'cemerlang', 'kepujian', 'lulus', 'gagal'})
 _BAND_MODS = frozenset({'tertinggi', 'tinggi', 'atas'})
 
+# Every known SPM subject as (canonical_name, token_set), LONGEST first so e.g.
+# "Matematik Tambahan" wins over "Matematik" on a subset match.
+_KNOWN_SUBJECTS = sorted(
+    ((name, frozenset(_norm(name).split())) for name in set(_SUBJECT_BM.values())),
+    key=lambda t: -len(t[1]),
+)
+
+
+def _match_known_subject(raw: str) -> str:
+    """Resolve an OCR'd slip row to the canonical SPM subject it CONTAINS — instead of
+    matching word-for-word. A row reads e.g. "1103 BAHASA MELAYU" or "4541 KIMIA
+    Malaysia" (subject code + OCR noise + watermark text); we keep the row iff a known
+    subject's words are all present in it, and return that subject's clean name. Strips
+    codes/noise for free, and drops non-subject rows (an "Ujian Lisan" oral line, a
+    watermark fragment). '' when no known subject matches."""
+    tokens = set(_norm(raw).split())
+    if not tokens:
+        return ''
+    for name, kt in _KNOWN_SUBJECTS:
+        if kt and kt <= tokens:
+            return name
+    return ''
+
 
 def _group_rows(words, *, y_tol_frac=0.6):
     """Cluster OCR words into visual ROWS by Y-coordinate — words at the same vertical
@@ -162,8 +185,11 @@ def _parse_grade_row(row):
     if band_idx is None:
         return None
     cut = min(i for i in (grade_idx, band_idx) if i is not None)
-    subject = ' '.join(toks[:cut]).strip(' .:-\t')
-    if len(_norm(subject)) < 3:
+    raw_subject = ' '.join(toks[:cut]).strip(' .:-\t')
+    # Resolve to the known SPM subject this row IS (ignoring the subject code + OCR
+    # noise); drop the row if it isn't a recognised subject (header / oral-test / noise).
+    subject = _match_known_subject(raw_subject)
+    if not subject:
         return None
     head = low[band_idx]
     if head == 'tidak':
@@ -221,7 +247,11 @@ def parse_spm_slip(words):
         results.append(gr)
     if len(results) < 3:
         return None
-    return {'candidate_name': _slip_name(rows), 'exam': _slip_exam(rows), 'results': results}
+    # _debug_rows: the raw grouped OCR lines (top-to-bottom) — a temporary diagnostic so
+    # a misparsed grade row can be inspected from the stored record. Ignored downstream.
+    debug = [' '.join(w['text'] for w in row) for row in rows]
+    return {'candidate_name': _slip_name(rows), 'exam': _slip_exam(rows),
+            'results': results, '_debug_rows': debug}
 
 
 def read_slip(doc) -> dict:

@@ -18,9 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to transposition and deterministic across re-runs. The band word is the authoritative grade (every row must carry one,
   which also excludes header/name rows); the letter confirms it; a genuine letter↔band conflict still degrades to
   "check by eye". Gemini (`extract_document_fields`) is used only when the positional parse can't lock onto the table
-  (`< 3` subject rows) or the slip isn't SPM. Added `Tidak Hadir → TH` to the band map. **STPM** (no Malay bands; a
-  ruled grid with grade-points) is a separate follow-up — its slip still routes to Gemini for now. Backend only, no
-  migration. _On branch `feature/slip-ocr-deterministic`; needs a live re-extract on real slips to verify before deploy._
+  (`< 3` subject rows) or the slip isn't SPM. Added `Tidak Hadir → TH` to the band map. Each row's subject is
+  **resolved to the canonical SPM subject it contains** (`_match_known_subject`, longest-token-subset) rather than
+  matched literally — so a subject **code** (`1103 BAHASA MELAYU`), watermark/OCR noise (`KIMIA Malaysia`, an Arabic
+  fragment) or an `Ujian Lisan` oral-test row no longer breaks the match (the latter dedups against the real subject).
+  **STPM** (no Malay bands; a ruled grid with grade-points) is a separate follow-up — its slip still routes to Gemini
+  for now. Backend only, no migration. _A temporary `_debug_rows` field stores the grouped OCR lines to diagnose a
+  residual single-row grade mispair (Sharmila's PERTANIAN); to be removed once solved._
 
 ### Fixed
 - **Identity name now anchors on the deliberate "as in IC" declaration signature — not the Google handle.** Two
