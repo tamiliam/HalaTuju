@@ -873,20 +873,20 @@
         "birth_certificate": "Birth certificate"
       },
       "help": {
-        "ic": "Please upload a photo of the front of your MyKad. We'll use it to verify your identity and confirm that your name and IC number match your application and supporting documents.",
-        "results_slip": "Your latest results slip.",
-        "str": "A screenshot or printout of your STR (Sumbangan Tunai Rahmah), showing the recipient's name and IC.",
-        "salary_slip": "The earner's latest salary slip.",
-        "epf": "The earner's EPF (KWSP) statement.",
+        "ic": "A photo of the front of your MyKad. We'll use it to verify your identity and confirm that your name and IC number match your application and supporting documents.",
+        "results_slip": "A photo or PDF of your official results slip.",
+        "str": "A screenshot of the STR portal or a photo/PDF of your STR letter, showing the recipient's name and IC number.",
+        "salary_slip": "A photo/PDF of your father/mother/guardian's latest salary slip.",
+        "epf": "A photo/PDF of your father/mother/guardian's EPF (KWSP) statement.",
         "income": "If your family is an STR recipient, please upload a screenshot of your STR portal showing your parent's name and NRIC. We strongly encourage you to also upload the latest salary slip and/or EPF statement for every working member of the household.",
         "water_bill": "A recent bill helps us understand your household.",
         "electricity_bill": "A recent bill helps us understand your household.",
-        "statement_of_intent": "A short letter about your goals, if you'd like to write one.",
-        "offer_letter": "If you have received an offer for further studies at a university, college, etc.",
+        "statement_of_intent": "A photo or PDF of a short letter in English, BM or Tamil about your goals and reasons for applying. You may include personal background, family circumstances, interests, or experiences relevant to your motivation.",
+        "offer_letter": "A photo or PDF of your offer letter for further studies at a university, college, or other institution of your choice.",
         "photo": "A recent photo of yourself.",
         "parent_ic": "A photo of your father/mother/guardian's MyKad. We use it to verify supporting documents such as STR that are usually issued in their name.",
-        "guardianship_letter": "Only needed if the consent will be given by someone other than your father or mother — a court-issued guardianship order OR a written authorisation letter from your parent.",
-        "birth_certificate": "Links your mother to you. A clear photo of your birth certificate.",
+        "guardianship_letter": "A photo or PDF of a court-issued guardianship order or a written authorisation letter from your parent, showing that you are under their care.",
+        "birth_certificate": "A photo/PDF of your birth certificate, linking your mother to you.",
         "coachLabel": "Cikgu Gopal · Helper",
         "editProfileName": "Edit your name in your profile",
         "editProfileResults": "Update your results on your profile",
@@ -919,6 +919,21 @@
             "mother": "A photo of your mother's MyKad. We use it to verify supporting documents such as STR that are usually issued in their name.",
             "guardian": "A photo of your guardian's MyKad. We use it to verify supporting documents such as STR that are usually issued in their name."
           },
+          "icTitle": {
+            "father": "Father's IC",
+            "mother": "Mother's IC",
+            "guardian": "Guardian's IC"
+          },
+          "salaryHelp": {
+            "father": "A photo/PDF of your father's latest salary slip.",
+            "mother": "A photo/PDF of your mother's latest salary slip.",
+            "guardian": "A photo/PDF of your guardian's latest salary slip."
+          },
+          "epfHelp": {
+            "father": "A photo/PDF of your father's EPF (KWSP) statement.",
+            "mother": "A photo/PDF of your mother's EPF (KWSP) statement.",
+            "guardian": "A photo/PDF of your guardian's EPF (KWSP) statement."
+          },
           "q3": "Is your main earner currently working?",
           "q4": "Does anyone else in your household earn an income (for example a working brother or sister)?",
           "yes": "Yes",
@@ -929,8 +944,8 @@
           "tertiary": "In college or university",
           "burdenHint": "This helps us understand your family's needs.",
           "docsHeading": "Documents to upload",
-          "footer": "Can't get one of these? Upload what you can — a reviewer will look at your situation personally.",
-          "badge": { "required": "Required", "optional": "Optional — adds credibility" }
+          "footer": "Upload what you can — a reviewer will look at your situation personally.",
+          "badge": { "required": "Required", "optional": "Optional" }
         }
       },
       "requiredPill": "Required",

@@ -413,6 +413,7 @@ function SingleDocCard({
   showVisionChip = false,
   required = false,
   helpOverride,
+  titleOverride,
 }: {
   docType: string
   docs: ApplicantDocument[]
@@ -425,6 +426,7 @@ function SingleDocCard({
   showVisionChip?: boolean
   required?: boolean
   helpOverride?: string
+  titleOverride?: string
 }) {
   const busy = busyType === docType
   const existing = docs.filter((d) => d.doc_type === docType)
@@ -435,7 +437,7 @@ function SingleDocCard({
       <div className="flex items-center justify-between gap-2">
         <div>
           <span className="text-sm font-medium text-gray-800">
-            {t(`scholarship.docs.type.${docType}`)}
+            {titleOverride ?? t(`scholarship.docs.type.${docType}`)}
             {required && <span className="text-red-500"> *</span>}
           </span>
           <p className="text-xs text-gray-500 mt-0.5">
@@ -607,7 +609,7 @@ function IncomeWizard({
   app: ScholarshipApplication
   token: string | null
   t: (key: string) => string
-  renderCard: (docType: string, opts?: { required?: boolean; helpOverride?: string }) => ReactNode
+  renderCard: (docType: string, opts?: { required?: boolean; helpOverride?: string; titleOverride?: string }) => ReactNode
   onChange?: () => void
 }) {
   // Q1 prefills from the Apply-stage STR declaration (receives_str): had STR → 'str' (Yes),
@@ -714,9 +716,18 @@ function IncomeWizard({
                          'parent_ic', 'birth_certificate', 'guardianship_letter']
   const ordered = (docs: string[]) =>
     [...docs].sort((a, b) => DISPLAY_ORDER.indexOf(a) - DISPLAY_ORDER.indexOf(b))
-  // The earner IC help is context-aware (your father's / mother's / guardian's MyKad).
-  const icHelpFor = (dt: string) =>
-    dt === 'parent_ic' && ans.income_earner ? iq(`icHelp.${ans.income_earner}`) : undefined
+  // Income-doc help + the IC card title are context-aware: they name the selected
+  // earner (your father's / mother's / guardian's MyKad, salary slip, EPF).
+  const e = ans.income_earner
+  const helpFor = (dt: string): string | undefined => {
+    if (!e) return undefined
+    if (dt === 'parent_ic') return iq(`icHelp.${e}`)
+    if (dt === 'salary_slip') return iq(`salaryHelp.${e}`)
+    if (dt === 'epf') return iq(`epfHelp.${e}`)
+    return undefined
+  }
+  const titleFor = (dt: string): string | undefined =>
+    dt === 'parent_ic' && e ? iq(`icTitle.${e}`) : undefined
 
   return (
     <div className="space-y-4">
@@ -768,7 +779,7 @@ function IncomeWizard({
       {ready && (
         <div className="space-y-3 pt-1">
           {ordered(reqs.compulsory).map((dt) => (
-            <div key={dt}>{renderCard(dt, { required: true, helpOverride: icHelpFor(dt) })}</div>
+            <div key={dt}>{renderCard(dt, { required: true, helpOverride: helpFor(dt), titleOverride: titleFor(dt) })}</div>
           ))}
           {ordered(reqs.optional).map((dt) => (
             <div key={dt}>
@@ -857,7 +868,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   }
 
   // A doc card with the shared handlers closed over — keeps the sections tidy.
-  const card = (docType: string, extra: { showVisionChip?: boolean; required?: boolean; helpOverride?: string } = {}) => (
+  const card = (docType: string, extra: { showVisionChip?: boolean; required?: boolean; helpOverride?: string; titleOverride?: string } = {}) => (
     <SingleDocCard
       key={docType}
       docType={docType}
