@@ -321,6 +321,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     pathway_check = serializers.SerializerMethodField()
     # Check-1 Income: the earner-IC relationship facts — null unless doc_type=parent_ic.
     income_ic_check = serializers.SerializerMethodField()
+    # Check-1 Income: a member-tagged salary slip / EPF vs that member's IC.
+    income_proof_check = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantDocument
@@ -342,6 +344,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'pathway_check',
             # Check-1 Income: earner-IC relationship facts (null unless doc_type=parent_ic).
             'income_ic_check',
+            # Check-1 Income: salary slip / EPF vs the member's IC (null otherwise).
+            'income_proof_check',
         ]
         read_only_fields = [
             'vision_nric', 'vision_name', 'vision_address',
@@ -397,8 +401,23 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
         identity match against the student. Null for every other doc type."""
         if obj.doc_type != 'parent_ic':
             return None
-        from .income_engine import student_income_ic_check
-        return student_income_ic_check(obj)
+        from .income_engine import student_income_ic_check, income_cluster_advice
+        chk = student_income_ic_check(obj)
+        if chk:
+            # The CLUSTER verdict (relationship + coherence across this member's income
+            # docs) drives the single per-member coach anchored on the IC.
+            chk['cluster_status'] = (income_cluster_advice(obj.application, chk['member'])
+                                     if chk['member'] else '')
+        return chk
+
+    def get_income_proof_check(self, obj):
+        """{name, nric, amount, period, member, name_status, nric_status, ic_present}
+        for a member-tagged salary slip / EPF — the earner facts cross-checked against
+        THAT member's IC. Null for everything else."""
+        if obj.doc_type not in ('salary_slip', 'epf') or not (obj.household_member or ''):
+            return None
+        from .income_engine import student_income_proof_check
+        return student_income_proof_check(obj)
 
 
 class ResolutionItemSerializer(serializers.ModelSerializer):

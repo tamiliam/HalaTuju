@@ -54,6 +54,13 @@ VERDICT_GUIDANCE = {
     # father/brother/sister the family name (patronymic) in the student's OWN IC did not
     # appear on this IC; for a mother/guardian the birth certificate / letter did not agree.
     'income_relationship_mismatch': "the name on this family member's IC did not match the family name in the applicant's own IC (or the birth certificate / guardianship letter did not agree), so we could not confirm this earner is the applicant's family",
+    # A member-tagged salary slip / EPF whose name or IC number did NOT match the IC the
+    # student uploaded for THAT same household member (e.g. the father's payslip but not
+    # the father's IC). The fix is about the EARNER's document, never the student's name.
+    'income_proof_person_mismatch': "the name or IC number on this income document did not match the IC uploaded for the same household member, so the income document and that person's IC do not appear to be for the same person",
+    # An income document (salary slip / EPF) was uploaded for a household member but that
+    # member's IC has not been uploaded yet, so we cannot confirm the two are the same person.
+    'income_ic_needed': "an income document was uploaded for this household member but their IC has not been uploaded yet, so we cannot automatically confirm the income document belongs to that same person",
 }
 
 # Per-verdict fix advice. Most verdicts just need a re-upload; a NAME mismatch is
@@ -120,6 +127,21 @@ VERDICT_FIX_HINT = {
         'their father\'s card under "Father", not someone else\'s), and that the photo is clear '
         'enough to read the full name. Reassure them nothing is blocked. Do NOT tell them to '
         'edit their profile — the fix here is the correct, clear IC photo for this person.'
+    ),
+    'income_proof_person_mismatch': (
+        'This income document (salary slip / EPF) does not seem to belong to the SAME person '
+        'as the IC uploaded for that household member. Kindly suggest they check that the '
+        'salary slip / EPF and that person\'s IC are for the SAME individual (for example, the '
+        'father\'s payslip together with the father\'s IC), and re-upload the matching one if a '
+        'wrong file slipped in. This is about the EARNER\'s documents — do NOT tell them to '
+        'edit their OWN name or profile. Reassure them nothing is blocked.'
+    ),
+    'income_ic_needed': (
+        'They have added an income document (salary slip / EPF) for this household member but '
+        'not that person\'s IC yet. Kindly, warmly invite them to upload that member\'s MyKad too '
+        '(for example, the father\'s IC alongside his payslip) so we can automatically confirm '
+        'the income document belongs to the right person. Make clear nothing is wrong or '
+        'blocked — it just helps us check faster.'
     ),
 }
 
@@ -208,17 +230,21 @@ def verdict_for_document(doc):
         if doc.vision_name and name_match(doc.vision_name, getattr(profile, 'name', '') or '') == 'mismatch':
             return 'name_mismatch'
         return ''
-    # An earner's IC (parent_ic) → the RELATIONSHIP verdict (does this person link to
-    # the student's family). The NRIC is the EARNER's — never matched to the student.
+    # An earner's IC (parent_ic) → the CLUSTER verdict for that member (their IC anchor +
+    # income proofs), so Gopal speaks ONCE per person. Income is a cluster, unlike the
+    # single-document Identity/Academic/Pathway facts. The NRIC is the EARNER's — never
+    # matched to the student.
     if doc.doc_type == 'parent_ic':
         if doc.vision_run_at is None:
             return ''
+        member = (getattr(doc, 'household_member', '') or '').strip() \
+            or (getattr(doc.application, 'income_earner', '') or '').strip()
+        from .income_engine import income_cluster_advice
+        if member:
+            return income_cluster_advice(doc.application, member)
+        # A non-income parent_ic (e.g. minor consent) — just flag an unreadable card.
         if doc.vision_error or not (doc.vision_name or '').strip():
             return 'unreadable'
-        from .income_engine import student_income_ic_check
-        chk = student_income_ic_check(doc)
-        if chk and chk.get('name_status') == 'mismatch':
-            return 'income_relationship_mismatch'
         return ''
     # Results slip — the three clinical checks (name / subjects / results), most
     # important first: a wrong-person slip, then a missing subject, then a grade that
@@ -273,6 +299,13 @@ def verdict_for_document(doc):
         if chk['pathway'] == 'mismatch':
             return 'offer_pathway_mismatch'
         return ''
+    # A member-tagged salary slip / EPF — part of that member's cluster. The coherence
+    # (slip vs IC) is voiced by the cluster coach anchored on the IC, so here we only
+    # speak when there is NO IC to anchor on: nudge the student to add this person's IC.
+    # (Skips the generic "your name isn't on this" check below, wrong for an earner's doc.)
+    if doc.doc_type in ('salary_slip', 'epf') and (doc.household_member or ''):
+        from .income_engine import _member_ic_doc
+        return '' if _member_ic_doc(doc.application, doc.household_member) else 'income_ic_needed'
     # Other supporting docs — the Gemini doc-assist verdict takes precedence (it is the
     # chip the frontend shows); fall back to the older soft full-text checks when it never ran.
     fields = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}

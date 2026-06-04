@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Income Check-1 — per-document IC/proof verification + cluster-aware Cikgu Gopal.** Income documents are now treated
+  as a **cluster per person** (Father's IC + Father's salary slip + Father's EPF), unlike the single-document Identity/
+  Academic/Pathway facts. **Each income IC** (`parent_ic`) shows the same checklist as the Identity card (IC No · Name ·
+  Address) but with a **relationship** verdict — the earner's NRIC is shown for reference, never matched to the student;
+  the Name carries a "Linked to your family" / "doesn't match" badge (father/sibling via the shared patronymic, mother
+  via birth cert, guardian via letter). **Each salary slip / EPF** is read for the earner's name · **NRIC** (new
+  extraction) · amount · period and cross-checked against *that member's* IC — so a father's payslip is verified against
+  the father's IC, not the student. **Gopal now speaks once per member cluster** (anchored on the member's IC): it
+  reasons across the cluster — relationship, coherence (are the IC + payslip the same person?), and completeness (a proof
+  with no IC yet → "add their IC"). The old behaviour (which told the student to edit *their own* name when a parent's
+  payslip didn't carry the student's name) is gone — a latent bug where `verdict_for_document` matched an earner's IC
+  against the student's profile is fixed by splitting `ic` (identity) from `parent_ic` (relationship/cluster). New help
+  codes `income_relationship_mismatch` / `income_proof_person_mismatch` / `income_ic_needed`; serializer fields
+  `income_ic_check` + `income_proof_check`; `salary_slip`/`epf` extraction gains `nric`. No migration (computed fields).
 - **Income Check-1 — salary (non-STR) route rebuilt for MULTIPLE working household members.** The single-earner salary
   route became a multi-select: *"tick everyone who works"* (father / mother / legal guardian / elder brother / elder
   sister), each with their own IC + (optional) salary slip + EPF. Storage gains a `household_member` tag on

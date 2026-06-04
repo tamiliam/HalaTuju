@@ -24,6 +24,10 @@ export const HELP_VERDICTS = [
   'offer_pathway_mismatch',
   // Income earner IC — the name doesn't link to the student's family (wrong IC uploaded).
   'income_relationship_mismatch',
+  // Income proof (salary slip / EPF) — doesn't match the member's IC (different person).
+  'income_proof_person_mismatch',
+  // Income cluster — a proof was added for a member but their IC hasn't been uploaded yet.
+  'income_ic_needed',
 ] as const
 
 /**
@@ -61,12 +65,17 @@ export function shouldShowCoach(doc: ApplicantDocument): boolean {
     const pc = doc.pathway_check
     return pc.name === 'mismatch' || pc.ic === 'mismatch' || pc.pathway === 'mismatch'
   }
-  // Income earner IC (parent_ic) — the RELATIONSHIP verdict (does this person link to
-  // the student's family), not a student-identity match. Set only for parent_ic.
+  // Income earner IC (parent_ic) — the single per-member CLUSTER coach is anchored here:
+  // it speaks for the whole cluster (relationship + coherence across the member's IC +
+  // income proofs). cluster_status (computed server-side) is non-empty iff there's advice.
   if (doc.income_ic_check) {
-    const ic = doc.income_ic_check
-    if (doc.vision_run_at && !ic.readable) return true // couldn't read this IC
-    return ic.name_status === 'mismatch'
+    return !!doc.income_ic_check.cluster_status
+  }
+  // Income proof (salary slip / EPF) — the cluster coach lives on the member's IC, so a
+  // proof only coaches when there is NO IC yet (nudge to add it). When the IC is present
+  // it anchors the coach and the proof stays quiet (no second Gopal for the same person).
+  if (doc.income_proof_check) {
+    return !doc.income_proof_check.ic_present
   }
   // Supporting docs — the Gemini doc-assist verdict takes precedence (matches the chip).
   const av = doc.vision_fields?.student_verdict
@@ -111,6 +120,7 @@ export function helpSignal(doc: ApplicantDocument): string {
   const ac = doc.academic_check
   const pc = doc.pathway_check
   const ic = doc.income_ic_check
+  const ip = doc.income_proof_check
   return [
     doc.vision_run_at || '',
     doc.vision_fields?.student_verdict || '',
@@ -120,9 +130,11 @@ export function helpSignal(doc: ApplicantDocument): string {
     // PROFILE (grades / name / NRIC) without re-uploading — fold it in to re-fire then.
     ac ? `${ac.name},${ac.subjects},${ac.results}` : '',
     pc ? `${pc.name},${pc.ic},${pc.pathway || ''}` : '',
-    // Income earner IC: re-fires when the relationship verdict changes (e.g. the
-    // student uploads the matching birth cert, flipping mother → match).
-    ic ? `${ic.name_status},${ic.readable ? 1 : 0}` : '',
+    // Income earner IC: the cluster coach re-fires when the cluster verdict changes —
+    // e.g. the student uploads a matching/ mismatching payslip, or the birth cert.
+    ic ? `cluster:${ic.cluster_status || ''}` : '',
+    // Income proof: re-fires when the member's IC appears (the add-IC nudge clears).
+    ip ? `${ip.name_status},${ip.nric_status},${ip.ic_present ? 1 : 0}` : '',
   ].join('|')
 }
 

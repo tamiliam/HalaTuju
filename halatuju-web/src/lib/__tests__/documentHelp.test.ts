@@ -63,6 +63,25 @@ describe('shouldShowCoach', () => {
     expect(shouldShowCoach(doc({ vision_name_match: 'found', vision_address_match: 'not_found' }))).toBe(true)
     expect(shouldShowCoach(doc({ vision_name_match: 'found' }))).toBe(false)
   })
+
+  it('income IC anchors the cluster coach: shows iff cluster_status is non-empty', () => {
+    const icDoc = (cluster_status: string) =>
+      doc({ doc_type: 'parent_ic', vision_run_at: '2026-06-05T00:00:00Z',
+        income_ic_check: { nric: '', name: 'X', address: '', member: 'father',
+          name_status: 'match', readable: true, cluster_status } } as Partial<ApplicantDocument>)
+    expect(shouldShowCoach(icDoc(''))).toBe(false)                         // consistent cluster → quiet
+    expect(shouldShowCoach(icDoc('income_proof_person_mismatch'))).toBe(true)
+    expect(shouldShowCoach(icDoc('income_relationship_mismatch'))).toBe(true)
+  })
+
+  it('income proof coaches ONLY when the member IC is missing (no second Gopal)', () => {
+    const proof = (ic_present: boolean) =>
+      doc({ doc_type: 'salary_slip',
+        income_proof_check: { name: 'X', nric: '', amount: '', period: '', member: 'father',
+          name_status: 'match', nric_status: 'no_ref', ic_present } } as Partial<ApplicantDocument>)
+    expect(shouldShowCoach(proof(false))).toBe(true)   // no IC yet → "add the IC" nudge
+    expect(shouldShowCoach(proof(true))).toBe(false)   // IC present → the IC anchors the coach
+  })
 })
 
 describe('fallbackKeyFor', () => {

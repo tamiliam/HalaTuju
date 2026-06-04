@@ -905,6 +905,8 @@
           "offer_name_mismatch": "The name or IC number on this offer letter isn't yours — it looks like it might be someone else's letter. Please make sure you upload your own offer letter; the name and IC on it must match yours. You've got this!",
           "offer_pathway_mismatch": "Good news — this is not a problem at all and never blocks your application! The college or programme on your offer letter looks a little different from the study choice you entered earlier. If this offer is where you're really going, that's perfectly fine — you don't need to change anything now. When you submit, we'll simply ask you to confirm it and update your record to match. Plans change, and that's okay!",
           "income_relationship_mismatch": "Quick check — this is easily fixed! The name on this IC doesn't seem to link to your family the way we expected (for a parent or sibling we look for your father's name from your own IC; for a mother we check your birth certificate). It usually just means a different person's card was uploaded here, or the photo was a little unclear. Please double-check you uploaded the right person's MyKad in this slot, with a clear photo. Nothing is blocked!",
+          "income_proof_person_mismatch": "Quick check — easily sorted! This salary slip / EPF doesn't seem to be for the same person as the IC you uploaded for that family member (the name or IC number is different). Please make sure the income document and that person's IC are for the SAME person — for example, your father's payslip together with your father's IC — and re-upload the right file if a wrong one slipped in. This is about that family member's documents, not your own — nothing is blocked!",
+          "income_ic_needed": "Nice work adding this! You've uploaded an income document for this family member but not their IC yet. When you have a moment, please add that person's MyKad too (for example, your father's IC alongside his payslip) so we can confirm the income document belongs to the right person. Nothing is wrong — it just helps us check faster!",
           "generic": "Something didn't look quite right with this upload — but it's nothing to worry about and easily fixed. Have another look and try uploading again. You're doing great!"
         }
       },
@@ -1041,6 +1043,16 @@
         "linked": "Linked to your family",
         "nameMismatch": "Name doesn't match — re-check",
         "reviewing": "We'll review this"
+      },
+      "incomeProofCheck": {
+        "name": "Name",
+        "icNo": "IC No",
+        "amount": "Amount",
+        "period": "Period",
+        "matchesIc": "Matches their IC",
+        "mismatchIc": "Doesn't match their IC — re-check",
+        "addIc": "Add their IC to auto-check",
+        "fromDoc": "from the document"
       },
       "slipCheck": {
         "name": "Name",
