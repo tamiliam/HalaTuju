@@ -443,39 +443,39 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-03)
+## Next Sprint (as of 2026-06-04)
 
-**SHIPPED TO PROD — the Check-1 "good feedback on every document" arc (2026-06-02 → 06-03):**
-- **Verification Verdict roadmap S1–S5 ✅** (migrations `0036`/`0037`). Four-fact verdict the coordinator audits.
-- **Check-1 Identity/IC ✅** (`3d110a4`, no migration). Name-trunc + address card-label strip + cost-gated Gemini IC
-  second opinion (`IC_GEMINI_FALLBACK_ENABLED`) + bidirectional Gopal. Smoke-passed. Retro `retrospective-check1-identity.md`.
-- **Check-1 Academic/results-slip ✅** (`62339e9`+`177aed2`; live-fixes `4391f54`+`b370503`, no migration). Band-word
-  "0 of 9" bug fix (`academic_engine._split_band`) + `student_slip_check`/`ResultsSlipChecklist` (Name/Subjects/Results
-  + exam year) + 3 Gopal slip verdicts (slip is the authoritative grade record → update profile). **Live-review fix:**
-  image-based Gemini slip read (fixes A↔A+ row transposition) + letter↔band cross-check + ±-only difference → `uncertain`
-  ("Please check"), never a confident wrong mismatch. Retros `retrospective-check1-academic.md` + `retrospective-check1-livefixes.md`.
-- **Check-1 Pathway/offer-letter ✅** (`3abe9a9`+`a0d997f`, **migration `0038` `pathway_confirmed_at`**; reconciliation
-  rework `6a54699`, no migration). Differentiated facts (Name+IC checks + Programme/Institution/Issuer/Date/Address data
-  points; `pathway_engine.student_offer_check` + `OfferLetterChecklist`) **+ AI-raised final-pathway confirmation**.
-  **Live-review rework:** the always-ask confirm is now a **lenient offer-vs-declared matcher** (`offer_pathway_match`) —
-  offer agrees / nothing to compare → Pathway verdict 'verified' (NO nag); a genuine clash (different school/field, naming-
-  quirk tolerant) → reframed `pathway_confirm` query + soft Gopal nudge (`offer_pathway_mismatch`) + red checklist rows;
-  the student's Yes (`confirm_pathway`) realigns `chosen_programme` + stamps `pathway_confirmed_at`. Editable self-edit in
-  Funding = Phase 2 (NOT built). Retros `retrospective-check1-pathway.md` + `retrospective-check1-livefixes.md`.
-- **Documents organised by the four facts ✅** (`ece0cec`, no migration). Order Identity·Academic·Pathway·Income
-  everywhere; parent IC → Income in the officer grouping; student Documents tab regrouped into 5 fact sections with
-  status pills. Presentational only.
-- Totals: **574 scholarship pytest** + 231 jest, i18n **1848**; scholarship migrations through **`0038`**.
+**SHIPPED TO PROD 2026-06-04 — Check-1 live-testing fixes (5 commits, all deployed; retro `retrospective-check1-livetesting-fixes.md`):**
+- **Orientation-robust SPM slip parse** (`c416c2e`) — gated de-rotation in `academic_engine._group_rows` (de-rotate by
+  median word angle only when |θ|≥25°; upright untouched). Reads sideways/keystoned photos that used to fall to Gemini +
+  transpose grades. 4 real slips frozen as fixtures (`tests/fixtures/slips/`).
+- **Pointed Gopal slip advice** (`39510ac`) — `slip_grade_uncertain` (double-check) + `slip_skewed_unclear` (retake flat);
+  anti-nag rule (skew advice only when skew coincides with a doubtful read).
+- **Officer Academic false "could not be read"** (`d9e683b`) — use the slip's own `_slip_name_status`, not the
+  supporting-doc `vision_name_match` column.
+- **Two pathway false flags** (`e80b60c`) — Form-6 offer false-clash (enrolment-type words added to `_GENERIC_TOKENS`) +
+  `offer_no_identity` for a readable notice with no name/IC.
+- **Reason-code chain** (`e3d93c9`) — `offer_no_identity` added to `actionCentre.KNOWN_CODES` (the 4th wiring point).
+- Totals: **~609 scholarship pytest + 231 jest** (deployed), i18n **1853**; scholarship migrations through **`0038`** on prod.
 
-**▶ NEXT — the INCOME fact Check-1 (the last + hardest; TD-081 residual).** Not just reading the doc:
-- income **amount** (per-capita vs household size → the B40 test),
-- **earner identity** (the parent IC — name+NRIC),
-- **relationship** earner↔student: **father** auto-derivable via the student-IC patronymic; **mother** needs a
-  **Birth Certificate** (a NEW doc type); **guardian** needs the guardianship letter,
-- utility bills as a **soft hardship signal** (unpaid balance + modest monthly → hardship),
-- **policy Q:** relax income-proof from HARD-required (S23) to "provide if available" for informal-income families?
+**▶ ACTIVE SPRINT — INCOME fact Check-1 (item 3: earner identity + relationship). Plan LOCKED, wizard mockup APPROVED.**
+Plan + schema: **`docs/scholarship/check1-income-plan.md`**. A guided **document wizard** in /application **Documents →
+Household income** (dynamic, replaces the static income card): Q1 STR-doc? → str/salary route · Q2 earner father/mother/
+guardian · Q3 (salary) payslip/informal/not_working · Q4 (non-STR) working sibling · burden (siblings in school/tertiary).
+Relationship proof: father=student-IC patronymic match · mother=**Birth Certificate (NEW doc type)** · guardian=letter.
+**Never-block** informal/no-EPF families → `recommend` + interview flag. 3 sprints:
+- **I1 BUILT this session — NOT deployed, UNCOMMITTED.** `income_engine.py` (patronymic parser `father_name_from_ic`,
+  relationship checks, `income_requirements` matrix) + Birth-Certificate reader (vision.py schema+hint) + **migration
+  `0039`** (6 wizard fields on ScholarshipApplication + `birth_certificate` doc type) + 28 tests (637 scholarship green).
+  **⚠️ LANDMINE: migration `0039` is NOT on prod. Do NOT blind-push (the ORM SELECTs the new columns → prod breaks).
+  Migrate-first `0039` via Supabase MCP BEFORE any push that includes these files.** Stitch mockup approved (project
+  `10844973747787673276`, nodes `87cdab6c…`/`dd466e0f…`).
+- **I2 (next) —** rewire `verdict_engine._verdict_income` onto `income_requirements`; new reason codes through the full
+  4-link chain (verdict_engine → CODE_TO_TICKET → officer i18n → actionCentre i18n + KNOWN_CODES); officer Income tile.
+- **I3 —** the student wizard UI + dynamic checklist (Stitch-approved) + Gopal income copy. Goes live end-to-end.
+- **I4 (deferred):** amount-reading (per-capita B40 test) + utility hardship signal (hooks left).
 **Other queued:** `/application` state machine + Check 2 (5-day SLA); reviewer-role sprint; old/new cockpit consolidation;
-Tamil i18n refine; richer pathway-aware Gopal (low priority, firewall-constrained).
+Tamil i18n refine; STPM positional slip parser (parked); richer pathway-aware Gopal (low priority, firewall-constrained).
 
 **Carried gotchas:** TD-078 (subject map FE/BE dup), TD-079 (resolution sync writes on GET), TD-082 (academic confirm →
 Documents), TD-083 (verdict-metrics + `overall` built, not surfaced in UI). Migrate-first via Supabase MCP (deploy does
