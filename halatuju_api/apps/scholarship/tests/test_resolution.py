@@ -67,11 +67,12 @@ def _add_doc(app, doc_type, *, student_verdict='', fields=None, name_match=''):
 
 class TestGeneration(_Base):
     def test_bare_application_generates_doc_tickets(self):
-        # No documents → ic/results/income gaps; pathway declared (no ticket).
+        # No documents → ic + results gaps (doc); the income wizard isn't walked →
+        # income_earner_undeclared (confirm); pathway declared (no ticket).
         items = sync_resolution_items(self.app)
         self.assertEqual(self._codes(items),
-                         ['ic_missing', 'income_proof_missing', 'results_slip_missing'])
-        self.assertTrue(all(i.kind == 'doc' and i.source == 'system' for i in items))
+                         ['ic_missing', 'income_earner_undeclared', 'results_slip_missing'])
+        self.assertTrue(all(i.source == 'system' for i in items))
 
     def test_no_queries_before_consent(self):
         # Check-2 gate: a shortlisted-but-not-yet-submitted /application (no
@@ -102,9 +103,18 @@ class TestGeneration(_Base):
 class TestMappingExclusions(_Base):
     def test_nonticketable_codes_make_no_tickets(self):
         # ic_service_down + grades_unverified + str_present_unverified are the
-        # three deliberately-excluded codes.
-        self.profile.receives_str = True
+        # three deliberately-excluded codes. Walk the income wizard (str/father +
+        # earner IC) so income produces str_present_unverified, not the ticketable
+        # income_earner_undeclared.
+        self.profile.name = 'DIVASHINI A/P MURUGAN'
         self.profile.save()
+        self.app.income_route = 'str'
+        self.app.income_earner = 'father'
+        self.app.save()
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='parent_ic',
+            storage_path=f'{self.app.id}/parent_ic/x', vision_name='MURUGAN A/L KESAVAN',
+            vision_run_at=timezone.now())
         _add_ic(self.app, error='Vision API down')                       # ic_service_down
         _add_doc(self.app, 'results_slip', student_verdict='ok', name_match='found')  # grades_unverified
         _add_doc(self.app, 'str', name_match='not_found')                # str_present_unverified
@@ -118,15 +128,23 @@ class TestIdempotencyAndLifecycle(_Base):
         self.assertEqual(self.app.resolution_items.filter(source='system').count(), 3)
 
     def test_auto_resolve_when_gap_clears(self):
-        self.profile.receives_str = True
+        # Walk the income wizard (str/father + earner IC) → an income_proof_missing
+        # gap appears until the STR is uploaded.
+        self.profile.name = 'DIVASHINI A/P MURUGAN'
         self.profile.save()
-        # str_claimed_no_doc ticket appears.
+        self.app.income_route = 'str'
+        self.app.income_earner = 'father'
+        self.app.save()
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='parent_ic',
+            storage_path=f'{self.app.id}/parent_ic/x', vision_name='MURUGAN A/L KESAVAN',
+            vision_run_at=timezone.now())
         codes = self._codes(sync_resolution_items(self.app))
-        self.assertIn('str_claimed_no_doc', codes)
-        # Upload an STR doc → the income gap clears.
+        self.assertIn('income_proof_missing', codes)
+        # Upload a verified STR doc → the income gap clears.
         _add_doc(self.app, 'str', name_match='found')
         sync_resolution_items(self.app)
-        t = self.app.resolution_items.get(code='str_claimed_no_doc')
+        t = self.app.resolution_items.get(code='income_proof_missing')
         self.assertEqual(t.status, 'resolved')
         self.assertEqual(t.resolved_by, 'system')
 

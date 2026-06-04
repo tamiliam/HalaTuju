@@ -219,43 +219,111 @@ class TestAcademicGrades(_Base):
         self.assertEqual(f['status'], 'review')
 
 
-# ── Income ───────────────────────────────────────────────────────────────────
+# ── Income (Check-1 item 3: wizard-driven earner identity + relationship) ─────
+
+def _parent_ic(app, name):
+    """The income earner's IC (parent_ic), OCR'd name on the vision_name column."""
+    return ApplicantDocument.objects.create(
+        application=app, doc_type='parent_ic', storage_path=f'{app.id}/parent_ic/x',
+        vision_name=name, vision_run_at=timezone.now())
+
 
 class TestIncome(_Base):
-    def test_verified_str_document_is_green(self):
+    def _wizard(self, route='', earner='', work=''):
+        # Father derivable from the student-IC patronymic 'DIVASHINI A/P MURUGAN' → MURUGAN.
+        self.profile.name = 'DIVASHINI A/P MURUGAN'
+        self.profile.save()
+        self.app.income_route = route
+        self.app.income_earner = earner
+        self.app.earner_work_status = work
+        self.app.save()
+
+    def test_verified_str_pre_wizard_is_still_green(self):
+        # A present, name-matched STR settles income on its own, wizard or not.
         _add_doc(self.app, 'str', name_match='found')
         f = _facts(self.app)['income']
         self.assertEqual(f['status'], 'verified')
         self.assertIn('str_verified', _codes(f['evidence']))
 
-    def test_str_present_but_unmatched_is_review(self):
-        _add_doc(self.app, 'str', name_match='not_found')
+    def test_wizard_not_walked_is_review_undeclared(self):
         f = _facts(self.app)['income']
         self.assertEqual(f['status'], 'review')
-        self.assertIn('str_present_unverified', _codes(f['unresolved']))
+        self.assertIn('income_earner_undeclared', _codes(f['unresolved']))
 
-    def test_claimed_str_no_doc_with_epf_is_recommend(self):
-        self.profile.receives_str = True
-        self.profile.save()
+    def test_str_father_complete_is_verified(self):
+        self._wizard(route='str', earner='father')
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
+        _add_doc(self.app, 'str', name_match='found')
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'verified')
+        self.assertIn('relationship_confirmed', _codes(f['evidence']))
+        self.assertIn('earner_ic_present', _codes(f['evidence']))
+
+    def test_earner_ic_missing_is_gap(self):
+        self._wizard(route='str', earner='father')
+        _add_doc(self.app, 'str', name_match='found')          # no parent_ic
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'gap')
+        self.assertIn('earner_ic_missing', _codes(f['unresolved']))
+
+    def test_father_relationship_mismatch_is_review(self):
+        self._wizard(route='str', earner='father')
+        _parent_ic(self.app, 'RAJU A/L SAMY')                   # not the student's father
+        _add_doc(self.app, 'str', name_match='found')
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('father_patronymic_mismatch', _codes(f['unresolved']))
+
+    def test_mother_route_bc_missing_is_gap(self):
+        self._wizard(route='str', earner='mother')
+        _parent_ic(self.app, 'KAMALA A/P RAMAN')
+        _add_doc(self.app, 'str', name_match='found')           # no birth_certificate
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'gap')
+        self.assertIn('birth_cert_missing', _codes(f['unresolved']))
+
+    def test_mother_route_bc_match_is_verified(self):
+        self._wizard(route='str', earner='mother')
+        _parent_ic(self.app, 'KAMALA A/P RAMAN')
+        _add_doc(self.app, 'birth_certificate', student_verdict='ok',
+                 fields={'bc_child_name': 'DIVASHINI A/P MURUGAN', 'bc_mother_name': 'KAMALA A/P RAMAN'})
+        _add_doc(self.app, 'str', name_match='found')
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'verified')
+        self.assertIn('relationship_confirmed', _codes(f['evidence']))
+
+    def test_salary_payslip_complete_is_recommend(self):
+        self._wizard(route='salary', earner='father', work='payslip')
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
+        _add_doc(self.app, 'salary_slip', student_verdict='ok')
         _add_doc(self.app, 'epf', student_verdict='ok')
         f = _facts(self.app)['income']
         self.assertEqual(f['status'], 'recommend')
-        self.assertIn('str_claimed_no_doc', _codes(f['unresolved']))
-        self.assertIn('income_proof_epf', _codes(f['evidence']))
 
-    def test_no_income_proof_is_gap(self):
-        self.profile.receives_str = True
-        self.profile.save()
+    def test_salary_missing_epf_is_gap(self):
+        self._wizard(route='salary', earner='father', work='payslip')
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
+        _add_doc(self.app, 'salary_slip', student_verdict='ok')  # no epf
         f = _facts(self.app)['income']
         self.assertEqual(f['status'], 'gap')
         self.assertIn('income_proof_missing', _codes(f['unresolved']))
 
-    def test_salary_only_no_str_claim_is_recommend(self):
-        _add_doc(self.app, 'salary_slip', student_verdict='ok')
+    def test_salary_informal_flags_interview(self):
+        self._wizard(route='salary', earner='father', work='informal')
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
+        _add_doc(self.app, 'water_bill', student_verdict='ok')
+        _add_doc(self.app, 'electricity_bill', student_verdict='ok')
         f = _facts(self.app)['income']
         self.assertEqual(f['status'], 'recommend')
-        self.assertIn('income_proof_salary', _codes(f['evidence']))
-        self.assertNotIn('str_claimed_no_doc', _codes(f['unresolved']))
+        self.assertIn('income_unverified_needs_interview', _codes(f['unresolved']))
+
+    def test_guardian_letter_missing_is_gap(self):
+        self._wizard(route='str', earner='guardian')
+        _parent_ic(self.app, 'RAJA A/L KUMAR')
+        _add_doc(self.app, 'str', name_match='found')           # no guardianship_letter
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'gap')
+        self.assertIn('guardianship_letter_missing', _codes(f['unresolved']))
 
 
 # ── Pathway ──────────────────────────────────────────────────────────────────
@@ -404,9 +472,10 @@ class TestTheresaIntegration(_Base):
         self.assertIn('name_resolved_truncation', _codes(facts['identity']['evidence']))
         # Academic: review (grades pending S2).
         self.assertEqual(facts['academic']['status'], 'review')
-        # Income: recommend (no verified STR), STR-claim flagged.
-        self.assertEqual(facts['income']['status'], 'recommend')
-        self.assertIn('str_claimed_no_doc', _codes(facts['income']['unresolved']))
+        # Income: review — she hasn't walked the income wizard yet (no income_earner),
+        # so the engine asks her to (the documents can't be checked until she does).
+        self.assertEqual(facts['income']['status'], 'review')
+        self.assertIn('income_earner_undeclared', _codes(facts['income']['unresolved']))
         # Pathway: verified — the offer's identity matches and it doesn't clash with
         # any specific declared college/programme (she declared only a pathway type),
         # so the offer settles the pathway with no redundant confirmation nag.

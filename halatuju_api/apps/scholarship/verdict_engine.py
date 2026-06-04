@@ -211,38 +211,102 @@ def _verdict_academic(application):
 # ── Income (the hard one) ────────────────────────────────────────────────────
 
 def _verdict_income(application):
-    """STR is the gold standard: a verified STR *document* → the AI asserts
-    'verified'. Otherwise it assembles the weaker evidence (EPF / salary /
-    utility-bill proxy) and a HUMAN decides ('recommend'). No income proof at
-    all → 'gap' (chase a document)."""
-    evidence, unresolved = [], []
-    profile = application.profile
+    """Income Check-1 (item 3): the guided wizard says which documents the family
+    needs (income_engine.income_requirements); this assembles whether they're present,
+    whether the EARNER is the student's family (father=patronymic, mother=Birth
+    Certificate, guardian=letter), and places the verdict:
+
+      - STR route, all compulsory present + relationship OK → 'verified' (gold standard).
+      - salary route assembled → 'recommend' (a human still places the B40 amount call).
+      - a compulsory DOC missing → 'gap'; a relationship/check that FAILS → 'review'.
+      - **never blocks** a genuinely poor family: an informal/no-EPF earner whose income
+        can't be document-proven gets 'recommend' + `income_unverified_needs_interview`,
+        which the officer confirms via the interview (lifestyle, household, burden).
+
+    Wizard not walked yet → 'review' (`income_earner_undeclared`), unless a present,
+    name-matched STR already settles it on its own."""
+    from .income_engine import (income_requirements, relationship_doc_for,
+                                father_relationship, mother_relationship, guardian_relationship)
+    evidence, gap, review = [], [], []
     present = _present_doc_types(application)
-    receives_str = bool(getattr(profile, 'receives_str', False))
+    student_name = getattr(application.profile, 'name', '') or ''
+    earner = (getattr(application, 'income_earner', '') or '').strip()
+    route = (getattr(application, 'income_route', '') or '').strip()
 
     str_doc = _latest_doc(application, 'str')
-    if str_doc is not None:
-        if str_doc.vision_name_match == 'found':
-            return _fact('income', 'verified', [_item('str_verified')], unresolved)
-        # Present but the household name isn't matched on it yet → confirm.
-        return _fact('income', 'review', evidence, [_item('str_present_unverified')])
+    str_verified = str_doc is not None and str_doc.vision_name_match == 'found'
 
-    # No STR document — assemble the weaker evidence; a human places the verdict.
-    if receives_str:
-        unresolved.append(_item('str_claimed_no_doc'))
-    has_epf = 'epf' in present
-    has_salary = 'salary_slip' in present
-    if has_epf:
-        evidence.append(_item('income_proof_epf'))
-    if has_salary:
-        evidence.append(_item('income_proof_salary'))
-    if present & {'water_bill', 'electricity_bill'}:
-        evidence.append(_item('utility_bills_present'))
+    # Wizard not walked → can't compute requirements. A verified STR still settles it;
+    # otherwise ask the student to tell us whose income they're showing (the wizard).
+    if not earner or not route:
+        if str_verified:
+            return _fact('income', 'verified', [_item('str_verified')], [])
+        return _fact('income', 'review', evidence, [_item('income_earner_undeclared')])
 
-    if not (has_epf or has_salary):
-        unresolved.append(_item('income_proof_missing'))
-        return _fact('income', 'gap', evidence, unresolved)
-    return _fact('income', 'recommend', evidence, unresolved)
+    reqs = income_requirements(application)
+    rel_doc = relationship_doc_for(earner)
+
+    # ── Earner IC (the income docs are issued in their name) ──────────────────
+    ic_doc = _latest_doc(application, 'parent_ic')
+    earner_ic_name = (getattr(ic_doc, 'vision_name', '') or '').strip() if ic_doc else ''
+    if ic_doc is None:
+        gap.append(_item('earner_ic_missing'))
+    elif not earner_ic_name:
+        review.append(_item('earner_ic_unreadable'))
+    else:
+        evidence.append(_item('earner_ic_present', name=earner_ic_name))
+
+    # ── Relationship: prove the earner is the student's family ────────────────
+    rel = None
+    if earner == 'father':
+        rel = father_relationship(student_name, earner_ic_name)
+    elif earner == 'mother':
+        if 'birth_certificate' not in present:
+            gap.append(_item('birth_cert_missing'))
+        else:
+            bcf = _doc_assist_fields(_latest_doc(application, 'birth_certificate'))
+            rel = mother_relationship(bcf.get('bc_child_name', ''), bcf.get('bc_mother_name', ''),
+                                      student_name, earner_ic_name)
+    elif earner == 'guardian':
+        if 'guardianship_letter' not in present:
+            gap.append(_item('guardianship_letter_missing'))
+        else:
+            g = _latest_doc(application, 'guardianship_letter')
+            rel = guardian_relationship(getattr(g, 'vision_name', '') or '', earner_ic_name)
+    if rel == 'match':
+        evidence.append(_item('relationship_confirmed'))
+    elif rel == 'mismatch':
+        review.append(_item('father_patronymic_mismatch' if earner == 'father' else 'birth_cert_mismatch'))
+    # 'unknown' (no patronymic — e.g. a Chinese name) / 'pending' → no claim; officer eyeballs.
+
+    # ── Income evidence — the compulsory income docs for this route/work-status ─
+    income_docs = [d for d in reqs['compulsory'] if d not in ('parent_ic', rel_doc)]
+    if route == 'str':
+        if str_verified:
+            evidence.append(_item('str_verified'))
+        elif str_doc is not None:
+            review.append(_item('str_present_unverified'))
+        else:
+            gap.append(_item('income_proof_missing'))
+    else:  # salary route
+        missing = [d for d in income_docs if d not in present]
+        if missing:
+            gap.append(_item('income_proof_missing'))
+        else:
+            evidence.append(_item('income_proof_present'))
+
+    # ── Place the verdict ─────────────────────────────────────────────────────
+    if gap:
+        return _fact('income', 'gap', evidence, gap + review)
+    if review:
+        return _fact('income', 'review', evidence, review)
+    if route == 'str' and str_verified:
+        return _fact('income', 'verified', evidence, [])
+    # Salary assembled, nothing missing/failed. A human still places the B40 amount call;
+    # when the proof is thin (informal / no payslip) flag it for the interview, never block.
+    if (getattr(application, 'earner_work_status', '') or '') == 'informal':
+        review.append(_item('income_unverified_needs_interview'))
+    return _fact('income', 'recommend', evidence, review)
 
 
 # ── Pathway (offer letter) ───────────────────────────────────────────────────

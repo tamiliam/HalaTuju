@@ -1279,6 +1279,34 @@
           "title": "Muat naik bukti pendapatan",
           "desc": "Kami perlukan satu dokumen pendapatan (slip gaji, KWSP, atau STR) untuk isi rumah anda."
         },
+        "income_earner_undeclared": {
+          "title": "Beritahu kami tentang pendapatan keluarga anda",
+          "desc": "Jawab beberapa soalan ringkas tentang pendapatan isi rumah anda dalam langkah Dokumen, dan kami akan tunjukkan dokumen yang perlu dimuat naik."
+        },
+        "earner_ic_missing": {
+          "title": "Muat naik KP ibu bapa atau penjaga anda",
+          "desc": "Kami menggunakannya untuk mengesahkan dokumen pendapatan (STR, slip gaji, KWSP) milik keluarga anda."
+        },
+        "earner_ic_unreadable": {
+          "title": "Muat naik gambar KP yang lebih jelas",
+          "desc": "Kami tidak dapat membaca KP ibu bapa atau penjaga anda. Gambar yang jelas, rata dan terang membantu."
+        },
+        "birth_cert_missing": {
+          "title": "Muat naik sijil kelahiran anda",
+          "desc": "Anda menunjukkan pendapatan ibu, jadi kami perlukan sijil kelahiran anda untuk mengaitkannya dengan anda. Tiada apa disekat — seseorang akan menyemak."
+        },
+        "birth_cert_mismatch": {
+          "title": "Semak sijil kelahiran anda",
+          "desc": "Nama pada sijil kelahiran nampak tidak sepadan — sila pastikan anda memuat naik sijil anda sendiri, dengan nama ibu anda padanya."
+        },
+        "father_patronymic_mismatch": {
+          "title": "Semak KP bapa anda",
+          "desc": "Nama pada KP tidak sepadan dengan nama bapa anda seperti ditunjukkan dalam KP anda sendiri — sila pastikan anda memuat naik yang betul."
+        },
+        "guardianship_letter_missing": {
+          "title": "Muat naik surat penjagaan anda",
+          "desc": "Anda menunjukkan pendapatan penjaga, jadi kami perlukan surat penjagaan atau perintah mahkamah. Tiada apa disekat — seseorang akan menyemak."
+        },
         "offer_unreadable": {
           "title": "Surat tawaran sukar dibaca",
           "desc": "Imbasan kurang jelas. Sila muat naik salinan yang lebih jelas."
@@ -2008,6 +2036,17 @@
           "str_claimed_no_doc": "Pelajar berkata keluarga menerima STR tetapi belum memuat naik surat STR — minta surat itu.",
           "str_present_unverified": "Dokumen STR ada tetapi belum dipadankan dengan isi rumah — sahkan.",
           "income_proof_missing": "Tiada bukti pendapatan dimuat naik — minta STR, slip gaji, atau KWSP.",
+          "income_earner_undeclared": "Pelajar belum memberitahu pendapatan siapa yang ditunjukkan (wizard pendapatan belum lengkap) — kami tidak dapat menyemak dokumen sehingga itu.",
+          "earner_ic_missing": "Tiada KP pencari nafkah dimuat naik — kami tidak dapat mengesahkan dokumen pendapatan milik keluarga. Minta KP ibu bapa/penjaga.",
+          "earner_ic_unreadable": "KP pencari nafkah tidak dapat dibaca — minta gambar yang lebih jelas.",
+          "birth_cert_missing": "Pendapatan yang ditunjukkan ialah ibu, tetapi tiada sijil kelahiran mengaitkannya dengan pelajar. Minta sijil itu.",
+          "birth_cert_mismatch": "Sijil kelahiran tidak mengaitkan nama ibu dengan pelajar — semak dengan mata.",
+          "father_patronymic_mismatch": "Nama pada KP pencari nafkah tidak sepadan dengan nama bapa dalam KP pelajar sendiri — semak hubungan.",
+          "guardianship_letter_missing": "Pendapatan yang ditunjukkan ialah penjaga, tetapi tiada surat/perintah penjagaan dimuat naik. Minta surat itu.",
+          "income_unverified_needs_interview": "Pendapatan tidak dapat disahkan melalui dokumen (tidak formal / tiada slip gaji) — sahkan semasa temu duga melalui saiz isi rumah, tanggungan dan gaya hidup. JANGAN sekat.",
+          "earner_ic_present": "KP pencari nafkah dalam fail: {name}.",
+          "relationship_confirmed": "Pencari nafkah disahkan sebagai ibu bapa/penjaga pelajar.",
+          "income_proof_present": "Dokumen pendapatan ada dalam fail.",
           "offer_name_mismatch": "Surat tawaran atas nama atau KP yang berbeza. Sahkan.",
           "offer_unreadable": "Surat tawaran tidak dapat dibaca — minta salinan yang lebih jelas.",
           "offer_no_identity": "Surat ini tiada nama atau KP pelajar — ia nampak seperti makluman umum, bukan surat tawaran peribadi. Minta surat tawaran sebenar yang dialamatkan kepada pelajar.",
