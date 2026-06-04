@@ -728,6 +728,10 @@ _FIELD_SCHEMAS = {
     'offer_letter': _doc_schema({'candidate_name': _STR, 'candidate_nric': _STR,
                                  'programme': _STR, 'institution': _STR, 'issuer': _STR,
                                  'offer_date': _STR, 'intake': _STR, 'candidate_address': _STR}),
+    # Income Check-1: the Birth Certificate links the income earner (mother) to the
+    # student. Read the child + both parents' names so the income engine can match.
+    'birth_certificate': _doc_schema({'bc_child_name': _STR, 'bc_mother_name': _STR,
+                                      'bc_father_name': _STR, 'bc_number': _STR}),
 }
 
 # Which extracted field holds the person's name (for the deterministic verdict).
@@ -770,6 +774,13 @@ _DOC_HINTS = {
                      'Sekolah"); "offer_date" = the letter\'s print/issue date; "intake" = '
                      'the session/intake (e.g. "Sesi 2026/2027"); "candidate_address" = the '
                      'student\'s mailing address if shown. Leave a field empty if absent.'),
+    'birth_certificate': (' This is a Malaysian birth certificate (Sijil Kelahiran, JPN). '
+                          'Return: "bc_child_name" = the child\'s full name ("Nama" of the '
+                          'child / "Nama Kanak-Kanak"); "bc_mother_name" = the mother\'s full '
+                          'name ("Nama Ibu"); "bc_father_name" = the father\'s full name '
+                          '("Nama Bapa"); "bc_number" = the certificate serial number if '
+                          'shown. Use the names EXACTLY as printed (keep bin/binti/a/l/a/p). '
+                          'Leave a field empty if it is not present or not legible.'),
 }
 
 
