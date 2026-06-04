@@ -50,6 +50,10 @@ VERDICT_GUIDANCE = {
     'offer_name_mismatch':   "the name and/or IC number on this offer letter are not the applicant's — it looks like it may be someone else's offer letter",
     # Offer-letter (pathway): the offer is for a different college/programme than declared.
     'offer_pathway_mismatch': "the college or programme on this offer letter looks different from the study choice the applicant entered earlier when they applied",
+    # Income earner IC: the name on this IC does not link to the student's family — for a
+    # father/brother/sister the family name (patronymic) in the student's OWN IC did not
+    # appear on this IC; for a mother/guardian the birth certificate / letter did not agree.
+    'income_relationship_mismatch': "the name on this family member's IC did not match the family name in the applicant's own IC (or the birth certificate / guardianship letter did not agree), so we could not confirm this earner is the applicant's family",
 }
 
 # Per-verdict fix advice. Most verdicts just need a re-upload; a NAME mismatch is
@@ -109,6 +113,13 @@ VERDICT_FIX_HINT = {
         'anything now; when they submit, we will simply ask them to confirm it and we will '
         'update their record to match the offer. Do NOT tell them to re-upload or to edit '
         'anything, and do NOT imply they made a mistake.'
+    ),
+    'income_relationship_mismatch': (
+        'This usually means the WRONG IC was uploaded for this family member: kindly suggest '
+        'they double-check they uploaded the right person\'s MyKad in this slot (for example, '
+        'their father\'s card under "Father", not someone else\'s), and that the photo is clear '
+        'enough to read the full name. Reassure them nothing is blocked. Do NOT tell them to '
+        'edit their profile — the fix here is the correct, clear IC photo for this person.'
     ),
 }
 
@@ -184,7 +195,8 @@ def verdict_for_document(doc):
     (never admin data) and re-uses the same deterministic matchers the chip/serializer
     use — this module phrases the verdict, it does not invent one. Mirrors the frontend
     chip precedence."""
-    if doc.doc_type in ('ic', 'parent_ic'):
+    # The student's OWN IC → identity match against the profile (name + NRIC).
+    if doc.doc_type == 'ic':
         if doc.vision_run_at is None:
             return ''
         if doc.vision_error or not doc.vision_nric:
@@ -195,6 +207,18 @@ def verdict_for_document(doc):
             return 'nric_mismatch'
         if doc.vision_name and name_match(doc.vision_name, getattr(profile, 'name', '') or '') == 'mismatch':
             return 'name_mismatch'
+        return ''
+    # An earner's IC (parent_ic) → the RELATIONSHIP verdict (does this person link to
+    # the student's family). The NRIC is the EARNER's — never matched to the student.
+    if doc.doc_type == 'parent_ic':
+        if doc.vision_run_at is None:
+            return ''
+        if doc.vision_error or not (doc.vision_name or '').strip():
+            return 'unreadable'
+        from .income_engine import student_income_ic_check
+        chk = student_income_ic_check(doc)
+        if chk and chk.get('name_status') == 'mismatch':
+            return 'income_relationship_mismatch'
         return ''
     # Results slip — the three clinical checks (name / subjects / results), most
     # important first: a wrong-person slip, then a missing subject, then a grade that

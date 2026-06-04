@@ -1158,6 +1158,19 @@ export interface ApplicantDocument {
   // Check-1 Pathway: the offer-letter facts (name + IC checks + data points). null
   // unless doc_type=offer_letter.
   pathway_check?: PathwayCheck | null
+  // Check-1 Income: an earner IC's OCR'd values + the RELATIONSHIP verdict (does this
+  // person link to the student's family). null unless doc_type=parent_ic.
+  income_ic_check?: IncomeIcCheck | null
+}
+
+export interface IncomeIcCheck {
+  nric: string
+  name: string
+  address: string
+  member: string
+  // 'match' | 'mismatch' | 'unknown' (no patronymic / no member) | 'pending' (not read)
+  name_status: 'match' | 'mismatch' | 'unknown' | 'pending'
+  readable: boolean
 }
 
 export type SlipCheckStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'uncertain' | 'pending'

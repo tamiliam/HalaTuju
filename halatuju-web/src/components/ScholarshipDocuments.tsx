@@ -179,6 +179,62 @@ function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => s
   )
 }
 
+/** Income earner IC checklist (Check-1 Income) — the SAME standard as the Identity IC
+ *  card (IC No / Name / Address, each with the value Vision READ), but the verdict is the
+ *  RELATIONSHIP, not an identity match against the student: the NRIC is the EARNER's, so it
+ *  is shown for reference only; the Name carries a "links to your family" / "doesn't match"
+ *  badge (father/brother/sister via the shared patronymic, mother via birth cert, guardian
+ *  via letter). Cikgu Gopal (below) gives the "what to do" only on a real mismatch. */
+function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
+  const chk = doc.income_ic_check
+  if (!chk || !doc.vision_run_at) return null
+
+  const nameKind: ICCheckKind =
+    chk.name_status === 'match' ? 'match' : chk.name_status === 'mismatch' ? 'mismatch' : 'none'
+  const cls: Record<ICCheckKind, string> = {
+    match: 'bg-green-50 text-green-700 ring-green-200',
+    partial: 'bg-amber-50 text-amber-700 ring-amber-200',
+    mismatch: 'bg-red-50 text-red-700 ring-red-200',
+    unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
+    none: 'bg-gray-50 text-gray-500 ring-gray-200',
+  }
+  const nameLabel =
+    chk.name_status === 'match'
+      ? t('scholarship.docs.incomeIcCheck.linked')
+      : chk.name_status === 'mismatch'
+        ? t('scholarship.docs.incomeIcCheck.nameMismatch')
+        : t('scholarship.docs.incomeIcCheck.reviewing')
+
+  const neutralTag = (
+    <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
+      {t('scholarship.docs.icCheck.fromIc')}
+    </span>
+  )
+  const row = (label: string, value: string, right: ReactNode) => (
+    <div className="flex items-start justify-between gap-2 py-1.5">
+      <p className="min-w-0 text-xs text-gray-700">
+        <span className="font-medium text-gray-600">{label}: </span>
+        <span className="break-words">{value || '—'}</span>
+      </p>
+      {right}
+    </div>
+  )
+
+  return (
+    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+      {chk.nric ? row(t('scholarship.docs.icCheck.icNo'), chk.nric, neutralTag) : null}
+      {row(
+        t('scholarship.docs.icCheck.name'),
+        chk.name,
+        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[nameKind]}`}>
+          {nameLabel}
+        </span>,
+      )}
+      {chk.address ? row(t('scholarship.docs.icCheck.address'), chk.address, neutralTag) : null}
+    </div>
+  )
+}
+
 // ── Results-slip clinical 3-check (Check-1 Academic) ─────────────────────
 // Mirrors the IC checklist: three rows the student can read at a glance —
 // Name · Subjects · Results — each with what we read + a pass/fail badge, plus
@@ -492,6 +548,8 @@ function SingleDocCard({
             <ResultsSlipChecklist doc={d} t={t} />
           ) : d.doc_type === 'offer_letter' && d.pathway_check ? (
             <OfferLetterChecklist doc={d} t={t} />
+          ) : d.doc_type === 'parent_ic' && d.income_ic_check ? (
+            <IncomeIcChecklist doc={d} t={t} />
           ) : (
             <SupportingDocChip doc={d} t={t} />
           )}

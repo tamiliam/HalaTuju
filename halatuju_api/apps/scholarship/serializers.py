@@ -319,6 +319,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     # Check-1 Pathway: the offer-letter facts (name + IC checks + data points) —
     # null unless doc_type=offer_letter.
     pathway_check = serializers.SerializerMethodField()
+    # Check-1 Income: the earner-IC relationship facts — null unless doc_type=parent_ic.
+    income_ic_check = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantDocument
@@ -338,6 +340,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'academic_check',
             # Check-1 Pathway: offer-letter facts (null unless doc_type=offer_letter).
             'pathway_check',
+            # Check-1 Income: earner-IC relationship facts (null unless doc_type=parent_ic).
+            'income_ic_check',
         ]
         read_only_fields = [
             'vision_nric', 'vision_name', 'vision_address',
@@ -385,6 +389,16 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             return None
         from .pathway_engine import student_offer_check
         return student_offer_check(obj)
+
+    def get_income_ic_check(self, obj):
+        """{nric, name, address, member, name_status, readable} for an income earner's
+        IC (parent_ic) — the OCR'd values + the RELATIONSHIP verdict (the earner's IC
+        links to the student's family via patronymic / birth cert / letter), NOT an
+        identity match against the student. Null for every other doc type."""
+        if obj.doc_type != 'parent_ic':
+            return None
+        from .income_engine import student_income_ic_check
+        return student_income_ic_check(obj)
 
 
 class ResolutionItemSerializer(serializers.ModelSerializer):

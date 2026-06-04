@@ -904,6 +904,7 @@
           "slip_skewed_unclear": "Slip anda diambil pada sudut yang sedikit senget, menyebabkan satu bahagian sukar dibaca dengan jelas. Apabila ada masa, letakkan slip rata di atas meja, penuhkan bingkai, dan ambil gambar tegak dari atas — biasanya itu menjadikan setiap gred jelas. Tiada apa-apa disekat, dan anda tidak buat silap pun!",
           "offer_name_mismatch": "Nama atau nombor KP pada surat tawaran ini bukan milik anda — ia nampak seperti surat orang lain. Sila pastikan anda memuat naik surat tawaran anda sendiri; nama dan KP padanya mesti sepadan dengan anda. Anda boleh!",
           "offer_pathway_mismatch": "Berita baik — ini bukan masalah dan tidak sekali-kali menghalang permohonan anda! Kolej atau program pada surat tawaran anda nampak sedikit berbeza daripada pilihan pengajian yang anda masukkan sebelum ini. Jika tawaran ini memang ke mana anda akan pergi, itu tidak mengapa — anda tidak perlu ubah apa-apa sekarang. Apabila anda hantar, kami hanya akan minta anda mengesahkannya dan mengemas kini rekod anda supaya sepadan. Rancangan berubah, dan itu tidak mengapa!",
+          "income_relationship_mismatch": "Semakan ringkas — mudah dibetulkan! Nama pada KP ini nampaknya tidak berkait dengan keluarga anda seperti yang kami jangkakan (bagi ibu bapa atau adik-beradik kami cari nama bapa anda daripada KP anda sendiri; bagi ibu kami semak sijil kelahiran anda). Biasanya ia bermakna kad orang lain telah dimuat naik di sini, atau gambar kurang jelas. Sila pastikan anda memuat naik MyKad orang yang betul di ruang ini, dengan gambar yang jelas. Tiada apa disekat!",
           "generic": "Ada sesuatu yang kurang tepat dengan muat naik ini — tetapi jangan risau, ia mudah dibetulkan. Semak semula dan cuba muat naik sekali lagi. Anda buat dengan baik!"
         }
       },
@@ -1035,6 +1036,11 @@
         "mismatch": "Tidak sepadan — semak semula",
         "unreadable": "Tidak dapat dibaca",
         "none": "Belum dibaca"
+      },
+      "incomeIcCheck": {
+        "linked": "Berkait dengan keluarga anda",
+        "nameMismatch": "Nama tidak sepadan — semak semula",
+        "reviewing": "Kami akan semak ini"
       },
       "slipCheck": {
         "name": "Nama",
