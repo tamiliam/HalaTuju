@@ -629,6 +629,9 @@ _DEEPER_FIELDS = (
     # TD-061: siblings_studying boolean dropped; only the count remains (S15).
     'siblings_studying_count',
     'family_context', 'daily_life',
+    # Income Check-1 wizard answers (Documents → Household income).
+    'income_route', 'income_earner', 'earner_work_status',
+    'household_other_earners', 'siblings_in_school', 'siblings_in_tertiary',
 )
 
 

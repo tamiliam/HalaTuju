@@ -1035,6 +1035,13 @@ export interface ScholarshipApplication {
   siblings_studying_count: number | null
   family_context: string
   daily_life: string
+  // Income Check-1 wizard answers (Documents → Household income).
+  income_route: '' | 'str' | 'salary'
+  income_earner: '' | 'father' | 'mother' | 'guardian'
+  earner_work_status: '' | 'payslip' | 'informal' | 'not_working'
+  household_other_earners: number | null
+  siblings_in_school: number | null
+  siblings_in_tertiary: number | null
   // Address pre-fill from the profile (S14) — round-trips through the details
   // PATCH, but stored on the profile (state already came from /apply).
   address: string

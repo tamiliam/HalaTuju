@@ -869,7 +869,8 @@
         "electricity_bill": "Electricity bill",
         "offer_letter": "Offer letter",
         "parent_ic": "Parent/guardian IC",
-        "guardianship_letter": "Guardianship letter"
+        "guardianship_letter": "Guardianship letter",
+        "birth_certificate": "Birth certificate"
       },
       "help": {
         "ic": "A photo of the front of your MyKad. We'll check it automatically to help you spot typos — your photo isn't kept at Google.",
@@ -882,6 +883,7 @@
         "photo": "A recent photo of yourself.",
         "parent_ic": "A photo of your parent or guardian's IC. We use it to verify supporting documents like STR or EPF that are usually issued in your parent's name. (If you are under 18, your parent or guardian also signs the consent below.)",
         "guardianship_letter": "Only needed if the consent will be given by someone other than your father or mother — a court-issued guardianship order OR a written authorisation letter from your parent.",
+        "birth_certificate": "Links your mother to you, when you're showing her income. A clear photo of your birth certificate.",
         "coachLabel": "Cikgu Gopal · Helper",
         "editProfileName": "Edit your name in your profile",
         "editProfileResults": "Update your results on your profile",
@@ -903,7 +905,24 @@
         }
       },
       "income": {
-        "title": "Proof of household income"
+        "title": "Proof of household income",
+        "wizard": {
+          "intro": "Tell us about your family's situation. The more you can share, the faster we can approve your application — and the less chance of a delay. Nothing here blocks you; anything missing is simply checked by a person.",
+          "q1": "Do you have an STR (Sumbangan Tunai Rahmah) document?",
+          "q2": "Whose income are you showing us?",
+          "q3": "Is your main earner currently working?",
+          "q4": "Does anyone else in your household earn an income (for example a working brother or sister)?",
+          "yes": "Yes",
+          "no": "No",
+          "earner": { "father": "Father", "mother": "Mother", "guardian": "Legal guardian" },
+          "work": { "payslip": "Working — has payslip", "informal": "Working — no payslip", "not_working": "Not working" },
+          "school": "Brothers/sisters in school",
+          "tertiary": "In college or university",
+          "burdenHint": "This helps us understand your family's needs.",
+          "docsHeading": "Documents to upload",
+          "footer": "Can't get one of these? Upload what you can — a reviewer will look at your situation personally.",
+          "badge": { "required": "Required", "optional": "Optional — adds credibility" }
+        }
       },
       "requiredPill": "Required",
       "optionalPill": "Optional",

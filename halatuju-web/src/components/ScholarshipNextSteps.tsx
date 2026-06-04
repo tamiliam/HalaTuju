@@ -560,7 +560,7 @@ export default function ScholarshipNextSteps({
     documents: (
       <div className="space-y-3">
         <InfoBox kind="info">{t('scholarship.nextSteps.step4Body')}</InfoBox>
-        <ScholarshipDocuments token={token} onChange={refreshApp} />
+        <ScholarshipDocuments token={token} onChange={refreshApp} app={app} />
       </div>
     ),
 
