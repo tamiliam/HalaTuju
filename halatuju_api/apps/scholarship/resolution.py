@@ -44,6 +44,15 @@ CODE_TO_TICKET = {
     # Income
     'str_claimed_no_doc':   {'fact': 'income', 'kind': 'doc', 'doc_type': 'str'},
     'income_proof_missing': {'fact': 'income', 'kind': 'doc', 'doc_type': 'str'},
+    # Income Check-1 (item 3: earner identity + relationship). `income_unverified_needs_interview`
+    # is deliberately ABSENT — it's an officer/interview flag, not a student to-do.
+    'income_earner_undeclared':     {'fact': 'income', 'kind': 'confirm'},
+    'earner_ic_missing':            {'fact': 'income', 'kind': 'doc', 'doc_type': 'parent_ic'},
+    'earner_ic_unreadable':         {'fact': 'income', 'kind': 'doc', 'doc_type': 'parent_ic'},
+    'birth_cert_missing':           {'fact': 'income', 'kind': 'doc', 'doc_type': 'birth_certificate'},
+    'birth_cert_mismatch':          {'fact': 'income', 'kind': 'confirm'},
+    'father_patronymic_mismatch':   {'fact': 'income', 'kind': 'confirm'},
+    'guardianship_letter_missing':  {'fact': 'income', 'kind': 'doc', 'doc_type': 'guardianship_letter'},
     # Pathway
     'offer_unreadable':    {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
     'offer_no_identity':   {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
