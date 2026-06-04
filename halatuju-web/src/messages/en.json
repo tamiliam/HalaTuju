@@ -873,13 +873,13 @@
         "birth_certificate": "Birth certificate"
       },
       "help": {
-        "ic": "A photo of the front of your MyKad. We'll check it automatically to help you spot typos — your photo isn't kept at Google.",
+        "ic": "Please upload a photo of the front of your MyKad. We'll use it to verify your identity and confirm that your name and IC number match your application and supporting documents.",
         "results_slip": "Your latest results slip.",
         "income": "If your family is an STR recipient, please upload a screenshot of your STR portal showing your parent's name and NRIC. We strongly encourage you to also upload the latest salary slip and/or EPF statement for every working member of the household.",
         "water_bill": "A recent bill helps us understand your household.",
         "electricity_bill": "A recent bill helps us understand your household.",
         "statement_of_intent": "A short letter about your goals, if you'd like to write one.",
-        "offer_letter": "If you already have a university or college offer.",
+        "offer_letter": "If you have received an offer for further studies at a university, college, etc.",
         "photo": "A recent photo of yourself.",
         "parent_ic": "A photo of your parent or guardian's IC. We use it to verify supporting documents like STR or EPF that are usually issued in your parent's name. (If you are under 18, your parent or guardian also signs the consent below.)",
         "guardianship_letter": "Only needed if the consent will be given by someone other than your father or mother — a court-issued guardianship order OR a written authorisation letter from your parent.",
