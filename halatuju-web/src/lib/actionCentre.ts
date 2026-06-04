@@ -152,3 +152,25 @@ export function paramsToStrings(
   for (const [k, v] of Object.entries(params)) out[k] = String(v)
   return out
 }
+
+/**
+ * Like `paramsToStrings`, but t-aware so the income reason codes' `members` list
+ * (e.g. ['father','brother']) renders as localized, joined labels ("Father, Elder
+ * brother") instead of raw codes. Used by both the student Action Centre and the
+ * officer verdict tile so a member-tagged income gap reads naturally in en/ms/ta.
+ */
+export function localiseParams(
+  params: Record<string, string | number | string[]> | undefined | null,
+  t: (key: string) => string,
+): Record<string, string> {
+  const out: Record<string, string> = {}
+  if (!params) return out
+  for (const [k, v] of Object.entries(params)) {
+    if (k === 'members' && Array.isArray(v)) {
+      out[k] = v.map((m) => t(`scholarship.docs.income.wizard.member.${m}`)).join(', ')
+    } else {
+      out[k] = String(v)
+    }
+  }
+  return out
+}

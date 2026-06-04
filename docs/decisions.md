@@ -1942,3 +1942,31 @@ exact families the B40 programme exists for.
 subjective call.
 **Trade-offs:** more interview judgement load; not document-auditable for those cases.
 **Revisit if:** abuse appears (then tighten the soft floor, e.g. require both utility bills + a declaration).
+
+## Salary income route = MULTIPLE working members, tagged docs, siblings via shared patronymic — Income Check-1 multi-earner, 2026-06-04
+
+**Decision:** The salary (non-STR) income route is a **multi-select** of working household members
+(father/mother/guardian/elder brother/elder sister), each contributing their own IC + (optional) salary slip + EPF.
+Documents are tagged with a `household_member` column on `ApplicantDocument` (reusing the existing `parent_ic`/
+`salary_slip`/`epf` types); single-instance is per `(doc_type, household_member)`. Relationship proof is parent-grade
+for everyone: **father/elder brother/elder sister all verify via the SAME student-IC patronymic** (siblings carry the
+same father's name), mother via birth certificate, guardian via letter. Verdict: every IC present + every relationship
+confirmed + ≥1 payslip/EPF → `verified` (document DATA verified; the income AMOUNT / per-capita B40 test is a later
+sprint, I4); IC present + no financial doc (informal) or an unprovable relationship → `recommend` + interview flag
+(never blocks); a missing IC/relationship doc → `gap`. The **forced non-earner-parent EPF was dropped**. STR route
+unchanged. Migration `0040` (additive). Migrate-first; `salary_apps=0` on prod so no backfill.
+**Alternatives considered:** (a) keep single primary earner + a free-text "who else works" + one shared multi-file
+"extra income proof" box (leaner; non-primary docs human-reviewed, not machine-matched) — user chose the full
+per-person slots. (b) ~15 new per-member doc types instead of a `household_member` tag — rejected (doubles the OCR +
+verdict wiring; the tag reuses all existing machinery). (c) per-member relationship proof for siblings (their own birth
+cert) — unnecessary once we saw siblings share the father's patronymic. (d) keep forcing both parents' EPF — dropped
+(EPF only exists for formal jobs; near-zero signal for informal B40, confusing for homemakers).
+**Rationale:** real B40 households have several earners; the multi-select is honest. The shared-patronymic insight
+closed the borrowed-payslip hole for siblings with zero extra documents. "Verified = document data" keeps the human in
+charge of the income *amount* call (consistent with the B40 engine) while letting identity/relationship go green.
+**Trade-offs:** up to ~17 cards for a 5-earner household; two working elder brothers can't both be represented (one
+slot); `earner_work_status`/`household_other_earners` columns + `q2`/`q3`/`q4`/`work` i18n keys now orphaned (kept,
+deprecated). **Evolves the 2026-06-02 "human owns the non-STR income verdict" decision (L1787):** the document-data
+verdict can now reach `verified`; the income amount judgement still cannot (out of scope here).
+**Revisit if:** households routinely have >1 working sibling of the same gender (then model brother_1/brother_2 or move
+to a `household_member` free-list), or when I4 lands (then "verified" must also clear the amount test).

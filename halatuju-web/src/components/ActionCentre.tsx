@@ -29,7 +29,7 @@ import {
   iconFor,
   titleSourceFor,
   confirmTargetFor,
-  paramsToStrings,
+  localiseParams,
   type ActionIcon,
   type ConfirmTarget,
 } from '@/lib/actionCentre'
@@ -72,7 +72,7 @@ function ActionCard({
 }) {
   const { t } = useT()
   const src = titleSourceFor(item)
-  const tParams = paramsToStrings(item.params)
+  const tParams = localiseParams(item.params, t)
   const title = src.kind === 'raw' ? src.text : t(src.titleKey, tParams)
   const desc = src.kind === 'i18n' ? t(src.descKey, tParams) : ''
 

@@ -445,6 +445,29 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-04)
 
+**▶ BUILT — Income Check-1 SALARY route → MULTI-EARNER (migrate-first `0040` applied + verified; deploy HELD for the
+user's click-test, TD-070). Retro `docs/retrospective-check1-income-multiearner.md`; decision in `docs/decisions.md`
+(2026-06-04).** The single-earner salary route became a **multi-select** — tick everyone who works (father/mother/
+guardian/elder brother/elder sister), each with their own IC + (optional) salary slip + EPF. New `household_member`
+column on `ApplicantDocument` tags income docs (single-instance now per `(doc_type, household_member)`; the upload view's
+sweep is member-scoped so a blank-member STR/student IC never sweeps the tagged ones). New `income_working_members`
+JSON on `ScholarshipApplication`. **Siblings verify via the SAME student-IC patronymic** (`income_engine.father_relationship`
+reused unchanged — closed the borrowed-payslip hole, no extra sibling doc). Mother→birth cert, guardian→letter.
+`verdict_engine._verdict_income` delegates `route=='salary'` to `_verdict_income_salary`: all ICs present + all
+relationships confirmed + ≥1 payslip/EPF → `verified` (DATA verified; income AMOUNT/B40 = I4, still deferred); IC + no
+financial doc (informal) or unprovable relationship → `recommend` + interview flag (never blocks); missing IC/rel doc →
+`gap`. **Per-member gaps AGGREGATE** into one item with a `members` list (resolution keys tickets by code — don't emit
+dupes); `lib/actionCentre.localiseParams(params, t)` renders the member codes as localized labels on BOTH the student
+Action Centre + officer tile. **Forced non-earner-parent EPF dropped.** STR route untouched. Gates: 659 pytest + 248
+jest + `next build` clean + i18n parity **1930**; scholarship migrations through **`0040`** on prod. `salary_apps=0` so
+no backfill. Also bundled-but-unpushed: items 1&2 (`e197209` — context-aware optional income docs + drop "Optional"
+pill). **Deprecated (kept, drop later): `earner_work_status`, `household_other_earners` columns + `q2/q3/q4/work` wizard
+i18n keys (orphaned by the multi-select).** **▶ NEXT after this deploys + click-tests: I4 (income amount → per-capita
+B40 + utility hardship) · Gopal income doc-coach copy · remove orphaned `str_claimed_no_doc`.**
+
+---
+
+
 **SHIPPED TO PROD 2026-06-04 — Check-1 live-testing fixes (5 commits, all deployed; retro `retrospective-check1-livetesting-fixes.md`):**
 - **Orientation-robust SPM slip parse** (`c416c2e`) — gated de-rotation in `academic_engine._group_rows` (de-rotate by
   median word angle only when |θ|≥25°; upright untouched). Reads sideways/keystoned photos that used to fall to Gemini +

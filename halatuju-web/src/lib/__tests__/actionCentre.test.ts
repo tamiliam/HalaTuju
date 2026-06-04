@@ -6,6 +6,7 @@ import {
   titleSourceFor,
   confirmTargetFor,
   paramsToStrings,
+  localiseParams,
   KNOWN_CODES,
 } from '@/lib/actionCentre'
 import type { ResolutionItem } from '@/lib/api'
@@ -124,5 +125,30 @@ describe('paramsToStrings', () => {
   it('handles null/undefined', () => {
     expect(paramsToStrings(undefined)).toEqual({})
     expect(paramsToStrings(null)).toEqual({})
+  })
+})
+
+describe('localiseParams', () => {
+  // Fake translator: returns the member label after the last dot, capitalised.
+  const t = (key: string) => {
+    const m = key.split('.').pop() || ''
+    return m.charAt(0).toUpperCase() + m.slice(1)
+  }
+
+  it('localises + joins the income `members` array', () => {
+    expect(localiseParams({ members: ['father', 'brother'] }, t)).toEqual({ members: 'Father, Brother' })
+  })
+
+  it('a single-member STR gap renders one label', () => {
+    expect(localiseParams({ members: ['mother'] }, t)).toEqual({ members: 'Mother' })
+  })
+
+  it('passes other params through as strings', () => {
+    expect(localiseParams({ name: 'Aisyah', count: 2 }, t)).toEqual({ name: 'Aisyah', count: '2' })
+  })
+
+  it('handles null/undefined', () => {
+    expect(localiseParams(undefined, t)).toEqual({})
+    expect(localiseParams(null, t)).toEqual({})
   })
 })

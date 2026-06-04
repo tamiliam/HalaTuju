@@ -1037,8 +1037,11 @@ export interface ScholarshipApplication {
   daily_life: string
   // Income Check-1 wizard answers (Documents → Household income).
   income_route: '' | 'str' | 'salary'
-  income_earner: '' | 'father' | 'mother' | 'guardian'
-  earner_work_status: '' | 'payslip' | 'informal' | 'not_working'
+  income_earner: '' | 'father' | 'mother' | 'guardian' // STR route (single earner)
+  // Salary route: the working household members (multi-select). Replaces the single
+  // earner + work-status + other-earner for that route.
+  income_working_members: Array<'father' | 'mother' | 'guardian' | 'brother' | 'sister'>
+  earner_work_status: '' | 'payslip' | 'informal' | 'not_working' // deprecated (salary route)
   household_other_earners: number | null
   siblings_in_school: number | null
   siblings_in_tertiary: number | null
@@ -1119,6 +1122,8 @@ export async function confirmScholarshipApplication(
 export interface ApplicantDocument {
   id: number
   doc_type: string
+  // Salary-route income docs: whose IC/payslip/EPF this is ('' for everything else).
+  household_member: '' | 'father' | 'mother' | 'guardian' | 'brother' | 'sister'
   original_filename: string
   content_type: string
   size: number
@@ -1247,7 +1252,7 @@ export async function uploadFileToSignedUrl(uploadUrl: string, file: File): Prom
 }
 
 export async function recordDocument(
-  payload: { doc_type: string; storage_path: string; original_filename?: string; content_type?: string; size?: number },
+  payload: { doc_type: string; storage_path: string; household_member?: string; original_filename?: string; content_type?: string; size?: number },
   options?: ApiOptions
 ): Promise<ApplicantDocument> {
   return apiRequest('/api/v1/scholarship/documents/', {
@@ -1329,7 +1334,8 @@ export interface ResolutionItem {
   id: number
   fact: string
   code: string
-  params: Record<string, string | number>
+  // string[] supports the income reason codes' `members` list (e.g. ['father','brother']).
+  params: Record<string, string | number | string[]>
   prompt: string
   kind: 'doc' | 'confirm' | 'explanation'
   doc_type: string

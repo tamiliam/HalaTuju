@@ -224,16 +224,28 @@ class ScholarshipApplication(models.Model):
         help_text="Wizard Q1 'have an STR document?': yes→'str' route, no→'salary' route.")
     income_earner = models.CharField(
         max_length=10, blank=True, default='', choices=INCOME_EARNER_CHOICES,
-        help_text="Wizard Q2 whose income is shown — drives the relationship proof: "
-                  "father=student-IC patronymic, mother=birth_certificate, guardian=guardianship_letter.")
+        help_text="STR route only — whose income/STR is shown (single earner). Drives the relationship "
+                  "proof: father=student-IC patronymic, mother=birth_certificate, guardian=guardianship_letter. "
+                  "The SALARY route uses income_working_members (multi-select) instead.")
+    # Salary (non-STR) route: the household members who currently work. Replaces the
+    # single income_earner + earner_work_status + household_other_earners for that route.
+    # Each ticked member gets their own IC + salary slip + EPF (tagged via
+    # ApplicantDocument.household_member). Relationship proof: father/brother/sister via the
+    # student-IC patronymic (siblings carry the same father's name), mother via birth cert,
+    # guardian via letter. List of {father,mother,guardian,brother,sister}; additive, 0-row-safe.
+    income_working_members = models.JSONField(
+        default=list, blank=True,
+        help_text="Salary route: household members who work (subset of "
+                  "father/mother/guardian/brother/sister). Drives per-member income docs.")
+    # DEPRECATED (salary route): Q3 work-status + Q4 other-earner are superseded by
+    # income_working_members (informal is now inferred from 'IC present, no payslip/EPF').
+    # Kept for the STR route's legacy reads + to avoid a destructive migration; drop later (tech debt).
     earner_work_status = models.CharField(
         max_length=12, blank=True, default='', choices=EARNER_WORK_CHOICES,
-        help_text="Wizard Q3 (salary route): payslip→salary slip+EPF, not_working→EPF only, "
-                  "informal→utility bills + officer judgement (never blocked).")
+        help_text="DEPRECATED (salary route) — informal is now inferred. STR route unaffected.")
     household_other_earners = models.PositiveSmallIntegerField(
         null=True, blank=True,
-        help_text="Wizard Q4 (non-STR): other working household members (e.g. a working sibling). "
-                  "Guards against an under-declared household income.")
+        help_text="DEPRECATED — superseded by income_working_members (siblings ticked explicitly).")
 
     # Workflow
     status = models.CharField(
@@ -529,10 +541,24 @@ class ApplicantDocument(models.Model):
         ('verified', 'Verified'),
         ('rejected', 'Rejected'),
     ]
+    # Income Check-1 salary route: which household member this document belongs to,
+    # so one application can hold father's AND mother's AND a sibling's IC/payslip/EPF
+    # without them overwriting each other. '' for everything outside the multi-earner
+    # flow (single-instance docs, STR-route parent_ic, IC/results slip/etc.). The
+    # (doc_type, household_member) pair is the single-instance key for income docs.
+    HOUSEHOLD_MEMBER_CHOICES = [
+        ('', 'Not applicable'),
+        ('father', 'Father'), ('mother', 'Mother'), ('guardian', 'Legal guardian'),
+        ('brother', 'Elder brother'), ('sister', 'Elder sister'),
+    ]
     application = models.ForeignKey(
         ScholarshipApplication, on_delete=models.CASCADE, related_name='documents',
     )
     doc_type = models.CharField(max_length=30, choices=DOC_TYPES)
+    household_member = models.CharField(
+        max_length=10, blank=True, default='', choices=HOUSEHOLD_MEMBER_CHOICES,
+        help_text="Salary-route income docs only — whose IC/salary slip/EPF this is. "
+                  "Blank for all other documents.")
     storage_path = models.CharField(max_length=500)
     original_filename = models.CharField(max_length=255, blank=True, default='')
     content_type = models.CharField(max_length=100, blank=True, default='')
