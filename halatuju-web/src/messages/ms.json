@@ -873,13 +873,13 @@
         "birth_certificate": "Sijil kelahiran"
       },
       "help": {
-        "ic": "Gambar bahagian depan MyKad anda. Kami akan menyemak secara automatik untuk membantu anda mengesan kesilapan menaip — gambar anda tidak disimpan di Google.",
+        "ic": "Sila muat naik gambar bahagian depan MyKad anda. Kami akan menggunakannya untuk mengesahkan identiti anda dan memastikan nama serta nombor KP anda sepadan dengan permohonan dan dokumen sokongan anda.",
         "results_slip": "Slip keputusan terkini anda.",
         "income": "Jika keluarga anda penerima STR, sila muat naik tangkapan skrin portal STR yang memaparkan nama dan NRIC ibu bapa anda. Kami amat menggalakkan anda juga memuat naik slip gaji terkini dan/atau penyata KWSP bagi setiap ahli isi rumah yang bekerja.",
         "water_bill": "Bil terkini membantu kami memahami keadaan isi rumah anda.",
         "electricity_bill": "Bil terkini membantu kami memahami keadaan isi rumah anda.",
         "statement_of_intent": "Surat pendek tentang matlamat anda, jika anda ingin menulisnya.",
-        "offer_letter": "Jika anda sudah menerima tawaran universiti atau kolej.",
+        "offer_letter": "Jika anda telah menerima tawaran untuk pengajian lanjutan di universiti, kolej, dan sebagainya.",
         "parent_ic": "Foto IC ibu bapa atau penjaga anda. Kami menggunakannya untuk mengesahkan dokumen sokongan seperti STR atau KWSP yang biasanya dikeluarkan atas nama ibu bapa anda. (Jika anda di bawah 18 tahun, ibu bapa atau penjaga anda juga akan menandatangani persetujuan di bawah.)",
         "guardianship_letter": "Hanya diperlukan jika persetujuan diberi oleh seseorang selain bapa atau ibu anda — perintah penjagaan dari mahkamah ATAU surat kebenaran bertulis daripada ibu bapa anda.",
         "birth_certificate": "Mengaitkan ibu anda dengan anda apabila anda menunjukkan pendapatannya. Gambar sijil kelahiran anda yang jelas.",

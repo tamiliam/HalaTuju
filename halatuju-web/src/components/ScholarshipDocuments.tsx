@@ -411,6 +411,7 @@ function SingleDocCard({
   token,
   lang,
   showVisionChip = false,
+  required = false,
 }: {
   docType: string
   docs: ApplicantDocument[]
@@ -421,6 +422,7 @@ function SingleDocCard({
   token: string | null
   lang: string
   showVisionChip?: boolean
+  required?: boolean
 }) {
   const busy = busyType === docType
   const existing = docs.filter((d) => d.doc_type === docType)
@@ -432,6 +434,7 @@ function SingleDocCard({
         <div>
           <span className="text-sm font-medium text-gray-800">
             {t(`scholarship.docs.type.${docType}`)}
+            {required && <span className="text-red-500"> *</span>}
           </span>
           <p className="text-xs text-gray-500 mt-0.5">
             {t(`scholarship.docs.help.${docType}`)}
@@ -832,7 +835,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   }
 
   // A doc card with the shared handlers closed over — keeps the sections tidy.
-  const card = (docType: string, extra: { showVisionChip?: boolean } = {}) => (
+  const card = (docType: string, extra: { showVisionChip?: boolean; required?: boolean } = {}) => (
     <SingleDocCard
       key={docType}
       docType={docType}
@@ -854,17 +857,21 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
     important: 'bg-blue-100 text-blue-800',
     optional: 'bg-gray-100 text-gray-600',
   }
-  const sectionHead = (key: string, pill: SectionPill) => (
+  // pill null → a bare section title (no badge, no note); the compulsory status is
+  // shown on the cards themselves (a red * after the title).
+  const sectionHead = (key: string, pill: SectionPill | null) => (
     <div className="mb-2">
       <div className="flex items-center gap-2">
         <h3 className="text-sm font-semibold text-gray-800">
           {t(`scholarship.docs.section.${key}.title`)}
         </h3>
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${pillClass[pill]}`}>
-          {t(`scholarship.docs.pill.${pill}`)}
-        </span>
+        {pill && (
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${pillClass[pill]}`}>
+            {t(`scholarship.docs.pill.${pill}`)}
+          </span>
+        )}
       </div>
-      <p className="text-xs text-gray-500 mt-0.5">{t(`scholarship.docs.section.${key}.note`)}</p>
+      {pill && <p className="text-xs text-gray-500 mt-0.5">{t(`scholarship.docs.section.${key}.note`)}</p>}
     </div>
   )
 
@@ -875,17 +882,17 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   return (
     <div className="space-y-6">
       <section>
-        {sectionHead('identity', 'compulsory')}
-        <div className="space-y-3">{card('ic', { showVisionChip: true })}</div>
+        {sectionHead('identity', null)}
+        <div className="space-y-3">{card('ic', { showVisionChip: true, required: true })}</div>
       </section>
 
       <section>
-        {sectionHead('academic', 'compulsory')}
-        <div className="space-y-3">{card('results_slip')}</div>
+        {sectionHead('academic', null)}
+        <div className="space-y-3">{card('results_slip', { required: true })}</div>
       </section>
 
       <section>
-        {sectionHead('pathway', 'important')}
+        {sectionHead('pathway', null)}
         <div className="space-y-3">{card('offer_letter')}</div>
       </section>
 
