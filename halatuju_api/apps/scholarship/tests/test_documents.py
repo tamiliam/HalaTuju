@@ -125,9 +125,9 @@ class TestDocumentApi(TestCase):
 
     @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
-    def test_multi_instance_doctype_keeps_existing_on_reupload(self, mock_storage_delete, _mock_vision):
-        """Income-proof types (str / salary_slip / epf) MUST keep prior copies —
-        a student may submit several monthly salary slips."""
+    def test_every_doctype_replaces_on_reupload(self, mock_storage_delete, _mock_vision):
+        """Every document is single-instance now (user's call, 2026-06-05) — a re-upload
+        of an UNTAGGED salary slip replaces the prior copy in the same slot."""
         first = ApplicantDocument.objects.create(
             application=self.app_a, doc_type='salary_slip',
             storage_path=f'{self.app_a.id}/salary_slip/jan',
@@ -140,16 +140,13 @@ class TestDocumentApi(TestCase):
         }, format='json')
         self.assertEqual(resp.status_code, 201)
         rows = ApplicantDocument.objects.filter(
-            application=self.app_a, doc_type='salary_slip',
-        ).order_by('uploaded_at')
-        self.assertEqual(rows.count(), 2)
-        self.assertEqual([r.storage_path for r in rows], [
-            f'{self.app_a.id}/salary_slip/jan',
-            f'{self.app_a.id}/salary_slip/feb',
-        ])
-        self.assertTrue(ApplicantDocument.objects.filter(id=first.id).exists())
-        # Storage sweep is NOT called for multi-instance types.
-        mock_storage_delete.assert_not_called()
+            application=self.app_a, doc_type='salary_slip', household_member='',
+        )
+        self.assertEqual(rows.count(), 1)
+        self.assertEqual(rows.first().storage_path, f'{self.app_a.id}/salary_slip/feb')
+        self.assertFalse(ApplicantDocument.objects.filter(id=first.id).exists())
+        # The stale blob was swept.
+        mock_storage_delete.assert_called_once_with([f'{self.app_a.id}/salary_slip/jan'])
 
     @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
