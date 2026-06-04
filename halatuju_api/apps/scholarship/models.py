@@ -209,6 +209,32 @@ class ScholarshipApplication(models.Model):
         blank=True, default='',
         help_text="When uncertain: 'where are you right now?' free text (Plans step).")
 
+    # ── Income evidence — Check-1 wizard answers (income fact, item 3) ───────
+    # Drive the dynamic document requirements (see income_engine.income_requirements).
+    # All additive/optional — blank until the student walks the wizard.
+    INCOME_ROUTE_CHOICES = [('', 'Not chosen'), ('str', 'STR'), ('salary', 'Salary')]
+    INCOME_EARNER_CHOICES = [
+        ('', 'Not chosen'), ('father', 'Father'), ('mother', 'Mother'),
+        ('guardian', 'Legal guardian')]
+    EARNER_WORK_CHOICES = [
+        ('', 'Not chosen'), ('payslip', 'Working — has payslip'),
+        ('informal', 'Working — no payslip'), ('not_working', 'Not working')]
+    income_route = models.CharField(
+        max_length=10, blank=True, default='', choices=INCOME_ROUTE_CHOICES,
+        help_text="Wizard Q1 'have an STR document?': yes→'str' route, no→'salary' route.")
+    income_earner = models.CharField(
+        max_length=10, blank=True, default='', choices=INCOME_EARNER_CHOICES,
+        help_text="Wizard Q2 whose income is shown — drives the relationship proof: "
+                  "father=student-IC patronymic, mother=birth_certificate, guardian=guardianship_letter.")
+    earner_work_status = models.CharField(
+        max_length=12, blank=True, default='', choices=EARNER_WORK_CHOICES,
+        help_text="Wizard Q3 (salary route): payslip→salary slip+EPF, not_working→EPF only, "
+                  "informal→utility bills + officer judgement (never blocked).")
+    household_other_earners = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        help_text="Wizard Q4 (non-STR): other working household members (e.g. a working sibling). "
+                  "Guards against an under-declared household income.")
+
     # Workflow
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default='submitted',
@@ -342,8 +368,17 @@ class ScholarshipApplication(models.Model):
     siblings_studying_count = models.PositiveSmallIntegerField(
         null=True, blank=True,
         help_text="How many of the applicant's siblings are currently studying. "
-                  "A proxy for how much education-funding burden the family carries.",
+                  "A proxy for how much education-funding burden the family carries. "
+                  "Kept for back-compat; the income wizard now splits this into "
+                  "school + tertiary below (the sum = studying).",
     )
+    # Family burden (income wizard) — dependents in education. Tertiary weighs more (fees).
+    siblings_in_school = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        help_text="Family burden: dependents (siblings) currently in school.")
+    siblings_in_tertiary = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        help_text="Family burden: dependents (siblings) in pre-U / college / university.")
     family_context = models.TextField(
         blank=True, default='',
         help_text="Anything about your family's situation we should know?",
@@ -485,6 +520,9 @@ class ApplicantDocument(models.Model):
         # older sibling, other relative).
         ('parent_ic', 'Parent/Guardian IC'),
         ('guardianship_letter', 'Guardianship Letter'),
+        # Income Check-1: links the income earner to the student when the earner is the
+        # MOTHER (the student-IC patronymic only names the father). OCR: child/mother/father.
+        ('birth_certificate', 'Birth Certificate'),
     ]
     VERIFICATION_CHOICES = [
         ('pending', 'Pending'),
