@@ -904,6 +904,7 @@
           "slip_skewed_unclear": "Your slip came through at a bit of an angle, which made one part hard to read clearly. When you have a moment, lay it flat on a table, fill the frame, and take the photo straight from above — that usually makes every grade crisp. Nothing's blocked, and you've done nothing wrong!",
           "offer_name_mismatch": "The name or IC number on this offer letter isn't yours — it looks like it might be someone else's letter. Please make sure you upload your own offer letter; the name and IC on it must match yours. You've got this!",
           "offer_pathway_mismatch": "Good news — this is not a problem at all and never blocks your application! The college or programme on your offer letter looks a little different from the study choice you entered earlier. If this offer is where you're really going, that's perfectly fine — you don't need to change anything now. When you submit, we'll simply ask you to confirm it and update your record to match. Plans change, and that's okay!",
+          "income_relationship_mismatch": "Quick check — this is easily fixed! The name on this IC doesn't seem to link to your family the way we expected (for a parent or sibling we look for your father's name from your own IC; for a mother we check your birth certificate). It usually just means a different person's card was uploaded here, or the photo was a little unclear. Please double-check you uploaded the right person's MyKad in this slot, with a clear photo. Nothing is blocked!",
           "generic": "Something didn't look quite right with this upload — but it's nothing to worry about and easily fixed. Have another look and try uploading again. You're doing great!"
         }
       },
@@ -1035,6 +1036,11 @@
         "mismatch": "Mismatch — re-check",
         "unreadable": "Couldn't read",
         "none": "Not read yet"
+      },
+      "incomeIcCheck": {
+        "linked": "Linked to your family",
+        "nameMismatch": "Name doesn't match — re-check",
+        "reviewing": "We'll review this"
       },
       "slipCheck": {
         "name": "Name",

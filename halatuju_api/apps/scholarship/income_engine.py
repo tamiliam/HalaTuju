@@ -140,6 +140,60 @@ def member_relationship_status(member: str, student_name: str, member_ic_name: s
     return 'unknown'
 
 
+def _relationship_inputs(application, member, member_ic_name):
+    """Pull the relationship-proof inputs for one member from the application's
+    documents (birth cert for a mother, guardianship letter for a guardian)."""
+    bc_child = bc_mother = letter_name = ''
+    if member == 'mother':
+        bc = (application.documents.filter(doc_type='birth_certificate')
+              .order_by('-uploaded_at').first())
+        vf = (getattr(bc, 'vision_fields', None) if bc else None) or {}
+        f = vf.get('fields', {}) if isinstance(vf, dict) else {}
+        if isinstance(f, dict):
+            bc_child, bc_mother = f.get('bc_child_name', ''), f.get('bc_mother_name', '')
+    elif member == 'guardian':
+        g = (application.documents.filter(doc_type='guardianship_letter')
+             .order_by('-uploaded_at').first())
+        letter_name = (getattr(g, 'vision_name', '') or '') if g else ''
+    return bc_child, bc_mother, letter_name
+
+
+def student_income_ic_check(doc):
+    """For an income earner's IC (``parent_ic``): the OCR'd IC No / Name / Address +
+    the RELATIONSHIP verdict (does this earner link to the student's family) — NOT an
+    identity match against the student (the NRIC is the earner's, not the student's).
+    The member is the document's ``household_member`` (salary route) or the
+    application's ``income_earner`` (STR route). Returns
+    ``{nric, name, address, member, name_status, readable}`` or None for non-parent_ic.
+
+    ``name_status``: 'match' | 'mismatch' | 'unknown' (no patronymic / no member) |
+    'pending' (not read / relationship doc not uploaded)."""
+    if getattr(doc, 'doc_type', '') != 'parent_ic':
+        return None
+    app = doc.application
+    member = ((getattr(doc, 'household_member', '') or '').strip()
+              or (getattr(app, 'income_earner', '') or '').strip())
+    name = (getattr(doc, 'vision_name', '') or '').strip()
+    readable = bool(getattr(doc, 'vision_run_at', None)) and not getattr(doc, 'vision_error', '') and bool(name)
+
+    name_status = 'pending'
+    if not member or not name:
+        name_status = 'unknown' if (readable and not member) else 'pending'
+    else:
+        student_name = getattr(getattr(app, 'profile', None), 'name', '') or ''
+        bc_child, bc_mother, letter_name = _relationship_inputs(app, member, name)
+        name_status = member_relationship_status(member, student_name, name,
+                                                 bc_child, bc_mother, letter_name)
+    return {
+        'nric': getattr(doc, 'vision_nric', '') or '',
+        'name': getattr(doc, 'vision_name', '') or '',
+        'address': getattr(doc, 'vision_address', '') or '',
+        'member': member,
+        'name_status': name_status,
+        'readable': readable,
+    }
+
+
 def salary_member_blocks(members) -> list:
     """Per-member document plan for the salary route. For each working member, the
     documents that person contributes — compulsory IC (+ relationship doc for a

@@ -8,6 +8,7 @@ from apps.scholarship.income_engine import (
     father_name_from_ic, father_relationship, mother_relationship,
     guardian_relationship, relationship_doc_for, income_requirements,
     working_members, salary_member_blocks, member_relationship_status,
+    student_income_ic_check,
 )
 
 
@@ -204,3 +205,39 @@ class TestSalaryRoute(SimpleTestCase):
         self.assertEqual(
             member_relationship_status('guardian', 'DIVASHINI A/P MURUGAN', 'RAJA A/L KUMAR',
                                        letter_name='RAJA A/L KUMAR'), 'match')
+
+
+class TestIncomeIcCheck(SimpleTestCase):
+    """The per-document income IC check (father/sibling paths need no DB)."""
+    @staticmethod
+    def _doc(member, ic_name, *, run=True, error='', nric='800101-01-1234', address='KL'):
+        app = SimpleNamespace(income_earner='',
+                              profile=SimpleNamespace(name='DIVASHINI A/P MURUGAN'))
+        return SimpleNamespace(doc_type='parent_ic', household_member=member,
+                               vision_nric=nric, vision_name=ic_name, vision_address=address,
+                               vision_run_at=(object() if run else None), vision_error=error,
+                               application=app)
+
+    def test_non_parent_ic_returns_none(self):
+        self.assertIsNone(student_income_ic_check(SimpleNamespace(doc_type='ic')))
+
+    def test_father_match_surfaces_values_and_links(self):
+        chk = student_income_ic_check(self._doc('father', 'MURUGAN A/L KESAVAN'))
+        self.assertEqual(chk['member'], 'father')
+        self.assertEqual(chk['name'], 'MURUGAN A/L KESAVAN')
+        self.assertEqual(chk['nric'], '800101-01-1234')
+        self.assertEqual(chk['name_status'], 'match')
+        self.assertTrue(chk['readable'])
+
+    def test_brother_shared_patronymic_matches(self):
+        chk = student_income_ic_check(self._doc('brother', 'RAJESH A/L MURUGAN'))
+        self.assertEqual(chk['name_status'], 'match')
+
+    def test_sibling_disjoint_name_mismatches(self):
+        chk = student_income_ic_check(self._doc('sister', 'PRIYA A/P STRANGER'))
+        self.assertEqual(chk['name_status'], 'mismatch')
+
+    def test_unreadable_ic(self):
+        chk = student_income_ic_check(self._doc('father', '', error='blurry'))
+        self.assertFalse(chk['readable'])
+        self.assertEqual(chk['name_status'], 'pending')

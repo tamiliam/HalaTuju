@@ -22,6 +22,8 @@ export const HELP_VERDICTS = [
   // Offer-letter (pathway).
   'offer_name_mismatch',
   'offer_pathway_mismatch',
+  // Income earner IC — the name doesn't link to the student's family (wrong IC uploaded).
+  'income_relationship_mismatch',
 ] as const
 
 /**
@@ -58,6 +60,13 @@ export function shouldShowCoach(doc: ApplicantDocument): boolean {
   if (doc.pathway_check) {
     const pc = doc.pathway_check
     return pc.name === 'mismatch' || pc.ic === 'mismatch' || pc.pathway === 'mismatch'
+  }
+  // Income earner IC (parent_ic) — the RELATIONSHIP verdict (does this person link to
+  // the student's family), not a student-identity match. Set only for parent_ic.
+  if (doc.income_ic_check) {
+    const ic = doc.income_ic_check
+    if (doc.vision_run_at && !ic.readable) return true // couldn't read this IC
+    return ic.name_status === 'mismatch'
   }
   // Supporting docs — the Gemini doc-assist verdict takes precedence (matches the chip).
   const av = doc.vision_fields?.student_verdict
@@ -101,6 +110,7 @@ function safeLocal(): StorageLike | null {
 export function helpSignal(doc: ApplicantDocument): string {
   const ac = doc.academic_check
   const pc = doc.pathway_check
+  const ic = doc.income_ic_check
   return [
     doc.vision_run_at || '',
     doc.vision_fields?.student_verdict || '',
@@ -110,6 +120,9 @@ export function helpSignal(doc: ApplicantDocument): string {
     // PROFILE (grades / name / NRIC) without re-uploading — fold it in to re-fire then.
     ac ? `${ac.name},${ac.subjects},${ac.results}` : '',
     pc ? `${pc.name},${pc.ic},${pc.pathway || ''}` : '',
+    // Income earner IC: re-fires when the relationship verdict changes (e.g. the
+    // student uploads the matching birth cert, flipping mother → match).
+    ic ? `${ic.name_status},${ic.readable ? 1 : 0}` : '',
   ].join('|')
 }
 
