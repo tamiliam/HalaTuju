@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **STR-route salary slip / EPF now get the same earner-aware check as the salary route** (they were showing the old
+  generic "the name doesn't match you — edit your profile" message). STR income proofs are stored UNTAGGED (single
+  earner = `income_earner`) where the salary route tags each by member; a route-aware `_cluster_docs` helper hides that
+  difference so `income_proof_check` / `income_ic_check` / the cluster coach all verify an STR slip against the untagged
+  earner IC — not the student. Backend-only.
+
 ### Changed
 - **Every document is single-instance now — a re-upload replaces the existing one in the same slot** (user's call,
   2026-06-05; supersedes the S15 "several monthly salary slips / EPF" multi-instance decision). Replace is scoped to

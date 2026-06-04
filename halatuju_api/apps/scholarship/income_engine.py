@@ -194,28 +194,56 @@ def student_income_ic_check(doc):
     }
 
 
+def _cluster_docs(application, member, doc_type):
+    """The documents of *doc_type* in *member*'s income cluster, latest first. The two
+    routes store income docs differently: the SALARY route tags each doc with the
+    household member; the STR route stores ONE untagged earner set (single earner). So
+    the storage tag is the member on the salary route and '' on the STR route — this
+    hides that difference so every income check works the same for both routes."""
+    route = (getattr(application, 'income_route', '') or '').strip()
+    tag = member if route == 'salary' else ''
+    return (application.documents.filter(doc_type=doc_type, household_member=tag)
+            .order_by('-uploaded_at'))
+
+
 def _member_ic_doc(application, member):
-    """That household member's IC (parent_ic tagged to them), or None."""
+    """That earner's IC (parent_ic) — salary route: tagged with the member; STR route:
+    the single untagged earner IC. None if not uploaded."""
     if not member:
         return None
-    return (application.documents.filter(doc_type='parent_ic', household_member=member)
-            .order_by('-uploaded_at').first())
+    return _cluster_docs(application, member, 'parent_ic').first()
+
+
+def _proof_member(doc):
+    """The earner a salary slip / EPF belongs to: its own household_member tag (salary
+    route), or the application's single income_earner (STR route). '' if no income
+    context (e.g. the wizard hasn't been walked) — the caller then skips the check."""
+    member = (getattr(doc, 'household_member', '') or '').strip()
+    if member:
+        return member
+    app = doc.application
+    if (getattr(app, 'income_route', '') or '').strip() == 'str':
+        return (getattr(app, 'income_earner', '') or '').strip()
+    return ''
 
 
 def student_income_proof_check(doc):
-    """For a member-tagged salary slip / EPF statement: the earner facts read off the
-    document (name · NRIC · amount · period) cross-checked against THAT member's IC —
-    NOT the student. So a father's payslip is verified against the father's IC, and the
-    coach never tells the student to edit their own name. Returns
+    """For a salary slip / EPF: the earner facts read off the document (name · NRIC ·
+    amount · period) cross-checked against THAT earner's IC — NOT the student. So a
+    father's payslip is verified against the father's IC, and the coach never tells the
+    student to edit their own name. Works for both routes (salary = the member-tagged
+    IC; STR = the single untagged earner IC). Returns
     ``{name, nric, amount, period, member, name_status, nric_status, ic_present}`` or
-    None for anything that isn't a member-tagged salary_slip/epf.
+    None when it is not a salary_slip/epf with an income context.
 
-    name_status / nric_status: 'match' | 'mismatch' | 'no_ref' (that member's IC not
+    name_status / nric_status: 'match' | 'mismatch' | 'no_ref' (that earner's IC not
     uploaded yet, or the field wasn't read) — a soft, never-blocking signal."""
     from .vision import name_match, nric_match
     dt = getattr(doc, 'doc_type', '')
-    member = (getattr(doc, 'household_member', '') or '').strip()
-    if dt not in ('salary_slip', 'epf') or not member:
+    if dt not in ('salary_slip', 'epf'):
+        return None
+    member = _proof_member(doc)
+    if not member:
         return None
 
     vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
@@ -271,7 +299,7 @@ def income_cluster_advice(application, member):
         if getattr(ic, 'vision_run_at', None) and not icc['readable']:
             return 'unreadable'
     for dt in ('salary_slip', 'epf'):
-        for p in application.documents.filter(doc_type=dt, household_member=member):
+        for p in _cluster_docs(application, member, dt):
             pc = student_income_proof_check(p)
             if pc and 'mismatch' in (pc['name_status'], pc['nric_status']):
                 return 'income_proof_person_mismatch'

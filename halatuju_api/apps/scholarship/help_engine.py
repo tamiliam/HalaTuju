@@ -299,13 +299,16 @@ def verdict_for_document(doc):
         if chk['pathway'] == 'mismatch':
             return 'offer_pathway_mismatch'
         return ''
-    # A member-tagged salary slip / EPF — part of that member's cluster. The coherence
-    # (slip vs IC) is voiced by the cluster coach anchored on the IC, so here we only
-    # speak when there is NO IC to anchor on: nudge the student to add this person's IC.
-    # (Skips the generic "your name isn't on this" check below, wrong for an earner's doc.)
-    if doc.doc_type in ('salary_slip', 'epf') and (doc.household_member or ''):
-        from .income_engine import _member_ic_doc
-        return '' if _member_ic_doc(doc.application, doc.household_member) else 'income_ic_needed'
+    # A salary slip / EPF in an income context (salary route = member-tagged; STR route =
+    # the single earner) — part of that earner's cluster. The coherence (slip vs IC) is
+    # voiced by the cluster coach anchored on the IC, so here we only speak when there is
+    # NO IC to anchor on: nudge the student to add this person's IC. (Skips the generic
+    # "your name isn't on this" check below, which is wrong for an earner's document.)
+    if doc.doc_type in ('salary_slip', 'epf'):
+        from .income_engine import _proof_member, _member_ic_doc
+        member = _proof_member(doc)
+        if member:
+            return '' if _member_ic_doc(doc.application, member) else 'income_ic_needed'
     # Other supporting docs — the Gemini doc-assist verdict takes precedence (it is the
     # chip the frontend shows); fall back to the older soft full-text checks when it never ran.
     fields = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
