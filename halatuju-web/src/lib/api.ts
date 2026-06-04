@@ -1161,6 +1161,9 @@ export interface ApplicantDocument {
   // Check-1 Income: an earner IC's OCR'd values + the RELATIONSHIP verdict (does this
   // person link to the student's family). null unless doc_type=parent_ic.
   income_ic_check?: IncomeIcCheck | null
+  // Check-1 Income: a member-tagged salary slip / EPF cross-checked against that member's
+  // IC (name + IC number) + the income data points. null unless salary_slip/epf w/ member.
+  income_proof_check?: IncomeProofCheck | null
 }
 
 export interface IncomeIcCheck {
@@ -1171,6 +1174,21 @@ export interface IncomeIcCheck {
   // 'match' | 'mismatch' | 'unknown' (no patronymic / no member) | 'pending' (not read)
   name_status: 'match' | 'mismatch' | 'unknown' | 'pending'
   readable: boolean
+  // The CLUSTER coach verdict for this member (relationship + coherence across their IC +
+  // income proofs); '' when the cluster is consistent. Drives the single per-member coach.
+  cluster_status?: string
+}
+
+export interface IncomeProofCheck {
+  name: string
+  nric: string
+  amount: string
+  period: string
+  member: string
+  // vs the member's IC: 'match' | 'mismatch' | 'no_ref' (that member's IC not uploaded / not read)
+  name_status: 'match' | 'mismatch' | 'no_ref'
+  nric_status: 'match' | 'mismatch' | 'no_ref'
+  ic_present: boolean
 }
 
 export type SlipCheckStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'uncertain' | 'pending'

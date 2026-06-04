@@ -223,12 +223,12 @@ class TestAcademicGrades(_Base):
 
 # ── Income (Check-1 item 3: wizard-driven earner identity + relationship) ─────
 
-def _parent_ic(app, name, member=''):
+def _parent_ic(app, name, member='', nric=''):
     """The income earner's IC (parent_ic), OCR'd name on the vision_name column.
     ``member`` tags it to a salary-route household member."""
     return ApplicantDocument.objects.create(
         application=app, doc_type='parent_ic', storage_path=f'{app.id}/parent_ic/{member}x',
-        household_member=member, vision_name=name, vision_run_at=timezone.now())
+        household_member=member, vision_name=name, vision_nric=nric, vision_run_at=timezone.now())
 
 
 class TestIncome(_Base):
@@ -553,3 +553,75 @@ class TestTheresaIntegration(_Base):
     def test_order_is_fixed(self):
         self.assertEqual([f['fact'] for f in build_verdict(self.app)],
                          ['identity', 'academic', 'pathway', 'income'])
+
+
+# ── Income — per-member document CLUSTER (Check-1 cluster-aware coach) ────────
+
+class TestIncomeCluster(TestCase):
+    """Income is a cluster per person (member IC + their salary slip / EPF). One
+    cluster coach is anchored on the member's IC; the proofs are cross-checked against
+    it. Real ORM — the cluster reads the application's documents."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='cl', name='B40', year=2026)
+
+    def setUp(self):
+        self.profile = StudentProfile.objects.create(
+            supabase_user_id=f'cluster-{self.id()}', name='DIVASHINI A/P MURUGAN',
+            nric='080115-05-0132')
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='shortlisted',
+            income_route='salary', income_working_members=['father'])
+
+    def _slip(self, member, name, nric='', amount='RM2000'):
+        return _add_doc(self.app, 'salary_slip', student_verdict='ok', member=member,
+                        fields={'name': name, 'nric': nric, 'gross_income': amount, 'period': 'March 2026'})
+
+    def test_proof_check_matches_member_ic(self):
+        from apps.scholarship.income_engine import student_income_proof_check
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father', nric='600101-01-1111')
+        slip = self._slip('father', 'MURUGAN A/L KESAVAN', nric='600101-01-1111')
+        chk = student_income_proof_check(slip)
+        self.assertEqual(chk['name_status'], 'match')
+        self.assertEqual(chk['nric_status'], 'match')
+        self.assertEqual(chk['amount'], 'RM2000')
+        self.assertTrue(chk['ic_present'])
+
+    def test_proof_no_member_ic_yet(self):
+        from apps.scholarship.income_engine import student_income_proof_check
+        from apps.scholarship.help_engine import verdict_for_document
+        slip = self._slip('father', 'MURUGAN A/L KESAVAN')        # no IC for father
+        chk = student_income_proof_check(slip)
+        self.assertFalse(chk['ic_present'])
+        # The proof's coach nudges to add the member's IC (cluster anchor missing).
+        self.assertEqual(verdict_for_document(slip), 'income_ic_needed')
+
+    def test_cluster_consistent_is_silent(self):
+        from apps.scholarship.income_engine import income_cluster_advice
+        ic = _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father')
+        self._slip('father', 'MURUGAN A/L KESAVAN')
+        self.assertEqual(income_cluster_advice(self.app, 'father'), '')
+        from apps.scholarship.help_engine import verdict_for_document
+        self.assertEqual(verdict_for_document(ic), '')           # IC anchors, nothing to say
+
+    def test_cluster_relationship_mismatch(self):
+        from apps.scholarship.income_engine import income_cluster_advice
+        _parent_ic(self.app, 'RAJU A/L STRANGER', member='father')   # not the student's father
+        self.assertEqual(income_cluster_advice(self.app, 'father'), 'income_relationship_mismatch')
+
+    def test_cluster_person_mismatch_proof_vs_ic(self):
+        from apps.scholarship.income_engine import income_cluster_advice
+        from apps.scholarship.help_engine import verdict_for_document
+        ic = _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father', nric='600101-01-1111')
+        self._slip('father', 'SOMEONE ELSE BIN OTHER', nric='770202-02-2222')
+        self.assertEqual(income_cluster_advice(self.app, 'father'), 'income_proof_person_mismatch')
+        # The single cluster coach is anchored on the IC and speaks the coherence verdict.
+        self.assertEqual(verdict_for_document(ic), 'income_proof_person_mismatch')
+
+    def test_proof_coach_silent_when_ic_present(self):
+        # No second Gopal: when the member's IC anchors the cluster, the proof stays quiet.
+        from apps.scholarship.help_engine import verdict_for_document
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father')
+        slip = self._slip('father', 'MURUGAN A/L KESAVAN')
+        self.assertEqual(verdict_for_document(slip), '')

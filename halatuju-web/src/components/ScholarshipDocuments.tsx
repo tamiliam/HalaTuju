@@ -235,6 +235,63 @@ function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string
   )
 }
 
+/** Member-tagged salary slip / EPF checklist (Check-1 Income). Reads the EARNER's facts
+ *  (Name · IC No · Amount · Period) and verifies the Name + IC No against the IC the
+ *  student uploaded for that SAME member — never against the student. So a father's
+ *  payslip is checked against the father's IC, and Gopal (below) never tells the student
+ *  to edit their own name. Amount + period are soft data points shown for reference. */
+function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
+  const chk = doc.income_proof_check
+  if (!chk) return null
+
+  const cls: Record<ICCheckKind, string> = {
+    match: 'bg-green-50 text-green-700 ring-green-200',
+    partial: 'bg-amber-50 text-amber-700 ring-amber-200',
+    mismatch: 'bg-red-50 text-red-700 ring-red-200',
+    unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
+    none: 'bg-gray-50 text-gray-500 ring-gray-200',
+  }
+  // A status pill vs the member's IC. 'no_ref' (that IC not uploaded / not read) is a
+  // neutral nudge, never a problem.
+  const vsIc = (status: string) => {
+    const kind: ICCheckKind = status === 'match' ? 'match' : status === 'mismatch' ? 'mismatch' : 'none'
+    const label =
+      status === 'match'
+        ? t('scholarship.docs.incomeProofCheck.matchesIc')
+        : status === 'mismatch'
+          ? t('scholarship.docs.incomeProofCheck.mismatchIc')
+          : t('scholarship.docs.incomeProofCheck.addIc')
+    return (
+      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>
+        {label}
+      </span>
+    )
+  }
+  const fromDoc = (
+    <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
+      {t('scholarship.docs.incomeProofCheck.fromDoc')}
+    </span>
+  )
+  const row = (label: string, value: string, right: ReactNode) => (
+    <div className="flex items-start justify-between gap-2 py-1.5">
+      <p className="min-w-0 text-xs text-gray-700">
+        <span className="font-medium text-gray-600">{label}: </span>
+        <span className="break-words">{value || '—'}</span>
+      </p>
+      {right}
+    </div>
+  )
+
+  return (
+    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+      {row(t('scholarship.docs.incomeProofCheck.name'), chk.name, vsIc(chk.name_status))}
+      {chk.nric ? row(t('scholarship.docs.incomeProofCheck.icNo'), chk.nric, vsIc(chk.nric_status)) : null}
+      {chk.amount ? row(t('scholarship.docs.incomeProofCheck.amount'), chk.amount, fromDoc) : null}
+      {chk.period ? row(t('scholarship.docs.incomeProofCheck.period'), chk.period, fromDoc) : null}
+    </div>
+  )
+}
+
 // ── Results-slip clinical 3-check (Check-1 Academic) ─────────────────────
 // Mirrors the IC checklist: three rows the student can read at a glance —
 // Name · Subjects · Results — each with what we read + a pass/fail badge, plus
@@ -550,6 +607,8 @@ function SingleDocCard({
             <OfferLetterChecklist doc={d} t={t} />
           ) : d.doc_type === 'parent_ic' && d.income_ic_check ? (
             <IncomeIcChecklist doc={d} t={t} />
+          ) : (d.doc_type === 'salary_slip' || d.doc_type === 'epf') && d.income_proof_check ? (
+            <IncomeProofChecklist doc={d} t={t} />
           ) : (
             <SupportingDocChip doc={d} t={t} />
           )}

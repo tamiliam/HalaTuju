@@ -706,10 +706,12 @@ def _doc_schema(props: dict) -> dict:
 
 
 _FIELD_SCHEMAS = {
-    'salary_slip': _doc_schema({'name': _STR, 'employer': _STR, 'gross_income': _STR,
-                                'net_income': _STR, 'period': _STR}),
-    'epf': _doc_schema({'name': _STR, 'employer': _STR, 'latest_balance': _STR,
-                        'last_contribution': _STR}),
+    # Income Check-1: read the earner's NRIC too, so a member-tagged slip can be
+    # cross-checked against that member's IC (name + IC number), not the student.
+    'salary_slip': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
+                                'gross_income': _STR, 'net_income': _STR, 'period': _STR}),
+    'epf': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
+                        'latest_balance': _STR, 'last_contribution': _STR}),
     'water_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR, 'billing_period': _STR}),
     'electricity_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR, 'billing_period': _STR}),
     # S2: read the GRADE against each subject (not just the subject list) so the
@@ -774,6 +776,16 @@ _DOC_HINTS = {
                      'Sekolah"); "offer_date" = the letter\'s print/issue date; "intake" = '
                      'the session/intake (e.g. "Sesi 2026/2027"); "candidate_address" = the '
                      'student\'s mailing address if shown. Leave a field empty if absent.'),
+    'salary_slip': (' This is a Malaysian salary slip / payslip. "name" = the EMPLOYEE\'s '
+                    'full name; "nric" = their IC number ("No. K/P" / "No. Kad Pengenalan", '
+                    'keep the 12 digits) if printed; "employer" = the company; "gross_income" '
+                    '= the gross/basic monthly pay (with the RM figure); "net_income" = the '
+                    'net/take-home pay; "period" = the pay month/year (e.g. "March 2026"). '
+                    'Leave a field empty if it is not present.'),
+    'epf': (' This is a Malaysian EPF/KWSP statement. "name" = the member\'s full name; '
+            '"nric" = their IC number if printed (keep the 12 digits); "employer" = the '
+            'employer if shown; "latest_balance" = the most recent total balance (RM); '
+            '"last_contribution" = the latest contribution month/year. Leave empty if absent.'),
     'birth_certificate': (' This is a Malaysian birth certificate (Sijil Kelahiran, JPN). '
                           'Return: "bc_child_name" = the child\'s full name ("Nama" of the '
                           'child / "Nama Kanak-Kanak"); "bc_mother_name" = the mother\'s full '

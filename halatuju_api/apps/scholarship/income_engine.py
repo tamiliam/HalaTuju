@@ -194,6 +194,90 @@ def student_income_ic_check(doc):
     }
 
 
+def _member_ic_doc(application, member):
+    """That household member's IC (parent_ic tagged to them), or None."""
+    if not member:
+        return None
+    return (application.documents.filter(doc_type='parent_ic', household_member=member)
+            .order_by('-uploaded_at').first())
+
+
+def student_income_proof_check(doc):
+    """For a member-tagged salary slip / EPF statement: the earner facts read off the
+    document (name · NRIC · amount · period) cross-checked against THAT member's IC —
+    NOT the student. So a father's payslip is verified against the father's IC, and the
+    coach never tells the student to edit their own name. Returns
+    ``{name, nric, amount, period, member, name_status, nric_status, ic_present}`` or
+    None for anything that isn't a member-tagged salary_slip/epf.
+
+    name_status / nric_status: 'match' | 'mismatch' | 'no_ref' (that member's IC not
+    uploaded yet, or the field wasn't read) — a soft, never-blocking signal."""
+    from .vision import name_match, nric_match
+    dt = getattr(doc, 'doc_type', '')
+    member = (getattr(doc, 'household_member', '') or '').strip()
+    if dt not in ('salary_slip', 'epf') or not member:
+        return None
+
+    vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
+    f = vf.get('fields', {}) if isinstance(vf.get('fields', {}), dict) else {}
+    name = (f.get('name', '') or '').strip()
+    nric = (f.get('nric', '') or '').strip()
+    if dt == 'salary_slip':
+        amount = (f.get('gross_income', '') or f.get('net_income', '') or '').strip()
+        period = (f.get('period', '') or '').strip()
+    else:                                          # epf
+        amount = (f.get('latest_balance', '') or '').strip()
+        period = (f.get('last_contribution', '') or '').strip()
+
+    ic = _member_ic_doc(doc.application, member)
+    ic_name = (getattr(ic, 'vision_name', '') or '').strip() if ic else ''
+    ic_nric = (getattr(ic, 'vision_nric', '') or '').strip() if ic else ''
+
+    name_status = 'no_ref'
+    if ic_name and name:
+        name_status = 'mismatch' if name_match(name, ic_name) == 'mismatch' else 'match'
+    nric_status = 'no_ref'
+    if ic_nric and nric:
+        nric_status = 'match' if nric_match(nric, ic_nric) else 'mismatch'
+
+    return {
+        'name': name, 'nric': nric, 'amount': amount, 'period': period,
+        'member': member, 'name_status': name_status, 'nric_status': nric_status,
+        'ic_present': ic is not None,
+    }
+
+
+def income_cluster_advice(application, member):
+    """ONE cluster-level coach verdict for a household member's Income documents — their
+    IC (the anchor) + their income proofs (salary slip / EPF) — so Gopal speaks once per
+    PERSON, not once per file. Income is a cluster (Father's IC + Father's payslip + …),
+    unlike Identity/Academic/Pathway where a single document is sufficient.
+
+    Computed when the member's IC IS present. Priority:
+      1. relationship — does the IC link to the student (patronymic / birth cert / letter)?
+      2. readable     — could we read the IC at all?
+      3. coherence    — are the income proofs the SAME person as the IC?
+    Returns '' when the cluster is consistent. The 'no IC yet' nudge is raised on the
+    proof document instead (``income_ic_needed``), since there is no IC to anchor on."""
+    if not member:
+        return ''
+    ic = _member_ic_doc(application, member)
+    if ic is None:
+        return ''
+    icc = student_income_ic_check(ic)
+    if icc:
+        if icc['name_status'] == 'mismatch':
+            return 'income_relationship_mismatch'
+        if getattr(ic, 'vision_run_at', None) and not icc['readable']:
+            return 'unreadable'
+    for dt in ('salary_slip', 'epf'):
+        for p in application.documents.filter(doc_type=dt, household_member=member):
+            pc = student_income_proof_check(p)
+            if pc and 'mismatch' in (pc['name_status'], pc['nric_status']):
+                return 'income_proof_person_mismatch'
+    return ''
+
+
 def salary_member_blocks(members) -> list:
     """Per-member document plan for the salary route. For each working member, the
     documents that person contributes — compulsory IC (+ relationship doc for a
