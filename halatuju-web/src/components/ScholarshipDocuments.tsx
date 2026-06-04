@@ -412,6 +412,7 @@ function SingleDocCard({
   lang,
   showVisionChip = false,
   required = false,
+  helpOverride,
 }: {
   docType: string
   docs: ApplicantDocument[]
@@ -423,6 +424,7 @@ function SingleDocCard({
   lang: string
   showVisionChip?: boolean
   required?: boolean
+  helpOverride?: string
 }) {
   const busy = busyType === docType
   const existing = docs.filter((d) => d.doc_type === docType)
@@ -437,7 +439,7 @@ function SingleDocCard({
             {required && <span className="text-red-500"> *</span>}
           </span>
           <p className="text-xs text-gray-500 mt-0.5">
-            {t(`scholarship.docs.help.${docType}`)}
+            {helpOverride ?? t(`scholarship.docs.help.${docType}`)}
           </p>
         </div>
         <UploadTrigger
@@ -605,11 +607,14 @@ function IncomeWizard({
   app: ScholarshipApplication
   token: string | null
   t: (key: string) => string
-  renderCard: (docType: string) => ReactNode
+  renderCard: (docType: string, opts?: { required?: boolean; helpOverride?: string }) => ReactNode
   onChange?: () => void
 }) {
+  // Q1 prefills from the Apply-stage STR declaration (receives_str): had STR → 'str' (Yes),
+  // else 'salary' (No). The student can change it.
+  const prefillRoute = app.income_route || (app.receives_str ? 'str' : 'salary')
   const [ans, setAns] = useState({
-    income_route: app.income_route || '',
+    income_route: prefillRoute,
     income_earner: app.income_earner || '',
     earner_work_status: app.earner_work_status || '',
     siblings_in_school: app.siblings_in_school,
@@ -627,6 +632,17 @@ function IncomeWizard({
       /* soft — local state already updated, save retries on the next change */
     }
   }
+
+  // Persist the prefilled route once (so the verdict reflects the declaration), only if
+  // the student hasn't already set a route.
+  useEffect(() => {
+    if (!app.income_route && token) {
+      updateScholarshipDetails(app.id, { income_route: prefillRoute }, { token })
+        .then(() => onChange?.())
+        .catch(() => { /* soft */ })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const iq = (k: string) => t(`scholarship.docs.income.wizard.${k}`)
 
@@ -692,6 +708,16 @@ function IncomeWizard({
   const ready = wizardComplete(answers)
   const otherEarners = ans.household_other_earners
 
+  // Checklist display order: income evidence first, then the earner IC, then the
+  // relationship doc (birth cert / guardianship letter).
+  const DISPLAY_ORDER = ['str', 'salary_slip', 'epf', 'water_bill', 'electricity_bill',
+                         'parent_ic', 'birth_certificate', 'guardianship_letter']
+  const ordered = (docs: string[]) =>
+    [...docs].sort((a, b) => DISPLAY_ORDER.indexOf(a) - DISPLAY_ORDER.indexOf(b))
+  // The earner IC help is context-aware (your father's / mother's / guardian's MyKad).
+  const icHelpFor = (dt: string) =>
+    dt === 'parent_ic' && ans.income_earner ? iq(`icHelp.${ans.income_earner}`) : undefined
+
   return (
     <div className="space-y-4">
       {/* Encouraging, never-punitive intro (blue = info). */}
@@ -706,8 +732,8 @@ function IncomeWizard({
           onPick={(v) => save({ income_route: v })} />
       </Question>
 
-      {/* Q2 — whose income */}
-      <Question label={iq('q2')}>
+      {/* Q2 — whose income (route-aware label: "Whose STR document…" on the STR route) */}
+      <Question label={iq(ans.income_route === 'str' ? 'q2Str' : 'q2')}>
         <Pills selected={ans.income_earner}
           options={['father', 'mother', 'guardian'].map((v) => ({ value: v, label: iq(`earner.${v}`) }))}
           onPick={(v) => save({ income_earner: v })} />
@@ -736,22 +762,18 @@ function IncomeWizard({
         <Question label={iq('school')}><Stepper field="siblings_in_school" value={ans.siblings_in_school} /></Question>
         <Question label={iq('tertiary')}><Stepper field="siblings_in_tertiary" value={ans.siblings_in_tertiary} /></Question>
       </div>
-      <p className="text-xs text-gray-400">{iq('burdenHint')}</p>
 
-      {/* Dynamic checklist — appears once the wizard is answered. */}
+      {/* Dynamic checklist — appears once the wizard is answered. Compulsory docs carry a
+          red * on the card title; optional docs get the "adds credibility" badge. */}
       {ready && (
         <div className="space-y-3 pt-1">
-          <p className="text-sm font-semibold text-gray-800">{iq('docsHeading')}</p>
-          {reqs.compulsory.map((dt) => (
-            <div key={dt}>
-              <div className="mb-1">{docBadge('required')}</div>
-              {renderCard(dt)}
-            </div>
+          {ordered(reqs.compulsory).map((dt) => (
+            <div key={dt}>{renderCard(dt, { required: true, helpOverride: icHelpFor(dt) })}</div>
           ))}
-          {reqs.optional.map((dt) => (
+          {ordered(reqs.optional).map((dt) => (
             <div key={dt}>
               <div className="mb-1">{docBadge('optional')}</div>
-              {renderCard(dt)}
+              {renderCard(dt, { required: false })}
             </div>
           ))}
           <p className="text-xs text-gray-400">{iq('footer')}</p>
@@ -835,7 +857,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   }
 
   // A doc card with the shared handlers closed over — keeps the sections tidy.
-  const card = (docType: string, extra: { showVisionChip?: boolean; required?: boolean } = {}) => (
+  const card = (docType: string, extra: { showVisionChip?: boolean; required?: boolean; helpOverride?: string } = {}) => (
     <SingleDocCard
       key={docType}
       docType={docType}
@@ -897,11 +919,11 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       </section>
 
       <section>
-        {sectionHead('income', 'compulsory')}
+        {sectionHead('income', null)}
         {app ? (
           /* Guided wizard → dynamic checklist (Check-1 item 3). */
           <IncomeWizard app={app} token={token} t={t} onChange={onChange}
-            renderCard={(dt) => card(dt)} />
+            renderCard={(dt, opts) => card(dt, opts)} />
         ) : (
           /* Fallback (no application loaded): the original static income cards. */
           <div className="space-y-3">

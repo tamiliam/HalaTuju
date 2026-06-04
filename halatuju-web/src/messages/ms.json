@@ -875,14 +875,17 @@
       "help": {
         "ic": "Sila muat naik gambar bahagian depan MyKad anda. Kami akan menggunakannya untuk mengesahkan identiti anda dan memastikan nama serta nombor KP anda sepadan dengan permohonan dan dokumen sokongan anda.",
         "results_slip": "Slip keputusan terkini anda.",
+        "str": "Tangkapan skrin atau cetakan STR (Sumbangan Tunai Rahmah) anda, menunjukkan nama dan KP penerima.",
+        "salary_slip": "Slip gaji terkini pencari nafkah.",
+        "epf": "Penyata KWSP pencari nafkah.",
         "income": "Jika keluarga anda penerima STR, sila muat naik tangkapan skrin portal STR yang memaparkan nama dan NRIC ibu bapa anda. Kami amat menggalakkan anda juga memuat naik slip gaji terkini dan/atau penyata KWSP bagi setiap ahli isi rumah yang bekerja.",
         "water_bill": "Bil terkini membantu kami memahami keadaan isi rumah anda.",
         "electricity_bill": "Bil terkini membantu kami memahami keadaan isi rumah anda.",
         "statement_of_intent": "Surat pendek tentang matlamat anda, jika anda ingin menulisnya.",
         "offer_letter": "Jika anda telah menerima tawaran untuk pengajian lanjutan di universiti, kolej, dan sebagainya.",
-        "parent_ic": "Foto IC ibu bapa atau penjaga anda. Kami menggunakannya untuk mengesahkan dokumen sokongan seperti STR atau KWSP yang biasanya dikeluarkan atas nama ibu bapa anda. (Jika anda di bawah 18 tahun, ibu bapa atau penjaga anda juga akan menandatangani persetujuan di bawah.)",
+        "parent_ic": "Gambar MyKad bapa/ibu/penjaga anda. Kami menggunakannya untuk mengesahkan dokumen sokongan seperti STR yang biasanya dikeluarkan atas nama mereka.",
         "guardianship_letter": "Hanya diperlukan jika persetujuan diberi oleh seseorang selain bapa atau ibu anda — perintah penjagaan dari mahkamah ATAU surat kebenaran bertulis daripada ibu bapa anda.",
-        "birth_certificate": "Mengaitkan ibu anda dengan anda apabila anda menunjukkan pendapatannya. Gambar sijil kelahiran anda yang jelas.",
+        "birth_certificate": "Mengaitkan ibu anda dengan anda. Gambar sijil kelahiran anda yang jelas.",
         "photo": "Gambar terkini anda.",
         "coachLabel": "Cikgu Gopal · Pembantu",
         "editProfileName": "Betulkan nama anda dalam profil",
@@ -907,9 +910,15 @@
       "income": {
         "title": "Bukti pendapatan isi rumah",
         "wizard": {
-          "intro": "Beritahu kami tentang situasi keluarga anda. Lebih banyak yang anda kongsi, lebih cepat kami boleh meluluskan permohonan anda — dan kurang kemungkinan tertangguh. Tiada apa di sini menyekat anda; apa-apa yang tertinggal hanya disemak oleh seseorang.",
+          "intro": "Beritahu kami tentang situasi keluarga anda. Lebih banyak yang anda kongsi, lebih cepat kami boleh meluluskan permohonan anda — dan kurang kemungkinan tertangguh.",
           "q1": "Adakah anda mempunyai dokumen STR (Sumbangan Tunai Rahmah)?",
           "q2": "Pendapatan siapa yang anda tunjukkan kepada kami?",
+          "q2Str": "Dokumen STR siapa yang anda berikan?",
+          "icHelp": {
+            "father": "Gambar MyKad bapa anda. Kami menggunakannya untuk mengesahkan dokumen sokongan seperti STR yang biasanya dikeluarkan atas namanya.",
+            "mother": "Gambar MyKad ibu anda. Kami menggunakannya untuk mengesahkan dokumen sokongan seperti STR yang biasanya dikeluarkan atas namanya.",
+            "guardian": "Gambar MyKad penjaga anda. Kami menggunakannya untuk mengesahkan dokumen sokongan seperti STR yang biasanya dikeluarkan atas namanya."
+          },
           "q3": "Adakah pencari nafkah utama anda sedang bekerja?",
           "q4": "Adakah sesiapa lagi dalam isi rumah anda memperoleh pendapatan (contohnya abang atau kakak yang bekerja)?",
           "yes": "Ya",
