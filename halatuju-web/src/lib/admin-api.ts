@@ -429,7 +429,7 @@ export interface AdminResolutionItem {
   id: number
   fact: string
   code: string
-  params: Record<string, string | number>
+  params: Record<string, string | number | string[]>
   prompt: string
   kind: 'doc' | 'confirm' | 'explanation'
   doc_type: string
@@ -613,8 +613,9 @@ export interface AdminAnomaly {
  *  status: verified (green, AI asserts) · review (amber, confirm) ·
  *  recommend (blue, a human places the verdict) · gap (red, action needed). */
 export interface AdminVerdictItem {
+  // string[] supports the income reason codes' `members` list (e.g. ['father','brother']).
   code: string
-  params: Record<string, string | number>
+  params: Record<string, string | number | string[]>
 }
 export interface AdminVerdictFact {
   fact: 'identity' | 'academic' | 'income' | 'pathway'

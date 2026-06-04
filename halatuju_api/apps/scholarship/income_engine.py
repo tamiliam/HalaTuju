@@ -98,8 +98,70 @@ _RELATIONSHIP_DOC = {'mother': 'birth_certificate', 'guardian': 'guardianship_le
 
 def relationship_doc_for(earner: str) -> str:
     """The extra document a given earner needs to prove the relationship
-    ('birth_certificate' / 'guardianship_letter'), or '' for a father (derived)."""
+    ('birth_certificate' / 'guardianship_letter'), or '' for a father/sibling (derived
+    from the shared student-IC patronymic — siblings carry the same father's name)."""
     return _RELATIONSHIP_DOC.get(earner or '', '')
+
+
+# ── Salary route: multiple working household members ──────────────────────────
+# Each ticked member gets their own IC + salary slip + EPF (tagged on the document
+# via household_member). The relationship to the student:
+#   - father / brother / sister → the SAME father's name from the student's IC
+#     patronymic (siblings carry it too) → father_relationship, no extra doc.
+#   - mother  → birth certificate.
+#   - guardian→ guardianship letter.
+_MEMBER_ORDER = ('father', 'mother', 'guardian', 'brother', 'sister')
+# father/brother/sister all verify the same way (patronymic); only mother/guardian need a doc.
+_PATRONYMIC_MEMBERS = {'father', 'brother', 'sister'}
+
+
+def working_members(application) -> list:
+    """The ticked salary-route members, de-duped and in display order. Tolerant of a
+    blank/None/garbage JSON value (returns [])."""
+    raw = getattr(application, 'income_working_members', None) or []
+    if not isinstance(raw, (list, tuple)):
+        return []
+    chosen = {m for m in raw if m in _MEMBER_ORDER}
+    return [m for m in _MEMBER_ORDER if m in chosen]
+
+
+def member_relationship_status(member: str, student_name: str, member_ic_name: str,
+                               bc_child_name: str = '', bc_mother_name: str = '',
+                               letter_name: str = '') -> str:
+    """The relationship verdict for one working member — routes to the right check.
+    father/brother/sister → father_relationship (shared patronymic); mother → birth cert;
+    guardian → guardianship letter. 'match' | 'mismatch' | 'unknown' | 'pending'."""
+    if member in _PATRONYMIC_MEMBERS:
+        return father_relationship(student_name, member_ic_name)
+    if member == 'mother':
+        return mother_relationship(bc_child_name, bc_mother_name, student_name, member_ic_name)
+    if member == 'guardian':
+        return guardian_relationship(letter_name, member_ic_name)
+    return 'unknown'
+
+
+def salary_member_blocks(members) -> list:
+    """Per-member document plan for the salary route. For each working member, the
+    documents that person contributes — compulsory IC (+ relationship doc for a
+    mother/guardian), optional salary slip + EPF. Income-evidence docs (parent_ic /
+    salary_slip / epf) are TAGGED to the member; the relationship doc (birth cert /
+    guardianship letter) is a single household doc, untagged.
+
+    Returns ``[{member, compulsory: [(doc_type, member_tag)],
+                optional: [(doc_type, member_tag)], rel_doc}]`` in display order."""
+    chosen = {m for m in (members or []) if m in _MEMBER_ORDER}
+    blocks = []
+    for m in _MEMBER_ORDER:
+        if m not in chosen:
+            continue
+        compulsory = [('parent_ic', m)]
+        rel = relationship_doc_for(m)
+        if rel:
+            compulsory.append((rel, ''))            # birth cert / letter — single, untagged
+        optional = [('salary_slip', m), ('epf', m)]
+        blocks.append({'member': m, 'compulsory': compulsory,
+                       'optional': optional, 'rel_doc': rel})
+    return blocks
 
 
 # ── The requirement engine ───────────────────────────────────────────────────
@@ -107,40 +169,37 @@ def relationship_doc_for(earner: str) -> str:
 def income_requirements(application) -> dict:
     """Given the wizard answers on *application*, the documents the family needs.
 
-    Returns ``{compulsory: [doc_type], optional: [doc_type]}``. Always: the earner
-    IC + the relationship proof. Then the income evidence per route/work-status.
-    Optional docs add credibility but never block. Blank answers (wizard not yet
-    walked) → just the earner IC compulsory; the verdict layer flags the gap."""
-    route = (getattr(application, 'income_route', '') or '').strip()
-    earner = (getattr(application, 'income_earner', '') or '').strip()
-    work = (getattr(application, 'earner_work_status', '') or '').strip()
+    Returns ``{route, members, compulsory, optional}``:
+      - ``route``      — '' | 'str' | 'salary'.
+      - ``members``    — salary route only: the per-member blocks from
+                         ``salary_member_blocks`` (empty for the STR route).
+      - ``compulsory`` — flat doc-type list (STR route: earner IC + relationship + STR;
+                         salary route: empty — everything is per-member).
+      - ``optional``   — household-level credibility docs (utility bills).
 
+    The STR route keeps the original single-earner shape; the salary route is driven
+    by ``income_working_members`` (multi-select). Optional docs never block. Blank
+    answers (wizard not walked) → just the earner IC compulsory; the verdict flags it."""
+    route = (getattr(application, 'income_route', '') or '').strip()
+
+    if route == 'salary':
+        members = salary_member_blocks(working_members(application))
+        return {'route': 'salary', 'members': members,
+                'compulsory': [], 'optional': ['water_bill', 'electricity_bill']}
+
+    # STR route (single earner) + the blank fallback.
+    earner = (getattr(application, 'income_earner', '') or '').strip()
     compulsory = ['parent_ic']                 # the earner's IC — always
     rel_doc = relationship_doc_for(earner)
     if rel_doc:
         compulsory.append(rel_doc)             # mother→BC, guardian→letter; father→none
-
     optional: list[str] = []
     if route == 'str':
         compulsory.append('str')
         optional += ['water_bill', 'electricity_bill', 'salary_slip', 'epf']
-    elif route == 'salary':
-        if work == 'payslip':
-            compulsory += ['salary_slip', 'epf']
-            optional += ['water_bill', 'electricity_bill']
-        elif work == 'not_working':
-            compulsory.append('epf')
-            optional += ['water_bill', 'electricity_bill']
-        elif work == 'informal':
-            # No payslip/EPF to demand — the bills tie the earner to the household;
-            # a person judges the rest (never blocked).
-            compulsory += ['water_bill', 'electricity_bill']
-            optional.append('epf')
-        else:                                  # work status not chosen yet
-            optional += ['salary_slip', 'epf', 'water_bill', 'electricity_bill']
     # route blank → wizard not started; only the earner IC stands. Verdict flags it.
 
     # De-dup while preserving order; a doc is never both compulsory and optional.
     seen = set(compulsory)
     optional = [d for d in optional if not (d in seen or seen.add(d))]
-    return {'compulsory': compulsory, 'optional': optional}
+    return {'route': route, 'members': [], 'compulsory': compulsory, 'optional': optional}

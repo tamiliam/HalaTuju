@@ -43,6 +43,7 @@ import {
   aiSuggestionFor,
   documentPill,
 } from '@/lib/officerCockpit'
+import { localiseParams } from '@/lib/actionCentre'
 
 const VERDICTS = ['resolved', 'still_unclear', 'new_concern'] as const
 const RUBRIC_DIMS = ['clarity_of_plan', 'financial_need', 'resilience'] as const
@@ -466,7 +467,7 @@ export default function AdminScholarshipDetailPage() {
             // Subtitle: first evidence item text, or first unresolved item text.
             const resolve = (it: AdminVerdictItem) =>
               t(`admin.scholarship.verdict.item.${it.code}`,
-                Object.fromEntries(Object.entries(it.params).map(([k, v]) => [k, String(v)])))
+                localiseParams(it.params, t))
             const subtitle = f.unresolved.length > 0
               ? resolve(f.unresolved[0])
               : f.evidence.length > 0
@@ -494,7 +495,7 @@ export default function AdminScholarshipDetailPage() {
             {(app.verdict || []).map((f) => {
               const resolve = (it: AdminVerdictItem) =>
                 t(`admin.scholarship.verdict.item.${it.code}`,
-                  Object.fromEntries(Object.entries(it.params).map(([k, v]) => [k, String(v)])))
+                  localiseParams(it.params, t))
               if (f.evidence.length <= 1 && f.unresolved.length === 0) return null
               return (
                 <div key={`detail-${f.fact}`} className="text-xs text-gray-600">
@@ -629,7 +630,7 @@ export default function AdminScholarshipDetailPage() {
                 const text = item.source === 'officer'
                   ? (item.prompt || item.code)
                   : t(`admin.scholarship.verdict.item.${item.code}`,
-                      Object.fromEntries(Object.entries(item.params).map(([k, v]) => [k, String(v)])))
+                      localiseParams(item.params, t))
                 return (
                   <li key={item.id} className="flex items-start gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
                     <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dotColour}`} aria-hidden />

@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Income Check-1 — salary (non-STR) route rebuilt for MULTIPLE working household members.** The single-earner salary
+  route became a multi-select: *"tick everyone who works"* (father / mother / legal guardian / elder brother / elder
+  sister), each with their own IC + (optional) salary slip + EPF. Storage gains a `household_member` tag on
+  `ApplicantDocument` so several people's same-type documents coexist (father's payslip never overwrites mother's); the
+  single-instance rule is now per `(doc_type, household_member)`. **Relationship proof** stays parent-grade for everyone:
+  father/elder brother/elder sister all verify via the *same* student-IC patronymic (siblings carry the same father's
+  name — `father_relationship` reused unchanged), mother via birth certificate, guardian via letter. **Verdict** (salary):
+  every IC present + every relationship confirmed + ≥1 payslip/EPF → `verified` (the document *data* checks out; the
+  income *amount*/B40 test is a later sprint); IC present but no financial doc (informal) or an unprovable relationship
+  (e.g. a non-patronymic name) → `recommend` + interview flag — **never blocks**; a missing IC/relationship doc → `gap`.
+  Per-member gaps **aggregate** into one ticket carrying a `members` list (the resolution layer keys tickets by code), and
+  the income reason-code copy now names the member(s) ("Upload the IC for Father, Elder brother") in en/ms/ta on both the
+  officer tile and the student Action Centre. The **forced non-earner-parent EPF** was dropped (EPF only exists for formal
+  jobs — near-zero signal, confusing for homemakers). STR route unchanged. Migration `0040` (additive `household_member` +
+  `income_working_members`), applied migrate-first.
 - **Income verification Check-1 (the fourth and final fact) — a guided document wizard + earner identity & relationship
   proof.** Income was the weakest fact (it only checked that *a* document was present). It is now a clinical check, in
   three sprints (`docs/scholarship/check1-income-plan.md`; migration `0039`, applied migrate-first). **The wizard**

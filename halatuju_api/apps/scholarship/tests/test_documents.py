@@ -151,6 +151,50 @@ class TestDocumentApi(TestCase):
         # Storage sweep is NOT called for multi-instance types.
         mock_storage_delete.assert_not_called()
 
+    @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
+    @patch('apps.scholarship.storage.delete_objects', return_value=True)
+    def test_member_tagged_income_doc_is_single_instance_per_member(self, mock_del, _mv):
+        """Salary route: a member-tagged salary slip replaces THAT member's prior copy
+        (single-instance per (doc_type, member)) — never another member's."""
+        fathers = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='salary_slip', household_member='father',
+            storage_path=f'{self.app_a.id}/salary_slip/father-old')
+        mothers = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='salary_slip', household_member='mother',
+            storage_path=f'{self.app_a.id}/salary_slip/mother-keep')
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'salary_slip', 'household_member': 'father',
+            'storage_path': f'{self.app_a.id}/salary_slip/father-new',
+            'original_filename': 'f.pdf', 'size': 50_000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)
+        father_rows = ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='salary_slip', household_member='father')
+        self.assertEqual(father_rows.count(), 1)
+        self.assertEqual(father_rows.first().storage_path, f'{self.app_a.id}/salary_slip/father-new')
+        self.assertFalse(ApplicantDocument.objects.filter(id=fathers.id).exists())
+        self.assertTrue(ApplicantDocument.objects.filter(id=mothers.id).exists())  # untouched
+
+    @patch('apps.scholarship.vision.run_vision_for_document', return_value=None)
+    @patch('apps.scholarship.storage.delete_objects', return_value=True)
+    def test_blank_member_parent_ic_does_not_sweep_member_tagged(self, mock_del, _mv):
+        """An untagged parent_ic (STR route / minor consent) must NOT sweep the
+        salary-route member-tagged parent_ics — the sweep is (doc_type, member)-scoped."""
+        father_ic = ApplicantDocument.objects.create(
+            application=self.app_a, doc_type='parent_ic', household_member='father',
+            storage_path=f'{self.app_a.id}/parent_ic/father')
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'parent_ic',  # no household_member → blank
+            'storage_path': f'{self.app_a.id}/parent_ic/str-earner',
+            'original_filename': 'ic.jpg', 'size': 50_000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)
+        self.assertTrue(ApplicantDocument.objects.filter(id=father_ic.id).exists())
+        self.assertEqual(ApplicantDocument.objects.filter(
+            application=self.app_a, doc_type='parent_ic').count(), 2)
+
     @patch('apps.scholarship.storage.delete_objects', return_value=True)
     def test_delete_sweeps_storage(self, mock_storage_delete):
         """Explicit DELETE on a doc also sweeps its Storage blob."""

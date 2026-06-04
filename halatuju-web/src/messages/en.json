@@ -914,25 +914,41 @@
           "q1": "Do you have an STR (Sumbangan Tunai Rahmah) document?",
           "q2": "Whose income are you showing us?",
           "q2Str": "Whose STR document are you providing?",
+          "q2Multi": "Select all household members who are currently working (you may choose more than one):",
+          "member": {
+            "father": "Father",
+            "mother": "Mother",
+            "guardian": "Legal guardian",
+            "brother": "Elder brother",
+            "sister": "Elder sister"
+          },
           "icHelp": {
-            "father": "A photo of your father's MyKad. We use it to verify supporting documents such as STR that are usually issued in their name.",
-            "mother": "A photo of your mother's MyKad. We use it to verify supporting documents such as STR that are usually issued in their name.",
-            "guardian": "A photo of your guardian's MyKad. We use it to verify supporting documents such as STR that are usually issued in their name."
+            "father": "A photo of your father's MyKad. We use it to verify the income documents that are usually issued in their name.",
+            "mother": "A photo of your mother's MyKad. We use it to verify the income documents that are usually issued in their name.",
+            "guardian": "A photo of your guardian's MyKad. We use it to verify the income documents that are usually issued in their name.",
+            "brother": "A photo of your elder brother's MyKad. We use it to verify the income documents that are usually issued in his name.",
+            "sister": "A photo of your elder sister's MyKad. We use it to verify the income documents that are usually issued in her name."
           },
           "icTitle": {
             "father": "Father's IC",
             "mother": "Mother's IC",
-            "guardian": "Guardian's IC"
+            "guardian": "Guardian's IC",
+            "brother": "Elder brother's IC",
+            "sister": "Elder sister's IC"
           },
           "salaryHelp": {
             "father": "A photo/PDF of your father's latest salary slip.",
             "mother": "A photo/PDF of your mother's latest salary slip.",
-            "guardian": "A photo/PDF of your guardian's latest salary slip."
+            "guardian": "A photo/PDF of your guardian's latest salary slip.",
+            "brother": "A photo/PDF of your elder brother's latest salary slip.",
+            "sister": "A photo/PDF of your elder sister's latest salary slip."
           },
           "epfHelp": {
             "father": "A photo/PDF of your father's EPF (KWSP) statement.",
             "mother": "A photo/PDF of your mother's EPF (KWSP) statement.",
-            "guardian": "A photo/PDF of your guardian's EPF (KWSP) statement."
+            "guardian": "A photo/PDF of your guardian's EPF (KWSP) statement.",
+            "brother": "A photo/PDF of your elder brother's EPF (KWSP) statement.",
+            "sister": "A photo/PDF of your elder sister's EPF (KWSP) statement."
           },
           "q3": "Is your main earner currently working?",
           "q4": "Does anyone else in your household earn an income (for example a working brother or sister)?",
@@ -1327,12 +1343,12 @@
           "desc": "Answer a few quick questions about your household income in the Documents step, and we'll show you exactly which documents to upload."
         },
         "earner_ic_missing": {
-          "title": "Upload your parent or guardian's IC",
+          "title": "Upload the IC for {members}",
           "desc": "We use it to confirm the income documents (STR, salary slip, EPF) belong to your family."
         },
         "earner_ic_unreadable": {
-          "title": "Upload a clearer photo of the IC",
-          "desc": "We couldn't read your parent or guardian's IC. A clear, flat, well-lit photo helps."
+          "title": "Upload a clearer IC photo for {members}",
+          "desc": "We couldn't read it. A clear, flat, well-lit photo helps."
         },
         "birth_cert_missing": {
           "title": "Upload your birth certificate",
@@ -1343,7 +1359,7 @@
           "desc": "The names on the birth certificate don't seem to match — please check you uploaded your own, with your mother's name on it."
         },
         "father_patronymic_mismatch": {
-          "title": "Check your father's IC",
+          "title": "Check the IC for {members}",
           "desc": "The name on the IC doesn't match your father's name as shown in your own IC — please check you uploaded the right one."
         },
         "guardianship_letter_missing": {
@@ -2080,11 +2096,11 @@
           "str_present_unverified": "STR document present but not yet matched to the household — confirm.",
           "income_proof_missing": "No proof of income uploaded — request STR, salary slip, or EPF.",
           "income_earner_undeclared": "The student hasn't said whose income they're showing (the income wizard is incomplete) — we can't check the documents until they do.",
-          "earner_ic_missing": "No earner's IC uploaded — we can't confirm the income documents belong to the family. Request the parent/guardian's IC.",
-          "earner_ic_unreadable": "The earner's IC couldn't be read — ask for a clearer photo.",
-          "birth_cert_missing": "Income shown is the mother's, but no birth certificate links her to the student. Request it.",
+          "earner_ic_missing": "No IC uploaded for: {members} — we can't confirm the income documents belong to the family. Request it.",
+          "earner_ic_unreadable": "Couldn't read the IC for: {members} — ask for a clearer photo.",
+          "birth_cert_missing": "A working member is the mother, but no birth certificate links her to the student. Request it.",
           "birth_cert_mismatch": "The birth certificate doesn't link the named mother to the student — check by eye.",
-          "father_patronymic_mismatch": "The earner's IC name doesn't match the father's name in the student's own IC — check the relationship.",
+          "father_patronymic_mismatch": "The IC name for {members} doesn't match the father's name in the student's own IC — check the relationship.",
           "guardianship_letter_missing": "Income shown is a guardian's, but no guardianship letter/order was uploaded. Request it.",
           "income_unverified_needs_interview": "Income can't be document-verified (informal / no payslip) — confirm during the interview via household size, dependents and lifestyle. Do NOT block.",
           "earner_ic_present": "Earner's IC on file: {name}.",

@@ -55,14 +55,16 @@ def _add_ic(app, *, nric='', name='', address='', error='', run=True):
 
 
 def _add_doc(app, doc_type, *, student_verdict='', fields=None,
-             name_match='', address_match=''):
-    """A supporting document with doc-assist + match fields populated."""
+             name_match='', address_match='', member=''):
+    """A supporting document with doc-assist + match fields populated. ``member``
+    tags a salary-route income doc to a household member."""
     vf = {}
     if student_verdict or fields is not None:
         vf = {'fields': fields or {}, 'warnings': [],
               'student_verdict': student_verdict, 'error': ''}
     return ApplicantDocument.objects.create(
-        application=app, doc_type=doc_type, storage_path=f'{app.id}/{doc_type}/x',
+        application=app, doc_type=doc_type, storage_path=f'{app.id}/{doc_type}/{member}x',
+        household_member=member,
         vision_fields=vf, vision_name_match=name_match,
         vision_address_match=address_match, vision_run_at=timezone.now(),
     )
@@ -221,21 +223,22 @@ class TestAcademicGrades(_Base):
 
 # ── Income (Check-1 item 3: wizard-driven earner identity + relationship) ─────
 
-def _parent_ic(app, name):
-    """The income earner's IC (parent_ic), OCR'd name on the vision_name column."""
+def _parent_ic(app, name, member=''):
+    """The income earner's IC (parent_ic), OCR'd name on the vision_name column.
+    ``member`` tags it to a salary-route household member."""
     return ApplicantDocument.objects.create(
-        application=app, doc_type='parent_ic', storage_path=f'{app.id}/parent_ic/x',
-        vision_name=name, vision_run_at=timezone.now())
+        application=app, doc_type='parent_ic', storage_path=f'{app.id}/parent_ic/{member}x',
+        household_member=member, vision_name=name, vision_run_at=timezone.now())
 
 
 class TestIncome(_Base):
-    def _wizard(self, route='', earner='', work=''):
+    def _wizard(self, route='', earner='', members=None):
         # Father derivable from the student-IC patronymic 'DIVASHINI A/P MURUGAN' → MURUGAN.
         self.profile.name = 'DIVASHINI A/P MURUGAN'
         self.profile.save()
         self.app.income_route = route
         self.app.income_earner = earner
-        self.app.earner_work_status = work
+        self.app.income_working_members = members or []
         self.app.save()
 
     def test_verified_str_pre_wizard_is_still_green(self):
@@ -292,31 +295,6 @@ class TestIncome(_Base):
         self.assertEqual(f['status'], 'verified')
         self.assertIn('relationship_confirmed', _codes(f['evidence']))
 
-    def test_salary_payslip_complete_is_recommend(self):
-        self._wizard(route='salary', earner='father', work='payslip')
-        _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
-        _add_doc(self.app, 'salary_slip', student_verdict='ok')
-        _add_doc(self.app, 'epf', student_verdict='ok')
-        f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'recommend')
-
-    def test_salary_missing_epf_is_gap(self):
-        self._wizard(route='salary', earner='father', work='payslip')
-        _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
-        _add_doc(self.app, 'salary_slip', student_verdict='ok')  # no epf
-        f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'gap')
-        self.assertIn('income_proof_missing', _codes(f['unresolved']))
-
-    def test_salary_informal_flags_interview(self):
-        self._wizard(route='salary', earner='father', work='informal')
-        _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
-        _add_doc(self.app, 'water_bill', student_verdict='ok')
-        _add_doc(self.app, 'electricity_bill', student_verdict='ok')
-        f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'recommend')
-        self.assertIn('income_unverified_needs_interview', _codes(f['unresolved']))
-
     def test_guardian_letter_missing_is_gap(self):
         self._wizard(route='str', earner='guardian')
         _parent_ic(self.app, 'RAJA A/L KUMAR')
@@ -324,6 +302,96 @@ class TestIncome(_Base):
         f = _facts(self.app)['income']
         self.assertEqual(f['status'], 'gap')
         self.assertIn('guardianship_letter_missing', _codes(f['unresolved']))
+
+
+# ── Income — salary (non-STR) multi-earner route ─────────────────────────────
+
+class TestIncomeSalary(_Base):
+    def _wizard(self, members):
+        self.profile.name = 'DIVASHINI A/P MURUGAN'   # patronymic → MURUGAN
+        self.profile.save()
+        self.app.income_route = 'salary'
+        self.app.income_working_members = members
+        self.app.save()
+
+    def test_no_members_is_review_undeclared(self):
+        self._wizard([])
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('income_earner_undeclared', _codes(f['unresolved']))
+
+    def test_father_ic_plus_payslip_is_verified(self):
+        # IC present + patronymic match + a financial doc → DATA verified.
+        self._wizard(['father'])
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father')
+        _add_doc(self.app, 'salary_slip', student_verdict='ok', member='father')
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'verified')
+        self.assertIn('relationship_confirmed', _codes(f['evidence']))
+        self.assertIn('income_proof_present', _codes(f['evidence']))
+
+    def test_sibling_only_with_payslip_is_verified(self):
+        # The borrowed-payslip hole is closed: a brother's IC carries the SAME father's
+        # name, so a lone working sibling is still machine-verifiable.
+        self._wizard(['brother'])
+        _parent_ic(self.app, 'RAJESH A/L MURUGAN', member='brother')
+        _add_doc(self.app, 'epf', student_verdict='ok', member='brother')
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'verified')
+        self.assertIn('relationship_confirmed', _codes(f['evidence']))
+
+    def test_sibling_patronymic_mismatch_is_review(self):
+        self._wizard(['sister'])
+        _parent_ic(self.app, 'PRIYA A/P STRANGER', member='sister')
+        _add_doc(self.app, 'salary_slip', student_verdict='ok', member='sister')
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('father_patronymic_mismatch', _codes(f['unresolved']))
+
+    def test_ic_present_no_financial_is_recommend_interview(self):
+        # Never blocks: IC present, relationship fine, but no payslip/EPF (informal).
+        self._wizard(['father'])
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father')
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'recommend')
+        self.assertIn('income_unverified_needs_interview', _codes(f['unresolved']))
+
+    def test_missing_ic_is_gap(self):
+        self._wizard(['father'])
+        _add_doc(self.app, 'salary_slip', student_verdict='ok', member='father')  # no IC
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'gap')
+        self.assertIn('earner_ic_missing', _codes(f['unresolved']))
+
+    def test_mother_member_needs_birth_cert_is_gap(self):
+        self._wizard(['mother'])
+        _parent_ic(self.app, 'KAMALA A/P RAMAN', member='mother')
+        _add_doc(self.app, 'salary_slip', student_verdict='ok', member='mother')  # no BC
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'gap')
+        self.assertIn('birth_cert_missing', _codes(f['unresolved']))
+
+    def test_multi_member_missing_ic_aggregates_into_one_item(self):
+        # Two members both missing an IC → ONE earner_ic_missing item listing both
+        # (the resolution layer keys tickets by code — duplicates would collide).
+        self._wizard(['father', 'brother'])
+        f = _facts(self.app)['income']
+        ic_items = [i for i in f['unresolved'] if i['code'] == 'earner_ic_missing']
+        self.assertEqual(len(ic_items), 1)
+        self.assertEqual(set(ic_items[0]['params']['members']), {'father', 'brother'})
+
+    def test_unknown_patronymic_with_payslip_is_recommend_not_verified(self):
+        # A Chinese-style name has no patronymic → relationship 'unknown' → can't assert
+        # verified even with a payslip; a human places it.
+        self.profile.name = 'TAN WEI MING'
+        self.profile.save()
+        self.app.income_route = 'salary'
+        self.app.income_working_members = ['father']
+        self.app.save()
+        _parent_ic(self.app, 'TAN AH KOW', member='father')
+        _add_doc(self.app, 'salary_slip', student_verdict='ok', member='father')
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'recommend')
 
 
 # ── Pathway ──────────────────────────────────────────────────────────────────

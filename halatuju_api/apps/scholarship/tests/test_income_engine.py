@@ -7,6 +7,7 @@ from django.test import SimpleTestCase
 from apps.scholarship.income_engine import (
     father_name_from_ic, father_relationship, mother_relationship,
     guardian_relationship, relationship_doc_for, income_requirements,
+    working_members, salary_member_blocks, member_relationship_status,
 )
 
 
@@ -101,17 +102,21 @@ class TestRelationshipDoc(SimpleTestCase):
 
 
 class TestIncomeRequirements(SimpleTestCase):
+    """STR route + the blank fallback. The salary route is per-member (below)."""
     @staticmethod
-    def _app(route='', earner='', work=''):
-        return SimpleNamespace(income_route=route, income_earner=earner, earner_work_status=work)
+    def _app(route='', earner='', members=None):
+        return SimpleNamespace(income_route=route, income_earner=earner,
+                               income_working_members=members or [])
 
     def test_blank_wizard_only_earner_ic(self):
         r = income_requirements(self._app())
         self.assertEqual(r['compulsory'], ['parent_ic'])
         self.assertEqual(r['optional'], [])
+        self.assertEqual(r['members'], [])
 
     def test_str_route_father(self):
         r = income_requirements(self._app(route='str', earner='father'))
+        self.assertEqual(r['route'], 'str')
         self.assertEqual(r['compulsory'], ['parent_ic', 'str'])
         self.assertIn('water_bill', r['optional'])
         self.assertIn('epf', r['optional'])
@@ -124,27 +129,78 @@ class TestIncomeRequirements(SimpleTestCase):
         r = income_requirements(self._app(route='str', earner='guardian'))
         self.assertEqual(r['compulsory'], ['parent_ic', 'guardianship_letter', 'str'])
 
-    def test_salary_payslip(self):
-        r = income_requirements(self._app(route='salary', earner='father', work='payslip'))
-        self.assertEqual(r['compulsory'], ['parent_ic', 'salary_slip', 'epf'])
+    def test_str_no_doc_is_both_compulsory_and_optional(self):
+        # De-dup guard: a doc compulsory on the STR route must not also appear optional.
+        r = income_requirements(self._app(route='str', earner='mother'))
+        self.assertFalse(set(r['compulsory']) & set(r['optional']))
+
+
+class TestSalaryRoute(SimpleTestCase):
+    """Multi-earner salary route: working_members + per-member document blocks."""
+    @staticmethod
+    def _app(members):
+        return SimpleNamespace(income_route='salary', income_earner='',
+                               income_working_members=members)
+
+    def test_working_members_orders_and_dedupes(self):
+        app = self._app(['sister', 'father', 'father', 'guardian'])
+        self.assertEqual(working_members(app), ['father', 'guardian', 'sister'])
+
+    def test_working_members_tolerates_garbage(self):
+        self.assertEqual(working_members(self._app(None)), [])
+        self.assertEqual(working_members(self._app(['nope', 'father'])), ['father'])
+        self.assertEqual(working_members(SimpleNamespace()), [])
+
+    def test_father_block_ic_plus_optional_income(self):
+        [block] = salary_member_blocks(['father'])
+        self.assertEqual(block['member'], 'father')
+        self.assertEqual(block['compulsory'], [('parent_ic', 'father')])      # no extra doc
+        self.assertEqual(block['optional'], [('salary_slip', 'father'), ('epf', 'father')])
+        self.assertEqual(block['rel_doc'], '')
+
+    def test_mother_block_adds_untagged_birth_cert(self):
+        [block] = salary_member_blocks(['mother'])
+        self.assertEqual(block['compulsory'], [('parent_ic', 'mother'), ('birth_certificate', '')])
+        self.assertEqual(block['rel_doc'], 'birth_certificate')
+
+    def test_guardian_block_adds_untagged_letter(self):
+        [block] = salary_member_blocks(['guardian'])
+        self.assertEqual(block['compulsory'], [('parent_ic', 'guardian'), ('guardianship_letter', '')])
+
+    def test_sibling_block_is_ic_only(self):
+        [block] = salary_member_blocks(['brother'])
+        self.assertEqual(block['compulsory'], [('parent_ic', 'brother')])
+        self.assertEqual(block['rel_doc'], '')
+
+    def test_income_requirements_salary_returns_blocks_in_order(self):
+        r = income_requirements(self._app(['sister', 'father']))
+        self.assertEqual(r['route'], 'salary')
+        self.assertEqual([b['member'] for b in r['members']], ['father', 'sister'])
+        self.assertEqual(r['compulsory'], [])
         self.assertEqual(r['optional'], ['water_bill', 'electricity_bill'])
 
-    def test_salary_not_working_epf_only(self):
-        r = income_requirements(self._app(route='salary', earner='father', work='not_working'))
-        self.assertEqual(r['compulsory'], ['parent_ic', 'epf'])
+    def test_income_requirements_salary_no_members(self):
+        r = income_requirements(self._app([]))
+        self.assertEqual(r['members'], [])
 
-    def test_salary_informal_needs_utility_bills(self):
-        r = income_requirements(self._app(route='salary', earner='father', work='informal'))
-        self.assertEqual(r['compulsory'], ['parent_ic', 'water_bill', 'electricity_bill'])
-        self.assertIn('epf', r['optional'])
+    def test_member_relationship_routes_to_patronymic_for_siblings(self):
+        # A brother's IC carries the SAME father's name as the student → match.
+        self.assertEqual(
+            member_relationship_status('brother', 'DIVASHINI A/P MURUGAN',
+                                       'RAJESH A/L MURUGAN'), 'match')
 
-    def test_salary_work_status_unset_keeps_income_docs_optional(self):
-        r = income_requirements(self._app(route='salary', earner='father'))
-        self.assertEqual(r['compulsory'], ['parent_ic'])
-        self.assertIn('salary_slip', r['optional'])
-        self.assertIn('epf', r['optional'])
+    def test_member_relationship_sister_mismatch(self):
+        self.assertEqual(
+            member_relationship_status('sister', 'DIVASHINI A/P MURUGAN',
+                                       'PRIYA A/P STRANGER'), 'mismatch')
 
-    def test_no_doc_is_both_compulsory_and_optional(self):
-        # De-dup guard: salary_slip/epf compulsory in payslip route must not also appear optional.
-        r = income_requirements(self._app(route='salary', earner='father', work='payslip'))
-        self.assertFalse(set(r['compulsory']) & set(r['optional']))
+    def test_member_relationship_mother_uses_birth_cert(self):
+        self.assertEqual(
+            member_relationship_status('mother', 'DIVASHINI A/P MURUGAN', 'KAMALA A/P RAMAN',
+                                       bc_child_name='DIVASHINI A/P MURUGAN',
+                                       bc_mother_name='KAMALA A/P RAMAN'), 'match')
+
+    def test_member_relationship_guardian_uses_letter(self):
+        self.assertEqual(
+            member_relationship_status('guardian', 'DIVASHINI A/P MURUGAN', 'RAJA A/L KUMAR',
+                                       letter_name='RAJA A/L KUMAR'), 'match')

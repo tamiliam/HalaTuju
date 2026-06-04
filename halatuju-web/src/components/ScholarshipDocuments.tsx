@@ -22,13 +22,20 @@ import {
   wizardComplete,
   type IncomeRoute,
   type IncomeEarner,
-  type EarnerWork,
+  type WorkingMember,
 } from '@/lib/incomeWizard'
 import DocumentHelpCoach from './DocumentHelpCoach'
 
 // Per-file size cap (mirrors the server's MAX_DOC_SIZE_BYTES default — server is
 // authoritative; this gives the student instant feedback before any upload).
 const MAX_DOC_SIZE_BYTES = 8 * 1024 * 1024
+
+// Busy/filter key for a doc card. Salary-route income docs are scoped to a household
+// member, so two members' salary slips don't share one busy spinner or file list.
+// member '' → just the doc type (backward-compatible with every non-income card).
+function docKey(docType: string, member = ''): string {
+  return member ? `${docType}:${member}` : docType
+}
 
 // ── Shared sub-components ─────────────────────────────────────────────────
 
@@ -414,11 +421,12 @@ function SingleDocCard({
   required = false,
   helpOverride,
   titleOverride,
+  member = '',
 }: {
   docType: string
   docs: ApplicantDocument[]
   busyType: string | null
-  onUpload: (docType: string, file: File) => void
+  onUpload: (docType: string, file: File, member?: string) => void
   onDelete: (id: number) => void
   t: (key: string) => string
   token: string | null
@@ -427,10 +435,14 @@ function SingleDocCard({
   required?: boolean
   helpOverride?: string
   titleOverride?: string
+  member?: string
 }) {
-  const busy = busyType === docType
-  const existing = docs.filter((d) => d.doc_type === docType)
+  const busy = busyType === docKey(docType, member)
+  // Salary-route income docs are scoped to a household member; everything else is
+  // member ''. Match on the pair so father's payslip card shows only father's file.
+  const existing = docs.filter((d) => d.doc_type === docType && (d.household_member || '') === member)
   const visionDoc = showVisionChip ? existing.find((d) => d.vision_run_at) : null
+  const onPick = (dt: string, f: File) => onUpload(dt, f, member)
 
   return (
     <div className="border rounded-lg p-3">
@@ -447,7 +459,7 @@ function SingleDocCard({
         <UploadTrigger
           docType={docType}
           busy={busy}
-          onUpload={onUpload}
+          onUpload={onPick}
           label={
             busy
               ? t('scholarship.docs.uploading')
@@ -609,7 +621,7 @@ function IncomeWizard({
   app: ScholarshipApplication
   token: string | null
   t: (key: string) => string
-  renderCard: (docType: string, opts?: { required?: boolean; helpOverride?: string; titleOverride?: string }) => ReactNode
+  renderCard: (docType: string, opts?: { required?: boolean; helpOverride?: string; titleOverride?: string; member?: string }) => ReactNode
   onChange?: () => void
 }) {
   // Q1 prefills from the Apply-stage STR declaration (receives_str): had STR → 'str' (Yes),
@@ -618,10 +630,9 @@ function IncomeWizard({
   const [ans, setAns] = useState({
     income_route: prefillRoute,
     income_earner: app.income_earner || '',
-    earner_work_status: app.earner_work_status || '',
+    income_working_members: (app.income_working_members || []) as WorkingMember[],
     siblings_in_school: app.siblings_in_school,
     siblings_in_tertiary: app.siblings_in_tertiary,
-    household_other_earners: app.household_other_earners,
   })
 
   const save = async (patch: Record<string, unknown>) => {
@@ -704,20 +715,26 @@ function IncomeWizard({
   const answers = {
     income_route: ans.income_route as IncomeRoute,
     income_earner: ans.income_earner as IncomeEarner,
-    earner_work_status: ans.earner_work_status as EarnerWork,
+    income_working_members: ans.income_working_members,
   }
   const reqs = incomeRequirements(answers)
   const ready = wizardComplete(answers)
-  const otherEarners = ans.household_other_earners
 
-  // Checklist display order: income evidence first, then the earner IC, then the
-  // relationship doc (birth cert / guardianship letter).
+  // Salary route — toggle a working household member in/out of the multi-select.
+  const MEMBER_OPTIONS: WorkingMember[] = ['father', 'mother', 'guardian', 'brother', 'sister']
+  const members = ans.income_working_members
+  const toggleMember = (m: WorkingMember) => {
+    const next = members.includes(m) ? members.filter((x) => x !== m) : [...members, m]
+    save({ income_working_members: next })
+  }
+
+  // STR-route checklist display order: income evidence first, then the earner IC,
+  // then the relationship doc.
   const DISPLAY_ORDER = ['str', 'salary_slip', 'epf', 'water_bill', 'electricity_bill',
                          'parent_ic', 'birth_certificate', 'guardianship_letter']
   const ordered = (docs: string[]) =>
     [...docs].sort((a, b) => DISPLAY_ORDER.indexOf(a) - DISPLAY_ORDER.indexOf(b))
-  // Income-doc help + the IC card title are context-aware: they name the selected
-  // earner (your father's / mother's / guardian's MyKad, salary slip, EPF).
+  // STR route: income-doc help + IC card title name the single chosen earner.
   const e = ans.income_earner
   const helpFor = (dt: string): string | undefined => {
     if (!e) return undefined
@@ -728,6 +745,15 @@ function IncomeWizard({
   }
   const titleFor = (dt: string): string | undefined =>
     dt === 'parent_ic' && e ? iq(`icTitle.${e}`) : undefined
+  // Salary route: the same context-aware help/title, but per household-member block.
+  const memberHelp = (dt: string, m: string): string | undefined => {
+    if (dt === 'parent_ic') return iq(`icHelp.${m}`)
+    if (dt === 'salary_slip') return iq(`salaryHelp.${m}`)
+    if (dt === 'epf') return iq(`epfHelp.${m}`)
+    return undefined // birth cert / guardianship letter keep their default help
+  }
+  const memberTitle = (dt: string, m: string): string | undefined =>
+    dt === 'parent_ic' ? iq(`icTitle.${m}`) : undefined
 
   return (
     <div className="space-y-4">
@@ -743,28 +769,28 @@ function IncomeWizard({
           onPick={(v) => save({ income_route: v })} />
       </Question>
 
-      {/* Q2 — whose income (route-aware label: "Whose STR document…" on the STR route) */}
-      <Question label={iq(ans.income_route === 'str' ? 'q2Str' : 'q2')}>
-        <Pills selected={ans.income_earner}
-          options={['father', 'mother', 'guardian'].map((v) => ({ value: v, label: iq(`earner.${v}`) }))}
-          onPick={(v) => save({ income_earner: v })} />
-      </Question>
-
-      {/* Q3 — work status (salary route only) */}
-      {ans.income_route === 'salary' && (
-        <Question label={iq('q3')}>
-          <Pills selected={ans.earner_work_status}
-            options={['payslip', 'informal', 'not_working'].map((v) => ({ value: v, label: iq(`work.${v}`) }))}
-            onPick={(v) => save({ earner_work_status: v })} />
+      {/* Q2 — STR route: a single earner. Salary route: tick everyone who works. */}
+      {ans.income_route === 'str' ? (
+        <Question label={iq('q2Str')}>
+          <Pills selected={ans.income_earner}
+            options={['father', 'mother', 'guardian'].map((v) => ({ value: v, label: iq(`earner.${v}`) }))}
+            onPick={(v) => save({ income_earner: v })} />
         </Question>
-      )}
-
-      {/* Q4 — other household earner (non-STR only) */}
-      {ans.income_route === 'salary' && (
-        <Question label={iq('q4')}>
-          <Pills selected={otherEarners == null ? '' : otherEarners > 0 ? 'yes' : 'no'}
-            options={[{ value: 'yes', label: iq('yes') }, { value: 'no', label: iq('no') }]}
-            onPick={(v) => save({ household_other_earners: v === 'yes' ? 1 : 0 })} />
+      ) : (
+        <Question label={iq('q2Multi')}>
+          <div className="flex flex-wrap gap-2 mt-1.5">
+            {MEMBER_OPTIONS.map((m) => {
+              const on = members.includes(m)
+              return (
+                <button key={m} type="button" onClick={() => toggleMember(m)}
+                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                    on ? 'bg-primary-600 text-white border-primary-600'
+                       : 'text-gray-600 border-gray-300 hover:border-primary-400'}`}>
+                  {on ? '✓ ' : ''}{iq(`member.${m}`)}
+                </button>
+              )
+            })}
+          </div>
         </Question>
       )}
 
@@ -775,8 +801,8 @@ function IncomeWizard({
       </div>
 
       {/* Dynamic checklist — appears once the wizard is answered. Compulsory docs carry a
-          red * on the card title; optional docs get the "adds credibility" badge. */}
-      {ready && (
+          red * on the card title; optional docs get the "optional" badge. */}
+      {ready && ans.income_route === 'str' && (
         <div className="space-y-3 pt-1">
           {ordered(reqs.compulsory).map((dt) => (
             <div key={dt}>{renderCard(dt, { required: true, helpOverride: helpFor(dt), titleOverride: titleFor(dt) })}</div>
@@ -785,6 +811,39 @@ function IncomeWizard({
             <div key={dt}>
               <div className="mb-1">{docBadge('optional')}</div>
               {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt) })}
+            </div>
+          ))}
+          <p className="text-xs text-gray-400">{iq('footer')}</p>
+        </div>
+      )}
+
+      {/* Salary route — one document block per ticked working member. */}
+      {ready && ans.income_route === 'salary' && (
+        <div className="space-y-3 pt-1">
+          {reqs.members.map((block) => (
+            <div key={block.member} className="rounded-lg border border-gray-100 bg-gray-50/60 p-2.5 space-y-2">
+              <p className="text-xs font-semibold text-gray-700">{iq(`member.${block.member}`)}</p>
+              {block.compulsory.map(({ docType, member }) => (
+                <div key={docKey(docType, member)}>
+                  {renderCard(docType, { required: true, member,
+                    helpOverride: memberHelp(docType, block.member),
+                    titleOverride: memberTitle(docType, block.member) })}
+                </div>
+              ))}
+              {block.optional.map(({ docType, member }) => (
+                <div key={docKey(docType, member)}>
+                  <div className="mb-1">{docBadge('optional')}</div>
+                  {renderCard(docType, { required: false, member,
+                    helpOverride: memberHelp(docType, block.member) })}
+                </div>
+              ))}
+            </div>
+          ))}
+          {/* Household-level optional credibility docs (utility bills). */}
+          {reqs.optional.map((dt) => (
+            <div key={dt}>
+              <div className="mb-1">{docBadge('optional')}</div>
+              {renderCard(dt, { required: false })}
             </div>
           ))}
           <p className="text-xs text-gray-400">{iq('footer')}</p>
@@ -820,7 +879,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
     getConsentStatus({ token }).then((s) => setIsMinor(!!s.is_minor)).catch(() => { /* ignore */ })
   }, [token])
 
-  const handleUpload = async (docType: string, file: File) => {
+  const handleUpload = async (docType: string, file: File, member = '') => {
     if (!token) return
     // Guardrail: per-file size cap — instant feedback, no wasted upload.
     if (file.size > MAX_DOC_SIZE_BYTES) {
@@ -832,13 +891,14 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       setError(t('scholarship.docs.unsupportedFormat'))
       return
     }
-    setBusyType(docType)
+    setBusyType(docKey(docType, member))
     setError(null)
     try {
       const { upload_url, storage_path } = await signUploadDocument(docType, { token })
       await uploadFileToSignedUrl(upload_url, file)
       await recordDocument(
-        { doc_type: docType, storage_path, original_filename: file.name, content_type: file.type, size: file.size },
+        { doc_type: docType, storage_path, household_member: member,
+          original_filename: file.name, content_type: file.type, size: file.size },
         { token },
       )
       await refresh()
@@ -868,9 +928,9 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   }
 
   // A doc card with the shared handlers closed over — keeps the sections tidy.
-  const card = (docType: string, extra: { showVisionChip?: boolean; required?: boolean; helpOverride?: string; titleOverride?: string } = {}) => (
+  const card = (docType: string, extra: { showVisionChip?: boolean; required?: boolean; helpOverride?: string; titleOverride?: string; member?: string } = {}) => (
     <SingleDocCard
-      key={docType}
+      key={docKey(docType, extra.member)}
       docType={docType}
       docs={docs}
       busyType={busyType}

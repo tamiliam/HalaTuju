@@ -246,8 +246,17 @@ class DocumentListCreateView(APIView):
     # Post-S14 fix: single-instance doc types replace any existing copy on
     # re-upload (avoids the "which IC is the real one?" ambiguity). The three
     # income-proof types stay multi-instance — students may upload several
-    # monthly salary slips / EPF statements.
+    # monthly salary slips / EPF statements. EXCEPTION (Check-1 salary route):
+    # a doc TAGGED to a household_member is single-instance per (doc_type, member)
+    # — father's payslip replaces father's, never mother's — even for the
+    # otherwise-multi salary_slip/epf. The sweep/replace is always scoped to the
+    # (doc_type, household_member) pair so a blank-member upload (STR-route IC,
+    # student IC, …) never sweeps the member-tagged income docs.
     MULTI_INSTANCE_DOC_TYPES = frozenset({'str', 'salary_slip', 'epf'})
+
+    def _is_single_instance(self, doc_type, member):
+        # Member-tagged income docs are single-per-member; otherwise the type rule.
+        return bool(member) or doc_type not in self.MULTI_INSTANCE_DOC_TYPES
 
     def post(self, request):
         app = _current_application(request.user_id)
@@ -267,17 +276,20 @@ class DocumentListCreateView(APIView):
         if (serializer.validated_data.get('size') or 0) > _settings.MAX_DOC_SIZE_BYTES:
             return Response({'error': 'file_too_large', 'max_mb': _settings.MAX_DOC_SIZE_BYTES // (1024 * 1024)},
                             status=status.HTTP_400_BAD_REQUEST)
+        new_member = serializer.validated_data.get('household_member', '') or ''
+        single = self._is_single_instance(new_doc_type, new_member)
         # Guardrail 2: per-application document cap. A single-instance re-upload
         # replaces an existing doc, so it doesn't count toward growth.
-        replaces = (new_doc_type not in self.MULTI_INSTANCE_DOC_TYPES
-                    and ApplicantDocument.objects.filter(application=app, doc_type=new_doc_type).exists())
+        replaces = (single and ApplicantDocument.objects.filter(
+            application=app, doc_type=new_doc_type, household_member=new_member).exists())
         if not replaces and ApplicantDocument.objects.filter(application=app).count() >= _settings.MAX_DOCS_PER_APPLICATION:
             return Response({'error': 'doc_limit_reached', 'max': _settings.MAX_DOCS_PER_APPLICATION},
                             status=status.HTTP_400_BAD_REQUEST)
-        # For single-instance types, sweep older copies of the SAME type for
-        # this application first — DB row + Supabase Storage object together.
-        if new_doc_type not in self.MULTI_INSTANCE_DOC_TYPES:
-            stale = ApplicantDocument.objects.filter(application=app, doc_type=new_doc_type)
+        # For single-instance types, sweep older copies of the SAME (type, member)
+        # for this application first — DB row + Supabase Storage object together.
+        if single:
+            stale = ApplicantDocument.objects.filter(
+                application=app, doc_type=new_doc_type, household_member=new_member)
             stale_paths = [d.storage_path for d in stale if d.storage_path]
             if stale_paths:
                 from .storage import delete_objects

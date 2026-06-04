@@ -210,6 +210,11 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
         choices=['', 'str', 'salary'], required=False, allow_blank=True)
     income_earner = serializers.ChoiceField(
         choices=['', 'father', 'mother', 'guardian'], required=False, allow_blank=True)
+    # Salary route: the multi-select of working household members (replaces the single
+    # earner + work-status + other-earner for that route).
+    income_working_members = serializers.ListField(
+        child=serializers.ChoiceField(choices=['father', 'mother', 'guardian', 'brother', 'sister']),
+        required=False, allow_empty=True)
     earner_work_status = serializers.ChoiceField(
         choices=['', 'payslip', 'informal', 'not_working'], required=False, allow_blank=True)
     household_other_earners = serializers.IntegerField(
@@ -277,7 +282,7 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'siblings_studying_count',
             'family_context', 'daily_life',
             # Income Check-1 wizard answers.
-            'income_route', 'income_earner', 'earner_work_status',
+            'income_route', 'income_earner', 'income_working_members', 'earner_work_status',
             'household_other_earners', 'siblings_in_school', 'siblings_in_tertiary',
             # Address pre-fill (profile-derived, read-only here; written via
             # ApplicationDetailsUpdateSerializer + save_application_details).
@@ -318,7 +323,7 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApplicantDocument
         fields = [
-            'id', 'doc_type', 'original_filename', 'content_type', 'size',
+            'id', 'doc_type', 'household_member', 'original_filename', 'content_type', 'size',
             'verification_status', 'uploaded_at', 'download_url',
             # S13: Vision OCR soft-signal fields (populated only for IC).
             # Post-S14: vision_address surfaced for admin cross-check, no matcher.
@@ -403,6 +408,11 @@ class SignUploadSerializer(serializers.Serializer):
 
 class DocumentCreateSerializer(serializers.Serializer):
     doc_type = serializers.ChoiceField(choices=[c[0] for c in ApplicantDocument.DOC_TYPES])
+    # Salary-route income docs tag the household member they belong to (so father's
+    # and mother's payslips don't overwrite each other). Blank for everything else.
+    household_member = serializers.ChoiceField(
+        choices=[c[0] for c in ApplicantDocument.HOUSEHOLD_MEMBER_CHOICES],
+        required=False, allow_blank=True, default='')
     storage_path = serializers.CharField(max_length=500)
     original_filename = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
     content_type = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')

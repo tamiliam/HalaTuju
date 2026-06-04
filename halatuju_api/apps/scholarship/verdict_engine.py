@@ -68,6 +68,14 @@ def _latest_doc(application, doc_type):
             .order_by('-uploaded_at').first())
 
 
+def _latest_doc_for_member(application, doc_type, member):
+    """The latest income document of *doc_type* tagged to a specific household
+    *member* (salary route). The (doc_type, household_member) pair is the
+    single-instance key, so this returns that member's current IC / payslip / EPF."""
+    return (application.documents.filter(doc_type=doc_type, household_member=member)
+            .order_by('-uploaded_at').first())
+
+
 def _present_doc_types(application):
     return set(application.documents.values_list('doc_type', flat=True))
 
@@ -224,9 +232,11 @@ def _verdict_income(application):
         which the officer confirms via the interview (lifestyle, household, burden).
 
     Wizard not walked yet → 'review' (`income_earner_undeclared`), unless a present,
-    name-matched STR already settles it on its own."""
-    from .income_engine import (income_requirements, relationship_doc_for,
-                                father_relationship, mother_relationship, guardian_relationship)
+    name-matched STR already settles it on its own.
+
+    The SALARY route delegates to ``_verdict_income_salary`` (multi-earner)."""
+    from .income_engine import (father_relationship, mother_relationship,
+                                guardian_relationship)
     evidence, gap, review = [], [], []
     present = _present_doc_types(application)
     student_name = getattr(application.profile, 'name', '') or ''
@@ -236,6 +246,10 @@ def _verdict_income(application):
     str_doc = _latest_doc(application, 'str')
     str_verified = str_doc is not None and str_doc.vision_name_match == 'found'
 
+    # Salary (non-STR) route → multi-earner path.
+    if route == 'salary':
+        return _verdict_income_salary(application, student_name, present)
+
     # Wizard not walked → can't compute requirements. A verified STR still settles it;
     # otherwise ask the student to tell us whose income they're showing (the wizard).
     if not earner or not route:
@@ -243,16 +257,15 @@ def _verdict_income(application):
             return _fact('income', 'verified', [_item('str_verified')], [])
         return _fact('income', 'review', evidence, [_item('income_earner_undeclared')])
 
-    reqs = income_requirements(application)
-    rel_doc = relationship_doc_for(earner)
-
     # ── Earner IC (the income docs are issued in their name) ──────────────────
+    # `members=[earner]` keeps the IC/relationship reason-code copy uniform with the
+    # salary route (which lists several) — both render "… for {members}".
     ic_doc = _latest_doc(application, 'parent_ic')
     earner_ic_name = (getattr(ic_doc, 'vision_name', '') or '').strip() if ic_doc else ''
     if ic_doc is None:
-        gap.append(_item('earner_ic_missing'))
+        gap.append(_item('earner_ic_missing', members=[earner]))
     elif not earner_ic_name:
-        review.append(_item('earner_ic_unreadable'))
+        review.append(_item('earner_ic_unreadable', members=[earner]))
     else:
         evidence.append(_item('earner_ic_present', name=earner_ic_name))
 
@@ -276,37 +289,132 @@ def _verdict_income(application):
     if rel == 'match':
         evidence.append(_item('relationship_confirmed'))
     elif rel == 'mismatch':
-        review.append(_item('father_patronymic_mismatch' if earner == 'father' else 'birth_cert_mismatch'))
+        if earner == 'father':
+            review.append(_item('father_patronymic_mismatch', members=[earner]))
+        else:
+            review.append(_item('birth_cert_mismatch'))
     # 'unknown' (no patronymic — e.g. a Chinese name) / 'pending' → no claim; officer eyeballs.
 
-    # ── Income evidence — the compulsory income docs for this route/work-status ─
-    income_docs = [d for d in reqs['compulsory'] if d not in ('parent_ic', rel_doc)]
-    if route == 'str':
-        if str_verified:
-            evidence.append(_item('str_verified'))
-        elif str_doc is not None:
-            review.append(_item('str_present_unverified'))
-        else:
-            gap.append(_item('income_proof_missing'))
-    else:  # salary route
-        missing = [d for d in income_docs if d not in present]
-        if missing:
-            gap.append(_item('income_proof_missing'))
-        else:
-            evidence.append(_item('income_proof_present'))
+    # ── Income evidence — the STR document ────────────────────────────────────
+    if str_verified:
+        evidence.append(_item('str_verified'))
+    elif str_doc is not None:
+        review.append(_item('str_present_unverified'))
+    else:
+        gap.append(_item('income_proof_missing'))
 
     # ── Place the verdict ─────────────────────────────────────────────────────
     if gap:
         return _fact('income', 'gap', evidence, gap + review)
     if review:
         return _fact('income', 'review', evidence, review)
-    if route == 'str' and str_verified:
+    if str_verified:
         return _fact('income', 'verified', evidence, [])
-    # Salary assembled, nothing missing/failed. A human still places the B40 amount call;
-    # when the proof is thin (informal / no payslip) flag it for the interview, never block.
-    if (getattr(application, 'earner_work_status', '') or '') == 'informal':
-        review.append(_item('income_unverified_needs_interview'))
-    return _fact('income', 'recommend', evidence, review)
+    # STR assembled, nothing missing/failed (e.g. relationship 'unknown') — a human places it.
+    return _fact('income', 'recommend', evidence, [_item('income_unverified_needs_interview')])
+
+
+def _verdict_income_salary(application, student_name, present):
+    """Salary (non-STR) route: one or more working household members, each with their
+    own IC + (optional) payslip + EPF, tagged via ``household_member``. Relationship to
+    the student: father/brother/sister via the SHARED student-IC patronymic (siblings
+    carry the same father's name); mother via birth certificate; guardian via letter.
+
+      - no member ticked          → 'review' (`income_earner_undeclared`).
+      - a required IC / relationship doc missing → 'gap' (member-tagged).
+      - a relationship/IC that FAILS reading or matching → 'review'.
+      - every IC present + every relationship confirmed + ≥1 payslip/EPF → 'verified'
+        (the document DATA checks out; the income AMOUNT/B40 test is a later sprint).
+      - **never blocks**: assembled but thin proof (no payslip/EPF = informal) or an
+        unprovable relationship (e.g. a Chinese-style name with no patronymic) →
+        'recommend' + `income_unverified_needs_interview`, for the officer to place."""
+    from .income_engine import (working_members, member_relationship_status,
+                                relationship_doc_for)
+    members = working_members(application)
+    if not members:
+        return _fact('income', 'review', [], [_item('income_earner_undeclared')])
+
+    evidence = []
+    any_financial = False          # at least one member supplied a payslip or EPF
+    all_confirmed = True           # every member's relationship is a positive 'match'
+    # Per-member gaps are AGGREGATED by code into one item carrying a `members` list —
+    # the resolution layer keys tickets by code (one per code per application), so
+    # emitting the same code twice would collapse/collide. One ticket lists everyone.
+    ic_missing, ic_unreadable, patronymic_mismatch = [], [], []
+    bc_missing = bc_mismatch = False
+    letter_missing = False
+
+    # Birth certificate / guardianship letter are single household docs (read once).
+    bcf = _doc_assist_fields(_latest_doc(application, 'birth_certificate'))
+    bc_child, bc_mother = bcf.get('bc_child_name', ''), bcf.get('bc_mother_name', '')
+    g_doc = _latest_doc(application, 'guardianship_letter')
+    letter_name = (getattr(g_doc, 'vision_name', '') or '') if g_doc else ''
+
+    for m in members:
+        ic_doc = _latest_doc_for_member(application, 'parent_ic', m)
+        ic_name = (getattr(ic_doc, 'vision_name', '') or '').strip() if ic_doc else ''
+        if ic_doc is None:
+            ic_missing.append(m)
+            all_confirmed = False
+        elif not ic_name:
+            ic_unreadable.append(m)
+            all_confirmed = False
+        else:
+            evidence.append(_item('earner_ic_present', member=m, name=ic_name))
+
+        # Relationship proof document (mother → BC, guardian → letter; single docs).
+        rel_doc = relationship_doc_for(m)
+        if rel_doc == 'birth_certificate' and 'birth_certificate' not in present:
+            bc_missing = True
+            all_confirmed = False
+        elif rel_doc == 'guardianship_letter' and 'guardianship_letter' not in present:
+            letter_missing = True
+            all_confirmed = False
+
+        # Relationship verdict (father/brother/sister share the patronymic).
+        rel = member_relationship_status(m, student_name, ic_name, bc_child, bc_mother, letter_name)
+        if rel == 'match':
+            evidence.append(_item('relationship_confirmed', member=m))
+        elif rel == 'mismatch':
+            if m == 'mother':
+                bc_mismatch = True
+            else:
+                patronymic_mismatch.append(m)
+            all_confirmed = False
+        else:                       # 'unknown' (no patronymic) / 'pending' (not read) — no claim
+            all_confirmed = False
+
+        if (_latest_doc_for_member(application, 'salary_slip', m)
+                or _latest_doc_for_member(application, 'epf', m)):
+            any_financial = True
+
+    if any_financial:
+        evidence.append(_item('income_proof_present'))
+
+    # Assemble the aggregated unresolved items (one per code).
+    gap, review = [], []
+    if ic_missing:
+        gap.append(_item('earner_ic_missing', members=ic_missing))
+    if bc_missing:
+        gap.append(_item('birth_cert_missing'))
+    if letter_missing:
+        gap.append(_item('guardianship_letter_missing'))
+    if ic_unreadable:
+        review.append(_item('earner_ic_unreadable', members=ic_unreadable))
+    if patronymic_mismatch:
+        review.append(_item('father_patronymic_mismatch', members=patronymic_mismatch))
+    if bc_mismatch:
+        review.append(_item('birth_cert_mismatch'))
+
+    if gap:
+        return _fact('income', 'gap', evidence, gap + review)
+    if review:
+        return _fact('income', 'review', evidence, review)
+    if any_financial and all_confirmed:
+        return _fact('income', 'verified', evidence, [])
+    # Assembled but a human still places it: no payslip/EPF (informal) or a relationship
+    # we couldn't machine-confirm. Never blocks.
+    return _fact('income', 'recommend', evidence, [_item('income_unverified_needs_interview')])
 
 
 # ── Pathway (offer letter) ───────────────────────────────────────────────────
