@@ -412,9 +412,10 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
 
     def get_income_proof_check(self, obj):
         """{name, nric, amount, period, member, name_status, nric_status, ic_present}
-        for a member-tagged salary slip / EPF — the earner facts cross-checked against
-        THAT member's IC. Null for everything else."""
-        if obj.doc_type not in ('salary_slip', 'epf') or not (obj.household_member or ''):
+        for a salary slip / EPF in an income context — the earner facts cross-checked
+        against THAT earner's IC (salary route = the member's IC; STR route = the single
+        earner's IC). Null for everything else (the check returns None with no context)."""
+        if obj.doc_type not in ('salary_slip', 'epf'):
             return None
         from .income_engine import student_income_proof_check
         return student_income_proof_check(obj)

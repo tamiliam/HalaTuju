@@ -625,3 +625,53 @@ class TestIncomeCluster(TestCase):
         _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father')
         slip = self._slip('father', 'MURUGAN A/L KESAVAN')
         self.assertEqual(verdict_for_document(slip), '')
+
+
+class TestIncomeClusterStr(TestCase):
+    """STR route: income proofs are UNTAGGED (single earner = income_earner). The same
+    cluster checks must verify them against the untagged earner IC, never the student —
+    otherwise the STR salary slip shows the wrong 'edit your profile name' coach."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='cs', name='B40', year=2026)
+
+    def setUp(self):
+        self.profile = StudentProfile.objects.create(
+            supabase_user_id=f'clusterstr-{self.id()}', name='DIVASHINI A/P MURUGAN',
+            nric='080115-05-0132')
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='shortlisted',
+            income_route='str', income_earner='father')
+
+    def test_str_proof_checks_against_untagged_earner_ic(self):
+        from apps.scholarship.income_engine import student_income_proof_check
+        from apps.scholarship.help_engine import verdict_for_document
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='', nric='600101-01-1111')  # untagged
+        slip = _add_doc(self.app, 'salary_slip', student_verdict='ok', member='',       # untagged
+                        fields={'name': 'MURUGAN A/L KESAVAN', 'nric': '600101-01-1111',
+                                'gross_income': 'RM2000', 'period': 'May 2026'})
+        chk = student_income_proof_check(slip)
+        self.assertIsNotNone(chk)                       # NOT None for an STR-route slip
+        self.assertEqual(chk['member'], 'father')       # resolved from income_earner
+        self.assertEqual(chk['name_status'], 'match')
+        self.assertTrue(chk['ic_present'])
+        # The coach is anchored on the earner IC, so the slip itself stays quiet (NOT the
+        # generic student-name "edit your profile" message).
+        self.assertEqual(verdict_for_document(slip), '')
+
+    def test_str_proof_person_mismatch_voiced_on_ic(self):
+        from apps.scholarship.income_engine import income_cluster_advice
+        from apps.scholarship.help_engine import verdict_for_document
+        ic = _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='', nric='600101-01-1111')
+        _add_doc(self.app, 'salary_slip', student_verdict='ok', member='',
+                 fields={'name': 'SUBACHANNA A/P AHCHINNA', 'nric': '810404-02-5330',
+                         'gross_income': 'RM9900', 'period': 'May 2026'})
+        self.assertEqual(income_cluster_advice(self.app, 'father'), 'income_proof_person_mismatch')
+        self.assertEqual(verdict_for_document(ic), 'income_proof_person_mismatch')
+
+    def test_str_proof_no_ic_yet_nudges(self):
+        from apps.scholarship.help_engine import verdict_for_document
+        slip = _add_doc(self.app, 'salary_slip', student_verdict='ok', member='',
+                        fields={'name': 'MURUGAN A/L KESAVAN'})
+        self.assertEqual(verdict_for_document(slip), 'income_ic_needed')
