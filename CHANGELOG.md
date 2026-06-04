@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Income verification Check-1 (the fourth and final fact) — a guided document wizard + earner identity & relationship
+  proof.** Income was the weakest fact (it only checked that *a* document was present). It is now a clinical check, in
+  three sprints (`docs/scholarship/check1-income-plan.md`; migration `0039`, applied migrate-first). **The wizard**
+  (`/application` Documents → Household income, replacing the static income cards): Q1 "do you have an STR document?"
+  → STR vs salary route · Q2 whose income (father/mother/legal guardian) · Q3 (salary) work status (payslip / informal /
+  not working) · Q4 (non-STR) other household earner · plus family-burden steppers (siblings in school / in tertiary).
+  The answers drive a **dynamic compulsory/optional document checklist** that reuses the existing card/chip/upload
+  pattern. **Proving the earner is family:** father → the father's name in the *student's own IC patronymic* (no extra
+  doc); mother → a **Birth Certificate** (a new document type, OCR'd for child/mother/father names); guardian → the
+  guardianship letter. **The verdict** (`verdict_engine._verdict_income`, driven off the new pure `income_engine`):
+  `verified` (a name-matched STR proves it), `recommend` (salary evidence assembled — a human still places the B40
+  per-capita amount call), `review` (a check failed), `gap` (a compulsory doc missing). **Never blocks a genuinely poor
+  family:** an informal / no-payslip earner whose income can't be document-proven becomes `recommend` +
+  `income_unverified_needs_interview` (the officer confirms via household size, dependents and lifestyle at interview),
+  not a rejection. 11 new reason codes wired through the full chain (officer tile + student Action Centre, en/ms/ta).
+  Front-end `lib/incomeWizard.ts` mirrors the backend requirement engine exactly so the student's checklist always
+  matches the officer verdict. **Deferred (hooks left):** reading the income *amount* for the per-capita test, the
+  utility-bill hardship signal, and Cikgu Gopal's income doc-coach copy. Migration `0039` (six additive
+  `ScholarshipApplication` fields + the `birth_certificate` doc type), applied migrate-first.
 - **Cikgu Gopal now gives pointed, situation-specific results-slip advice instead of generic encouragement.** The coach was
   only ever handed a coarse verdict label (name/subjects/grade mismatch), so when a grade came back merely *uncertain* — the
   common "please check" outcome — `verdict_for_document` fell through to nothing and Gopal either said a generic line or
