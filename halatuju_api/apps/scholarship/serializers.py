@@ -205,6 +205,19 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
     address = serializers.CharField(required=False, allow_blank=True)
     postal_code = serializers.CharField(required=False, allow_blank=True)
     city = serializers.CharField(required=False, allow_blank=True)
+    # Income Check-1 wizard answers (Documents → Household income).
+    income_route = serializers.ChoiceField(
+        choices=['', 'str', 'salary'], required=False, allow_blank=True)
+    income_earner = serializers.ChoiceField(
+        choices=['', 'father', 'mother', 'guardian'], required=False, allow_blank=True)
+    earner_work_status = serializers.ChoiceField(
+        choices=['', 'payslip', 'informal', 'not_working'], required=False, allow_blank=True)
+    household_other_earners = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0, max_value=20)
+    siblings_in_school = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0, max_value=20)
+    siblings_in_tertiary = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0, max_value=20)
 
 
 class ApplicationReadSerializer(serializers.ModelSerializer):
@@ -263,6 +276,9 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'first_in_family', 'parents_occupation',
             'siblings_studying_count',
             'family_context', 'daily_life',
+            # Income Check-1 wizard answers.
+            'income_route', 'income_earner', 'earner_work_status',
+            'household_other_earners', 'siblings_in_school', 'siblings_in_tertiary',
             # Address pre-fill (profile-derived, read-only here; written via
             # ApplicationDetailsUpdateSerializer + save_application_details).
             'address', 'postal_code', 'city', 'preferred_state',

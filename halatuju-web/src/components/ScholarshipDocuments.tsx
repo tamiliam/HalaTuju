@@ -9,12 +9,21 @@ import {
   listDocuments,
   deleteDocument,
   getConsentStatus,
+  updateScholarshipDetails,
   type ApplicantDocument,
+  type ScholarshipApplication,
 } from '@/lib/api'
 import {
   INCOME_PROOF_TYPES,
   formatFileSize,
 } from '@/lib/scholarship'
+import {
+  incomeRequirements,
+  wizardComplete,
+  type IncomeRoute,
+  type IncomeEarner,
+  type EarnerWork,
+} from '@/lib/incomeWizard'
 import DocumentHelpCoach from './DocumentHelpCoach'
 
 // Per-file size cap (mirrors the server's MAX_DOC_SIZE_BYTES default — server is
@@ -578,7 +587,179 @@ function IncomeProofCard({
 
 // ── Main component ────────────────────────────────────────────────────────
 
-export default function ScholarshipDocuments({ token, onChange }: { token: string | null; onChange?: () => void }) {
+// ── Income wizard (Check-1 item 3) ────────────────────────────────────────
+// A few questions → the dynamic document checklist (compulsory + optional),
+// mirroring income_engine.income_requirements so the student's list matches the
+// officer verdict exactly. Encouraging, never-punitive; nothing here blocks.
+
+function IncomeWizard({
+  app,
+  token,
+  t,
+  renderCard,
+  onChange,
+}: {
+  app: ScholarshipApplication
+  token: string | null
+  t: (key: string) => string
+  renderCard: (docType: string) => ReactNode
+  onChange?: () => void
+}) {
+  const [ans, setAns] = useState({
+    income_route: app.income_route || '',
+    income_earner: app.income_earner || '',
+    earner_work_status: app.earner_work_status || '',
+    siblings_in_school: app.siblings_in_school,
+    siblings_in_tertiary: app.siblings_in_tertiary,
+    household_other_earners: app.household_other_earners,
+  })
+
+  const save = async (patch: Record<string, unknown>) => {
+    setAns((a) => ({ ...a, ...patch }))
+    if (!token) return
+    try {
+      await updateScholarshipDetails(app.id, patch, { token })
+      onChange?.()
+    } catch {
+      /* soft — local state already updated, save retries on the next change */
+    }
+  }
+
+  const iq = (k: string) => t(`scholarship.docs.income.wizard.${k}`)
+
+  const Pills = ({
+    options,
+    selected,
+    onPick,
+  }: {
+    options: { value: string; label: string }[]
+    selected: string
+    onPick: (v: string) => void
+  }) => (
+    <div className="flex flex-wrap gap-2 mt-1.5">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          onClick={() => onPick(o.value)}
+          className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+            selected === o.value
+              ? 'bg-primary-600 text-white border-primary-600'
+              : 'text-gray-600 border-gray-300 hover:border-primary-400'
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+
+  const Stepper = ({ field, value }: { field: string; value: number | null | undefined }) => {
+    const n = value ?? 0
+    return (
+      <div className="flex items-center gap-2 mt-1.5">
+        <button type="button" aria-label="decrease" onClick={() => save({ [field]: Math.max(0, n - 1) })}
+          className="h-7 w-7 rounded-full border border-gray-300 text-gray-600 hover:border-primary-400">−</button>
+        <span className="w-6 text-center text-sm font-medium">{n}</span>
+        <button type="button" aria-label="increase" onClick={() => save({ [field]: Math.min(20, n + 1) })}
+          className="h-7 w-7 rounded-full border border-gray-300 text-gray-600 hover:border-primary-400">+</button>
+      </div>
+    )
+  }
+
+  const Question = ({ label, children }: { label: string; children: ReactNode }) => (
+    <div>
+      <p className="text-sm font-medium text-gray-800">{label}</p>
+      {children}
+    </div>
+  )
+
+  const docBadge = (kind: 'required' | 'optional') => (
+    <span className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+      kind === 'required' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-500'
+    }`}>{iq(`badge.${kind}`)}</span>
+  )
+
+  const answers = {
+    income_route: ans.income_route as IncomeRoute,
+    income_earner: ans.income_earner as IncomeEarner,
+    earner_work_status: ans.earner_work_status as EarnerWork,
+  }
+  const reqs = incomeRequirements(answers)
+  const ready = wizardComplete(answers)
+  const otherEarners = ans.household_other_earners
+
+  return (
+    <div className="space-y-4">
+      {/* Encouraging, never-punitive intro (blue = info). */}
+      <div className="rounded-xl bg-blue-50 ring-1 ring-blue-100 p-3 text-sm text-blue-900/90">
+        {iq('intro')}
+      </div>
+
+      {/* Q1 — STR document? Yes → STR route, No → salary route */}
+      <Question label={iq('q1')}>
+        <Pills selected={ans.income_route}
+          options={[{ value: 'str', label: iq('yes') }, { value: 'salary', label: iq('no') }]}
+          onPick={(v) => save({ income_route: v })} />
+      </Question>
+
+      {/* Q2 — whose income */}
+      <Question label={iq('q2')}>
+        <Pills selected={ans.income_earner}
+          options={['father', 'mother', 'guardian'].map((v) => ({ value: v, label: iq(`earner.${v}`) }))}
+          onPick={(v) => save({ income_earner: v })} />
+      </Question>
+
+      {/* Q3 — work status (salary route only) */}
+      {ans.income_route === 'salary' && (
+        <Question label={iq('q3')}>
+          <Pills selected={ans.earner_work_status}
+            options={['payslip', 'informal', 'not_working'].map((v) => ({ value: v, label: iq(`work.${v}`) }))}
+            onPick={(v) => save({ earner_work_status: v })} />
+        </Question>
+      )}
+
+      {/* Q4 — other household earner (non-STR only) */}
+      {ans.income_route === 'salary' && (
+        <Question label={iq('q4')}>
+          <Pills selected={otherEarners == null ? '' : otherEarners > 0 ? 'yes' : 'no'}
+            options={[{ value: 'yes', label: iq('yes') }, { value: 'no', label: iq('no') }]}
+            onPick={(v) => save({ household_other_earners: v === 'yes' ? 1 : 0 })} />
+        </Question>
+      )}
+
+      {/* Family burden */}
+      <div className="grid grid-cols-2 gap-3">
+        <Question label={iq('school')}><Stepper field="siblings_in_school" value={ans.siblings_in_school} /></Question>
+        <Question label={iq('tertiary')}><Stepper field="siblings_in_tertiary" value={ans.siblings_in_tertiary} /></Question>
+      </div>
+      <p className="text-xs text-gray-400">{iq('burdenHint')}</p>
+
+      {/* Dynamic checklist — appears once the wizard is answered. */}
+      {ready && (
+        <div className="space-y-3 pt-1">
+          <p className="text-sm font-semibold text-gray-800">{iq('docsHeading')}</p>
+          {reqs.compulsory.map((dt) => (
+            <div key={dt}>
+              <div className="mb-1">{docBadge('required')}</div>
+              {renderCard(dt)}
+            </div>
+          ))}
+          {reqs.optional.map((dt) => (
+            <div key={dt}>
+              <div className="mb-1">{docBadge('optional')}</div>
+              {renderCard(dt)}
+            </div>
+          ))}
+          <p className="text-xs text-gray-400">{iq('footer')}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+export default function ScholarshipDocuments({ token, onChange, app }: { token: string | null; onChange?: () => void; app?: ScholarshipApplication | null }) {
   const { t, locale } = useT()
   const [docs, setDocs] = useState<ApplicantDocument[]>([])
   const [busyType, setBusyType] = useState<string | null>(null)
@@ -710,23 +891,27 @@ export default function ScholarshipDocuments({ token, onChange }: { token: strin
 
       <section>
         {sectionHead('income', 'compulsory')}
-        <div className="space-y-3">
-          {/* Any one of STR / salary slip / EPF satisfies the income requirement. */}
-          <IncomeProofCard
-            docs={docs}
-            busyType={busyType}
-            onUpload={handleUpload}
-            onDelete={handleDelete}
-            t={t}
-            token={token}
-            lang={locale}
-          />
-          {/* Parent/guardian IC — confirms the earner the income docs are issued to. */}
-          {card('parent_ic', { showVisionChip: false })}
-          {/* Utility bills — optional; they lend credibility to the income claim. */}
-          {card('water_bill')}
-          {card('electricity_bill')}
-        </div>
+        {app ? (
+          /* Guided wizard → dynamic checklist (Check-1 item 3). */
+          <IncomeWizard app={app} token={token} t={t} onChange={onChange}
+            renderCard={(dt) => card(dt)} />
+        ) : (
+          /* Fallback (no application loaded): the original static income cards. */
+          <div className="space-y-3">
+            <IncomeProofCard
+              docs={docs}
+              busyType={busyType}
+              onUpload={handleUpload}
+              onDelete={handleDelete}
+              t={t}
+              token={token}
+              lang={locale}
+            />
+            {card('parent_ic', { showVisionChip: false })}
+            {card('water_bill')}
+            {card('electricity_bill')}
+          </div>
+        )}
       </section>
 
       <section>

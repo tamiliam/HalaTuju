@@ -869,7 +869,8 @@
         "electricity_bill": "Bil elektrik",
         "offer_letter": "Surat tawaran",
         "parent_ic": "IC ibu bapa/penjaga",
-        "guardianship_letter": "Surat penjagaan"
+        "guardianship_letter": "Surat penjagaan",
+        "birth_certificate": "Sijil kelahiran"
       },
       "help": {
         "ic": "Gambar bahagian depan MyKad anda. Kami akan menyemak secara automatik untuk membantu anda mengesan kesilapan menaip — gambar anda tidak disimpan di Google.",
@@ -881,6 +882,7 @@
         "offer_letter": "Jika anda sudah menerima tawaran universiti atau kolej.",
         "parent_ic": "Foto IC ibu bapa atau penjaga anda. Kami menggunakannya untuk mengesahkan dokumen sokongan seperti STR atau KWSP yang biasanya dikeluarkan atas nama ibu bapa anda. (Jika anda di bawah 18 tahun, ibu bapa atau penjaga anda juga akan menandatangani persetujuan di bawah.)",
         "guardianship_letter": "Hanya diperlukan jika persetujuan diberi oleh seseorang selain bapa atau ibu anda — perintah penjagaan dari mahkamah ATAU surat kebenaran bertulis daripada ibu bapa anda.",
+        "birth_certificate": "Mengaitkan ibu anda dengan anda apabila anda menunjukkan pendapatannya. Gambar sijil kelahiran anda yang jelas.",
         "photo": "Gambar terkini anda.",
         "coachLabel": "Cikgu Gopal · Pembantu",
         "editProfileName": "Betulkan nama anda dalam profil",
@@ -903,7 +905,24 @@
         }
       },
       "income": {
-        "title": "Bukti pendapatan isi rumah"
+        "title": "Bukti pendapatan isi rumah",
+        "wizard": {
+          "intro": "Beritahu kami tentang situasi keluarga anda. Lebih banyak yang anda kongsi, lebih cepat kami boleh meluluskan permohonan anda — dan kurang kemungkinan tertangguh. Tiada apa di sini menyekat anda; apa-apa yang tertinggal hanya disemak oleh seseorang.",
+          "q1": "Adakah anda mempunyai dokumen STR (Sumbangan Tunai Rahmah)?",
+          "q2": "Pendapatan siapa yang anda tunjukkan kepada kami?",
+          "q3": "Adakah pencari nafkah utama anda sedang bekerja?",
+          "q4": "Adakah sesiapa lagi dalam isi rumah anda memperoleh pendapatan (contohnya abang atau kakak yang bekerja)?",
+          "yes": "Ya",
+          "no": "Tidak",
+          "earner": { "father": "Bapa", "mother": "Ibu", "guardian": "Penjaga sah" },
+          "work": { "payslip": "Bekerja — ada slip gaji", "informal": "Bekerja — tiada slip gaji", "not_working": "Tidak bekerja" },
+          "school": "Adik-beradik di sekolah",
+          "tertiary": "Di kolej atau universiti",
+          "burdenHint": "Ini membantu kami memahami keperluan keluarga anda.",
+          "docsHeading": "Dokumen untuk dimuat naik",
+          "footer": "Tidak dapat satu daripada ini? Muat naik apa yang anda boleh — seorang penyemak akan melihat situasi anda secara peribadi.",
+          "badge": { "required": "Wajib", "optional": "Pilihan — menambah kredibiliti" }
+        }
       },
       "requiredPill": "Wajib",
       "optionalPill": "Pilihan",
