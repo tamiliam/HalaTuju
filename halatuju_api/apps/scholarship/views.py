@@ -243,20 +243,15 @@ class DocumentListCreateView(APIView):
         docs = ApplicantDocument.objects.filter(application=app) if app else ApplicantDocument.objects.none()
         return Response({'documents': ApplicantDocumentSerializer(docs, many=True).data})
 
-    # Post-S14 fix: single-instance doc types replace any existing copy on
-    # re-upload (avoids the "which IC is the real one?" ambiguity). The three
-    # income-proof types stay multi-instance — students may upload several
-    # monthly salary slips / EPF statements. EXCEPTION (Check-1 salary route):
-    # a doc TAGGED to a household_member is single-instance per (doc_type, member)
-    # — father's payslip replaces father's, never mother's — even for the
-    # otherwise-multi salary_slip/epf. The sweep/replace is always scoped to the
-    # (doc_type, household_member) pair so a blank-member upload (STR-route IC,
-    # student IC, …) never sweeps the member-tagged income docs.
-    MULTI_INSTANCE_DOC_TYPES = frozenset({'str', 'salary_slip', 'epf'})
-
+    # EVERY document is single-instance: a re-upload REPLACES the existing copy in the
+    # same slot (DB row + Supabase blob), keeping things simple — one IC, one salary slip,
+    # one EPF, … per person. The sweep is scoped to the (doc_type, household_member) pair,
+    # so re-uploading Mother's salary slip replaces Mother's, never Father's, and a
+    # blank-member upload (student IC, STR-route doc) never touches the member-tagged ones.
+    # (Retired the former str/salary_slip/epf multi-instance exception — user's call,
+    # 2026-06-05; supersedes the S15 "several monthly slips" decision. See TD/decisions.)
     def _is_single_instance(self, doc_type, member):
-        # Member-tagged income docs are single-per-member; otherwise the type rule.
-        return bool(member) or doc_type not in self.MULTI_INSTANCE_DOC_TYPES
+        return True
 
     def post(self, request):
         app = _current_application(request.user_id)

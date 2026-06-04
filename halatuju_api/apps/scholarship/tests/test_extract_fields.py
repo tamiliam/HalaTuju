@@ -197,10 +197,13 @@ class TestUploadGuardrails(TestCase):
 
     @override_settings(DOC_ASSIST_RATE_LIMIT_PER_HOUR=2)
     def test_ai_throttle_skips_gemini_but_uploads(self):
-        # Two recent extractions already this hour → the 3rd skips Gemini.
+        # Two recent extractions already this hour → the 3rd skips Gemini. (Different
+        # doc types so the new salary_slip upload — now single-instance — doesn't sweep
+        # them; the rate cap counts every extracted doc regardless of type.)
         ApplicantDocument.objects.bulk_create([
-            ApplicantDocument(application=self.app, doc_type='salary_slip',
-                              storage_path=f'r{i}', vision_fields_run_at=timezone.now()) for i in range(2)])
+            ApplicantDocument(application=self.app, doc_type=dt,
+                              storage_path=f'r-{dt}', vision_fields_run_at=timezone.now())
+            for dt in ('water_bill', 'electricity_bill')])
         with patch('apps.scholarship.vision.run_field_extraction_for_document') as mock_run:
             r = self._post(doc_type='salary_slip')
             self.assertEqual(r.status_code, 201)          # upload still succeeds

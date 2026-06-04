@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Every document is single-instance now — a re-upload replaces the existing one in the same slot** (user's call,
+  2026-06-05; supersedes the S15 "several monthly salary slips / EPF" multi-instance decision). Replace is scoped to
+  the `(doc_type, household_member)` pair, so re-uploading Mother's salary slip replaces Mother's, never Father's, and an
+  untagged upload never touches the member-tagged income docs. Retired `DocumentListCreateView.MULTI_INSTANCE_DOC_TYPES`.
+
 ### Added
 - **Income Check-1 — per-document IC/proof verification + cluster-aware Cikgu Gopal.** Income documents are now treated
   as a **cluster per person** (Father's IC + Father's salary slip + Father's EPF), unlike the single-document Identity/
