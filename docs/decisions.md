@@ -1916,3 +1916,29 @@ no such fixture exists and the gate's job is to protect upright slips from noise
 (upright ×2, rotated-90°, rotated-90°+keystone-Type2).
 **Revisit if:** a real slip arrives tilted within the 25° dead-band and misparses, or a third slip format appears — then
 lower/tune the gate against a new fixture, never against the live UI.
+
+## Income evidence — two-track wizard, relationship proof common to both — Income Check-1, 2026-06-04
+**Decision:** A guided wizard collects three answers (route: STR|salary, earner: father|mother|guardian, work status)
+and `income_engine.income_requirements` turns them into a dynamic compulsory/optional document list. The **earner
+identity + family-relationship proof** (father=student-IC patronymic match, mother=Birth Certificate, guardian=letter)
+is COMMON to both routes; only the income *evidence* differs (STR doc vs salary slip+EPF / EPF-only / utility bills).
+**Alternatives considered:** (a) keep the static income card + a free-form "upload what you have" (the old behaviour —
+no identity/relationship check, weakest fact); (b) one giant conditional form; (c) a separate top-level Income tab.
+**Rationale:** the wizard shows each family exactly the documents IT needs (no guessing), and a pure FE mirror
+(`lib/incomeWizard.ts`) keeps the student's checklist identical to the officer verdict. In-Documents (not a new tab)
+keeps the 5-step flow.
+**Trade-offs:** more questions up front; the wizard answers must be walked before the verdict can assess (an
+un-walked app reads `income_earner_undeclared`).
+**Revisit if:** the question count grows unwieldy (then promote to a "5. Income" tab), or multi-earner households need
+more than one earner block.
+
+## Income never-block — `recommend` + interview flag, not a hard gate — Income Check-1, 2026-06-04
+**Decision:** A genuinely poor family that cannot produce formal proof (non-working/informal earner, no EPF) is NOT
+blocked. The verdict returns `recommend` + a soft `income_unverified_needs_interview` signal that flows to the interview
+gap-spotter; a human confirms via household size, dependents, lifestyle and the burden signals.
+**Alternatives considered:** hard-require an income document for everyone (S23 behaviour) — rejected: it excludes the
+exact families the B40 programme exists for.
+**Rationale:** informal income is the B40 norm; the deterministic layer surfaces the concern, a human makes the
+subjective call.
+**Trade-offs:** more interview judgement load; not document-auditable for those cases.
+**Revisit if:** abuse appears (then tighten the soft floor, e.g. require both utility bills + a declaration).

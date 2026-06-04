@@ -458,24 +458,31 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 - **Reason-code chain** (`e3d93c9`) — `offer_no_identity` added to `actionCentre.KNOWN_CODES` (the 4th wiring point).
 - Totals: **~609 scholarship pytest + 231 jest** (deployed), i18n **1853**; scholarship migrations through **`0038`** on prod.
 
-**▶ ACTIVE SPRINT — INCOME fact Check-1 (item 3: earner identity + relationship). Plan LOCKED, wizard mockup APPROVED.**
-Plan + schema: **`docs/scholarship/check1-income-plan.md`**. A guided **document wizard** in /application **Documents →
-Household income** (dynamic, replaces the static income card): Q1 STR-doc? → str/salary route · Q2 earner father/mother/
-guardian · Q3 (salary) payslip/informal/not_working · Q4 (non-STR) working sibling · burden (siblings in school/tertiary).
-Relationship proof: father=student-IC patronymic match · mother=**Birth Certificate (NEW doc type)** · guardian=letter.
-**Never-block** informal/no-EPF families → `recommend` + interview flag. 3 sprints:
-- **I1 BUILT this session — NOT deployed, UNCOMMITTED.** `income_engine.py` (patronymic parser `father_name_from_ic`,
-  relationship checks, `income_requirements` matrix) + Birth-Certificate reader (vision.py schema+hint) + **migration
-  `0039`** (6 wizard fields on ScholarshipApplication + `birth_certificate` doc type) + 28 tests (637 scholarship green).
-  **⚠️ LANDMINE: migration `0039` is NOT on prod. Do NOT blind-push (the ORM SELECTs the new columns → prod breaks).
-  Migrate-first `0039` via Supabase MCP BEFORE any push that includes these files.** Stitch mockup approved (project
-  `10844973747787673276`, nodes `87cdab6c…`/`dd466e0f…`).
-- **I2 (next) —** rewire `verdict_engine._verdict_income` onto `income_requirements`; new reason codes through the full
-  4-link chain (verdict_engine → CODE_TO_TICKET → officer i18n → actionCentre i18n + KNOWN_CODES); officer Income tile.
-- **I3 —** the student wizard UI + dynamic checklist (Stitch-approved) + Gopal income copy. Goes live end-to-end.
-- **I4 (deferred):** amount-reading (per-capita B40 test) + utility hardship signal (hooks left).
-**Other queued:** `/application` state machine + Check 2 (5-day SLA); reviewer-role sprint; old/new cockpit consolidation;
-Tamil i18n refine; STPM positional slip parser (parked); richer pathway-aware Gopal (low priority, firewall-constrained).
+**SHIPPED TO PROD 2026-06-04 — INCOME fact Check-1 (the FOURTH + final fact), I1–I3 in one migrate-first deploy
+(`9fa5ffe`+`d151bf6`+`a8bcd75`; retro `retrospective-check1-income.md`; plan `docs/scholarship/check1-income-plan.md`):**
+- Guided **document wizard** in /application Documents → Household income (`IncomeWizard` in ScholarshipDocuments.tsx +
+  pure `lib/incomeWizard.ts` mirroring the backend): Q1 STR-doc?→route · Q2 earner · Q3 work-status · Q4 other-earner ·
+  burden steppers → **dynamic compulsory/optional checklist**. Earner-relationship proof: father=student-IC patronymic ·
+  mother=**Birth Certificate** (new doc type, Gemini-read) · guardian=letter.
+- `income_engine.py` (pure: `income_requirements` + `father_name_from_ic` + relationship checks) + rewired
+  `verdict_engine._verdict_income` (verified/recommend/review/gap; **never-block** informal→`recommend` +
+  `income_unverified_needs_interview` interview flag). **11 new reason codes** via the full 4-link chain.
+- Migration **`0039`** (6 additive ScholarshipApplication fields + `birth_certificate` doc type) — **applied
+  migrate-first via Supabase MCP** (Postgres `ALTER TABLE ADD COLUMN` ×6 + recorded `django_migrations` row; verified).
+- **1680 pytest** (1037 courses/reports + 643 scholarship), jest 40, i18n parity **1900**; scholarship migrations
+  through **`0039`** on prod.
+- **▶ LIVE-VERIFY (TD-070, pending): click through the income wizard on /application** — walk Q1–Q4 + burden, confirm
+  the dynamic checklist + a save round-trip + the officer Income tile recomputes. Not yet click-tested.
+
+**▶ NEXT — income polish + the deferred slices:**
+- **I4 (income amount + hardship):** read the income AMOUNT off salary/EPF → per-capita vs household size = the real B40
+  test; utility-bill unpaid-balance hardship signal. Hooks left in `income_engine`/the per-doc checks.
+- **Gopal income doc-coach copy** (`help_engine` income verdicts + `documentHelp.ts`) — the officer tile + student
+  Action Centre already cover income guidance; Cikgu Gopal on the income docs is the remaining warm-voice layer.
+- `str_claimed_no_doc` is now an ORPHAN reason code (the wizard's Q1 replaced the receives-str-no-doc heuristic) — kept
+  in i18n/CODE_TO_TICKET, never emitted; remove in a cleanup.
+**Other queued:** `/application` state machine + Check 2 (5-day SLA); reviewer-role sprint; old/new cockpit
+consolidation; Tamil i18n refine; STPM positional slip parser (parked); richer pathway-aware Gopal (low priority).
 
 **Carried gotchas:** TD-078 (subject map FE/BE dup), TD-079 (resolution sync writes on GET), TD-082 (academic confirm →
 Documents), TD-083 (verdict-metrics + `overall` built, not surfaced in UI). Migrate-first via Supabase MCP (deploy does

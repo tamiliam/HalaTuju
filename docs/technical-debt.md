@@ -489,7 +489,14 @@
     sideways/keystoned phone photos via gated de-rotation in `academic_engine._group_rows` (it previously fell back to
     Gemini on non-upright slips, which transposed grades). Four real slips frozen as fixtures. Retro
     `docs/retrospective-check1-livetesting-fixes.md`.
-  - **▶ INCOME (open) — last + hardest; plan LOCKED, I1 built (in progress).** Plan + schema:
+  - **✅ INCOME Check-1 (item 3: earner identity + relationship) — SHIPPED 2026-06-04 (`9fa5ffe`+`d151bf6`+`a8bcd75`,
+    migration `0039` migrate-first).** Guided document wizard (Documents → Household income) → dynamic checklist;
+    earner-relationship proof (father=patronymic / mother=Birth Certificate [new doc type] / guardian=letter); rewired
+    `_verdict_income` (verified/recommend/review/gap; never-block informal→interview flag); 11 reason codes (4-link
+    chain). `income_engine.py` + `lib/incomeWizard.ts` (mirrored). Retro `retrospective-check1-income.md`. **Residual:
+    I4 = income AMOUNT (per-capita B40 test) + utility hardship signal (hooks left); Gopal income doc-coach copy; live
+    click-through (TD-070).** _Original plan below:_
+  - **▶ INCOME (now SHIPPED — see above) — last + hardest; plan LOCKED, I1 built (in progress).** Plan + schema:
     `docs/scholarship/check1-income-plan.md` (guided document wizard in /application Documents → Household income;
     earner identity + relationship: father=student-IC patronymic, mother=Birth Certificate [NEW doc type], guardian=
     guardianship letter; never-block informal-income families → officer/interview judgement; household-burden signals).
