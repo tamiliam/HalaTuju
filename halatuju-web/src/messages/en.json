@@ -875,15 +875,18 @@
       "help": {
         "ic": "Please upload a photo of the front of your MyKad. We'll use it to verify your identity and confirm that your name and IC number match your application and supporting documents.",
         "results_slip": "Your latest results slip.",
+        "str": "A screenshot or printout of your STR (Sumbangan Tunai Rahmah), showing the recipient's name and IC.",
+        "salary_slip": "The earner's latest salary slip.",
+        "epf": "The earner's EPF (KWSP) statement.",
         "income": "If your family is an STR recipient, please upload a screenshot of your STR portal showing your parent's name and NRIC. We strongly encourage you to also upload the latest salary slip and/or EPF statement for every working member of the household.",
         "water_bill": "A recent bill helps us understand your household.",
         "electricity_bill": "A recent bill helps us understand your household.",
         "statement_of_intent": "A short letter about your goals, if you'd like to write one.",
         "offer_letter": "If you have received an offer for further studies at a university, college, etc.",
         "photo": "A recent photo of yourself.",
-        "parent_ic": "A photo of your parent or guardian's IC. We use it to verify supporting documents like STR or EPF that are usually issued in your parent's name. (If you are under 18, your parent or guardian also signs the consent below.)",
+        "parent_ic": "A photo of your father/mother/guardian's MyKad. We use it to verify supporting documents such as STR that are usually issued in their name.",
         "guardianship_letter": "Only needed if the consent will be given by someone other than your father or mother — a court-issued guardianship order OR a written authorisation letter from your parent.",
-        "birth_certificate": "Links your mother to you, when you're showing her income. A clear photo of your birth certificate.",
+        "birth_certificate": "Links your mother to you. A clear photo of your birth certificate.",
         "coachLabel": "Cikgu Gopal · Helper",
         "editProfileName": "Edit your name in your profile",
         "editProfileResults": "Update your results on your profile",
@@ -907,9 +910,15 @@
       "income": {
         "title": "Proof of household income",
         "wizard": {
-          "intro": "Tell us about your family's situation. The more you can share, the faster we can approve your application — and the less chance of a delay. Nothing here blocks you; anything missing is simply checked by a person.",
+          "intro": "Tell us about your family's situation. The more you can share, the faster we can approve your application — and the less chance of a delay.",
           "q1": "Do you have an STR (Sumbangan Tunai Rahmah) document?",
           "q2": "Whose income are you showing us?",
+          "q2Str": "Whose STR document are you providing?",
+          "icHelp": {
+            "father": "A photo of your father's MyKad. We use it to verify supporting documents such as STR that are usually issued in their name.",
+            "mother": "A photo of your mother's MyKad. We use it to verify supporting documents such as STR that are usually issued in their name.",
+            "guardian": "A photo of your guardian's MyKad. We use it to verify supporting documents such as STR that are usually issued in their name."
+          },
           "q3": "Is your main earner currently working?",
           "q4": "Does anyone else in your household earn an income (for example a working brother or sister)?",
           "yes": "Yes",
