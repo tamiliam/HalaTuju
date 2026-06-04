@@ -784,7 +784,7 @@ function IncomeWizard({
           {ordered(reqs.optional).map((dt) => (
             <div key={dt}>
               <div className="mb-1">{docBadge('optional')}</div>
-              {renderCard(dt, { required: false })}
+              {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt) })}
             </div>
           ))}
           <p className="text-xs text-gray-400">{iq('footer')}</p>
@@ -892,7 +892,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   }
   // pill null → a bare section title (no badge, no note); the compulsory status is
   // shown on the cards themselves (a red * after the title).
-  const sectionHead = (key: string, pill: SectionPill | null) => (
+  const sectionHead = (key: string, pill: SectionPill | null, showNote = false) => (
     <div className="mb-2">
       <div className="flex items-center gap-2">
         <h3 className="text-sm font-semibold text-gray-800">
@@ -904,7 +904,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
           </span>
         )}
       </div>
-      {pill && <p className="text-xs text-gray-500 mt-0.5">{t(`scholarship.docs.section.${key}.note`)}</p>}
+      {(pill || showNote) && <p className="text-xs text-gray-500 mt-0.5">{t(`scholarship.docs.section.${key}.note`)}</p>}
     </div>
   )
 
@@ -955,7 +955,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
       </section>
 
       <section>
-        {sectionHead('other', 'optional')}
+        {sectionHead('other', null, true)}
         <div className="space-y-3">
           {card('statement_of_intent')}
           {card('photo')}
