@@ -1899,3 +1899,20 @@ application), or the override metric needs per-reviewer/per-cohort breakdowns th
 **Rationale:** Lenient + layered (soft Check-1 nudge, enforced Check-2 confirm) reconciles every case while never blocking and never nagging on a match; the offer is the evidence, the student owns the final choice.
 **Trade-offs:** A pure-abbreviation declared institution with no shared place token could false-flag a clash — only a soft nudge + confirm, the student's Yes realigns. The self-edit (let the student fix their declaration directly) waits for Phase 2.
 **Revisit if:** real-use shows abbreviation false-flags (add an abbreviation map), or students ask to edit their declared pathway directly (build the Phase-2 editable Funding surface).
+
+## Orientation-robust slip parse via GATED de-rotation — Check-1 live-testing fixes, 2026-06-04
+**Decision:** Capture a per-word baseline angle in `_vision_words`; in `academic_engine._group_rows` estimate the slip's
+median text angle and, **only when |θ| ≥ 25°**, de-rotate every word centroid before clustering rows. Upright slips
+(|θ|<25°) are left exactly as before. Row tolerance is derived from the inter-row gap so it scales to a 4000px photo.
+**Alternatives considered:** (a) always de-rotate by the measured angle (tried first — broke upright slips via OCR
+angle-noise); (b) snap to ±90° (loses the keystone correction — a tilted slip is ~89°, not exactly 90°); (c) OpenCV
+homography pre-processing before Vision (heavy dependency + fragile auto corner-detection); (d) Google Document AI
+(per-page cost + new integration).
+**Rationale:** The deterministic parser is correct whenever it runs — the only failure was that it *ran* only on
+upright slips. Gated de-rotation makes it run on rotated/keystoned photos without touching the upright path, using data
+we already had (Vision word boxes). No new dependency, no per-page cost, deterministic.
+**Trade-offs:** A mild real tilt (5–20°) is treated as upright (below the gate) and not corrected — acceptable because
+no such fixture exists and the gate's job is to protect upright slips from noise. Validated against four real fixtures
+(upright ×2, rotated-90°, rotated-90°+keystone-Type2).
+**Revisit if:** a real slip arrives tilted within the 25° dead-band and misparses, or a third slip format appears — then
+lower/tune the gate against a new fixture, never against the live UI.
