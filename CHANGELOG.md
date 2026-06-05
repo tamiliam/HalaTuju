@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Verification verdict panel — green facts collapse to a tick, details only for what still needs you.** A fact whose
+  badge is green (verified) now shows just `● FACT ✓` with no description, and its evidence/detail block is hidden — green
+  means every requirement is met, so the receipts are noise. Amber/red facts are unchanged: they keep their lead line and
+  the full detail block (the ✓ evidence + the • unresolved gap), because there the context is the whole story (e.g. "IC ✓,
+  STR ✓, but no birth certificate links the mother — request it"). Net effect: a clean row of done tiles, detail only where
+  attention is needed. Officer cockpit only; no migration. 258 jest + next build clean.
 - **Utility-bill facts in the officer cockpit — Current · Reasonable · Outstanding + an orange "another name" note.**
   A water/electricity bill row now shows three soft hardship signals beside **Address**: **Current** (🟢 the bill is
   within ~3 months of the review date · 🟡 stale · ⚪ no readable date), **Reasonable** (🟢 combined household utility

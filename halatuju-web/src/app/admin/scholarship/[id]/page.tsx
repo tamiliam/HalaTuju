@@ -477,6 +477,9 @@ export default function AdminScholarshipDetailPage() {
               : f.evidence.length > 0
               ? resolve(f.evidence[0])
               : t(`admin.scholarship.verdict.status.${f.status}`)
+            // A green (verified) fact is done — the tick says it all, so we drop the
+            // description (and its detail block below). Amber/red keep the lead line.
+            const isGreen = tone === 'green'
             return (
               <div key={f.fact} className={`min-w-0 rounded-lg border p-3 flex flex-col gap-1.5 ${tileColour}`}>
                 <div className="flex items-center gap-1.5 min-w-0">
@@ -484,8 +487,14 @@ export default function AdminScholarshipDetailPage() {
                   <span className={`truncate text-xs font-semibold uppercase tracking-wide ${labelColour}`}>
                     {t(`admin.scholarship.verdict.fact.${f.fact}`)}
                   </span>
+                  {isGreen && (
+                    <span className="ml-auto shrink-0 text-green-600 text-sm font-bold"
+                      aria-label={t('admin.scholarship.verdict.status.verified')}>✓</span>
+                  )}
                 </div>
-                <p className="text-[11px] text-gray-700 leading-tight line-clamp-2 break-words">{subtitle}</p>
+                {!isGreen && (
+                  <p className="text-[11px] text-gray-700 leading-tight line-clamp-2 break-words">{subtitle}</p>
+                )}
               </div>
             )
           })}
@@ -493,14 +502,15 @@ export default function AdminScholarshipDetailPage() {
             <p className="col-span-4 text-sm text-gray-400 italic">{t('admin.scholarship.none')}</p>
           )}
         </div>
-        {/* Expanded evidence / unresolved — kept below tiles for detail */}
-        {(app.verdict || []).some((f) => f.evidence.length > 1 || f.unresolved.length > 0) && (
+        {/* Expanded evidence / unresolved — shown ONLY for facts that still need attention.
+            A green fact is hidden here (its tile tick is the whole story). */}
+        {(app.verdict || []).some((f) => factTileTone(f.status) !== 'green' && (f.evidence.length > 1 || f.unresolved.length > 0)) && (
           <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
             {(app.verdict || []).map((f) => {
               const resolve = (it: AdminVerdictItem) =>
                 t(`admin.scholarship.verdict.item.${it.code}`,
                   localiseParams(it.params, t))
-              if (f.evidence.length <= 1 && f.unresolved.length === 0) return null
+              if (factTileTone(f.status) === 'green' || (f.evidence.length <= 1 && f.unresolved.length === 0)) return null
               return (
                 <div key={`detail-${f.fact}`} className="text-xs text-gray-600">
                   <span className="font-medium text-gray-500 uppercase text-[10px] tracking-wide">
