@@ -443,7 +443,31 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-05)
+## Next Sprint (as of 2026-06-06)
+
+**✅ SHIPPED 2026-06-06 — Gopal + Cockpit polish sprint (5 commits `d7e34eb`→`4fb5255` on `main`; NO migration; retro
+`docs/retrospective-gopal-cockpit-polish.md`).** Live-testing follow-up after TD-085, all officer-cockpit + student
+Gopal:
+- **Utility-bill facts** (`d7e34eb`): the cockpit water/electricity row gains **Current** (billing period ≤3 months of
+  the review date), **Reasonable** (combined water+electricity per-capita vs RM25/RM40 — one bill greys out with a
+  "water/electricity only" note, high consumption stays amber not red), **Outstanding** (green only when arrears > the
+  current charge), + an **orange note** when the account holder is neither the student nor any uploaded parent IC. All
+  soft. `income_engine.utility_check` (+ `utility_reasonable` + billing-period parser); `officerCockpit.documentFacts`.
+- **Verdict panel green-collapse** (`093a4ae`): a verified fact renders `● FACT ✓` with NO description + the evidence
+  block hidden; amber/red keep the lead line + the full ✓-evidence/•-gap detail (where it's the story).
+- **Gopal `ic_nric_misread`** (`72377d1`): on the student's OWN IC, name-match + IC-number-mismatch is its own verdict
+  ("name matched, the number's likely a glare misread → re-upload cleanly"); both-fail keeps generic `nric_mismatch`.
+- **Gopal lean tone** (`6d40af2`): the prompt now mandates diagnose→action→stop and BANS cheerleading openers/sign-offs
+  (`HELP_PROMPT` + all 19 fallback strings en/ms/ta rewritten).
+- **One Gopal per income earner** (`4fb5255`): income is the one CLUSTER fact, so the coach speaks once per earner at
+  the foot of the cluster (father→after IC, mother→after BC, guardian→after letter; per ticked member on salary route),
+  aware of the whole cluster + firing before the IC arrives. STR-currency + "add the IC" nudges folded in (precedence
+  relationship→unreadable→STR stale→person-mismatch→missing-IC). `income_cluster_advice` rewrite + new
+  `IncomeClusterHelpView` (`GET scholarship/income/<member>/help/`); FE shared `CoachCard` + `IncomeClusterCoach` +
+  `clusterDocsFor`; per-file coaches suppressed for cluster docs. **Income-too-high deliberately NOT in the student coach**
+  (officer/interview only — see decisions.md).
+- Gates: **1037 courses/reports + 738 scholarship pytest + 262 jest + next build clean + i18n parity 2020**; no migration
+  (scholarship still through `0040` on prod).
 
 **✅ SHIPPED + DEPLOYED 2026-06-05 — Income Check-1 multi-earner arc COMPLETE (11 commits `e197209`→`668676b` on
 `main`; migration `0040` migrate-first; retro `docs/retrospective-check1-income-multiearner.md`).** The income fact is
@@ -539,9 +563,11 @@ cockpit needs must be in `AdminApplicationDetailSerializer`, not just the studen
 
 _(I1–I3 above were extended to the full multi-earner arc + I4 amount gate — SHIPPED 2026-06-05; see the top of this
 section. The income-route document-first verdict + legacy backfill + cockpit redesign is the immediate ▶ NEXT, TD-085.)_
-**Other queued:** Gopal income doc-coach copy; remove orphaned `str_claimed_no_doc`; `/application` state machine +
-Check 2 (5-day SLA); reviewer-role sprint; old/new cockpit consolidation; Tamil i18n refine; STPM positional slip
-parser (parked); richer pathway-aware Gopal (low priority).
+**Other queued:** PARKED post-consent summary page + lock-at-Continue (spec in `docs/scholarship/consent-gate-v2-plan.md`);
+remove orphaned `str_claimed_no_doc`; TD-084 cleanup (drop `earner_work_status`/`household_other_earners` + `q2/q3/q4/work`
+i18n); `/application` state machine + Check 2 (5-day SLA); reviewer-role sprint (Check 3); old/new cockpit consolidation;
+Tamil i18n refine; STPM positional slip parser (parked); live click-through of the income arc + the new cluster Gopal
+(TD-070). _(Gopal income doc-coach copy + lean tone = DONE this sprint.)_
 
 **Carried gotchas:** TD-078 (subject map FE/BE dup), TD-079 (resolution sync writes on GET), TD-082 (academic confirm →
 Documents), TD-083 (verdict-metrics + `overall` built, not surfaced in UI). Migrate-first via Supabase MCP (deploy does
