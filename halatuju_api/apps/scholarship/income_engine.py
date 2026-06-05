@@ -336,6 +336,68 @@ def student_str_check(doc):
     }
 
 
+# ── Per-capita income from the documents (Check-1 I4, salary route) ──────────
+_AMOUNT_RE = re.compile(r'(\d[\d,]*\.?\d*)')
+# EPF total monthly contribution ≈ 11% (employee) + 13% (employer) = 24% of salary, so a
+# salary estimate when there's no payslip: monthly_salary ≈ contribution / 0.24.
+_EPF_CONTRIB_RATE = 0.24
+
+
+def _parse_rm(s):
+    """Parse an RM figure ('RM 9,900.04' / '2400.00' / 'RM2,400') → float, or None."""
+    if not s:
+        return None
+    m = _AMOUNT_RE.search(str(s).replace(' ', ''))
+    if not m:
+        return None
+    try:
+        return float(m.group(1).replace(',', ''))
+    except ValueError:
+        return None
+
+
+def _doc_fields(doc):
+    vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
+    f = vf.get('fields', {})
+    return f if isinstance(f, dict) else {}
+
+
+def earner_monthly_income(application, member):
+    """A working member's estimated MONTHLY income from their documents + the source.
+    The salary slip's gross is primary; failing that, estimate from the EPF monthly
+    contribution (≈24% of salary). Returns ``(amount: float | None, source)`` where
+    source is 'salary' | 'epf_estimate' | 'unknown'."""
+    for slip in _cluster_docs(application, member, 'salary_slip'):
+        f = _doc_fields(slip)
+        amt = _parse_rm(f.get('gross_income') or f.get('net_income'))
+        if amt:
+            return amt, 'salary'
+    for epf in _cluster_docs(application, member, 'epf'):
+        contrib = _parse_rm(_doc_fields(epf).get('monthly_contribution'))
+        if contrib:
+            return round(contrib / _EPF_CONTRIB_RATE, 2), 'epf_estimate'
+    return None, 'unknown'
+
+
+def income_per_capita(application, members):
+    """``(per_capita, all_known)`` — the document-derived household monthly income
+    (sum of every working member's income) divided by the household size. ``all_known``
+    is False when any member's income couldn't be read (so the per-capita is unreliable
+    → the verdict falls to a human/interview). ``per_capita`` is None when income is
+    unknown or there's no household size."""
+    total, all_known = 0.0, True
+    for m in (members or []):
+        amt, _src = earner_monthly_income(application, m)
+        if amt is None:
+            all_known = False
+        else:
+            total += amt
+    size = getattr(getattr(application, 'profile', None), 'household_size', None)
+    if not all_known or not size:
+        return None, all_known
+    return total / size, all_known
+
+
 def income_cluster_advice(application, member):
     """ONE cluster-level coach verdict for a household member's Income documents — their
     IC (the anchor) + their income proofs (salary slip / EPF) — so Gopal speaks once per

@@ -422,8 +422,22 @@ def _verdict_income_salary(application, student_name, present):
         return _fact('income', 'gap', evidence, gap + review)
     if review:
         return _fact('income', 'review', evidence, review)
+    # The cluster adds up (every IC + relationship confirmed, financial evidence present).
+    # Income GREEN also needs the AMOUNT to clear the B40 line: sum the earners' pay from
+    # the documents → per-capita vs the cohort ceiling (I4). Never blocks — anything we
+    # can't compute, or income above the line, goes to the officer/interview.
     if any_financial and all_confirmed:
-        return _fact('income', 'verified', evidence, [])
+        from .income_engine import income_per_capita
+        ceiling = getattr(getattr(application, 'cohort', None), 'per_capita_ceiling', None)
+        pc, _all_known = income_per_capita(application, members)
+        if pc is not None and ceiling:
+            if pc < ceiling:
+                evidence.append(_item('income_per_capita_ok', amount=int(round(pc)), ceiling=ceiling))
+                return _fact('income', 'verified', evidence, [])
+            return _fact('income', 'recommend', evidence,
+                         [_item('income_above_b40_line', amount=int(round(pc)), ceiling=ceiling)])
+        # Couldn't compute the per-capita (income unreadable / informal / no household size).
+        return _fact('income', 'recommend', evidence, [_item('income_unverified_needs_interview')])
     # Assembled but a human still places it: no payslip/EPF (informal) or a relationship
     # we couldn't machine-confirm. Never blocks.
     return _fact('income', 'recommend', evidence, [_item('income_unverified_needs_interview')])

@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   untagged upload never touches the member-tagged income docs. Retired `DocumentListCreateView.MULTI_INSTANCE_DOC_TYPES`.
 
 ### Added
+- **Income Check-1 (I4) — salary-route per-capita income gate.** The salary-route Income tile now goes **verified** only
+  when the **amount** also clears the B40 line: the earners' pay is summed from the documents (each ticked earner's
+  salary-slip **gross**, or — when there's no payslip — an estimate from the EPF monthly contribution, ≈24% of salary)
+  → **per-capita** = sum ÷ household size → compared to the cohort's `per_capita_ceiling` (RM1,584, the same line the
+  shortlisting engine uses). Below the line *and* the cluster adds up (every earner IC + relationship confirmed) →
+  verified (`income_per_capita_ok`); **at/above** the line → `recommend` + `income_above_b40_line` (a human decides at
+  interview — never auto-rejected); income unreadable / informal / no household size → `recommend` + interview. EPF
+  extraction gains `monthly_contribution`. Officer-facing only (no student to-do). No migration (computed field).
 - **Income Check-1 — STR document verification (recipient + currency) + STR-route green = the cluster adds up.** The STR
   document is now read for its **recipient name + IC** and its **currency** (status + year), covering both the MOF letter
   and the MySTR portal screenshot (`vision` STR schema). It joins the **earner's cluster**: the recipient must match the

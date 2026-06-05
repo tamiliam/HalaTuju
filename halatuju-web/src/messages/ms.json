@@ -2141,6 +2141,8 @@
           "str_not_current": "STR sudah lapuk (tahun lama / tidak diluluskan) — STR adalah tahunan, jadi ia tidak lagi membuktikan keperluan B40 semasa. Minta STR tahun ini, atau terima laluan gaji.",
           "str_recipient_mismatch": "Penerima STR bukan pencari nafkah yang diisytiharkan — nama/KP pada STR tidak sepadan dengan KP pencari nafkah. Sahkan.",
           "income_unverified_needs_interview": "Pendapatan tidak dapat disahkan melalui dokumen (tidak formal / tiada slip gaji) — sahkan semasa temu duga melalui saiz isi rumah, tanggungan dan gaya hidup. JANGAN sekat.",
+          "income_per_capita_ok": "Pendapatan per kapita RM{amount} di bawah garis B40 (RM{ceiling}) — dalam ambang.",
+          "income_above_b40_line": "Pendapatan per kapita RM{amount} pada/melebihi garis B40 (RM{ceiling}) — dokumen tidak mengesahkan keperluan B40. Manusia mesti putuskan semasa temu duga (keadaan mungkin masih terpakai). JANGAN auto-tolak.",
           "earner_ic_present": "KP pencari nafkah dalam fail: {name}.",
           "relationship_confirmed": "Pencari nafkah disahkan sebagai ibu bapa/penjaga pelajar.",
           "income_proof_present": "Dokumen pendapatan ada dalam fail.",
