@@ -186,6 +186,28 @@ Consent → student edits the Application pages.
 - **So the feature is small:** the lock is NOT new. What's new = (1) the summary page between consent and the commit,
   and (2) moving the commit/lock trigger from Consent to **Continue** (Back keeps the app at `shortlisted` = editable).
 
+## PENDING (proposed, NOT built — awaiting 2 design confirmations) — utility-bill facts enhancement
+Live-testing follow-up (2026-06-05): the officer cockpit utility-bill row currently shows only **Address**. The user
+wants it to tell the officer whether the bill is recent, reasonable, and whether there are arrears, plus flag an
+unrelated account holder. The extraction already captures `billing_period`, `amount` (current charge), `unpaid_balance`,
+`name` — so no new extraction, no migration.
+
+Proposed utility-bill fact labels (in `officerCockpit.documentFacts` + backend `income_engine.utility_check`):
+- **Address** — (existing) bill address vs home address → 🟢 / 🔴 / grey.
+- **Current** — `billing_period` within ~3 months of the review date → 🟢 current / 🟡 older / grey if no date.
+- **Reasonable** — the COMBINED household utility per-capita (water+electricity ÷ household size) vs the existing
+  `utility_per_capita` thresholds (RM25 / RM40 per capita) → 🟢 B40-consistent / 🟡 high / grey. (Both bills show the
+  same household verdict; reuses existing logic.)
+- **Outstanding** — shown ONLY when arrears > current charge (a genuine hardship signal); 🟢 when shown, hidden otherwise.
+- **Orange note** (like the salary-slip warning) when the bill is in someone else's name — account holder doesn't match
+  the student or any uploaded parent IC. (e.g. Theepicaa's water bill is in "Rajeswari A/P Ramolingom".)
+
+Scope: `income_engine.utility_check` (+ a billing_period date parser) · `documentFacts` utility facts + conditional
+Outstanding · the orange name note in the cockpit `docRow` · i18n (Current/Reasonable/Outstanding labels + the note) ·
+jest/pytest. **2 OPEN QUESTIONS awaiting the user's nod before building:** (1) "Reasonable" = the *combined* household
+utility per-capita (vs each bill on its own)? (2) "Current" = within 3 months of *now* (review time), not the
+application date? — both proposed YES.
+
 ## Test plan (before any deploy)
 - STR route: father (no extra) / mother (BC) / guardian (letter) — each missing doc blocks; complete set passes.
 - Salary route: single father; mother+brother both working (each needs IC + slip); mother needs BC.
