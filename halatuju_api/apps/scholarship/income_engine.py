@@ -22,6 +22,7 @@ informal earner becomes an officer/interview judgement upstream, not a hard gate
 """
 from __future__ import annotations
 
+import datetime
 import re
 
 from .vision import name_match
@@ -477,20 +478,132 @@ _UTILITY_B40_CEILING = 25   # < RM25/capita/month combined → consistent with B
 _UTILITY_HIGH_FLOOR = 40    # > RM40/capita/month → likely M40/T20 consumption
 
 
-def utility_check(doc):
-    """For a water / electricity bill: the account-holder name (a data point — NOT matched
-    to the student; bills are in a parent's name), the home address (matched via the
-    upload-time ``vision_address_match``), the monthly charge, and any unpaid balance.
-    Returns ``{name, address, monthly_bill, unpaid_balance, address_status}`` or None."""
+# Reading a utility bill: a month-name → number map (Malay + English, common OCR forms)
+# and a tolerant period parser, so "Mei 2026" / "05/2026" / "2026-05" all resolve.
+_UTILITY_MONTHS = {
+    'jan': 1, 'feb': 2, 'mac': 3, 'mar': 3, 'apr': 4, 'apl': 4, 'mei': 5, 'may': 5,
+    'jun': 6, 'jul': 7, 'ogo': 8, 'aug': 8, 'sep': 9, 'okt': 10, 'oct': 10,
+    'nov': 11, 'dis': 12, 'dec': 12,
+}
+_UTILITY_CURRENT_MONTHS = 3   # a bill within ~3 months of the review date counts as current
+
+
+def _parse_billing_month(period):
+    """``(year, month)`` from a free-form billing period ('Mei 2026', '05/2026',
+    '2026-05', 'April 2026'), or None when nothing parseable is found."""
+    if not period:
+        return None
+    t = str(period).lower()
+    ym = re.search(r'(20\d{2})', t)
+    year = int(ym.group(1)) if ym else None
+    month = None
+    for name, num in _UTILITY_MONTHS.items():
+        if name in t:
+            month = num
+            break
+    if month is None:                                  # numeric month
+        m = re.search(r'\b(\d{1,2})[/\-.](20\d{2})\b', t)
+        if m:
+            month, year = int(m.group(1)), int(m.group(2))
+        else:
+            m = re.search(r'\b(20\d{2})[/\-.](\d{1,2})\b', t)
+            if m:
+                year, month = int(m.group(1)), int(m.group(2))
+    if not year or not month or not (1 <= month <= 12):
+        return None
+    return year, month
+
+
+def _utility_currency(period, today):
+    """Is the bill recent? 'current' (within ~3 months of *today*) | 'stale' (older) |
+    'unknown' (no readable date). Measured against the review date, not the application
+    date — the question is whether this is a LIVE household paying bills now."""
+    ym = _parse_billing_month(period)
+    if not ym:
+        return 'unknown'
+    year, month = ym
+    months_ago = (today.year - year) * 12 + (today.month - month)
+    if months_ago < 0:                                 # future-dated (data entry) → treat current
+        return 'current'
+    return 'current' if months_ago <= _UTILITY_CURRENT_MONTHS else 'stale'
+
+
+def utility_reasonable(application):
+    """Combined household utility consumption as a soft B40 proxy, shown identically on
+    every bill row. Water alone is a weak signal (cheap, flat across households) — so a
+    verdict is only given when BOTH bills are present; one bill → 'partial' (can't judge).
+    Returns ``{status, detail, per_capita}``:
+      - status: 'reasonable' (< RM25/head) | 'borderline' (RM25–40) | 'high' (> RM40)
+                | 'partial' (only one bill) | 'unknown' (no amount / no household size).
+      - detail: 'both' | 'water_only' | 'electricity_only' | '' — which bills informed it."""
+    amounts = {}
+    for dt in ('water_bill', 'electricity_bill'):
+        d = _latest_doc(application, dt)
+        amt = _parse_rm(_doc_fields(d).get('amount')) if d else None
+        if amt is not None:
+            amounts[dt] = amt
+    size = getattr(getattr(application, 'profile', None), 'household_size', None)
+    if not amounts or not size:
+        return {'status': 'unknown', 'detail': '', 'per_capita': None}
+    if len(amounts) < 2:                               # one bill alone can't judge consumption
+        detail = 'water_only' if 'water_bill' in amounts else 'electricity_only'
+        return {'status': 'partial', 'detail': detail, 'per_capita': None}
+    pc = sum(amounts.values()) / size
+    status = ('reasonable' if pc < _UTILITY_B40_CEILING
+              else 'high' if pc > _UTILITY_HIGH_FLOOR else 'borderline')
+    return {'status': status, 'detail': 'both', 'per_capita': round(pc, 2)}
+
+
+def _utility_name_unrelated(application, bill_name):
+    """True when the account-holder name matches NEITHER the student nor any uploaded
+    parent/earner IC — a soft 'bill is in someone else's name' note. Bills are routinely
+    in a parent's name (fine, matches the IC); the note fires only when it's a stranger.
+    Never asserted on a blank read or with no reference name to compare against."""
+    bill = (bill_name or '').strip()
+    if not bill:
+        return False
+    candidates = []
+    student = getattr(getattr(application, 'profile', None), 'name', '') or ''
+    if student.strip():
+        candidates.append(student)
+    for ic in application.documents.filter(doc_type='parent_ic'):
+        nm = (getattr(ic, 'vision_name', '') or '').strip()
+        if nm:
+            candidates.append(nm)
+    if not candidates:
+        return False
+    return all(name_match(bill, c) == 'mismatch' for c in candidates)
+
+
+def utility_check(doc, today=None):
+    """For a water / electricity bill: the account-holder name (a data point — bills are in
+    a parent's name), the home address (matched via the upload-time ``vision_address_match``),
+    the monthly charge + any arrears, plus three soft facts — whether the bill is CURRENT
+    (≤3 months old), whether household consumption is REASONABLE (combined per-capita, both
+    bills), and whether ARREARS exceed the current charge (a hardship signal). All soft,
+    never a gate. Returns the fact dict or None for a non-utility doc."""
     if getattr(doc, 'doc_type', '') not in ('water_bill', 'electricity_bill'):
         return None
+    if today is None:
+        today = datetime.date.today()
+    app = doc.application
     f = _doc_fields(doc)
+    name = (f.get('name', '') or '').strip()
+    monthly = _parse_rm(f.get('amount'))
+    arrears = _parse_rm(f.get('unpaid_balance'))
+    reasonable = utility_reasonable(app)
     return {
-        'name': (f.get('name', '') or '').strip(),
+        'name': name,
         'address': (f.get('address', '') or '').strip(),
         'monthly_bill': (f.get('amount', '') or '').strip(),
         'unpaid_balance': (f.get('unpaid_balance', '') or '').strip(),
         'address_status': getattr(doc, 'vision_address_match', '') or '',
+        'current_status': _utility_currency(f.get('billing_period'), today),
+        'reasonable_status': reasonable['status'],
+        'reasonable_detail': reasonable['detail'],
+        # 'arrears' (shown green) only when arrears exceed the current charge; else hidden.
+        'outstanding_status': 'arrears' if (arrears and monthly and arrears > monthly) else '',
+        'name_note': 'unrelated' if _utility_name_unrelated(app, name) else '',
     }
 
 

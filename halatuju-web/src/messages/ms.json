@@ -958,14 +958,25 @@
           "q4": "Adakah sesiapa lagi dalam isi rumah anda memperoleh pendapatan (contohnya abang atau kakak yang bekerja)?",
           "yes": "Ya",
           "no": "Tidak",
-          "earner": { "father": "Bapa", "mother": "Ibu", "guardian": "Penjaga sah" },
-          "work": { "payslip": "Bekerja — ada slip gaji", "informal": "Bekerja — tiada slip gaji", "not_working": "Tidak bekerja" },
+          "earner": {
+            "father": "Bapa",
+            "mother": "Ibu",
+            "guardian": "Penjaga sah"
+          },
+          "work": {
+            "payslip": "Bekerja — ada slip gaji",
+            "informal": "Bekerja — tiada slip gaji",
+            "not_working": "Tidak bekerja"
+          },
           "school": "Adik-beradik di sekolah",
           "tertiary": "Di kolej atau universiti",
           "burdenHint": "Ini membantu kami memahami keperluan keluarga anda.",
           "docsHeading": "Dokumen untuk dimuat naik",
           "footer": "Muat naik apa yang anda boleh — seorang penyemak akan melihat situasi anda secara peribadi.",
-          "badge": { "required": "Wajib", "optional": "Pilihan" }
+          "badge": {
+            "required": "Wajib",
+            "optional": "Pilihan"
+          }
         }
       },
       "requiredPill": "Wajib",
@@ -2257,7 +2268,9 @@
           "father": "Bapa",
           "guardian": "Penjaga",
           "ward": "Anak jagaan",
-          "address": "Alamat"
+          "address": "Alamat",
+          "reasonable": "Munasabah",
+          "outstanding": "Tunggakan"
         },
         "type": {
           "parent_ic": "IC pencari nafkah",
@@ -2265,6 +2278,11 @@
           "salary_slip": "Slip gaji",
           "birth_certificate": "Sijil kelahiran",
           "guardianship_letter": "Surat penjagaan"
+        },
+        "utilityNote": {
+          "unrelated": "Bil atas nama lain: {name}",
+          "water_only": "Bil air sahaja — bil elektrik tiada, penggunaan tidak dapat dinilai",
+          "electricity_only": "Bil elektrik sahaja — bil air tiada, penggunaan tidak dapat dinilai"
         }
       }
     },

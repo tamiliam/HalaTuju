@@ -264,3 +264,142 @@ class TestIncomeIcCheck(SimpleTestCase):
         chk = student_income_ic_check(self._doc('father', '', error='blurry'))
         self.assertFalse(chk['readable'])
         self.assertEqual(chk['name_status'], 'pending')
+
+
+# ── Utility-bill facts (current / reasonable / outstanding / name note) ────────
+import datetime  # noqa: E402
+
+from apps.scholarship.income_engine import (  # noqa: E402
+    _parse_billing_month, _utility_currency, utility_reasonable, utility_check,
+    _utility_name_unrelated,
+)
+
+
+class _FakeQS(list):
+    def order_by(self, *a, **k):
+        return self
+
+    def first(self):
+        return self[0] if self else None
+
+
+class _FakeDocs:
+    def __init__(self, docs):
+        self._docs = docs
+
+    def filter(self, doc_type=None, **kw):
+        return _FakeQS([d for d in self._docs if d.doc_type == doc_type])
+
+
+def _bill(doc_type, fields=None, address_match='', name=''):
+    return SimpleNamespace(doc_type=doc_type, vision_fields={'fields': fields or {}},
+                           vision_address_match=address_match, vision_name=name)
+
+
+def _app(docs, household_size=4, student_name=''):
+    app = SimpleNamespace(profile=SimpleNamespace(household_size=household_size, name=student_name))
+    app.documents = _FakeDocs(docs)
+    for d in docs:
+        d.application = app
+    return app
+
+
+class TestBillingMonthParse(SimpleTestCase):
+    def test_malay_month_name(self):
+        self.assertEqual(_parse_billing_month('Mei 2026'), (2026, 5))
+
+    def test_english_month_name(self):
+        self.assertEqual(_parse_billing_month('April 2026'), (2026, 4))
+
+    def test_numeric_mm_yyyy(self):
+        self.assertEqual(_parse_billing_month('05/2026'), (2026, 5))
+
+    def test_iso_yyyy_mm(self):
+        self.assertEqual(_parse_billing_month('2026-05'), (2026, 5))
+
+    def test_unparseable_returns_none(self):
+        self.assertIsNone(_parse_billing_month(''))
+        self.assertIsNone(_parse_billing_month('this month'))
+
+
+class TestUtilityCurrency(SimpleTestCase):
+    TODAY = datetime.date(2026, 6, 5)
+
+    def test_within_three_months_is_current(self):
+        self.assertEqual(_utility_currency('Mei 2026', self.TODAY), 'current')
+        self.assertEqual(_utility_currency('Mac 2026', self.TODAY), 'current')
+
+    def test_older_than_three_months_is_stale(self):
+        self.assertEqual(_utility_currency('Jan 2026', self.TODAY), 'stale')
+        self.assertEqual(_utility_currency('2025-12', self.TODAY), 'stale')
+
+    def test_no_date_is_unknown(self):
+        self.assertEqual(_utility_currency('', self.TODAY), 'unknown')
+
+    def test_future_dated_treated_current(self):
+        self.assertEqual(_utility_currency('07/2026', self.TODAY), 'current')
+
+
+class TestUtilityReasonable(SimpleTestCase):
+    def test_both_cheap_is_reasonable(self):
+        app = _app([_bill('water_bill', {'amount': '40'}), _bill('electricity_bill', {'amount': '40'})], household_size=4)
+        r = utility_reasonable(app)
+        self.assertEqual(r['status'], 'reasonable')   # 80 / 4 = 20 < 25
+        self.assertEqual(r['detail'], 'both')
+
+    def test_both_high_is_high(self):
+        app = _app([_bill('water_bill', {'amount': '100'}), _bill('electricity_bill', {'amount': '120'})], household_size=4)
+        self.assertEqual(utility_reasonable(app)['status'], 'high')   # 220 / 4 = 55 > 40
+
+    def test_both_middle_is_borderline(self):
+        app = _app([_bill('water_bill', {'amount': '60'}), _bill('electricity_bill', {'amount': '70'})], household_size=4)
+        self.assertEqual(utility_reasonable(app)['status'], 'borderline')   # 130 / 4 = 32.5
+
+    def test_one_bill_only_is_partial(self):
+        app = _app([_bill('water_bill', {'amount': '40'})], household_size=4)
+        r = utility_reasonable(app)
+        self.assertEqual(r['status'], 'partial')
+        self.assertEqual(r['detail'], 'water_only')
+
+    def test_no_household_size_is_unknown(self):
+        app = _app([_bill('water_bill', {'amount': '40'}), _bill('electricity_bill', {'amount': '40'})], household_size=None)
+        self.assertEqual(utility_reasonable(app)['status'], 'unknown')
+
+
+class TestUtilityCheck(SimpleTestCase):
+    TODAY = datetime.date(2026, 6, 5)
+
+    def test_assembles_all_facts(self):
+        docs = [_bill('water_bill', {'amount': '20', 'billing_period': 'Mei 2026'}, address_match='found'),
+                _bill('electricity_bill', {'amount': '20'})]
+        app = _app(docs, household_size=4)
+        chk = utility_check(docs[0], today=self.TODAY)
+        self.assertEqual(chk['address_status'], 'found')
+        self.assertEqual(chk['current_status'], 'current')
+        self.assertEqual(chk['reasonable_status'], 'reasonable')   # 40 / 4 = 10
+
+    def test_outstanding_only_when_arrears_exceed_charge(self):
+        app = _app([_bill('water_bill', {'amount': '30', 'unpaid_balance': '80'})], household_size=4)
+        self.assertEqual(utility_check(app.documents.filter(doc_type='water_bill').first(), today=self.TODAY)['outstanding_status'], 'arrears')
+        app2 = _app([_bill('water_bill', {'amount': '30', 'unpaid_balance': '10'})], household_size=4)
+        self.assertEqual(utility_check(app2.documents.filter(doc_type='water_bill').first(), today=self.TODAY)['outstanding_status'], '')
+
+    def test_name_note_unrelated_when_stranger(self):
+        docs = [_bill('water_bill', {'amount': '20', 'name': 'RAJESWARI A/P RAMALINGAM'}),
+                _bill('parent_ic', name='MURUGAN A/L KESAVAN')]
+        app = _app(docs, household_size=4, student_name='DIVASHINI A/P MURUGAN')
+        self.assertEqual(utility_check(docs[0], today=self.TODAY)['name_note'], 'unrelated')
+
+    def test_name_note_blank_when_matches_parent_ic(self):
+        docs = [_bill('water_bill', {'amount': '20', 'name': 'MURUGAN A/L KESAVAN'}),
+                _bill('parent_ic', name='MURUGAN A/L KESAVAN')]
+        app = _app(docs, household_size=4, student_name='DIVASHINI A/P MURUGAN')
+        self.assertEqual(utility_check(docs[0], today=self.TODAY)['name_note'], '')
+
+    def test_name_note_blank_when_blank_name(self):
+        app = _app([_bill('water_bill', {'amount': '20'}, name='')], household_size=4)
+        self.assertFalse(_utility_name_unrelated(app, ''))
+
+    def test_non_utility_doc_returns_none(self):
+        app = _app([_bill('ic')], household_size=4)
+        self.assertIsNone(utility_check(app.documents.filter(doc_type='ic').first(), today=self.TODAY))
