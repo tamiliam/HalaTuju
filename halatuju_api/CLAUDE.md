@@ -443,27 +443,41 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-04)
+## Next Sprint (as of 2026-06-05)
 
-**▶ BUILT — Income Check-1 SALARY route → MULTI-EARNER (migrate-first `0040` applied + verified; deploy HELD for the
-user's click-test, TD-070). Retro `docs/retrospective-check1-income-multiearner.md`; decision in `docs/decisions.md`
-(2026-06-04).** The single-earner salary route became a **multi-select** — tick everyone who works (father/mother/
-guardian/elder brother/elder sister), each with their own IC + (optional) salary slip + EPF. New `household_member`
-column on `ApplicantDocument` tags income docs (single-instance now per `(doc_type, household_member)`; the upload view's
-sweep is member-scoped so a blank-member STR/student IC never sweeps the tagged ones). New `income_working_members`
-JSON on `ScholarshipApplication`. **Siblings verify via the SAME student-IC patronymic** (`income_engine.father_relationship`
-reused unchanged — closed the borrowed-payslip hole, no extra sibling doc). Mother→birth cert, guardian→letter.
-`verdict_engine._verdict_income` delegates `route=='salary'` to `_verdict_income_salary`: all ICs present + all
-relationships confirmed + ≥1 payslip/EPF → `verified` (DATA verified; income AMOUNT/B40 = I4, still deferred); IC + no
-financial doc (informal) or unprovable relationship → `recommend` + interview flag (never blocks); missing IC/rel doc →
-`gap`. **Per-member gaps AGGREGATE** into one item with a `members` list (resolution keys tickets by code — don't emit
-dupes); `lib/actionCentre.localiseParams(params, t)` renders the member codes as localized labels on BOTH the student
-Action Centre + officer tile. **Forced non-earner-parent EPF dropped.** STR route untouched. Gates: 659 pytest + 248
-jest + `next build` clean + i18n parity **1930**; scholarship migrations through **`0040`** on prod. `salary_apps=0` so
-no backfill. Also bundled-but-unpushed: items 1&2 (`e197209` — context-aware optional income docs + drop "Optional"
-pill). **Deprecated (kept, drop later): `earner_work_status`, `household_other_earners` columns + `q2/q3/q4/work` wizard
-i18n keys (orphaned by the multi-select).** **▶ NEXT after this deploys + click-tests: I4 (income amount → per-capita
-B40 + utility hardship) · Gopal income doc-coach copy · remove orphaned `str_claimed_no_doc`.**
+**✅ SHIPPED + DEPLOYED 2026-06-05 — Income Check-1 multi-earner arc COMPLETE (11 commits `e197209`→`668676b` on
+`main`; migration `0040` migrate-first; retro `docs/retrospective-check1-income-multiearner.md`).** The income fact is
+now a full clinical check, both routes:
+- **Salary route → multi-select** ("tick everyone who works": father/mother/guardian/elder brother/elder sister), each
+  with their own IC + salary slip + EPF. `household_member` tags income docs (single-instance per `(doc_type, member)`);
+  new `income_working_members` JSON. Siblings verify via the SAME student-IC patronymic (`father_relationship` reused —
+  closed the borrowed-payslip hole, no extra doc); mother→birth cert, guardian→letter. Forced non-earner EPF dropped.
+- **Per-document verification** (the Identity standard, with relationship semantics): every income IC / salary slip /
+  EPF / STR is read for name + **NRIC** + amount + period and cross-checked against the **earner's own IC** (never the
+  student). One **cluster-aware Cikgu Gopal** per member, anchored on their IC.
+- **I4 per-capita amount gate (DONE, not deferred):** salary route goes `verified` only when the summed earner pay (from
+  payslip gross, or ≈24% of the EPF monthly contribution) ÷ household size clears `per_capita_ceiling` (RM1,584);
+  at/above → `recommend` + interview, never auto-reject. EPF monthly-contribution + utility-bill address/hardship soft
+  signals (officer-facing, never gates). Birth-certificate + guardianship checklists surfaced.
+- **STR route:** STR doc read for recipient + currency; a stale/rejected STR no longer auto-greens; green = the whole
+  cluster adds up.
+- Gates: **687 scholarship pytest + 250 jest** + `next build` clean + i18n parity **1930**; scholarship migrations
+  through **`0040`** on prod. Deprecated (kept, drop later, TD-084): `earner_work_status`, `household_other_earners` +
+  `q2/q3/q4/work` i18n keys.
+
+**▶ NEXT — Income document-first verdict + legacy backfill + cockpit redesign (TD-085, the user's explicit next sprint).**
+Live-testing app #21 (KISHANTAN, an STR recipient who uploaded the father's **salary slip** instead of an STR) exposed
+that **`_verdict_income` is wizard-route-driven, not document-driven**: the STR branch only accepts an `str` doc, so the
+payslip + father's IC sitting in the drawer are ignored → red *"no proof of income"* despite a confirmed earner
+relationship. Pipeline audit: **15 apps have `income_route=''`** (submitted before the wizard existed) but **only 6 are
+actually submitted (`profile_complete`)** — the other **9 are merely `shortlisted`** and self-heal when they walk the
+wizard. So real remediation ≈ **7 submitted apps** (the 6 blank-route + app #21); their docs are in the correct
+doc_types but untagged (`household_member=''`). **Do:** (1) make the verdict **document-first** — verify whatever income
+proof exists (STR/salary/EPF, tagged or not) against the available parent IC(s), wizard answers as *hints not gates*;
+(2) one-time **backfill** `income_route`/`income_earner` for the 6 blank-route submitted apps; (3) **reconfigure the
+income cockpit tile** to reflect what's in the drawer (surface the salary slip + per-capita + cluster), never claim "no
+proof" when a verified doc is present. Then: Gopal income doc-coach copy; remove orphaned `str_claimed_no_doc`; live
+click-through (TD-070).
 
 ---
 
@@ -497,15 +511,11 @@ B40 + utility hardship) · Gopal income doc-coach copy · remove orphaned `str_c
 - **▶ LIVE-VERIFY (TD-070, pending): click through the income wizard on /application** — walk Q1–Q4 + burden, confirm
   the dynamic checklist + a save round-trip + the officer Income tile recomputes. Not yet click-tested.
 
-**▶ NEXT — income polish + the deferred slices:**
-- **I4 (income amount + hardship):** read the income AMOUNT off salary/EPF → per-capita vs household size = the real B40
-  test; utility-bill unpaid-balance hardship signal. Hooks left in `income_engine`/the per-doc checks.
-- **Gopal income doc-coach copy** (`help_engine` income verdicts + `documentHelp.ts`) — the officer tile + student
-  Action Centre already cover income guidance; Cikgu Gopal on the income docs is the remaining warm-voice layer.
-- `str_claimed_no_doc` is now an ORPHAN reason code (the wizard's Q1 replaced the receives-str-no-doc heuristic) — kept
-  in i18n/CODE_TO_TICKET, never emitted; remove in a cleanup.
-**Other queued:** `/application` state machine + Check 2 (5-day SLA); reviewer-role sprint; old/new cockpit
-consolidation; Tamil i18n refine; STPM positional slip parser (parked); richer pathway-aware Gopal (low priority).
+_(I1–I3 above were extended to the full multi-earner arc + I4 amount gate — SHIPPED 2026-06-05; see the top of this
+section. The income-route document-first verdict + legacy backfill + cockpit redesign is the immediate ▶ NEXT, TD-085.)_
+**Other queued:** Gopal income doc-coach copy; remove orphaned `str_claimed_no_doc`; `/application` state machine +
+Check 2 (5-day SLA); reviewer-role sprint; old/new cockpit consolidation; Tamil i18n refine; STPM positional slip
+parser (parked); richer pathway-aware Gopal (low priority).
 
 **Carried gotchas:** TD-078 (subject map FE/BE dup), TD-079 (resolution sync writes on GET), TD-082 (academic confirm →
 Documents), TD-083 (verdict-metrics + `overall` built, not surfaced in UI). Migrate-first via Supabase MCP (deploy does
