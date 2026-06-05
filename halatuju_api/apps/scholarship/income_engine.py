@@ -402,6 +402,74 @@ def income_per_capita(application, members):
     return total / size, all_known
 
 
+# ── Relationship-proof documents: birth certificate + guardianship letter ────
+def _name_bucket(extracted, reference):
+    if not (extracted or '').strip() or not (reference or '').strip():
+        return 'no_ref'
+    return 'mismatch' if name_match(extracted, reference) == 'mismatch' else 'match'
+
+
+def _nric_bucket(extracted, reference):
+    from .vision import nric_match
+    if not (extracted or '').strip() or not (reference or '').strip():
+        return 'no_ref'
+    return 'match' if nric_match(extracted, reference) else 'mismatch'
+
+
+def _combine(a, b):
+    return 'mismatch' if 'mismatch' in (a, b) else ('match' if 'match' in (a, b) else 'no_ref')
+
+
+def student_bc_check(doc):
+    """Birth certificate: it links the student to their MOTHER (the income earner). Three
+    rows: CHILD = the student (name + NRIC); MOTHER = the mother's IC (name + NRIC);
+    FATHER = the student's patronymic. Returns the read fields + per-row status, or None."""
+    if getattr(doc, 'doc_type', '') != 'birth_certificate':
+        return None
+    app = doc.application
+    f = _doc_fields(doc)
+    student = getattr(getattr(app, 'profile', None), 'name', '') or ''
+    student_nric = getattr(getattr(app, 'profile', None), 'nric', '') or ''
+    child_name = (f.get('bc_child_name', '') or '').strip()
+    child_status = _combine(_name_bucket(child_name, student),
+                            _nric_bucket(f.get('bc_child_nric'), student_nric))
+    mother_name = (f.get('bc_mother_name', '') or '').strip()
+    mother_nric = (f.get('bc_mother_nric', '') or '').strip()
+    mic = _member_ic_doc(app, 'mother')
+    mother_status = _combine(_name_bucket(mother_name, getattr(mic, 'vision_name', '') if mic else ''),
+                             _nric_bucket(mother_nric, getattr(mic, 'vision_nric', '') if mic else ''))
+    father_name = (f.get('bc_father_name', '') or '').strip()
+    father_status = _name_bucket(father_name, father_name_from_ic(student))
+    return {
+        'child_name': child_name, 'child_status': child_status,
+        'mother_name': mother_name, 'mother_nric': mother_nric, 'mother_status': mother_status,
+        'father_name': father_name, 'father_status': father_status,
+        'bc_number': (f.get('bc_number', '') or '').strip(),
+    }
+
+
+def student_guardianship_check(doc):
+    """Guardianship order / authorisation letter: ties the legal guardian to the student
+    (the ward). GUARDIAN = the guardian's IC (name + NRIC); WARD = the student. Returns
+    the read fields + per-row status, or None for a non-guardianship doc."""
+    if getattr(doc, 'doc_type', '') != 'guardianship_letter':
+        return None
+    app = doc.application
+    f = _doc_fields(doc)
+    student = getattr(getattr(app, 'profile', None), 'name', '') or ''
+    g_name = (f.get('guardian_name', '') or '').strip()
+    g_nric = (f.get('guardian_nric', '') or '').strip()
+    gic = _member_ic_doc(app, 'guardian')
+    guardian_status = _combine(_name_bucket(g_name, getattr(gic, 'vision_name', '') if gic else ''),
+                               _nric_bucket(g_nric, getattr(gic, 'vision_nric', '') if gic else ''))
+    ward_name = (f.get('ward_name', '') or '').strip()
+    return {
+        'guardian_name': g_name, 'guardian_nric': g_nric, 'guardian_status': guardian_status,
+        'ward_name': ward_name, 'ward_status': _name_bucket(ward_name, student),
+        'doc_kind': (f.get('doc_kind', '') or '').strip(),
+    }
+
+
 # ── Utility bills as a SOFT B40 proxy + hardship signal (imperfect; officer context) ─
 _UTILITY_B40_CEILING = 25   # < RM25/capita/month combined → consistent with B40
 _UTILITY_HIGH_FLOOR = 40    # > RM40/capita/month → likely M40/T20 consumption

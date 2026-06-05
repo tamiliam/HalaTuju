@@ -21,6 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   untagged upload never touches the member-tagged income docs. Retired `DocumentListCreateView.MULTI_INSTANCE_DOC_TYPES`.
 
 ### Added
+- **Income Check-1 — birth certificate + guardianship-letter verification checklists.** The two relationship-proof docs
+  were used in the verdict logic but never *surfaced* as a checklist. Now: the **birth certificate** reads the three JPN
+  sections (child · father · mother, with the parents' **NRICs**) and shows Child (vs the student) · Mother (vs the
+  mother's IC, name+NRIC) · Father (vs the student's patronymic). The **guardianship letter** is now Gemini-extracted
+  (guardian name+NRIC · ward · court-order vs authorisation-letter) and shows Guardian (vs the guardian's IC) · Ward (vs
+  the student) — so the guardian cluster is complete. Any relationship problem is still voiced once by the earner-IC
+  cluster coach (these docs no longer fire the wrong generic "edit your name" nudge). New `bc_check` / `guardianship_check`
+  serializer fields + `BcChecklist` / `GuardianshipChecklist`; BC extraction gains the NRIC fields; guardianship gains an
+  extraction schema. No migration (computed; schema additive).
 - **Income Check-1 — EPF facts refined + utility bills (address check + soft B40 proxy + hardship).** EPF now shows the
   **monthly contribution** (the income figure — drives the 24% salary estimate) separately from the **total accumulated**
   balance and the **year**, so a large lifetime balance is never read as monthly income (the extraction reads "CARUMAN

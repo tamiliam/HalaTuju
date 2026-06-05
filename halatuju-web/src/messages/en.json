@@ -1065,6 +1065,16 @@
         "addressOk": "Matches your home",
         "addressMismatch": "Doesn't match your home — re-check"
       },
+      "relCheck": {
+        "child": "Child (you)",
+        "mother": "Mother",
+        "father": "Father",
+        "guardian": "Guardian",
+        "ward": "Child in their care (you)",
+        "confirmed": "Confirmed",
+        "mismatch": "Doesn't match — re-check",
+        "reviewing": "We'll review this"
+      },
       "strCheck": {
         "recipient": "Recipient",
         "icNo": "IC No",

@@ -693,7 +693,7 @@ def run_vision_match_for_document(doc, *, names, postcode='', city='', check_add
 
 GEMINI_EXTRACT_DOC_TYPES = frozenset({
     'salary_slip', 'epf', 'water_bill', 'electricity_bill', 'results_slip', 'offer_letter',
-    'str',
+    'str', 'guardianship_letter',
 })
 
 _STR = {'type': 'string'}
@@ -742,9 +742,15 @@ _FIELD_SCHEMAS = {
                                  'programme': _STR, 'institution': _STR, 'issuer': _STR,
                                  'offer_date': _STR, 'intake': _STR, 'candidate_address': _STR}),
     # Income Check-1: the Birth Certificate links the income earner (mother) to the
-    # student. Read the child + both parents' names so the income engine can match.
-    'birth_certificate': _doc_schema({'bc_child_name': _STR, 'bc_mother_name': _STR,
-                                      'bc_father_name': _STR, 'bc_number': _STR}),
+    # student. Read the child + both parents' names AND their NRICs (the strong match).
+    'birth_certificate': _doc_schema({'bc_child_name': _STR, 'bc_child_nric': _STR,
+                                      'bc_mother_name': _STR, 'bc_mother_nric': _STR,
+                                      'bc_father_name': _STR, 'bc_father_nric': _STR,
+                                      'bc_number': _STR}),
+    # Income Check-1: a guardianship order / authorisation letter ties the legal guardian
+    # to the student (the ward). Read the guardian + ward names + the guardian's NRIC.
+    'guardianship_letter': _doc_schema({'guardian_name': _STR, 'guardian_nric': _STR,
+                                        'ward_name': _STR, 'doc_kind': _STR}),
 }
 
 # Which extracted field holds the person's name (for the deterministic verdict).
@@ -831,13 +837,24 @@ _DOC_HINTS = {
                          'is the TOTAL including arrears; "unpaid_balance" = the arrears '
                          '("Tunggakan" / "Baki Tertunggak", RM) — empty if none; '
                          '"billing_period" = the bill month. Leave empty if absent.'),
-    'birth_certificate': (' This is a Malaysian birth certificate (Sijil Kelahiran, JPN). '
-                          'Return: "bc_child_name" = the child\'s full name ("Nama" of the '
-                          'child / "Nama Kanak-Kanak"); "bc_mother_name" = the mother\'s full '
-                          'name ("Nama Ibu"); "bc_father_name" = the father\'s full name '
-                          '("Nama Bapa"); "bc_number" = the certificate serial number if '
-                          'shown. Use the names EXACTLY as printed (keep bin/binti/a/l/a/p). '
-                          'Leave a field empty if it is not present or not legible.'),
+    'birth_certificate': (' This is a Malaysian birth certificate (Sijil Kelahiran, JPN). It '
+                          'has three labelled sections: "KANAK-KANAK / CHILD", "BAPA / FATHER" '
+                          'and "IBU / MOTHER". Return: "bc_child_name" = the child\'s "Nama '
+                          'Penuh / Full Name" in the CHILD section; "bc_child_nric" = the '
+                          'child\'s IC number if shown; "bc_father_name" + "bc_father_nric" = '
+                          'the "Nama" and "No. Kad Pengenalan" in the FATHER section; '
+                          '"bc_mother_name" + "bc_mother_nric" = the "Nama" and "No. Kad '
+                          'Pengenalan" in the MOTHER section (keep all 12 NRIC digits); '
+                          '"bc_number" = the certificate serial number. Use names EXACTLY as '
+                          'printed (keep bin/binti/a/l/a/p). Leave a field empty if absent.'),
+    'guardianship_letter': (' This is EITHER a Malaysian court-issued guardianship order OR a '
+                            'written authorisation letter from a parent placing the applicant '
+                            '(the "ward") under someone\'s care. Return: "guardian_name" = the '
+                            'guardian\'s full name; "guardian_nric" = the guardian\'s IC number '
+                            'if shown (12 digits); "ward_name" = the child/ward the letter is '
+                            'about (the applicant); "doc_kind" = "court_order" if it is a court '
+                            'guardianship order, else "authorisation_letter". Leave a field '
+                            'empty if it is not present or not legible.'),
 }
 
 

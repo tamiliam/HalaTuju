@@ -90,6 +90,12 @@ export function shouldShowCoach(doc: ApplicantDocument): boolean {
   if (doc.utility_check) {
     return doc.utility_check.address_status === 'not_found'
   }
+  // Relationship-proof docs (birth cert / guardianship letter) — the per-row checklist shows
+  // the detail and any relationship problem is voiced by the earner-IC cluster coach, so the
+  // doc itself stays quiet (no wrong generic name/address nudge).
+  if (doc.bc_check || doc.guardianship_check) {
+    return false
+  }
   // Supporting docs — the Gemini doc-assist verdict takes precedence (matches the chip).
   const av = doc.vision_fields?.student_verdict
   if (av) return av !== 'ok'

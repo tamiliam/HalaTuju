@@ -336,6 +336,11 @@ def verdict_for_document(doc):
         if doc.vision_run_at is None:
             return ''
         return 'address_mismatch' if doc.vision_address_match == 'not_found' else ''
+    # Relationship-proof docs (birth cert / guardianship letter) — any problem (the names
+    # don't link to the family) is voiced by the earner-IC cluster coach, and the per-row
+    # checklist shows the detail. So the doc itself stays quiet (no wrong generic nudge).
+    if doc.doc_type in ('birth_certificate', 'guardianship_letter'):
+        return ''
     # Other supporting docs — the Gemini doc-assist verdict takes precedence (it is the
     # chip the frontend shows); fall back to the older soft full-text checks when it never ran.
     fields = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}

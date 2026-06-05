@@ -393,6 +393,66 @@ function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => 
   )
 }
 
+// ── Relationship-proof checklists (Check-1 Income): birth cert + guardianship ──
+
+const REL_PILL: Record<ICCheckKind, string> = {
+  match: 'bg-green-50 text-green-700 ring-green-200',
+  partial: 'bg-amber-50 text-amber-700 ring-amber-200',
+  mismatch: 'bg-red-50 text-red-700 ring-red-200',
+  unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
+  none: 'bg-gray-50 text-gray-500 ring-gray-200',
+}
+
+function relPill(status: string, t: (k: string) => string): ReactNode {
+  const kind: ICCheckKind = status === 'match' ? 'match' : status === 'mismatch' ? 'mismatch' : 'none'
+  const label =
+    status === 'match' ? t('scholarship.docs.relCheck.confirmed')
+      : status === 'mismatch' ? t('scholarship.docs.relCheck.mismatch')
+        : t('scholarship.docs.relCheck.reviewing')
+  return <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${REL_PILL[kind]}`}>{label}</span>
+}
+
+function relRow(label: string, value: string, right: ReactNode): ReactNode {
+  return (
+    <div className="flex items-start justify-between gap-2 py-1.5">
+      <p className="min-w-0 text-xs text-gray-700">
+        <span className="font-medium text-gray-600">{label}: </span>
+        <span className="break-words">{value || '—'}</span>
+      </p>
+      {right}
+    </div>
+  )
+}
+
+/** Birth-certificate checklist — links the student to their mother (the income earner):
+ *  Child (vs you) · Mother (vs Mother's IC) · Father (vs your IC's family name). */
+function BcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
+  const chk = doc.bc_check
+  if (!chk) return null
+  return (
+    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+      {relRow(t('scholarship.docs.relCheck.child'), chk.child_name, relPill(chk.child_status, t))}
+      {relRow(t('scholarship.docs.relCheck.mother'),
+              [chk.mother_name, chk.mother_nric].filter(Boolean).join(' · '), relPill(chk.mother_status, t))}
+      {chk.father_name ? relRow(t('scholarship.docs.relCheck.father'), chk.father_name, relPill(chk.father_status, t)) : null}
+    </div>
+  )
+}
+
+/** Guardianship-letter checklist — ties the guardian to the student (the ward):
+ *  Guardian (vs Guardian's IC) · Ward (vs you). */
+function GuardianshipChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
+  const chk = doc.guardianship_check
+  if (!chk) return null
+  return (
+    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+      {relRow(t('scholarship.docs.relCheck.guardian'),
+              [chk.guardian_name, chk.guardian_nric].filter(Boolean).join(' · '), relPill(chk.guardian_status, t))}
+      {relRow(t('scholarship.docs.relCheck.ward'), chk.ward_name, relPill(chk.ward_status, t))}
+    </div>
+  )
+}
+
 // ── Results-slip clinical 3-check (Check-1 Academic) ─────────────────────
 // Mirrors the IC checklist: three rows the student can read at a glance —
 // Name · Subjects · Results — each with what we read + a pass/fail badge, plus
@@ -714,6 +774,10 @@ function SingleDocCard({
             <StrChecklist doc={d} t={t} />
           ) : (d.doc_type === 'water_bill' || d.doc_type === 'electricity_bill') && d.utility_check ? (
             <UtilityChecklist doc={d} t={t} />
+          ) : d.doc_type === 'birth_certificate' && d.bc_check ? (
+            <BcChecklist doc={d} t={t} />
+          ) : d.doc_type === 'guardianship_letter' && d.guardianship_check ? (
+            <GuardianshipChecklist doc={d} t={t} />
           ) : (
             <SupportingDocChip doc={d} t={t} />
           )}
