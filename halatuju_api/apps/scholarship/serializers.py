@@ -327,6 +327,9 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     str_check = serializers.SerializerMethodField()
     # Check-1 Income: a utility bill — address (vs home) + monthly bill + unpaid balance.
     utility_check = serializers.SerializerMethodField()
+    # Check-1 Income: relationship proof — birth certificate / guardianship letter.
+    bc_check = serializers.SerializerMethodField()
+    guardianship_check = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantDocument
@@ -354,6 +357,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'str_check',
             # Check-1 Income: utility bill — address + monthly bill + unpaid balance.
             'utility_check',
+            # Check-1 Income: relationship proof checklists (BC / guardianship letter).
+            'bc_check', 'guardianship_check',
         ]
         read_only_fields = [
             'vision_nric', 'vision_name', 'vision_address',
@@ -445,6 +450,22 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             return None
         from .income_engine import utility_check
         return utility_check(obj)
+
+    def get_bc_check(self, obj):
+        """{child/mother/father names + statuses} for a birth certificate — links the
+        student to their mother (the income earner). Null for other doc types."""
+        if obj.doc_type != 'birth_certificate':
+            return None
+        from .income_engine import student_bc_check
+        return student_bc_check(obj)
+
+    def get_guardianship_check(self, obj):
+        """{guardian/ward names + statuses + doc_kind} for a guardianship letter — ties the
+        guardian to the student. Null for other doc types."""
+        if obj.doc_type != 'guardianship_letter':
+            return None
+        from .income_engine import student_guardianship_check
+        return student_guardianship_check(obj)
 
 
 class ResolutionItemSerializer(serializers.ModelSerializer):

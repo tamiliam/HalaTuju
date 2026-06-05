@@ -1168,6 +1168,31 @@ export interface ApplicantDocument {
   str_check?: StrCheck | null
   // Check-1 Income: a utility bill — address (vs home) + monthly bill + unpaid balance.
   utility_check?: UtilityCheck | null
+  // Check-1 Income: relationship proof checklists. null unless the matching doc type.
+  bc_check?: BcCheck | null
+  guardianship_check?: GuardianshipCheck | null
+}
+
+type RelStatus = 'match' | 'mismatch' | 'no_ref'
+
+export interface BcCheck {
+  child_name: string
+  child_status: RelStatus     // vs the student (you)
+  mother_name: string
+  mother_nric: string
+  mother_status: RelStatus    // vs the mother's IC
+  father_name: string
+  father_status: RelStatus    // vs your IC patronymic
+  bc_number: string
+}
+
+export interface GuardianshipCheck {
+  guardian_name: string
+  guardian_nric: string
+  guardian_status: RelStatus  // vs the guardian's IC
+  ward_name: string
+  ward_status: RelStatus      // vs the student (you)
+  doc_kind: string
 }
 
 export interface StrCheck {

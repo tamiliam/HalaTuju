@@ -824,3 +824,55 @@ class TestUtilityAndEpf(TestCase):
         ev = _codes(_facts(self.app)['income']['evidence'])
         self.assertIn('utility_percapita_b40', ev)   # (20+40)/4 = 15 < 25
         self.assertIn('utility_hardship', ev)
+
+
+class TestRelationshipChecklists(TestCase):
+    """Birth certificate + guardianship letter surface a per-row checklist (child/mother/
+    father, guardian/ward) verified against the relevant IC — the relationship-proof docs
+    that were previously unsurfaced."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='rel', name='B40', year=2026)
+
+    def setUp(self):
+        self.profile = StudentProfile.objects.create(
+            supabase_user_id=f'rel-{self.id()}', name='ATHIAN SANKAR A/L ELANJELIAN',
+            nric='090822-02-0919', household_size=4)
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='shortlisted',
+            income_route='salary', income_working_members=['mother'])
+
+    def test_bc_check_child_mother_father(self):
+        from apps.scholarship.income_engine import student_bc_check
+        _parent_ic(self.app, 'VANITHA A/P MOHAN', member='mother', nric='760820-02-5230')
+        bc = _add_doc(self.app, 'birth_certificate', student_verdict='ok',
+                      fields={'bc_child_name': 'ATHIAN SANKAR A/L ELANJELIAN',
+                              'bc_mother_name': 'VANITHA A/P MOHAN', 'bc_mother_nric': '760820-02-5230',
+                              'bc_father_name': 'ELANJELIAN A/L VENUGOPAL'})
+        chk = student_bc_check(bc)
+        self.assertEqual(chk['child_status'], 'match')      # child = the student
+        self.assertEqual(chk['mother_status'], 'match')     # mother name+NRIC = the mother IC
+        # father vs the student's patronymic (A/L ELANJELIAN → ELANJELIAN)
+        self.assertEqual(chk['father_status'], 'match')
+
+    def test_bc_mother_mismatch(self):
+        from apps.scholarship.income_engine import student_bc_check
+        _parent_ic(self.app, 'VANITHA A/P MOHAN', member='mother', nric='760820-02-5230')
+        bc = _add_doc(self.app, 'birth_certificate', student_verdict='ok',
+                      fields={'bc_child_name': 'ATHIAN SANKAR A/L ELANJELIAN',
+                              'bc_mother_name': 'STRANGER WOMAN', 'bc_mother_nric': '111111-11-1111'})
+        self.assertEqual(student_bc_check(bc)['mother_status'], 'mismatch')
+
+    def test_guardianship_check(self):
+        from apps.scholarship.income_engine import student_guardianship_check
+        self.app.income_working_members = ['guardian']
+        self.app.save()
+        _parent_ic(self.app, 'RAJA A/L KUMAR', member='guardian', nric='650505-05-5555')
+        g = _add_doc(self.app, 'guardianship_letter', student_verdict='ok',
+                     fields={'guardian_name': 'RAJA A/L KUMAR', 'guardian_nric': '650505-05-5555',
+                             'ward_name': 'ATHIAN SANKAR A/L ELANJELIAN', 'doc_kind': 'court_order'})
+        chk = student_guardianship_check(g)
+        self.assertEqual(chk['guardian_status'], 'match')   # guardian name+NRIC = the guardian IC
+        self.assertEqual(chk['ward_status'], 'match')       # ward = the student
+        self.assertEqual(chk['doc_kind'], 'court_order')
