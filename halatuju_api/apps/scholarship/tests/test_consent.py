@@ -156,7 +156,7 @@ class TestConsentApi(TestCase):
         }, format='json')
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.json()['error'], 'consent_not_ready')
-        self.assertIn('parent_ic_missing', resp.json()['blockers'])
+        self.assertIn('parent_ic_missing:father', resp.json()['blockers'])   # member-qualified (STR earner)
 
     def test_minor_non_parent_ok_without_letter(self):
         """The guardianship letter is now OPTIONAL — a non-parent guardian
@@ -413,8 +413,9 @@ class TestIncomeGateV2(TestCase):
 
     def test_str_father_needs_earner_ic_and_str_no_bc(self):
         app = self._app(route='str', earner='father')
-        # STR doc leads, then the earner IC (matches the Documents-UI display order).
-        self.assertEqual(self._blockers(app), ['str_missing', 'parent_ic_missing'])
+        # STR doc leads, then the earner IC (matches the Documents-UI display order);
+        # the IC code is member-qualified so the checklist names the earner.
+        self.assertEqual(self._blockers(app), ['str_missing', 'parent_ic_missing:father'])
         self._doc(app, 'parent_ic')
         self._doc(app, 'str')
         self.assertEqual(self._blockers(app), [])   # father → patronymic, no BC
@@ -430,7 +431,7 @@ class TestIncomeGateV2(TestCase):
     def test_salary_mother_needs_ic_slip_and_bc(self):
         app = self._app(route='salary', members=['mother'])
         self.assertEqual(set(self._blockers(app)),
-                         {'parent_ic_missing', 'salary_slip_missing', 'birth_certificate_missing'})
+                         {'parent_ic_missing:mother', 'salary_slip_missing:mother', 'birth_certificate_missing'})
         self._doc(app, 'parent_ic', member='mother')
         self._doc(app, 'salary_slip', member='mother')
         self._doc(app, 'birth_certificate')   # single household doc, untagged
@@ -440,14 +441,14 @@ class TestIncomeGateV2(TestCase):
         app = self._app(route='salary', members=['father'])
         self._doc(app, 'parent_ic', member='father')
         self._doc(app, 'epf', member='father')           # EPF present...
-        self.assertEqual(self._blockers(app), ['salary_slip_missing'])  # ...slip still required
+        self.assertEqual(self._blockers(app), ['salary_slip_missing:father'])  # ...slip still required
 
     def test_salary_multi_member_each_member_checked(self):
         app = self._app(route='salary', members=['father', 'mother'])
         self._doc(app, 'parent_ic', member='father')
         self._doc(app, 'salary_slip', member='father')   # father complete; mother's missing
         b = set(self._blockers(app))
-        self.assertEqual(b, {'parent_ic_missing', 'salary_slip_missing', 'birth_certificate_missing'})
+        self.assertEqual(b, {'parent_ic_missing:mother', 'salary_slip_missing:mother', 'birth_certificate_missing'})
 
     def test_salary_tagging_is_member_scoped(self):
         # Father's slip must NOT satisfy the mother's requirement (tag-scoped).
@@ -455,7 +456,7 @@ class TestIncomeGateV2(TestCase):
         self._doc(app, 'parent_ic', member='father')     # wrong member
         self._doc(app, 'salary_slip', member='father')
         self.assertEqual(set(self._blockers(app)),
-                         {'parent_ic_missing', 'salary_slip_missing', 'birth_certificate_missing'})
+                         {'parent_ic_missing:mother', 'salary_slip_missing:mother', 'birth_certificate_missing'})
 
     # ── offer letter + documents_done + grandfather ──────────────────────────
     def test_offer_letter_compulsory(self):
