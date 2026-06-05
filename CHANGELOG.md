@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Cikgu Gopal — precise message when the IC number is misread but the name matches.** On the student's own identity
+  IC, a name‑match with a number‑mismatch is now its own verdict (`ic_nric_misread`) instead of the generic "the IC
+  number didn't match your profile." Gopal reassures that the name matched, explains the number is almost certainly a
+  camera misread (glare across the digits), and asks for a clean straight‑on re‑upload — with a soft fallback to "check
+  the number in your profile" only if a clear photo still differs. When the name *also* fails (likely the wrong card), it
+  keeps the generic note. Backend `help_engine` verdict split + guidance/fix‑hint; FE `HELP_VERDICTS`; new fallback copy
+  `scholarship.docs.help.fallback.ic_nric_misread` (en/ms/ta). No migration. 730 scholarship pytest + 258 jest + build clean.
 - **Verification verdict panel — green facts collapse to a tick, details only for what still needs you.** A fact whose
   badge is green (verified) now shows just `● FACT ✓` with no description, and its evidence/detail block is hidden — green
   means every requirement is met, so the receipts are noise. Amber/red facts are unchanged: they keep their lead line and

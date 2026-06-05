@@ -32,6 +32,10 @@ PERSONA = 'Cikgu Gopal'
 VERDICT_GUIDANCE = {
     'name_mismatch':   "the name we read on this document did not match the name saved in the applicant's profile",
     'nric_mismatch':   "the IC number we read did not match the IC number in the applicant's profile",
+    # The student's OWN IC where the NAME matched but only the IC NUMBER did not — because
+    # the name agreed, this is almost always the camera misreading the digits (glare), not
+    # the wrong card. Reassure on the name, ask for a clean re-upload.
+    'ic_nric_misread': "the NAME on this IC matched the applicant's name, but the IC NUMBER we read did not match the IC number registered on the applicant's account — and because the name matched, this is most likely the camera misreading the number (glare or blur across the card) rather than the wrong card",
     'address_mismatch': "the home address on this bill did not match the address on file",
     'wrong_doc':       "this file did not look like the kind of document expected in this slot",
     'unreadable':      "we could not read this document clearly — it may be blurry, dark, or low-resolution",
@@ -79,6 +83,15 @@ VERDICT_FIX_HINT = {
         'correct, then the name they typed when registering may have a small spelling '
         'difference — they can fix it on their Profile page. Do NOT assume which one is '
         "wrong — the card might be right and the typed name wrong, or the other way round."
+    ),
+    'ic_nric_misread': (
+        'Reassure them warmly that the NAME matched, so this is very likely just the photo '
+        'being misread, not a real problem and nothing is blocked. Kindly ask them to '
+        're-upload a clear, straight-on photo of the IC with no glare or shadow across the '
+        'number, filling the frame. Add gently that if the number still does not match after '
+        'a clean photo, the IC number they typed when registering may have a small typo they '
+        'can correct on their Profile page. Do NOT tell them they did something wrong, and do '
+        'NOT ask them to change their name.'
     ),
     'slip_name_mismatch': (
         'This is almost always the WRONG FILE: kindly suggest they check they uploaded '
@@ -237,7 +250,12 @@ def verdict_for_document(doc):
         from .vision import name_match, nric_match
         profile = getattr(doc.application, 'profile', None)
         if not nric_match(doc.vision_nric, getattr(profile, 'nric', '') or ''):
-            return 'nric_mismatch'
+            # IC number didn't match the account. If the NAME we read still matches, it is
+            # almost always an OCR misread of the digits (glare) — reassure + ask for a clean
+            # re-upload. If the name ALSO fails (or none was read), fall back to the generic
+            # number-mismatch note (it could be the wrong card entirely).
+            name_ok = doc.vision_name and name_match(doc.vision_name, getattr(profile, 'name', '') or '') != 'mismatch'
+            return 'ic_nric_misread' if name_ok else 'nric_mismatch'
         if doc.vision_name and name_match(doc.vision_name, getattr(profile, 'name', '') or '') == 'mismatch':
             return 'name_mismatch'
         return ''

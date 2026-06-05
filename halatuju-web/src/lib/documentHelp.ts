@@ -7,6 +7,8 @@ import type { ApplicantDocument } from './api'
 export const HELP_VERDICTS = [
   'name_mismatch',
   'nric_mismatch',
+  // Student's own IC: name matched but only the IC number didn't — likely an OCR misread.
+  'ic_nric_misread',
   'address_mismatch',
   'wrong_doc',
   'unreadable',
