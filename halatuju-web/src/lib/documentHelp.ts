@@ -2,6 +2,7 @@
 // is unit-testable in the project's node-env Jest (no DOM). The component
 // (DocumentHelpCoach.tsx) is the only React part; all decisions live here.
 import type { ApplicantDocument } from './api'
+import { relationshipDocFor, type WorkingMember } from './incomeWizard'
 
 // Verdict codes the backend + these fallbacks share (same set as help_engine.VERDICT_GUIDANCE).
 export const HELP_VERDICTS = [
@@ -115,6 +116,44 @@ export function fallbackKeyFor(verdict: string | undefined): string {
   return `scholarship.docs.help.fallback.${v}`
 }
 
+// ── Income cluster grouping (the single per-earner coach) ────────────────────
+// Income is a cluster per earner; the coach is anchored at the foot of the cluster (not on
+// one file). These helpers pick the documents that belong to a member's cluster so the
+// cluster coach can gate its fetch + build a cache signal that re-fires on any cluster change.
+
+const INCOME_EVIDENCE = new Set(['parent_ic', 'salary_slip', 'epf'])
+
+/**
+ * The documents in one earner's income cluster.
+ *  - STR route: a single earner; income docs are stored UNTAGGED — the STR + evidence
+ *    (IC / payslip / EPF) + the relationship doc (birth cert / guardianship letter).
+ *  - salary route: this member's TAGGED evidence + the (untagged) relationship doc.
+ */
+export function clusterDocsFor(
+  docs: ApplicantDocument[], member: string, route: string,
+): ApplicantDocument[] {
+  const rel = relationshipDocFor(member as WorkingMember)   // '' | 'birth_certificate' | 'guardianship_letter'
+  if (route === 'str') {
+    return docs.filter((d) => {
+      const untagged = (d.household_member || '') === ''
+      return untagged && (d.doc_type === 'str' || INCOME_EVIDENCE.has(d.doc_type) || (!!rel && d.doc_type === rel))
+    })
+  }
+  return docs.filter((d) => {
+    const m = d.household_member || ''
+    return (INCOME_EVIDENCE.has(d.doc_type) && m === member) || (!!rel && d.doc_type === rel && m === '')
+  })
+}
+
+/** A signal that changes whenever any document in the cluster changes (upload / re-run /
+ *  verdict). Compose with the language at the call site. */
+export function clusterHelpSignal(clusterDocs: ApplicantDocument[]): string {
+  return clusterDocs
+    .map((d) => `${d.id}:${helpSignal(d)}`)
+    .sort()
+    .join('||')
+}
+
 // ── Coach advice cache ───────────────────────────────────────────────────────
 // Cikgu Gopal must pop up only AFTER an upload, and his advice must STICK. We cache
 // the fetched advice keyed by a "verdict signal" that changes only on a (re-)upload
@@ -173,12 +212,14 @@ function helpCacheKey(docId: number, signal: string): string {
   return `halatuju_doc_help_${docId}_${signal}`
 }
 
-export function readHelpCache(
-  docId: number, signal: string, storage: StorageLike | null = safeLocal(),
+/** Read/write a cached coach result by a fully-formed key — shared by the per-document
+ *  cache (keyed by docId) and the income-cluster cache (keyed by member). */
+export function readHelpCacheRaw(
+  key: string, storage: StorageLike | null = safeLocal(),
 ): CachedHelp | null {
   if (!storage) return null
   try {
-    const raw = storage.getItem(helpCacheKey(docId, signal))
+    const raw = storage.getItem(key)
     if (!raw) return null
     const v = JSON.parse(raw)
     if (v && (v.source === 'ai' || v.source === 'fallback' || v.source === 'none')) return v as CachedHelp
@@ -188,13 +229,30 @@ export function readHelpCache(
   }
 }
 
-export function writeHelpCache(
-  docId: number, signal: string, value: CachedHelp, storage: StorageLike | null = safeLocal(),
+export function writeHelpCacheRaw(
+  key: string, value: CachedHelp, storage: StorageLike | null = safeLocal(),
 ): void {
   if (!storage) return
   try {
-    storage.setItem(helpCacheKey(docId, signal), JSON.stringify(value))
+    storage.setItem(key, JSON.stringify(value))
   } catch {
     /* quota / disabled — non-fatal */
   }
+}
+
+export function readHelpCache(
+  docId: number, signal: string, storage: StorageLike | null = safeLocal(),
+): CachedHelp | null {
+  return readHelpCacheRaw(helpCacheKey(docId, signal), storage)
+}
+
+export function writeHelpCache(
+  docId: number, signal: string, value: CachedHelp, storage: StorageLike | null = safeLocal(),
+): void {
+  writeHelpCacheRaw(helpCacheKey(docId, signal), value, storage)
+}
+
+/** Cache key for the income-cluster coach (per earner, per signal). */
+export function clusterCacheKey(member: string, signal: string): string {
+  return `halatuju_income_help_${member}_${signal}`
 }

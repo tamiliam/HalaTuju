@@ -655,6 +655,17 @@ class TestIncomeCluster(TestCase):
         slip = self._slip('father', 'MURUGAN A/L KESAVAN')
         self.assertEqual(verdict_for_document(slip), '')
 
+    def test_cluster_nudges_add_ic_when_proof_but_no_ic(self):
+        # The single cluster coach now speaks even before the IC: a payslip with no IC for
+        # that member → "add the IC" (this nudge moved off the payslip row into the cluster).
+        from apps.scholarship.income_engine import income_cluster_advice
+        self._slip('father', 'MURUGAN A/L KESAVAN')        # proof, no father IC
+        self.assertEqual(income_cluster_advice(self.app, 'father'), 'income_ic_needed')
+
+    def test_cluster_silent_when_nothing_uploaded(self):
+        from apps.scholarship.income_engine import income_cluster_advice
+        self.assertEqual(income_cluster_advice(self.app, 'father'), '')
+
 
 class TestIncomeClusterStr(TestCase):
     """STR route: income proofs are UNTAGGED (single earner = income_earner). The same
@@ -704,6 +715,30 @@ class TestIncomeClusterStr(TestCase):
         slip = _add_doc(self.app, 'salary_slip', student_verdict='ok', member='',
                         fields={'name': 'MURUGAN A/L KESAVAN'})
         self.assertEqual(verdict_for_document(slip), 'income_ic_needed')
+
+    def _str(self, *, year='2026', status='diluluskan'):
+        return _add_doc(self.app, 'str', student_verdict='ok', member='',
+                        fields={'recipient_name': 'MURUGAN A/L KESAVAN',
+                                'recipient_nric': '600101-01-1111',
+                                'status': status, 'year': year, 'amount': 'RM500'})
+
+    def test_str_stale_voiced_in_cluster_without_ic(self):
+        # STR currency now lives in the single cluster voice — even before the IC arrives.
+        from apps.scholarship.income_engine import income_cluster_advice
+        self._str(year='2024')                                  # older than cohort 2026 → stale
+        self.assertEqual(income_cluster_advice(self.app, 'father'), 'str_not_current')
+
+    def test_str_stale_voiced_in_cluster_with_ic(self):
+        from apps.scholarship.income_engine import income_cluster_advice
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='', nric='600101-01-1111')
+        self._str(year='2024')
+        self.assertEqual(income_cluster_advice(self.app, 'father'), 'str_not_current')
+
+    def test_str_current_cluster_is_silent(self):
+        from apps.scholarship.income_engine import income_cluster_advice
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='', nric='600101-01-1111')
+        self._str(year='2026')
+        self.assertEqual(income_cluster_advice(self.app, 'father'), '')
 
 
 class TestIncomePerCapita(TestCase):
