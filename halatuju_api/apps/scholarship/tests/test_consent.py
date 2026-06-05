@@ -413,7 +413,8 @@ class TestIncomeGateV2(TestCase):
 
     def test_str_father_needs_earner_ic_and_str_no_bc(self):
         app = self._app(route='str', earner='father')
-        self.assertEqual(set(self._blockers(app)), {'parent_ic_missing', 'str_missing'})
+        # STR doc leads, then the earner IC (matches the Documents-UI display order).
+        self.assertEqual(self._blockers(app), ['str_missing', 'parent_ic_missing'])
         self._doc(app, 'parent_ic')
         self._doc(app, 'str')
         self.assertEqual(self._blockers(app), [])   # father → patronymic, no BC

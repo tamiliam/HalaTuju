@@ -615,13 +615,15 @@ def income_doc_blockers(application):
         earner = (getattr(application, 'income_earner', '') or '').strip()
         if not earner:
             return ['income_incomplete']
+        # Order: STR doc first (the primary income proof), then the earner IC, then the
+        # relationship doc — matches the Documents-UI DISPLAY_ORDER (str before parent_ic).
+        if 'str' not in present:
+            out.append('str_missing')
         if _member_ic_doc(application, earner) is None:
             out.append('parent_ic_missing')
         rel = relationship_doc_for(earner)          # birth_certificate / guardianship_letter / ''
         if rel and rel not in present:
             out.append(f'{rel}_missing')            # birth_certificate_missing / guardianship_letter_missing
-        if 'str' not in present:
-            out.append('str_missing')
         return out
     # Salary route — every selected working member needs IC + salary slip (+ rel doc).
     members = working_members(application)
