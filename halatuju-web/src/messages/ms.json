@@ -1050,10 +1050,20 @@
         "icNo": "No. KP",
         "amount": "Jumlah",
         "period": "Tempoh",
+        "monthlyContribution": "Caruman bulanan",
+        "totalAccumulated": "Jumlah simpanan (KWSP)",
+        "year": "Tahun",
         "matchesIc": "Sepadan dengan KP mereka",
         "mismatchIc": "Tidak sepadan dengan KP mereka — semak semula",
         "addIc": "Muat naik KP mereka untuk semak automatik",
         "fromDoc": "daripada dokumen"
+      },
+      "utilityCheck": {
+        "address": "Alamat",
+        "monthlyBill": "Bil bulan ini",
+        "unpaidBalance": "Baki tertunggak",
+        "addressOk": "Sepadan dengan rumah anda",
+        "addressMismatch": "Tidak sepadan dengan rumah anda — semak semula"
       },
       "strCheck": {
         "recipient": "Penerima",
@@ -2143,6 +2153,9 @@
           "income_unverified_needs_interview": "Pendapatan tidak dapat disahkan melalui dokumen (tidak formal / tiada slip gaji) — sahkan semasa temu duga melalui saiz isi rumah, tanggungan dan gaya hidup. JANGAN sekat.",
           "income_per_capita_ok": "Pendapatan per kapita RM{amount} di bawah garis B40 (RM{ceiling}) — dalam ambang.",
           "income_above_b40_line": "Pendapatan per kapita RM{amount} pada/melebihi garis B40 (RM{ceiling}) — dokumen tidak mengesahkan keperluan B40. Manusia mesti putuskan semasa temu duga (keadaan mungkin masih terpakai). JANGAN auto-tolak.",
+          "utility_percapita_b40": "Proksi utiliti: gabungan air + elektrik ~RM{amount}/kapita/bulan — konsisten dengan isi rumah B40 (isyarat lembut, tidak sempurna).",
+          "utility_percapita_high": "Proksi utiliti: gabungan air + elektrik ~RM{amount}/kapita/bulan — tinggi (corak penggunaan M40/T20). Wajar disiasat semasa temu duga (isyarat lembut).",
+          "utility_hardship": "Isyarat kesusahan: bil utiliti mempunyai tunggakan yang ketara (baki belum dibayar) — menyokong keperluan kewangan.",
           "earner_ic_present": "KP pencari nafkah dalam fail: {name}.",
           "relationship_confirmed": "Pencari nafkah disahkan sebagai ibu bapa/penjaga pelajar.",
           "income_proof_present": "Dokumen pendapatan ada dalam fail.",

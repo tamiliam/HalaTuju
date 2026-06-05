@@ -85,6 +85,11 @@ export function shouldShowCoach(doc: ApplicantDocument): boolean {
     const s = doc.str_check
     return s.current_status === 'stale' || s.current_status === 'rejected' || !s.ic_present
   }
+  // Utility bill — the meaningful check is the HOME ADDRESS, never the (parent's) name. So
+  // coach ONLY on an address mismatch (the old "name doesn't match you" nudge is wrong here).
+  if (doc.utility_check) {
+    return doc.utility_check.address_status === 'not_found'
+  }
   // Supporting docs — the Gemini doc-assist verdict takes precedence (matches the chip).
   const av = doc.vision_fields?.student_verdict
   if (av) return av !== 'ok'
@@ -145,6 +150,8 @@ export function helpSignal(doc: ApplicantDocument): string {
     ip ? `${ip.name_status},${ip.nric_status},${ip.ic_present ? 1 : 0}` : '',
     // STR: re-fires when currency / recipient match / earner-IC presence changes.
     doc.str_check ? `str:${doc.str_check.current_status},${doc.str_check.name_status},${doc.str_check.ic_present ? 1 : 0}` : '',
+    // Utility: re-fires when the address match changes.
+    doc.utility_check ? `util:${doc.utility_check.address_status}` : '',
   ].join('|')
 }
 

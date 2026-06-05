@@ -718,9 +718,13 @@ _FIELD_SCHEMAS = {
                                 'gross_income': _STR, 'net_income': _STR, 'period': _STR}),
     'epf': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
                         'latest_balance': _STR, 'last_contribution': _STR,
-                        'monthly_contribution': _STR}),
-    'water_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR, 'billing_period': _STR}),
-    'electricity_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR, 'billing_period': _STR}),
+                        'monthly_contribution': _STR, 'year': _STR}),
+    # Income Check-1: utility bills carry the home address + the MONTHLY charge + any
+    # UNPAID balance (a high outstanding amount is a soft hardship signal).
+    'water_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR,
+                               'unpaid_balance': _STR, 'billing_period': _STR}),
+    'electricity_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR,
+                                     'unpaid_balance': _STR, 'billing_period': _STR}),
     # S2: read the GRADE against each subject (not just the subject list) so the
     # academic engine can verify the typed grades against the slip.
     # Check-1 fix: also read the Malay BAND phrase per subject (Cemerlang Tertinggi /
@@ -800,12 +804,33 @@ _DOC_HINTS = {
                     '= the gross/basic monthly pay (with the RM figure); "net_income" = the '
                     'net/take-home pay; "period" = the pay month/year (e.g. "March 2026"). '
                     'Leave a field empty if it is not present.'),
-    'epf': (' This is a Malaysian EPF/KWSP statement. "name" = the member\'s full name; '
-            '"nric" = their IC number if printed (keep the 12 digits); "employer" = the '
-            'employer if shown; "latest_balance" = the most recent total balance (RM); '
-            '"last_contribution" = the latest contribution month/year; "monthly_contribution" '
-            '= the RM amount of the most recent MONTHLY contribution (the employee + employer '
-            'amount credited that month, NOT the running balance). Leave empty if absent.'),
+    'epf': (' This is a Malaysian EPF/KWSP statement ("PENYATA AHLI"). "name" = the '
+            'member\'s full name; "nric" = "No. Kad Pengenalan" (keep the 12 digits); '
+            '"employer" = "No. Majikan" — but if it is all zeros (e.g. "000000000") leave '
+            'it EMPTY (no active employer); "latest_balance" = the TOTAL savings "JUMLAH '
+            'SIMPANAN" (RM); "year" = the statement year ("PENYATA AHLI TAHUN <year>" or the '
+            'year of "Tarikh Penyata"); "monthly_contribution" = ONLY the most recent '
+            'monthly CONTRIBUTION amount from the "CARUMAN SEMASA" (current contributions) '
+            'section — this is the money credited that month, NOT the total balance. CRITICAL: '
+            'if the CARUMAN SEMASA section says "Tiada Transaksi" (no transactions) or shows '
+            'no contribution, leave "monthly_contribution" EMPTY — do NOT put the JUMLAH '
+            'SIMPANAN total there. "last_contribution" = the month/year of that contribution '
+            'if shown. Leave any field empty if it is not present.'),
+    'water_bill': (' This is a Malaysian water utility bill (e.g. PAIP, SAJ, Air Selangor, '
+                   'PBAPP, SADA). "name" = the account holder\'s name ("Nama"); "address" = '
+                   'the supply/billing address; "amount" = ONLY the CURRENT month\'s charge '
+                   '("Caj Air Semasa" / "Jumlah Caj Air Semasa" / "Jumlah Bil Semasa") — do '
+                   'NOT use "Jumlah Bil Perlu Dibayar", which is the TOTAL including arrears; '
+                   '"unpaid_balance" = the arrears carried forward ("Tunggakan" / "Baki '
+                   'Tertunggak", RM) — empty if none; "billing_period" = the bill month. '
+                   'Leave empty if absent.'),
+    'electricity_bill': (' This is a Malaysian electricity bill (TNB / SESB / SESCO). "name" = '
+                         'the account holder\'s name; "address" = the supply/billing address; '
+                         '"amount" = ONLY the CURRENT month\'s charge ("Caj Semasa" / "Caj '
+                         'Penggunaan Bulan Semasa") — do NOT use "Jumlah Perlu Dibayar", which '
+                         'is the TOTAL including arrears; "unpaid_balance" = the arrears '
+                         '("Tunggakan" / "Baki Tertunggak", RM) — empty if none; '
+                         '"billing_period" = the bill month. Leave empty if absent.'),
     'birth_certificate': (' This is a Malaysian birth certificate (Sijil Kelahiran, JPN). '
                           'Return: "bc_child_name" = the child\'s full name ("Nama" of the '
                           'child / "Nama Kanak-Kanak"); "bc_mother_name" = the mother\'s full '

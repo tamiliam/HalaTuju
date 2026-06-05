@@ -325,6 +325,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     income_proof_check = serializers.SerializerMethodField()
     # Check-1 Income: the STR document — recipient vs the earner IC + currency.
     str_check = serializers.SerializerMethodField()
+    # Check-1 Income: a utility bill — address (vs home) + monthly bill + unpaid balance.
+    utility_check = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantDocument
@@ -350,6 +352,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'income_proof_check',
             # Check-1 Income: STR recipient vs the earner IC + currency (null otherwise).
             'str_check',
+            # Check-1 Income: utility bill — address + monthly bill + unpaid balance.
+            'utility_check',
         ]
         read_only_fields = [
             'vision_nric', 'vision_name', 'vision_address',
@@ -432,6 +436,15 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             return None
         from .income_engine import student_str_check
         return student_str_check(obj)
+
+    def get_utility_check(self, obj):
+        """{name, address, monthly_bill, unpaid_balance, address_status} for a water /
+        electricity bill — the meaningful check is the home address, never the student's
+        name. Null for every other doc type."""
+        if obj.doc_type not in ('water_bill', 'electricity_bill'):
+            return None
+        from .income_engine import utility_check
+        return utility_check(obj)
 
 
 class ResolutionItemSerializer(serializers.ModelSerializer):

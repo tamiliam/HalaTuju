@@ -246,16 +246,20 @@ def student_income_proof_check(doc):
     if not member:
         return None
 
-    vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
-    f = vf.get('fields', {}) if isinstance(vf.get('fields', {}), dict) else {}
+    f = _doc_fields(doc)
     name = (f.get('name', '') or '').strip()
     nric = (f.get('nric', '') or '').strip()
+    # Data points shown on the card. Salary → gross + period. EPF → the MONTHLY
+    # contribution (the income figure) + the total accumulated + the year (so the big
+    # lifetime balance is never mistaken for monthly income).
     if dt == 'salary_slip':
-        amount = (f.get('gross_income', '') or f.get('net_income', '') or '').strip()
-        period = (f.get('period', '') or '').strip()
+        raw_points = [('amount', f.get('gross_income') or f.get('net_income')),
+                      ('period', f.get('period'))]
     else:                                          # epf
-        amount = (f.get('latest_balance', '') or '').strip()
-        period = (f.get('last_contribution', '') or '').strip()
+        raw_points = [('monthlyContribution', f.get('monthly_contribution')),
+                      ('totalAccumulated', f.get('latest_balance')),
+                      ('year', f.get('year') or f.get('last_contribution'))]
+    points = [{'key': k, 'value': (v or '').strip()} for k, v in raw_points if (v or '').strip()]
 
     ic = _member_ic_doc(doc.application, member)
     ic_name = (getattr(ic, 'vision_name', '') or '').strip() if ic else ''
@@ -269,7 +273,7 @@ def student_income_proof_check(doc):
         nric_status = 'match' if nric_match(nric, ic_nric) else 'mismatch'
 
     return {
-        'name': name, 'nric': nric, 'amount': amount, 'period': period,
+        'name': name, 'nric': nric, 'points': points,
         'member': member, 'name_status': name_status, 'nric_status': nric_status,
         'ic_present': ic is not None,
     }
@@ -396,6 +400,63 @@ def income_per_capita(application, members):
     if not all_known or not size:
         return None, all_known
     return total / size, all_known
+
+
+# ── Utility bills as a SOFT B40 proxy + hardship signal (imperfect; officer context) ─
+_UTILITY_B40_CEILING = 25   # < RM25/capita/month combined → consistent with B40
+_UTILITY_HIGH_FLOOR = 40    # > RM40/capita/month → likely M40/T20 consumption
+
+
+def utility_check(doc):
+    """For a water / electricity bill: the account-holder name (a data point — NOT matched
+    to the student; bills are in a parent's name), the home address (matched via the
+    upload-time ``vision_address_match``), the monthly charge, and any unpaid balance.
+    Returns ``{name, address, monthly_bill, unpaid_balance, address_status}`` or None."""
+    if getattr(doc, 'doc_type', '') not in ('water_bill', 'electricity_bill'):
+        return None
+    f = _doc_fields(doc)
+    return {
+        'name': (f.get('name', '') or '').strip(),
+        'address': (f.get('address', '') or '').strip(),
+        'monthly_bill': (f.get('amount', '') or '').strip(),
+        'unpaid_balance': (f.get('unpaid_balance', '') or '').strip(),
+        'address_status': getattr(doc, 'vision_address_match', '') or '',
+    }
+
+
+def _latest_doc(application, doc_type):
+    return application.documents.filter(doc_type=doc_type).order_by('-uploaded_at').first()
+
+
+def utility_per_capita(application):
+    """Combined water + electricity MONTHLY bill ÷ household size, with a soft B40 proxy.
+    Returns ``{per_capita, signal}`` ('b40' | 'neutral' | 'high') or None when no bill
+    amount / household size. IMPERFECT — officer context, never a verdict gate."""
+    total, any_read = 0.0, False
+    for dt in ('water_bill', 'electricity_bill'):
+        doc = _latest_doc(application, dt)
+        amt = _parse_rm(_doc_fields(doc).get('amount')) if doc else None
+        if amt is not None:
+            total += amt
+            any_read = True
+    size = getattr(getattr(application, 'profile', None), 'household_size', None)
+    if not any_read or not size:
+        return None
+    pc = total / size
+    signal = 'b40' if pc < _UTILITY_B40_CEILING else ('high' if pc > _UTILITY_HIGH_FLOOR else 'neutral')
+    return {'per_capita': round(pc, 2), 'signal': signal}
+
+
+def utility_hardship(application):
+    """True when the utility bills carry meaningful arrears (unpaid balance) — a soft
+    hardship signal that SUPPORTS need. Sums arrears across water + electricity."""
+    total = 0.0
+    for dt in ('water_bill', 'electricity_bill'):
+        doc = _latest_doc(application, dt)
+        amt = _parse_rm(_doc_fields(doc).get('unpaid_balance')) if doc else None
+        if amt:
+            total += amt
+    return total > 100
 
 
 def income_cluster_advice(application, member):
