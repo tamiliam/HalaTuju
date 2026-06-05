@@ -60,6 +60,14 @@ class TestNameMatch(TestCase):
         # parentage tokens absorbed
         self.assertEqual(name_match('AHMAD BIN YUSOFF', 'Ahmad Yusoff'), 'match')
 
+    def test_honorific_prefix_stripped(self):
+        # An offer letter addressed to "SDRI <name>" (Saudari) still matches the profile
+        # name — the honorific is stripped like the parentage tokens, so it doesn't drop
+        # the match to 'partial'.
+        self.assertEqual(
+            name_match('SDRI THEEPICAA A/P SELVAVINAYAGAM', 'Theepicaa Selvavinayagam'), 'match')
+        self.assertEqual(name_match('ENCIK AHMAD BIN YUSOFF', 'Ahmad Yusoff'), 'match')
+
     def test_partial_when_one_is_subset(self):
         # IC has a middle name the profile omits
         self.assertEqual(

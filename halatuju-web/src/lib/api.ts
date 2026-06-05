@@ -1204,8 +1204,8 @@ export interface StrCheck {
   member: string
   name_status: 'match' | 'mismatch' | 'no_ref'
   nric_status: 'match' | 'mismatch' | 'no_ref'
-  // 'current' | 'stale' (older year) | 'rejected' (status not approved)
-  current_status: 'current' | 'stale' | 'rejected'
+  // 'current' | 'stale' (older year) | 'rejected' (status not approved) | 'unknown' (nothing read)
+  current_status: 'current' | 'stale' | 'rejected' | 'unknown'
   ic_present: boolean
 }
 

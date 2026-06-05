@@ -178,6 +178,8 @@ describe('documentPill', () => {
   it('str pill rolls up recipient/IC/currency', () => {
     expect(documentPill(doc({ doc_type: 'str', str_check: strCheck({ name_status: 'match', nric_status: 'match', current_status: 'current' }) }))).toBe('verified')
     expect(documentPill(doc({ doc_type: 'str', str_check: strCheck({ name_status: 'match', nric_status: 'match', current_status: 'stale' }) }))).toBe('check')
+    // Nothing read (recipient/IC no_ref + current 'unknown') → unread, NOT a false Verified.
+    expect(documentPill(doc({ doc_type: 'str', str_check: strCheck({ current_status: 'unknown' }) }))).toBe('unread')
   })
 
   it('unread when the per-fact check has not run', () => {

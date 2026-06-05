@@ -1082,7 +1082,8 @@
         "amount": "Amount",
         "current": "Current",
         "stale": "Out of date — needs this year's STR",
-        "rejected": "Not approved"
+        "rejected": "Not approved",
+        "unknown": "Not read yet"
       },
       "slipCheck": {
         "name": "Name",

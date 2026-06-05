@@ -22,7 +22,11 @@ logger = logging.getLogger(__name__)
 
 # Stripped before name comparison — common MyKad name suffixes / parentage markers.
 _NAME_NOISE = re.compile(
-    r"\b(bin|binti|a/l|a/p|al|ap|d/o|s/o|@)\b",
+    # MyKad parentage tokens + Malay/English honorifics that prefix a name on official
+    # letters (e.g. an offer addressed to "SDRI THEEPICAA …") — stripped so the name
+    # matches the profile name regardless of the title.
+    r"\b(bin|binti|a/l|a/p|al|ap|d/o|s/o|@"
+    r"|sdr|sdri|saudara|saudari|encik|puan|cik|tuan|dr|datuk|dato|datin)\b",
     flags=re.IGNORECASE,
 )
 
@@ -33,7 +37,7 @@ def _canonical_nric(s: str) -> str:
 
 
 def _canonical_name_tokens(s: str) -> set:
-    """Lowercase, strip MyKad parentage tokens, return a tokens set."""
+    """Lowercase, strip MyKad parentage tokens + honorific prefixes, return a tokens set."""
     if not s:
         return set()
     cleaned = _NAME_NOISE.sub(' ', s.lower())

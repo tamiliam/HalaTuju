@@ -8,8 +8,27 @@ from apps.scholarship.income_engine import (
     father_name_from_ic, father_relationship, mother_relationship,
     guardian_relationship, relationship_doc_for, income_requirements,
     working_members, salary_member_blocks, member_relationship_status,
-    student_income_ic_check,
+    student_income_ic_check, _str_currency,
 )
+
+
+class TestStrCurrency(SimpleTestCase):
+    def test_unread_str_is_unknown_not_current(self):
+        # No status AND no readable year → 'unknown' (an unread STR must NOT badge Current/Verified).
+        self.assertEqual(_str_currency('', '', 2026), 'unknown')
+
+    def test_approved_current_year_is_current(self):
+        self.assertEqual(_str_currency('diluluskan', '2026', 2026), 'current')
+
+    def test_older_year_is_stale(self):
+        self.assertEqual(_str_currency('diluluskan', '2024', 2026), 'stale')
+
+    def test_rejected_status(self):
+        self.assertEqual(_str_currency('permohonan ditolak', '2026', 2026), 'rejected')
+
+    def test_status_present_but_no_year_is_current(self):
+        # A real screenshot with an approved status but no parseable year stays 'current'.
+        self.assertEqual(_str_currency('diluluskan', '', 2026), 'current')
 
 
 class TestFatherNameFromIc(SimpleTestCase):
