@@ -70,6 +70,9 @@ class TestConsentApi(TestCase):
         profile.save()
         app.aspirations, app.plans = 'Become an engineer.', 'Study hard and apply.'
         app.daily_life, app.fears = 'I help at home each evening.', 'I worry about textbook costs.'
+        # Gate v2: a consent-ready income cluster = STR route, father earner (no BC),
+        # with the earner IC + the STR doc; plus the now-compulsory offer letter.
+        app.income_route, app.income_earner = 'str', 'father'
         app.save()
         FundingNeed.objects.update_or_create(
             application=app, defaults={'categories': ['tuition'], 'programme_months': 24})
@@ -79,6 +82,7 @@ class TestConsentApi(TestCase):
             vision_nric=ic_nric or profile.nric, vision_name=ic_name or profile.name,
             vision_run_at=now, vision_error='')
         ApplicantDocument.objects.create(application=app, doc_type='results_slip', storage_path='x/r')
+        ApplicantDocument.objects.create(application=app, doc_type='offer_letter', storage_path='x/o')
         ApplicantDocument.objects.create(application=app, doc_type='str', storage_path='x/s')
         if parent_ic:
             ApplicantDocument.objects.create(application=app, doc_type='parent_ic', storage_path='x/pi')
@@ -369,3 +373,111 @@ class TestConsentApi(TestCase):
     def test_consent_requires_auth(self):
         resp = self.client.post('/api/v1/scholarship/consent/', {}, format='json')
         self.assertEqual(resp.status_code, 401)
+
+
+class TestIncomeGateV2(TestCase):
+    """Gate v2 (2026-06-05): route-aware compulsory income docs + a compulsory offer
+    letter + grandfathering for already-submitted apps. Tested directly against
+    `income_doc_blockers` / `consent_blockers` / `application_completeness`."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='gv2', name='B40', year=2026)
+
+    def _app(self, *, route='', earner='', members=None, submitted=False):
+        import uuid
+        prof = StudentProfile.objects.create(
+            supabase_user_id=str(uuid.uuid4()), nric='030101-14-1234', name='Student')
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=prof, status='shortlisted',
+            income_route=route, income_earner=earner, income_working_members=members or [])
+        if submitted:
+            from django.utils import timezone
+            app.status, app.profile_completed_at = 'profile_complete', timezone.now()
+            app.save()
+        return app
+
+    def _doc(self, app, doc_type, member=''):
+        from apps.scholarship.models import ApplicantDocument
+        return ApplicantDocument.objects.create(
+            application=app, doc_type=doc_type, storage_path=f'x/{doc_type}/{member}',
+            household_member=member)
+
+    def _blockers(self, app):
+        from apps.scholarship.services import income_doc_blockers
+        return income_doc_blockers(app)
+
+    # ── route-aware income requirements ──────────────────────────────────────
+    def test_blank_route_is_income_incomplete(self):
+        self.assertEqual(self._blockers(self._app(route='')), ['income_incomplete'])
+
+    def test_str_father_needs_earner_ic_and_str_no_bc(self):
+        app = self._app(route='str', earner='father')
+        self.assertEqual(set(self._blockers(app)), {'parent_ic_missing', 'str_missing'})
+        self._doc(app, 'parent_ic')
+        self._doc(app, 'str')
+        self.assertEqual(self._blockers(app), [])   # father → patronymic, no BC
+
+    def test_str_mother_also_needs_birth_certificate(self):
+        app = self._app(route='str', earner='mother')
+        self._doc(app, 'parent_ic')
+        self._doc(app, 'str')
+        self.assertEqual(self._blockers(app), ['birth_certificate_missing'])
+        self._doc(app, 'birth_certificate')
+        self.assertEqual(self._blockers(app), [])
+
+    def test_salary_mother_needs_ic_slip_and_bc(self):
+        app = self._app(route='salary', members=['mother'])
+        self.assertEqual(set(self._blockers(app)),
+                         {'parent_ic_missing', 'salary_slip_missing', 'birth_certificate_missing'})
+        self._doc(app, 'parent_ic', member='mother')
+        self._doc(app, 'salary_slip', member='mother')
+        self._doc(app, 'birth_certificate')   # single household doc, untagged
+        self.assertEqual(self._blockers(app), [])
+
+    def test_salary_epf_does_not_substitute_salary_slip(self):
+        app = self._app(route='salary', members=['father'])
+        self._doc(app, 'parent_ic', member='father')
+        self._doc(app, 'epf', member='father')           # EPF present...
+        self.assertEqual(self._blockers(app), ['salary_slip_missing'])  # ...slip still required
+
+    def test_salary_multi_member_each_member_checked(self):
+        app = self._app(route='salary', members=['father', 'mother'])
+        self._doc(app, 'parent_ic', member='father')
+        self._doc(app, 'salary_slip', member='father')   # father complete; mother's missing
+        b = set(self._blockers(app))
+        self.assertEqual(b, {'parent_ic_missing', 'salary_slip_missing', 'birth_certificate_missing'})
+
+    def test_salary_tagging_is_member_scoped(self):
+        # Father's slip must NOT satisfy the mother's requirement (tag-scoped).
+        app = self._app(route='salary', members=['mother'])
+        self._doc(app, 'parent_ic', member='father')     # wrong member
+        self._doc(app, 'salary_slip', member='father')
+        self.assertEqual(set(self._blockers(app)),
+                         {'parent_ic_missing', 'salary_slip_missing', 'birth_certificate_missing'})
+
+    # ── offer letter + documents_done + grandfather ──────────────────────────
+    def test_offer_letter_compulsory(self):
+        from apps.scholarship.services import consent_blockers
+        app = self._app(route='str', earner='father')
+        self._doc(app, 'parent_ic')
+        self._doc(app, 'str')
+        self.assertIn('offer_letter_missing', consent_blockers(app))   # income done, offer not
+
+    def test_documents_done_strict_for_new_submission(self):
+        from apps.scholarship.services import application_completeness
+        app = self._app(route='str', earner='father')          # shortlisted
+        for dt in ('ic', 'results_slip', 'parent_ic', 'str'):
+            self._doc(app, dt)
+        self.assertFalse(application_completeness(app)['documents_done'])  # no offer letter
+        self._doc(app, 'offer_letter')
+        self.assertTrue(application_completeness(app)['documents_done'])
+
+    def test_grandfathered_submitted_app_keeps_old_bar(self):
+        from apps.scholarship.services import application_completeness
+        # Already submitted, blank route, no offer letter — but the OLD docs present.
+        app = self._app(route='', submitted=True)
+        for dt in ('ic', 'results_slip', 'parent_ic', 'str'):
+            self._doc(app, dt)
+        # Lenient (old) bar for a submitted app → stays done, so revert never fires.
+        self.assertTrue(application_completeness(app)['documents_done'])

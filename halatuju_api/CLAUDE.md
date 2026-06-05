@@ -465,19 +465,34 @@ now a full clinical check, both routes:
   through **`0040`** on prod. Deprecated (kept, drop later, TD-084): `earner_work_status`, `household_other_earners` +
   `q2/q3/q4/work` i18n keys.
 
-**▶ NEXT — Income document-first verdict + legacy backfill + cockpit redesign (TD-085, the user's explicit next sprint).**
-Live-testing app #21 (KISHANTAN, an STR recipient who uploaded the father's **salary slip** instead of an STR) exposed
-that **`_verdict_income` is wizard-route-driven, not document-driven**: the STR branch only accepts an `str` doc, so the
-payslip + father's IC sitting in the drawer are ignored → red *"no proof of income"* despite a confirmed earner
-relationship. Pipeline audit: **15 apps have `income_route=''`** (submitted before the wizard existed) but **only 6 are
-actually submitted (`profile_complete`)** — the other **9 are merely `shortlisted`** and self-heal when they walk the
-wizard. So real remediation ≈ **7 submitted apps** (the 6 blank-route + app #21); their docs are in the correct
-doc_types but untagged (`household_member=''`). **Do:** (1) make the verdict **document-first** — verify whatever income
-proof exists (STR/salary/EPF, tagged or not) against the available parent IC(s), wizard answers as *hints not gates*;
-(2) one-time **backfill** `income_route`/`income_earner` for the 6 blank-route submitted apps; (3) **reconfigure the
-income cockpit tile** to reflect what's in the drawer (surface the salary slip + per-capita + cluster), never claim "no
-proof" when a verified doc is present. Then: Gopal income doc-coach copy; remove orphaned `str_claimed_no_doc`; live
-click-through (TD-070).
+**▶ TD-085 income gate + cockpit — RE-SCOPED to 2 sprints (2026-06-05). DROPPED: the document-first verdict (the route
+stays AUTHORITATIVE — the strict gate below + the manual slotting obviate it) and the re-extraction backfill (the user
+re-runs legacy docs by hand via the cockpit "Re-run" button). Full spec: `docs/scholarship/consent-gate-v2-plan.md`.**
+
+**✅ S1 — Consent gate v2 SHIPPED + DEPLOYED 2026-06-05 (no migration; retro `retrospective-consent-gate-v2-s1.md`).**
+The consent/submission gate is now route-aware + STRICT: **offer letter compulsory for all**; STR route → STR doc +
+earner IC + (mother→birth cert / guardian→letter; father via patronymic, none); salary route → for EACH selected member,
+their IC + **salary slip** (EPF no longer substitutes) + rel doc. Sourced from `income_engine.income_requirements` (ONE
+source of truth → `services.income_doc_blockers`; the consent blockers and the wizard checklist can't drift). Per-member
+salary slip promoted optional→compulsory (backend + `incomeWizard.ts` mirror). **"Never-block" now lives ONLY at the
+officer/interview verdict — submission hard-blocks** (a family that can't produce a route doc can't submit, but is never
+auto-rejected later). **Grandfathered**: the strict bar applies only to not-yet-submitted apps (keyed on
+`profile_completed_at`); the 6 already-submitted keep the OLD looser bar (`revert_if_profile_incomplete` never reverts
+them on the new rules), resolved at Check 2 / interview. New blocker codes (`offer_letter_missing`/`str_missing`/
+`salary_slip_missing`/`birth_certificate_missing`/`guardianship_letter_missing`/`income_incomplete`) en/ms/ta. Gates
+**697 scholarship + 1037 courses/reports pytest + 250 jest + next build clean + i18n 1985**. (All 16 pipeline students
+were hand-slotted onto income routes during triage — recorded in the plan doc; gate change guides the 9 shortlisted to
+their route's docs, leaves the 6 grandfathered untouched.)
+
+**▶ S2 (NEXT) — Documents-panel redesign, officer cockpit (Stitch-first per the UI rule).** Per-document coloured
+fact-labels (🟢 fully verified / 🟡 partial-until-cured / 🔴 not — show ONLY the facts that document provides). The
+relationship is MOVABLE: father/elder-sibling IC proves it via the student-IC patronymic (Relationship 🟢 on the IC);
+mother → birth certificate; guardian → guardianship letter (never on a mother's/guardian's IC). Income section = a
+visual render of `income_requirements` (compulsory on top → optional bottom, route + selection aware) with
+missing-compulsory **placeholder rows**. Fixes the `documentPill` "earner IC always Unread" bug. Build: `lib/officerCockpit.ts`
+(fact lists + colours + pill fix) + cockpit `[id]/page.tsx` + fact-label i18n + jest. Full spec in the plan doc.
+**PARKED (separate future feature, NOT S2):** the post-consent summary page + "lock at Continue" (the lock already
+exists at consent; see the plan doc's parked section).
 
 ---
 

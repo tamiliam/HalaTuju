@@ -152,25 +152,29 @@ class TestSalaryRoute(SimpleTestCase):
         self.assertEqual(working_members(self._app(['nope', 'father'])), ['father'])
         self.assertEqual(working_members(SimpleNamespace()), [])
 
-    def test_father_block_ic_plus_optional_income(self):
+    def test_father_block_ic_and_slip_compulsory(self):
+        # Gate v2: the salary slip is now COMPULSORY (order: IC → slip); EPF stays optional.
         [block] = salary_member_blocks(['father'])
         self.assertEqual(block['member'], 'father')
-        self.assertEqual(block['compulsory'], [('parent_ic', 'father')])      # no extra doc
-        self.assertEqual(block['optional'], [('salary_slip', 'father'), ('epf', 'father')])
+        self.assertEqual(block['compulsory'], [('parent_ic', 'father'), ('salary_slip', 'father')])
+        self.assertEqual(block['optional'], [('epf', 'father')])
         self.assertEqual(block['rel_doc'], '')
 
     def test_mother_block_adds_untagged_birth_cert(self):
         [block] = salary_member_blocks(['mother'])
-        self.assertEqual(block['compulsory'], [('parent_ic', 'mother'), ('birth_certificate', '')])
+        self.assertEqual(block['compulsory'],
+                         [('parent_ic', 'mother'), ('salary_slip', 'mother'), ('birth_certificate', '')])
         self.assertEqual(block['rel_doc'], 'birth_certificate')
 
     def test_guardian_block_adds_untagged_letter(self):
         [block] = salary_member_blocks(['guardian'])
-        self.assertEqual(block['compulsory'], [('parent_ic', 'guardian'), ('guardianship_letter', '')])
+        self.assertEqual(block['compulsory'],
+                         [('parent_ic', 'guardian'), ('salary_slip', 'guardian'), ('guardianship_letter', '')])
 
-    def test_sibling_block_is_ic_only(self):
+    def test_sibling_block_is_ic_and_slip(self):
         [block] = salary_member_blocks(['brother'])
-        self.assertEqual(block['compulsory'], [('parent_ic', 'brother')])
+        self.assertEqual(block['compulsory'], [('parent_ic', 'brother'), ('salary_slip', 'brother')])
+        self.assertEqual(block['optional'], [('epf', 'brother')])
         self.assertEqual(block['rel_doc'], '')
 
     def test_income_requirements_salary_returns_blocks_in_order(self):

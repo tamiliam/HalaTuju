@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Consent / submission gate v2 — route-aware and strict (TD-085 Sprint 1).** To give consent (and submit), a student
+  must now upload exactly what their income route requires, plus a now-compulsory **offer letter**. STR route → the STR
+  document + the earner's IC + the relationship doc (mother→birth certificate, guardian→guardianship letter; father via
+  patronymic, none). Salary route → for EVERY selected working member: their IC + their **salary slip** (EPF no longer
+  substitutes) + the relationship doc. The old "any one of STR / salary slip / EPF" rule is gone. The gate is sourced
+  from the wizard's own `income_requirements` (one source of truth, so the consent blockers and the student checklist can
+  never disagree); `consent_blockers` gains a `income_doc_blockers` helper + an `offer_letter_missing` /
+  `str_missing` / `salary_slip_missing` / `birth_certificate_missing` / `guardianship_letter_missing` / `income_incomplete`
+  blocker set (en/ms/ta). **"Never-block" now applies only at the officer/interview verdict, not at submission** (a
+  deliberate reversal — a family who can't produce a route document can't submit, but is never auto-rejected later).
+  **Grandfathered:** the strict bar applies only to not-yet-submitted apps (keyed on `profile_completed_at`); the 6
+  already-submitted applications keep the old looser bar and are resolved at Check 2 / interview — `revert_if_profile_incomplete`
+  never rolls them back on the new rules. The per-member salary slip is promoted optional→compulsory in both the backend
+  `income_engine` and the frontend `incomeWizard.ts` mirror. No migration (pure logic). 697 scholarship pytest (+10) +
+  250 jest + next build clean + i18n parity 1985.
+
 ### Fixed
 - **STR-route salary slip / EPF now get the same earner-aware check as the salary route** (they were showing the old
   generic "the name doesn't match you — edit your profile" message). STR income proofs are stored UNTAGGED (single

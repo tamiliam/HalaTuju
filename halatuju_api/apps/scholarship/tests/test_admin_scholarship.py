@@ -212,9 +212,10 @@ class TestAdminScholarship(TestCase):
         # their verdict (audited the AI). A complete, accept-ready fixture sets it.
         ScholarshipApplication.objects.filter(pk=self.app.id).update(
             plans='Study hard', daily_life='Help at home', fears='Worried about fees',
+            income_route='str', income_earner='father',   # gate v2: STR route, father earner
             verdict_decided_at=timezone.now())
         FundingNeed.objects.create(application=self.app, categories=['living'], programme_months=36)
-        for dt in ('ic', 'results_slip', 'parent_ic', 'str'):
+        for dt in ('ic', 'results_slip', 'offer_letter', 'parent_ic', 'str'):
             ApplicantDocument.objects.create(application=self.app, doc_type=dt, storage_path=f'x/{dt}')
         Consent.objects.create(application=self.app, version='t', is_active=True)
 

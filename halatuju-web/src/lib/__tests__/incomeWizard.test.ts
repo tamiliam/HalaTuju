@@ -47,30 +47,35 @@ describe('salary route — multi-earner per-member blocks', () => {
     expect(workingMembers(['nope', 'father'])).toEqual(['father'])
   })
 
-  it('father block → IC tagged + optional payslip/EPF, no extra doc', () => {
+  it('father block → IC + compulsory salary slip (gate v2), EPF optional, no extra doc', () => {
     const [block] = salaryMemberBlocks(['father'])
-    expect(block.compulsory).toEqual([{ docType: 'parent_ic', member: 'father' }])
-    expect(block.optional).toEqual([
+    expect(block.compulsory).toEqual([
+      { docType: 'parent_ic', member: 'father' },
       { docType: 'salary_slip', member: 'father' },
-      { docType: 'epf', member: 'father' },
     ])
+    expect(block.optional).toEqual([{ docType: 'epf', member: 'father' }])
     expect(block.relDoc).toBe('')
   })
 
   it('mother block adds untagged birth certificate; guardian adds untagged letter', () => {
     expect(salaryMemberBlocks(['mother'])[0].compulsory).toEqual([
       { docType: 'parent_ic', member: 'mother' },
+      { docType: 'salary_slip', member: 'mother' },
       { docType: 'birth_certificate', member: '' },
     ])
     expect(salaryMemberBlocks(['guardian'])[0].compulsory).toEqual([
       { docType: 'parent_ic', member: 'guardian' },
+      { docType: 'salary_slip', member: 'guardian' },
       { docType: 'guardianship_letter', member: '' },
     ])
   })
 
-  it('sibling block is IC only (relationship via shared patronymic)', () => {
+  it('sibling block is IC + compulsory salary slip (relationship via shared patronymic)', () => {
     const [block] = salaryMemberBlocks(['brother'])
-    expect(block.compulsory).toEqual([{ docType: 'parent_ic', member: 'brother' }])
+    expect(block.compulsory).toEqual([
+      { docType: 'parent_ic', member: 'brother' },
+      { docType: 'salary_slip', member: 'brother' },
+    ])
     expect(block.relDoc).toBe('')
   })
 

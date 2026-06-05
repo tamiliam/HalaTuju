@@ -1,7 +1,13 @@
 # Consent / Submission Gate v2 — route-aware document gate (TD-085)
 
-**Status:** SPEC — agreed with the user 2026-06-05, NOT yet built. Awaiting go-ahead before touching `services.py`.
-**Part of:** TD-085 (income document-first verdict + legacy backfill + cockpit redesign).
+**Status:** **S1 (Consent gate v2) SHIPPED + DEPLOYED 2026-06-05** (no migration; retro
+`docs/retrospective-consent-gate-v2-s1.md`). **S2 (Documents-panel redesign) = SPEC below, not yet built.**
+**Part of:** TD-085.
+**FINAL SCOPE (2026-06-05): TWO sprints only — (S1) Consent gate v2, (S2) Documents-panel redesign (officer cockpit).**
+**DROPPED:** (a) the *document-first verdict* — it would make the route NON-authoritative, but the strict route-aware
+gate (S1) + the manual slotting already prevent the route/doc mismatch it was meant to fix; the route stays
+authoritative. (b) the *re-extraction backfill* — the user re-runs legacy docs by hand in the cockpit (the "Re-run"
+button, as done for Divashini/Yeswindran/Theepicaa). No verdict-logic change, no new migration in either sprint.
 
 ## Objective
 The consent/submission gate (`consent_blockers`) currently treats income proof as the old S23 rule —

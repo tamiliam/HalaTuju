@@ -58,10 +58,13 @@ class TestCompleteness(TestCase):
         self.app.plans = 'Study hard every day'
         self.app.daily_life = 'Help at home each evening'
         self.app.fears = 'Worried about textbook costs'
+        # Gate v2: STR route + father earner so the STR doc satisfies the route.
+        self.app.income_route, self.app.income_earner = 'str', 'father'
         self.app.save()
         FundingNeed.objects.create(application=self.app, categories=['living'], programme_months=36)
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
         ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
+        ApplicantDocument.objects.create(application=self.app, doc_type='offer_letter', storage_path='o')
         ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
         ApplicantDocument.objects.create(application=self.app, doc_type='str', storage_path='s')
         Consent.objects.create(application=self.app, version='t', is_active=True)
@@ -116,28 +119,39 @@ class TestCompleteness(TestCase):
         ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
         self.assertFalse(application_completeness(self.app)['documents_done'])
 
-    def test_documents_done_true_with_str_income_proof(self):
-        """S23: ic + results_slip + parent_ic + STR satisfies documents_done."""
-        ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
-        ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
-        ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
-        ApplicantDocument.objects.create(application=self.app, doc_type='str', storage_path='s')
+    def test_documents_done_true_with_str_route(self):
+        """Gate v2: STR route (father) — ic + results + offer_letter + parent_ic + STR."""
+        self.app.income_route, self.app.income_earner = 'str', 'father'
+        self.app.save()
+        for dt in ('ic', 'results_slip', 'offer_letter', 'parent_ic', 'str'):
+            ApplicantDocument.objects.create(application=self.app, doc_type=dt, storage_path=dt)
         self.assertTrue(application_completeness(self.app)['documents_done'])
 
-    def test_documents_done_true_with_salary_slip_income_proof(self):
-        """S23: any one of {str, salary_slip, epf} satisfies the income-proof side."""
-        ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
-        ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
-        ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
-        ApplicantDocument.objects.create(application=self.app, doc_type='salary_slip', storage_path='ss')
+    def test_documents_done_true_with_salary_route(self):
+        """Gate v2: salary route (father working) — IC + salary slip tagged to the member."""
+        self.app.income_route, self.app.income_working_members = 'salary', ['father']
+        self.app.save()
+        for dt in ('ic', 'results_slip', 'offer_letter'):
+            ApplicantDocument.objects.create(application=self.app, doc_type=dt, storage_path=dt)
+        ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic',
+                                         storage_path='pi', household_member='father')
+        ApplicantDocument.objects.create(application=self.app, doc_type='salary_slip',
+                                         storage_path='ss', household_member='father')
         self.assertTrue(application_completeness(self.app)['documents_done'])
 
-    def test_documents_done_true_with_epf_income_proof(self):
-        """S23: EPF on its own (no STR, no salary slip) is enough for the gate."""
-        ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
-        ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
-        ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
-        ApplicantDocument.objects.create(application=self.app, doc_type='epf', storage_path='e')
+    def test_epf_alone_does_not_satisfy_salary_route(self):
+        """Gate v2: EPF does NOT substitute the compulsory salary slip."""
+        self.app.income_route, self.app.income_working_members = 'salary', ['father']
+        self.app.save()
+        for dt in ('ic', 'results_slip', 'offer_letter'):
+            ApplicantDocument.objects.create(application=self.app, doc_type=dt, storage_path=dt)
+        ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic',
+                                         storage_path='pi', household_member='father')
+        ApplicantDocument.objects.create(application=self.app, doc_type='epf',
+                                         storage_path='e', household_member='father')
+        self.assertFalse(application_completeness(self.app)['documents_done'])   # slip still required
+        ApplicantDocument.objects.create(application=self.app, doc_type='salary_slip',
+                                         storage_path='ss', household_member='father')
         self.assertTrue(application_completeness(self.app)['documents_done'])
 
     def test_documents_done_false_when_parent_ic_missing(self):
@@ -156,16 +170,15 @@ class TestCompleteness(TestCase):
         self.app.plans = 'Study hard every day'
         self.app.daily_life = 'Help at home each evening'
         self.app.fears = 'Worried about textbook costs'
+        self.app.income_route, self.app.income_earner = 'str', 'father'
         self.app.save()
         FundingNeed.objects.create(application=self.app, categories=['living'], programme_months=36)
         self.assertFalse(application_completeness(self.app)['complete'])
 
-        # + compulsory documents (S23: ic + results_slip + parent_ic + one income proof)
-        # — still not complete (consent + address missing)
-        ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
-        ApplicantDocument.objects.create(application=self.app, doc_type='results_slip', storage_path='y')
-        ApplicantDocument.objects.create(application=self.app, doc_type='parent_ic', storage_path='z')
-        ApplicantDocument.objects.create(application=self.app, doc_type='str', storage_path='s')
+        # + compulsory documents (gate v2: ic + results_slip + offer_letter + the STR
+        # route's earner IC + STR) — still not complete (consent + address missing)
+        for dt in ('ic', 'results_slip', 'offer_letter', 'parent_ic', 'str'):
+            ApplicantDocument.objects.create(application=self.app, doc_type=dt, storage_path=dt)
         self.assertFalse(application_completeness(self.app)['complete'])
 
         # + active consent — still not complete (address missing)

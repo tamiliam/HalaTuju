@@ -70,13 +70,15 @@ export function salaryMemberBlocks(members: WorkingMember[] | null | undefined):
   const blocks: MemberBlock[] = []
   for (const m of MEMBER_ORDER) {
     if (!chosen.has(m)) continue
-    const compulsory: MemberDoc[] = [{ docType: 'parent_ic', member: m }]
+    // Compulsory order (mirrors income_engine.salary_member_blocks): IC → salary slip
+    // → relationship doc. The salary slip is COMPULSORY (gate v2); EPF does not substitute.
+    const compulsory: MemberDoc[] = [
+      { docType: 'parent_ic', member: m },
+      { docType: 'salary_slip', member: m },
+    ]
     const relDoc = relationshipDocFor(m)
     if (relDoc) compulsory.push({ docType: relDoc, member: '' }) // birth cert / letter — single, untagged
-    const optional: MemberDoc[] = [
-      { docType: 'salary_slip', member: m },
-      { docType: 'epf', member: m },
-    ]
+    const optional: MemberDoc[] = [{ docType: 'epf', member: m }]
     blocks.push({ member: m, compulsory, optional, relDoc })
   }
   return blocks

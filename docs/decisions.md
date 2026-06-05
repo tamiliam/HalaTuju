@@ -2008,3 +2008,27 @@ route-only backfills fixes neither cleanly.
 relationship guards so a stray document can't green a tile. Accepted; that's the next sprint's scope.
 **Revisit if:** the document-first rewrite proves to mis-assemble multi-earner clusters (then re-introduce the wizard
 tags as a tie-breaker rather than dropping them).
+
+## Consent/submission gate v2 — route-aware + strict; "never-block" only at the verdict — TD-085 S1, 2026-06-05
+**Decision:** To give consent (and submit), a student must upload exactly what their income ROUTE requires plus a now-
+compulsory offer letter — STR route: STR + earner IC + (mother→BC / guardian→letter); salary route: each selected
+member's IC + salary slip (EPF does NOT substitute) + rel doc. The gate is sourced from the wizard's own
+`income_requirements` (`services.income_doc_blockers`), not a parallel re-derivation. Already-submitted apps are
+grandfathered (strict bar keyed on `profile_completed_at IS NULL`); the rest keep the old looser bar so
+`revert_if_profile_incomplete` never rolls them back.
+**Alternatives considered:** keep the old "any one of {str, salary_slip, epf}" flat rule; allow EPF to substitute the
+salary slip; make the lock/strictness retroactive to the 6 submitted apps; build a document-first verdict that ignores
+the route instead of a strict route-aware gate.
+**Rationale:** the route is the user's authoritative model (wizard picks it; the student switches routes if they can't
+supply a route doc). A strict route-aware gate makes the uploaded documents match the declared route, which is exactly
+what a document-first verdict was invented to paper over — so the gate makes document-first unnecessary (it was dropped).
+Sourcing from `income_requirements` keeps the gate and the student checklist (and the eventual officer panel) in
+lockstep. Grandfathering avoids disrupting already-submitted families (resolved at interview).
+**Trade-offs:** "never-block" no longer protects a family that genuinely can't produce a route document at the SUBMISSION
+stage — it now lives only at the officer/interview verdict (the user accepted this; informal earners use an official
+income-verification letter as their salary slip, whose AMOUNT is then manually verified). Two enforcement bars
+(strict / grandfathered) coexist until the 6 submitted apps clear.
+**Revisit if:** the informal-no-document family proves common enough to need a deliberate sub-path, or the two-bar
+grandfather logic outlives the 6 apps (then collapse to one strict bar).
+**Supersedes:** the "Income never-block — recommend + interview, not a hard gate" decision (Income Check-1) AT THE
+SUBMISSION LAYER; and reverses the (2026-06-05) "Income verdict must become document-first" reframe.

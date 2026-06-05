@@ -66,11 +66,14 @@ class PhaseCBase(TestCase):
         )
 
     def _complete(self, app):
-        """Satisfy all 7 completeness parts for ``app``."""
+        """Satisfy all 7 completeness parts for ``app`` (gate v2: STR route + father
+        earner, with a compulsory offer letter + the route's income docs)."""
         FundingNeed.objects.create(application=app, categories=['living'], programme_months=36)
-        for dt in ('ic', 'results_slip', 'parent_ic', 'str'):
+        for dt in ('ic', 'results_slip', 'offer_letter', 'parent_ic', 'str'):
             ApplicantDocument.objects.create(application=app, doc_type=dt, storage_path=f'x/{dt}')
         Consent.objects.create(application=app, version='t', is_active=True)
+        ScholarshipApplication.objects.filter(pk=app.id).update(income_route='str', income_earner='father')
+        app.refresh_from_db()
         return app
 
 
