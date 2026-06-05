@@ -269,9 +269,20 @@ export default function ScholarshipConsent({
         <InfoBox kind="warning">
           <p className="font-medium">{t('scholarship.consent.blockersHeading')}</p>
           <ul className="mt-1.5 list-disc space-y-1 pl-5">
-            {blockers.map((b) => (
-              <li key={b}>{t(`scholarship.consent.blocker.${b}`)}</li>
-            ))}
+            {blockers.map((b) => {
+              // Member-qualified income codes ("parent_ic_missing:father") name the person;
+              // everything else is a plain blocker code.
+              const [code, member] = b.split(':')
+              return (
+                <li key={b}>
+                  {member
+                    ? t(`scholarship.consent.blocker.${code}_member`, {
+                        member: t(`scholarship.docs.income.wizard.member.${member}`),
+                      })
+                    : t(`scholarship.consent.blocker.${code}`)}
+                </li>
+              )
+            })}
           </ul>
         </InfoBox>
       )}

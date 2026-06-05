@@ -1186,6 +1186,8 @@
         "offer_letter_missing": "Upload your offer letter in the Documents step.",
         "str_missing": "Upload your STR document in the Documents step.",
         "salary_slip_missing": "Upload a salary slip for each working family member in the Documents step.",
+        "parent_ic_missing_member": "Upload {member}'s IC in the Documents step.",
+        "salary_slip_missing_member": "Upload {member}'s salary slip in the Documents step.",
         "birth_certificate_missing": "Upload the birth certificate (to confirm your mother is your parent) in the Documents step.",
         "guardianship_letter_missing": "Upload the guardianship letter in the Documents step.",
         "ic_unreadable": "We couldn't read your IC photo. Please upload a clearer image in the Documents step.",

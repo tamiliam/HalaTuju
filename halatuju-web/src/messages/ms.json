@@ -1186,6 +1186,8 @@
         "offer_letter_missing": "Muat naik surat tawaran anda dalam langkah Dokumen.",
         "str_missing": "Muat naik dokumen STR anda dalam langkah Dokumen.",
         "salary_slip_missing": "Muat naik slip gaji bagi setiap ahli keluarga yang bekerja dalam langkah Dokumen.",
+        "parent_ic_missing_member": "Muat naik IC {member} dalam langkah Dokumen.",
+        "salary_slip_missing_member": "Muat naik slip gaji {member} dalam langkah Dokumen.",
         "birth_certificate_missing": "Muat naik sijil kelahiran (untuk mengesahkan ibu anda ialah ibu bapa anda) dalam langkah Dokumen.",
         "guardianship_letter_missing": "Muat naik surat penjagaan dalam langkah Dokumen.",
         "ic_unreadable": "Kami tidak dapat membaca foto IC anda. Sila muat naik imej yang lebih jelas dalam langkah Dokumen.",

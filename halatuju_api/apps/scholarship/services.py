@@ -595,14 +595,18 @@ def detect_vision_outage(window_hours=24):
 
 
 def income_doc_blockers(application):
-    """The route + selection aware COMPULSORY income documents still missing, as flat
-    blocker codes (gate v2, 2026-06-05). Sourced from ``income_engine`` so the consent
-    gate and the student's wizard checklist can never disagree (one source of truth).
-    The wizard carries the per-member detail; the gate stays coarse:
+    """The route + selection aware COMPULSORY income documents still missing, as blocker
+    codes (gate v2, 2026-06-05). Sourced from ``income_engine`` so the consent gate and
+    the student's wizard checklist can never disagree (one source of truth).
       - blank route / no earner-or-member chosen → ``income_incomplete`` (walk the wizard);
-      - STR route → the earner IC + relationship doc (mother→BC, guardian→letter) + STR;
+      - STR route → STR doc + the earner IC + relationship doc (mother→BC, guardian→letter);
       - salary route → for EVERY selected member: their IC + their salary slip (EPF does
-        NOT substitute) + the relationship doc. Any member missing one → the flat code.
+        NOT substitute) + the relationship doc.
+    The per-PERSON codes are member-qualified — ``parent_ic_missing:<member>`` and
+    ``salary_slip_missing:<member>`` (member = father/mother/guardian/brother/sister) — so
+    the consent checklist names each person ("Upload Father's IC"). The frontend splits on
+    ``:`` and renders the member name; the household relationship docs (BC / guardianship
+    letter) stay un-suffixed. The POST gate only cares that the list is non-empty.
     """
     from .income_engine import (working_members, relationship_doc_for,
                                 _member_ic_doc, _cluster_docs)
@@ -620,7 +624,7 @@ def income_doc_blockers(application):
         if 'str' not in present:
             out.append('str_missing')
         if _member_ic_doc(application, earner) is None:
-            out.append('parent_ic_missing')
+            out.append(f'parent_ic_missing:{earner}')   # names the single STR earner
         rel = relationship_doc_for(earner)          # birth_certificate / guardianship_letter / ''
         if rel and rel not in present:
             out.append(f'{rel}_missing')            # birth_certificate_missing / guardianship_letter_missing
@@ -629,21 +633,19 @@ def income_doc_blockers(application):
     members = working_members(application)
     if not members:
         return ['income_incomplete']
-    need_ic = need_slip = need_bc = need_guard = False
+    need_bc = need_guard = False
     for m in members:
+        # Member-qualified codes so the checklist names each person — IC then salary slip,
+        # grouped per member to match the Documents-UI member blocks.
         if _member_ic_doc(application, m) is None:
-            need_ic = True
+            out.append(f'parent_ic_missing:{m}')
         if not _cluster_docs(application, m, 'salary_slip').exists():
-            need_slip = True
+            out.append(f'salary_slip_missing:{m}')
         rel = relationship_doc_for(m)
         if rel == 'birth_certificate' and 'birth_certificate' not in present:
             need_bc = True
         elif rel == 'guardianship_letter' and 'guardianship_letter' not in present:
             need_guard = True
-    if need_ic:
-        out.append('parent_ic_missing')
-    if need_slip:
-        out.append('salary_slip_missing')
     if need_bc:
         out.append('birth_certificate_missing')
     if need_guard:
