@@ -5,6 +5,11 @@
  * is not a partner admin.
  */
 
+import type {
+  AcademicCheck, PathwayCheck, IncomeIcCheck, IncomeProofCheck,
+  StrCheck, UtilityCheck, BcCheck, GuardianshipCheck,
+} from '@/lib/api'
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface ApiOptions {
@@ -327,6 +332,10 @@ export interface AdminScholarshipDetail {
   household_income: number | null
   household_size: number | null
   receives_str: boolean
+  // Income wizard answers — drive the cockpit's route-aware income document panel.
+  income_route?: string | null
+  income_earner?: string | null
+  income_working_members?: string[] | null
   receives_jkm: boolean
   intended_pathway: string
   intends_tertiary_2026: boolean
@@ -627,6 +636,8 @@ export interface AdminVerdictFact {
 export interface AdminApplicantDocument {
   id: number
   doc_type: string
+  // Salary-route income docs: whose IC/salary slip/EPF this is (father/mother/…); '' otherwise.
+  household_member?: string
   original_filename: string
   size: number
   verification_status: string
@@ -651,6 +662,17 @@ export interface AdminApplicantDocument {
     student_verdict?: string
     error?: string
   }
+  // Per-fact verification checks (the admin detail serializes documents via
+  // ApplicantDocumentSerializer, so these arrive on the admin response too). Each is
+  // null unless its doc_type matches. The cockpit renders them as coloured fact-labels.
+  academic_check?: AcademicCheck | null
+  pathway_check?: PathwayCheck | null
+  income_ic_check?: IncomeIcCheck | null
+  income_proof_check?: IncomeProofCheck | null
+  str_check?: StrCheck | null
+  utility_check?: UtilityCheck | null
+  bc_check?: BcCheck | null
+  guardianship_check?: GuardianshipCheck | null
 }
 
 /** Admin re-runs Vision OCR on an existing IC document (soft signal, never a gate). */

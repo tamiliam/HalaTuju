@@ -484,15 +484,26 @@ them on the new rules), resolved at Check 2 / interview. New blocker codes (`off
 were hand-slotted onto income routes during triage — recorded in the plan doc; gate change guides the 9 shortlisted to
 their route's docs, leaves the 6 grandfathered untouched.)
 
-**▶ S2 (NEXT) — Documents-panel redesign, officer cockpit (Stitch-first per the UI rule).** Per-document coloured
-fact-labels (🟢 fully verified / 🟡 partial-until-cured / 🔴 not — show ONLY the facts that document provides). The
-relationship is MOVABLE: father/elder-sibling IC proves it via the student-IC patronymic (Relationship 🟢 on the IC);
-mother → birth certificate; guardian → guardianship letter (never on a mother's/guardian's IC). Income section = a
-visual render of `income_requirements` (compulsory on top → optional bottom, route + selection aware) with
-missing-compulsory **placeholder rows**. Fixes the `documentPill` "earner IC always Unread" bug. Build: `lib/officerCockpit.ts`
-(fact lists + colours + pill fix) + cockpit `[id]/page.tsx` + fact-label i18n + jest. Full spec in the plan doc.
-**PARKED (separate future feature, NOT S2):** the post-consent summary page + "lock at Continue" (the lock already
-exists at consent; see the plan doc's parked section).
+_S1 also got live-testing fixes (all deployed): offer-letter red `*` + dropped the redundant OPTIONAL pills; STR-route
+income blocker order (STR doc before earner IC); and member-qualified consent blockers (`parent_ic_missing:<member>` /
+`salary_slip_missing:<member>` → "Upload Father's IC", "Upload Mother's salary slip", per selection)._
+
+**✅ S2 — Officer Documents-panel redesign SHIPPED + DEPLOYED 2026-06-05 (no migration; retro `retrospective-td085-cockpit-s2.md`). ▶▶ TD-085 COMPLETE.**
+The cockpit Documents drawer now shows per-document **coloured fact-labels** (🟢/🟡/🔴 — only the facts THAT doc provides)
+via new `officerCockpit.documentFacts`; the **relationship is movable** (father/sibling IC patronymic → on the IC; mother
+→ BC; guardian → letter); the income section is **route+selection-aware Required→Optional** with red "Missing" placeholder
+rows via `officerCockpit.incomeDocLayout`; the row badge **rolls up the fact colours**, fixing the "earner IC always
+Unread" bug. `AdminApplicationDetailSerializer` now surfaces `income_route`/`income_earner`/`income_working_members` (3
+fields, no migration); `admin-api.ts` declares the `*_check` + `household_member` + income fields. Gates **697 scholarship
++ 1037 courses/reports pytest + 258 jest + next build clean + i18n 2013**.
+
+**▶ NEXT (queued — see `docs/scholarship/application-processing-pipeline-plan.md` MASTER + `consent-gate-v2-plan.md`):**
+the post-consent **summary page + "lock at Continue"** (PARKED feature; full spec in the plan doc — note the consent lock
+ALREADY exists, this just inserts a review step + moves the commit to Continue); **Gopal income doc-coach copy**; remove
+orphaned `str_claimed_no_doc`; **TD-084 cleanup** (drop deprecated `earner_work_status`/`household_other_earners` cols +
+`q2/q3/q4/work` i18n under expand-contract); **Check 2** (submission gap-queries + email + 5-day SLA); **Check 3**
+(reviewer role + assignment gate); live click-through of the income arc (TD-070). Carried gotcha (S2 lesson): the data the
+cockpit needs must be in `AdminApplicationDetailSerializer`, not just the student `ApplicantDocumentSerializer`.
 
 ---
 

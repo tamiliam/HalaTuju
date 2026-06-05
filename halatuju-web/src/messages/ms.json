@@ -2228,12 +2228,42 @@
           "pathway": "LALUAN",
           "other": "LAIN-LAIN"
         },
+        "required": "Wajib",
+        "optional": "Pilihan",
+        "notUploaded": "belum dimuat naik",
         "view": "Lihat",
         "rerun": "Jalankan semula",
         "pill": {
           "verified": "Disahkan",
           "check": "Semak",
-          "unread": "Belum dibaca"
+          "unread": "Belum dibaca",
+          "missing": "Tiada"
+        },
+        "fact": {
+          "name": "Nama",
+          "ic_no": "No. IC",
+          "relationship": "Hubungan",
+          "subjects": "Subjek",
+          "results": "Keputusan",
+          "pathway": "Laluan",
+          "recipient": "Penerima",
+          "current": "Semasa",
+          "amount": "Jumlah",
+          "period": "Tempoh",
+          "contribution": "Caruman",
+          "child": "Anak",
+          "mother": "Ibu",
+          "father": "Bapa",
+          "guardian": "Penjaga",
+          "ward": "Anak jagaan",
+          "address": "Alamat"
+        },
+        "type": {
+          "parent_ic": "IC pencari nafkah",
+          "str": "Dokumen STR",
+          "salary_slip": "Slip gaji",
+          "birth_certificate": "Sijil kelahiran",
+          "guardianship_letter": "Surat penjagaan"
         }
       }
     },

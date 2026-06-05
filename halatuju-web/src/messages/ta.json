@@ -2228,12 +2228,42 @@
           "pathway": "பாதை",
           "other": "மற்றவை"
         },
+        "required": "கட்டாயம்",
+        "optional": "விருப்பம்",
+        "notUploaded": "இன்னும் பதிவேற்றப்படவில்லை",
         "view": "பார்க்கவும்",
         "rerun": "மீண்டும் இயக்கு",
         "pill": {
           "verified": "உறுதி",
           "check": "சரிபார்க்க",
-          "unread": "படிக்கவில்லை"
+          "unread": "படிக்கவில்லை",
+          "missing": "இல்லை"
+        },
+        "fact": {
+          "name": "பெயர்",
+          "ic_no": "IC எண்",
+          "relationship": "உறவு",
+          "subjects": "பாடங்கள்",
+          "results": "முடிவுகள்",
+          "pathway": "பாதை",
+          "recipient": "பெறுநர்",
+          "current": "நடப்பு",
+          "amount": "தொகை",
+          "period": "காலம்",
+          "contribution": "பங்களிப்பு",
+          "child": "குழந்தை",
+          "mother": "தாய்",
+          "father": "தந்தை",
+          "guardian": "பாதுகாவலர்",
+          "ward": "பராமரிப்பில் உள்ளவர்",
+          "address": "முகவரி"
+        },
+        "type": {
+          "parent_ic": "வருமானதாரரின் IC",
+          "str": "STR ஆவணம்",
+          "salary_slip": "சம்பளச் சீட்டு",
+          "birth_certificate": "பிறப்புச் சான்றிதழ்",
+          "guardianship_letter": "பாதுகாவலர் கடிதம்"
         }
       }
     },

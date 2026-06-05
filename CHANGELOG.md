@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Officer Documents panel redesign — coloured per‑fact labels + route‑aware income ordering (TD-085 Sprint 2).** Each
+  document row in the cockpit Documents drawer now shows the **labels of the facts that document provides**, coloured by
+  its own sub‑verdict (🟢 verified · 🟡 partial · 🔴 not) — Identity IC → Name · IC No; results slip → Name · Subjects ·
+  Results; offer letter → Name · IC No · Pathway; STR → Recipient · IC No · Current; salary slip → Name · Amount · Period;
+  birth certificate → Child · Mother · Father; etc. The **relationship is movable**: it sits on a father/elder‑sibling IC
+  (shared student‑IC patronymic), on the **birth certificate** for a mother, and on the **guardianship letter** for a
+  guardian — never on a mother's/guardian's IC. The **income section** is now compulsory‑on‑top → optional‑at‑the‑bottom
+  (route + selection aware, sourced from the same `incomeWizard` logic the gate uses), with red **Missing** placeholder
+  rows for unmet compulsory documents. The row badge now **rolls up the fact colours**, which fixes the long‑standing
+  "earner IC always shows Unread" bug (the earner IC is judged by its income relationship check, not the student‑identity
+  verdict it never gets). New `officerCockpit` helpers `documentFacts` + `incomeDocLayout`; the admin detail serializer
+  surfaces the income wizard answers (`income_route`/`income_earner`/`income_working_members`); no migration. Officer
+  cockpit only. **This completes TD-085** (income gate + cockpit; the document‑first verdict + re‑extraction backfill were
+  dropped — the route stays authoritative). 258 jest + next build clean + i18n parity 2013; 697 scholarship pytest.
 - **Consent / submission gate v2 — route-aware and strict (TD-085 Sprint 1).** To give consent (and submit), a student
   must now upload exactly what their income route requires, plus a now-compulsory **offer letter**. STR route → the STR
   document + the earner's IC + the relationship doc (mother→birth certificate, guardian→guardianship letter; father via

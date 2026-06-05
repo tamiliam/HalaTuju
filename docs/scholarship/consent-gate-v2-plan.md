@@ -1,7 +1,9 @@
 # Consent / Submission Gate v2 — route-aware document gate (TD-085)
 
-**Status:** **S1 (Consent gate v2) SHIPPED + DEPLOYED 2026-06-05** (no migration; retro
-`docs/retrospective-consent-gate-v2-s1.md`). **S2 (Documents-panel redesign) = SPEC below, not yet built.**
+**Status:** **✅ TD-085 COMPLETE — both sprints SHIPPED + DEPLOYED 2026-06-05** (no migrations). S1 (consent gate v2,
+retro `docs/retrospective-consent-gate-v2-s1.md`) + S2 (officer Documents-panel redesign, retro
+`docs/retrospective-td085-cockpit-s2.md`). The document-first verdict + re-extraction backfill were intentionally
+dropped (route stays authoritative). PARKED for later: the post-consent summary page + lock-at-Continue (section below).
 **Part of:** TD-085.
 **FINAL SCOPE (2026-06-05): TWO sprints only — (S1) Consent gate v2, (S2) Documents-panel redesign (officer cockpit).**
 **DROPPED:** (a) the *document-first verdict* — it would make the route NON-authoritative, but the strict route-aware
