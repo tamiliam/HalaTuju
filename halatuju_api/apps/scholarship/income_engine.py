@@ -294,6 +294,8 @@ def _str_currency(status_raw, year_str, cohort_year):
     m = _STR_YEAR_RE.search(year_str or '')
     if m and cohort_year and int(m.group(1)) < int(cohort_year):
         return 'stale'
+    if not s and not m:
+        return 'unknown'   # nothing read (no status, no year) — don't claim 'current'
     return 'current'
 
 

@@ -362,11 +362,13 @@ function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => 
       : status === 'mismatch'
         ? pill('mismatch', t('scholarship.docs.incomeProofCheck.mismatchIc'))
         : pill('none', t('scholarship.docs.incomeProofCheck.addIc'))
-  // Currency: current → green; stale/rejected → red (no longer proves B40).
+  // Currency: current → green; unknown (nothing read) → neutral; stale/rejected → red.
   const currentPill =
     chk.current_status === 'current'
       ? pill('match', t('scholarship.docs.strCheck.current'))
-      : pill('mismatch', t(`scholarship.docs.strCheck.${chk.current_status}`))
+      : chk.current_status === 'unknown'
+        ? pill('none', t('scholarship.docs.strCheck.unknown'))
+        : pill('mismatch', t(`scholarship.docs.strCheck.${chk.current_status}`))
   const fromDoc = (
     <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
       {t('scholarship.docs.incomeProofCheck.fromDoc')}
