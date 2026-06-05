@@ -2032,3 +2032,24 @@ income-verification letter as their salary slip, whose AMOUNT is then manually v
 grandfather logic outlives the 6 apps (then collapse to one strict bar).
 **Supersedes:** the "Income never-block — recommend + interview, not a hard gate" decision (Income Check-1) AT THE
 SUBMISSION LAYER; and reverses the (2026-06-05) "Income verdict must become document-first" reframe.
+
+## Officer document row = coloured fact-labels + a facts-derived badge (movable relationship) — TD-085 S2, 2026-06-05
+**Decision:** Each document row in the officer cockpit shows the LABELS of the facts that document provides
+(`officerCockpit.documentFacts`), each coloured by its own sub-verdict (🟢 verified / 🟡 partial / 🔴 not), read from the
+per-fact `*_check` serializer fields. The row's aggregate badge (`documentPill`) is the ROLL-UP of those fact colours.
+The relationship fact is MOVABLE — it sits on a father/elder-sibling IC (shared student-IC patronymic), on the birth
+certificate for a mother, on the guardianship letter for a guardian; never on a mother's/guardian's IC. The income
+section renders `officerCockpit.incomeDocLayout` — route+selection-aware Required→Optional ordering (reusing
+`incomeWizard`) with placeholder rows for missing compulsory docs.
+**Alternatives considered:** keep the old single-badge-per-row + grey extracted-values line; compute a fresh per-doc
+verdict in the cockpit instead of reading the student-facing `*_check` fields; show the relationship on every earner IC.
+**Rationale:** the per-fact checks already arrive on the admin response (documents are serialised by
+`ApplicantDocumentSerializer`), so reading them keeps the cockpit and the student checklist in lockstep (no parallel
+re-derivation). Deriving the badge from the facts removes the "earner IC always Unread" bug for free. The movable
+relationship reflects how the relationship is actually proven (patronymic vs BC vs letter). Reusing `incomeWizard` for
+the income layout means the cockpit, the gate, and the student wizard all agree on what's compulsory.
+**Trade-offs:** the cockpit now depends on the `*_check` field shapes + the admin serializer surfacing the income wizard
+answers (an admin-serializer allowlist add). The fact labels replace the extracted-values summary line (values move
+behind "View"). Legacy docs whose checks haven't run show grey/unread facts until re-read.
+**Revisit if:** the per-fact check shapes change (the fact map in `documentFacts` must move with them), or a future
+document type needs a fact set not yet mapped.

@@ -42,6 +42,10 @@ import {
   groupDocumentsByFact,
   aiSuggestionFor,
   documentPill,
+  documentFacts,
+  incomeDocLayout,
+  type FactStatus,
+  type IncomeSlot,
 } from '@/lib/officerCockpit'
 import { localiseParams } from '@/lib/actionCentre'
 
@@ -688,69 +692,123 @@ export default function AdminScholarshipDetailPage() {
             if (p === 'check') return 'bg-amber-100 text-amber-700'
             return 'bg-gray-100 text-gray-500'
           }
+          const factClass = (s: FactStatus) =>
+            s === 'verified' ? 'text-green-600' : s === 'partial' ? 'text-amber-600'
+              : s === 'not' ? 'text-red-600' : 'text-gray-400'
+          const subLabel = 'text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5'
+          // Line 2: the coloured fact-labels — only the facts THIS document provides.
+          const factLine = (d: AdminApplicantDocument) => {
+            const facts = documentFacts(d)
+            if (facts.length === 0) return null
+            return (
+              <p className="mt-0.5 flex flex-wrap items-center text-[11px]">
+                {facts.map((f, i) => (
+                  <span key={`${f.key}-${i}`} className="flex items-center">
+                    {i > 0 && <span className="text-gray-300 mx-1.5">·</span>}
+                    <span className={`font-medium ${factClass(f.status)}`}>
+                      {t(`admin.scholarship.docsDrawer.fact.${f.key}`)}
+                    </span>
+                  </span>
+                ))}
+              </p>
+            )
+          }
+          // Placeholder label for a missing compulsory income doc (+ the member, salary route).
+          const slotLabel = (docType: string, member: string) => {
+            const base = t(`admin.scholarship.docsDrawer.type.${docType}`)
+            return member
+              ? `${t(`scholarship.docs.income.wizard.member.${member}`)} — ${base}`
+              : base
+          }
+          const docRow = (d: AdminApplicantDocument) => {
+            const p = documentPill(d)
+            return (
+              <li key={d.id} className="flex items-start gap-2 rounded-lg border border-gray-100 p-2.5 hover:bg-gray-50">
+                <span className="shrink-0 mt-0.5 text-gray-400 text-base" aria-hidden>
+                  {d.doc_type === 'ic' || d.doc_type === 'parent_ic' ? '🪪' : '📄'}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-sm font-medium text-gray-800 truncate max-w-[180px]">
+                      {d.original_filename || d.doc_type}
+                    </span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${pillClass(p)}`}>
+                      {t(`admin.scholarship.docsDrawer.pill.${p}`)}
+                    </span>
+                  </div>
+                  {factLine(d)}
+                  {d.vision_fields?.warnings && d.vision_fields.warnings.length > 0 && (
+                    <p className="text-[11px] text-amber-600 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
+                  )}
+                </div>
+                <div className="shrink-0 flex flex-col items-end gap-0.5 mt-0.5">
+                  {d.download_url && (
+                    <a href={d.download_url} target="_blank" rel="noreferrer"
+                      className="text-xs text-blue-600 hover:underline">
+                      {t('admin.scholarship.docsDrawer.view')}
+                    </a>
+                  )}
+                  <button onClick={() => doReRunVision(d.id)} disabled={busy === 'vision'}
+                    className="text-[11px] text-gray-500 hover:text-gray-700 hover:underline disabled:opacity-50">
+                    {busy === 'vision' ? t('common.loading') : t('admin.scholarship.docsDrawer.rerun')}
+                  </button>
+                </div>
+              </li>
+            )
+          }
+          const placeholderRow = (s: IncomeSlot) => (
+            <li key={`ph-${s.docType}-${s.member}`}
+              className="flex items-center gap-2 rounded-lg border border-dashed border-gray-200 p-2.5">
+              <span className="shrink-0 text-gray-300 text-base" aria-hidden>
+                {s.docType === 'parent_ic' ? '🪪' : '📄'}
+              </span>
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-medium text-gray-500">{slotLabel(s.docType, s.member)}</span>
+                <span className="text-[11px] text-gray-400"> — {t('admin.scholarship.docsDrawer.notUploaded')}</span>
+              </div>
+              <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-red-100 text-red-600">
+                {t('admin.scholarship.docsDrawer.pill.missing')}
+              </span>
+            </li>
+          )
           return (
             <div className="space-y-4">
               {sectionKeys.map((key) => {
                 const docs = groups[key]
+                if (key === 'income') {
+                  // Income: compulsory (route+selection aware) on top with placeholders for
+                  // anything missing, then the optional household docs.
+                  const layout = incomeDocLayout(app, docs)
+                  if (docs.length === 0 && layout.required.length === 0) return null
+                  return (
+                    <div key={key}>
+                      <p className={subLabel}>{t('admin.scholarship.docsDrawer.group.income')}</p>
+                      {layout.required.length > 0 && (
+                        <>
+                          <p className="text-[9px] font-semibold uppercase tracking-wider text-gray-300 mb-1">
+                            {t('admin.scholarship.docsDrawer.required')}
+                          </p>
+                          <ul className="space-y-1.5">
+                            {layout.required.map((s) => (s.doc ? docRow(s.doc) : placeholderRow(s)))}
+                          </ul>
+                        </>
+                      )}
+                      {layout.optional.length > 0 && (
+                        <>
+                          <p className="text-[9px] font-semibold uppercase tracking-wider text-gray-300 mb-1 mt-2">
+                            {t('admin.scholarship.docsDrawer.optional')}
+                          </p>
+                          <ul className="space-y-1.5">{layout.optional.map(docRow)}</ul>
+                        </>
+                      )}
+                    </div>
+                  )
+                }
                 if (docs.length === 0) return null
                 return (
                   <div key={key}>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">
-                      {t(`admin.scholarship.docsDrawer.group.${key}`)}
-                    </p>
-                    <ul className="space-y-1.5">
-                      {docs.map((d) => {
-                        const p = documentPill(d)
-                        // Extracted fields summary line
-                        const fields = d.vision_fields?.fields
-                        const fieldSummary = fields && Object.keys(fields).length > 0
-                          ? Object.entries(fields)
-                              .filter(([, v]) => v && (Array.isArray(v) ? v.length : String(v).trim()))
-                              .map(([k, v]) => `${k}: ${Array.isArray(v)
-                                ? v.map((x) => (x && typeof x === 'object' ? [x.subject, x.grade].filter(Boolean).join(' ') : x)).join(', ')
-                                : v}`)
-                              .join(' · ')
-                          : ''
-                        return (
-                          <li key={d.id} className="flex items-start gap-2 rounded-lg border border-gray-100 p-2.5 hover:bg-gray-50">
-                            {/* File icon */}
-                            <span className="shrink-0 mt-0.5 text-gray-400 text-base" aria-hidden>
-                              {d.doc_type === 'ic' || d.doc_type === 'parent_ic' ? '🪪' : '📄'}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-sm font-medium text-gray-800 truncate max-w-[180px]">
-                                  {d.original_filename || d.doc_type}
-                                </span>
-                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${pillClass(p)}`}>
-                                  {t(`admin.scholarship.docsDrawer.pill.${p}`)}
-                                </span>
-                              </div>
-                              {fieldSummary && (
-                                <p className="text-[11px] text-gray-400 mt-0.5 truncate">{fieldSummary}</p>
-                              )}
-                              {d.vision_fields?.warnings && d.vision_fields.warnings.length > 0 && (
-                                <p className="text-[11px] text-amber-600 mt-0.5">{d.vision_fields.warnings.join('; ')}</p>
-                              )}
-                            </div>
-                            <div className="shrink-0 flex flex-col items-end gap-0.5 mt-0.5">
-                              {d.download_url && (
-                                <a href={d.download_url} target="_blank" rel="noreferrer"
-                                  className="text-xs text-blue-600 hover:underline">
-                                  {t('admin.scholarship.docsDrawer.view')}
-                                </a>
-                              )}
-                              {/* Re-run the automatic read (IC OCR, or the results-slip
-                                  grade extraction) — available on every document, not just IC. */}
-                              <button onClick={() => doReRunVision(d.id)} disabled={busy === 'vision'}
-                                className="text-[11px] text-gray-500 hover:text-gray-700 hover:underline disabled:opacity-50">
-                                {busy === 'vision' ? t('common.loading') : t('admin.scholarship.docsDrawer.rerun')}
-                              </button>
-                            </div>
-                          </li>
-                        )
-                      })}
-                    </ul>
+                    <p className={subLabel}>{t(`admin.scholarship.docsDrawer.group.${key}`)}</p>
+                    <ul className="space-y-1.5">{docs.map(docRow)}</ul>
                   </div>
                 )
               })}

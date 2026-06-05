@@ -3,6 +3,8 @@ import {
   groupDocumentsByFact,
   aiSuggestionFor,
   documentPill,
+  documentFacts,
+  incomeDocLayout,
 } from '@/lib/officerCockpit'
 import type { AdminVerdictFact, AdminApplicantDocument } from '@/lib/admin-api'
 
@@ -138,106 +140,127 @@ describe('aiSuggestionFor', () => {
   })
 })
 
-// ── documentPill ──────────────────────────────────────────────────────────────
+// ── Check fixtures (only the fields the fact logic reads matter) ───────────────
+const icCheck = (o: Partial<NonNullable<AdminApplicantDocument['income_ic_check']>>) =>
+  ({ nric: '', name: '', address: '', member: '', name_status: 'pending', readable: false, ...o } as NonNullable<AdminApplicantDocument['income_ic_check']>)
+const strCheck = (o: Partial<NonNullable<AdminApplicantDocument['str_check']>>) =>
+  ({ name: '', nric: '', status: '', year: '', amount: '', member: '', name_status: 'no_ref', nric_status: 'no_ref', current_status: 'current', ic_present: false, ...o } as NonNullable<AdminApplicantDocument['str_check']>)
+const acadCheck = (o: Partial<NonNullable<AdminApplicantDocument['academic_check']>>) =>
+  ({ name: 'pending', subjects: 'pending', results: 'pending', candidate_name: '', exam: '', exam_year: '', missing: [], mismatched: [], uncertain: [], slip_count: 1, ...o } as NonNullable<AdminApplicantDocument['academic_check']>)
+
+// ── documentPill (rolls up the fact colours) ──────────────────────────────────
 
 describe('documentPill', () => {
-  describe('IC / parent IC', () => {
-    it('returns unread when no vision signals present', () => {
-      expect(documentPill(doc({ doc_type: 'ic' }))).toBe('unread')
-    })
-
-    it('returns verified when both nric and name match', () => {
-      expect(
-        documentPill(
-          doc({
-            doc_type: 'ic',
-            vision_nric_verdict: 'match',
-            vision_name_verdict: 'match',
-          }),
-        ),
-      ).toBe('verified')
-    })
-
-    it('returns verified when only nric matches (name not yet checked)', () => {
-      expect(
-        documentPill(
-          doc({
-            doc_type: 'ic',
-            vision_nric_verdict: 'match',
-            vision_name_verdict: '',
-          }),
-        ),
-      ).toBe('verified')
-    })
-
-    it('returns check when nric mismatches', () => {
-      expect(
-        documentPill(
-          doc({
-            doc_type: 'ic',
-            vision_nric_verdict: 'mismatch',
-            vision_name_verdict: 'match',
-          }),
-        ),
-      ).toBe('check')
-    })
-
-    it('returns check when name is partial', () => {
-      expect(
-        documentPill(
-          doc({
-            doc_type: 'ic',
-            vision_nric_verdict: 'match',
-            vision_name_verdict: 'partial',
-          }),
-        ),
-      ).toBe('check')
-    })
-
-    it('returns check when either field is unreadable', () => {
-      expect(
-        documentPill(
-          doc({ doc_type: 'parent_ic', vision_nric_verdict: 'unreadable' }),
-        ),
-      ).toBe('check')
-    })
+  it('unread when no fact can be assessed', () => {
+    expect(documentPill(doc({ doc_type: 'ic' }))).toBe('unread')
   })
 
-  describe('supporting documents', () => {
-    it('returns unread when no signals', () => {
-      expect(documentPill(doc({ doc_type: 'salary_slip' }))).toBe('unread')
-    })
+  it('verified when every assessable fact is verified', () => {
+    expect(documentPill(doc({ doc_type: 'ic', vision_nric_verdict: 'match', vision_name_verdict: 'match' }))).toBe('verified')
+  })
 
-    it('returns verified when name is found', () => {
-      expect(
-        documentPill(
-          doc({ doc_type: 'salary_slip', vision_name_match: 'found' }),
-        ),
-      ).toBe('verified')
-    })
+  it('verified when only one fact is known and it matches', () => {
+    expect(documentPill(doc({ doc_type: 'ic', vision_nric_verdict: 'match', vision_name_verdict: '' }))).toBe('verified')
+  })
 
-    it('returns check when name is not_found', () => {
-      expect(
-        documentPill(
-          doc({ doc_type: 'results_slip', vision_name_match: 'not_found' }),
-        ),
-      ).toBe('check')
-    })
+  it('check when any fact mismatches', () => {
+    expect(documentPill(doc({ doc_type: 'ic', vision_nric_verdict: 'mismatch', vision_name_verdict: 'match' }))).toBe('check')
+  })
 
-    it('returns check when name is unreadable', () => {
-      expect(
-        documentPill(
-          doc({ doc_type: 'str', vision_name_match: 'unreadable' }),
-        ),
-      ).toBe('check')
-    })
+  it('check when a fact is partial', () => {
+    expect(documentPill(doc({ doc_type: 'ic', vision_nric_verdict: 'match', vision_name_verdict: 'partial' }))).toBe('check')
+  })
 
-    it('returns verified when address is found (even if name blank)', () => {
-      expect(
-        documentPill(
-          doc({ doc_type: 'water_bill', vision_address_match: 'found' }),
-        ),
-      ).toBe('verified')
-    })
+  it('earner IC is judged by its income relationship check — a readable IC is Verified, not the old false Unread', () => {
+    expect(documentPill(doc({ doc_type: 'parent_ic', income_ic_check: icCheck({ member: 'mother', readable: true }) }))).toBe('verified')
+  })
+
+  it('str pill rolls up recipient/IC/currency', () => {
+    expect(documentPill(doc({ doc_type: 'str', str_check: strCheck({ name_status: 'match', nric_status: 'match', current_status: 'current' }) }))).toBe('verified')
+    expect(documentPill(doc({ doc_type: 'str', str_check: strCheck({ name_status: 'match', nric_status: 'match', current_status: 'stale' }) }))).toBe('check')
+  })
+
+  it('unread when the per-fact check has not run', () => {
+    expect(documentPill(doc({ doc_type: 'salary_slip' }))).toBe('unread')
+  })
+})
+
+// ── documentFacts (per-doc coloured labels — only what the doc provides) ───────
+
+describe('documentFacts', () => {
+  it('identity IC → Name + IC No', () => {
+    expect(documentFacts(doc({ doc_type: 'ic', vision_name_verdict: 'match', vision_nric_verdict: 'match' })))
+      .toEqual([{ key: 'name', status: 'verified' }, { key: 'ic_no', status: 'verified' }])
+  })
+
+  it('father earner IC → Name, IC No, Relationship (patronymic)', () => {
+    expect(documentFacts(doc({ doc_type: 'parent_ic', income_ic_check: icCheck({ member: 'father', name_status: 'match', readable: true }) })))
+      .toEqual([{ key: 'name', status: 'verified' }, { key: 'ic_no', status: 'verified' }, { key: 'relationship', status: 'verified' }])
+  })
+
+  it('mother earner IC → Name + IC No only (relationship lives on the birth certificate)', () => {
+    expect(documentFacts(doc({ doc_type: 'parent_ic', income_ic_check: icCheck({ member: 'mother', name_status: 'unknown', readable: true }) })).map((f) => f.key))
+      .toEqual(['name', 'ic_no'])
+  })
+
+  it('results slip → Name, Subjects, Results from the 3-check', () => {
+    expect(documentFacts(doc({ doc_type: 'results_slip', academic_check: acadCheck({ name: 'match', subjects: 'partial', results: 'match' }) })))
+      .toEqual([{ key: 'name', status: 'verified' }, { key: 'subjects', status: 'partial' }, { key: 'results', status: 'verified' }])
+  })
+
+  it('str → Recipient, IC No, Current', () => {
+    expect(documentFacts(doc({ doc_type: 'str', str_check: strCheck({ name_status: 'match', nric_status: 'mismatch', current_status: 'stale' }) })))
+      .toEqual([{ key: 'recipient', status: 'verified' }, { key: 'ic_no', status: 'not' }, { key: 'current', status: 'partial' }])
+  })
+
+  it('birth certificate → Child, Mother, Father (carries the mother relationship)', () => {
+    expect(documentFacts(doc({ doc_type: 'birth_certificate', bc_check: { child_name: '', child_status: 'match', mother_name: '', mother_nric: '', mother_status: 'match', father_name: '', father_status: 'match', bc_number: '' } })).map((f) => f.key))
+      .toEqual(['child', 'mother', 'father'])
+  })
+
+  it('utility bill → Address only', () => {
+    expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: { name: '', address: '', monthly_bill: '', unpaid_balance: '', address_status: 'found' } })))
+      .toEqual([{ key: 'address', status: 'verified' }])
+  })
+
+  it('returns [] when the check has not run', () => {
+    expect(documentFacts(doc({ doc_type: 'str' }))).toEqual([])
+  })
+})
+
+// ── incomeDocLayout ───────────────────────────────────────────────────────────
+
+describe('incomeDocLayout', () => {
+  it('STR + mother → STR doc → earner IC → birth certificate slots; missing ones are null', () => {
+    const str = doc({ id: 1, doc_type: 'str' })
+    const layout = incomeDocLayout({ income_route: 'str', income_earner: 'mother' }, [str])
+    expect(layout.required.map((s) => [s.docType, s.doc?.id ?? null])).toEqual([
+      ['str', 1],
+      ['parent_ic', null],          // not uploaded → placeholder
+      ['birth_certificate', null],  // mother → BC required
+    ])
+  })
+
+  it('STR + father → no birth certificate slot (patronymic)', () => {
+    const layout = incomeDocLayout({ income_route: 'str', income_earner: 'father' }, [])
+    expect(layout.required.map((s) => s.docType)).toEqual(['str', 'parent_ic'])
+  })
+
+  it('salary + father & mother → per-member IC + salary slip, one untagged BC; extras go optional', () => {
+    const fIc = doc({ id: 1, doc_type: 'parent_ic', household_member: 'father' })
+    const fSlip = doc({ id: 2, doc_type: 'salary_slip', household_member: 'father' })
+    const water = doc({ id: 9, doc_type: 'water_bill' })
+    const layout = incomeDocLayout(
+      { income_route: 'salary', income_working_members: ['father', 'mother'] },
+      [fIc, fSlip, water],
+    )
+    expect(layout.required.map((s) => [s.docType, s.member, s.doc?.id ?? null])).toEqual([
+      ['parent_ic', 'father', 1],
+      ['salary_slip', 'father', 2],
+      ['parent_ic', 'mother', null],
+      ['salary_slip', 'mother', null],
+      ['birth_certificate', '', null],   // mother needs a BC (untagged), not uploaded
+    ])
+    expect(layout.optional.map((d) => d.id)).toEqual([9])   // the water bill
   })
 })

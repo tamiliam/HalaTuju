@@ -2228,12 +2228,42 @@
           "pathway": "PATHWAY",
           "other": "OTHER"
         },
+        "required": "Required",
+        "optional": "Optional",
+        "notUploaded": "not uploaded yet",
         "view": "View",
         "rerun": "Re-run",
         "pill": {
           "verified": "Verified",
           "check": "Check",
-          "unread": "Unread"
+          "unread": "Unread",
+          "missing": "Missing"
+        },
+        "fact": {
+          "name": "Name",
+          "ic_no": "IC No",
+          "relationship": "Relationship",
+          "subjects": "Subjects",
+          "results": "Results",
+          "pathway": "Pathway",
+          "recipient": "Recipient",
+          "current": "Current",
+          "amount": "Amount",
+          "period": "Period",
+          "contribution": "Contribution",
+          "child": "Child",
+          "mother": "Mother",
+          "father": "Father",
+          "guardian": "Guardian",
+          "ward": "Ward",
+          "address": "Address"
+        },
+        "type": {
+          "parent_ic": "Earner's IC",
+          "str": "STR document",
+          "salary_slip": "Salary slip",
+          "birth_certificate": "Birth certificate",
+          "guardianship_letter": "Guardianship letter"
         }
       }
     },

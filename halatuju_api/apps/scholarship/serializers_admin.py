@@ -189,6 +189,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             # Plans redesign — surface the structured pathway plan for admin/coordinator
             'pathway_certainty', 'chosen_pathway', 'pre_u_track', 'pre_u_institution',
             'chosen_programme', 'uncertainty_reasons', 'uncertainty_note',
+            # Income wizard answers — drive the cockpit's route-aware income document panel.
+            'income_route', 'income_earner', 'income_working_members',
             'funding_need', 'documents', 'referees', 'consents', 'sponsor_profile',
             'anomalies',
             'verdict',
