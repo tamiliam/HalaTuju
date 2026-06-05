@@ -717,7 +717,8 @@ _FIELD_SCHEMAS = {
     'salary_slip': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
                                 'gross_income': _STR, 'net_income': _STR, 'period': _STR}),
     'epf': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
-                        'latest_balance': _STR, 'last_contribution': _STR}),
+                        'latest_balance': _STR, 'last_contribution': _STR,
+                        'monthly_contribution': _STR}),
     'water_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR, 'billing_period': _STR}),
     'electricity_bill': _doc_schema({'name': _STR, 'address': _STR, 'amount': _STR, 'billing_period': _STR}),
     # S2: read the GRADE against each subject (not just the subject list) so the
@@ -802,7 +803,9 @@ _DOC_HINTS = {
     'epf': (' This is a Malaysian EPF/KWSP statement. "name" = the member\'s full name; '
             '"nric" = their IC number if printed (keep the 12 digits); "employer" = the '
             'employer if shown; "latest_balance" = the most recent total balance (RM); '
-            '"last_contribution" = the latest contribution month/year. Leave empty if absent.'),
+            '"last_contribution" = the latest contribution month/year; "monthly_contribution" '
+            '= the RM amount of the most recent MONTHLY contribution (the employee + employer '
+            'amount credited that month, NOT the running balance). Leave empty if absent.'),
     'birth_certificate': (' This is a Malaysian birth certificate (Sijil Kelahiran, JPN). '
                           'Return: "bc_child_name" = the child\'s full name ("Nama" of the '
                           'child / "Nama Kanak-Kanak"); "bc_mother_name" = the mother\'s full '

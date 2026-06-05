@@ -2141,6 +2141,8 @@
           "str_not_current": "The STR is out of date (older year / not approved) — STR is annual, so it no longer proves current B40 need. Ask for this year's STR, or accept the salary route.",
           "str_recipient_mismatch": "The STR recipient isn't the declared earner — the name/IC on the STR doesn't match the earner's IC. Confirm.",
           "income_unverified_needs_interview": "Income can't be document-verified (informal / no payslip) — confirm during the interview via household size, dependents and lifestyle. Do NOT block.",
+          "income_per_capita_ok": "Per-capita income RM{amount} is below the B40 line (RM{ceiling}) — within the threshold.",
+          "income_above_b40_line": "Per-capita income RM{amount} is at/above the B40 line (RM{ceiling}) — the documents don't confirm B40 need. A human must decide at interview (circumstances may still apply). Do NOT auto-reject.",
           "earner_ic_present": "Earner's IC on file: {name}.",
           "relationship_confirmed": "Earner confirmed as the student's parent/guardian.",
           "income_proof_present": "Income documents are on file.",

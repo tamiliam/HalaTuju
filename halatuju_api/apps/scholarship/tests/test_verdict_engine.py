@@ -344,21 +344,26 @@ class TestIncomeSalary(_Base):
         self.assertIn('income_earner_undeclared', _codes(f['unresolved']))
 
     def test_father_ic_plus_payslip_is_verified(self):
-        # IC present + patronymic match + a financial doc → DATA verified.
+        # IC present + patronymic match + payslip whose per-capita clears the B40 line
+        # (RM2,000 / household 4 = RM500 < RM1,584) → verified.
         self._wizard(['father'])
         _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father')
-        _add_doc(self.app, 'salary_slip', student_verdict='ok', member='father')
+        _add_doc(self.app, 'salary_slip', student_verdict='ok', member='father',
+                 fields={'name': 'MURUGAN A/L KESAVAN', 'gross_income': 'RM2,000'})
         f = _facts(self.app)['income']
         self.assertEqual(f['status'], 'verified')
         self.assertIn('relationship_confirmed', _codes(f['evidence']))
         self.assertIn('income_proof_present', _codes(f['evidence']))
+        self.assertIn('income_per_capita_ok', _codes(f['evidence']))
 
     def test_sibling_only_with_payslip_is_verified(self):
         # The borrowed-payslip hole is closed: a brother's IC carries the SAME father's
-        # name, so a lone working sibling is still machine-verifiable.
+        # name, so a lone working sibling is still machine-verifiable. EPF contribution
+        # RM480 ≈ 24% of ~RM2,000 → per-capita RM500 < RM1,584 → verified.
         self._wizard(['brother'])
         _parent_ic(self.app, 'RAJESH A/L MURUGAN', member='brother')
-        _add_doc(self.app, 'epf', student_verdict='ok', member='brother')
+        _add_doc(self.app, 'epf', student_verdict='ok', member='brother',
+                 fields={'name': 'RAJESH A/L MURUGAN', 'monthly_contribution': 'RM480'})
         f = _facts(self.app)['income']
         self.assertEqual(f['status'], 'verified')
         self.assertIn('relationship_confirmed', _codes(f['evidence']))
@@ -698,3 +703,57 @@ class TestIncomeClusterStr(TestCase):
         slip = _add_doc(self.app, 'salary_slip', student_verdict='ok', member='',
                         fields={'name': 'MURUGAN A/L KESAVAN'})
         self.assertEqual(verdict_for_document(slip), 'income_ic_needed')
+
+
+class TestIncomePerCapita(TestCase):
+    """Salary route I4: sum the earners' pay from the documents → per-capita vs the cohort
+    ceiling. Green only when it clears the B40 line AND the cluster adds up; above the line
+    (or uncomputable) → recommend + interview, never blocked."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='pc', name='B40', year=2026,
+                                                      per_capita_ceiling=1584)
+
+    def setUp(self):
+        self.profile = StudentProfile.objects.create(
+            supabase_user_id=f'percap-{self.id()}', name='DIVASHINI A/P MURUGAN',
+            nric='080115-05-0132', household_size=4)
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='shortlisted',
+            income_route='salary', income_working_members=['father'])
+
+    def _father(self, gross=None, epf_contrib=None):
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father')
+        if gross is not None:
+            _add_doc(self.app, 'salary_slip', student_verdict='ok', member='father',
+                     fields={'name': 'MURUGAN A/L KESAVAN', 'gross_income': gross, 'period': 'May 2026'})
+        if epf_contrib is not None:
+            _add_doc(self.app, 'epf', student_verdict='ok', member='father',
+                     fields={'name': 'MURUGAN A/L KESAVAN', 'monthly_contribution': epf_contrib})
+
+    def test_below_ceiling_is_verified(self):
+        self._father(gross='RM2,000')      # 2000 / 4 = 500 < 1584
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'verified')
+        self.assertIn('income_per_capita_ok', _codes(f['evidence']))
+
+    def test_above_ceiling_is_recommend_interview(self):
+        self.profile.household_size = 2
+        self.profile.save()
+        self._father(gross='RM9,900.04')   # 9900 / 2 = 4950 >= 1584
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'recommend')
+        self.assertIn('income_above_b40_line', _codes(f['unresolved']))
+
+    def test_epf_contribution_estimates_salary(self):
+        # EPF monthly contribution RM480 ≈ 24% of salary → ~RM2000 → per-capita 500 < 1584.
+        self._father(epf_contrib='RM480')
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'verified')
+
+    def test_unreadable_amount_falls_to_interview(self):
+        self._father(gross='see attached')   # no parseable figure
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'recommend')
+        self.assertIn('income_unverified_needs_interview', _codes(f['unresolved']))
