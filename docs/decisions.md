@@ -1970,3 +1970,41 @@ deprecated). **Evolves the 2026-06-02 "human owns the non-STR income verdict" de
 verdict can now reach `verified`; the income amount judgement still cannot (out of scope here).
 **Revisit if:** households routinely have >1 working sibling of the same gender (then model brother_1/brother_2 or move
 to a `household_member` free-list), or when I4 lands (then "verified" must also clear the amount test).
+
+## Income "verified" now requires the per-capita AMOUNT test (I4) — read from documents, never auto-rejects — Income Check-1 multi-earner, 2026-06-05
+**Decision:** On the salary route, the Income tile reaches `verified` only when the income **amount** also clears the
+B40 line, computed *from the documents*: sum each ticked earner's salary-slip **gross** (or, when there's no payslip, an
+estimate of ≈24% of the EPF **monthly contribution**) → **per-capita** = sum ÷ `household_size` → compare to the
+cohort's `per_capita_ceiling` (RM1,584, the same line the shortlisting engine uses). Below the line *and* the cluster
+adds up → `verified`; **at/above** the line → `recommend` + `income_above_b40_line`; unreadable / informal / no
+household size → `recommend` + interview. **Never auto-rejected** — a human always places the at/above and the
+unprovable cases.
+**Alternatives considered:** (a) keep "verified = identities + relationships only" and leave the amount entirely to the
+officer (the 2026-06-04 scope); (b) trust the student's *declared* household income instead of reading it from docs;
+(c) hard-reject above the line.
+**Rationale:** the amount is the actual B40 test — a green tile that ignored it was misleading. Reading it from the
+uploaded payslips/EPF (not the declared figure) keeps the verdict evidence-based and consistent with how the slip data
+is already extracted. The EPF 24% fallback recovers an income signal when there's no payslip but a contribution exists.
+Never-rejecting preserves the standing "income never blocks a genuinely poor family" rule — at/above is a *recommend*,
+judged at interview, because per-capita-from-docs is an estimate (informal top-ups, irregular pay, partial months).
+**Trade-offs:** the per-capita is only as good as the extracted amounts; a household that under-uploads payslips can
+read as *below* the line. Accepted because the direction of error (toward `verified`/`recommend`, never a silent reject)
+is safe, and the officer sees the cluster.
+**Revisit if:** the cohort ceiling model changes, or extraction confidence on amounts proves too noisy (then widen the
+"unreadable → recommend" net, or weight EPF vs payslip differently).
+
+## Income verdict must become document-first, not wizard-route-first (reframe surfaced at close) — Income Check-1 multi-earner, 2026-06-05
+**Decision:** Recorded as a **direction for the next sprint (TD-085)**, not yet built: the income verdict should start
+from the **documents actually in the drawer** (what income proof exists — STR / salary slip / EPF, tagged or not — and
+which parent ICs are present) and use the wizard answers (route / earner / member tags) as **hints, not hard gates**.
+**Alternatives considered:** keep the current wizard-route-driven verdict and instead (a) force STR recipients to
+re-upload as the right type, or (b) only backfill the route/earner of legacy apps.
+**Rationale:** live testing (app #21) showed a confirmed STR recipient who uploaded the father's salary slip getting a
+red "no proof of income" because the STR branch only accepts an `str` doc — the verdict trusts the declared route over
+observed evidence. The whole pipeline, moreover, submitted *before* the wizard, so 6 apps have no route/tags at all. A
+document-first verdict fixes both the STR-with-salary case and the legacy cases uniformly; forcing re-uploads or
+route-only backfills fixes neither cleanly.
+**Trade-offs:** a document-first verdict is more permissive about what counts as proof and needs careful per-capita /
+relationship guards so a stray document can't green a tile. Accepted; that's the next sprint's scope.
+**Revisit if:** the document-first rewrite proves to mis-assemble multi-earner clusters (then re-introduce the wizard
+tags as a tie-breaker rather than dropping them).
