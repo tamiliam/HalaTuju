@@ -286,8 +286,54 @@ function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
     <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
       {row(t('scholarship.docs.incomeProofCheck.name'), chk.name, vsIc(chk.name_status))}
       {chk.nric ? row(t('scholarship.docs.incomeProofCheck.icNo'), chk.nric, vsIc(chk.nric_status)) : null}
-      {chk.amount ? row(t('scholarship.docs.incomeProofCheck.amount'), chk.amount, fromDoc) : null}
-      {chk.period ? row(t('scholarship.docs.incomeProofCheck.period'), chk.period, fromDoc) : null}
+      {chk.points.map((p) => (
+        <div key={p.key}>{row(t(`scholarship.docs.incomeProofCheck.${p.key}`), p.value, fromDoc)}</div>
+      ))}
+    </div>
+  )
+}
+
+/** Utility bill checklist (Check-1 Income). The meaningful check is the home ADDRESS (these
+ *  confirm where the family lives) — the bill is in a parent's name, so the name is a data
+ *  point, never matched to the student. Monthly charge + any unpaid balance are shown (a high
+ *  arrears is a soft hardship signal the coordinator weighs). */
+function UtilityChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
+  const chk = doc.utility_check
+  if (!chk) return null
+
+  const cls: Record<ICCheckKind, string> = {
+    match: 'bg-green-50 text-green-700 ring-green-200',
+    partial: 'bg-amber-50 text-amber-700 ring-amber-200',
+    mismatch: 'bg-red-50 text-red-700 ring-red-200',
+    unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
+    none: 'bg-gray-50 text-gray-500 ring-gray-200',
+  }
+  const addrPill =
+    chk.address_status === 'found'
+      ? <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls.match}`}>{t('scholarship.docs.utilityCheck.addressOk')}</span>
+      : chk.address_status === 'not_found'
+        ? <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls.mismatch}`}>{t('scholarship.docs.utilityCheck.addressMismatch')}</span>
+        : <span className={`shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200`}>{t('scholarship.docs.incomeProofCheck.fromDoc')}</span>
+  const fromDoc = (
+    <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
+      {t('scholarship.docs.incomeProofCheck.fromDoc')}
+    </span>
+  )
+  const row = (label: string, value: string, right: ReactNode) => (
+    <div className="flex items-start justify-between gap-2 py-1.5">
+      <p className="min-w-0 text-xs text-gray-700">
+        <span className="font-medium text-gray-600">{label}: </span>
+        <span className="break-words">{value || '—'}</span>
+      </p>
+      {right}
+    </div>
+  )
+
+  return (
+    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+      {row(t('scholarship.docs.utilityCheck.address'), chk.address, addrPill)}
+      {chk.monthly_bill ? row(t('scholarship.docs.utilityCheck.monthlyBill'), chk.monthly_bill, fromDoc) : null}
+      {chk.unpaid_balance ? row(t('scholarship.docs.utilityCheck.unpaidBalance'), chk.unpaid_balance, fromDoc) : null}
     </div>
   )
 }
@@ -666,6 +712,8 @@ function SingleDocCard({
             <IncomeProofChecklist doc={d} t={t} />
           ) : d.doc_type === 'str' && d.str_check ? (
             <StrChecklist doc={d} t={t} />
+          ) : (d.doc_type === 'water_bill' || d.doc_type === 'electricity_bill') && d.utility_check ? (
+            <UtilityChecklist doc={d} t={t} />
           ) : (
             <SupportingDocChip doc={d} t={t} />
           )}

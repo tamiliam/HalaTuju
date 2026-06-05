@@ -21,6 +21,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   untagged upload never touches the member-tagged income docs. Retired `DocumentListCreateView.MULTI_INSTANCE_DOC_TYPES`.
 
 ### Added
+- **Income Check-1 — EPF facts refined + utility bills (address check + soft B40 proxy + hardship).** EPF now shows the
+  **monthly contribution** (the income figure — drives the 24% salary estimate) separately from the **total accumulated**
+  balance and the **year**, so a large lifetime balance is never read as monthly income (the extraction reads "CARUMAN
+  SEMASA", and treats "Tiada Transaksi" as no contribution). Utility bills (water/electricity) get their own check: the
+  meaningful test is the **home address** (the bill is in a parent's name, so the student-name match is dropped — fixes
+  the wrong "edit your profile name" nudge); the **current month's charge** (not the arrears-inclusive total) and any
+  **unpaid balance** are read. Combined water+electricity per-capita is surfaced as a **soft B40 proxy** on the Income
+  tile (<RM25/capita consistent · >RM40 flags M40/T20) and meaningful **arrears** as a **hardship** signal — both
+  officer-facing context, never verdict gates. `income_proof_check` now returns flexible `points`; new `utility_check`
+  serializer field + `UtilityChecklist`; new officer codes `utility_percapita_b40` / `utility_percapita_high` /
+  `utility_hardship`. No migration (computed; extraction schema additive).
 - **Income Check-1 (I4) — salary-route per-capita income gate.** The salary-route Income tile now goes **verified** only
   when the **amount** also clears the B40 line: the earners' pay is summed from the documents (each ticked earner's
   salary-slip **gross**, or — when there's no payslip — an estimate from the EPF monthly contribution, ≈24% of salary)

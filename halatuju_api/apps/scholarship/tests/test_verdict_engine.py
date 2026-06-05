@@ -613,7 +613,8 @@ class TestIncomeCluster(TestCase):
         chk = student_income_proof_check(slip)
         self.assertEqual(chk['name_status'], 'match')
         self.assertEqual(chk['nric_status'], 'match')
-        self.assertEqual(chk['amount'], 'RM2000')
+        # Salary slip data points: gross amount + period.
+        self.assertIn({'key': 'amount', 'value': 'RM2000'}, chk['points'])
         self.assertTrue(chk['ic_present'])
 
     def test_proof_no_member_ic_yet(self):
@@ -757,3 +758,69 @@ class TestIncomePerCapita(TestCase):
         f = _facts(self.app)['income']
         self.assertEqual(f['status'], 'recommend')
         self.assertIn('income_unverified_needs_interview', _codes(f['unresolved']))
+
+
+class TestUtilityAndEpf(TestCase):
+    """EPF shows the MONTHLY contribution (not the lifetime balance) as the income figure;
+    utility bills are an address check + a soft per-capita / hardship signal."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='ue', name='B40', year=2026)
+
+    def setUp(self):
+        self.profile = StudentProfile.objects.create(
+            supabase_user_id=f'ue-{self.id()}', name='DIVASHINI A/P MURUGAN',
+            nric='080115-05-0132', household_size=4)
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='shortlisted',
+            income_route='salary', income_working_members=['father'])
+
+    def test_epf_points_use_monthly_contribution_not_balance(self):
+        from apps.scholarship.income_engine import student_income_proof_check
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father')
+        epf = _add_doc(self.app, 'epf', student_verdict='ok', member='father',
+                       fields={'name': 'MURUGAN A/L KESAVAN', 'monthly_contribution': 'RM480',
+                               'latest_balance': 'RM1,150,410.53', 'year': '2026'})
+        pts = {p['key']: p['value'] for p in student_income_proof_check(epf)['points']}
+        self.assertEqual(pts['monthlyContribution'], 'RM480')
+        self.assertEqual(pts['totalAccumulated'], 'RM1,150,410.53')
+        self.assertEqual(pts['year'], '2026')
+
+    def test_epf_no_current_contribution_gives_no_income_estimate(self):
+        # The RM1.15M sample: CARUMAN SEMASA "Tiada Transaksi" → empty monthly_contribution
+        # → no income estimate (NOT the balance).
+        from apps.scholarship.income_engine import earner_monthly_income
+        _add_doc(self.app, 'epf', student_verdict='ok', member='father',
+                 fields={'name': 'MURUGAN A/L KESAVAN', 'latest_balance': 'RM1,150,410.53'})
+        amt, src = earner_monthly_income(self.app, 'father')
+        self.assertIsNone(amt)
+        self.assertEqual(src, 'unknown')
+
+    def test_utility_per_capita_b40_and_high(self):
+        from apps.scholarship.income_engine import utility_per_capita
+        _add_doc(self.app, 'water_bill', student_verdict='ok', fields={'amount': 'RM30'})
+        _add_doc(self.app, 'electricity_bill', student_verdict='ok', fields={'amount': 'RM50'})
+        # (30 + 50) / 4 = 20 < 25 → b40
+        self.assertEqual(utility_per_capita(self.app)['signal'], 'b40')
+        # Now a high-consumption household (size 2): 80 / 2 = 40 → not < 25, not > 40 = neutral;
+        # bump electricity so per-capita clears 40.
+        self.profile.household_size = 1
+        self.profile.save()
+        self.assertEqual(utility_per_capita(self.app)['signal'], 'high')  # 80 / 1 = 80 > 40
+
+    def test_utility_hardship_on_arrears(self):
+        from apps.scholarship.income_engine import utility_hardship
+        self.assertFalse(utility_hardship(self.app))
+        _add_doc(self.app, 'electricity_bill', student_verdict='ok',
+                 fields={'amount': 'RM50', 'unpaid_balance': 'RM350'})
+        self.assertTrue(utility_hardship(self.app))
+
+    def test_utility_context_surfaces_on_income_tile(self):
+        # The soft utility signal rides on the income verdict's evidence (officer context).
+        _add_doc(self.app, 'water_bill', student_verdict='ok', fields={'amount': 'RM20'})
+        _add_doc(self.app, 'electricity_bill', student_verdict='ok',
+                 fields={'amount': 'RM40', 'unpaid_balance': 'RM500'})
+        ev = _codes(_facts(self.app)['income']['evidence'])
+        self.assertIn('utility_percapita_b40', ev)   # (20+40)/4 = 15 < 25
+        self.assertIn('utility_hardship', ev)

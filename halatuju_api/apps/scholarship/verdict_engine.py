@@ -218,6 +218,21 @@ def _verdict_academic(application):
 
 # ── Income (the hard one) ────────────────────────────────────────────────────
 
+def _utility_context(application):
+    """Soft, officer-facing income context from the utility bills (never a gate): the
+    combined water+electricity per-capita as a B40 proxy, + an arrears hardship signal.
+    Imperfect — surfaced as evidence the coordinator weighs, not a verdict driver."""
+    from .income_engine import utility_per_capita, utility_hardship
+    items = []
+    pc = utility_per_capita(application)
+    if pc and pc['signal'] == 'b40':
+        items.append(_item('utility_percapita_b40', amount=int(round(pc['per_capita']))))
+    elif pc and pc['signal'] == 'high':
+        items.append(_item('utility_percapita_high', amount=int(round(pc['per_capita']))))
+    if utility_hardship(application):
+        items.append(_item('utility_hardship'))
+    return items
+
 def _verdict_income(application):
     """Income Check-1 (item 3): the guided wizard says which documents the family
     needs (income_engine.income_requirements); this assembles whether they're present,
@@ -237,7 +252,7 @@ def _verdict_income(application):
     The SALARY route delegates to ``_verdict_income_salary`` (multi-earner)."""
     from .income_engine import (father_relationship, mother_relationship,
                                 guardian_relationship)
-    evidence, gap, review = [], [], []
+    evidence, gap, review = _utility_context(application), [], []
     present = _present_doc_types(application)
     student_name = getattr(application.profile, 'name', '') or ''
     earner = (getattr(application, 'income_earner', '') or '').strip()
@@ -344,9 +359,10 @@ def _verdict_income_salary(application, student_name, present):
                                 relationship_doc_for)
     members = working_members(application)
     if not members:
-        return _fact('income', 'review', [], [_item('income_earner_undeclared')])
+        return _fact('income', 'review', _utility_context(application),
+                     [_item('income_earner_undeclared')])
 
-    evidence = []
+    evidence = _utility_context(application)
     any_financial = False          # at least one member supplied a payslip or EPF
     all_confirmed = True           # every member's relationship is a positive 'match'
     # Per-member gaps are AGGREGATED by code into one item carrying a `members` list —

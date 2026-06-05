@@ -1166,6 +1166,8 @@ export interface ApplicantDocument {
   income_proof_check?: IncomeProofCheck | null
   // Check-1 Income: the STR document — recipient vs the earner IC + currency. null unless str.
   str_check?: StrCheck | null
+  // Check-1 Income: a utility bill — address (vs home) + monthly bill + unpaid balance.
+  utility_check?: UtilityCheck | null
 }
 
 export interface StrCheck {
@@ -1198,13 +1200,23 @@ export interface IncomeIcCheck {
 export interface IncomeProofCheck {
   name: string
   nric: string
-  amount: string
-  period: string
+  // Data points shown on the card. Salary: amount + period. EPF: monthlyContribution +
+  // totalAccumulated + year (so the lifetime balance is never read as monthly income).
+  points: { key: string; value: string }[]
   member: string
   // vs the member's IC: 'match' | 'mismatch' | 'no_ref' (that member's IC not uploaded / not read)
   name_status: 'match' | 'mismatch' | 'no_ref'
   nric_status: 'match' | 'mismatch' | 'no_ref'
   ic_present: boolean
+}
+
+export interface UtilityCheck {
+  name: string
+  address: string
+  monthly_bill: string
+  unpaid_balance: string
+  // vs the home address: 'found' | 'not_found' | 'unreadable' | '' (not run)
+  address_status: string
 }
 
 export type SlipCheckStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'uncertain' | 'pending'

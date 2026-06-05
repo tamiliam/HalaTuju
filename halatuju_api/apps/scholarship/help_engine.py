@@ -328,6 +328,14 @@ def verdict_for_document(doc):
              if (doc.application.income_route or '') == 'str' else '')
         if member:
             return '' if _member_ic_doc(doc.application, member) else 'income_ic_needed'
+    # Utility bill (water / electricity) — the meaningful check is the HOME ADDRESS (these
+    # confirm where the family lives). The bill is in a PARENT's name, so we deliberately do
+    # NOT flag a name mismatch (that's the wrong "edit your profile name" nudge). Coach only
+    # when the address couldn't be matched.
+    if doc.doc_type in ('water_bill', 'electricity_bill'):
+        if doc.vision_run_at is None:
+            return ''
+        return 'address_mismatch' if doc.vision_address_match == 'not_found' else ''
     # Other supporting docs — the Gemini doc-assist verdict takes precedence (it is the
     # chip the frontend shows); fall back to the older soft full-text checks when it never ran.
     fields = doc.vision_fields if isinstance(doc.vision_fields, dict) else {}
