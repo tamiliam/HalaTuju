@@ -2053,3 +2053,45 @@ answers (an admin-serializer allowlist add). The fact labels replace the extract
 behind "View"). Legacy docs whose checks haven't run show grey/unread facts until re-read.
 **Revisit if:** the per-fact check shapes change (the fact map in `documentFacts` must move with them), or a future
 document type needs a fact set not yet mapped.
+
+## One Cikgu Gopal per income cluster, anchored to the slot (not the document) — Sprint Gopal-polish, 2026-06-06
+**Decision:** For the income fact (the one *cluster* fact), the student-facing coach renders ONCE per earner at the foot
+of the cluster (after the relationship-proof card: father→IC, mother→BC, guardian→letter; per ticked member on the
+salary route), fed by `income_cluster_advice` via a dedicated `GET scholarship/income/<member>/help/` endpoint. The
+per-file coaches for cluster docs (`parent_ic`/`str`/`salary_slip`/`epf`/`birth_certificate`/`guardianship_letter`) are
+suppressed; the STR-currency + "add the IC" nudges that used to live on separate rows are folded into the one voice.
+**Alternatives considered:** (a) keep the per-document coaches (status quo — up to 3 Gopals in one cluster, jumping
+position as files arrive); (b) anchor the coach on the IC document (the old `cluster_status`-on-parent_ic behaviour —
+but it can't speak before the IC is uploaded, and competes with the STR/payslip nudges).
+**Rationale:** Income is a cluster, unlike the single-document Identity/Academic/Pathway. Anchoring to a POSITION (the
+cluster foot, always rendered once the wizard is answered) — not a document — means the coach speaks from the first
+uploaded doc and stays put as more arrive, exactly mirroring the officer's per-earner verdict. The per-file coloured
+chips stay for instant feedback; only the coach consolidates.
+**Trade-offs:** A second help endpoint + an FE component + a client-side cluster-doc grouping (`clusterDocsFor`). The
+per-doc `verdict_for_document` still returns income verdicts in isolation (relied on only by suppression), so a future
+income doc card rendered WITHOUT `suppressCoach` would double-voice — a small latent coupling.
+**Revisit if:** the income wizard's cluster structure changes (the anchor rule + `clusterDocsFor` must move with it), or
+a non-cluster income doc (e.g. a standalone utility bill) needs its own coach again.
+
+## "Income too high" is NOT surfaced in the student coach — Sprint Gopal-polish, 2026-06-06
+**Decision:** The income cluster coach never tells the student their family income looks too high (the I4 per-capita
+ceiling). That signal stays at the officer verdict (`recommend` → interview), never in Gopal.
+**Alternatives considered:** Include it in the cluster-coach precedence (it was in the proposed order the user approved).
+**Rationale:** It is not a document fix — there is no action the student can take — and a coach that says "your income
+looks too high" cuts against the programme's never-block / don't-discourage stance. The officer + interview own the
+amount judgement.
+**Trade-offs:** The student gets no early signal that their per-capita is over the line; they learn it (gently) at
+interview. Accepted — that is the correct, humane place for it.
+**Revisit if:** policy changes to make income-amount a student-visible gate (it currently is never-block).
+
+## Utility "Reasonable" needs both bills; high consumption is amber, never red — Sprint Gopal-polish, 2026-06-06
+**Decision:** The cockpit utility-bill "Reasonable" fact is a verdict only when BOTH water + electricity are present
+(combined per-capita vs RM25/RM40). With one bill it greys out with a "water/electricity only" note. Above the RM40
+ceiling it shows AMBER, not red.
+**Alternatives considered:** judge "Reasonable" on a single bill; show red for high consumption.
+**Rationale:** Water alone is a weak, flat signal (cheap across all households) — judging on it falsely greens almost
+everyone. A soft B40 proxy must never scream red (red elsewhere = "not verified / mismatch"); amber = "needs a look".
+Greying-with-a-reason on one bill is honest about *why* we can't judge, vs hiding (which reads as "all clear").
+**Trade-offs:** Officer must request the second bill to get a "Reasonable" verdict; high consumption is softened to amber.
+**Revisit if:** the programme wants utility consumption to be a harder signal, or a single-utility household is common
+enough that one bill should suffice.
