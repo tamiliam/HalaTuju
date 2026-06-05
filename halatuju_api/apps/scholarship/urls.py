@@ -9,6 +9,7 @@ from .views import (
     CronRunView,
     DocumentDetailView,
     DocumentHelpView,
+    IncomeClusterHelpView,
     DocumentListCreateView,
     DocumentSignUploadView,
     RefereeListCreateView,
@@ -64,6 +65,7 @@ urlpatterns = [
     path('scholarship/documents/', DocumentListCreateView.as_view()),
     path('scholarship/documents/<int:pk>/', DocumentDetailView.as_view()),
     path('scholarship/documents/<int:pk>/help/', DocumentHelpView.as_view()),
+    path('scholarship/income/<str:member>/help/', IncomeClusterHelpView.as_view()),
     path('scholarship/referees/', RefereeListCreateView.as_view()),
     path('scholarship/consent/', ConsentView.as_view()),
     # Phase E3: the student's award offer (accept/decline; guardian-gated for minors)

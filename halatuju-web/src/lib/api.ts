@@ -1384,6 +1384,17 @@ export async function getDocumentHelp(
   return apiRequest(`/api/v1/scholarship/documents/${id}/help/${q}`, options)
 }
 
+// The single per-earner income-cluster coach (one Gopal for the whole cluster: the earner's
+// IC + STR / payslip + relationship doc). Same shape as the per-document helper.
+export async function getIncomeHelp(
+  member: string,
+  lang?: string,
+  options?: ApiOptions
+): Promise<DocumentHelp> {
+  const q = lang ? `?lang=${encodeURIComponent(lang)}` : ''
+  return apiRequest(`/api/v1/scholarship/income/${encodeURIComponent(member)}/help/${q}`, options)
+}
+
 export async function listReferees(options?: ApiOptions): Promise<{ referees: Referee[] }> {
   return apiRequest('/api/v1/scholarship/referees/', options)
 }

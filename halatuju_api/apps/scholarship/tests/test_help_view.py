@@ -141,3 +141,46 @@ class TestDocumentHelpView(TestCase):
             resp = self.client.get(self._url(doc))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()['source'], 'fallback')
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestIncomeClusterHelpView(TestCase):
+    """GET /api/v1/scholarship/income/<member>/help/ — the SINGLE per-earner coach,
+    anchored at the cluster foot (speaks even before the IC is uploaded)."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='ic', name='B40', year=2026)
+        cls.profile = StudentProfile.objects.create(
+            supabase_user_id=USER_A, nric='080115-05-0132', name='DIVASHINI A/P MURUGAN')
+        cls.app = ScholarshipApplication.objects.create(
+            cohort=cls.cohort, profile=cls.profile, status='shortlisted',
+            income_route='salary', income_working_members=['father'])
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(USER_A)}')
+
+    def _url(self, member):
+        return f'/api/v1/scholarship/income/{member}/help/'
+
+    def test_cluster_nudges_add_ic_when_proof_but_no_ic(self):
+        ApplicantDocument.objects.create(
+            application=self.app, doc_type='salary_slip', household_member='father',
+            storage_path='x/salary/f', vision_run_at=timezone.now(),
+            vision_fields={'fields': {'name': 'MURUGAN A/L KESAVAN'}, 'student_verdict': 'ok'})
+        with patch(SEAM, return_value={'markdown': 'Add the IC, Divashini.',
+                                       'model_used': 'gemini-2.5-flash'}):
+            resp = self.client.get(self._url('father'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['verdict'], 'income_ic_needed')
+        self.assertEqual(resp.json()['source'], 'ai')
+
+    def test_consistent_cluster_returns_none_no_call(self):
+        with patch(SEAM) as m:
+            resp = self.client.get(self._url('father'))   # nothing uploaded
+        self.assertEqual(resp.json()['source'], 'none')
+        m.assert_not_called()
+
+    def test_unknown_member_returns_none(self):
+        resp = self.client.get(self._url('nobody'))
+        self.assertEqual(resp.json()['source'], 'none')

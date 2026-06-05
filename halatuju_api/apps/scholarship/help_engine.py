@@ -181,6 +181,9 @@ READABLE_DOC = {
     'offer_letter': 'university/college offer letter',
     'statement_of_intent': 'statement of intent',
     'guardianship_letter': 'guardianship letter',
+    # The whole household-income cluster for one earner (IC + income proof + relationship
+    # doc) — the anchor for the single per-earner cluster coach.
+    'income_cluster': "household income documents for this family member",
 }
 
 # Plain-language briefing so Cikgu Gopal "knows the programme" — the same public information

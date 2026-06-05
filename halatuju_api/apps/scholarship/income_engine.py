@@ -643,37 +643,56 @@ def utility_hardship(application):
 
 
 def income_cluster_advice(application, member):
-    """ONE cluster-level coach verdict for a household member's Income documents — their
-    IC (the anchor) + their income proofs (salary slip / EPF) — so Gopal speaks once per
-    PERSON, not once per file. Income is a cluster (Father's IC + Father's payslip + …),
-    unlike Identity/Academic/Pathway where a single document is sufficient.
+    """The SINGLE coach verdict for a household member's whole Income cluster — their IC
+    (the anchor) + their income proofs (STR / salary slip / EPF) + their relationship doc —
+    so Cikgu Gopal speaks ONCE per earner, at the foot of the cluster, not once per file.
+    Income is a cluster (Father's IC + Father's payslip + …), unlike the single-document
+    Identity / Academic / Pathway facts. The verdict is anchored on a POSITION (the cluster
+    foot), so it speaks even before the IC arrives — it folds in the STR-currency and
+    'add the IC' nudges that used to live on the STR / payslip rows.
 
-    Computed when the member's IC IS present. Priority:
-      1. relationship — does the IC link to the student (patronymic / birth cert / letter)?
-      2. readable     — could we read the IC at all?
-      3. coherence    — are the income proofs the SAME person as the IC?
-    Returns '' when the cluster is consistent. The 'no IC yet' nudge is raised on the
-    proof document instead (``income_ic_needed``), since there is no IC to anchor on."""
+    Precedence (most serious first):
+      1. relationship — the IC does not link to the student (wrong person's card);
+      2. readable     — the IC could not be read;
+      3. STR currency — the STR is stale / rejected (STR route);
+      4. coherence    — a payslip / EPF / STR is a DIFFERENT person from the IC;
+      5. missing IC   — proofs are uploaded but the earner's IC is not, so we can't confirm.
+    Returns '' when the cluster is consistent (or empty)."""
     if not member:
         return ''
+    route = (getattr(application, 'income_route', '') or '').strip()
+    str_doc = (application.documents.filter(doc_type='str').order_by('-uploaded_at').first()
+               if route == 'str' else None)
+    proofs = [p for dt in ('salary_slip', 'epf') for p in _cluster_docs(application, member, dt)]
+    has_proof = bool(proofs) or str_doc is not None
+
     ic = _member_ic_doc(application, member)
     if ic is None:
-        return ''
+        # No IC yet. STR currency can still be judged from the STR alone; otherwise, if any
+        # proof was uploaded, nudge to add the earner's IC so we can confirm the person.
+        if str_doc is not None:
+            sc = student_str_check(str_doc)
+            if sc and sc['current_status'] in ('stale', 'rejected'):
+                return 'str_not_current'
+        return 'income_ic_needed' if has_proof else ''
+
+    # IC present — the full cluster, in precedence order.
     icc = student_income_ic_check(ic)
     if icc:
         if icc['name_status'] == 'mismatch':
             return 'income_relationship_mismatch'
         if getattr(ic, 'vision_run_at', None) and not icc['readable']:
             return 'unreadable'
-    for dt in ('salary_slip', 'epf'):
-        for p in _cluster_docs(application, member, dt):
-            pc = student_income_proof_check(p)
-            if pc and 'mismatch' in (pc['name_status'], pc['nric_status']):
-                return 'income_proof_person_mismatch'
-    # STR route: the STR document is also part of the earner's cluster — its recipient
-    # must be the earner. (Its CURRENCY — stale/rejected — is voiced on the STR doc
-    # itself, not here, so the two issues don't double up.)
-    str_doc = (application.documents.filter(doc_type='str').order_by('-uploaded_at').first())
+    if str_doc is not None:
+        sc = student_str_check(str_doc)
+        if sc and sc['current_status'] in ('stale', 'rejected'):
+            return 'str_not_current'
+    # Coherence — every proof (payslip / EPF, and the STR recipient) must be the SAME
+    # person as the earner's IC.
+    for p in proofs:
+        pc = student_income_proof_check(p)
+        if pc and 'mismatch' in (pc['name_status'], pc['nric_status']):
+            return 'income_proof_person_mismatch'
     if str_doc is not None:
         sc = student_str_check(str_doc)
         if sc and 'mismatch' in (sc['name_status'], sc['nric_status']):

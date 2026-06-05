@@ -1,6 +1,6 @@
 import {
   shouldShowCoach, fallbackKeyFor, HELP_VERDICTS,
-  helpSignal, readHelpCache, writeHelpCache, type StorageLike, type CachedHelp,
+  helpSignal, readHelpCache, writeHelpCache, clusterDocsFor, type StorageLike, type CachedHelp,
 } from '@/lib/documentHelp'
 import type { ApplicantDocument } from '@/lib/api'
 
@@ -21,6 +21,41 @@ function doc(over: Partial<ApplicantDocument> = {}): ApplicantDocument {
     ...over,
   } as ApplicantDocument
 }
+
+describe('clusterDocsFor', () => {
+  it('STR route: gathers the untagged earner docs (STR + IC + payslip)', () => {
+    const docs = [
+      doc({ id: 1, doc_type: 'str', household_member: '' }),
+      doc({ id: 2, doc_type: 'parent_ic', household_member: '' }),
+      doc({ id: 3, doc_type: 'salary_slip', household_member: '' }),
+      doc({ id: 9, doc_type: 'ic', household_member: '' }),          // the student's own IC — not income
+    ]
+    expect(clusterDocsFor(docs, 'father', 'str').map((d) => d.id).sort()).toEqual([1, 2, 3])
+  })
+
+  it('STR route + mother: includes the untagged birth certificate', () => {
+    const docs = [
+      doc({ id: 1, doc_type: 'str', household_member: '' }),
+      doc({ id: 2, doc_type: 'birth_certificate', household_member: '' }),
+    ]
+    expect(clusterDocsFor(docs, 'mother', 'str').map((d) => d.id).sort()).toEqual([1, 2])
+  })
+
+  it('salary route: only THIS member’s tagged docs + the untagged relationship doc', () => {
+    const docs = [
+      doc({ id: 1, doc_type: 'parent_ic', household_member: 'father' }),
+      doc({ id: 2, doc_type: 'salary_slip', household_member: 'father' }),
+      doc({ id: 3, doc_type: 'parent_ic', household_member: 'mother' }),   // a different member
+      doc({ id: 4, doc_type: 'birth_certificate', household_member: '' }), // mother’s rel doc
+    ]
+    expect(clusterDocsFor(docs, 'father', 'salary').map((d) => d.id).sort()).toEqual([1, 2])
+    expect(clusterDocsFor(docs, 'mother', 'salary').map((d) => d.id).sort()).toEqual([3, 4])
+  })
+
+  it('returns [] when nothing in the cluster is uploaded', () => {
+    expect(clusterDocsFor([doc({ id: 9, doc_type: 'ic' })], 'father', 'str')).toEqual([])
+  })
+})
 
 describe('shouldShowCoach', () => {
   it('is false for an unchecked doc', () => {

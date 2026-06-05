@@ -471,6 +471,50 @@ class DocumentHelpView(APIView):
         return Response(result)
 
 
+class IncomeClusterHelpView(APIView):
+    """GET the SINGLE "Cikgu Gopal" message for one earner's whole income cluster.
+
+    Income is a cluster (the earner's IC + their STR / payslip / EPF + their relationship
+    doc), so unlike the single-document facts the coach speaks once per EARNER, anchored at
+    the foot of the cluster — even before the IC is uploaded. ``member`` is the household
+    member (father / mother / guardian / brother / sister). Same soft contract + hourly
+    throttle as the per-document helper; nothing here is admin/score data."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    _MEMBERS = ('father', 'mother', 'guardian', 'brother', 'sister')
+
+    def get(self, request, member):
+        if member not in self._MEMBERS:
+            return Response({'message': '', 'source': 'none'})
+        app = _current_application(request.user_id)
+        if app is None:
+            return Response({'message': '', 'source': 'none'})
+
+        from . import help_engine
+        from .income_engine import income_cluster_advice
+        verdict = income_cluster_advice(app, member)
+        if not verdict:
+            return Response({'message': '', 'source': 'none'})
+
+        from django.conf import settings as _settings
+        from django.core.cache import cache
+        from django.utils import timezone
+        cap = getattr(_settings, 'DOC_HELP_RATE_LIMIT_PER_HOUR', 20)
+        key = f'help_coach:{app.id}:{timezone.now():%Y%m%d%H}'
+        if cache.get(key, 0) >= cap:
+            return Response({'message': '', 'source': 'fallback', 'verdict': verdict})
+        cache.set(key, cache.get(key, 0) + 1, 3600)
+
+        from .profile_engine import _resolve_language
+        language = _resolve_language(app, request.query_params.get('lang'))
+        first_name = (getattr(getattr(app, 'profile', None), 'name', '') or '').strip().split(' ')[0]
+        result = help_engine.generate_document_help(
+            'income_cluster', verdict, first_name=first_name, target_language=language,
+        )
+        result['verdict'] = verdict
+        return Response(result)
+
+
 class RefereeListCreateView(APIView):
     """GET list / POST add a referee for the caller's application."""
     permission_classes = [SupabaseIsAuthenticated]

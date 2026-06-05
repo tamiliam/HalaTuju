@@ -25,6 +25,7 @@ import {
   type WorkingMember,
 } from '@/lib/incomeWizard'
 import DocumentHelpCoach from './DocumentHelpCoach'
+import IncomeClusterCoach from './IncomeClusterCoach'
 
 // Per-file size cap (mirrors the server's MAX_DOC_SIZE_BYTES default — server is
 // authoritative; this gives the student instant feedback before any upload).
@@ -698,6 +699,7 @@ function SingleDocCard({
   helpOverride,
   titleOverride,
   member = '',
+  suppressCoach = false,
 }: {
   docType: string
   docs: ApplicantDocument[]
@@ -712,6 +714,8 @@ function SingleDocCard({
   helpOverride?: string
   titleOverride?: string
   member?: string
+  // Income cluster docs suppress their per-file coach — one cluster coach speaks for them.
+  suppressCoach?: boolean
 }) {
   const busy = busyType === docKey(docType, member)
   // Salary-route income docs are scoped to a household member; everything else is
@@ -757,7 +761,7 @@ function SingleDocCard({
       {visionDoc && (
         <>
           <ICChecklist doc={visionDoc} t={t} />
-          <DocumentHelpCoach doc={visionDoc} token={token} t={t} lang={lang} />
+          {!suppressCoach && <DocumentHelpCoach doc={visionDoc} token={token} t={t} lang={lang} />}
         </>
       )}
       {existing.filter((d) => d !== visionDoc).map((d) => (
@@ -783,7 +787,7 @@ function SingleDocCard({
           ) : (
             <SupportingDocChip doc={d} t={t} />
           )}
-          <DocumentHelpCoach doc={d} token={token} t={t} lang={lang} />
+          {!suppressCoach && <DocumentHelpCoach doc={d} token={token} t={t} lang={lang} />}
         </div>
       ))}
     </div>
@@ -899,18 +903,28 @@ function IncomeProofCard({
 // mirroring income_engine.income_requirements so the student's list matches the
 // officer verdict exactly. Encouraging, never-punitive; nothing here blocks.
 
+// Income cluster docs whose per-file coach is suppressed — the one cluster coach speaks
+// for the whole earner cluster instead.
+const CLUSTER_COACH_DOCS = new Set([
+  'parent_ic', 'str', 'salary_slip', 'epf', 'birth_certificate', 'guardianship_letter',
+])
+
 function IncomeWizard({
   app,
   token,
   t,
   renderCard,
   onChange,
+  docs,
+  lang,
 }: {
   app: ScholarshipApplication
   token: string | null
   t: (key: string) => string
-  renderCard: (docType: string, opts?: { required?: boolean; helpOverride?: string; titleOverride?: string; member?: string }) => ReactNode
+  renderCard: (docType: string, opts?: { required?: boolean; helpOverride?: string; titleOverride?: string; member?: string; suppressCoach?: boolean }) => ReactNode
   onChange?: () => void
+  docs: ApplicantDocument[]
+  lang: string
 }) {
   // Q1 prefills from the Apply-stage STR declaration (receives_str): had STR → 'str' (Yes),
   // else 'salary' (No). The student can change it.
@@ -1088,13 +1102,15 @@ function IncomeWizard({
       {ready && ans.income_route === 'str' && (
         <div className="space-y-3 pt-1">
           {ordered(reqs.compulsory).map((dt) => (
-            <div key={dt}>{renderCard(dt, { required: true, helpOverride: helpFor(dt), titleOverride: titleFor(dt) })}</div>
+            <div key={dt}>{renderCard(dt, { required: true, helpOverride: helpFor(dt), titleOverride: titleFor(dt), suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}</div>
           ))}
           {ordered(reqs.optional).map((dt) => (
             <div key={dt}>
-              {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt) })}
+              {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt), suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
             </div>
           ))}
+          {/* One coach for the whole earner cluster, at its foot (after the relationship doc). */}
+          {e && <IncomeClusterCoach member={e} route="str" docs={docs} token={token} t={t} lang={lang} />}
           <p className="text-xs text-gray-400">{iq('footer')}</p>
         </div>
       )}
@@ -1109,15 +1125,19 @@ function IncomeWizard({
                 <div key={docKey(docType, member)}>
                   {renderCard(docType, { required: true, member,
                     helpOverride: memberHelp(docType, block.member),
-                    titleOverride: memberTitle(docType, block.member) })}
+                    titleOverride: memberTitle(docType, block.member),
+                    suppressCoach: CLUSTER_COACH_DOCS.has(docType) })}
                 </div>
               ))}
               {block.optional.map(({ docType, member }) => (
                 <div key={docKey(docType, member)}>
                   {renderCard(docType, { required: false, member,
-                    helpOverride: memberHelp(docType, block.member) })}
+                    helpOverride: memberHelp(docType, block.member),
+                    suppressCoach: CLUSTER_COACH_DOCS.has(docType) })}
                 </div>
               ))}
+              {/* One coach per member's cluster, at the foot of that member's block. */}
+              <IncomeClusterCoach member={block.member} route="salary" docs={docs} token={token} t={t} lang={lang} />
             </div>
           ))}
           {/* Household-level optional credibility docs (utility bills). */}
@@ -1274,6 +1294,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
         {app ? (
           /* Guided wizard → dynamic checklist (Check-1 item 3). */
           <IncomeWizard app={app} token={token} t={t} onChange={onChange}
+            docs={docs} lang={locale}
             renderCard={(dt, opts) => card(dt, opts)} />
         ) : (
           /* Fallback (no application loaded): the original static income cards. */

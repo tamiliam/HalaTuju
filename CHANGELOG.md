@@ -8,7 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- **Cikgu Gopal — leaner, diagnose-then-advise tone across every document message.** Gopal was spending words motivating
+- **Cikgu Gopal for income — one coach per earner, anchored at the cluster foot, aware of the whole cluster.** Income is
+  the one *cluster* fact (the earner's IC + STR / payslip + relationship doc), unlike the single-document Identity /
+  Academic / Pathway. Gopal now speaks **once per earner** — pinned to the foot of the cluster (after the relationship‑proof
+  card: father → IC, mother → birth certificate, guardian → guardianship letter; per ticked member on the salary route) —
+  instead of one nudge per file. It reads the whole cluster and **fires even before the IC is uploaded**: the STR‑currency
+  warning and the "add the earner's IC" nudge that used to pop on separate rows are folded into this single voice, with a
+  clear precedence (relationship → unreadable IC → STR stale/rejected → payslip‑isn't‑the‑same‑person → missing IC). The
+  per‑file coloured status chips stay for instant feedback; only the *coach* consolidates. Backend
+  `income_engine.income_cluster_advice` rewritten + new `IncomeClusterHelpView` (`GET scholarship/income/<member>/help/`);
+  FE shared `CoachCard` shell + new `IncomeClusterCoach` + `clusterDocsFor`/cluster cache; per‑file coaches suppressed for
+  cluster docs. No migration, no new i18n (reuses the existing verdict copy). 738 scholarship pytest + 262 jest + build clean.
+- **Cikgu Gopal — leaner, diagnose-then-advise tone across every document message.** Gopal was spending words motivating Gopal was spending words motivating
   the student ("don't worry!", "you've got this!", "you're doing great!") instead of using the available signals to name
   the problem and say what to do. The prompt now mandates **diagnosis first, action second, stop** — warm in wording but
   economical — and explicitly bans cheerleading openers/sign-offs (at most one short reassurance, and only when it carries
