@@ -75,6 +75,8 @@ export const KNOWN_CODES = [
   'birth_cert_mismatch',
   'father_patronymic_mismatch',
   'guardianship_letter_missing',
+  'str_not_current',
+  'str_recipient_mismatch',
   'offer_unreadable',
   'offer_no_identity',
   'offer_name_mismatch',

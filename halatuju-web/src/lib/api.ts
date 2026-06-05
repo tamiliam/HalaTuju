@@ -1164,6 +1164,22 @@ export interface ApplicantDocument {
   // Check-1 Income: a member-tagged salary slip / EPF cross-checked against that member's
   // IC (name + IC number) + the income data points. null unless salary_slip/epf w/ member.
   income_proof_check?: IncomeProofCheck | null
+  // Check-1 Income: the STR document — recipient vs the earner IC + currency. null unless str.
+  str_check?: StrCheck | null
+}
+
+export interface StrCheck {
+  name: string
+  nric: string
+  status: string
+  year: string
+  amount: string
+  member: string
+  name_status: 'match' | 'mismatch' | 'no_ref'
+  nric_status: 'match' | 'mismatch' | 'no_ref'
+  // 'current' | 'stale' (older year) | 'rejected' (status not approved)
+  current_status: 'current' | 'stale' | 'rejected'
+  ic_present: boolean
 }
 
 export interface IncomeIcCheck {

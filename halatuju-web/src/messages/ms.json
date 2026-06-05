@@ -907,6 +907,7 @@
           "income_relationship_mismatch": "Semakan ringkas — mudah dibetulkan! Nama pada KP ini nampaknya tidak berkait dengan keluarga anda seperti yang kami jangkakan (bagi ibu bapa atau adik-beradik kami cari nama bapa anda daripada KP anda sendiri; bagi ibu kami semak sijil kelahiran anda). Biasanya ia bermakna kad orang lain telah dimuat naik di sini, atau gambar kurang jelas. Sila pastikan anda memuat naik MyKad orang yang betul di ruang ini, dengan gambar yang jelas. Tiada apa disekat!",
           "income_proof_person_mismatch": "Semakan ringkas — mudah diselesaikan! Slip gaji / KWSP ini nampaknya bukan untuk orang yang sama seperti KP yang anda muat naik untuk ahli keluarga itu (nama atau nombor KP berbeza). Sila pastikan dokumen pendapatan dan KP orang itu adalah untuk orang yang SAMA — contohnya, slip gaji bapa anda bersama KP bapa anda — dan muat naik semula fail yang betul jika fail yang salah termasuk. Ini tentang dokumen ahli keluarga itu, bukan dokumen anda sendiri — tiada apa disekat!",
           "income_ic_needed": "Bagus kerana menambah ini! Anda telah memuat naik dokumen pendapatan untuk ahli keluarga ini tetapi belum KP mereka. Apabila ada masa, sila tambah MyKad orang itu juga (contohnya, KP bapa anda bersama slip gajinya) supaya kami dapat mengesahkan dokumen pendapatan itu milik orang yang betul. Tiada apa yang salah — ia cuma membantu kami menyemak lebih cepat!",
+          "str_not_current": "Nota ringkas — mudah diselesaikan! STR diberikan baharu setiap tahun, jadi kami perlukan STR tahun ini untuk menunjukkan keluarga anda layak sekarang. Sila muat naik STR semasa anda — tangkapan skrin terkini portal MySTR \"Semakan Status\" yang menunjukkan \"Lulus\", atau surat STR terkini anda. Tiada STR semasa? Tidak mengapa — anda boleh tunjukkan pendapatan keluarga dengan slip gaji / KWSP. Tiada apa disekat!",
           "generic": "Ada sesuatu yang kurang tepat dengan muat naik ini — tetapi jangan risau, ia mudah dibetulkan. Semak semula dan cuba muat naik sekali lagi. Anda buat dengan baik!"
         }
       },
@@ -1053,6 +1054,15 @@
         "mismatchIc": "Tidak sepadan dengan KP mereka — semak semula",
         "addIc": "Muat naik KP mereka untuk semak automatik",
         "fromDoc": "daripada dokumen"
+      },
+      "strCheck": {
+        "recipient": "Penerima",
+        "icNo": "No. KP",
+        "statusYear": "Status / Tahun",
+        "amount": "Jumlah",
+        "current": "Terkini",
+        "stale": "Lapuk — perlukan STR tahun ini",
+        "rejected": "Tidak diluluskan"
       },
       "slipCheck": {
         "name": "Nama",
@@ -1379,6 +1389,14 @@
         "father_patronymic_mismatch": {
           "title": "Semak KP untuk {members}",
           "desc": "Nama pada KP tidak sepadan dengan nama bapa anda seperti ditunjukkan dalam KP anda sendiri — sila pastikan anda memuat naik yang betul."
+        },
+        "str_not_current": {
+          "title": "Muat naik STR tahun ini",
+          "desc": "STR diberikan baharu setiap tahun, jadi kami perlukan STR semasa anda untuk menunjukkan keluarga anda layak sekarang. Muat naik tangkapan skrin MySTR \"Semakan Status\" terkini yang menunjukkan \"Lulus\", atau surat STR terkini anda. Tiada STR semasa? Anda boleh tunjukkan pendapatan dengan slip gaji / KWSP."
+        },
+        "str_recipient_mismatch": {
+          "title": "Semak dokumen STR anda",
+          "desc": "Nama atau KP pada STR ini tidak sepadan dengan KP pencari nafkah yang anda muat naik. Sila pastikan ia STR yang betul untuk ahli keluarga yang pendapatannya anda tunjukkan."
         },
         "guardianship_letter_missing": {
           "title": "Muat naik surat penjagaan anda",
@@ -2120,6 +2138,8 @@
           "birth_cert_mismatch": "Sijil kelahiran tidak mengaitkan nama ibu dengan pelajar — semak dengan mata.",
           "father_patronymic_mismatch": "Nama pada KP untuk {members} tidak sepadan dengan nama bapa dalam KP pelajar sendiri — semak hubungan.",
           "guardianship_letter_missing": "Pendapatan yang ditunjukkan ialah penjaga, tetapi tiada surat/perintah penjagaan dimuat naik. Minta surat itu.",
+          "str_not_current": "STR sudah lapuk (tahun lama / tidak diluluskan) — STR adalah tahunan, jadi ia tidak lagi membuktikan keperluan B40 semasa. Minta STR tahun ini, atau terima laluan gaji.",
+          "str_recipient_mismatch": "Penerima STR bukan pencari nafkah yang diisytiharkan — nama/KP pada STR tidak sepadan dengan KP pencari nafkah. Sahkan.",
           "income_unverified_needs_interview": "Pendapatan tidak dapat disahkan melalui dokumen (tidak formal / tiada slip gaji) — sahkan semasa temu duga melalui saiz isi rumah, tanggungan dan gaya hidup. JANGAN sekat.",
           "earner_ic_present": "KP pencari nafkah dalam fail: {name}.",
           "relationship_confirmed": "Pencari nafkah disahkan sebagai ibu bapa/penjaga pelajar.",

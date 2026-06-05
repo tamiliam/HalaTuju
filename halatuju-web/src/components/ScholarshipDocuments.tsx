@@ -292,6 +292,61 @@ function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
   )
 }
 
+/** STR document checklist (Check-1 Income). Reads the recipient (Name · IC No) and the
+ *  currency facts (Status · Year) and verifies Name + IC against the STR EARNER's IC —
+ *  the STR is the household benefit in the earner's name. A stale/rejected STR is
+ *  flagged (STR is annual — an out-of-date one no longer proves B40). */
+function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
+  const chk = doc.str_check
+  if (!chk) return null
+
+  const cls: Record<ICCheckKind, string> = {
+    match: 'bg-green-50 text-green-700 ring-green-200',
+    partial: 'bg-amber-50 text-amber-700 ring-amber-200',
+    mismatch: 'bg-red-50 text-red-700 ring-red-200',
+    unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
+    none: 'bg-gray-50 text-gray-500 ring-gray-200',
+  }
+  const pill = (kind: ICCheckKind, label: string) => (
+    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[kind]}`}>{label}</span>
+  )
+  const vsIc = (status: string) =>
+    status === 'match'
+      ? pill('match', t('scholarship.docs.incomeProofCheck.matchesIc'))
+      : status === 'mismatch'
+        ? pill('mismatch', t('scholarship.docs.incomeProofCheck.mismatchIc'))
+        : pill('none', t('scholarship.docs.incomeProofCheck.addIc'))
+  // Currency: current → green; stale/rejected → red (no longer proves B40).
+  const currentPill =
+    chk.current_status === 'current'
+      ? pill('match', t('scholarship.docs.strCheck.current'))
+      : pill('mismatch', t(`scholarship.docs.strCheck.${chk.current_status}`))
+  const fromDoc = (
+    <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
+      {t('scholarship.docs.incomeProofCheck.fromDoc')}
+    </span>
+  )
+  const row = (label: string, value: string, right: ReactNode) => (
+    <div className="flex items-start justify-between gap-2 py-1.5">
+      <p className="min-w-0 text-xs text-gray-700">
+        <span className="font-medium text-gray-600">{label}: </span>
+        <span className="break-words">{value || '—'}</span>
+      </p>
+      {right}
+    </div>
+  )
+
+  return (
+    <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
+      {row(t('scholarship.docs.strCheck.recipient'), chk.name, vsIc(chk.name_status))}
+      {chk.nric ? row(t('scholarship.docs.strCheck.icNo'), chk.nric, vsIc(chk.nric_status)) : null}
+      {row(t('scholarship.docs.strCheck.statusYear'),
+           [chk.status, chk.year].filter(Boolean).join(' · '), currentPill)}
+      {chk.amount ? row(t('scholarship.docs.strCheck.amount'), chk.amount, fromDoc) : null}
+    </div>
+  )
+}
+
 // ── Results-slip clinical 3-check (Check-1 Academic) ─────────────────────
 // Mirrors the IC checklist: three rows the student can read at a glance —
 // Name · Subjects · Results — each with what we read + a pass/fail badge, plus
@@ -609,6 +664,8 @@ function SingleDocCard({
             <IncomeIcChecklist doc={d} t={t} />
           ) : (d.doc_type === 'salary_slip' || d.doc_type === 'epf') && d.income_proof_check ? (
             <IncomeProofChecklist doc={d} t={t} />
+          ) : d.doc_type === 'str' && d.str_check ? (
+            <StrChecklist doc={d} t={t} />
           ) : (
             <SupportingDocChip doc={d} t={t} />
           )}

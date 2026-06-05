@@ -21,6 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   untagged upload never touches the member-tagged income docs. Retired `DocumentListCreateView.MULTI_INSTANCE_DOC_TYPES`.
 
 ### Added
+- **Income Check-1 — STR document verification (recipient + currency) + STR-route green = the cluster adds up.** The STR
+  document is now read for its **recipient name + IC** and its **currency** (status + year), covering both the MOF letter
+  and the MySTR portal screenshot (`vision` STR schema). It joins the **earner's cluster**: the recipient must match the
+  STR earner's IC (not the student), and — because STR is awarded annually — a **stale** (older-year) or **rejected** STR
+  is flagged (`str_not_current`) as no longer proving B40. The Income tile now goes **verified** only when the whole
+  cluster adds up: a current STR whose recipient is the earner + the earner IC + a confirmed relationship (mother→birth
+  cert, father→patronymic, guardian→letter); otherwise `recommend` (a human places it) — never blocks. A bare pre-wizard
+  STR no longer auto-greens. New `str_check` serializer field + `StrChecklist` (Recipient · IC No · Status/Year · Amount);
+  new reason codes `str_not_current` / `str_recipient_mismatch` (full 4-link chain) + the `str_not_current` Gopal coach.
+  No migration (computed field; STR extraction is additive).
 - **Income Check-1 — per-document IC/proof verification + cluster-aware Cikgu Gopal.** Income documents are now treated
   as a **cluster per person** (Father's IC + Father's salary slip + Father's EPF), unlike the single-document Identity/
   Academic/Pathway facts. **Each income IC** (`parent_ic`) shows the same checklist as the Identity card (IC No · Name ·

@@ -693,6 +693,7 @@ def run_vision_match_for_document(doc, *, names, postcode='', city='', check_add
 
 GEMINI_EXTRACT_DOC_TYPES = frozenset({
     'salary_slip', 'epf', 'water_bill', 'electricity_bill', 'results_slip', 'offer_letter',
+    'str',
 })
 
 _STR = {'type': 'string'}
@@ -708,6 +709,11 @@ def _doc_schema(props: dict) -> dict:
 _FIELD_SCHEMAS = {
     # Income Check-1: read the earner's NRIC too, so a member-tagged slip can be
     # cross-checked against that member's IC (name + IC number), not the student.
+    # Income Check-1 (STR): the recipient (name + NRIC) is the household earner, plus the
+    # CURRENCY facts — status (Lulus/diluluskan/…) + the STR year — since a stale STR no
+    # longer proves B40. Covers both the MOF letter and the MySTR portal screenshot.
+    'str': _doc_schema({'recipient_name': _STR, 'recipient_nric': _STR, 'status': _STR,
+                        'year': _STR, 'amount': _STR}),
     'salary_slip': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
                                 'gross_income': _STR, 'net_income': _STR, 'period': _STR}),
     'epf': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
@@ -739,7 +745,7 @@ _FIELD_SCHEMAS = {
 # Which extracted field holds the person's name (for the deterministic verdict).
 _NAME_FIELD = {
     'salary_slip': 'name', 'epf': 'name', 'water_bill': 'name', 'electricity_bill': 'name',
-    'results_slip': 'candidate_name', 'offer_letter': 'candidate_name',
+    'results_slip': 'candidate_name', 'offer_letter': 'candidate_name', 'str': 'recipient_name',
 }
 
 # Optional per-doc-type instruction appended to the extraction prompt.
@@ -776,6 +782,17 @@ _DOC_HINTS = {
                      'Sekolah"); "offer_date" = the letter\'s print/issue date; "intake" = '
                      'the session/intake (e.g. "Sesi 2026/2027"); "candidate_address" = the '
                      'student\'s mailing address if shown. Leave a field empty if absent.'),
+    'str': (' This is a Malaysian STR (Sumbangan Tunai Rahmah) document — EITHER an official '
+            'Kementerian Kewangan letter OR a screenshot of the MySTR "Semakan Status" portal. '
+            '"recipient_name" = the recipient\'s full name ("Nama Penerima" on the letter, or '
+            '"Nama" on the portal); "recipient_nric" = their IC / MyKad number ("No Pengenalan" '
+            '/ "No. MyKad", keep ALL 12 digits exactly as shown, even without dashes); "status" '
+            '= the approval status ("diluluskan" / "Lulus" = approved; "Ditolak" = rejected; '
+            '"Dalam proses" = pending; "Tidak Layak" = not eligible) — use the portal\'s "Status '
+            'Permohonan Semasa" when present; "year" = the STR cycle year (e.g. "2026" from '
+            '"STR 2026" / "SUMBANGAN TUNAI RAHMAH (STR) 2026", or the letter date year); '
+            '"amount" = the total STR entitlement in RM ("jumlah … STR … RM1,200" / "Jumlah '
+            'Bayaran Keseluruhan STR"). Leave a field empty if it is not present.'),
     'salary_slip': (' This is a Malaysian salary slip / payslip. "name" = the EMPLOYEE\'s '
                     'full name; "nric" = their IC number ("No. K/P" / "No. Kad Pengenalan", '
                     'keep the 12 digits) if printed; "employer" = the company; "gross_income" '

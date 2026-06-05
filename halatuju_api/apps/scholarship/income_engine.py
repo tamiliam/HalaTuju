@@ -275,6 +275,67 @@ def student_income_proof_check(doc):
     }
 
 
+_STR_REJECTED_WORDS = ('tolak', 'tidak layak', 'gagal', 'reject')
+_STR_YEAR_RE = re.compile(r'(20\d{2})')
+
+
+def _str_currency(status_raw, year_str, cohort_year):
+    """Whether an STR is CURRENT proof of B40. STR is annual/rolling, so a stale (older
+    than the cohort year) or rejected STR no longer proves need. Conservative — only
+    flags 'stale' when we can read a year that's clearly older, and 'rejected' on a clear
+    negative status; otherwise 'current' (don't over-flag varied portal screenshots)."""
+    s = (status_raw or '').lower()
+    if any(w in s for w in _STR_REJECTED_WORDS):
+        return 'rejected'
+    m = _STR_YEAR_RE.search(year_str or '')
+    if m and cohort_year and int(m.group(1)) < int(cohort_year):
+        return 'stale'
+    return 'current'
+
+
+def student_str_check(doc):
+    """For an STR document: the recipient facts (name · NRIC · status · year · amount)
+    cross-checked against the STR EARNER's IC (the household benefit is in the earner's
+    name — Q2 'whose STR?'), plus whether it's CURRENT (this cohort year + approved).
+    Returns ``{name, nric, status, year, amount, member, name_status, nric_status,
+    current_status, ic_present}`` or None for a non-STR doc.
+
+    name_status / nric_status: 'match' | 'mismatch' | 'no_ref'.
+    current_status: 'current' | 'stale' | 'rejected'."""
+    from .vision import name_match, nric_match
+    if getattr(doc, 'doc_type', '') != 'str':
+        return None
+    app = doc.application
+    member = (getattr(app, 'income_earner', '') or '').strip()   # STR route single earner
+
+    vf = doc.vision_fields if isinstance(getattr(doc, 'vision_fields', None), dict) else {}
+    f = vf.get('fields', {}) if isinstance(vf.get('fields', {}), dict) else {}
+    name = (f.get('recipient_name', '') or '').strip()
+    nric = (f.get('recipient_nric', '') or '').strip()
+    status = (f.get('status', '') or '').strip()
+    year = (f.get('year', '') or '').strip()
+    amount = (f.get('amount', '') or '').strip()
+
+    ic = _member_ic_doc(app, member) if member else None
+    ic_name = (getattr(ic, 'vision_name', '') or '').strip() if ic else ''
+    ic_nric = (getattr(ic, 'vision_nric', '') or '').strip() if ic else ''
+
+    name_status = 'no_ref'
+    if ic_name and name:
+        name_status = 'mismatch' if name_match(name, ic_name) == 'mismatch' else 'match'
+    nric_status = 'no_ref'
+    if ic_nric and nric:
+        nric_status = 'match' if nric_match(nric, ic_nric) else 'mismatch'
+
+    cohort_year = getattr(getattr(app, 'cohort', None), 'year', None)
+    return {
+        'name': name, 'nric': nric, 'status': status, 'year': year, 'amount': amount,
+        'member': member, 'name_status': name_status, 'nric_status': nric_status,
+        'current_status': _str_currency(status, year, cohort_year),
+        'ic_present': ic is not None,
+    }
+
+
 def income_cluster_advice(application, member):
     """ONE cluster-level coach verdict for a household member's Income documents — their
     IC (the anchor) + their income proofs (salary slip / EPF) — so Gopal speaks once per
@@ -303,6 +364,14 @@ def income_cluster_advice(application, member):
             pc = student_income_proof_check(p)
             if pc and 'mismatch' in (pc['name_status'], pc['nric_status']):
                 return 'income_proof_person_mismatch'
+    # STR route: the STR document is also part of the earner's cluster — its recipient
+    # must be the earner. (Its CURRENCY — stale/rejected — is voiced on the STR doc
+    # itself, not here, so the two issues don't double up.)
+    str_doc = (application.documents.filter(doc_type='str').order_by('-uploaded_at').first())
+    if str_doc is not None:
+        sc = student_str_check(str_doc)
+        if sc and 'mismatch' in (sc['name_status'], sc['nric_status']):
+            return 'income_proof_person_mismatch'
     return ''
 
 

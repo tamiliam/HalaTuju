@@ -323,6 +323,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
     income_ic_check = serializers.SerializerMethodField()
     # Check-1 Income: a member-tagged salary slip / EPF vs that member's IC.
     income_proof_check = serializers.SerializerMethodField()
+    # Check-1 Income: the STR document — recipient vs the earner IC + currency.
+    str_check = serializers.SerializerMethodField()
 
     class Meta:
         model = ApplicantDocument
@@ -346,6 +348,8 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             'income_ic_check',
             # Check-1 Income: salary slip / EPF vs the member's IC (null otherwise).
             'income_proof_check',
+            # Check-1 Income: STR recipient vs the earner IC + currency (null otherwise).
+            'str_check',
         ]
         read_only_fields = [
             'vision_nric', 'vision_name', 'vision_address',
@@ -419,6 +423,15 @@ class ApplicantDocumentSerializer(serializers.ModelSerializer):
             return None
         from .income_engine import student_income_proof_check
         return student_income_proof_check(obj)
+
+    def get_str_check(self, obj):
+        """{name, nric, status, year, amount, member, name_status, nric_status,
+        current_status, ic_present} for an STR document — recipient vs the earner IC +
+        whether it's a CURRENT STR. Null for every other doc type."""
+        if obj.doc_type != 'str':
+            return None
+        from .income_engine import student_str_check
+        return student_str_check(obj)
 
 
 class ResolutionItemSerializer(serializers.ModelSerializer):

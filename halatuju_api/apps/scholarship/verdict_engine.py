@@ -244,17 +244,15 @@ def _verdict_income(application):
     route = (getattr(application, 'income_route', '') or '').strip()
 
     str_doc = _latest_doc(application, 'str')
-    str_verified = str_doc is not None and str_doc.vision_name_match == 'found'
 
     # Salary (non-STR) route → multi-earner path.
     if route == 'salary':
         return _verdict_income_salary(application, student_name, present)
 
-    # Wizard not walked → can't compute requirements. A verified STR still settles it;
-    # otherwise ask the student to tell us whose income they're showing (the wizard).
+    # Wizard not walked → we don't know whose income this is, so we can't confirm the
+    # cluster adds up. Income green requires the whole cluster (STR + earner IC +
+    # relationship), so a bare STR is no longer enough on its own — ask for the wizard.
     if not earner or not route:
-        if str_verified:
-            return _fact('income', 'verified', [_item('str_verified')], [])
         return _fact('income', 'review', evidence, [_item('income_earner_undeclared')])
 
     # ── Earner IC (the income docs are issued in their name) ──────────────────
@@ -295,22 +293,36 @@ def _verdict_income(application):
             review.append(_item('birth_cert_mismatch'))
     # 'unknown' (no patronymic — e.g. a Chinese name) / 'pending' → no claim; officer eyeballs.
 
-    # ── Income evidence — the STR document ────────────────────────────────────
-    if str_verified:
-        evidence.append(_item('str_verified'))
-    elif str_doc is not None:
-        review.append(_item('str_present_unverified'))
-    else:
+    # ── Income evidence — the STR document (recipient = the earner, and CURRENT) ──
+    # STR is annual/rolling: a stale or rejected STR no longer proves B40 (review). Its
+    # recipient must be the earner (matched to the earner IC) — not just a name present.
+    from .income_engine import student_str_check
+    sc = student_str_check(str_doc) if str_doc is not None else None
+    str_verified = False
+    if str_doc is None:
         gap.append(_item('income_proof_missing'))
+    elif sc and sc['current_status'] in ('stale', 'rejected'):
+        review.append(_item('str_not_current', status=sc['current_status']))
+    elif sc and 'mismatch' in (sc['name_status'], sc['nric_status']):
+        review.append(_item('str_recipient_mismatch', members=[earner]))
+    elif sc and (sc['name_status'] == 'match' or sc['nric_status'] == 'match'):
+        str_verified = True
+        evidence.append(_item('str_verified'))
+    else:
+        # Present but the recipient couldn't be confirmed (earner IC missing/unreadable,
+        # or the STR didn't read) — a human looks.
+        review.append(_item('str_present_unverified'))
 
     # ── Place the verdict ─────────────────────────────────────────────────────
     if gap:
         return _fact('income', 'gap', evidence, gap + review)
     if review:
         return _fact('income', 'review', evidence, review)
-    if str_verified:
+    # Income GREEN only when the whole cluster adds up: a CURRENT STR whose recipient is
+    # the earner + the earner IC present + the relationship CONFIRMED (mother→BC,
+    # father→patronymic, guardian→letter). An unconfirmed relationship → a human places it.
+    if str_verified and rel == 'match':
         return _fact('income', 'verified', evidence, [])
-    # STR assembled, nothing missing/failed (e.g. relationship 'unknown') — a human places it.
     return _fact('income', 'recommend', evidence, [_item('income_unverified_needs_interview')])
 
 
