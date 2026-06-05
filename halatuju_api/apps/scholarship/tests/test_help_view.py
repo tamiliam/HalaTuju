@@ -66,7 +66,9 @@ class TestDocumentHelpView(TestCase):
         self.assertEqual(body['verdict'], 'name_mismatch')
         m.assert_called_once()
 
-    def test_ic_nric_mismatch_returns_ai_message(self):
+    def test_ic_nric_misread_when_name_matches(self):
+        # Name matches the profile but the IC number doesn't → 'ic_nric_misread' (likely a
+        # glare misread), not the generic 'nric_mismatch'.
         doc = self._doc(self.app_a, doc_type='ic', vision_nric='999999-99-9999',
                         vision_name='Aisyah binti Rahman', vision_run_at=timezone.now())
         self._auth(USER_A)
@@ -74,8 +76,19 @@ class TestDocumentHelpView(TestCase):
                                        'model_used': 'gemini-2.5-flash'}):
             resp = self.client.get(self._url(doc))
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()['verdict'], 'nric_mismatch')
+        self.assertEqual(resp.json()['verdict'], 'ic_nric_misread')
         self.assertEqual(resp.json()['source'], 'ai')
+
+    def test_ic_nric_mismatch_generic_when_name_also_fails(self):
+        # Both the name and the IC number fail → fall back to the generic 'nric_mismatch'
+        # (it could be the wrong card entirely).
+        doc = self._doc(self.app_a, doc_type='ic', vision_nric='999999-99-9999',
+                        vision_name='Someone Else Entirely', vision_run_at=timezone.now())
+        self._auth(USER_A)
+        with patch(SEAM, return_value={'markdown': 'Hi there.', 'model_used': 'gemini-2.5-flash'}):
+            resp = self.client.get(self._url(doc))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['verdict'], 'nric_mismatch')
 
     # ── nothing to help with ─────────────────────────────────────────────────
     def test_good_supporting_verdict_returns_none_no_call(self):

@@ -218,6 +218,43 @@ class TestOfferVerdictRouting(TestCase):
         self.assertEqual(help_engine.verdict_for_document(doc), '')
 
 
+class TestIcVerdictRouting(TestCase):
+    """verdict_for_document on the student's OWN IC — name + IC-number checks vs the profile."""
+
+    @staticmethod
+    def _ic_doc(vision_name, vision_nric, pname='Elan A/L Venugopal', pnric='710829-02-5709'):
+        return SimpleNamespace(
+            doc_type='ic', vision_run_at='2026-06-05', vision_error='',
+            vision_name=vision_name, vision_nric=vision_nric,
+            application=SimpleNamespace(profile=SimpleNamespace(name=pname, nric=pnric)),
+        )
+
+    def test_name_ok_nric_mismatch_is_misread(self):
+        # The headline case: name matches, only the IC number differs → likely a glare misread.
+        doc = self._ic_doc('Elan A/L Venugopal', '999999-99-9999')
+        self.assertEqual(help_engine.verdict_for_document(doc), 'ic_nric_misread')
+
+    def test_both_mismatch_falls_back_to_generic(self):
+        doc = self._ic_doc('Someone Else', '999999-99-9999')
+        self.assertEqual(help_engine.verdict_for_document(doc), 'nric_mismatch')
+
+    def test_nric_mismatch_with_no_name_read_is_generic(self):
+        doc = self._ic_doc('', '999999-99-9999')
+        self.assertEqual(help_engine.verdict_for_document(doc), 'nric_mismatch')
+
+    def test_nric_ok_name_mismatch_is_name_mismatch(self):
+        doc = self._ic_doc('Someone Else', '710829-02-5709')
+        self.assertEqual(help_engine.verdict_for_document(doc), 'name_mismatch')
+
+    def test_all_match_no_coach(self):
+        doc = self._ic_doc('Elan A/L Venugopal', '710829-02-5709')
+        self.assertEqual(help_engine.verdict_for_document(doc), '')
+
+    def test_unreadable_when_no_nric(self):
+        doc = self._ic_doc('Elan A/L Venugopal', '')
+        self.assertEqual(help_engine.verdict_for_document(doc), 'unreadable')
+
+
 class TestGuardrails(TestCase):
     """Task 4 — the hard rule: coach, never ghostwriter; never leak a score; firewalled."""
 
