@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Cikgu Gopal — leaner, diagnose-then-advise tone across every document message.** Gopal was spending words motivating
+  the student ("don't worry!", "you've got this!", "you're doing great!") instead of using the available signals to name
+  the problem and say what to do. The prompt now mandates **diagnosis first, action second, stop** — warm in wording but
+  economical — and explicitly bans cheerleading openers/sign-offs (at most one short reassurance, and only when it carries
+  real information, e.g. "nothing is blocked"). All 19 pre-written fallback strings (en/ms/ta) were rewritten to the same
+  shape. `help_engine.HELP_PROMPT` + fix-hint tidy; `scholarship.docs.help.fallback.*` rewritten. No migration, no logic
+  change. 730 scholarship pytest + 258 jest + next build clean + i18n parity 2020.
 - **Cikgu Gopal — precise message when the IC number is misread but the name matches.** On the student's own identity
   IC, a name‑match with a number‑mismatch is now its own verdict (`ic_nric_misread`) instead of the generic "the IC
   number didn't match your profile." Gopal reassures that the name matched, explains the number is almost certainly a
