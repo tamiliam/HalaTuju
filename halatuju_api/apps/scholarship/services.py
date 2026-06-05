@@ -426,9 +426,10 @@ def application_completeness(application):
 
     funding_done (S3 redesign + S23): at least one category ticked AND
     programme_months set.
-    documents_done (S4 / S22 / S23): ic + results_slip + parent_ic + at least
-    one of {str, salary_slip, epf} (proof of household income; the income-proof
-    card on the Documents tab accepts any combination).
+    documents_done (gate v2, 2026-06-05): route-aware + STRICT for a not-yet-
+    submitted app — ic + results_slip + offer_letter + the route's compulsory
+    income docs (income_doc_blockers). An ALREADY-submitted app keeps the old
+    looser bar (grandfathered; see the inline note).
     consent_done (S5): an active Consent row exists.
     address_done (S14): profile has street + postal_code + city (state already
     came from /apply). Stored on the profile, captured in the Story tab.
@@ -455,17 +456,23 @@ def application_completeness(application):
     except FundingNeed.DoesNotExist:
         funding_done = False
     present = set(application.documents.values_list('doc_type', flat=True))
-    # S22: parent_ic now compulsory for everyone (not just minors). Used by the
-    # admin to cross-check supporting docs like STR or EPF that are usually
-    # issued in a parent's name.
-    # S23: proof of household income is now compulsory too — any one of
-    # {str, salary_slip, epf} satisfies it; STR recipients are nudged to ALSO
-    # upload salary/EPF for each working household member, but one is enough
-    # to pass the completeness gate.
-    documents_done = (
-        {'ic', 'results_slip', 'parent_ic'}.issubset(present)
-        and bool(present & {'str', 'salary_slip', 'epf'})
-    )
+    # Gate v2 (2026-06-05): the documents bar is route-aware and STRICT for a not-yet-
+    # submitted application — ic + results_slip + offer_letter (now compulsory for all)
+    # + the route's compulsory income docs (income_doc_blockers, sourced from the wizard
+    # requirement engine). GRANDFATHER: an already-submitted app (profile_completed_at
+    # set) keeps the OLD, looser bar (any one of str/salary/epf, no offer letter) so a
+    # later edit never trips revert_if_profile_incomplete on the new rules — those 6 are
+    # resolved at Check 2 / interview instead.
+    if application.profile_completed_at is None:
+        documents_done = (
+            {'ic', 'results_slip', 'offer_letter'}.issubset(present)
+            and not income_doc_blockers(application)
+        )
+    else:
+        documents_done = (
+            {'ic', 'results_slip', 'parent_ic'}.issubset(present)
+            and bool(present & {'str', 'salary_slip', 'epf'})
+        )
     consent_done = application.consents.filter(is_active=True).exists()
     address_done = bool(
         profile
@@ -587,15 +594,70 @@ def detect_vision_outage(window_hours=24):
     }
 
 
+def income_doc_blockers(application):
+    """The route + selection aware COMPULSORY income documents still missing, as flat
+    blocker codes (gate v2, 2026-06-05). Sourced from ``income_engine`` so the consent
+    gate and the student's wizard checklist can never disagree (one source of truth).
+    The wizard carries the per-member detail; the gate stays coarse:
+      - blank route / no earner-or-member chosen → ``income_incomplete`` (walk the wizard);
+      - STR route → the earner IC + relationship doc (mother→BC, guardian→letter) + STR;
+      - salary route → for EVERY selected member: their IC + their salary slip (EPF does
+        NOT substitute) + the relationship doc. Any member missing one → the flat code.
+    """
+    from .income_engine import (working_members, relationship_doc_for,
+                                _member_ic_doc, _cluster_docs)
+    route = (getattr(application, 'income_route', '') or '').strip()
+    if not route:
+        return ['income_incomplete']
+    present = set(application.documents.values_list('doc_type', flat=True))
+    out = []
+    if route == 'str':
+        earner = (getattr(application, 'income_earner', '') or '').strip()
+        if not earner:
+            return ['income_incomplete']
+        if _member_ic_doc(application, earner) is None:
+            out.append('parent_ic_missing')
+        rel = relationship_doc_for(earner)          # birth_certificate / guardianship_letter / ''
+        if rel and rel not in present:
+            out.append(f'{rel}_missing')            # birth_certificate_missing / guardianship_letter_missing
+        if 'str' not in present:
+            out.append('str_missing')
+        return out
+    # Salary route — every selected working member needs IC + salary slip (+ rel doc).
+    members = working_members(application)
+    if not members:
+        return ['income_incomplete']
+    need_ic = need_slip = need_bc = need_guard = False
+    for m in members:
+        if _member_ic_doc(application, m) is None:
+            need_ic = True
+        if not _cluster_docs(application, m, 'salary_slip').exists():
+            need_slip = True
+        rel = relationship_doc_for(m)
+        if rel == 'birth_certificate' and 'birth_certificate' not in present:
+            need_bc = True
+        elif rel == 'guardianship_letter' and 'guardianship_letter' not in present:
+            need_guard = True
+    if need_ic:
+        out.append('parent_ic_missing')
+    if need_slip:
+        out.append('salary_slip_missing')
+    if need_bc:
+        out.append('birth_certificate_missing')
+    if need_guard:
+        out.append('guardianship_letter_missing')
+    return out
+
+
 def consent_blockers(application):
     """Every gate that must pass BEFORE consent can be given, as a list of blocker
     codes (empty list = ready). Consent is the final step: the profile must be
-    complete, the required documents uploaded, and the uploaded IC must be machine
-    -readable AND match the student's name + NRIC. Each code has a matching i18n
-    label on the frontend, so the student sees ALL outstanding items at once and
-    can fix them in one pass. The ConsentView POST enforces this list; the minor
-    guardian-field checks (typed name/NRIC vs the parent's IC) are separate and
-    run on the submitted consent data.
+    complete, the required documents uploaded (route-aware income docs + a compulsory
+    offer letter), and the uploaded IC must be machine-readable AND match the student's
+    name + NRIC. Each code has a matching i18n label on the frontend, so the student
+    sees ALL outstanding items at once and can fix them in one pass. The ConsentView
+    POST enforces this list; the minor guardian-field checks (typed name/NRIC vs the
+    parent's IC) are separate and run on the submitted consent data.
     """
     c = application_completeness(application)
     blockers = []
@@ -612,10 +674,9 @@ def consent_blockers(application):
         blockers.append('ic_missing')
     if 'results_slip' not in present:
         blockers.append('results_slip_missing')
-    if 'parent_ic' not in present:
-        blockers.append('parent_ic_missing')
-    if not (present & {'str', 'salary_slip', 'epf'}):
-        blockers.append('income_proof_missing')
+    if 'offer_letter' not in present:                 # gate v2: compulsory for everyone
+        blockers.append('offer_letter_missing')
+    blockers.extend(income_doc_blockers(application))  # route-aware (replaces parent_ic + income_proof)
     # Identity check only once the IC is actually uploaded (else 'ic_missing' leads).
     if 'ic' in present:
         blockers.extend(_ic_identity_blockers(application))

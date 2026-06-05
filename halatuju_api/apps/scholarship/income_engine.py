@@ -580,11 +580,14 @@ def salary_member_blocks(members) -> list:
     for m in _MEMBER_ORDER:
         if m not in chosen:
             continue
-        compulsory = [('parent_ic', m)]
+        # Compulsory order (drives both the gate and the cockpit panel): the member's
+        # IC → their salary slip → the relationship doc (mother/guardian only). The
+        # salary slip is COMPULSORY (gate v2, 2026-06-05) — EPF does not substitute it.
+        compulsory = [('parent_ic', m), ('salary_slip', m)]
         rel = relationship_doc_for(m)
         if rel:
             compulsory.append((rel, ''))            # birth cert / letter — single, untagged
-        optional = [('salary_slip', m), ('epf', m)]
+        optional = [('epf', m)]
         blocks.append({'member': m, 'compulsory': compulsory,
                        'optional': optional, 'rel_doc': rel})
     return blocks
