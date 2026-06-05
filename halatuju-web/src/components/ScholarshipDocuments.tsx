@@ -992,11 +992,6 @@ function IncomeWizard({
     </div>
   )
 
-  const docBadge = (kind: 'required' | 'optional') => (
-    <span className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
-      kind === 'required' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-500'
-    }`}>{iq(`badge.${kind}`)}</span>
-  )
 
   const answers = {
     income_route: ans.income_route as IncomeRoute,
@@ -1087,7 +1082,7 @@ function IncomeWizard({
       </div>
 
       {/* Dynamic checklist — appears once the wizard is answered. Compulsory docs carry a
-          red * on the card title; optional docs get the "optional" badge. */}
+          red * on the card title; optional docs carry no marker (the * is what distinguishes). */}
       {ready && ans.income_route === 'str' && (
         <div className="space-y-3 pt-1">
           {ordered(reqs.compulsory).map((dt) => (
@@ -1095,7 +1090,6 @@ function IncomeWizard({
           ))}
           {ordered(reqs.optional).map((dt) => (
             <div key={dt}>
-              <div className="mb-1">{docBadge('optional')}</div>
               {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt) })}
             </div>
           ))}
@@ -1118,7 +1112,6 @@ function IncomeWizard({
               ))}
               {block.optional.map(({ docType, member }) => (
                 <div key={docKey(docType, member)}>
-                  <div className="mb-1">{docBadge('optional')}</div>
                   {renderCard(docType, { required: false, member,
                     helpOverride: memberHelp(docType, block.member) })}
                 </div>
@@ -1128,7 +1121,6 @@ function IncomeWizard({
           {/* Household-level optional credibility docs (utility bills). */}
           {reqs.optional.map((dt) => (
             <div key={dt}>
-              <div className="mb-1">{docBadge('optional')}</div>
               {renderCard(dt, { required: false })}
             </div>
           ))}
@@ -1272,7 +1264,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
 
       <section>
         {sectionHead('pathway', null)}
-        <div className="space-y-3">{card('offer_letter')}</div>
+        <div className="space-y-3">{card('offer_letter', { required: true })}</div>
       </section>
 
       <section>
