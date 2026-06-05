@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Utility-bill facts in the officer cockpit — Current · Reasonable · Outstanding + an orange "another name" note.**
+  A water/electricity bill row now shows three soft hardship signals beside **Address**: **Current** (🟢 the bill is
+  within ~3 months of the review date · 🟡 stale · ⚪ no readable date), **Reasonable** (🟢 combined household utility
+  per‑capita under RM25/head · 🟡 borderline or high — a soft proxy never shows red · ⚪ can't judge), and **Outstanding**
+  (🟢 shown *only* when arrears exceed the current charge — a genuine hardship signal — hidden otherwise). **Reasonable
+  combines water + electricity** (water alone is a weak signal); with only one bill it greys out with a "water/electricity
+  bill only" note rather than faking a verdict. When the account is in a name that's **neither the student nor any uploaded
+  parent IC**, an **orange note** flags it (e.g. "Bill is in another name: …"). All soft — utility bills never gate a
+  verdict. Backend `income_engine.utility_check` (+ `utility_reasonable`, billing-period parser); `officerCockpit`
+  `documentFacts` extended; new i18n `docsDrawer.fact.reasonable`/`outstanding` + `docsDrawer.utilityNote.*` (en/ms/ta).
+  No migration. Officer cockpit only. 723 scholarship pytest + 258 jest + next build clean + i18n parity 2019.
 - **Officer Documents panel redesign — coloured per‑fact labels + route‑aware income ordering (TD-085 Sprint 2).** Each
   document row in the cockpit Documents drawer now shows the **labels of the facts that document provides**, coloured by
   its own sub‑verdict (🟢 verified · 🟡 partial · 🔴 not) — Identity IC → Name · IC No; results slip → Name · Subjects ·

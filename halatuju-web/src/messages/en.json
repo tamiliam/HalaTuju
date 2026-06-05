@@ -958,14 +958,25 @@
           "q4": "Does anyone else in your household earn an income (for example a working brother or sister)?",
           "yes": "Yes",
           "no": "No",
-          "earner": { "father": "Father", "mother": "Mother", "guardian": "Legal guardian" },
-          "work": { "payslip": "Working — has payslip", "informal": "Working — no payslip", "not_working": "Not working" },
+          "earner": {
+            "father": "Father",
+            "mother": "Mother",
+            "guardian": "Legal guardian"
+          },
+          "work": {
+            "payslip": "Working — has payslip",
+            "informal": "Working — no payslip",
+            "not_working": "Not working"
+          },
           "school": "Brothers/sisters in school",
           "tertiary": "In college or university",
           "burdenHint": "This helps us understand your family's needs.",
           "docsHeading": "Documents to upload",
           "footer": "Upload what you can — a reviewer will look at your situation personally.",
-          "badge": { "required": "Required", "optional": "Optional" }
+          "badge": {
+            "required": "Required",
+            "optional": "Optional"
+          }
         }
       },
       "requiredPill": "Required",
@@ -2257,7 +2268,9 @@
           "father": "Father",
           "guardian": "Guardian",
           "ward": "Ward",
-          "address": "Address"
+          "address": "Address",
+          "reasonable": "Reasonable",
+          "outstanding": "Outstanding"
         },
         "type": {
           "parent_ic": "Earner's IC",
@@ -2265,6 +2278,11 @@
           "salary_slip": "Salary slip",
           "birth_certificate": "Birth certificate",
           "guardianship_letter": "Guardianship letter"
+        },
+        "utilityNote": {
+          "unrelated": "Bill is in another name: {name}",
+          "water_only": "Water bill only — electricity not provided, so consumption cannot be judged",
+          "electricity_only": "Electricity bill only — water not provided, so consumption cannot be judged"
         }
       }
     },

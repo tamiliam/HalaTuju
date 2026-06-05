@@ -186,7 +186,18 @@ Consent → student edits the Application pages.
 - **So the feature is small:** the lock is NOT new. What's new = (1) the summary page between consent and the commit,
   and (2) moving the commit/lock trigger from Consent to **Continue** (Back keeps the app at `shortlisted` = editable).
 
-## PENDING (proposed, NOT built — awaiting 2 design confirmations) — utility-bill facts enhancement
+## ✅ DONE (2026-06-05) — utility-bill facts enhancement
+**Built + tested; both open questions confirmed YES + the `?` dropped from labels.** The officer cockpit utility-bill
+row now shows **Address · Current · Reasonable** (+ **Outstanding** only when arrears > charge), plus an **orange note**
+when the account holder is neither the student nor any uploaded parent IC. **Reasonable = combined water+electricity
+per-capita** (one bill → grey + "water/electricity bill only" note, never a faked verdict); **Current = within ~3 months
+of the review date**; high consumption stays amber (soft proxy, never red). Backend `income_engine.utility_check` (+
+`utility_reasonable` + `_parse_billing_month`/`_utility_currency` + `_utility_name_unrelated`); `officerCockpit.
+documentFacts` extended; FE `UtilityCheck` type; cockpit `docRow` notes; i18n `docsDrawer.fact.reasonable`/`outstanding`
+\+ `docsDrawer.utilityNote.{unrelated,water_only,electricity_only}` (en/ms/ta). No migration. Gates: 723 scholarship
+pytest + 258 jest + next build clean + i18n parity 2019. The original spec follows for the record.
+
+## (BUILT — see above) utility-bill facts enhancement
 Live-testing follow-up (2026-06-05): the officer cockpit utility-bill row currently shows only **Address**. The user
 wants it to tell the officer whether the bill is recent, reasonable, and whether there are arrears, plus flag an
 unrelated account holder. The extraction already captures `billing_period`, `amount` (current charge), `unpaid_balance`,

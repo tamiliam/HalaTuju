@@ -220,9 +220,31 @@ describe('documentFacts', () => {
       .toEqual(['child', 'mother', 'father'])
   })
 
-  it('utility bill → Address only', () => {
-    expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: { name: '', address: '', monthly_bill: '', unpaid_balance: '', address_status: 'found' } })))
-      .toEqual([{ key: 'address', status: 'verified' }])
+  it('utility bill → Address, Current, Reasonable (Outstanding only when arrears > charge)', () => {
+    const util = (o: Partial<NonNullable<AdminApplicantDocument['utility_check']>>) =>
+      ({ name: '', address: '', monthly_bill: '', unpaid_balance: '', address_status: '',
+        current_status: 'unknown', reasonable_status: 'unknown', reasonable_detail: '',
+        outstanding_status: '', name_note: '', ...o } as NonNullable<AdminApplicantDocument['utility_check']>)
+    // Address found, recent bill, both bills cheap, arrears exceed the charge → all four green.
+    expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: util({
+      address_status: 'found', current_status: 'current', reasonable_status: 'reasonable', outstanding_status: 'arrears' }) })))
+      .toEqual([
+        { key: 'address', status: 'verified' },
+        { key: 'current', status: 'verified' },
+        { key: 'reasonable', status: 'verified' },
+        { key: 'outstanding', status: 'verified' },
+      ])
+    // Stale bill, only one bill provided, no arrears → Current amber, Reasonable grey, no Outstanding.
+    expect(documentFacts(doc({ doc_type: 'electricity_bill', utility_check: util({
+      address_status: 'not_found', current_status: 'stale', reasonable_status: 'partial', reasonable_detail: 'electricity_only' }) })))
+      .toEqual([
+        { key: 'address', status: 'not' },
+        { key: 'current', status: 'partial' },
+        { key: 'reasonable', status: 'unknown' },
+      ])
+    // High combined consumption stays amber (soft proxy, never red).
+    expect(documentFacts(doc({ doc_type: 'water_bill', utility_check: util({ reasonable_status: 'high' }) })).find((f) => f.key === 'reasonable')?.status)
+      .toBe('partial')
   })
 
   it('returns [] when the check has not run', () => {

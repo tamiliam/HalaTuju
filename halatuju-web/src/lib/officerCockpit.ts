@@ -163,6 +163,17 @@ function factStatus(s: string | undefined | null): FactStatus {
 const _PATRONYMIC_MEMBER = new Set(['father', 'brother', 'sister'])
 
 /**
+ * Tone for the combined-utility "Reasonable" fact. A soft B40 proxy, so it never shows
+ * red: green when consumption is low, amber when borderline/high or only one bill was
+ * given, grey when we can't judge at all.
+ */
+function reasonableStatus(s: string): FactStatus {
+  if (s === 'reasonable') return 'verified'
+  if (s === 'borderline' || s === 'high') return 'partial'
+  return 'unknown'                       // 'partial' (one bill) + 'unknown' (no data) → grey
+}
+
+/**
  * The coloured fact-labels for a document — only the facts that document provides.
  * Returns [] when the relevant check hasn't run (the row then renders as "unread").
  */
@@ -251,7 +262,18 @@ export function documentFacts(doc: AdminApplicantDocument): DocumentFactLabel[] 
   if (dt === 'water_bill' || dt === 'electricity_bill') {
     const c = doc.utility_check
     if (!c) return []
-    return [{ key: 'address', status: factStatus(c.address_status) }]
+    // Address · Current · Reasonable always; Outstanding only when arrears > the charge
+    // (a real hardship signal, shown green). 'current'/'stale'/'unknown' map through
+    // factStatus directly (current→green, stale→amber, unknown→grey).
+    const facts: DocumentFactLabel[] = [
+      { key: 'address', status: factStatus(c.address_status) },
+      { key: 'current', status: factStatus(c.current_status) },
+      { key: 'reasonable', status: reasonableStatus(c.reasonable_status) },
+    ]
+    if (c.outstanding_status === 'arrears') {
+      facts.push({ key: 'outstanding', status: 'verified' })
+    }
+    return facts
   }
   return []
 }

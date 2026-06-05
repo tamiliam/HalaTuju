@@ -1242,6 +1242,17 @@ export interface UtilityCheck {
   unpaid_balance: string
   // vs the home address: 'found' | 'not_found' | 'unreadable' | '' (not run)
   address_status: string
+  // billing period vs the review date: 'current' (≤3 months) | 'stale' | 'unknown' (no date)
+  current_status: 'current' | 'stale' | 'unknown'
+  // combined household per-capita B40 proxy (both bills): 'reasonable' | 'borderline' |
+  // 'high' | 'partial' (only one bill, can't judge) | 'unknown' (no amount / no size)
+  reasonable_status: 'reasonable' | 'borderline' | 'high' | 'partial' | 'unknown'
+  // which bills informed the reasonable verdict
+  reasonable_detail: 'both' | 'water_only' | 'electricity_only' | ''
+  // 'arrears' when unpaid balance exceeds the current charge (hardship signal); '' = hide
+  outstanding_status: 'arrears' | ''
+  // 'unrelated' = bill in a name that is neither the student nor any uploaded parent IC
+  name_note: 'unrelated' | ''
 }
 
 export type SlipCheckStatus = 'match' | 'partial' | 'mismatch' | 'unreadable' | 'uncertain' | 'pending'
