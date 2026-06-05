@@ -241,12 +241,13 @@ class TestIncome(_Base):
         self.app.income_working_members = members or []
         self.app.save()
 
-    def test_verified_str_pre_wizard_is_still_green(self):
-        # A present, name-matched STR settles income on its own, wizard or not.
+    def test_str_pre_wizard_is_review_not_green(self):
+        # Income green now requires the whole cluster (STR + earner IC + relationship), so a
+        # bare STR before the wizard is walked is no longer enough on its own.
         _add_doc(self.app, 'str', name_match='found')
         f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'verified')
-        self.assertIn('str_verified', _codes(f['evidence']))
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('income_earner_undeclared', _codes(f['unresolved']))
 
     def test_wizard_not_walked_is_review_undeclared(self):
         f = _facts(self.app)['income']
@@ -254,13 +255,34 @@ class TestIncome(_Base):
         self.assertIn('income_earner_undeclared', _codes(f['unresolved']))
 
     def test_str_father_complete_is_verified(self):
+        # Whole cluster adds up: current STR whose recipient = the father IC + patronymic.
         self._wizard(route='str', earner='father')
         _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
-        _add_doc(self.app, 'str', name_match='found')
+        _add_doc(self.app, 'str', student_verdict='ok',
+                 fields={'recipient_name': 'MURUGAN A/L KESAVAN', 'status': 'Lulus', 'year': '2026'})
         f = _facts(self.app)['income']
         self.assertEqual(f['status'], 'verified')
+        self.assertIn('str_verified', _codes(f['evidence']))
         self.assertIn('relationship_confirmed', _codes(f['evidence']))
         self.assertIn('earner_ic_present', _codes(f['evidence']))
+
+    def test_str_stale_year_is_review(self):
+        self._wizard(route='str', earner='father')
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
+        _add_doc(self.app, 'str', student_verdict='ok',
+                 fields={'recipient_name': 'MURUGAN A/L KESAVAN', 'status': 'Lulus', 'year': '2023'})
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('str_not_current', _codes(f['unresolved']))
+
+    def test_str_recipient_not_earner_is_review(self):
+        self._wizard(route='str', earner='father')
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
+        _add_doc(self.app, 'str', student_verdict='ok',
+                 fields={'recipient_name': 'SOMEONE ELSE BIN OTHER', 'status': 'Lulus', 'year': '2026'})
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('str_recipient_mismatch', _codes(f['unresolved']))
 
     def test_earner_ic_missing_is_gap(self):
         self._wizard(route='str', earner='father')
@@ -290,7 +312,8 @@ class TestIncome(_Base):
         _parent_ic(self.app, 'KAMALA A/P RAMAN')
         _add_doc(self.app, 'birth_certificate', student_verdict='ok',
                  fields={'bc_child_name': 'DIVASHINI A/P MURUGAN', 'bc_mother_name': 'KAMALA A/P RAMAN'})
-        _add_doc(self.app, 'str', name_match='found')
+        _add_doc(self.app, 'str', student_verdict='ok',
+                 fields={'recipient_name': 'KAMALA A/P RAMAN', 'status': 'Lulus', 'year': '2026'})
         f = _facts(self.app)['income']
         self.assertEqual(f['status'], 'verified')
         self.assertIn('relationship_confirmed', _codes(f['evidence']))

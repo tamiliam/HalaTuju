@@ -61,6 +61,9 @@ VERDICT_GUIDANCE = {
     # An income document (salary slip / EPF) was uploaded for a household member but that
     # member's IC has not been uploaded yet, so we cannot confirm the two are the same person.
     'income_ic_needed': "an income document was uploaded for this household member but their IC has not been uploaded yet, so we cannot automatically confirm the income document belongs to that same person",
+    # The STR document is for an older year, or its status is not 'approved' — STR is
+    # awarded annually, so an out-of-date STR no longer proves the family's current need.
+    'str_not_current': "the STR document is for an earlier year or its status is not approved, and STR is awarded annually — so this one no longer proves the family's CURRENT financial need",
 }
 
 # Per-verdict fix advice. Most verdicts just need a re-upload; a NAME mismatch is
@@ -142,6 +145,14 @@ VERDICT_FIX_HINT = {
         '(for example, the father\'s IC alongside his payslip) so we can automatically confirm '
         'the income document belongs to the right person. Make clear nothing is wrong or '
         'blocked — it just helps us check faster.'
+    ),
+    'str_not_current': (
+        'Gently explain that STR is given out fresh each year, so we need the CURRENT year\'s '
+        'STR to show the family qualifies now. Kindly ask them to upload this year\'s STR — a '
+        'recent screenshot of the MySTR "Semakan Status" portal showing "Lulus", or the latest '
+        'STR letter. If they do not have a current STR, reassure them it is fine: they can '
+        'instead show the family\'s income with a salary slip / EPF (the other route). Do NOT '
+        'imply they did anything wrong.'
     ),
 }
 
@@ -304,9 +315,17 @@ def verdict_for_document(doc):
     # voiced by the cluster coach anchored on the IC, so here we only speak when there is
     # NO IC to anchor on: nudge the student to add this person's IC. (Skips the generic
     # "your name isn't on this" check below, which is wrong for an earner's document.)
-    if doc.doc_type in ('salary_slip', 'epf'):
-        from .income_engine import _proof_member, _member_ic_doc
-        member = _proof_member(doc)
+    if doc.doc_type in ('salary_slip', 'epf', 'str'):
+        from .income_engine import _proof_member, _member_ic_doc, student_str_check
+        # An STR whose currency itself is the problem (stale / rejected) speaks here —
+        # the earner-IC cluster coach can't say "this STR is out of date".
+        if doc.doc_type == 'str':
+            sc = student_str_check(doc)
+            if sc and sc['current_status'] in ('stale', 'rejected'):
+                return 'str_not_current'
+        member = _proof_member(doc) if doc.doc_type != 'str' else \
+            ((doc.application.income_earner or '').strip()
+             if (doc.application.income_route or '') == 'str' else '')
         if member:
             return '' if _member_ic_doc(doc.application, member) else 'income_ic_needed'
     # Other supporting docs — the Gemini doc-assist verdict takes precedence (it is the

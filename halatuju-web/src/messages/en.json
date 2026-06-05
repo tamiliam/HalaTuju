@@ -907,6 +907,7 @@
           "income_relationship_mismatch": "Quick check — this is easily fixed! The name on this IC doesn't seem to link to your family the way we expected (for a parent or sibling we look for your father's name from your own IC; for a mother we check your birth certificate). It usually just means a different person's card was uploaded here, or the photo was a little unclear. Please double-check you uploaded the right person's MyKad in this slot, with a clear photo. Nothing is blocked!",
           "income_proof_person_mismatch": "Quick check — easily sorted! This salary slip / EPF doesn't seem to be for the same person as the IC you uploaded for that family member (the name or IC number is different). Please make sure the income document and that person's IC are for the SAME person — for example, your father's payslip together with your father's IC — and re-upload the right file if a wrong one slipped in. This is about that family member's documents, not your own — nothing is blocked!",
           "income_ic_needed": "Nice work adding this! You've uploaded an income document for this family member but not their IC yet. When you have a moment, please add that person's MyKad too (for example, your father's IC alongside his payslip) so we can confirm the income document belongs to the right person. Nothing is wrong — it just helps us check faster!",
+          "str_not_current": "Quick note — easily sorted! STR is given out fresh each year, so we need this year's STR to show your family qualifies now. Please upload your current STR — a recent screenshot of the MySTR \"Semakan Status\" portal showing \"Lulus\", or your latest STR letter. No current STR? No problem — you can instead show your family's income with a salary slip / EPF. Nothing is blocked!",
           "generic": "Something didn't look quite right with this upload — but it's nothing to worry about and easily fixed. Have another look and try uploading again. You're doing great!"
         }
       },
@@ -1053,6 +1054,15 @@
         "mismatchIc": "Doesn't match their IC — re-check",
         "addIc": "Add their IC to auto-check",
         "fromDoc": "from the document"
+      },
+      "strCheck": {
+        "recipient": "Recipient",
+        "icNo": "IC No",
+        "statusYear": "Status / Year",
+        "amount": "Amount",
+        "current": "Current",
+        "stale": "Out of date — needs this year's STR",
+        "rejected": "Not approved"
       },
       "slipCheck": {
         "name": "Name",
@@ -1383,6 +1393,14 @@
         "guardianship_letter_missing": {
           "title": "Upload your guardianship letter",
           "desc": "You're showing a guardian's income, so we need the guardianship letter or court order. Nothing is blocked — a person reviews it."
+        },
+        "str_not_current": {
+          "title": "Upload this year's STR",
+          "desc": "STR is given out fresh each year, so we need your current STR to show your family qualifies now. Upload a recent MySTR \"Semakan Status\" screenshot showing \"Lulus\", or your latest STR letter. No current STR? You can show income with a salary slip / EPF instead."
+        },
+        "str_recipient_mismatch": {
+          "title": "Check your STR document",
+          "desc": "The name or IC on this STR doesn't match the earner's IC you uploaded. Please check it's the right STR for the family member whose income you're showing."
         },
         "offer_unreadable": {
           "title": "Your offer letter was hard to read",
@@ -2120,6 +2138,8 @@
           "birth_cert_mismatch": "The birth certificate doesn't link the named mother to the student — check by eye.",
           "father_patronymic_mismatch": "The IC name for {members} doesn't match the father's name in the student's own IC — check the relationship.",
           "guardianship_letter_missing": "Income shown is a guardian's, but no guardianship letter/order was uploaded. Request it.",
+          "str_not_current": "The STR is out of date (older year / not approved) — STR is annual, so it no longer proves current B40 need. Ask for this year's STR, or accept the salary route.",
+          "str_recipient_mismatch": "The STR recipient isn't the declared earner — the name/IC on the STR doesn't match the earner's IC. Confirm.",
           "income_unverified_needs_interview": "Income can't be document-verified (informal / no payslip) — confirm during the interview via household size, dependents and lifestyle. Do NOT block.",
           "earner_ic_present": "Earner's IC on file: {name}.",
           "relationship_confirmed": "Earner confirmed as the student's parent/guardian.",

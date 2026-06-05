@@ -28,6 +28,8 @@ export const HELP_VERDICTS = [
   'income_proof_person_mismatch',
   // Income cluster — a proof was added for a member but their IC hasn't been uploaded yet.
   'income_ic_needed',
+  // STR document is out of date (older year / not approved) — STR is awarded annually.
+  'str_not_current',
 ] as const
 
 /**
@@ -76,6 +78,12 @@ export function shouldShowCoach(doc: ApplicantDocument): boolean {
   // it anchors the coach and the proof stays quiet (no second Gopal for the same person).
   if (doc.income_proof_check) {
     return !doc.income_proof_check.ic_present
+  }
+  // STR — currency (stale/rejected) is intrinsic to the STR so it coaches HERE; recipient
+  // coherence is voiced by the earner-IC cluster coach. Also nudge if no earner IC yet.
+  if (doc.str_check) {
+    const s = doc.str_check
+    return s.current_status === 'stale' || s.current_status === 'rejected' || !s.ic_present
   }
   // Supporting docs — the Gemini doc-assist verdict takes precedence (matches the chip).
   const av = doc.vision_fields?.student_verdict
@@ -135,6 +143,8 @@ export function helpSignal(doc: ApplicantDocument): string {
     ic ? `cluster:${ic.cluster_status || ''}` : '',
     // Income proof: re-fires when the member's IC appears (the add-IC nudge clears).
     ip ? `${ip.name_status},${ip.nric_status},${ip.ic_present ? 1 : 0}` : '',
+    // STR: re-fires when currency / recipient match / earner-IC presence changes.
+    doc.str_check ? `str:${doc.str_check.current_status},${doc.str_check.name_status},${doc.str_check.ic_present ? 1 : 0}` : '',
   ].join('|')
 }
 

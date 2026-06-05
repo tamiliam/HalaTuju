@@ -53,6 +53,10 @@ CODE_TO_TICKET = {
     'birth_cert_mismatch':          {'fact': 'income', 'kind': 'confirm'},
     'father_patronymic_mismatch':   {'fact': 'income', 'kind': 'confirm'},
     'guardianship_letter_missing':  {'fact': 'income', 'kind': 'doc', 'doc_type': 'guardianship_letter'},
+    # STR document checks (Check-1 income, STR route): a stale/rejected STR no longer
+    # proves B40 (upload a current one or explain); a recipient that isn't the earner.
+    'str_not_current':              {'fact': 'income', 'kind': 'doc', 'doc_type': 'str'},
+    'str_recipient_mismatch':       {'fact': 'income', 'kind': 'confirm'},
     # Pathway
     'offer_unreadable':    {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
     'offer_no_identity':   {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
