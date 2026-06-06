@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Application completion reminders + auto-close (the daily reminder job).** Shortlisted students who haven't completed
+  their application now get an escalating reminder sequence, and stalled applications are eventually closed. Cadence (days
+  from `reminder_anchor_at`, normally = the shortlist invitation): **R1 +2 · R2 +9 · R3 +23 · R4/final +53**, where the
+  final reminder warns *"complete within 5 days or we'll close it; you'd need to start a new application."* Then a 5-day
+  grace and **auto-close** → new `expired` status. The 55‑min/48‑h initial reveal was already live (cohort delays). New
+  `ScholarshipApplication` fields `reminder_anchor_at` / `reminder_stage` / `last_reminder_at` / `expired_at` + the
+  `expired` status (**migration `0041`**, additive columns + the per‑cohort/profile unique constraint made **partial** so an
+  `expired` row never blocks a fresh application — students may restart). `services.send_application_reminders` (idempotent,
+  one stage per run, close gated on the final reminder having actually gone out ≥5 days earlier — never on raw elapsed
+  days); 5 new trilingual emails (R1–R4 + closure), each linking to `/scholarship/application`; new
+  `send_application_reminders` management command wired into the cron whitelist (`application-reminders`); one-time
+  `backfill_reminder_anchors` command (anchors the existing shortlisted‑incomplete cohort to *today − 2 days* so R1 fires
+  on the first run). Needs a new daily Cloud Scheduler (~9am Asia/KL). 753 scholarship + 1037 courses/reports pytest.
+
 ### Changed
 - **Cikgu Gopal for income — one coach per earner, anchored at the cluster foot, aware of the whole cluster.** Income is
   the one *cluster* fact (the earner's IC + STR / payslip + relationship doc), unlike the single-document Identity /
