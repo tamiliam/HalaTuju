@@ -1,17 +1,17 @@
-# myNADI B40 Sponsor Programme — Lawyer Review Bundle
+# B40 Assistance Programme — Lawyer Review Bundle
 
 > **Prepared for:** Vickneswari Veerasamy & Co, Advocates & Solicitors (Kajang).
-> **Prepared by:** myNADI / Tamil Foundation (tamiliam).
+> **Prepared by:** HalaTuju (tamiliam).
 > **For: legal review.** **Status: working draft for the lawyer to vet — not yet legal advice, not yet live.**
 > This document describes the sponsor (donor) programme in full so you can (a) test the **robustness of the process**
 > and (b) vet the **words a donor and a student/guardian actually agree to**. We would like you to harden both before
 > we go live with real money and real students.
 >
-> **Nothing here is live yet.** The entire system currently runs on **dummy students** and **mocked donations** behind a
-> feature flag, specifically so it can be built and demonstrated *before* your review. Real money and real student data
-> are switched on only **after** your sign-off — that is the last step.
+> **The full system is not live yet.** Only a pilot of around 20 students is live, to gauge student response; there are
+> no sponsors yet and none have been onboarded. A live system involving real money will be switched on only **after**
+> your sign-off — that is the last step.
 >
-> British English throughout. Versioned: sponsor agreement `2026-draft-1`; student consent `2026-draft-3`.
+> Version: sponsor agreement `2026-draft-1`; student consent `2026-draft-3`.
 
 ---
 
@@ -30,18 +30,20 @@ Our specific questions are in **§7**. The supporting detail is in **§1–§6**
 
 ## 1. The programme in one page
 
-**myNADI's B40 Assistance Programme** connects **sponsors** (donors) with **B40 students** (from the bottom-40% income
-band in Malaysia) who need financial help to continue their education. A sponsor donates money to myNADI; myNADI matches
-that donation to a student's assessed need; the funds are released to support that student's studies.
+**The B40 Assistance Programme** connects **sponsors** (donors) with **B40 students** (from the bottom-40% income band in
+Malaysia) who need financial help to continue their education. A sponsor donates money to **Yayasan myNADI** ("myNADI");
+myNADI matches that donation to a student's assessed need; the funds are released to support that student's studies.
 
 Two promises sit at the heart of it:
 
 - **It is a donation.** A sponsor gives money to the charity. They are not investing, lending, or buying; they get nothing
   financial back; and they **cannot withdraw it to their bank**. They can only **redirect it within the programme**.
-- **It is permanently anonymous.** A sponsor **never** learns the identity of a student they help — not the name, school,
-  photo, IC number, or contact details — even after a match. The student likewise never learns the sponsor's identity.
+- **It is permanently anonymous.** A sponsor **never** learns the identity of a student they help — not the name, photo,
+  IC number, or contact details — even after a match. The student likewise never learns the sponsor's identity.
 
-The programme is run by **myNADI**, a programme under **Tamil Foundation** (a Malaysian non-profit).
+The programme is planned to be run by **myNADI**, a tax-exempt charity under Subsection 44(6) of the Income Tax Act 1967,
+in partnership with other non-profit organisations such as CUMIG, SMC, EWRF and HYO. *(The operating entity is still
+being finalised.)*
 
 ---
 
@@ -49,7 +51,7 @@ The programme is run by **myNADI**, a programme under **Tamil Foundation** (a Ma
 
 | Party | Who | Role |
 |---|---|---|
-| **myNADI / Tamil Foundation** | The charity (non-profit) | Receives donations, assesses student need, manages matching and the release of funds, holds all student data |
+| **Yayasan myNADI** | The charity (non-profit) | Receives donations, assesses student need, manages matching and the release of funds, holds all student data |
 | **Sponsor** | An individual or organisation donor | Donates money; directs their giving balance to anonymous student needs |
 | **Student** | A B40 applicant | Applies for assistance; consents to an **anonymised** version of their profile being shown to sponsors |
 | **Parent / guardian** | For students under 18 | Gives consent on the minor's behalf |
@@ -62,11 +64,11 @@ the anonymity model.
 
 ## 3. How the money works
 
-This is the most legally sensitive part, so it is described precisely.
+This is the most legally sensitive part.
 
-1. **Donation in.** A sponsor donates a sum to myNADI (in production, via the toyyibPay payment gateway — currently
-   **mocked**). At the moment of donation the money becomes **myNADI's**. It is **final** and **not refundable to the
-   sponsor's bank account**.
+1. **Donation in.** A sponsor donates a sum to myNADI (in production, via a payment gateway — **to be determined**). At
+   the moment of donation the money becomes **myNADI's**. It is **final** and **not refundable to the sponsor's bank
+   account**.
 2. **Giving balance (a ledger, not custody of the sponsor's money).** The donated sum credits the sponsor's internal
    **directed-giving balance**. This balance is simply *bookkeeping*: `balance = total donated − amounts currently
    committed to students`. The sponsor can **direct** this balance to students within the programme; they cannot take it
@@ -75,7 +77,7 @@ This is the most legally sensitive part, so it is described precisely.
 4. **Fund a student.** A sponsor with enough balance funds a student's award **in full** (1:1, full-or-nothing at launch;
    the design allows several sponsors to a single student later). This issues an **award offer**.
 5. **Student accepts.** The student — or the **guardian**, for a minor — accepts the award within a deadline. On
-   acceptance the match becomes active and the student leaves the visible pool. If they do not accept in time, the offer
+   acceptance, the match becomes active and the student leaves the visible pool. If they do not accept in time, the offer
    **lapses** and the amount **returns to the sponsor's giving balance** (to redirect — never a bank refund).
 6. **Release in stages ("tranches").** *(Designed, not yet built.)* The award is released to the student's institution in
    **stages tied to progress** — e.g. part on acceptance, the rest as the student progresses. A stage can be **withheld**
@@ -93,8 +95,8 @@ Anonymity is **two-way and permanent**, and enforced in the software, not just b
 
 - **What a sponsor sees:** an **anonymised profile** of a student — a respectful, non-identifying summary of their
   situation, academic band, field of study, and funding need. It is **generated** from non-identifying inputs (never the
-  raw application), and is checked by software before publication to ensure it contains no name, school, place, IC, phone,
-  or email. The sponsor-facing data is an **allowlist** (only explicitly permitted, non-identifying fields can ever
+  raw application), and is checked by software before publication to ensure it contains no name, street address, IC,
+  phone, or email. The sponsor-facing data is an **allowlist** (only explicitly permitted, non-identifying fields can ever
   appear), so a future change cannot accidentally leak identity.
 - **What a student sees:** nothing identifying about the sponsor. The student's view of their award has **no sponsor
   field at all**.
@@ -131,8 +133,7 @@ again when an award is **accepted**. The current wording is in **Appendix B**. S
   **relationship** (father / mother / legal guardian / grandparent / sibling / relative).
 - **Identity checks:** the guardian's IC is required and is cross-checked (by OCR) against the typed name/NRIC; a
   **non-parent** guardian must also upload a **guardianship letter** (a court order **or** the parent's written
-  authorisation — a pragmatic standard chosen for the many absent-parent realities in this community; **we want your view
-  on whether this is sufficient** — §7.5).
+  authorisation; **we want your view on whether this is sufficient** — §7.5).
 - **Withdrawable:** the consent states it can be withdrawn at any time.
 
 ---
@@ -147,8 +148,9 @@ again when an award is **accepted**. The current wording is in **Appendix B**. S
    and a student-side process, not unfettered discretion. What is defensible, and what must we put in writing?
 
 **On charitable / tax status:**
-3. **Tax receipts** — confirm myNADI / Tamil Foundation's actual status (e.g. LHDN-approved institution under s.44(6))
-   and the correct, compliant wording. Today our disclosure (Appendix A6) is deliberately non-committal.
+3. **Tax receipts** — myNADI is a Subsection 44(6) tax-exempt charity. Please confirm the correct, compliant donor-facing
+   wording for tax-deductible receipts, and whether disclosure A6 (currently deliberately non-committal) can now be made
+   specific.
 
 **On anonymity & safeguarding:**
 4. Is **permanent two-way anonymity** — *"you will never know who you helped"* — compatible with safeguarding obligations
@@ -175,9 +177,9 @@ again when an award is **accepted**. The current wording is in **Appendix B**. S
 
 ## 8. What is built vs. planned (so you know what is real)
 
-| Built (on dummy data / mocked money) | Planned / not yet built |
+| Built (mocked money) | Planned / not yet built |
 |---|---|
-| Sponsor sign-up + the account model | Real toyyibPay donation-in (currently **mocked**) |
+| Sponsor sign-up + the account model | Real payment-gateway donation-in (gateway TBD; currently **mocked**) |
 | The anonymised pool + anonymity safeguards | Disbursement-out to institutions |
 | Donate → fund → award offer → accept → lapse (the state machine) | The **tranche** schedule + withholding mechanics |
 | Student / guardian consent (incl. minors) | Award / decline notification emails |
@@ -189,17 +191,16 @@ The real-money and disbursement parts are deliberately **last**, and gated on yo
 
 # Appendix A — Sponsor onboarding content (the donor's words)
 
-> The full disclosures, comprehension quiz, donor agreement, and quick declarations the sponsor sees. *(Mirrors the
-> engineering build-spec `sponsor-onboarding-content-draft.md`; this is the lawyer-facing copy.)*
+> The full disclosures, comprehension quiz, donor agreement, and quick declarations, exactly as the sponsor sees them.
 
 ## §A — The seven disclosure cards
 
 Each card is shown on its own, with a single **"I understand"** checkbox; the sponsor cannot continue until it is ticked.
 Each acknowledgement is stored with its card code, the agreement version, and a timestamp.
 
-**A1 · This is a donation, not an investment.** When you put money in, it becomes a **donation to myNADI** (under Tamil
-Foundation). It is no longer your money. You are **not** buying, lending, or investing — no return, no interest, no share
-of anything. You are giving, generously, to help a student.
+**A1 · This is a donation, not an investment.** When you put money in, it becomes a **donation to myNADI**. It is no
+longer your money. You are **not** buying, lending, or investing — no return, no interest, no share of anything. You are
+giving, generously, to help a student.
 > ☐ I understand that my contribution is a donation, not an investment, and I expect nothing back in return.
 
 **A2 · You cannot get the money back to your bank.** Because it is a donation, it **cannot be refunded to your bank
@@ -209,8 +210,8 @@ amount returns to that balance for you to give to someone else. It never leaves 
 > ☐ I understand I cannot withdraw my donation to my bank; I can only direct it to students within the platform.
 
 **A3 · You will never know who you helped.** To protect vulnerable students, the programme is **permanently anonymous**.
-You will **never** see a student's name, photograph, school, IC number, or contact details — not while choosing, not
-after you fund them, not ever. You will see only a respectful, non-identifying summary of their situation and need.
+You will **never** see a student's name, photograph, IC number, or contact details — not while choosing, not after you
+fund them, not ever. You will see only a respectful, non-identifying summary of their situation and need.
 > ☐ I understand I will never learn the identity of any student I sponsor, and I will not attempt to find out.
 
 **A4 · The money is released in stages, tied to progress.** An award is not handed over in one lump. It is released to
@@ -224,9 +225,9 @@ You are choosing a **need to meet**. You will have no say over the student's cho
 role in their life beyond your gift. myNADI manages the relationship, the checks, and the release of funds.
 > ☐ I understand I am funding a need, not selecting or mentoring a particular individual, and I will have no relationship with them.
 
-**A6 · This is a charitable gift.** Your donation is a **charitable contribution** to myNADI / Tamil Foundation. Any tax
-treatment (such as a receipt for relief, where available) depends on the foundation's status and the rules at the time,
-and will be confirmed to you separately — it is **not** a reason for, or a condition of, your gift.
+**A6 · This is a charitable gift.** Your donation is a **charitable contribution** to myNADI. Any tax treatment (such as a
+receipt for relief, where available) depends on the foundation's status and the rules at the time, and will be confirmed
+to you separately — it is **not** a reason for, or a condition of, your gift.
 > ☐ I understand this is a charitable gift, and any tax receipt depends on the foundation's status and is confirmed separately.
 
 **A7 · How you will conduct yourself, and how we handle your data.** You agree to act in the student's best interest: you
@@ -241,24 +242,24 @@ run your sponsor account and your giving, never sold.
 A. Yes, on request · B. Yes, within 14 days · **C. No — it stays as a giving balance to direct to a student ✓** · D. Only the unspent part.
 
 **Q2.** After you sponsor a student, what will you be able to learn about them?
-A. Their full name and school · B. Their name, once accepted · **C. Nothing identifying — only an anonymous summary ✓** · D. Their contact details.
+A. Their full name and school · B. Their name, once accepted · C. Their contact details · **D. Nothing identifying — only an anonymous summary ✓**
 
-**Q3.** A student you funded stops attending and makes no progress. What happens to the not-yet-released part of the award?
-A. It is paid out anyway · B. It is refunded to your bank · **C. It can be withheld and returns to your giving balance ✓** · D. myNADI keeps it as a fee.
+**Q3.** A student you funded stops attending classes and makes no progress. What happens to the not-yet-released part of the award?
+A. It is paid out anyway · B. It is refunded to your bank · **C. It can be withheld and returned to your giving balance ✓** · D. myNADI keeps it as a fee.
 
 **Q4.** What are you receiving in return for your contribution?
-A. Interest · B. A stake in the student's future earnings · **C. Nothing financial — it is a charitable donation ✓** · D. A guaranteed graduate.
+A. Interest · **B. Nothing financial — it is a charitable donation ✓** · C. A stake in the student's future earnings · D. A guaranteed graduate.
 
 **Q5.** Which of these are you allowed to do?
-A. Ask for the student's phone number · B. Choose their course · C. Visit their school · **D. None of the above — you fund a need and stay anonymous ✓**
+A. Ask for the student's phone number · B. Choose their course · C. Talk to their parents · **D. None of the above — you fund a need and stay anonymous ✓**
 
 ## §C — Donor agreement (e-signed with the sponsor's typed full name)
 
 **myNADI Sponsor Donation Agreement** *(working draft v2026-draft-1)*
 
 By signing, I confirm that:
-1. **My contribution is a voluntary, irrevocable donation** to myNADI (under Tamil Foundation), made for charitable
-   purposes. It is not an investment, loan, or purchase, and I expect no financial return.
+1. **My contribution is a voluntary, irrevocable donation** to myNADI, made for charitable purposes. It is not an
+   investment, loan, or purchase, and I expect no financial return.
 2. **It is not refundable to me.** Once donated, the funds are held by myNADI as a directed-giving balance. I may direct
    that balance to support students within the programme; I may not withdraw it to a bank account. Amounts from a lapsed,
    declined, or withheld award return to my giving balance to be redirected, not refunded.
