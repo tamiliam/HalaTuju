@@ -746,6 +746,12 @@ def income_cluster_advice(application, member):
         sc = student_str_check(str_doc)
         if sc and 'mismatch' in (sc['name_status'], sc['nric_status']):
             return 'income_proof_person_mismatch'
+    # Salary route: the salary slip is this earner's compulsory income PROOF — the document that
+    # actually shows the income. If the IC is in and matches but the salary slip is still
+    # missing, nudge it as the logical NEXT step, BEFORE the relationship doc (uploading a birth
+    # certificate before any proof of income is out of order). EPF doesn't substitute it (gate v2).
+    if route == 'salary' and not _cluster_docs(application, member, 'salary_slip').exists():
+        return 'income_proof_needed'
     # IC present + coherent. The relationship-proof doc (mother → birth certificate, guardian
     # → letter) links the earner to the student — it's the LAST step (father/sibling need none:
     # the shared patronymic on the IC proves it).

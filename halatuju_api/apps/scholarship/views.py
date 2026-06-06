@@ -527,11 +527,18 @@ class IncomeClusterHelpView(APIView):
                       'birth_certificate': 'birth certificate', 'guardianship_letter': 'guardianship letter'}
         proof_kind, _pn, _pi = _cluster_proof_identity(app, member)
         rel_doc = relationship_doc_for(member)
+        # income_proof_needed asks specifically for the salary slip (the proof not yet uploaded,
+        # so _cluster_proof_identity has nothing to report). The relationship-mismatch message is
+        # member-aware: a mother's clash is between her birth certificate and her MyKad, so name
+        # the rel doc there too (not just for the "needed/unreadable" verdicts).
+        income_doc = ('salary slip' if verdict == 'income_proof_needed'
+                      else _DOC_LABEL.get(proof_kind, ''))
         context = {
             'member': _MEMBER_LABEL.get(member, member),
-            'income_doc': _DOC_LABEL.get(proof_kind, ''),
-            'rel_doc': (_DOC_LABEL.get(rel_doc, '')
-                        if verdict in ('income_rel_doc_needed', 'income_rel_doc_unreadable') else ''),
+            'income_doc': income_doc,
+            'rel_doc': (_DOC_LABEL.get(rel_doc, '') if verdict in (
+                'income_rel_doc_needed', 'income_rel_doc_unreadable',
+                'income_relationship_mismatch') else ''),
         }
         result = help_engine.generate_document_help(
             'income_cluster', verdict, first_name=first_name, target_language=language,

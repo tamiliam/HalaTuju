@@ -65,6 +65,7 @@ VERDICT_GUIDANCE = {
     # An income document was uploaded for a household member but that member's IC has not
     # been uploaded yet, so we cannot confirm the two are the same person. The IC is a
     # REQUIRED document — the application cannot be submitted until it is uploaded.
+    'income_proof_needed': "the earner's identity card is in and matches, but their salary slip — the document that actually shows the household income on the salary route — has not been uploaded yet, so it is the logical next step (it comes before the relationship document)",
     'income_ic_needed': "an income document has been uploaded for this household member, but that person's identity card (IC/MyKad) has not been uploaded yet — and it is required, so the application cannot be completed until it is added; we use it to confirm the income document really belongs to that person",
     # The earner's IC is in and matches the income document, but the relationship-proof
     # document (a birth certificate for a mother, a guardianship letter for a guardian) is
@@ -146,11 +147,25 @@ VERDICT_FIX_HINT = {
         'anything, and do NOT imply they made a mistake.'
     ),
     'income_relationship_mismatch': (
-        'This usually means the WRONG IC was uploaded for this family member: kindly suggest '
-        'they double-check they uploaded the right person\'s MyKad in this slot (for example, '
-        'their father\'s card under "Father", not someone else\'s), and that the photo is clear '
-        'enough to read the full name. Reassure them nothing is blocked. Do NOT tell them to '
-        'edit their profile — the fix here is the correct, clear IC photo for this person.'
+        'The document that should link this earner to the applicant does not agree. If the '
+        'SPECIFICS name a relationship document (e.g. a birth certificate), the clash is between '
+        'THAT document and the earner\'s MyKad — point at BOTH: kindly suggest they check they '
+        'uploaded the right relationship document (their OWN birth certificate, the one showing '
+        'them and this parent) AND the correct MyKad for this person. If the MyKad already '
+        'matches the income document, the relationship document (e.g. the birth certificate) is '
+        'the more likely one to re-check — gently say so. If NO relationship document is named '
+        'in the SPECIFICS, the earner\'s IC simply does not carry the family name from the '
+        'applicant\'s own IC — suggest they double-check they uploaded the right person\'s MyKad '
+        'in this slot, with a clear, full-name photo. Reassure them nothing is blocked; do NOT '
+        'tell them to edit their profile.'
+    ),
+    'income_proof_needed': (
+        'The earner\'s IC is in and matches. The next step is their INCOME proof — the salary '
+        'slip named in the SPECIFICS. Kindly ask them to upload that family member\'s latest '
+        'salary slip (it is what actually shows the household income). If a relationship '
+        'document is also still needed, you may note it comes after. Warm and matter-of-fact — '
+        'nothing is blocked; do NOT name a different document than the SPECIFICS give, and do '
+        'NOT ask them to edit their profile.'
     ),
     'income_proof_person_mismatch': (
         'This income document (salary slip / EPF) does not seem to belong to the SAME person '

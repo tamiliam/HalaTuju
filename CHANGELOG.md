@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Cikgu Gopal (income cluster) — two live‑testing refinements.** (1) **Salary‑route sequencing:** once the earner's IC
+  is in and matches, Gopal now nudges the **salary slip** (the income proof) as the logical next step before the birth
+  certificate — previously it jumped straight to the BC and never mentioned the slip (new `income_proof_needed` verdict,
+  placed before the relationship‑doc check on the salary route). (2) **Mother‑route mismatch message:** when the
+  relationship check clashes on the **mother** route, the message now points at the **birth certificate ↔ MyKad**
+  mismatch (and leans toward re‑checking the birth certificate, since the IC usually already matches the income document)
+  rather than the father‑route "re‑upload the MyKad". The cluster help view passes the relationship‑doc label into the
+  mismatch + proof messages so the coach names the real document. No migration; 770 scholarship pytest + 267 jest + build
+  clean; i18n parity 2027.
 - **An STR now only counts as B40 proof when it shows it was APPROVED and current — a self‑filled application record
   (SALINAN) no longer auto‑passes.** Previously the STR currency check was "valid unless clearly rejected", so a status‑less
   SALINAN/printout (which any applicant can generate) was given the benefit of the doubt and marked `current` → income
