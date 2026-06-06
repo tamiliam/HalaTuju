@@ -112,6 +112,19 @@ class TestBirthCertificateWiring(SimpleTestCase):
         for f in ('bc_child_name', 'bc_mother_name', 'bc_father_name'):
             self.assertIn(f, props)
 
+    def test_child_nric_warning_is_dropped_as_expected_noise(self):
+        # A Malaysian BC shows no IC for the child, so a 'child NRIC missing' warning is
+        # expected noise — it must not reach the officer. Real problems are kept.
+        from apps.scholarship.vision import _drop_expected_warnings
+        kept = _drop_expected_warnings('birth_certificate', [
+            "Child's NRIC not explicitly labelled as 'No. Kad Pengenalan' in the CHILD section.",
+            "Mother's name was partially obscured.",
+        ])
+        self.assertEqual(kept, ["Mother's name was partially obscured."])
+        # Non-BC docs are untouched.
+        self.assertEqual(_drop_expected_warnings('salary_slip', ['child ic missing']),
+                         ['child ic missing'])
+
     def test_birth_certificate_is_in_the_upload_pipeline(self):
         # The schema existing is NOT enough — the upload handler only OCRs + field-extracts
         # doc types in these sets. A BC missing here was silently never read (child/mother
