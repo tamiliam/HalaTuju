@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `expired` row never blocks a fresh application — students may restart). `services.send_application_reminders` (idempotent,
   one stage per run, close gated on the final reminder having actually gone out ≥5 days earlier — never on raw elapsed
   days); 5 new trilingual emails (R1–R4 + closure), each linking to `/scholarship/application`; new
-  `send_application_reminders` management command wired into the cron whitelist (`application-reminders`); one-time
+  `send_application_reminders` management command wired into the cron whitelist (`application-reminders`); each reminder
+  also points the student to the built-in AI helper (**Cikgu Gopal**) and a human fallback (`tamiliam@gmail.com`); one-time
   `backfill_reminder_anchors` command (anchors the existing shortlisted‑incomplete cohort to *today − 2 days* so R1 fires
   on the first run). Needs a new daily Cloud Scheduler (~9am Asia/KL). 753 scholarship + 1037 courses/reports pytest.
 
