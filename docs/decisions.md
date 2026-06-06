@@ -2095,3 +2095,29 @@ Greying-with-a-reason on one bill is honest about *why* we can't judge, vs hidin
 **Trade-offs:** Officer must request the second bill to get a "Reasonable" verdict; high consumption is softened to amber.
 **Revisit if:** the programme wants utility consumption to be a harder signal, or a single-utility household is common
 enough that one bill should suffice.
+
+## reminder_anchor_at as a separate clock knob (not shortlisted_at) — Sprint application-reminders, 2026-06-06
+**Decision:** The completion-reminder cadence counts from a dedicated `reminder_anchor_at` field, not directly from
+`shortlisted_at`. New shortlists set it to the invitation time (in `release_decision`); the one-time launch backfill set
+the in-flight cohort to *today − 2 days*.
+**Alternatives considered:** key the cadence directly off `shortlisted_at`.
+**Rationale:** Keying off the real shortlist date would have fired a sudden "final warning" (or instant close) at launch
+for anyone shortlisted weeks earlier — unfair for a reminder promise that didn't exist when they were shortlisted. A
+separate anchor decouples "when reminders count from" from the audit timestamp, makes the launch cutover a one-line
+backfill, and gives a re-anchor lever (e.g. an admin grace extension) without touching history.
+**Trade-offs:** one extra column; a back-dated anchor must be paired with a burst-proof sender (one stage/run) so it
+doesn't fire R1–R4 at once.
+**Revisit if:** the programme wants reminders to reflect the literal shortlist date with no cutover grace.
+
+## Partial unique constraint (exclude 'expired') enables restart at the DB layer — Sprint application-reminders, 2026-06-06
+**Decision:** The per-(cohort, profile) `unique_application_per_cohort` constraint is now PARTIAL —
+`condition = Q(profile__isnull=False) & ~Q(status='expired')` — so an auto-closed application never blocks a fresh one.
+**Alternatives considered:** (a) relax only the create-VIEW guard (`.exclude(status='expired')`) — but the DB constraint
+still blocks (IntegrityError); (b) reuse/reset the expired row in place — messier (lingering documents/consent, muddies
+history).
+**Rationale:** "Restart the whole process" means a genuinely new application row; the partial index lets the new row
+coexist with the archived `expired` one while still forbidding two LIVE applications per cohort/profile. The view guard +
+the DB constraint must agree.
+**Trade-offs:** the constraint swap is a real migration op (drop/recreate the partial unique INDEX), not pure ADD COLUMN;
+multiple historical rows per (cohort, profile) are now possible (all but one `expired`).
+**Revisit if:** a per-(cohort, profile) `.get()` is introduced anywhere that assumes exactly one row.
