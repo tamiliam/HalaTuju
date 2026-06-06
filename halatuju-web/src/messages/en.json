@@ -749,7 +749,7 @@
         "consent": "Consent",
         "review": "Review"
       },
-      "stepOf": "Step {n} of 5",
+      "stepOf": "Step {n} of {total}",
       "story": {
         "langNote": "Tell us about yourself in your own words — in Bahasa Melayu, English, or Tamil, whichever you're most comfortable with. There are no wrong answers.",
         "optional": "Optional",
