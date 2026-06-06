@@ -840,7 +840,7 @@
         "noteHelper": "For example, how you're planning to fund your studies, or how you'd manage if this assistance doesn't come through."
       },
       "allSetTitle": "You're all set!",
-      "allSetIntro": "You've completed every step. Press the button below to submit your application for review.",
+      "allSetIntro": "You've completed every step. Click below to look over everything one last time, then submit your final application.",
       "confirmCta": "Confirm & submit my application",
       "confirming": "Submitting…",
       "confirmError": "Could not submit. Please try again.",
@@ -1474,7 +1474,7 @@
       }
     },
     "summary": {
-      "subtitle": "One last look — check everything is right before you send it.",
+      "subtitle": "One last look — check everything is right, then scroll down and submit.",
       "locked": "Locked",
       "edit": "Edit",
       "uploaded": "✓ Uploaded",
