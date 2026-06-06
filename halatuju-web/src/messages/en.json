@@ -910,7 +910,7 @@
           "income_ic_needed": "You've uploaded an income document for this family member, but not that person's MyKad yet. The IC is required — please add it to complete your application, so we can confirm the income document belongs to them.",
           "income_rel_doc_needed": "The earner's IC is in and matches the income document. The last required step is the document that links them to you — a birth certificate for a mother, or a guardianship letter for a guardian. Please upload it to complete your application.",
           "income_rel_doc_unreadable": "You've uploaded your birth certificate (or guardianship letter), but we couldn't read the names on it that link the earner to you — it may be unclear, or the wrong document. Please check it's a clear photo or PDF of the actual document and upload it again to complete your application.",
-          "str_not_current": "STR is issued fresh each year, so we need this year's STR to show your family qualifies now. Upload your current STR — a recent MySTR “Semakan Status” screenshot showing “Lulus”, or your latest STR letter. No current STR? You can show your family's income with a salary slip / EPF instead.",
+          "str_not_current": "We couldn't confirm this STR shows it was approved and is for this year. To prove your family qualifies, upload your STR showing approval — a MySTR “Semakan Status” screenshot showing your parent's name, their IC, the status “Lulus”, and the payment dates; or your official STR approval letter. No current STR? You can show your family's income with a salary slip / EPF instead.",
           "generic": "Something didn't look right with this upload. Have another look, then try uploading again."
         }
       },
@@ -1100,7 +1100,8 @@
         "current": "Current",
         "stale": "Out of date — needs this year's STR",
         "rejected": "Not approved",
-        "unknown": "Not read yet"
+        "unknown": "Not read yet",
+        "unconfirmed": "Approval not shown"
       },
       "slipCheck": {
         "name": "Name",
@@ -1441,8 +1442,8 @@
           "desc": "You're showing a guardian's income, so we need the guardianship letter or court order. Nothing is blocked — a person reviews it."
         },
         "str_not_current": {
-          "title": "Upload this year's STR",
-          "desc": "STR is given out fresh each year, so we need your current STR to show your family qualifies now. Upload a recent MySTR \"Semakan Status\" screenshot showing \"Lulus\", or your latest STR letter. No current STR? You can show income with a salary slip / EPF instead."
+          "title": "Show your STR was approved",
+          "desc": "We couldn't confirm your STR was approved and current. Upload a MySTR “Semakan Status” screenshot showing your parent's name, their IC, the status “Lulus”, and the payment dates — or your official STR approval letter. No current STR? You can show income with a salary slip / EPF instead."
         },
         "str_recipient_mismatch": {
           "title": "Check your STR document",
@@ -2184,7 +2185,7 @@
           "birth_cert_mismatch": "The birth certificate doesn't link the named mother to the student — check by eye.",
           "father_patronymic_mismatch": "The IC name for {members} doesn't match the father's name in the student's own IC — check the relationship.",
           "guardianship_letter_missing": "Income shown is a guardian's, but no guardianship letter/order was uploaded. Request it.",
-          "str_not_current": "The STR is out of date (older year / not approved) — STR is annual, so it no longer proves current B40 need. Ask for this year's STR, or accept the salary route.",
+          "str_not_current": "The STR doesn't positively show it was approved and current — it may be an application record (SALINAN) with no status, an out-of-date STR, or one we couldn't confirm. Ask for the MySTR “Lulus” status (with name, IC, dates) or the approval letter; or accept the salary route.",
           "str_recipient_mismatch": "The STR recipient isn't the declared earner — the name/IC on the STR doesn't match the earner's IC. Confirm.",
           "income_unverified_needs_interview": "Income can't be document-verified (informal / no payslip) — confirm during the interview via household size, dependents and lifestyle. Do NOT block.",
           "income_per_capita_ok": "Per-capita income RM{amount} is below the B40 line (RM{ceiling}) — within the threshold.",

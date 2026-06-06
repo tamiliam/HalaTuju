@@ -319,23 +319,34 @@ def student_income_proof_check(doc):
 
 
 _STR_REJECTED_WORDS = ('tolak', 'tidak layak', 'gagal', 'reject')
+# Positive approval signals. 'lulus' also matches 'diLULUSkan'; 'layak' matches SARA's
+# 'Layak' (the rejecting 'tidak layak' is caught FIRST, above, so a bare 'layak' = approved).
+_STR_APPROVED_WORDS = ('lulus', 'layak', 'approve')
 _STR_YEAR_RE = re.compile(r'(20\d{2})')
 
 
 def _str_currency(status_raw, year_str, cohort_year):
-    """Whether an STR is CURRENT proof of B40. STR is annual/rolling, so a stale (older
-    than the cohort year) or rejected STR no longer proves need. Conservative — only
-    flags 'stale' when we can read a year that's clearly older, and 'rejected' on a clear
-    negative status; otherwise 'current' (don't over-flag varied portal screenshots)."""
+    """Whether an STR positively PROVES current B40. An STR only proves B40 when it shows it
+    was APPROVED ('Lulus' / 'Diluluskan' / SARA 'Layak') AND is for the current cycle. So:
+      'rejected'    — a clear negative status (Ditolak / Tidak Layak / Gagal);
+      'stale'       — a readable year older than the cohort year (STR is annual);
+      'current'     — an approval word AND a readable current/this-cohort year;
+      'unconfirmed' — everything else: a record with NO approval status (e.g. a SALINAN /
+                      application printout the applicant fills in), or an approval we can't
+                      tie to a current year. NOT proof — the student is asked for the MySTR
+                      'Lulus' status or the official approval letter.
+    Earlier this returned 'current' by default (benefit of the doubt), which wrongly accepted
+    unapproved application records as B40 proof."""
     s = (status_raw or '').lower()
     if any(w in s for w in _STR_REJECTED_WORDS):
         return 'rejected'
     m = _STR_YEAR_RE.search(year_str or '')
     if m and cohort_year and int(m.group(1)) < int(cohort_year):
         return 'stale'
-    if not s and not m:
-        return 'unknown'   # nothing read (no status, no year) — don't claim 'current'
-    return 'current'
+    approved = any(w in s for w in _STR_APPROVED_WORDS)
+    if approved and m:
+        return 'current'        # approved AND a readable (current/this-cohort) year
+    return 'unconfirmed'        # no approval signal, or approval without a confirmable year
 
 
 def student_str_check(doc):
@@ -710,7 +721,7 @@ def income_cluster_advice(application, member):
         # proof was uploaded, nudge to add the earner's IC so we can confirm the person.
         if str_doc is not None:
             sc = student_str_check(str_doc)
-            if sc and sc['current_status'] in ('stale', 'rejected'):
+            if sc and sc['current_status'] in ('stale', 'rejected', 'unconfirmed'):
                 return 'str_not_current'
         return 'income_ic_needed' if has_proof else ''
 
@@ -723,7 +734,7 @@ def income_cluster_advice(application, member):
             return 'unreadable'
     if str_doc is not None:
         sc = student_str_check(str_doc)
-        if sc and sc['current_status'] in ('stale', 'rejected'):
+        if sc and sc['current_status'] in ('stale', 'rejected', 'unconfirmed'):
             return 'str_not_current'
     # Coherence — every proof (payslip / EPF, and the STR recipient) must be the SAME
     # person as the earner's IC.

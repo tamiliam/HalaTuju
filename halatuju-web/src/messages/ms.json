@@ -910,7 +910,7 @@
           "income_ic_needed": "Anda telah memuat naik dokumen pendapatan untuk ahli keluarga ini, tetapi belum MyKad orang itu. IC diperlukan — sila tambahkannya untuk melengkapkan permohonan anda, supaya kami dapat mengesahkan dokumen pendapatan itu milik mereka.",
           "income_rel_doc_needed": "IC penerima pendapatan telah dimuat naik dan sepadan dengan dokumen pendapatan. Langkah terakhir yang diperlukan ialah dokumen yang menghubungkan mereka dengan anda — sijil kelahiran untuk ibu, atau surat penjagaan untuk penjaga. Sila muat naik untuk melengkapkan permohonan anda.",
           "income_rel_doc_unreadable": "Anda telah memuat naik sijil kelahiran (atau surat penjagaan), tetapi kami tidak dapat membaca nama padanya yang menghubungkan penerima pendapatan dengan anda — mungkin tidak jelas, atau dokumen yang salah. Sila pastikan ia gambar atau PDF yang jelas bagi dokumen sebenar dan muat naik semula untuk melengkapkan permohonan anda.",
-          "str_not_current": "STR dikeluarkan baharu setiap tahun, jadi kami perlukan STR tahun ini untuk menunjukkan keluarga anda layak sekarang. Muat naik STR semasa anda — tangkapan skrin portal MySTR “Semakan Status” yang menunjukkan “Lulus”, atau surat STR terkini. Tiada STR semasa? Anda boleh tunjukkan pendapatan keluarga dengan slip gaji / KWSP sebagai ganti.",
+          "str_not_current": "Kami tidak dapat mengesahkan STR ini menunjukkan ia telah diluluskan dan untuk tahun ini. Untuk membuktikan keluarga anda layak, muat naik STR yang menunjukkan kelulusan — tangkapan skrin MySTR “Semakan Status” yang menunjukkan nama ibu bapa anda, IC mereka, status “Lulus”, dan tarikh pembayaran; atau surat kelulusan STR rasmi anda. Tiada STR semasa? Anda boleh tunjukkan pendapatan keluarga dengan slip gaji / KWSP sebagai ganti.",
           "generic": "Ada sesuatu yang tidak kena dengan muat naik ini. Semak semula, kemudian cuba muat naik lagi."
         }
       },
@@ -1100,7 +1100,8 @@
         "current": "Terkini",
         "stale": "Lapuk — perlukan STR tahun ini",
         "rejected": "Tidak diluluskan",
-        "unknown": "Belum dibaca"
+        "unknown": "Belum dibaca",
+        "unconfirmed": "Kelulusan tidak ditunjukkan"
       },
       "slipCheck": {
         "name": "Nama",
@@ -1437,8 +1438,8 @@
           "desc": "Nama pada KP tidak sepadan dengan nama bapa anda seperti ditunjukkan dalam KP anda sendiri — sila pastikan anda memuat naik yang betul."
         },
         "str_not_current": {
-          "title": "Muat naik STR tahun ini",
-          "desc": "STR diberikan baharu setiap tahun, jadi kami perlukan STR semasa anda untuk menunjukkan keluarga anda layak sekarang. Muat naik tangkapan skrin MySTR \"Semakan Status\" terkini yang menunjukkan \"Lulus\", atau surat STR terkini anda. Tiada STR semasa? Anda boleh tunjukkan pendapatan dengan slip gaji / KWSP."
+          "title": "Tunjukkan STR anda diluluskan",
+          "desc": "Kami tidak dapat mengesahkan STR anda telah diluluskan dan semasa. Muat naik tangkapan skrin MySTR “Semakan Status” yang menunjukkan nama ibu bapa anda, IC mereka, status “Lulus”, dan tarikh pembayaran — atau surat kelulusan STR rasmi anda. Tiada STR semasa? Anda boleh tunjukkan pendapatan dengan slip gaji / KWSP sebagai ganti."
         },
         "str_recipient_mismatch": {
           "title": "Semak dokumen STR anda",
@@ -2184,7 +2185,7 @@
           "birth_cert_mismatch": "Sijil kelahiran tidak mengaitkan nama ibu dengan pelajar — semak dengan mata.",
           "father_patronymic_mismatch": "Nama pada KP untuk {members} tidak sepadan dengan nama bapa dalam KP pelajar sendiri — semak hubungan.",
           "guardianship_letter_missing": "Pendapatan yang ditunjukkan ialah penjaga, tetapi tiada surat/perintah penjagaan dimuat naik. Minta surat itu.",
-          "str_not_current": "STR sudah lapuk (tahun lama / tidak diluluskan) — STR adalah tahunan, jadi ia tidak lagi membuktikan keperluan B40 semasa. Minta STR tahun ini, atau terima laluan gaji.",
+          "str_not_current": "STR tidak menunjukkan dengan jelas bahawa ia telah diluluskan dan semasa — mungkin rekod permohonan (SALINAN) tanpa status, STR lapuk, atau yang tidak dapat disahkan. Minta status “Lulus” MySTR (dengan nama, IC, tarikh) atau surat kelulusan; atau terima laluan gaji.",
           "str_recipient_mismatch": "Penerima STR bukan pencari nafkah yang diisytiharkan — nama/KP pada STR tidak sepadan dengan KP pencari nafkah. Sahkan.",
           "income_unverified_needs_interview": "Pendapatan tidak dapat disahkan melalui dokumen (tidak formal / tiada slip gaji) — sahkan semasa temu duga melalui saiz isi rumah, tanggungan dan gaya hidup. JANGAN sekat.",
           "income_per_capita_ok": "Pendapatan per kapita RM{amount} di bawah garis B40 (RM{ceiling}) — dalam ambang.",

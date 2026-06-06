@@ -117,7 +117,11 @@ class TestMappingExclusions(_Base):
             vision_run_at=timezone.now())
         _add_ic(self.app, error='Vision API down')                       # ic_service_down
         _add_doc(self.app, 'results_slip', student_verdict='ok', name_match='found')  # grades_unverified
-        _add_doc(self.app, 'str', name_match='not_found')                # str_present_unverified
+        # An APPROVED + current STR (so it's NOT str_not_current) whose recipient we couldn't
+        # read → the non-ticketable 'str_present_unverified'. A bare STR with no status now
+        # correctly yields the ticketable 'str_not_current', so give it Lulus + year here.
+        _add_doc(self.app, 'str', name_match='not_found',
+                 fields={'status': 'diluluskan', 'year': '2026'})        # str_present_unverified
         self.assertEqual(sync_resolution_items(self.app), [])
 
 
