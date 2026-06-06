@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **IC numbers now display in the canonical `XXXXXX-XX-XXXX` format everywhere they're shown.** The student
+  document checklists (identity IC, income earner IC, income proof, STR recipient) and the officer review cockpit
+  (header NRIC, the NRIC verify‑checklist row, and the Vision‑extracted lines on the identity + parent IC drawers)
+  were rendering the raw OCR/stored digit string; they now pass it through the existing shared `formatNric()`
+  (display‑only, idempotent) so every IC reads the same way. No data is mutated; the profile's privacy masking
+  (`maskIc`) and the consent NRIC‑match validation are untouched, and the admin students list/detail pages already
+  formatted correctly so were left as‑is. No migration; 262 jest + next build clean.
 - **Income earner IC now shows whether it MATCHES the income document (the point of uploading it), and Gopal guides
   IC → birth certificate.** On the student's income cluster (e.g. an STR in the mother's name), the earner‑IC card used
   to show source labels ("from your IC") and a relationship‑pending name ("We'll review this"). It now cross‑checks the

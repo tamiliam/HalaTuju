@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
-import { formatPhone, formatAddress, isValidPhone } from '@/lib/scholarship'
+import { formatPhone, formatAddress, isValidPhone, formatNric } from '@/lib/scholarship'
 import {
   getScholarshipApplication,
   generateSponsorProfile,
@@ -409,7 +409,7 @@ export default function AdminScholarshipDetailPage() {
           )}
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
-          <span>NRIC <span className="font-mono text-gray-700">{app.nric || '—'}</span></span>
+          <span>NRIC <span className="font-mono text-gray-700">{formatNric(app.nric || '') || '—'}</span></span>
           {app.merit_score != null && (
             <span>{t('admin.scholarship.meritScore')} <span className="font-semibold text-gray-800">{app.merit_score}</span></span>
           )}
@@ -1118,7 +1118,7 @@ export default function AdminScholarshipDetailPage() {
                     onChange={(e) => setChecklist((c) => ({ ...c, [key]: e.target.checked }))} />
                   <span>
                     {t(`admin.scholarship.check_${key}`)}
-                    {key === 'nric' && <span className="ml-1 font-mono text-gray-500">{app.nric || '—'}</span>}
+                    {key === 'nric' && <span className="ml-1 font-mono text-gray-500">{formatNric(app.nric || '') || '—'}</span>}
                     {key === 'name' && <span className="ml-1 text-gray-500">{app.name || '—'}</span>}
                   </span>
                 </label>
@@ -1174,7 +1174,7 @@ export default function AdminScholarshipDetailPage() {
               </div>
               {(ic.vision_nric || ic.vision_name) && (
                 <p className="text-xs text-gray-500 font-mono break-words">
-                  {t('admin.scholarship.visionExtracted')}: {ic.vision_nric || '—'} · {ic.vision_name || '—'}
+                  {t('admin.scholarship.visionExtracted')}: {formatNric(ic.vision_nric || '') || '—'} · {ic.vision_name || '—'}
                 </p>
               )}
               {ic.vision_address && (
@@ -1220,7 +1220,7 @@ export default function AdminScholarshipDetailPage() {
               </div>
               {(pic.vision_nric || pic.vision_name) && (
                 <p className="text-xs text-gray-500 font-mono break-words">
-                  {t('admin.scholarship.visionExtracted')}: {pic.vision_nric || '—'} · {pic.vision_name || '—'}
+                  {t('admin.scholarship.visionExtracted')}: {formatNric(pic.vision_nric || '') || '—'} · {pic.vision_name || '—'}
                 </p>
               )}
               {pic.vision_address && (

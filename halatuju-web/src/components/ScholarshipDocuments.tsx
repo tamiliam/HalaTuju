@@ -16,6 +16,7 @@ import {
 import {
   INCOME_PROOF_TYPES,
   formatFileSize,
+  formatNric,
 } from '@/lib/scholarship'
 import {
   incomeRequirements,
@@ -165,7 +166,7 @@ function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => s
 
   return (
     <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
-      {row(t('scholarship.docs.icCheck.icNo'), doc.vision_nric, badge(icVerdictKind(doc.vision_nric_verdict)))}
+      {row(t('scholarship.docs.icCheck.icNo'), formatNric(doc.vision_nric || ''), badge(icVerdictKind(doc.vision_nric_verdict)))}
       {row(t('scholarship.docs.icCheck.name'), doc.vision_name, badge(icVerdictKind(doc.vision_name_verdict)))}
       {doc.vision_address
         ? row(
@@ -231,7 +232,7 @@ function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string
 
   return (
     <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
-      {chk.nric ? row(t('scholarship.docs.icCheck.icNo'), chk.nric, matchTag(chk.proof_nric_status)) : null}
+      {chk.nric ? row(t('scholarship.docs.icCheck.icNo'), formatNric(chk.nric), matchTag(chk.proof_nric_status)) : null}
       {row(t('scholarship.docs.icCheck.name'), chk.name, matchTag(chk.proof_name_status))}
       {chk.address ? row(t('scholarship.docs.icCheck.address'), chk.address, neutralTag) : null}
     </div>
@@ -288,7 +289,7 @@ function IncomeProofChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: str
   return (
     <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
       {row(t('scholarship.docs.incomeProofCheck.name'), chk.name, vsIc(chk.name_status))}
-      {chk.nric ? row(t('scholarship.docs.incomeProofCheck.icNo'), chk.nric, vsIc(chk.nric_status)) : null}
+      {chk.nric ? row(t('scholarship.docs.incomeProofCheck.icNo'), formatNric(chk.nric), vsIc(chk.nric_status)) : null}
       {chk.points.map((p) => (
         <div key={p.key}>{row(t(`scholarship.docs.incomeProofCheck.${p.key}`), p.value, fromDoc)}</div>
       ))}
@@ -390,7 +391,7 @@ function StrChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => 
   return (
     <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
       {row(t('scholarship.docs.strCheck.recipient'), chk.name, vsIc(chk.name_status))}
-      {chk.nric ? row(t('scholarship.docs.strCheck.icNo'), chk.nric, vsIc(chk.nric_status)) : null}
+      {chk.nric ? row(t('scholarship.docs.strCheck.icNo'), formatNric(chk.nric), vsIc(chk.nric_status)) : null}
       {row(t('scholarship.docs.strCheck.statusYear'),
            [chk.status, chk.year].filter(Boolean).join(' · '), currentPill)}
       {chk.amount ? row(t('scholarship.docs.strCheck.amount'), chk.amount, fromDoc) : null}
