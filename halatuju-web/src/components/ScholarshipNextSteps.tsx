@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
-import { updateScholarshipDetails, confirmScholarshipApplication, getScholarshipApplication, type ScholarshipApplication } from '@/lib/api'
+import { updateScholarshipDetails, confirmScholarshipApplication, getScholarshipApplication, type ScholarshipApplication, type StudentProfile } from '@/lib/api'
 import {
   applicationToDetailsForm,
   buildDetailsPayload,
@@ -14,6 +14,7 @@ import {
 } from '@/lib/scholarship'
 import ScholarshipDocuments from '@/components/ScholarshipDocuments'
 import ScholarshipConsent from '@/components/ScholarshipConsent'
+import ScholarshipReview from '@/components/ScholarshipReview'
 import ActionCentre from '@/components/ActionCentre'
 import InfoBox from '@/components/InfoBox'
 import FieldLabel from '@/components/FieldLabel'
@@ -68,6 +69,7 @@ function StepIcon({ step, active }: { step: NextStepKey; active: boolean }) {
     funding: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
     documents: 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z',
     consent: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+    review: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
   }
   return (
     <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
@@ -94,10 +96,12 @@ export default function ScholarshipNextSteps({
   initialApp,
   token,
   studentName,
+  profile,
 }: {
   initialApp: ScholarshipApplication
   token: string | null
   studentName?: string
+  profile?: StudentProfile | null
 }) {
   const { t, locale } = useT()
   const [app, setApp] = useState<ScholarshipApplication>(initialApp)
@@ -172,6 +176,7 @@ export default function ScholarshipNextSteps({
   }
 
   const c = app.completeness
+  const confirmed = app.status !== 'shortlisted'  // profile_complete or further along
   const tabIndex = NEXT_STEP_ORDER.indexOf(tab)
 
   // Completeness mapping — every step now has a backend signal (S5).
@@ -183,6 +188,16 @@ export default function ScholarshipNextSteps({
     funding: c.funding_done,
     documents: c.documents_done,
     consent: c.consent_done,
+    review: confirmed,   // ticked once submitted
+  }
+
+  // Jump to a step's tab and scroll its card into view — used by the review page's
+  // per-section Edit links (and Back).
+  const goToStep = (k: NextStepKey) => {
+    setTab(k)
+    setTimeout(() => {
+      document.getElementById('next-steps-active')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 50)
   }
 
   // The shared save feedback — rendered inside whichever tab has the Save button.
@@ -572,9 +587,25 @@ export default function ScholarshipNextSteps({
         <ScholarshipConsent token={token} locale={locale} onChange={refreshApp} />
       </div>
     ),
-  }
 
-  const confirmed = app.status !== 'shortlisted'  // profile_complete or further along
+    // The final read-back. Submit here is the ONLY commit (lock-at-Continue).
+    review: (
+      <ScholarshipReview
+        app={app}
+        profile={profile ?? null}
+        token={token}
+        onEdit={goToStep}
+        onBack={() => goToStep('consent')}
+        onSubmit={handleConfirm}
+        submitting={confirming}
+        submitError={confirmError}
+        canSubmit={c.complete}
+        confirmed={confirmed}
+        t={t}
+        lang={locale}
+      />
+    ),
+  }
 
   return (
     <div>
@@ -604,18 +635,17 @@ export default function ScholarshipNextSteps({
             <p className="text-sm text-gray-700 mt-1">
               {confirmed ? t('scholarship.nextSteps.confirmedIntro') : t('scholarship.nextSteps.allSetIntro')}
             </p>
-            {/* The explicit "I'm done" action — only before confirming. */}
+            {/* The commit now lives on the Review step ("lock at Continue"): this
+                button takes the student to the final read-back, where they submit. */}
             {!confirmed && (
               <div className="mt-3">
                 <button
                   type="button"
-                  onClick={handleConfirm}
-                  disabled={confirming}
-                  className="btn-primary disabled:opacity-50"
+                  onClick={() => goToStep('review')}
+                  className="btn-primary"
                 >
-                  {confirming ? t('scholarship.nextSteps.confirming') : t('scholarship.nextSteps.confirmCta')}
+                  {t('scholarship.nextSteps.reviewCta')}
                 </button>
-                {confirmError && <p className="text-red-600 text-sm mt-2">{confirmError}</p>}
               </div>
             )}
           </>
