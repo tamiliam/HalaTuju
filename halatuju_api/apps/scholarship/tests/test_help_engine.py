@@ -271,8 +271,26 @@ class TestGuardrails(TestCase):
         self.assertIn('Cikgu Gopal', p)
 
     def test_engine_signature_is_structurally_firewalled(self):
-        """The engine can ONLY be passed doc_type/verdict/first_name/target_language —
+        """The engine can ONLY be passed doc_type/verdict/first_name/target_language/context —
         there is no parameter through which an application, profile, sponsor profile,
-        interview or score could reach it. The firewall is structural, not prompt-trust."""
+        interview or score could reach it. ``context`` is a flat dict of NON-sensitive
+        household specifics (member + document labels) — never a model object. The firewall
+        is structural, not prompt-trust."""
         params = set(inspect.signature(help_engine.generate_document_help).parameters)
-        self.assertEqual(params, {'doc_type', 'verdict', 'first_name', 'target_language'})
+        self.assertEqual(params, {'doc_type', 'verdict', 'first_name', 'target_language', 'context'})
+
+    def test_specifics_block_names_the_right_member_and_document(self):
+        # The cluster coach supplies non-sensitive specifics so the message names the actual
+        # earner + document (e.g. the mother's STR), not the generic father/payslip example.
+        p = help_engine._build_help_prompt(
+            'income_cluster', 'income_ic_needed', 'Elan', 'English',
+            context={'member': 'mother', 'income_doc': 'STR document', 'rel_doc': ''})
+        self.assertIn('SPECIFICS', p)
+        self.assertIn('mother', p)
+        self.assertIn('STR document', p)
+        # No context → no specifics block (existing per-document coaches are unaffected).
+        self.assertNotIn('SPECIFICS', help_engine._build_help_prompt('ic', 'nric_mismatch', 'Siti', 'English'))
+
+    def test_rel_doc_needed_is_a_known_verdict(self):
+        self.assertIn('income_rel_doc_needed', help_engine.VERDICT_GUIDANCE)
+        self.assertIn('income_rel_doc_needed', help_engine.VERDICT_FIX_HINT)

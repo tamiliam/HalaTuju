@@ -907,7 +907,8 @@
           "offer_pathway_mismatch": "Kolej atau program pada surat tawaran ini berbeza daripada pilihan pengajian yang anda masukkan sebelum ini. Ini tidak menyekat apa-apa — jika tawaran ini hala tuju sebenar anda, biarkan sahaja; semasa anda menghantar, kami akan minta anda mengesahkannya dan mengemas kini rekod anda.",
           "income_relationship_mismatch": "Nama pada IC ini tidak berkait dengan keluarga anda seperti yang dijangka (untuk ibu bapa atau adik-beradik, kami cari nama bapa anda daripada IC anda sendiri; untuk ibu, sijil kelahiran anda). Biasanya kad orang lain dimuat naik di sini, atau gambar kurang jelas. Semak anda muat naik MyKad orang yang betul di slot ini, dengan gambar yang jelas.",
           "income_proof_person_mismatch": "Slip gaji / KWSP ini bukan untuk orang yang sama dengan IC yang anda muat naik bagi ahli keluarga itu (nama atau nombor IC berbeza). Pastikan dokumen pendapatan dan IC orang itu adalah untuk orang yang sama — contohnya slip gaji bapa dengan IC bapa — dan muat naik semula fail yang betul jika tersilap.",
-          "income_ic_needed": "Anda telah memuat naik dokumen pendapatan untuk ahli keluarga ini tetapi belum IC mereka. Tambah MyKad orang itu juga (contohnya IC bapa bersama slip gajinya) supaya kami dapat mengesahkan dokumen pendapatan itu milik mereka.",
+          "income_ic_needed": "Anda telah memuat naik dokumen pendapatan untuk ahli keluarga ini, tetapi belum MyKad orang itu. IC diperlukan — sila tambahkannya untuk melengkapkan permohonan anda, supaya kami dapat mengesahkan dokumen pendapatan itu milik mereka.",
+          "income_rel_doc_needed": "IC penerima pendapatan telah dimuat naik dan sepadan dengan dokumen pendapatan. Langkah terakhir yang diperlukan ialah dokumen yang menghubungkan mereka dengan anda — sijil kelahiran untuk ibu, atau surat penjagaan untuk penjaga. Sila muat naik untuk melengkapkan permohonan anda.",
           "str_not_current": "STR dikeluarkan baharu setiap tahun, jadi kami perlukan STR tahun ini untuk menunjukkan keluarga anda layak sekarang. Muat naik STR semasa anda — tangkapan skrin portal MySTR “Semakan Status” yang menunjukkan “Lulus”, atau surat STR terkini. Tiada STR semasa? Anda boleh tunjukkan pendapatan keluarga dengan slip gaji / KWSP sebagai ganti.",
           "generic": "Ada sesuatu yang tidak kena dengan muat naik ini. Semak semula, kemudian cuba muat naik lagi."
         }
@@ -1050,12 +1051,15 @@
         "partial": "Sepadan sebahagian",
         "mismatch": "Tidak sepadan — semak semula",
         "unreadable": "Tidak dapat dibaca",
-        "none": "Belum dibaca"
+        "none": "Belum dibaca",
+        "fromTheirIc": "daripada IC mereka"
       },
       "incomeIcCheck": {
         "linked": "Berkait dengan keluarga anda",
         "nameMismatch": "Nama tidak sepadan — semak semula",
-        "reviewing": "Kami akan semak ini"
+        "reviewing": "Kami akan semak ini",
+        "matchesProof": "Sepadan dengan {doc}",
+        "proofMismatch": "Tidak sepadan dengan {doc}"
       },
       "incomeProofCheck": {
         "name": "Nama",

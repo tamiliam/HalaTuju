@@ -510,8 +510,23 @@ class IncomeClusterHelpView(APIView):
         from .profile_engine import _resolve_language
         language = _resolve_language(app, request.query_params.get('lang'))
         first_name = (getattr(getattr(app, 'profile', None), 'name', '') or '').strip().split(' ')[0]
+        # Non-sensitive specifics so the coach names the RIGHT member + document (e.g. "your
+        # mother's MyKad alongside her STR document"), not the generic father/payslip example.
+        from .income_engine import _cluster_proof_identity, relationship_doc_for
+        _MEMBER_LABEL = {'father': 'father', 'mother': 'mother', 'guardian': 'legal guardian',
+                         'brother': 'elder brother', 'sister': 'elder sister'}
+        _DOC_LABEL = {'str': 'STR document', 'salary_slip': 'salary slip', 'epf': 'EPF statement',
+                      'birth_certificate': 'birth certificate', 'guardianship_letter': 'guardianship letter'}
+        proof_kind, _pn, _pi = _cluster_proof_identity(app, member)
+        rel_doc = relationship_doc_for(member)
+        context = {
+            'member': _MEMBER_LABEL.get(member, member),
+            'income_doc': _DOC_LABEL.get(proof_kind, ''),
+            'rel_doc': _DOC_LABEL.get(rel_doc, '') if verdict == 'income_rel_doc_needed' else '',
+        }
         result = help_engine.generate_document_help(
             'income_cluster', verdict, first_name=first_name, target_language=language,
+            context=context,
         )
         result['verdict'] = verdict
         return Response(result)
