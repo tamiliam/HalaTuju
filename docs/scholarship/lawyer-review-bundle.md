@@ -111,8 +111,9 @@ the student.
 
 ## 5. The sponsor journey & onboarding (where the donor agrees to everything)
 
-A sponsor self-registers and then completes a short **onboarding** that **auto-approves** them on completion (no manual
-gatekeeping). The onboarding is deliberately built so the donor **demonstrates understanding** before they can give:
+A sponsor self-registers and then completes a short **onboarding** *(in build — see §8)* that **auto-approves** them on
+completion (no manual gatekeeping). The onboarding is deliberately designed so the donor **demonstrates understanding**
+before they can give:
 
 1. **Sign up** (email + password or Google) — email confirmed.
 2. **Quick declarations** — 18+, lawful own funds, individual or organisation *(Appendix A §D)*.
@@ -122,8 +123,7 @@ gatekeeping). The onboarding is deliberately built so the donor **demonstrates u
 6. **Auto-approved** — they may now donate and fund students.
 
 Every acknowledgement, quiz answer, and the signature are **stored with the version and a timestamp** as an audit trail
-of informed consent. The full wording is in **Appendix A**. *(In the onboarding flow the quick declarations come early,
-as step 2; in Appendix A they are placed last, as §D, after the three "understanding" gates — the content is the same.)*
+of informed consent. The full wording is in **Appendix A**.
 
 ---
 
@@ -201,8 +201,9 @@ The real-money and disbursement parts are deliberately **last**, and gated on yo
 # Appendix A — Sponsor onboarding content (the donor's words)
 
 > The full disclosures, comprehension quiz, donor agreement, and quick declarations, exactly as the sponsor sees them.
-> *(The three "understanding" gates — disclosures §A, quiz §B, agreement §C — are grouped first; the lighter quick
-> declarations §D come early in the actual flow, as noted in §5.)*
+> *(Order note: the three "understanding" gates — disclosures §A, quiz §B, agreement §C — are grouped first here; the
+> lighter quick declarations §D actually come earlier in the onboarding flow, at step 2 (see §5). Only the order of
+> presentation differs; the content is identical.)*
 
 ## §A — The seven disclosure cards
 
