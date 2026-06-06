@@ -147,7 +147,38 @@ export default function ScholarshipConsent({
   }
 
   if (hasActive) {
-    return <p className="text-green-700 text-sm">{t('scholarship.consent.given')}</p>
+    // Consent is final once given — there is deliberately no toggle or button here.
+    // But the student/guardian should still be able to SEE exactly what they agreed
+    // to, so we show the same consent text read-only, plus who gave it and when.
+    const active = status?.consents?.find((c) => c.is_active)
+    const localeTag = ({ en: 'en-GB', ms: 'ms-MY', ta: 'ta-IN' } as Record<string, string>)[locale] || 'en-GB'
+    const grantedAt = active?.granted_at
+      ? new Date(active.granted_at).toLocaleDateString(localeTag, { day: 'numeric', month: 'long', year: 'numeric' })
+      : ''
+    const byGuardian = active?.granted_by === 'guardian'
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-green-700">
+          <span aria-hidden>✓</span>
+          <span>{t('scholarship.consent.given')}</span>
+        </div>
+
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+          {t('scholarship.consent.givenHeading')}
+        </p>
+        <div className="bg-gray-50 border rounded-lg p-3 text-sm text-gray-700 max-h-48 overflow-y-auto whitespace-pre-line">
+          {renderRich(consentBody)}
+        </div>
+
+        {grantedAt && (
+          <p className="text-xs text-gray-500">
+            {byGuardian && active?.guardian_name
+              ? t('scholarship.consent.givenMetaGuardian', { name: active.guardian_name, date: grantedAt })
+              : t('scholarship.consent.givenMetaSelf', { date: grantedAt })}
+          </p>
+        )}
+      </div>
+    )
   }
 
   // Consent is the FINAL step: the backend returns every unmet precondition
