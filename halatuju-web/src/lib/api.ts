@@ -1204,8 +1204,10 @@ export interface StrCheck {
   member: string
   name_status: 'match' | 'mismatch' | 'no_ref'
   nric_status: 'match' | 'mismatch' | 'no_ref'
-  // 'current' | 'stale' (older year) | 'rejected' (status not approved) | 'unknown' (nothing read)
-  current_status: 'current' | 'stale' | 'rejected' | 'unknown'
+  // 'current' = approved (Lulus/Diluluskan/Layak) AND a current year; 'stale' = older year;
+  // 'rejected' = a clear negative status; 'unconfirmed' = no approval shown (e.g. a SALINAN
+  // application record) or approval we can't tie to a current year — not proof on its own.
+  current_status: 'current' | 'stale' | 'rejected' | 'unconfirmed' | 'unknown'
   ic_present: boolean
 }
 

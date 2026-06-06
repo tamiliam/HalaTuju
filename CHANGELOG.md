@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **An STR now only counts as B40 proof when it shows it was APPROVED and current — a self‑filled application record
+  (SALINAN) no longer auto‑passes.** Previously the STR currency check was "valid unless clearly rejected", so a status‑less
+  SALINAN/printout (which any applicant can generate) was given the benefit of the doubt and marked `current` → income
+  verified. It now requires a positive approval signal (`Lulus` / `Diluluskan` / SARA `Layak`) **and** a readable current
+  year; anything else — no approval shown, or approval we can't tie to a current year — is a new **`unconfirmed`** state.
+  An `unconfirmed` STR no longer verifies income: Check‑1 raises the `str_not_current` caveat and Cikgu Gopal asks the
+  student to upload proof of approval — *"a MySTR 'Semakan Status' screenshot showing your parent's name, their IC, the
+  status 'Lulus', and the payment dates; or your official STR approval letter"* (or switch to the salary route). The STR
+  document chip shows an amber "Approval not shown" instead of a green "Current". The consent gate is unchanged
+  (presence‑based, by design) — the student can still submit, but the caveat now travels with the application for the
+  officer/reviewer. No migration; 766 scholarship pytest + 267 jest + build clean; i18n parity 2026.
+
 ### Fixed
 - **Birth certificate no longer warns about the (always‑absent) child IC number.** A Malaysian birth certificate
   carries no "No. Kad Pengenalan" for the child — they're issued one later — yet the field‑extraction prompt asks Gemini

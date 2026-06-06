@@ -76,7 +76,7 @@ VERDICT_GUIDANCE = {
     'income_rel_doc_unreadable': "the document that should link the earner to the student (a birth certificate for a mother, or a guardianship letter for a guardian) has been uploaded, but we could not read the names on it that prove the link — either the photo was unclear or it was the wrong document — so it must be re-uploaded as a clear copy of the correct document before the application can be completed",
     # The STR document is for an older year, or its status is not 'approved' — STR is
     # awarded annually, so an out-of-date STR no longer proves the family's current need.
-    'str_not_current': "the STR document is for an earlier year or its status is not approved, and STR is awarded annually — so this one no longer proves the family's CURRENT financial need",
+    'str_not_current': "the STR uploaded does not positively show it was APPROVED and current — it may be an application record/printout (a SALINAN) with no approval status, an out-of-date STR, or one whose status couldn't be read; an STR only proves B40 when it shows 'Lulus'/'Diluluskan'/'Layak' for the current year",
 }
 
 # Per-verdict fix advice. Most verdicts just need a re-upload; a NAME mismatch is
@@ -186,12 +186,16 @@ VERDICT_FIX_HINT = {
         'SPECIFICS give.'
     ),
     'str_not_current': (
-        'Gently explain that STR is given out fresh each year, so we need the CURRENT year\'s '
-        'STR to show the family qualifies now. Kindly ask them to upload this year\'s STR — a '
-        'recent screenshot of the MySTR "Semakan Status" portal showing "Lulus", or the latest '
-        'STR letter. If they do not have a current STR, reassure them it is fine: they can '
-        'instead show the family\'s income with a salary slip / EPF (the other route). Do NOT '
-        'imply they did anything wrong.'
+        'We could not confirm this STR was APPROVED and is for the current year — it may be an '
+        'STR application record / printout (a "SALINAN") that shows no approval status, an '
+        'out-of-date STR, or one whose status we could not read. Gently explain that an STR '
+        'only proves the family qualifies when it shows it was approved ("Lulus" / "Diluluskan" '
+        '/ "Layak") for this year. Kindly ask them to upload the STR that SHOWS this — a '
+        'screenshot of the MySTR "Semakan Status" portal showing their parent\'s name, the '
+        'parent\'s IC, the status "Lulus", and the payment dates; OR the official STR approval '
+        'letter. If they have no current STR, reassure them it is fine: they can instead show '
+        'the family\'s income with a salary slip / EPF (the other route). Nothing is rejected '
+        'and a person will review — do NOT imply they did anything wrong.'
     ),
 }
 

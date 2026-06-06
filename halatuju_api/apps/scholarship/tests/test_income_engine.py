@@ -13,12 +13,23 @@ from apps.scholarship.income_engine import (
 
 
 class TestStrCurrency(SimpleTestCase):
-    def test_unread_str_is_unknown_not_current(self):
-        # No status AND no readable year → 'unknown' (an unread STR must NOT badge Current/Verified).
-        self.assertEqual(_str_currency('', '', 2026), 'unknown')
+    def test_unread_str_is_unconfirmed(self):
+        # No status AND no readable year → 'unconfirmed' (no approval shown → NOT proof).
+        self.assertEqual(_str_currency('', '', 2026), 'unconfirmed')
+
+    def test_salinan_record_no_status_is_unconfirmed(self):
+        # The STR "SALINAN" application printout has a year but NO approval status — it is an
+        # applicant-filled record, not proof it was approved. Must NOT badge Current/Verified.
+        self.assertEqual(_str_currency('', '2026', 2026), 'unconfirmed')
 
     def test_approved_current_year_is_current(self):
         self.assertEqual(_str_currency('diluluskan', '2026', 2026), 'current')
+
+    def test_portal_lulus_is_current(self):
+        self.assertEqual(_str_currency('Lulus', '2026', 2026), 'current')
+
+    def test_sara_layak_is_current(self):
+        self.assertEqual(_str_currency('Layak', '2026', 2026), 'current')
 
     def test_older_year_is_stale(self):
         self.assertEqual(_str_currency('diluluskan', '2024', 2026), 'stale')
@@ -26,9 +37,14 @@ class TestStrCurrency(SimpleTestCase):
     def test_rejected_status(self):
         self.assertEqual(_str_currency('permohonan ditolak', '2026', 2026), 'rejected')
 
-    def test_status_present_but_no_year_is_current(self):
-        # A real screenshot with an approved status but no parseable year stays 'current'.
-        self.assertEqual(_str_currency('diluluskan', '', 2026), 'current')
+    def test_tidak_layak_is_rejected_not_approved(self):
+        # 'layak' is an approval word, but 'tidak layak' (not eligible) is a REJECTION — the
+        # rejection check runs first, so this must be 'rejected', never 'current'.
+        self.assertEqual(_str_currency('Tidak Layak', '2026', 2026), 'rejected')
+
+    def test_approved_but_no_year_is_unconfirmed(self):
+        # Approved status but no readable year → we can't confirm it's the CURRENT cycle.
+        self.assertEqual(_str_currency('diluluskan', '', 2026), 'unconfirmed')
 
 
 class TestFatherNameFromIc(SimpleTestCase):

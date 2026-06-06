@@ -316,7 +316,7 @@ def _verdict_income(application):
     str_verified = False
     if str_doc is None:
         gap.append(_item('income_proof_missing'))
-    elif sc and sc['current_status'] in ('stale', 'rejected'):
+    elif sc and sc['current_status'] in ('stale', 'rejected', 'unconfirmed'):
         review.append(_item('str_not_current', status=sc['current_status']))
     elif sc and 'mismatch' in (sc['name_status'], sc['nric_status']):
         review.append(_item('str_recipient_mismatch', members=[earner]))

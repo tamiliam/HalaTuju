@@ -266,6 +266,19 @@ class TestIncome(_Base):
         self.assertIn('relationship_confirmed', _codes(f['evidence']))
         self.assertIn('earner_ic_present', _codes(f['evidence']))
 
+    def test_str_salinan_without_approval_is_review_not_verified(self):
+        # A SALINAN / application record: recipient + current year read, but NO approval
+        # status ('Lulus'/'Diluluskan'). It is NOT proof the STR was granted, so income must
+        # NOT go verified — it raises the str_not_current caveat for a current STR showing Lulus.
+        self._wizard(route='str', earner='father')
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
+        _add_doc(self.app, 'str', student_verdict='ok',
+                 fields={'recipient_name': 'MURUGAN A/L KESAVAN', 'year': '2026'})   # no status
+        f = _facts(self.app)['income']
+        self.assertEqual(f['status'], 'review')
+        self.assertIn('str_not_current', _codes(f['unresolved']))
+        self.assertNotIn('str_verified', _codes(f['evidence']))
+
     def test_str_stale_year_is_review(self):
         self._wizard(route='str', earner='father')
         _parent_ic(self.app, 'MURUGAN A/L KESAVAN')
