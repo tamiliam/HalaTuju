@@ -840,7 +840,7 @@
         "noteHelper": "Contohnya, bagaimana anda merancang untuk membiayai pengajian anda, atau bagaimana anda akan mengurus jika bantuan ini tidak diterima."
       },
       "allSetTitle": "Semuanya selesai!",
-      "allSetIntro": "Anda telah melengkapkan setiap langkah. Tekan butang di bawah untuk menghantar permohonan anda untuk semakan.",
+      "allSetIntro": "Anda telah melengkapkan setiap langkah. Klik di bawah untuk menyemak semuanya sekali lagi, kemudian hantar permohonan muktamad anda.",
       "confirmCta": "Sahkan & hantar permohonan saya",
       "confirming": "Menghantar…",
       "confirmError": "Tidak dapat menghantar. Sila cuba lagi.",
@@ -1474,7 +1474,7 @@
       }
     },
     "summary": {
-      "subtitle": "Lihat sekali lagi — pastikan semuanya betul sebelum anda hantar.",
+      "subtitle": "Lihat sekali lagi — pastikan semuanya betul, kemudian tatal ke bawah dan hantar.",
       "locked": "Dikunci",
       "edit": "Sunting",
       "uploaded": "✓ Dimuat naik",
