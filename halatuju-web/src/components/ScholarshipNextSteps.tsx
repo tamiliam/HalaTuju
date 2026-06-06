@@ -722,13 +722,18 @@ export default function ScholarshipNextSteps({
             {t('scholarship.nextSteps.stepOf', { n: String(tabIndex + 1) })} · {t(`scholarship.nextSteps.tab.${tab}`)}
           </p>
 
-          {/* Active section card */}
-          <div id="next-steps-active" className="bg-white border rounded-2xl p-5 shadow-sm scroll-mt-6">
-            <h2 className="font-semibold text-gray-900 mb-4">
-              {tabIndex + 1}. {t(`scholarship.nextSteps.tab.${tab}`)}
-            </h2>
-            {sections[tab]}
-          </div>
+          {/* Active section card. The review step renders its own titled cards on the page
+              background (no white wrapper) so they aren't white-on-white. */}
+          {tab === 'review' ? (
+            <div id="next-steps-active" className="scroll-mt-6">{sections.review}</div>
+          ) : (
+            <div id="next-steps-active" className="bg-white border rounded-2xl p-5 shadow-sm scroll-mt-6">
+              <h2 className="font-semibold text-gray-900 mb-4">
+                {tabIndex + 1}. {t(`scholarship.nextSteps.tab.${tab}`)}
+              </h2>
+              {sections[tab]}
+            </div>
+          )}
         </div>
       </div>
 
