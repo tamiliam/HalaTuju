@@ -745,10 +745,15 @@ def income_cluster_advice(application, member):
         if rel_obj is None:
             return 'income_rel_doc_needed'             # not uploaded yet → nudge for it
         # Uploaded, but we still can't confirm the link. A name CLASH already returned
-        # 'income_relationship_mismatch' above; a 'pending' here once the doc's vision has
-        # RUN means it was unreadable / the wrong document (e.g. an IC sent as a birth cert).
+        # 'income_relationship_mismatch' above; a 'pending' here once the doc has been
+        # PROCESSED means it was unreadable / the wrong document (e.g. an IC sent as a birth
+        # cert). The relationship doc is a field-extraction doc (birth cert / letter), so its
+        # "processed" stamp is vision_fields_run_at — NOT vision_run_at, which only the IC path
+        # sets (a birth cert never has it). Accept either so the check survives doc-type quirks.
         rel_status = icc['name_status'] if icc else 'pending'
-        if rel_status == 'pending' and getattr(rel_obj, 'vision_run_at', None):
+        rel_ran = (getattr(rel_obj, 'vision_fields_run_at', None)
+                   or getattr(rel_obj, 'vision_run_at', None))
+        if rel_status == 'pending' and rel_ran:
             return 'income_rel_doc_unreadable'
     return ''
 

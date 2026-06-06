@@ -777,8 +777,10 @@ class TestIncomeClusterStr(TestCase):
         self.assertEqual(income_cluster_advice(self.app, 'mother'), '')
 
     def test_mother_rel_doc_unreadable_when_bc_uploaded_but_unread(self):
-        # BC uploaded + vision RAN but no names read (unclear, or an IC sent as a birth cert):
-        # not a name CLASH and not MISSING, so Gopal must still speak (was silent before).
+        # BC processed but no names read (unclear, or an IC sent as a birth cert): not a name
+        # CLASH and not MISSING, so Gopal must still speak (was silent before). The BC is a
+        # field-extraction doc, so its "processed" stamp is vision_fields_run_at, NOT
+        # vision_run_at (which only the IC path sets) — mirror that exactly here.
         from apps.scholarship.income_engine import income_cluster_advice
         self.app.income_earner = 'mother'
         self.app.save()
@@ -786,8 +788,11 @@ class TestIncomeClusterStr(TestCase):
         _add_doc(self.app, 'str', student_verdict='ok', member='',
                  fields={'recipient_name': 'KAMALA A/P RAMAN', 'recipient_nric': '770101-01-2222',
                          'status': 'diluluskan', 'year': '2026'})
-        _add_doc(self.app, 'birth_certificate', student_verdict='ok', member='',
-                 fields={'bc_child_name': '', 'bc_mother_name': ''})   # vision ran, nothing read
+        bc = _add_doc(self.app, 'birth_certificate', student_verdict='unreadable', member='',
+                      fields={'bc_child_name': '', 'bc_mother_name': ''})
+        bc.vision_run_at = None                      # a birth cert NEVER gets the IC-path stamp
+        bc.vision_fields_run_at = timezone.now()     # field extraction ran (and read nothing)
+        bc.save(update_fields=['vision_run_at', 'vision_fields_run_at'])
         self.assertEqual(income_cluster_advice(self.app, 'mother'),
                          'income_rel_doc_unreadable')
 
