@@ -9,9 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Post‑consent "Review & submit" page (lock‑at‑Continue).** A new final step (6 of 6) in the shortlisted application
-  flow shows the student a read‑only recap of everything they entered before they commit — About you · results · family ·
-  plans · story · support · income evidence · documents (a simple "✓ Uploaded" list) · consent — with per‑section **Edit**
-  links that jump back to the relevant step. The **Submit application** button now lives here and is the *only* commit
+  flow shows the student a read‑only recap of everything they entered before they commit, in seven sections: **About you**
+  (identity + the non‑editable household facts: income, size, STR, JKM) · **Your results** · **Your story** (family
+  narrative + address + the story narrative) · **Funding** (chosen study + programme length + support) · **Household
+  income** (the income‑wizard route/earner) · **Documents** (a simple "✓ Uploaded" list) · **Consent** — with per‑section
+  **Edit** links that jump back to the relevant step (Household income jumps straight to the income wizard). The **Submit application** button now lives here and is the *only* commit
   (`confirmScholarshipApplication`); the consent step's CTA becomes **"Review & submit →"** and no longer submits. Built
   from data already on the client (the application + the student profile + `listDocuments` + `getConsentStatus`) — **no
   backend change, no migration**. New `ScholarshipReview.tsx`; `review` added to `NEXT_STEP_ORDER`; `scholarship.summary.*`

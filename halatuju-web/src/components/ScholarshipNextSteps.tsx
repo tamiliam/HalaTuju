@@ -191,13 +191,15 @@ export default function ScholarshipNextSteps({
     review: confirmed,   // ticked once submitted
   }
 
-  // Jump to a step's tab and scroll its card into view — used by the review page's
-  // per-section Edit links (and Back).
-  const goToStep = (k: NextStepKey) => {
+  // Jump to a step's tab and scroll into view — used by the review page's per-section
+  // Edit links (and Back). An optional anchorId scrolls to a sub-section within the step
+  // (e.g. the income wizard inside Documents) instead of the step card top.
+  const goToStep = (k: NextStepKey, anchorId?: string) => {
     setTab(k)
     setTimeout(() => {
-      document.getElementById('next-steps-active')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 50)
+      const el = (anchorId && document.getElementById(anchorId)) || document.getElementById('next-steps-active')
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 60)
   }
 
   // The shared save feedback — rendered inside whichever tab has the Save button.

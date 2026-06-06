@@ -1313,7 +1313,7 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
         <div className="space-y-3">{card('offer_letter', { required: true })}</div>
       </section>
 
-      <section>
+      <section id="income-wizard" className="scroll-mt-6">
         {sectionHead('income', null)}
         {app ? (
           /* Guided wizard → dynamic checklist (Check-1 item 3). */

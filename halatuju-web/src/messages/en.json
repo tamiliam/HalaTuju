@@ -1487,9 +1487,10 @@
         "plans": "Your plans",
         "story": "Your story",
         "support": "Support you need",
-        "income": "Income evidence",
+        "income": "Household income",
         "documents": "Documents",
-        "consent": "Consent"
+        "consent": "Consent",
+        "funding": "Funding"
       },
       "field": {
         "fullName": "Full name",
@@ -1516,7 +1517,10 @@
         "incomeEarner": "STR in the name of",
         "workingMembers": "Working members",
         "consentGiven": "Consent given",
-        "guardian": "Guardian"
+        "guardian": "Guardian",
+        "firstInFamily": "First in family at university",
+        "siblings": "Siblings studying",
+        "chosenStudy": "Chosen study"
       },
       "value": {
         "route_str": "STR document",

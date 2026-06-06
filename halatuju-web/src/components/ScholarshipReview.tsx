@@ -21,7 +21,7 @@ export default function ScholarshipReview({
   app: ScholarshipApplication
   profile: StudentProfile | null
   token: string | null
-  onEdit: (step: NextStepKey) => void
+  onEdit: (step: NextStepKey, anchor?: string) => void
   onBack: () => void
   onSubmit: () => void
   submitting: boolean
@@ -47,8 +47,8 @@ export default function ScholarshipReview({
   const yn = (v: boolean | null | undefined) => (v ? s('yes') : s('no'))
 
   // ── small primitives (mirror the existing ScholarshipDocuments row/card system) ──
-  const Section = ({ title, editStep, locked, children }: {
-    title: string; editStep?: NextStepKey; locked?: boolean; children: ReactNode
+  const Section = ({ title, editStep, editAnchor, locked, children }: {
+    title: string; editStep?: NextStepKey; editAnchor?: string; locked?: boolean; children: ReactNode
   }) => (
     <div className="rounded-2xl bg-white border p-5 shadow-sm mb-3">
       <div className="flex items-center justify-between mb-2">
@@ -56,7 +56,7 @@ export default function ScholarshipReview({
         {locked ? (
           <span className="text-[10px] font-semibold rounded-full bg-gray-100 text-gray-500 px-2 py-0.5">{s('locked')}</span>
         ) : editStep ? (
-          <button type="button" onClick={() => onEdit(editStep)} className="text-xs font-semibold text-primary-600 hover:underline">
+          <button type="button" onClick={() => onEdit(editStep, editAnchor)} className="text-xs font-semibold text-primary-600 hover:underline">
             {s('edit')}
           </button>
         ) : null}
@@ -92,14 +92,17 @@ export default function ScholarshipReview({
     <div className="space-y-1">
       <p className="text-sm text-gray-500 mb-3">{s('subtitle')}</p>
 
-      {/* 1. About you (locked) */}
+      {/* 1. About you (locked) — identity + the non-editable household facts */}
       <Section title={s('section.about')} locked>
         <Rows>
           <Row label={s('field.fullName')} value={profile?.name} />
           <Row label={s('field.ic')} value={formatNricDisplay(profile?.nric)} />
           <Row label={s('field.email')} value={profile?.contact_email || profile?.email} />
           <Row label={s('field.phone')} value={profile?.contact_phone} />
-          <Row label={s('field.address')} value={addr} />
+          <Row label={s('field.householdIncome')} value={app.household_income != null ? `RM ${app.household_income.toLocaleString()}` : ''} />
+          <Row label={s('field.householdSize')} value={app.household_size != null ? String(app.household_size) : ''} />
+          <Row label={s('field.receivesStr')} value={yn(app.receives_str)} />
+          <Row label={s('field.receivesJkm')} value={yn(app.receives_jkm)} />
         </Rows>
       </Section>
 
@@ -117,29 +120,15 @@ export default function ScholarshipReview({
         </div>
       </Section>
 
-      {/* 3. Your family (narrative editable via Story) */}
-      <Section title={s('section.family')} editStep="story">
-        <Rows>
-          <Row label={s('field.householdIncome')} value={app.household_income != null ? `RM ${app.household_income.toLocaleString()}` : ''} />
-          <Row label={s('field.householdSize')} value={app.household_size != null ? String(app.household_size) : ''} />
-          <Row label={s('field.receivesStr')} value={yn(app.receives_str)} />
-          <Row label={s('field.receivesJkm')} value={yn(app.receives_jkm)} />
-          <Row label={s('field.parentsWork')} value={app.parents_occupation} />
-          {app.family_context ? <Row label={s('field.familyContext')} value={app.family_context} /> : null}
-        </Rows>
-      </Section>
-
-      {/* 4. Your plans (read-only — set at apply) */}
-      <Section title={s('section.plans')}>
-        <Rows>
-          <Row label={app.pathway_certainty === 'sure' ? s('field.decided') : s('field.deciding')}
-               value={app.pathway_certainty === 'sure' ? plansLabel : (app.uncertainty_note || s('field.stillDeciding'))} />
-        </Rows>
-      </Section>
-
-      {/* 5. Your story (editable via Story) */}
+      {/* 3. Your story (merged: family narrative + address + the story narrative). Editable
+             via the Story step — except the address state, which is read-only there. */}
       <Section title={s('section.story')} editStep="story">
         <Rows>
+          <Row label={s('field.parentsWork')} value={app.parents_occupation} />
+          <Row label={s('field.firstInFamily')} value={yn(app.first_in_family)} />
+          <Row label={s('field.siblings')} value={app.siblings_studying_count != null ? String(app.siblings_studying_count) : ''} />
+          {app.family_context ? <Row label={s('field.familyContext')} value={app.family_context} /> : null}
+          <Row label={s('field.address')} value={addr} />
           <Row label={s('field.aspirations')} value={app.aspirations} />
           <Row label={s('field.studyPlans')} value={app.plans} />
           <Row label={s('field.dailyLife')} value={app.daily_life} />
@@ -147,9 +136,13 @@ export default function ScholarshipReview({
         </Rows>
       </Section>
 
-      {/* 6. Support you need (editable via Funding) */}
-      <Section title={s('section.support')} editStep="funding">
-        <div className="flex flex-wrap gap-1.5 mb-2">
+      {/* 4. Funding (chosen study read-only + programme length + support categories/note) */}
+      <Section title={s('section.funding')} editStep="funding">
+        <Rows>
+          <Row label={s('field.chosenStudy')}
+               value={app.pathway_certainty === 'sure' ? plansLabel : (app.uncertainty_note || s('field.stillDeciding'))} />
+        </Rows>
+        <div className="flex flex-wrap gap-1.5 mt-3 mb-2">
           {(fn?.categories || []).map((cat) => (
             <span key={cat} className="text-[11px] rounded-full bg-primary-50 text-primary-700 px-2.5 py-0.5">
               {t(`scholarship.nextSteps.funding.cat_${cat}`)}
@@ -161,8 +154,8 @@ export default function ScholarshipReview({
         {fn?.funding_note ? <p className="text-xs text-gray-700 mt-1"><span className="font-medium text-gray-500">{s('field.fundingNote')}: </span>{fn.funding_note}</p> : null}
       </Section>
 
-      {/* 7. Income evidence (editable via Documents) */}
-      <Section title={s('section.income')} editStep="documents">
+      {/* 5. Household income (the income wizard answers). Edit jumps to the income wizard. */}
+      <Section title={s('section.income')} editStep="documents" editAnchor="income-wizard">
         <Rows>
           <Row label={s('field.incomeRoute')} value={app.income_route ? s(`value.route_${app.income_route}`) : ''} />
           {app.income_route === 'str'
