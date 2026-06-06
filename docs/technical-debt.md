@@ -550,3 +550,10 @@
   anchor's time-of-day, the day threshold is first met one tick later (e.g. a 4-Jun anchor's R2 fires 14 Jun, not 13).
   Harmless for a reminder (consistent 1-day slip). **To resolve (if day-exact timing ever matters):** anchor to a DATE
   (midnight) or compare on date boundaries rather than a floor-of-timedelta. Low priority. (Logged 2026-06-06.)
+- TD-088: **Two local `formatNric` duplicates in the admin students pages.** `app/admin/students/page.tsx` and
+  `app/admin/students/[id]/page.tsx` each define their own `formatNric(nric: string | null)` (null-safe, returns the raw
+  string when not 12 digits) instead of importing the shared `lib/scholarship.ts` one. Left unconsolidated in the
+  income-card sprint deliberately: the shared helper takes `string` (not `string | null`) and returns `''` (not `'—'`)
+  for invalid input, so a blind swap would crash on a null `nric`. **To resolve:** make the shared `formatNric` null-safe
+  (or add a `formatNricDisplay` wrapper) and replace both locals. Cosmetic; both already render the canonical format.
+  Low priority. (Logged 2026-06-06.)

@@ -2121,3 +2121,37 @@ the DB constraint must agree.
 **Trade-offs:** the constraint swap is a real migration op (drop/recreate the partial unique INDEX), not pure ADD COLUMN;
 multiple historical rows per (cohort, profile) are now possible (all but one `expired`).
 **Revisit if:** a per-(cohort, profile) `.get()` is introduced anywhere that assumes exactly one row.
+
+## Earner IC card asserts proof-match, not relationship — relationship is the birth cert's job — Sprint income-card, 2026-06-06
+**Decision:** On the student's income earner-IC checklist, the IC No + Name now show whether they **match the cluster's
+income proof** (the STR recipient, or the salary-slip/EPF identity) — green "Matches the STR document" / red on a clash.
+The earner-to-student **relationship** is no longer asserted on the IC card; instead a new cluster verdict
+`income_rel_doc_needed` makes Cikgu Gopal nudge for the relationship document (birth certificate for a mother,
+guardianship letter for a guardian) once the IC is in, then go silent.
+**Alternatives considered:** (a) keep showing the relationship status on the IC card (the old behaviour) — but the IC
+alone can't prove a mother/child link, so it showed a perpetual "We'll review this"; (b) a separate relationship row on
+the card — clutter, and still not the IC's evidence to give.
+**Rationale:** the question a student is answering when they upload an earner's IC is "is this the right person for the
+income doc?" — so the card should answer exactly that. The *relationship* is evidenced by a different document, so it
+belongs to that document's step, voiced once by the cluster coach.
+**Trade-offs:** the relationship signal is now a Gopal nudge rather than a row, so a student who ignores Gopal sees less
+about the missing birth cert on the card itself (the consent gate still blocks submission, so it can't be skipped).
+**Revisit if:** we add an inline per-row relationship indicator, or the birth-cert/guardianship requirement changes.
+
+## The doc-help engine gains a non-sensitive `context` param (member/doc labels, never a model object) — Sprint income-card, 2026-06-06
+**Decision:** `help_engine.generate_document_help` now takes an optional `context` dict of **flat, non-sensitive**
+strings (member label, income-document label, relationship-document label). It feeds a `_specifics_block` in the prompt
+so the income coach names the real earner + document instead of a hardcoded "father's payslip" example. The structural
+firewall test was updated to allow exactly this one extra param and assert (in its docstring) that `context` is never a
+model object.
+**Alternatives considered:** (a) keep the 4-arg firewall and live with generic copy — but the copy was factually wrong
+when the earner wasn't the father; (b) pass the `application`/`member` objects in — rejected, that's exactly the leak the
+firewall exists to prevent; (c) branch the copy per earner inside the engine — duplicates the member taxonomy the view
+already has.
+**Rationale:** the coach needs *which member + which document*, which are non-sensitive household-structure labels, not
+scores/admin data. A flat string dict carries just that, keeping the firewall's intent (no model object, no score, no
+reviewer opinion can reach the engine) while fixing the copy.
+**Trade-offs:** the firewall is now "no model objects" rather than "exactly 4 scalar params" — a slightly weaker
+structural guarantee, mitigated by the only caller building `context` from member + doc labels alone.
+**Revisit if:** any caller is tempted to stuff application/score data into `context`, or the firewall needs to be
+re-tightened to scalars only.

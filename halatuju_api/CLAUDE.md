@@ -445,6 +445,31 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-06)
 
+**✅ SHIPPED 2026-06-06 — Income IC↔proof match + Gopal BC nudge + IC display format (2 commits `b0d851d`+`dbc8ac8`
+on `main`; NO migration; retro `docs/retrospective-income-card-and-ic-format.md`).** Live-testing follow-up on the
+income earner-IC card:
+- **Earner IC now shows whether it MATCHES the income proof** — the point of uploading it. On a cluster (e.g. an STR in
+  the mother's name) the IC No + Name read **"Matches the STR document" (green)** when they agree, red on a clash —
+  `income_engine.student_income_ic_check` gains `proof_kind`/`proof_name_status`/`proof_nric_status` (cross-checks the
+  earner IC against the cluster's STR / salary slip / EPF via `_cluster_proof_identity` + `vision.nric_match`).
+- **Relationship moves OFF the IC card → it's the birth certificate's job.** New cluster verdict **`income_rel_doc_needed`**:
+  once the IC is in and matches, Gopal nudges for the **birth certificate** (mother) / **guardianship letter** (guardian)
+  as the last required step, then goes silent. Father needs none (patronymic).
+- **Coach copy fixed (was wrong + contradicted gate v2).** `generate_document_help` was a hardcoded "father's payslip /
+  not blocked" example regardless of the actual earner. The cluster coach now passes **non-sensitive member + document
+  specifics** (`_specifics_block`; `IncomeClusterHelpView` builds `{member, income_doc, rel_doc}` labels) so it names the
+  real earner + doc ("your **mother's** MyKad alongside her **STR document**"), and is honest these compulsory income docs
+  **are required** (no more false "nothing's blocked"). Earner-IC labels: "from **your** IC" → "from **their** IC".
+- **IC display standardised to `XXXXXX-XX-XXXX` everywhere shown** (`dbc8ac8`): student checklists (identity / income IC /
+  income proof / STR) + officer cockpit (header NRIC, NRIC verify-row, Vision-extracted lines on identity + parent IC
+  drawers) now wrap the raw OCR/stored value in the **existing shared `formatNric()`** (display-only, idempotent). Profile
+  `maskIc` privacy masking + consent NRIC-match validation untouched; admin students list/detail already formatted.
+- Gates: **1037 courses/reports + 758 scholarship pytest + 262 jest + next build clean + i18n parity 2024**; no migration
+  (scholarship still through `0041` on prod). The firewall test now allows the `context` param (flat non-sensitive dict,
+  never a model object — see decisions.md). **▶ NEXT (queued, unchanged):** PARKED post-consent summary + lock-at-Continue;
+  remove orphan `str_claimed_no_doc`; TD-084 cleanup; Check 2 (5-day SLA); Check 3 (reviewer role); old/new cockpit
+  consolidation; Tamil refine; income-arc live click-through (TD-070).
+
 **✅ SHIPPED + LIVE ON PROD 2026-06-06 — Application completion reminders + auto-close (2 commits `9b53810`+`f7f280d`;
 migration `0041` applied migrate-first via MCP; retro `docs/retrospective-application-reminders.md`).** Escalating
 reminder sequence for shortlisted-but-incomplete students + an auto-close at the end. Cadence from `reminder_anchor_at`:
