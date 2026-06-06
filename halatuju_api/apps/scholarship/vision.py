@@ -850,7 +850,10 @@ _DOC_HINTS = {
                           '"bc_mother_name" + "bc_mother_nric" = the "Nama" and "No. Kad '
                           'Pengenalan" in the MOTHER section (keep all 12 NRIC digits); '
                           '"bc_number" = the certificate serial number. Use names EXACTLY as '
-                          'printed (keep bin/binti/a/l/a/p). Leave a field empty if absent.'),
+                          'printed (keep bin/binti/a/l/a/p). Leave a field empty if absent. '
+                          'NOTE: a birth certificate normally shows NO IC number for the child '
+                          '(only the parents have "No. Kad Pengenalan") — leave "bc_child_nric" '
+                          'empty and do NOT add any warning about a missing/unlabelled child IC.'),
     'guardianship_letter': (' This is EITHER a Malaysian court-issued guardianship order OR a '
                             'written authorisation letter from a parent placing the applicant '
                             '(the "ward") under someone\'s care. Return: "guardian_name" = the '
@@ -928,8 +931,22 @@ def extract_document_fields(ocr_text: str, doc_type: str, *, image: Optional[byt
         data = _call_gemini_json(prompt, schema)
     if '_error' in data:
         return {'fields': {}, 'warnings': [], 'error': data['_error']}
-    warnings = data.pop('warnings', []) or []
+    warnings = _drop_expected_warnings(doc_type, data.pop('warnings', []) or [])
     return {'fields': data, 'warnings': warnings, 'error': ''}
+
+
+def _drop_expected_warnings(doc_type: str, warnings: list) -> list:
+    """Strip warnings a document is EXPECTED to trip — noise that misleads the officer.
+    A Malaysian birth certificate carries NO IC number for the child (the child is issued
+    one later), so a 'child NRIC missing/unlabelled' note is normal, not a problem. Belt-and-
+    braces with the prompt hint, since Gemini's free-text warnings aren't fully steerable."""
+    if doc_type != 'birth_certificate':
+        return warnings
+    def _is_child_nric_noise(w) -> bool:
+        s = (w or '').lower()
+        return 'child' in s and any(k in s for k in
+                                    ('nric', 'kad pengenalan', 'ic number', 'identity card', 'no. kad'))
+    return [w for w in warnings if not _is_child_nric_noise(w)]
 
 
 def _any_field_filled(fields: dict) -> bool:

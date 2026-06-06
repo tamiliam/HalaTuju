@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Birth certificate no longer warns about the (always‑absent) child IC number.** A Malaysian birth certificate
+  carries no "No. Kad Pengenalan" for the child — they're issued one later — yet the field‑extraction prompt asks Gemini
+  to note every empty field, so it flagged *"Child's NRIC not explicitly labelled…"* as an orange warning on a perfectly
+  good certificate. The BC hint now tells Gemini to leave `bc_child_nric` empty without warning, and a deterministic
+  `_drop_expected_warnings` filter strips any child‑NRIC note that slips through (belt‑and‑braces). Re‑running a BC clears
+  the stale warning. No migration; 762 scholarship pytest.
 - **Officer cockpit: an uploaded birth certificate no longer shows as "Missing" in the income panel.** `docTypeToFact`
   mapped the parent IC / STR / salary slip / EPF / bills to the income group but omitted `birth_certificate` (and
   `guardianship_letter`), so a BC fell into "other" and the income `incomeDocLayout` never saw it — leaving a false
