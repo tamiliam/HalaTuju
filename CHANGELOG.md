@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Officer cockpit: an uploaded birth certificate no longer shows as "Missing" in the income panel.** `docTypeToFact`
+  mapped the parent IC / STR / salary slip / EPF / bills to the income group but omitted `birth_certificate` (and
+  `guardianship_letter`), so a BC fell into "other" and the income `incomeDocLayout` never saw it — leaving a false
+  "Missing" placeholder on a doc the student had actually uploaded. Both relationship docs now group with income. FE-only;
+  267 jest + next build clean.
 - **Birth certificates are now actually read (child + mother names) — the mother income route's relationship check
   finally works.** The BC's extraction schema existed, but `birth_certificate` was in neither `SUPPORTING_NAME_CHECK_TYPES`
   (OCR) nor `GEMINI_EXTRACT_DOC_TYPES` (field extraction), so the upload handler skipped it entirely: `bc_child_name`/
