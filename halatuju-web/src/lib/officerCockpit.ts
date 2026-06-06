@@ -48,11 +48,16 @@ function docTypeToFact(docType: string): DocFact {
       return 'pathway'
     // The parent/guardian IC sits with INCOME: the income docs (STR / salary slip /
     // EPF) are issued in a parent's name, and the parent IC is what confirms that
-    // earner's identity. Utility bills lend credibility to the income claim.
+    // earner's identity. The relationship docs (birth cert / guardianship letter) link
+    // that earner to the student, so they belong to the income cluster too — without this
+    // the BC fell to 'other' and the income panel showed it as a missing placeholder.
+    // Utility bills lend credibility to the income claim.
     case 'parent_ic':
     case 'str':
     case 'epf':
     case 'salary_slip':
+    case 'birth_certificate':
+    case 'guardianship_letter':
     case 'water_bill':
     case 'electricity_bill':
       return 'income'

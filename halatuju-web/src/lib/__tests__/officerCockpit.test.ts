@@ -74,11 +74,14 @@ describe('groupDocumentsByFact', () => {
 
   it('places income docs AND the parent ic in income', () => {
     // The parent/guardian IC moved to income — it confirms the earner whose name
-    // the STR / salary slip / EPF are issued in.
-    const incomeTypes = ['parent_ic', 'str', 'epf', 'salary_slip', 'water_bill', 'electricity_bill']
+    // the STR / salary slip / EPF are issued in. The relationship docs (birth cert /
+    // guardianship letter) link that earner to the student, so they're income too.
+    const incomeTypes = ['parent_ic', 'str', 'epf', 'salary_slip', 'birth_certificate',
+                         'guardianship_letter', 'water_bill', 'electricity_bill']
     const docs = incomeTypes.map((t, i) => doc({ id: i, doc_type: t }))
     const groups = groupDocumentsByFact(docs)
-    expect(groups.income).toHaveLength(6)
+    expect(groups.income).toHaveLength(8)
+    expect(groups.other).toHaveLength(0)
     expect(groups.identity).toHaveLength(0)
   })
 
@@ -268,6 +271,14 @@ describe('incomeDocLayout', () => {
   it('STR + father → no birth certificate slot (patronymic)', () => {
     const layout = incomeDocLayout({ income_route: 'str', income_earner: 'father' }, [])
     expect(layout.required.map((s) => s.docType)).toEqual(['str', 'parent_ic'])
+  })
+
+  it('an uploaded birth certificate fills the slot (must be grouped into income first)', () => {
+    // Regression: birth_certificate was missing from docTypeToFact's income case, so it
+    // landed in 'other' and the income panel never saw it → showed a false "Missing".
+    const bc = doc({ id: 7, doc_type: 'birth_certificate', household_member: '' })
+    const layout = incomeDocLayout({ income_route: 'str', income_earner: 'mother' }, [bc])
+    expect(layout.required.find((s) => s.docType === 'birth_certificate')?.doc?.id).toBe(7)
   })
 
   it('salary + father & mother → per-member IC + salary slip, one untagged BC; extras go optional', () => {
