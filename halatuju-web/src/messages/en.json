@@ -1219,6 +1219,9 @@
         "no_application": "We couldn't find your application."
       },
       "given": "Consent given. Thank you.",
+      "givenHeading": "What you agreed to",
+      "givenMetaSelf": "Given on {date}.",
+      "givenMetaGuardian": "Given by {name} on {date}.",
       "submit": "Give consent",
       "saving": "Saving…",
       "error": "Could not record your consent. Please try again."
@@ -1478,7 +1481,7 @@
       "back": "← Back",
       "submit": "Submit application",
       "submitting": "Submitting…",
-      "lockNote": "Once you submit, you won't be able to edit your application until we contact you.",
+      "lockNote": "If you're happy with everything, press Submit and this will be taken as your final application. To change anything, edit it above first, then come back and submit the final version.",
       "incompleteNote": "Please finish the earlier steps before you submit.",
       "section": {
         "about": "About you",

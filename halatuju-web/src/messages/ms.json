@@ -1219,6 +1219,9 @@
         "no_application": "Kami tidak dapat menemui permohonan anda."
       },
       "given": "Persetujuan diberikan. Terima kasih.",
+      "givenHeading": "Apa yang anda persetujui",
+      "givenMetaSelf": "Diberi pada {date}.",
+      "givenMetaGuardian": "Diberi oleh {name} pada {date}.",
       "submit": "Beri persetujuan",
       "saving": "Menyimpan…",
       "error": "Tidak dapat merekodkan persetujuan anda. Sila cuba lagi."
@@ -1478,7 +1481,7 @@
       "back": "← Kembali",
       "submit": "Hantar permohonan",
       "submitting": "Menghantar…",
-      "lockNote": "Setelah anda hantar, anda tidak boleh menyunting permohonan sehingga kami menghubungi anda.",
+      "lockNote": "Jika anda berpuas hati dengan semuanya, tekan Hantar dan ini akan diambil sebagai permohonan muktamad anda. Untuk mengubah apa-apa, suntingnya di atas dahulu, kemudian kembali dan hantar versi muktamad.",
       "incompleteNote": "Sila lengkapkan langkah sebelumnya sebelum anda boleh menghantar.",
       "section": {
         "about": "Tentang anda",

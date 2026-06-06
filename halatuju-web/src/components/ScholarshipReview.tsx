@@ -104,8 +104,9 @@ export default function ScholarshipReview({
 
   return (
     <div>
-      <h1 className="text-2xl font-bold tracking-tight text-gray-900">{t('scholarship.application.title')}</h1>
-      <p className="text-sm text-gray-500 mt-1 mb-5">{s('subtitle')}</p>
+      {/* No <h1> here — the page wrapper (application/page.tsx) already renders the
+          "Your application" title. This page only adds its own subtitle. */}
+      <p className="text-sm text-gray-500 -mt-4 mb-5">{s('subtitle')}</p>
 
       {/* 1. About you (locked) — identity + the non-editable household facts */}
       <Card title={s('section.about')} locked>
