@@ -1487,9 +1487,10 @@
         "plans": "Rancangan anda",
         "story": "Cerita anda",
         "support": "Bantuan yang diperlukan",
-        "income": "Bukti pendapatan",
+        "income": "Pendapatan isi rumah",
         "documents": "Dokumen",
-        "consent": "Persetujuan"
+        "consent": "Persetujuan",
+        "funding": "Pembiayaan"
       },
       "field": {
         "fullName": "Nama penuh",
@@ -1516,7 +1517,10 @@
         "incomeEarner": "STR atas nama",
         "workingMembers": "Ahli yang bekerja",
         "consentGiven": "Persetujuan diberikan",
-        "guardian": "Penjaga"
+        "guardian": "Penjaga",
+        "firstInFamily": "Pertama dalam keluarga ke universiti",
+        "siblings": "Adik-beradik yang belajar",
+        "chosenStudy": "Pengajian pilihan"
       },
       "value": {
         "route_str": "Dokumen STR",
