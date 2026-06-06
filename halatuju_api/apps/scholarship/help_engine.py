@@ -151,13 +151,15 @@ VERDICT_FIX_HINT = {
         'SPECIFICS name a relationship document (e.g. a birth certificate), the clash is between '
         'THAT document and the earner\'s MyKad — point at BOTH: kindly suggest they check they '
         'uploaded the right relationship document (their OWN birth certificate, the one showing '
-        'them and this parent) AND the correct MyKad for this person. If the MyKad already '
-        'matches the income document, the relationship document (e.g. the birth certificate) is '
-        'the more likely one to re-check — gently say so. If NO relationship document is named '
-        'in the SPECIFICS, the earner\'s IC simply does not carry the family name from the '
-        'applicant\'s own IC — suggest they double-check they uploaded the right person\'s MyKad '
-        'in this slot, with a clear, full-name photo. Reassure them nothing is blocked; do NOT '
-        'tell them to edit their profile.'
+        'them and this parent) AND the correct MyKad for this person. If the SPECIFICS say the '
+        'MyKad has been CONFIRMED (it matches the income document), state plainly that the MyKad '
+        'is correct and the relationship document (e.g. the birth certificate) is the ONE thing '
+        'to re-check — ask only for a clear copy of their own birth certificate, and do NOT tell '
+        'them to re-check or re-upload the MyKad. If NO relationship document is named in the '
+        'SPECIFICS, the earner\'s IC simply does not carry the family name from the applicant\'s '
+        'own IC — suggest they double-check they uploaded the right person\'s MyKad in this slot, '
+        'with a clear, full-name photo. Reassure them nothing is blocked; do NOT tell them to '
+        'edit their profile.'
     ),
     'income_proof_needed': (
         'The earner\'s IC is in and matches. The next step is their INCOME proof — the salary '
@@ -450,6 +452,10 @@ def _specifics_block(context):
         lines.append(f"- The income document they already uploaded is the {context['income_doc']}.")
     if context.get('rel_doc'):
         lines.append(f"- The relationship document still needed is the {context['rel_doc']}.")
+    if context.get('ic_matches_income_doc'):
+        lines.append("- IMPORTANT: the earner's MyKad has been CONFIRMED — its name/IC matches their "
+                     "income document — so the MyKad is correct; the relationship document is the one "
+                     "to re-check. Do NOT ask them to re-check or re-upload the MyKad.")
     if not lines:
         return ''
     return ('SPECIFICS (use these EXACT details — do not substitute a different family member or '

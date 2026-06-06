@@ -15,8 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   relationship check clashes on the **mother** route, the message now points at the **birth certificate ↔ MyKad**
   mismatch (and leans toward re‑checking the birth certificate, since the IC usually already matches the income document)
   rather than the father‑route "re‑upload the MyKad". The cluster help view passes the relationship‑doc label into the
-  mismatch + proof messages so the coach names the real document. No migration; 770 scholarship pytest + 267 jest + build
-  clean; i18n parity 2027.
+  mismatch + proof messages so the coach names the real document. **(2b)** When the earner's MyKad is *already corroborated*
+  by their income document, the mismatch message now commits — *"your mother's MyKad is confirmed by her salary slip, so
+  the birth certificate is the one to re‑check"* — instead of still hedging "double‑check the MyKad" (the view passes an
+  `ic_matches_income_doc` flag into the coach context). No migration; 771 scholarship pytest + 267 jest + build clean;
+  i18n parity 2027.
 - **An STR now only counts as B40 proof when it shows it was APPROVED and current — a self‑filled application record
   (SALINAN) no longer auto‑passes.** Previously the STR currency check was "valid unless clearly rejected", so a status‑less
   SALINAN/printout (which any applicant can generate) was given the benefit of the doubt and marked `current` → income

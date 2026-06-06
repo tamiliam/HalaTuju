@@ -520,13 +520,21 @@ class IncomeClusterHelpView(APIView):
         first_name = (getattr(getattr(app, 'profile', None), 'name', '') or '').strip().split(' ')[0]
         # Non-sensitive specifics so the coach names the RIGHT member + document (e.g. "your
         # mother's MyKad alongside her STR document"), not the generic father/payslip example.
-        from .income_engine import _cluster_proof_identity, relationship_doc_for
+        from .income_engine import (_cluster_proof_identity, relationship_doc_for,
+                                     _member_ic_doc, student_income_ic_check)
         _MEMBER_LABEL = {'father': 'father', 'mother': 'mother', 'guardian': 'legal guardian',
                          'brother': 'elder brother', 'sister': 'elder sister'}
         _DOC_LABEL = {'str': 'STR document', 'salary_slip': 'salary slip', 'epf': 'EPF statement',
                       'birth_certificate': 'birth certificate', 'guardianship_letter': 'guardianship letter'}
         proof_kind, _pn, _pi = _cluster_proof_identity(app, member)
         rel_doc = relationship_doc_for(member)
+        # Is the earner's MyKad already corroborated by their income document? If so, a
+        # relationship clash is the BC's fault, not the IC's — let the coach commit to that
+        # (drop the now-pointless "re-check the MyKad" line).
+        _ic_doc = _member_ic_doc(app, member)
+        _icc = student_income_ic_check(_ic_doc) if _ic_doc else None
+        ic_matches_income_doc = bool(_icc and 'match' in
+                                     (_icc.get('proof_name_status'), _icc.get('proof_nric_status')))
         # income_proof_needed asks specifically for the salary slip (the proof not yet uploaded,
         # so _cluster_proof_identity has nothing to report). The relationship-mismatch message is
         # member-aware: a mother's clash is between her birth certificate and her MyKad, so name
@@ -539,6 +547,8 @@ class IncomeClusterHelpView(APIView):
             'rel_doc': (_DOC_LABEL.get(rel_doc, '') if verdict in (
                 'income_rel_doc_needed', 'income_rel_doc_unreadable',
                 'income_relationship_mismatch') else ''),
+            'ic_matches_income_doc': (ic_matches_income_doc
+                                      and verdict == 'income_relationship_mismatch'),
         }
         result = help_engine.generate_document_help(
             'income_cluster', verdict, first_name=first_name, target_language=language,

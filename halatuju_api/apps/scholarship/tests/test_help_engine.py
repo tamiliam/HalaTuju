@@ -302,3 +302,18 @@ class TestGuardrails(TestCase):
     def test_income_proof_needed_is_a_known_verdict(self):
         self.assertIn('income_proof_needed', help_engine.VERDICT_GUIDANCE)
         self.assertIn('income_proof_needed', help_engine.VERDICT_FIX_HINT)
+
+    def test_specifics_states_ic_confirmed_when_it_matches_the_income_doc(self):
+        # When the earner IC is corroborated by the income doc, the prompt tells the coach the
+        # MyKad is CONFIRMED so it points only at the relationship doc (drops the MyKad hedge).
+        p = help_engine._build_help_prompt(
+            'income_cluster', 'income_relationship_mismatch', 'Elan', 'English',
+            context={'member': 'mother', 'rel_doc': 'birth certificate',
+                     'ic_matches_income_doc': True})
+        self.assertIn("the earner's MyKad has been CONFIRMED", p)   # the SPECIFICS fact line
+        # Without the flag, the SPECIFICS don't state the MyKad is confirmed (the coach then
+        # asks them to check both). NB the fix-hint text mentions "CONFIRMED" conditionally, so
+        # assert on the specifics-line phrase, not the bare word.
+        self.assertNotIn("the earner's MyKad has been CONFIRMED", help_engine._build_help_prompt(
+            'income_cluster', 'income_relationship_mismatch', 'Elan', 'English',
+            context={'member': 'mother', 'rel_doc': 'birth certificate'}))
