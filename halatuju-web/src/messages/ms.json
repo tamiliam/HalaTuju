@@ -749,7 +749,7 @@
         "consent": "Persetujuan",
         "review": "Semak"
       },
-      "stepOf": "Langkah {n} daripada 5",
+      "stepOf": "Langkah {n} daripada {total}",
       "story": {
         "langNote": "Ceritakan tentang diri anda dengan kata-kata sendiri — dalam Bahasa Melayu, Bahasa Inggeris, atau Tamil, mana-mana yang anda lebih selesa. Tiada jawapan yang salah.",
         "optional": "Pilihan",

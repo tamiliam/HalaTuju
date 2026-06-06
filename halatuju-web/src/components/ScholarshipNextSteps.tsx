@@ -719,7 +719,7 @@ export default function ScholarshipNextSteps({
             ))}
           </div>
           <p className="text-xs text-gray-500 mb-4">
-            {t('scholarship.nextSteps.stepOf', { n: String(tabIndex + 1) })} · {t(`scholarship.nextSteps.tab.${tab}`)}
+            {t('scholarship.nextSteps.stepOf', { n: String(tabIndex + 1), total: String(NEXT_STEP_ORDER.length) })} · {t(`scholarship.nextSteps.tab.${tab}`)}
           </p>
 
           {/* Active section card. The review step renders its own titled cards on the page

@@ -205,8 +205,8 @@ export default function ScholarshipReview({
         </div>
       </Card>
 
-      {/* 7. Consent */}
-      <Card title={s('section.consent')} editStep="consent">
+      {/* 7. Consent — read-only: once given it can't be re-edited (no dead-end Edit link). */}
+      <Card title={s('section.consent')} locked>
         {activeConsent ? (
           <>
             <Field label={s('field.consentGiven')}
