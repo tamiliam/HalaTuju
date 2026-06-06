@@ -746,7 +746,8 @@
         "story": "Your story",
         "funding": "Funding",
         "documents": "Documents",
-        "consent": "Consent"
+        "consent": "Consent",
+        "review": "Review"
       },
       "stepOf": "Step {n} of 5",
       "story": {
@@ -853,7 +854,8 @@
         "step3": "You'll receive our decision by email.",
         "emailNote": "We'll send all updates to {email} — do check your inbox (and spam folder).",
         "yourEmail": "the email you signed up with"
-      }
+      },
+      "reviewCta": "Review & submit"
     },
     "docs": {
       "type": {
@@ -1467,6 +1469,63 @@
           "desc": "Your offer letter is for {programme} at {institution}, which looks different from the study choice you entered earlier. If this offer is your final pathway, confirm it and we'll update your record to match. If you have a better offer, upload that one instead."
         }
       }
+    },
+    "summary": {
+      "subtitle": "One last look — check everything is right before you send it.",
+      "locked": "Locked",
+      "edit": "Edit",
+      "uploaded": "✓ Uploaded",
+      "back": "← Back",
+      "submit": "Submit application",
+      "submitting": "Submitting…",
+      "lockNote": "Once you submit, you won't be able to edit your application until we contact you.",
+      "incompleteNote": "Please finish the earlier steps before you submit.",
+      "section": {
+        "about": "About you",
+        "results": "Your results",
+        "family": "Your family",
+        "plans": "Your plans",
+        "story": "Your story",
+        "support": "Support you need",
+        "income": "Income evidence",
+        "documents": "Documents",
+        "consent": "Consent"
+      },
+      "field": {
+        "fullName": "Full name",
+        "ic": "IC number",
+        "email": "Email",
+        "phone": "Phone",
+        "address": "Address",
+        "householdIncome": "Household income",
+        "householdSize": "Household size",
+        "receivesStr": "Receives STR",
+        "receivesJkm": "Receives JKM",
+        "parentsWork": "Parents' work",
+        "familyContext": "Family situation",
+        "decided": "Decided",
+        "deciding": "Still deciding",
+        "stillDeciding": "Still deciding",
+        "aspirations": "Aspirations",
+        "studyPlans": "Study plans",
+        "dailyLife": "Daily life",
+        "concerns": "Concerns",
+        "programmeLength": "Programme length: {n} months",
+        "fundingNote": "Note",
+        "incomeRoute": "Route",
+        "incomeEarner": "STR in the name of",
+        "workingMembers": "Working members",
+        "consentGiven": "Consent given",
+        "guardian": "Guardian"
+      },
+      "value": {
+        "route_str": "STR document",
+        "route_salary": "Salary slip",
+        "bySelf": "by you",
+        "byGuardian": "by your parent / guardian"
+      },
+      "yes": "Yes",
+      "no": "No"
     }
   },
   "authGate": {

@@ -1057,6 +1057,8 @@ export interface ScholarshipApplication {
   chosen_pathway?: string
   chosen_programme?: { course_id?: string; course_name?: string; field_key?: string } | null
   pre_u_track?: string
+  uncertainty_reasons?: string[]
+  uncertainty_note?: string
   pre_u_institution?: string
   funding_need: FundingNeed | null
   completeness: ApplicationCompleteness

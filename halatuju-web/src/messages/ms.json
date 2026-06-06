@@ -746,7 +746,8 @@
         "story": "Kisah anda",
         "funding": "Kewangan",
         "documents": "Dokumen",
-        "consent": "Persetujuan"
+        "consent": "Persetujuan",
+        "review": "Semak"
       },
       "stepOf": "Langkah {n} daripada 5",
       "story": {
@@ -853,7 +854,8 @@
         "step3": "Anda akan menerima keputusan kami melalui e-mel.",
         "emailNote": "Kami akan menghantar semua kemas kini ke {email} — sila semak peti masuk (dan folder spam) anda.",
         "yourEmail": "e-mel yang anda daftar"
-      }
+      },
+      "reviewCta": "Semak & hantar"
     },
     "docs": {
       "type": {
@@ -1467,6 +1469,63 @@
           "desc": "Surat tawaran anda adalah untuk {programme} di {institution}, yang nampak berbeza daripada pilihan pengajian yang anda masukkan sebelum ini. Jika tawaran ini ialah laluan akhir anda, sahkannya dan kami akan kemas kini rekod anda supaya sepadan. Jika anda ada tawaran yang lebih baik, muat naik yang itu."
         }
       }
+    },
+    "summary": {
+      "subtitle": "Lihat sekali lagi — pastikan semuanya betul sebelum anda hantar.",
+      "locked": "Dikunci",
+      "edit": "Sunting",
+      "uploaded": "✓ Dimuat naik",
+      "back": "← Kembali",
+      "submit": "Hantar permohonan",
+      "submitting": "Menghantar…",
+      "lockNote": "Setelah anda hantar, anda tidak boleh menyunting permohonan sehingga kami menghubungi anda.",
+      "incompleteNote": "Sila lengkapkan langkah sebelumnya sebelum anda boleh menghantar.",
+      "section": {
+        "about": "Tentang anda",
+        "results": "Keputusan anda",
+        "family": "Keluarga anda",
+        "plans": "Rancangan anda",
+        "story": "Cerita anda",
+        "support": "Bantuan yang diperlukan",
+        "income": "Bukti pendapatan",
+        "documents": "Dokumen",
+        "consent": "Persetujuan"
+      },
+      "field": {
+        "fullName": "Nama penuh",
+        "ic": "No. IC",
+        "email": "E-mel",
+        "phone": "Telefon",
+        "address": "Alamat",
+        "householdIncome": "Pendapatan isi rumah",
+        "householdSize": "Saiz isi rumah",
+        "receivesStr": "Menerima STR",
+        "receivesJkm": "Menerima JKM",
+        "parentsWork": "Pekerjaan ibu bapa",
+        "familyContext": "Keadaan keluarga",
+        "decided": "Sudah pasti",
+        "deciding": "Masih memilih",
+        "stillDeciding": "Masih memilih",
+        "aspirations": "Cita-cita",
+        "studyPlans": "Rancangan pengajian",
+        "dailyLife": "Kehidupan harian",
+        "concerns": "Kebimbangan",
+        "programmeLength": "Tempoh program: {n} bulan",
+        "fundingNote": "Nota",
+        "incomeRoute": "Laluan",
+        "incomeEarner": "STR atas nama",
+        "workingMembers": "Ahli yang bekerja",
+        "consentGiven": "Persetujuan diberikan",
+        "guardian": "Penjaga"
+      },
+      "value": {
+        "route_str": "Dokumen STR",
+        "route_salary": "Slip gaji",
+        "bySelf": "oleh anda",
+        "byGuardian": "oleh ibu bapa / penjaga anda"
+      },
+      "yes": "Ya",
+      "no": "Tidak"
     }
   },
   "authGate": {

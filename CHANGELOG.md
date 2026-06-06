@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Post‑consent "Review & submit" page (lock‑at‑Continue).** A new final step (6 of 6) in the shortlisted application
+  flow shows the student a read‑only recap of everything they entered before they commit — About you · results · family ·
+  plans · story · support · income evidence · documents (a simple "✓ Uploaded" list) · consent — with per‑section **Edit**
+  links that jump back to the relevant step. The **Submit application** button now lives here and is the *only* commit
+  (`confirmScholarshipApplication`); the consent step's CTA becomes **"Review & submit →"** and no longer submits. Built
+  from data already on the client (the application + the student profile + `listDocuments` + `getConsentStatus`) — **no
+  backend change, no migration**. New `ScholarshipReview.tsx`; `review` added to `NEXT_STEP_ORDER`; `scholarship.summary.*`
+  i18n in en/ms/ta. Visual approved via an in‑code mockup (Stitch generation timed out on the dense page). 267 jest +
+  next build clean; i18n parity 2073.
+
 ### Removed
 - **Orphaned `str_claimed_no_doc` anomaly rule.** The pre‑interview flag "student says the family receives STR but
   hasn't uploaded the letter" is superseded by the income wizard, which now *requires* the STR document on the STR route

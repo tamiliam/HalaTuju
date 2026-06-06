@@ -770,7 +770,7 @@ export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown
  * The 5 tabs shown to a shortlisted applicant on /scholarship/application.
  * Referee has been moved to the admin verify-&-accept flow and is NOT in this list.
  */
-export const NEXT_STEP_ORDER = ['quiz', 'story', 'funding', 'documents', 'consent'] as const
+export const NEXT_STEP_ORDER = ['quiz', 'story', 'funding', 'documents', 'consent', 'review'] as const
 export type NextStepKey = typeof NEXT_STEP_ORDER[number]
 
 /**
