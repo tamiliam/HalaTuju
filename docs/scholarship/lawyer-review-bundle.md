@@ -41,9 +41,10 @@ Two promises sit at the heart of it:
 - **It is permanently anonymous.** A sponsor **never** learns the identity of a student they help — not the name, photo,
   IC number, or contact details — even after a match. The student likewise never learns the sponsor's identity.
 
-The programme is planned to be run by **myNADI**, a tax-exempt charity under Subsection 44(6) of the Income Tax Act 1967,
-in partnership with other non-profit organisations such as CUMIG, SMC, EWRF and HYO. *(The operating entity is still
-being finalised.)*
+The programme is intended to be run by **myNADI**, which we understand operates as a tax-exempt charity under Subsection
+44(6) of the Income Tax Act 1967 (**to be confirmed with you — see §7.3**), in partnership with several non-profit
+organisations (for example CUMIG, SMC, EWRF and HYO — full names to be supplied). *(The operating entity is still being
+finalised.)*
 
 ---
 
@@ -70,9 +71,9 @@ This is the most legally sensitive part.
    the moment of donation the money becomes **myNADI's**. It is **final** and **not refundable to the sponsor's bank
    account**.
 2. **Giving balance (a ledger, not custody of the sponsor's money).** The donated sum credits the sponsor's internal
-   **directed-giving balance**. This balance is simply *bookkeeping*: `balance = total donated − amounts currently
-   committed to students`. The sponsor can **direct** this balance to students within the programme; they cannot take it
-   out.
+   **directed-giving balance** (their "**giving balance**"). This balance is simply *bookkeeping*: `balance = total
+   donated − amounts currently committed to students`. The sponsor can **direct** this balance to students within the
+   programme; they cannot take it out.
 3. **Award amount.** For each student, a myNADI reviewer sets an **award amount** (the assessed need).
 4. **Fund a student.** A sponsor with enough balance funds a student's award **in full** (1:1, full-or-nothing at launch;
    the design allows several sponsors to a single student later). This issues an **award offer**.
@@ -95,12 +96,13 @@ Anonymity is **two-way and permanent**, and enforced in the software, not just b
 
 - **What a sponsor sees:** an **anonymised profile** of a student — a respectful, non-identifying summary of their
   situation, academic band, field of study, and funding need. It is **generated** from non-identifying inputs (never the
-  raw application), and is checked by software before publication to ensure it contains no name, photograph, IC number,
-  home address, phone, or email. The sponsor-facing data is an **allowlist** (only explicitly permitted, non-identifying fields can ever
-  appear), so a future change cannot accidentally leak identity.
+  raw application or any document), and is checked by software before publication to ensure it contains no name,
+  photograph, IC number, home address, phone, or email. The sponsor-facing data is an **allowlist** (only explicitly
+  permitted, non-identifying fields can ever appear), so a future change cannot accidentally leak identity.
 - **What a student sees:** nothing identifying about the sponsor. The student's view of their award has **no sponsor
   field at all**.
-- **What myNADI sees:** both sides (it runs the programme and must).
+- **What myNADI sees:** both sides (it runs the programme and must), including all documents and identifying details —
+  which **never** reach a sponsor.
 
 The intent: a sponsor funds a **need**, not a **person**; there is no contact, no relationship, and no route to identify
 the student.
@@ -120,7 +122,8 @@ gatekeeping). The onboarding is deliberately built so the donor **demonstrates u
 6. **Auto-approved** — they may now donate and fund students.
 
 Every acknowledgement, quiz answer, and the signature are **stored with the version and a timestamp** as an audit trail
-of informed consent. The full wording is in **Appendix A**.
+of informed consent. The full wording is in **Appendix A**. *(In the onboarding flow the quick declarations come early,
+as step 2; in Appendix A they are placed last, as §D, after the three "understanding" gates — the content is the same.)*
 
 ---
 
@@ -135,6 +138,10 @@ again when an award is **accepted**. The current wording is in **Appendix B**. S
   **non-parent** guardian must also upload a **guardianship letter** (a court order **or** the parent's written
   authorisation; **we want your view on whether this is sufficient** — §7.5).
 - **Withdrawable:** the consent states it can be withdrawn at any time.
+- **Open item — staged release is not yet disclosed to the student.** The progress-tied release and possible
+  **withholding** of funds (§3.6) is currently explained only to the *sponsor* (disclosure A4, the quiz, and the
+  agreement). The student/guardian consent (Appendix B) does **not** yet mention it, even though it materially affects the
+  student. We need your view on what the student should be told, and when (see §7.2).
 
 ---
 
@@ -145,12 +152,13 @@ again when an award is **accepted**. The current wording is in **Appendix B**. S
    on trust / operating a refundable custody arrangement? Is the donation properly final at the **point of donation**, or
    should it be final only at the **point of allocation** to a student?
 2. **Tranche withholding** — withholding a stage because a student "does not progress" needs a **fair, defined standard**
-   and a student-side process, not unfettered discretion. What is defensible, and what must we put in writing?
+   and a student-side process, not unfettered discretion. What is defensible, what must we put in writing, and **what must
+   the student be told up front** (the consent does not yet mention staged release — §6)?
 
 **On charitable / tax status:**
-3. **Tax receipts** — myNADI is a Subsection 44(6) tax-exempt charity. Please confirm the correct, compliant donor-facing
-   wording for tax-deductible receipts, and whether disclosure A6 (currently deliberately non-committal) can now be made
-   specific.
+3. **Tax status & receipts** — please confirm **whether myNADI qualifies** as a tax-exempt charity under Subsection 44(6),
+   the correct compliant wording for any tax-deductible receipt to donors, and whether disclosure A6 (currently
+   deliberately non-committal) can then be made specific.
 
 **On anonymity & safeguarding:**
 4. Is **permanent two-way anonymity** — *"you will never know who you helped"* — compatible with safeguarding obligations
@@ -179,11 +187,12 @@ again when an award is **accepted**. The current wording is in **Appendix B**. S
 
 | Built (mocked money) | Planned / not yet built |
 |---|---|
-| Sponsor sign-up + the account model | Real payment-gateway donation-in (gateway TBD; currently **mocked**) |
-| The anonymised pool + anonymity safeguards | Disbursement-out to institutions |
-| Donate → fund → award offer → accept → lapse (the state machine) | The **tranche** schedule + withholding mechanics |
-| Student / guardian consent (incl. minors) | Award / decline notification emails |
-| The onboarding flow + auto-approval *(in build)* | Multi-sponsor funding of one student |
+| Sponsor sign-up + the account model | The onboarding flow + auto-approval *(in build)* |
+| The anonymised pool + anonymity safeguards | Real payment-gateway donation-in (gateway TBD; currently **mocked**) |
+| Donate → fund → award offer → accept → lapse (the state machine) | Disbursement-out to institutions |
+| Student / guardian consent (incl. minors) | The **tranche** schedule + withholding mechanics |
+| | Award / decline notification emails |
+| | Multi-sponsor funding of one student |
 
 The real-money and disbursement parts are deliberately **last**, and gated on your review.
 
@@ -192,6 +201,8 @@ The real-money and disbursement parts are deliberately **last**, and gated on yo
 # Appendix A — Sponsor onboarding content (the donor's words)
 
 > The full disclosures, comprehension quiz, donor agreement, and quick declarations, exactly as the sponsor sees them.
+> *(The three "understanding" gates — disclosures §A, quiz §B, agreement §C — are grouped first; the lighter quick
+> declarations §D come early in the actual flow, as noted in §5.)*
 
 ## §A — The seven disclosure cards
 
@@ -226,9 +237,9 @@ role in their life beyond your gift. myNADI manages the relationship, the checks
 > ☐ I understand I am funding a need, not selecting or mentoring a particular individual, and I will have no relationship with them.
 
 **A6 · This is a charitable gift.** Your donation is a **charitable contribution** to myNADI. Any tax treatment (such as a
-receipt for relief, where available) depends on the foundation's status and the rules at the time, and will be confirmed
-to you separately — it is **not** a reason for, or a condition of, your gift.
-> ☐ I understand this is a charitable gift, and any tax receipt depends on the foundation's status and is confirmed separately.
+receipt for relief, where available) depends on myNADI's status and the rules at the time, and will be confirmed to you
+separately — it is **not** a reason for, or a condition of, your gift.
+> ☐ I understand this is a charitable gift, and any tax receipt depends on myNADI's status and is confirmed separately.
 
 **A7 · How you will conduct yourself, and how we handle your data.** You agree to act in the student's best interest: you
 will **not** try to identify, contact, or influence them, and you will keep anything you see in the programme
@@ -255,13 +266,13 @@ A. Ask for the student's phone number · B. Choose their course · C. Talk to th
 
 ## §C — Donor agreement (e-signed with the sponsor's typed full name)
 
-**myNADI Sponsor Donation Agreement** *(working draft v2026-draft-1)*
+**myNADI Sponsor Donation Agreement** (the "donor agreement") *(working draft v2026-draft-1)*
 
 By signing, I confirm that:
 1. **My contribution is a voluntary, irrevocable donation** to myNADI, made for charitable purposes. It is not an
    investment, loan, or purchase, and I expect no financial return.
-2. **It is not refundable to me.** Once donated, the funds are held by myNADI as a directed-giving balance. I may direct
-   that balance to support students within the programme; I may not withdraw it to a bank account. Amounts from a lapsed,
+2. **It is not refundable to me.** Once donated, the funds are held by myNADI as my **giving balance**. I may direct that
+   balance to support students within the programme; I may not withdraw it to a bank account. Amounts from a lapsed,
    declined, or withheld award return to my giving balance to be redirected, not refunded.
 3. **Awards are released in stages tied to a student's progress**, at myNADI's reasonable discretion, and a stage may be
    withheld if a student does not progress — in which case the withheld amount returns to my giving balance.
@@ -291,26 +302,34 @@ By signing, I confirm that:
 
 # Appendix B — Student / guardian consent (the student's words)
 
-**Consent to share an anonymised profile with sponsors** *(version 2026-draft-3)*
+**Consent to share an anonymised profile with sponsors** *(version 2026-draft-3 — proposed revised wording; see note)*
 
 **Adult applicant (18+):**
 > I, the named applicant (**{student_name}**, NRIC **{student_nric}**), consent to the **B40 Assistance Programme**
-> sharing my profile and supporting information with potential sponsors for the purpose of considering me for financial
-> assistance. I understand I can withdraw this consent at any time.
+> preparing an **anonymised** summary of my profile and sharing **that** with potential sponsors, so that I may be
+> considered for financial assistance. My identifying details and documents are seen only by the programme and are
+> **never** shared with sponsors. I understand I can withdraw this consent at any time.
 >
 > ☐ I have read and agree to the above.
 
 **Parent / guardian of a minor (under 18):**
 > I confirm that I am the parent or guardian of **{student_name}** (NRIC: **{student_nric}**), who is under 18 years old.
 >
-> I give permission for the **B40 Assistance Programme** to share {his/her} profile and documents with sponsors. This is
-> to help {him/her} get financial aid. I understand that I can cancel this permission at any time.
+> I give permission for the **B40 Assistance Programme** to prepare an **anonymised** summary of {his/her} profile and
+> share **that** with sponsors, to help {him/her} get financial aid. {His/Her} identifying details and documents are seen
+> only by the programme and are **never** shared with sponsors. I understand that I can cancel this permission at any time.
 >
 > ☐ As parent or guardian, I have read and agree to the above on the applicant's behalf.
+
+> **⚠️ Proposed revision — please vet this wording.** The **current live** consent text says the programme shares the
+> student's *"profile and supporting information / documents with sponsors"*. That **overstates** the sharing and
+> **contradicts the anonymity model** (§4): sponsors receive only the anonymised summary — never documents or identifying
+> details. The wording above is the corrected version, and it now also tells the student about the **anonymisation
+> safeguard**. The live product text (and `CONSENT_VERSION`) will be updated to match before go-live.
 
 The guardian additionally provides: their full name (as on IC), their NRIC, and their **relationship** to the applicant
 (father / mother / legal guardian / grandparent / brother / sister / relative). A non-parent guardian must upload a
 guardianship letter (court order or the parent's written authorisation).
 
 *A second consent — **consent to the sponsorship itself** — is recorded when an award is accepted (again, by the guardian
-for a minor). Wording to be finalised with you.*
+for a minor). Its wording, and what it should say about staged release / withholding (§6), is to be finalised with you.*
