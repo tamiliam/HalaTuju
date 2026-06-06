@@ -3,9 +3,9 @@
 > **Prepared for:** Vickneswari Veerasamy & Co, Advocates & Solicitors (Kajang).
 > **Prepared by:** HalaTuju (tamiliam).
 > **For: legal review.** **Status: working draft for the lawyer to vet — not yet legal advice, not yet live.**
-> This document describes the sponsor (donor) programme in full so you can (a) test the **robustness of the process**
-> and (b) vet the **words a donor and a student/guardian actually agree to**. We would like you to harden both before
-> we go live with real money and real students.
+> This document describes the sponsor (donor) programme in full so you can vet both **how it works** and **the exact
+> words** people agree to, and harden them before we go live with real money and real students. *(What we are asking for
+> is set out in §0.)*
 >
 > **The full system is not live yet.** Only a pilot of around 20 students is live, to gauge student response; there are
 > no sponsors yet and none have been onboarded. A live system involving real money will be switched on only **after**
@@ -95,8 +95,8 @@ Anonymity is **two-way and permanent**, and enforced in the software, not just b
 
 - **What a sponsor sees:** an **anonymised profile** of a student — a respectful, non-identifying summary of their
   situation, academic band, field of study, and funding need. It is **generated** from non-identifying inputs (never the
-  raw application), and is checked by software before publication to ensure it contains no name, street address, IC,
-  phone, or email. The sponsor-facing data is an **allowlist** (only explicitly permitted, non-identifying fields can ever
+  raw application), and is checked by software before publication to ensure it contains no name, photograph, IC number,
+  home address, phone, or email. The sponsor-facing data is an **allowlist** (only explicitly permitted, non-identifying fields can ever
   appear), so a future change cannot accidentally leak identity.
 - **What a student sees:** nothing identifying about the sponsor. The student's view of their award has **no sponsor
   field at all**.
@@ -210,8 +210,8 @@ amount returns to that balance for you to give to someone else. It never leaves 
 > ☐ I understand I cannot withdraw my donation to my bank; I can only direct it to students within the platform.
 
 **A3 · You will never know who you helped.** To protect vulnerable students, the programme is **permanently anonymous**.
-You will **never** see a student's name, photograph, IC number, or contact details — not while choosing, not after you
-fund them, not ever. You will see only a respectful, non-identifying summary of their situation and need.
+You will **never** see a student's name, photograph, IC number, home address, or contact details — not while choosing,
+not after you fund them, not ever. You will see only a respectful, non-identifying summary of their situation and need.
 > ☐ I understand I will never learn the identity of any student I sponsor, and I will not attempt to find out.
 
 **A4 · The money is released in stages, tied to progress.** An award is not handed over in one lump. It is released to
