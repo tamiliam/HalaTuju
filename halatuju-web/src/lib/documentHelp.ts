@@ -29,6 +29,9 @@ export const HELP_VERDICTS = [
   'income_relationship_mismatch',
   // Income proof (salary slip / EPF) — doesn't match the member's IC (different person).
   'income_proof_person_mismatch',
+  // Income cluster (salary route) — earner IC is in + matches, but the salary slip (the income
+  // proof) hasn't been uploaded yet; nudge it before the relationship doc.
+  'income_proof_needed',
   // Income cluster — a proof was added for a member but their IC hasn't been uploaded yet.
   'income_ic_needed',
   // Income cluster — IC is in + matches the proof; the relationship doc (birth cert /

@@ -679,6 +679,22 @@ class TestIncomeCluster(TestCase):
         from apps.scholarship.income_engine import income_cluster_advice
         self.assertEqual(income_cluster_advice(self.app, 'father'), '')
 
+    def test_cluster_nudges_salary_slip_when_ic_in_but_no_slip(self):
+        # Salary route: IC matches but the salary slip (the income proof) isn't up → nudge it
+        # as the next step (was silent for a father, who needs no relationship doc).
+        from apps.scholarship.income_engine import income_cluster_advice
+        _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='father')
+        self.assertEqual(income_cluster_advice(self.app, 'father'), 'income_proof_needed')
+
+    def test_cluster_salary_slip_comes_before_the_birth_certificate(self):
+        # Mother on the salary route: IC matches; with neither the salary slip nor the BC up,
+        # the SALARY SLIP is nudged first (the income proof), not the birth certificate.
+        from apps.scholarship.income_engine import income_cluster_advice
+        self.app.income_working_members = ['mother']
+        self.app.save()
+        _parent_ic(self.app, 'KAMALA A/P RAMAN', member='mother', nric='770101-01-2222')
+        self.assertEqual(income_cluster_advice(self.app, 'mother'), 'income_proof_needed')
+
 
 class TestIncomeClusterStr(TestCase):
     """STR route: income proofs are UNTAGGED (single earner = income_earner). The same

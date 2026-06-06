@@ -298,3 +298,7 @@ class TestGuardrails(TestCase):
     def test_rel_doc_unreadable_is_a_known_verdict(self):
         self.assertIn('income_rel_doc_unreadable', help_engine.VERDICT_GUIDANCE)
         self.assertIn('income_rel_doc_unreadable', help_engine.VERDICT_FIX_HINT)
+
+    def test_income_proof_needed_is_a_known_verdict(self):
+        self.assertIn('income_proof_needed', help_engine.VERDICT_GUIDANCE)
+        self.assertIn('income_proof_needed', help_engine.VERDICT_FIX_HINT)
