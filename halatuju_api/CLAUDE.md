@@ -445,6 +445,25 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-06)
 
+**✅ SHIPPED + LIVE ON PROD 2026-06-06 — Application completion reminders + auto-close (2 commits `9b53810`+`f7f280d`;
+migration `0041` applied migrate-first via MCP; retro `docs/retrospective-application-reminders.md`).** Escalating
+reminder sequence for shortlisted-but-incomplete students + an auto-close at the end. Cadence from `reminder_anchor_at`:
+**R1 +2d · R2 +9d · R3 +23d · R4/final +53d** ("5 days or we close"), then a 5-day grace → auto-close to a new
+`expired` status. (The 55-min/48-h initial reveal was already live in cohort config.) `reminder_anchor_at` is a separate
+clock knob (= shortlist invitation for new ones; the launch backfill set the in-flight cohort to *today−2d*).
+`services.send_application_reminders` (idempotent, one stage/run; close gated on the final reminder having gone out
+≥5d earlier, never raw days). The per-(cohort,profile) **unique constraint is now PARTIAL** (excludes `expired`) so a
+closed student may restart. 5 trilingual emails (R1–R4 + closure) link to `/scholarship/application` + name **Cikgu
+Gopal** + a human fallback `tamiliam@gmail.com` (temporary). `send_application_reminders` + `backfill_reminder_anchors`
+commands; cron whitelist `application-reminders`. **OPS (live):** api rev `halatuju-api-00298-xhp`; daily Cloud Scheduler
+**`halatuju-application-reminders`** (`0 9 * * *` Asia/KL) → the HTTP cron endpoint (mirrors `halatuju-vision-outage`,
+`X-Cron-Secret` auth); backfill done (9 shortlisted-incomplete apps anchored, **R1 sent live**, all at `reminder_stage=1`).
+Backend+email only (no FE). **1037 courses/reports + 753 scholarship pytest**; scholarship migrations through **`0041`**.
+**▶ Known minor (TD): reminders land ~1 day after the nominal day-count** (anchor clock-time vs the fixed 09:00 tick →
+floor rounding; harmless). **Support email is a personal Gmail for now** — swap to a branded address later (one line in
+`emails.py`). **▶ Next auto-events (no action): R2 ~14 Jun · R3 ~28 Jun · R4 ~28 Jul · close ~2 Aug** (per cohort; any
+student who completes drops off automatically).
+
 **✅ SHIPPED 2026-06-06 — Gopal + Cockpit polish sprint (5 commits `d7e34eb`→`4fb5255` on `main`; NO migration; retro
 `docs/retrospective-gopal-cockpit-polish.md`).** Live-testing follow-up after TD-085, all officer-cockpit + student
 Gopal:
