@@ -735,12 +735,21 @@ def income_cluster_advice(application, member):
         sc = student_str_check(str_doc)
         if sc and 'mismatch' in (sc['name_status'], sc['nric_status']):
             return 'income_proof_person_mismatch'
-    # IC present + coherent, but the relationship-proof doc (mother → birth certificate,
-    # guardian → letter) is still missing — it links the earner to the student. Nudge for it
-    # as the LAST step (father/sibling need no doc: the shared patronymic on the IC proves it).
+    # IC present + coherent. The relationship-proof doc (mother → birth certificate, guardian
+    # → letter) links the earner to the student — it's the LAST step (father/sibling need none:
+    # the shared patronymic on the IC proves it).
     rel_doc = relationship_doc_for(member)
-    if rel_doc and not application.documents.filter(doc_type=rel_doc).exists():
-        return 'income_rel_doc_needed'
+    if rel_doc:
+        rel_obj = (application.documents.filter(doc_type=rel_doc)
+                   .order_by('-uploaded_at').first())
+        if rel_obj is None:
+            return 'income_rel_doc_needed'             # not uploaded yet → nudge for it
+        # Uploaded, but we still can't confirm the link. A name CLASH already returned
+        # 'income_relationship_mismatch' above; a 'pending' here once the doc's vision has
+        # RUN means it was unreadable / the wrong document (e.g. an IC sent as a birth cert).
+        rel_status = icc['name_status'] if icc else 'pending'
+        if rel_status == 'pending' and getattr(rel_obj, 'vision_run_at', None):
+            return 'income_rel_doc_unreadable'
     return ''
 
 

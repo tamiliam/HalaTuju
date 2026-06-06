@@ -776,6 +776,21 @@ class TestIncomeClusterStr(TestCase):
                  fields={'bc_child_name': 'DIVASHINI A/P MURUGAN', 'bc_mother_name': 'KAMALA A/P RAMAN'})
         self.assertEqual(income_cluster_advice(self.app, 'mother'), '')
 
+    def test_mother_rel_doc_unreadable_when_bc_uploaded_but_unread(self):
+        # BC uploaded + vision RAN but no names read (unclear, or an IC sent as a birth cert):
+        # not a name CLASH and not MISSING, so Gopal must still speak (was silent before).
+        from apps.scholarship.income_engine import income_cluster_advice
+        self.app.income_earner = 'mother'
+        self.app.save()
+        _parent_ic(self.app, 'KAMALA A/P RAMAN', member='', nric='770101-01-2222')
+        _add_doc(self.app, 'str', student_verdict='ok', member='',
+                 fields={'recipient_name': 'KAMALA A/P RAMAN', 'recipient_nric': '770101-01-2222',
+                         'status': 'diluluskan', 'year': '2026'})
+        _add_doc(self.app, 'birth_certificate', student_verdict='ok', member='',
+                 fields={'bc_child_name': '', 'bc_mother_name': ''})   # vision ran, nothing read
+        self.assertEqual(income_cluster_advice(self.app, 'mother'),
+                         'income_rel_doc_unreadable')
+
 
 class TestIncomePerCapita(TestCase):
     """Salary route I4: sum the earners' pay from the documents → per-capita vs the cohort

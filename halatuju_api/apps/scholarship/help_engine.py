@@ -70,6 +70,10 @@ VERDICT_GUIDANCE = {
     # document (a birth certificate for a mother, a guardianship letter for a guardian) is
     # still needed to LINK that earner to the student — and it is required to complete.
     'income_rel_doc_needed': "the earner's identity card is uploaded and matches the income document — the last required step is the document that links that earner to the student (a birth certificate for a mother, or a guardianship letter for a guardian), which has not been uploaded yet, so the application cannot be completed until it is added",
+    # The relationship-proof document HAS been uploaded, but we could not read the names that
+    # establish the link (e.g. it was unclear, or the wrong document — an IC sent as a birth
+    # certificate). It must be re-uploaded as a clear copy of the correct document.
+    'income_rel_doc_unreadable': "the document that should link the earner to the student (a birth certificate for a mother, or a guardianship letter for a guardian) has been uploaded, but we could not read the names on it that prove the link — either the photo was unclear or it was the wrong document — so it must be re-uploaded as a clear copy of the correct document before the application can be completed",
     # The STR document is for an older year, or its status is not 'approved' — STR is
     # awarded annually, so an out-of-date STR no longer proves the family's current need.
     'str_not_current': "the STR document is for an earlier year or its status is not approved, and STR is awarded annually — so this one no longer proves the family's CURRENT financial need",
@@ -171,6 +175,15 @@ VERDICT_FIX_HINT = {
         'it links that earner to them. This is the LAST required step — frame it as "to '
         'complete your application", warmly. Do NOT ask them to re-upload the IC or edit their '
         'profile, and do NOT name a different document than the SPECIFICS give.'
+    ),
+    'income_rel_doc_unreadable': (
+        'They DID upload the relationship document (the one named in the SPECIFICS — a birth '
+        'certificate for a mother, a guardianship letter for a guardian), but we could not read '
+        'the names that prove the link. Tell them to check it is a clear photo or PDF of the '
+        'CORRECT document (the actual birth certificate / letter, not an IC or another file) and '
+        're-upload it. Be specific that we need to see the names on it. Do NOT ask them to edit '
+        'their profile or re-upload the IC, and do NOT name a different document than the '
+        'SPECIFICS give.'
     ),
     'str_not_current': (
         'Gently explain that STR is given out fresh each year, so we need the CURRENT year\'s '

@@ -27,6 +27,7 @@ import {
 } from '@/lib/incomeWizard'
 import DocumentHelpCoach from './DocumentHelpCoach'
 import IncomeClusterCoach from './IncomeClusterCoach'
+import { clusterAnchorKey, clusterDocKey } from '@/lib/documentHelp'
 
 // Per-file size cap (mirrors the server's MAX_DOC_SIZE_BYTES default — server is
 // authoritative; this gives the student instant feedback before any upload).
@@ -1036,6 +1037,10 @@ function IncomeWizard({
     [...docs].sort((a, b) => DISPLAY_ORDER.indexOf(a) - DISPLAY_ORDER.indexOf(b))
   // STR route: income-doc help + IC card title name the single chosen earner.
   const e = ans.income_earner
+  // The single cluster coach is dropped directly beneath the MOST RECENTLY UPLOADED document
+  // in the earner's cluster (so it sits under whatever the student just added, and moves down
+  // when they add the next one) — not at the foot, where it sank below the utility bills.
+  const strAnchor = e ? clusterAnchorKey(docs, e, 'str') : ''
   const helpFor = (dt: string): string | undefined => {
     if (!e) return undefined
     if (dt === 'parent_ic') return iq(`icHelp.${e}`)
@@ -1105,15 +1110,22 @@ function IncomeWizard({
       {ready && ans.income_route === 'str' && (
         <div className="space-y-3 pt-1">
           {ordered(reqs.compulsory).map((dt) => (
-            <div key={dt}>{renderCard(dt, { required: true, helpOverride: helpFor(dt), titleOverride: titleFor(dt), suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}</div>
+            <div key={dt}>
+              {renderCard(dt, { required: true, helpOverride: helpFor(dt), titleOverride: titleFor(dt), suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
+              {/* The single cluster coach rides directly under the most recently uploaded cluster doc. */}
+              {e && clusterDocKey(dt, '') === strAnchor && (
+                <div className="mt-2"><IncomeClusterCoach member={e} route="str" docs={docs} token={token} t={t} lang={lang} /></div>
+              )}
+            </div>
           ))}
           {ordered(reqs.optional).map((dt) => (
             <div key={dt}>
               {renderCard(dt, { required: false, helpOverride: helpFor(dt), titleOverride: titleFor(dt), suppressCoach: CLUSTER_COACH_DOCS.has(dt) })}
+              {e && clusterDocKey(dt, '') === strAnchor && (
+                <div className="mt-2"><IncomeClusterCoach member={e} route="str" docs={docs} token={token} t={t} lang={lang} /></div>
+              )}
             </div>
           ))}
-          {/* One coach for the whole earner cluster, at its foot (after the relationship doc). */}
-          {e && <IncomeClusterCoach member={e} route="str" docs={docs} token={token} t={t} lang={lang} />}
           <p className="text-xs text-gray-400">{iq('footer')}</p>
         </div>
       )}
@@ -1121,7 +1133,13 @@ function IncomeWizard({
       {/* Salary route — one document block per ticked working member. */}
       {ready && ans.income_route === 'salary' && (
         <div className="space-y-3 pt-1">
-          {reqs.members.map((block) => (
+          {reqs.members.map((block) => {
+            // This member's cluster coach rides under their most recently uploaded cluster doc.
+            const salAnchor = clusterAnchorKey(docs, block.member, 'salary')
+            const coach = (
+              <div className="mt-2"><IncomeClusterCoach member={block.member} route="salary" docs={docs} token={token} t={t} lang={lang} /></div>
+            )
+            return (
             <div key={block.member} className="rounded-lg border border-gray-100 bg-gray-50/60 p-2.5 space-y-2">
               <p className="text-xs font-semibold text-gray-700">{iq(`member.${block.member}`)}</p>
               {block.compulsory.map(({ docType, member }) => (
@@ -1130,6 +1148,7 @@ function IncomeWizard({
                     helpOverride: memberHelp(docType, block.member),
                     titleOverride: memberTitle(docType, block.member),
                     suppressCoach: CLUSTER_COACH_DOCS.has(docType) })}
+                  {clusterDocKey(docType, member) === salAnchor && coach}
                 </div>
               ))}
               {block.optional.map(({ docType, member }) => (
@@ -1137,12 +1156,11 @@ function IncomeWizard({
                   {renderCard(docType, { required: false, member,
                     helpOverride: memberHelp(docType, block.member),
                     suppressCoach: CLUSTER_COACH_DOCS.has(docType) })}
+                  {clusterDocKey(docType, member) === salAnchor && coach}
                 </div>
               ))}
-              {/* One coach per member's cluster, at the foot of that member's block. */}
-              <IncomeClusterCoach member={block.member} route="salary" docs={docs} token={token} t={t} lang={lang} />
             </div>
-          ))}
+          )})}
           {/* Household-level optional credibility docs (utility bills). */}
           {reqs.optional.map((dt) => (
             <div key={dt}>

@@ -522,7 +522,8 @@ class IncomeClusterHelpView(APIView):
         context = {
             'member': _MEMBER_LABEL.get(member, member),
             'income_doc': _DOC_LABEL.get(proof_kind, ''),
-            'rel_doc': _DOC_LABEL.get(rel_doc, '') if verdict == 'income_rel_doc_needed' else '',
+            'rel_doc': (_DOC_LABEL.get(rel_doc, '')
+                        if verdict in ('income_rel_doc_needed', 'income_rel_doc_unreadable') else ''),
         }
         result = help_engine.generate_document_help(
             'income_cluster', verdict, first_name=first_name, target_language=language,
