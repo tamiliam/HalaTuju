@@ -1520,13 +1520,16 @@
         "guardian": "Guardian",
         "firstInFamily": "First in family at university",
         "siblings": "Siblings studying",
-        "chosenStudy": "Chosen study"
+        "chosenStudy": "Chosen study",
+        "programmeLengthLabel": "Programme length",
+        "support": "Support needed"
       },
       "value": {
         "route_str": "STR document",
         "route_salary": "Salary slip",
         "bySelf": "by you",
-        "byGuardian": "by your parent / guardian"
+        "byGuardian": "by your parent / guardian",
+        "months": "{n} months"
       },
       "yes": "Yes",
       "no": "No"

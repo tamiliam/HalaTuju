@@ -1520,13 +1520,16 @@
         "guardian": "Penjaga",
         "firstInFamily": "Pertama dalam keluarga ke universiti",
         "siblings": "Adik-beradik yang belajar",
-        "chosenStudy": "Pengajian pilihan"
+        "chosenStudy": "Pengajian pilihan",
+        "programmeLengthLabel": "Tempoh program",
+        "support": "Bantuan diperlukan"
       },
       "value": {
         "route_str": "Dokumen STR",
         "route_salary": "Slip gaji",
         "bySelf": "oleh anda",
-        "byGuardian": "oleh ibu bapa / penjaga anda"
+        "byGuardian": "oleh ibu bapa / penjaga anda",
+        "months": "{n} bulan"
       },
       "yes": "Ya",
       "no": "Tidak"
