@@ -112,6 +112,16 @@ class TestBirthCertificateWiring(SimpleTestCase):
         for f in ('bc_child_name', 'bc_mother_name', 'bc_father_name'):
             self.assertIn(f, props)
 
+    def test_birth_certificate_is_in_the_upload_pipeline(self):
+        # The schema existing is NOT enough — the upload handler only OCRs + field-extracts
+        # doc types in these sets. A BC missing here was silently never read (child/mother
+        # names always blank → relationship could never confirm). Guard against that regressing.
+        from apps.scholarship import vision
+        from apps.scholarship import views
+        self.assertIn('birth_certificate', views.SUPPORTING_NAME_CHECK_TYPES)   # gets OCR'd
+        self.assertIn('birth_certificate', vision.GEMINI_EXTRACT_DOC_TYPES)     # gets field-extracted
+        self.assertIn('birth_certificate', views.RELATIONSHIP_DOC_TYPES)        # always-extract (cost knob can't skip)
+
 
 class TestRelationshipDoc(SimpleTestCase):
     def test_relationship_doc_for(self):
