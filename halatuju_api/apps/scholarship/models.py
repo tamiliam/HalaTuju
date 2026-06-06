@@ -947,7 +947,7 @@ class ResolutionItem(models.Model):
     # The verdict fact this item belongs to (identity/academic/income/pathway),
     # or 'other' for an officer-raised item that isn't tied to a fact.
     fact = models.CharField(max_length=20, default='other')
-    # The verdict item code (e.g. 'str_claimed_no_doc') or, for officer items,
+    # The verdict item code (e.g. 'income_proof_missing') or, for officer items,
     # a synthetic 'officer_<n>'. Drives the i18n copy + the resolution UI (S4).
     code = models.CharField(max_length=60)
     # The verdict item's params, frozen for display (so the queue reads the same

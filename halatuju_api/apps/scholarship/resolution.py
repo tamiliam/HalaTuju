@@ -42,7 +42,6 @@ CODE_TO_TICKET = {
     'academic_missing_subjects':  {'fact': 'academic', 'kind': 'confirm'},
     'academic_grade_mismatch':    {'fact': 'academic', 'kind': 'confirm'},
     # Income
-    'str_claimed_no_doc':   {'fact': 'income', 'kind': 'doc', 'doc_type': 'str'},
     'income_proof_missing': {'fact': 'income', 'kind': 'doc', 'doc_type': 'str'},
     # Income Check-1 (item 3: earner identity + relationship). `income_unverified_needs_interview`
     # is deliberately ABSENT — it's an officer/interview flag, not a student to-do.

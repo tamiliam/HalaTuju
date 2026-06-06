@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
+import { formatNricDisplay } from '@/lib/scholarship'
 
 export default function AdminStudentDetail() {
   const { id } = useParams<{ id: string }>()
@@ -56,11 +57,6 @@ export default function AdminStudentDetail() {
     return { text: t('admin.weak'), className: 'bg-gray-100 text-gray-600' }
   }
 
-  const formatNric = (nric: string | null) => {
-    if (!nric || nric.length !== 12) return nric || '\u2014'
-    return `${nric.slice(0, 6)}-${nric.slice(6, 8)}-${nric.slice(8)}`
-  }
-
   const formatPhone = (phone: string | null) => {
     if (!phone) return '\u2014'
     const digits = phone.replace(/\D/g, '')
@@ -92,7 +88,7 @@ export default function AdminStudentDetail() {
 
       <h1 className="text-2xl font-bold mb-1">{data.name || t('admin.noName')}</h1>
       <p className="text-gray-500 mb-8 text-sm">
-        {formatNric(data.nric)} &middot; {data.exam_type?.toUpperCase()} &middot; {data.gender}
+        {formatNricDisplay(data.nric)} &middot; {data.exam_type?.toUpperCase()} &middot; {data.gender}
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

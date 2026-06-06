@@ -9,13 +9,9 @@ import {
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
+import { formatNricDisplay } from '@/lib/scholarship'
 
 const PER_PAGE = 10
-
-const formatNric = (nric: string | null) => {
-  if (!nric || nric.length !== 12) return nric || '\u2014'
-  return `${nric.slice(0, 6)}-${nric.slice(6, 8)}-${nric.slice(8)}`
-}
 
 const formatPhone = (phone: string | null) => {
   if (!phone) return '\u2014'
@@ -108,7 +104,7 @@ export default function AdminStudentList() {
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="font-medium text-blue-600">{s.name || '\u2014'}</p>
-                <p className="text-xs text-gray-500 font-mono mt-0.5">{formatNric(s.nric)}</p>
+                <p className="text-xs text-gray-500 font-mono mt-0.5">{formatNricDisplay(s.nric)}</p>
               </div>
               <span
                 className={`px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${
@@ -163,7 +159,7 @@ export default function AdminStudentList() {
                   </Link>
                 </td>
                 <td className="px-4 py-3.5 font-mono text-xs text-gray-600">
-                  {formatNric(s.nric)}
+                  {formatNricDisplay(s.nric)}
                 </td>
                 <td className="px-4 py-3.5 text-gray-600">{s.gender || '\u2014'}</td>
                 <td className="px-4 py-3.5">

@@ -66,6 +66,13 @@ export function formatNric(raw: string): string {
   return [d.slice(0, 6), d.slice(6, 8), d.slice(8, 12)].filter(Boolean).join('-')
 }
 
+/** Display an NRIC as XXXXXX-XX-XXXX, or an em-dash when missing/blank. Null-safe — for
+ *  read-only display sites (admin tables, detail headers), unlike `formatNric` which is for
+ *  input fields and takes a string. */
+export function formatNricDisplay(nric: string | null | undefined): string {
+  return formatNric(nric || '') || '—'
+}
+
 /**
  * Format raw phone keystrokes/paste into a readable Malaysian style, aware of
  * both mobile and landline numbering (area codes are 2 or 3 digits by region):

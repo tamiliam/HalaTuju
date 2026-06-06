@@ -64,7 +64,6 @@ export const KNOWN_CODES = [
   'results_slip_name_mismatch',
   'academic_missing_subjects',
   'academic_grade_mismatch',
-  'str_claimed_no_doc',
   'income_proof_missing',
   // Income Check-1 (item 3: earner identity + relationship). The officer-only
   // `income_unverified_needs_interview` is NOT here — it's an interview flag, not a to-do.
