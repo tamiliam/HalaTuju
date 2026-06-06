@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Birth certificates are now actually read (child + mother names) — the mother income route's relationship check
+  finally works.** The BC's extraction schema existed, but `birth_certificate` was in neither `SUPPORTING_NAME_CHECK_TYPES`
+  (OCR) nor `GEMINI_EXTRACT_DOC_TYPES` (field extraction), so the upload handler skipped it entirely: `bc_child_name`/
+  `bc_mother_name` were *always* blank ("Child: —, Mother: —"), the mother‑relationship verdict could never confirm, and
+  (downstream) the unreadable‑BC nudge could never fire. The BC is now routed through the pipeline and **always**
+  field‑extracts (a new `RELATIONSHIP_DOC_TYPES` set bypasses the cost knob, since its verdict needs the structured
+  fields). A guard test asserts the BC stays in all three sets. (The guardianship‑letter route has a separate, deeper gap
+  — logged as TD‑089.) No migration; 761 scholarship pytest.
 - **Cikgu Gopal (income cluster coach) now rides directly beneath the document the student just uploaded, and speaks
   when the birth certificate is unreadable.** Two live-testing issues on the income cluster: (1) on the STR route the
   coach was pinned to the *foot* of the cluster, which sat below the water + electricity bills — so it sank far from the

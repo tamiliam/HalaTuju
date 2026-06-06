@@ -215,9 +215,13 @@ class DocumentSignUploadView(APIView):
 # results slip, offer letter, and utility bills). Utility bills additionally get a
 # soft home-address check. IC / parent_ic use the dedicated MyKad pipeline instead.
 BILL_DOC_TYPES = frozenset({'water_bill', 'electricity_bill'})
+# Income relationship-proof docs whose VERDICT depends on the Gemini-extracted structured
+# fields (e.g. a birth certificate's child/mother names), so they must ALWAYS field-extract —
+# never gated by the "only when uncertain" cost knob, and never skipped at upload.
+RELATIONSHIP_DOC_TYPES = frozenset({'birth_certificate'})
 SUPPORTING_NAME_CHECK_TYPES = frozenset({
     'results_slip', 'str', 'salary_slip', 'epf', 'offer_letter',
-} | BILL_DOC_TYPES)
+} | BILL_DOC_TYPES | RELATIONSHIP_DOC_TYPES)
 
 # Accepted upload formats: images (phone photos) + PDF (scan-to-PDF / digital docs
 # like EPF & payslips). Everything else (video, etc.) is rejected. Before this
@@ -331,7 +335,11 @@ class DocumentListCreateView(APIView):
         from django.utils import timezone
         uncertain = (match.get('name_match') in ('not_found', 'unreadable')
                      or match.get('address_match') in ('not_found', 'unreadable'))
-        if getattr(_settings, 'DOC_ASSIST_ONLY_WHEN_UNCERTAIN', False) and not uncertain:
+        # Relationship docs (birth cert) MUST extract — their verdict reads the structured
+        # fields (child/mother names), which a name-presence "found" wouldn't surface. Never
+        # let the cost knob skip them.
+        always = doc.doc_type in RELATIONSHIP_DOC_TYPES
+        if getattr(_settings, 'DOC_ASSIST_ONLY_WHEN_UNCERTAIN', False) and not uncertain and not always:
             return  # clean upload + knob on → skip the billable call
         recent = ApplicantDocument.objects.filter(
             application=app, vision_fields_run_at__gte=timezone.now() - timedelta(hours=1)).count()

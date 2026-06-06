@@ -557,3 +557,12 @@
   for invalid input, so a blind swap would crash on a null `nric`. **To resolve:** make the shared `formatNric` null-safe
   (or add a `formatNricDisplay` wrapper) and replace both locals. Cosmetic; both already render the canonical format.
   Low priority. (Logged 2026-06-06.)
+- TD-089: **The guardianship-letter relationship path is unwired (guardian income route).** Unlike the birth
+  certificate (fixed 2026-06-06), `guardianship_letter` is NOT in `views.SUPPORTING_NAME_CHECK_TYPES`, so an uploaded
+  letter is never OCR'd or field-extracted. Worse, `income_engine._relationship_inputs` reads the letter's name from
+  `doc.vision_name` — a field only the IC path (`run_vision_for_document`) sets; neither `run_vision_match_for_document`
+  nor `run_field_extraction_for_document` writes it. So even after routing the letter into the pipeline, the guardian
+  relationship would stay `pending`. **To resolve:** add `guardianship_letter` to `SUPPORTING_NAME_CHECK_TYPES` +
+  `RELATIONSHIP_DOC_TYPES`, give it a name field in its extraction schema, and change `_relationship_inputs` to read the
+  guardian's name from `vision_fields['fields']` (not `vision_name`). Deliberately NOT done in the BC fix to avoid making
+  valid guardian letters show a false "unreadable". Guardian income route is rare; low priority. (Logged 2026-06-06.)

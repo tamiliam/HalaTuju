@@ -697,7 +697,7 @@ def run_vision_match_for_document(doc, *, names, postcode='', city='', check_add
 
 GEMINI_EXTRACT_DOC_TYPES = frozenset({
     'salary_slip', 'epf', 'water_bill', 'electricity_bill', 'results_slip', 'offer_letter',
-    'str', 'guardianship_letter',
+    'str', 'guardianship_letter', 'birth_certificate',
 })
 
 _STR = {'type': 'string'}
