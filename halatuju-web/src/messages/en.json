@@ -1406,10 +1406,6 @@
           "title": "Check your grades",
           "desc": "Some grades don't match your results slip. Please re-check what you entered."
         },
-        "str_claimed_no_doc": {
-          "title": "Upload your STR proof",
-          "desc": "You told us your family receives STR — please upload the document to confirm."
-        },
         "income_proof_missing": {
           "title": "Upload proof of income",
           "desc": "We need one income document (salary slip, EPF, or STR) for your household."
@@ -2065,10 +2061,6 @@
           "fact": "Signed declaration name “{declaration}” differs from the profile name “{profile_name}”.",
           "question": "The name you signed differs from your profile — small typo, or are these genuinely different names?"
         },
-        "str_claimed_no_doc": {
-          "fact": "Student says family receives STR but no STR confirmation document was uploaded.",
-          "question": "You said your family receives STR — could you upload the STR confirmation? It helps us verify quickly."
-        },
         "device_in_funding": {
           "fact": "Student ticked “device” (laptop/tablet) under funding.",
           "question": "RM 3,000 may not cover a laptop alongside other costs. If we can only support partially, how would you bridge the gap?"
@@ -2176,7 +2168,6 @@
           "results_slip_name_mismatch": "The results slip is in a different name. Confirm.",
           "results_slip_unreadable": "The results slip could not be read — ask for a clearer copy.",
           "grades_unverified": "Grades not yet cross-checked against the slip — eyeball them (automated check coming).",
-          "str_claimed_no_doc": "Student says the family receives STR but hasn't uploaded the STR letter — request it.",
           "str_present_unverified": "STR document present but not yet matched to the household — confirm.",
           "income_proof_missing": "No proof of income uploaded — request STR, salary slip, or EPF.",
           "income_earner_undeclared": "The student hasn't said whose income they're showing (the income wizard is incomplete) — we can't check the documents until they do.",

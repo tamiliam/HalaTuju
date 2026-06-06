@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **Orphaned `str_claimed_no_doc` anomaly rule.** The pre‑interview flag "student says the family receives STR but
+  hasn't uploaded the letter" is superseded by the income wizard, which now *requires* the STR document on the STR route
+  (consent gate v2). Removed the detector + its `_DETECTORS` registration, the `resolution.py` ticket mapping, the
+  `actionCentre` known‑code, and its i18n in all three namespaces ×3 languages; tests updated. No migration.
+
 ### Changed
+- **De‑duplicated `formatNric` (TD‑088).** The two admin students pages each carried their own `formatNric`; both now use
+  a single null‑safe `formatNricDisplay()` in `lib/scholarship.ts` (returns an em‑dash for a missing IC). FE‑only.
 - **Cikgu Gopal (income cluster) — two live‑testing refinements.** (1) **Salary‑route sequencing:** once the earner's IC
   is in and matches, Gopal now nudges the **salary slip** (the income proof) as the logical next step before the birth
   certificate — previously it jumped straight to the BC and never mentioned the slip (new `income_proof_needed` verdict,

@@ -178,24 +178,6 @@ class TestDeclarationNameMismatch(_Base):
         self.assertNotIn('declaration_name_mismatch', codes)
 
 
-class TestStrClaimedNoDoc(_Base):
-    def test_flag_when_str_claimed_without_doc(self):
-        self.profile.receives_str = True
-        self.profile.save()
-        codes = [a['code'] for a in detect_anomalies(self.app)]
-        self.assertIn('str_claimed_no_doc', codes)
-
-    def test_no_flag_when_str_claimed_with_doc(self):
-        self.profile.receives_str = True
-        self.profile.save()
-        ApplicantDocument.objects.create(
-            application=self.app, doc_type='str',
-            storage_path=f'{self.app.id}/str/proof',
-        )
-        codes = [a['code'] for a in detect_anomalies(self.app)]
-        self.assertNotIn('str_claimed_no_doc', codes)
-
-
 class TestDeviceInFunding(_Base):
     def test_flag_when_device_ticked(self):
         FundingNeed.objects.create(
@@ -232,21 +214,19 @@ class TestAnomalyShape(_Base):
     def test_multiple_flags_in_registration_order(self):
         """Order is stable + matches the _DETECTORS tuple — so the admin
         always sees the same flags in the same order for the same data."""
-        # Trigger flags from the 4th + 7th + 9th detectors (jkm_high_income,
-        # funding_other_without_note, str_claimed_no_doc) and confirm order.
+        # Trigger flags from two detectors registered in this order (jkm_high_income then
+        # funding_other_without_note) and confirm the output preserves _DETECTORS order.
         self.profile.receives_jkm = True
-        self.profile.receives_str = True
         self.profile.household_income = 5000
         self.profile.save()
         FundingNeed.objects.create(
             application=self.app, categories=['other'], funding_note='',
         )
         codes = [a['code'] for a in detect_anomalies(self.app)]
-        # jkm comes before funding_other comes before str_claimed in _DETECTORS.
+        # jkm comes before funding_other in _DETECTORS.
         self.assertEqual(codes, [
             'jkm_high_income',
             'funding_other_without_note',
-            'str_claimed_no_doc',
         ])
 
 

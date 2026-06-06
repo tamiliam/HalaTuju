@@ -218,18 +218,6 @@ def _detect_declaration_name_mismatch(application) -> Optional[Anomaly]:
     })
 
 
-def _detect_str_claimed_no_doc(application) -> Optional[Anomaly]:
-    """Student says the family receives STR but hasn't uploaded the STR
-    confirmation document — verify quickly + request the doc."""
-    profile = application.profile
-    if not profile or not profile.receives_str:
-        return None
-    has_str_doc = application.documents.filter(doc_type='str').exists()
-    if has_str_doc:
-        return None
-    return Anomaly('str_claimed_no_doc', {})
-
-
 def _detect_device_in_funding(application) -> Optional[Anomaly]:
     """Student ticked 'device' (laptop/tablet) in funding. RM 3,000 won't cover
     a decent laptop plus the rest of the programme — worth understanding their
@@ -288,7 +276,6 @@ _DETECTORS = (
     _detect_first_in_family_with_siblings_studying,
     _detect_funding_other_without_note,
     _detect_declaration_name_mismatch,
-    _detect_str_claimed_no_doc,
     _detect_device_in_funding,
     # S17 — minor consent flow
     _detect_parent_ic_name_mismatch,

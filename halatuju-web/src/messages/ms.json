@@ -1406,10 +1406,6 @@
           "title": "Semak gred anda",
           "desc": "Sesetengah gred tidak sepadan dengan slip keputusan. Sila semak semula yang dimasukkan."
         },
-        "str_claimed_no_doc": {
-          "title": "Muat naik bukti STR",
-          "desc": "Anda beritahu keluarga anda menerima STR — sila muat naik dokumen untuk mengesahkan."
-        },
         "income_proof_missing": {
           "title": "Muat naik bukti pendapatan",
           "desc": "Kami perlukan satu dokumen pendapatan (slip gaji, KWSP, atau STR) untuk isi rumah anda."
@@ -2065,10 +2061,6 @@
           "fact": "Nama yang ditandatangani “{declaration}” berbeza daripada nama profil “{profile_name}”.",
           "question": "Nama yang anda tandatangani berbeza daripada profil anda — kesilapan kecil atau memang nama yang berbeza?"
         },
-        "str_claimed_no_doc": {
-          "fact": "Pelajar berkata keluarga menerima STR tetapi tiada dokumen pengesahan STR dimuat naik.",
-          "question": "Anda kata keluarga anda terima STR — bolehkah anda muat naik pengesahan STR? Ia membantu kami sahkan dengan cepat."
-        },
         "device_in_funding": {
           "fact": "Pelajar menanda “peranti” (komputer riba/tablet) bawah pembiayaan.",
           "question": "RM 3,000 mungkin tidak cukup untuk komputer riba bersama kos lain. Jika kami hanya boleh sokong sebahagian, bagaimana anda akan tampung jurang itu?"
@@ -2176,7 +2168,6 @@
           "results_slip_name_mismatch": "Slip keputusan atas nama berbeza. Sahkan.",
           "results_slip_unreadable": "Slip keputusan tidak dapat dibaca — minta salinan yang lebih jelas.",
           "grades_unverified": "Gred belum disemak silang dengan slip — semak sendiri (semakan automatik akan datang).",
-          "str_claimed_no_doc": "Pelajar berkata keluarga menerima STR tetapi belum memuat naik surat STR — minta surat itu.",
           "str_present_unverified": "Dokumen STR ada tetapi belum dipadankan dengan isi rumah — sahkan.",
           "income_proof_missing": "Tiada bukti pendapatan dimuat naik — minta STR, slip gaji, atau KWSP.",
           "income_earner_undeclared": "Pelajar belum memberitahu pendapatan siapa yang ditunjukkan (wizard pendapatan belum lengkap) — kami tidak dapat menyemak dokumen sehingga itu.",
