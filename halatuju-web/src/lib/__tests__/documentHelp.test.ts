@@ -1,6 +1,7 @@
 import {
   shouldShowCoach, fallbackKeyFor, HELP_VERDICTS,
-  helpSignal, readHelpCache, writeHelpCache, clusterDocsFor, type StorageLike, type CachedHelp,
+  helpSignal, readHelpCache, writeHelpCache, clusterDocsFor,
+  clusterAnchorKey, clusterDocKey, type StorageLike, type CachedHelp,
 } from '@/lib/documentHelp'
 import type { ApplicantDocument } from '@/lib/api'
 
@@ -54,6 +55,37 @@ describe('clusterDocsFor', () => {
 
   it('returns [] when nothing in the cluster is uploaded', () => {
     expect(clusterDocsFor([doc({ id: 9, doc_type: 'ic' })], 'father', 'str')).toEqual([])
+  })
+})
+
+describe('clusterAnchorKey (the coach rides under the latest-uploaded cluster doc)', () => {
+  it('STR route: returns the most recently uploaded cluster doc, not a later non-cluster one', () => {
+    const docs = [
+      doc({ id: 1, doc_type: 'str', household_member: '', uploaded_at: '2026-06-01T00:00:00Z' }),
+      doc({ id: 2, doc_type: 'parent_ic', household_member: '', uploaded_at: '2026-06-03T00:00:00Z' }),
+      doc({ id: 3, doc_type: 'water_bill', household_member: '', uploaded_at: '2026-06-09T00:00:00Z' }), // later, but NOT a cluster doc
+    ]
+    expect(clusterAnchorKey(docs, 'mother', 'str')).toBe(clusterDocKey('parent_ic', ''))
+  })
+
+  it('STR route + mother: moves to the birth certificate once it is the newest cluster upload', () => {
+    const docs = [
+      doc({ id: 2, doc_type: 'parent_ic', household_member: '', uploaded_at: '2026-06-03T00:00:00Z' }),
+      doc({ id: 4, doc_type: 'birth_certificate', household_member: '', uploaded_at: '2026-06-05T00:00:00Z' }),
+    ]
+    expect(clusterAnchorKey(docs, 'mother', 'str')).toBe(clusterDocKey('birth_certificate', ''))
+  })
+
+  it('salary route: keys include the member tag', () => {
+    const docs = [
+      doc({ id: 1, doc_type: 'parent_ic', household_member: 'father', uploaded_at: '2026-06-02T00:00:00Z' }),
+      doc({ id: 2, doc_type: 'salary_slip', household_member: 'father', uploaded_at: '2026-06-04T00:00:00Z' }),
+    ]
+    expect(clusterAnchorKey(docs, 'father', 'salary')).toBe(clusterDocKey('salary_slip', 'father'))
+  })
+
+  it('returns "" when the cluster is empty (nothing to anchor)', () => {
+    expect(clusterAnchorKey([doc({ id: 9, doc_type: 'ic' })], 'father', 'str')).toBe('')
   })
 })
 

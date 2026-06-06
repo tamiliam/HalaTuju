@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Cikgu Gopal (income cluster coach) now rides directly beneath the document the student just uploaded, and speaks
+  when the birth certificate is unreadable.** Two live-testing issues on the income cluster: (1) on the STR route the
+  coach was pinned to the *foot* of the cluster, which sat below the water + electricity bills — so it sank far from the
+  income documents. It now anchors under the **most recently uploaded cluster document** (by `uploaded_at`) and moves
+  down to the next one when another is added (new `clusterAnchorKey`/`clusterDocKey` helpers; utility bills aren't cluster
+  docs so it never lands there). (2) When the relationship doc (birth certificate / guardianship letter) was uploaded but
+  unreadable — unclear, or the wrong document (an IC sent as a birth cert) — `income_cluster_advice` returned nothing
+  (it's neither a name *mismatch* nor a *missing* doc), so Gopal went silent. New verdict **`income_rel_doc_unreadable`**:
+  once the doc is uploaded and its vision has run but the link still can't be read, Gopal asks for a clear copy of the
+  correct document. No migration; 760 scholarship pytest + 266 jest + next build clean; i18n parity 2025.
+
 ### Changed
 - **IC numbers now display in the canonical `XXXXXX-XX-XXXX` format everywhere they're shown.** The student
   document checklists (identity IC, income earner IC, income proof, STR recipient) and the officer review cockpit

@@ -34,6 +34,9 @@ export const HELP_VERDICTS = [
   // Income cluster — IC is in + matches the proof; the relationship doc (birth cert /
   // guardianship letter) is the last required step to link the earner to the student.
   'income_rel_doc_needed',
+  // Income cluster — the relationship doc IS uploaded but unreadable / the wrong document
+  // (e.g. an IC sent as a birth cert), so the earner-to-student link can't be confirmed.
+  'income_rel_doc_unreadable',
   // STR document is out of date (older year / not approved) — STR is awarded annually.
   'str_not_current',
 ] as const
@@ -146,6 +149,27 @@ export function clusterDocsFor(
     const m = d.household_member || ''
     return (INCOME_EVIDENCE.has(d.doc_type) && m === member) || (!!rel && d.doc_type === rel && m === '')
   })
+}
+
+/** Identity key for one document inside a cluster — `doc_type` plus its member tag (income
+ *  evidence is tagged on the salary route; the STR + relationship doc are untagged). The
+ *  render loop builds the same key per card to decide where to drop the single cluster coach. */
+export function clusterDocKey(docType: string, member: string): string {
+  return `${docType}${member || ''}`
+}
+
+/** The cluster's coach is anchored under the MOST RECENTLY UPLOADED document in the cluster
+ *  (by `uploaded_at`), so it sits right beneath whatever the student just added — and moves
+ *  down to the next document when they upload another. Returns that doc's `clusterDocKey`, or
+ *  '' when the cluster is empty (nothing to anchor to). */
+export function clusterAnchorKey(
+  docs: ApplicantDocument[], member: string, route: string,
+): string {
+  const clusterDocs = clusterDocsFor(docs, member, route)
+  if (!clusterDocs.length) return ''
+  const latest = clusterDocs.reduce((a, b) =>
+    (a.uploaded_at || '') >= (b.uploaded_at || '') ? a : b)
+  return clusterDocKey(latest.doc_type, latest.household_member || '')
 }
 
 /** A signal that changes whenever any document in the cluster changes (upload / re-run /
