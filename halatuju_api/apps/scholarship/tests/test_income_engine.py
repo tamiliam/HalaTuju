@@ -234,8 +234,13 @@ class TestIncomeIcCheck(SimpleTestCase):
     """The per-document income IC check (father/sibling paths need no DB)."""
     @staticmethod
     def _doc(member, ic_name, *, run=True, error='', nric='800101-01-1234', address='KL'):
-        app = SimpleNamespace(income_earner='',
-                              profile=SimpleNamespace(name='DIVASHINI A/P MURUGAN'))
+        # No income proof in this cluster (empty documents) → the proof-match check is a no-op;
+        # these tests only exercise the father/sibling relationship (patronymic) path.
+        _empty_qs = SimpleNamespace(order_by=lambda *a, **k: SimpleNamespace(first=lambda: None),
+                                    first=lambda: None)
+        app = SimpleNamespace(income_earner='', income_route='',
+                              profile=SimpleNamespace(name='DIVASHINI A/P MURUGAN'),
+                              documents=SimpleNamespace(filter=lambda **kw: _empty_qs))
         return SimpleNamespace(doc_type='parent_ic', household_member=member,
                                vision_nric=nric, vision_name=ic_name, vision_address=address,
                                vision_run_at=(object() if run else None), vision_error=error,

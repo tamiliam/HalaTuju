@@ -1214,9 +1214,15 @@ export interface IncomeIcCheck {
   name: string
   address: string
   member: string
+  // RELATIONSHIP to the student (patronymic / birth cert / letter):
   // 'match' | 'mismatch' | 'unknown' (no patronymic / no member) | 'pending' (not read)
   name_status: 'match' | 'mismatch' | 'unknown' | 'pending'
   readable: boolean
+  // Cross-check against the cluster's income proof (the reason the IC is uploaded): does this
+  // IC's holder match the STR / salary slip? 'match' | 'mismatch' | 'no_ref' (no proof yet).
+  proof_kind?: 'str' | 'salary_slip' | 'epf' | ''
+  proof_name_status?: 'match' | 'mismatch' | 'no_ref'
+  proof_nric_status?: 'match' | 'mismatch' | 'no_ref'
   // The CLUSTER coach verdict for this member (relationship + coherence across their IC +
   // income proofs); '' when the cluster is consistent. Drives the single per-member coach.
   cluster_status?: string

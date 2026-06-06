@@ -735,10 +735,46 @@ class TestIncomeClusterStr(TestCase):
         self.assertEqual(income_cluster_advice(self.app, 'father'), 'str_not_current')
 
     def test_str_current_cluster_is_silent(self):
+        # Father needs NO relationship doc (patronymic) — once the IC matches the STR, silent.
         from apps.scholarship.income_engine import income_cluster_advice
         _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='', nric='600101-01-1111')
         self._str(year='2026')
         self.assertEqual(income_cluster_advice(self.app, 'father'), '')
+
+    def test_ic_proof_match_surfaced_for_student(self):
+        # The earner IC now reports whether it MATCHES the income proof (the STR) — the
+        # student-facing "Matches the STR document" check.
+        from apps.scholarship.income_engine import student_income_ic_check
+        ic = _parent_ic(self.app, 'MURUGAN A/L KESAVAN', member='', nric='600101-01-1111')
+        self._str(year='2026')                              # recipient MURUGAN, nric 600101-01-1111
+        chk = student_income_ic_check(ic)
+        self.assertEqual(chk['proof_kind'], 'str')
+        self.assertEqual(chk['proof_name_status'], 'match')
+        self.assertEqual(chk['proof_nric_status'], 'match')
+
+    def test_mother_rel_doc_needed_when_ic_in_but_no_bc(self):
+        # Mother earner: IC in + matches the STR, but the birth certificate (the link to the
+        # student) is still missing → Gopal nudges for it (the last required step).
+        from apps.scholarship.income_engine import income_cluster_advice
+        self.app.income_earner = 'mother'
+        self.app.save()
+        _parent_ic(self.app, 'KAMALA A/P RAMAN', member='', nric='770101-01-2222')
+        _add_doc(self.app, 'str', student_verdict='ok', member='',
+                 fields={'recipient_name': 'KAMALA A/P RAMAN', 'recipient_nric': '770101-01-2222',
+                         'status': 'diluluskan', 'year': '2026', 'amount': 'RM500'})
+        self.assertEqual(income_cluster_advice(self.app, 'mother'), 'income_rel_doc_needed')
+
+    def test_mother_silent_once_bc_uploaded(self):
+        from apps.scholarship.income_engine import income_cluster_advice
+        self.app.income_earner = 'mother'
+        self.app.save()
+        _parent_ic(self.app, 'KAMALA A/P RAMAN', member='', nric='770101-01-2222')
+        _add_doc(self.app, 'str', student_verdict='ok', member='',
+                 fields={'recipient_name': 'KAMALA A/P RAMAN', 'recipient_nric': '770101-01-2222',
+                         'status': 'diluluskan', 'year': '2026'})
+        _add_doc(self.app, 'birth_certificate', student_verdict='ok', member='',
+                 fields={'bc_child_name': 'DIVASHINI A/P MURUGAN', 'bc_mother_name': 'KAMALA A/P RAMAN'})
+        self.assertEqual(income_cluster_advice(self.app, 'mother'), '')
 
 
 class TestIncomePerCapita(TestCase):

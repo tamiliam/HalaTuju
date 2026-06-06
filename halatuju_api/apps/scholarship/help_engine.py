@@ -62,9 +62,14 @@ VERDICT_GUIDANCE = {
     # student uploaded for THAT same household member (e.g. the father's payslip but not
     # the father's IC). The fix is about the EARNER's document, never the student's name.
     'income_proof_person_mismatch': "the name or IC number on this income document did not match the IC uploaded for the same household member, so the income document and that person's IC do not appear to be for the same person",
-    # An income document (salary slip / EPF) was uploaded for a household member but that
-    # member's IC has not been uploaded yet, so we cannot confirm the two are the same person.
-    'income_ic_needed': "an income document was uploaded for this household member but their IC has not been uploaded yet, so we cannot automatically confirm the income document belongs to that same person",
+    # An income document was uploaded for a household member but that member's IC has not
+    # been uploaded yet, so we cannot confirm the two are the same person. The IC is a
+    # REQUIRED document — the application cannot be submitted until it is uploaded.
+    'income_ic_needed': "an income document has been uploaded for this household member, but that person's identity card (IC/MyKad) has not been uploaded yet — and it is required, so the application cannot be completed until it is added; we use it to confirm the income document really belongs to that person",
+    # The earner's IC is in and matches the income document, but the relationship-proof
+    # document (a birth certificate for a mother, a guardianship letter for a guardian) is
+    # still needed to LINK that earner to the student — and it is required to complete.
+    'income_rel_doc_needed': "the earner's identity card is uploaded and matches the income document — the last required step is the document that links that earner to the student (a birth certificate for a mother, or a guardianship letter for a guardian), which has not been uploaded yet, so the application cannot be completed until it is added",
     # The STR document is for an older year, or its status is not 'approved' — STR is
     # awarded annually, so an out-of-date STR no longer proves the family's current need.
     'str_not_current': "the STR document is for an earlier year or its status is not approved, and STR is awarded annually — so this one no longer proves the family's CURRENT financial need",
@@ -152,11 +157,20 @@ VERDICT_FIX_HINT = {
         'edit their OWN name or profile. Reassure them nothing is blocked.'
     ),
     'income_ic_needed': (
-        'They have added an income document (salary slip / EPF) for this household member but '
-        'not that person\'s IC yet. Kindly, warmly invite them to upload that member\'s MyKad too '
-        '(for example, the father\'s IC alongside his payslip) so we can automatically confirm '
-        'the income document belongs to the right person. Make clear nothing is wrong or '
-        'blocked — it just helps us check faster.'
+        'They added an income document for this household member but not that person\'s IC yet. '
+        'Tell them to upload THAT person\'s MyKad (use the exact family member and income document '
+        'from the SPECIFICS) so we can confirm it belongs to the right person. The IC is a '
+        'required document — say plainly that it is needed to complete the application; do NOT '
+        'say it is optional or "not blocked". Do NOT name a different family member or document '
+        'than the SPECIFICS give.'
+    ),
+    'income_rel_doc_needed': (
+        'The earner\'s IC is in and matches the income document — only the relationship document '
+        'is left. Tell them to upload the exact document named in the SPECIFICS (a birth '
+        'certificate for a mother, or a guardianship letter for a guardian) to finish, because '
+        'it links that earner to them. This is the LAST required step — frame it as "to '
+        'complete your application", warmly. Do NOT ask them to re-upload the IC or edit their '
+        'profile, and do NOT name a different document than the SPECIFICS give.'
     ),
     'str_not_current': (
         'Gently explain that STR is given out fresh each year, so we need the CURRENT year\'s '
@@ -197,8 +211,10 @@ documents, and give consent -> a person reviews it -> a decision is sent by emai
 shows their achievement; income documents (salary slip, EPF, STR) and utility bills (water, \
 electricity) help show the family's financial need so support reaches those who need it most.
 - A document mismatch is normal and easily fixed — it is NOT a rejection and does NOT lower the \
-student's chances. Uploads are never blocked; the student can simply re-upload a clearer or \
-correct file."""
+student's chances; a clearer or corrected re-upload usually resolves it. Some documents (the IC, \
+results slip, offer letter, and the income documents for the chosen route) are REQUIRED — the \
+application is completed once those are in, so for a missing required document say plainly that it \
+is needed, not that it is optional."""
 
 HELP_PROMPT = """You are {persona}, a clear, practical Malaysian teacher ("cikgu") helping a \
 student fix a document for their B40 Assistance Programme application. A good cikgu reads the \
@@ -211,7 +227,7 @@ THE SITUATION RIGHT NOW:
 - The student just uploaded their {doc_label}.
 - Our automatic check found that {cause}.
 - The student's first name is: {first_name}
-
+{specifics}
 YOUR REPLY — diagnose, then advise:
 - Write 1-3 short, plain sentences in {target_language}. Say the student's first name once at the \
 start, then go straight to the point — no warm-up line.
@@ -389,9 +405,29 @@ def _doc_label(doc_type):
     return READABLE_DOC.get(doc_type, (doc_type or 'document').replace('_', ' '))
 
 
-def _build_help_prompt(doc_type, verdict, first_name, target_language=DEFAULT_LANGUAGE):
+# Non-sensitive specifics the cluster coach can supply so the message names the RIGHT family
+# member + document (e.g. "your mother's MyKad alongside her STR document"), instead of the
+# generic example in the fix-hint. Household structure only — never any score/admin data.
+def _specifics_block(context):
+    if not context:
+        return ''
+    lines = []
+    if context.get('member'):
+        lines.append(f"- The household member is the {context['member']}.")
+    if context.get('income_doc'):
+        lines.append(f"- The income document they already uploaded is the {context['income_doc']}.")
+    if context.get('rel_doc'):
+        lines.append(f"- The relationship document still needed is the {context['rel_doc']}.")
+    if not lines:
+        return ''
+    return ('SPECIFICS (use these EXACT details — do not substitute a different family member or '
+            'document):\n' + '\n'.join(lines) + '\n')
+
+
+def _build_help_prompt(doc_type, verdict, first_name, target_language=DEFAULT_LANGUAGE, context=None):
     """Pure prompt builder — unit-tested directly (the guardrail/firewall assertions read this
-    string). It can ONLY see the four arguments, so no admin data can appear in it."""
+    string). ``context`` carries only non-sensitive household specifics (member + document
+    names) so no admin/score data can appear in it."""
     return HELP_PROMPT.format(
         persona=PERSONA,
         programme_briefing=PROGRAMME_BRIEFING,
@@ -400,21 +436,23 @@ def _build_help_prompt(doc_type, verdict, first_name, target_language=DEFAULT_LA
         fix_hint=VERDICT_FIX_HINT.get(verdict, DEFAULT_FIX_HINT),
         first_name=(first_name or '').strip() or 'there',
         target_language=target_language,
+        specifics=_specifics_block(context),
     )
 
 
-def generate_document_help(doc_type, verdict, *, first_name='', target_language=DEFAULT_LANGUAGE):
+def generate_document_help(doc_type, verdict, *, first_name='', target_language=DEFAULT_LANGUAGE, context=None):
     """Return {'message', 'source', ...}. ``source`` is:
     - 'none'     — nothing to help with (good/absent verdict); no Gemini call made.
     - 'ai'       — a warm message from Gemini (also returns 'model_used').
     - 'fallback' — Gemini was unavailable/empty; caller should use pre-written i18n copy.
 
-    Never raises. Soft by construction."""
+    ``context`` (optional) supplies non-sensitive household specifics so the message names the
+    right family member + document. Never raises. Soft by construction."""
     verdict = (verdict or '').strip()
     if verdict not in VERDICT_GUIDANCE:
         return {'message': '', 'source': 'none'}
 
-    prompt = _build_help_prompt(doc_type, verdict, first_name, target_language)
+    prompt = _build_help_prompt(doc_type, verdict, first_name, target_language, context)
     from .profile_engine import _call_gemini_text  # shared, mockable Gemini prose seam
     data = _call_gemini_text(prompt, target_language)
     if 'error' in data:

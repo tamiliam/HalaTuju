@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Income earner IC now shows whether it MATCHES the income document (the point of uploading it), and Gopal guides
+  IC → birth certificate.** On the student's income cluster (e.g. an STR in the mother's name), the earner‑IC card used
+  to show source labels ("from your IC") and a relationship‑pending name ("We'll review this"). It now cross‑checks the
+  IC against the cluster's income proof and shows **"Matches the STR document" (green)** on the IC No + Name when they
+  agree (red on a clash) — `income_engine.student_income_ic_check` gains `proof_kind`/`proof_name_status`/
+  `proof_nric_status`. The **relationship to the student moves off the IC card** (it's the birth certificate's job): a new
+  cluster verdict **`income_rel_doc_needed`** makes Cikgu Gopal nudge for the **birth certificate** (mother) / guardianship
+  letter (guardian) as the last step once the IC is in, then go silent. The income coach copy is fixed too — it was a
+  hardcoded **"father's payslip / not blocked"** example regardless of the actual earner; the cluster coach now passes
+  non‑sensitive **member + document specifics** so it names the real earner + doc ("your **mother's** MyKad alongside her
+  **STR document**"), and is honest that these compulsory income docs **are required** under gate v2 (no more false
+  "nothing's blocked"). Earner‑IC labels also corrected "from **your** IC" → "from **their** IC". 758 scholarship pytest +
+  262 jest + next build clean; no migration; i18n parity 2024.
+
 ### Added
 - **Application completion reminders + auto-close (the daily reminder job).** Shortlisted students who haven't completed
   their application now get an escalating reminder sequence, and stalled applications are eventually closed. Cadence (days

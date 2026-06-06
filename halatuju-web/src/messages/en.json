@@ -907,7 +907,8 @@
           "offer_pathway_mismatch": "The college or programme on this offer letter differs from the study choice you entered earlier. This doesn't block anything — if this offer is where you're going, leave it as is; when you submit, we'll ask you to confirm it and update your record to match.",
           "income_relationship_mismatch": "The name on this IC doesn't link to your family the way we expected (for a parent or sibling we look for your father's name from your own IC; for a mother, your birth certificate). Usually a different person's card was uploaded here, or the photo was unclear. Check you uploaded the right person's MyKad in this slot, with a clear photo.",
           "income_proof_person_mismatch": "This salary slip / EPF isn't for the same person as the IC uploaded for that family member (the name or IC number differs). Make sure the income document and that person's IC are for the same person — for example, your father's payslip with your father's IC — and re-upload the right file if a wrong one slipped in.",
-          "income_ic_needed": "You've uploaded an income document for this family member but not their IC yet. Add that person's MyKad too (for example, your father's IC alongside his payslip) so we can confirm the income document belongs to them.",
+          "income_ic_needed": "You've uploaded an income document for this family member, but not that person's MyKad yet. The IC is required — please add it to complete your application, so we can confirm the income document belongs to them.",
+          "income_rel_doc_needed": "The earner's IC is in and matches the income document. The last required step is the document that links them to you — a birth certificate for a mother, or a guardianship letter for a guardian. Please upload it to complete your application.",
           "str_not_current": "STR is issued fresh each year, so we need this year's STR to show your family qualifies now. Upload your current STR — a recent MySTR “Semakan Status” screenshot showing “Lulus”, or your latest STR letter. No current STR? You can show your family's income with a salary slip / EPF instead.",
           "generic": "Something didn't look right with this upload. Have another look, then try uploading again."
         }
@@ -1050,12 +1051,15 @@
         "partial": "Partial match",
         "mismatch": "Mismatch — re-check",
         "unreadable": "Couldn't read",
-        "none": "Not read yet"
+        "none": "Not read yet",
+        "fromTheirIc": "from their IC"
       },
       "incomeIcCheck": {
         "linked": "Linked to your family",
         "nameMismatch": "Name doesn't match — re-check",
-        "reviewing": "We'll review this"
+        "reviewing": "We'll review this",
+        "matchesProof": "Matches the {doc}",
+        "proofMismatch": "Doesn't match the {doc}"
       },
       "incomeProofCheck": {
         "name": "Name",

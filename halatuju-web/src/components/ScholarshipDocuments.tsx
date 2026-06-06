@@ -186,29 +186,37 @@ function ICChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => s
  *  is shown for reference only; the Name carries a "links to your family" / "doesn't match"
  *  badge (father/brother/sister via the shared patronymic, mother via birth cert, guardian
  *  via letter). Cikgu Gopal (below) gives the "what to do" only on a real mismatch. */
-function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string) => string }) {
+function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string, vars?: Record<string, string>) => string }) {
   const chk = doc.income_ic_check
   if (!chk || !doc.vision_run_at) return null
 
-  const nameKind: ICCheckKind =
-    chk.name_status === 'match' ? 'match' : chk.name_status === 'mismatch' ? 'mismatch' : 'none'
-  const cls: Record<ICCheckKind, string> = {
+  // The point of the earner IC is to MATCH the cluster's income proof (STR / salary slip).
+  // Show that cross-check: green "Matches the STR document", red on a clash, neutral "from
+  // their IC" before any proof exists. (The relationship to the student lives on the birth
+  // certificate now, voiced by Cikgu Gopal — not on this card.)
+  const proofDoc = chk.proof_kind ? t(`scholarship.docs.type.${chk.proof_kind}`) : ''
+  const ring: Record<'match' | 'mismatch' | 'none', string> = {
     match: 'bg-green-50 text-green-700 ring-green-200',
-    partial: 'bg-amber-50 text-amber-700 ring-amber-200',
     mismatch: 'bg-red-50 text-red-700 ring-red-200',
-    unreadable: 'bg-gray-50 text-gray-600 ring-gray-200',
     none: 'bg-gray-50 text-gray-500 ring-gray-200',
   }
-  const nameLabel =
-    chk.name_status === 'match'
-      ? t('scholarship.docs.incomeIcCheck.linked')
-      : chk.name_status === 'mismatch'
-        ? t('scholarship.docs.incomeIcCheck.nameMismatch')
-        : t('scholarship.docs.incomeIcCheck.reviewing')
-
+  const matchTag = (status?: string) => {
+    const kind = status === 'match' ? 'match' : status === 'mismatch' ? 'mismatch' : 'none'
+    const label =
+      status === 'match' && proofDoc
+        ? t('scholarship.docs.incomeIcCheck.matchesProof', { doc: proofDoc })
+        : status === 'mismatch' && proofDoc
+          ? t('scholarship.docs.incomeIcCheck.proofMismatch', { doc: proofDoc })
+          : t('scholarship.docs.icCheck.fromTheirIc')
+    return (
+      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${ring[kind]}`}>
+        {label}
+      </span>
+    )
+  }
   const neutralTag = (
     <span className="shrink-0 rounded-full bg-gray-50 px-2 py-0.5 text-[10px] text-gray-500 ring-1 ring-gray-200">
-      {t('scholarship.docs.icCheck.fromIc')}
+      {t('scholarship.docs.icCheck.fromTheirIc')}
     </span>
   )
   const row = (label: string, value: string, right: ReactNode) => (
@@ -223,14 +231,8 @@ function IncomeIcChecklist({ doc, t }: { doc: ApplicantDocument; t: (key: string
 
   return (
     <div className="mt-2 rounded-xl border border-gray-100 bg-gray-50/60 px-3 divide-y divide-gray-100">
-      {chk.nric ? row(t('scholarship.docs.icCheck.icNo'), chk.nric, neutralTag) : null}
-      {row(
-        t('scholarship.docs.icCheck.name'),
-        chk.name,
-        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${cls[nameKind]}`}>
-          {nameLabel}
-        </span>,
-      )}
+      {chk.nric ? row(t('scholarship.docs.icCheck.icNo'), chk.nric, matchTag(chk.proof_nric_status)) : null}
+      {row(t('scholarship.docs.icCheck.name'), chk.name, matchTag(chk.proof_name_status))}
       {chk.address ? row(t('scholarship.docs.icCheck.address'), chk.address, neutralTag) : null}
     </div>
   )

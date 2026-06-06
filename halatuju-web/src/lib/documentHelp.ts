@@ -31,6 +31,9 @@ export const HELP_VERDICTS = [
   'income_proof_person_mismatch',
   // Income cluster — a proof was added for a member but their IC hasn't been uploaded yet.
   'income_ic_needed',
+  // Income cluster — IC is in + matches the proof; the relationship doc (birth cert /
+  // guardianship letter) is the last required step to link the earner to the student.
+  'income_rel_doc_needed',
   // STR document is out of date (older year / not approved) — STR is awarded annually.
   'str_not_current',
 ] as const

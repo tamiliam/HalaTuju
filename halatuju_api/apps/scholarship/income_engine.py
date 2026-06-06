@@ -159,22 +159,46 @@ def _relationship_inputs(application, member, member_ic_name):
     return bc_child, bc_mother, letter_name
 
 
-def student_income_ic_check(doc):
-    """For an income earner's IC (``parent_ic``): the OCR'd IC No / Name / Address +
-    the RELATIONSHIP verdict (does this earner link to the student's family) — NOT an
-    identity match against the student (the NRIC is the earner's, not the student's).
-    The member is the document's ``household_member`` (salary route) or the
-    application's ``income_earner`` (STR route). Returns
-    ``{nric, name, address, member, name_status, readable}`` or None for non-parent_ic.
+def _cluster_proof_identity(application, member):
+    """The income proof's recipient identity ``(kind, name, nric)`` that the earner IC must
+    match — the whole point of uploading the IC. STR route → the STR (recipient_name/nric);
+    salary route → the member's salary slip, then EPF (name/nric). ('', '', '') when no
+    income proof is present yet to compare against."""
+    route = (getattr(application, 'income_route', '') or '').strip()
+    if route == 'str':
+        p = application.documents.filter(doc_type='str').order_by('-uploaded_at').first()
+        if p:
+            f = _doc_fields(p)
+            return 'str', (f.get('recipient_name', '') or '').strip(), (f.get('recipient_nric', '') or '').strip()
+        return '', '', ''
+    for dt in ('salary_slip', 'epf'):
+        p = _cluster_docs(application, member, dt).first()
+        if p:
+            f = _doc_fields(p)
+            return dt, (f.get('name', '') or '').strip(), (f.get('nric', '') or '').strip()
+    return '', '', ''
 
-    ``name_status``: 'match' | 'mismatch' | 'unknown' (no patronymic / no member) |
-    'pending' (not read / relationship doc not uploaded)."""
+
+def student_income_ic_check(doc):
+    """For an income earner's IC (``parent_ic``): the OCR'd IC No / Name / Address, the
+    RELATIONSHIP verdict (``name_status`` — does this earner link to the student's family,
+    via patronymic / birth cert / letter), AND — the student-facing point — whether this IC
+    MATCHES the cluster's income proof (the STR / salary slip it must belong to). The NRIC is
+    the earner's, never matched to the student. Returns ``{nric, name, address, member,
+    name_status, readable, proof_kind, proof_name_status, proof_nric_status}`` or None.
+
+    ``name_status`` (relationship): 'match' | 'mismatch' | 'unknown' | 'pending'.
+    ``proof_name_status`` / ``proof_nric_status`` (vs the income proof): 'match' | 'mismatch'
+    | 'no_ref' (no proof uploaded yet, or the field wasn't read). ``proof_kind``: 'str' |
+    'salary_slip' | 'epf' | '' — drives the "Matches the STR document" student label."""
+    from .vision import nric_match
     if getattr(doc, 'doc_type', '') != 'parent_ic':
         return None
     app = doc.application
     member = ((getattr(doc, 'household_member', '') or '').strip()
               or (getattr(app, 'income_earner', '') or '').strip())
     name = (getattr(doc, 'vision_name', '') or '').strip()
+    nric = (getattr(doc, 'vision_nric', '') or '').strip()
     readable = bool(getattr(doc, 'vision_run_at', None)) and not getattr(doc, 'vision_error', '') and bool(name)
 
     name_status = 'pending'
@@ -185,6 +209,17 @@ def student_income_ic_check(doc):
         bc_child, bc_mother, letter_name = _relationship_inputs(app, member, name)
         name_status = member_relationship_status(member, student_name, name,
                                                  bc_child, bc_mother, letter_name)
+
+    # Cross-check against the cluster's income proof (STR / salary slip) — the reason the
+    # earner IC is uploaded. Green when the IC's name + number match the proof's recipient.
+    proof_kind, p_name, p_nric = _cluster_proof_identity(app, member) if member else ('', '', '')
+    proof_name_status = 'no_ref'
+    if name and p_name:
+        proof_name_status = 'mismatch' if name_match(name, p_name) == 'mismatch' else 'match'
+    proof_nric_status = 'no_ref'
+    if nric and p_nric:
+        proof_nric_status = 'match' if nric_match(nric, p_nric) else 'mismatch'
+
     return {
         'nric': getattr(doc, 'vision_nric', '') or '',
         'name': getattr(doc, 'vision_name', '') or '',
@@ -192,6 +227,9 @@ def student_income_ic_check(doc):
         'member': member,
         'name_status': name_status,
         'readable': readable,
+        'proof_kind': proof_kind,
+        'proof_name_status': proof_name_status,
+        'proof_nric_status': proof_nric_status,
     }
 
 
@@ -697,6 +735,12 @@ def income_cluster_advice(application, member):
         sc = student_str_check(str_doc)
         if sc and 'mismatch' in (sc['name_status'], sc['nric_status']):
             return 'income_proof_person_mismatch'
+    # IC present + coherent, but the relationship-proof doc (mother → birth certificate,
+    # guardian → letter) is still missing — it links the earner to the student. Nudge for it
+    # as the LAST step (father/sibling need no doc: the shared patronymic on the IC proves it).
+    rel_doc = relationship_doc_for(member)
+    if rel_doc and not application.documents.filter(doc_type=rel_doc).exists():
+        return 'income_rel_doc_needed'
     return ''
 
 
