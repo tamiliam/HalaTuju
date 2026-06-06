@@ -104,6 +104,10 @@ class ScholarshipApplication(models.Model):
         ('sponsored', 'Sponsored'),    # Phase E3: a sponsor's award was accepted — student leaves the pool
         ('rejected', 'Rejected'),
         ('withdrawn', 'Withdrawn'),
+        # Auto-closed: shortlisted but never completed after the full reminder
+        # sequence (R1–R4 + a 5-day final grace). The student may start a fresh
+        # application — an 'expired' app never blocks a new one.
+        ('expired', 'Expired (not completed in time)'),
     ]
     BUCKET_CHOICES = [('', 'Unassigned'), ('A', 'Bucket A'), ('B', 'Bucket B')]
     UPU_CHOICES = [
@@ -297,6 +301,22 @@ class ScholarshipApplication(models.Model):
         help_text="When the scheduler flipped status + sent the verdict email",
     )
 
+    # Post-shortlist completion reminders + auto-close (the daily reminder job).
+    # The cadence counts from reminder_anchor_at — normally = shortlisted_at (set
+    # when the invitation is released), but it is a separate knob so a one-time
+    # launch backfill (or an admin grace extension) can re-anchor the clock without
+    # touching the audit timestamp. NULL anchor = not on the reminder track.
+    reminder_anchor_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When the completion-reminder clock starts (usually = shortlisted_at)",
+    )
+    # 0 = none sent yet; 1–4 = the last reminder stage sent (R1 +2d, R2 +9d,
+    # R3 +23d, R4/final +53d). Drives idempotency — a stage is never re-sent.
+    reminder_stage = models.PositiveSmallIntegerField(default=0)
+    last_reminder_at = models.DateTimeField(null=True, blank=True)
+    # When the application was auto-closed for non-completion (status → 'expired').
+    expired_at = models.DateTimeField(null=True, blank=True)
+
     # Admin verify-&-accept (S11a): a PartnerAdmin confirms NRIC/name/results against
     # the uploaded MyKad, which sets profile.nric_verified (locks the NRIC) and
     # advances status → 'accepted'. These capture who/when/what was confirmed.
@@ -464,10 +484,13 @@ class ScholarshipApplication(models.Model):
         db_table = 'scholarship_applications'
         ordering = ['-submitted_at']
         constraints = [
+            # At most one LIVE application per (cohort, profile). Auto-closed
+            # ('expired') rows are excluded so a student may restart after a
+            # closure — the old expired row stays as history alongside the new one.
             models.UniqueConstraint(
                 fields=['cohort', 'profile'],
                 name='unique_application_per_cohort',
-                condition=models.Q(profile__isnull=False),
+                condition=models.Q(profile__isnull=False) & ~models.Q(status='expired'),
             ),
         ]
 

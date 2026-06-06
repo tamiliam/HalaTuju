@@ -83,10 +83,12 @@ class ApplicationListCreateView(APIView):
                 status=status.HTTP_409_CONFLICT,
             )
 
-        # One application per student per cohort.
+        # One LIVE application per student per cohort — but an auto-closed ('expired')
+        # application never blocks a fresh start (the reminder system promises the
+        # student they may restart). The old expired row stays as history.
         if ScholarshipApplication.objects.filter(
             cohort=cohort, profile=profile
-        ).exists():
+        ).exclude(status='expired').exists():
             return Response(
                 {'error': 'You have already applied to this round.'},
                 status=status.HTTP_409_CONFLICT,
@@ -668,6 +670,7 @@ class CronRunView(APIView):
     JOBS = {
         'vision-outage': 'alert_vision_outage',
         'decision-emails': 'send_pending_decision_emails',
+        'application-reminders': 'send_application_reminders',
     }
 
     def post(self, request, job):

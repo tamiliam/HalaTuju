@@ -221,6 +221,17 @@ class TestApplicationIntake(TestCase):
         )
         self.assertEqual(resp.status_code, 409)
 
+    def test_expired_application_does_not_block_reapply(self):
+        # An auto-closed ('expired') application must NOT block a fresh start — the
+        # reminder system promises the student they may restart.
+        ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile_a, status='expired')
+        self._auth(_make_token(USER_A))
+        resp = self.client.post(
+            '/api/v1/scholarship/applications/', self._payload(), format='json',
+        )
+        self.assertEqual(resp.status_code, 201)
+
     def test_no_open_cohort_returns_409(self):
         ScholarshipCohort.objects.update(is_open=False)
         self._auth(_make_token(USER_A))
