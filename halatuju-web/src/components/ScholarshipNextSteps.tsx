@@ -69,7 +69,6 @@ function StepIcon({ step, active }: { step: NextStepKey; active: boolean }) {
     funding: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
     documents: 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z',
     consent: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
-    review: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
   }
   return (
     <svg className={cls} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
@@ -110,6 +109,8 @@ export default function ScholarshipNextSteps({
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [tab, setTab] = useState<NextStepKey>(() => defaultNextTab(initialApp.completeness))
+  // The Review/Summary is a distinct page reached AFTER consent (not a rail step).
+  const [reviewing, setReviewing] = useState(false)
 
   const update = <K extends keyof DetailsFormState>(key: K, value: DetailsFormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -160,17 +161,17 @@ export default function ScholarshipNextSteps({
     }
   }
 
-  // Phase C: the explicit "Confirm & submit" action (shortlisted → profile_complete).
+  // Phase C: the explicit submit (shortlisted → profile_complete). On success, reload so
+  // the page re-renders as the post-submit "received" screen (with "What happens next").
   const handleConfirm = async () => {
     if (!token) return
     setConfirming(true)
     setConfirmError(null)
     try {
-      const updated = await confirmScholarshipApplication(app.id, { token })
-      setApp(updated)
+      await confirmScholarshipApplication(app.id, { token })
+      if (typeof window !== 'undefined') { window.location.reload(); return }
     } catch {
       setConfirmError(t('scholarship.nextSteps.confirmError'))
-    } finally {
       setConfirming(false)
     }
   }
@@ -188,7 +189,6 @@ export default function ScholarshipNextSteps({
     funding: c.funding_done,
     documents: c.documents_done,
     consent: c.consent_done,
-    review: confirmed,   // ticked once submitted
   }
 
   // Jump to a step's tab and scroll into view — used by the review page's per-section
@@ -589,15 +589,19 @@ export default function ScholarshipNextSteps({
         <ScholarshipConsent token={token} locale={locale} onChange={refreshApp} />
       </div>
     ),
+  }
 
-    // The final read-back. Submit here is the ONLY commit (lock-at-Continue).
-    review: (
+  // The Review/Summary is its own page, reached only AFTER consent (the "Review &
+  // submit" action below, shown once complete). Back returns to the steps; an Edit
+  // link leaves Review for the relevant step. Submit here is the ONLY commit.
+  if (reviewing) {
+    return (
       <ScholarshipReview
         app={app}
         profile={profile ?? null}
         token={token}
-        onEdit={goToStep}
-        onBack={() => goToStep('consent')}
+        onEdit={(step, anchor) => { setReviewing(false); goToStep(step, anchor) }}
+        onBack={() => setReviewing(false)}
         onSubmit={handleConfirm}
         submitting={confirming}
         submitError={confirmError}
@@ -606,7 +610,7 @@ export default function ScholarshipNextSteps({
         t={t}
         lang={locale}
       />
-    ),
+    )
   }
 
   return (
@@ -637,13 +641,13 @@ export default function ScholarshipNextSteps({
             <p className="text-sm text-gray-700 mt-1">
               {confirmed ? t('scholarship.nextSteps.confirmedIntro') : t('scholarship.nextSteps.allSetIntro')}
             </p>
-            {/* The commit now lives on the Review step ("lock at Continue"): this
-                button takes the student to the final read-back, where they submit. */}
+            {/* The commit lives on the Review page ("lock at Continue"): this opens
+                the final read-back (only reachable here, after consent), where they submit. */}
             {!confirmed && (
               <div className="mt-3">
                 <button
                   type="button"
-                  onClick={() => goToStep('review')}
+                  onClick={() => { setReviewing(true); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
                   className="btn-primary"
                 >
                   {t('scholarship.nextSteps.reviewCta')}
@@ -659,30 +663,9 @@ export default function ScholarshipNextSteps({
         )}
       </div>
 
-      {/* What happens next — shown once the application is complete */}
-      {c.complete && (
-        <div className="bg-white border rounded-2xl p-5 shadow-sm mb-6">
-          <h3 className="font-semibold text-gray-900 mb-3">{t('scholarship.nextSteps.whatNext.title')}</h3>
-          <ol className="space-y-3">
-            {['step1', 'step2', 'step3'].map((s, i) => (
-              <li key={s} className="flex gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700 text-xs font-semibold">
-                  {i + 1}
-                </span>
-                <span className="text-sm text-gray-700">{t(`scholarship.nextSteps.whatNext.${s}`)}</span>
-              </li>
-            ))}
-          </ol>
-          <div className="mt-4 flex items-start gap-2 rounded-lg bg-primary-50 p-3">
-            <span className="text-primary-600 shrink-0" aria-hidden>✉️</span>
-            <p className="text-sm text-gray-700">
-              {t('scholarship.nextSteps.whatNext.emailNote', {
-                email: app.notify_email || t('scholarship.nextSteps.whatNext.yourEmail'),
-              })}
-            </p>
-          </div>
-        </div>
-      )}
+      {/* "What happens next" moved to the post-submit "received" screen
+          (application/page.tsx) — it describes what follows submission, so it no
+          longer belongs above the still-to-submit steps. */}
 
       {/* On desktop: left step-rail beside the active section. On mobile: bottom tab bar. */}
       <div className="lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-8 lg:items-start">
@@ -722,18 +705,13 @@ export default function ScholarshipNextSteps({
             {t('scholarship.nextSteps.stepOf', { n: String(tabIndex + 1), total: String(NEXT_STEP_ORDER.length) })} · {t(`scholarship.nextSteps.tab.${tab}`)}
           </p>
 
-          {/* Active section card. The review step renders its own titled cards on the page
-              background (no white wrapper) so they aren't white-on-white. */}
-          {tab === 'review' ? (
-            <div id="next-steps-active" className="scroll-mt-6">{sections.review}</div>
-          ) : (
-            <div id="next-steps-active" className="bg-white border rounded-2xl p-5 shadow-sm scroll-mt-6">
-              <h2 className="font-semibold text-gray-900 mb-4">
-                {tabIndex + 1}. {t(`scholarship.nextSteps.tab.${tab}`)}
-              </h2>
-              {sections[tab]}
-            </div>
-          )}
+          {/* Active section card */}
+          <div id="next-steps-active" className="bg-white border rounded-2xl p-5 shadow-sm scroll-mt-6">
+            <h2 className="font-semibold text-gray-900 mb-4">
+              {tabIndex + 1}. {t(`scholarship.nextSteps.tab.${tab}`)}
+            </h2>
+            {sections[tab]}
+          </div>
         </div>
       </div>
 

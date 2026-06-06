@@ -117,13 +117,37 @@ export default function ScholarshipApplicationPage() {
     )
   }
 
-  // submitted / rejected / withdrawn — keep it neutral (the decision email is
-  // sent separately; we don't expose a raw "rejected" status here).
+  // submitted / profile_complete / rejected / withdrawn — keep it neutral (the
+  // decision email is sent separately; we don't expose a raw "rejected" status here).
+  // "What happens next" lives HERE (post-submit), where it actually applies.
   return wrap(
-    <div className="rounded-2xl border border-green-200 bg-green-50 p-6">
-      <h2 className="mb-2 font-semibold text-gray-900">{t('scholarship.application.receivedTitle')}</h2>
-      <p className="text-gray-700">{t('scholarship.application.receivedBody')}</p>
+    <>
+      <div className="rounded-2xl border border-green-200 bg-green-50 p-6">
+        <h2 className="mb-2 font-semibold text-gray-900">{t('scholarship.application.receivedTitle')}</h2>
+        <p className="text-gray-700">{t('scholarship.application.receivedBody')}</p>
+      </div>
+      <div className="mt-6 rounded-2xl border bg-white p-5 shadow-sm">
+        <h3 className="mb-3 font-semibold text-gray-900">{t('scholarship.nextSteps.whatNext.title')}</h3>
+        <ol className="space-y-3">
+          {['step1', 'step2', 'step3'].map((s, i) => (
+            <li key={s} className="flex gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700 text-xs font-semibold">
+                {i + 1}
+              </span>
+              <span className="text-sm text-gray-700">{t(`scholarship.nextSteps.whatNext.${s}`)}</span>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-4 flex items-start gap-2 rounded-lg bg-primary-50 p-3">
+          <span className="shrink-0 text-primary-600" aria-hidden>✉️</span>
+          <p className="text-sm text-gray-700">
+            {t('scholarship.nextSteps.whatNext.emailNote', {
+              email: app.notify_email || t('scholarship.nextSteps.whatNext.yourEmail'),
+            })}
+          </p>
+        </div>
+      </div>
       {nav()}
-    </div>
+    </>
   )
 }

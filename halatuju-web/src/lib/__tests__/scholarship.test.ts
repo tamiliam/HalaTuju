@@ -1037,8 +1037,8 @@ describe('documentsComplete', () => {
 // ── S1: next-steps tabbed shell helpers ─────────────────────────────────
 
 describe('NEXT_STEP_ORDER', () => {
-  it('has the 6 tabs in the correct order, ending with review', () => {
-    expect(NEXT_STEP_ORDER).toEqual(['quiz', 'story', 'funding', 'documents', 'consent', 'review'])
+  it('has the 5 wizard steps in order (review is a separate post-consent page)', () => {
+    expect(NEXT_STEP_ORDER).toEqual(['quiz', 'story', 'funding', 'documents', 'consent'])
   })
 
   it('does not include referee', () => {
