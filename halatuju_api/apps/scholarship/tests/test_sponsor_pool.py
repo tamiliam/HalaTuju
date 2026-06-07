@@ -26,6 +26,9 @@ from apps.scholarship.serializers import (
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
 
 # Distinctive identifying values — if any appears in a sponsor-facing payload, it leaked.
+# `school` is special: post-2026-06-07 Boundary decision it MAY cross as `institution`
+# to a TRUSTED sponsor — so leak tests run on the default (non-trusted) card, and the
+# trusted-card test exempts only `school`. Everything else (incl. the PARENTS') stays out.
 IDENTIFIERS = {
     'name': 'Zxqvbn Identifiable',
     'nric': '050505-10-9999',
@@ -34,6 +37,9 @@ IDENTIFIERS = {
     'city': 'Siretown',
     'contact_phone': '012-9998888',
     'contact_email': 'leak@secret.example',
+    # Parent/guardian identity must never cross to a sponsor either.
+    'parent_name': 'Qwfpgj Guardianperson',
+    'parent_nric': '060606-11-7777',
 }
 
 
@@ -53,7 +59,12 @@ def _make_eligible_app(cohort, *, suffix='1', anon_published=True, consent=True)
         exam_type='spm',
         preferred_state='Kedah',
         household_income=1500, household_size=5, receives_str=True, receives_jkm=False,
-        **IDENTIFIERS,
+        name=IDENTIFIERS['name'], nric=IDENTIFIERS['nric'], school=IDENTIFIERS['school'],
+        address=IDENTIFIERS['address'], city=IDENTIFIERS['city'],
+        contact_phone=IDENTIFIERS['contact_phone'], contact_email=IDENTIFIERS['contact_email'],
+        # parent/guardian identity lives in guardians — must never cross to a sponsor.
+        guardians=[{'name': IDENTIFIERS['parent_name'], 'nric': IDENTIFIERS['parent_nric'],
+                    'relationship': 'mother'}],
     )
     app = ScholarshipApplication.objects.create(
         cohort=cohort, profile=profile, status='accepted',
@@ -139,6 +150,25 @@ class TestAllowlistNoLeak(TestCase):
         data = SponsorPoolDetailSerializer(app).data
         self._assert_no_identifiers(data)
         self.assertIn('anon_profile', data)
+
+    def test_institution_absent_for_non_trusted(self):
+        # Default (no context) = non-trusted: institution empty, school never appears.
+        app = _make_eligible_app(self.cohort)
+        data = SponsorPoolCardSerializer(app).data
+        self.assertEqual(data['institution'], '')
+        self.assertNotIn(IDENTIFIERS['school'], json.dumps(data))
+
+    def test_institution_present_for_trusted_only(self):
+        # Boundary (2026-06-07): a TRUSTED sponsor sees institution (= school); every
+        # OTHER identifier — including the parents' name/NRIC — still never appears.
+        app = _make_eligible_app(self.cohort)
+        data = SponsorPoolCardSerializer(app, context={'is_trusted': True}).data
+        self.assertEqual(data['institution'], IDENTIFIERS['school'])
+        blob = json.dumps(data)
+        for label, value in IDENTIFIERS.items():
+            if label == 'school':
+                continue  # institution IS the school — deliberately exposed to a trusted sponsor
+            self.assertNotIn(value, blob, f'{label} leaked to a trusted sponsor')
 
 
 # ─── the anonymous prompt must not carry name/school ─────────────────────────

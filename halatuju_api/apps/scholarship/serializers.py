@@ -40,7 +40,12 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     construction:** every field is an explicit, derived, non-identifying value and
     nothing is passed through from the application/profile, so a new model field
     can never leak to a sponsor by accident. Input is a ``ScholarshipApplication``.
-    (Tests assert no name/NRIC/address/phone/email/school appears in the output.)"""
+    (Tests assert no name/NRIC/address/phone/email appears in the output — for the
+    student OR their parents.)
+
+    Boundary decision (2026-06-07): ``institution`` (the student's school/college) is
+    a LOCATOR and crosses ONLY to a **trusted** sponsor — set ``context['is_trusted']``
+    True. Fail-closed: with no context it is absent. ``state`` stays region-level."""
     # `id` is the application row id — used only as the opaque key to fetch the
     # detail; it is not identifying. `ref` is the human-facing alias.
     id = serializers.IntegerField(read_only=True)
@@ -48,6 +53,7 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     state = serializers.SerializerMethodField()
     field = serializers.SerializerMethodField()
     academic = serializers.SerializerMethodField()
+    institution = serializers.SerializerMethodField()  # Boundary: trusted-sponsor-gated
     funding_categories = serializers.SerializerMethodField()
     programme_months = serializers.SerializerMethodField()
     award_amount = serializers.SerializerMethodField()  # E3: admin-set; non-identifying
@@ -67,6 +73,14 @@ class SponsorPoolCardSerializer(serializers.Serializer):
 
     def get_academic(self, app):
         return pool.academic_band(app.profile)
+
+    def get_institution(self, app):
+        # Boundary decision (2026-06-07): institution (school/college) is a LOCATOR —
+        # it crosses ONLY to a trusted sponsor (the launch default). Fail-closed:
+        # absent unless the calling view sets context['is_trusted'] = True.
+        if not self.context.get('is_trusted', False):
+            return ''
+        return (getattr(app.profile, 'school', '') or '') if app.profile else ''
 
     def get_funding_categories(self, app):
         fn = _funding_need_or_none(app)

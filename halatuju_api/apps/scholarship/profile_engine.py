@@ -287,6 +287,9 @@ ABSOLUTE ANONYMITY RULES — follow exactly:
 street/address, no phone, no email, no IC number. If the student's own words below mention any \
 such detail, OMIT it — do not repeat it.
 - State-level region and field of study are fine; anything more specific is not.
+- Keep family/community detail GENERAL — convey the situation (low income, first in family, single-earner, \
+caregiving, etc.) WITHOUT specifics that could pinpoint one person in a small community: no employer/company \
+names, no specific village/neighbourhood, no unusual one-of-a-kind family particulars.
 
 LANGUAGE — the student's own words may be in Malay, English, or Tamil (or a mix); understand them \
 whichever language they are in, and write the FINAL profile in {target_language}.
