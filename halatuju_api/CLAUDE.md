@@ -443,7 +443,28 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-06)
+## Next Sprint (as of 2026-06-07)
+
+**✅ SHIPPED 2026-06-07 — Review & submit flow live‑testing refinements (5 commits `1cc5f65`→`a533637` on `main`; NO
+migration; retro `docs/retrospective-review-submit-flow.md`).** Built out the previously‑PARKED **post‑consent summary +
+lock‑at‑Continue** and polished it from live testing:
+- **Review is a post‑consent page, not a 6th tab.** `NEXT_STEP_ORDER` is back to the 5 wizard steps
+  (quiz·story·funding·documents·consent); `ScholarshipReview` renders via a `reviewing` state reached only by the
+  **"Review & submit"** CTA after consent. Back returns to the steps; Submit there is the **only** commit, then
+  `handleConfirm` reloads into the post‑submit "received" screen.
+- **Consent step is read‑only once given** — no dead‑end Edit link; it shows the **full consent text read‑only** + who
+  gave it and when (new `consent.givenHeading`/`givenMetaSelf`/`givenMetaGuardian`).
+- **"What happens next" moved to the post‑submit screen** and now reads review → **email query** (Check 2 / reviewer may
+  ask for more docs/clarification *by email*, please reply) → **may‑call** → decision; the doubled email note de‑duped
+  (`nav({email})`).
+- **Submit‑flow copy unified on "submit"** across the "all set" banner, the review subtitle (with a scroll cue), and the
+  button; banner no longer says "submit for review" (it opens the student's own read‑back); lock note reworded so it
+  doesn't imply editing reopens after contact. Dynamic step counter; de‑duped doubled "Your application" title.
+- FE‑only, no backend/migration. Gates: **758 scholarship + 1037 courses/reports pytest + 267 jest + next build clean +
+  i18n parity 2084**; scholarship still through `0041` on prod. **▶ NEXT (queued):** remove orphan `str_claimed_no_doc`;
+  TD‑084 cleanup; Check 2 (5‑day SLA); Check 3 (reviewer role); old/new cockpit consolidation; Tamil refine;
+  income‑arc live click‑through (TD‑070). (Whether the "Review & submit" CTA should auto‑jump once all 5 steps complete,
+  vs the current explicit button, is an open UX choice left to the user.)
 
 **✅ SHIPPED 2026-06-06 — Income IC↔proof match + Gopal BC nudge + IC display format (2 commits `b0d851d`+`dbc8ac8`
 on `main`; NO migration; retro `docs/retrospective-income-card-and-ic-format.md`).** Live-testing follow-up on the
@@ -466,9 +487,9 @@ income earner-IC card:
   `maskIc` privacy masking + consent NRIC-match validation untouched; admin students list/detail already formatted.
 - Gates: **1037 courses/reports + 758 scholarship pytest + 262 jest + next build clean + i18n parity 2024**; no migration
   (scholarship still through `0041` on prod). The firewall test now allows the `context` param (flat non-sensitive dict,
-  never a model object — see decisions.md). **▶ NEXT (queued, unchanged):** PARKED post-consent summary + lock-at-Continue;
-  remove orphan `str_claimed_no_doc`; TD-084 cleanup; Check 2 (5-day SLA); Check 3 (reviewer role); old/new cockpit
-  consolidation; Tamil refine; income-arc live click-through (TD-070).
+  never a model object — see decisions.md). **▶ NEXT (queued, unchanged):** ~~post-consent summary + lock-at-Continue~~
+  (✅ shipped 2026-06-07); remove orphan `str_claimed_no_doc`; TD-084 cleanup; Check 2 (5-day SLA); Check 3 (reviewer
+  role); old/new cockpit consolidation; Tamil refine; income-arc live click-through (TD-070).
 
 **✅ SHIPPED + LIVE ON PROD 2026-06-06 — Application completion reminders + auto-close (2 commits `9b53810`+`f7f280d`;
 migration `0041` applied migrate-first via MCP; retro `docs/retrospective-application-reminders.md`).** Escalating

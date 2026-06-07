@@ -8,17 +8,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Post‑consent "Review & submit" page (lock‑at‑Continue).** A new final step (6 of 6) in the shortlisted application
-  flow shows the student a read‑only recap of everything they entered before they commit, in seven sections: **About you**
+- **Post‑consent "Review & submit" page (lock‑at‑Continue).** A new **post‑consent page** in the shortlisted application
+  flow (reached via a **"Review & submit"** CTA after the 5 wizard steps — **not** a navigable tab) shows the student a
+  read‑only recap of everything they entered before they commit, in seven sections: **About you**
   (identity + the non‑editable household facts: income, size, STR, JKM) · **Your results** · **Your story** (family
   narrative + address + the story narrative) · **Funding** (chosen study + programme length + support) · **Household
   income** (the income‑wizard route/earner) · **Documents** (a simple "✓ Uploaded" list) · **Consent** — with per‑section
   **Edit** links that jump back to the relevant step (Household income jumps straight to the income wizard). The **Submit application** button now lives here and is the *only* commit
   (`confirmScholarshipApplication`); the consent step's CTA becomes **"Review & submit →"** and no longer submits. Built
   from data already on the client (the application + the student profile + `listDocuments` + `getConsentStatus`) — **no
-  backend change, no migration**. New `ScholarshipReview.tsx`; `review` added to `NEXT_STEP_ORDER`; `scholarship.summary.*`
-  i18n in en/ms/ta. Visual approved via an in‑code mockup (Stitch generation timed out on the dense page). 267 jest +
-  next build clean; i18n parity 2073.
+  backend change, no migration**. New `ScholarshipReview.tsx`; the 5 wizard steps stay in `NEXT_STEP_ORDER` while Review
+  is a separate post‑consent page; `scholarship.summary.*` i18n in en/ms/ta. Visual approved via an in‑code mockup (Stitch
+  generation timed out on the dense page). 267 jest + next build clean; i18n parity 2073 (since raised — see below).
+- **Review & submit flow — live‑testing refinements (5 commits `1cc5f65`→`a533637`, FE‑only, no migration).**
+  (1) Review became a **post‑consent page** rather than a 6th navigable tab — `NEXT_STEP_ORDER` reverts to the 5 wizard
+  steps; the page is reached only via the **"Review & submit"** CTA after consent, Back returns to the steps, Submit there
+  is the only commit (`handleConfirm` then reloads into the post‑submit screen). (2) The **Consent step is read‑only once
+  given** — the dead‑end Edit link is gone; instead it now shows the **full consent text read‑only** plus who gave it and
+  when (`givenHeading`/`givenMetaSelf`/`givenMetaGuardian`). (3) The step counter is **dynamic** ("Step n of {total}").
+  (4) **"What happens next"** moved off the pre‑submit wizard to the **post‑submit "received" screen**, and now reads
+  review → **email query** (we may ask for more documents/clarification — Check 2 / reviewer, by email) → **may‑call** →
+  decision; the doubled email note was de‑duped (`nav({email})`). (5) Submit‑flow copy made **consistent on "submit"**
+  across the "all set" banner, the review subtitle (now with a scroll cue), and the button; the banner no longer says
+  "submit for review" (it opens the student's own read‑back, not a third‑party review); the lock note reworded so it no
+  longer implies editing reopens after contact. (6) De‑duped the doubled "Your application" title on the Review page.
+  267 jest + next build clean; i18n parity 2084.
 
 ### Removed
 - **Orphaned `str_claimed_no_doc` anomaly rule.** The pre‑interview flag "student says the family receives STR but

@@ -2155,3 +2155,19 @@ reviewer opinion can reach the engine) while fixing the copy.
 structural guarantee, mitigated by the only caller building `context` from member + doc labels alone.
 **Revisit if:** any caller is tempted to stuff application/score data into `context`, or the firewall needs to be
 re-tightened to scalars only.
+
+## Review as a post‑consent page (not a wizard tab, not an auto‑jump) — Sprint review-submit-flow, 2026-06-07
+**Decision:** The read‑only "Review & submit" recap is a distinct screen rendered via a `reviewing` state in
+`ScholarshipNextSteps`, reached only by an explicit **"Review & submit"** CTA shown after all 5 wizard steps (incl.
+consent) are complete. `NEXT_STEP_ORDER` stays the 5 wizard steps; Review is NOT a member of it. Back returns to the
+steps; Submit on the review page is the only commit.
+**Alternatives considered:** (a) Review as a 6th navigable tab in `NEXT_STEP_ORDER` — how it was first built; (b) auto‑jump
+straight to Review the moment all 5 steps complete (no button); (c) the explicit‑CTA post‑consent page (chosen).
+**Rationale:** a freely‑navigable 6th tab let students land on "Review" before they had anything to review, and muddled
+"these are steps to do" with "this is the final read‑back". Gating Review behind consent + an explicit CTA makes it a
+clear terminal step. The auto‑jump was rejected as jarring — it swaps the whole screen the instant the last toggle flips,
+with no beat between "I just consented" and "here's everything, submit now".
+**Trade-offs:** one extra click vs an auto‑jump; the submit lives on a screen the student must choose to enter.
+`handleConfirm` uses a full reload to flip to the post‑submit screen (TD‑090).
+**Revisit if:** testing shows students miss the "Review & submit" CTA, or the user prefers the auto‑jump (left as an
+open UX choice at sprint close).
