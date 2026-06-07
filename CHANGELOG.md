@@ -81,6 +81,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   officer/reviewer. No migration; 766 scholarship pytest + 267 jest + build clean; i18n parity 2026.
 
 ### Fixed
+- **Identity verdict no longer goes amber on an IC registered‑address state difference (a false yellow).** A MyKad shows
+  the *registered* state (e.g. KEDAH), which is the **least‑current** address on file — people relocate and the IC isn't
+  reissued; fresher addresses come from the offer letter / bills / STR — and it is **not an identity key** (name + NRIC
+  are). `_verdict_identity` was folding `address_state_mismatch` into the identity fact's `unresolved`, flipping it to
+  `review` (amber) even with name + NRIC both matched — contradicting the Documents panel (green) and the student's own IC
+  card (address shown as a neutral "from your IC"). Identity now reads `verified` (green) when name + NRIC match; the state
+  difference stays a **pre‑interview flag** ("ask which is current", `_detect_address_state_mismatch`) — its proper home —
+  and is no longer a "Caveat to resolve" (removed the address append from the verdict + its now‑dead `CODE_TO_TICKET`
+  entry). Identity still **never auto‑fails**: name/NRIC mismatches are amber‑to‑confirm, red is reserved for a
+  missing/unreadable IC. Backend‑only, no migration; verdict + resolution tests updated; 762 scholarship pytest.
 - **Academic "fix this" tickets now open the grades editor, not the Documents tab (TD‑082).** A student Action Centre
   `confirm` ticket on an academic fact (`academic_missing_subjects` — "add Moral + Tamil Literature" — or
   `academic_grade_mismatch`) sent the student to **Documents**, which is for *uploading files*, not editing entered

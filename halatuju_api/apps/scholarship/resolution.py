@@ -34,7 +34,10 @@ CODE_TO_TICKET = {
     'ic_unreadable':          {'fact': 'identity', 'kind': 'doc', 'doc_type': 'ic'},
     'nric_mismatch':          {'fact': 'identity', 'kind': 'confirm'},
     'name_mismatch':          {'fact': 'identity', 'kind': 'confirm'},
-    'address_state_mismatch': {'fact': 'identity', 'kind': 'confirm'},
+    # NB: address_state_mismatch is deliberately NOT ticketable — the IC's registered
+    # state is the least-current address on file, not an identity caveat (see
+    # verdict_engine._verdict_identity). It surfaces only as a pre-interview flag
+    # ("ask which is current"), so it never becomes a caveat the student must resolve.
     # Academic
     'results_slip_missing':       {'fact': 'academic', 'kind': 'doc', 'doc_type': 'results_slip'},
     'results_slip_unreadable':    {'fact': 'academic', 'kind': 'doc', 'doc_type': 'results_slip'},
