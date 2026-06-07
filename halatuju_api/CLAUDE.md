@@ -445,6 +445,29 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-07)
 
+**✅ SHIPPED 2026-06-07 — Input length-guard hardening (Story · Funding · Apply) (3 commits `b3f81d8`/`e343b96`/`048138a`
+on `main`; migration `0042`; retro `docs/retrospective-input-length-guards.md`).** Prod incident (app #30,
+POVIENTHIRAN): the "Your story" save failed with a generic *"Could not save your details"*. Root cause = the
+**`parents_occupation`** field was a `varchar(255)` column with **no length guard on the form OR the API** (the Story
+PATCH uses a plain `serializers.Serializer` + `save_application_details` writes via `setattr`, so neither inherits a
+`max_length`); a real one-sentence answer overflowed 255 → Postgres `value too long` → the whole atomic save rolled
+back. Fixed + audited the same trap everywhere a student types:
+- **`parents_occupation` → `TextField`** (migration `0042`, backward-compatible widening, migrate-first via MCP). All
+  free-text Story/Funding fields get an anti-spam cap **`STORY_TEXT_MAX = 5000`** on the form (`maxLength`) AND the
+  serializer (clean 400). Closed the identical latent traps on **city** (`varchar(100)`) and, on **/apply**, **name** +
+  **school** (free-text combobox → `varchar(255)` profile columns written by `sync_profile_fields`/`setattr`):
+  `ApplicationCreateSerializer`'s write-only profile fields now carry `max_length` matching their columns.
+- **Actionable error** replaces the blanket message: *"Your answer to "{question}" is too long. Please shorten it."*
+  (en/ms/ta). The API client preserves DRF field-level 400s (`err.fieldErrors`); pure `firstTooLongField()` +
+  `STORY_FIELD_LABEL_KEYS`/`APPLY_FIELD_LABEL_KEYS` resolve field → question label. (`contact_phone` was already safe —
+  `formatPhone` caps to 11 digits; dropdowns can't overflow.)
+- Gates: **1814 pytest** (777 scholarship + 1037 courses/reports) + **274 jest** + next build clean + i18n parity
+  **2090**; scholarship migrations through **`0042`** on prod. **Carried note:** the same `name`/`school` are also
+  editable via the onboarding "a few more details" path (different serializer) — NOT audited this sprint; audit if a
+  similar report appears there. **▶ NEXT (queued, unchanged):** remove orphan `str_claimed_no_doc`; TD‑084 cleanup;
+  Check 2 (5‑day SLA); Check 3 (reviewer role); old/new cockpit consolidation; Tamil refine; income‑arc live
+  click‑through (TD‑070); the open "Review & submit" auto‑jump-vs-button UX choice.
+
 **✅ SHIPPED 2026-06-07 — Review & submit flow live‑testing refinements (5 commits `1cc5f65`→`a533637` on `main`; NO
 migration; retro `docs/retrospective-review-submit-flow.md`).** Built out the previously‑PARKED **post‑consent summary +
 lock‑at‑Continue** and polished it from live testing:

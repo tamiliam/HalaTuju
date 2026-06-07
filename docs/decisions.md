@@ -2171,3 +2171,23 @@ with no beat between "I just consented" and "here's everything, submit now".
 `handleConfirm` uses a full reload to flip to the post‑submit screen (TD‑090).
 **Revisit if:** testing shows students miss the "Review & submit" CTA, or the user prefers the auto‑jump (left as an
 open UX choice at sprint close).
+
+## Anti-spam length caps at the serializer + UI; widen the one mis-typed column — Sprint input-length-guards, 2026-06-07
+
+**Decision:** For student free-text fields, enforce length in two places — the web form (`maxLength`) and the API serializer
+(`max_length`) — with a generous shared anti-spam ceiling `STORY_TEXT_MAX = 5000`. Caps on fields backed by a `varchar(N)`
+column mirror N exactly (city 100, name/school 255, declaration 200, other-scholarships 300). The one column that was the
+wrong *type* for its content — `parents_occupation`, a `varchar(255)` holding a sentence — was widened to `TextField`
+(migration `0042`) rather than just capped, since a one-line cap there would still truncate a legitimate answer.
+**Alternatives considered:** (a) only a frontend `maxLength` (rejected — paste/older clients/non-UI callers bypass it);
+(b) only a serializer cap (rejected — the student gets an error after typing instead of being stopped); (c) widen every
+column to `text` and rely solely on the cap (rejected — the existing `varchar` limits are sane DB hygiene; only
+`parents_occupation` was genuinely mis-typed); (d) a global request-size limit (rejected — gives a useless generic error,
+can't name the field).
+**Rationale:** defence in depth — the form stops the common case at the keyboard, the serializer is the authoritative
+guard for every code path (incl. the `setattr` writes that bypass model validation), and matching the column avoids both
+silent rollbacks and arbitrary truncation. 5000 ≈ ~900 words: above any genuine answer, below a copy-paste flood.
+**Trade-offs:** the cap constant is duplicated (a `STORY_TEXT_MAX` in both `serializers.py` and `ScholarshipNextSteps.tsx`)
+— a small FE/BE contract to keep in sync, accepted over a shared-config mechanism for one number.
+**Revisit if:** a field legitimately needs >5000 chars (raise that field's cap explicitly), or a shared FE/BE constants
+source is introduced (then dedupe the ceiling).
