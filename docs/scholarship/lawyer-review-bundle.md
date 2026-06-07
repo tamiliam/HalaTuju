@@ -12,6 +12,12 @@
 > your sign-off — that is the last step.
 >
 > Version: sponsor agreement `2026-draft-1`; student consent `2026-draft-3`.
+>
+> **Amendment 2026-06-07 (programme-owner boundary decision).** Sponsor-facing fields are **widened** to include the
+> student's **academic context — institution, course, and results** — within the two-way anonymity wall. The
+> **personal & contact identifiers** of the student **and their parents/guardians** (name, IC, photograph, address,
+> phone, email) stay **blocked**. This affects **§4**, disclosure **A3**, quiz **Q2**, and **Appendix B**, and adds a
+> **headline question at §7.4**. These are owner-proposed revisions, **pending your vet**.
 
 ---
 
@@ -94,11 +100,14 @@ operating a refundable custody/escrow arrangement. **We need you to confirm this
 
 Anonymity is **two-way and permanent**, and enforced in the software, not just by policy:
 
-- **What a sponsor sees:** an **anonymised profile** of a student — a respectful, non-identifying summary of their
-  situation, academic band, field of study, and funding need. It is **generated** from non-identifying inputs (never the
-  raw application or any document), and is checked by software before publication to ensure it contains no name,
-  photograph, IC number, home address, phone, or email. The sponsor-facing data is an **allowlist** (only explicitly
-  permitted, non-identifying fields can ever appear), so a future change cannot accidentally leak identity.
+- **What a sponsor sees:** an **anonymised profile** of a student — their **academic and study information**
+  (institution, course/field of study, and results/grades), their **region** (not town or street), the funding need, and
+  a generated, scrubbed narrative summary of their situation. It is checked by software before publication to ensure it
+  contains **no name, photograph, IC number, home address, phone, or email — for the student or their
+  parents/guardians**, and never any document. The sponsor-facing data is an **allowlist** (only explicitly permitted
+  fields can ever appear), so a future change cannot accidentally leak identity. *(Institution is shown to **launch**
+  sponsors, who are known and vetted; for a future **public** launch with unknown sponsors, institution-level detail is
+  gated behind sponsor vetting — see the §7.4 headline question.)*
 - **What a student sees:** nothing identifying about the sponsor. The student's view of their award has **no sponsor
   field at all**.
 - **What myNADI sees:** both sides (it runs the programme and must), including all documents and identifying details —
@@ -161,8 +170,14 @@ again when an award is **accepted**. The current wording is in **Appendix B**. S
    deliberately non-committal) can then be made specific.
 
 **On anonymity & safeguarding:**
-4. Is **permanent two-way anonymity** — *"you will never know who you helped"* — compatible with safeguarding obligations
-   and with any donor-reporting or transparency expectations for a charity?
+4. Is **two-way anonymity on personal & contact identifiers** — the sponsor never learns the **name, IC, photograph,
+   address, or contact details** of the student or their parents, and may not seek them — compatible with safeguarding
+   obligations and any donor-reporting/transparency expectations for a charity?
+   **Headline question (boundary decision, 2026-06-07):** *At launch, sponsors are known, vetted, large donors. We keep
+   two-way anonymity on personal and contact identifiers for the student and their parents, but we **share academic
+   context — institution, course, results — with sponsors**. A future public launch with unknown sponsors will add
+   sponsor vetting before institution-level detail is shown. **Is this launch position defensible for our minor
+   applicants, and what consent and disclosure wording does it require?***
 
 **On minors & consent (§6, Appendix B):**
 5. Is a **parent's written authorisation OR a court order** a sufficient basis for a **non-parent guardian** to consent on
@@ -221,10 +236,12 @@ myNADI**: the money sits in your **giving balance**, and you choose which studen
 amount returns to that balance for you to give to someone else. It never leaves myNADI back to you.
 > ☐ I understand I cannot withdraw my donation to my bank; I can only direct it to students within the platform.
 
-**A3 · You will never know who you helped.** To protect vulnerable students, the programme is **permanently anonymous**.
-You will **never** see a student's name, photograph, IC number, home address, or contact details — not while choosing,
-not after you fund them, not ever. You will see only a respectful, non-identifying summary of their situation and need.
-> ☐ I understand I will never learn the identity of any student I sponsor, and I will not attempt to find out.
+**A3 · You fund a need; you cannot identify the student.** To protect vulnerable students, the programme keeps the
+student's **identity private**. You will **never** receive the **name, photograph, IC number, home address, or contact
+details** of a student **or their parents/guardians** — not while choosing, not after you fund them, not ever — and you
+may not seek them. You **will** see the student's **academic and study information** — their institution, course, and
+results — and a respectful summary of their situation and need, so you can choose a need to meet.
+> ☐ I understand I will not receive the name, IC, photo, address, or contact details of the student or their parents, and I will not attempt to identify or contact them.
 
 **A4 · The money is released in stages, tied to progress.** An award is not handed over in one lump. It is released to
 the student's institution in **stages ("tranches")** — for example, part on acceptance and the rest as the student shows
@@ -253,8 +270,8 @@ run your sponsor account and your giving, never sold.
 **Q1.** You donate RM3,000 and later change your mind before funding anyone. Can you get the RM3,000 back to your bank?
 A. Yes, on request · B. Yes, within 14 days · **C. No — it stays as a giving balance to direct to a student ✓** · D. Only the unspent part.
 
-**Q2.** After you sponsor a student, what will you be able to learn about them?
-A. Their full name and school · B. Their name, once accepted · C. Their contact details · **D. Nothing identifying — only an anonymous summary ✓**
+**Q2.** After you sponsor a student, what will you be able to see about them?
+A. Their name and a photograph · B. Their and their parents' contact details · C. Their IC number · **D. Their academic and study information — institution, course, results — but never the name, IC, photo, address, or contact details of the student or their parents ✓**
 
 **Q3.** A student you funded stops attending classes and makes no progress. What happens to the not-yet-released part of the award?
 A. It is paid out anyway · B. It is refunded to your bank · **C. It can be withheld and returned to your giving balance ✓** · D. myNADI keeps it as a fee.
@@ -307,26 +324,31 @@ By signing, I confirm that:
 
 **Adult applicant (18+):**
 > I, the named applicant (**{student_name}**, NRIC **{student_nric}**), consent to the **B40 Assistance Programme**
-> preparing an **anonymised** summary of my profile and sharing **that** with potential sponsors, so that I may be
-> considered for financial assistance. My identifying details and documents are seen only by the programme and are
-> **never** shared with sponsors. I understand I can withdraw this consent at any time.
+> sharing an **anonymised** profile of me with potential sponsors, so that I may be considered for financial assistance.
+> That profile **includes my academic and study information** — my institution, course, and results — but **not** my or
+> my family's **name, IC, photograph, address, or contact details**. My **documents** (such as my results slip) are seen
+> only by the programme and are **never** shared with sponsors. I understand I can withdraw this consent at any time.
 >
 > ☐ I have read and agree to the above.
 
 **Parent / guardian of a minor (under 18):**
 > I confirm that I am the parent or guardian of **{student_name}** (NRIC: **{student_nric}**), who is under 18 years old.
 >
-> I give permission for the **B40 Assistance Programme** to prepare an **anonymised** summary of {his/her} profile and
-> share **that** with sponsors, to help {him/her} get financial aid. {His/Her} identifying details and documents are seen
-> only by the programme and are **never** shared with sponsors. I understand that I can cancel this permission at any time.
+> I give permission for the **B40 Assistance Programme** to share an **anonymised** profile of {him/her} with sponsors,
+> to help {him/her} get financial aid. That profile **includes {his/her} academic and study information** — institution,
+> course, and results — but **not** {his/her} or our family's **name, IC, photograph, address, or contact details**.
+> {His/Her} **documents** (such as the results slip) are seen only by the programme and are **never** shared with
+> sponsors. I understand that I can cancel this permission at any time.
 >
 > ☐ As parent or guardian, I have read and agree to the above on the applicant's behalf.
 
-> **⚠️ Proposed revision — please vet this wording.** The **current live** consent text says the programme shares the
-> student's *"profile and supporting information / documents with sponsors"*. That **overstates** the sharing and
-> **contradicts the anonymity model** (§4): sponsors receive only the anonymised summary — never documents or identifying
-> details. The wording above is the corrected version, and it now also tells the student about the **anonymisation
-> safeguard**. The live product text (and `CONSENT_VERSION`) will be updated to match before go-live.
+> **⚠️ Owner-revised 2026-06-07 — please vet.** Following a programme-owner **boundary decision**, sponsors see the
+> student's **academic and study information (institution, course, results)** plus region and funding need, but **never**
+> the name, IC, photograph, address, or contact details of the student **or their parents**, and **never** any document.
+> The wording above is rewritten to state this precisely (the prior draft — "anonymised summary … identifying details
+> never shared" — both over- and under-stated what is shared). The live product text and `CONSENT_VERSION` will be
+> updated to match before go-live. See the **headline question at §7.4** on whether this launch position is defensible for
+> minors.
 
 The guardian additionally provides: their full name (as on IC), their NRIC, and their **relationship** to the applicant
 (father / mother / legal guardian / grandparent / brother / sister / relative). A non-parent guardian must upload a

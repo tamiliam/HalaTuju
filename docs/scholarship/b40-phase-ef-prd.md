@@ -1,6 +1,7 @@
 # PRD — B40 Assistance Programme: Sponsor, Reviewer & Student Features (Phase E/F)
 
 > **Status:** Approved 2026-06-07 — requirements baseline. **No feature code until the open decisions (§ end) are resolved.**
+> *Amended 2026-06-07 with the owner **Boundary decision** (sponsor-facing fields widened within Design A) — see the dated section below; the legal bundle was updated in concert.*
 > **Author:** Claude (picked up from the sponsor/E-phase workstream).
 > **Investigated:** `serializers.py`, `pool.py`, `sponsorship.py`, `views_sponsor.py`, `models.py`, `emails.py`,
 > `application-processing-pipeline-plan.md`, `reviewer-role-scoped-access-plan.md`, `lawyer-review-bundle.md`, the
@@ -35,7 +36,7 @@ fields that would cross the sponsor-facing boundary are flagged as **decisions f
 
 | # | Constraint | Where it lives (binding) |
 |---|---|---|
-| B1 | **Sponsor allowlist** — a sponsor may see ONLY: `ref` (alias S-XXXX), `state` (region, not city/street), `field`, `academic` (band), `funding_categories`, `programme_months`, `award_amount`, and (detail) the generated `anon_profile` blurb. Every field is explicitly derived; **no model field auto-crosses.** | `serializers.py:38` `SponsorPoolCardSerializer` (+ `:80` detail, `:90` sponsorship card) |
+| B1 | **Sponsor allowlist (fail-closed; widened 2026-06-07 — see Boundary decision below).** A sponsor may see ONLY explicitly-listed, derived fields: `ref` (alias), `state` (region), `field`/course, `academic` results/CGPA/band, **`institution` (trusted-sponsor-gated)**, `funding_categories`, `programme_months`, `award_amount`, and the generated `anon_profile` blurb. **Blocked for the student AND parents/guardians:** name, IC/NRIC, phone, email, street address, photo. **No model field auto-crosses.** | `serializers.py:38` `SponsorPoolCardSerializer` (+ `:80` detail, `:90` sponsorship card) |
 | B2 | **Pre-publish identifier scan** — an anon profile cannot be published if it contains the student's name/school/city/NRIC/phone/email. | `pool.py:87` `scan_anon_for_identifiers` |
 | B3 | **Pool eligibility** — a student is in the pool iff `SponsorProfile.anon_published` is true **AND** an active `share_with_sponsors` consent exists **AND** status ≠ `sponsored`; whole pool behind `SPONSOR_POOL_ENABLED`. | `pool.py:43,50`; `models.py` `SponsorProfile.anon_published` |
 | B4 | **Two-way anonymity** — the student NEVER sees the sponsor. The student's award view has no sponsor field. | `serializers.py:105` `StudentAwardSerializer` |
@@ -43,6 +44,46 @@ fields that would cross the sponsor-facing boundary are flagged as **decisions f
 | B6 | **Pipeline state machine** — `ScholarshipApplication.status`: `submitted → shortlisted → profile_complete → interviewing → interviewed → accepted → sponsored` (+ `rejected/withdrawn/expired`). `Sponsorship.status`: `offered → active / lapsed / cancelled`. | `models.py` `STATUS_CHOICES`, `Sponsorship.STATUS` |
 
 **Legend used below:** **EXISTS** (built, reuse) · **PARTIAL** (backend or shell exists, needs the rest) · **NET-NEW** (build from scratch).
+
+---
+
+## Boundary decision — sponsor-facing fields (programme-owner decision, 2026-06-07)
+
+**Settles FLAG-1 and supersedes its narrow "one `progress_state` enum" framing.** We stay with **Design A (anonymous
+giving)** — the two-way wall stays, which is what keeps the light sponsor onboarding defensible — but **widen the
+allowlist within it**. The mechanism stays an **allowlist (fail-closed)**: we add permitted fields; we do **not** invert
+to a denylist (a denylist would leak future model fields by default; the allowlist keeps new fields invisible until
+consciously approved). *Acceptable at launch because launch sponsors are known to us and are large donors, not anonymous
+members of the public; fuller sponsor vetting is deferred to true public launch — the institution gate below.*
+
+**Blocked — never crosses to a sponsor (student AND parent/guardian):** full name · IC/NRIC · phone · email · street
+address · photo. Enforced by allowlist omission **and** `scan_anon_for_identifiers` as the backstop.
+
+**Allowed — may cross to a sponsor:** academic results / CGPA / grade band · field of study / course ·
+**institution (school/college) — trusted-sponsor-gated** · region (already) · funding need / award amount (already) ·
+the generated, scrubbed narrative blurb (already).
+
+**Institution gate ("trusted-sponsor / launch-only").** At launch every sponsor is *trusted* (known, vetted, large
+donors), so institution is visible. **Build the seam now:** the allowlist must distinguish a **trusted** sponsor from a
+future **public** sponsor, so institution-level detail can be coarsened or switched off for unvetted sponsors at public
+launch without re-architecting. *Rationale:* results are an **attribute** (describe the student); school/college is a
+**locator** (where to physically find a specific minor) — tolerable for known donors, but the field a regulator/lawyer
+will scrutinise for minors at public launch.
+
+**Quasi-identifier guard (engineering note, not a blocker):** even with personal identifiers removed,
+institution + course + region + family situation can re-identify a minor in a small community. Keep the generated blurb
+**coarse** on family/locality detail so the narrative does not reintroduce a fingerprint the field-level blocks remove.
+
+**Code consequences.** (1) Add results/CGPA, field/course, and **trusted-gated** institution to
+`SponsorPoolCardSerializer`. (2) Introduce a **trusted-vs-public sponsor** flag now (e.g. `Sponsor.is_trusted`, default
+true at launch) for the institution gate to read. (3) Extend serializer tests to assert the blocked **parent** fields
+never appear, and that **institution is absent for a non-trusted sponsor**. This **supersedes** FLAG-1's narrow framing
+— progress is no longer the only new field crossing; progress reporting continues as a smaller separate question.
+
+**Legal consequences (applied to `lawyer-review-bundle.md`, pending lawyer vet).** The widening makes three texts
+inaccurate; rewritten as owner-proposed revisions: sponsor disclosure **A3**, comprehension quiz **Q2**, and the
+student/guardian consent **Appendix B** — plus a new **headline question** to the lawyer on whether the launch position
+is defensible for minor applicants. (§4 of the bundle was also aligned for consistency.)
 
 ---
 
@@ -71,8 +112,9 @@ student landing `app/scholarship/page.tsx` (212 lines, `'use client'`) is the **
 **Pipeline states/triggers touched.** None on the student pipeline. Sponsor-account states only (`Sponsor.status`
 `pending/approved/...`), and only as the "what happens next" copy.
 
-**Data fields.** None new. Read-only marketing content + a link. (Optionally a live, non-identifying stat like "N students
-seeking support" — see Open Question Q-1; this would read pool size and is a **mild** disclosure, flag.)
+**Data fields.** None new on the student side. **Decided 2026-06-07: include a live "students waiting" counter** — a
+**count only** (never cards), derived from the eligible pool, gated behind `SPONSOR_POOL_ENABLED` (0/hidden until launch).
+Reveals pool size only.
 
 **Privacy/PDPA.** No personal data. If a live "students waiting" counter is added, it must be a **count only** (never
 cards) and respect `SPONSOR_POOL_ENABLED`.
@@ -80,8 +122,8 @@ cards) and respect `SPONSOR_POOL_ENABLED`.
 **Dependencies.** Feeds Feature 4 (referral links land here). Independent of the money flow — can ship while the pool is
 still dark.
 
-**Open questions.** Q-1 (live student-count stat yes/no); Q-2 (does the landing page require login to see *any* pool
-preview, or is it fully public marketing only — recommend public marketing only, no cards pre-approval).
+**Decisions (2026-06-07).** Q-1: **yes** — live "students waiting" counter (count only). Q-2: **fully public marketing**,
+no pool cards/preview pre-approval.
 
 ---
 
@@ -98,8 +140,9 @@ yet (deferred E3b).
 **User-facing behaviour.**
 - Sponsor account block: name, email, phone, organisation, status (from `SponsorSerializer`, `serializers.py:11`).
 - Giving balance: donated − committed (`sponsorship.sponsor_balance`).
-- **My students:** a list of the sponsor's sponsorships, each shown as the **anonymised card** (`ref`, field, academic
-  band, award amount, status `offered/active`) + a **progress indicator**.
+- **My students:** a list of the sponsor's sponsorships, each shown as the **anonymised card** (`ref`, field/course,
+  academic results/band, institution [trusted-gated], award amount, status `offered/active`) + a **progress signal**
+  (see FLAG-1).
 
 **Pipeline states/triggers touched.** Reads `Sponsorship.status` (`offered/active/lapsed/cancelled`) and the linked
 application's pool card. No writes.
@@ -111,14 +154,15 @@ passthrough.
 
 **Dependencies.** Feature 9's student progress data feeds the indicator (and shares FLAG-1).
 
-> **🚩 FLAG-1 — "each student's progress" is NOT in the allowlist.** Showing progress to a sponsor needs a *new*
-> sponsor-facing field, which by B1 is a decision, not something to add silently. **Options:**
-> (a) **Coarse status only** (recommended) — reuse what already crosses: the sponsorship `status` + a derived,
-> non-identifying enum like `on_track / semester_completed / needs_attention / graduated`, computed by myNADI from the
-> results upload (Feature 9) — **never** the results slip itself. Add ONE allowlist field `progress_state`.
-> (b) **Milestone counter** — "Semester 2 of 6 funded/released" tied to tranche releases (§3.6 of the bundle, *not built*).
-> (c) **No per-student progress at launch** — show only `offered/active` status; defer progress to the tranche build.
-> *Open decision: which option, and exactly which enum values may cross the allowlist?*
+> **🚩 FLAG-1 — SETTLED by the Boundary decision (2026-06-07).** The sponsor-facing set is widened (academic/CGPA,
+> field/course, trusted-gated institution now cross); the allowlist stays **fail-closed**. Progress is no longer the only
+> new field, so progress reporting becomes a **smaller, separate** question: does the sponsor *also* see a coarse progress
+> signal, and with what values? **Options (progress signal only):**
+> (a) one derived `progress_state` enum `on_track / semester_completed / needs_attention / graduated`, computed from the
+> results upload — **never** the slip itself *(recommended)*;
+> (b) tranche milestone counter ("Semester 2 of 6") — depends on unbuilt tranche mechanics;
+> (c) no per-student progress at launch (show only `offered/active`).
+> *Decided 2026-06-07: option (a) — one `progress_state` enum `on_track / semester_completed / needs_attention / graduated`, derived from the results upload, never the slip.*
 
 ---
 
@@ -161,9 +205,8 @@ fans out widely (see HalaTuju email infra).
 
 **Dependencies.** Requires the publish transition to emit a signal/hook (small backend addition). Independent of Feature 1.
 
-**Open questions.** Q-3 default frequency (recommend `weekly` to protect deliverability); Q-4 whether real-time should be
-**debounced/batched hourly** to avoid a burst when an admin publishes many at once; Q-5 send channel (Brevo, same as
-student emails — recommend yes, from `noreply@halatuju.xyz`).
+**Decisions (2026-06-07).** Q-3: default = **weekly digest**. Q-4: real-time is **batched hourly** (to avoid publish
+bursts). Q-5: send via **Brevo**, from `noreply@halatuju.xyz` (same path as student emails).
 
 > **🚩 FLAG-2 — "applied/verified" cannot be sponsor-trigger events.** They precede anonymisation and involve identity.
 > The PRD ties the trigger to `anon_published` only. *If the user wanted sponsors notified earlier, that is impossible
@@ -302,8 +345,8 @@ finalised**, because the gate depends on queries being created at submit + the c
 > **🚩 FLAG-3 — reviewer-role semantic flip is breaking.** Today `reviewer` is *powerful* (every write endpoint gates on
 > `has_role('reviewer')`), so existing reviewers can assign/accept/reject on **every** application. The plan **restricts**
 > reviewer to assigned-only and moves powerful actions to `super`. **Audit existing `PartnerAdmin.role` values first**
-> (esp. CUMIG admins) before flipping — otherwise live admins silently lose access. *Decision: confirm the audit + the
-> super/reviewer split before implementation.*
+> (esp. CUMIG admins) before flipping — otherwise live admins silently lose access. *Decided 2026-06-07: **audit existing
+> `PartnerAdmin.role` values FIRST, then adopt the super/reviewer split** per the reviewer plan.*
 
 ---
 
@@ -324,19 +367,20 @@ consent machinery (`CONSENT_VERSION`, `record_consent`, `Consent`) is the system
 1. **Award announcement** — on `Sponsorship offered→active` (accept), send a congratulations email + in-app banner: "Your
    support is confirmed." (The sponsor identity is **never** included — B4.)
 2. **Onboarding flow** (mirrors the sponsor's seven-card pattern, student-appropriate): a short set of **acknowledgement
-   cards** — what the support is, that it's tied to progress (and may be staged/withheld — *see FLAG-4 / bundle §6 open
-   item*), conduct, how results uploads work, the two-way anonymity (they won't know the sponsor), and data handling.
-   Each card acknowledged; recorded via `record_consent` with a **new `consent_type` and version** (B5 — reuse the
-   machinery, add a type, do not fork it).
+   cards** — what the support is, that it's tied to progress (and may be staged/withheld — **provisional copy below**,
+   *FLAG-6, lawyer to vet*), conduct, how results uploads work, the two-way anonymity (they won't know the sponsor), and
+   data handling. Each card acknowledged; recorded via `record_consent` with the **new `student_onboarding_ack`
+   consent_type + version bump** (B5 — reuse the machinery, add a type, do not fork it).
 3. **Questionnaire** — a short comprehension/expectations questionnaire (mirroring the sponsor quiz intent) confirming the
-   student understands obligations. Stored as structured responses tied to the application.
+   student understands obligations. Stored as structured responses tied to the application. **Decided 2026-06-07: this is
+   a hard gate** — the student must complete the onboarding cards + questionnaire **before the first disbursement**.
 
 **Pipeline states/triggers touched.** Trigger = `Sponsorship` `offered→active` (accept) and/or app `accepted→sponsored`.
 Onboarding completion can be a new sub-state/flag on the application (e.g. `onboarded_at`) — **does not** add a new top
 status value (B6); it's a timestamp gate like `profile_completed_at`.
 
 **Data fields (new):**
-- New `Consent.consent_type` (e.g. `student_onboarding_ack`) + a version bump (reuse the model; **B5 respected**).
+- New `Consent.consent_type` **`student_onboarding_ack`** + a `CONSENT_VERSION` bump (decided 2026-06-07; reuse the model — B5).
 - `ScholarshipApplication.onboarded_at` (datetime, nullable) — gate for "onboarding complete."
 - Questionnaire responses: a JSON field on the application or a small `OnboardingResponse` model (Open Q-13).
 - New email(s): `send_award_confirmed_email` (+ digest-safe). All student-side; no allowlist impact.
@@ -347,10 +391,16 @@ is student PII under existing handling.
 **Dependencies.** Sits directly on the existing `respond_to_award` accept path. Independent of Features 1–4. Reuses
 consent machinery — **must not** create a parallel consent table.
 
-**Open questions.** Q-12 confirm a **new `consent_type` + version** vs reusing `consent_to_sponsorship` (recommend a new
-`student_onboarding_ack` so the sponsorship-acceptance consent stays clean); Q-13 questionnaire storage (JSON on app vs
-`OnboardingResponse` model); Q-14 is the questionnaire **blocking** (must pass before funds release) or informational;
-Q-15 staged-release disclosure wording for the student (ties to bundle §6 open item — lawyer-dependent).
+**Decisions (2026-06-07).** Q-12: **new `student_onboarding_ack` consent_type + version bump**. Q-14: **blocking** — must
+complete before first disbursement. Q-15: **draft provisional staged-release wording now** (below), ⚠️ lawyer to vet.
+*Implementation detail still open:* Q-13 questionnaire storage (JSON on the application vs a small `OnboardingResponse`
+model).
+
+**Provisional staged-release card copy** *(decided: draft now; ⚠️ lawyer to vet — bundle §6/§7.2; tranche mechanics not
+built yet, so this card can wait for the tranche build if needed):*
+> *"Your support is given in stages as you progress. If you stay enrolled and keep making genuine progress, the next
+> stage is released. If you stop your studies or do not progress, a stage may be paused while myNADI checks in with you —
+> we will always tell you why, and you can explain your situation."*
 
 ---
 
@@ -369,8 +419,9 @@ featuring** consent does **not**. `scan_anon_for_identifiers` (`pool.py:87`) is 
 **User-facing behaviour.**
 - **Profile:** basic details, institution + field, CGPA, **upload latest-semester results**, and (18+) a
   **promotional-use consent** toggle.
-- **Progress signal:** myNADI derives a non-identifying `progress_state` from the results upload — this is what may reach
-  the sponsor (Feature 2 / FLAG-1). The **results slip itself never reaches the sponsor** (it carries name/IC).
+- **Progress signal:** myNADI derives a non-identifying `progress_state` from the results upload — one of the
+  sponsor-facing signals, *alongside* the academic context now permitted by the Boundary decision (results/CGPA,
+  field/course, trusted-gated institution). The **results *slip document* never reaches the sponsor** (it carries name/IC).
 - **Graduation thank-you relay:** on closeout, the student writes a thank-you note → it is **relayed through HalaTuju/
   myNADI**, run through `scan_anon_for_identifiers` (blocking on any leak), and surfaced in the sponsor's profile as a
   message from *"a student you supported."* **Never a direct student→sponsor channel.**
@@ -381,8 +432,9 @@ featuring** consent does **not**. `scan_anon_for_identifiers` (`pool.py:87`) is 
    student is asked to revise (same UX as the anon-profile publish gate).
 3. **myNADI review (recommended):** a human approves the scanned-clean note (defence-in-depth, mirrors the anon-profile
    admin-approve step) → `status='approved'`.
-4. **Surface:** the approved, stripped note appears in the sponsor's profile attributed to *"a student you supported"* —
-   no ref, no field that could correlate to a single student if the sponsor funded several (Open Q-17).
+4. **Surface:** the approved, stripped note appears in the sponsor's profile **linked to the specific (still-anonymous)
+   `ref`** — decided 2026-06-07; sponsors may see *which* anonymous student thanked them. It still passes
+   `scan_anon_for_identifiers` and carries no name/IC/contact and no field beyond the existing anon card.
 
 **Pipeline states/triggers touched.** Profile reads existing application/profile + documents. Relay triggers at
 graduation/closeout (a new terminal step after `sponsored`; model as a timestamp/flag, not a new top status — B6).
@@ -393,9 +445,10 @@ graduation/closeout (a new terminal step after `sponsored`; model as a timestamp
 - `GraduationMessage` model: `application`, `raw_text`, `scrubbed_text`, `scan_result`, `status`
   (`pending_review/approved/blocked`), `approved_by`, timestamps.
 
-**Privacy/PDPA.** Results slips and CGPA are student PII — myNADI-only, never sponsor-facing. Promotional consent is
-**explicit, 18+, withdrawable**. The relay is the privacy-critical path: **scan is mandatory and blocking**; human review
-recommended.
+**Privacy/PDPA.** Per the 2026-06-07 Boundary decision, the **results/CGPA values, field/course, and (trusted-gated)
+institution DO cross** to sponsors as academic context; the **results *slip document* is myNADI-only and never
+sponsor-facing** (it carries name/IC). Promotional consent is **explicit, 18+, withdrawable**. The relay is the
+privacy-critical path: **scan is mandatory and blocking**; human review recommended.
 
 **Dependencies.** Feature 2 consumes `progress_state` (shared FLAG-1). Reuses `scan_anon_for_identifiers` and the consent
 machinery.
@@ -403,9 +456,11 @@ machinery.
 > **🚩 FLAG-4 — promotional-use consent is a NEW consent type + version bump.** Reuse the `Consent` model/`record_consent`
 > (B5) but add `promotional_use` and bump `CONSENT_VERSION`; 18+ gate enforced server-side. *Decision: confirm the new
 > type + version, and the 18+ enforcement point.*
-> **🚩 FLAG-5 — thank-you relay correlation risk.** If a sponsor funded several students, even a stripped note plus timing
-> could correlate. *Decision Q-17: attribute as a generic "a student you supported" with no per-student linkage, or allow
-> linkage to the specific (still-anonymous) `ref`? Recommend generic, no linkage, to protect anonymity.*
+> **🚩 FLAG-5 — DECIDED 2026-06-07: link the note to the anonymous `ref`** (owner chose linkage over the generic
+> "a student you supported" option). The sponsor sees which still-anonymous student thanked them. **Recorded trade-off:**
+> this is the less conservative choice and, combined with the now-visible institution + course, raises re-identification/
+> correlation risk — so the note stays **mandatory-scanned** (`scan_anon_for_identifiers`), **human-reviewed**, and adds
+> no field beyond the existing anon card.
 
 ---
 
@@ -413,16 +468,18 @@ machinery.
 
 | Flag | Feature(s) | The conflict | Recommended option |
 |---|---|---|---|
-| FLAG-1 | 2, 9 | Sponsor "student progress" is not in the allowlist | Add ONE derived enum `progress_state` to the allowlist; never the results slip |
+| FLAG-1 | 2, 9 | **SETTLED 2026-06-07** — boundary widened (academic/CGPA, field/course, trusted-gated institution cross); allowlist stays fail-closed | See Boundary decision; only the progress-signal sub-decision remains (recommend `progress_state` enum) |
 | FLAG-2 | 3 | "applied/verified" can't be sponsor triggers (pre-anonymisation) | Single trigger at `anon_published` only |
 | FLAG-3 | 7 | Reviewer-role flip is breaking for existing admins | Audit `PartnerAdmin.role` values before flipping; confirm super/reviewer split |
 | FLAG-4 | 8, 9 | New consent types needed | Reuse `Consent`/`record_consent`; add `student_onboarding_ack` + `promotional_use`, bump version |
-| FLAG-5 | 9 | Thank-you relay could correlate to a student | Generic "a student you supported", no per-student linkage |
+| FLAG-5 | 9 | Thank-you relay could correlate to a student | **DECIDED: link to anonymous `ref`** (owner); mitigated by mandatory scan + human review |
 | FLAG-6 | 8, 9 | Staged-release/withholding not yet disclosed to students (bundle §6 open item) | Lawyer-dependent; align onboarding copy to the bundle's §7.2 answer |
 
-**Boundary verdict:** only **two** new fields would ever cross the sponsor-facing allowlist — `progress_state` (FLAG-1)
-and nothing else. The thank-you note crosses only **after** the `scan_anon_for_identifiers` gate. Everything else is
-sponsor-side or student-side and does not touch B1.
+**Boundary verdict (updated 2026-06-07):** per the owner Boundary decision, the sponsor-facing set is **widened** to
+academic results/CGPA, field/course, and **trusted-gated institution** (plus the existing region/funding/award/blurb).
+**Blocked for student AND parents:** name, IC, phone, email, street address, photo — enforced by allowlist omission +
+`scan_anon_for_identifiers`. The allowlist stays **fail-closed**; institution reads a new **trusted-vs-public sponsor**
+flag. The thank-you note crosses only **after** the scan gate. Everything else stays sponsor- or student-side.
 
 ---
 
@@ -438,33 +495,40 @@ sponsor-side or student-side and does not touch B1.
 
 ---
 
-## Open decisions I need from you
+## Decisions log (resolved 2026-06-07) + what remains
 
-1. **Q-1 / Q-2 (F1):** Live "students waiting" counter on the public landing page — yes/no? Landing page fully public
-   marketing (no pool preview pre-approval) — confirm?
-2. **FLAG-1 (F2/F9):** Which progress model crosses to sponsors — (a) one derived `progress_state` enum *(recommended)*,
-   (b) tranche milestone counter, or (c) no per-student progress at launch? And the exact allowed enum values.
-3. **Q-3/Q-4 (F3):** Default notification frequency (recommend `weekly`); should real-time be hourly-batched to avoid
-   publish bursts?
-4. **FLAG-3 (F7):** Confirm we audit existing `PartnerAdmin.role` values and adopt the plan's super/reviewer split before
-   flipping semantics.
-5. **Q-12/Q-14 (F8):** New `student_onboarding_ack` consent type + version *(recommended)* vs reuse `consent_to_sponsorship`?
-   Is the onboarding questionnaire **blocking** (gate funds release) or informational?
-6. **FLAG-4/FLAG-5 (F9):** Confirm new `promotional_use` consent (18+, version bump); and thank-you attribution —
-   generic "a student you supported" with **no** per-student linkage *(recommended)*?
-7. **FLAG-6 (F8/F9):** Staged-release/withholding disclosure to students is **lawyer-dependent** (bundle §6/§7.2) — hold
-   that copy until the lawyer answers, or draft provisional wording now?
-8. **Q-6/Q-7 (F4):** Referral model shape (full `SponsorReferral` vs lightweight `referred_by`) and the retention window
-   for unconverted invitee emails.
-9. **Logistics:** Save the approved PRD to `Production/HalaTuju/docs/scholarship/b40-phase-ef-prd.md`? (And note: another
-   session has been active in this repo — I'll path-scope any future commit.)
+**Resolved this session:**
+1. **Boundary (owner Boundary decision + FLAG-1):** widen the allowlist *within* Design A; it stays **fail-closed**.
+   Blocked (student **and** parents): name, IC, phone, email, street address, photo. Allowed: academic/CGPA, field/course,
+   **trusted-gated institution** (+ existing region/funding/award/blurb). Legal bundle updated in concert. **Progress
+   signal = `progress_state` enum** (`on_track / semester_completed / needs_attention / graduated`), derived from results,
+   never the slip.
+2. **F1 landing:** **live "students waiting" counter** (count only, `SPONSOR_POOL_ENABLED`-gated); page is **fully public
+   marketing**, no pool preview pre-approval.
+3. **F3 notifications:** default **weekly digest**; real-time **batched hourly**; via **Brevo** (`noreply@halatuju.xyz`).
+4. **F8 onboarding:** **new `student_onboarding_ack` consent_type + `CONSENT_VERSION` bump**; questionnaire is a **hard
+   gate** (complete before first disbursement); **provisional staged-release card drafted** (FLAG-6, ⚠️ lawyer to vet).
+5. **F9 thank-you (FLAG-5):** **link the relayed note to the anonymous `ref`** (owner's choice over generic), with the
+   recorded correlation trade-off; mitigated by mandatory `scan_anon_for_identifiers` + human review.
+6. **F7 reviewer (FLAG-3):** **audit existing `PartnerAdmin.role` values first**, then adopt the super/reviewer split.
+7. **Logistics:** PRD saved + committed (`ff13f10`); this amendment to be committed path-scoped.
+
+**Still open (smaller / decide at build time):**
+- **FLAG-4 (F9):** `promotional_use` consent — assumed to follow the same pattern (new consent_type + version bump, 18+
+  gated); **confirm** when F9 is built.
+- **Q-6/Q-7 (F4):** referral model shape (full `SponsorReferral` vs lightweight `referred_by`) + retention window for
+  unconverted invitee emails. (Feature 4 is last in sequence.)
+- **Implementation details:** Q-13 questionnaire storage (JSON vs `OnboardingResponse`); Q-10/Q-11 reviewer-profile model
+  shape + address structuring.
 
 ---
 
 ## Verification (how we'll validate once features are built — not now)
 
-- **Allowlist:** the existing serializer tests assert no name/NRIC/address/phone/email/school in sponsor output; extend
-  them for any new field (`progress_state`) and for the digest email body.
+- **Allowlist:** existing serializer tests assert no name/NRIC/address/phone/email in sponsor output; **extend** to also
+  assert the blocked **parent** fields never appear, that **institution is absent for a non-trusted sponsor**, and to
+  cover the new permitted fields (`progress_state`, academic/CGPA, field/course, trusted-gated institution) + the digest
+  email body.
 - **Relay:** unit-test `scan_anon_for_identifiers` against the thank-you path with planted identifiers (must block).
 - **Consent:** assert `record_consent` writes the new types with the bumped version and the 18+ gate.
 - **Assignment gate:** test `is_ready_for_assignment` for (queries-open) vs (5-day lapsed); test reviewer 403/404 on
