@@ -2220,6 +2220,26 @@
       "familyContext": "Family context",
       "programmeMonths": "Programme length (months)",
       "fundingNote": "Funding note",
+      "estimate": {
+        "title": "Estimated need",
+        "basis": "Based on",
+        "monthly": "Monthly gap",
+        "oneOff": "One-off",
+        "total": "Programme total",
+        "months": "months",
+        "covers": "Government covers",
+        "reviewNote": "Varies widely — confirm the figures with the student.",
+        "none": "Pathway not chosen yet — no estimate. Use the student's stated needs.",
+        "pathway": {
+          "matrik": "Matrikulasi",
+          "asasi": "Asasi",
+          "stpm": "STPM",
+          "poly_diploma": "Polytechnic / Diploma",
+          "pismp": "PISMP (IPG)",
+          "degree": "Degree",
+          "unknown": "Not chosen"
+        }
+      },
       "meritScore": "Merit score",
       "studentNote": "Student's note",
       "upu": {

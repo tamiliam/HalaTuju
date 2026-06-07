@@ -24,6 +24,7 @@ class _Base(TestCase):
             profile_completed_at=timezone.now(),  # submitted
             aspirations='I want to teach.', field_of_study='Education',
             siblings_in_tertiary=0,  # sibling level known
+            chosen_pathway='stpm', pathway_certainty='sure',  # STPM → transport asked
         )
 
     def _codes(self, qs=None):

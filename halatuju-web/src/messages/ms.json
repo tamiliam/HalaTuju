@@ -2220,6 +2220,26 @@
       "familyContext": "Konteks keluarga",
       "programmeMonths": "Tempoh program (bulan)",
       "fundingNote": "Nota pembiayaan",
+      "estimate": {
+        "title": "Anggaran keperluan",
+        "basis": "Berdasarkan",
+        "monthly": "Jurang bulanan",
+        "oneOff": "Sekali sahaja",
+        "total": "Jumlah program",
+        "months": "bulan",
+        "covers": "Kerajaan menanggung",
+        "reviewNote": "Berbeza-beza — sahkan angka dengan pelajar.",
+        "none": "Laluan belum dipilih — tiada anggaran. Guna keperluan yang dinyatakan pelajar.",
+        "pathway": {
+          "matrik": "Matrikulasi",
+          "asasi": "Asasi",
+          "stpm": "STPM",
+          "poly_diploma": "Politeknik / Diploma",
+          "pismp": "PISMP (IPG)",
+          "degree": "Ijazah",
+          "unknown": "Belum dipilih"
+        }
+      },
       "meritScore": "Skor merit",
       "studentNote": "Nota pelajar",
       "upu": {

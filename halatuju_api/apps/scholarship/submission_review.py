@@ -162,8 +162,12 @@ def completeness_gaps(application) -> list[dict]:
     if 'device' not in cats:
         gaps.append({'code': 'device_status_unknown'})
 
-    # Transport cost — no structured field at all.
-    gaps.append({'code': 'transport_cost_unknown'})
+    # Transport cost — only STPM students travel daily at a real, distance-dependent
+    # cost worth asking. Residential pathways (matrik/asasi/poly/PISMP) have transport
+    # estimated as small, so we don't ask them; an unknown pathway also doesn't ask.
+    from .funding_estimate import classify_pathway
+    if classify_pathway(application) == 'stpm':
+        gaps.append({'code': 'transport_cost_unknown'})
 
     return gaps
 

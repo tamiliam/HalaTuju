@@ -463,6 +463,11 @@ export default function AdminScholarshipDetailPage() {
           app.preferred_state,
         ])
         const guardian = (app.guardians && app.guardians[0]) || null
+        const fe = app.funding_estimate
+        const rmRange = (r?: [number, number]) =>
+          !r ? null : r[0] === r[1]
+            ? `RM ${r[0].toLocaleString('en-US')}`
+            : `RM ${r[0].toLocaleString('en-US')}–${r[1].toLocaleString('en-US')}`
         return (
           <div className="space-y-4">
             {/* Two independent columns rather than a row-major grid, so each column
@@ -618,6 +623,38 @@ export default function AdminScholarshipDetailPage() {
                   <Field label={t('admin.scholarship.programmeMonths')} value={app.funding_need.programme_months} />
                 </dl>
                 {app.funding_need.funding_note && <div className="mt-2"><Field label={t('admin.scholarship.fundingNote')} value={app.funding_need.funding_note} /></div>}
+              </Card>
+            )}
+
+            {/* Check 2 — estimated funding need (per-pathway; a starting point for the
+                award amount). The student's checkboxes above are a signal; this is the
+                estimated GAP after government coverage. */}
+            {fe && (
+              <Card title={t('admin.scholarship.estimate.title')}>
+                {fe.known ? (
+                  <>
+                    <p className="text-xs text-gray-500 mb-1.5">
+                      {t('admin.scholarship.estimate.basis')}: {t(`admin.scholarship.estimate.pathway.${fe.pathway}`)}
+                    </p>
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 md:grid-cols-3">
+                      <Field label={t('admin.scholarship.estimate.monthly')} value={rmRange(fe.monthly_total)} />
+                      <Field label={t('admin.scholarship.estimate.oneOff')} value={rmRange(fe.one_off_total)} />
+                      <Field
+                        label={`${t('admin.scholarship.estimate.total')} (${fe.programme_months || 12} ${t('admin.scholarship.estimate.months')})`}
+                        value={rmRange(fe.total)} />
+                    </dl>
+                    {fe.covered.length > 0 && (
+                      <p className="mt-2 text-xs text-gray-500">
+                        {t('admin.scholarship.estimate.covers')}: {fe.covered.join(', ')}
+                      </p>
+                    )}
+                    {fe.review && (
+                      <p className="mt-1 text-xs text-amber-700">{t('admin.scholarship.estimate.reviewNote')}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">{t('admin.scholarship.estimate.none')}</p>
+                )}
               </Card>
             )}
           </div>
