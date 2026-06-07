@@ -557,6 +557,8 @@
   for invalid input, so a blind swap would crash on a null `nric`. **To resolve:** make the shared `formatNric` null-safe
   (or add a `formatNricDisplay` wrapper) and replace both locals. Cosmetic; both already render the canonical format.
   Low priority. (Logged 2026-06-06.)
+  - **✅ RESOLVED** (this [Unreleased] cycle; see CHANGELOG "Changed"): added a null‑safe `formatNricDisplay()` in
+    `lib/scholarship.ts` (em‑dash for a missing IC); both admin pages and the new `ScholarshipReview` use it.
 - TD-089: **The guardianship-letter relationship path is unwired (guardian income route).** Unlike the birth
   certificate (fixed 2026-06-06), `guardianship_letter` is NOT in `views.SUPPORTING_NAME_CHECK_TYPES`, so an uploaded
   letter is never OCR'd or field-extracted. Worse, `income_engine._relationship_inputs` reads the letter's name from
@@ -566,3 +568,9 @@
   `RELATIONSHIP_DOC_TYPES`, give it a name field in its extraction schema, and change `_relationship_inputs` to read the
   guardian's name from `vision_fields['fields']` (not `vision_name`). Deliberately NOT done in the BC fix to avoid making
   valid guardian letters show a false "unreadable". Guardian income route is rare; low priority. (Logged 2026-06-06.)
+- TD-090: **`handleConfirm` does a full `window.location.reload()` after submit** (`ScholarshipNextSteps.tsx`) to
+  re-render the page as the post-submit "received" screen, instead of updating React state in place. Pragmatic and
+  reliable (the received screen lives in the parent `application/page.tsx`, keyed off `app.status`, so a reload is the
+  simplest way to flip to it), but it's a heavier transition than necessary and loses client state. **To resolve:** lift
+  the submitted application up via the existing `onChange`/refresh path so the parent re-renders without a full reload.
+  Cosmetic; low priority. (Logged 2026-06-07, Review & submit flow.)

@@ -3,7 +3,8 @@
 **Status:** **✅ TD-085 COMPLETE — both sprints SHIPPED + DEPLOYED 2026-06-05** (no migrations). S1 (consent gate v2,
 retro `docs/retrospective-consent-gate-v2-s1.md`) + S2 (officer Documents-panel redesign, retro
 `docs/retrospective-td085-cockpit-s2.md`). The document-first verdict + re-extraction backfill were intentionally
-dropped (route stays authoritative). PARKED for later: the post-consent summary page + lock-at-Continue (section below).
+dropped (route stays authoritative). ✅ The post-consent summary page + lock-at-Continue (section below) was **SHIPPED
+2026-06-07** — retro `docs/retrospective-review-submit-flow.md`.
 **Part of:** TD-085.
 **FINAL SCOPE (2026-06-05): TWO sprints only — (S1) Consent gate v2, (S2) Documents-panel redesign (officer cockpit).**
 **DROPPED:** (a) the *document-first verdict* — it would make the route NON-authoritative, but the strict route-aware
@@ -165,7 +166,9 @@ Untouched (no income docs to slot): #12, #13, #17, #19.
 STR validity (user manual check 2026-06-05): Theepicaa = valid → STR; Yeswindran = invalid → salary. System copies
 still unread until the TD-085 re-extraction backfill (cosmetic for the cockpit, not the routing).
 
-## Parked / FYI — post-consent summary page (NOT in TD-085 scope; future, do not build yet)
+## ✅ SHIPPED 2026-06-07 — post-consent summary page + lock-at-Continue (retro `retrospective-review-submit-flow.md`)
+> Built as a post‑consent **page** reached via the "Review & submit" CTA (not a wizard tab). Submit on the review page is
+> the only commit. The original spec below is kept for reference; see the retro/decisions for what actually shipped.
 Flow: `Application pages → Consent → [Summary page, NEW] → Continue → "Thank you, you'll hear from us"`; **Back** →
 Consent → student edits the Application pages.
 - **Summary** = a one-glance recap of EVERYTHING the student submitted (name, IC, story, funding, documents, income
