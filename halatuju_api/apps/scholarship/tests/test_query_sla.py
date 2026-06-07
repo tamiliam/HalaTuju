@@ -7,11 +7,11 @@ from django.utils import timezone
 
 from apps.courses.models import StudentProfile
 from apps.scholarship.models import (
-    ResolutionItem, ScholarshipApplication, ScholarshipCohort,
+    FundingNeed, ResolutionItem, ScholarshipApplication, ScholarshipCohort,
 )
 from apps.scholarship.services import (
     autogenerate_ready_profiles, is_ready_for_assignment, query_sla,
-    send_query_reminders,
+    send_due_query_emails, send_query_reminders,
 )
 
 
@@ -138,3 +138,39 @@ class TestStep3AutoGenerate(_Base):
             again = autogenerate_ready_profiles()
         self.assertEqual(again['generated'], 0)
         self.assertFalse(mock_gen.called)
+
+
+class TestDueQueryEmails(_Base):
+    """Check 2 STEP 2: the delayed 'we have a few questions' email (~2h after submit)."""
+    @patch('apps.scholarship.emails.send_query_raised_email', return_value=True)
+    def test_sends_after_delay_once(self, mock_email):
+        # Submitted 3h ago, with completeness gaps → sync raises clarify queries → email.
+        self.app.profile_completed_at = timezone.now() - timedelta(hours=3)
+        self.app.save()
+        self.assertEqual(send_due_query_emails()['sent'], 1)
+        self.assertTrue(mock_email.called)
+        self.app.refresh_from_db()
+        self.assertIsNotNone(self.app.query_raised_notified_at)
+        # idempotent — a second sweep sends nothing.
+        mock_email.reset_mock()
+        self.assertEqual(send_due_query_emails()['sent'], 0)
+        self.assertFalse(mock_email.called)
+
+    @patch('apps.scholarship.emails.send_query_raised_email', return_value=True)
+    def test_no_email_before_the_delay(self, mock_email):
+        # Submitted just now → too early for the ~2h email.
+        self.assertEqual(send_due_query_emails()['sent'], 0)
+        self.assertFalse(mock_email.called)
+
+    @patch('apps.scholarship.emails.send_query_raised_email', return_value=True)
+    def test_no_email_when_no_questions(self, mock_email):
+        # No clarify gaps: course set, sibling known, device ticked, residential pathway.
+        self.app.profile_completed_at = timezone.now() - timedelta(hours=3)
+        self.app.field_of_study = 'Education'
+        self.app.siblings_in_tertiary = 0
+        self.app.chosen_pathway = 'matric'
+        self.app.pathway_certainty = 'sure'
+        self.app.save()
+        FundingNeed.objects.create(application=self.app, categories=['device'])
+        self.assertEqual(send_due_query_emails()['sent'], 0)
+        self.assertFalse(mock_email.called)
