@@ -2191,3 +2191,48 @@ silent rollbacks and arbitrary truncation. 5000 ≈ ~900 words: above any genuin
 — a small FE/BE contract to keep in sync, accepted over a shared-config mechanism for one number.
 **Revisit if:** a field legitimately needs >5000 chars (raise that field's cap explicitly), or a shared FE/BE constants
 source is introduced (then dedupe the ceiling).
+
+## Verdict tiles as a 4-band Kent confidence scale — Sprint verdict-confidence-alignment, 2026-06-07
+**Decision:** The officer's four verdict statuses map to a collapsed Sherman-Kent confidence
+scale: `verified`→🟢 Certain, `review`→🔵 Probable, `recommend`→🟡 Unsure, `gap`→🔴 Can't verify.
+Two refinements: (a) **blue/amber are assigned so colour temperature tracks certainty** —
+blue is the higher-confidence "Probable" band, amber the "Unsure" band (amber reads as
+caution); (b) **"blue needs a green"** — a `review` fact is blue only if it carries ≥1
+genuinely-verified value; backed only by a declaration or a soft signal (`SOFT_EVIDENCE`) or
+nothing, it is amber. Tiles show the estimative word + a legend. `factTileTone(fact)`.
+**Alternatives considered:** keep the raw status→colour map (the prior 1:1); a 3-band scale
+(drops blue); auto-jump amber↔blue by `recommend` alone (ignores whether anything's verified).
+**Rationale:** the colours were being read as severity, not confidence; the Kent framing gives
+a single coherent axis ("how sure are we the fact is sound") and a principled home for blue
+(income's "evidence assembled, a human places it") distinct from amber.
+**Trade-offs:** the tile colour is no longer a pure function of status (needs the evidence
+array); `recommend` and "review with no verified value" both render amber (acceptable — both
+are genuinely "Unsure").
+**Revisit if:** a fifth state appears, or officers report the band labels don't match how they
+triage.
+
+## Per-fact evidence policy: hard-stop unusable documents; keep income interview-assessable — Sprint verdict-confidence-alignment, 2026-06-07
+**Decision:** Weak evidence is bounced back to the applicant for re-upload rather than passed
+to an officer for manual vetting — but only where a human genuinely can't recover it:
+- **Academic** — a results-slip **name mismatch** is a hard stop (🔴 + fails `documents_done`):
+  a slip we can't attribute is unusable. Only a positive mismatch blocks ('pending'/
+  'unreadable'/'match' pass).
+- **Pathway** — **no offer letter → 🔴** (already a submission blocker): we fund a confirmed
+  place; a pathway can't be assessed by interview.
+- **Income** — **no income info → 🔴** (consistency with no-IC/slip/offer). BUT income that the
+  documents can't prove B40 (informal/no-EPF, unprovable relationship, or salary **above** the
+  B40 line) stays **🟡 → interview**: documented salary often understates a poor family, so it
+  must not auto-exclude.
+- **Identity** — the IC's registered-address **state** is NOT an identity caveat (it's the
+  least-current address on file); it's a pre-interview flag only. Identity never auto-fails —
+  the gate blocks a NRIC mismatch / unreadable IC for re-upload.
+**Alternatives considered:** pass everything to the officer (status quo — but no manpower to
+vet); auto-reject above-B40-line income (rejected — interview-recoverable); make every "anchor
+mismatch" a hard fail (rejected for identity — OCR misreads a good card's name).
+**Rationale:** the team can't manually make sense of poor documents; an applicant re-uploading
+beats staff guessing. The one carve-out is income *amount*, which is genuinely interview-
+recoverable, so it escalates (amber) rather than blocks.
+**Trade-offs:** a legitimate slip whose name OCR misread is bounced (mitigated: the slip
+matcher is more reliable than IC-name OCR, and only a positive mismatch blocks).
+**Revisit if:** re-upload friction spikes, or a state-restricted cohort makes the IC address
+load-bearing.
