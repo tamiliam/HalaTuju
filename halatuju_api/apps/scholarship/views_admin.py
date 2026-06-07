@@ -278,9 +278,12 @@ class AdminRunVisionView(_AdminBase):
         if doc is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         from . import vision as _vision
-        from .views import BILL_DOC_TYPES, SUPPORTING_NAME_CHECK_TYPES
+        from .views import BILL_DOC_TYPES, SUPPORTING_NAME_CHECK_TYPES, TEXT_READ_DOC_TYPES
         if doc.doc_type in ('ic', 'parent_ic'):
             _vision.run_vision_for_document(doc)
+        elif doc.doc_type in TEXT_READ_DOC_TYPES:
+            # P1 (Check 2): re-read the letter of intent's plain text.
+            _vision.read_text_document(doc)
         elif doc.doc_type in SUPPORTING_NAME_CHECK_TYPES:
             # Replicate the upload-time supporting-doc processing (forced, not throttled).
             profile = getattr(self._get_application(pk), 'profile', None)

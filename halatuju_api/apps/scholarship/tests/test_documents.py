@@ -302,6 +302,25 @@ class TestDocumentApi(TestCase):
         self.assertEqual(resp.json()['vision_nric'], '')
 
     @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://signed.example/dl')
+    @patch('apps.scholarship.vision.ocr_document')
+    def test_statement_of_intent_upload_reads_text(self, mock_ocr, _dl):
+        """P1 (Check 2): uploading the letter of intent OCRs its plain text into
+        vision_fields['text'] so the submission review can read motivation."""
+        mock_ocr.return_value = {'text': 'I have taught my younger cousins for years.', 'error': ''}
+        self._auth(USER_A)
+        resp = self.client.post('/api/v1/scholarship/documents/', {
+            'doc_type': 'statement_of_intent',
+            'storage_path': f'{self.app_a.id}/statement_of_intent/abc',
+            'original_filename': 'letter.pdf', 'size': 2000,
+        }, format='json')
+        self.assertEqual(resp.status_code, 201)
+        self.assertTrue(mock_ocr.called)
+        from apps.scholarship.models import ApplicantDocument
+        doc = ApplicantDocument.objects.get(id=resp.json()['id'])
+        self.assertEqual(doc.vision_fields.get('text'), 'I have taught my younger cousins for years.')
+        self.assertEqual(doc.vision_fields.get('student_verdict'), 'read')
+
+    @patch('apps.scholarship.storage.create_signed_download_url', return_value='https://signed.example/dl')
     @patch('apps.scholarship.vision.run_vision_for_document')
     def test_ic_upload_survives_vision_failure(self, mock_vision, _dl):
         """If Vision errors, the upload still succeeds; the error is recorded on the row."""
