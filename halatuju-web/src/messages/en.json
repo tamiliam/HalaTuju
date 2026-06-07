@@ -734,6 +734,7 @@
       "saving": "Saving…",
       "saved": "Saved.",
       "saveError": "Could not save your details. Please try again.",
+      "tooLong": "Your answer to “{field}” is too long. Please shorten it and try again.",
       "step4Title": "4. Upload your documents",
       "step4Body": "Please upload the required documents below — your IC, your latest results slip, and your parent or guardian's IC. The optional documents help strengthen your application.",
       "techSupport": "Having technical trouble with this application? Email tamiliam@gmail.com or call 012-337 5709 and describe the problem — we'll be glad to help.",

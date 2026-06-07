@@ -47,6 +47,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   keyboard) and the API serializer (clean `400` instead of a DB rollback). The `parents_occupation` input became a small
   textarea (it always held a sentence). Also closed the same latent trap on the address **city** field (`varchar(100)`):
   capped at 100 on the form + serializer. +2 regression tests (long answer now saves; over‑cap is a clean 400).
+- **Actionable "too long" message instead of the generic save error.** When a Story/Funding answer is rejected for
+  length, the student now sees *"Your answer to "{question}" is too long. Please shorten it and try again."* (en/ms/ta)
+  naming the exact question — not the blanket "Could not save your details". The API client now carries DRF
+  field‑level validation errors through to the caller (`err.fieldErrors`); a pure `firstTooLongField()` helper walks the
+  (possibly nested) error body and a `STORY_FIELD_LABEL_KEYS` map resolves the field → its question label. Also gave the
+  Funding **"Anything else about funding"** note (`funding_note`) the same `STORY_TEXT_MAX` anti‑spam cap (form +
+  serializer) for consistency — completing the audit of every student‑typed Story/Funding field. +5 tests
+  (`firstTooLongField` ×4, funding_note over‑cap 400 ×1); i18n parity 2089.
 
 ### Removed
 - **Orphaned `str_claimed_no_doc` anomaly rule.** The pre‑interview flag "student says the family receives STR but

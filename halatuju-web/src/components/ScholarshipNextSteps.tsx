@@ -8,6 +8,8 @@ import { updateScholarshipDetails, confirmScholarshipApplication, getScholarship
 import {
   applicationToDetailsForm,
   buildDetailsPayload,
+  firstTooLongField,
+  STORY_FIELD_LABEL_KEYS,
   NEXT_STEP_ORDER,
   defaultNextTab,
   setOnboardingReturn,
@@ -171,8 +173,17 @@ export default function ScholarshipNextSteps({
       setApp(updated)
       setForm(applicationToDetailsForm(updated))
       setSaved(true)
-    } catch {
-      setError(t('scholarship.nextSteps.saveError'))
+    } catch (e) {
+      // If a field was rejected for being too long, tell the student exactly which
+      // answer to shorten — not just "could not save".
+      const fieldErrors = (e as { fieldErrors?: unknown }).fieldErrors
+      const key = firstTooLongField(fieldErrors)
+      const labelKey = key ? STORY_FIELD_LABEL_KEYS[key] : null
+      if (labelKey) {
+        setError(t('scholarship.nextSteps.tooLong', { field: t(labelKey) }))
+      } else {
+        setError(t('scholarship.nextSteps.saveError'))
+      }
     } finally {
       setSaving(false)
     }
@@ -579,6 +590,7 @@ export default function ScholarshipNextSteps({
           <textarea
             className="input"
             rows={3}
+            maxLength={STORY_TEXT_MAX}
             placeholder={t('scholarship.nextSteps.funding.notePlaceholder')}
             value={form.fundingNote}
             onChange={(e) => update('fundingNote', e.target.value)}
