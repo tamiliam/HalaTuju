@@ -178,17 +178,23 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
         return value
 
 
+# Anti-spam ceiling for the free-text Story/Funding fields. Generous (~900 words)
+# — well above any genuine answer, well below a copy-paste flood. Enforced here
+# (clean 400) AND on the web form (maxLength), so an over-long value never reaches
+# the DB and silently rolls back the whole save (the parents_occupation varchar(255)
+# bug). The frontend mirrors this value as STORY_TEXT_MAX.
+STORY_TEXT_MAX = 5000
+
+
 class FundingNeedSerializer(serializers.ModelSerializer):
+    # funding_note is a TextField (no DB cap); add the same anti-spam ceiling so a
+    # flood is a clean field error, not an unbounded write.
+    funding_note = serializers.CharField(
+        required=False, allow_blank=True, max_length=STORY_TEXT_MAX)
+
     class Meta:
         model = FundingNeed
         fields = ['categories', 'funding_note', 'programme_months']
-
-
-# Anti-spam ceiling for the free-text Story fields. Generous (~900 words) — well
-# above any genuine answer, well below a copy-paste flood. Enforced here (clean
-# 400) AND on the web form (maxLength), so an over-long value never reaches the DB
-# and silently rolls back the whole save (the parents_occupation varchar(255) bug).
-STORY_TEXT_MAX = 5000
 
 
 class ApplicationDetailsUpdateSerializer(serializers.Serializer):

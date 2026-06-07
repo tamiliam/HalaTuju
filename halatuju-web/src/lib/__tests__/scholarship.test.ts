@@ -41,6 +41,7 @@ import {
   APPLY_RETURN_KEY,
   NEXT_STEP_ORDER,
   defaultNextTab,
+  firstTooLongField,
   type ApplyFormState,
 } from '@/lib/scholarship'
 import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse } from '@/lib/api'
@@ -1065,5 +1066,28 @@ describe('defaultNextTab', () => {
 
   it('falls back to quiz when all three known steps are done', () => {
     expect(defaultNextTab({ quiz_done: true, details_done: true, funding_done: true })).toBe('quiz')
+  })
+})
+
+describe('firstTooLongField', () => {
+  it('returns the top-level field with a length error', () => {
+    expect(firstTooLongField({
+      parents_occupation: ['Ensure this field has no more than 5000 characters.'],
+    })).toBe('parents_occupation')
+  })
+
+  it('finds a nested length error (funding_need.funding_note)', () => {
+    expect(firstTooLongField({
+      funding_need: { funding_note: ['Ensure this field has no more than 5000 characters.'] },
+    })).toBe('funding_note')
+  })
+
+  it('returns null when no error mentions length', () => {
+    expect(firstTooLongField({ siblings_studying_count: ['A valid integer is required.'] })).toBeNull()
+  })
+
+  it('returns null for non-object input', () => {
+    expect(firstTooLongField(null)).toBeNull()
+    expect(firstTooLongField('API error: 400')).toBeNull()
   })
 })

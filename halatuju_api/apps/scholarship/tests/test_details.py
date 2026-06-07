@@ -481,6 +481,17 @@ class TestDetailsApi(TestCase):
         self.assertEqual(fn['programme_months'], 36)
         self.assertEqual(fn['funding_note'], 'I will try for PTPTN as well.')
 
+    def test_patch_rejects_spam_length_funding_note(self):
+        """Anti-spam: an over-cap funding_note is a clean 400 (nested under
+        funding_need), not an unbounded write."""
+        self._auth(USER_A)
+        resp = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {'funding_need': {'categories': ['living'], 'funding_note': 'x' * 5001}},
+            format='json',
+        )
+        self.assertEqual(resp.status_code, 400)
+
     def test_funding_done_true_when_categories_and_months_set(self):
         """S23: funding_done is True when at least one category AND programme_months set."""
         self._auth(USER_A)

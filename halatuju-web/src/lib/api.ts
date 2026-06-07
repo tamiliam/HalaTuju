@@ -35,6 +35,12 @@ async function apiRequest<T>(
     // Carry the backend error code (e.g. 'doc_limit_reached') so callers can
     // map it to a localised message.
     ;(err as Error & { code?: string }).code = error.error || error.code || ''
+    // Carry DRF field-level validation errors (400) — e.g.
+    // { parents_occupation: ["Ensure this field has no more than 5000 characters."] }
+    // so callers can tell the student WHICH answer to fix, not just "save failed".
+    if (response.status === 400 && error && typeof error === 'object') {
+      ;(err as Error & { fieldErrors?: unknown }).fieldErrors = error
+    }
     throw err
   }
 

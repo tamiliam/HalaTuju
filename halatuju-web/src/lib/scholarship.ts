@@ -784,6 +784,43 @@ export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown
   }
 }
 
+// ── Save-error helpers (actionable validation messages) ──────────────────
+// Maps a Story/Funding payload field key to the i18n key of the question label
+// the student sees, so a "too long" save error can name the exact answer to fix.
+export const STORY_FIELD_LABEL_KEYS: Record<string, string> = {
+  parents_occupation: 'scholarship.nextSteps.story.cardA.parentsOccupation',
+  family_context: 'scholarship.nextSteps.story.cardA.familyContext',
+  aspirations: 'scholarship.nextSteps.story.cardB.aspirations',
+  plans: 'scholarship.nextSteps.story.cardB.plans',
+  daily_life: 'scholarship.nextSteps.story.cardB.dailyLife',
+  fears: 'scholarship.nextSteps.story.cardB.fears',
+  address: 'scholarship.nextSteps.story.cardAddress.street',
+  city: 'scholarship.nextSteps.story.cardAddress.city',
+  postal_code: 'scholarship.nextSteps.story.cardAddress.postal',
+  funding_note: 'scholarship.nextSteps.funding.noteLabel',
+}
+
+/**
+ * Walk a DRF 400 error body and return the first field key whose message is a
+ * length-limit error (possibly nested, e.g. funding_need.funding_note), or null.
+ * Lets the caller show "Your answer to "<question>" is too long" instead of a
+ * generic "could not save".
+ */
+export function firstTooLongField(errors: unknown): string | null {
+  if (!errors || typeof errors !== 'object') return null
+  for (const [key, val] of Object.entries(errors as Record<string, unknown>)) {
+    if (Array.isArray(val)) {
+      if (val.some((m) => typeof m === 'string' && /no more than|too long|characters/i.test(m))) {
+        return key
+      }
+    } else if (val && typeof val === 'object') {
+      const nested = firstTooLongField(val)
+      if (nested) return nested
+    }
+  }
+  return null
+}
+
 // ── Next-steps tabbed shell (Sprint S1) ─────────────────────────────────
 
 /**
