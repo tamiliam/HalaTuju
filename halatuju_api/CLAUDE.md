@@ -445,6 +445,33 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-07)
 
+**✅ SHIPPED 2026-06-07 — Officer cockpit + verdict confidence-scale alignment (9 commits `c748284`→`dd40865` on `main`;
+NO migration; retro `docs/retrospective-verdict-confidence-alignment.md`).** A live-testing pass over the officer cockpit
+and the four-fact verification verdict:
+- **Cockpit layout:** **About the student** now sits **above** Review & actions; the **Documents** drawer is fixed-height
+  + scrollable; **Pre-interview flags** moved under **Caveats**; **Referees** hidden behind `SHOW_REFEREES=false`
+  (handlers kept for a one-line re-enable; the consent status stays visible).
+- **Verdict tiles = a Kent confidence scale (4 bands):** 🟢 Certain (`verified`) · 🔵 Probable (`review` **with ≥1
+  verified value**) · 🟡 Unsure (`recommend`, or a review with no verified value) · 🔴 Can't verify (`gap`). Tiles show the
+  estimative word + a legend (`TONE_BAND_KEY`, `verdict.band.*`). Blue/amber **swapped** so colour temperature tracks
+  certainty; **"blue needs a green"** is enforced (`factTileTone(fact)` + `SOFT_EVIDENCE`: declarations / utility signals
+  don't qualify a tile for blue).
+- **Per-fact alignment (policy: don't pass weak evidence to manual review — bounce for re-upload):** **Identity** — the IC
+  registered-address state is no longer a false-yellow caveat (it's a pre-interview flag); identity never auto-fails (the
+  gate already blocks a NRIC mismatch / unreadable IC). **Academic** — a **slip-name mismatch is a hard stop** (red +
+  fails `documents_done` → re-upload; only a positive mismatch blocks). **Pathway** — **no offer letter → red** (the offer
+  was already a `consent_blockers` submission blocker; new `offer_letter_missing` verdict item + re-upload ticket).
+  **Income** — **no income info → red** for consistency; the genuine "assess at interview" cases (informal/no-EPF,
+  unprovable relationship, salary above the B40 line) correctly stay 🟡.
+- **TDs resolved:** TD-082 (academic ticket → onboarding grades editor), TD-087 (reminders fire on the named calendar
+  day, Asia/KL), TD-088 (`formatNric` de-dup), TD-090 (submit state-lift, no page reload). New reference doc
+  `docs/scholarship/verdict-confidence-bands.md` (canonical category × colour map).
+- Gates: **778 scholarship + 1037 courses/reports pytest + 274 jest** + next build clean; NO migration (scholarship still
+  through `0042` on prod). **DB:** test account app 16 (ELANJELIAN) reset to shortlisted for re-testing earlier in the
+  session. **▶ NEXT (queued):** Check 2 (5-day SLA); Check 3 (reviewer role); old/new cockpit consolidation; Tamil
+  refine; income-arc live click-through (TD-070); TD-083/084/086/089; the open "Review & submit" auto-jump-vs-button UX
+  choice.
+
 **✅ SHIPPED 2026-06-07 — Input length-guard hardening (Story · Funding · Apply) (3 commits `b3f81d8`/`e343b96`/`048138a`
 on `main`; migration `0042`; retro `docs/retrospective-input-length-guards.md`).** Prod incident (app #30,
 POVIENTHIRAN): the "Your story" save failed with a generic *"Could not save your details"*. Root cause = the
