@@ -819,6 +819,11 @@ class Sponsor(models.Model):
     consent_at = models.DateTimeField(null=True, blank=True)
     consent_version = models.CharField(max_length=30, blank=True, default='')
     status = models.CharField(max_length=20, choices=STATUS, default='pending')
+    # Boundary decision (2026-06-07): a TRUSTED sponsor (known/vetted — the launch
+    # default) may see institution-level detail on the anonymised card; a future
+    # PUBLIC/untrusted sponsor does not. Default True so every existing + launch
+    # sponsor is trusted; flip to False per-sponsor when public onboarding opens.
+    is_trusted = models.BooleanField(default=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
     reviewed_by = models.CharField(
         max_length=254, blank=True, default='',

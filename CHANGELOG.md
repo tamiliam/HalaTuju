@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Sponsor allowlist widened to a trusted-sponsor boundary (B40 Phase E/F Sprint 0, ships dark).** Per the 2026-06-07
+  owner Boundary decision, the anonymised sponsor card (`SponsorPoolCardSerializer`) gains an `institution` field that
+  crosses **only** to a **trusted** sponsor (`context['is_trusted']`); absent by default (fail-closed). New
+  `Sponsor.is_trusted` (BooleanField, default True; migration `0043`, additive). The anon-blurb prompt is coarsened
+  (quasi-identifier guard). Leak tests extended: parent identifiers never cross; institution absent-for-non-trusted /
+  present-for-trusted. Reads only under `SPONSOR_POOL_ENABLED` (off) — no user-visible change. On branch
+  `feat/sponsor-boundary-foundation` (pending merge).
 - **Post‑consent "Review & submit" page (lock‑at‑Continue).** A new **post‑consent page** in the shortlisted application
   flow (reached via a **"Review & submit"** CTA after the 5 wizard steps — **not** a navigable tab) shows the student a
   read‑only recap of everything they entered before they commit, in seven sections: **About you**
