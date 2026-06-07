@@ -398,6 +398,19 @@ class TestAdminScholarship(TestCase):
         self.assertTrue(mock_match.called)
         self.assertTrue(mock_extract.called)   # the grade read
 
+    @patch('apps.scholarship.vision.ocr_document')
+    def test_admin_rerun_vision_on_statement_of_intent(self, mock_ocr):
+        # P1 (Check 2): the letter of intent re-reads to plain text in vision_fields['text'].
+        mock_ocr.return_value = {'text': 'I want to become a teacher because...', 'error': ''}
+        loi = ApplicantDocument.objects.create(
+            application=self.app, doc_type='statement_of_intent', storage_path='loi/abc')
+        self._auth(ADMIN)
+        r = self.client.post(self._rerun_vision_url(loi.id))
+        self.assertEqual(r.status_code, 200)
+        loi.refresh_from_db()
+        self.assertEqual(loi.vision_fields.get('text'), 'I want to become a teacher because...')
+        self.assertEqual(loi.vision_fields.get('student_verdict'), 'read')
+
     def test_admin_rerun_vision_rejects_unsupported_type(self):
         # A type with no automatic check (e.g. guardianship_letter) still 400s.
         doc = ApplicantDocument.objects.create(application=self.app, doc_type='guardianship_letter', storage_path='g/abc')
