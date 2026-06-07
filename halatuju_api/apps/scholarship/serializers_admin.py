@@ -144,6 +144,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     anomalies = serializers.SerializerMethodField()
     verdict = serializers.SerializerMethodField()
     submission_review = serializers.SerializerMethodField()
+    query_sla = serializers.SerializerMethodField()
     resolution_items = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
     interview_session = serializers.SerializerMethodField()
@@ -198,6 +199,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'anomalies',
             'verdict',
             'submission_review',
+            'query_sla',
             'resolution_items',
             'intake_snapshot',
             # S5 verdict audit / override capture (read-only; written via record-verdict).
@@ -272,6 +274,23 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         consistency flags. Pure rules, no LLM — mirrors get_verdict / get_anomalies."""
         from .submission_review import submission_review
         return submission_review(obj)
+
+    def get_query_sla(self, obj):
+        """Check 2 STEP 2/3: the query SLA clock for the cockpit — deadline, whether it
+        lapsed, open clarify-query count, days left, whether the app is ready for
+        assignment, and whether it's proceeding WITH queries still open (the
+        'ready-with-open-queries' reviewer flag, design §5)."""
+        from .services import is_ready_for_assignment, query_sla
+        sla = query_sla(obj)
+        ready = is_ready_for_assignment(obj)
+        return {
+            'deadline': sla['deadline'],
+            'lapsed': sla['lapsed'],
+            'open_count': sla['open_count'],
+            'days_left': sla['days_left'],
+            'ready_for_assignment': ready,
+            'proceeding_with_open_queries': ready and sla['open_count'] > 0,
+        }
 
     def get_resolution_items(self, obj):
         """S3 resolution queue: sync the system tickets against the live verdict AND

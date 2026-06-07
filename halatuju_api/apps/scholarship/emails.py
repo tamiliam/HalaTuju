@@ -541,6 +541,53 @@ def send_request_info_email(to_email, applicant_name, programme_name, note, lang
         return False
 
 
+QUERY_REMINDER_SUBJECTS = {
+    'en': 'A few quick questions on your {programme} application',
+    'ms': 'Beberapa soalan ringkas untuk permohonan {programme} anda',
+    'ta': 'உங்கள் {programme} விண்ணப்பம் குறித்து சில விரைவு கேள்விகள்',
+}
+QUERY_REMINDER_BODIES = {
+    'en': ('Dear {name},\n\nWe have {n} short question(s) waiting in your Action Centre to '
+           'help us complete your {programme} profile. Please sign in and answer them within '
+           'about {days} day(s): {link}\n\nIf we do not hear back in time we will proceed with '
+           'what we have, so it is best to reply.\n\nThank you.'),
+    'ms': ('Salam {name},\n\nKami mempunyai {n} soalan ringkas menunggu di Pusat Tindakan anda '
+           'untuk membantu kami melengkapkan profil {programme} anda. Sila log masuk dan jawab '
+           'dalam kira-kira {days} hari: {link}\n\nJika kami tidak menerima maklum balas tepat '
+           'pada masanya, kami akan teruskan dengan maklumat sedia ada, jadi eloklah membalas.\n\n'
+           'Terima kasih.'),
+    'ta': ('அன்புள்ள {name},\n\nஉங்கள் {programme} விவரக்குறிப்பை முழுமைப்படுத்த உதவ உங்கள் '
+           'செயல் மையத்தில் {n} சிறு கேள்வி(கள்) காத்திருக்கின்றன. தயவுசெய்து உள்நுழைந்து '
+           'சுமார் {days} நாட்களுக்குள் பதிலளிக்கவும்: {link}\n\nசரியான நேரத்தில் பதில் '
+           'கிடைக்காவிட்டால், எங்களிடம் உள்ள தகவலுடன் தொடர்வோம், எனவே பதிலளிப்பது நல்லது.\n\n'
+           'நன்றி.'),
+}
+
+
+def send_query_reminder_email(to_email, applicant_name, programme_name, n_queries,
+                              days_left, lang='en'):
+    """Check 2 STEP 2: nudge the student to answer their open AI clarify queries in the
+    Action Centre before the SLA lapses. Trilingual; best-effort."""
+    if not to_email:
+        return False
+    lang = normalise_lang(lang)
+    name = applicant_name or _DEFAULT_NAME[lang]
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    link = f'{frontend}/scholarship/application'
+    try:
+        send_mail(
+            subject=QUERY_REMINDER_SUBJECTS[lang].format(programme=programme_name),
+            message=QUERY_REMINDER_BODIES[lang].format(
+                name=name, programme=programme_name, n=n_queries, days=days_left, link=link),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            recipient_list=[to_email],
+        )
+        return True
+    except Exception:
+        logger.warning('Failed to send query-reminder email to %s', to_email, exc_info=True)
+        return False
+
+
 def send_sponsor_interest_admin_email(name, email, organisation, message):
     """Notify the admin that someone registered interest in sponsoring. English,
     to ``settings.ADMIN_NOTIFY_EMAIL``; skipped silently if unset. Best-effort."""

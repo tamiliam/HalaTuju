@@ -726,6 +726,7 @@ class CronRunView(APIView):
         'vision-outage': 'alert_vision_outage',
         'decision-emails': 'send_pending_decision_emails',
         'application-reminders': 'send_application_reminders',
+        'query-reminders': 'send_query_reminders',
     }
 
     def post(self, request, job):

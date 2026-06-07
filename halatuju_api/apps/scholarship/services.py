@@ -354,6 +354,85 @@ def send_application_reminders(now=None):
     return {'reminded': reminded, 'closed': closed}
 
 
+# ── Check 2 STEP 2/3 — the query SLA clock (design §5) ───────────────────────
+# Statuses where the post-submit query clock is live (submitted, not yet decided).
+QUERY_SLA_ACTIVE_STATUSES = ('profile_complete', 'interviewing', 'interviewed')
+
+
+def open_clarify_queries(application):
+    """The student's still-open Check-2 AI clarify queries (the ones the SLA governs)."""
+    return application.resolution_items.filter(source='check2', kind='clarify', status='open')
+
+
+def query_sla_days(application):
+    return getattr(application.cohort, 'query_response_sla_days', 5) or 5
+
+
+def query_sla(application, now=None):
+    """The Check-2 query SLA clock. Starts at submit (``profile_completed_at``).
+    Returns ``{active, deadline, lapsed, open_count, days_left}``:
+      - active     — there are open clarify queries (the clock is meaningfully running)
+      - deadline   — submit + the cohort's SLA days (None before submit)
+      - lapsed     — the deadline has passed
+      - open_count — open clarify queries
+      - days_left  — whole days remaining (negative once lapsed; None before submit)."""
+    from datetime import timedelta
+    now = now or timezone.now()
+    start = application.profile_completed_at
+    if start is None:
+        return {'active': False, 'deadline': None, 'lapsed': False,
+                'open_count': 0, 'days_left': None}
+    deadline = start + timedelta(days=query_sla_days(application))
+    open_count = open_clarify_queries(application).count()
+    return {
+        'active': open_count > 0,
+        'deadline': deadline,
+        'lapsed': now >= deadline,
+        'open_count': open_count,
+        'days_left': (timezone.localtime(deadline).date() - timezone.localtime(now).date()).days,
+    }
+
+
+def is_ready_for_assignment(application, now=None):
+    """STEP 3 trigger / the Check-3 assignment gate (design intro): an application is
+    ready when there are NO open clarify queries OR the SLA window has lapsed
+    (proceed-as-is, flagged for the reviewer). Never ready before submission."""
+    if application.profile_completed_at is None:
+        return False
+    sla = query_sla(application, now)
+    return sla['open_count'] == 0 or sla['lapsed']
+
+
+def send_query_reminders(now=None):
+    """Daily sweep: nudge submitted students who still have open Check-2 clarify
+    queries, once, ~2 days before the SLA deadline. Reuses the trilingual email
+    infra. Idempotent via ``query_reminder_at`` (one reminder per application).
+    Lapsed apps are NOT emailed (they already proceed-as-is). Returns ``{'reminded': n}``."""
+    from .emails import send_query_reminder_email
+    now = now or timezone.now()
+    sent = 0
+    qs = (ScholarshipApplication.objects
+          .filter(status__in=QUERY_SLA_ACTIVE_STATUSES,
+                  profile_completed_at__isnull=False, query_reminder_at__isnull=True)
+          .select_related('cohort', 'profile'))
+    for app in qs:
+        sla = query_sla(app, now)
+        if not sla['active'] or sla['lapsed']:
+            continue
+        # one nudge, from ~2 days before the deadline onwards.
+        if _elapsed_days_local(now, app.profile_completed_at) < max(query_sla_days(app) - 2, 0):
+            continue
+        name = getattr(app.profile, 'name', '') if app.profile else ''
+        send_query_reminder_email(
+            to_email=app.notify_email, applicant_name=name,
+            programme_name=app.cohort.name, n_queries=sla['open_count'],
+            days_left=max(sla['days_left'], 0), lang=app.locale)
+        app.query_reminder_at = now
+        app.save(update_fields=['query_reminder_at'])
+        sent += 1
+    return {'reminded': sent}
+
+
 # Statuses from which an admin may decline a *reviewed* application (bucket 3,
 # 'interview'): anyone who cleared the engine and reached the post-shortlist funnel
 # but is not yet accepted. Poor documentation is grounds — no formal interview needed.
