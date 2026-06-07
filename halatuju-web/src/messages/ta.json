@@ -2194,6 +2194,8 @@
       "firstInFamily": "குடும்பத்தில் முதல்",
       "parentsOccupation": "பெற்றோர் தொழில்",
       "siblingsStudying": "படிக்கும் உடன்பிறப்புகள்",
+      "siblingsInSchool": "பள்ளியில் படிக்கும் உடன்பிறப்புகள்",
+      "siblingsInTertiary": "உயர்கல்வியில் படிக்கும் உடன்பிறப்புகள்",
       "familyContext": "குடும்பச் சூழல்",
       "programmeMonths": "நிரல் காலம் (மாதங்கள்)",
       "fundingNote": "நிதிக் குறிப்பு",

@@ -2194,6 +2194,8 @@
       "firstInFamily": "First in family",
       "parentsOccupation": "Parents' occupation",
       "siblingsStudying": "Siblings studying",
+      "siblingsInSchool": "Siblings in school",
+      "siblingsInTertiary": "Siblings in tertiary",
       "familyContext": "Family context",
       "programmeMonths": "Programme length (months)",
       "fundingNote": "Funding note",

@@ -175,16 +175,40 @@ def _detect_household_size_one(application) -> Optional[Anomaly]:
     return Anomaly('household_size_one', {})
 
 
+def _sibling_tertiary_count(application):
+    """Authoritative number of siblings in TERTIARY education (P2, Check 2).
+
+    Reads the school/tertiary split (the income wizard's two counters) first; it is
+    authoritative. Falls back to the legacy combined ``siblings_studying_count`` ONLY
+    when it is unambiguous — a legacy 0 means nobody is studying, so tertiary is 0.
+    Returns ``None`` when the split is missing and the legacy count is a positive
+    number that can't be broken down (→ a Check-2 clarify-query, not a guess)."""
+    t = application.siblings_in_tertiary
+    if t is not None:
+        return t
+    legacy = application.siblings_studying_count
+    if legacy == 0:
+        return 0
+    return None  # ambiguous: split unknown, some siblings studying → ask
+
+
 def _detect_first_in_family_with_siblings_studying(application) -> Optional[Anomaly]:
-    """First-to-university + siblings studying is a mild contradiction — could
-    be younger siblings still in school (not at university), in which case
-    both are true. Worth asking."""
+    """First-to-university + a sibling already in TERTIARY is a real contradiction
+    (worth asking). Siblings only in *school* do NOT contradict it — so when the
+    split says tertiary == 0, the first-gen claim auto-resolves and no flag is
+    raised (P2). When the split is unknown but the legacy count says some siblings
+    study, we still can't confirm → flag it for a clarify-query."""
     if not application.first_in_family:
         return None
-    count = application.siblings_studying_count
-    if count is None or count <= 0:
+    tertiary = _sibling_tertiary_count(application)
+    if tertiary is None:
+        count = application.siblings_studying_count
+        if count and count > 0:
+            return Anomaly('first_in_family_with_siblings_studying', {'count': count})
         return None
-    return Anomaly('first_in_family_with_siblings_studying', {'count': count})
+    if tertiary > 0:
+        return Anomaly('first_in_family_with_siblings_studying', {'count': tertiary})
+    return None  # tertiary == 0 → first-gen holds, auto-resolved
 
 
 def _detect_funding_other_without_note(application) -> Optional[Anomaly]:
