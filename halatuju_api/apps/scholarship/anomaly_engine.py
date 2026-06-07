@@ -166,6 +166,33 @@ def _detect_jkm_high_income(application) -> Optional[Anomaly]:
     return Anomaly('jkm_high_income', {'income': income})
 
 
+# Utilities eating more than this share of declared monthly income looks
+# disproportionate (e.g. RM180 of bills on a declared RM600 income = 30%).
+_UTILITY_INCOME_RATIO_FLOOR = 0.20
+
+
+def _detect_utility_high_vs_income(application) -> Optional[Anomaly]:
+    """P3 (Check 2): the household's utility bills look disproportionate to the income
+    it declared — a soft consistency flag for the reviewer, never a gate. Fires only
+    when both a monthly utility charge and a stated household income are known and the
+    bills exceed ~20% of the declared monthly income (the actual numbers go to the
+    reviewer so they can ask how a low-income household sustains the spend)."""
+    from . import income_engine
+    profile = application.profile
+    income = (profile.household_income or 0) if profile else 0
+    if income <= 0:
+        return None
+    total = income_engine.utility_monthly_total(application)
+    if not total or total <= 0:
+        return None
+    ratio = total / income
+    if ratio < _UTILITY_INCOME_RATIO_FLOOR:
+        return None
+    return Anomaly('utility_high_vs_income', {
+        'utility': total, 'income': income, 'percent': round(ratio * 100),
+    })
+
+
 def _detect_household_size_one(application) -> Optional[Anomaly]:
     """Household of one is unusual — verify they aren't accidentally counting
     only themselves while still living with family."""
@@ -296,6 +323,7 @@ _DETECTORS = (
     _detect_vision_name_mismatch,
     _detect_address_state_mismatch,
     _detect_jkm_high_income,
+    _detect_utility_high_vs_income,
     _detect_household_size_one,
     _detect_first_in_family_with_siblings_studying,
     _detect_funding_other_without_note,

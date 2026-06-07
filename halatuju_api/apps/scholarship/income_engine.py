@@ -679,6 +679,19 @@ def utility_per_capita(application):
     return {'per_capita': round(pc, 2), 'signal': signal}
 
 
+def utility_monthly_total(application):
+    """Combined water + electricity MONTHLY charge (RM), or None when neither bill
+    amount could be read. Used for the 'utility spend high vs declared income' flag."""
+    total, any_read = 0.0, False
+    for dt in ('water_bill', 'electricity_bill'):
+        doc = _latest_doc(application, dt)
+        amt = _parse_rm(_doc_fields(doc).get('amount')) if doc else None
+        if amt is not None:
+            total += amt
+            any_read = True
+    return round(total, 2) if any_read else None
+
+
 def utility_hardship(application):
     """True when the utility bills carry meaningful arrears (unpaid balance) — a soft
     hardship signal that SUPPORTS need. Sums arrears across water + electricity."""
