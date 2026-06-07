@@ -850,8 +850,9 @@
       "whatNext": {
         "title": "What happens next",
         "step1": "We review your application and documents.",
-        "step2": "We may call you — in your preferred language — to check a few details.",
-        "step3": "You'll receive our decision by email.",
+        "step2": "We may email you to ask for more documents or to clear up a detail — please reply when you can.",
+        "step3": "We may also call you, in your preferred language, to check a few details.",
+        "step4": "You'll receive our decision by email.",
         "emailNote": "We'll send all updates to {email} — do check your inbox (and spam folder).",
         "yourEmail": "the email you signed up with"
       },
