@@ -2216,6 +2216,12 @@
           "recommend": "Recommend",
           "gap": "Action needed"
         },
+        "band": {
+          "certain": "Certain",
+          "probable": "Probable",
+          "unsure": "Unsure",
+          "unverifiable": "Can't verify"
+        },
         "item": {
           "nric_match": "NRIC matches the IC ({nric}).",
           "name_match": "Name matches across documents.",

@@ -42,6 +42,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `actionCentre` known‑code, and its i18n in all three namespaces ×3 languages; tests updated. No migration.
 
 ### Changed
+- **Verdict tiles now read as a confidence scale (Kent's words of estimative probability).** Each tile shows the
+  estimative word it stands for, with a legend under the row, on a collapsed 4‑band scale: 🟢 **Certain** (`verified`) ·
+  🔵 **Probable** (`review` — likely sound, confirm the one flag) · 🟡 **Unsure** (`recommend` — even odds; the
+  coordinator places the verdict, e.g. salary‑route B40) · 🔴 **Can't verify** (`gap` — missing/unreadable). **Blue and
+  amber swapped** from before so colour temperature tracks certainty: blue is the higher‑confidence "probable" band,
+  amber the "unsure / your call" band (amber reads as caution). `factTileTone`: review→blue, recommend→amber; new
+  `TONE_BAND_KEY` + `admin.scholarship.verdict.band.*` i18n (en/ms/ta). FE‑only, no migration; 268 jest + build clean;
+  i18n parity 2088.
 - **Officer cockpit polish (live testing).** (1) The **Documents** drawer is now fixed‑height with a vertical scrollbar
   (`max-h-[28rem] overflow-y-auto`) — a long list (11+) no longer pushes the rest of the cockpit down; the header stays
   put and the groups scroll. (2) The **Pre‑interview flags** card moved to sit **just below "Caveats to resolve"** — the

@@ -2216,6 +2216,12 @@
           "recommend": "Cadangan",
           "gap": "Perlu tindakan"
         },
+        "band": {
+          "certain": "Pasti",
+          "probable": "Berkemungkinan",
+          "unsure": "Tidak pasti",
+          "unverifiable": "Tidak dapat disahkan"
+        },
         "item": {
           "nric_match": "Nombor KP sepadan dengan kad pengenalan ({nric}).",
           "name_match": "Nama sepadan merentas dokumen.",
