@@ -407,6 +407,8 @@ export interface AdminScholarshipDetail {
   // Check 2 STEP 1: the deterministic submission review — the facts ledger (claims +
   // how well each is backed), fundable-profile gaps, and consistency flags. Pure rules.
   submission_review: AdminSubmissionReview
+  // Check 2 STEP 2/3: the query SLA clock + assignment readiness.
+  query_sla: AdminQuerySla
   // Phase B: Gemini-suggested interview gaps. Carry their OWN dynamic text
   // (unlike anomalies which i18n by code). Empty until the admin generates them.
   interview_gaps: Array<{ code: string; question: string; why: string }>
@@ -652,6 +654,18 @@ export interface AdminSubmissionReview {
   ledger: AdminLedgerRow[]
   completeness: Array<{ code: string }>
   consistency: AdminAnomaly[]
+}
+
+/** Check 2 STEP 2/3 — the query SLA clock for the cockpit. */
+export interface AdminQuerySla {
+  deadline: string | null
+  lapsed: boolean
+  open_count: number
+  days_left: number | null
+  ready_for_assignment: boolean
+  // true when the app is proceeding to assignment WITH clarify queries still open
+  // (the SLA lapsed) — the 'ready-with-open-queries' reviewer flag.
+  proceeding_with_open_queries: boolean
 }
 
 export interface AdminApplicantDocument {
