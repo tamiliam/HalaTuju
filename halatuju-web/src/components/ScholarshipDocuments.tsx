@@ -997,11 +997,16 @@ function IncomeWizard({
 
   const Stepper = ({ field, value }: { field: string; value: number | null | undefined }) => {
     const n = value ?? 0
+    // Show "—" until the student actually sets a value. A null field is UNANSWERED;
+    // displaying it as "0" made students think they'd answered when they hadn't, so
+    // the school/tertiary split was almost never captured (it then became a Check-2
+    // query). Any click stores a real number (0 included), clearing the unset state.
+    const unset = value === null || value === undefined
     return (
       <div className="flex items-center gap-2 mt-1.5">
         <button type="button" aria-label="decrease" onClick={() => save({ [field]: Math.max(0, n - 1) })}
           className="h-7 w-7 rounded-full border border-gray-300 text-gray-600 hover:border-primary-400">−</button>
-        <span className="w-6 text-center text-sm font-medium">{n}</span>
+        <span className={`w-6 text-center text-sm font-medium ${unset ? 'text-gray-400' : ''}`}>{unset ? '—' : n}</span>
         <button type="button" aria-label="increase" onClick={() => save({ [field]: Math.min(20, n + 1) })}
           className="h-7 w-7 rounded-full border border-gray-300 text-gray-600 hover:border-primary-400">+</button>
       </div>
@@ -1107,6 +1112,15 @@ function IncomeWizard({
         <Question label={iq('school')}><Stepper field="siblings_in_school" value={ans.siblings_in_school} /></Question>
         <Question label={iq('tertiary')}><Stepper field="siblings_in_tertiary" value={ans.siblings_in_tertiary} /></Question>
       </div>
+      {/* If the student already said (on the Story step) that siblings are studying but
+          hasn't split them here, prompt for it in place — so we capture it now instead
+          of raising a Check-2 query later. */}
+      {(app.siblings_studying_count ?? 0) > 0
+        && (ans.siblings_in_school == null || ans.siblings_in_tertiary == null) ? (
+        <p className="text-xs text-amber-700 mt-1.5">{iq('splitPrompt')}</p>
+      ) : (
+        <p className="text-xs text-gray-500 mt-1.5">{iq('burdenHint')}</p>
+      )}
 
       {/* Dynamic checklist — appears once the wizard is answered. Compulsory docs carry a
           red * on the card title; optional docs carry no marker (the * is what distinguishes). */}
