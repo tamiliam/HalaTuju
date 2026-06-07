@@ -54,6 +54,9 @@ const RUBRIC_DIMS = ['clarity_of_plan', 'financial_need', 'resilience'] as const
 const COMPLETENESS_PARTS = ['quiz_done', 'details_done', 'funding_done', 'documents_done', 'consent_done', 'address_done', 'guardian_docs_done'] as const
 
 const EMPTY_REFEREE = { name: '', role: '', relationship: '', phone: '', email: '' }
+// Referees aren't in play yet — hide the capture UI (the handlers stay wired so this
+// is a one-line re-enable, and so they don't become unused). Flip to true to restore.
+const SHOW_REFEREES = false
 
 const VERIFY_ITEMS = ['nric', 'name', 'results', 'document'] as const
 
@@ -885,6 +888,69 @@ export default function AdminScholarshipDetailPage() {
         })()}
       </div>
 
+      {/* S16 Phase A: deterministic pre-interview flag list */}
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-semibold">{t('admin.scholarship.anomaly.title')}</h2>
+          <div className="flex items-center gap-2">
+            {app.anomalies && app.anomalies.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                {app.anomalies.length} {app.anomalies.length === 1 ? t('admin.scholarship.anomaly.flagOne') : t('admin.scholarship.anomaly.flagMany')}
+              </span>
+            )}
+            {canWrite && (
+              <button onClick={doSuggestGaps} disabled={!!busy}
+                className="px-2.5 py-1 rounded-lg text-xs bg-indigo-600 text-white disabled:opacity-50">
+                {busy === 'gaps' ? t('admin.scholarship.gaps.running') : t('admin.scholarship.gaps.button')}
+              </button>
+            )}
+          </div>
+        </div>
+        <p className="text-xs text-gray-500">{t('admin.scholarship.anomaly.intro')}</p>
+        {!app.anomalies || app.anomalies.length === 0 ? (
+          <p className="text-sm text-gray-400 italic">{t('admin.scholarship.anomaly.empty')}</p>
+        ) : (
+          <ul className="space-y-3">
+            {app.anomalies.map((a) => (
+              <li key={a.code} className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1.5">
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-600 shrink-0" aria-hidden>⚠</span>
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-800">
+                      {t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
+                    </p>
+                    <p className="text-sm text-gray-700 italic">
+                      <span className="font-semibold not-italic">{t('admin.scholarship.anomaly.askLabel')}:</span>{' '}
+                      {t(`admin.scholarship.anomaly.${a.code}.question`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        {app.interview_gaps && app.interview_gaps.length > 0 && (
+          <div className="space-y-2 border-t border-gray-100 pt-3">
+            <p className="text-xs font-medium text-gray-500">{t('admin.scholarship.gaps.title')}</p>
+            <ul className="space-y-2">
+              {app.interview_gaps.map((g) => (
+                <li key={g.code} className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
+                  <div className="flex items-start gap-2">
+                    <span className="shrink-0 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white" aria-hidden>
+                      {t('admin.scholarship.gaps.aiBadge')}
+                    </span>
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-800">{g.question}</p>
+                      {g.why && <p className="text-xs text-gray-500">{t('admin.scholarship.gaps.whyLabel')}: {g.why}</p>}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
       {/* ── Documents drawer — grouped by fact ────────────────────────────────── */}
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="mb-3">
@@ -990,7 +1056,9 @@ export default function AdminScholarshipDetailPage() {
             </li>
           )
           return (
-            <div className="space-y-4">
+            // Fixed-height, scrollable: a long document list (11+) no longer pushes the
+            // rest of the cockpit down — the header stays put and the groups scroll.
+            <div className="space-y-4 max-h-[28rem] overflow-y-auto pr-1">
               {sectionKeys.map((key) => {
                 const docs = groups[key]
                 if (key === 'income') {
@@ -1040,6 +1108,7 @@ export default function AdminScholarshipDetailPage() {
 
       {/* ── Referees / consent (unchanged) ────────────────────────────────────── */}
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        {SHOW_REFEREES && (<>
         <h3 className="font-semibold text-sm mb-1">{t('admin.scholarship.referees')}</h3>
         <p className="text-xs text-gray-400 mb-2">{t('admin.scholarship.refHint')}</p>
         <ul className="text-sm text-gray-600 space-y-1">
@@ -1074,74 +1143,12 @@ export default function AdminScholarshipDetailPage() {
           className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
           {busy === 'ref' ? t('admin.scholarship.refAdding') : t('admin.scholarship.refAdd')}
         </button>
+        </>)}
 
-        <h3 className="font-semibold text-sm mt-4 mb-2">{t('admin.scholarship.consent')}</h3>
+        <h3 className={`font-semibold text-sm mb-2 ${SHOW_REFEREES ? 'mt-4' : ''}`}>{t('admin.scholarship.consent')}</h3>
         <p className="text-sm text-gray-600">
           {app.consents.some((c) => c.is_active) ? t('admin.scholarship.consentGiven') : t('admin.scholarship.consentNone')}
         </p>
-      </div>
-
-      {/* S16 Phase A: deterministic pre-interview flag list */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="font-semibold">{t('admin.scholarship.anomaly.title')}</h2>
-          <div className="flex items-center gap-2">
-            {app.anomalies && app.anomalies.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-                {app.anomalies.length} {app.anomalies.length === 1 ? t('admin.scholarship.anomaly.flagOne') : t('admin.scholarship.anomaly.flagMany')}
-              </span>
-            )}
-            {canWrite && (
-              <button onClick={doSuggestGaps} disabled={!!busy}
-                className="px-2.5 py-1 rounded-lg text-xs bg-indigo-600 text-white disabled:opacity-50">
-                {busy === 'gaps' ? t('admin.scholarship.gaps.running') : t('admin.scholarship.gaps.button')}
-              </button>
-            )}
-          </div>
-        </div>
-        <p className="text-xs text-gray-500">{t('admin.scholarship.anomaly.intro')}</p>
-        {!app.anomalies || app.anomalies.length === 0 ? (
-          <p className="text-sm text-gray-400 italic">{t('admin.scholarship.anomaly.empty')}</p>
-        ) : (
-          <ul className="space-y-3">
-            {app.anomalies.map((a) => (
-              <li key={a.code} className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1.5">
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 shrink-0" aria-hidden>⚠</span>
-                  <div className="space-y-1">
-                    <p className="text-sm text-gray-800">
-                      {t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
-                    </p>
-                    <p className="text-sm text-gray-700 italic">
-                      <span className="font-semibold not-italic">{t('admin.scholarship.anomaly.askLabel')}:</span>{' '}
-                      {t(`admin.scholarship.anomaly.${a.code}.question`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
-                    </p>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-        {app.interview_gaps && app.interview_gaps.length > 0 && (
-          <div className="space-y-2 border-t border-gray-100 pt-3">
-            <p className="text-xs font-medium text-gray-500">{t('admin.scholarship.gaps.title')}</p>
-            <ul className="space-y-2">
-              {app.interview_gaps.map((g) => (
-                <li key={g.code} className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
-                  <div className="flex items-start gap-2">
-                    <span className="shrink-0 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white" aria-hidden>
-                      {t('admin.scholarship.gaps.aiBadge')}
-                    </span>
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-800">{g.question}</p>
-                      {g.why && <p className="text-xs text-gray-500">{t('admin.scholarship.gaps.whyLabel')}: {g.why}</p>}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
 
       {/* Phase C: assignment */}

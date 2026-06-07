@@ -42,6 +42,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `actionCentre` known‑code, and its i18n in all three namespaces ×3 languages; tests updated. No migration.
 
 ### Changed
+- **Officer cockpit polish (live testing).** (1) The **Documents** drawer is now fixed‑height with a vertical scrollbar
+  (`max-h-[28rem] overflow-y-auto`) — a long list (11+) no longer pushes the rest of the cockpit down; the header stays
+  put and the groups scroll. (2) The **Pre‑interview flags** card moved to sit **just below "Caveats to resolve"** — the
+  two belong together (caveats are things to resolve, flags are questions worth asking at interview). (3) **Referees**
+  capture is hidden for now (`SHOW_REFEREES = false`; the add/delete handlers stay wired so it's a one‑line re‑enable and
+  nothing goes unused); the **Consent** status in that card stays visible. Pure layout/JSX in
+  `admin/scholarship/[id]/page.tsx`; no logic or data change.
 - **Officer cockpit reordered — "About the student" now sits above "Review & actions".** The reviewer reads the
   applicant's facts (About · Family & finances · Academic · Support) first, then the verification verdict + action
   panels below. The sticky **"Record your verdict"** panel stays attached to the Review & actions section (bottom‑right),
