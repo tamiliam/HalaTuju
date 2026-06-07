@@ -67,11 +67,13 @@ def _add_doc(app, doc_type, *, student_verdict='', fields=None, name_match=''):
 
 class TestGeneration(_Base):
     def test_bare_application_generates_doc_tickets(self):
-        # No documents → ic + results gaps (doc); the income wizard isn't walked →
-        # income_earner_undeclared (confirm); pathway declared (no ticket).
+        # No documents → ic + results + offer gaps (doc); the income wizard isn't walked
+        # → income_earner_undeclared (confirm). The offer letter is now compulsory, so a
+        # bare app also raises offer_letter_missing.
         items = sync_resolution_items(self.app)
         self.assertEqual(self._codes(items),
-                         ['ic_missing', 'income_earner_undeclared', 'results_slip_missing'])
+                         ['ic_missing', 'income_earner_undeclared', 'offer_letter_missing',
+                          'results_slip_missing'])
         self.assertTrue(all(i.source == 'system' for i in items))
 
     def test_no_queries_before_consent(self):
@@ -123,14 +125,19 @@ class TestMappingExclusions(_Base):
         # correctly yields the ticketable 'str_not_current', so give it Lulus + year here.
         _add_doc(self.app, 'str', name_match='not_found',
                  fields={'status': 'diluluskan', 'year': '2026'})        # str_present_unverified
-        self.assertEqual(sync_resolution_items(self.app), [])
+        # The three excluded codes raise NO tickets (the compulsory-offer gap is its own
+        # separate, ticketable matter — assert the exclusions specifically, not emptiness).
+        codes = self._codes(sync_resolution_items(self.app))
+        for excluded in ('ic_service_down', 'grades_unverified', 'str_present_unverified'):
+            self.assertNotIn(excluded, codes)
 
 
 class TestIdempotencyAndLifecycle(_Base):
     def test_sync_is_idempotent(self):
         sync_resolution_items(self.app)
         sync_resolution_items(self.app)
-        self.assertEqual(self.app.resolution_items.filter(source='system').count(), 3)
+        # ic_missing + results_slip_missing + offer_letter_missing + income_earner_undeclared.
+        self.assertEqual(self.app.resolution_items.filter(source='system').count(), 4)
 
     def test_auto_resolve_when_gap_clears(self):
         # Walk the income wizard (str/father + earner IC) → an income_proof_missing

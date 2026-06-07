@@ -173,10 +173,13 @@ def _verdict_academic(application):
     # slip can carry 'not_found' there for some name spellings, and must never be mistaken
     # for "the slip could not be read" (it falsely flagged Sharvani's clean, fully-read slip).
     name_status = _slip_name_status(slip)
-    name_ok = name_status == 'match'
     if name_status == 'mismatch':
-        unresolved.append(_item('results_slip_name_mismatch'))
-    elif name_status == 'unreadable':
+        # A slip in someone else's name is unusable — these results can't be attributed
+        # to the student. Hard stop (red, can't verify): re-upload the correct slip. Also
+        # a submission blocker (application_completeness), so it can't be submitted as-is.
+        return _fact('academic', 'gap', evidence, [_item('results_slip_name_mismatch')])
+    name_ok = name_status == 'match'
+    if name_status == 'unreadable':
         unresolved.append(_item('results_slip_unreadable'))
     elif name_status == 'match':
         evidence.append(_item('results_slip_name_ok'))
@@ -480,10 +483,12 @@ def _verdict_pathway(application):
     chosen = (application.chosen_pathway or application.intended_pathway or '').strip()
 
     if offer is None:
-        if chosen:
-            return _fact('pathway', 'review',
-                         [_item('pathway_declared', pathway=chosen)], unresolved)
-        return _fact('pathway', 'review', evidence, [_item('pathway_undeclared')])
+        # The offer letter is compulsory: the programme supports a CONFIRMED place, so
+        # without an offer there is nothing to fund (income can be settled at interview,
+        # a pathway cannot). Red + submission blocker; the declared pathway rides along
+        # as context when present.
+        decl = [_item('pathway_declared', pathway=chosen)] if chosen else []
+        return _fact('pathway', 'gap', decl, [_item('offer_letter_missing')])
 
     chk = student_offer_check(offer)
     # Identity guard: a wrong name OR IC means a wrong-person letter.

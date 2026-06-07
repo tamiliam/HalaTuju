@@ -156,9 +156,11 @@ class TestAcademic(_Base):
         self.assertIn('results_slip_name_ok', _codes(f['evidence']))
         self.assertIn('grades_unverified', _codes(f['unresolved']))
 
-    def test_slip_name_mismatch_flags(self):
+    def test_slip_name_mismatch_is_gap_reupload(self):
+        # A slip in someone else's name is unusable → red (can't verify): re-upload.
         _add_doc(self.app, 'results_slip', student_verdict='name_mismatch')
         f = _facts(self.app)['academic']
+        self.assertEqual(f['status'], 'gap')
         self.assertIn('results_slip_name_mismatch', _codes(f['unresolved']))
 
 
@@ -546,17 +548,21 @@ class TestPathway(_Base):
         self.app.refresh_from_db()
         self.assertIsNone(self.app.pathway_confirmed_at)
 
-    def test_no_offer_but_declared_is_review(self):
+    def test_no_offer_is_gap_offer_required(self):
+        # Offer letter is compulsory — no offer → red (can't verify / blocked); the
+        # declared pathway rides along as context.
         f = _facts(self.app)['pathway']
-        self.assertEqual(f['status'], 'review')
+        self.assertEqual(f['status'], 'gap')
+        self.assertIn('offer_letter_missing', _codes(f['unresolved']))
         self.assertIn('pathway_declared', _codes(f['evidence']))
 
-    def test_no_offer_undeclared_is_review_flagged(self):
+    def test_no_offer_undeclared_is_gap(self):
         self.app.chosen_pathway = ''
         self.app.intended_pathway = ''
         self.app.save()
         f = _facts(self.app)['pathway']
-        self.assertIn('pathway_undeclared', _codes(f['unresolved']))
+        self.assertEqual(f['status'], 'gap')
+        self.assertIn('offer_letter_missing', _codes(f['unresolved']))
 
 
 # ── Integration: the Theresa case ────────────────────────────────────────────

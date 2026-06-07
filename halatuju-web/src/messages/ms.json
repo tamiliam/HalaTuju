@@ -1473,6 +1473,10 @@
         "pathway_confirm": {
           "title": "Ini tempat anda akan pergi?",
           "desc": "Surat tawaran anda adalah untuk {programme} di {institution}, yang nampak berbeza daripada pilihan pengajian yang anda masukkan sebelum ini. Jika tawaran ini ialah laluan akhir anda, sahkannya dan kami akan kemas kini rekod anda supaya sepadan. Jika anda ada tawaran yang lebih baik, muat naik yang itu."
+        },
+        "offer_letter_missing": {
+          "title": "Muat naik surat tawaran anda",
+          "desc": "Kami hanya boleh menyokong tempat yang disahkan, jadi surat tawaran diperlukan. Sila muat naik di Dokumen."
         }
       }
     },
@@ -2275,7 +2279,8 @@
           "academic_missing_subjects": "Memasukkan {entered} daripada {total} subjek pada slip — tiada: {subjects}. Minta pelajar menambahnya.",
           "academic_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip menunjukkan {slip}. Semak.",
           "academic_grade_uncertain": "{subject}: bacaan kami menunjukkan {slip}, tetapi pelajar menaip {typed} — bacaan A/A+ (±) yang kami tidak pasti. Semak dengan mata pada slip.",
-          "grades_verified": "Kesemua {count} gred sepadan dengan slip keputusan."
+          "grades_verified": "Kesemua {count} gred sepadan dengan slip keputusan.",
+          "offer_letter_missing": "Tiada surat tawaran dimuat naik — diperlukan sebelum kami boleh menyokong tempat pengajian."
         }
       },
       "recordVerdict": {

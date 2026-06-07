@@ -475,6 +475,21 @@ class TestIncomeGateV2(TestCase):
         self._doc(app, 'offer_letter')
         self.assertTrue(application_completeness(app)['documents_done'])
 
+    def test_slip_name_mismatch_blocks_submission(self):
+        from apps.scholarship.services import application_completeness
+        from apps.scholarship.models import ApplicantDocument
+        from django.utils import timezone
+        app = self._app(route='str', earner='father')
+        for dt in ('ic', 'parent_ic', 'str', 'offer_letter'):
+            self._doc(app, dt)
+        # A results slip in someone else's name is unusable → does NOT satisfy the bar;
+        # the student must re-upload the correct slip before submitting.
+        ApplicantDocument.objects.create(
+            application=app, doc_type='results_slip', storage_path='x/results_slip/m',
+            vision_fields={'fields': {}, 'warnings': [], 'student_verdict': 'name_mismatch', 'error': ''},
+            vision_run_at=timezone.now())
+        self.assertFalse(application_completeness(app)['documents_done'])
+
     def test_grandfathered_submitted_app_keeps_old_bar(self):
         from apps.scholarship.services import application_completeness
         # Already submitted, blank route, no offer letter — but the OLD docs present.
