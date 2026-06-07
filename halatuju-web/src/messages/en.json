@@ -572,6 +572,7 @@
         "householdSizeMax": "That seems like too many people — please double-check your household size.",
         "income": "Please enter your combined monthly household income.",
         "generic": "Something went wrong submitting your application. You may have already applied, or applications may be closed. Please try again later.",
+        "tooLong": "Your answer to “{field}” is too long. Please shorten it and try again.",
         "name": "Please enter your full name.",
         "school": "Please enter your school.",
         "nric": "Please enter a valid IC number (format XXXXXX-XX-XXXX).",

@@ -49,6 +49,8 @@ import {
   HELP_OPTIONS,
   OTHER_SCHOLARSHIP_OPTIONS,
   type ApplyFormState,
+  firstTooLongField,
+  APPLY_FIELD_LABEL_KEYS,
   type PathwayCertainty,
   type ChosenProgramme,
   type TopChoice,
@@ -328,8 +330,15 @@ export default function ScholarshipApplyPage() {
       const payload = buildApplicationPayload(form) as unknown as Record<string, unknown>
       await submitScholarshipApplication(payload, locale, { token })
       router.replace('/scholarship/application')
-    } catch {
-      setError(t('scholarship.apply.error.generic'))
+    } catch (err) {
+      // If a field was rejected for length, name the exact question to shorten.
+      const key = firstTooLongField((err as { fieldErrors?: unknown }).fieldErrors)
+      const labelKey = key ? APPLY_FIELD_LABEL_KEYS[key] : null
+      if (labelKey) {
+        setError(t('scholarship.apply.error.tooLong', { field: t(labelKey) }))
+      } else {
+        setError(t('scholarship.apply.error.generic'))
+      }
     } finally {
       setSubmitting(false)
     }
@@ -421,7 +430,7 @@ export default function ScholarshipApplyPage() {
         <p className="text-xs text-gray-500">{t('scholarship.apply.aboutMeHint')}</p>
         <div>
           <FieldLabel required tip={t('scholarship.apply.tip.name')}>{t('scholarship.apply.field.name')}</FieldLabel>
-          <input className="input" value={form.name} onChange={(e) => update('name', e.target.value)} />
+          <input className="input" maxLength={255} value={form.name} onChange={(e) => update('name', e.target.value)} />
           {/* Mismatch with the declaration signature blocks submit — flag it here too,
               since the About Me name (often a pre-filled handle) is the usual fix. */}
           {declarationNameMismatch(form) && (
@@ -511,7 +520,7 @@ export default function ScholarshipApplyPage() {
         <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{t('scholarship.apply.parentHeading')}</p>
         <div>
           <FieldLabel tip={t('scholarship.apply.tip.parentName')}>{t('scholarship.apply.field.parentName')}</FieldLabel>
-          <input className="input" value={form.parentName} onChange={(e) => update('parentName', e.target.value)} />
+          <input className="input" maxLength={255} value={form.parentName} onChange={(e) => update('parentName', e.target.value)} />
         </div>
         <div>
           <FieldLabel tip={t('scholarship.apply.tip.parentPhone')}>{t('scholarship.apply.field.parentPhone')}</FieldLabel>
@@ -765,7 +774,7 @@ export default function ScholarshipApplyPage() {
         {form.pathwayCertainty !== '' && (
           <div>
             <FieldLabel>{t('scholarship.apply.plan.uncertainNoteLabel')}</FieldLabel>
-            <textarea className="input" rows={3} value={form.uncertaintyNote}
+            <textarea className="input" rows={3} maxLength={5000} value={form.uncertaintyNote}
               placeholder={t('scholarship.apply.plan.uncertainNotePlaceholder')}
               onChange={(e) => update('uncertaintyNote', e.target.value)} />
           </div>
@@ -786,7 +795,7 @@ export default function ScholarshipApplyPage() {
               )
             })}
           </div>
-          <input className="input" value={form.otherScholarshipsText}
+          <input className="input" maxLength={300} value={form.otherScholarshipsText}
             placeholder={t('scholarship.apply.otherScholarshipsPlaceholder')}
             onChange={(e) => update('otherScholarshipsText', e.target.value)} />
         </div>
@@ -825,7 +834,7 @@ export default function ScholarshipApplyPage() {
         </div>
         <div>
           <FieldLabel>{t('scholarship.apply.anythingElseLabel')}</FieldLabel>
-          <textarea className="input" rows={4} value={form.anythingElse}
+          <textarea className="input" rows={4} maxLength={5000} value={form.anythingElse}
             placeholder={t('scholarship.apply.anythingElsePlaceholder')}
             onChange={(e) => update('anythingElse', e.target.value)} />
         </div>
@@ -846,6 +855,7 @@ export default function ScholarshipApplyPage() {
             <FieldLabel required>{t('scholarship.apply.declaration.signLabel')}</FieldLabel>
             <input
               className="input"
+              maxLength={200}
               value={form.declarationName}
               placeholder={t('scholarship.apply.declaration.signPlaceholder')}
               autoComplete="off"

@@ -141,12 +141,17 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
     # they are write-only — the service syncs them back to the canonical profile
     # (StudentProfile), never storing them on the application. NRIC is NOT here:
     # it changes only through the validated claim path (/profile/claim-nric/).
-    name = serializers.CharField(required=False, allow_blank=True, write_only=True)
-    school = serializers.CharField(required=False, allow_blank=True, write_only=True)
-    preferred_state = serializers.CharField(required=False, allow_blank=True, write_only=True)
-    contact_phone = serializers.CharField(required=False, allow_blank=True, write_only=True)
-    preferred_call_language = serializers.CharField(required=False, allow_blank=True, write_only=True)
-    referral_source = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    # max_length mirrors the profile (StudentProfile) columns these sync to. Without
+    # it an over-long value reaches sync_profile_fields -> setattr -> save and
+    # overflows the varchar, rolling back the whole submit as a generic error
+    # (the same class of bug as the Story parents_occupation incident). With it the
+    # student gets a clean field-level 400 the form can phrase as "too long".
+    name = serializers.CharField(required=False, allow_blank=True, write_only=True, max_length=255)
+    school = serializers.CharField(required=False, allow_blank=True, write_only=True, max_length=255)
+    preferred_state = serializers.CharField(required=False, allow_blank=True, write_only=True, max_length=50)
+    contact_phone = serializers.CharField(required=False, allow_blank=True, write_only=True, max_length=20)
+    preferred_call_language = serializers.CharField(required=False, allow_blank=True, write_only=True, max_length=10)
+    referral_source = serializers.CharField(required=False, allow_blank=True, write_only=True, max_length=50)
     guardians = serializers.JSONField(required=False, write_only=True)
 
     class Meta:

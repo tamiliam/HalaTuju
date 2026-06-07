@@ -4,7 +4,7 @@ import pytest
 from apps.courses.models import StudentProfile
 from apps.scholarship.models import ScholarshipCohort
 from apps.scholarship.services import create_application
-from apps.scholarship.serializers import ApplicationReadSerializer
+from apps.scholarship.serializers import ApplicationReadSerializer, ApplicationCreateSerializer
 
 
 @pytest.mark.django_db
@@ -140,3 +140,25 @@ class TestApplicationIntakeFields:
 
         assert app.declaration_name == ''
         assert app.declared_at is None
+
+    # ── Length guards: profile write-back fields are validated by the serializer so
+    # an over-long value is a clean 400, never a DB-overflow rollback of the submit
+    # (the parents_occupation incident class, audited across the Apply form). ──
+    def test_create_serializer_rejects_overlong_name(self):
+        """name -> StudentProfile.name varchar(255); >255 fails validation."""
+        s = ApplicationCreateSerializer(data={'consent_to_contact': True, 'name': 'x' * 256})
+        assert not s.is_valid()
+        assert 'name' in s.errors
+
+    def test_create_serializer_rejects_overlong_school(self):
+        """school -> StudentProfile.school varchar(255); >255 fails validation."""
+        s = ApplicationCreateSerializer(data={'consent_to_contact': True, 'school': 'x' * 256})
+        assert not s.is_valid()
+        assert 'school' in s.errors
+
+    def test_create_serializer_accepts_normal_length_name(self):
+        """A realistic long full name (e.g. POVIENTHIRAN A/L R MARIMUTU) is fine."""
+        s = ApplicationCreateSerializer(data={
+            'consent_to_contact': True, 'name': 'POVIENTHIRAN A/L R MARIMUTU', 'school': 'SMK Bandar Puteri Klang',
+        })
+        assert s.is_valid(), s.errors

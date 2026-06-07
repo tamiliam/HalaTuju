@@ -13,9 +13,11 @@ import { searchSchools } from '@/data/secondary-schools'
 export default function SchoolSelect({
   value,
   onChange,
+  maxLength = 255,   // mirrors StudentProfile.school varchar(255) so a typed name can't overflow
 }: {
   value: string
   onChange: (v: string) => void
+  maxLength?: number
 }) {
   const { t } = useT()
   const [open, setOpen] = useState(false)
@@ -36,6 +38,7 @@ export default function SchoolSelect({
     <div className="relative">
       <input
         className="input"
+        maxLength={maxLength}
         value={value}
         autoComplete="off"
         role="combobox"
