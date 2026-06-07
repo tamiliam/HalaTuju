@@ -143,6 +143,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # {code, params}; the frontend resolves human copy from its i18n bundle.
     anomalies = serializers.SerializerMethodField()
     verdict = serializers.SerializerMethodField()
+    submission_review = serializers.SerializerMethodField()
     resolution_items = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
     interview_session = serializers.SerializerMethodField()
@@ -196,6 +197,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'funding_need', 'documents', 'referees', 'consents', 'sponsor_profile',
             'anomalies',
             'verdict',
+            'submission_review',
             'resolution_items',
             'intake_snapshot',
             # S5 verdict audit / override capture (read-only; written via record-verdict).
@@ -264,6 +266,12 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         LLM calls — mirrors get_anomalies."""
         from .verdict_engine import build_verdict
         return build_verdict(obj)
+
+    def get_submission_review(self, obj):
+        """Check 2 STEP 1: the deterministic facts ledger + completeness gaps +
+        consistency flags. Pure rules, no LLM — mirrors get_verdict / get_anomalies."""
+        from .submission_review import submission_review
+        return submission_review(obj)
 
     def get_resolution_items(self, obj):
         """S3 resolution queue: sync the system tickets against the live verdict,

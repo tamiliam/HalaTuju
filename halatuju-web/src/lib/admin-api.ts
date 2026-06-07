@@ -404,6 +404,9 @@ export interface AdminScholarshipDetail {
   anomalies: AdminAnomaly[]
   // S1 verification verdict: the four-fact rollup the coordinator audits.
   verdict: AdminVerdictFact[]
+  // Check 2 STEP 1: the deterministic submission review — the facts ledger (claims +
+  // how well each is backed), fundable-profile gaps, and consistency flags. Pure rules.
+  submission_review: AdminSubmissionReview
   // Phase B: Gemini-suggested interview gaps. Carry their OWN dynamic text
   // (unlike anomalies which i18n by code). Empty until the admin generates them.
   interview_gaps: Array<{ code: string; question: string; why: string }>
@@ -634,6 +637,21 @@ export interface AdminVerdictFact {
   status: 'verified' | 'review' | 'recommend' | 'gap'
   evidence: AdminVerdictItem[]
   unresolved: AdminVerdictItem[]
+}
+
+/** Check 2 STEP 1 — the deterministic submission review. */
+export interface AdminLedgerRow {
+  claim: string
+  value: string
+  source: string
+  // verified (assert as fact) · reported (self-reported / under review) ·
+  // student_words (their voice) · unverified (omit or hedge).
+  verification: 'verified' | 'reported' | 'student_words' | 'unverified'
+}
+export interface AdminSubmissionReview {
+  ledger: AdminLedgerRow[]
+  completeness: Array<{ code: string }>
+  consistency: AdminAnomaly[]
 }
 
 export interface AdminApplicantDocument {
