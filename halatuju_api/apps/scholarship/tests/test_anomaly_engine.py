@@ -165,6 +165,41 @@ class TestFirstInFamilyWithSiblingsStudying(_Base):
         self.assertNotIn('first_in_family_with_siblings_studying', codes)
 
 
+def _add_bill(app, doc_type, amount):
+    """Attach a utility bill with a Gemini-extracted monthly amount."""
+    return ApplicantDocument.objects.create(
+        application=app, doc_type=doc_type, storage_path=f'{app.id}/{doc_type}/x',
+        vision_fields={'fields': {'amount': amount}}, vision_fields_run_at=timezone.now(),
+    )
+
+
+class TestUtilityHighVsIncome(_Base):
+    def test_flag_when_utilities_disproportionate(self):
+        # RM180 of bills on a declared RM500 income = 36% → flag.
+        self.profile.household_income = 500
+        self.profile.save()
+        _add_bill(self.app, 'water_bill', 'RM 90.00')
+        _add_bill(self.app, 'electricity_bill', 'RM 90.00')
+        anomalies = {a['code']: a['params'] for a in detect_anomalies(self.app)}
+        self.assertIn('utility_high_vs_income', anomalies)
+        self.assertEqual(anomalies['utility_high_vs_income']['percent'], 36)
+
+    def test_no_flag_when_utilities_modest(self):
+        # RM180 of bills on a declared RM2000 income = 9% → no flag.
+        _add_bill(self.app, 'water_bill', 'RM 90.00')
+        _add_bill(self.app, 'electricity_bill', 'RM 90.00')
+        codes = [a['code'] for a in detect_anomalies(self.app)]
+        self.assertNotIn('utility_high_vs_income', codes)
+
+    def test_no_flag_when_income_unknown(self):
+        self.profile.household_income = 0
+        self.profile.save()
+        _add_bill(self.app, 'water_bill', 'RM 90.00')
+        _add_bill(self.app, 'electricity_bill', 'RM 90.00')
+        codes = [a['code'] for a in detect_anomalies(self.app)]
+        self.assertNotIn('utility_high_vs_income', codes)
+
+
 class TestFundingOtherWithoutNote(_Base):
     def test_flag_when_other_ticked_but_note_blank(self):
         FundingNeed.objects.create(

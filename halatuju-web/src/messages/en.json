@@ -2125,6 +2125,10 @@
           "fact": "Household size is 1 — unusual for a B40 student.",
           "question": "You mentioned you live alone — can you tell me about that? Are you a student living away from family?"
         },
+        "utility_high_vs_income": {
+          "fact": "Utility bills total RM {utility}/month — about {percent}% of the declared household income of RM {income}/month.",
+          "question": "Your utility bills are a large share of the income on file — is the declared income the full household picture, or is there other income that helps cover the bills?"
+        },
         "first_in_family_with_siblings_studying": {
           "fact": "Student claims to be first-to-university, but {count} sibling(s) are studying.",
           "question": "You'd be the first in your family to go to university, but {count} sibling(s) are also studying — are they younger and still in school, or already at university?"

@@ -2125,6 +2125,10 @@
           "fact": "Saiz isi rumah ialah 1 — luar biasa untuk pelajar B40.",
           "question": "Anda menyebut anda tinggal sendirian — bolehkah anda kongsi tentang itu? Adakah anda pelajar yang tinggal jauh dari keluarga?"
         },
+        "utility_high_vs_income": {
+          "fact": "Bil utiliti berjumlah RM {utility}/bulan — kira-kira {percent}% daripada pendapatan isi rumah yang diisytiharkan iaitu RM {income}/bulan.",
+          "question": "Bil utiliti anda merupakan sebahagian besar daripada pendapatan dalam rekod — adakah pendapatan yang diisytiharkan itu gambaran penuh isi rumah, atau ada pendapatan lain yang membantu menampung bil?"
+        },
         "first_in_family_with_siblings_studying": {
           "fact": "Pelajar mendakwa pertama ke universiti, tetapi {count} adik-beradik sedang belajar.",
           "question": "Anda akan menjadi yang pertama dalam keluarga ke universiti, tetapi {count} adik-beradik juga sedang belajar — adakah mereka masih bersekolah, atau sudah di universiti?"
