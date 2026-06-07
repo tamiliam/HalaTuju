@@ -236,3 +236,54 @@ class TestStudentQueueViewGate(TestCase):
         codes = sorted(i['code'] for i in r.json()['open'])
         self.assertIn('ic_missing', codes)
         self.assertIn('results_slip_missing', codes)
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=_TEST_JWT_SECRET)
+class TestCheck2QueriesInStudentQueue(TestCase):
+    """Check 2 STEP 2: AI clarify queries surface in the student Action Centre;
+    reviewer-only 'human' items never do; the student can answer a clarify by text."""
+    URL = '/api/v1/scholarship/resolution-items/'
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def setUp(self):
+        self.client = APIClient()
+        self.profile = StudentProfile.objects.create(
+            supabase_user_id='c2-stu', nric='030101-14-1234', name='Stu',
+            household_income=1200, household_size=5)
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='profile_complete',
+            profile_completed_at=timezone.now(),
+            aspirations='I want to teach.', field_of_study='Education',
+            siblings_in_tertiary=0)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("c2-stu")}')
+
+    def test_clarify_query_shows_but_human_hidden(self):
+        ResolutionItem.objects.create(
+            application=self.app, source='check2', code='human_award_sizing',
+            fact='income', kind='human', status='open')
+        r = self.client.get(self.URL)
+        self.assertEqual(r.status_code, 200)
+        codes = {i['code'] for i in r.json()['open']}
+        # device + transport clarify queries are generated; the human item is hidden.
+        self.assertIn('transport_cost_unknown', codes)
+        self.assertNotIn('human_award_sizing', codes)
+
+    def test_student_can_answer_a_clarify(self):
+        self.client.get(self.URL)  # generates the clarify queries
+        item = self.app.resolution_items.get(code='transport_cost_unknown')
+        r = self.client.post(f'{self.URL}{item.id}/resolve/', {'text': 'Bus, ~RM80/month.'},
+                             format='json')
+        self.assertEqual(r.status_code, 200)
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'resolved')
+        self.assertEqual(item.resolution_text, 'Bus, ~RM80/month.')
+        self.assertEqual(item.resolved_by, 'student')
+
+    def test_clarify_requires_text(self):
+        self.client.get(self.URL)
+        item = self.app.resolution_items.get(code='transport_cost_unknown')
+        r = self.client.post(f'{self.URL}{item.id}/resolve/', {'text': ''}, format='json')
+        self.assertEqual(r.status_code, 400)

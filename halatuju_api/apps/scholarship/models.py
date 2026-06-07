@@ -72,6 +72,13 @@ class ScholarshipCohort(models.Model):
         default=48,
         help_text="Hours after submit before the warm decline email (S8 delayed reveal). Float (see above).",
     )
+    # Check 2 STEP 2/3: days a student has to answer the AI clarify queries after submit
+    # before the application proceeds to a reviewer regardless (the SLA clock, design §5).
+    query_response_sla_days = models.PositiveSmallIntegerField(
+        default=5,
+        help_text="Check-2 query SLA: days after submit to answer clarify queries before "
+                  "the application is ready for assignment regardless (proceed-as-is, flagged).",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -316,6 +323,8 @@ class ScholarshipApplication(models.Model):
     last_reminder_at = models.DateTimeField(null=True, blank=True)
     # When the application was auto-closed for non-completion (status → 'expired').
     expired_at = models.DateTimeField(null=True, blank=True)
+    # Check 2 STEP 2: when the single 'answer your queries' reminder was sent (idempotent).
+    query_reminder_at = models.DateTimeField(null=True, blank=True)
 
     # Admin verify-&-accept (S11a): a PartnerAdmin confirms NRIC/name/results against
     # the uploaded MyKad, which sets profile.nric_verified (locks the NRIC) and
@@ -942,13 +951,18 @@ class ResolutionItem(models.Model):
         ('doc', 'Upload a document'),
         ('confirm', 'Confirm / correct a value'),
         ('explanation', 'Explain in your own words'),
+        # Check 2 STEP 2:
+        ('clarify', 'Answer a question'),          # AI student query (one-line, non-sensitive)
+        ('human', 'For the reviewer'),             # AI-triaged to the human; never shown to the student
     ]
     STATUS = [
         ('open', 'Open'),
         ('resolved', 'Resolved'),
         ('waived', 'Waived'),     # officer decided it isn't needed
     ]
-    SOURCE = [('system', 'System'), ('officer', 'Officer')]
+    # 'check2' = an AI clarify/human query raised by the Check-2 submission review;
+    # kept OUT of the verdict-driven sync (which only reconciles source='system').
+    SOURCE = [('system', 'System'), ('officer', 'Officer'), ('check2', 'Check 2')]
 
     application = models.ForeignKey(
         ScholarshipApplication, on_delete=models.CASCADE, related_name='resolution_items',
@@ -998,6 +1012,10 @@ class ResolutionItem(models.Model):
             models.UniqueConstraint(
                 fields=['application', 'code'], condition=models.Q(source='system'),
                 name='uniq_system_resolution_per_code'),
+            # Same idempotence for Check-2 AI queries: one per (application, code), ever.
+            models.UniqueConstraint(
+                fields=['application', 'code'], condition=models.Q(source='check2'),
+                name='uniq_check2_resolution_per_code'),
         ]
 
     def __str__(self):

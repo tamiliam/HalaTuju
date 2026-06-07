@@ -34,6 +34,7 @@ describe('iconFor', () => {
   it('maps each kind to its icon family', () => {
     expect(iconFor('doc')).toBe('document')
     expect(iconFor('explanation')).toBe('chat')
+    expect(iconFor('clarify')).toBe('chat')
     expect(iconFor('confirm')).toBe('checklist')
   })
 })

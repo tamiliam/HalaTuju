@@ -1477,6 +1477,22 @@
         "offer_letter_missing": {
           "title": "Muat naik surat tawaran anda",
           "desc": "Kami hanya boleh menyokong tempat yang disahkan, jadi surat tawaran diperlukan. Sila muat naik di Dokumen."
+        },
+        "course_unspecified": {
+          "title": "Apakah yang anda rancang untuk belajar?",
+          "desc": "Beritahu kami kursus atau bidang yang anda harap untuk ceburi — ia membantu kami menerangkan rancangan anda kepada penaja."
+        },
+        "sibling_level_unknown": {
+          "title": "Adik-beradik anda di sekolah atau pengajian lanjut?",
+          "desc": "Anda menyebut adik-beradik yang sedang belajar. Beritahu kami berapa orang di sekolah dan berapa orang di kolej atau universiti."
+        },
+        "device_status_unknown": {
+          "title": "Adakah anda mempunyai peranti untuk belajar?",
+          "desc": "Adakah anda mempunyai komputer riba atau tablet untuk pengajian anda, atau adakah anda memerlukannya?"
+        },
+        "transport_cost_unknown": {
+          "title": "Bagaimana anda pergi ke tempat pengajian?",
+          "desc": "Bagaimana anda pergi ke sekolah atau kolej, dan lebih kurang berapa kosnya sebulan?"
         }
       }
     },
@@ -2125,6 +2141,10 @@
           "fact": "Saiz isi rumah ialah 1 — luar biasa untuk pelajar B40.",
           "question": "Anda menyebut anda tinggal sendirian — bolehkah anda kongsi tentang itu? Adakah anda pelajar yang tinggal jauh dari keluarga?"
         },
+        "utility_high_vs_income": {
+          "fact": "Bil utiliti berjumlah RM {utility}/bulan — kira-kira {percent}% daripada pendapatan isi rumah yang diisytiharkan iaitu RM {income}/bulan.",
+          "question": "Bil utiliti anda merupakan sebahagian besar daripada pendapatan dalam rekod — adakah pendapatan yang diisytiharkan itu gambaran penuh isi rumah, atau ada pendapatan lain yang membantu menampung bil?"
+        },
         "first_in_family_with_siblings_studying": {
           "fact": "Pelajar mendakwa pertama ke universiti, tetapi {count} adik-beradik sedang belajar.",
           "question": "Anda akan menjadi yang pertama dalam keluarga ke universiti, tetapi {count} adik-beradik juga sedang belajar — adakah mereka masih bersekolah, atau sudah di universiti?"
@@ -2194,6 +2214,8 @@
       "firstInFamily": "Pertama dalam keluarga",
       "parentsOccupation": "Pekerjaan ibu bapa",
       "siblingsStudying": "Adik-beradik belajar",
+      "siblingsInSchool": "Adik-beradik di sekolah",
+      "siblingsInTertiary": "Adik-beradik di pengajian tinggi",
       "familyContext": "Konteks keluarga",
       "programmeMonths": "Tempoh program (bulan)",
       "fundingNote": "Nota pembiayaan",

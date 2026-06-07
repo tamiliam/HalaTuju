@@ -13,8 +13,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   crosses **only** to a **trusted** sponsor (`context['is_trusted']`); absent by default (fail-closed). New
   `Sponsor.is_trusted` (BooleanField, default True; migration `0043`, additive). The anon-blurb prompt is coarsened
   (quasi-identifier guard). Leak tests extended: parent identifiers never cross; institution absent-for-non-trusted /
-  present-for-trusted. Reads only under `SPONSOR_POOL_ENABLED` (off) — no user-visible change. On branch
-  `feat/sponsor-boundary-foundation` (pending merge).
+  present-for-trusted. Reads only under `SPONSOR_POOL_ENABLED` (off) — no user-visible change.
+- **Check 2 — submission review → queries → SLA → claim-gated profile (Sprints 2–5).** The post-submit pipeline that
+  turns a raw application into a sponsor-ready profile without ever asserting an unverified claim
+  (`docs/scholarship/check2-design.md`). **STEP 1 — facts ledger** (`submission_review.py`): on submit, a deterministic
+  ledger of every assertable claim tagged with how well the verification layer backs it (verified / reported /
+  student_words / unverified), plus fundable-profile completeness gaps and consistency flags. **No LLM** — verification
+  is the deterministic layer's call. Exposed read-only on the admin serializer. **STEP 2 — clarify queries** (model:
+  `ResolutionItem.kind` += `clarify`/`human`, `source` += `check2`, migration 0045; `check2_queries.py`): factual,
+  one-line, non-sensitive completeness gaps (course / sibling level / device / transport — *not* motivation) become a
+  capped (≤3, most-material-first) student query stream on the existing Action Centre; idempotent, auto-resolves when the
+  gap clears, never re-asks an answered query; `human` items stay reviewer-only. The student answers by text; the officer
+  sees the queries in their resolution queue. **STEP 2/3 — the 5-day SLA clock** (`ScholarshipCohort.query_response_sla_days`
+  default 5, `ScholarshipApplication.query_reminder_at`, migration 0046): `is_ready_for_assignment` = no open clarify
+  queries OR the window lapsed (proceed-as-is, flagged); a daily `send_query_reminders` sweep nudges open-query students
+  once ~2 days before the deadline (new trilingual email + `query-reminders` cron); the cockpit shows the clock
+  (`query_sla`: deadline / lapsed / days_left / ready / proceeding-with-open-queries). **STEP 3 — claim-gated generation**
+  (`profile_engine.py`): both profile prompts now feed the facts ledger and assert only verified claims — the
+  first-to-university claim is gated on the sibling split (else *"not established — do not claim"*), killing the live
+  "first-generation" over-claim bug; a tone guardrail bans hardship-mining clichés, requires the real grade band mix, and
+  forbids invented specifics; `generate_ready_profile` (shared by the admin action) + a flag-gated
+  (`CHECK2_AUTO_GENERATE`, default off) `autogenerate_ready_profiles` sweep + cron draft the profile once an application
+  is ready. The structural dual-profile *retirement* (merge anon/named storage; final redaction wording) is deferred to
+  the award-stage alignment (design Q4) + cross-agent coordination. Gates: 826 scholarship pytest + 274 jest + next build
+  clean; i18n parity 2105; migrations through 0046 (renumbered above the sponsor branch's 0043).
+- **Check 2 — Sprint 1 prerequisites (P1–P3): the submission review can now "use all the information".** Three small,
+  independent backend fixes so the upcoming Check‑2 submission review (`docs/scholarship/check2-design.md`) reads every
+  signal the form already captures. **P1 — read the letter of intent.** The `statement_of_intent` was uploaded and
+  **never OCR'd**; it now routes through a new `vision.read_text_document` (plain‑text OCR → `vision_fields['text']`,
+  `student_verdict:'read'`) on upload and on the admin **re‑run‑vision** action — making the student's motivation in her
+  own words available downstream. New `TEXT_READ_DOC_TYPES`. Soft, never blocks. **P2 — the sibling school/tertiary
+  split is authoritative.** The income wizard's `siblings_in_school` / `siblings_in_tertiary` counters now drive the
+  *first‑to‑university* check instead of the legacy combined `siblings_studying_count`: a sibling in **tertiary** is a
+  genuine contradiction (flag), but siblings only in **school** no longer falsely contradict the claim — it
+  **auto‑resolves** (`_sibling_tertiary_count` helper). Migration `0044` backfills the unambiguous legacy‑0 case (data
+  only, no schema change); both counts now show in the officer cockpit (admin serializer + FE + en/ms/ta). **P3 —
+  utility‑spend‑high‑vs‑income reviewer flag.** A new deterministic anomaly fires when utility bills exceed ~20% of the
+  declared monthly household income, carrying the actual numbers (RM bills / RM income / %) so the reviewer can ask how a
+  low‑income household sustains the spend — soft, never a gate (`utility_monthly_total` + `_detect_utility_high_vs_income`
+  + i18n). 785 scholarship pytest + 274 jest + next build clean; i18n parity 2097.
 - **Post‑consent "Review & submit" page (lock‑at‑Continue).** A new **post‑consent page** in the shortlisted application
   flow (reached via a **"Review & submit"** CTA after the 5 wizard steps — **not** a navigable tab) shows the student a
   read‑only recap of everything they entered before they commit, in seven sections: **About you**

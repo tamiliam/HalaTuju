@@ -143,6 +143,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     # {code, params}; the frontend resolves human copy from its i18n bundle.
     anomalies = serializers.SerializerMethodField()
     verdict = serializers.SerializerMethodField()
+    submission_review = serializers.SerializerMethodField()
+    query_sla = serializers.SerializerMethodField()
     resolution_items = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
     interview_session = serializers.SerializerMethodField()
@@ -169,6 +171,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'muet_band', 'coq_score', 'grades', 'stpm_grades', 'spm_prereq_grades',
             # "Your story" narrative (S2) + support + declaration
             'first_in_family', 'parents_occupation', 'siblings_studying_count',
+            # P2 (Check 2): the school/tertiary split (cockpit shows the burden breakdown)
+            'siblings_in_school', 'siblings_in_tertiary',
             'family_context', 'daily_life', 'consent_to_contact',
             'declaration_name', 'declared_at',
             'status', 'bucket', 'shortlist_reason', 'submitted_at',
@@ -194,6 +198,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'funding_need', 'documents', 'referees', 'consents', 'sponsor_profile',
             'anomalies',
             'verdict',
+            'submission_review',
+            'query_sla',
             'resolution_items',
             'intake_snapshot',
             # S5 verdict audit / override capture (read-only; written via record-verdict).
@@ -263,13 +269,40 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         from .verdict_engine import build_verdict
         return build_verdict(obj)
 
+    def get_submission_review(self, obj):
+        """Check 2 STEP 1: the deterministic facts ledger + completeness gaps +
+        consistency flags. Pure rules, no LLM — mirrors get_verdict / get_anomalies."""
+        from .submission_review import submission_review
+        return submission_review(obj)
+
+    def get_query_sla(self, obj):
+        """Check 2 STEP 2/3: the query SLA clock for the cockpit — deadline, whether it
+        lapsed, open clarify-query count, days left, whether the app is ready for
+        assignment, and whether it's proceeding WITH queries still open (the
+        'ready-with-open-queries' reviewer flag, design §5)."""
+        from .services import is_ready_for_assignment, query_sla
+        sla = query_sla(obj)
+        ready = is_ready_for_assignment(obj)
+        return {
+            'deadline': sla['deadline'],
+            'lapsed': sla['lapsed'],
+            'open_count': sla['open_count'],
+            'days_left': sla['days_left'],
+            'ready_for_assignment': ready,
+            'proceeding_with_open_queries': ready and sla['open_count'] > 0,
+        }
+
     def get_resolution_items(self, obj):
-        """S3 resolution queue: sync the system tickets against the live verdict,
-        then return the OPEN items (system + officer) so the officer sees exactly
-        what the student still owes. The sync is idempotent + race-safe."""
+        """S3 resolution queue: sync the system tickets against the live verdict AND
+        the Check-2 AI clarify queries, then return the OPEN items (system + officer +
+        check2) so the officer sees exactly what the student still owes. Idempotent."""
         from .resolution import sync_resolution_items
+        from .check2_queries import sync_check2_queries
         from .serializers import ResolutionItemSerializer
-        return ResolutionItemSerializer(sync_resolution_items(obj), many=True).data
+        sync_resolution_items(obj)
+        sync_check2_queries(obj)
+        openq = obj.resolution_items.filter(status='open')  # ordered -created_at
+        return ResolutionItemSerializer(openq, many=True).data
 
     def get_completeness(self, obj):
         """Phase C: the 7-part completeness breakdown, so the admin can see
