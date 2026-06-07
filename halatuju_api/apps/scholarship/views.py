@@ -727,6 +727,7 @@ class CronRunView(APIView):
         'decision-emails': 'send_pending_decision_emails',
         'application-reminders': 'send_application_reminders',
         'query-reminders': 'send_query_reminders',
+        'autogenerate-profiles': 'autogenerate_profiles',
     }
 
     def post(self, request, job):

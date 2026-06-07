@@ -11,7 +11,8 @@ from apps.scholarship.models import (
     FundingNeed, Referee, ScholarshipApplication, ScholarshipCohort,
 )
 from apps.scholarship.profile_engine import (
-    DEFAULT_LANGUAGE, _build_prompt, _resolve_language, generate_sponsor_profile,
+    DEFAULT_LANGUAGE, _DO_NOT_CLAIM, _build_prompt, _resolve_language,
+    generate_sponsor_profile,
 )
 
 
@@ -113,3 +114,46 @@ class TestProfilePrompt(TestCase):
         prompt = _build_prompt(app2)
         self.assertIn('none provided', prompt)   # referees
         self.assertIn('not provided', prompt)     # funding categories/note
+
+
+class TestClaimGating(TestCase):
+    """Check 2 §6: the generator must not assert an UNVERIFIED first-to-university
+    claim (the live 'first-generation' bug). Verification comes from the sibling split."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='cg', name='B40', year=2026)
+        cls.profile = StudentProfile.objects.create(
+            supabase_user_id='cg-1', nric='030101-14-1234', name='Priya', school='SMK',
+            exam_type='SPM', household_income=1500, household_size=5)
+
+    def _app(self, **kw):
+        return ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='shortlisted', **kw)
+
+    def test_unverified_first_in_family_is_not_claimed(self):
+        # Claimed, but only a legacy combined count → split unknown → must NOT assert.
+        app = self._app(first_in_family=True, siblings_studying_count=2)
+        prompt = _build_prompt(app)
+        self.assertIn(f'First in family to university: {_DO_NOT_CLAIM}', prompt)
+
+    def test_verified_first_in_family_is_claimed(self):
+        # Split says no sibling in tertiary → verified → assert it.
+        app = self._app(first_in_family=True, siblings_in_tertiary=0)
+        prompt = _build_prompt(app)
+        self.assertIn('First in family to university: yes', prompt)
+
+    def test_not_claimed_when_sibling_in_tertiary(self):
+        app = self._app(first_in_family=True, siblings_in_tertiary=1)
+        prompt = _build_prompt(app)
+        self.assertIn(f'First in family to university: {_DO_NOT_CLAIM}', prompt)
+
+    def test_not_first_in_family_says_no(self):
+        app = self._app(first_in_family=False)
+        prompt = _build_prompt(app)
+        self.assertIn('First in family to university: no', prompt)
+
+    def test_prompt_carries_verification_and_tone_rules(self):
+        app = self._app(first_in_family=True, siblings_in_tertiary=0)
+        prompt = _build_prompt(app)
+        self.assertIn('VERIFICATION', prompt)
+        self.assertIn('breaking the cycle', prompt)  # the banned-cliché instruction
