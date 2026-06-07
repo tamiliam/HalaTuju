@@ -145,6 +145,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
     verdict = serializers.SerializerMethodField()
     submission_review = serializers.SerializerMethodField()
     query_sla = serializers.SerializerMethodField()
+    funding_estimate = serializers.SerializerMethodField()
     resolution_items = serializers.SerializerMethodField()
     completeness = serializers.SerializerMethodField()
     interview_session = serializers.SerializerMethodField()
@@ -200,6 +201,7 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'verdict',
             'submission_review',
             'query_sla',
+            'funding_estimate',
             'resolution_items',
             'intake_snapshot',
             # S5 verdict audit / override capture (read-only; written via record-verdict).
@@ -291,6 +293,12 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'ready_for_assignment': ready,
             'proceeding_with_open_queries': ready and sla['open_count'] > 0,
         }
+
+    def get_funding_estimate(self, obj):
+        """Check 2: the deterministic per-pathway funding-need estimate (the gap after
+        government coverage) for award sizing. Pure rules, no LLM."""
+        from .funding_estimate import estimate_funding
+        return estimate_funding(obj)
 
     def get_resolution_items(self, obj):
         """S3 resolution queue: sync the system tickets against the live verdict AND

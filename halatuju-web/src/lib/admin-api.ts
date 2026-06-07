@@ -409,6 +409,8 @@ export interface AdminScholarshipDetail {
   submission_review: AdminSubmissionReview
   // Check 2 STEP 2/3: the query SLA clock + assignment readiness.
   query_sla: AdminQuerySla
+  // Check 2: per-pathway funding-need estimate (the gap after govt coverage) for award sizing.
+  funding_estimate: AdminFundingEstimate
   // Phase B: Gemini-suggested interview gaps. Carry their OWN dynamic text
   // (unlike anomalies which i18n by code). Empty until the admin generates them.
   interview_gaps: Array<{ code: string; question: string; why: string }>
@@ -654,6 +656,20 @@ export interface AdminSubmissionReview {
   ledger: AdminLedgerRow[]
   completeness: Array<{ code: string }>
   consistency: AdminAnomaly[]
+}
+
+/** Check 2 — per-pathway funding-need estimate (RM [low, high]). */
+export interface AdminFundingEstimate {
+  pathway: string            // 'matrik' | 'asasi' | 'stpm' | 'poly_diploma' | 'pismp' | 'degree' | 'unknown'
+  known: boolean             // false for an unknown pathway → no estimate, fall back to self-report
+  review: boolean            // estimate too variable to trust without an officer (e.g. degree)
+  monthly: Record<string, [number, number]>
+  monthly_total: [number, number]
+  one_off: Record<string, [number, number]>
+  one_off_total: [number, number]
+  programme_months: number | null
+  total: [number, number]    // monthly_total × months (or 12) + one_off_total
+  covered: string[]          // what government already covers
 }
 
 /** Check 2 STEP 2/3 — the query SLA clock for the cockpit. */
