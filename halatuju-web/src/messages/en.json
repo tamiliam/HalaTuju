@@ -1433,7 +1433,7 @@
         },
         "birth_cert_missing": {
           "title": "Upload your birth certificate",
-          "desc": "You're showing your mother's income, so we need your birth certificate to link her to you. Nothing is blocked — a person reviews it."
+          "desc": "You're showing your mother's income, so we need your birth certificate to link her to you. This is an important one — we can't fully verify your application without it."
         },
         "birth_cert_mismatch": {
           "title": "Check your birth certificate",
@@ -1445,7 +1445,7 @@
         },
         "guardianship_letter_missing": {
           "title": "Upload your guardianship letter",
-          "desc": "You're showing a guardian's income, so we need the guardianship letter or court order. Nothing is blocked — a person reviews it."
+          "desc": "You're showing a guardian's income, so we need the guardianship letter or court order. This is an important one — we can't fully verify your application without it."
         },
         "str_not_current": {
           "title": "Show your STR was approved",

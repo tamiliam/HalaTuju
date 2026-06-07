@@ -30,6 +30,7 @@ import {
   titleSourceFor,
   confirmTargetFor,
   localiseParams,
+  sortByWeight,
   type ActionIcon,
   type ConfirmTarget,
 } from '@/lib/actionCentre'
@@ -286,7 +287,7 @@ export default function ActionCentre({
         </div>
       ) : (
         <div className="mt-4 space-y-4">
-          {open.map((item) => (
+          {sortByWeight(open).map((item) => (
             <ActionCard
               key={item.id}
               item={item}

@@ -7,6 +7,7 @@ import {
   confirmTargetFor,
   paramsToStrings,
   localiseParams,
+  sortByWeight,
   KNOWN_CODES,
 } from '@/lib/actionCentre'
 import type { ResolutionItem } from '@/lib/api'
@@ -36,6 +37,25 @@ describe('iconFor', () => {
     expect(iconFor('explanation')).toBe('chat')
     expect(iconFor('clarify')).toBe('chat')
     expect(iconFor('confirm')).toBe('checklist')
+  })
+})
+
+describe('sortByWeight', () => {
+  it('puts document blockers first and soft clarify questions last', () => {
+    const items = [
+      item({ id: 1, kind: 'clarify', code: 'sibling_level_unknown' }),
+      item({ id: 2, kind: 'doc', code: 'birth_cert_missing' }),
+      item({ id: 3, kind: 'confirm', code: 'nric_mismatch' }),
+    ]
+    expect(sortByWeight(items).map((i) => i.id)).toEqual([2, 3, 1])
+  })
+
+  it('is stable within the same weight (preserves server order)', () => {
+    const items = [
+      item({ id: 10, kind: 'doc' }),
+      item({ id: 11, kind: 'doc' }),
+    ]
+    expect(sortByWeight(items).map((i) => i.id)).toEqual([10, 11])
   })
 })
 

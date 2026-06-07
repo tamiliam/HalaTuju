@@ -28,6 +28,28 @@ export function iconFor(kind: ResolutionItem['kind']): ActionIcon {
   }
 }
 
+// Action-Centre ordering by WEIGHT, not recency: a hard blocker (a missing document
+// that stops verification — birth cert, IC, results slip, offer) must sit above a soft
+// clarify question (device / transport / sibling), so the student tackles the
+// make-or-break item first.
+const _KIND_WEIGHT: Record<string, number> = {
+  doc: 0,          // upload a blocking document — highest priority
+  confirm: 1,      // review / correct a fact
+  explanation: 1,  // type a short reply
+  clarify: 2,      // soft Check-2 question — lowest priority
+  human: 3,        // reviewer-only (never shown to a student, ordered last if present)
+}
+
+/** Stable sort of open tickets by weight (blockers first), preserving the server's
+ *  within-group order. Pure — the component calls this before rendering. */
+export function sortByWeight<T extends { kind: string }>(items: T[]): T[] {
+  return items
+    .map((item, i) => ({ item, i }))
+    .sort((a, b) =>
+      ((_KIND_WEIGHT[a.item.kind] ?? 1) - (_KIND_WEIGHT[b.item.kind] ?? 1)) || (a.i - b.i))
+    .map(({ item }) => item)
+}
+
 export interface Progress {
   done: number
   total: number
