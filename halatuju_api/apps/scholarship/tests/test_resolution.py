@@ -257,7 +257,8 @@ class TestCheck2QueriesInStudentQueue(TestCase):
             cohort=self.cohort, profile=self.profile, status='profile_complete',
             profile_completed_at=timezone.now(),
             aspirations='I want to teach.', field_of_study='Education',
-            siblings_in_tertiary=0)
+            siblings_in_tertiary=0,
+            chosen_pathway='stpm', pathway_certainty='sure')  # STPM → transport asked
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("c2-stu")}')
 
     def test_clarify_query_shows_but_human_hidden(self):

@@ -99,7 +99,13 @@ class TestCompletenessGaps(_Base):
     def _codes(self):
         return {g['code'] for g in completeness_gaps(self.app)}
 
-    def test_transport_always_a_gap(self):
+    def test_transport_gap_only_for_stpm(self):
+        # Residential / unknown pathway → no transport question.
+        self.assertNotIn('transport_cost_unknown', self._codes())
+        # STPM → daily travel cost is worth asking.
+        self.app.chosen_pathway = 'stpm'
+        self.app.pathway_certainty = 'sure'
+        self.app.save()
         self.assertIn('transport_cost_unknown', self._codes())
 
     def test_device_gap_unless_ticked(self):
