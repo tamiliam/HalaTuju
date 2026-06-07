@@ -296,6 +296,40 @@ class TestDetailsApi(TestCase):
         self.assertEqual(body['family_context'], 'Father ill; mother is the sole earner.')
         self.assertEqual(body['daily_life'], 'Wake at 5am, help at home, then school.')
 
+    def test_patch_saves_long_parents_occupation(self):
+        """Regression: parents_occupation is now a TextField, not varchar(255).
+        A student's sentence-or-two answer (e.g. >255 chars) used to overflow the
+        column and silently roll back the whole Story save."""
+        self._auth(USER_A)
+        long_answer = (
+            'My mother works as a Grab driver and is the sole breadwinner of our '
+            'family. My father does not provide any financial support and there is '
+            'no contact with him. ' * 3
+        ).strip()   # ~480 chars, comfortably over the old 255
+        resp = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {'parents_occupation': long_answer, 'aspirations': 'Be a teacher'},
+            format='json',
+        )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body['parents_occupation'], long_answer)
+        # The co-submitted narrative persisted too (no rollback).
+        self.assertEqual(body['aspirations'], 'Be a teacher')
+        self.app_a.refresh_from_db()
+        self.assertEqual(self.app_a.parents_occupation, long_answer)
+
+    def test_patch_rejects_spam_length_story_field(self):
+        """Anti-spam: a free-text field over STORY_TEXT_MAX (5000) is a clean 400,
+        not a 500/DB rollback. Guards against tens-of-thousands-of-char floods."""
+        self._auth(USER_A)
+        resp = self.client.patch(
+            f'/api/v1/scholarship/applications/{self.app_a.id}/',
+            {'parents_occupation': 'x' * 5001}, format='json',
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('parents_occupation', resp.json())
+
     def test_patch_saves_address_to_profile(self):
         """S14: address fields submitted via the details PATCH land on the profile,
         and the address shows up pre-filled on the next read."""

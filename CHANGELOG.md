@@ -35,6 +35,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   longer implies editing reopens after contact. (6) De‑duped the doubled "Your application" title on the Review page.
   267 jest + next build clean; i18n parity 2084.
 
+### Fixed
+- **"Your story" save silently failing for students who wrote a real answer (prod incident, app #30).** The
+  "What do your parents or guardians do for a living?" field (`parents_occupation`) was a `varchar(255)` column with **no
+  length guard on the web form or the API** — a student writing a sentence or two (e.g. "My mother is a Grab driver and
+  the sole breadwinner…") overflowed 255 chars, the DB raised `value too long for type character varying(255)`, and
+  (under atomic requests) the **entire Story save rolled back** — narrative, funding and address included — surfacing only
+  as the generic *"Could not save your details. Please try again."* **Fix:** `parents_occupation` is now a `TextField`
+  (migration `0042`, backward‑compatible widening); every free‑text Story field gains a generous **anti‑spam cap**
+  (`STORY_TEXT_MAX = 5000` ≈ ~900 words) enforced on both the web form (`maxLength`, so over‑long input is stopped at the
+  keyboard) and the API serializer (clean `400` instead of a DB rollback). The `parents_occupation` input became a small
+  textarea (it always held a sentence). Also closed the same latent trap on the address **city** field (`varchar(100)`):
+  capped at 100 on the form + serializer. +2 regression tests (long answer now saves; over‑cap is a clean 400).
+
 ### Removed
 - **Orphaned `str_claimed_no_doc` anomaly rule.** The pre‑interview flag "student says the family receives STR but
   hasn't uploaded the letter" is superseded by the income wizard, which now *requires* the STR document on the STR route

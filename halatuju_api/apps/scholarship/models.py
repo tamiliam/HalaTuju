@@ -391,8 +391,12 @@ class ScholarshipApplication(models.Model):
         default=False,
         help_text="I would be the first in my family to go to university.",
     )
-    parents_occupation = models.CharField(
-        max_length=255, blank=True, default='',
+    # TextField (not CharField) on purpose: students write a sentence or two here
+    # ("My mother is a Grab driver and sole breadwinner…"), which overflowed the
+    # old varchar(255) and silently rolled back the whole Story save. Anti-spam
+    # length is enforced at the serializer/UI (STORY_TEXT_MAX), not the column.
+    parents_occupation = models.TextField(
+        blank=True, default='',
         help_text="What do your parents or guardians do for a living?",
     )
     # TD-061: legacy `siblings_studying` boolean dropped — superseded by the

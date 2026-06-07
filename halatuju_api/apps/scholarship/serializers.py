@@ -184,27 +184,35 @@ class FundingNeedSerializer(serializers.ModelSerializer):
         fields = ['categories', 'funding_note', 'programme_months']
 
 
+# Anti-spam ceiling for the free-text Story fields. Generous (~900 words) — well
+# above any genuine answer, well below a copy-paste flood. Enforced here (clean
+# 400) AND on the web form (maxLength), so an over-long value never reaches the DB
+# and silently rolls back the whole save (the parents_occupation varchar(255) bug).
+STORY_TEXT_MAX = 5000
+
+
 class ApplicationDetailsUpdateSerializer(serializers.Serializer):
     """PATCH payload for STEP 2 deeper-info + funding need."""
-    aspirations = serializers.CharField(required=False, allow_blank=True)
-    plans = serializers.CharField(required=False, allow_blank=True)
-    fears = serializers.CharField(required=False, allow_blank=True)
-    justification = serializers.CharField(required=False, allow_blank=True)
+    aspirations = serializers.CharField(required=False, allow_blank=True, max_length=STORY_TEXT_MAX)
+    plans = serializers.CharField(required=False, allow_blank=True, max_length=STORY_TEXT_MAX)
+    fears = serializers.CharField(required=False, allow_blank=True, max_length=STORY_TEXT_MAX)
+    justification = serializers.CharField(required=False, allow_blank=True, max_length=STORY_TEXT_MAX)
     funding_need = FundingNeedSerializer(required=False)
     # "Your story" guided narrative fields (S2 redesign)
     first_in_family = serializers.BooleanField(required=False)
-    parents_occupation = serializers.CharField(required=False, allow_blank=True)
+    parents_occupation = serializers.CharField(required=False, allow_blank=True, max_length=STORY_TEXT_MAX)
     # TD-061: the legacy siblings_studying boolean is gone; only the count remains.
     siblings_studying_count = serializers.IntegerField(
         required=False, allow_null=True, min_value=0, max_value=20,
     )
-    family_context = serializers.CharField(required=False, allow_blank=True)
-    daily_life = serializers.CharField(required=False, allow_blank=True)
-    # Address — stored on the profile, captured in the Story tab (S14).
-    # State already came from /apply (profile.preferred_state).
-    address = serializers.CharField(required=False, allow_blank=True)
-    postal_code = serializers.CharField(required=False, allow_blank=True)
-    city = serializers.CharField(required=False, allow_blank=True)
+    family_context = serializers.CharField(required=False, allow_blank=True, max_length=STORY_TEXT_MAX)
+    daily_life = serializers.CharField(required=False, allow_blank=True, max_length=STORY_TEXT_MAX)
+    # Address — stored on the profile, captured in the Story tab (S14). Caps mirror
+    # the profile columns (address=text, postal_code=varchar(5), city=varchar(100))
+    # so an over-long value fails cleanly here instead of as a DB rollback.
+    address = serializers.CharField(required=False, allow_blank=True, max_length=STORY_TEXT_MAX)
+    postal_code = serializers.CharField(required=False, allow_blank=True, max_length=5)
+    city = serializers.CharField(required=False, allow_blank=True, max_length=100)
     # Income Check-1 wizard answers (Documents → Household income).
     income_route = serializers.ChoiceField(
         choices=['', 'str', 'salary'], required=False, allow_blank=True)

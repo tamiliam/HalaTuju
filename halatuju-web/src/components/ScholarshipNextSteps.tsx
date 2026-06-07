@@ -23,6 +23,12 @@ import FieldLabel from '@/components/FieldLabel'
 import Toggle from '@/components/Toggle'
 import type { ConfirmTarget } from '@/lib/actionCentre'
 
+// Anti-spam ceiling for the free-text Story fields — mirrors the backend's
+// STORY_TEXT_MAX. Generous (~900 words): well above any genuine answer, well
+// below a copy-paste flood. Stops over-long input at the keyboard so it never
+// reaches the API (the parents_occupation overflow that rolled back saves).
+const STORY_TEXT_MAX = 5000
+
 /** Small collapsible "Need ideas?" tips panel rendered below an open-ended
  *  textarea. Native <details> for accessibility + zero JS. Three tip bullets
  *  by convention — keeps the cheat-sheet short and encouraging. */
@@ -267,9 +273,9 @@ export default function ScholarshipNextSteps({
           {/* parents_occupation */}
           <div>
             <FieldLabel>{t('scholarship.nextSteps.story.cardA.parentsOccupation')}</FieldLabel>
-            <input
-              type="text"
-              className="input"
+            <textarea
+              className="input" rows={2}
+              maxLength={STORY_TEXT_MAX}
               placeholder={t('scholarship.nextSteps.story.cardA.parentsOccupationPlaceholder')}
               value={form.parentsOccupation}
               onChange={(e) => update('parentsOccupation', e.target.value)}
@@ -303,6 +309,7 @@ export default function ScholarshipNextSteps({
             <FieldLabel>{t('scholarship.nextSteps.story.cardA.familyContext')}</FieldLabel>
             <textarea
               className="input" rows={3}
+              maxLength={STORY_TEXT_MAX}
               placeholder={t('scholarship.nextSteps.story.cardA.familyContextPlaceholder')}
               value={form.familyContext}
               onChange={(e) => update('familyContext', e.target.value)}
@@ -328,6 +335,7 @@ export default function ScholarshipNextSteps({
             <FieldLabel required>{t('scholarship.nextSteps.story.cardAddress.street')}</FieldLabel>
             <textarea
               className="input" rows={2}
+              maxLength={STORY_TEXT_MAX}
               placeholder={t('scholarship.nextSteps.story.cardAddress.streetPlaceholder')}
               value={form.address}
               onChange={(e) => update('address', e.target.value)}
@@ -353,6 +361,7 @@ export default function ScholarshipNextSteps({
               <input
                 type="text"
                 className="input"
+                maxLength={100}
                 placeholder={t('scholarship.nextSteps.story.cardAddress.cityPlaceholder')}
                 value={form.city}
                 onChange={(e) => update('city', e.target.value)}
@@ -379,6 +388,7 @@ export default function ScholarshipNextSteps({
             <FieldLabel required>{t('scholarship.nextSteps.story.cardB.aspirations')}</FieldLabel>
             <textarea
               className="input" rows={3}
+              maxLength={STORY_TEXT_MAX}
               placeholder={t('scholarship.nextSteps.story.cardB.aspirationsPlaceholder')}
               value={form.aspirations}
               onChange={(e) => update('aspirations', e.target.value)}
@@ -398,6 +408,7 @@ export default function ScholarshipNextSteps({
             <FieldLabel required>{t('scholarship.nextSteps.story.cardB.plans')}</FieldLabel>
             <textarea
               className="input" rows={3}
+              maxLength={STORY_TEXT_MAX}
               placeholder={t('scholarship.nextSteps.story.cardB.plansPlaceholder')}
               value={form.plans}
               onChange={(e) => update('plans', e.target.value)}
@@ -417,6 +428,7 @@ export default function ScholarshipNextSteps({
             <FieldLabel required>{t('scholarship.nextSteps.story.cardB.dailyLife')}</FieldLabel>
             <textarea
               className="input" rows={3}
+              maxLength={STORY_TEXT_MAX}
               placeholder={t('scholarship.nextSteps.story.cardB.dailyLifePlaceholder')}
               value={form.dailyLife}
               onChange={(e) => update('dailyLife', e.target.value)}
@@ -436,6 +448,7 @@ export default function ScholarshipNextSteps({
             <FieldLabel required>{t('scholarship.nextSteps.story.cardB.fears')}</FieldLabel>
             <textarea
               className="input" rows={3}
+              maxLength={STORY_TEXT_MAX}
               placeholder={t('scholarship.nextSteps.story.cardB.fearsPlaceholder')}
               value={form.fears}
               onChange={(e) => update('fears', e.target.value)}
