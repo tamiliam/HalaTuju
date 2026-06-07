@@ -545,6 +545,15 @@ def confirm_profile(application):
     name = getattr(application.profile, 'name', '') if application.profile else ''
     send_profile_complete_admin_email(application_id=application.id, applicant_name=name,
                                       programme_name=application.cohort.name)
+    # Check 2 STEP 1→2: review the submission, raise the clarify queries, and email the
+    # student once to come answer them. Best-effort — never blocks the confirm.
+    try:
+        from .check2_queries import raise_and_notify_check2_queries
+        raise_and_notify_check2_queries(application)
+    except Exception:  # noqa: BLE001 — notification must never fail a submission
+        import logging
+        logging.getLogger(__name__).warning(
+            'Check-2 query raise/notify failed for app %s', application.id, exc_info=True)
     return True
 
 

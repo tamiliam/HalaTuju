@@ -325,6 +325,9 @@ class ScholarshipApplication(models.Model):
     expired_at = models.DateTimeField(null=True, blank=True)
     # Check 2 STEP 2: when the single 'answer your queries' reminder was sent (idempotent).
     query_reminder_at = models.DateTimeField(null=True, blank=True)
+    # Check 2 STEP 2: when the student was first notified that clarify queries were raised
+    # (sent once at submission, so they come back and answer). Idempotent.
+    query_raised_notified_at = models.DateTimeField(null=True, blank=True)
 
     # Admin verify-&-accept (S11a): a PartnerAdmin confirms NRIC/name/results against
     # the uploaded MyKad, which sets profile.nric_verified (locks the NRIC) and

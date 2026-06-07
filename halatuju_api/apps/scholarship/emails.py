@@ -588,6 +588,50 @@ def send_query_reminder_email(to_email, applicant_name, programme_name, n_querie
         return False
 
 
+QUERY_RAISED_SUBJECTS = {
+    'en': 'A few quick questions on your {programme} application',
+    'ms': 'Beberapa soalan ringkas untuk permohonan {programme} anda',
+    'ta': 'உங்கள் {programme} விண்ணப்பம் குறித்து சில விரைவு கேள்விகள்',
+}
+QUERY_RAISED_BODIES = {
+    'en': ('Dear {name},\n\nThank you for submitting your {programme} application. We have {n} '
+           'short question(s) for you to help complete your profile. Please sign in and answer '
+           'them here: {link}\n\nIt only takes a few minutes, and your answers help us put your '
+           'case forward well.\n\nThank you.'),
+    'ms': ('Salam {name},\n\nTerima kasih kerana menghantar permohonan {programme} anda. Kami '
+           'mempunyai {n} soalan ringkas untuk membantu melengkapkan profil anda. Sila log masuk '
+           'dan jawab di sini: {link}\n\nIa hanya mengambil beberapa minit, dan jawapan anda '
+           'membantu kami mengetengahkan kes anda dengan baik.\n\nTerima kasih.'),
+    'ta': ('அன்புள்ள {name},\n\nஉங்கள் {programme} விண்ணப்பத்தைச் சமர்ப்பித்ததற்கு நன்றி. உங்கள் '
+           'விவரக்குறிப்பை முழுமைப்படுத்த உதவ {n} சிறு கேள்வி(கள்) உள்ளன. தயவுசெய்து உள்நுழைந்து '
+           'இங்கே பதிலளிக்கவும்: {link}\n\nஇதற்கு சில நிமிடங்களே ஆகும்; உங்கள் பதில்கள் உங்கள் '
+           'வழக்கை நன்கு முன்வைக்க உதவும்.\n\nநன்றி.'),
+}
+
+
+def send_query_raised_email(to_email, applicant_name, programme_name, n_queries, lang='en'):
+    """Check 2 STEP 2: at submission, tell the student a few clarify questions are waiting
+    in their Action Centre so they come back and answer. Trilingual; best-effort."""
+    if not to_email:
+        return False
+    lang = normalise_lang(lang)
+    name = applicant_name or _DEFAULT_NAME[lang]
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    link = f'{frontend}/scholarship/application'
+    try:
+        send_mail(
+            subject=QUERY_RAISED_SUBJECTS[lang].format(programme=programme_name),
+            message=QUERY_RAISED_BODIES[lang].format(
+                name=name, programme=programme_name, n=n_queries, link=link),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            recipient_list=[to_email],
+        )
+        return True
+    except Exception:
+        logger.warning('Failed to send query-raised email to %s', to_email, exc_info=True)
+        return False
+
+
 def send_sponsor_interest_admin_email(name, email, organisation, message):
     """Notify the admin that someone registered interest in sponsoring. English,
     to ``settings.ADMIN_NOTIFY_EMAIL``; skipped silently if unset. Best-effort."""
