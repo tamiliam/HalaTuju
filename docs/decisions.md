@@ -2191,3 +2191,23 @@ silent rollbacks and arbitrary truncation. 5000 ≈ ~900 words: above any genuin
 — a small FE/BE contract to keep in sync, accepted over a shared-config mechanism for one number.
 **Revisit if:** a field legitimately needs >5000 chars (raise that field's cap explicitly), or a shared FE/BE constants
 source is introduced (then dedupe the ceiling).
+
+## Sponsor-facing boundary: widen the allowlist (academic context) but gate institution to TRUSTED sponsors — B40 Phase E/F Sprint 0, 2026-06-07
+**Decision:** Keep the sponsor pool's hard boundary an allowlist `Serializer` (fail-closed) but WIDEN it — cross academic
+context (results/CGPA/band, field/course) and, gated, the student's **institution**. Institution crosses ONLY to a
+**trusted** sponsor, read from `Sponsor.is_trusted` (default True at launch) and passed to the serializer as
+`context['is_trusted']`; with no context it is absent. Personal & contact identifiers of the student AND their parents
+(name, IC, phone, email, address, photo) stay blocked.
+**Alternatives considered:** (1) invert to a denylist — rejected: a denylist leaks new model fields by default; the
+allowlist keeps them invisible until consciously approved. (2) expose institution to ALL sponsors — rejected: institution
+is a *locator* for a minor, tolerable only for known/vetted launch sponsors. (3) no institution at all — rejected: the
+owner decided academic + institution context is the point of the widening for known donors.
+**Rationale:** launch sponsors are known, vetted, large donors, so institution-level detail is acceptable; the
+trusted-vs-public seam is built now (the `is_trusted` flag + context gate) so institution can be coarsened/switched off
+for unvetted public sponsors later with no re-architecture. Results are an *attribute*; institution is a *locator* — so
+only the locator is gated.
+**Trade-offs:** institution stays dark until a view passes `is_trusted` (view-wiring deferred to go-live / Sprint 7); the
+`scan_anon_for_identifiers` blurb scan still blocks school tokens in free text even though the structured institution
+field may cross — an intentional asymmetry (structured, gated exposure vs un-gated free-text leak).
+**Revisit if:** public (unvetted) sponsor onboarding opens (enforce the gate hard, review academic granularity), or the
+lawyer's answer to the bundle §7.4 headline question requires a different boundary.
