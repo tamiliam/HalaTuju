@@ -42,6 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `actionCentre` known‑code, and its i18n in all three namespaces ×3 languages; tests updated. No migration.
 
 ### Changed
+- **Officer cockpit reordered — "About the student" now sits above "Review & actions".** The reviewer reads the
+  applicant's facts (About · Family & finances · Academic · Support) first, then the verification verdict + action
+  panels below. The sticky **"Record your verdict"** panel stays attached to the Review & actions section (bottom‑right),
+  so it's beside the checks it records. Pure JSX reorder of `admin/scholarship/[id]/page.tsx` (two sibling blocks
+  swapped); no logic/data change. Mobile order: About → Review → verdict panel.
 - **De‑duplicated `formatNric` (TD‑088).** The two admin students pages each carried their own `formatNric`; both now use
   a single null‑safe `formatNricDisplay()` in `lib/scholarship.ts` (returns an em‑dash for a missing IC). FE‑only.
 - **Cikgu Gopal (income cluster) — two live‑testing refinements.** (1) **Salary‑route sequencing:** once the earner's IC
