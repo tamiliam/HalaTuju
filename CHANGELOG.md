@@ -68,6 +68,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   officer/reviewer. No migration; 766 scholarship pytest + 267 jest + build clean; i18n parity 2026.
 
 ### Fixed
+- **Completion reminders now land on the named day, not a day late (TD‑087).** The cadence compared
+  `floor((now − reminder_anchor_at))` in raw days against the 2/9/23/53 thresholds, but the daily job ticks at a fixed
+  09:00 Asia/KL while the anchor carries the clock‑time it was set — so an afternoon anchor's R2 (+9) first crossed the
+  threshold one tick late (e.g. fired 14 Jun for a 4 Jun anchor, not 13). Now compares **calendar dates in Asia/KL**
+  (new `_elapsed_days_local`) so each reminder fires on its nominal day regardless of the anchor's time‑of‑day. The
+  auto‑close gate is unchanged (it compares two 09:00‑job timestamps, so it never had the slip). Backend only, no
+  migration; +2 regression tests (afternoon anchor fires on calendar‑day 9; the day before does not). 762 scholarship.
 - **Birth certificate no longer warns about the (always‑absent) child IC number.** A Malaysian birth certificate
   carries no "No. Kad Pengenalan" for the child — they're issued one later — yet the field‑extraction prompt asks Gemini
   to note every empty field, so it flagged *"Child's NRIC not explicitly labelled…"* as an orange warning on a perfectly
