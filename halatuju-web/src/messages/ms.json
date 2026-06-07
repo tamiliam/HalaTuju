@@ -1433,7 +1433,7 @@
         },
         "birth_cert_missing": {
           "title": "Muat naik sijil kelahiran anda",
-          "desc": "Anda menunjukkan pendapatan ibu, jadi kami perlukan sijil kelahiran anda untuk mengaitkannya dengan anda. Tiada apa disekat — seseorang akan menyemak."
+          "desc": "Anda menunjukkan pendapatan ibu, jadi kami perlukan sijil kelahiran anda untuk mengaitkannya dengan anda. Ini penting — kami tidak dapat mengesahkan permohonan anda sepenuhnya tanpanya."
         },
         "birth_cert_mismatch": {
           "title": "Semak sijil kelahiran anda",
@@ -1453,7 +1453,7 @@
         },
         "guardianship_letter_missing": {
           "title": "Muat naik surat penjagaan anda",
-          "desc": "Anda menunjukkan pendapatan penjaga, jadi kami perlukan surat penjagaan atau perintah mahkamah. Tiada apa disekat — seseorang akan menyemak."
+          "desc": "Anda menunjukkan pendapatan penjaga, jadi kami perlukan surat penjagaan atau perintah mahkamah. Ini penting — kami tidak dapat mengesahkan permohonan anda sepenuhnya tanpanya."
         },
         "offer_unreadable": {
           "title": "Surat tawaran sukar dibaca",
