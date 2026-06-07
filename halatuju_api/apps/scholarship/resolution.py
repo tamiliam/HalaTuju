@@ -60,6 +60,7 @@ CODE_TO_TICKET = {
     'str_not_current':              {'fact': 'income', 'kind': 'doc', 'doc_type': 'str'},
     'str_recipient_mismatch':       {'fact': 'income', 'kind': 'confirm'},
     # Pathway
+    'offer_letter_missing': {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
     'offer_unreadable':    {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
     'offer_no_identity':   {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},
     'offer_name_mismatch': {'fact': 'pathway', 'kind': 'doc', 'doc_type': 'offer_letter'},

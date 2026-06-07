@@ -526,8 +526,17 @@ def application_completeness(application):
     # later edit never trips revert_if_profile_incomplete on the new rules — those 6 are
     # resolved at Check 2 / interview instead.
     if application.profile_completed_at is None:
+        # A results slip in a different name is unusable (we can't attribute the results
+        # to the student), so it does NOT satisfy the bar — the student must re-upload the
+        # correct slip before submitting. 'pending'/'unreadable'/'match' all pass here;
+        # only a positive name MISMATCH blocks.
+        from .academic_engine import _slip_name_status
+        slip = (application.documents.filter(doc_type='results_slip')
+                .order_by('-uploaded_at').first())
+        slip_name_ok = slip is None or _slip_name_status(slip) != 'mismatch'
         documents_done = (
             {'ic', 'results_slip', 'offer_letter'}.issubset(present)
+            and slip_name_ok
             and not income_doc_blockers(application)
         )
     else:

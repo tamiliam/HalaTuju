@@ -1473,6 +1473,10 @@
         "pathway_confirm": {
           "title": "Is this where you're going?",
           "desc": "Your offer letter is for {programme} at {institution}, which looks different from the study choice you entered earlier. If this offer is your final pathway, confirm it and we'll update your record to match. If you have a better offer, upload that one instead."
+        },
+        "offer_letter_missing": {
+          "title": "Upload your offer letter",
+          "desc": "We can only support a confirmed place, so an offer letter is required. Please upload it in Documents."
         }
       }
     },
@@ -2275,7 +2279,8 @@
           "academic_missing_subjects": "Entered {entered} of {total} subjects on the slip — missing: {subjects}. Ask the student to add them.",
           "academic_grade_mismatch": "{subject}: typed {typed}, but the slip reads {slip}. Check.",
           "academic_grade_uncertain": "{subject}: our read shows {slip}, but the student typed {typed} — an A/A+ (±) read we can't be sure of. Check it by eye against the slip.",
-          "grades_verified": "All {count} grades match the results slip."
+          "grades_verified": "All {count} grades match the results slip.",
+          "offer_letter_missing": "No offer letter uploaded — required before we can support a place."
         }
       },
       "recordVerdict": {

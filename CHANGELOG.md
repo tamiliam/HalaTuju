@@ -75,6 +75,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `actionCentre` known‑code, and its i18n in all three namespaces ×3 languages; tests updated. No migration.
 
 ### Changed
+- **Two facts now hard‑stop weak evidence instead of passing it to manual review** (policy: don't pass a student we
+  can't actually support — re‑upload beats us struggling with unusable documents).
+  - **(1) A results slip in a different name is a hard stop.** A positive slip‑name **mismatch** now makes Academic
+    🔴 **Can't verify** *and* fails the submission bar (`documents_done`) — the student must re‑upload the correct slip.
+    Matching grades on someone else's slip can't be credited to the student; the slip's name is its ownership anchor.
+    ('pending' / 'unreadable' / 'match' still pass the gate — only a positive mismatch blocks.)
+  - **(2) No offer letter → Pathway 🔴 Can't verify.** The offer letter was already a submission blocker
+    (`offer_letter_missing` in `consent_blockers`); the **verdict** now reflects it — a pathway with no offer reads red,
+    not amber/blue. We support a *confirmed place*: income can be settled at interview, a pathway cannot. New
+    `offer_letter_missing` verdict item + Action Centre re‑upload ticket + `CODE_TO_TICKET` mapping (en/ms/ta).
+  Backend + i18n; no migration. 766 scholarship pytest + 274 jest + next build clean.
 - **"Probable" (blue) now requires a verified value — a fact with nothing green reads "Unsure" (amber), not "Probable".**
   A self‑declared pathway (no offer letter yet) and an un‑walked income wizard were showing 🔵 Probable despite **zero
   verified evidence** (seen on a bare application). `factTileTone` now takes the whole fact: a `review` fact is blue only

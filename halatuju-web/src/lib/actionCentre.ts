@@ -76,6 +76,7 @@ export const KNOWN_CODES = [
   'guardianship_letter_missing',
   'str_not_current',
   'str_recipient_mismatch',
+  'offer_letter_missing',
   'offer_unreadable',
   'offer_no_identity',
   'offer_name_mismatch',
