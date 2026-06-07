@@ -550,6 +550,9 @@
   anchor's time-of-day, the day threshold is first met one tick later (e.g. a 4-Jun anchor's R2 fires 14 Jun, not 13).
   Harmless for a reminder (consistent 1-day slip). **To resolve (if day-exact timing ever matters):** anchor to a DATE
   (midnight) or compare on date boundaries rather than a floor-of-timedelta. Low priority. (Logged 2026-06-06.)
+  - **✅ RESOLVED 2026-06-07** (`services._elapsed_days_local`): the cadence now compares calendar dates in Asia/KL
+    instead of flooring the timedelta, so each reminder fires on its nominal day regardless of the anchor's time-of-day.
+    +2 regression tests in `test_reminders.py`. Auto-close gate left as-is (it compares two 09:00-job stamps → no slip).
 - TD-088: **Two local `formatNric` duplicates in the admin students pages.** `app/admin/students/page.tsx` and
   `app/admin/students/[id]/page.tsx` each define their own `formatNric(nric: string | null)` (null-safe, returns the raw
   string when not 12 digits) instead of importing the shared `lib/scholarship.ts` one. Left unconsolidated in the

@@ -302,6 +302,15 @@ REMINDER_THRESHOLDS_DAYS = (2, 9, 23, 53)   # index 0 → R1 … index 3 → R4 
 FINAL_REMINDER_GRACE_DAYS = 5               # close this long after R4 was sent
 
 
+def _elapsed_days_local(now, anchor):
+    """Whole CALENDAR days from ``anchor`` to ``now`` in the project timezone
+    (Asia/KL). We compare local dates rather than flooring ``(now - anchor)`` so the
+    cadence lands on the named day regardless of the anchor's time-of-day vs the fixed
+    09:00 daily tick — a 14:30 anchor's R2 (+9) fires on the 9th calendar day at the
+    09:00 tick, not the 10th (TD-087)."""
+    return (timezone.localtime(now).date() - timezone.localtime(anchor).date()).days
+
+
 def send_application_reminders(now=None):
     """Send the next due completion reminder to each shortlisted-but-incomplete
     application, and auto-close those that ignored the final reminder. Returns
@@ -336,7 +345,7 @@ def send_application_reminders(now=None):
             continue
         # Otherwise, send the next stage if its day-threshold is crossed (one per run).
         next_stage = app.reminder_stage + 1                # 1..4
-        if next_stage <= final_stage and (now - app.reminder_anchor_at).days >= REMINDER_THRESHOLDS_DAYS[next_stage - 1]:
+        if next_stage <= final_stage and _elapsed_days_local(now, app.reminder_anchor_at) >= REMINDER_THRESHOLDS_DAYS[next_stage - 1]:
             send_reminder_email(stage=next_stage, **common)
             app.reminder_stage = next_stage
             app.last_reminder_at = now

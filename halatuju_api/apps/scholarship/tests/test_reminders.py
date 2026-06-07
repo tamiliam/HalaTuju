@@ -103,6 +103,39 @@ class TestReminderCadence(_Base):
         bodies = ' '.join(m.body for m in mail.outbox)
         self.assertIn('5 days', bodies)               # the final (R4) warning copy
 
+    def test_afternoon_anchor_fires_on_calendar_day_not_a_day_late(self):
+        # TD-087 regression: an anchor stamped at 14:30 must still trigger R2 on the
+        # 9th *calendar* day at the 09:00 Asia/KL tick. Raw (now - anchor) is only
+        # 8d 18.5h → floor 8, so the old floor-of-timedelta logic fired a day late.
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        kl = ZoneInfo('Asia/Kuala_Lumpur')
+        p = StudentProfile.objects.create(
+            supabase_user_id=f'tz-{self.id()}', name='TZ Student', nric='081299-01-1234')
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='shortlisted', notify_email='tz@example.com',
+            locale='en', reminder_anchor_at=datetime(2026, 6, 4, 14, 30, tzinfo=kl), reminder_stage=1)
+        res = send_application_reminders(now=datetime(2026, 6, 13, 9, 0, tzinfo=kl))
+        app.refresh_from_db()
+        self.assertEqual(res['reminded'], 1)
+        self.assertEqual(app.reminder_stage, 2)
+
+    def test_nothing_fires_on_calendar_day_before_threshold(self):
+        # The day before (8 calendar days on) must NOT fire R2 — guards against the
+        # fix over-correcting into early sends.
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        kl = ZoneInfo('Asia/Kuala_Lumpur')
+        p = StudentProfile.objects.create(
+            supabase_user_id=f'tz2-{self.id()}', name='TZ Student', nric='081299-01-5678')
+        app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=p, status='shortlisted', notify_email='tz2@example.com',
+            locale='en', reminder_anchor_at=datetime(2026, 6, 4, 14, 30, tzinfo=kl), reminder_stage=1)
+        res = send_application_reminders(now=datetime(2026, 6, 12, 9, 0, tzinfo=kl))
+        app.refresh_from_db()
+        self.assertEqual(res['reminded'], 0)
+        self.assertEqual(app.reminder_stage, 1)
+
     def test_completed_app_gets_no_reminder(self):
         # profile_completed_at set → off the track even if still tagged 'shortlisted'.
         app = self._app(anchor_days_ago=30, stage=0, completed=True)
