@@ -650,7 +650,7 @@ export default function AdminScholarshipDetailPage() {
         {/* Horizontal tile row */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {(app.verdict || []).map((f) => {
-            const tone = factTileTone(f.status)
+            const tone = factTileTone(f)
             const tileColour = {
               green: 'border-green-200 bg-green-50',
               amber: 'border-amber-200 bg-amber-50',
@@ -720,13 +720,13 @@ export default function AdminScholarshipDetailPage() {
         )}
         {/* Expanded evidence / unresolved — shown ONLY for facts that still need attention.
             A green fact is hidden here (its tile tick is the whole story). */}
-        {(app.verdict || []).some((f) => factTileTone(f.status) !== 'green' && (f.evidence.length > 1 || f.unresolved.length > 0)) && (
+        {(app.verdict || []).some((f) => factTileTone(f) !== 'green' && (f.evidence.length > 1 || f.unresolved.length > 0)) && (
           <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
             {(app.verdict || []).map((f) => {
               const resolve = (it: AdminVerdictItem) =>
                 t(`admin.scholarship.verdict.item.${it.code}`,
                   localiseParams(it.params, t))
-              if (factTileTone(f.status) === 'green' || (f.evidence.length <= 1 && f.unresolved.length === 0)) return null
+              if (factTileTone(f) === 'green' || (f.evidence.length <= 1 && f.unresolved.length === 0)) return null
               return (
                 <div key={`detail-${f.fact}`} className="text-xs text-gray-600">
                   <span className="font-medium text-gray-500 uppercase text-[10px] tracking-wide">

@@ -13,8 +13,14 @@ import type { AdminVerdictFact, AdminApplicantDocument } from '@/lib/admin-api'
 function fact(
   f: AdminVerdictFact['fact'],
   status: AdminVerdictFact['status'],
+  evidenceCodes: string[] = [],
 ): AdminVerdictFact {
-  return { fact: f, status, evidence: [], unresolved: [] }
+  return {
+    fact: f,
+    status,
+    evidence: evidenceCodes.map((code) => ({ code, params: {} })),
+    unresolved: [],
+  }
 }
 
 function doc(over: Partial<AdminApplicantDocument> = {}): AdminApplicantDocument {
@@ -42,19 +48,28 @@ function doc(over: Partial<AdminApplicantDocument> = {}): AdminApplicantDocument
 
 describe('factTileTone', () => {
   it('returns green for verified', () => {
-    expect(factTileTone('verified')).toBe('green')
+    expect(factTileTone(fact('identity', 'verified'))).toBe('green')
   })
 
-  it('returns blue (Probable) for review', () => {
-    expect(factTileTone('review')).toBe('blue')
+  it('returns blue (Probable) for review backed by a verified value', () => {
+    expect(factTileTone(fact('identity', 'review', ['nric_match']))).toBe('blue')
+  })
+
+  it('returns amber (Unsure) for review with NO verified value — blue needs a green', () => {
+    expect(factTileTone(fact('income', 'review'))).toBe('amber')
+  })
+
+  it('treats a declared-only / soft-signal value as not verified (amber, not blue)', () => {
+    expect(factTileTone(fact('pathway', 'review', ['pathway_declared']))).toBe('amber')
+    expect(factTileTone(fact('income', 'review', ['utility_percapita_b40']))).toBe('amber')
   })
 
   it('returns amber (Unsure) for recommend', () => {
-    expect(factTileTone('recommend')).toBe('amber')
+    expect(factTileTone(fact('income', 'recommend'))).toBe('amber')
   })
 
   it('returns red for gap', () => {
-    expect(factTileTone('gap')).toBe('red')
+    expect(factTileTone(fact('identity', 'gap'))).toBe('red')
   })
 })
 
