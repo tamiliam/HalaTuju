@@ -1459,10 +1459,11 @@ export interface ResolutionItem {
   // string[] supports the income reason codes' `members` list (e.g. ['father','brother']).
   params: Record<string, string | number | string[]>
   prompt: string
-  kind: 'doc' | 'confirm' | 'explanation'
+  // 'clarify'/'human' added by Check 2 STEP 2 (an AI student query / a reviewer-only item).
+  kind: 'doc' | 'confirm' | 'explanation' | 'clarify' | 'human'
   doc_type: string
   status: string
-  source: 'system' | 'officer'
+  source: 'system' | 'officer' | 'check2'
   resolution_text: string
   created_at: string
   resolved_at: string | null

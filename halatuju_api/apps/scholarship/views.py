@@ -398,6 +398,7 @@ class ResolutionItemListView(APIView):
 
     def get(self, request):
         from .resolution import sync_resolution_items
+        from .check2_queries import sync_check2_queries
         from .serializers import ResolutionItemSerializer
         app = _current_application(request.user_id)
         # Check-2 gate: NO student queries until the /application is submitted
@@ -407,7 +408,9 @@ class ResolutionItemListView(APIView):
         if app is None or app.profile_completed_at is None:
             return Response({'open': [], 'resolved': []})
         sync_resolution_items(app)
-        items = list(app.resolution_items.all())  # ordered -created_at
+        sync_check2_queries(app)   # Check 2 STEP 2: AI clarify queries
+        # 'human' items are the reviewer's — never shown to the student.
+        items = [i for i in app.resolution_items.all() if i.kind != 'human']
         openq = [i for i in items if i.status == 'open']
         resolved = [i for i in items if i.status == 'resolved'][:10]
         return Response({
@@ -434,8 +437,10 @@ class ResolutionItemResolveView(APIView):
         if item.kind == 'doc':
             return Response({'error': 'upload_doc_instead', 'doc_type': item.doc_type},
                             status=status.HTTP_400_BAD_REQUEST)
+        if item.kind == 'human':   # reviewer-only — not the student's to answer
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         text = (request.data.get('text') or '').strip()
-        if item.kind == 'explanation' and not text:
+        if item.kind in ('explanation', 'clarify') and not text:
             return Response({'error': 'text_required'}, status=status.HTTP_400_BAD_REQUEST)
         resolve_item(item, text=text, by='student')
         # The pathway confirmation is the one 'confirm' that also WRITES state: the

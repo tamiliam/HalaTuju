@@ -274,12 +274,16 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         return submission_review(obj)
 
     def get_resolution_items(self, obj):
-        """S3 resolution queue: sync the system tickets against the live verdict,
-        then return the OPEN items (system + officer) so the officer sees exactly
-        what the student still owes. The sync is idempotent + race-safe."""
+        """S3 resolution queue: sync the system tickets against the live verdict AND
+        the Check-2 AI clarify queries, then return the OPEN items (system + officer +
+        check2) so the officer sees exactly what the student still owes. Idempotent."""
         from .resolution import sync_resolution_items
+        from .check2_queries import sync_check2_queries
         from .serializers import ResolutionItemSerializer
-        return ResolutionItemSerializer(sync_resolution_items(obj), many=True).data
+        sync_resolution_items(obj)
+        sync_check2_queries(obj)
+        openq = obj.resolution_items.filter(status='open')  # ordered -created_at
+        return ResolutionItemSerializer(openq, many=True).data
 
     def get_completeness(self, obj):
         """Phase C: the 7-part completeness breakdown, so the admin can see
