@@ -119,16 +119,21 @@ class TestIdentity(_Base):
         self.assertEqual(f['status'], 'review')
         self.assertIn('ic_service_down', _codes(f['unresolved']))
 
-    def test_major_address_divergence_escalates(self):
-        # Different STATE on the IC → coherence flag.
+    def test_address_state_divergence_does_not_downgrade_identity(self):
+        # A different STATE on the IC must NOT make identity amber. The MyKad's
+        # registered address is the least-current address on file (relocation; the IC
+        # isn't reissued) and is not an identity key — name + NRIC are. The divergence
+        # stays a pre-interview flag ("ask which is current"), not a verdict caveat, so
+        # identity reads green — matching the Documents panel + the student's IC card.
         _add_ic(self.app, nric=self.profile.nric, name=self.profile.name,
                 address='NO 12 JALAN ABC, 08000 SUNGAI PETANI, KEDAH')
         f = _facts(self.app)['identity']
-        self.assertEqual(f['status'], 'review')
-        self.assertIn('address_state_mismatch', _codes(f['unresolved']))
+        self.assertEqual(f['status'], 'verified')
+        self.assertEqual(f['unresolved'], [])
+        self.assertNotIn('address_state_mismatch', _codes(f['unresolved']))
 
     def test_substate_postcode_drift_is_noise(self):
-        # Same state (Melaka), different postcode/town → NOT flagged.
+        # Same state (Melaka), different postcode/town → still verified (never flagged).
         _add_ic(self.app, nric=self.profile.nric, name=self.profile.name,
                 address='TB 456 JALAN KEJORA 4, 76460 ALOR GAJAH, MELAKA')
         f = _facts(self.app)['identity']

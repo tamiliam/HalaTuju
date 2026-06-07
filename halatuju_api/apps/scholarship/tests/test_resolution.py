@@ -90,14 +90,15 @@ class TestGeneration(_Base):
         self.assertEqual(items['ic_missing'].doc_type, 'ic')
         self.assertEqual(items['results_slip_missing'].doc_type, 'results_slip')
 
-    def test_confirm_ticket_for_address_mismatch(self):
+    def test_address_state_divergence_makes_no_caveat_ticket(self):
+        # A different-STATE IC address is NOT an identity caveat — it's a pre-interview
+        # flag ("ask which is current"), so it must generate no resolution ticket.
         _add_ic(self.app, nric=self.profile.nric, name=self.profile.name,
                 address='NO 1 JALAN X, 08000 SUNGAI PETANI, KEDAH')
         _add_doc(self.app, 'results_slip', student_verdict='ok', name_match='found')
         _add_doc(self.app, 'str', name_match='found')  # income verified
         codes = {i.code: i for i in sync_resolution_items(self.app)}
-        self.assertIn('address_state_mismatch', codes)
-        self.assertEqual(codes['address_state_mismatch'].kind, 'confirm')
+        self.assertNotIn('address_state_mismatch', codes)
 
 
 class TestMappingExclusions(_Base):
@@ -153,17 +154,19 @@ class TestIdempotencyAndLifecycle(_Base):
         self.assertEqual(t.resolved_by, 'system')
 
     def test_no_renag_after_resolved_confirm(self):
-        _add_ic(self.app, nric=self.profile.nric, name=self.profile.name,
-                address='NO 1 JALAN X, 08000 SUNGAI PETANI, KEDAH')
+        # A 'confirm' ticket whose underlying condition PERSISTS (here an NRIC mismatch —
+        # the IC's number differs from the typed one) must not be re-created once the
+        # student resolves it: confirm = acknowledge/explain, not fix-the-data.
+        _add_ic(self.app, nric='710829-02-5709', name=self.profile.name)  # != profile.nric
         _add_doc(self.app, 'results_slip', student_verdict='ok', name_match='found')
         _add_doc(self.app, 'str', name_match='found')
         sync_resolution_items(self.app)
-        t = self.app.resolution_items.get(code='address_state_mismatch')
-        resolve_item(t, text='I live in Melaka now', by='student')
-        # The verdict still flags the state mismatch, but sync must NOT re-create.
+        t = self.app.resolution_items.get(code='nric_mismatch')
+        resolve_item(t, text='The IC photo had glare; the number is correct', by='student')
+        # The verdict still flags the mismatch, but sync must NOT re-create.
         sync_resolution_items(self.app)
-        self.assertEqual(self.app.resolution_items.filter(code='address_state_mismatch').count(), 1)
-        self.assertEqual(self.app.resolution_items.get(code='address_state_mismatch').status, 'resolved')
+        self.assertEqual(self.app.resolution_items.filter(code='nric_mismatch').count(), 1)
+        self.assertEqual(self.app.resolution_items.get(code='nric_mismatch').status, 'resolved')
 
 
 class TestResolveAndOfficer(_Base):

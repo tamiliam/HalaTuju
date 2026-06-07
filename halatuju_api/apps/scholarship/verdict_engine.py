@@ -39,7 +39,6 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 
-from .anomaly_engine import _detect_address_state_mismatch
 from .services import _ic_identity_blockers
 from .vision import name_match
 
@@ -143,12 +142,13 @@ def _verdict_identity(application):
             unresolved.append(_item('name_mismatch',
                                     ocr_name=ic.vision_name, profile_name=pname))
 
-    # Address coherence — only a state-level (major) divergence escalates;
-    # sub-state postcode drift is deliberately ignored as noise.
-    addr_anomaly = _detect_address_state_mismatch(application)
-    if addr_anomaly is not None:
-        unresolved.append(_item('address_state_mismatch', **addr_anomaly.params))
-
+    # NOTE: the IC's registered-address state is deliberately NOT an identity caveat.
+    # A MyKad carries the *least-current* address on file (people relocate; the IC is
+    # not reissued — fresher addresses come from the offer letter / bills / STR) and it
+    # is not an identity key: name + NRIC are. A state divergence therefore stays a
+    # pre-interview flag ("ask which is current" — `_detect_address_state_mismatch` in
+    # anomaly_engine), NOT a verdict downgrade. So identity reads green when name + NRIC
+    # match, consistent with the Documents panel and the student's own identity card.
     return _fact('identity', 'verified' if not unresolved else 'review',
                  evidence, unresolved)
 
