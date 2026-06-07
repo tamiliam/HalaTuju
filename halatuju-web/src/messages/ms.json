@@ -572,6 +572,7 @@
         "householdSizeMax": "Itu nampaknya terlalu ramai — sila semak semula saiz isi rumah anda.",
         "income": "Sila masukkan jumlah pendapatan isi rumah bulanan anda.",
         "generic": "Sesuatu telah berlaku semasa menghantar permohonan anda. Mungkin anda telah memohon, atau permohonan telah ditutup. Sila cuba sebentar lagi.",
+        "tooLong": "Jawapan anda untuk “{field}” terlalu panjang. Sila pendekkan dan cuba lagi.",
         "name": "Sila masukkan nama penuh anda.",
         "school": "Sila masukkan sekolah anda.",
         "nric": "Sila masukkan nombor IC yang sah (format XXXXXX-XX-XXXX).",

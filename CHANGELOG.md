@@ -55,6 +55,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Funding **"Anything else about funding"** note (`funding_note`) the same `STORY_TEXT_MAX` anti‑spam cap (form +
   serializer) for consistency — completing the audit of every student‑typed Story/Funding field. +5 tests
   (`firstTooLongField` ×4, funding_note over‑cap 400 ×1); i18n parity 2089.
+- **Same length‑trap audit + fix on the /apply form.** Two genuine rollback risks found: **name** and **school** —
+  both free‑text (school is a type‑your‑own combobox) writing to `StudentProfile` `varchar(255)` columns via
+  `sync_profile_fields` → `setattr` → `save` with **no validation** (the application's own fields were already protected
+  because `ApplicationCreateSerializer` is a *ModelSerializer* that derives `max_length` from the model, but the
+  write‑only profile fields were declared as plain `CharField` with no `max_length`). **Fix:** `name`/`school`/
+  `contact_phone`/`preferred_state`/`preferred_call_language`/`referral_source` now carry `max_length` matching their
+  profile columns, so an over‑long value is a clean field‑400, never a DB‑overflow rollback. Web form: `maxLength` on the
+  name (255), school combobox (255 via a new `SchoolSelect` prop), parent name (255), declaration signature (200),
+  other‑scholarships note (300), and the two free‑text plan/support boxes (5000 anti‑spam). The apply submit now shows the
+  same actionable *"Your answer to "{question}" is too long…"* message (via `firstTooLongField` + `APPLY_FIELD_LABEL_KEYS`)
+  instead of the blanket "Something went wrong". (`contact_phone` was already safe — `formatPhone` caps to 11 digits; the
+  state/org/language dropdowns can't overflow.) +3 tests; i18n parity 2090. No migration.
 
 ### Removed
 - **Orphaned `str_claimed_no_doc` anomaly rule.** The pre‑interview flag "student says the family receives STR but

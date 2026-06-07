@@ -800,6 +800,18 @@ export const STORY_FIELD_LABEL_KEYS: Record<string, string> = {
   funding_note: 'scholarship.nextSteps.funding.noteLabel',
 }
 
+// Same idea for the /apply form's typed fields (profile + application).
+export const APPLY_FIELD_LABEL_KEYS: Record<string, string> = {
+  name: 'scholarship.apply.field.name',
+  school: 'scholarship.apply.field.school',
+  contact_phone: 'scholarship.apply.field.phone',
+  preferred_state: 'scholarship.apply.field.state',
+  declaration_name: 'scholarship.apply.declaration.signLabel',
+  other_scholarships_text: 'scholarship.apply.otherScholarshipsLabel',
+  anything_else: 'scholarship.apply.anythingElseLabel',
+  uncertainty_note: 'scholarship.apply.plan.uncertainNoteLabel',
+}
+
 /**
  * Walk a DRF 400 error body and return the first field key whose message is a
  * length-limit error (possibly nested, e.g. funding_need.funding_note), or null.
