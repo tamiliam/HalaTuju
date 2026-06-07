@@ -10,7 +10,8 @@ from apps.scholarship.models import (
     ResolutionItem, ScholarshipApplication, ScholarshipCohort,
 )
 from apps.scholarship.services import (
-    is_ready_for_assignment, query_sla, send_query_reminders,
+    autogenerate_ready_profiles, is_ready_for_assignment, query_sla,
+    send_query_reminders,
 )
 
 
@@ -100,3 +101,40 @@ class TestQueryReminders(_Base):
         self.app.profile_completed_at = timezone.now() - timedelta(days=3)
         self.app.save()
         self.assertEqual(send_query_reminders()['reminded'], 0)
+
+
+class TestStep3AutoGenerate(_Base):
+    """Check 2 STEP 3: the flag-gated auto-generation sweep drafts a profile for ready
+    applications and never regenerates an existing one."""
+    def test_off_by_default(self):
+        with self.settings(CHECK2_AUTO_GENERATE=False):
+            self.assertEqual(autogenerate_ready_profiles()['generated'], 0)
+
+    @patch('apps.scholarship.profile_engine.generate_sponsor_profile',
+           return_value={'markdown': '# Profile', 'model_used': 'gemini-2.5-flash'})
+    def test_generates_for_ready_app_when_enabled(self, mock_gen):
+        # Ready: no open clarify queries.
+        with self.settings(CHECK2_AUTO_GENERATE=True):
+            result = autogenerate_ready_profiles()
+        self.assertEqual(result['generated'], 1)
+        self.assertTrue(mock_gen.called)
+        self.app.refresh_from_db()
+        self.assertEqual(self.app.sponsor_profile.draft_markdown, '# Profile')
+
+    @patch('apps.scholarship.profile_engine.generate_sponsor_profile')
+    def test_skips_when_not_ready(self, mock_gen):
+        self._clarify()  # an open clarify query, inside the window → not ready
+        with self.settings(CHECK2_AUTO_GENERATE=True):
+            result = autogenerate_ready_profiles()
+        self.assertEqual(result['generated'], 0)
+        self.assertFalse(mock_gen.called)
+
+    @patch('apps.scholarship.profile_engine.generate_sponsor_profile',
+           return_value={'markdown': '# Profile', 'model_used': 'gemini-2.5-flash'})
+    def test_does_not_regenerate(self, mock_gen):
+        with self.settings(CHECK2_AUTO_GENERATE=True):
+            autogenerate_ready_profiles()
+            mock_gen.reset_mock()
+            again = autogenerate_ready_profiles()
+        self.assertEqual(again['generated'], 0)
+        self.assertFalse(mock_gen.called)
