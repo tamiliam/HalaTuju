@@ -13,24 +13,34 @@ import type { AdminVerdictFact, AdminApplicantDocument } from '@/lib/admin-api'
 export type FactTileTone = 'green' | 'amber' | 'blue' | 'red'
 
 /**
- * Map a verdict fact status to a colour tone.
- *   verified  → green  (AI is confident, all checks passed)
- *   review    → amber  (AI flagged for coordinator to confirm)
- *   recommend → blue   (coordinator places the verdict, AI gives a steer)
- *   gap       → red    (action needed — something is missing or mismatched)
+ * Map a verdict fact status to a colour tone on a collapsed Kent confidence scale —
+ * how sure the engine is that the fact is sound:
+ *   verified  → green  (Certain  — checks passed)
+ *   review    → blue   (Probable — likely sound; confirm the one flag)
+ *   recommend → amber  (Unsure   — even odds; the coordinator places the verdict)
+ *   gap       → red    (Can't verify — missing/unreadable evidence)
  */
 export function factTileTone(status: AdminVerdictFact['status']): FactTileTone {
   switch (status) {
     case 'verified':
       return 'green'
     case 'review':
-      return 'amber'
-    case 'recommend':
       return 'blue'
+    case 'recommend':
+      return 'amber'
     case 'gap':
     default:
       return 'red'
   }
+}
+
+// The estimative-probability band each tone names (Kent scale, collapsed to four).
+// Used for the tile labels + legend; the i18n key is admin.scholarship.verdict.band.<key>.
+export const TONE_BAND_KEY: Record<FactTileTone, string> = {
+  green: 'certain',
+  blue: 'probable',
+  amber: 'unsure',
+  red: 'unverifiable',
 }
 
 // ── Document grouping ────────────────────────────────────────────────────────

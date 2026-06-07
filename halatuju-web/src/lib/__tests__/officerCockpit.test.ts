@@ -45,12 +45,12 @@ describe('factTileTone', () => {
     expect(factTileTone('verified')).toBe('green')
   })
 
-  it('returns amber for review', () => {
-    expect(factTileTone('review')).toBe('amber')
+  it('returns blue (Probable) for review', () => {
+    expect(factTileTone('review')).toBe('blue')
   })
 
-  it('returns blue for recommend', () => {
-    expect(factTileTone('recommend')).toBe('blue')
+  it('returns amber (Unsure) for recommend', () => {
+    expect(factTileTone('recommend')).toBe('amber')
   })
 
   it('returns red for gap', () => {

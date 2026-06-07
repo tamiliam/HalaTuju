@@ -39,6 +39,7 @@ import {
 } from '@/lib/admin-api'
 import {
   factTileTone,
+  TONE_BAND_KEY,
   groupDocumentsByFact,
   aiSuggestionFor,
   documentPill,
@@ -692,6 +693,10 @@ export default function AdminScholarshipDetailPage() {
                       aria-label={t('admin.scholarship.verdict.status.verified')}>✓</span>
                   )}
                 </div>
+                {/* The estimative-probability band (Kent scale) the colour stands for. */}
+                <p className={`text-[10px] font-semibold uppercase tracking-wide ${labelColour}`}>
+                  {t(`admin.scholarship.verdict.band.${TONE_BAND_KEY[tone]}`)}
+                </p>
                 {!isGreen && (
                   <p className="text-[11px] text-gray-700 leading-tight line-clamp-2 break-words">{subtitle}</p>
                 )}
@@ -702,6 +707,17 @@ export default function AdminScholarshipDetailPage() {
             <p className="col-span-4 text-sm text-gray-400 italic">{t('admin.scholarship.none')}</p>
           )}
         </div>
+        {/* Legend — the confidence scale the tile colours encode (green→red). */}
+        {(app.verdict || []).length > 0 && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-gray-400">
+            {(['green', 'blue', 'amber', 'red'] as const).map((tn) => (
+              <span key={tn} className="flex items-center gap-1">
+                <span className={`h-2 w-2 rounded-full ${ {green:'bg-green-500',blue:'bg-blue-500',amber:'bg-amber-500',red:'bg-red-500'}[tn] }`} aria-hidden />
+                {t(`admin.scholarship.verdict.band.${TONE_BAND_KEY[tn]}`)}
+              </span>
+            ))}
+          </div>
+        )}
         {/* Expanded evidence / unresolved — shown ONLY for facts that still need attention.
             A green fact is hidden here (its tile tick is the whole story). */}
         {(app.verdict || []).some((f) => factTileTone(f.status) !== 'green' && (f.evidence.length > 1 || f.unresolved.length > 0)) && (
