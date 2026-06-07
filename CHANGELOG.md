@@ -23,7 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Review & submit flow — live‑testing refinements (5 commits `1cc5f65`→`a533637`, FE‑only, no migration).**
   (1) Review became a **post‑consent page** rather than a 6th navigable tab — `NEXT_STEP_ORDER` reverts to the 5 wizard
   steps; the page is reached only via the **"Review & submit"** CTA after consent, Back returns to the steps, Submit there
-  is the only commit (`handleConfirm` then reloads into the post‑submit screen). (2) The **Consent step is read‑only once
+  is the only commit (`handleConfirm` hands the updated application up to the parent via `onSubmitted`, which renders the
+  post‑submit "received" screen — no page reload; resolves TD‑090 within the same cycle). (2) The **Consent step is read‑only once
   given** — the dead‑end Edit link is gone; instead it now shows the **full consent text read‑only** plus who gave it and
   when (`givenHeading`/`givenMetaSelf`/`givenMetaGuardian`). (3) The step counter is **dynamic** ("Step n of {total}").
   (4) **"What happens next"** moved off the pre‑submit wizard to the **post‑submit "received" screen**, and now reads
@@ -68,6 +69,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   officer/reviewer. No migration; 766 scholarship pytest + 267 jest + build clean; i18n parity 2026.
 
 ### Fixed
+- **Academic "fix this" tickets now open the grades editor, not the Documents tab (TD‑082).** A student Action Centre
+  `confirm` ticket on an academic fact (`academic_missing_subjects` — "add Moral + Tamil Literature" — or
+  `academic_grade_mismatch`) sent the student to **Documents**, which is for *uploading files*, not editing entered
+  subjects/grades (those live in the onboarding grades flow; `/application` has no grades surface). `confirmTargetFor`
+  now routes academic facts to a new `'grades'` target, while the results **slip** (a document) stays on Documents;
+  `handleConfirmNav` deep‑links the grades case to `/onboarding/grades` with a return marker
+  (`setOnboardingReturn('/scholarship/application')`) so the onboarding final step brings the student back to
+  `/application` (new `popOnboardingReturn`; grades rehydrate from the profile via auth‑context, so the editor isn't
+  blank). FE‑only, no migration; actionCentre test updated (academic→grades, slip→documents). 268 jest + build clean.
 - **Completion reminders now land on the named day, not a day late (TD‑087).** The cadence compared
   `floor((now − reminder_anchor_at))` in raw days against the 2/9/23/53 thresholds, but the daily job ticks at a fixed
   09:00 Asia/KL while the anchor carries the clock‑time it was set — so an afternoon anchor's R2 (+9) first crossed the

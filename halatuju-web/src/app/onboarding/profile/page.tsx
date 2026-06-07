@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth-context'
 import { getProfile, syncProfile, type SyncProfileData } from '@/lib/api'
 import ProgressStepper from '@/components/ProgressStepper'
 import { KEY_PROFILE, KEY_GRADES, KEY_ALIRAN, KEY_ELEKTIF, KEY_STPM_GRADES, KEY_STPM_CGPA, KEY_MUET_BAND, KEY_EXAM_TYPE } from '@/lib/storage'
-import { hasApplyReturn, clearApplyReturn, peekApplyStash } from '@/lib/scholarship'
+import { hasApplyReturn, clearApplyReturn, peekApplyStash, popOnboardingReturn } from '@/lib/scholarship'
 
 const MALAYSIAN_STATES = [
   'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan',
@@ -142,6 +142,14 @@ export default function ProfileInputPage() {
       } catch {
         // Continue even if sync fails — localStorage has the data
       }
+    }
+
+    // A non-apply flow (e.g. an /application Action Centre academic ticket) may have
+    // asked to return to a specific page after onboarding — honour it first.
+    const back = popOnboardingReturn()
+    if (back) {
+      router.push(back)
+      return
     }
 
     // Returning from the apply form's "edit results" detour → back to the apply
