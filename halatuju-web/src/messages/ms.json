@@ -980,6 +980,7 @@
           "school": "Adik-beradik di sekolah",
           "tertiary": "Di kolej atau universiti",
           "burdenHint": "Ini membantu kami memahami keperluan keluarga anda.",
+          "splitPrompt": "Anda memberitahu kami seorang atau lebih adik-beradik anda sedang belajar — sila tetapkan berapa orang di sekolah dan berapa orang di kolej atau universiti.",
           "docsHeading": "Dokumen untuk dimuat naik",
           "footer": "Muat naik apa yang anda boleh — seorang penyemak akan melihat situasi anda secara peribadi.",
           "badge": {
