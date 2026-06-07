@@ -248,17 +248,18 @@ class TestIncome(_Base):
         self.app.income_working_members = members or []
         self.app.save()
 
-    def test_str_pre_wizard_is_review_not_green(self):
-        # Income green now requires the whole cluster (STR + earner IC + relationship), so a
-        # bare STR before the wizard is walked is no longer enough on its own.
+    def test_str_pre_wizard_is_gap_not_green(self):
+        # Income green needs the whole cluster (STR + earner IC + relationship); a bare STR
+        # before the wizard is walked is "no income info yet" → red (can't verify).
         _add_doc(self.app, 'str', name_match='found')
         f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'review')
+        self.assertEqual(f['status'], 'gap')
         self.assertIn('income_earner_undeclared', _codes(f['unresolved']))
 
-    def test_wizard_not_walked_is_review_undeclared(self):
+    def test_wizard_not_walked_is_gap_undeclared(self):
+        # Nothing provided (no route/earner) → red, like a missing IC / slip / offer.
         f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'review')
+        self.assertEqual(f['status'], 'gap')
         self.assertIn('income_earner_undeclared', _codes(f['unresolved']))
 
     def test_str_father_complete_is_verified(self):
@@ -357,10 +358,11 @@ class TestIncomeSalary(_Base):
         self.app.income_working_members = members
         self.app.save()
 
-    def test_no_members_is_review_undeclared(self):
+    def test_no_members_is_gap_undeclared(self):
+        # Salary route with no member declared → no income info → red (see STR route).
         self._wizard([])
         f = _facts(self.app)['income']
-        self.assertEqual(f['status'], 'review')
+        self.assertEqual(f['status'], 'gap')
         self.assertIn('income_earner_undeclared', _codes(f['unresolved']))
 
     def test_father_ic_plus_payslip_is_verified(self):
@@ -592,9 +594,10 @@ class TestTheresaIntegration(_Base):
         self.assertIn('name_resolved_truncation', _codes(facts['identity']['evidence']))
         # Academic: review (grades pending S2).
         self.assertEqual(facts['academic']['status'], 'review')
-        # Income: review — she hasn't walked the income wizard yet (no income_earner),
-        # so the engine asks her to (the documents can't be checked until she does).
-        self.assertEqual(facts['income']['status'], 'review')
+        # Income: gap (red) — she hasn't walked the income wizard yet (no income_earner),
+        # so there's no income information to check at all (consistent with a missing
+        # IC / slip / offer: nothing provided → can't verify).
+        self.assertEqual(facts['income']['status'], 'gap')
         self.assertIn('income_earner_undeclared', _codes(facts['income']['unresolved']))
         # Pathway: verified — the offer's identity matches and it doesn't clash with
         # any specific declared college/programme (she declared only a pathway type),

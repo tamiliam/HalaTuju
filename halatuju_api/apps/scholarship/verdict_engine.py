@@ -267,11 +267,11 @@ def _verdict_income(application):
     if route == 'salary':
         return _verdict_income_salary(application, student_name, present)
 
-    # Wizard not walked → we don't know whose income this is, so we can't confirm the
-    # cluster adds up. Income green requires the whole cluster (STR + earner IC +
-    # relationship), so a bare STR is no longer enough on its own — ask for the wizard.
+    # Wizard not walked → no income information at all yet. Like a missing IC / slip /
+    # offer, "nothing provided" is a hard red (can't verify), not a soft amber — the
+    # student must complete the income wizard (and its docs) before we can check anything.
     if not earner or not route:
-        return _fact('income', 'review', evidence, [_item('income_earner_undeclared')])
+        return _fact('income', 'gap', evidence, [_item('income_earner_undeclared')])
 
     # ── Earner IC (the income docs are issued in their name) ──────────────────
     # `members=[earner]` keeps the IC/relationship reason-code copy uniform with the
@@ -362,7 +362,8 @@ def _verdict_income_salary(application, student_name, present):
                                 relationship_doc_for)
     members = working_members(application)
     if not members:
-        return _fact('income', 'review', _utility_context(application),
+        # No working member declared → no income information yet → red (see STR route).
+        return _fact('income', 'gap', _utility_context(application),
                      [_item('income_earner_undeclared')])
 
     evidence = _utility_context(application)

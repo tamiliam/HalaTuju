@@ -83,11 +83,12 @@ IC · relationship (father = patronymic, mother = birth cert, guardian = letter)
   (salary route).
 - 🔵 **Probable** — a check fails/unconfirmed *and* something is verified (e.g. earner IC in,
   STR not current).
-- 🟡 **Unsure** — B40 can't be document-proven (informal/no-EPF, or an unprovable
-  relationship) → officer places it at interview (`recommend`); **or** the wizard isn't
-  walked / nothing verified yet (`review` with no green).
-- 🔴 **Can't verify** — a compulsory income doc is missing (earner/member IC, birth cert,
-  guardianship letter, or STR).
+- 🟡 **Unsure** — B40 can't be document-proven (informal/no-EPF, an unprovable
+  relationship, or a salary computed *above* the B40 line) → officer places it at interview
+  (`recommend`).
+- 🔴 **Can't verify** — **no income information at all** (wizard not walked / no member
+  declared — "nothing provided" is red, like a missing IC/slip/offer), or a compulsory
+  income doc missing (earner/member IC, birth cert, guardianship letter, or STR).
 
 ### Other — supporting documents
 The Documents-panel catch-all for any doc type that isn't one of the four facts. **No band,

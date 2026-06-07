@@ -75,6 +75,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `actionCentre` known‑code, and its i18n in all three namespaces ×3 languages; tests updated. No migration.
 
 ### Changed
+- **Income with no information yet reads 🔴 Can't verify, not 🟡 Unsure** — consistency with the other facts, where
+  "nothing provided" is always red (no IC / no slip / no offer). A not‑walked income wizard (STR route, no earner/route)
+  or no working member declared (salary route) now returns `gap` instead of `review`. The 🟡 cases stay as they should:
+  income the engine can't document‑prove (informal/no‑EPF, an unprovable relationship, or salary *above* the B40 line)
+  is `recommend` → the officer places it at interview. Backend‑only, no migration; verdict tests updated; 766 scholarship.
 - **Two facts now hard‑stop weak evidence instead of passing it to manual review** (policy: don't pass a student we
   can't actually support — re‑upload beats us struggling with unusable documents).
   - **(1) A results slip in a different name is a hard stop.** A positive slip‑name **mismatch** now makes Academic
