@@ -10,6 +10,7 @@ from django.utils import timezone
 from .emails import (
     send_acknowledgement_email, send_pass_email, send_fail_email,
     send_decline_email, send_profile_complete_admin_email,
+    send_submission_received_email,
 )
 from .models import (
     ApplicantDocument, Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort,
@@ -403,6 +404,42 @@ def is_ready_for_assignment(application, now=None):
     return sla['open_count'] == 0 or sla['lapsed']
 
 
+# How long after submission to hold the "we have a few questions" email, so it reads as
+# a human review rather than an instant bot reply (the owner's call).
+QUERY_EMAIL_DELAY_HOURS = 2
+
+
+def send_due_query_emails(now=None):
+    """Frequent sweep (hourly): ~``QUERY_EMAIL_DELAY_HOURS`` after a student submits,
+    email them ONCE that a few clarify questions are waiting in their Action Centre — but
+    only if questions are actually open (if they answered everything in the form, none).
+    The delay is deliberate so it feels like someone reviewed the application. Idempotent
+    via ``query_raised_notified_at``. Returns ``{'sent': n}``."""
+    from datetime import timedelta
+    from .check2_queries import sync_check2_queries
+    from .emails import send_query_raised_email
+    now = now or timezone.now()
+    cutoff = now - timedelta(hours=QUERY_EMAIL_DELAY_HOURS)
+    sent = 0
+    qs = (ScholarshipApplication.objects
+          .filter(status__in=QUERY_SLA_ACTIVE_STATUSES,
+                  profile_completed_at__isnull=False, profile_completed_at__lte=cutoff,
+                  query_raised_notified_at__isnull=True)
+          .select_related('cohort', 'profile'))
+    for app in qs:
+        clarify = [r for r in sync_check2_queries(app) if r.kind == 'clarify']
+        if not clarify:
+            continue
+        name = getattr(app.profile, 'name', '') if app.profile else ''
+        send_query_raised_email(
+            to_email=app.notify_email, applicant_name=name,
+            programme_name=app.cohort.name, n_queries=len(clarify), lang=app.locale)
+        app.query_raised_notified_at = now
+        app.save(update_fields=['query_raised_notified_at'])
+        sent += 1
+    return {'sent': sent}
+
+
 def send_query_reminders(now=None):
     """Daily sweep: nudge submitted students who still have open Check-2 clarify
     queries, once, ~2 days before the SLA deadline. Reuses the trilingual email
@@ -545,15 +582,19 @@ def confirm_profile(application):
     name = getattr(application.profile, 'name', '') if application.profile else ''
     send_profile_complete_admin_email(application_id=application.id, applicant_name=name,
                                       programme_name=application.cohort.name)
-    # Check 2 STEP 1→2: review the submission, raise the clarify queries, and email the
-    # student once to come answer them. Best-effort — never blocks the confirm.
+    # Check 2: acknowledge the submission NOW (warm "we've got it, we'll review and
+    # revert") and raise the clarify queries SILENTLY. The "we have a few questions"
+    # email is deliberately delayed (send_due_query_emails, ~2h later) so it reads as a
+    # human review, not an instant bot reply. All best-effort — never blocks the confirm.
+    send_submission_received_email(to_email=application.notify_email, applicant_name=name,
+                                   programme_name=application.cohort.name, lang=application.locale)
     try:
-        from .check2_queries import raise_and_notify_check2_queries
-        raise_and_notify_check2_queries(application)
-    except Exception:  # noqa: BLE001 — notification must never fail a submission
+        from .check2_queries import sync_check2_queries
+        sync_check2_queries(application)
+    except Exception:  # noqa: BLE001 — query raising must never fail a submission
         import logging
         logging.getLogger(__name__).warning(
-            'Check-2 query raise/notify failed for app %s', application.id, exc_info=True)
+            'Check-2 query raise failed for app %s', application.id, exc_info=True)
     return True
 
 

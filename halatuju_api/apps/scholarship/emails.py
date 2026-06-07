@@ -314,6 +314,34 @@ def send_acknowledgement_email(to_email, applicant_name, programme_name, lang='e
     return _send(to_email, ACK_SUBJECTS, ACK_BODIES, applicant_name, programme_name, lang)
 
 
+# Sent the moment a SHORTLISTED student submits their completed profile (Check 2). A warm
+# "we've got it, we'll review and revert" — NOT the questions (those follow ~2h later, so
+# they read as a human review rather than an instant bot reply).
+SUBMISSION_ACK_SUBJECTS = {
+    'en': "We've received your completed {programme} application",
+    'ms': 'Kami telah menerima permohonan {programme} anda yang lengkap',
+    'ta': 'உங்கள் நிறைவு செய்யப்பட்ட {programme} விண்ணப்பத்தைப் பெற்றோம்',
+}
+SUBMISSION_ACK_BODIES = {
+    'en': ("Dear {name},\n\nThank you for submitting your {programme} application. Our team "
+           "will review it and get back to you. If we need any additional information or "
+           "documents, we'll be in touch.\n\nWarm regards,\nThe {programme} Team"),
+    'ms': ("Salam {name},\n\nTerima kasih kerana menghantar permohonan {programme} anda. "
+           "Pasukan kami akan menyemaknya dan menghubungi anda semula. Jika kami memerlukan "
+           "sebarang maklumat atau dokumen tambahan, kami akan memaklumkan anda.\n\n"
+           "Salam hormat,\nPasukan {programme}"),
+    'ta': ("அன்புள்ள {name},\n\nஉங்கள் {programme} விண்ணப்பத்தைச் சமர்ப்பித்ததற்கு நன்றி. "
+           "எங்கள் குழு அதைப் பரிசீலித்து உங்களைத் தொடர்புகொள்ளும். கூடுதல் தகவல் அல்லது "
+           "ஆவணங்கள் தேவைப்பட்டால், நாங்கள் தொடர்புகொள்வோம்.\n\nஅன்புடன்,\n{programme} குழு"),
+}
+
+
+def send_submission_received_email(to_email, applicant_name, programme_name, lang='en'):
+    """Check 2: acknowledge a completed-profile submission (we'll review and revert)."""
+    return _send(to_email, SUBMISSION_ACK_SUBJECTS, SUBMISSION_ACK_BODIES,
+                 applicant_name, programme_name, lang)
+
+
 def send_pass_email(to_email, applicant_name, programme_name, lang='en'):
     return _send(to_email, PASS_SUBJECTS, PASS_BODIES, applicant_name, programme_name, lang)
 
