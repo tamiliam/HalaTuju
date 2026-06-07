@@ -90,3 +90,22 @@ def sync_check2_queries(application):
             item.save(update_fields=['status', 'resolved_by', 'resolved_at'])
 
     return application.resolution_items.filter(source='check2', status='open')
+
+
+def raise_and_notify_check2_queries(application):
+    """Raise the clarify queries and, the FIRST time any are raised, email the student
+    once to come answer them (so they don't have to stumble back to the page on their
+    own). Idempotent via ``query_raised_notified_at``. Called at submission. Returns the
+    number of open clarify queries."""
+    open_q = sync_check2_queries(application)
+    clarify = [r for r in open_q if r.kind == 'clarify']
+    if application.query_raised_notified_at is None and clarify:
+        from .emails import send_query_raised_email
+        name = getattr(application.profile, 'name', '') if application.profile else ''
+        send_query_raised_email(
+            to_email=application.notify_email, applicant_name=name,
+            programme_name=application.cohort.name, n_queries=len(clarify),
+            lang=application.locale)
+        application.query_raised_notified_at = timezone.now()
+        application.save(update_fields=['query_raised_notified_at'])
+    return len(clarify)

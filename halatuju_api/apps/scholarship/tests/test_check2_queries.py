@@ -3,7 +3,11 @@ from django.test import TestCase
 from django.utils import timezone
 
 from apps.courses.models import StudentProfile
-from apps.scholarship.check2_queries import MAX_CLARIFY, sync_check2_queries
+from unittest.mock import patch
+
+from apps.scholarship.check2_queries import (
+    MAX_CLARIFY, raise_and_notify_check2_queries, sync_check2_queries,
+)
 from apps.scholarship.models import (
     FundingNeed, ResolutionItem, ScholarshipApplication, ScholarshipCohort,
 )
@@ -89,3 +93,34 @@ class TestSyncCheck2Queries(_Base):
             self.app.resolution_items.filter(code='transport_cost_unknown').count(), 1)
         item.refresh_from_db()
         self.assertEqual(item.status, 'resolved')
+
+
+class TestRaiseAndNotify(_Base):
+    def setUp(self):
+        super().setUp()
+        self.app.notify_email = 'p@example.com'
+        self.app.locale = 'en'
+        self.app.save()
+
+    @patch('apps.scholarship.emails.send_query_raised_email', return_value=True)
+    def test_raises_and_notifies_once(self, mock_email):
+        n = raise_and_notify_check2_queries(self.app)
+        self.assertGreater(n, 0)
+        self.assertTrue(mock_email.called)
+        self.app.refresh_from_db()
+        self.assertIsNotNone(self.app.query_raised_notified_at)
+        # idempotent — a second call raises nothing new and sends no second email.
+        mock_email.reset_mock()
+        raise_and_notify_check2_queries(self.app)
+        self.assertFalse(mock_email.called)
+
+    @patch('apps.scholarship.emails.send_query_raised_email', return_value=True)
+    def test_no_email_when_no_clarify_queries(self, mock_email):
+        # No gaps → no clarify queries → no email. Course set, sibling known, device
+        # ticked, and NOT stpm so transport doesn't fire.
+        self.app.chosen_pathway = 'matric'
+        self.app.save()
+        FundingNeed.objects.create(application=self.app, categories=['device'])
+        n = raise_and_notify_check2_queries(self.app)
+        self.assertEqual(n, 0)
+        self.assertFalse(mock_email.called)
