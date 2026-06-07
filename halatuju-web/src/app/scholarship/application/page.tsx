@@ -61,11 +61,13 @@ export default function ScholarshipApplicationPage() {
   }
 
   // Email note + onward navigation, shown under the status card so the page is
-  // never a dead end.
-  function nav() {
+  // never a dead end. `email` defaults on; pass false where an email note is
+  // already shown nearby (the received screen's "What happens next" box) to
+  // avoid repeating it.
+  function nav({ email = true }: { email?: boolean } = {}) {
     return (
       <>
-        {commsEmail && (
+        {email && commsEmail && (
           <p className="mt-4 text-sm text-gray-500">
             {t('scholarship.application.emailNote', { email: commsEmail })}
           </p>
@@ -129,7 +131,7 @@ export default function ScholarshipApplicationPage() {
       <div className="mt-6 rounded-2xl border bg-white p-5 shadow-sm">
         <h3 className="mb-3 font-semibold text-gray-900">{t('scholarship.nextSteps.whatNext.title')}</h3>
         <ol className="space-y-3">
-          {['step1', 'step2', 'step3'].map((s, i) => (
+          {['step1', 'step2', 'step3', 'step4'].map((s, i) => (
             <li key={s} className="flex gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700 text-xs font-semibold">
                 {i + 1}
@@ -147,7 +149,8 @@ export default function ScholarshipApplicationPage() {
           </p>
         </div>
       </div>
-      {nav()}
+      {/* email note suppressed here — the box above already states the address + spam */}
+      {nav({ email: false })}
     </>
   )
 }

@@ -850,8 +850,9 @@
       "whatNext": {
         "title": "Apa yang berlaku seterusnya",
         "step1": "Kami menyemak permohonan dan dokumen anda.",
-        "step2": "Kami mungkin menghubungi anda — dalam bahasa pilihan anda — untuk mengesahkan beberapa butiran.",
-        "step3": "Anda akan menerima keputusan kami melalui e-mel.",
+        "step2": "Kami mungkin menghantar e-mel untuk meminta dokumen tambahan atau penjelasan — sila balas apabila anda boleh.",
+        "step3": "Kami juga mungkin menghubungi anda, dalam bahasa pilihan anda, untuk mengesahkan beberapa butiran.",
+        "step4": "Anda akan menerima keputusan kami melalui e-mel.",
         "emailNote": "Kami akan menghantar semua kemas kini ke {email} — sila semak peti masuk (dan folder spam) anda.",
         "yourEmail": "e-mel yang anda daftar"
       },
