@@ -55,6 +55,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `actionCentre` known‑code, and its i18n in all three namespaces ×3 languages; tests updated. No migration.
 
 ### Changed
+- **"Probable" (blue) now requires a verified value — a fact with nothing green reads "Unsure" (amber), not "Probable".**
+  A self‑declared pathway (no offer letter yet) and an un‑walked income wizard were showing 🔵 Probable despite **zero
+  verified evidence** (seen on a bare application). `factTileTone` now takes the whole fact: a `review` fact is blue only
+  when it has **≥1 genuinely‑verified** evidence item; backed only by a declaration (`pathway_declared`) or a soft signal
+  (utility per‑capita / hardship) — or by nothing — it drops to 🟡 **Unsure**. `verified`→green, `recommend`→amber,
+  `gap`→red unchanged. FE‑only, no migration; 270 jest + next build clean.
 - **Verdict tiles now read as a confidence scale (Kent's words of estimative probability).** Each tile shows the
   estimative word it stands for, with a legend under the row, on a collapsed 4‑band scale: 🟢 **Certain** (`verified`) ·
   🔵 **Probable** (`review` — likely sound, confirm the one flag) · 🟡 **Unsure** (`recommend` — even odds; the

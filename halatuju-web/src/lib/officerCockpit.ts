@@ -12,22 +12,38 @@ import type { AdminVerdictFact, AdminApplicantDocument } from '@/lib/admin-api'
 
 export type FactTileTone = 'green' | 'amber' | 'blue' | 'red'
 
+// Evidence codes that are NOT a verified value — a self-declaration or a soft signal.
+// "Probable" (blue) must rest on at least one real verified value, so a fact backed
+// only by these (or by nothing) is "Unsure", not "Probable".
+const SOFT_EVIDENCE = new Set<string>([
+  'pathway_declared',        // the student's own declared pathway (unverified)
+  'utility_percapita_b40',   // soft income proxy from the utility bills
+  'utility_percapita_high',
+  'utility_hardship',
+])
+
 /**
- * Map a verdict fact status to a colour tone on a collapsed Kent confidence scale —
+ * Map a verdict fact to a colour tone on a collapsed Kent confidence scale —
  * how sure the engine is that the fact is sound:
  *   verified  → green  (Certain  — checks passed)
- *   review    → blue   (Probable — likely sound; confirm the one flag)
+ *   review    → blue   (Probable — ≥1 verified value backs it; confirm the rest)
+ *             → amber  (Unsure   — review with NO verified value: declared-only /
+ *                        soft-signal-only / incomplete. Blue requires a green.)
  *   recommend → amber  (Unsure   — even odds; the coordinator places the verdict)
  *   gap       → red    (Can't verify — missing/unreadable evidence)
  */
-export function factTileTone(status: AdminVerdictFact['status']): FactTileTone {
-  switch (status) {
+export function factTileTone(fact: AdminVerdictFact): FactTileTone {
+  switch (fact.status) {
     case 'verified':
       return 'green'
-    case 'review':
-      return 'blue'
     case 'recommend':
       return 'amber'
+    case 'review': {
+      // Probable needs a green: at least one genuinely-verified value, not just a
+      // declaration or a soft signal. Otherwise it's Unsure.
+      const hasVerified = fact.evidence.some((e) => !SOFT_EVIDENCE.has(e.code))
+      return hasVerified ? 'blue' : 'amber'
+    }
     case 'gap':
     default:
       return 'red'
