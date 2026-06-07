@@ -366,6 +366,9 @@ export interface AdminScholarshipDetail {
   first_in_family: boolean
   parents_occupation: string
   siblings_studying_count: number | null
+  // P2 (Check 2): the school/tertiary split — the family-burden breakdown
+  siblings_in_school: number | null
+  siblings_in_tertiary: number | null
   family_context: string
   daily_life: string
   consent_to_contact: boolean

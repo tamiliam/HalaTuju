@@ -169,6 +169,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'muet_band', 'coq_score', 'grades', 'stpm_grades', 'spm_prereq_grades',
             # "Your story" narrative (S2) + support + declaration
             'first_in_family', 'parents_occupation', 'siblings_studying_count',
+            # P2 (Check 2): the school/tertiary split (cockpit shows the burden breakdown)
+            'siblings_in_school', 'siblings_in_tertiary',
             'family_context', 'daily_life', 'consent_to_contact',
             'declaration_name', 'declared_at',
             'status', 'bucket', 'shortlist_reason', 'submitted_at',

@@ -129,7 +129,8 @@ class TestHouseholdSizeOne(_Base):
 
 
 class TestFirstInFamilyWithSiblingsStudying(_Base):
-    def test_flag_when_first_in_family_and_siblings_studying(self):
+    def test_flag_when_first_in_family_and_legacy_siblings_studying(self):
+        # Legacy combined count, no split → can't confirm first-gen → flag (clarify-query).
         self.app.first_in_family = True
         self.app.siblings_studying_count = 2
         self.app.save()
@@ -139,6 +140,26 @@ class TestFirstInFamilyWithSiblingsStudying(_Base):
     def test_no_flag_when_count_is_zero(self):
         self.app.first_in_family = True
         self.app.siblings_studying_count = 0
+        self.app.save()
+        codes = [a['code'] for a in detect_anomalies(self.app)]
+        self.assertNotIn('first_in_family_with_siblings_studying', codes)
+
+    def test_flag_when_sibling_in_tertiary(self):
+        # P2: the split is authoritative — a sibling in tertiary genuinely contradicts.
+        self.app.first_in_family = True
+        self.app.siblings_in_school = 1
+        self.app.siblings_in_tertiary = 1
+        self.app.save()
+        codes = [a['code'] for a in detect_anomalies(self.app)]
+        self.assertIn('first_in_family_with_siblings_studying', codes)
+
+    def test_auto_resolved_when_only_siblings_in_school(self):
+        # P2: siblings only in school do NOT contradict first-to-university → no flag,
+        # even though the legacy count is positive. The split wins.
+        self.app.first_in_family = True
+        self.app.siblings_studying_count = 2
+        self.app.siblings_in_school = 2
+        self.app.siblings_in_tertiary = 0
         self.app.save()
         codes = [a['code'] for a in detect_anomalies(self.app)]
         self.assertNotIn('first_in_family_with_siblings_studying', codes)

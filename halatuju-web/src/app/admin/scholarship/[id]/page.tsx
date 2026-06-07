@@ -602,6 +602,8 @@ export default function AdminScholarshipDetailPage() {
                     <Field label={t('admin.scholarship.firstInFamily')} value={yn(app.first_in_family)} />
                     <Field label={t('admin.scholarship.parentsOccupation')} value={app.parents_occupation} />
                     <Field label={t('admin.scholarship.siblingsStudying')} value={app.siblings_studying_count} />
+                    <Field label={t('admin.scholarship.siblingsInSchool')} value={app.siblings_in_school} />
+                    <Field label={t('admin.scholarship.siblingsInTertiary')} value={app.siblings_in_tertiary} />
                   </dl>
                   <Field label={t('admin.scholarship.familyContext')} value={app.family_context} />
                 </div>
