@@ -101,9 +101,15 @@ describe('titleSourceFor', () => {
 })
 
 describe('confirmTargetFor', () => {
-  it('routes academic facts to results', () => {
-    expect(confirmTargetFor('academic')).toBe('results')
-    expect(confirmTargetFor('results_grade')).toBe('results')
+  it('routes academic grade/subject facts to the grades editor', () => {
+    expect(confirmTargetFor('academic_missing_subjects')).toBe('grades')
+    expect(confirmTargetFor('academic_grade_mismatch')).toBe('grades')
+  })
+
+  it('routes the results SLIP (a document) to documents, not the grades editor', () => {
+    expect(confirmTargetFor('results_slip_missing')).toBe('documents')
+    expect(confirmTargetFor('results_slip_unreadable')).toBe('documents')
+    expect(confirmTargetFor('results_slip_name_mismatch')).toBe('documents')
   })
 
   it('routes pathway/story facts to story', () => {

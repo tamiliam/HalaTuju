@@ -100,7 +100,7 @@ export default function ScholarshipApplicationPage() {
   }
 
   if (app.status === 'shortlisted') {
-    return wrap(<ScholarshipNextSteps initialApp={app} token={token} studentName={profile?.name} profile={profile} />)
+    return wrap(<ScholarshipNextSteps initialApp={app} token={token} studentName={profile?.name} profile={profile} onSubmitted={setApp} />)
   }
 
   // accepted — the admin has verified & confirmed this applicant.

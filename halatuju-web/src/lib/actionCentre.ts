@@ -122,10 +122,11 @@ export function titleSourceFor(
 }
 
 // Where a `confirm`-kind ticket sends the student to fix the underlying fact.
-// 'results'   → the academic results / grades area
-// 'documents' → the Documents tab (identity & income proof)
+// 'grades'    → the onboarding grades editor (entered subjects/grades — there is no
+//               grades surface in /application, so academic fixes deep-link there)
+// 'documents' → the Documents tab (identity, income proof, the results SLIP)
 // 'story'     → "Your story" (pathway / narrative)
-export type ConfirmTarget = 'results' | 'documents' | 'story'
+export type ConfirmTarget = 'grades' | 'documents' | 'story'
 
 /**
  * Map a ticket's `fact` to the section a `confirm` ticket should scroll/switch
@@ -134,9 +135,11 @@ export type ConfirmTarget = 'results' | 'documents' | 'story'
  */
 export function confirmTargetFor(fact: string): ConfirmTarget {
   const f = (fact || '').toLowerCase()
-  if (f.includes('academic') || f.includes('result') || f.includes('grade')) {
-    return 'results'
-  }
+  // The results SLIP is an uploaded document → re-upload it in the Documents tab.
+  if (f.includes('slip')) return 'documents'
+  // The student's entered subjects/grades live in the onboarding grades editor —
+  // there is no grades surface in /application — so academic_* facts go there.
+  if (f.includes('academic') || f.includes('grade')) return 'grades'
   if (f.includes('pathway') || f.includes('story') || f.includes('aspiration')) {
     return 'story'
   }

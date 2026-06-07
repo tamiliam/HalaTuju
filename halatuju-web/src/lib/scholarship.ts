@@ -646,6 +646,26 @@ export function clearApplyReturn(storage?: StorageLike): void {
   s?.removeItem(APPLY_RETURN_KEY)
 }
 
+// A general "after onboarding, return to this path" marker — used when a flow other
+// than the apply form (e.g. an /application Action Centre academic ticket) sends the
+// student into the onboarding grades editor and needs them brought back afterwards.
+export const ONBOARDING_RETURN_KEY = 'halatuju_onboarding_return_to'
+
+/** Mark where the onboarding flow should return on completion. */
+export function setOnboardingReturn(path: string, storage?: StorageLike): void {
+  const s = storage ?? safeSession()
+  s?.setItem(ONBOARDING_RETURN_KEY, path)
+}
+
+/** Read and consume the onboarding return path (null if none). */
+export function popOnboardingReturn(storage?: StorageLike): string | null {
+  const s = storage ?? safeSession()
+  if (!s) return null
+  const v = s.getItem(ONBOARDING_RETURN_KEY)
+  if (v) s.removeItem(ONBOARDING_RETURN_KEY)
+  return v
+}
+
 // ── STEP 2: deeper-info + funding-need form (Sprint 4b) ──────────────────
 
 export interface DetailsFormState {

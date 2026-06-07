@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { updateScholarshipDetails, confirmScholarshipApplication, getScholarshipApplication, type ScholarshipApplication, type StudentProfile } from '@/lib/api'
 import {
@@ -9,6 +10,7 @@ import {
   buildDetailsPayload,
   NEXT_STEP_ORDER,
   defaultNextTab,
+  setOnboardingReturn,
   type NextStepKey,
   type DetailsFormState,
 } from '@/lib/scholarship'
@@ -96,13 +98,18 @@ export default function ScholarshipNextSteps({
   token,
   studentName,
   profile,
+  onSubmitted,
 }: {
   initialApp: ScholarshipApplication
   token: string | null
   studentName?: string
   profile?: StudentProfile | null
+  // Called with the updated application after a successful submit, so the parent
+  // page re-renders into the post-submit "received" screen (no full page reload).
+  onSubmitted?: (app: ScholarshipApplication) => void
 }) {
   const { t, locale } = useT()
+  const router = useRouter()
   const [app, setApp] = useState<ScholarshipApplication>(initialApp)
   const [form, setForm] = useState<DetailsFormState>(() => applicationToDetailsForm(initialApp))
   const [saving, setSaving] = useState(false)
@@ -123,13 +130,17 @@ export default function ScholarshipNextSteps({
     try { setApp(await getScholarshipApplication(app.id, { token })) } catch { /* ignore */ }
   }
 
-  // Action Centre "Review" → switch to the section that resolves a `confirm`
-  // ticket and scroll the step card into view. The grades/results live in the
-  // Documents tab (results_slip), identity & income also in Documents, and the
-  // pathway narrative in "Your story".
+  // Action Centre "Review" → send the student to where they fix the ticket's fact.
+  // The results SLIP, identity & income all live in the Documents tab; the pathway
+  // narrative in "Your story"; and the entered subjects/grades in the onboarding
+  // grades editor (there is no grades surface here), which returns to /application.
   const handleConfirmNav = (target: ConfirmTarget) => {
-    const tabFor: Record<ConfirmTarget, NextStepKey> = {
-      results: 'documents',
+    if (target === 'grades') {
+      setOnboardingReturn('/scholarship/application')
+      router.push('/onboarding/grades')
+      return
+    }
+    const tabFor: Record<Exclude<ConfirmTarget, 'grades'>, NextStepKey> = {
       documents: 'documents',
       story: 'story',
     }
@@ -161,15 +172,17 @@ export default function ScholarshipNextSteps({
     }
   }
 
-  // Phase C: the explicit submit (shortlisted → profile_complete). On success, reload so
-  // the page re-renders as the post-submit "received" screen (with "What happens next").
+  // Phase C: the explicit submit (shortlisted → profile_complete). On success we hand
+  // the updated application up to the parent (onSubmitted), which re-renders into the
+  // post-submit "received" screen — no full page reload (TD-090).
   const handleConfirm = async () => {
     if (!token) return
     setConfirming(true)
     setConfirmError(null)
     try {
-      await confirmScholarshipApplication(app.id, { token })
-      if (typeof window !== 'undefined') { window.location.reload(); return }
+      const updated = await confirmScholarshipApplication(app.id, { token })
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0 })
+      onSubmitted?.(updated)
     } catch {
       setConfirmError(t('scholarship.nextSteps.confirmError'))
       setConfirming(false)
