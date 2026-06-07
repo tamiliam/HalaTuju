@@ -1477,6 +1477,22 @@
         "offer_letter_missing": {
           "title": "Upload your offer letter",
           "desc": "We can only support a confirmed place, so an offer letter is required. Please upload it in Documents."
+        },
+        "course_unspecified": {
+          "title": "What do you plan to study?",
+          "desc": "Tell us the course or field you hope to take up — it helps us describe your plan to a sponsor."
+        },
+        "sibling_level_unknown": {
+          "title": "Are your siblings in school or further study?",
+          "desc": "You mentioned siblings who are studying. Let us know how many are in school and how many are in college or university."
+        },
+        "device_status_unknown": {
+          "title": "Do you have a device to study on?",
+          "desc": "Do you have a laptop or tablet you can use for your studies, or would you need one?"
+        },
+        "transport_cost_unknown": {
+          "title": "How do you get to your studies?",
+          "desc": "How do you travel to school or college, and roughly what does it cost you a month?"
         }
       }
     },

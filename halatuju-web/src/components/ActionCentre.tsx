@@ -165,7 +165,7 @@ function ActionCard({
               </label>
             )}
 
-            {item.kind === 'explanation' && (
+            {(item.kind === 'explanation' || item.kind === 'clarify') && (
               <div className="space-y-2">
                 <textarea
                   className="input"

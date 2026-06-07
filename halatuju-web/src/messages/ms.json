@@ -1477,6 +1477,22 @@
         "offer_letter_missing": {
           "title": "Muat naik surat tawaran anda",
           "desc": "Kami hanya boleh menyokong tempat yang disahkan, jadi surat tawaran diperlukan. Sila muat naik di Dokumen."
+        },
+        "course_unspecified": {
+          "title": "Apakah yang anda rancang untuk belajar?",
+          "desc": "Beritahu kami kursus atau bidang yang anda harap untuk ceburi — ia membantu kami menerangkan rancangan anda kepada penaja."
+        },
+        "sibling_level_unknown": {
+          "title": "Adik-beradik anda di sekolah atau pengajian lanjut?",
+          "desc": "Anda menyebut adik-beradik yang sedang belajar. Beritahu kami berapa orang di sekolah dan berapa orang di kolej atau universiti."
+        },
+        "device_status_unknown": {
+          "title": "Adakah anda mempunyai peranti untuk belajar?",
+          "desc": "Adakah anda mempunyai komputer riba atau tablet untuk pengajian anda, atau adakah anda memerlukannya?"
+        },
+        "transport_cost_unknown": {
+          "title": "Bagaimana anda pergi ke tempat pengajian?",
+          "desc": "Bagaimana anda pergi ke sekolah atau kolej, dan lebih kurang berapa kosnya sebulan?"
         }
       }
     },
