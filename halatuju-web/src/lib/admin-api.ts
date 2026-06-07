@@ -366,6 +366,9 @@ export interface AdminScholarshipDetail {
   first_in_family: boolean
   parents_occupation: string
   siblings_studying_count: number | null
+  // P2 (Check 2): the school/tertiary split — the family-burden breakdown
+  siblings_in_school: number | null
+  siblings_in_tertiary: number | null
   family_context: string
   daily_life: string
   consent_to_contact: boolean
@@ -401,6 +404,11 @@ export interface AdminScholarshipDetail {
   anomalies: AdminAnomaly[]
   // S1 verification verdict: the four-fact rollup the coordinator audits.
   verdict: AdminVerdictFact[]
+  // Check 2 STEP 1: the deterministic submission review — the facts ledger (claims +
+  // how well each is backed), fundable-profile gaps, and consistency flags. Pure rules.
+  submission_review: AdminSubmissionReview
+  // Check 2 STEP 2/3: the query SLA clock + assignment readiness.
+  query_sla: AdminQuerySla
   // Phase B: Gemini-suggested interview gaps. Carry their OWN dynamic text
   // (unlike anomalies which i18n by code). Empty until the admin generates them.
   interview_gaps: Array<{ code: string; question: string; why: string }>
@@ -631,6 +639,33 @@ export interface AdminVerdictFact {
   status: 'verified' | 'review' | 'recommend' | 'gap'
   evidence: AdminVerdictItem[]
   unresolved: AdminVerdictItem[]
+}
+
+/** Check 2 STEP 1 — the deterministic submission review. */
+export interface AdminLedgerRow {
+  claim: string
+  value: string
+  source: string
+  // verified (assert as fact) · reported (self-reported / under review) ·
+  // student_words (their voice) · unverified (omit or hedge).
+  verification: 'verified' | 'reported' | 'student_words' | 'unverified'
+}
+export interface AdminSubmissionReview {
+  ledger: AdminLedgerRow[]
+  completeness: Array<{ code: string }>
+  consistency: AdminAnomaly[]
+}
+
+/** Check 2 STEP 2/3 — the query SLA clock for the cockpit. */
+export interface AdminQuerySla {
+  deadline: string | null
+  lapsed: boolean
+  open_count: number
+  days_left: number | null
+  ready_for_assignment: boolean
+  // true when the app is proceeding to assignment WITH clarify queries still open
+  // (the SLA lapsed) — the 'ready-with-open-queries' reviewer flag.
+  proceeding_with_open_queries: boolean
 }
 
 export interface AdminApplicantDocument {

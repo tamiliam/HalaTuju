@@ -222,6 +222,10 @@ RELATIONSHIP_DOC_TYPES = frozenset({'birth_certificate'})
 SUPPORTING_NAME_CHECK_TYPES = frozenset({
     'results_slip', 'str', 'salary_slip', 'epf', 'offer_letter',
 } | BILL_DOC_TYPES | RELATIONSHIP_DOC_TYPES)
+# Free-text docs (the letter of intent) that get OCR'd into vision_fields['text'] so
+# Check-2's submission review can read the student's motivation in her own words. No
+# name/address check, no field extraction — just the plain text. Soft, never blocks.
+TEXT_READ_DOC_TYPES = frozenset({'statement_of_intent'})
 
 # Accepted upload formats: images (phone photos) + PDF (scan-to-PDF / digital docs
 # like EPF & payslips). Everything else (video, etc.) is rejected. Before this
@@ -321,6 +325,11 @@ class DocumentListCreateView(APIView):
             if doc.doc_type in _vision.GEMINI_EXTRACT_DOC_TYPES:
                 self._maybe_extract_fields(app, doc, _vision, ocr, names, postcode, city,
                                            check_address, match, _settings)
+        # P1 (Check 2): the letter of intent — OCR its plain text so the submission
+        # review can read motivation. No matching/extraction, just the text. Soft.
+        elif doc.doc_type in TEXT_READ_DOC_TYPES:
+            from . import vision as _vision
+            _vision.read_text_document(doc)
         # S3: a new upload may clear a verdict gap → auto-resolve its ticket
         # (and link the doc), or surface a fresh ticket. Idempotent, never blocks.
         from .resolution import sync_resolution_items
@@ -389,6 +398,7 @@ class ResolutionItemListView(APIView):
 
     def get(self, request):
         from .resolution import sync_resolution_items
+        from .check2_queries import sync_check2_queries
         from .serializers import ResolutionItemSerializer
         app = _current_application(request.user_id)
         # Check-2 gate: NO student queries until the /application is submitted
@@ -398,7 +408,9 @@ class ResolutionItemListView(APIView):
         if app is None or app.profile_completed_at is None:
             return Response({'open': [], 'resolved': []})
         sync_resolution_items(app)
-        items = list(app.resolution_items.all())  # ordered -created_at
+        sync_check2_queries(app)   # Check 2 STEP 2: AI clarify queries
+        # 'human' items are the reviewer's — never shown to the student.
+        items = [i for i in app.resolution_items.all() if i.kind != 'human']
         openq = [i for i in items if i.status == 'open']
         resolved = [i for i in items if i.status == 'resolved'][:10]
         return Response({
@@ -425,8 +437,10 @@ class ResolutionItemResolveView(APIView):
         if item.kind == 'doc':
             return Response({'error': 'upload_doc_instead', 'doc_type': item.doc_type},
                             status=status.HTTP_400_BAD_REQUEST)
+        if item.kind == 'human':   # reviewer-only — not the student's to answer
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         text = (request.data.get('text') or '').strip()
-        if item.kind == 'explanation' and not text:
+        if item.kind in ('explanation', 'clarify') and not text:
             return Response({'error': 'text_required'}, status=status.HTTP_400_BAD_REQUEST)
         resolve_item(item, text=text, by='student')
         # The pathway confirmation is the one 'confirm' that also WRITES state: the
@@ -712,6 +726,8 @@ class CronRunView(APIView):
         'vision-outage': 'alert_vision_outage',
         'decision-emails': 'send_pending_decision_emails',
         'application-reminders': 'send_application_reminders',
+        'query-reminders': 'send_query_reminders',
+        'autogenerate-profiles': 'autogenerate_profiles',
     }
 
     def post(self, request, job):

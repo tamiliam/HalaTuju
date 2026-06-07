@@ -667,6 +667,19 @@ def ocr_document(doc) -> dict:
     return {'text': '', 'error': 'could not fetch image'} if image is None else extract_text(image, doc.content_type)
 
 
+def read_text_document(doc, *, ocr=None) -> dict:
+    """OCR a FREE-TEXT document (e.g. the statement_of_intent / letter of intent) and store
+    its plain text in ``vision_fields['text']`` for downstream analysis (Check 2 reads it for
+    motivation + clues the structured form doesn't capture). Soft — never blocks an upload."""
+    from django.utils import timezone
+    ocr = ocr if ocr is not None else ocr_document(doc)
+    doc.vision_fields = {'text': (ocr.get('text') or '').strip(),
+                         'student_verdict': 'read', 'error': ocr.get('error', '') or ''}
+    doc.vision_fields_run_at = timezone.now()
+    doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])
+    return doc.vision_fields
+
+
 def run_vision_match_for_document(doc, *, names, postcode='', city='', check_address=False, ocr=None) -> dict:
     """OCR a supporting document and record soft verdicts: does an expected name
     appear (``vision_name_match``), and — for bills — does the home address appear

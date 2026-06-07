@@ -20,6 +20,7 @@ export function iconFor(kind: ResolutionItem['kind']): ActionIcon {
     case 'doc':
       return 'document'
     case 'explanation':
+    case 'clarify': // Check 2: a one-line answer, same as an explanation
       return 'chat'
     case 'confirm':
     default:
@@ -82,6 +83,11 @@ export const KNOWN_CODES = [
   'offer_name_mismatch',
   'pathway_undeclared',
   'pathway_confirm',
+  // Check 2 STEP 2 — AI clarify queries (kind='clarify', source='check2').
+  'course_unspecified',
+  'sibling_level_unknown',
+  'device_status_unknown',
+  'transport_cost_unknown',
 ] as const
 
 export type KnownCode = (typeof KNOWN_CODES)[number]

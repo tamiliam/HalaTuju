@@ -166,6 +166,33 @@ def _detect_jkm_high_income(application) -> Optional[Anomaly]:
     return Anomaly('jkm_high_income', {'income': income})
 
 
+# Utilities eating more than this share of declared monthly income looks
+# disproportionate (e.g. RM180 of bills on a declared RM600 income = 30%).
+_UTILITY_INCOME_RATIO_FLOOR = 0.20
+
+
+def _detect_utility_high_vs_income(application) -> Optional[Anomaly]:
+    """P3 (Check 2): the household's utility bills look disproportionate to the income
+    it declared — a soft consistency flag for the reviewer, never a gate. Fires only
+    when both a monthly utility charge and a stated household income are known and the
+    bills exceed ~20% of the declared monthly income (the actual numbers go to the
+    reviewer so they can ask how a low-income household sustains the spend)."""
+    from . import income_engine
+    profile = application.profile
+    income = (profile.household_income or 0) if profile else 0
+    if income <= 0:
+        return None
+    total = income_engine.utility_monthly_total(application)
+    if not total or total <= 0:
+        return None
+    ratio = total / income
+    if ratio < _UTILITY_INCOME_RATIO_FLOOR:
+        return None
+    return Anomaly('utility_high_vs_income', {
+        'utility': total, 'income': income, 'percent': round(ratio * 100),
+    })
+
+
 def _detect_household_size_one(application) -> Optional[Anomaly]:
     """Household of one is unusual — verify they aren't accidentally counting
     only themselves while still living with family."""
@@ -175,16 +202,40 @@ def _detect_household_size_one(application) -> Optional[Anomaly]:
     return Anomaly('household_size_one', {})
 
 
+def _sibling_tertiary_count(application):
+    """Authoritative number of siblings in TERTIARY education (P2, Check 2).
+
+    Reads the school/tertiary split (the income wizard's two counters) first; it is
+    authoritative. Falls back to the legacy combined ``siblings_studying_count`` ONLY
+    when it is unambiguous — a legacy 0 means nobody is studying, so tertiary is 0.
+    Returns ``None`` when the split is missing and the legacy count is a positive
+    number that can't be broken down (→ a Check-2 clarify-query, not a guess)."""
+    t = application.siblings_in_tertiary
+    if t is not None:
+        return t
+    legacy = application.siblings_studying_count
+    if legacy == 0:
+        return 0
+    return None  # ambiguous: split unknown, some siblings studying → ask
+
+
 def _detect_first_in_family_with_siblings_studying(application) -> Optional[Anomaly]:
-    """First-to-university + siblings studying is a mild contradiction — could
-    be younger siblings still in school (not at university), in which case
-    both are true. Worth asking."""
+    """First-to-university + a sibling already in TERTIARY is a real contradiction
+    (worth asking). Siblings only in *school* do NOT contradict it — so when the
+    split says tertiary == 0, the first-gen claim auto-resolves and no flag is
+    raised (P2). When the split is unknown but the legacy count says some siblings
+    study, we still can't confirm → flag it for a clarify-query."""
     if not application.first_in_family:
         return None
-    count = application.siblings_studying_count
-    if count is None or count <= 0:
+    tertiary = _sibling_tertiary_count(application)
+    if tertiary is None:
+        count = application.siblings_studying_count
+        if count and count > 0:
+            return Anomaly('first_in_family_with_siblings_studying', {'count': count})
         return None
-    return Anomaly('first_in_family_with_siblings_studying', {'count': count})
+    if tertiary > 0:
+        return Anomaly('first_in_family_with_siblings_studying', {'count': tertiary})
+    return None  # tertiary == 0 → first-gen holds, auto-resolved
 
 
 def _detect_funding_other_without_note(application) -> Optional[Anomaly]:
@@ -272,6 +323,7 @@ _DETECTORS = (
     _detect_vision_name_mismatch,
     _detect_address_state_mismatch,
     _detect_jkm_high_income,
+    _detect_utility_high_vs_income,
     _detect_household_size_one,
     _detect_first_in_family_with_siblings_studying,
     _detect_funding_other_without_note,

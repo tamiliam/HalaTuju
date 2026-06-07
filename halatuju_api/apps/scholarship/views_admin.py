@@ -21,7 +21,7 @@ from .models import (
     Sponsor, SponsorProfile, Sponsorship,
 )
 from .profile_engine import (
-    generate_anonymous_profile, generate_sponsor_profile, refine_sponsor_profile,
+    generate_anonymous_profile, refine_sponsor_profile,
 )
 from .serializers import ApplicantDocumentSerializer, RefereeSerializer
 from .serializers_admin import (
@@ -278,9 +278,12 @@ class AdminRunVisionView(_AdminBase):
         if doc is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         from . import vision as _vision
-        from .views import BILL_DOC_TYPES, SUPPORTING_NAME_CHECK_TYPES
+        from .views import BILL_DOC_TYPES, SUPPORTING_NAME_CHECK_TYPES, TEXT_READ_DOC_TYPES
         if doc.doc_type in ('ic', 'parent_ic'):
             _vision.run_vision_for_document(doc)
+        elif doc.doc_type in TEXT_READ_DOC_TYPES:
+            # P1 (Check 2): re-read the letter of intent's plain text.
+            _vision.read_text_document(doc)
         elif doc.doc_type in SUPPORTING_NAME_CHECK_TYPES:
             # Replicate the upload-time supporting-doc processing (forced, not throttled).
             profile = getattr(self._get_application(pk), 'profile', None)
@@ -314,16 +317,11 @@ class AdminGenerateProfileView(_AdminBase):
         if app is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
         # Optional output language ('en'/'ms'); defaults to the applicant's locale.
-        result = generate_sponsor_profile(app, language=request.data.get('language'))
-        if 'error' in result:
-            return Response({'error': result['error']}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        sp, _ = SponsorProfile.objects.get_or_create(application=app)
-        sp.draft_markdown = result['markdown']
-        sp.model_used = result.get('model_used', '')
-        sp.generated_at = timezone.now()
-        if sp.status == 'published':
-            sp.status = 'draft'  # regenerating a published profile reverts it to draft
-        sp.save()
+        # Shared store path (Check 2 STEP 3): same as the auto-trigger, with claim-gating.
+        from .services import generate_ready_profile
+        sp, error = generate_ready_profile(app, language=request.data.get('language'))
+        if error is not None:
+            return Response({'error': error}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         return Response(SponsorProfileSerializer(sp).data)
 
 

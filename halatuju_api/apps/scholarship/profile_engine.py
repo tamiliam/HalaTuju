@@ -39,6 +39,17 @@ Background, Academic record, Pathway plan, Funding need, Why support matters. Us
 information given below; do not invent facts. Where information is missing, say so briefly \
 rather than guessing.
 
+VERIFICATION — do not over-claim:
+- Some fields are marked "{do_not_claim}". Those are NOT verified. Do NOT assert them as fact; \
+omit them rather than hedge.
+- Report grades as the actual band mix given (e.g. "ten distinctions across A+/A/A−"); never \
+round up or imply a uniform top grade.
+
+TONE — honest and dignified:
+- Factual warmth, not fundraising melodrama. Do NOT mine hardship for sympathy and do NOT use \
+clichés like "breaking the cycle" or "ripple effect". Let the facts carry the case.
+- Do not invent specifics (an age, a number of children, a relationship) that are not stated below.
+
 Student: {name}
 School: {school}
 Qualification: {qualification}    SPM A-count: {spm_a_count}    STPM PNGK: {stpm_pngk}
@@ -108,6 +119,31 @@ def _yesno(v):
     return 'yes' if v else 'no'
 
 
+# ── Check 2 §6: claim-gating ─────────────────────────────────────────────────
+# The generator must assert ONLY claims the deterministic layer verifies — the fix
+# for the live bug where the profile asserted "first-generation" while it was merely
+# an unverified flag. The STEP-1 facts ledger (submission_review) is the source of
+# truth for what's verified; this gates the one assertion the form lets a student make
+# about themselves that we can independently check (first-to-university, via the
+# sibling split). Other unverified narrative is already attributed to "the student".
+_DO_NOT_CLAIM = 'not established — do not claim'
+
+
+def _ledger_verification(application):
+    """{claim: verification} from the STEP-1 facts ledger (verified/reported/…)."""
+    from .submission_review import build_facts_ledger
+    return {row['claim']: row['verification'] for row in build_facts_ledger(application)}
+
+
+def _gated_first_in_family(application, ledger):
+    """'yes' only when the sibling split VERIFIES first-to-university; 'no' when the
+    student didn't claim it; otherwise the do-not-claim sentinel so the model never
+    asserts an unverified flag as fact (Check 2 §6)."""
+    if not application.first_in_family:
+        return 'no'
+    return 'yes' if ledger.get('first_in_family') == 'verified' else _DO_NOT_CLAIM
+
+
 def _pathway(application):
     bits = []
     if application.field_of_study:
@@ -150,9 +186,11 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
 
     spm_a_count = count_spm_a_grades(getattr(profile, 'grades', None)) if profile else 0
     cats_str, months, note = _funding(application)
+    ledger = _ledger_verification(application)
 
     return PROFILE_PROMPT.format(
         target_language=target_language,
+        do_not_claim=_DO_NOT_CLAIM,
         name=pval('name', 'the applicant'),
         school=pval('school'),
         qualification=(pval('exam_type', 'n/a') or 'n/a'),
@@ -162,7 +200,7 @@ def _build_prompt(application, target_language=DEFAULT_LANGUAGE):
         household_size=pval('household_size'),
         receives_str=_yesno(getattr(profile, 'receives_str', None) if profile else None),
         receives_jkm=_yesno(getattr(profile, 'receives_jkm', None) if profile else None),
-        first_in_family=_yesno(application.first_in_family),
+        first_in_family=_gated_first_in_family(application, ledger),
         parents_occupation=val(application.parents_occupation),
         siblings_studying=_siblings_studying_display(application),
         pathway=_pathway(application),
@@ -298,6 +336,16 @@ Write factual, warm, concise prose (~250-350 words) in Markdown with these secti
 Academic record, Pathway plan, Funding need, Why support matters. Use ONLY the information below; \
 do not invent facts. Where information is missing, say so briefly.
 
+VERIFICATION — do not over-claim:
+- Some fields are marked "{do_not_claim}". Those are NOT verified. Do NOT assert them as fact; \
+omit them rather than hedge.
+- Report grades as the actual band mix given; never round up or imply a uniform top grade.
+
+TONE — honest and dignified:
+- Factual warmth, not fundraising melodrama. Do NOT mine hardship for sympathy and do NOT use \
+clichés like "breaking the cycle" or "ripple effect". Let the facts carry the case.
+- Do not invent specifics (an age, a number of children, a relationship) that are not stated below.
+
 Qualification: {qualification}    SPM A-count: {spm_a_count}    STPM PNGK: {stpm_pngk}
 Home state: {state}
 Household income (RM/month): {household_income}    Household size: {household_size}
@@ -331,9 +379,11 @@ def _build_anon_prompt(application, target_language=DEFAULT_LANGUAGE):
 
     spm_a_count = count_spm_a_grades(getattr(profile, 'grades', None)) if profile else 0
     cats_str, months, note = _funding(application)
+    ledger = _ledger_verification(application)
 
     return ANON_PROMPT.format(
         target_language=target_language,
+        do_not_claim=_DO_NOT_CLAIM,
         qualification=(pval('exam_type', 'n/a') or 'n/a'),
         spm_a_count=spm_a_count,
         stpm_pngk=pval('stpm_cgpa', 'n/a'),
@@ -342,7 +392,7 @@ def _build_anon_prompt(application, target_language=DEFAULT_LANGUAGE):
         household_size=pval('household_size'),
         receives_str=_yesno(getattr(profile, 'receives_str', None) if profile else None),
         receives_jkm=_yesno(getattr(profile, 'receives_jkm', None) if profile else None),
-        first_in_family=_yesno(application.first_in_family),
+        first_in_family=_gated_first_in_family(application, ledger),
         parents_occupation=val(application.parents_occupation),
         siblings_studying=_siblings_studying_display(application),
         pathway=_pathway(application),

@@ -157,7 +157,7 @@ class TestAdminScholarship(TestCase):
         self.assertTrue(body['consent_to_contact'])
         self.assertEqual(body['help_university'], 'yes')
 
-    @patch('apps.scholarship.views_admin.generate_sponsor_profile',
+    @patch('apps.scholarship.profile_engine.generate_sponsor_profile',
            return_value={'markdown': '# Priya\nA strong candidate.', 'model_used': 'gemini-2.5-flash'})
     def test_generate_profile(self, _mock):
         self._auth(ADMIN)
@@ -168,7 +168,7 @@ class TestAdminScholarship(TestCase):
         self.assertIn('strong candidate', body['draft_markdown'])
         self.assertEqual(body['model_used'], 'gemini-2.5-flash')
 
-    @patch('apps.scholarship.views_admin.generate_sponsor_profile', return_value={'error': 'AI down'})
+    @patch('apps.scholarship.profile_engine.generate_sponsor_profile', return_value={'error': 'AI down'})
     def test_generate_profile_ai_error(self, _mock):
         self._auth(ADMIN)
         r = self.client.post(f'/api/v1/admin/scholarship/applications/{self.app.id}/generate-profile/')
@@ -397,6 +397,19 @@ class TestAdminScholarship(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertTrue(mock_match.called)
         self.assertTrue(mock_extract.called)   # the grade read
+
+    @patch('apps.scholarship.vision.ocr_document')
+    def test_admin_rerun_vision_on_statement_of_intent(self, mock_ocr):
+        # P1 (Check 2): the letter of intent re-reads to plain text in vision_fields['text'].
+        mock_ocr.return_value = {'text': 'I want to become a teacher because...', 'error': ''}
+        loi = ApplicantDocument.objects.create(
+            application=self.app, doc_type='statement_of_intent', storage_path='loi/abc')
+        self._auth(ADMIN)
+        r = self.client.post(self._rerun_vision_url(loi.id))
+        self.assertEqual(r.status_code, 200)
+        loi.refresh_from_db()
+        self.assertEqual(loi.vision_fields.get('text'), 'I want to become a teacher because...')
+        self.assertEqual(loi.vision_fields.get('student_verdict'), 'read')
 
     def test_admin_rerun_vision_rejects_unsupported_type(self):
         # A type with no automatic check (e.g. guardianship_letter) still 400s.
