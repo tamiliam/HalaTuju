@@ -18,7 +18,7 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 
 | # | Sprint | Feature | Size | Depends on |
 |---|--------|---------|------|------------|
-| 0 | Boundary foundation (allowlist widen) | (cross-cutting) | S–M, BE | — |
+| 0 | Boundary foundation (allowlist widen) ✅ **DONE** (`feat/sponsor-boundary-foundation`, pending merge) | (cross-cutting) | S–M, BE | — |
 | 1 | Sponsor landing + live counter ⭐ | F1 | M, FE+tiny BE | 0 (counter only) |
 | 2 | Student post-match onboarding — backend ⭐ | F8a | M, BE | — |
 | 3 | Student post-match onboarding — frontend ⭐ | F8b | M, FE | 2 |
@@ -37,7 +37,7 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 
 ## Per-sprint detail
 
-### Sprint 0 — Boundary foundation (widen the allowlist) · BE
+### Sprint 0 — Boundary foundation (widen the allowlist) · BE  ✅ DONE 2026-06-07 (branch `feat/sponsor-boundary-foundation`; 41 sponsor tests green; pending merge)
 **Deliverable:** the sponsor-facing allowlist reflects the owner Boundary decision, fail-closed, with the trusted gate.
 - **Widen** `SponsorPoolCardSerializer` (`serializers.py:38`) + `SponsorPoolDetailSerializer` (`:80`): add academic results/CGPA, field/course, and **`institution` (trusted-gated)**. Keep every field explicit/derived.
 - **Add** `Sponsor.is_trusted` (default `True`) — migration `0043` (scholarship is at `0042`). Institution field renders only when the requesting sponsor `is_trusted`.
