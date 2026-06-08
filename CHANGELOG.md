@@ -119,6 +119,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `actionCentre` known‑code, and its i18n in all three namespaces ×3 languages; tests updated. No migration.
 
 ### Changed
+- **Documents — removed the redundant "Vision OCR (soft signal)" + "Parent/guardian IC (Vision OCR)" blocks.** They
+  were legacy display (S13/S17) that the cockpit now reproduces everywhere else: the NRIC/Name match pills duplicated the
+  IDENTITY document row's green "Name · IC No" labels (same `vision_*_verdict` fields), the "Re-run Vision" button
+  duplicated each row's own Re-run (same `doReRunVision(doc.id)` call), and any real mismatch already surfaces as a flag
+  in Outstanding (`address_state_mismatch`, `declaration_name_mismatch`). FE-only; the OCR data + per-doc Re-run are
+  unchanged. i18n parity 2137.
 - **Decision panel — removed the whole Verify-&-accept step; "Save verdict" is now the single accept.** Per owner
   review: the programme does not re-verify the IC here — identity is already verified at the **consent gate**
   (`services` IC check: `nric_match`, blocks `ic_nric_mismatch`), and the NRIC is locked to the student by then, so a
