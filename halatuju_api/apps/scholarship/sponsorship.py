@@ -15,6 +15,7 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from . import pool
+from .emails import send_award_confirmed_email
 from .models import Consent, Donation, Sponsorship, SponsorProfile
 from .services import CONSENT_VERSION, is_minor, record_consent
 
@@ -119,6 +120,14 @@ def respond_to_award(application, *, action, locale='en', granted_by='self',
 
     application.status = 'sponsored'
     application.save(update_fields=['status'])
+
+    # F8a: tell the student their funding is confirmed + point them to onboarding.
+    # NO sponsor identity in the email (B4 two-way anonymity). Best-effort.
+    name = getattr(application.profile, 'name', '') if application.profile else ''
+    send_award_confirmed_email(
+        to_email=application.notify_email, applicant_name=name,
+        programme_name=application.cohort.name, lang=locale,
+    )
     return sponsorship
 
 

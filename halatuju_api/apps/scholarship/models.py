@@ -279,6 +279,9 @@ class ScholarshipApplication(models.Model):
     # profile (status shortlisted → profile_complete). Completion is NOT a
     # freeze — the student can still add documents afterwards.
     profile_completed_at = models.DateTimeField(null=True, blank=True)
+    # B40 Phase E/F (F8a): stamped when the student completes post-award onboarding
+    # (acknowledgement + questionnaire). The hard gate before the first disbursement.
+    onboarded_at = models.DateTimeField(null=True, blank=True)
     # Phase C: the admin's "please send more documentation" request. Surfaced
     # read-only on the student's Step 4; does not change status.
     info_request_note = models.TextField(blank=True, default='')
@@ -743,6 +746,31 @@ class Consent(models.Model):
 
     def __str__(self):
         return f'Consent {self.consent_type} v{self.version} for application #{self.application_id}'
+
+
+class OnboardingResponse(models.Model):
+    """B40 Phase E/F (F8a): the student's post-award onboarding — the questionnaire
+    answers + the acknowledgement consent. One row per application (re-submitting
+    updates it). Kept as a dedicated row rather than a JSON blob on the application
+    for a clean audit trail of what was answered and when. The matching
+    ``student_onboarding_ack`` Consent is the legal record; this holds the content."""
+    application = models.OneToOneField(
+        ScholarshipApplication, on_delete=models.CASCADE, related_name='onboarding_response',
+    )
+    # Free-form questionnaire payload (the F8b frontend defines the shape); JSON so
+    # the questions can evolve without a migration. Never holds identity documents.
+    answers = models.JSONField(default=dict, blank=True)
+    consent = models.ForeignKey(
+        Consent, on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+    )
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'onboarding_responses'
+
+    def __str__(self):
+        return f'OnboardingResponse for application #{self.application_id}'
 
 
 class SponsorProfile(models.Model):

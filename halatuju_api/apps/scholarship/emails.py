@@ -88,6 +88,54 @@ PASS_BODIES = {
     ),
 }
 
+# ── Award confirmed (F8a) — sent when a student/guardian ACCEPTS an award. NO ──
+# sponsor identity anywhere (B4 two-way anonymity); points to onboarding. ─────────
+AWARD_CONFIRMED_SUBJECTS = {
+    'en': 'Your {programme} funding is confirmed 🎉',
+    'ms': 'Pembiayaan {programme} anda disahkan 🎉',
+    'ta': 'உங்கள் {programme} நிதியுதவி உறுதிசெய்யப்பட்டது 🎉',
+}
+AWARD_CONFIRMED_BODIES = {
+    'en': (
+        "Dear {name},\n\n"
+        "Wonderful news — your funding for the {programme} has been confirmed. A "
+        "supporter has chosen to fund your studies.\n\n"
+        "There's one short step left before we begin: please complete your "
+        "onboarding. It takes a few minutes — a short welcome, a few details to "
+        "confirm, and a couple of questions so we can support you well.\n\n"
+        "Complete your onboarding here:\n{link}\n\n"
+        "Your supporter's details are kept private, just as yours are kept private "
+        "from them. You'll be able to send an anonymous thank-you note later.\n\n"
+        "Warm regards,\nThe {programme} Team"
+    ),
+    'ms': (
+        "Salam {name},\n\n"
+        "Berita baik — pembiayaan anda untuk {programme} telah disahkan. Seorang "
+        "penyokong telah memilih untuk membiayai pengajian anda.\n\n"
+        "Tinggal satu langkah pendek sebelum kita bermula: sila lengkapkan proses "
+        "onboarding anda. Ia mengambil masa beberapa minit — aluan ringkas, beberapa "
+        "butiran untuk disahkan, dan beberapa soalan supaya kami dapat menyokong anda "
+        "dengan baik.\n\n"
+        "Lengkapkan onboarding anda di sini:\n{link}\n\n"
+        "Butiran penyokong anda dirahsiakan, sama seperti butiran anda dirahsiakan "
+        "daripada mereka. Anda boleh menghantar nota terima kasih tanpa nama kemudian.\n\n"
+        "Salam hormat,\nPasukan {programme}"
+    ),
+    'ta': (
+        "அன்புள்ள {name},\n\n"
+        "மகிழ்ச்சியான செய்தி — {programme}-க்கான உங்கள் நிதியுதவி உறுதிசெய்யப்பட்டது. ஒரு "
+        "ஆதரவாளர் உங்கள் படிப்புக்கு நிதியளிக்கத் தேர்ந்தெடுத்துள்ளார்.\n\n"
+        "நாம் தொடங்குவதற்கு முன் ஒரே ஒரு சிறிய படி உள்ளது: உங்கள் onboarding-ஐ "
+        "நிறைவுசெய்யவும். இதற்கு சில நிமிடங்களே ஆகும் — ஒரு குறுகிய வரவேற்பு, உறுதிப்படுத்த "
+        "சில விவரங்கள், மற்றும் நாங்கள் உங்களை நன்றாக ஆதரிக்க சில கேள்விகள்.\n\n"
+        "உங்கள் onboarding-ஐ இங்கே நிறைவுசெய்யவும்:\n{link}\n\n"
+        "உங்கள் விவரங்கள் ஆதரவாளரிடமிருந்து ரகசியமாக வைக்கப்படுவதைப் போலவே, ஆதரவாளரின் "
+        "விவரங்களும் ரகசியமாக வைக்கப்படுகின்றன. பின்னர் நீங்கள் அடையாளம் தெரியாத நன்றிக் "
+        "குறிப்பை அனுப்பலாம்.\n\n"
+        "அன்புடன்,\n{programme} குழு"
+    ),
+}
+
 # ── Decline / not this round (warm; sent at +decline_delay_hours, ~48h, by the scheduler) ──
 FAIL_SUBJECTS = {
     'en': 'Update on your {programme} application',
@@ -344,6 +392,13 @@ def send_submission_received_email(to_email, applicant_name, programme_name, lan
 
 def send_pass_email(to_email, applicant_name, programme_name, lang='en'):
     return _send(to_email, PASS_SUBJECTS, PASS_BODIES, applicant_name, programme_name, lang)
+
+
+def send_award_confirmed_email(to_email, applicant_name, programme_name, lang='en'):
+    """F8a: sent when a student/guardian ACCEPTS an award. Carries NO sponsor identity
+    (B4 two-way anonymity) — only that funding is confirmed + the onboarding link."""
+    return _send(to_email, AWARD_CONFIRMED_SUBJECTS, AWARD_CONFIRMED_BODIES,
+                 applicant_name, programme_name, lang)
 
 
 def send_fail_email(to_email, applicant_name, programme_name, lang='en'):

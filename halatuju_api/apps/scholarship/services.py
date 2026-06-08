@@ -13,7 +13,8 @@ from .emails import (
     send_submission_received_email,
 )
 from .models import (
-    ApplicantDocument, Consent, FundingNeed, ScholarshipApplication, ScholarshipCohort,
+    ApplicantDocument, Consent, FundingNeed, OnboardingResponse,
+    ScholarshipApplication, ScholarshipCohort,
 )
 
 
@@ -23,6 +24,20 @@ class IncompleteProfileError(Exception):
     def __init__(self, completeness):
         self.completeness = completeness
         super().__init__('Profile is not complete.')
+
+
+class OnboardingError(Exception):
+    """Raised when a student tries to complete onboarding out of order (e.g. before
+    their award has been accepted). Carries a short ``code`` for the view."""
+    def __init__(self, code):
+        self.code = code
+        super().__init__(code)
+
+
+# B40 Phase E/F (F8a): the consent a student records when they finish post-award
+# onboarding (acknowledging the programme terms). A free string consent_type — no
+# model migration needed (Consent.consent_type is an open CharField).
+ONBOARDING_CONSENT_TYPE = 'student_onboarding_ack'
 
 
 # Post-shortlist states in which the student can still edit Step 4 (add documents,
@@ -1134,7 +1149,7 @@ def save_application_details(application, data):
 # NRIC, hard-gates on name+NRIC match against parent_ic OCR, and refines the
 # relationship list (older_sibling → brother+sister; other_relative → relative).
 # 0 existing consents on prod at bump time, so this is purely forward-looking.
-CONSENT_VERSION = '2026-draft-3'
+CONSENT_VERSION = '2026-draft-4'  # bumped for the F8a student_onboarding_ack consent
 
 
 # S17/S19 — structured guardian relationship codes. Father/mother only need
@@ -1205,3 +1220,30 @@ def record_consent(application, *, consent_type, locale, granted_by,
         guardian_nric=guardian_nric,
         ip_address=ip,
     )
+
+
+def complete_onboarding(application, *, answers=None, locale='en', ip=None):
+    """B40 Phase E/F (F8a): the student finishes post-award onboarding.
+
+    Records the ``student_onboarding_ack`` consent (granted_by='self' — the award
+    itself was accepted earlier, with the guardian gate for minors), stores the
+    questionnaire answers on the (created-or-updated) OnboardingResponse, and stamps
+    ``onboarded_at`` — the hard gate the disbursement flow checks. Re-running updates
+    the answers and re-stamps (idempotent enough for a "save" button).
+
+    Onboarding only makes sense once the award is accepted, so it requires the
+    application to be 'sponsored'; otherwise raises ``OnboardingError('not_awarded')``.
+    """
+    if application.status != 'sponsored':
+        raise OnboardingError('not_awarded')
+    consent = record_consent(
+        application, consent_type=ONBOARDING_CONSENT_TYPE, locale=locale,
+        granted_by='self', guardian_name='', guardian_relationship='', ip=ip,
+    )
+    response, _ = OnboardingResponse.objects.update_or_create(
+        application=application,
+        defaults={'answers': answers or {}, 'consent': consent},
+    )
+    application.onboarded_at = timezone.now()
+    application.save(update_fields=['onboarded_at'])
+    return response
