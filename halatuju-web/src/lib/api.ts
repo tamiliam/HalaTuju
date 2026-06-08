@@ -1001,6 +1001,7 @@ export interface ApplicationCompleteness {
   documents_done: boolean
   consent_done: boolean
   address_done: boolean
+  family_done: boolean
   complete: boolean
 }
 
@@ -1041,6 +1042,15 @@ export interface ScholarshipApplication {
   siblings_studying_count: number | null
   family_context: string
   daily_life: string
+  // Structured family roster (redesign 2026-06) — the new inputs. first_in_family
+  // + parents_occupation above are now DERIVED from these on the backend.
+  father_name: string
+  father_occupation: string
+  father_occupation_other: string
+  mother_name: string
+  mother_occupation: string
+  mother_occupation_other: string
+  other_family_members: Array<{ role: 'brother' | 'sister' | 'guardian'; occupation: string; occupation_other?: string }>
   // Income Check-1 wizard answers (Documents → Household income).
   income_route: '' | 'str' | 'salary'
   income_earner: '' | 'father' | 'mother' | 'guardian' // STR route (single earner)

@@ -4,6 +4,7 @@
  * Logic lives here (node-testable) so the page component stays a thin renderer.
  */
 import type { StudentProfile, ScholarshipApplication, EligibleCourse, PathwayResult, StpmEligibleCourse } from '@/lib/api'
+import { cleanOtherMembers, type OtherMember } from '@/lib/familyRoster'
 
 // SPM grades that count as an "A" for the shortlist (A+, A and A- all count,
 // matching the backend's count_spm_a_grades and the B40 candidate profiles).
@@ -669,15 +670,19 @@ export function popOnboardingReturn(storage?: StorageLike): string | null {
 // ── STEP 2: deeper-info + funding-need form (Sprint 4b) ──────────────────
 
 export interface DetailsFormState {
-  // Card A — About your family (S2)
-  firstInFamily: boolean
-  parentsOccupation: string
-  // S15: how many siblings are currently studying (proxy for family education
-  // burden). String for the <input> (empty = "not provided"); converts to
-  // int|null in buildDetailsPayload, mirroring programmeMonths. The legacy
-  // boolean is dropped from the form state; backend still accepts it for
-  // back-compat from older clients.
-  siblingsStudyingCount: string
+  // Card A — About your family (redesign 2026-06): structured roster. first_in_family
+  // + parents_occupation are DERIVED on the backend from this, so the form no longer
+  // holds/sends them. occupation_other only matters when occupation === 'other'.
+  fatherName: string
+  fatherOccupation: string          // a PROFESSION_CODE, '' = not yet chosen
+  fatherOccupationOther: string
+  motherName: string
+  motherOccupation: string
+  motherOccupationOther: string
+  otherFamilyMembers: OtherMember[]
+  // Sibling steppers — null = NOT YET ANSWERED (compulsory; "0" is a deliberate answer).
+  siblingsInSchool: number | null
+  siblingsInTertiary: number | null
   familyContext: string
   // Card B — About you (S2; aspirations/plans/fears pre-existing, daily_life new)
   aspirations: string
@@ -700,10 +705,16 @@ export interface DetailsFormState {
 
 export function emptyDetailsForm(): DetailsFormState {
   return {
-    // Card A — About your family
-    firstInFamily: false,
-    parentsOccupation: '',
-    siblingsStudyingCount: '',
+    // Card A — About your family (structured roster)
+    fatherName: '',
+    fatherOccupation: '',
+    fatherOccupationOther: '',
+    motherName: '',
+    motherOccupation: '',
+    motherOccupationOther: '',
+    otherFamilyMembers: [],
+    siblingsInSchool: null,
+    siblingsInTertiary: null,
     familyContext: '',
     // Card B — About you
     aspirations: '',
@@ -725,13 +736,16 @@ export function emptyDetailsForm(): DetailsFormState {
 export function applicationToDetailsForm(app: ScholarshipApplication): DetailsFormState {
   const fn = app.funding_need
   return {
-    // Card A — About your family (S2 narrative fields)
-    firstInFamily: !!app.first_in_family,
-    parentsOccupation: app.parents_occupation || '',
-    // TD-061: count only (the legacy siblings_studying boolean is gone).
-    siblingsStudyingCount: app.siblings_studying_count != null
-      ? String(app.siblings_studying_count)
-      : '',
+    // Card A — About your family (structured roster)
+    fatherName: app.father_name || '',
+    fatherOccupation: app.father_occupation || '',
+    fatherOccupationOther: app.father_occupation_other || '',
+    motherName: app.mother_name || '',
+    motherOccupation: app.mother_occupation || '',
+    motherOccupationOther: app.mother_occupation_other || '',
+    otherFamilyMembers: Array.isArray(app.other_family_members) ? app.other_family_members : [],
+    siblingsInSchool: app.siblings_in_school,
+    siblingsInTertiary: app.siblings_in_tertiary,
     familyContext: app.family_context || '',
     // Card B — About you
     aspirations: app.aspirations || '',
@@ -756,15 +770,17 @@ export function buildDetailsPayload(f: DetailsFormState): Record<string, unknown
   const programmeMonthsInt = pm !== '' ? (parseInt(pm, 10) || null) : null
 
   return {
-    // Card A — About your family (snake_case for the backend)
-    first_in_family: f.firstInFamily,
-    parents_occupation: f.parentsOccupation.trim(),
-    // S15: emit the count (int|null); the legacy boolean is no longer sent by
-    // this client — the backend keeps accepting it from older clients during
-    // the back-compat window (TD-061 will drop the column next session).
-    siblings_studying_count: f.siblingsStudyingCount.trim() !== ''
-      ? (parseInt(f.siblingsStudyingCount.trim(), 10) || 0)
-      : null,
+    // Card A — About your family (structured roster). first_in_family +
+    // parents_occupation are DERIVED on the backend from these — not sent here.
+    father_name: f.fatherName.trim(),
+    father_occupation: f.fatherOccupation,
+    father_occupation_other: f.fatherOccupation === 'other' ? f.fatherOccupationOther.trim() : '',
+    mother_name: f.motherName.trim(),
+    mother_occupation: f.motherOccupation,
+    mother_occupation_other: f.motherOccupation === 'other' ? f.motherOccupationOther.trim() : '',
+    other_family_members: cleanOtherMembers(f.otherFamilyMembers),
+    siblings_in_school: f.siblingsInSchool,
+    siblings_in_tertiary: f.siblingsInTertiary,
     family_context: f.familyContext.trim(),
     // Card B — About you
     aspirations: f.aspirations.trim(),

@@ -25,6 +25,7 @@ import {
   type IncomeEarner,
   type WorkingMember,
 } from '@/lib/incomeWizard'
+import { earningMembers } from '@/lib/familyRoster'
 import DocumentHelpCoach from './DocumentHelpCoach'
 import IncomeClusterCoach from './IncomeClusterCoach'
 import { clusterAnchorKey, clusterDocKey } from '@/lib/documentHelp'
@@ -936,12 +937,17 @@ function IncomeWizard({
   // Q1 prefills from the Apply-stage STR declaration (receives_str): had STR → 'str' (Yes),
   // else 'salary' (No). The student can change it.
   const prefillRoute = app.income_route || (app.receives_str ? 'str' : 'salary')
+  // Phase-2-lite harmonisation: pre-tick the earners derived from the family roster
+  // (the "About your family" professions) so the student doesn't re-name the same
+  // people. UI prefill only — saved when the student confirms/changes a selection.
+  const rosterEarners = earningMembers(app) as WorkingMember[]
   const [ans, setAns] = useState({
     income_route: prefillRoute,
-    income_earner: app.income_earner || '',
-    income_working_members: (app.income_working_members || []) as WorkingMember[],
-    siblings_in_school: app.siblings_in_school,
-    siblings_in_tertiary: app.siblings_in_tertiary,
+    income_earner: app.income_earner
+      || (rosterEarners.find((r) => r === 'father' || r === 'mother' || r === 'guardian') || ''),
+    income_working_members: (app.income_working_members && app.income_working_members.length
+      ? app.income_working_members
+      : rosterEarners) as WorkingMember[],
   })
 
   const save = async (patch: Record<string, unknown>) => {
@@ -994,24 +1000,6 @@ function IncomeWizard({
       ))}
     </div>
   )
-
-  const Stepper = ({ field, value }: { field: string; value: number | null | undefined }) => {
-    const n = value ?? 0
-    // Show "—" until the student actually sets a value. A null field is UNANSWERED;
-    // displaying it as "0" made students think they'd answered when they hadn't, so
-    // the school/tertiary split was almost never captured (it then became a Check-2
-    // query). Any click stores a real number (0 included), clearing the unset state.
-    const unset = value === null || value === undefined
-    return (
-      <div className="flex items-center gap-2 mt-1.5">
-        <button type="button" aria-label="decrease" onClick={() => save({ [field]: Math.max(0, n - 1) })}
-          className="h-7 w-7 rounded-full border border-gray-300 text-gray-600 hover:border-primary-400">−</button>
-        <span className={`w-6 text-center text-sm font-medium ${unset ? 'text-gray-400' : ''}`}>{unset ? '—' : n}</span>
-        <button type="button" aria-label="increase" onClick={() => save({ [field]: Math.min(20, n + 1) })}
-          className="h-7 w-7 rounded-full border border-gray-300 text-gray-600 hover:border-primary-400">+</button>
-      </div>
-    )
-  }
 
   const Question = ({ label, children }: { label: string; children: ReactNode }) => (
     <div>
@@ -1107,20 +1095,8 @@ function IncomeWizard({
         </Question>
       )}
 
-      {/* Family burden */}
-      <div className="grid grid-cols-2 gap-3">
-        <Question label={iq('school')}><Stepper field="siblings_in_school" value={ans.siblings_in_school} /></Question>
-        <Question label={iq('tertiary')}><Stepper field="siblings_in_tertiary" value={ans.siblings_in_tertiary} /></Question>
-      </div>
-      {/* If the student already said (on the Story step) that siblings are studying but
-          hasn't split them here, prompt for it in place — so we capture it now instead
-          of raising a Check-2 query later. */}
-      {(app.siblings_studying_count ?? 0) > 0
-        && (ans.siblings_in_school == null || ans.siblings_in_tertiary == null) ? (
-        <p className="text-xs text-amber-700 mt-1.5">{iq('splitPrompt')}</p>
-      ) : (
-        <p className="text-xs text-gray-500 mt-1.5">{iq('burdenHint')}</p>
-      )}
+      {/* Family burden (siblings in school / tertiary) moved to the Story tab's
+          "About your family" card in the 2026-06 redesign — captured once there. */}
 
       {/* Dynamic checklist — appears once the wizard is answered. Compulsory docs carry a
           red * on the card title; optional docs carry no marker (the * is what distinguishes). */}

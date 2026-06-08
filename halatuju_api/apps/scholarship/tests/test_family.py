@@ -119,3 +119,45 @@ class SaveDerivesLegacyColumnsTests(_AppBase):
         app.refresh_from_db()
         self.assertEqual(app.parents_occupation, 'My dad drives a lorry.')
         self.assertTrue(app.first_in_family)
+
+
+class FamilyCompletenessTests(_AppBase):
+    """The structured roster is compulsory (`family_done`) — names exempt for an
+    absent (deceased / no-contact) parent; both sibling counts must be answered."""
+
+    def _fill(self, app, **over):
+        data = dict(father_name='Aroon', father_occupation='driver',
+                    mother_name='Komathi', mother_occupation='homemaker',
+                    siblings_in_school=1, siblings_in_tertiary=0)
+        data.update(over)
+        save_application_details(app, data)
+        app.refresh_from_db()
+
+    def test_family_done_requires_full_roster(self):
+        from apps.scholarship.services import application_completeness
+        app = self._app()
+        self.assertFalse(application_completeness(app)['family_done'])
+        self._fill(app)
+        self.assertTrue(application_completeness(app)['family_done'])
+
+    def test_name_exempt_for_absent_parent(self):
+        from apps.scholarship.services import application_completeness
+        app = self._app()
+        # Father passed away with no name → still done (name exempt for deceased).
+        self._fill(app, father_name='', father_occupation='deceased')
+        self.assertTrue(application_completeness(app)['family_done'])
+
+    def test_missing_sibling_count_blocks(self):
+        from apps.scholarship.services import application_completeness
+        app = self._app()
+        self._fill(app, siblings_in_tertiary=None)
+        self.assertFalse(application_completeness(app)['family_done'])
+
+    def test_grandfathered_submitted_app_is_exempt(self):
+        from django.utils import timezone
+        from apps.scholarship.services import application_completeness
+        app = self._app()
+        # Already-submitted (profile_completed_at set) → grandfathered, no roster needed.
+        app.profile_completed_at = timezone.now()
+        app.save(update_fields=['profile_completed_at'])
+        self.assertTrue(application_completeness(app)['family_done'])

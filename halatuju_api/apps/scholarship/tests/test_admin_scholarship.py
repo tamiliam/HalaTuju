@@ -213,6 +213,10 @@ class TestAdminScholarship(TestCase):
         ScholarshipApplication.objects.filter(pk=self.app.id).update(
             plans='Study hard', daily_life='Help at home', fears='Worried about fees',
             income_route='str', income_earner='father',   # gate v2: STR route, father earner
+            # 2026-06 redesign: the structured family roster is compulsory.
+            father_name='AROON', father_occupation='driver',
+            mother_name='KOMATHI', mother_occupation='homemaker',
+            siblings_in_school=1, siblings_in_tertiary=0,
             verdict_decided_at=timezone.now())
         FundingNeed.objects.create(application=self.app, categories=['living'], programme_months=36)
         for dt in ('ic', 'results_slip', 'offer_letter', 'parent_ic', 'str'):

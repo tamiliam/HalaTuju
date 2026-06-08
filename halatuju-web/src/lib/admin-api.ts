@@ -276,6 +276,7 @@ export interface AdminCompleteness {
   consent_done: boolean
   address_done: boolean
   guardian_docs_done: boolean
+  family_done: boolean
   complete: boolean
 }
 

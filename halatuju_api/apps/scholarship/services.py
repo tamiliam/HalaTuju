@@ -736,6 +736,7 @@ def application_completeness(application):
         and (profile.city or '').strip()
     )
     guardian_docs_done = _guardian_docs_done(application, profile, present)
+    family_done = _family_done(application)
     return {
         'quiz_done': quiz_done,
         'details_done': details_done,
@@ -744,10 +745,33 @@ def application_completeness(application):
         'consent_done': consent_done,
         'address_done': address_done,
         'guardian_docs_done': guardian_docs_done,
+        'family_done': family_done,
         'complete': (quiz_done and details_done and funding_done
                      and documents_done and consent_done and address_done
-                     and guardian_docs_done),
+                     and guardian_docs_done and family_done),
     }
+
+
+def _family_done(application):
+    """Redesign 2026-06: the structured family roster is compulsory. Father + mother
+    profession set; their name set UNLESS the profession is deceased/no_contact (an
+    absent parent can't always be named); and both sibling counts answered (not None,
+    so "0" is a deliberate answer). Already-submitted apps are grandfathered (they
+    carry the legacy free-text answers) — mirrors the documents-gate grandfather."""
+    if application.profile_completed_at is not None:
+        return True
+    f_occ = application.father_occupation
+    m_occ = application.mother_occupation
+    if not f_occ or not m_occ:
+        return False
+    name_exempt = {'deceased', 'no_contact'}
+    if f_occ not in name_exempt and not (application.father_name or '').strip():
+        return False
+    if m_occ not in name_exempt and not (application.mother_name or '').strip():
+        return False
+    if application.siblings_in_school is None or application.siblings_in_tertiary is None:
+        return False
+    return True
 
 
 def _guardian_docs_done(application, profile, present_doc_types):
