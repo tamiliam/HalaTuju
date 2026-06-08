@@ -2241,6 +2241,9 @@
         }
       },
       "meritScore": "Skor merit",
+      "ownWords": {
+        "toggle": "Tunjukkan kata-kata pelajar sendiri"
+      },
       "studentNote": "Nota pelajar",
       "upu": {
         "applied": "Memohon melalui UPU",
