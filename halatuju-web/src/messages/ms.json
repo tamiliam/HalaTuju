@@ -2323,7 +2323,11 @@
           "academic_grade_mismatch": "{subject}: ditaip {typed}, tetapi slip menunjukkan {slip}. Semak.",
           "academic_grade_uncertain": "{subject}: bacaan kami menunjukkan {slip}, tetapi pelajar menaip {typed} — bacaan A/A+ (±) yang kami tidak pasti. Semak dengan mata pada slip.",
           "grades_verified": "Kesemua {count} gred sepadan dengan slip keputusan.",
-          "offer_letter_missing": "Tiada surat tawaran dimuat naik — diperlukan sebelum kami boleh menyokong tempat pengajian."
+          "offer_letter_missing": "Tiada surat tawaran dimuat naik — diperlukan sebelum kami boleh menyokong tempat pengajian.",
+          "course_unspecified": "Belum memilih kursus/bidang — pelajar telah ditanya apa yang mereka rancang untuk belajar.",
+          "sibling_level_unknown": "Pecahan adik-beradik sekolah lwn pengajian tinggi belum direkod — pelajar telah diminta memecahkan jumlah itu.",
+          "device_status_unknown": "Keperluan peranti tidak diketahui — pelajar telah ditanya sama ada mereka mempunyai komputer riba/tablet.",
+          "transport_cost_unknown": "Kos pengangkutan tidak diketahui — pelajar telah ditanya cara mereka pergi dan anggaran kos bulanan."
         }
       },
       "recordVerdict": {
