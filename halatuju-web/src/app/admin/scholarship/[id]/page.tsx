@@ -463,11 +463,6 @@ export default function AdminScholarshipDetailPage() {
           app.preferred_state,
         ])
         const guardian = (app.guardians && app.guardians[0]) || null
-        const fe = app.funding_estimate
-        const rmRange = (r?: [number, number]) =>
-          !r ? null : r[0] === r[1]
-            ? `RM ${r[0].toLocaleString('en-US')}`
-            : `RM ${r[0].toLocaleString('en-US')}–${r[1].toLocaleString('en-US')}`
         return (
           <div className="space-y-4">
             {/* Two independent columns rather than a row-major grid, so each column
@@ -574,37 +569,7 @@ export default function AdminScholarshipDetailPage() {
             {/* Student's note · Your story · Funding moved into the left column,
                 under the Sponsor profile (the "show the student's own words" reveal). */}
 
-            {/* Check 2 — estimated funding need (per-pathway; a starting point for the
-                award amount). The student's checkboxes above are a signal; this is the
-                estimated GAP after government coverage. */}
-            {fe && (
-              <Card title={t('admin.scholarship.estimate.title')}>
-                {fe.known ? (
-                  <>
-                    <p className="text-xs text-gray-500 mb-1.5">
-                      {t('admin.scholarship.estimate.basis')}: {t(`admin.scholarship.estimate.pathway.${fe.pathway}`)}
-                    </p>
-                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 md:grid-cols-3">
-                      <Field label={t('admin.scholarship.estimate.monthly')} value={rmRange(fe.monthly_total)} />
-                      <Field label={t('admin.scholarship.estimate.oneOff')} value={rmRange(fe.one_off_total)} />
-                      <Field
-                        label={`${t('admin.scholarship.estimate.total')} (${fe.programme_months || 12} ${t('admin.scholarship.estimate.months')})`}
-                        value={rmRange(fe.total)} />
-                    </dl>
-                    {fe.covered.length > 0 && (
-                      <p className="mt-2 text-xs text-gray-500">
-                        {t('admin.scholarship.estimate.covers')}: {fe.covered.join(', ')}
-                      </p>
-                    )}
-                    {fe.review && (
-                      <p className="mt-1 text-xs text-amber-700">{t('admin.scholarship.estimate.reviewNote')}</p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-sm text-gray-500">{t('admin.scholarship.estimate.none')}</p>
-                )}
-              </Card>
-            )}
+            {/* Estimated need relocated to the right column, beside Decision (award sizing). */}
           </div>
         )
       })()}
@@ -1323,22 +1288,6 @@ export default function AdminScholarshipDetailPage() {
       </div>
       )}
 
-      {/* Phase C: assignment — reviewer/super only (viewers no longer see a dead control) */}
-      {canWrite && (
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
-        <h2 className="font-semibold">{t('admin.scholarship.assignTitle')}</h2>
-        <select
-          value={app.assigned_to_id ?? ''}
-          disabled={!!busy}
-          onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
-          className="border rounded-lg px-3 py-2 text-sm w-full sm:w-auto"
-        >
-          <option value="">{t('admin.scholarship.unassigned')}</option>
-          {admins.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-        </select>
-      </div>
-      )}
-
       {/* Phase C: interview capture */}
       <div id="interview-section" className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
@@ -1456,6 +1405,46 @@ export default function AdminScholarshipDetailPage() {
 
       {/* ═══════════════════════ RIGHT COLUMN (sticky) ══════════════════════════ */}
       <div id="record-verdict-panel" className="space-y-4 lg:sticky lg:top-4">
+
+      {/* ── Estimated need — beside Decision (award-sizing input; NOT raw narrative, so
+           NOT hidden). Per-pathway estimated GAP after government coverage. ─────────── */}
+      {(() => {
+        const fe = app.funding_estimate
+        if (!fe) return null
+        const rmRange = (r?: [number, number]) =>
+          !r ? null : r[0] === r[1]
+            ? `RM ${r[0].toLocaleString('en-US')}`
+            : `RM ${r[0].toLocaleString('en-US')}–${r[1].toLocaleString('en-US')}`
+        return (
+          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <h2 className="font-semibold mb-2">{t('admin.scholarship.estimate.title')}</h2>
+            {fe.known ? (
+              <>
+                <p className="text-xs text-gray-500 mb-1.5">
+                  {t('admin.scholarship.estimate.basis')}: {t(`admin.scholarship.estimate.pathway.${fe.pathway}`)}
+                </p>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                  <Field label={t('admin.scholarship.estimate.monthly')} value={rmRange(fe.monthly_total)} />
+                  <Field label={t('admin.scholarship.estimate.oneOff')} value={rmRange(fe.one_off_total)} />
+                  <div className="col-span-2"><Field
+                    label={`${t('admin.scholarship.estimate.total')} (${fe.programme_months || 12} ${t('admin.scholarship.estimate.months')})`}
+                    value={rmRange(fe.total)} /></div>
+                </dl>
+                {fe.covered.length > 0 && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    {t('admin.scholarship.estimate.covers')}: {fe.covered.join(', ')}
+                  </p>
+                )}
+                {fe.review && (
+                  <p className="mt-1 text-xs text-amber-700">{t('admin.scholarship.estimate.reviewNote')}</p>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-gray-500">{t('admin.scholarship.estimate.none')}</p>
+            )}
+          </div>
+        )
+      })()}
 
       {/* ── Decision — audit the four facts (records the verdict) → verify identity →
            accept. The audit→accept gate is preserved (accept stays gated on a complete
@@ -1657,6 +1646,22 @@ export default function AdminScholarshipDetailPage() {
 
         {error && <p className="text-red-600 text-xs">{error}</p>}
       </div>
+
+      {/* ── Assign a reviewer — below Decision, reviewer/super only (viewer-hidden). ─── */}
+      {canWrite && (
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
+        <h2 className="font-semibold">{t('admin.scholarship.assignTitle')}</h2>
+        <select
+          value={app.assigned_to_id ?? ''}
+          disabled={!!busy}
+          onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
+          className="border rounded-lg px-3 py-2 text-sm w-full"
+        >
+          <option value="">{t('admin.scholarship.unassigned')}</option>
+          {admins.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+        </select>
+      </div>
+      )}
 
       </div>{/* end RIGHT column */}
 
