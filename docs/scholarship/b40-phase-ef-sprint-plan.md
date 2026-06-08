@@ -8,8 +8,8 @@
 The PRD specifies nine features across sponsor/reviewer/student. The money-flow backend + anonymised pool exist but are
 **dark behind `SPONSOR_POOL_ENABLED`** (lawyer-gated). This plan sequences the build to a demoable end-state.
 
-**Scope decisions (2026-06-07):**
-- **Build all features except F7** — F7 (reviewer assignment/reassignment) is **deferred** (blocked on Check-2-at-submit, out of scope here). In-scope: **F1, F2, F3, F4, F5, F6, F8, F9** + a boundary foundation + a go-live sprint.
+**Scope decisions (2026-06-07; F7 re-added 2026-06-08):**
+- **Build all nine features** — **F1–F9** + a boundary foundation + a go-live sprint. F7 (reviewer assignment/reassignment) was originally deferred as blocked on Check-2-at-submit; **Check-2 is now built on `main`** (`services.is_ready_for_assignment`, `query_response_sla_days`, migrations `0045`–`0047`, reviewer-scoping in `views_admin.py`), so F7 is **unblocked and back in scope**, sequenced into the reviewer cluster (Sprint 7).
 - **Real money deferred** — toyyibPay donation-in, disbursement-out, tranche/withholding (**TD-075**) are a separate later track, gated on lawyer sign-off. Everything here uses the existing **mocked** money flow.
 - **Granularity** — one feature per sprint; the big full-stack features (F8, F9) split into a **backend** sprint and a **frontend** sprint. ~one coherent deliverable / ~20 files / one session each (CLAUDE.md).
 - **Ship dark** — all sponsor-facing work ships behind `SPONSOR_POOL_ENABLED` (off); student onboarding is gated on the award flow. Go-live (flag flip + consent-text sync) is the final, lawyer-gated sprint.
@@ -18,18 +18,19 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 
 | # | Sprint | Feature | Size | Depends on |
 |---|--------|---------|------|------------|
-| 0 | Boundary foundation (allowlist widen) ✅ **DONE** (`feat/sponsor-boundary-foundation`, pending merge) | (cross-cutting) | S–M, BE | — |
+| 0 | Boundary foundation (allowlist widen) ✅ **DONE + MERGED** to `main` 2026-06-07 | (cross-cutting) | S–M, BE | — |
 | 1 | Sponsor landing + live counter ⭐ | F1 | M, FE+tiny BE | 0 (counter only) |
 | 2 | Student post-match onboarding — backend ⭐ | F8a | M, BE | — |
 | 3 | Student post-match onboarding — frontend ⭐ | F8b | M, FE | 2 |
 | 4 | Sponsor notifications (real-time + digest) ⭐ | F3 | M–L, BE+tiny FE | 0 |
 | 5 | Reviewer profile | F6 | M, BE+FE | — |
 | 6 | Reviewer invite role selector | F5 | S, BE+FE | 5 |
-| 7 | Sponsor profile + sponsored-students | F2 | M, BE+FE | 0 |
-| 8 | Student profile + results + relay — backend | F9a | L, BE | 0, 7 |
-| 9 | Student profile + relay — frontend | F9b | M, FE | 8 |
-| 10 | Sponsor referral / invitation | F4 | M, BE+FE | 1 |
-| 11 | **Go-live** (lawyer-gated) | — | S | lawyer sign-off |
+| 7 | **Reviewer assignment / reassignment** (Check-2 unblocked) | F7 | M, BE+FE | 6, Check-2 |
+| 8 | Sponsor profile + sponsored-students | F2 | M, BE+FE | 0 |
+| 9 | Student profile + results + relay — backend | F9a | L, BE | 0, 8 |
+| 10 | Student profile + relay — frontend | F9b | M, FE | 9 |
+| 11 | Sponsor referral / invitation | F4 | M, BE+FE | 1 |
+| 12 | **Go-live** (lawyer-gated) | — | S | lawyer sign-off |
 
 ⭐ = must-have-for-closure (done by Sprint 4).
 
@@ -37,7 +38,7 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 
 ## Per-sprint detail
 
-### Sprint 0 — Boundary foundation (widen the allowlist) · BE  ✅ DONE 2026-06-07 (branch `feat/sponsor-boundary-foundation`; 41 sponsor tests green; pending merge)
+### Sprint 0 — Boundary foundation (widen the allowlist) · BE  ✅ DONE + MERGED to `main` 2026-06-07 (was branch `feat/sponsor-boundary-foundation`; migration `0043`; 41 sponsor tests green)
 **Deliverable:** the sponsor-facing allowlist reflects the owner Boundary decision, fail-closed, with the trusted gate.
 - **Widen** `SponsorPoolCardSerializer` (`serializers.py:38`) + `SponsorPoolDetailSerializer` (`:80`): add academic results/CGPA, field/course, and **`institution` (trusted-gated)**. Keep every field explicit/derived.
 - **Add** `Sponsor.is_trusted` (default `True`) — migration `0043` (scholarship is at `0042`). Institution field renders only when the requesting sponsor `is_trusted`.
@@ -90,13 +91,23 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 - Extend `/admin/invite` (`app/admin/invite/page.tsx`) + `AdminInviteView` to set `role='reviewer'` (selector: super|reviewer|viewer) and prompt **Reviewer profile** (Sprint 5) completion on first sign-in.
 - *(Could merge with Sprint 5; kept separate per one-feature-per-sprint.)*
 
-### Sprint 7 — F2 Sponsor profile + sponsored-students list · BE + FE
+### Sprint 7 — F7 Reviewer assignment / reassignment · BE + FE
+**Deliverable:** super-admins assign a submitted application to a reviewer; reassign it; reviewers see only what's assigned to them.
+- **Unblocked:** Check-2 is built on `main` — the assignment gate `services.is_ready_for_assignment(application)` (`services.py:397`), the SLA clock `query_response_sla_days` (`models.py:79`, default 5), Check-2 migrations `0045`–`0047`, and reviewer-scoped lists `qs.filter(assigned_to=admin)` + `has_role(admin,'reviewer')` (`views_admin.py:69` ff) already exist. F7 builds the **assign/reassign action** on top.
+- **Field:** `ScholarshipApplication.assigned_to` (FK → `PartnerAdmin`, null) + `assigned_at` if not already present — confirm at sprint start (the reviewer-scoping filter implies `assigned_to` exists; verify before adding a migration). Add an `AssignmentEvent` audit row (or reuse the resolution-ticket audit pattern) so reassignment is traceable.
+- **Gate:** assignment is only permitted once `is_ready_for_assignment` is true (no open queries **or** SLA elapsed). Reassignment allowed any time by a super-admin; logs who/when/from→to.
+- **BE:** `POST /api/v1/scholarship/applications/<id>/assign/` (body: `reviewer_id`) + `POST .../reassign/` — both `has_role(admin,'super')`-gated; validate the target has `role='reviewer'`; never let a reviewer self-assign. Surface `assigned_to` (name only, staff-internal) in `AdminApplicationDetailSerializer`.
+- **FE:** an "Assign reviewer" control in the officer cockpit (`/admin`) — reviewer dropdown (from `AdminInviteView`/reviewer list), shows current assignee + reassign; disabled with a reason tooltip when `is_ready_for_assignment` is false.
+- **Tests:** can't assign before ready; super-only; reassign writes an audit row; a reviewer sees only their assigned applications (extends existing scoping tests).
+- **No new sponsor-facing surface** — staff-internal; no anonymity-allowlist impact.
+
+### Sprint 8 — F2 Sponsor profile + sponsored-students list · BE + FE
 **Deliverable:** a signed-in sponsor's home with their (anonymised) students + progress.
 - **Field:** `progress_state` enum (`on_track | semester_completed | needs_attention | graduated`) — add to the allowlist card (built on Sprint 0). Derivation stub here; real derivation lands in F9a.
 - **BE:** surface the sponsor's sponsorships via `SponsorSponsorshipSerializer` (`serializers.py:90`) incl. `progress_state`.
 - **FE:** "My students" view extending the `/sponsor` portal — account block (`SponsorSerializer`), giving balance (`sponsorship.sponsor_balance`), and the anon cards + progress.
 
-### Sprint 8 — F9a Student profile + results + graduation relay (backend) · BE
+### Sprint 9 — F9a Student profile + results + graduation relay (backend) · BE
 **Deliverable:** the student-profile data + the anonymity-preserving thank-you relay.
 - Student-profile endpoints: basic details, institution/field, CGPA, **latest-semester results upload** (reuse `ApplicantDocument` `results_slip` + the OCR path). The slip is **myNADI-only**; the **values** cross per the Boundary decision.
 - **`progress_state` derivation** from the results upload (feeds F2).
@@ -104,20 +115,20 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 - **Graduation relay:** new `GraduationMessage(application, raw_text, scrubbed_text, scan_result, status, approved_by, ...)`. Pipeline: submit → `scan_anon_for_identifiers` (`pool.py:87`) **blocks on any leak** → myNADI human-approve → surface **linked to the anonymous `ref`** (owner decision) in the sponsor profile. **Never a direct channel.**
 - **Tests:** relay blocks planted identifiers; promotional consent enforces 18+; results slip never appears in sponsor output.
 
-### Sprint 9 — F9b Student profile + relay (frontend) · FE
+### Sprint 10 — F9b Student profile + relay (frontend) · FE
 **Deliverable:** the student profile + thank-you compose UI + the sponsor-side surface.
 - Student profile page (details, institution/field, CGPA, results upload, 18+ promotional toggle).
 - Graduation thank-you compose UI (with the same "we'll check for identifying details" UX as the publish gate).
 - Sponsor profile shows the approved note as **"a message from a student you supported"** linked to the anon `ref`.
 - **Stitch-prototype first.**
 
-### Sprint 10 — F4 Sponsor referral / invitation · BE + FE
+### Sprint 11 — F4 Sponsor referral / invitation · BE + FE
 **Deliverable:** sponsors invite prospective sponsors to the F1 landing page.
 - `SponsorReferral` model (`inviter, invitee_email, invitee_name, note, code, status, registered_sponsor`) — *or* lightweight `referred_by` (decide at sprint start, PRD Q-6).
 - Invite email (sponsor's note + pitch) → `/sponsor?ref=<code>`; attribution on register; **PDPA:** purge unconverted invitee emails after a short window (PRD Q-7).
 - WhatsApp share = later.
 
-### Sprint 11 — Go-live (lawyer-gated) · S
+### Sprint 12 — Go-live (lawyer-gated) · S
 **Deliverable:** flip the programme live once the lawyer signs off.
 - Sync the **live consent text + `CONSENT_VERSION`** to the lawyer-vetted bundle wording (A3 / Q2 / Appendix B revisions).
 - Final anonymity/allowlist audit (run the full serializer + relay + scan test suite).
@@ -138,14 +149,16 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 
 ## Verification (per sprint, end-to-end)
 
-- **Allowlist (0, 4, 7, 8):** serializer + digest-email tests assert no name/NRIC/address/phone/email (student **and** parents); institution absent for non-trusted sponsor.
-- **Relay (8):** `scan_anon_for_identifiers` blocks planted identifiers in a thank-you note.
-- **Consent (2, 8):** `record_consent` writes `student_onboarding_ack` / `promotional_use` at the bumped version; 18+ gate enforced.
+- **Allowlist (0, 4, 8, 9):** serializer + digest-email tests assert no name/NRIC/address/phone/email (student **and** parents); institution absent for non-trusted sponsor.
+- **Assignment (7):** can't assign before `is_ready_for_assignment`; super-only; reassign writes an audit row; reviewer sees only assigned applications.
+- **Relay (9):** `scan_anon_for_identifiers` blocks planted identifiers in a thank-you note.
+- **Consent (2, 9):** `record_consent` writes `student_onboarding_ack` / `promotional_use` at the bumped version; 18+ gate enforced.
 - **Notifications (4):** run `send_sponsor_digests`/`send_sponsor_realtime` via the cron endpoint with `X-Cron-Secret`; assert `off` sends nothing, digest body is allowlist-safe.
 - **Onboarding (2, 3):** accept an award (mocked) → award-confirmed email → onboarding-complete sets `onboarded_at` + blocks until done.
 - **Local-first:** `manage.py runserver` + the relevant page before any deploy; full `pytest` + `jest` green.
 
 ## Open items folded from the PRD (decide at the owning sprint)
-- F9: confirm `promotional_use` consent type + version (Sprint 8).
-- F4: referral model shape + invitee-email retention window (Sprint 10).
+- F9: confirm `promotional_use` consent type + version (Sprint 9).
+- F4: referral model shape + invitee-email retention window (Sprint 11).
+- F7: confirm `assigned_to`/`assigned_at` already exist (Check-2 scoping implies it) before adding any migration (Sprint 7).
 - Impl details: questionnaire storage = `OnboardingResponse` model (Sprint 2); reviewer-profile = `ReviewerProfile` 1:1, address free-text (Sprint 5).
