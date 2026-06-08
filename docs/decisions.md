@@ -2297,3 +2297,19 @@ is the minimal pattern that distinguishes answered-zero from unanswered, with no
 **Trade-offs:** the student must tap each stepper even to leave it at 0 (one extra interaction); the UI must
 render a null state distinctly.
 **Revisit if:** drop-off data shows the steppers are a completion bottleneck (then consider the Yes/No gate).
+
+## Sponsor landing gated behind the count endpoint's `enabled` flag — B40 Phase E/F Sprint 1, 2026-06-08
+
+**Decision:** The public sponsor marketing page (`/sponsor` for signed-out visitors) renders **only when the public
+count endpoint reports `enabled: true`** (i.e. `SPONSOR_POOL_ENABLED` is on). While the flag is off, signed-out
+visitors keep the pre-existing sign-in card; the marketing page is never shown. The backend setting is the single
+source of truth — the FE has no separate flag.
+**Alternatives considered:** (a) show the marketing page always (gate only the live-counter number); (b) a separate
+frontend env flag for the page.
+**Rationale:** the whole sponsor programme is lawyer-gated until go-live (Sprint 12), so even recruitment copy waits
+for sign-off. Routing the live/dark signal through the count endpoint's `enabled` means one switch flips both the
+counter and the page, and the FE can't drift out of sync with the backend.
+**Trade-offs:** the marketing page can't be seen on prod until go-live (verify locally with the flag on); an extra
+public GET on every `/sponsor` visit.
+**Revisit if:** we want to recruit sponsors before the pool/money flow is live (then decouple a "marketing live" flag
+from `SPONSOR_POOL_ENABLED`).

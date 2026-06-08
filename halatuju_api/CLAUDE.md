@@ -445,7 +445,25 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 ## Next Sprint (as of 2026-06-08)
 
-**▶ IN PROGRESS — "About your family" section redesign (branch `feature/family-section-redesign`, NOT merged/deployed;
+**▶ ACTIVE TRACK — B40 Phase E/F sponsor build (roadmap `docs/scholarship/b40-phase-ef-sprint-plan.md`, 13 sprints).**
+Building the sponsor/reviewer/student features to a demoable end-state, all **dark behind `SPONSOR_POOL_ENABLED`** until
+the lawyer-gated go-live (Sprint 12). **Sprint 0 (boundary) + Sprint 1 (F1 sponsor landing) DONE on `main`.**
+- **✅ Sprint 1 DONE (F1, 2026-06-08, no migration, ships dark):** public `/sponsor` marketing landing (hero + live
+  counter, promises, how-it-works, FAQ, CTA; trilingual `sponsorLanding.*`) + public `GET /api/v1/sponsor/pool/count/`
+  → `{count, enabled}` (count-only, flag-gated). `components/SponsorLanding.tsx`; the `/sponsor` page shows it to
+  signed-out visitors only when `enabled`. Retro `docs/retrospective-sprint1-sponsor-landing.md`. Open: TD-091 (Tamil
+  refine), TD-092 (live click-through at go-live).
+- **▶ NEXT — Sprint 2 (F8a, backend):** student post-match onboarding on the existing award path — `respond_to_award`
+  hook → `send_award_confirmed_email` (no sponsor identity); new `onboarded_at` gate + `OnboardingResponse` model;
+  `student_onboarding_ack` consent (+ bump `CONSENT_VERSION`); `POST .../onboarding-complete/`. **Has a migration** —
+  migrate-first via Supabase MCP (prod at `0047`; the parked family branch claims `0048`, so renumber if it lands
+  first). Then Sprint 3 (F8b frontend, Stitch-first). Full sequence in the roadmap.
+- **Gotchas:** ship dark (flag off); i18n en/ms/ta parity every sprint; Stitch-prototype new pages (F8b, F9b) before
+  TSX; ≤2 deploys/feature; deploys are owner-gated (build minutes).
+
+---
+
+**▶ PARKED (other agent, unmerged) — "About your family" section redesign (branch `feature/family-section-redesign`, NOT merged/deployed;
 plan `docs/scholarship/family-section-redesign-plan.md`, retro `docs/retrospective-family-section-redesign.md`).**
 S1 backend + S2a foundation DONE & committed (`dbf19ba`/`2aa2bc4`/`55faf10`): structured family roster replacing the
 four overlapping family fields with Father/Mother (name + coded profession) + a brother/sister/guardian pool + 2

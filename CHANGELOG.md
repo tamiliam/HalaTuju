@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Sponsor landing page + live "students waiting" counter (B40 Phase E/F Sprint 1, F1, ships dark).** A public,
+  persuasive marketing page for prospective sponsors at `/sponsor` (shown to signed-out visitors only while the
+  programme is live): hero with a live counter, three promise cards (complete anonymity / every ringgit tracked /
+  real verified impact), a four-step "how it works", an FAQ, and a closing call-to-action — all trilingual
+  (`sponsorLanding.*`, en/ms/ta, 40 keys each). New public endpoint `GET /api/v1/sponsor/pool/count/` →
+  `{count, enabled}`: count-only (exposes no student data), no auth, and gated by `SPONSOR_POOL_ENABLED` — while the
+  flag is off it returns `{count: 0, enabled: false}`, so signed-out visitors keep the plain sign-in card and the whole
+  programme stays dark until the lawyer-gated go-live (Sprint 12). New `components/SponsorLanding.tsx` +
+  `getStudentsWaitingCount()` API client; the `/sponsor` page renders the landing for signed-out visitors when enabled,
+  otherwise the existing portal/auth flow is unchanged. No migration. +3 sponsor-pool tests (count hidden when flag off,
+  count reflects the eligible pool when on, response leaks nothing). Tamil copy pending the owner's refinement pass.
+  Prototyped in Stitch and visually approved before coding. Retro `docs/retrospective-sprint1-sponsor-landing.md`.
 - **"About your family" structured roster — backend foundation (branch `feature/family-section-redesign`, NOT
   deployed).** Replaces four overlapping family fields (`first_in_family` toggle + legacy `siblings_studying_count` +
   `siblings_in_school`/`tertiary` steppers split across the Story + Income tabs + free-text `parents_occupation`) with

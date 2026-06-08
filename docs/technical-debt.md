@@ -584,3 +584,13 @@
   - **✅ RESOLVED 2026-06-07** (same day): `ScholarshipNextSteps` gained an `onSubmitted` prop; `handleConfirm` hands the
     updated application to the parent (`onSubmitted={setApp}`), which re-renders into the post-submit "received" screen —
     no `window.location.reload()`.
+- TD-091: **Sponsor-landing Tamil copy is a best-effort first pass, not the owner's voice.** The `sponsorLanding.*`
+  Tamil strings (en/ms/ta parity, 40 keys) were written to ship trilingual but need the owner's refinement per the
+  Tamil style guide (joins the existing Tamil-refine queue). Low risk — the page is dark behind `SPONSOR_POOL_ENABLED`
+  until go-live. **To resolve:** owner refine pass on `messages/ta.json` `sponsorLanding` before Sprint 12 go-live.
+  (Logged 2026-06-08, B40 Phase E/F Sprint 1.)
+- TD-092: **Sponsor landing not yet click-through-verified in a live browser.** Sprint 1 verified F1 via `next build`
+  typecheck + jest + the approved Stitch design, but did not run a Playwright/dev-server click-through (the page is dark
+  on prod, and a live smoke needs `SPONSOR_POOL_ENABLED=on` locally with both servers). **To resolve:** before the
+  Sprint 12 go-live deploy, run the app locally with the flag on and click through `/sponsor` in all three locales +
+  confirm the counter renders the real eligible count. (Logged 2026-06-08, B40 Phase E/F Sprint 1.)
