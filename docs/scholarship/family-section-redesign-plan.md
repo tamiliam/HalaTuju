@@ -65,6 +65,23 @@ smallholder · `homemaker` Homemaker · `retired` Retired / pensioner · `unempl
 4. Admin cockpit Family card — show structured occupations + roster + sibling split (replaces free-text line).
 5. i18n en/ms/ta — profession options + section copy + member-pool copy + derived-note copy.
 
+## Compulsory (owner, 2026-06-08)
+The family section is now **required** (a new `family_done` completeness part; same
+pattern as when address became required in S14 — grandfathered apps must fill it to
+reach "complete"):
+- **Father & Mother profession** — required (both). **Name** required EXCEPT when the
+  profession is `deceased` or `no_contact` (an absent parent can't always be named; this
+  is also how a single-parent / guardian-raised student answers — they'd add a Guardian
+  in the pool).
+- **Sibling steppers** — both required. They **start blank ("—"), not 0**, so the student
+  must actively set each; "0 in school" becomes a deliberate answer, not a skipped
+  default. Completeness requires `siblings_in_school is not None AND siblings_in_tertiary
+  is not None`.
+- `family_done` = father_occupation set · mother_occupation set · father_name set (or
+  father deceased/no_contact) · mother_name set (or mother deceased/no_contact) · both
+  sibling counts set. Folded into the Story-tab tick + `application_completeness`.
+- The optional member **pool** stays optional. `family_context` (free text) stays optional.
+
 ## Migration of existing data
 Additive; the ~12 in-flight apps keep their `parents_occupation` free text (structured fields null). profile_engine
 falls back to it. No backfill (free text isn't reliably parseable); students re-enter structured on next edit.
