@@ -2359,6 +2359,14 @@
         "resolve": "Resolve",
         "waitingStudent": "Waiting for student"
       },
+      "outstanding": {
+        "title": "Outstanding",
+        "itemOne": "item",
+        "itemMany": "items",
+        "empty": "Nothing outstanding — caveats clear and no flags raised.",
+        "studentTodo": "Student to-do",
+        "askInterview": "Ask at interview"
+      },
       "docsDrawer": {
         "title": "Documents",
         "subtitle": "Grouped by verification fact",

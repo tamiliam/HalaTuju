@@ -884,75 +884,20 @@ export default function AdminScholarshipDetailPage() {
         {error && <p className="text-red-600 text-sm">{error}</p>}
       </div>
 
-      {/* ── Caveats to resolve (resolution_items — OPEN only) ─────────────────── */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
-        <h2 className="font-semibold">{t('admin.scholarship.caveats.title')}</h2>
-        {(() => {
-          const items: AdminResolutionItem[] = app.resolution_items ?? []
-          if (items.length === 0) {
-            return <p className="text-sm text-gray-400 italic">{t('admin.scholarship.caveats.empty')}</p>
-          }
-          return (
-            <ul className="space-y-2">
-              {items.map((item) => {
-                const dotColour = item.source === 'officer' ? 'bg-indigo-400' : 'bg-amber-400'
-                const text = item.source === 'officer'
-                  ? (item.prompt || item.code)
-                  : t(`admin.scholarship.verdict.item.${item.code}`,
-                      localiseParams(item.params, t))
-                return (
-                  <li key={item.id} className="flex items-start gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
-                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dotColour}`} aria-hidden />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-800 break-words">{text}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-400">
-                        <span className="rounded bg-gray-200 px-1.5 py-0.5">{item.fact}</span>
-                        <span className="rounded bg-gray-200 px-1.5 py-0.5">{item.kind}</span>
-                        {item.status !== 'open' && (
-                          <span className="rounded bg-amber-100 text-amber-700 px-1.5 py-0.5">
-                            {t('admin.scholarship.caveats.waitingStudent')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {canWrite && (
-                      <div className="flex shrink-0 gap-1">
-                        <button
-                          onClick={() => doActionResolution(item.id, 'waive')}
-                          disabled={!!busy}
-                          className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-                        >
-                          {t('admin.scholarship.caveats.resolve')}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setInfoNote(item.prompt || '')
-                          }}
-                          disabled={!!busy}
-                          className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
-                        >
-                          {t('admin.scholarship.caveats.ask')}
-                        </button>
-                      </div>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
-          )
-        })()}
-      </div>
-
-      {/* S16 Phase A: deterministic pre-interview flag list */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+      {/* ── Outstanding — student to-do (caveats) + ask-at-interview (flags + AI gaps),
+           one merged panel. Identity NRIC/name flags are deduped server-side. ─────── */}
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="font-semibold">{t('admin.scholarship.anomaly.title')}</h2>
+          <h2 className="font-semibold">{t('admin.scholarship.outstanding.title')}</h2>
           <div className="flex items-center gap-2">
-            {app.anomalies && app.anomalies.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-                {app.anomalies.length} {app.anomalies.length === 1 ? t('admin.scholarship.anomaly.flagOne') : t('admin.scholarship.anomaly.flagMany')}
-              </span>
-            )}
+            {(() => {
+              const n = (app.resolution_items?.length ?? 0) + (app.anomalies?.length ?? 0) + (app.interview_gaps?.length ?? 0)
+              return n > 0 ? (
+                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                  {n} {n === 1 ? t('admin.scholarship.outstanding.itemOne') : t('admin.scholarship.outstanding.itemMany')}
+                </span>
+              ) : null
+            })()}
             {canWrite && (
               <button onClick={doSuggestGaps} disabled={!!busy}
                 className="px-2.5 py-1 rounded-lg text-xs bg-indigo-600 text-white disabled:opacity-50">
@@ -961,49 +906,113 @@ export default function AdminScholarshipDetailPage() {
             )}
           </div>
         </div>
-        <p className="text-xs text-gray-500">{t('admin.scholarship.anomaly.intro')}</p>
-        {!app.anomalies || app.anomalies.length === 0 ? (
-          <p className="text-sm text-gray-400 italic">{t('admin.scholarship.anomaly.empty')}</p>
-        ) : (
-          <ul className="space-y-3">
-            {app.anomalies.map((a) => (
-              <li key={a.code} className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1.5">
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-600 shrink-0" aria-hidden>⚠</span>
-                  <div className="space-y-1">
-                    <p className="text-sm text-gray-800">
-                      {t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
-                    </p>
-                    <p className="text-sm text-gray-700 italic">
-                      <span className="font-semibold not-italic">{t('admin.scholarship.anomaly.askLabel')}:</span>{' '}
-                      {t(`admin.scholarship.anomaly.${a.code}.question`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
-                    </p>
-                  </div>
+        {(() => {
+          const caveats: AdminResolutionItem[] = app.resolution_items ?? []
+          const flags = app.anomalies ?? []
+          const gaps = app.interview_gaps ?? []
+          if (caveats.length === 0 && flags.length === 0 && gaps.length === 0) {
+            return <p className="text-sm text-gray-400 italic">{t('admin.scholarship.outstanding.empty')}</p>
+          }
+          return (
+            <div className="space-y-4">
+              {/* Student to-do — the applicant still owes these (Resolve / Ask) */}
+              {caveats.length > 0 && (
+                <div className="space-y-2">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+                    <span className="h-2 w-2 rounded-full bg-amber-400" aria-hidden />
+                    {t('admin.scholarship.outstanding.studentTodo')}
+                  </p>
+                  <ul className="space-y-2">
+                    {caveats.map((item) => {
+                      const dotColour = item.source === 'officer' ? 'bg-indigo-400' : 'bg-amber-400'
+                      const text = item.source === 'officer'
+                        ? (item.prompt || item.code)
+                        : t(`admin.scholarship.verdict.item.${item.code}`,
+                            localiseParams(item.params, t))
+                      return (
+                        <li key={item.id} className="flex items-start gap-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
+                          <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dotColour}`} aria-hidden />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-800 break-words">{text}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-gray-400">
+                              <span className="rounded bg-gray-200 px-1.5 py-0.5">{item.fact}</span>
+                              <span className="rounded bg-gray-200 px-1.5 py-0.5">{item.kind}</span>
+                              {item.status !== 'open' && (
+                                <span className="rounded bg-amber-100 text-amber-700 px-1.5 py-0.5">
+                                  {t('admin.scholarship.caveats.waitingStudent')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {canWrite && (
+                            <div className="flex shrink-0 gap-1">
+                              <button
+                                onClick={() => doActionResolution(item.id, 'waive')}
+                                disabled={!!busy}
+                                className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                              >
+                                {t('admin.scholarship.caveats.resolve')}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setInfoNote(item.prompt || '')
+                                }}
+                                disabled={!!busy}
+                                className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                              >
+                                {t('admin.scholarship.caveats.ask')}
+                              </button>
+                            </div>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
-        {app.interview_gaps && app.interview_gaps.length > 0 && (
-          <div className="space-y-2 border-t border-gray-100 pt-3">
-            <p className="text-xs font-medium text-gray-500">{t('admin.scholarship.gaps.title')}</p>
-            <ul className="space-y-2">
-              {app.interview_gaps.map((g) => (
-                <li key={g.code} className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
-                  <div className="flex items-start gap-2">
-                    <span className="shrink-0 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white" aria-hidden>
-                      {t('admin.scholarship.gaps.aiBadge')}
-                    </span>
-                    <div className="space-y-1">
-                      <p className="text-sm text-gray-800">{g.question}</p>
-                      {g.why && <p className="text-xs text-gray-500">{t('admin.scholarship.gaps.whyLabel')}: {g.why}</p>}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+              )}
+              {/* Ask at interview — deterministic flags + AI gap suggestions (no student action) */}
+              {(flags.length > 0 || gaps.length > 0) && (
+                <div className="space-y-2">
+                  <p className="flex items-center gap-1.5 text-xs font-medium text-gray-500">
+                    <span className="text-amber-600" aria-hidden>⚠</span>
+                    {t('admin.scholarship.outstanding.askInterview')}
+                  </p>
+                  <ul className="space-y-3">
+                    {flags.map((a) => (
+                      <li key={a.code} className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1.5">
+                        <div className="flex items-start gap-2">
+                          <span className="text-amber-600 shrink-0" aria-hidden>⚠</span>
+                          <div className="space-y-1">
+                            <p className="text-sm text-gray-800">
+                              {t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
+                            </p>
+                            <p className="text-sm text-gray-700 italic">
+                              <span className="font-semibold not-italic">{t('admin.scholarship.anomaly.askLabel')}:</span>{' '}
+                              {t(`admin.scholarship.anomaly.${a.code}.question`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)])))}
+                            </p>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                    {gaps.map((g) => (
+                      <li key={g.code} className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
+                        <div className="flex items-start gap-2">
+                          <span className="shrink-0 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white" aria-hidden>
+                            {t('admin.scholarship.gaps.aiBadge')}
+                          </span>
+                          <div className="space-y-1">
+                            <p className="text-sm text-gray-800">{g.question}</p>
+                            {g.why && <p className="text-xs text-gray-500">{t('admin.scholarship.gaps.whyLabel')}: {g.why}</p>}
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )
+        })()}
       </div>
 
       {/* ── Documents drawer — grouped by fact ────────────────────────────────── */}
