@@ -1430,89 +1430,16 @@ export default function AdminScholarshipDetailPage() {
         </div>
       )}
 
-      {/* Verify & accept */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold">{t('admin.scholarship.verifyTitle')}</h2>
-          {app.nric_verified && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-              {t('admin.scholarship.nricLocked')}
-            </span>
-          )}
-        </div>
-
-        {app.status === 'accepted' ? (
-          <>
-            <p className="text-sm text-gray-600">
-              {t('admin.scholarship.acceptedBy')} {app.verified_by || '—'}
-              {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
-            </p>
-            {canWrite && (
-              <button onClick={() => doReject('contractual')} disabled={!!busy}
-                className="mt-2 px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
-                {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
-              </button>
-            )}
-          </>
-        ) : ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) ? (
-          <>
-            {!app.completeness.complete && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
-                <p className="font-medium text-amber-900">{t('admin.scholarship.incompleteTitle')}</p>
-                <ul className="mt-1 list-disc ml-5 text-amber-800">
-                  {COMPLETENESS_PARTS.filter((p) => !app.completeness[p]).map((p) => (
-                    <li key={p}>{t(`admin.scholarship.completeness.${p}`)}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            <p className="text-sm text-gray-500">{t('admin.scholarship.verifyHint')}</p>
-            <div className="space-y-2">
-              {VERIFY_ITEMS.map((key) => (
-                <label key={key} className="flex items-start gap-2 text-sm text-gray-700">
-                  <input type="checkbox" className="mt-1" checked={!!checklist[key]} disabled={!canWrite}
-                    onChange={(e) => setChecklist((c) => ({ ...c, [key]: e.target.checked }))} />
-                  <span>
-                    {t(`admin.scholarship.check_${key}`)}
-                    {key === 'nric' && <span className="ml-1 font-mono text-gray-500">{formatNric(app.nric || '') || '—'}</span>}
-                    {key === 'name' && <span className="ml-1 text-gray-500">{app.name || '—'}</span>}
-                  </span>
-                </label>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={doVerifyAccept}
-                disabled={!!busy || !canWrite || !app.completeness.complete || !VERIFY_ITEMS.every((k) => checklist[k])}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
-                {busy === 'verify' ? t('admin.scholarship.accepting') : t('admin.scholarship.verifyAccept')}
-              </button>
-              {canWrite && (
-                <button onClick={() => doReject('interview')} disabled={!!busy}
-                  className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
-                  {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineReview')}
-                </button>
-              )}
-            </div>
-          </>
-        ) : (
-          <p className="text-sm text-gray-400">{t('admin.scholarship.notShortlisted')}</p>
-        )}
-
-        <label className="mt-2 flex items-center gap-2 border-t pt-3 text-sm text-gray-700">
-          <input type="checkbox" checked={app.mentoring_candidate} disabled={!!busy}
-            onChange={(e) => toggleMentoring(e.target.checked)} />
-          {t('admin.scholarship.mentoring')}
-        </label>
-      </div>
-
       </div>{/* end LEFT column */}
 
       {/* ═══════════════════════ RIGHT COLUMN (sticky) ══════════════════════════ */}
       <div id="record-verdict-panel" className="space-y-4 lg:sticky lg:top-4">
 
-      {/* ── Record your verdict ────────────────────────────────────────────────── */}
+      {/* ── Decision — audit the four facts (records the verdict) → verify identity →
+           accept. The audit→accept gate is preserved (accept stays gated on a complete
+           profile + every checklist box). ──────────────────────────────────────────── */}
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
-        <h2 className="font-semibold">{t('admin.scholarship.recordVerdict.title')}</h2>
+        <h2 className="font-semibold">{t('admin.scholarship.decision.title')}</h2>
 
         {/* Four fact rows — pass / fail toggle */}
         <div className="space-y-2">
@@ -1601,6 +1528,80 @@ export default function AdminScholarshipDetailPage() {
             </p>
           )
         })()}
+
+        {/* ── Verify & accept (second gate): confirm identity → lock NRIC → accept.
+             Gated on a complete profile + every checklist box (unchanged). ────────── */}
+        <div className="space-y-3 border-t pt-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-700">{t('admin.scholarship.verifyTitle')}</h3>
+            {app.nric_verified && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                {t('admin.scholarship.nricLocked')}
+              </span>
+            )}
+          </div>
+          {app.status === 'accepted' ? (
+            <>
+              <p className="text-sm text-gray-600">
+                {t('admin.scholarship.acceptedBy')} {app.verified_by || '—'}
+                {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
+              </p>
+              {canWrite && (
+                <button onClick={() => doReject('contractual')} disabled={!!busy}
+                  className="mt-2 px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
+                  {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
+                </button>
+              )}
+            </>
+          ) : ['shortlisted', 'profile_complete', 'interviewing', 'interviewed'].includes(app.status) ? (
+            <>
+              {!app.completeness.complete && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+                  <p className="font-medium text-amber-900">{t('admin.scholarship.incompleteTitle')}</p>
+                  <ul className="mt-1 list-disc ml-5 text-amber-800">
+                    {COMPLETENESS_PARTS.filter((p) => !app.completeness[p]).map((p) => (
+                      <li key={p}>{t(`admin.scholarship.completeness.${p}`)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <p className="text-sm text-gray-500">{t('admin.scholarship.verifyHint')}</p>
+              <div className="space-y-2">
+                {VERIFY_ITEMS.map((key) => (
+                  <label key={key} className="flex items-start gap-2 text-sm text-gray-700">
+                    <input type="checkbox" className="mt-1" checked={!!checklist[key]} disabled={!canWrite}
+                      onChange={(e) => setChecklist((c) => ({ ...c, [key]: e.target.checked }))} />
+                    <span>
+                      {t(`admin.scholarship.check_${key}`)}
+                      {key === 'nric' && <span className="ml-1 font-mono text-gray-500">{formatNric(app.nric || '') || '—'}</span>}
+                      {key === 'name' && <span className="ml-1 text-gray-500">{app.name || '—'}</span>}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={doVerifyAccept}
+                  disabled={!!busy || !canWrite || !app.completeness.complete || !VERIFY_ITEMS.every((k) => checklist[k])}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
+                  {busy === 'verify' ? t('admin.scholarship.accepting') : t('admin.scholarship.verifyAccept')}
+                </button>
+                {canWrite && (
+                  <button onClick={() => doReject('interview')} disabled={!!busy}
+                    className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
+                    {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineReview')}
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-gray-400">{t('admin.scholarship.notShortlisted')}</p>
+          )}
+          <label className="mt-1 flex items-center gap-2 border-t pt-3 text-sm text-gray-700">
+            <input type="checkbox" checked={app.mentoring_candidate} disabled={!!busy}
+              onChange={(e) => toggleMentoring(e.target.checked)} />
+            {t('admin.scholarship.mentoring')}
+          </label>
+        </div>
 
         {/* Tools group */}
         <div className="space-y-1.5 border-t pt-3">
