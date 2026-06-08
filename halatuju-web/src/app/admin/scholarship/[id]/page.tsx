@@ -1002,6 +1002,161 @@ export default function AdminScholarshipDetailPage() {
         })()}
       </div>
 
+      {/* ── Referees (consent panel removed — the consent RECORD + sponsor-share gating
+           stay untouched; only the cockpit status line is gone). Behind SHOW_REFEREES. ── */}
+      {SHOW_REFEREES && (
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <h3 className="font-semibold text-sm mb-1">{t('admin.scholarship.referees')}</h3>
+        <p className="text-xs text-gray-400 mb-2">{t('admin.scholarship.refHint')}</p>
+        <ul className="text-sm text-gray-600 space-y-1">
+          {app.referees.map((r) => (
+            <li key={r.id} className="flex items-start justify-between gap-2">
+              <span>
+                {r.name}{r.role ? ` (${r.role})` : ''}{r.relationship ? ` · ${r.relationship}` : ''}
+                {r.phone ? ` — ${r.phone}` : ''}{r.email ? ` · ${r.email}` : ''}
+              </span>
+              <button onClick={() => doDeleteReferee(r.id)} disabled={!!busy}
+                className="text-red-500 hover:underline text-xs shrink-0 disabled:opacity-50">
+                {t('admin.scholarship.refRemove')}
+              </button>
+            </li>
+          ))}
+          {app.referees.length === 0 && <li className="text-gray-400">{t('admin.scholarship.none')}</li>}
+        </ul>
+        {/* Add referee (coordinator records it at verify-&-accept) */}
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <input value={refForm.name} onChange={(e) => setRefForm((f) => ({ ...f, name: e.target.value }))}
+            placeholder={t('admin.scholarship.refName')} className="border rounded-lg px-2 py-1 text-sm" />
+          <input value={refForm.role} onChange={(e) => setRefForm((f) => ({ ...f, role: e.target.value }))}
+            placeholder={t('admin.scholarship.refRole')} className="border rounded-lg px-2 py-1 text-sm" />
+          <input value={refForm.relationship} onChange={(e) => setRefForm((f) => ({ ...f, relationship: e.target.value }))}
+            placeholder={t('admin.scholarship.refRelationship')} className="border rounded-lg px-2 py-1 text-sm" />
+          <input value={refForm.phone} onChange={(e) => setRefForm((f) => ({ ...f, phone: formatPhone(e.target.value) }))}
+            placeholder={t('admin.scholarship.refPhone')} className="border rounded-lg px-2 py-1 text-sm" />
+          <input value={refForm.email} onChange={(e) => setRefForm((f) => ({ ...f, email: e.target.value }))}
+            placeholder={t('admin.scholarship.refEmail')} className="border rounded-lg px-2 py-1 text-sm sm:col-span-2" />
+        </div>
+        <button onClick={doAddReferee} disabled={!!busy || !refForm.name.trim()}
+          className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
+          {busy === 'ref' ? t('admin.scholarship.refAdding') : t('admin.scholarship.refAdd')}
+        </button>
+      </div>
+      )}
+
+      {/* Phase C: interview capture */}
+      <div id="interview-section" className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">{t('admin.scholarship.interview.title')}</h2>
+          {app.interview_session?.status === 'submitted' && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+              {t('admin.scholarship.interview.submitted')}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-gray-500">{t('admin.scholarship.interview.intro')}</p>
+        {(() => {
+          const items = [
+            ...app.anomalies.map((a) => ({
+              code: a.code,
+              label: t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)]))),
+              ai: false,
+            })),
+            ...(app.interview_gaps || []).map((g) => ({ code: g.code, label: g.question, ai: true })),
+          ]
+          if (items.length === 0) {
+            return <p className="text-sm text-gray-400 italic">{t('admin.scholarship.interview.noFlags')}</p>
+          }
+          return (
+            <ul className="space-y-3">
+              {items.map((it) => {
+                const f = findings[it.code] ?? { verdict: '', rationale: '' }
+                const setF = (patch: Partial<{ verdict: string; rationale: string }>) =>
+                  setFindings((prev) => ({ ...prev, [it.code]: { ...f, ...patch } }))
+                return (
+                  <li key={it.code} className="border rounded-lg p-3">
+                    <p className="text-sm text-gray-800">
+                      {it.ai && <span className="mr-1 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
+                      {it.label}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {VERDICTS.map((v) => (
+                        <label key={v} className={`cursor-pointer rounded-full border px-3 py-1 text-xs ${f.verdict === v ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-700'}`}>
+                          <input type="radio" name={`v-${it.code}`} className="sr-only" disabled={!canWrite}
+                            checked={f.verdict === v} onChange={() => setF({ verdict: v })} />
+                          {t(`admin.scholarship.interview.verdict.${v}`)}
+                        </label>
+                      ))}
+                    </div>
+                    <input
+                      value={f.rationale} maxLength={140} disabled={!canWrite}
+                      onChange={(e) => setF({ rationale: e.target.value })}
+                      placeholder={t('admin.scholarship.interview.rationalePlaceholder')}
+                      className="mt-2 w-full border rounded-lg px-3 py-1.5 text-sm"
+                    />
+                  </li>
+                )
+              })}
+            </ul>
+          )
+        })()}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {RUBRIC_DIMS.map((dim) => (
+            <div key={dim}>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{t(`admin.scholarship.interview.rubric.${dim}`)}</label>
+              <select value={rubric[dim] ?? ''} disabled={!canWrite}
+                onChange={(e) => setRubric((r) => ({ ...r, [dim]: Number(e.target.value) }))}
+                className="border rounded-lg px-2 py-1.5 text-sm w-full">
+                <option value="">—</option>
+                {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+          ))}
+        </div>
+        <textarea value={note} disabled={!canWrite} rows={2}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder={t('admin.scholarship.interview.notePlaceholder')}
+          className="w-full border rounded-lg px-3 py-2 text-sm" />
+        {canWrite && (
+          <div className="flex gap-2">
+            <button onClick={doSaveInterview} disabled={!!busy}
+              className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
+              {busy === 'iv' ? t('common.loading') : t('admin.scholarship.interview.saveDraft')}
+            </button>
+            <button onClick={doSubmitInterview} disabled={!!busy}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm disabled:opacity-50">
+              {busy === 'ivs' ? t('common.loading') : t('admin.scholarship.interview.submit')}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Phase C: request more documentation from the student */}
+      {canWrite && (
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
+          <h2 className="font-semibold">{t('admin.scholarship.requestInfoTitle')}</h2>
+          <p className="text-xs text-gray-500">{t('admin.scholarship.requestInfoIntro')}</p>
+          {app.info_request_note && (
+            <p className="text-xs text-gray-500 italic">
+              {t('admin.scholarship.requestInfoLast')}: {app.info_request_note}
+            </p>
+          )}
+          <textarea name="infoNote" value={infoNote} rows={2} onChange={(e) => setInfoNote(e.target.value)}
+            placeholder={t('admin.scholarship.requestInfoPlaceholder')}
+            className="w-full border rounded-lg px-3 py-2 text-sm" />
+          <div className="flex gap-2">
+            <button onClick={doRequestInfo} disabled={!!busy || !infoNote.trim()}
+              className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
+              {busy === 'info' ? t('common.loading') : t('admin.scholarship.requestInfoSend')}
+            </button>
+            <button onClick={doRaiseQuery} disabled={!!busy || !infoNote.trim()}
+              className="px-4 py-2 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
+              {busy === 'raise' ? t('common.loading') : t('admin.scholarship.caveats.ask')}
+            </button>
+          </div>
+        </div>
+      )}
+
+
       {/* ── Documents drawer — grouped by fact ────────────────────────────────── */}
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="mb-3">
@@ -1246,160 +1401,6 @@ export default function AdminScholarshipDetailPage() {
           )
         })()}
       </div>
-
-      {/* ── Referees (consent panel removed — the consent RECORD + sponsor-share gating
-           stay untouched; only the cockpit status line is gone). Behind SHOW_REFEREES. ── */}
-      {SHOW_REFEREES && (
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <h3 className="font-semibold text-sm mb-1">{t('admin.scholarship.referees')}</h3>
-        <p className="text-xs text-gray-400 mb-2">{t('admin.scholarship.refHint')}</p>
-        <ul className="text-sm text-gray-600 space-y-1">
-          {app.referees.map((r) => (
-            <li key={r.id} className="flex items-start justify-between gap-2">
-              <span>
-                {r.name}{r.role ? ` (${r.role})` : ''}{r.relationship ? ` · ${r.relationship}` : ''}
-                {r.phone ? ` — ${r.phone}` : ''}{r.email ? ` · ${r.email}` : ''}
-              </span>
-              <button onClick={() => doDeleteReferee(r.id)} disabled={!!busy}
-                className="text-red-500 hover:underline text-xs shrink-0 disabled:opacity-50">
-                {t('admin.scholarship.refRemove')}
-              </button>
-            </li>
-          ))}
-          {app.referees.length === 0 && <li className="text-gray-400">{t('admin.scholarship.none')}</li>}
-        </ul>
-        {/* Add referee (coordinator records it at verify-&-accept) */}
-        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <input value={refForm.name} onChange={(e) => setRefForm((f) => ({ ...f, name: e.target.value }))}
-            placeholder={t('admin.scholarship.refName')} className="border rounded-lg px-2 py-1 text-sm" />
-          <input value={refForm.role} onChange={(e) => setRefForm((f) => ({ ...f, role: e.target.value }))}
-            placeholder={t('admin.scholarship.refRole')} className="border rounded-lg px-2 py-1 text-sm" />
-          <input value={refForm.relationship} onChange={(e) => setRefForm((f) => ({ ...f, relationship: e.target.value }))}
-            placeholder={t('admin.scholarship.refRelationship')} className="border rounded-lg px-2 py-1 text-sm" />
-          <input value={refForm.phone} onChange={(e) => setRefForm((f) => ({ ...f, phone: formatPhone(e.target.value) }))}
-            placeholder={t('admin.scholarship.refPhone')} className="border rounded-lg px-2 py-1 text-sm" />
-          <input value={refForm.email} onChange={(e) => setRefForm((f) => ({ ...f, email: e.target.value }))}
-            placeholder={t('admin.scholarship.refEmail')} className="border rounded-lg px-2 py-1 text-sm sm:col-span-2" />
-        </div>
-        <button onClick={doAddReferee} disabled={!!busy || !refForm.name.trim()}
-          className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
-          {busy === 'ref' ? t('admin.scholarship.refAdding') : t('admin.scholarship.refAdd')}
-        </button>
-      </div>
-      )}
-
-      {/* Phase C: interview capture */}
-      <div id="interview-section" className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold">{t('admin.scholarship.interview.title')}</h2>
-          {app.interview_session?.status === 'submitted' && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
-              {t('admin.scholarship.interview.submitted')}
-            </span>
-          )}
-        </div>
-        <p className="text-xs text-gray-500">{t('admin.scholarship.interview.intro')}</p>
-        {(() => {
-          const items = [
-            ...app.anomalies.map((a) => ({
-              code: a.code,
-              label: t(`admin.scholarship.anomaly.${a.code}.fact`, Object.fromEntries(Object.entries(a.params).map(([k, v]) => [k, String(v)]))),
-              ai: false,
-            })),
-            ...(app.interview_gaps || []).map((g) => ({ code: g.code, label: g.question, ai: true })),
-          ]
-          if (items.length === 0) {
-            return <p className="text-sm text-gray-400 italic">{t('admin.scholarship.interview.noFlags')}</p>
-          }
-          return (
-            <ul className="space-y-3">
-              {items.map((it) => {
-                const f = findings[it.code] ?? { verdict: '', rationale: '' }
-                const setF = (patch: Partial<{ verdict: string; rationale: string }>) =>
-                  setFindings((prev) => ({ ...prev, [it.code]: { ...f, ...patch } }))
-                return (
-                  <li key={it.code} className="border rounded-lg p-3">
-                    <p className="text-sm text-gray-800">
-                      {it.ai && <span className="mr-1 rounded bg-indigo-600 px-1.5 py-0.5 text-[10px] font-semibold text-white align-middle">{t('admin.scholarship.gaps.aiBadge')}</span>}
-                      {it.label}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {VERDICTS.map((v) => (
-                        <label key={v} className={`cursor-pointer rounded-full border px-3 py-1 text-xs ${f.verdict === v ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-gray-300 text-gray-700'}`}>
-                          <input type="radio" name={`v-${it.code}`} className="sr-only" disabled={!canWrite}
-                            checked={f.verdict === v} onChange={() => setF({ verdict: v })} />
-                          {t(`admin.scholarship.interview.verdict.${v}`)}
-                        </label>
-                      ))}
-                    </div>
-                    <input
-                      value={f.rationale} maxLength={140} disabled={!canWrite}
-                      onChange={(e) => setF({ rationale: e.target.value })}
-                      placeholder={t('admin.scholarship.interview.rationalePlaceholder')}
-                      className="mt-2 w-full border rounded-lg px-3 py-1.5 text-sm"
-                    />
-                  </li>
-                )
-              })}
-            </ul>
-          )
-        })()}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {RUBRIC_DIMS.map((dim) => (
-            <div key={dim}>
-              <label className="block text-xs font-medium text-gray-600 mb-1">{t(`admin.scholarship.interview.rubric.${dim}`)}</label>
-              <select value={rubric[dim] ?? ''} disabled={!canWrite}
-                onChange={(e) => setRubric((r) => ({ ...r, [dim]: Number(e.target.value) }))}
-                className="border rounded-lg px-2 py-1.5 text-sm w-full">
-                <option value="">—</option>
-                {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </div>
-          ))}
-        </div>
-        <textarea value={note} disabled={!canWrite} rows={2}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder={t('admin.scholarship.interview.notePlaceholder')}
-          className="w-full border rounded-lg px-3 py-2 text-sm" />
-        {canWrite && (
-          <div className="flex gap-2">
-            <button onClick={doSaveInterview} disabled={!!busy}
-              className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
-              {busy === 'iv' ? t('common.loading') : t('admin.scholarship.interview.saveDraft')}
-            </button>
-            <button onClick={doSubmitInterview} disabled={!!busy}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm disabled:opacity-50">
-              {busy === 'ivs' ? t('common.loading') : t('admin.scholarship.interview.submit')}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Phase C: request more documentation from the student */}
-      {canWrite && (
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
-          <h2 className="font-semibold">{t('admin.scholarship.requestInfoTitle')}</h2>
-          <p className="text-xs text-gray-500">{t('admin.scholarship.requestInfoIntro')}</p>
-          {app.info_request_note && (
-            <p className="text-xs text-gray-500 italic">
-              {t('admin.scholarship.requestInfoLast')}: {app.info_request_note}
-            </p>
-          )}
-          <textarea name="infoNote" value={infoNote} rows={2} onChange={(e) => setInfoNote(e.target.value)}
-            placeholder={t('admin.scholarship.requestInfoPlaceholder')}
-            className="w-full border rounded-lg px-3 py-2 text-sm" />
-          <div className="flex gap-2">
-            <button onClick={doRequestInfo} disabled={!!busy || !infoNote.trim()}
-              className="px-4 py-2 border rounded-lg text-sm disabled:opacity-50">
-              {busy === 'info' ? t('common.loading') : t('admin.scholarship.requestInfoSend')}
-            </button>
-            <button onClick={doRaiseQuery} disabled={!!busy || !infoNote.trim()}
-              className="px-4 py-2 border border-indigo-300 text-indigo-700 rounded-lg text-sm disabled:opacity-50">
-              {busy === 'raise' ? t('common.loading') : t('admin.scholarship.caveats.ask')}
-            </button>
-          </div>
-        </div>
-      )}
 
       </div>{/* end LEFT column */}
 
