@@ -1161,9 +1161,10 @@ export default function AdminScholarshipDetailPage() {
         })()}
       </div>
 
-      {/* ── Referees / consent (unchanged) ────────────────────────────────────── */}
+      {/* ── Referees (consent panel removed — the consent RECORD + sponsor-share gating
+           stay untouched; only the cockpit status line is gone). Behind SHOW_REFEREES. ── */}
+      {SHOW_REFEREES && (
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        {SHOW_REFEREES && (<>
         <h3 className="font-semibold text-sm mb-1">{t('admin.scholarship.referees')}</h3>
         <p className="text-xs text-gray-400 mb-2">{t('admin.scholarship.refHint')}</p>
         <ul className="text-sm text-gray-600 space-y-1">
@@ -1198,20 +1199,16 @@ export default function AdminScholarshipDetailPage() {
           className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
           {busy === 'ref' ? t('admin.scholarship.refAdding') : t('admin.scholarship.refAdd')}
         </button>
-        </>)}
-
-        <h3 className={`font-semibold text-sm mb-2 ${SHOW_REFEREES ? 'mt-4' : ''}`}>{t('admin.scholarship.consent')}</h3>
-        <p className="text-sm text-gray-600">
-          {app.consents.some((c) => c.is_active) ? t('admin.scholarship.consentGiven') : t('admin.scholarship.consentNone')}
-        </p>
       </div>
+      )}
 
-      {/* Phase C: assignment */}
+      {/* Phase C: assignment — reviewer/super only (viewers no longer see a dead control) */}
+      {canWrite && (
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
         <h2 className="font-semibold">{t('admin.scholarship.assignTitle')}</h2>
         <select
           value={app.assigned_to_id ?? ''}
-          disabled={!canWrite || !!busy}
+          disabled={!!busy}
           onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
           className="border rounded-lg px-3 py-2 text-sm w-full sm:w-auto"
         >
@@ -1219,6 +1216,7 @@ export default function AdminScholarshipDetailPage() {
           {admins.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
       </div>
+      )}
 
       {/* Phase C: interview capture */}
       <div id="interview-section" className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
