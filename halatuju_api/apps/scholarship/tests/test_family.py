@@ -235,3 +235,23 @@ class ConsentRedGateTests(TestCase):
         with patch('apps.scholarship.pathway_engine.student_offer_check',
                    return_value={'name': 'mismatch', 'ic': 'match', 'pathway': 'match'}):
             self.assertIn('offer_letter_mismatch', document_red_blockers(app))
+
+    def test_unreadable_slip_and_offer_block_but_pending_does_not(self):
+        from unittest.mock import patch
+        from apps.scholarship.models import ApplicantDocument
+        from apps.scholarship.services import document_unreadable_blockers
+        app = self._app_with_doc('results_slip')
+        ApplicantDocument.objects.create(application=app, doc_type='offer_letter', storage_path='o')
+        with patch('apps.scholarship.academic_engine.student_slip_check',
+                   return_value={'name': 'unreadable', 'subjects': 'unreadable', 'results': 'unreadable'}), \
+             patch('apps.scholarship.pathway_engine.student_offer_check',
+                   return_value={'name': 'unreadable', 'ic': 'pending'}):
+            codes = document_unreadable_blockers(app)
+            self.assertIn('results_slip_unreadable', codes)
+            self.assertIn('offer_letter_unreadable', codes)
+        # 'pending' (not processed yet / our OCR outage) must NOT block.
+        with patch('apps.scholarship.academic_engine.student_slip_check',
+                   return_value={'name': 'pending', 'subjects': 'pending', 'results': 'pending'}), \
+             patch('apps.scholarship.pathway_engine.student_offer_check',
+                   return_value={'name': 'pending', 'ic': 'pending'}):
+            self.assertEqual(document_unreadable_blockers(app), [])
