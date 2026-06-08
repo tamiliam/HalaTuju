@@ -2323,7 +2323,11 @@
           "academic_grade_mismatch": "{subject}: typed {typed}, but the slip reads {slip}. Check.",
           "academic_grade_uncertain": "{subject}: our read shows {slip}, but the student typed {typed} — an A/A+ (±) read we can't be sure of. Check it by eye against the slip.",
           "grades_verified": "All {count} grades match the results slip.",
-          "offer_letter_missing": "No offer letter uploaded — required before we can support a place."
+          "offer_letter_missing": "No offer letter uploaded — required before we can support a place.",
+          "course_unspecified": "No course/field chosen yet — the student has been asked what they plan to study.",
+          "sibling_level_unknown": "Sibling school-vs-tertiary split not captured — the student has been asked to split the count.",
+          "device_status_unknown": "Device need unknown — the student has been asked whether they have a laptop/tablet.",
+          "transport_cost_unknown": "Transport cost unknown — the student has been asked how they travel and the rough monthly cost."
         }
       },
       "recordVerdict": {
