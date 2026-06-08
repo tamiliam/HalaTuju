@@ -968,6 +968,9 @@ def consent_blockers(application):
     # POLICY (owner): do not receive applications with ANY red document check — every
     # "Doesn't match" the student sees in the Documents tab must clear before consent.
     blockers.extend(document_red_blockers(application))
+    # …and a COMPULSORY doc that's present but UNREADABLE (a bad photo the student can
+    # re-take) must be re-uploaded too — but never block on OUR OCR-service outages.
+    blockers.extend(document_unreadable_blockers(application))
     return blockers
 
 
@@ -1016,6 +1019,48 @@ def document_red_blockers(application):
         elif dt == 'guardianship_letter':
             if has(income_engine.student_guardianship_check(doc), 'guardian_status', 'ward_status'):
                 codes.add('income_document_mismatch')
+    return list(codes)
+
+
+def document_unreadable_blockers(application):
+    """Compulsory documents that were uploaded but are UNREADABLE — a bad/blurry/skewed
+    photo the student can simply re-take (Gopal already says exactly this). Owner policy:
+    don't accept what we can't verify. EXCLUDES our own OCR-service outages: the Gemini
+    docs (slip/offer/relationship) surface an outage as 'pending' (not processed), not
+    'unreadable'; the Vision IC path is guarded with _is_ic_decode_error (a service error
+    is not the student's fault). Returns blocker codes."""
+    from .academic_engine import student_slip_check
+    from .pathway_engine import student_offer_check
+    from .income_engine import (income_cluster_advice, working_members,
+                                _member_ic_doc, student_income_ic_check)
+    codes = set()
+    slip = application.documents.filter(doc_type='results_slip').order_by('-uploaded_at').first()
+    if slip and student_slip_check(slip).get('name') == 'unreadable':
+        codes.add('results_slip_unreadable')
+    offer = application.documents.filter(doc_type='offer_letter').order_by('-uploaded_at').first()
+    if offer and student_offer_check(offer).get('name') == 'unreadable':
+        codes.add('offer_letter_unreadable')
+    # Income cluster — per earner.
+    route = (getattr(application, 'income_route', '') or '').strip()
+    if route == 'str':
+        earner = (getattr(application, 'income_earner', '') or '').strip()
+        members = [earner] if earner else []
+    elif route == 'salary':
+        members = working_members(getattr(application, 'income_working_members', None) or [])
+    else:
+        members = []
+    for member in members:
+        ic = _member_ic_doc(application, member)
+        if ic is not None:
+            ran = bool(getattr(ic, 'vision_run_at', None))
+            err = getattr(ic, 'vision_error', '') or ''
+            service_down = bool(err) and not _is_ic_decode_error(err)   # OUR outage → don't block
+            if ran and not service_down and not student_income_ic_check(ic).get('readable'):
+                codes.add('income_document_unreadable')
+        # The relationship doc (BC / guardianship letter) is a Gemini field-extraction doc,
+        # so an outage shows as 'pending' — only a genuine bad scan returns this code.
+        if income_cluster_advice(application, member) == 'income_rel_doc_unreadable':
+            codes.add('income_document_unreadable')
     return list(codes)
 
 
