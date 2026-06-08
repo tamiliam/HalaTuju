@@ -2256,3 +2256,44 @@ only the locator is gated.
 field may cross — an intentional asymmetry (structured, gated exposure vs un-gated free-text leak).
 **Revisit if:** public (unvetted) sponsor onboarding opens (enforce the gate hard, review academic granularity), or the
 lawyer's answer to the bundle §7.4 headline question requires a different boundary.
+
+## Family roster — derive the legacy columns as OUTPUTS — Sprint family-redesign, 2026-06-08
+**Decision:** The new structured family roster (father/mother name + coded profession + a brother/sister/guardian
+pool) is the sole INPUT. The two legacy columns `first_in_family` and `parents_occupation` are KEPT and
+recomputed on every save (`first_in_family` = no sibling in/through tertiary; `parents_occupation` = a human
+summary of the roster). They become read-only OUTPUTS.
+**Alternatives considered:** (a) drop the legacy columns and update every consumer (profile_engine,
+anomaly_engine, submission_review ledger, check2) to read the structured fields; (b) keep both as independent
+inputs (status quo).
+**Rationale:** Deriving the legacy columns means ZERO consumer changes — a multi-engine refactor collapses to an
+additive model + one save-path change. It also makes the `first_in_family_with_siblings_studying` anomaly and the
+`sibling_level_unknown` clarify-query *inert by construction* for structured data (first_in_family can no longer
+contradict the sibling count), while they stay correct as a safety net for grandfathered free-text rows.
+**Trade-offs:** `parents_occupation` carries a terse machine summary ("Father: Driver…") for new apps instead of
+the student's prose; the sponsor-profile prompt loses some narrative colour (acceptable — `family_context` keeps
+the prose). Two columns now have a hidden invariant (must be derived, never hand-set when a roster exists).
+**Revisit if:** a consumer needs per-earner structured occupation (then read the structured fields directly and
+retire the summary), or Phase 2 unifies the roster with the income earners.
+
+## Family roster — validate the profession taxonomy against the production DB — Sprint family-redesign, 2026-06-08
+**Decision:** Before finalising the 40-option profession list, query every real `parents_occupation` free-text
+entry on prod (33 rows) and map each to a code; add options for the genuine gaps the data exposes.
+**Alternatives considered:** ship an armchair list and refine later from support tickets.
+**Rationale:** The data surfaced four real gaps an a-priori list missed (insurance agent ×2, site engineer,
+generic "company worker", foreman ×2) and confirmed the common ones — pushing coverage to ~95% before a single
+student sees the dropdown. Cheap, high-signal, repeatable.
+**Trade-offs:** a one-off DB read of (mildly sensitive) free text; the list is tuned to the current applicant mix
+(B40/lower-M40) and may need extension if the programme's demographic widens.
+**Revisit if:** the applicant population shifts, or "Other (specify)" free text starts clustering on a missing code.
+
+## Family roster — make a zero-able stepper compulsory via a null default — Sprint family-redesign, 2026-06-08
+**Decision:** The sibling steppers ("in school", "in college/university") start BLANK ("—", null), not 0, and
+completeness requires both to be non-null. The student must actively set each, so "0 in school" is a deliberate
+answer rather than an un-touched default.
+**Alternatives considered:** (a) a preceding "Do you have siblings?" Yes/No gate; (b) leave them defaulting to 0
+(can't tell "answered 0" from "skipped").
+**Rationale:** A value that can legitimately be zero can't be made compulsory by checking `> 0`; the null-default
+is the minimal pattern that distinguishes answered-zero from unanswered, with no extra question.
+**Trade-offs:** the student must tap each stepper even to leave it at 0 (one extra interaction); the UI must
+render a null state distinctly.
+**Revisit if:** drop-off data shows the steppers are a completion bottleneck (then consider the Yes/No gate).
