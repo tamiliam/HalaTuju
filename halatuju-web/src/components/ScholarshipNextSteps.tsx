@@ -65,18 +65,17 @@ function ProfessionSelect({ value, onChange, t }: { value: string; onChange: (v:
   )
 }
 
-/** A +/− stepper for a count that may be null — it shows "—" until the student
- *  actively answers, so "0" is a deliberate choice, not an un-touched default
- *  (that's what makes the count compulsory). */
-function CountStepper({ value, onChange }: { value: number | null; onChange: (v: number) => void }) {
+/** A +/− stepper for a sibling count. Defaults to 0 (a real "none" answer) — no
+ *  confusing "not set" state. */
+function CountStepper({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const btn = 'h-9 w-9 rounded-full border border-gray-300 text-lg leading-none text-gray-600 hover:bg-gray-100 disabled:opacity-40'
   return (
     <div className="flex items-center gap-3">
       <button type="button" aria-label="decrease" className={btn}
-        onClick={() => onChange(value == null ? 0 : Math.max(0, value - 1))}>−</button>
-      <span className="w-6 text-center text-sm font-semibold tabular-nums">{value == null ? '—' : value}</span>
+        onClick={() => onChange(Math.max(0, value - 1))}>−</button>
+      <span className="w-6 text-center text-sm font-semibold tabular-nums">{value}</span>
       <button type="button" aria-label="increase" className={btn}
-        onClick={() => onChange(value == null ? 1 : value + 1)}>+</button>
+        onClick={() => onChange(value + 1)}>+</button>
     </div>
   )
 }
@@ -317,9 +316,6 @@ export default function ScholarshipNextSteps({
 
           {/* ── Parents / guardians ─────────────────────────────────────────── */}
           <div className="space-y-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-              {t(`${CA}.parentsHeading`)}
-            </p>
             {(['father', 'mother'] as const).map((who) => {
               const nameKey = `${who}Name` as const
               const occKey = `${who}Occupation` as const
@@ -354,7 +350,12 @@ export default function ScholarshipNextSteps({
                   <div className="flex-1 grid gap-2 sm:grid-cols-2">
                     <select className="input" value={m.role}
                       onChange={(e) => updateMember(i, { role: e.target.value as FamilyRole })}>
-                      {FAMILY_ROLES.map((r) => <option key={r} value={r}>{t(`${CA}.role.${r}`)}</option>)}
+                      {FAMILY_ROLES.map((r) => {
+                        // Only one guardian is possible — disable it once another row has it.
+                        const guardianTaken = r === 'guardian'
+                          && form.otherFamilyMembers.some((mm, j) => j !== i && mm.role === 'guardian')
+                        return <option key={r} value={r} disabled={guardianTaken}>{t(`${CA}.role.${r}`)}</option>
+                      })}
                     </select>
                     <ProfessionSelect value={m.occupation} onChange={(v) => updateMember(i, { occupation: v })} t={t} />
                   </div>
@@ -390,7 +391,6 @@ export default function ScholarshipNextSteps({
               <span className="text-sm text-gray-700">{t(`${CA}.siblingsTertiary`)}</span>
               <CountStepper value={form.siblingsInTertiary} onChange={(v) => update('siblingsInTertiary', v)} />
             </div>
-            <p className="text-xs text-gray-400">{t(`${CA}.siblingsHint`)}</p>
             {form.siblingsInTertiary === 0 && (
               <div className="flex items-center gap-1.5 rounded-lg border border-green-200 bg-green-50 p-2 text-sm text-green-700">
                 <span aria-hidden>✓</span> {t(`${CA}.firstInFamilyNote`)}

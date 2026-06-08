@@ -761,8 +761,8 @@ describe('buildDetailsPayload', () => {
 
   it('emits sibling counts (int|null) and occupation_other only for "other"', () => {
     let p = buildDetailsPayload(emptyDetailsForm()) as Record<string, unknown>
-    expect(p.siblings_in_school).toBeNull()
-    expect(p.siblings_in_tertiary).toBeNull()
+    expect(p.siblings_in_school).toBe(0)
+    expect(p.siblings_in_tertiary).toBe(0)
     // occupation_other carried ONLY when the code is 'other'
     p = buildDetailsPayload({ ...emptyDetailsForm(), fatherOccupation: 'driver', fatherOccupationOther: 'ignored' }) as Record<string, unknown>
     expect(p.father_occupation_other).toBe('')
@@ -857,18 +857,18 @@ describe('applicationToDetailsForm', () => {
     expect(f.dailyLife).toBe('Wake early, help at home')
   })
 
-  it('pre-fills the sibling steppers (null when unanswered)', () => {
+  it('pre-fills the sibling steppers (defaulting null → 0)', () => {
     const app = {
       aspirations: '', plans: '', fears: '', justification: '',
-      siblings_in_school: 0, siblings_in_tertiary: null,
+      siblings_in_school: 2, siblings_in_tertiary: null,
       family_context: '', daily_life: '', funding_need: null,
     } as unknown as ScholarshipApplication
     const f = applicationToDetailsForm(app)
-    expect(f.siblingsInSchool).toBe(0)
-    expect(f.siblingsInTertiary).toBeNull()
+    expect(f.siblingsInSchool).toBe(2)
+    expect(f.siblingsInTertiary).toBe(0)   // null → 0 (a real "none" answer)
   })
 
-  it('defaults the roster to empty/null for a fresh application', () => {
+  it('defaults the roster to empty/0 for a fresh application', () => {
     const app = {
       aspirations: '', plans: '', fears: '', justification: '',
       siblings_in_school: null, siblings_in_tertiary: null,
@@ -877,7 +877,7 @@ describe('applicationToDetailsForm', () => {
     const f = applicationToDetailsForm(app)
     expect(f.fatherOccupation).toBe('')
     expect(f.otherFamilyMembers).toEqual([])
-    expect(f.siblingsInSchool).toBeNull()
+    expect(f.siblingsInSchool).toBe(0)
   })
   it('handles a null funding need', () => {
     const app = {

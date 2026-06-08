@@ -680,9 +680,9 @@ export interface DetailsFormState {
   motherOccupation: string
   motherOccupationOther: string
   otherFamilyMembers: OtherMember[]
-  // Sibling steppers — null = NOT YET ANSWERED (compulsory; "0" is a deliberate answer).
-  siblingsInSchool: number | null
-  siblingsInTertiary: number | null
+  // Sibling steppers — default 0 (a real "none" answer; no confusing "not set" state).
+  siblingsInSchool: number
+  siblingsInTertiary: number
   familyContext: string
   // Card B — About you (S2; aspirations/plans/fears pre-existing, daily_life new)
   aspirations: string
@@ -713,8 +713,8 @@ export function emptyDetailsForm(): DetailsFormState {
     motherOccupation: '',
     motherOccupationOther: '',
     otherFamilyMembers: [],
-    siblingsInSchool: null,
-    siblingsInTertiary: null,
+    siblingsInSchool: 0,
+    siblingsInTertiary: 0,
     familyContext: '',
     // Card B — About you
     aspirations: '',
@@ -744,8 +744,8 @@ export function applicationToDetailsForm(app: ScholarshipApplication): DetailsFo
     motherOccupation: app.mother_occupation || '',
     motherOccupationOther: app.mother_occupation_other || '',
     otherFamilyMembers: Array.isArray(app.other_family_members) ? app.other_family_members : [],
-    siblingsInSchool: app.siblings_in_school,
-    siblingsInTertiary: app.siblings_in_tertiary,
+    siblingsInSchool: app.siblings_in_school ?? 0,
+    siblingsInTertiary: app.siblings_in_tertiary ?? 0,
     familyContext: app.family_context || '',
     // Card B — About you
     aspirations: app.aspirations || '',
