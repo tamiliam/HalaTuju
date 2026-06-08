@@ -2,7 +2,7 @@
 from datetime import timedelta
 from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.courses.models import StudentProfile
@@ -67,6 +67,7 @@ class TestQuerySla(_Base):
         self.assertTrue(is_ready_for_assignment(self.app))
 
 
+@override_settings(CHECK2_STUDENT_QUERIES_ENABLED=True)
 class TestQueryReminders(_Base):
     @patch('apps.scholarship.emails.send_query_reminder_email', return_value=True)
     def test_reminds_near_deadline_once(self, mock_email):
@@ -140,6 +141,7 @@ class TestStep3AutoGenerate(_Base):
         self.assertFalse(mock_gen.called)
 
 
+@override_settings(CHECK2_STUDENT_QUERIES_ENABLED=True)
 class TestDueQueryEmails(_Base):
     """Check 2 STEP 2: the delayed 'we have a few questions' email (~2h after submit)."""
     @patch('apps.scholarship.emails.send_query_raised_email', return_value=True)
@@ -172,5 +174,14 @@ class TestDueQueryEmails(_Base):
         self.app.pathway_certainty = 'sure'
         self.app.save()
         FundingNeed.objects.create(application=self.app, categories=['device'])
+        self.assertEqual(send_due_query_emails()['sent'], 0)
+        self.assertFalse(mock_email.called)
+
+    @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=False)
+    @patch('apps.scholarship.emails.send_query_raised_email', return_value=True)
+    def test_held_when_flag_off(self, mock_email):
+        # Even when due, no email goes out while student queries are held.
+        self.app.profile_completed_at = timezone.now() - timedelta(hours=3)
+        self.app.save()
         self.assertEqual(send_due_query_emails()['sent'], 0)
         self.assertFalse(mock_email.called)

@@ -416,8 +416,11 @@ def send_due_query_emails(now=None):
     The delay is deliberate so it feels like someone reviewed the application. Idempotent
     via ``query_raised_notified_at``. Returns ``{'sent': n}``."""
     from datetime import timedelta
+    from django.conf import settings as _settings
     from .check2_queries import sync_check2_queries
     from .emails import send_query_raised_email
+    if not getattr(_settings, 'CHECK2_STUDENT_QUERIES_ENABLED', False):
+        return {'sent': 0}   # student queries held until the questions are reviewed
     now = now or timezone.now()
     cutoff = now - timedelta(hours=QUERY_EMAIL_DELAY_HOURS)
     sent = 0
@@ -445,7 +448,10 @@ def send_query_reminders(now=None):
     queries, once, ~2 days before the SLA deadline. Reuses the trilingual email
     infra. Idempotent via ``query_reminder_at`` (one reminder per application).
     Lapsed apps are NOT emailed (they already proceed-as-is). Returns ``{'reminded': n}``."""
+    from django.conf import settings as _settings
     from .emails import send_query_reminder_email
+    if not getattr(_settings, 'CHECK2_STUDENT_QUERIES_ENABLED', False):
+        return {'reminded': 0}   # student queries held until the questions are reviewed
     now = now or timezone.now()
     sent = 0
     qs = (ScholarshipApplication.objects
