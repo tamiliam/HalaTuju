@@ -22,6 +22,7 @@ from .views_sponsor import (
     SponsorDonateView,
     SponsorFundView,
     SponsorMeView,
+    SponsorPoolCountView,
     SponsorPoolDetailView,
     SponsorPoolListView,
     SponsorRegisterView,
@@ -77,6 +78,7 @@ urlpatterns = [
     # Phase E: sponsor accounts (authenticated self-registration + own status)
     path('sponsor/register/', SponsorRegisterView.as_view()),
     path('sponsor/me/', SponsorMeView.as_view()),
+    path('sponsor/pool/count/', SponsorPoolCountView.as_view()),  # F1: public landing counter
     path('sponsor/pool/', SponsorPoolListView.as_view()),
     path('sponsor/pool/<int:pk>/', SponsorPoolDetailView.as_view()),
     # Phase E3: wallet + funding (flag + approved-sponsor gated)

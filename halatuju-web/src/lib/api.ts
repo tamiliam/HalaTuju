@@ -624,6 +624,13 @@ export async function getSponsorPoolDetail(id: number, options?: ApiOptions): Pr
   return apiRequest(`/api/v1/sponsor/pool/${id}/`, options)
 }
 
+/** F1 — public live counter for the sponsor landing. No auth (a public marketing
+ *  page calls it). While SPONSOR_POOL_ENABLED is off it returns {count:0,
+ *  enabled:false} so the landing stays dark until go-live. */
+export async function getStudentsWaitingCount(options?: ApiOptions): Promise<{ count: number; enabled: boolean }> {
+  return apiRequest('/api/v1/sponsor/pool/count/', options)
+}
+
 // STPM types
 export interface StpmEligibleCourse {
   course_id: string

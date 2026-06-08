@@ -11,6 +11,7 @@ from decimal import Decimal, InvalidOperation
 from django.conf import settings
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -125,6 +126,23 @@ class SponsorMeView(SponsorMixin, APIView):
         if not sponsor:
             return Response({'registered': False})
         return Response(SponsorSerializer(sponsor).data)
+
+
+class SponsorPoolCountView(APIView):
+    """GET /api/v1/sponsor/pool/count/ — PUBLIC count of students currently waiting
+    in the anonymised pool, for the F1 sponsor-landing live counter.
+
+    Count ONLY — exposes no student data (not even an id). Behind SPONSOR_POOL_ENABLED:
+    while the flag is off (lawyer-gated) it returns {count: 0, enabled: False} so the
+    landing hides the counter and the whole sponsor programme stays dark until go-live.
+    No auth (a public marketing page calls it); the NRIC gate skips anonymous callers."""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        if not getattr(settings, 'SPONSOR_POOL_ENABLED', False):
+            return Response({'count': 0, 'enabled': False})
+        count = pool.eligible_pool_queryset(ScholarshipApplication).count()
+        return Response({'count': count, 'enabled': True})
 
 
 class _PoolBase(SponsorMixin, APIView):

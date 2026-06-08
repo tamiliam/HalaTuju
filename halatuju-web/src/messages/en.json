@@ -149,6 +149,60 @@
     "durationLabel": "Programme length",
     "months": "months"
   },
+  "sponsorLanding": {
+    "nav": {
+      "forSponsors": "For Sponsors",
+      "signIn": "Sign in",
+      "becomeSponsor": "Become a sponsor"
+    },
+    "hero": {
+      "heading": "Open a door for a student who has the grades but not the means",
+      "sub": "Sponsor a verified B40 school-leaver through their studies — anonymously, with every ringgit accounted for.",
+      "becomeSponsor": "Become a sponsor",
+      "howItWorks": "How it works",
+      "counter": "{count} students are waiting for a sponsor right now"
+    },
+    "promises": {
+      "title": "Why sponsor through HalaTuju",
+      "card1Title": "Complete anonymity",
+      "card1Desc": "You never see names or contact details, only an anonymous student profile. Identities are protected both ways.",
+      "card2Title": "Every ringgit tracked",
+      "card2Desc": "Funds are held by Yayasan myNADI and released against verified study milestones, never handed over directly.",
+      "card3Title": "Real, verified impact",
+      "card3Desc": "Each student is income-verified and interviewed, so your support reaches a genuine B40 family."
+    },
+    "how": {
+      "title": "How it works",
+      "step1Title": "Create a sponsor account",
+      "step1Desc": "Sign up in a few minutes — no commitment yet.",
+      "step2Title": "Get approved",
+      "step2Desc": "We run a quick check before you can browse students.",
+      "step3Title": "Choose a student",
+      "step3Desc": "Browse anonymised profiles and pick someone to support.",
+      "step4Title": "Fund and follow",
+      "step4Desc": "Fund their studies and follow their progress along the way."
+    },
+    "faq": {
+      "title": "Questions sponsors ask",
+      "q1": "Will I see the student's identity?",
+      "a1": "No. To protect everyone, you see an anonymous profile only — never a name, IC, address, phone, email or photo. The student never sees your details either.",
+      "q2": "Where does my money go?",
+      "a2": "Funds are held by Yayasan myNADI and released against verified study milestones. Money is never handed directly to a student.",
+      "q3": "Can I choose who I support?",
+      "a3": "Yes. Once approved, you can browse the anonymised profiles and choose the student you'd like to support.",
+      "q4": "What happens if a student withdraws?",
+      "a4": "If a student leaves their studies, any remaining funds stay within the programme to support another verified student.",
+      "q5": "How much does it cost to sponsor someone?",
+      "a5": "It depends on the student's programme and needs. Each profile shows the support required so you can decide what works for you.",
+      "q6": "Who runs this programme?",
+      "a6": "HalaTuju runs the B40 Assistance Programme together with Yayasan myNADI, which holds and disburses the funds."
+    },
+    "cta": {
+      "heading": "Ready to change a life?",
+      "body": "Your support helps a student complete their studies and lift their family.",
+      "questions": "Questions? Email"
+    }
+  },
   "footer": {
     "tagline": "Guiding Malaysian students to the right course.",
     "quickLinks": "Quick Links",
