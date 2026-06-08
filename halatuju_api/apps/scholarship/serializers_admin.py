@@ -174,6 +174,11 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             'first_in_family', 'parents_occupation', 'siblings_studying_count',
             # P2 (Check 2): the school/tertiary split (cockpit shows the burden breakdown)
             'siblings_in_school', 'siblings_in_tertiary',
+            # Structured family roster (redesign 2026-06) — the cockpit Family card
+            # shows father/mother name + profession + the member pool.
+            'father_name', 'father_occupation', 'father_occupation_other',
+            'mother_name', 'mother_occupation', 'mother_occupation_other',
+            'other_family_members',
             'family_context', 'daily_life', 'consent_to_contact',
             'declaration_name', 'declared_at',
             'status', 'bucket', 'shortlist_reason', 'submitted_at',

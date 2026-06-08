@@ -102,6 +102,25 @@ def has_structured_roster(application):
     return bool(application.other_family_members)
 
 
+def earning_members(application):
+    """Member roles in the roster whose profession EARNS income — the prefill default
+    for the income wizard's "who is working" select (Phase-2-lite harmonisation, so the
+    student doesn't re-name the same people). Roles use the income wizard's vocabulary:
+    father / mother / guardian / brother / sister."""
+    out = []
+    if application.father_occupation and application.father_occupation not in NON_EARNING:
+        out.append('father')
+    if application.mother_occupation and application.mother_occupation not in NON_EARNING:
+        out.append('mother')
+    for member in (application.other_family_members or []):
+        if not isinstance(member, dict):
+            continue
+        role, occ = member.get('role', ''), member.get('occupation', '')
+        if role in ('guardian', 'brother', 'sister') and occ and occ not in NON_EARNING and role not in out:
+            out.append(role)
+    return out
+
+
 def parents_occupation_summary(application):
     """Build the legacy ``parents_occupation`` free-text from the structured roster,
     so the sponsor-profile prompt + officer view keep working. Returns '' when nothing

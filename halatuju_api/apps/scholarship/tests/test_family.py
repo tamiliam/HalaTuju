@@ -98,6 +98,19 @@ class SaveDerivesLegacyColumnsTests(_AppBase):
         app.refresh_from_db()
         self.assertFalse(app.first_in_family)
 
+    def test_earning_members_prefill(self):
+        app = self._app()
+        save_application_details(app, {
+            'father_occupation': 'driver',          # earns
+            'mother_occupation': 'homemaker',         # does NOT earn
+            'other_family_members': [
+                {'role': 'brother', 'occupation': 'odd_jobs'},     # earns
+                {'role': 'sister', 'occupation': 'unemployed'},     # does NOT earn
+            ],
+        })
+        app.refresh_from_db()
+        self.assertEqual(family.earning_members(app), ['father', 'brother'])
+
     def test_grandfathered_free_text_untouched_without_roster(self):
         # No structured roster → the legacy free text / toggle are left as-is.
         app = self._app()
