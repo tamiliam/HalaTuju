@@ -119,6 +119,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `actionCentre` known‑code, and its i18n in all three namespaces ×3 languages; tests updated. No migration.
 
 ### Changed
+- **Officer cockpit consolidated — ~11 action panels → ~7, two clean columns** (`feature/cockpit-consolidation`;
+  spec `docs/scholarship/cockpit-consolidation-plan.md`; retro `docs/retrospective-cockpit-consolidation.md`; Stitch
+  mockup approved). No more overlapping/duplicated questions. **Outstanding** is one panel = Caveats + Pre-interview
+  flags, split into "Student to-do" (Resolve/Ask) vs "Ask at interview" (deterministic flags + AI gaps); identity
+  `vision_nric_mismatch`/`vision_name_mismatch` are **deduped server-side** (`get_anomalies`) since the verdict tile +
+  identity caveat own them. **Decision** is one panel = the four-fact verdict audit + Verify-&-accept, with the
+  audit→accept gate preserved verbatim (accept stays gated on a complete profile + every checklist box; NRIC lock
+  intact). The IC/parent-IC **OCR display moved into Documents**; the **Consent** panel was removed (the consent record
+  + sponsor-share gating are untouched). The student's raw **Note/Story/Funding** now collapse behind a "Show the
+  student's own words" reveal under the Sponsor profile (factual About cards stay visible). **Estimated need** sits at
+  the top of the right column beside **Decision**; **Assign a reviewer** sits below it (reviewer/super only —
+  viewer-hidden). Left column order: Verdict · Profile · Outstanding · Interview · Documents. FE + one additive
+  serializer filter (+ test); **no migration**. Gates: next build clean, 276 jest, 845 scholarship pytest, i18n parity
+  2134.
 - **Income with no information yet reads 🔴 Can't verify, not 🟡 Unsure** — consistency with the other facts, where
   "nothing provided" is always red (no IC / no slip / no offer). A not‑walked income wizard (STR route, no earner/route)
   or no working member declared (salary route) now returns `gap` instead of `review`. The 🟡 cases stay as they should:
