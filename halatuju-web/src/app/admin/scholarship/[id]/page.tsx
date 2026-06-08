@@ -51,7 +51,7 @@ import { localiseParams } from '@/lib/actionCentre'
 
 const VERDICTS = ['resolved', 'still_unclear', 'new_concern'] as const
 const RUBRIC_DIMS = ['clarity_of_plan', 'financial_need', 'resilience'] as const
-const COMPLETENESS_PARTS = ['quiz_done', 'details_done', 'funding_done', 'documents_done', 'consent_done', 'address_done', 'guardian_docs_done'] as const
+const COMPLETENESS_PARTS = ['quiz_done', 'details_done', 'funding_done', 'documents_done', 'consent_done', 'address_done', 'guardian_docs_done', 'family_done'] as const
 
 const EMPTY_REFEREE = { name: '', role: '', relationship: '', phone: '', email: '' }
 // Referees aren't in play yet — hide the capture UI (the handlers stay wired so this

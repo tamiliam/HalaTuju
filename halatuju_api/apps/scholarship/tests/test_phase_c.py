@@ -72,7 +72,12 @@ class PhaseCBase(TestCase):
         for dt in ('ic', 'results_slip', 'offer_letter', 'parent_ic', 'str'):
             ApplicantDocument.objects.create(application=app, doc_type=dt, storage_path=f'x/{dt}')
         Consent.objects.create(application=app, version='t', is_active=True)
-        ScholarshipApplication.objects.filter(pk=app.id).update(income_route='str', income_earner='father')
+        ScholarshipApplication.objects.filter(pk=app.id).update(
+            income_route='str', income_earner='father',
+            # 2026-06 redesign: the structured family roster is compulsory.
+            father_name='AROON', father_occupation='driver',
+            mother_name='KOMATHI', mother_occupation='homemaker',
+            siblings_in_school=1, siblings_in_tertiary=0)
         app.refresh_from_db()
         return app
 

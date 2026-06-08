@@ -733,37 +733,41 @@ describe('buildDetailsPayload', () => {
     expect(p.aspirations).toBe('be a teacher')
   })
 
-  it('includes all 5 new story snake_case fields', () => {
+  it('emits the structured roster; first_in_family/parents_occupation are derived backend (not sent)', () => {
     const f = {
       ...emptyDetailsForm(),
-      firstInFamily: true,
-      parentsOccupation: '  Factory worker  ',
+      fatherName: '  MOHD RIZAL  ',
+      fatherOccupation: 'driver',
+      motherOccupation: 'homemaker',
+      otherFamilyMembers: [{ role: 'brother' as const, occupation: 'odd_jobs' }],
+      siblingsInSchool: 2,
+      siblingsInTertiary: 0,
       familyContext: '  Father is ill  ',
       dailyLife: '  Wake at 5am  ',
     }
     const p = buildDetailsPayload(f) as Record<string, unknown>
-    expect(p.first_in_family).toBe(true)
-    expect(p.parents_occupation).toBe('Factory worker')
+    expect(p.father_name).toBe('MOHD RIZAL')
+    expect(p.father_occupation).toBe('driver')
+    expect(p.mother_occupation).toBe('homemaker')
+    expect(p.other_family_members).toEqual([{ role: 'brother', occupation: 'odd_jobs' }])
+    expect(p.siblings_in_school).toBe(2)
+    expect(p.siblings_in_tertiary).toBe(0)
     expect(p.family_context).toBe('Father is ill')
     expect(p.daily_life).toBe('Wake at 5am')
-    // S15: the form no longer emits the legacy boolean; back-compat lives
-    // on the backend serializer only.
-    expect('siblings_studying' in p).toBe(false)
+    // first_in_family + parents_occupation are DERIVED on the backend — never sent.
+    expect('first_in_family' in p).toBe(false)
+    expect('parents_occupation' in p).toBe(false)
   })
 
-  it('S15: emits siblings_studying_count as int|null (string-to-int conversion)', () => {
-    // empty string → null
+  it('emits sibling counts (int|null) and occupation_other only for "other"', () => {
     let p = buildDetailsPayload(emptyDetailsForm()) as Record<string, unknown>
-    expect(p.siblings_studying_count).toBeNull()
-    // "3" → 3
-    p = buildDetailsPayload({ ...emptyDetailsForm(), siblingsStudyingCount: '3' }) as Record<string, unknown>
-    expect(p.siblings_studying_count).toBe(3)
-    // "0" → 0 (a valid answer — no siblings studying)
-    p = buildDetailsPayload({ ...emptyDetailsForm(), siblingsStudyingCount: '0' }) as Record<string, unknown>
-    expect(p.siblings_studying_count).toBe(0)
-    // whitespace stripped
-    p = buildDetailsPayload({ ...emptyDetailsForm(), siblingsStudyingCount: '  2  ' }) as Record<string, unknown>
-    expect(p.siblings_studying_count).toBe(2)
+    expect(p.siblings_in_school).toBeNull()
+    expect(p.siblings_in_tertiary).toBeNull()
+    // occupation_other carried ONLY when the code is 'other'
+    p = buildDetailsPayload({ ...emptyDetailsForm(), fatherOccupation: 'driver', fatherOccupationOther: 'ignored' }) as Record<string, unknown>
+    expect(p.father_occupation_other).toBe('')
+    p = buildDetailsPayload({ ...emptyDetailsForm(), fatherOccupation: 'other', fatherOccupationOther: '  Puppeteer  ' }) as Record<string, unknown>
+    expect(p.father_occupation_other).toBe('Puppeteer')
   })
 
   it('emits S3 funding fields: categories, funding_note, programme_months (trimmed, typed)', () => {
@@ -830,45 +834,50 @@ describe('applicationToDetailsForm', () => {
     expect(f.fundingNote).toBe('note')
     expect(f.programmeMonths).toBe('12')
     // new story fields
-    expect(f.firstInFamily).toBe(false)
-    expect(f.parentsOccupation).toBe('')
     expect(f.dailyLife).toBe('')
   })
-  it('reads back story narrative fields from an application', () => {
+  it('reads back the structured roster + narrative from an application', () => {
     const app = {
       aspirations: 'Be a nurse', plans: 'Study pharmacy', fears: '', justification: '',
-      first_in_family: true, parents_occupation: 'Rubber tapper',
-      siblings_studying: true, siblings_studying_count: 3,
+      father_name: 'Raju', father_occupation: 'driver',
+      mother_name: 'Lata', mother_occupation: 'homemaker',
+      other_family_members: [{ role: 'sister', occupation: 'retail' }],
+      siblings_in_school: 1, siblings_in_tertiary: 0,
       family_context: 'Mother is ill',
       daily_life: 'Wake early, help at home',
       funding_need: null,
     } as unknown as ScholarshipApplication
     const f = applicationToDetailsForm(app)
-    expect(f.firstInFamily).toBe(true)
-    expect(f.parentsOccupation).toBe('Rubber tapper')
-    expect(f.siblingsStudyingCount).toBe('3')
+    expect(f.fatherOccupation).toBe('driver')
+    expect(f.motherName).toBe('Lata')
+    expect(f.otherFamilyMembers).toEqual([{ role: 'sister', occupation: 'retail' }])
+    expect(f.siblingsInSchool).toBe(1)
+    expect(f.siblingsInTertiary).toBe(0)
     expect(f.familyContext).toBe('Mother is ill')
     expect(f.dailyLife).toBe('Wake early, help at home')
   })
 
-  it('S15: pre-fills siblingsStudyingCount from app.siblings_studying_count when set', () => {
+  it('pre-fills the sibling steppers (null when unanswered)', () => {
     const app = {
       aspirations: '', plans: '', fears: '', justification: '',
-      first_in_family: false, parents_occupation: '',
-      siblings_studying: false, siblings_studying_count: 0,
+      siblings_in_school: 0, siblings_in_tertiary: null,
       family_context: '', daily_life: '', funding_need: null,
     } as unknown as ScholarshipApplication
-    expect(applicationToDetailsForm(app).siblingsStudyingCount).toBe('0')
+    const f = applicationToDetailsForm(app)
+    expect(f.siblingsInSchool).toBe(0)
+    expect(f.siblingsInTertiary).toBeNull()
   })
 
-  it('TD-061: count is null → empty (the legacy boolean is no longer a fallback)', () => {
+  it('defaults the roster to empty/null for a fresh application', () => {
     const app = {
       aspirations: '', plans: '', fears: '', justification: '',
-      first_in_family: false, parents_occupation: '',
-      siblings_studying_count: null,
+      siblings_in_school: null, siblings_in_tertiary: null,
       family_context: '', daily_life: '', funding_need: null,
     } as unknown as ScholarshipApplication
-    expect(applicationToDetailsForm(app).siblingsStudyingCount).toBe('')
+    const f = applicationToDetailsForm(app)
+    expect(f.fatherOccupation).toBe('')
+    expect(f.otherFamilyMembers).toEqual([])
+    expect(f.siblingsInSchool).toBeNull()
   })
   it('handles a null funding need', () => {
     const app = {
@@ -881,7 +890,7 @@ describe('applicationToDetailsForm', () => {
     expect(f.fundingCategories).toEqual([])
     expect(f.fundingNote).toBe('')
     expect(f.aspirations).toBe('')
-    expect(f.firstInFamily).toBe(false)
+    expect(f.otherFamilyMembers).toEqual([])
   })
 
   it('reads back S3 funding fields from a funding_need row', () => {

@@ -41,6 +41,8 @@ class TestCompleteness(TestCase):
                 'address_done': False,
                 # S17: adult by default (no profile NRIC → not a minor) → trivially True.
                 'guardian_docs_done': True,
+                # 2026-06 redesign: the structured roster is compulsory (not yet filled).
+                'family_done': False,
                 'complete': False,
             },
         )
@@ -60,6 +62,10 @@ class TestCompleteness(TestCase):
         self.app.fears = 'Worried about textbook costs'
         # Gate v2: STR route + father earner so the STR doc satisfies the route.
         self.app.income_route, self.app.income_earner = 'str', 'father'
+        # 2026-06 redesign: the structured family roster is compulsory.
+        self.app.father_name, self.app.father_occupation = 'AROON A/L SAMY', 'driver'
+        self.app.mother_name, self.app.mother_occupation = 'KOMATHI A/P RAMAN', 'homemaker'
+        self.app.siblings_in_school, self.app.siblings_in_tertiary = 1, 0
         self.app.save()
         FundingNeed.objects.create(application=self.app, categories=['living'], programme_months=36)
         ApplicantDocument.objects.create(application=self.app, doc_type='ic', storage_path='x')
@@ -185,11 +191,18 @@ class TestCompleteness(TestCase):
         Consent.objects.create(application=self.app, version='t', is_active=True)
         self.assertFalse(application_completeness(self.app)['complete'])
 
-        # + address — now complete
+        # + address — still not complete (the family roster is compulsory now)
         self.profile.address = 'No. 12, Jalan ABC'
         self.profile.postal_code = '62100'
         self.profile.city = 'Putrajaya'
         self.profile.save()
+        self.assertFalse(application_completeness(self.app)['complete'])
+
+        # + the structured family roster — now complete
+        self.app.father_name, self.app.father_occupation = 'AROON A/L SAMY', 'driver'
+        self.app.mother_name, self.app.mother_occupation = 'KOMATHI A/P RAMAN', 'homemaker'
+        self.app.siblings_in_school, self.app.siblings_in_tertiary = 1, 0
+        self.app.save()
         self.assertTrue(application_completeness(self.app)['complete'])
 
     def test_address_done_requires_street_postal_and_city(self):
