@@ -119,6 +119,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `actionCentre` known‑code, and its i18n in all three namespaces ×3 languages; tests updated. No migration.
 
 ### Changed
+- **Decision panel — dropped the redundant Verify-&-accept checklist + the mentoring toggle.** The 4 MyKad
+  checkboxes (NRIC / name / results / MyKad-clear) only re-asked what the four-fact verdict audit above already
+  captures — NRIC + name are OCR-verified deterministically (the Identity fact), and the slip is the Academic fact +
+  `completeness`. Accept is now gated on a **complete profile + a recorded verdict** (the backend already required
+  `verdict_decided_at`; the FE button now reflects it, with a "Record your verdict above to enable accept" hint), so a
+  reviewer makes one judgement, recorded once — no manual re-confirmation. The "Flag for mentoring" toggle was removed
+  from the panel (the `mentoring_candidate` field is retained on the model). FE-only; no backend/migration change
+  (`verify_checklist` simply stores empty now — the decision lives in `officer_verdict` + reason). i18n parity 2135.
 - **Officer cockpit consolidated — ~11 action panels → ~7, two clean columns** (`feature/cockpit-consolidation`;
   spec `docs/scholarship/cockpit-consolidation-plan.md`; retro `docs/retrospective-cockpit-consolidation.md`; Stitch
   mockup approved). No more overlapping/duplicated questions. **Outstanding** is one panel = Caveats + Pre-interview

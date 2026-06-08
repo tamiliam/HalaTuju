@@ -17,7 +17,6 @@ import {
   publishAnonProfile,
   verifyAcceptApplication,
   rejectApplication,
-  setMentoringCandidate,
   addReferee,
   deleteReferee,
   reRunVision,
@@ -59,7 +58,6 @@ const EMPTY_REFEREE = { name: '', role: '', relationship: '', phone: '', email: 
 // is a one-line re-enable, and so they don't become unused). Flip to true to restore.
 const SHOW_REFEREES = false
 
-const VERIFY_ITEMS = ['nric', 'name', 'results', 'document'] as const
 
 function Field({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -114,7 +112,6 @@ export default function AdminScholarshipDetailPage() {
   const [markdown, setMarkdown] = useState('')
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
-  const [checklist, setChecklist] = useState<Record<string, boolean>>({})
   const [refForm, setRefForm] = useState({ ...EMPTY_REFEREE })
   const [genLang, setGenLang] = useState('en')
   // Phase C
@@ -230,7 +227,7 @@ export default function AdminScholarshipDetailPage() {
     if (!token) return
     setBusy('verify'); setError('')
     try {
-      setApp(await verifyAcceptApplication(id, checklist, { token }))
+      setApp(await verifyAcceptApplication(id, {}, { token }))
     } catch (e) {
       setError(e instanceof Error ? e.message : t('admin.scholarship.acceptError'))
     } finally { setBusy('') }
@@ -282,14 +279,6 @@ export default function AdminScholarshipDetailPage() {
       setApp(await requestMoreInfo(id, infoNote.trim(), { token }))
       setInfoNote('')
     } catch { setError(t('admin.scholarship.requestInfoError')) } finally { setBusy('') }
-  }
-
-  const toggleMentoring = async (value: boolean) => {
-    if (!token) return
-    setBusy('mentor'); setError('')
-    try {
-      setApp(await setMentoringCandidate(id, value, { token }))
-    } catch { setError(t('admin.scholarship.mentorError')) } finally { setBusy('') }
   }
 
   const doRecordVerdict = async (finalise: boolean) => {
@@ -1541,8 +1530,9 @@ export default function AdminScholarshipDetailPage() {
           )
         })()}
 
-        {/* ── Verify & accept (second gate): confirm identity → lock NRIC → accept.
-             Gated on a complete profile + every checklist box (unchanged). ────────── */}
+        {/* ── Verify & accept: lock the NRIC + accept. Identity is verified by the
+             recorded verdict above (OCR-deterministic NRIC + name), so there is no
+             separate manual checklist. Gated on a complete profile + a recorded verdict. */}
         <div className="space-y-3 border-t pt-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-700">{t('admin.scholarship.verifyTitle')}</h3>
@@ -1578,22 +1568,9 @@ export default function AdminScholarshipDetailPage() {
                 </div>
               )}
               <p className="text-sm text-gray-500">{t('admin.scholarship.verifyHint')}</p>
-              <div className="space-y-2">
-                {VERIFY_ITEMS.map((key) => (
-                  <label key={key} className="flex items-start gap-2 text-sm text-gray-700">
-                    <input type="checkbox" className="mt-1" checked={!!checklist[key]} disabled={!canWrite}
-                      onChange={(e) => setChecklist((c) => ({ ...c, [key]: e.target.checked }))} />
-                    <span>
-                      {t(`admin.scholarship.check_${key}`)}
-                      {key === 'nric' && <span className="ml-1 font-mono text-gray-500">{formatNric(app.nric || '') || '—'}</span>}
-                      {key === 'name' && <span className="ml-1 text-gray-500">{app.name || '—'}</span>}
-                    </span>
-                  </label>
-                ))}
-              </div>
               <div className="flex flex-wrap gap-2">
                 <button onClick={doVerifyAccept}
-                  disabled={!!busy || !canWrite || !app.completeness.complete || !VERIFY_ITEMS.every((k) => checklist[k])}
+                  disabled={!!busy || !canWrite || !app.completeness.complete || !app.verdict_decided_at}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
                   {busy === 'verify' ? t('admin.scholarship.accepting') : t('admin.scholarship.verifyAccept')}
                 </button>
@@ -1604,15 +1581,13 @@ export default function AdminScholarshipDetailPage() {
                   </button>
                 )}
               </div>
+              {!app.verdict_decided_at && (
+                <p className="text-xs text-gray-400">{t('admin.scholarship.acceptNeedsVerdict')}</p>
+              )}
             </>
           ) : (
             <p className="text-sm text-gray-400">{t('admin.scholarship.notShortlisted')}</p>
           )}
-          <label className="mt-1 flex items-center gap-2 border-t pt-3 text-sm text-gray-700">
-            <input type="checkbox" checked={app.mentoring_candidate} disabled={!!busy}
-              onChange={(e) => toggleMentoring(e.target.checked)} />
-            {t('admin.scholarship.mentoring')}
-          </label>
         </div>
 
         {/* Tools group */}
