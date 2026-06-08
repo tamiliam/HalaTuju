@@ -2335,7 +2335,9 @@
         }
       },
       "decision": {
-        "title": "Decision"
+        "title": "Decision",
+        "savedAndAccepted": "Verdict saved — applicant accepted.",
+        "identityToAccept": "Mark Identity = Pass, then Save to accept this applicant."
       },
       "recordVerdict": {
         "title": "Record your verdict",
@@ -2344,6 +2346,7 @@
         "reasonLabel": "Reason / notes",
         "reasonPlaceholder": "Add a note explaining your decision (optional).",
         "save": "Save verdict & generate final profile",
+        "saveAccept": "Save verdict & accept",
         "aiSuggested": "AI suggested:",
         "suggest": {
           "yes": "yes",
@@ -2355,7 +2358,6 @@
         "finaliseNoInterview": "Submit the interview findings before saving a verdict.",
         "tools": {
           "poseQuery": "Pose written query",
-          "logCall": "Log phone-call outcome",
           "addFindings": "Add interview findings"
         }
       },

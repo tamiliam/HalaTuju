@@ -223,16 +223,6 @@ export default function AdminScholarshipDetailPage() {
     } catch { setError(t('admin.scholarship.anonProfile.pubError')) } finally { setBusy('') }
   }
 
-  const doVerifyAccept = async () => {
-    if (!token) return
-    setBusy('verify'); setError('')
-    try {
-      setApp(await verifyAcceptApplication(id, {}, { token }))
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t('admin.scholarship.acceptError'))
-    } finally { setBusy('') }
-  }
-
   const doReject = async (category: 'interview' | 'contractual') => {
     if (!token) return
     const confirmKey = category === 'contractual'
@@ -291,11 +281,32 @@ export default function AdminScholarshipDetailPage() {
         finalise,
         language: genLang,
       }, { token })
-      setApp(result)
-      setProfile(result.sponsor_profile)
-      setMarkdown(result.sponsor_profile?.current_markdown || '')
-      loadVerdictState(result)
-      if (finalise) {
+      // Save verdict IS the decision: when the officer's verdict is a clear accept
+      // (Identity = Pass, nothing failed), the profile is complete, and the case is
+      // still live, accept in the same click. No separate IC-verify/lock step —
+      // identity was already verified at the consent gate.
+      let finalApp: AdminScholarshipDetail = result
+      let accepted = false
+      const liveStates = ['shortlisted', 'profile_complete', 'interviewing', 'interviewed']
+      const clearAccept = officerVerdict.identity === 'pass'
+        && !(['academic', 'pathway', 'income'] as const).some((f) => officerVerdict[f] === 'fail')
+        && !!result.completeness?.complete && liveStates.includes(result.status)
+      if (clearAccept) {
+        try {
+          finalApp = await verifyAcceptApplication(id, {}, { token })
+          accepted = true
+        } catch (e) {
+          // The verdict is saved; only the accept failed (e.g. an NRIC clash) — surface it.
+          setError(e instanceof Error ? e.message : t('admin.scholarship.acceptError'))
+        }
+      }
+      setApp(finalApp)
+      setProfile(finalApp.sponsor_profile)
+      setMarkdown(finalApp.sponsor_profile?.current_markdown || '')
+      loadVerdictState(finalApp)
+      if (accepted) {
+        setVerdictMsg(t('admin.scholarship.decision.savedAndAccepted')); setVerdictMsgTone('ok')
+      } else if (finalise) {
         const fr = result.finalise_result
         if (fr && fr.ok) {
           // The ONLY truly-complete outcome: verdict recorded AND final profile generated.
@@ -1497,7 +1508,16 @@ export default function AdminScholarshipDetailPage() {
             disabled={!!busy}
             className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
           >
-            {busy === 'verdict' ? t('common.loading') : t('admin.scholarship.recordVerdict.save')}
+            {(() => {
+              if (busy === 'verdict') return t('common.loading')
+              const liveStates = ['shortlisted', 'profile_complete', 'interviewing', 'interviewed']
+              const willAccept = officerVerdict.identity === 'pass'
+                && !(['academic', 'pathway', 'income'] as const).some((f) => officerVerdict[f] === 'fail')
+                && app.completeness.complete && liveStates.includes(app.status)
+              return willAccept
+                ? t('admin.scholarship.recordVerdict.saveAccept')
+                : t('admin.scholarship.recordVerdict.save')
+            })()}
           </button>
         )}
 
@@ -1530,27 +1550,21 @@ export default function AdminScholarshipDetailPage() {
           )
         })()}
 
-        {/* ── Verify & accept: lock the NRIC + accept. Identity is verified by the
-             recorded verdict above (OCR-deterministic NRIC + name), so there is no
-             separate manual checklist. Gated on a complete profile + a recorded verdict. */}
-        <div className="space-y-3 border-t pt-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-700">{t('admin.scholarship.verifyTitle')}</h3>
-            {app.nric_verified && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                {t('admin.scholarship.nricLocked')}
-              </span>
-            )}
-          </div>
+        {/* ── Outcome. There is NO separate verify/lock step — identity is verified at
+             the consent gate, so "Save verdict" above IS the accept (when Identity =
+             Pass, nothing failed, and the profile is complete). This area is just the
+             accepted record + the decline path. ──────────────────────────────────── */}
+        <div className="space-y-2 border-t pt-3">
           {app.status === 'accepted' ? (
             <>
-              <p className="text-sm text-gray-600">
+              <p className="flex items-center gap-1.5 text-sm text-green-700">
+                <span aria-hidden>✓</span>
                 {t('admin.scholarship.acceptedBy')} {app.verified_by || '—'}
                 {app.verified_at ? ` · ${new Date(app.verified_at).toLocaleDateString()}` : ''}
               </p>
               {canWrite && (
                 <button onClick={() => doReject('contractual')} disabled={!!busy}
-                  className="mt-2 px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
+                  className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
                   {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineContractual')}
                 </button>
               )}
@@ -1567,22 +1581,14 @@ export default function AdminScholarshipDetailPage() {
                   </ul>
                 </div>
               )}
-              <p className="text-sm text-gray-500">{t('admin.scholarship.verifyHint')}</p>
-              <div className="flex flex-wrap gap-2">
-                <button onClick={doVerifyAccept}
-                  disabled={!!busy || !canWrite || !app.completeness.complete || !app.verdict_decided_at}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-50">
-                  {busy === 'verify' ? t('admin.scholarship.accepting') : t('admin.scholarship.verifyAccept')}
+              {app.completeness.complete && officerVerdict.identity !== 'pass' && (
+                <p className="text-xs text-gray-400">{t('admin.scholarship.decision.identityToAccept')}</p>
+              )}
+              {canWrite && (
+                <button onClick={() => doReject('interview')} disabled={!!busy}
+                  className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
+                  {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineReview')}
                 </button>
-                {canWrite && (
-                  <button onClick={() => doReject('interview')} disabled={!!busy}
-                    className="px-4 py-2 border border-red-300 text-red-700 rounded-lg text-sm disabled:opacity-50">
-                    {busy === 'reject' ? t('admin.scholarship.reject.running') : t('admin.scholarship.reject.declineReview')}
-                  </button>
-                )}
-              </div>
-              {!app.verdict_decided_at && (
-                <p className="text-xs text-gray-400">{t('admin.scholarship.acceptNeedsVerdict')}</p>
               )}
             </>
           ) : (
@@ -1599,15 +1605,6 @@ export default function AdminScholarshipDetailPage() {
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-left text-xs text-gray-600 hover:bg-gray-50"
           >
             {t('admin.scholarship.recordVerdict.tools.poseQuery')}
-          </button>
-          <button
-            onClick={() => {
-              // Log a phone call outcome via resolution raise
-              setInfoNote(t('admin.scholarship.recordVerdict.tools.logCall'))
-            }}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-left text-xs text-gray-600 hover:bg-gray-50"
-          >
-            {t('admin.scholarship.recordVerdict.tools.logCall')}
           </button>
           <button
             onClick={() => {

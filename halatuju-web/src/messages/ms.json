@@ -2335,7 +2335,9 @@
         }
       },
       "decision": {
-        "title": "Keputusan"
+        "title": "Keputusan",
+        "savedAndAccepted": "Keputusan disimpan — pemohon diterima.",
+        "identityToAccept": "Tandakan Identiti = Lulus, kemudian Simpan untuk menerima pemohon ini."
       },
       "recordVerdict": {
         "title": "Rekod keputusan anda",
@@ -2344,6 +2346,7 @@
         "reasonLabel": "Sebab / nota",
         "reasonPlaceholder": "Tambah nota yang menerangkan keputusan anda (pilihan).",
         "save": "Simpan keputusan & jana profil akhir",
+        "saveAccept": "Simpan keputusan & terima",
         "aiSuggested": "AI cadangkan:",
         "suggest": {
           "yes": "ya",
@@ -2355,7 +2358,6 @@
         "finaliseNoInterview": "Hantar penemuan temu duga sebelum menyimpan keputusan.",
         "tools": {
           "poseQuery": "Ajukan pertanyaan bertulis",
-          "logCall": "Log hasil panggilan telefon",
           "addFindings": "Tambah penemuan temu duga"
         }
       },
