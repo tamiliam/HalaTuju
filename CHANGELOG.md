@@ -119,6 +119,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `actionCentre` known‑code, and its i18n in all three namespaces ×3 languages; tests updated. No migration.
 
 ### Changed
+- **Decision panel — removed the whole Verify-&-accept step; "Save verdict" is now the single accept.** Per owner
+  review: the programme does not re-verify the IC here — identity is already verified at the **consent gate**
+  (`services` IC check: `nric_match`, blocks `ic_nric_mismatch`), and the NRIC is locked to the student by then, so a
+  second verify-and-lock step was redundant. The separate "Verify & accept" button + the dead "Log phone-call outcome"
+  tool are gone. **Save verdict & generate final profile** now accepts the applicant in one click when Identity = Pass,
+  nothing is failed, and the profile is complete (the button relabels to "Save verdict & accept"); the right-hand area
+  shows just the accepted record + the Decline path. FE-only — reuses the existing accept endpoint (status → accepted;
+  the NRIC `verified` flag is still set as silent plumbing for uniqueness + to stop post-accept edits, no manual step,
+  nothing re-checked). i18n parity 2137.
 - **Decision panel — dropped the redundant Verify-&-accept checklist + the mentoring toggle.** The 4 MyKad
   checkboxes (NRIC / name / results / MyKad-clear) only re-asked what the four-fact verdict audit above already
   captures — NRIC + name are OCR-verified deterministically (the Identity fact), and the slip is the Academic fact +
