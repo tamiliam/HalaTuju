@@ -959,23 +959,64 @@ def consent_blockers(application):
         blockers.append('ic_missing')
     if 'results_slip' not in present:
         blockers.append('results_slip_missing')
-    else:
-        # A results slip in a DIFFERENT name is unusable (we can't attribute the
-        # results to the student). Same hard-stop as documents_done — surface it HERE
-        # too so the student re-uploads before consent, not only at submit. Only a
-        # positive name MISMATCH blocks ('pending'/'unreadable'/'match' pass).
-        from .academic_engine import _slip_name_status
-        slip = (application.documents.filter(doc_type='results_slip')
-                .order_by('-uploaded_at').first())
-        if slip and _slip_name_status(slip) == 'mismatch':
-            blockers.append('results_slip_name_mismatch')
     if 'offer_letter' not in present:                 # gate v2: compulsory for everyone
         blockers.append('offer_letter_missing')
     blockers.extend(income_doc_blockers(application))  # route-aware (replaces parent_ic + income_proof)
     # Identity check only once the IC is actually uploaded (else 'ic_missing' leads).
     if 'ic' in present:
         blockers.extend(_ic_identity_blockers(application))
+    # POLICY (owner): do not receive applications with ANY red document check — every
+    # "Doesn't match" the student sees in the Documents tab must clear before consent.
+    blockers.extend(document_red_blockers(application))
     return blockers
+
+
+def document_red_blockers(application):
+    """Every RED ('Doesn't match' / rejected / stale) per-document check that must
+    clear before consent. Reads the SAME stored verification the student sees in the
+    Documents tab (the student_*_check engines — no new OCR). Only a CONFIRMED
+    `mismatch` (or STR rejected/stale) blocks; 'pending' / 'unreadable' / 'no_ref' do
+    not. IC identity reds are covered separately by _ic_identity_blockers. Utility
+    bills (soft hardship signal) are deliberately NOT gated. Returns blocker codes."""
+    from . import income_engine
+    from .academic_engine import student_slip_check
+    from .pathway_engine import student_offer_check
+    codes = set()
+
+    def has(d, *keys):
+        return any(d.get(k) == 'mismatch' for k in keys)
+
+    for doc in application.documents.all():
+        dt = doc.doc_type
+        if dt == 'results_slip':
+            chk = student_slip_check(doc)
+            if chk.get('name') == 'mismatch':
+                codes.add('results_slip_name_mismatch')
+            if chk.get('subjects') == 'mismatch' or chk.get('results') == 'mismatch':
+                codes.add('results_slip_grades_mismatch')
+        elif dt == 'offer_letter':
+            # Name / IC are hard identity reds; the pathway-clash is a SOFT "is this
+            # where you're going?" signal and is deliberately not gated here.
+            if has(student_offer_check(doc), 'name', 'ic'):
+                codes.add('offer_letter_mismatch')
+        elif dt == 'parent_ic':
+            chk = income_engine.student_income_ic_check(doc)
+            if has(chk, 'name_status', 'proof_name_status', 'proof_nric_status'):
+                codes.add('income_document_mismatch')
+        elif dt in ('salary_slip', 'epf'):
+            if has(income_engine.student_income_proof_check(doc), 'name_status', 'nric_status'):
+                codes.add('income_document_mismatch')
+        elif dt == 'str':
+            chk = income_engine.student_str_check(doc)
+            if has(chk, 'name_status', 'nric_status') or chk.get('current_status') in ('rejected', 'stale'):
+                codes.add('income_document_mismatch')
+        elif dt == 'birth_certificate':
+            if has(income_engine.student_bc_check(doc), 'child_status', 'mother_status', 'father_status'):
+                codes.add('income_document_mismatch')
+        elif dt == 'guardianship_letter':
+            if has(income_engine.student_guardianship_check(doc), 'guardian_status', 'ward_status'):
+                codes.add('income_document_mismatch')
+    return list(codes)
 
 
 _DEEPER_FIELDS = (
