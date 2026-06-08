@@ -153,6 +153,24 @@ class FamilyCompletenessTests(_AppBase):
         self._fill(app, siblings_in_tertiary=None)
         self.assertFalse(application_completeness(app)['family_done'])
 
+    def test_consent_gate_blocks_on_incomplete_roster(self):
+        from apps.scholarship.services import consent_blockers
+        app = self._app()
+        self.assertIn('family_incomplete', consent_blockers(app))
+        self._fill(app)
+        self.assertNotIn('family_incomplete', consent_blockers(app))
+
+    def test_consent_blocks_on_results_slip_name_mismatch(self):
+        from unittest.mock import patch
+        from apps.scholarship.models import ApplicantDocument
+        from apps.scholarship.services import consent_blockers
+        app = self._app()
+        ApplicantDocument.objects.create(application=app, doc_type='results_slip', storage_path='x/r')
+        with patch('apps.scholarship.academic_engine._slip_name_status', return_value='mismatch'):
+            self.assertIn('results_slip_name_mismatch', consent_blockers(app))
+        with patch('apps.scholarship.academic_engine._slip_name_status', return_value='match'):
+            self.assertNotIn('results_slip_name_mismatch', consent_blockers(app))
+
     def test_grandfathered_submitted_app_is_exempt(self):
         from django.utils import timezone
         from apps.scholarship.services import application_completeness

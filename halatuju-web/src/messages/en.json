@@ -1260,10 +1260,12 @@
       "blocker": {
         "quiz_incomplete": "Finish the Quiz step.",
         "story_incomplete": "Finish the Your Story step.",
+        "family_incomplete": "Complete your family details (parents' names + professions) in the Your Story step.",
         "address_incomplete": "Add your home address (in the Your Story step).",
         "funding_incomplete": "Complete the Funding step.",
         "ic_missing": "Upload your IC in the Documents step.",
         "results_slip_missing": "Upload your results slip in the Documents step.",
+        "results_slip_name_mismatch": "The name on your results slip doesn't match yours — please re-upload your own slip in the Documents step.",
         "parent_ic_missing": "Upload your parent's or guardian's IC in the Documents step.",
         "income_proof_missing": "Upload proof of household income (STR, salary slip, or EPF) in the Documents step.",
         "income_incomplete": "Complete the Household income section in the Documents step.",

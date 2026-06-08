@@ -73,6 +73,10 @@ class TestConsentApi(TestCase):
         # Gate v2: a consent-ready income cluster = STR route, father earner (no BC),
         # with the earner IC + the STR doc; plus the now-compulsory offer letter.
         app.income_route, app.income_earner = 'str', 'father'
+        # 2026-06 redesign: the structured family roster is compulsory for consent.
+        app.father_name, app.father_occupation = 'AROON', 'driver'
+        app.mother_name, app.mother_occupation = 'KOMATHI', 'homemaker'
+        app.siblings_in_school, app.siblings_in_tertiary = 1, 0
         app.save()
         FundingNeed.objects.update_or_create(
             application=app, defaults={'categories': ['tuition'], 'programme_months': 24})
