@@ -19,7 +19,7 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 | # | Sprint | Feature | Size | Depends on |
 |---|--------|---------|------|------------|
 | 0 | Boundary foundation (allowlist widen) ✅ **DONE + MERGED** to `main` 2026-06-07 | (cross-cutting) | S–M, BE | — |
-| 1 | Sponsor landing + live counter ⭐ | F1 | M, FE+tiny BE | 0 (counter only) |
+| 1 | Sponsor landing + live counter ⭐ ✅ **DONE** on `main` 2026-06-08 (no migration) | F1 | M, FE+tiny BE | 0 (counter only) |
 | 2 | Student post-match onboarding — backend ⭐ | F8a | M, BE | — |
 | 3 | Student post-match onboarding — frontend ⭐ | F8b | M, FE | 2 |
 | 4 | Sponsor notifications (real-time + digest) ⭐ | F3 | M–L, BE+tiny FE | 0 |
@@ -46,13 +46,12 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 - **Tests:** extend the existing allowlist assertions — blocked **parent** fields never appear; **institution absent for a non-trusted sponsor**; new fields present for a trusted one.
 - **Ships dark** (pool still flag-off).
 
-### Sprint 1 — F1 Sponsor landing page + live counter · FE + tiny BE ⭐
-**Deliverable:** a public, persuasive `/sponsor` marketing page + a "students waiting" counter.
-- **FE:** mirror `app/scholarship/page.tsx` structure (hero → how-it-works → 3 promises → FAQ → CTA), reusing `AppHeader`/`AppFooter`/`useT` (`@/lib/i18n`). Unauth `/sponsor` = marketing; authed → portal. New i18n block `sponsorLanding.*` in `messages/{en,ms,ta}.json` (manual 3-lang parity).
-- **BE:** public `GET /api/v1/sponsor/pool/count/` → `{count}` from `pool.eligible_pool_queryset(...).count()`; **count only**, `SPONSOR_POOL_ENABLED`-gated (returns 0/hidden when off). New view (does **not** inherit `_PoolBase`, no auth) + `urls.py` route.
-- **FE client:** `getStudentsWaitingCount()` in `lib/api.ts` (mirror `getSponsorPool`, `:619`).
-- **No tax-deductibility claims** (bundle A6 open).
-- **Stitch-prototype the page first** (CLAUDE.md).
+### Sprint 1 — F1 Sponsor landing page + live counter · ✅ DONE on `main` 2026-06-08 (no migration; ships dark)
+Shipped: public `/sponsor` marketing landing (`components/SponsorLanding.tsx`) shown to signed-out visitors when the
+programme is live; public `GET /api/v1/sponsor/pool/count/` → `{count, enabled}` (count-only, `AllowAny`, flag-gated);
+`getStudentsWaitingCount()` client; trilingual `sponsorLanding.*` (40 keys × en/ms/ta); +3 tests. No tax claims.
+Stitch-prototyped + owner-approved before coding. Retro `docs/retrospective-sprint1-sponsor-landing.md`; TD-091 (Tamil
+refine) + TD-092 (live click-through at go-live).
 
 ### Sprint 2 — F8a Student post-match onboarding (backend) · BE ⭐
 **Deliverable:** the accept→onboard→questionnaire backend, on the existing award path.
