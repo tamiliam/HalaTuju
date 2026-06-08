@@ -2241,6 +2241,9 @@
         }
       },
       "meritScore": "Merit score",
+      "ownWords": {
+        "toggle": "Show the student's own words"
+      },
       "studentNote": "Student's note",
       "upu": {
         "applied": "Applied via UPU",

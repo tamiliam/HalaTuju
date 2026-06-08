@@ -128,6 +128,9 @@ export default function AdminScholarshipDetailPage() {
   const [verdictReason, setVerdictReason] = useState('')
   const [verdictMsg, setVerdictMsg] = useState('')
   const [verdictMsgTone, setVerdictMsgTone] = useState<'ok' | 'warn'>('ok')
+  // Consolidation: the student's own words (note/story/funding) are collapsed by
+  // default under the Sponsor profile — the reviewer checks the AI draft first.
+  const [showOwnWords, setShowOwnWords] = useState(false)
 
   const loadInterviewState = (d: AdminScholarshipDetail) => {
     const s = d.interview_session
@@ -452,9 +455,6 @@ export default function AdminScholarshipDetailPage() {
             ? <a href={href} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{name}</a>
             : name
         }
-        const hasStory = !!(app.aspirations || app.plans || app.fears || app.justification
-          || app.daily_life || app.first_in_family || app.parents_occupation
-          || app.siblings_studying_count || app.family_context)
         const hasPlans = !!(app.chosen_pathway || app.chosen_programme?.course_name
           || app.top_choices?.length || app.pathways_considered?.length || app.uncertainty_reasons?.length)
         const addr = formatAddress([
@@ -571,60 +571,8 @@ export default function AdminScholarshipDetailPage() {
               </div>
             </div>
 
-            {/* Student's note — both free-text memos in one box, each question labelled.
-                "Anything you'd like to add?" (uncertainty_note, from Plans) +
-                "Anything else you'd like us to know?" (anything_else, from Support).
-                Hidden when the student wrote neither. */}
-            {(app.uncertainty_note || app.anything_else) && (
-              <Card title={t('admin.scholarship.studentNote')}>
-                <div className="space-y-3">
-                  {app.uncertainty_note && (
-                    <div>
-                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.plan.uncertainNoteLabel')}</dt>
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.uncertainty_note}</p>
-                    </div>
-                  )}
-                  {app.anything_else && (
-                    <div>
-                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.anythingElseLabel')}</dt>
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.anything_else}</p>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            )}
-
-            {/* Your story — full-width, post-shortlist; hidden until the student fills it */}
-            {hasStory && (
-              <Card title={t('admin.scholarship.sec.story')}>
-                <div className="space-y-2">
-                  <Field label={t('admin.scholarship.aspirations')} value={app.aspirations} />
-                  <Field label={t('admin.scholarship.plans')} value={app.plans} />
-                  <Field label={t('admin.scholarship.fears')} value={app.fears} />
-                  <Field label={t('admin.scholarship.dailyLife')} value={app.daily_life} />
-                  <Field label={t('admin.scholarship.justification')} value={app.justification} />
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 pt-1 md:grid-cols-3">
-                    <Field label={t('admin.scholarship.firstInFamily')} value={yn(app.first_in_family)} />
-                    <Field label={t('admin.scholarship.parentsOccupation')} value={app.parents_occupation} />
-                    <Field label={t('admin.scholarship.siblingsStudying')} value={app.siblings_studying_count} />
-                    <Field label={t('admin.scholarship.siblingsInSchool')} value={app.siblings_in_school} />
-                    <Field label={t('admin.scholarship.siblingsInTertiary')} value={app.siblings_in_tertiary} />
-                  </dl>
-                  <Field label={t('admin.scholarship.familyContext')} value={app.family_context} />
-                </div>
-              </Card>
-            )}
-
-            {/* Funding — full-width, hidden when empty */}
-            {app.funding_need && (
-              <Card title={t('admin.scholarship.sec.funding')}>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 md:grid-cols-3">
-                  <Field label={t('admin.scholarship.funding')} value={joinOr(app.funding_need.categories)} />
-                  <Field label={t('admin.scholarship.programmeMonths')} value={app.funding_need.programme_months} />
-                </dl>
-                {app.funding_need.funding_note && <div className="mt-2"><Field label={t('admin.scholarship.fundingNote')} value={app.funding_need.funding_note} /></div>}
-              </Card>
-            )}
+            {/* Student's note · Your story · Funding moved into the left column,
+                under the Sponsor profile (the "show the student's own words" reveal). */}
 
             {/* Check 2 — estimated funding need (per-pathway; a starting point for the
                 award amount). The student's checkboxes above are a signal; this is the
@@ -883,6 +831,80 @@ export default function AdminScholarshipDetailPage() {
         )}
         {error && <p className="text-red-600 text-sm">{error}</p>}
       </div>
+
+      {/* ── The student's own words — collapsed by default. The reviewer's job is to
+           check & sign off the AI profile above; the raw note/story/funding is the
+           safety valve, revealed on demand. ──────────────────────────────────────── */}
+      {(() => {
+        const hasStory = !!(app.aspirations || app.plans || app.fears || app.justification
+          || app.daily_life || app.first_in_family || app.parents_occupation
+          || app.siblings_studying_count || app.family_context)
+        if (!(app.uncertainty_note || app.anything_else || hasStory || app.funding_need)) return null
+        return (
+        <div className="space-y-4">
+          <button
+            onClick={() => setShowOwnWords((v) => !v)}
+            className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline"
+          >
+            <span aria-hidden>{showOwnWords ? '▾' : '▸'}</span>
+            {t('admin.scholarship.ownWords.toggle')}
+          </button>
+          {showOwnWords && (<>
+            {/* Student's note — both free-text memos in one box, each question labelled. */}
+            {(app.uncertainty_note || app.anything_else) && (
+              <Card title={t('admin.scholarship.studentNote')}>
+                <div className="space-y-3">
+                  {app.uncertainty_note && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.plan.uncertainNoteLabel')}</dt>
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.uncertainty_note}</p>
+                    </div>
+                  )}
+                  {app.anything_else && (
+                    <div>
+                      <dt className="text-xs text-gray-400 uppercase tracking-wider mb-1">{t('scholarship.apply.anythingElseLabel')}</dt>
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{app.anything_else}</p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {/* Your story — post-shortlist; hidden until the student fills it */}
+            {hasStory && (
+              <Card title={t('admin.scholarship.sec.story')}>
+                <div className="space-y-2">
+                  <Field label={t('admin.scholarship.aspirations')} value={app.aspirations} />
+                  <Field label={t('admin.scholarship.plans')} value={app.plans} />
+                  <Field label={t('admin.scholarship.fears')} value={app.fears} />
+                  <Field label={t('admin.scholarship.dailyLife')} value={app.daily_life} />
+                  <Field label={t('admin.scholarship.justification')} value={app.justification} />
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 pt-1 md:grid-cols-3">
+                    <Field label={t('admin.scholarship.firstInFamily')} value={yn(app.first_in_family)} />
+                    <Field label={t('admin.scholarship.parentsOccupation')} value={app.parents_occupation} />
+                    <Field label={t('admin.scholarship.siblingsStudying')} value={app.siblings_studying_count} />
+                    <Field label={t('admin.scholarship.siblingsInSchool')} value={app.siblings_in_school} />
+                    <Field label={t('admin.scholarship.siblingsInTertiary')} value={app.siblings_in_tertiary} />
+                  </dl>
+                  <Field label={t('admin.scholarship.familyContext')} value={app.family_context} />
+                </div>
+              </Card>
+            )}
+
+            {/* Funding — hidden when empty */}
+            {app.funding_need && (
+              <Card title={t('admin.scholarship.sec.funding')}>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 md:grid-cols-3">
+                  <Field label={t('admin.scholarship.funding')} value={joinOr(app.funding_need.categories)} />
+                  <Field label={t('admin.scholarship.programmeMonths')} value={app.funding_need.programme_months} />
+                </dl>
+                {app.funding_need.funding_note && <div className="mt-2"><Field label={t('admin.scholarship.fundingNote')} value={app.funding_need.funding_note} /></div>}
+              </Card>
+            )}
+          </>)}
+        </div>
+        )
+      })()}
 
       {/* ── Outstanding — student to-do (caveats) + ask-at-interview (flags + AI gaps),
            one merged panel. Identity NRIC/name flags are deduped server-side. ─────── */}
