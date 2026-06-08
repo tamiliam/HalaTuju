@@ -594,3 +594,9 @@
   on prod, and a live smoke needs `SPONSOR_POOL_ENABLED=on` locally with both servers). **To resolve:** before the
   Sprint 12 go-live deploy, run the app locally with the flag on and click through `/sponsor` in all three locales +
   confirm the counter renders the real eligible count. (Logged 2026-06-08, B40 Phase E/F Sprint 1.)
+- TD-093: **The new `onboarding_responses` table (migration `0049`) needs RLS enabled on Supabase at deploy.** New
+  Django-created tables land without row-level security; per the existing new-model pattern (TD-058 era), enable RLS +
+  the appropriate policy when applying `0049` migrate-first via the Supabase MCP, and re-run `get_advisors` to confirm
+  no "RLS disabled" finding. Low risk while dark (the api connects with a privileged role), but must be closed before
+  go-live. **To resolve:** at the Phase E/F batch deploy, after `0049`, enable RLS on `onboarding_responses`. (Logged
+  2026-06-08, B40 Phase E/F Sprint 2.)

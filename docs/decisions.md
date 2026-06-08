@@ -2313,3 +2313,16 @@ counter and the page, and the FE can't drift out of sync with the backend.
 public GET on every `/sponsor` visit.
 **Revisit if:** we want to recruit sponsors before the pool/money flow is live (then decouple a "marketing live" flag
 from `SPONSOR_POOL_ENABLED`).
+
+## OnboardingResponse as a dedicated model (not JSON on the application) — B40 Phase E/F Sprint 2, 2026-06-08
+
+**Decision:** Store the F8a post-award onboarding questionnaire in a new `OnboardingResponse` model (one row per
+application, JSON `answers` + FK to the acknowledgement `Consent` + timestamps) rather than a JSON column on
+`ScholarshipApplication`.
+**Alternatives considered:** a single `onboarding_response` JSONField on the application (no new table).
+**Rationale:** the questionnaire is an audit artifact tied to a specific consent; a dedicated row with its own consent
+FK + submitted/updated timestamps gives a clean audit trail and keeps the (already wide) application table from
+accreting onboarding-shaped JSON. The answer shape can still evolve without a migration (the payload is JSON).
+**Trade-offs:** one more table + a join to read; a new table needs RLS enabled on Supabase at deploy (TD-093).
+**Revisit if:** onboarding answers become a fixed, small, queried-by-column set (then promote to typed columns), or if
+the OneToOne join proves awkward for the F8b read path.

@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Student post-match onboarding — backend (B40 Phase E/F Sprint 2, F8a, ships dark).** When a student/guardian
+  accepts an award (`respond_to_award`), they now receive a trilingual **award-confirmed email** that carries **no
+  sponsor identity** (B4 two-way anonymity) and points them to onboarding. New `complete_onboarding(...)` service +
+  `POST /api/v1/scholarship/applications/<id>/onboarding-complete/`: records a new `student_onboarding_ack` consent
+  (`granted_by='self'`; bumped `CONSENT_VERSION` → `2026-draft-4`), stores the questionnaire on a new
+  **`OnboardingResponse`** model (one per application, JSON answers, audit trail), and stamps a new
+  `ScholarshipApplication.onboarded_at` — the hard gate before any first disbursement. Onboarding is refused until the
+  award is accepted (status `sponsored`, else `400 not_awarded`). `onboarded_at` surfaced in `ApplicationReadSerializer`.
+  Migration **`0049`** (additive: `onboarded_at` column + `onboarding_responses` table) — apply migrate-first at deploy;
+  the new table needs RLS enabled at deploy (TD-093). +5 tests (873 scholarship pytest). Retro
+  `docs/retrospective-sprint2-onboarding-backend.md`.
 - **Sponsor landing page + live "students waiting" counter (B40 Phase E/F Sprint 1, F1, ships dark).** A public,
   persuasive marketing page for prospective sponsors at `/sponsor` (shown to signed-out visitors only while the
   programme is live): hero with a live counter, three promise cards (complete anonymity / every ringgit tracked /
