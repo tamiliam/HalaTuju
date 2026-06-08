@@ -1260,10 +1260,12 @@
       "blocker": {
         "quiz_incomplete": "Lengkapkan langkah Kuiz.",
         "story_incomplete": "Lengkapkan langkah Kisah Anda.",
+        "family_incomplete": "Lengkapkan butiran keluarga anda (nama + pekerjaan ibu bapa) dalam langkah Kisah Anda.",
         "address_incomplete": "Masukkan alamat rumah anda (dalam langkah Kisah Anda).",
         "funding_incomplete": "Lengkapkan langkah Pembiayaan.",
         "ic_missing": "Muat naik IC anda dalam langkah Dokumen.",
         "results_slip_missing": "Muat naik slip keputusan anda dalam langkah Dokumen.",
+        "results_slip_name_mismatch": "Nama pada slip keputusan anda tidak sepadan dengan nama anda — sila muat naik semula slip anda sendiri dalam langkah Dokumen.",
         "parent_ic_missing": "Muat naik IC ibu bapa atau penjaga anda dalam langkah Dokumen.",
         "income_proof_missing": "Muat naik bukti pendapatan isi rumah (STR, slip gaji, atau KWSP) dalam langkah Dokumen.",
         "income_incomplete": "Lengkapkan bahagian Pendapatan isi rumah dalam langkah Dokumen.",

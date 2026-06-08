@@ -948,6 +948,8 @@ def consent_blockers(application):
         blockers.append('quiz_incomplete')
     if not c['details_done']:
         blockers.append('story_incomplete')
+    if not c['family_done']:                          # structured family roster (Your Story)
+        blockers.append('family_incomplete')
     if not c['address_done']:
         blockers.append('address_incomplete')
     if not c['funding_done']:
@@ -957,6 +959,16 @@ def consent_blockers(application):
         blockers.append('ic_missing')
     if 'results_slip' not in present:
         blockers.append('results_slip_missing')
+    else:
+        # A results slip in a DIFFERENT name is unusable (we can't attribute the
+        # results to the student). Same hard-stop as documents_done — surface it HERE
+        # too so the student re-uploads before consent, not only at submit. Only a
+        # positive name MISMATCH blocks ('pending'/'unreadable'/'match' pass).
+        from .academic_engine import _slip_name_status
+        slip = (application.documents.filter(doc_type='results_slip')
+                .order_by('-uploaded_at').first())
+        if slip and _slip_name_status(slip) == 'mismatch':
+            blockers.append('results_slip_name_mismatch')
     if 'offer_letter' not in present:                 # gate v2: compulsory for everyone
         blockers.append('offer_letter_missing')
     blockers.extend(income_doc_blockers(application))  # route-aware (replaces parent_ic + income_proof)
