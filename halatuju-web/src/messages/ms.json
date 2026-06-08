@@ -2359,6 +2359,14 @@
         "resolve": "Selesaikan",
         "waitingStudent": "Menunggu pelajar"
       },
+      "outstanding": {
+        "title": "Belum selesai",
+        "itemOne": "perkara",
+        "itemMany": "perkara",
+        "empty": "Tiada yang belum selesai — semuanya jelas dan tiada amaran.",
+        "studentTodo": "Tindakan pelajar",
+        "askInterview": "Tanya semasa temu duga"
+      },
       "docsDrawer": {
         "title": "Dokumen",
         "subtitle": "Dikumpulkan mengikut fakta pengesahan",
