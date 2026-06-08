@@ -123,6 +123,12 @@ CRON_SECRET = os.environ.get('CRON_SECRET', '')
 # every sponsor-pool browse endpoint returns 404. Build + test run on dummy data.
 SPONSOR_POOL_ENABLED = os.environ.get('SPONSOR_POOL_ENABLED', '').lower() in ('1', 'true', 'yes')
 
+# Check 2 STEP 2: the AI clarify queries asked of the STUDENT. While OFF (default), no
+# clarify query is shown in the student Action Centre and no query email/reminder is
+# sent — but officers still see them in the cockpit, so the questions can be reviewed
+# per student before any applicant is asked. Flip to true (env var) to go live.
+CHECK2_STUDENT_QUERIES_ENABLED = os.environ.get('CHECK2_STUDENT_QUERIES_ENABLED', '').lower() in ('1', 'true', 'yes')
+
 # Supporting-document upload guardrails (cost + abuse). Env-overridable.
 MAX_DOC_SIZE_BYTES = int(os.environ.get('MAX_DOC_SIZE_BYTES', str(8 * 1024 * 1024)))   # 8 MB/file
 MAX_DOCS_PER_APPLICATION = int(os.environ.get('MAX_DOCS_PER_APPLICATION', '40'))

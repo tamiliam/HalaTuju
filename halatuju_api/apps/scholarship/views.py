@@ -407,10 +407,17 @@ class ResolutionItemListView(APIView):
         # under the old behaviour. (Apply → Shortlist → Consent → Check 2 → Query.)
         if app is None or app.profile_completed_at is None:
             return Response({'open': [], 'resolved': []})
+        from django.conf import settings as _settings
         sync_resolution_items(app)
-        sync_check2_queries(app)   # Check 2 STEP 2: AI clarify queries
-        # 'human' items are the reviewer's — never shown to the student.
-        items = [i for i in app.resolution_items.all() if i.kind != 'human']
+        # Check 2 STEP 2: the AI clarify queries are held behind a flag until the
+        # questions have been reviewed — while OFF, students are asked nothing new
+        # (officers still review them in the cockpit).
+        queries_live = getattr(_settings, 'CHECK2_STUDENT_QUERIES_ENABLED', False)
+        if queries_live:
+            sync_check2_queries(app)
+        # 'human' items are the reviewer's; 'clarify' items are hidden until the flag is on.
+        items = [i for i in app.resolution_items.all()
+                 if i.kind != 'human' and (queries_live or i.kind != 'clarify')]
         openq = [i for i in items if i.status == 'open']
         resolved = [i for i in items if i.status == 'resolved'][:10]
         return Response({

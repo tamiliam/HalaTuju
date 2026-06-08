@@ -238,7 +238,8 @@ class TestStudentQueueViewGate(TestCase):
         self.assertIn('results_slip_missing', codes)
 
 
-@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=_TEST_JWT_SECRET)
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=_TEST_JWT_SECRET,
+                   CHECK2_STUDENT_QUERIES_ENABLED=True)
 class TestCheck2QueriesInStudentQueue(TestCase):
     """Check 2 STEP 2: AI clarify queries surface in the student Action Centre;
     reviewer-only 'human' items never do; the student can answer a clarify by text."""
@@ -288,3 +289,14 @@ class TestCheck2QueriesInStudentQueue(TestCase):
         item = self.app.resolution_items.get(code='transport_cost_unknown')
         r = self.client.post(f'{self.URL}{item.id}/resolve/', {'text': ''}, format='json')
         self.assertEqual(r.status_code, 400)
+
+    @override_settings(CHECK2_STUDENT_QUERIES_ENABLED=False)
+    def test_clarify_hidden_from_student_when_flag_off(self):
+        # Held: no clarify queries shown to the student, and none are even created.
+        r = self.client.get(self.URL)
+        self.assertEqual(r.status_code, 200)
+        codes = {i['code'] for i in r.json()['open']}
+        self.assertNotIn('transport_cost_unknown', codes)
+        self.assertNotIn('sibling_level_unknown', codes)
+        self.assertFalse(
+            self.app.resolution_items.filter(source='check2', kind='clarify').exists())
