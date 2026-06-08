@@ -7,6 +7,8 @@ docs/scholarship/b40-phase1-roadmap.md.
 """
 from django.db import models
 
+from .family import PROFESSION_CHOICES
+
 
 class ScholarshipCohort(models.Model):
     """
@@ -431,6 +433,34 @@ class ScholarshipApplication(models.Model):
         blank=True, default='',
         help_text="Anything about your family's situation we should know?",
     )
+    # ── Structured family roster (redesign 2026-06) — the new INPUTS. Father/Mother
+    #    (name as in IC + coded profession) + an optional pool of brother/sister/
+    #    guardian. The legacy columns above (first_in_family, parents_occupation) are
+    #    now DERIVED from this on save (services.save_application_details via
+    #    family.derive_first_in_family / parents_occupation_summary), so every
+    #    downstream reader keeps working unchanged. All additive/optional.
+    father_name = models.CharField(
+        max_length=200, blank=True, default='',
+        help_text="Father's name as in IC (structured roster).")
+    father_occupation = models.CharField(
+        max_length=40, blank=True, default='', choices=PROFESSION_CHOICES,
+        help_text="Father's profession (coded; see family.PROFESSION_CHOICES).")
+    father_occupation_other = models.CharField(
+        max_length=120, blank=True, default='',
+        help_text="Father's profession free text when occupation == 'other'.")
+    mother_name = models.CharField(
+        max_length=200, blank=True, default='',
+        help_text="Mother's name as in IC (structured roster).")
+    mother_occupation = models.CharField(
+        max_length=40, blank=True, default='', choices=PROFESSION_CHOICES,
+        help_text="Mother's profession (coded).")
+    mother_occupation_other = models.CharField(
+        max_length=120, blank=True, default='',
+        help_text="Mother's profession free text when occupation == 'other'.")
+    other_family_members = models.JSONField(
+        default=list, blank=True,
+        help_text="Optional pool: [{role: brother|sister|guardian, occupation: <code>, "
+                  "occupation_other: <str>}] — extra family members + their professions.")
     # Card B — About you (aspirations/plans/fears already above; daily_life is new)
     daily_life = models.TextField(
         blank=True, default='',
