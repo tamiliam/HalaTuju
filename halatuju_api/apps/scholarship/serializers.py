@@ -2,6 +2,7 @@
 from rest_framework import serializers
 
 from . import pool
+from .family import PROFESSION_CODES
 from .models import (
     ApplicantDocument, Consent, FundingNeed, Referee, ResolutionItem,
     ScholarshipApplication, Sponsor,
@@ -256,6 +257,20 @@ class ApplicationDetailsUpdateSerializer(serializers.Serializer):
         required=False, allow_null=True, min_value=0, max_value=20)
     siblings_in_tertiary = serializers.IntegerField(
         required=False, allow_null=True, min_value=0, max_value=20)
+    # ── Structured family roster (redesign 2026-06). first_in_family +
+    #    parents_occupation above are DERIVED from these on save, so the form no
+    #    longer sends them. occupation_other only matters when occupation == 'other'.
+    father_name = serializers.CharField(required=False, allow_blank=True, max_length=200)
+    father_occupation = serializers.ChoiceField(
+        choices=[''] + sorted(PROFESSION_CODES), required=False, allow_blank=True)
+    father_occupation_other = serializers.CharField(required=False, allow_blank=True, max_length=120)
+    mother_name = serializers.CharField(required=False, allow_blank=True, max_length=200)
+    mother_occupation = serializers.ChoiceField(
+        choices=[''] + sorted(PROFESSION_CODES), required=False, allow_blank=True)
+    mother_occupation_other = serializers.CharField(required=False, allow_blank=True, max_length=120)
+    # The optional pool — validated/normalised by family.clean_other_members on save.
+    other_family_members = serializers.ListField(
+        child=serializers.DictField(), required=False, allow_empty=True)
 
 
 class ApplicationReadSerializer(serializers.ModelSerializer):
@@ -314,6 +329,10 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'first_in_family', 'parents_occupation',
             'siblings_studying_count',
             'family_context', 'daily_life',
+            # Structured family roster (redesign 2026-06) — the new inputs.
+            'father_name', 'father_occupation', 'father_occupation_other',
+            'mother_name', 'mother_occupation', 'mother_occupation_other',
+            'other_family_members',
             # Income Check-1 wizard answers.
             'income_route', 'income_earner', 'income_working_members', 'earner_work_status',
             'household_other_earners', 'siblings_in_school', 'siblings_in_tertiary',

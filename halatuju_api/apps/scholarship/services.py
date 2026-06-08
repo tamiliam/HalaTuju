@@ -952,6 +952,11 @@ _DEEPER_FIELDS = (
     # Income Check-1 wizard answers (Documents → Household income).
     'income_route', 'income_earner', 'income_working_members', 'earner_work_status',
     'household_other_earners', 'siblings_in_school', 'siblings_in_tertiary',
+    # Structured family roster (redesign 2026-06) — the new inputs. first_in_family
+    # + parents_occupation above are DERIVED from these on save (see below).
+    'father_name', 'father_occupation', 'father_occupation_other',
+    'mother_name', 'mother_occupation', 'mother_occupation_other',
+    'other_family_members',
 )
 
 
@@ -965,11 +970,29 @@ def save_application_details(application, data):
     /apply), not on the application. The Story tab on /scholarship/application
     sends it here so the student saves everything with one button.
     """
+    from . import family
     deeper = {k: data[k] for k in _DEEPER_FIELDS if k in data}
+    # Normalise the optional member pool to a safe shape before persisting.
+    if 'other_family_members' in deeper:
+        deeper['other_family_members'] = family.clean_other_members(deeper['other_family_members'])
     if deeper:
         for k, v in deeper.items():
             setattr(application, k, v)
-        application.save(update_fields=list(deeper.keys()) + ['updated_at'])
+        # The structured roster is now the INPUT; keep the two legacy columns
+        # (first_in_family, parents_occupation) in sync as OUTPUTS so every
+        # downstream reader (profile_engine, anomaly_engine, ledger) works unchanged.
+        # Only takes over once the student has entered structured data — grandfathered
+        # apps keep their existing free text / toggle until they re-enter.
+        derived = []
+        if family.has_structured_roster(application):
+            application.first_in_family = family.derive_first_in_family(application)
+            derived.append('first_in_family')
+            summary = family.parents_occupation_summary(application)
+            if summary:
+                application.parents_occupation = summary
+                derived.append('parents_occupation')
+        update_fields = list(dict.fromkeys(list(deeper.keys()) + derived)) + ['updated_at']
+        application.save(update_fields=update_fields)
     fn_data = data.get('funding_need')
     if fn_data is not None:
         FundingNeed.objects.update_or_create(application=application, defaults=fn_data)
