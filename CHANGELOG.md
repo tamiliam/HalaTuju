@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **"About your family" structured roster — backend foundation (branch `feature/family-section-redesign`, NOT
+  deployed).** Replaces four overlapping family fields (`first_in_family` toggle + legacy `siblings_studying_count` +
+  `siblings_in_school`/`tertiary` steppers split across the Story + Income tabs + free-text `parents_occupation`) with
+  one structured roster: Father/Mother (name as in IC + coded profession) + an optional brother/sister/guardian pool,
+  plus two sibling steppers and a *derived* "first in family" (no toggle). `apps/scholarship/family.py` holds a
+  40-option B40/lower-M40 profession taxonomy — **validated against the 33 real `parents_occupation` entries on prod,
+  ~95% coverage** — and the pure derivations. 7 additive model fields + migration `0048` (additive, no data loss,
+  migrate-first at deploy). `save_application_details` makes the roster the INPUT; `first_in_family` (= no sibling
+  in/through tertiary) and `parents_occupation` (= roster summary) are kept correct as OUTPUTS, so every downstream
+  reader (profile_engine, anomaly_engine, ledger, check2) works unchanged and the old contradiction-flag +
+  clarify-email become inert-by-construction. Serializers + the admin serializer accept/expose the roster;
+  `lib/familyRoster.ts` mirrors it for the (pending) form. **Compulsory** rules agreed: father/mother profession
+  required (name required unless deceased/no-contact), sibling steppers required via a blank-`—` (null) default.
+  +9 tests (854 scholarship pytest). **▶ Remaining (S2, not started): the form rebuild + i18n (40×3) + the
+  `family_done` completeness gate + income-wizard stepper-removal/earner-prefill + cockpit Family card.** Plan:
+  `docs/scholarship/family-section-redesign-plan.md`; retro `docs/retrospective-family-section-redesign.md`.
 - **Sponsor allowlist widened to a trusted-sponsor boundary (B40 Phase E/F Sprint 0, ships dark).** Per the 2026-06-07
   owner Boundary decision, the anonymised sponsor card (`SponsorPoolCardSerializer`) gains an `institution` field that
   crosses **only** to a **trusted** sponsor (`context['is_trusted']`); absent by default (fail-closed). New

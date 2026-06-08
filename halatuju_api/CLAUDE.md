@@ -443,7 +443,24 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-07)
+## Next Sprint (as of 2026-06-08)
+
+**▶ IN PROGRESS — "About your family" section redesign (branch `feature/family-section-redesign`, NOT merged/deployed;
+plan `docs/scholarship/family-section-redesign-plan.md`, retro `docs/retrospective-family-section-redesign.md`).**
+S1 backend + S2a foundation DONE & committed (`dbf19ba`/`2aa2bc4`/`55faf10`): structured family roster replacing the
+four overlapping family fields with Father/Mother (name + coded profession) + a brother/sister/guardian pool + 2
+sibling steppers + a *derived* first-in-family. `apps/scholarship/family.py` (40-option B40/lower-M40 profession
+taxonomy, validated ~95% against real prod entries) + 7 additive model fields + migration **`0048`** (additive, NOT
+applied — prod at `0047`); roster is the INPUT, `first_in_family`/`parents_occupation` are derived OUTPUTS so all
+consumers work unchanged. **▶ S2 REMAINING (do next):** rebuild the Story "About your family" card per the approved
+Stitch mockup (compulsory father/mother [name unless deceased/no-contact] + the pool + 2 compulsory blank-`—` steppers
++ derived note); i18n 40 professions ×3 (Tamil needs the owner's eye); a new `family_done` completeness part
+(`services.application_completeness`) + required-field validation; income wizard (`ScholarshipDocuments.tsx`) — REMOVE
+the sibling steppers (they move to Story) + PREFILL who-works/STR-earner from `family.earning_members`; cockpit Family
+card → show the structured roster. Migrate-first `0048` via MCP at deploy. Phase 2 (later): roster feeds income earners
+so the wizard drops its own "who works" step.
+
+---
 
 **✅ SHIPPED 2026-06-07 — Officer cockpit + verdict confidence-scale alignment (9 commits `c748284`→`dd40865` on `main`;
 NO migration; retro `docs/retrospective-verdict-confidence-alignment.md`).** A live-testing pass over the officer cockpit
