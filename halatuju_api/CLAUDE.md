@@ -447,19 +447,26 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 **▶ ACTIVE TRACK — B40 Phase E/F sponsor build (roadmap `docs/scholarship/b40-phase-ef-sprint-plan.md`, 13 sprints).**
 Building the sponsor/reviewer/student features to a demoable end-state, all **dark behind `SPONSOR_POOL_ENABLED`** until
-the lawyer-gated go-live (Sprint 12). **Sprint 0 (boundary) + Sprint 1 (F1 sponsor landing) DONE on `main`.**
-- **✅ Sprint 1 DONE (F1, 2026-06-08, no migration, ships dark):** public `/sponsor` marketing landing (hero + live
-  counter, promises, how-it-works, FAQ, CTA; trilingual `sponsorLanding.*`) + public `GET /api/v1/sponsor/pool/count/`
-  → `{count, enabled}` (count-only, flag-gated). `components/SponsorLanding.tsx`; the `/sponsor` page shows it to
-  signed-out visitors only when `enabled`. Retro `docs/retrospective-sprint1-sponsor-landing.md`. Open: TD-091 (Tamil
-  refine), TD-092 (live click-through at go-live).
-- **▶ NEXT — Sprint 2 (F8a, backend):** student post-match onboarding on the existing award path — `respond_to_award`
-  hook → `send_award_confirmed_email` (no sponsor identity); new `onboarded_at` gate + `OnboardingResponse` model;
-  `student_onboarding_ack` consent (+ bump `CONSENT_VERSION`); `POST .../onboarding-complete/`. **Has a migration** —
-  migrate-first via Supabase MCP (prod at `0047`; the parked family branch claims `0048`, so renumber if it lands
-  first). Then Sprint 3 (F8b frontend, Stitch-first). Full sequence in the roadmap.
+the lawyer-gated go-live (Sprint 12). **Sprints 0–2 DONE on `main` (held local, NOT pushed — push=deploy, owner-gated;
+deploys batched for go-live).**
+- **✅ Sprint 1 DONE (F1, 2026-06-08, no migration):** public `/sponsor` marketing landing + public
+  `GET /api/v1/sponsor/pool/count/` → `{count, enabled}` (count-only, flag-gated). `components/SponsorLanding.tsx`.
+  TD-091 (Tamil refine), TD-092 (live click-through at go-live).
+- **✅ Sprint 2 DONE (F8a, backend, 2026-06-08, migration `0049`):** student post-match onboarding. Accept
+  (`respond_to_award`) now fires `send_award_confirmed_email` (NO sponsor identity, B4). New
+  `complete_onboarding(...)` + `POST /api/v1/scholarship/applications/<id>/onboarding-complete/` → records a
+  `student_onboarding_ack` consent (`CONSENT_VERSION` bumped → `2026-draft-4`), stores answers on the new
+  `OnboardingResponse` model, stamps `onboarded_at` (refuses unless status `sponsored`). **Migration `0049`**
+  (additive: `onboarded_at` col + `onboarding_responses` table) — apply migrate-first at deploy; **TD-093 = enable RLS
+  on the new table at deploy.** Retro `docs/retrospective-sprint2-onboarding-backend.md`.
+- **▶ NEXT — Sprint 3 (F8b, frontend):** the student award + onboarding UI — `app/scholarship/award/page.tsx`
+  (guardian modal for minors) + `app/scholarship/onboarding/*` (welcome → acknowledgement cards → questionnaire →
+  confirmation); `getStudentAward`/`respondToAward`/`submitOnboarding` clients; `scholarship.award.*` +
+  `scholarship.onboarding.*` i18n (en/ms/ta); a "Next: accept your award / complete onboarding" panel on
+  `application/page.tsx`. **Stitch-prototype first** (owner visual approval). Wires to the F8a endpoints above.
 - **Gotchas:** ship dark (flag off); i18n en/ms/ta parity every sprint; Stitch-prototype new pages (F8b, F9b) before
-  TSX; ≤2 deploys/feature; deploys are owner-gated (build minutes).
+  TSX; ≤2 deploys/feature; deploys/pushes are owner-gated (build minutes); prod migrations at `0049` once the batch
+  deploys (currently `0048` on prod).
 
 ---
 

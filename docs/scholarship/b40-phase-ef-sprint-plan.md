@@ -20,7 +20,7 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 |---|--------|---------|------|------------|
 | 0 | Boundary foundation (allowlist widen) ✅ **DONE + MERGED** to `main` 2026-06-07 | (cross-cutting) | S–M, BE | — |
 | 1 | Sponsor landing + live counter ⭐ ✅ **DONE** on `main` 2026-06-08 (no migration) | F1 | M, FE+tiny BE | 0 (counter only) |
-| 2 | Student post-match onboarding — backend ⭐ | F8a | M, BE | — |
+| 2 | Student post-match onboarding — backend ⭐ ✅ **DONE** on `main` 2026-06-08 (migration `0049`) | F8a | M, BE | — |
 | 3 | Student post-match onboarding — frontend ⭐ | F8b | M, FE | 2 |
 | 4 | Sponsor notifications (real-time + digest) ⭐ | F3 | M–L, BE+tiny FE | 0 |
 | 5 | Reviewer profile | F6 | M, BE+FE | — |
@@ -53,15 +53,14 @@ programme is live; public `GET /api/v1/sponsor/pool/count/` → `{count, enabled
 Stitch-prototyped + owner-approved before coding. Retro `docs/retrospective-sprint1-sponsor-landing.md`; TD-091 (Tamil
 refine) + TD-092 (live click-through at go-live).
 
-### Sprint 2 — F8a Student post-match onboarding (backend) · BE ⭐
-**Deliverable:** the accept→onboard→questionnaire backend, on the existing award path.
-- **Hook** `respond_to_award` (`sponsorship.py:83`): on accept (after the consent + status flips at `~:110–121`) call new `send_award_confirmed_email(...)` (sponsor identity **never** included — B4).
-- **Gate field:** add `ScholarshipApplication.onboarded_at` (migration), mirroring `profile_completed_at` (`models.py:272`, set by `confirm_profile` `services.py:414`); surface in `ApplicationReadSerializer` (`serializers.py:247`).
-- **Consent:** new `consent_type='student_onboarding_ack'` recorded via `record_consent` (`services.py:853`); **bump `CONSENT_VERSION`** (`services.py:799`). Onboarding is `granted_by='self'`.
-- **Endpoint:** `POST /api/v1/scholarship/applications/<id>/onboarding-complete/` — records the consent, sets `onboarded_at`, stores questionnaire (**new `OnboardingResponse` model** — recommended over JSON for auditability). **Hard gate:** the student must complete this before the first disbursement.
-- **Email:** `send_award_confirmed_email` via `_send` (`emails.py:282`) with trilingual `AWARD_CONFIRMED_SUBJECTS/BODIES` (mirror `PASS_*`).
-- **Provisional staged-release card copy** (PRD, ⚠️ lawyer-to-vet) lives in the onboarding content.
-- **Tests:** accept fires the email + gate; onboarding-complete writes the consent (new type + version) + `onboarded_at`.
+### Sprint 2 — F8a Student post-match onboarding (backend) · ✅ DONE on `main` 2026-06-08 (migration `0049`; ships dark)
+Shipped: `send_award_confirmed_email` (trilingual, NO sponsor identity — B4) fired from `respond_to_award` on accept;
+new `ScholarshipApplication.onboarded_at` gate (surfaced in `ApplicationReadSerializer`); `student_onboarding_ack`
+consent via `record_consent` (`CONSENT_VERSION` bumped → `2026-draft-4`); new `OnboardingResponse` model (one per app,
+JSON answers + consent FK); `complete_onboarding(...)` service + `POST .../onboarding-complete/` (refuses unless status
+`sponsored`). Migration `0049` (additive: column + table). +5 tests (873 scholarship pytest). Retro
+`docs/retrospective-sprint2-onboarding-backend.md`; TD-093 (RLS on `onboarding_responses` at deploy). Staged-release
+card copy (lawyer-to-vet) lives in the F8b onboarding content (Sprint 3).
 
 ### Sprint 3 — F8b Student post-match onboarding (frontend) · FE ⭐
 **Deliverable:** the student-facing award + onboarding UI.
