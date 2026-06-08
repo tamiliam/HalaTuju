@@ -24,7 +24,9 @@ from . import sponsorship as sponsorship_service
 from .services import (
     CONSENT_VERSION,
     IncompleteProfileError,
+    OnboardingError,
     POST_SHORTLIST_EDITABLE,
+    complete_onboarding,
     confirm_profile,
     consent_blockers,
     create_application,
@@ -167,6 +169,37 @@ class ApplicationConfirmView(APIView):
             return Response(
                 {'error': 'Please complete every required step before submitting.',
                  'code': 'incomplete_profile', 'completeness': exc.completeness},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(ApplicationReadSerializer(application).data)
+
+
+class ApplicationOnboardingCompleteView(APIView):
+    """POST /api/v1/scholarship/applications/<id>/onboarding-complete/ — the student
+    finishes post-award onboarding (F8a). Records the student_onboarding_ack consent,
+    stores the questionnaire (`answers`), and stamps `onboarded_at`. 400 if the award
+    hasn't been accepted yet (status must be 'sponsored')."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def post(self, request, pk):
+        application = ScholarshipApplication.objects.filter(
+            pk=pk, profile_id=request.user_id
+        ).select_related('cohort', 'profile').first()
+        if application is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        answers = request.data.get('answers') if isinstance(request.data, dict) else None
+        if answers is not None and not isinstance(answers, dict):
+            return Response({'error': 'answers must be an object', 'code': 'bad_answers'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            complete_onboarding(
+                application, answers=answers, locale=application.locale,
+                ip=request.META.get('REMOTE_ADDR'),
+            )
+        except OnboardingError as exc:
+            return Response(
+                {'error': 'Your award must be accepted before you can complete onboarding.',
+                 'code': exc.code},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(ApplicationReadSerializer(application).data)

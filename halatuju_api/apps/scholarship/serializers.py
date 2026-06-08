@@ -324,6 +324,8 @@ class ApplicationReadSerializer(serializers.ModelSerializer):
             'acknowledged_at', 'submitted_at', 'updated_at',
             # Phase C: confirm-submit timestamp + the admin's request-more-docs note
             'profile_completed_at', 'info_request_note', 'info_requested_at',
+            # B40 Phase E/F (F8a): post-award onboarding completion timestamp
+            'onboarded_at',
             'aspirations', 'plans', 'fears', 'justification',
             # "Your story" guided narrative fields (S2 redesign)
             'first_in_family', 'parents_occupation',

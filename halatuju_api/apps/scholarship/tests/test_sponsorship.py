@@ -16,9 +16,11 @@ from rest_framework.test import APIClient
 
 from apps.courses.models import PartnerAdmin, StudentProfile
 from apps.scholarship import sponsorship as svc
+from apps.scholarship import services
 from apps.scholarship import pool
 from apps.scholarship.models import (
-    Consent, Donation, ScholarshipApplication, ScholarshipCohort, Sponsor, Sponsorship, SponsorProfile,
+    Consent, Donation, OnboardingResponse, ScholarshipApplication, ScholarshipCohort,
+    Sponsor, Sponsorship, SponsorProfile,
 )
 
 TEST_JWT_SECRET = 'test-supabase-jwt-secret'
@@ -39,7 +41,8 @@ def _fundable_app(cohort, *, suffix='1', nric=ADULT_NRIC, award=Decimal('3000'))
         contact_email='student@secret.example', contact_phone='012-7776666',
     )
     app = ScholarshipApplication.objects.create(
-        cohort=cohort, profile=profile, status='accepted', award_amount=award)
+        cohort=cohort, profile=profile, status='accepted', award_amount=award,
+        notify_email='student@secret.example')
     SponsorProfile.objects.create(application=app, anon_markdown='The student is determined.', anon_published=True)
     Consent.objects.create(application=app, consent_type='share_with_sponsors', version='e', is_active=True)
     return app
@@ -131,6 +134,48 @@ class TestSponsorshipService(TestCase):
         self.assertEqual(sp.status, 'lapsed')
         self.assertEqual(svc.sponsor_balance(s), Decimal('3000'))
 
+    # ─── F8a: award-confirmed email + onboarding ─────────────────────────────
+    def test_accept_emails_award_confirmed_without_sponsor_identity(self):
+        from django.core import mail
+        s = _sponsor()
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        app = _fundable_app(self.cohort)
+        svc.fund_student(s, app)
+        mail.outbox = []
+        svc.respond_to_award(app, action='accept')
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        blob = f'{msg.subject}\n{msg.body}'
+        # B4: the sponsor is NEVER named to the student.
+        self.assertNotIn('Jane Sponsor', blob)
+        self.assertNotIn('jane@sponsor.example', blob)
+
+    def test_complete_onboarding_records_consent_and_stamps(self):
+        s = _sponsor()
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        app = _fundable_app(self.cohort)
+        svc.fund_student(s, app)
+        svc.respond_to_award(app, action='accept')          # → status 'sponsored'
+        resp = services.complete_onboarding(app, answers={'commitment': 'yes'})
+        app.refresh_from_db()
+        self.assertIsNotNone(app.onboarded_at)
+        self.assertEqual(resp.answers, {'commitment': 'yes'})
+        c = app.consents.filter(consent_type='student_onboarding_ack', is_active=True).first()
+        self.assertIsNotNone(c)
+        self.assertEqual(c.version, '2026-draft-4')
+        self.assertEqual(c.granted_by, 'self')
+        # re-running updates in place (no duplicate row, latest answers win)
+        services.complete_onboarding(app, answers={'commitment': 'absolutely'})
+        app.refresh_from_db()
+        self.assertEqual(app.onboarding_response.answers, {'commitment': 'absolutely'})
+        self.assertEqual(OnboardingResponse.objects.filter(application=app).count(), 1)
+
+    def test_onboarding_blocked_before_award_accepted(self):
+        app = _fundable_app(self.cohort)   # status 'accepted', not yet 'sponsored'
+        with self.assertRaises(services.OnboardingError) as e:
+            services.complete_onboarding(app)
+        self.assertEqual(e.exception.code, 'not_awarded')
+
 
 # ─── sponsor endpoints (flag + approval gated; anonymous student) ────────────
 
@@ -181,6 +226,29 @@ class TestSponsorEndpoints(TestCase):
     def test_404_when_flag_off(self):
         self._auth('spon-ok')
         self.assertEqual(self.client.get('/api/v1/sponsor/wallet/').status_code, 404)
+
+    # ─── F8a: the student onboarding-complete endpoint ───────────────────────
+    def _onboard_url(self):
+        return f'/api/v1/scholarship/applications/{self.app.id}/onboarding-complete/'
+
+    def test_onboarding_complete_endpoint(self):
+        s = Sponsor.objects.get(supabase_user_id='spon-ok')
+        Donation.objects.create(sponsor=s, amount=Decimal('3000'))
+        svc.fund_student(s, self.app)
+        svc.respond_to_award(self.app, action='accept')   # → 'sponsored'
+        self._auth('stu-1')                               # the student owns the app (profile pk == uid)
+        r = self.client.post(self._onboard_url(), {'answers': {'q': 'a'}}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.app.refresh_from_db()
+        self.assertIsNotNone(self.app.onboarded_at)
+        self.assertTrue(self.app.consents.filter(
+            consent_type='student_onboarding_ack', is_active=True).exists())
+
+    def test_onboarding_complete_blocked_before_award(self):
+        self._auth('stu-1')                               # award not accepted yet
+        r = self.client.post(self._onboard_url(), {}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.json()['code'], 'not_awarded')
 
     def _assert_no_student_identity(self, payload):
         blob = json.dumps(payload)
