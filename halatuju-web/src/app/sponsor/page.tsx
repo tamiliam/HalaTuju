@@ -7,9 +7,10 @@ import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { sponsorSignOut } from '@/lib/sponsor-supabase'
-import { registerSponsor, getSponsorPool, type SponsorPoolCard } from '@/lib/api'
+import { registerSponsor, getSponsorPool, getStudentsWaitingCount, type SponsorPoolCard } from '@/lib/api'
 import { SPONSOR_SOURCES, formatMyMobile, isValidMyMobile } from '@/lib/sponsorAuth'
 import { KEY_SPONSOR_PENDING } from '@/lib/storage'
+import SponsorLanding from '@/components/SponsorLanding'
 
 export default function SponsorPortalPage() {
   const { t } = useT()
@@ -61,6 +62,22 @@ export default function SponsorPortalPage() {
 
   const showBrowse = account?.status === 'approved' && !poolUnavailable
 
+  // ── F1: public sponsor landing ─────────────────────────────────────────────
+  // The live "students waiting" counter is a public, flag-gated endpoint. While
+  // SPONSOR_POOL_ENABLED is off it reports enabled:false → signed-out visitors keep
+  // the plain sign-in card (the programme stays dark until go-live). When it's on,
+  // signed-out visitors get the full marketing landing with the live counter.
+  const [waitingCount, setWaitingCount] = useState(0)
+  const [landingEnabled, setLandingEnabled] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    getStudentsWaitingCount()
+      .then((d) => { if (!cancelled) { setWaitingCount(d.count); setLandingEnabled(d.enabled) } })
+      .catch(() => { /* leave the landing disabled → falls back to the sign-in card */ })
+    return () => { cancelled = true }
+  }, [])
+
   const phoneInvalid = phone.length > 0 && !isValidMyMobile(phone)
   const canSubmit = !!name.trim() && isValidMyMobile(phone) && !!source && consent && !submitting
 
@@ -86,6 +103,11 @@ export default function SponsorPortalPage() {
   }
 
   const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+
+  // Signed-out visitors see the public marketing landing once the programme is live.
+  if (!isLoading && !isSignedIn && landingEnabled) {
+    return <SponsorLanding count={waitingCount} />
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">

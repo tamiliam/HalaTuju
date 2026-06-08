@@ -149,6 +149,60 @@
     "durationLabel": "Tempoh program",
     "months": "bulan"
   },
+  "sponsorLanding": {
+    "nav": {
+      "forSponsors": "Untuk Penaja",
+      "signIn": "Log masuk",
+      "becomeSponsor": "Jadi penaja"
+    },
+    "hero": {
+      "heading": "Buka pintu untuk pelajar yang ada keputusan baik tetapi tiada kemampuan",
+      "sub": "Tajalah lepasan sekolah B40 yang disahkan sepanjang pengajian mereka — secara tanpa nama, dengan setiap ringgit diperakaunkan.",
+      "becomeSponsor": "Jadi penaja",
+      "howItWorks": "Cara ia berfungsi",
+      "counter": "{count} pelajar sedang menunggu penaja sekarang"
+    },
+    "promises": {
+      "title": "Mengapa menaja melalui HalaTuju",
+      "card1Title": "Tanpa nama sepenuhnya",
+      "card1Desc": "Anda tidak pernah melihat nama atau butiran hubungan, hanya profil pelajar tanpa nama. Identiti dilindungi kedua-dua belah pihak.",
+      "card2Title": "Setiap ringgit dijejaki",
+      "card2Desc": "Dana dipegang oleh Yayasan myNADI dan dikeluarkan mengikut pencapaian pengajian yang disahkan, tidak pernah diserahkan terus.",
+      "card3Title": "Impak sebenar yang disahkan",
+      "card3Desc": "Setiap pelajar disahkan pendapatan dan ditemu duga, supaya bantuan anda sampai kepada keluarga B40 yang sebenar."
+    },
+    "how": {
+      "title": "Cara ia berfungsi",
+      "step1Title": "Buka akaun penaja",
+      "step1Desc": "Daftar dalam beberapa minit — tiada komitmen lagi.",
+      "step2Title": "Dapatkan kelulusan",
+      "step2Desc": "Kami membuat semakan ringkas sebelum anda boleh melihat pelajar.",
+      "step3Title": "Pilih pelajar",
+      "step3Desc": "Lihat profil tanpa nama dan pilih seseorang untuk ditaja.",
+      "step4Title": "Taja dan ikuti",
+      "step4Desc": "Tajalah pengajian mereka dan ikuti perkembangan mereka."
+    },
+    "faq": {
+      "title": "Soalan lazim penaja",
+      "q1": "Adakah saya akan melihat identiti pelajar?",
+      "a1": "Tidak. Untuk melindungi semua pihak, anda hanya melihat profil tanpa nama — tidak pernah nama, IC, alamat, telefon, e-mel atau foto. Pelajar juga tidak melihat butiran anda.",
+      "q2": "Ke mana wang saya pergi?",
+      "a2": "Dana dipegang oleh Yayasan myNADI dan dikeluarkan mengikut pencapaian pengajian yang disahkan. Wang tidak pernah diserahkan terus kepada pelajar.",
+      "q3": "Bolehkah saya memilih siapa yang saya taja?",
+      "a3": "Boleh. Setelah diluluskan, anda boleh melihat profil tanpa nama dan memilih pelajar yang ingin anda taja.",
+      "q4": "Apa berlaku jika pelajar berhenti?",
+      "a4": "Jika pelajar berhenti pengajian, baki dana kekal dalam program untuk membantu pelajar lain yang disahkan.",
+      "q5": "Berapa kos untuk menaja seseorang?",
+      "a5": "Ia bergantung pada program dan keperluan pelajar. Setiap profil menunjukkan bantuan yang diperlukan supaya anda boleh menentukan apa yang sesuai.",
+      "q6": "Siapa yang mengendalikan program ini?",
+      "a6": "HalaTuju mengendalikan Program Bantuan B40 bersama Yayasan myNADI, yang memegang dan menyalurkan dana."
+    },
+    "cta": {
+      "heading": "Bersedia untuk mengubah hidup?",
+      "body": "Bantuan anda membantu pelajar menamatkan pengajian dan mengangkat keluarga mereka.",
+      "questions": "Ada soalan? E-mel"
+    }
+  },
   "footer": {
     "tagline": "Membimbing pelajar Malaysia ke kursus yang tepat.",
     "quickLinks": "Pautan Pantas",

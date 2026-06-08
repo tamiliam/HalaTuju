@@ -281,6 +281,45 @@ class TestSponsorBrowse(TestCase):
             self.assertNotIn(value, blob)
 
 
+# ─── F1: public landing counter ──────────────────────────────────────────────
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
+class TestSponsorPoolCount(TestCase):
+    """The public /sponsor/pool/count/ endpoint feeds the F1 landing's live counter:
+    no auth, count-only, and flag-gated (dark until go-live)."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+        cls.app = _make_eligible_app(cls.cohort)
+        _make_eligible_app(cls.cohort, suffix='2')  # a second eligible student
+        _make_eligible_app(cls.cohort, suffix='3', anon_published=False)  # NOT in the pool
+
+    def setUp(self):
+        self.client = APIClient()  # deliberately unauthenticated — this is a public endpoint
+
+    @override_settings(SPONSOR_POOL_ENABLED=False)
+    def test_count_hidden_when_flag_off(self):
+        r = self.client.get('/api/v1/sponsor/pool/count/')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json(), {'count': 0, 'enabled': False})
+
+    @override_settings(SPONSOR_POOL_ENABLED=True)
+    def test_count_reflects_eligible_pool_when_on(self):
+        r = self.client.get('/api/v1/sponsor/pool/count/')
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        self.assertTrue(body['enabled'])
+        self.assertEqual(body['count'], 2)  # only the two anon-published + consented apps
+
+    @override_settings(SPONSOR_POOL_ENABLED=True)
+    def test_count_leaks_no_student_data(self):
+        r = self.client.get('/api/v1/sponsor/pool/count/')
+        blob = json.dumps(r.json())
+        for value in IDENTIFIERS.values():
+            self.assertNotIn(value, blob)
+        self.assertEqual(set(r.json().keys()), {'count', 'enabled'})
+
+
 # ─── admin generate / publish the anonymous profile ──────────────────────────
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET)
