@@ -179,3 +179,59 @@ class FamilyCompletenessTests(_AppBase):
         app.profile_completed_at = timezone.now()
         app.save(update_fields=['profile_completed_at'])
         self.assertTrue(application_completeness(app)['family_done'])
+
+
+class ConsentRedGateTests(TestCase):
+    """document_red_blockers: ANY red ('Doesn't match' / STR rejected-stale) per-document
+    check blocks consent. Reads the stored student_*_check verdicts (mocked here)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='red', name='B40', year=2026)
+
+    def _app_with_doc(self, doc_type):
+        from apps.scholarship.models import ApplicantDocument
+        profile = StudentProfile.objects.create(
+            supabase_user_id=f'red-{self.id()}', name='X', nric='030101-14-1234')
+        app = ScholarshipApplication.objects.create(profile=profile, cohort=self.cohort)
+        ApplicantDocument.objects.create(application=app, doc_type=doc_type, storage_path='x')
+        return app
+
+    def test_results_slip_name_and_grades_mismatch_block(self):
+        from unittest.mock import patch
+        from apps.scholarship.services import document_red_blockers
+        app = self._app_with_doc('results_slip')
+        with patch('apps.scholarship.academic_engine.student_slip_check',
+                   return_value={'name': 'mismatch', 'subjects': 'match', 'results': 'match'}):
+            self.assertIn('results_slip_name_mismatch', document_red_blockers(app))
+        with patch('apps.scholarship.academic_engine.student_slip_check',
+                   return_value={'name': 'match', 'subjects': 'match', 'results': 'mismatch'}):
+            self.assertIn('results_slip_grades_mismatch', document_red_blockers(app))
+
+    def test_str_rejected_or_stale_blocks(self):
+        from unittest.mock import patch
+        from apps.scholarship.services import document_red_blockers
+        app = self._app_with_doc('str')
+        with patch('apps.scholarship.income_engine.student_str_check',
+                   return_value={'name_status': 'match', 'nric_status': 'match', 'current_status': 'rejected'}):
+            self.assertIn('income_document_mismatch', document_red_blockers(app))
+
+    def test_bc_child_mismatch_blocks(self):
+        from unittest.mock import patch
+        from apps.scholarship.services import document_red_blockers
+        app = self._app_with_doc('birth_certificate')
+        with patch('apps.scholarship.income_engine.student_bc_check',
+                   return_value={'child_status': 'mismatch', 'mother_status': 'match', 'father_status': 'match'}):
+            self.assertIn('income_document_mismatch', document_red_blockers(app))
+
+    def test_offer_pathway_clash_is_soft_not_gated(self):
+        from unittest.mock import patch
+        from apps.scholarship.services import document_red_blockers
+        app = self._app_with_doc('offer_letter')
+        # name/ic match, only the pathway clashes → SOFT, not gated.
+        with patch('apps.scholarship.pathway_engine.student_offer_check',
+                   return_value={'name': 'match', 'ic': 'match', 'pathway': 'mismatch'}):
+            self.assertEqual(document_red_blockers(app), [])
+        with patch('apps.scholarship.pathway_engine.student_offer_check',
+                   return_value={'name': 'mismatch', 'ic': 'match', 'pathway': 'match'}):
+            self.assertIn('offer_letter_mismatch', document_red_blockers(app))
