@@ -335,3 +335,24 @@ class TestParentIcUnderage(_Base):
         _add_parent_ic(self.app, vision_nric='710101-14-2222', vision_name='Adult Person')
         codes = [a['code'] for a in detect_anomalies(self.app)]
         self.assertNotIn('parent_ic_underage', codes)
+
+
+class CockpitAnomalyDedupeTests(TestCase):
+    """Cockpit consolidation: the admin serializer drops identity NRIC/name
+    mismatch flags (the verdict tile + the identity caveat own them) so the
+    merged Outstanding panel never double-asks. The raw engine still emits them."""
+
+    def test_serializer_drops_identity_mismatch_flags(self):
+        from unittest.mock import patch
+        from apps.scholarship.serializers_admin import AdminApplicationDetailSerializer
+        raw = [
+            {'code': 'vision_nric_mismatch', 'params': {}},
+            {'code': 'vision_name_mismatch', 'params': {}},
+            {'code': 'household_size_one', 'params': {}},
+        ]
+        with patch('apps.scholarship.anomaly_engine.detect_anomalies', return_value=raw):
+            out = AdminApplicationDetailSerializer().get_anomalies(object())
+        codes = [a['code'] for a in out]
+        self.assertEqual(codes, ['household_size_one'])
+        self.assertNotIn('vision_nric_mismatch', codes)
+        self.assertNotIn('vision_name_mismatch', codes)

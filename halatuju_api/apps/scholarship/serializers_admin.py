@@ -258,11 +258,18 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         except SponsorProfile.DoesNotExist:
             return None
 
+    #: Cockpit consolidation: anomalies that already have an authoritative home
+    #: elsewhere (the verdict tile + the identity caveat) are NOT also surfaced as
+    #: pre-interview flags, so the merged "Outstanding" panel never double-asks.
+    _DEDUPED_ANOMALIES = frozenset({'vision_nric_mismatch', 'vision_name_mismatch'})
+
     def get_anomalies(self, obj):
         """S16 Phase A: deterministic pre-interview flag list. Pure rules,
-        no LLM calls. Returns ``[]`` when nothing flags."""
+        no LLM calls. Returns ``[]`` when nothing flags. Identity NRIC/name
+        mismatches are deduped out (the verdict + caveat own them)."""
         from .anomaly_engine import detect_anomalies
-        return detect_anomalies(obj)
+        return [a for a in detect_anomalies(obj)
+                if a['code'] not in self._DEDUPED_ANOMALIES]
 
     def get_verdict(self, obj):
         """S1 verification verdict: the four-fact rollup the coordinator audits
