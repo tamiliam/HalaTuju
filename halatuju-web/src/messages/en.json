@@ -2330,6 +2330,9 @@
           "transport_cost_unknown": "Transport cost unknown — the student has been asked how they travel and the rough monthly cost."
         }
       },
+      "decision": {
+        "title": "Decision"
+      },
       "recordVerdict": {
         "title": "Record your verdict",
         "factPass": "Pass",

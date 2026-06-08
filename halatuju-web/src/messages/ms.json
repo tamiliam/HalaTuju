@@ -2330,6 +2330,9 @@
           "transport_cost_unknown": "Kos pengangkutan tidak diketahui — pelajar telah ditanya cara mereka pergi dan anggaran kos bulanan."
         }
       },
+      "decision": {
+        "title": "Keputusan"
+      },
       "recordVerdict": {
         "title": "Rekod keputusan anda",
         "factPass": "Lulus",
