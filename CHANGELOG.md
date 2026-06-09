@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Reviewer assignment / reassignment (B40 Phase E/F Sprint 7, F7, held local).** A super admin assigns a submitted
+  application to a reviewer, reassigns it, or unassigns — via a new **super-only, audited** `POST
+  /api/v1/admin/scholarship/applications/<id>/assign/` (body `{reviewer_id}`; `null` = unassign). `services.assign_reviewer`
+  validates the target is an active reviewer/super (never a viewer → `not_reviewer`), gates the **first** assignment of
+  an unassigned app on `is_ready_for_assignment` (no open queries **or** the SLA lapsed → else `not_ready`), allows a
+  reassignment/unassignment any time, and writes an **`AssignmentEvent`** audit row (from → to, by-whom) on every change;
+  adds `ScholarshipApplication.assigned_at`. The loose reviewer-gated `PATCH assigned_to` branch is **removed** (single
+  audited path). Cockpit "Assign a reviewer" card is now super-only, lists only reviewers, disables the first assignment
+  with a reason until the app is ready, shows the current assignee, and surfaces the server error codes. Trilingual
+  `admin.scholarship.assign.*`. **Migration `0052`** (`assigned_at` + new `AssignmentEvent` model). +18 tests (1945
+  backend pytest; 276 jest; `next build` clean; i18n parity 2338). Ships in the held Phase E/F batch (no push).
 - **Reviewer invite role selector (B40 Phase E/F Sprint 6, F5, held local).** A super admin now picks the new admin's
   role at invite time — `AdminInviteView` accepts `role` (`super`/`reviewer`/`viewer`; defaults to `reviewer`, an
   invalid value falls back to `reviewer`) and keeps the legacy `is_super_admin` flag in lockstep when `role=super`;

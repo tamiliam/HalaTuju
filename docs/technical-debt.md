@@ -626,6 +626,12 @@
   record the `django_migrations` row), then **enable RLS on `reviewer_profiles`** (deny-by-default, service-role-only
   — it holds sensitive staff PII: phone/address) and re-run `get_advisors`. Must be closed before go-live. (Logged
   2026-06-09, B40 Phase E/F Sprint 5.)
+- TD-100: **Migration `0052` (new `AssignmentEvent` model) needs the contenttypes workaround + RLS at deploy.** Like
+  `0051`, the new `assignment_events` table is a new-model migration; prod has no contenttypes/auth tables, so a plain
+  `manage.py migrate` exits non-zero on `post_migrate` even when the DDL commits. **To resolve:** at the Phase E/F batch
+  deploy, apply `0052` via the Supabase MCP (ADD COLUMN `assigned_at` + CREATE TABLE `assignment_events` + record the
+  `django_migrations` row), then **enable RLS on `assignment_events`** (deny-by-default, service-role-only) and re-run
+  `get_advisors`. Must be closed before go-live. (Logged 2026-06-09, B40 Phase E/F Sprint 7.)
 - TD-099: **No first-sign-in nudge for a reviewer to complete their profile.** F5 (Sprint 6) lets a super admin invite
   a reviewer with the right role, but the roadmap's secondary "prompt Reviewer profile (F6) completion on first
   sign-in" was deferred to keep the sprint small — a newly-invited reviewer can reach `/admin` with a blank
