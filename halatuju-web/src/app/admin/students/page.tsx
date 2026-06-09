@@ -4,14 +4,16 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import {
   getPartnerStudents,
   getExportUrl,
+  DEFAULT_ADMIN_PAGE_SIZE,
   type StudentListData,
 } from '@/lib/admin-api'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useT } from '@/lib/i18n'
 import { formatNricDisplay } from '@/lib/scholarship'
+import { Pagination } from '@/components/Pagination'
 
-const PER_PAGE = 10
+const PAGE_SIZE_OPTIONS = [10, 25, 50]
 
 const formatPhone = (phone: string | null) => {
   if (!phone) return '\u2014'
@@ -39,13 +41,14 @@ export default function AdminStudentList() {
   const [data, setData] = useState<StudentListData | null>(null)
   const [error, setError] = useState('')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE)
 
   useEffect(() => {
     if (!token) return
-    getPartnerStudents({ token })
+    getPartnerStudents({ page, pageSize }, { token })
       .then(setData)
       .catch(() => setError(t('admin.loadStudentsFailed')))
-  }, [token])
+  }, [token, page, pageSize])
 
   if (error) {
     return <div className="text-red-600 mt-8">{error}</div>
@@ -72,8 +75,7 @@ export default function AdminStudentList() {
     URL.revokeObjectURL(a.href)
   }
 
-  const totalPages = Math.ceil(data.students.length / PER_PAGE)
-  const paginated = data.students.slice((page - 1) * PER_PAGE, page * PER_PAGE)
+  const rows = data.students
 
   return (
     <div>
@@ -95,7 +97,7 @@ export default function AdminStudentList() {
 
       {/* Mobile: card layout */}
       <div className="md:hidden space-y-3 mt-6">
-        {paginated.map((s) => (
+        {rows.map((s) => (
           <Link
             key={s.supabase_user_id}
             href={`/admin/students/${s.supabase_user_id}`}
@@ -145,7 +147,7 @@ export default function AdminStudentList() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {paginated.map((s) => (
+            {rows.map((s) => (
               <tr
                 key={s.supabase_user_id}
                 className="hover:bg-blue-50/40 transition-colors"
@@ -193,42 +195,18 @@ export default function AdminStudentList() {
       </div>
 
       {/* Pagination */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mt-4 text-sm text-gray-500">
-        <span>
-          {t('admin.showingRange', { start: String(Math.min((page - 1) * PER_PAGE + 1, data.students.length)), end: String(Math.min(page * PER_PAGE, data.students.length)), total: String(data.students.length) })}
-        </span>
-        {totalPages > 1 && (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              &lsaquo;
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                  p === page
-                    ? 'bg-blue-600 text-white'
-                    : 'hover:bg-gray-50 border border-gray-200'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              &rsaquo;
-            </button>
-          </div>
-        )}
-      </div>
+      <Pagination
+        page={data.page}
+        totalPages={data.total_pages}
+        total={data.count}
+        pageSize={data.page_size}
+        onPageChange={setPage}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        onPageSizeChange={(size) => {
+          setPageSize(size)
+          setPage(1)
+        }}
+      />
     </div>
   )
 }
