@@ -55,6 +55,11 @@ tab already scans each document with its specific engine and shows Gopal only on
 
 ## 4. Phase 1 — Documents: scan-on-upload → resolve-on-match → contextual Gopal
 
+> **✅ BUILT 2026-06-10** on `feature/action-centre-mount` (FE-only contract + 2-line backend wire, no migration):
+> `resolution.doc_match_verdict` + `resolve_doc_items_for_upload`, wired into `recordDocument` (returns `match_verdict`);
+> `ActionCard` shows `DocumentHelpCoach` inline on mismatch/unreadable; static footer removed. 982 scholarship pytest
+> (+17) + 276 jest + next build clean + parity 2472. Not pushed (owner-gated). Live re-test on app #16 pending.
+
 ### 4.1 The flow (per document task)
 ```
 student taps Upload on a `doc` task (doc_type = e.g. birth_certificate)
