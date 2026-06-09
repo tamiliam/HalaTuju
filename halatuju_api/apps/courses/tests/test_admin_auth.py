@@ -172,9 +172,9 @@ class AdminInviteRoleTest(TestCase):
         self.assertFalse(a.is_super_admin)
 
     def test_invite_viewer(self):
-        self._invite('view@example.com', 'viewer')
+        self._invite('view@example.com', 'admin')
         a = PartnerAdmin.objects.get(email='view@example.com')
-        self.assertEqual(a.role, 'viewer')
+        self.assertEqual(a.role, 'admin')
         self.assertFalse(a.is_super_admin)
 
     def test_invite_super_sets_legacy_flag(self):
@@ -202,11 +202,11 @@ class AdminInviteRoleTest(TestCase):
 
     def test_admin_list_returns_role(self):
         PartnerAdmin.objects.create(
-            supabase_user_id='v-uid', role='viewer', is_active=True,
+            supabase_user_id='v-uid', role='admin', is_active=True,
             name='V', email='v@example.com',
         )
         r = self.client.get('/api/v1/admin/admins/')
         self.assertEqual(r.status_code, 200)
         roles = {a['email']: a['role'] for a in r.json()['admins']}
-        self.assertEqual(roles['v@example.com'], 'viewer')
+        self.assertEqual(roles['v@example.com'], 'admin')
         self.assertEqual(roles['super@halatuju.com'], 'super')

@@ -74,21 +74,30 @@ class PartnerAdminMixin:
         return effective == 'super' or effective in roles
 
     def get_partner_students(self, request):
+        """Role-aware student scope for the Students list, Dashboard and CSV export
+        (all three call this one choke-point):
+          super / admin → ALL students (admin is read-only elsewhere, but sees all).
+          partner       → only their OWN organisation's students.
+          reviewer / anyone else → no access (None → the caller returns 403).
+        """
         admin = self.get_admin(request)
         if not admin:
             return None, None, None
 
-        if admin.is_super_admin:
+        # super + admin: every student.
+        if self.has_role(admin, 'admin'):
             students = StudentProfile.objects.all().order_by('-created_at')
             return students, None, admin
 
-        if not admin.org:
-            return None, None, None
+        # partner: scoped to their own organisation only.
+        if admin.role == 'partner' and admin.org:
+            students = StudentProfile.objects.filter(
+                referred_by_org=admin.org,
+            ).order_by('-created_at')
+            return students, admin.org, admin
 
-        students = StudentProfile.objects.filter(
-            referred_by_org=admin.org,
-        ).order_by('-created_at')
-        return students, admin.org, admin
+        # reviewer (individual volunteer) and anyone without a valid scope: no Students.
+        return None, None, admin
 
 
 class AdminRoleView(PartnerAdminMixin, APIView):

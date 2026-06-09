@@ -90,7 +90,7 @@ class TestFinaliseProfileEndpoint(TestCase):
         cls.profile = StudentProfile.objects.create(supabase_user_id=STUDENT, nric='030101-14-1234', name='Priya')
         cls.app = ScholarshipApplication.objects.create(cohort=cls.cohort, profile=cls.profile, status='interviewed')
         PartnerAdmin.objects.create(supabase_user_id=REVIEWER, role='reviewer', is_active=True, name='Rev', email='r@x.com')
-        PartnerAdmin.objects.create(supabase_user_id=VIEWER, role='viewer', is_active=True, name='Vie', email='v@x.com')
+        PartnerAdmin.objects.create(supabase_user_id=VIEWER, role='admin', is_active=True, name='Vie', email='v@x.com')
 
     def setUp(self):
         self.client = APIClient()
@@ -152,6 +152,8 @@ class TestFinaliseProfileEndpoint(TestCase):
     @patch('apps.scholarship.views_admin.refine_sponsor_profile')
     def test_get_detail_does_not_call_gemini(self, mock_refine):
         self._draft(); _submitted_session(self.app)
+        self.app.assigned_to = PartnerAdmin.objects.get(supabase_user_id=REVIEWER)
+        self.app.save(update_fields=['assigned_to'])
         self._auth(REVIEWER)
         r = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/')
         self.assertEqual(r.status_code, 200)

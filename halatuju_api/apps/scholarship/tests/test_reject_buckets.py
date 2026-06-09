@@ -144,7 +144,7 @@ class TestAdminRejectEndpoint(TestCase):
     def setUpTestData(cls):
         cls.cohort = _cohort()
         PartnerAdmin.objects.create(supabase_user_id=REVIEWER, role='reviewer', is_active=True, name='R', email='r@x.com')
-        PartnerAdmin.objects.create(supabase_user_id=VIEWER, role='viewer', is_active=True, name='V', email='v@x.com')
+        PartnerAdmin.objects.create(supabase_user_id=VIEWER, role='admin', is_active=True, name='V', email='v@x.com')
 
     def setUp(self):
         self.client = APIClient()
