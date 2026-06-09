@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { sponsorSignOut } from '@/lib/sponsor-supabase'
-import { registerSponsor, getSponsorPool, getStudentsWaitingCount, type SponsorPoolCard } from '@/lib/api'
+import { registerSponsor, getSponsorPool, getStudentsWaitingCount, patchSponsorNotifications, type SponsorPoolCard } from '@/lib/api'
 import { SPONSOR_SOURCES, formatMyMobile, isValidMyMobile } from '@/lib/sponsorAuth'
 import { KEY_SPONSOR_PENDING } from '@/lib/storage'
 import SponsorLanding from '@/components/SponsorLanding'
@@ -61,6 +61,18 @@ export default function SponsorPortalPage() {
   }, [account?.status, token])
 
   const showBrowse = account?.status === 'approved' && !poolUnavailable
+
+  // F3: notification cadence (realtime | weekly | off). Optimistic-ish — saves then refreshes.
+  const [savingNotify, setSavingNotify] = useState(false)
+  const changeNotify = async (freq: 'realtime' | 'weekly' | 'off') => {
+    if (!token || savingNotify || account?.notify_frequency === freq) return
+    setSavingNotify(true)
+    try {
+      await patchSponsorNotifications(freq, { token })
+      await refreshAccount()
+    } catch { /* keep the current preference on failure */ }
+    finally { setSavingNotify(false) }
+  }
 
   // ── F1: public sponsor landing ─────────────────────────────────────────────
   // The live "students waiting" counter is a public, flag-gated endpoint. While
@@ -226,6 +238,31 @@ export default function SponsorPortalPage() {
               <p className="text-sm text-gray-600 mt-2">{t('sponsorPortal.approvedBody')}</p>
               <div className="mt-5 rounded-xl bg-gray-50 border border-dashed border-gray-200 px-4 py-5 text-sm text-gray-500">
                 {t('sponsorPortal.comingSoon')}
+              </div>
+
+              {/* F3: email-update preference */}
+              <div className="mt-5 text-left">
+                <p className="text-sm font-medium text-gray-700">{t('sponsorPortal.notify.title')}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{t('sponsorPortal.notify.intro')}</p>
+                <div className="mt-2 space-y-2">
+                  {(['realtime', 'weekly', 'off'] as const).map((f) => {
+                    const selected = (account?.notify_frequency || 'weekly') === f
+                    return (
+                      <button
+                        key={f} type="button" disabled={savingNotify}
+                        onClick={() => changeNotify(f)}
+                        className={`w-full text-left rounded-lg border px-3 py-2 transition-colors disabled:opacity-60 ${
+                          selected ? 'border-blue-600 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className={`text-sm font-medium ${selected ? 'text-blue-800' : 'text-gray-800'}`}>
+                          {t(`sponsorPortal.notify.${f}`)}
+                        </span>
+                        <span className="block text-xs text-gray-500">{t(`sponsorPortal.notify.${f}Desc`)}</span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
           ) : (

@@ -411,7 +411,11 @@ class AdminPublishAnonProfileView(_AdminBase):
                     status=status.HTTP_400_BAD_REQUEST)
         sp.anon_published = bool(publish)
         sp.anon_published_at = timezone.now() if publish else None
-        sp.save(update_fields=['anon_published', 'anon_published_at', 'updated_at'])
+        # F3: mark this student for the next real-time sponsor alert. Resetting on
+        # both publish AND unpublish means a re-published student is alerted again
+        # (no synchronous fan-out here — the hourly job picks them up).
+        sp.realtime_notified_at = None
+        sp.save(update_fields=['anon_published', 'anon_published_at', 'realtime_notified_at', 'updated_at'])
         return Response(SponsorProfileSerializer(sp).data)
 
 

@@ -132,6 +132,16 @@
     "approvedTitle": "Anda telah diluluskan",
     "approvedBody": "Selamat menyertai. Tidak lama lagi anda boleh menyemak pelajar yang memerlukan bantuan — sentiasa tanpa nama.",
     "comingSoon": "Penyemakan pelajar akan datang tidak lama lagi. Kami akan e-mel anda sebaik sahaja ia sedia.",
+    "notify": {
+      "title": "Kemas kini e-mel",
+      "intro": "Berapa kerap kami patut e-mel anda tentang pelajar baharu?",
+      "realtime": "Sebaik ditambah",
+      "realtimeDesc": "Pemberitahuan ringkas setiap kali pelajar baharu menyertai kumpulan.",
+      "weekly": "Ringkasan mingguan",
+      "weeklyDesc": "Satu e-mel seminggu merumuskan pelajar baharu.",
+      "off": "Tutup",
+      "offDesc": "Tiada e-mel — saya akan menyemak kumpulan sendiri."
+    },
     "inactiveTitle": "Akaun tidak aktif",
     "inactiveBody": "Akaun penaja anda tidak aktif buat masa ini. Jika anda rasa ini satu kesilapan, sila hubungi kami.",
     "backHome": "Kembali ke laman utama"

@@ -401,6 +401,111 @@ def send_award_confirmed_email(to_email, applicant_name, programme_name, lang='e
                  applicant_name, programme_name, lang)
 
 
+# ── F3: sponsor notifications (real-time alert + weekly digest) ───────────────
+# The body is built ONLY from already-serialised SponsorPoolDetailSerializer dicts
+# (an allowlist), so it can never contain a student's identity by construction.
+SPONSOR_NEW_SUBJECTS = {
+    'en': '{n} new student(s) waiting for a sponsor',
+    'ms': '{n} pelajar baharu sedang menunggu penaja',
+    'ta': '{n} புதிய மாணவர்(கள்) நிதியுதவியாளருக்காகக் காத்திருக்கிறார்கள்',
+}
+SPONSOR_DIGEST_SUBJECTS = {
+    'en': 'Your weekly update: {n} student(s) waiting for a sponsor',
+    'ms': 'Kemas kini mingguan anda: {n} pelajar menunggu penaja',
+    'ta': 'உங்கள் வாராந்திர புதுப்பிப்பு: {n} மாணவர்(கள்) நிதியுதவியாளருக்காகக் காத்திருக்கிறார்கள்',
+}
+SPONSOR_NOTIFY_BODIES = {
+    'en': (
+        "Dear Sponsor,\n\n"
+        "{intro}\n\n{list}\n\n"
+        "Sign in to read their anonymous profiles and choose someone to support:\n{link}\n\n"
+        "You're receiving this because your notifications are set to {freq}. You can "
+        "change this any time in your sponsor account.\n\n"
+        "Warm regards,\nThe B40 Assistance Programme Team"
+    ),
+    'ms': (
+        "Salam Penaja,\n\n"
+        "{intro}\n\n{list}\n\n"
+        "Log masuk untuk membaca profil tanpa nama mereka dan memilih seseorang untuk ditaja:\n{link}\n\n"
+        "Anda menerima ini kerana pemberitahuan anda ditetapkan kepada {freq}. Anda boleh "
+        "menukarnya bila-bila masa dalam akaun penaja anda.\n\n"
+        "Salam hormat,\nPasukan Program Bantuan B40"
+    ),
+    'ta': (
+        "அன்புள்ள நிதியுதவியாளரே,\n\n"
+        "{intro}\n\n{list}\n\n"
+        "அவர்களின் அடையாளம் தெரியாத சுயவிவரங்களைப் படித்து, உதவ ஒருவரைத் தேர்ந்தெடுக்க உள்நுழையவும்:\n{link}\n\n"
+        "உங்கள் அறிவிப்புகள் {freq} என அமைக்கப்பட்டுள்ளதால் இதைப் பெறுகிறீர்கள். உங்கள் நிதியுதவியாளர் "
+        "கணக்கில் எப்போது வேண்டுமானாலும் இதை மாற்றலாம்.\n\n"
+        "அன்புடன்,\nB40 உதவித் திட்டக் குழு"
+    ),
+}
+_SPONSOR_NEW_INTRO = {
+    'en': 'A new anonymised student has joined the pool and is waiting for a sponsor:',
+    'ms': 'Seorang pelajar tanpa nama baharu telah menyertai kumpulan dan menunggu penaja:',
+    'ta': 'ஒரு புதிய அடையாளம் தெரியாத மாணவர் சேர்ந்து நிதியுதவியாளருக்காகக் காத்திருக்கிறார்:',
+}
+_SPONSOR_DIGEST_INTRO = {
+    'en': 'Here are the students who joined the pool this week:',
+    'ms': 'Berikut ialah pelajar yang menyertai kumpulan minggu ini:',
+    'ta': 'இந்த வாரம் கூட்டத்தில் சேர்ந்த மாணவர்கள் இங்கே:',
+}
+_SPONSOR_FREQ_WORD = {
+    'realtime': {'en': 'real-time', 'ms': 'masa nyata', 'ta': 'நிகழ்நேரம்'},
+    'weekly': {'en': 'weekly', 'ms': 'mingguan', 'ta': 'வாராந்திரம்'},
+}
+
+
+def _format_sponsor_cards(cards, lang):
+    """Render the anonymised card dicts as a plain-text bullet list. Reads ONLY the
+    allowlist keys the SponsorPoolDetailSerializer produces — never any identity."""
+    lines = []
+    for c in cards:
+        ref = c.get('ref', '')
+        field = c.get('field', '') or '—'
+        bits = [field]
+        if c.get('academic'):
+            bits.append(c['academic'])
+        if c.get('state'):
+            bits.append(c['state'])
+        lines.append(f"• {ref} — {', '.join(bits)}")
+    return '\n'.join(lines)
+
+
+def _send_sponsor_notify(to_email, subjects, cards, freq, lang, intro_map):
+    if not to_email or not cards:
+        return False
+    lang = normalise_lang(lang)
+    frontend = getattr(settings, 'FRONTEND_URL', 'https://halatuju.xyz').rstrip('/')
+    freq_word = _SPONSOR_FREQ_WORD.get(freq, {}).get(lang, freq)
+    try:
+        send_mail(
+            subject=subjects[lang].format(n=len(cards)),
+            message=SPONSOR_NOTIFY_BODIES[lang].format(
+                intro=intro_map[lang], list=_format_sponsor_cards(cards, lang),
+                link=f'{frontend}/sponsor', freq=freq_word,
+            ),
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@halatuju.com'),
+            recipient_list=[to_email],
+        )
+        return True
+    except Exception:
+        logger.warning('Failed to send sponsor notification to %s', to_email, exc_info=True)
+        return False
+
+
+def send_sponsor_new_student_email(to_email, cards, lang='en'):
+    """F3 real-time: alert a sponsor that newly-published student(s) are waiting.
+    ``cards`` = a list of SponsorPoolDetailSerializer dicts (allowlist-safe)."""
+    return _send_sponsor_notify(to_email, SPONSOR_NEW_SUBJECTS, cards, 'realtime', lang, _SPONSOR_NEW_INTRO)
+
+
+def send_sponsor_digest_email(to_email, cards, lang='en'):
+    """F3 weekly: a digest of students published since the sponsor's last digest.
+    ``cards`` = a list of SponsorPoolDetailSerializer dicts (allowlist-safe)."""
+    return _send_sponsor_notify(to_email, SPONSOR_DIGEST_SUBJECTS, cards, 'weekly', lang, _SPONSOR_DIGEST_INTRO)
+
+
 def send_fail_email(to_email, applicant_name, programme_name, lang='en'):
     return _send(to_email, FAIL_SUBJECTS, FAIL_BODIES, applicant_name, programme_name, lang)
 

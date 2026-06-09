@@ -580,11 +580,24 @@ export interface SponsorAccount {
   status?: 'pending' | 'approved' | 'rejected' | 'suspended'
   is_approved?: boolean
   profile_complete?: boolean         // false until phone + source + PDPA consent are set
+  notify_frequency?: 'realtime' | 'weekly' | 'off'   // F3: email-update cadence
   created_at?: string
 }
 
 export async function getSponsorMe(options?: ApiOptions): Promise<SponsorAccount> {
   return apiRequest('/api/v1/sponsor/me/', options)
+}
+
+/** F3: set how often the sponsor is emailed about newly-published students. */
+export async function patchSponsorNotifications(
+  notify_frequency: 'realtime' | 'weekly' | 'off',
+  options?: ApiOptions
+): Promise<SponsorAccount> {
+  return apiRequest('/api/v1/sponsor/notifications/', {
+    method: 'PATCH',
+    body: JSON.stringify({ notify_frequency }),
+    ...options,
+  })
 }
 
 export async function registerSponsor(
