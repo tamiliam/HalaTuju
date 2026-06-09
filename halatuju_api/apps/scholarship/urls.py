@@ -54,6 +54,7 @@ from .views_admin import (
     AdminResolutionItemActionView,
     AdminRunVisionView,
     AdminVerdictMetricsView,
+    ReviewerProfileView,
     AdminSponsorListView,
     AdminSponsorReviewView,
     AdminSuggestGapsView,
@@ -128,4 +129,6 @@ urlpatterns = [
     # S5: officer records the verification verdict (+ optional finalise) + override metrics
     path('admin/scholarship/applications/<int:pk>/record-verdict/', AdminRecordVerdictView.as_view()),
     path('admin/scholarship/verdict-metrics/', AdminVerdictMetricsView.as_view()),
+    # F6: a reviewer's own credentials + contact profile (self-scoped, reviewer/super).
+    path('admin/reviewer-profile/', ReviewerProfileView.as_view()),
 ]

@@ -2,7 +2,8 @@
 from rest_framework import serializers
 
 from .models import (
-    FundingNeed, InterviewSession, ScholarshipApplication, SponsorProfile,
+    FundingNeed, InterviewSession, ReviewerProfile, ScholarshipApplication,
+    SponsorProfile,
 )
 from .serializers import (
     ApplicantDocumentSerializer,
@@ -334,3 +335,24 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
         """Phase C: the latest interview session (draft or submitted), or None."""
         session = obj.interview_sessions.first()  # ordering = -created_at
         return InterviewSessionSerializer(session).data if session else None
+
+
+class ReviewerProfileSerializer(serializers.ModelSerializer):
+    """A reviewer's own credentials + contact details (F6). Narrow + self-scoped:
+    only the six editable fields are writable; the FK is never exposed or accepted.
+    Sensitive staff PII (phone/address) lives only here, never in any outward
+    (student/sponsor) serializer."""
+
+    class Meta:
+        model = ReviewerProfile
+        fields = [
+            'highest_qualification', 'university', 'graduation_year',
+            'field_of_study', 'phone', 'address',
+        ]
+
+    def validate_graduation_year(self, value):
+        # A plausible graduation year (or None). PositiveSmallIntegerField already
+        # bars negatives; keep the upper bound generous and the lower bound sane.
+        if value is not None and not (1950 <= value <= 2100):
+            raise serializers.ValidationError('Enter a valid graduation year.')
+        return value

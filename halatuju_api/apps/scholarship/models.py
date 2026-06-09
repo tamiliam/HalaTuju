@@ -1093,3 +1093,33 @@ class ResolutionItem(models.Model):
 
     def __str__(self):
         return f'ResolutionItem #{self.id} app={self.application_id} {self.code} ({self.status})'
+
+
+class ReviewerProfile(models.Model):
+    """A reviewer's own credentials + contact details (F6, Phase E/F Sprint 5).
+
+    OneToOne to courses.PartnerAdmin (a cross-app FK, like the rest of this app's
+    references to the courses domain). Lives here, not on PartnerAdmin, so the
+    sensitive staff PII (phone/address) sits in its own table with its own RLS and
+    is edited only via the self-scoped /admin/reviewer-profile/ endpoint — it can
+    never reach the student/sponsor allowlist serializers. NO password field
+    (authentication is Supabase's; passwords are never modelled).
+    """
+    partner_admin = models.OneToOneField(
+        'courses.PartnerAdmin', on_delete=models.CASCADE,
+        related_name='reviewer_profile',
+    )
+    highest_qualification = models.CharField(max_length=120, blank=True, default='')
+    university = models.CharField(max_length=200, blank=True, default='')
+    graduation_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    field_of_study = models.CharField(max_length=200, blank=True, default='')
+    # Sensitive staff PII — reviewer + super only, never exposed to students/sponsors.
+    phone = models.CharField(max_length=30, blank=True, default='')
+    address = models.TextField(blank=True, default='')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'reviewer_profiles'
+
+    def __str__(self):
+        return f'ReviewerProfile for {self.partner_admin_id}'
