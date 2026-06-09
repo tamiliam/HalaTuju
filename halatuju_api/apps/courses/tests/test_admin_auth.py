@@ -1,5 +1,19 @@
-from django.test import TestCase
+from unittest.mock import MagicMock, patch
+
+import jwt
+from django.test import TestCase, override_settings
+from rest_framework.test import APIClient
+
 from apps.courses.models import PartnerOrganisation, PartnerAdmin, StudentProfile
+
+TEST_JWT_SECRET = 'test-supabase-jwt-secret'
+
+
+def _token(uid):
+    return jwt.encode(
+        {'sub': uid, 'aud': 'authenticated', 'role': 'authenticated'},
+        TEST_JWT_SECRET, algorithm='HS256',
+    )
 
 
 class PartnerOrgFieldsTest(TestCase):
@@ -121,3 +135,78 @@ class PartnerAdminMixinTest(TestCase):
     def test_orgs_view_exists(self):
         from apps.courses.views_admin import AdminOrgsView
         self.assertTrue(hasattr(AdminOrgsView, 'get'))
+
+
+@override_settings(
+    ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=TEST_JWT_SECRET,
+    SUPABASE_SERVICE_ROLE_KEY='svc-key', SUPABASE_URL='https://x.supabase.co',
+)
+class AdminInviteRoleTest(TestCase):
+    """F5: the inviter picks the new admin's role (super|reviewer|viewer)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.superadmin = PartnerAdmin.objects.create(
+            supabase_user_id='super-uid', is_super_admin=True, is_active=True,
+            name='Super', email='super@halatuju.com',
+        )
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("super-uid")}')
+
+    def _invite(self, email, role=None):
+        payload = {'email': email, 'name': 'Invitee'}
+        if role is not None:
+            payload['role'] = role
+        with patch('apps.courses.views_admin.http_requests.post') as mock_post:
+            mock_post.return_value = MagicMock(status_code=200, text='ok')
+            return self.client.post('/api/v1/admin/invite/', payload, format='json')
+
+    def test_invite_reviewer(self):
+        r = self._invite('rev@example.com', 'reviewer')
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.json()['role'], 'reviewer')
+        a = PartnerAdmin.objects.get(email='rev@example.com')
+        self.assertEqual(a.role, 'reviewer')
+        self.assertFalse(a.is_super_admin)
+
+    def test_invite_viewer(self):
+        self._invite('view@example.com', 'viewer')
+        a = PartnerAdmin.objects.get(email='view@example.com')
+        self.assertEqual(a.role, 'viewer')
+        self.assertFalse(a.is_super_admin)
+
+    def test_invite_super_sets_legacy_flag(self):
+        self._invite('sup2@example.com', 'super')
+        a = PartnerAdmin.objects.get(email='sup2@example.com')
+        self.assertEqual(a.role, 'super')
+        self.assertTrue(a.is_super_admin)  # legacy flag kept in lockstep
+
+    def test_invite_defaults_to_reviewer(self):
+        self._invite('def@example.com')  # no role sent
+        self.assertEqual(PartnerAdmin.objects.get(email='def@example.com').role, 'reviewer')
+
+    def test_invalid_role_falls_back_to_reviewer(self):
+        self._invite('bad@example.com', 'wizard')
+        self.assertEqual(PartnerAdmin.objects.get(email='bad@example.com').role, 'reviewer')
+
+    def test_non_super_cannot_invite(self):
+        PartnerAdmin.objects.create(
+            supabase_user_id='rev-uid', role='reviewer', is_active=True,
+            name='Rev', email='rev-actor@example.com',
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("rev-uid")}')
+        r = self._invite('x@example.com', 'reviewer')
+        self.assertEqual(r.status_code, 403)
+
+    def test_admin_list_returns_role(self):
+        PartnerAdmin.objects.create(
+            supabase_user_id='v-uid', role='viewer', is_active=True,
+            name='V', email='v@example.com',
+        )
+        r = self.client.get('/api/v1/admin/admins/')
+        self.assertEqual(r.status_code, 200)
+        roles = {a['email']: a['role'] for a in r.json()['admins']}
+        self.assertEqual(roles['v@example.com'], 'viewer')
+        self.assertEqual(roles['super@halatuju.com'], 'super')

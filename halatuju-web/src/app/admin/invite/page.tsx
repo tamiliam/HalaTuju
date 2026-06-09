@@ -17,6 +17,7 @@ export default function AdminInvitePage() {
   const [orgPhone, setOrgPhone] = useState('')
   const [adminName, setAdminName] = useState('')
   const [adminEmail, setAdminEmail] = useState('')
+  const [adminRole, setAdminRole] = useState<'super' | 'reviewer' | 'viewer'>('reviewer')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [admins, setAdmins] = useState<AdminItem[]>([])
@@ -48,6 +49,7 @@ export default function AdminInvitePage() {
       const data: Parameters<typeof inviteAdmin>[0] = {
         email: adminEmail,
         name: adminName,
+        role: adminRole,
       }
       if (orgMode === 'existing' && selectedOrgId) {
         data.org_id = Number(selectedOrgId)
@@ -64,6 +66,7 @@ export default function AdminInvitePage() {
       // Reset form
       setAdminName('')
       setAdminEmail('')
+      setAdminRole('reviewer')
       setSelectedOrgId('')
       setNewOrgName('')
       setNewOrgCode('')
@@ -183,6 +186,19 @@ export default function AdminInvitePage() {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             required
           />
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">{t('admin.roleLabel')}</label>
+            <select
+              value={adminRole}
+              onChange={(e) => setAdminRole(e.target.value as 'super' | 'reviewer' | 'viewer')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+            >
+              <option value="reviewer">{t('admin.role.reviewer')}</option>
+              <option value="viewer">{t('admin.role.viewer')}</option>
+              <option value="super">{t('admin.role.super')}</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-500">{t(`admin.roleHint.${adminRole}`)}</p>
+          </div>
         </fieldset>
 
         <button
@@ -204,6 +220,7 @@ export default function AdminInvitePage() {
                 <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.nameHeader')}</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.emailHeader')}</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.orgHeader')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.roleHeader')}</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.statusHeader')}</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">{t('admin.actionHeader')}</th>
               </tr>
@@ -214,6 +231,13 @@ export default function AdminInvitePage() {
                   <td className="px-4 py-3">{a.name}</td>
                   <td className="px-4 py-3 text-gray-500">{a.email}</td>
                   <td className="px-4 py-3">{a.org_name || t('admin.superAdmin')}</td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${
+                      a.role === 'super' ? 'bg-purple-100 text-purple-700'
+                      : a.role === 'reviewer' ? 'bg-blue-100 text-blue-700'
+                      : 'bg-gray-100 text-gray-600'
+                    }`}>{t(`admin.role.${a.role}`)}</span>
+                  </td>
                   <td className="px-4 py-3">
                     {a.is_active ? (
                       <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">{t('admin.active')}</span>
@@ -245,7 +269,7 @@ export default function AdminInvitePage() {
               ))}
               {admins.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-gray-400">{t('admin.noAdmins')}</td>
+                  <td colSpan={6} className="px-4 py-6 text-center text-gray-400">{t('admin.noAdmins')}</td>
                 </tr>
               )}
             </tbody>

@@ -308,6 +308,13 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         new_org_name = request.data.get('new_org_name', '').strip()
         new_org_code = request.data.get('new_org_code', '').strip().lower()
 
+        # F5: the inviter chooses the new admin's role. Default to the safest
+        # workhorse role (reviewer) if unspecified or invalid.
+        valid_roles = {choice[0] for choice in PartnerAdmin.ROLE_CHOICES}
+        role = request.data.get('role', 'reviewer')
+        if role not in valid_roles:
+            role = 'reviewer'
+
         if not email or not name:
             return Response({'error': 'email and name are required'}, status=400)
 
@@ -354,11 +361,16 @@ class AdminInviteView(PartnerAdminMixin, APIView):
             email=email,
             name=name,
             org=org,
+            role=role,
+            # Keep the legacy flag in lockstep with the role (expand-contract):
+            # several call sites still gate on is_super_admin directly.
+            is_super_admin=(role == 'super'),
         )
 
         return Response({
             'message': f'Invite sent to {email}',
             'org': org.name if org else None,
+            'role': role,
         }, status=201)
 
 
@@ -392,6 +404,7 @@ class AdminListView(PartnerAdminMixin, APIView):
                 'name': a.name,
                 'email': a.email,
                 'is_super_admin': a.is_super_admin,
+                'role': 'super' if a.is_super else a.role,
                 'is_active': a.is_active,
                 'org_name': a.org.name if a.org else None,
                 'created_at': a.created_at.isoformat(),
