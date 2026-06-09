@@ -626,3 +626,9 @@
   record the `django_migrations` row), then **enable RLS on `reviewer_profiles`** (deny-by-default, service-role-only
   — it holds sensitive staff PII: phone/address) and re-run `get_advisors`. Must be closed before go-live. (Logged
   2026-06-09, B40 Phase E/F Sprint 5.)
+- TD-099: **No first-sign-in nudge for a reviewer to complete their profile.** F5 (Sprint 6) lets a super admin invite
+  a reviewer with the right role, but the roadmap's secondary "prompt Reviewer profile (F6) completion on first
+  sign-in" was deferred to keep the sprint small — a newly-invited reviewer can reach `/admin` with a blank
+  `ReviewerProfile`. **To resolve:** on the admin dashboard (or `/admin/profile`), show a dismissable banner for a
+  reviewer/super whose `ReviewerProfile` is still blank, linking to `/admin/profile`. Low priority, non-blocking.
+  (Logged 2026-06-09, B40 Phase E/F Sprint 6.)

@@ -480,12 +480,21 @@ deploys batched for go-live).**
   `updateReviewerProfile` + role-gated two-card section saved by the page's one Save button. Stitch-approved
   (`My profile — Reviewer Settings`). **Migration `0051`** (new model → apply via MCP + enable RLS at deploy, TD-098);
   TD-097 (Tamil refine). Retro `docs/retrospective-sprint5-reviewer-profile.md`.
-- **▶ NEXT — Sprint 6 (F5, reviewer invite role selector, BE + FE, small):** extend `/admin/invite` + `AdminInviteView`
-  to set `role` (super|reviewer|viewer) at invite time, and prompt **Reviewer profile** (Sprint 5) completion on first
-  sign-in. Could merge with what S5 built; kept separate per one-feature-per-sprint.
+- **✅ Sprint 6 DONE (F5, reviewer invite role selector, BE + FE, 2026-06-09, no migration):** `AdminInviteView` accepts
+  `role` (super|reviewer|viewer; default reviewer, invalid→reviewer) + keeps `is_super_admin` in lockstep for super;
+  `AdminListView` returns each admin's effective role. `/admin/invite` gains a role select + hint; admin list gains a
+  role badge column. Trilingual `admin.role.*`/`admin.roleHint.*`. No migration (role field pre-existed). TD-099 =
+  deferred first-sign-in profile-completion nudge. Retro `docs/retrospective-sprint6-reviewer-invite-role.md`.
+- **▶ NEXT — Sprint 7 (F7, reviewer assignment/reassignment, BE + FE):** assign a submitted application to a reviewer +
+  reassign. Check-2 dependency is built on `main` (`services.is_ready_for_assignment`, `query_response_sla_days`,
+  migrations 0045-0047, `views_admin` reviewer-scoping); `ScholarshipApplication.assigned_to` FK + `?assigned=me|none|<id>`
+  filter already exist (Phase C). Likely: an assignment gate ("no open queries OR 5-day SLA elapsed") + a reassign
+  endpoint + the assignment UI on the cockpit/list. Confirm exact scope against the roadmap's Sprint 7 detail at start.
 - **Gotchas:** ship dark (flag off) for sponsor-facing; i18n en/ms/ta parity; ≤2 deploys/feature; deploys/pushes
   owner-gated; prod at `0048`, local migrations `0049`+`0050`+`0051` apply migrate-first when the batch deploys
-  (`0051` is a new-model migration → MCP CREATE TABLE + contenttypes workaround + RLS, TD-098).
+  (`0051` is a new-model migration → MCP CREATE TABLE + contenttypes workaround + RLS, TD-098). **A parallel agent is
+  on a pagination sprint in this same tree — commit with explicit `git add <paths>`, never `-A`; check `git status`
+  before each commit.**
 
 ---
 

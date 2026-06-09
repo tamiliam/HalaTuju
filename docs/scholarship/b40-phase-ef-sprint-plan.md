@@ -24,7 +24,7 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 | 3 | Student post-match onboarding — frontend ⭐ ✅ **DONE** on `main` 2026-06-09 (no migration) | F8b | M, FE | 2 |
 | 4 | Sponsor notifications (real-time + digest) ⭐ ✅ **DONE** on `main` 2026-06-09 (migration `0050`) | F3 | M–L, BE+tiny FE | 0 |
 | 5 | Reviewer profile ✅ | F6 | M, BE+FE | — |
-| 6 | Reviewer invite role selector | F5 | S, BE+FE | 5 |
+| 6 | Reviewer invite role selector ✅ | F5 | S, BE+FE | 5 |
 | 7 | **Reviewer assignment / reassignment** (Check-2 unblocked) | F7 | M, BE+FE | 6, Check-2 |
 | 8 | Sponsor profile + sponsored-students | F2 | M, BE+FE | 0 |
 | 9 | Student profile + results + relay — backend | F9a | L, BE | 0, 8 |
@@ -85,10 +85,10 @@ Shipped (held local). `ReviewerProfile` in `apps/scholarship` (OneToOne → `cou
 self-scoped `GET/PATCH /admin/reviewer-profile/` + role-gated cards on the existing `/admin/profile`. Migration `0051`.
 Retro `docs/retrospective-sprint5-reviewer-profile.md`.
 
-### Sprint 6 — F5 Reviewer invite role selector · BE + FE (small)
-**Deliverable:** invite a reviewer with the right role.
-- Extend `/admin/invite` (`app/admin/invite/page.tsx`) + `AdminInviteView` to set `role='reviewer'` (selector: super|reviewer|viewer) and prompt **Reviewer profile** (Sprint 5) completion on first sign-in.
-- *(Could merge with Sprint 5; kept separate per one-feature-per-sprint.)*
+### Sprint 6 — F5 Reviewer invite role selector · BE + FE ✅ DONE (2026-06-09)
+Shipped (held local). `AdminInviteView` accepts `role` (super|reviewer|viewer; default reviewer) + `is_super_admin`
+lockstep; `AdminListView` returns role; `/admin/invite` role select + admin-list role badge. No migration.
+First-sign-in profile-completion nudge deferred (TD-099). Retro `docs/retrospective-sprint6-reviewer-invite-role.md`.
 
 ### Sprint 7 — F7 Reviewer assignment / reassignment · BE + FE
 **Deliverable:** super-admins assign a submitted application to a reviewer; reassign it; reviewers see only what's assigned to them.
