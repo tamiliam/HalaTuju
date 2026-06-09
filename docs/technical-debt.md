@@ -615,3 +615,14 @@
   English (the `send_sponsor_*` templates are trilingual and ready). **To resolve:** add a `locale` to `Sponsor`
   (captured at registration) and pass it through `sponsor_notifications`. Low priority. (Logged 2026-06-09, B40 Phase
   E/F Sprint 4.)
+- TD-097: **The F6 reviewer-credentials Tamil copy is a first-draft.** `admin.reviewer.*` Tamil strings were written
+  to ship trilingual but need the owner's refinement (joins the Tamil-refine queue with TD-091/094). English + Malay
+  are final. Low risk — the page is staff-only and held local until the batch deploy. **To resolve:** owner Tamil
+  refine before Sprint 12 go-live. (Logged 2026-06-09, B40 Phase E/F Sprint 5.)
+- TD-098: **Migration `0051_reviewerprofile` (new model) needs the contenttypes workaround + RLS at deploy.** The
+  `reviewer_profiles` table is created by a new-model migration; per the TD-058 pattern, prod has no
+  contenttypes/auth tables, so a plain `manage.py migrate` exits non-zero on the `post_migrate` signal even when the
+  DDL commits. **To resolve:** at the Phase E/F batch deploy, apply `0051` via the Supabase MCP (CREATE TABLE +
+  record the `django_migrations` row), then **enable RLS on `reviewer_profiles`** (deny-by-default, service-role-only
+  — it holds sensitive staff PII: phone/address) and re-run `get_advisors`. Must be closed before go-live. (Logged
+  2026-06-09, B40 Phase E/F Sprint 5.)

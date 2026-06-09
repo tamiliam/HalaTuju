@@ -23,7 +23,7 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 | 2 | Student post-match onboarding — backend ⭐ ✅ **DONE** on `main` 2026-06-08 (migration `0049`) | F8a | M, BE | — |
 | 3 | Student post-match onboarding — frontend ⭐ ✅ **DONE** on `main` 2026-06-09 (no migration) | F8b | M, FE | 2 |
 | 4 | Sponsor notifications (real-time + digest) ⭐ ✅ **DONE** on `main` 2026-06-09 (migration `0050`) | F3 | M–L, BE+tiny FE | 0 |
-| 5 | Reviewer profile | F6 | M, BE+FE | — |
+| 5 | Reviewer profile ✅ | F6 | M, BE+FE | — |
 | 6 | Reviewer invite role selector | F5 | S, BE+FE | 5 |
 | 7 | **Reviewer assignment / reassignment** (Check-2 unblocked) | F7 | M, BE+FE | 6, Check-2 |
 | 8 | Sponsor profile + sponsored-students | F2 | M, BE+FE | 0 |
@@ -80,10 +80,10 @@ ONLY from `SponsorPoolDetailSerializer` (allowlist-safe by construction) + soft 
 Retro `docs/retrospective-sprint4-sponsor-notifications.md`. TD-095 (create 2 Cloud Scheduler jobs at deploy), TD-096
 (sponsor email locale). **All four ⭐ must-haves (S1–S4) done.**
 
-### Sprint 5 — F6 Reviewer profile · BE + FE
-**Deliverable:** a reviewer's own credentials + contact profile.
-- New `ReviewerProfile` 1:1 to `PartnerAdmin` (recommended over fields-on-PartnerAdmin, for staff-PII segregation): `highest_qualification, university, graduation_year, field_of_study, phone, address`. **No password field** (hashed by auth, never modelled).
-- Self-edit endpoint (scoped to self) + a profile page under `/admin`. **`phone`/`address` are sensitive PII** — reviewer + super only; in the PDPA retention policy; never exposed to students/sponsors.
+### Sprint 5 — F6 Reviewer profile · BE + FE ✅ DONE (2026-06-09)
+Shipped (held local). `ReviewerProfile` in `apps/scholarship` (OneToOne → `courses.PartnerAdmin`, cross-app FK) +
+self-scoped `GET/PATCH /admin/reviewer-profile/` + role-gated cards on the existing `/admin/profile`. Migration `0051`.
+Retro `docs/retrospective-sprint5-reviewer-profile.md`.
 
 ### Sprint 6 — F5 Reviewer invite role selector · BE + FE (small)
 **Deliverable:** invite a reviewer with the right role.
