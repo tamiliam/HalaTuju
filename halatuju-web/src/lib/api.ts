@@ -621,6 +621,9 @@ export interface SponsorPoolCard {
   academic: string
   funding_categories: string[]
   programme_months: number | null
+  award_amount: string | null   // E3: admin-set; non-identifying
+  // F2: coarse, non-identifying progress band — null until the student is sponsored.
+  progress_state: 'on_track' | 'semester_completed' | 'needs_attention' | 'graduated' | null
 }
 
 export interface SponsorPoolDetail extends SponsorPoolCard {
@@ -635,6 +638,30 @@ export async function getSponsorPool(options?: ApiOptions): Promise<{ students: 
 
 export async function getSponsorPoolDetail(id: number, options?: ApiOptions): Promise<SponsorPoolDetail> {
   return apiRequest(`/api/v1/sponsor/pool/${id}/`, options)
+}
+
+// F2 — a sponsor's own allocation: the ANONYMISED student card + money/status only.
+export interface SponsorSponsorship {
+  id: number
+  status: 'offered' | 'active' | 'lapsed' | 'cancelled'
+  amount: string
+  offered_at: string
+  accept_deadline: string | null
+  decided_at: string | null
+  student: SponsorPoolCard
+}
+
+export interface SponsorWallet {
+  balance: string
+  donations: Array<{ amount: string; reference: string; created_at: string }>
+  sponsorships: SponsorSponsorship[]
+}
+
+/** F2 — the sponsor's "My students" home: directed-giving balance + their holding
+ *  (offered/active) allocations, each carrying the anonymised student card. 404s
+ *  while the pool flag is off (callers treat that as "not available yet"). */
+export async function getSponsorWallet(options?: ApiOptions): Promise<SponsorWallet> {
+  return apiRequest('/api/v1/sponsor/wallet/', options)
 }
 
 /** F1 — public live counter for the sponsor landing. No auth (a public marketing

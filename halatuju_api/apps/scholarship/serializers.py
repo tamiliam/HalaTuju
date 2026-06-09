@@ -59,9 +59,15 @@ class SponsorPoolCardSerializer(serializers.Serializer):
     funding_categories = serializers.SerializerMethodField()
     programme_months = serializers.SerializerMethodField()
     award_amount = serializers.SerializerMethodField()  # E3: admin-set; non-identifying
+    progress_state = serializers.SerializerMethodField()  # F2: coarse, non-identifying
 
     def get_ref(self, app):
         return pool.pool_ref(app.id)
+
+    def get_progress_state(self, app):
+        # F2: null until the student is sponsored; on_track thereafter (stub — F9a
+        # computes the real band from semester results). Non-identifying.
+        return pool.derive_progress_state(app)
 
     def get_award_amount(self, app):
         return str(app.award_amount) if app.award_amount is not None else None

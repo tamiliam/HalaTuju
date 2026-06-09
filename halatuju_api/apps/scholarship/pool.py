@@ -47,6 +47,21 @@ def has_active_share_consent(application):
     ).exists()
 
 
+# F2: a coarse, non-identifying progress signal a sponsor sees for a student they
+# fund. The real derivation (from the latest-semester results upload) lands in F9a
+# (Sprint 9); this is the stub: a student isn't "in progress" until they're actually
+# sponsored, and once sponsored they default to on_track until results say otherwise.
+PROGRESS_STATES = ('on_track', 'semester_completed', 'needs_attention', 'graduated')
+
+
+def derive_progress_state(application):
+    """The student's progress band, or None when there's nothing to report yet
+    (not sponsored). STUB until F9a computes it from semester results."""
+    if application is None or application.status != 'sponsored':
+        return None
+    return 'on_track'
+
+
 def is_pool_eligible(application):
     """A single application is poolable iff its SponsorProfile is anon-published
     AND it has an active share_with_sponsors consent."""
