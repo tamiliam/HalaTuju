@@ -2732,6 +2732,7 @@
     "sourceHeader": "Source",
     "dateHeader": "Date",
     "showingRange": "Showing {start}–{end} of {total} students",
+    "perPage": "{n} / page",
     "deleteFailed": "Failed to delete",
     "strong": "Strong",
     "moderate": "Moderate",
