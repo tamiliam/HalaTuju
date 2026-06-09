@@ -392,6 +392,8 @@ class TestAdminAnonProfile(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.app = _make_eligible_app(self.cohort, anon_published=False)
+        self.app.assigned_to = PartnerAdmin.objects.get(supabase_user_id='rev')
+        self.app.save(update_fields=['assigned_to'])
 
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid, "x@x.com")}')

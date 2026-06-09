@@ -155,7 +155,8 @@ class TestAdminRejectEndpoint(TestCase):
     def _app(self, status):
         p = StudentProfile.objects.create(supabase_user_id=f'e{StudentProfile.objects.count()}')
         return ScholarshipApplication.objects.create(
-            cohort=self.cohort, profile=p, status=status, notify_email='stu@x.com')
+            cohort=self.cohort, profile=p, status=status, notify_email='stu@x.com',
+            assigned_to=PartnerAdmin.objects.get(supabase_user_id=REVIEWER))
 
     def _url(self, app):
         return f'/api/v1/admin/scholarship/applications/{app.id}/reject/'

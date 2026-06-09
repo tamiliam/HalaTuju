@@ -65,6 +65,14 @@ class PhaseCBase(TestCase):
             daily_life='Help at home each evening', fears='Worried about fees',
         )
 
+    def _assigned_app(self, status='shortlisted'):
+        """An application assigned to the reviewer — the realistic 'reviewing my own
+        assigned case' scenario now that reviewers are assignment-scoped."""
+        app = self._make_app(status=status)
+        app.assigned_to = self.reviewer
+        app.save(update_fields=['assigned_to'])
+        return app
+
     def _complete(self, app):
         """Satisfy all 7 completeness parts for ``app`` (gate v2: STR route + father
         earner, with a compulsory offer letter + the route's income docs)."""
@@ -106,14 +114,14 @@ class TestConfirm(PhaseCBase):
 
     @patch('apps.scholarship.services.send_profile_complete_admin_email')
     def test_confirm_is_idempotent(self, _mock):
-        app = self._complete(self._make_app(status='profile_complete'))
+        app = self._complete(self._assigned_app(status='profile_complete'))
         self._auth(STUDENT)
         r = self.client.post(f'/api/v1/scholarship/applications/{app.id}/confirm/')
         self.assertEqual(r.status_code, 200)  # no-op, not an error
 
     def test_student_can_still_edit_after_confirm(self):
         """Completion is not a freeze — PATCH details still works at profile_complete."""
-        app = self._complete(self._make_app(status='profile_complete'))
+        app = self._complete(self._assigned_app(status='profile_complete'))
         self._auth(STUDENT)
         r = self.client.patch(
             f'/api/v1/scholarship/applications/{app.id}/',
@@ -134,7 +142,7 @@ class TestAcceptGate(PhaseCBase):
 
     def test_accept_complete_succeeds(self):
         from django.utils import timezone
-        app = self._complete(self._make_app(status='profile_complete'))
+        app = self._complete(self._assigned_app(status='profile_complete'))
         # Check-3 audit gate: the reviewer must have recorded their verdict before close.
         ScholarshipApplication.objects.filter(pk=app.id).update(verdict_decided_at=timezone.now())
         self._auth(SUPER)
@@ -144,7 +152,7 @@ class TestAcceptGate(PhaseCBase):
         self.assertEqual(app.status, 'accepted')
 
     def test_viewer_cannot_accept(self):
-        app = self._complete(self._make_app(status='profile_complete'))
+        app = self._complete(self._assigned_app(status='profile_complete'))
         self._auth(VIEWER)
         r = self.client.post(f'/api/v1/admin/scholarship/applications/{app.id}/verify-accept/')
         self.assertEqual(r.status_code, 403)
@@ -159,7 +167,7 @@ class TestListFilters(PhaseCBase):
         )
 
     def test_status_profile_complete_filter(self):
-        self._complete(self._make_app(status='profile_complete'))
+        self._complete(self._assigned_app(status='profile_complete'))
         self._second_app(status='shortlisted')
         self._auth(SUPER)
         r = self.client.get('/api/v1/admin/scholarship/applications/?status=profile_complete')
@@ -280,7 +288,7 @@ class TestAssignment(PhaseCBase):
 
 class TestInterview(PhaseCBase):
     def test_draft_then_submit_advances_status(self):
-        app = self._complete(self._make_app(status='profile_complete'))
+        app = self._complete(self._assigned_app(status='profile_complete'))
         self._auth(REVIEWER)
         # Create a draft → status moves to interviewing.
         r = self.client.post(
@@ -299,7 +307,7 @@ class TestInterview(PhaseCBase):
         self.assertEqual(InterviewSession.objects.filter(application=app, status='submitted').count(), 1)
 
     def test_bad_verdict_rejected(self):
-        app = self._complete(self._make_app(status='profile_complete'))
+        app = self._complete(self._assigned_app(status='profile_complete'))
         self._auth(REVIEWER)
         r = self.client.post(
             f'/api/v1/admin/scholarship/applications/{app.id}/interview/',
@@ -309,7 +317,7 @@ class TestInterview(PhaseCBase):
         self.assertEqual(r.json()['code'], 'bad_findings')
 
     def test_rationale_too_long_rejected(self):
-        app = self._complete(self._make_app(status='profile_complete'))
+        app = self._complete(self._assigned_app(status='profile_complete'))
         self._auth(REVIEWER)
         r = self.client.post(
             f'/api/v1/admin/scholarship/applications/{app.id}/interview/',
@@ -318,7 +326,7 @@ class TestInterview(PhaseCBase):
         self.assertEqual(r.status_code, 400)
 
     def test_viewer_cannot_write_interview(self):
-        app = self._complete(self._make_app(status='profile_complete'))
+        app = self._complete(self._assigned_app(status='profile_complete'))
         self._auth(VIEWER)
         r = self.client.post(
             f'/api/v1/admin/scholarship/applications/{app.id}/interview/',
@@ -337,7 +345,7 @@ class TestInterview(PhaseCBase):
 class TestRequestInfo(PhaseCBase):
     @patch('apps.scholarship.views_admin.send_request_info_email')
     def test_request_info_stores_note_and_emails(self, mock_email):
-        app = self._complete(self._make_app(status='profile_complete'))
+        app = self._complete(self._assigned_app(status='profile_complete'))
         self._auth(REVIEWER)
         r = self.client.post(
             f'/api/v1/admin/scholarship/applications/{app.id}/request-info/',
@@ -351,7 +359,7 @@ class TestRequestInfo(PhaseCBase):
         mock_email.assert_called_once()
 
     def test_request_info_requires_note(self):
-        app = self._make_app()
+        app = self._assigned_app()
         self._auth(REVIEWER)
         r = self.client.post(
             f'/api/v1/admin/scholarship/applications/{app.id}/request-info/',
@@ -378,7 +386,7 @@ class TestStickyProfileCompleteRevert(PhaseCBase):
 
     def _confirmed(self):
         from django.utils import timezone
-        app = self._complete(self._make_app(status='profile_complete'))
+        app = self._complete(self._assigned_app(status='profile_complete'))
         app.profile_completed_at = timezone.now()
         app.save(update_fields=['profile_completed_at'])
         return app

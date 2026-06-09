@@ -179,9 +179,9 @@ class AdminVerifyAcceptView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
         # Must be a live pre-accept state (not already accepted/rejected/withdrawn).
         if app.status not in ('shortlisted', 'profile_complete', 'interviewing', 'interviewed'):
             return Response(
@@ -245,9 +245,9 @@ class AdminRejectView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
         category = request.data.get('category')
         try:
             admin_reject(app, admin, category)
@@ -270,9 +270,9 @@ class AdminApplicationRefereeView(_AdminBase):
     def get(self, request, pk):
         if not self.get_admin(request):
             return self._deny()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
         refs = Referee.objects.filter(application=app)
         return Response({'referees': RefereeSerializer(refs, many=True).data})
 
@@ -282,9 +282,9 @@ class AdminApplicationRefereeView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
         serializer = RefereeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         ref = Referee.objects.create(application=app, **serializer.validated_data)
@@ -317,8 +317,9 @@ class AdminRunVisionView(_AdminBase):
     stays the real identity gate. Returns the updated document.
     """
     def post(self, request, pk, doc_id):
-        if not self.get_admin(request):
-            return self._deny()
+        app, _err = self._scoped_application(request, pk)   # reviewer assignment-scoped; partner none
+        if _err:
+            return _err
         doc = ApplicantDocument.objects.filter(pk=doc_id, application_id=pk).first()
         if doc is None:
             return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -331,7 +332,7 @@ class AdminRunVisionView(_AdminBase):
             _vision.read_text_document(doc)
         elif doc.doc_type in SUPPORTING_NAME_CHECK_TYPES:
             # Replicate the upload-time supporting-doc processing (forced, not throttled).
-            profile = getattr(self._get_application(pk), 'profile', None)
+            profile = getattr(app, 'profile', None)
             names = [getattr(profile, 'name', '') or '']
             names += [g.get('name', '') for g in (getattr(profile, 'guardians', None) or [])
                       if isinstance(g, dict)]
@@ -358,9 +359,9 @@ class AdminGenerateProfileView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
         # Optional output language ('en'/'ms'); defaults to the applicant's locale.
         # Shared store path (Check 2 STEP 3): same as the auto-trigger, with claim-gating.
         from .services import generate_ready_profile
@@ -380,9 +381,9 @@ class AdminFinaliseProfileView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
         sp = SponsorProfile.objects.filter(application=app).first()
         if sp is None or not sp.current_markdown.strip():
             return Response({'error': 'Draft a profile first.', 'code': 'no_draft'},
@@ -413,9 +414,9 @@ class AdminGenerateAnonProfileView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
         result = generate_anonymous_profile(app, language=request.data.get('language'))
         if 'error' in result:
             return Response({'error': result['error']}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
@@ -474,9 +475,9 @@ class AdminSuggestGapsView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
         from .gap_engine import generate_interview_gaps
         result = generate_interview_gaps(app, language=request.data.get('language'))
         if 'error' in result:
@@ -556,9 +557,9 @@ class AdminInterviewView(_AdminBase):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
         session = app.interview_sessions.first()  # ordering = -created_at
         data = InterviewSessionSerializer(session).data if session else None
         return Response({'session': data, 'agenda': _interview_agenda(app)})
@@ -569,9 +570,9 @@ class AdminInterviewView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
         findings = request.data.get('findings', {}) or {}
         err = _validate_findings(findings)
         if err:
@@ -603,9 +604,9 @@ class AdminInterviewSubmitView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
         session = app.interview_sessions.filter(status='draft').first()
         if session is None:
             return Response({'error': 'No draft interview to submit.', 'code': 'no_draft'},
@@ -677,9 +678,9 @@ class AdminSetAwardAmountView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
         from decimal import Decimal, InvalidOperation
         raw = request.data.get('amount')
         try:
@@ -744,9 +745,9 @@ class AdminRequestInfoView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
         note = (request.data.get('note', '') or '').strip()
         if not note:
             return Response({'error': 'A note is required.', 'code': 'note_required'},
@@ -770,9 +771,9 @@ class AdminResolutionItemView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
         kind = (request.data.get('kind') or '').strip()
         prompt = (request.data.get('prompt') or '').strip()
         if kind not in ('doc', 'confirm', 'explanation'):
@@ -828,9 +829,9 @@ class AdminRecordVerdictView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
 
         raw = request.data.get('officer_verdict')
         if not isinstance(raw, dict):
@@ -921,9 +922,9 @@ class AdminAssignReviewerView(_AdminBase):
             return self._deny()
         if not self.has_role(admin, 'super'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, _err = self._scoped_application(request, pk)
+        if _err:
+            return _err
 
         reviewer_id = request.data.get('reviewer_id')
         reviewer = None
