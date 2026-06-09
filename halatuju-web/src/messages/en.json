@@ -2183,6 +2183,7 @@
       "title": "B40 Assistance Applications",
       "desc": "Review applicants, draft and publish sponsor profiles.",
       "loadFailed": "Could not load applications.",
+      "showingRange": "Showing {start}–{end} of {total} applications",
       "allStatuses": "All statuses",
       "allBuckets": "All buckets",
       "allAssignees": "Anyone",

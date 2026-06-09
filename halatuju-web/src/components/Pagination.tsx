@@ -20,6 +20,12 @@ interface PaginationProps {
   /** Optional page-size selector. Provide both to show it. */
   pageSizeOptions?: number[]
   onPageSizeChange?: (size: number) => void
+  /**
+   * i18n key for the "Showing {start}–{end} of {total}" label, so each table
+   * can use its own noun (students / applications / …). Must accept
+   * {start}/{end}/{total} params. Defaults to the students wording.
+   */
+  rangeKey?: string
 }
 
 export function Pagination({
@@ -30,6 +36,7 @@ export function Pagination({
   onPageChange,
   pageSizeOptions,
   onPageSizeChange,
+  rangeKey = 'admin.showingRange',
 }: PaginationProps) {
   const { t } = useT()
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1
@@ -39,7 +46,7 @@ export function Pagination({
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mt-4 text-sm text-gray-500">
       <div className="flex items-center gap-3">
         <span>
-          {t('admin.showingRange', { start: String(start), end: String(end), total: String(total) })}
+          {t(rangeKey, { start: String(start), end: String(end), total: String(total) })}
         </span>
         {pageSizeOptions && onPageSizeChange && (
           <select
