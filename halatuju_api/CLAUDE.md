@@ -505,9 +505,11 @@ deploys batched for go-live).**
   **`promotional_use` consent** (server-side 18+ gate, version bump). **Graduation relay:** new `GraduationMessage`
   (raw/scrubbed text, scan_result, status, approved_by) → submit → `scan_anon_for_identifiers` blocks on any leak →
   myNADI human-approve → surfaced linked to the anon `ref` (never a direct channel). Tests: relay blocks planted
-  identifiers; promo consent enforces 18+; results slip never appears in sponsor output. **⚠ F9 micro-decision (owner
-  gate): confirm the `promotional_use` consent type + version, and the `GraduationMessage` model shape — surface these
-  for sign-off at sprint start.** Likely migration `0053` (new model → MCP+RLS).
+  identifiers; promo consent enforces 18+; results slip never appears in sponsor output. Likely migration `0053` (new
+  model → MCP+RLS). **✅ F9 micro-decisions MADE (owner, 2026-06-09): (1) relay = SCAN + staff-approve + anonymous
+  (`scan_anon_for_identifiers` blocks on any leak → myNADI approve → shown as "a message from a student you supported"
+  linked to the anon `ref`, never a direct channel); (2) `promotional_use` = a SEPARATE versioned consent, server-side
+  18+ ONLY (a minor can never grant it — NOT a guardian path), bump `CONSENT_VERSION`.**
 - **Gotchas:** ship dark (flag off) for sponsor-facing; i18n en/ms/ta parity; ≤2 deploys/feature; deploys/pushes
   owner-gated; prod at `0048`, local migrations `0049`–`0052` apply migrate-first when the batch deploys (`0051`/`0052`
   are new-model migrations → MCP CREATE TABLE + contenttypes workaround + RLS, TD-098/TD-100). **A parallel agent has
