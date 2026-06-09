@@ -2403,3 +2403,11 @@ covered by the weekly digest.
 subscribed (they see them in the pool / digest instead).
 **Revisit if:** sponsors expect a "catch-up" real-time alert on first subscribing (then track notification per
 (sponsor, student) instead of a single per-student stamp).
+
+## Pagination is opted in per-view, not a global DRF default — Partner pagination, 2026-06-09
+
+**Decision:** Add `FlexiblePageNumberPagination` (`halatuju/pagination.py`) and apply it explicitly on each list view that needs it (`PartnerStudentListView`, `AdminApplicationListView`), rather than setting `DEFAULT_PAGINATION_CLASS` in `REST_FRAMEWORK`.
+**Alternatives considered:** the MySkills approach — a global default pagination class that every viewset inherits.
+**Rationale:** MySkills was built that way from day one; HalaTuju has ~30 existing list endpoints that return full lists by contract (dashboards, pickers, exports, the verdict/cockpit serializers). A global default would silently truncate all of them and would have collided with the parallel reviewer track editing the `scholarship` app. Per-view opt-in keeps the blast radius to exactly the two tables converted.
+**Trade-offs:** each new table that wants pagination must opt in (one paginator + `.envelope()` call) instead of getting it for free; the `.envelope()` helper exists to keep that boilerplate to ~4 lines and preserve each view's bespoke top-level fields.
+**Revisit if:** the API is ever rebuilt around uniform `ListAPIView`/ViewSets with a consistent `{count,next,previous,results}` contract — then a global default becomes safe and removes the per-view calls.
