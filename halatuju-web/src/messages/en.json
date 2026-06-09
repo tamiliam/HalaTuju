@@ -2936,7 +2936,38 @@
       "phone": "Phone number",
       "address": "Address",
       "saved": "Credentials saved.",
-      "saveFailed": "Could not save your credentials."
+      "saveFailed": "Could not save your credentials.",
+      "qualOpts": {
+        "spm": "SPM",
+        "stpm": "STPM",
+        "matriculation": "Matriculation",
+        "diploma": "Diploma",
+        "bachelor": "Bachelor's Degree",
+        "master": "Master's Degree",
+        "phd": "PhD",
+        "professional": "Professional Qualification"
+      },
+      "fieldOpts": {
+        "engineering": "Engineering",
+        "it": "Computer Science / IT",
+        "medicine": "Medicine & Health Sciences",
+        "science": "Science",
+        "business": "Business & Economics",
+        "accounting": "Accounting & Finance",
+        "law": "Law",
+        "education": "Education",
+        "arts": "Arts & Humanities",
+        "social": "Social Sciences"
+      },
+      "other": "Other",
+      "selectQualification": "Select qualification",
+      "selectField": "Select field of study",
+      "universityHint": "Type to search (e.g. UTM)…",
+      "street": "Street address",
+      "postcode": "Postcode",
+      "city": "City",
+      "state": "State",
+      "selectState": "Select state"
     },
     "inviteAs": "Invite as",
     "inviteHeading": {

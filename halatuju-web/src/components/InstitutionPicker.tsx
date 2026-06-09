@@ -5,7 +5,8 @@ import { useT } from '@/lib/i18n'
 
 export interface InstitutionOption {
   name: string
-  hint?: string   // secondary text, e.g. state
+  hint?: string       // secondary text, e.g. state or acronym
+  keywords?: string   // extra searchable text (acronyms, aliases) — matched, not shown
 }
 
 /**
@@ -22,12 +23,17 @@ export default function InstitutionPicker({
   onChange,
   placeholder,
   limit = 50,
+  allowCustom = false,
 }: {
   options: InstitutionOption[]
   value: string
   onChange: (name: string) => void
   placeholder?: string
   limit?: number
+  // When true, a typed value with no match is kept (free text) on blur — for
+  // private/foreign/unknown entries. When false (default), blur snaps back to the
+  // current selection (the constrained apply-form behaviour).
+  allowCustom?: boolean
 }) {
   const { t } = useT()
   const [open, setOpen] = useState(false)
@@ -36,7 +42,9 @@ export default function InstitutionPicker({
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const q = query.trim().toLowerCase()
-  const filtered = q ? options.filter((o) => o.name.toLowerCase().includes(q)) : options
+  const filtered = q
+    ? options.filter((o) => `${o.name} ${o.keywords ?? ''}`.toLowerCase().includes(q))
+    : options
   const matches = filtered.slice(0, limit)
   const truncated = filtered.length > matches.length
 
@@ -64,7 +72,11 @@ export default function InstitutionPicker({
         placeholder={placeholder ?? t('scholarship.apply.plan.schoolPlaceholder')}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); setActive(-1) }}
         onFocus={() => setOpen(true)}
-        onBlur={() => { blurTimer.current = setTimeout(() => { setOpen(false); setQuery(value ?? '') }, 120) }}
+        onBlur={() => { blurTimer.current = setTimeout(() => {
+          setOpen(false)
+          if (allowCustom) { const v = query.trim(); if (v !== value) onChange(v) }
+          else setQuery(value ?? '')
+        }, 120) }}
         onKeyDown={(e) => {
           if (!open || matches.length === 0) return
           if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(a + 1, matches.length - 1)) }

@@ -99,6 +99,17 @@ class TestReviewerProfile(TestCase):
         self.assertEqual(prof.phone, '012-345 6789')
         self.assertEqual(prof.graduation_year, 2015)
 
+    def test_patch_structured_address(self):
+        self._auth('reviewer-uid')
+        r = self.client.patch(self.URL, {
+            'street_address': '12 Jalan Ilmu', 'postcode': '50480',
+            'city': 'Kuala Lumpur', 'state': 'W.P. Kuala Lumpur',
+        }, format='json')
+        self.assertEqual(r.status_code, 200)
+        prof = ReviewerProfile.objects.get(partner_admin=self.reviewer)
+        self.assertEqual((prof.street_address, prof.postcode, prof.city, prof.state),
+                         ('12 Jalan Ilmu', '50480', 'Kuala Lumpur', 'W.P. Kuala Lumpur'))
+
     def test_patch_is_partial(self):
         ReviewerProfile.objects.create(partner_admin=self.reviewer, phone='OLD', university='UM')
         self._auth('reviewer-uid')

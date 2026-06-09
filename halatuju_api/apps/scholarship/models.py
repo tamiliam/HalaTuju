@@ -1119,7 +1119,12 @@ class ReviewerProfile(models.Model):
     field_of_study = models.CharField(max_length=200, blank=True, default='')
     # Sensitive staff PII — reviewer + super only, never exposed to students/sponsors.
     phone = models.CharField(max_length=30, blank=True, default='')
-    address = models.TextField(blank=True, default='')
+    address = models.TextField(blank=True, default='')   # legacy single-line; kept for back-compat
+    # Structured address (2026-06 redesign), mirroring the student address split.
+    street_address = models.CharField(max_length=255, blank=True, default='')
+    postcode = models.CharField(max_length=10, blank=True, default='')
+    city = models.CharField(max_length=100, blank=True, default='')
+    state = models.CharField(max_length=50, blank=True, default='')
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
