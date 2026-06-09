@@ -769,6 +769,8 @@ class CronRunView(APIView):
         'query-emails': 'send_due_query_emails',
         'query-reminders': 'send_query_reminders',
         'autogenerate-profiles': 'autogenerate_profiles',
+        'sponsor-realtime': 'send_sponsor_realtime',   # F3: hourly
+        'sponsor-digests': 'send_sponsor_digests',     # F3: weekly
     }
 
     def post(self, request, job):

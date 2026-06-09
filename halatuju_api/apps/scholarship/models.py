@@ -803,6 +803,10 @@ class SponsorProfile(models.Model):
     anon_generated_at = models.DateTimeField(null=True, blank=True)
     anon_published = models.BooleanField(default=False)
     anon_published_at = models.DateTimeField(null=True, blank=True)
+    # F3: stamped once this published student has been included in a real-time
+    # sponsor alert batch, so the hourly job never re-sends them. Reset to null on
+    # (re)publish so a freshly-published student is alerted exactly once.
+    realtime_notified_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -894,6 +898,14 @@ class Sponsor(models.Model):
     # PUBLIC/untrusted sponsor does not. Default True so every existing + launch
     # sponsor is trusted; flip to False per-sponsor when public onboarding opens.
     is_trusted = models.BooleanField(default=True)
+    # F3 (Phase E/F): how often this sponsor wants to hear about newly-published
+    # anonymised students. 'realtime' = an hourly-batched alert, 'weekly' = a
+    # weekly digest, 'off' = no emails. Default 'weekly' (a gentle cadence).
+    NOTIFY_FREQUENCIES = [('realtime', 'Real-time'), ('weekly', 'Weekly digest'), ('off', 'Off')]
+    notify_frequency = models.CharField(max_length=10, choices=NOTIFY_FREQUENCIES, default='weekly')
+    # When the last weekly digest was sent to THIS sponsor; the next digest only
+    # includes students published after it (so a sponsor never gets a duplicate).
+    last_digest_sent_at = models.DateTimeField(null=True, blank=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
     reviewed_by = models.CharField(
         max_length=254, blank=True, default='',

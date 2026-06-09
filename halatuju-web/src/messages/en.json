@@ -132,6 +132,16 @@
     "approvedTitle": "You're approved",
     "approvedBody": "Welcome aboard. You can soon browse students who need support — always anonymously.",
     "comingSoon": "Browsing students is coming soon. We'll email you the moment it's ready.",
+    "notify": {
+      "title": "Email updates",
+      "intro": "How often should we email you about new students?",
+      "realtime": "As they're added",
+      "realtimeDesc": "A short alert whenever a new student joins the pool.",
+      "weekly": "Weekly digest",
+      "weeklyDesc": "One email a week summarising new students.",
+      "off": "Off",
+      "offDesc": "No emails — I'll check the pool myself."
+    },
     "inactiveTitle": "Account not active",
     "inactiveBody": "Your sponsor account isn't active right now. If you think this is a mistake, please contact us.",
     "backHome": "Back to home"

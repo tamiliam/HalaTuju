@@ -18,7 +18,8 @@ class SponsorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sponsor
         fields = ['id', 'name', 'email', 'phone', 'source', 'organisation',
-                  'status', 'is_approved', 'profile_complete', 'created_at']
+                  'status', 'is_approved', 'profile_complete', 'notify_frequency',
+                  'created_at']
         read_only_fields = fields
 
     def get_profile_complete(self, obj):

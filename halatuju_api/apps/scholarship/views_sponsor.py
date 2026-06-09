@@ -128,6 +128,24 @@ class SponsorMeView(SponsorMixin, APIView):
         return Response(SponsorSerializer(sponsor).data)
 
 
+class SponsorNotificationsView(SponsorMixin, APIView):
+    """PATCH /api/v1/sponsor/notifications/ {notify_frequency: realtime|weekly|off}
+    — the sponsor sets how often they hear about newly-published students (F3).
+    Self-only; available to any registered sponsor (not gated on approval)."""
+    def patch(self, request):
+        sponsor = self.get_sponsor(request)
+        if not sponsor:
+            return Response({'error': 'not_registered'}, status=status.HTTP_400_BAD_REQUEST)
+        freq = (request.data.get('notify_frequency') or '').strip()
+        valid = {c for c, _ in Sponsor.NOTIFY_FREQUENCIES}
+        if freq not in valid:
+            return Response({'error': 'bad_frequency', 'allowed': sorted(valid)},
+                            status=status.HTTP_400_BAD_REQUEST)
+        sponsor.notify_frequency = freq
+        sponsor.save(update_fields=['notify_frequency', 'updated_at'])
+        return Response(SponsorSerializer(sponsor).data)
+
+
 class SponsorPoolCountView(APIView):
     """GET /api/v1/sponsor/pool/count/ — PUBLIC count of students currently waiting
     in the anonymised pool, for the F1 sponsor-landing live counter.
