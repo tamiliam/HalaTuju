@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
-import { getMyScholarshipApplications, type ScholarshipApplication } from '@/lib/api'
+import { getMyScholarshipApplications, getStudentAward, type ScholarshipApplication, type StudentAward } from '@/lib/api'
 import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
@@ -23,6 +23,7 @@ export default function ScholarshipApplicationPage() {
   const { status, token, profile } = useAuth()
   const router = useRouter()
   const [app, setApp] = useState<ScholarshipApplication | null>(null)
+  const [award, setAward] = useState<StudentAward | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -36,6 +37,12 @@ export default function ScholarshipApplicationPage() {
       .then((res) => { if (active) setApp(res.applications[0] ?? null) })
       .catch(() => { if (active) setApp(null) })
       .finally(() => { if (active) setLoading(false) })
+    // The award offer is fetched alongside the application so the "accept your
+    // award / complete onboarding" panel can show. No offer → endpoint returns
+    // { offer: null }; on any error we simply hide the panel.
+    getStudentAward({ token })
+      .then((res) => { if (active) setAward(res.offer) })
+      .catch(() => { if (active) setAward(null) })
     return () => { active = false }
   }, [status, token, router])
 
@@ -53,9 +60,39 @@ export default function ScholarshipApplicationPage() {
         <AppHeader />
         <main className={`container mx-auto w-full flex-1 px-6 py-10 ${isShortlisted ? 'max-w-2xl lg:max-w-4xl' : 'max-w-2xl'}`}>
           <h1 className="mb-6 text-2xl font-bold text-gray-900">{t('scholarship.application.title')}</h1>
+          {awardPanel()}
           {children}
         </main>
         <AppFooter />
+      </div>
+    )
+  }
+
+  // "Next: accept your award / complete onboarding" — shown only when the
+  // student has an award offer. An un-accepted offer (status 'offered') points
+  // to the award page; an accepted-but-not-yet-onboarded award points to
+  // onboarding. Once onboarded (onboarded_at set) the panel disappears.
+  function awardPanel() {
+    if (!award) return null
+    const accepted = award.status !== 'offered'   // active / sponsored / etc.
+    if (accepted && app?.onboarded_at) return null
+    const href = accepted ? '/scholarship/onboarding' : '/scholarship/award'
+    const cta = accepted
+      ? t('scholarship.application.awardPanel.onboardingCta')
+      : t('scholarship.application.awardPanel.acceptCta')
+    const body = accepted
+      ? t('scholarship.application.awardPanel.onboardingBody')
+      : t('scholarship.application.awardPanel.acceptBody')
+    return (
+      <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+        <div className="flex items-start gap-3">
+          <span className="shrink-0 text-blue-600" aria-hidden>🎉</span>
+          <div className="flex-1">
+            <h2 className="font-semibold text-gray-900">{t('scholarship.application.awardPanel.title')}</h2>
+            <p className="mt-1 text-sm text-gray-700">{body}</p>
+            <Link href={href} className="btn-primary mt-3 inline-block">{cta}</Link>
+          </div>
+        </div>
       </div>
     )
   }

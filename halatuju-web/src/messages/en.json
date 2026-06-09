@@ -1469,7 +1469,14 @@
       "browseCta": "Browse courses while you wait",
       "homeCta": "Back to home",
       "acceptedTitle": "You've been accepted",
-      "acceptedBody": "Congratulations — your application has been verified and confirmed. Our team will be in touch about the next steps for your award."
+      "acceptedBody": "Congratulations — your application has been verified and confirmed. Our team will be in touch about the next steps for your award.",
+      "awardPanel": {
+        "title": "One more step",
+        "acceptBody": "A supporter has chosen to fund your studies. Accept your award to continue.",
+        "acceptCta": "View my award",
+        "onboardingBody": "You've accepted your award — just a few quick questions to finish setting up.",
+        "onboardingCta": "Complete onboarding"
+      }
     },
     "banner": {
       "shortlistedTitle": "You've been shortlisted",
@@ -1680,6 +1687,99 @@
       },
       "yes": "Yes",
       "no": "No"
+    },
+    "award": {
+      "empty": {
+        "body": "There's no award waiting for you right now. We'll let you know the moment a supporter chooses to fund your studies.",
+        "cta": "Back to my application"
+      },
+      "confirmed": {
+        "heading": "Great news — your studies are funded",
+        "body": "A supporter has chosen to fund your studies. Their identity stays private, just as yours stays private from them.",
+        "amountLabel": "Your award",
+        "acceptBy": "Please accept by {date}.",
+        "accept": "Accept and continue",
+        "accepting": "Accepting…",
+        "decline": "Not right now",
+        "heldNote": "Funds are held by Yayasan myNADI and released as you progress."
+      },
+      "declineConfirm": "Are you sure you want to decline this award for now? You can come back to it before the accept-by date.",
+      "guardian": {
+        "title": "A parent or guardian needs to accept",
+        "intro": "Because you're under 18, a parent or guardian must accept this award on your behalf. Please ask them to fill this in.",
+        "name": "Parent or guardian's full name",
+        "namePlaceholder": "As shown on their IC",
+        "relationship": "Relationship to you",
+        "relationshipPlaceholder": "Choose a relationship",
+        "nric": "Parent or guardian's IC number",
+        "submit": "Accept on their behalf",
+        "cancel": "Cancel"
+      },
+      "error": {
+        "no_offer": "There's no award available to respond to right now.",
+        "guardian_required": "Please fill in the parent or guardian's name, relationship and IC number.",
+        "bad_action": "Something went wrong. Please try again.",
+        "generic": "Something went wrong. Please try again."
+      }
+    },
+    "onboarding": {
+      "back": "Back",
+      "noApp": "We couldn't find your application. Please head back and try again.",
+      "progress": {
+        "award": "Award",
+        "welcome": "Welcome",
+        "questions": "Questions",
+        "finish": "Finish"
+      },
+      "welcome": {
+        "heading": "Welcome — here's how this works",
+        "stages": {
+          "title": "Your funding is released in stages",
+          "line": "as you complete each part of your studies"
+        },
+        "checkin": {
+          "title": "We'll check in now and then",
+          "line": "to see how you're getting on"
+        },
+        "anonymous": {
+          "title": "You stay anonymous",
+          "line": "your supporter never sees your personal details"
+        },
+        "understand": "I understand"
+      },
+      "questions": {
+        "heading": "Help us support you well",
+        "lookingForward": "What are you most looking forward to in your studies?",
+        "living": "Will you be staying on campus or at home?",
+        "living_campus": "On campus",
+        "living_home": "At home",
+        "mentor": "Would you like a student mentor?",
+        "mentor_yes": "Yes",
+        "mentor_no": "No",
+        "continue": "Continue"
+      },
+      "finish": {
+        "saving": "Finishing up…",
+        "error": "We couldn't save your answers. Please try again.",
+        "retry": "Try again",
+        "notAwarded": "Your award needs to be accepted before you can complete onboarding.",
+        "notAwardedCta": "Go to my award",
+        "title": "You're all set 🎉",
+        "body": "Thank you. Your onboarding is complete and your funding journey begins now.",
+        "whatNext": {
+          "title": "What happens next",
+          "email": {
+            "title": "Verification email",
+            "line": "we'll review within 48 hours"
+          },
+          "dashboard": {
+            "title": "Access your dashboard",
+            "line": "track your studies"
+          }
+        },
+        "dashboardCta": "Go to my dashboard",
+        "thankYouSoon": "Send an anonymous thank-you to your supporter (coming soon)"
+      }
     }
   },
   "authGate": {
