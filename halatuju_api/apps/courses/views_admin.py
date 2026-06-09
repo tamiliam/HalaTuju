@@ -353,11 +353,11 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         new_org_name = request.data.get('new_org_name', '').strip()
         new_org_code = request.data.get('new_org_code', '').strip().lower()
 
-        # F5: the inviter chooses the new admin's role. Default to the safest
-        # workhorse role (reviewer) if unspecified or invalid.
-        valid_roles = {choice[0] for choice in PartnerAdmin.ROLE_CHOICES}
+        # The inviter chooses the new admin's role. Super is NOT invitable here
+        # (there is one super admin — the owner); default to the safe workhorse.
+        INVITABLE_ROLES = {'admin', 'partner', 'reviewer'}
         role = request.data.get('role', 'reviewer')
-        if role not in valid_roles:
+        if role not in INVITABLE_ROLES:
             role = 'reviewer'
 
         if not email or not name:
@@ -366,21 +366,26 @@ class AdminInviteView(PartnerAdminMixin, APIView):
         if PartnerAdmin.objects.filter(email=email).exists():
             return Response({'error': 'Admin with this email already exists'}, status=409)
 
+        # Organisation applies ONLY to a partner (an org rep, scoped to their org's
+        # students). Admin + reviewer are not org-scoped, so any org input is ignored.
         org = None
-        if new_org_name and new_org_code:
-            org, _ = PartnerOrganisation.objects.get_or_create(
-                code=new_org_code,
-                defaults={
-                    'name': new_org_name,
-                    'contact_person': request.data.get('contact_person', ''),
-                    'phone': request.data.get('org_phone', ''),
-                },
-            )
-        elif org_id:
-            try:
-                org = PartnerOrganisation.objects.get(id=org_id)
-            except PartnerOrganisation.DoesNotExist:
-                return Response({'error': 'Organisation not found'}, status=404)
+        if role == 'partner':
+            if new_org_name and new_org_code:
+                org, _ = PartnerOrganisation.objects.get_or_create(
+                    code=new_org_code,
+                    defaults={
+                        'name': new_org_name,
+                        'contact_person': request.data.get('contact_person', ''),
+                        'phone': request.data.get('org_phone', ''),
+                    },
+                )
+            elif org_id:
+                try:
+                    org = PartnerOrganisation.objects.get(id=org_id)
+                except PartnerOrganisation.DoesNotExist:
+                    return Response({'error': 'Organisation not found'}, status=404)
+            if org is None:
+                return Response({'error': 'A partner must belong to an organisation', 'code': 'org_required'}, status=400)
 
         service_role_key = getattr(settings, 'SUPABASE_SERVICE_ROLE_KEY', '')
         supabase_url = getattr(settings, 'SUPABASE_URL', '')

@@ -2815,7 +2815,9 @@
     "role": {
       "super": "Pentadbir utama",
       "reviewer": "Penilai",
-      "viewer": "Pemerhati"
+      "viewer": "Pemerhati",
+      "admin": "Pentadbir",
+      "partner": "Rakan kongsi"
     },
     "roleHint": {
       "super": "Akses penuh, termasuk menjemput dan mengurus pentadbir lain.",
@@ -2935,6 +2937,17 @@
       "address": "Alamat",
       "saved": "Kelayakan disimpan.",
       "saveFailed": "Tidak dapat menyimpan kelayakan anda."
+    },
+    "inviteAs": "Jemput sebagai",
+    "inviteHeading": {
+      "admin": "Jemput Pentadbir",
+      "partner": "Jemput Rakan Kongsi",
+      "reviewer": "Jemput Penyemak"
+    },
+    "roleDesc": {
+      "admin": "Melihat setiap halaman — baca sahaja buat masa ini.",
+      "partner": "Wakil organisasi — melihat pelajar organisasi mereka sahaja.",
+      "reviewer": "Penyemak individu — melihat pemohon yang ditugaskan kepada mereka sahaja, dan membuat keputusan akhir."
     }
   }
 }

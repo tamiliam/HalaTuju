@@ -2815,7 +2815,9 @@
     "role": {
       "super": "Super admin",
       "reviewer": "Reviewer",
-      "viewer": "Viewer"
+      "viewer": "Viewer",
+      "admin": "Admin",
+      "partner": "Partner"
     },
     "roleHint": {
       "super": "Full access, including inviting and managing other admins.",
@@ -2935,6 +2937,17 @@
       "address": "Address",
       "saved": "Credentials saved.",
       "saveFailed": "Could not save your credentials."
+    },
+    "inviteAs": "Invite as",
+    "inviteHeading": {
+      "admin": "Invite an Admin",
+      "partner": "Invite a Partner",
+      "reviewer": "Invite a Reviewer"
+    },
+    "roleDesc": {
+      "admin": "Sees every page — view-only for now.",
+      "partner": "An organisation's representative — sees only their own organisation's students.",
+      "reviewer": "An individual reviewer — sees only the applicants assigned to them, and makes the final decision."
     }
   }
 }

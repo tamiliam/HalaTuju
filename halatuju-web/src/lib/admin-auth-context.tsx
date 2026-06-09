@@ -14,7 +14,7 @@ import type { Session } from '@supabase/supabase-js'
 interface AdminRole {
   is_admin: boolean
   is_super_admin: boolean
-  role?: 'super' | 'reviewer' | 'viewer'
+  role?: 'super' | 'admin' | 'partner' | 'reviewer'
   org_name: string | null
   admin_name: string
 }

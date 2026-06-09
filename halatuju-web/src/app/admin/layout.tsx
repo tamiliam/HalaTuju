@@ -49,14 +49,19 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     router.replace('/admin/login')
   }
 
-  const navLinks = [
-    { href: '/admin', label: t('common.dashboard') },
-    { href: '/admin/students', label: t('admin.students') },
-    { href: '/admin/scholarship', label: t('admin.scholarship.nav') },
-    { href: '/admin/sponsors', label: t('admin.sponsors.nav') },
-    ...(role?.is_super_admin ? [{ href: '/admin/invite', label: t('admin.invite') }] : []),
-    { href: '/admin/profile', label: t('admin.profile') },
-  ]
+  // Role-driven menu (2026-06): super/admin see everything; partner sees only
+  // Dashboard + Students (own org); reviewer sees only B40 Applications.
+  const r = role?.is_super_admin ? 'super' : (role?.role || 'reviewer')
+  const dashboard = { href: '/admin', label: t('common.dashboard') }
+  const students = { href: '/admin/students', label: t('admin.students') }
+  const scholarship = { href: '/admin/scholarship', label: t('admin.scholarship.nav') }
+  const sponsors = { href: '/admin/sponsors', label: t('admin.sponsors.nav') }
+  const invite = { href: '/admin/invite', label: t('admin.invite') }
+  const profile = { href: '/admin/profile', label: t('admin.profile') }
+  const navLinks =
+    r === 'partner' ? [dashboard, students, profile]
+    : r === 'reviewer' ? [scholarship, profile]
+    : [dashboard, students, scholarship, sponsors, ...(r === 'super' ? [invite] : []), profile]  // super + admin
 
   return (
     <div className="min-h-screen bg-gray-50">

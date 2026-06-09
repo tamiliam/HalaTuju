@@ -106,7 +106,9 @@ export default function AdminScholarshipDetailPage() {
   const id = Number(params?.id)
   const { token, role } = useAdminAuth()
   const { t } = useT()
-  const canWrite = (role?.role ?? (role?.is_super_admin ? 'super' : 'reviewer')) !== 'viewer'
+  // Execute (verify/verdict/etc.) is for super + reviewer only; admin is read-only.
+  const effRole = role?.is_super_admin ? 'super' : (role?.role ?? 'reviewer')
+  const canWrite = effRole === 'super' || effRole === 'reviewer'
   const isSuper = role?.role === 'super' || !!role?.is_super_admin
   const [app, setApp] = useState<AdminScholarshipDetail | null>(null)
   const [profile, setProfile] = useState<AdminSponsorProfile | null>(null)
