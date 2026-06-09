@@ -447,7 +447,7 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
 
 **▶ ACTIVE TRACK — B40 Phase E/F sponsor build (roadmap `docs/scholarship/b40-phase-ef-sprint-plan.md`, 13 sprints).**
 Building the sponsor/reviewer/student features to a demoable end-state, all **dark behind `SPONSOR_POOL_ENABLED`** until
-the lawyer-gated go-live (Sprint 12). **Sprints 0–2 DONE on `main` (held local, NOT pushed — push=deploy, owner-gated;
+the lawyer-gated go-live (Sprint 12). **Sprints 0–5 DONE on `main` (held local, NOT pushed — push=deploy, owner-gated;
 deploys batched for go-live).**
 - **✅ Sprint 1 DONE (F1, 2026-06-08, no migration):** public `/sponsor` marketing landing + public
   `GET /api/v1/sponsor/pool/count/` → `{count, enabled}` (count-only, flag-gated). `components/SponsorLanding.tsx`.
@@ -471,13 +471,21 @@ deploys batched for go-live).**
   `CronRunView.JOBS`; publish hook resets `realtime_notified_at`; emails built from `SponsorPoolDetailSerializer` only
   (allowlist-safe). `PATCH /api/v1/sponsor/notifications/` + a `/sponsor` toggle. **TD-095 = create 2 Cloud Scheduler
   jobs at deploy.** Retro `docs/retrospective-sprint4-sponsor-notifications.md`. **All four ⭐ must-haves now done.**
-- **▶ NEXT — Sprint 5 (F6, reviewer profile, BE + FE):** a reviewer's own credentials + contact profile. New
-  `ReviewerProfile` 1:1 to `PartnerAdmin` (`highest_qualification, university, graduation_year, field_of_study, phone,
-  address`; NO password field) + a self-edit endpoint (scoped to self) + a profile page under `/admin`. `phone`/`address`
-  are sensitive staff PII — reviewer + super only, never exposed to students/sponsors; add to the PDPA retention note.
+- **✅ Sprint 5 DONE (F6, reviewer profile, BE + FE, 2026-06-09, migration `0051`):** a reviewer's own credentials +
+  contact profile as new cards on the existing `/admin/profile` page (reviewer/super only; viewer never sees them). New
+  `ReviewerProfile` model in `apps/scholarship` — OneToOne to `courses.PartnerAdmin` (cross-app FK) with
+  `highest_qualification, university, graduation_year, field_of_study, phone, address` (sensitive PII); NO password
+  field. Self-scoped `GET/PATCH /api/v1/admin/reviewer-profile/` (own row only) + narrow `ReviewerProfileSerializer`;
+  PII isolated in `reviewer_profiles` (own RLS at deploy), reachable by no outward serializer. `getReviewerProfile`/
+  `updateReviewerProfile` + role-gated two-card section saved by the page's one Save button. Stitch-approved
+  (`My profile — Reviewer Settings`). **Migration `0051`** (new model → apply via MCP + enable RLS at deploy, TD-098);
+  TD-097 (Tamil refine). Retro `docs/retrospective-sprint5-reviewer-profile.md`.
+- **▶ NEXT — Sprint 6 (F5, reviewer invite role selector, BE + FE, small):** extend `/admin/invite` + `AdminInviteView`
+  to set `role` (super|reviewer|viewer) at invite time, and prompt **Reviewer profile** (Sprint 5) completion on first
+  sign-in. Could merge with what S5 built; kept separate per one-feature-per-sprint.
 - **Gotchas:** ship dark (flag off) for sponsor-facing; i18n en/ms/ta parity; ≤2 deploys/feature; deploys/pushes
-  owner-gated; prod at `0048`, local migrations `0049`+`0050` apply migrate-first when the batch deploys; Sprint 5 likely
-  adds `0051`.
+  owner-gated; prod at `0048`, local migrations `0049`+`0050`+`0051` apply migrate-first when the batch deploys
+  (`0051` is a new-model migration → MCP CREATE TABLE + contenttypes workaround + RLS, TD-098).
 
 ---
 

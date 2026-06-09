@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Reviewer profile (B40 Phase E/F Sprint 5, F6, held local).** A reviewer can record their own credentials +
+  contact details, surfaced as new cards on the existing `/admin/profile` page (rendered only for `reviewer`/`super`;
+  a `viewer` never sees them). New `ReviewerProfile` model in `apps/scholarship` — a OneToOne to `courses.PartnerAdmin`
+  (mirroring the app's existing cross-app FK to `courses`) holding `highest_qualification`, `university`,
+  `graduation_year`, `field_of_study`, and the sensitive staff PII `phone`/`address`; **no password field** (auth is
+  Supabase's). Self-scoped `GET/PATCH /api/v1/admin/reviewer-profile/` (always the calling admin's own row — one
+  reviewer can never read or edit another's) with its own narrow `ReviewerProfileSerializer`. The PII lives in its own
+  table (`reviewer_profiles`, own RLS at deploy) and is reachable by **no** outward student/sponsor serializer.
+  Frontend: `getReviewerProfile`/`updateReviewerProfile` + a role-gated two-card section ("Reviewer credentials" +
+  "Contact details 🔒") saved by the page's single Save button; trilingual `admin.reviewer.*` (Tamil first-draft,
+  TD-097). **Migration `0051`** (new model — apply via MCP + enable RLS at deploy, TD-098). Stitch-approved
+  (`My profile — Reviewer Settings`). +10 tests (892 scholarship pytest; 276 jest; `next build` clean; i18n parity
+  2325). Ships in the held Phase E/F batch (no push).
 - **Sponsor notifications — real-time + weekly digest (B40 Phase E/F Sprint 4, F3, ships dark).** A sponsor chooses how
   often they hear about newly-published anonymised students: `realtime` (an hourly-batched alert), `weekly` (a digest),
   or `off` — `Sponsor.notify_frequency` (default `weekly`) set via `PATCH /api/v1/sponsor/notifications/` and a

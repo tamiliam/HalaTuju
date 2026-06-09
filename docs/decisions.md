@@ -1,5 +1,31 @@
 # Architectural Decisions — HalaTuju
 
+## ReviewerProfile is a separate model in `apps/scholarship`, not fields on `courses.PartnerAdmin` — B40 Phase E/F Sprint 5, 2026-06-09
+
+**Decision:** The reviewer's credentials + contact details (F6) live in a new `ReviewerProfile` model **in
+`apps/scholarship`** with a OneToOne FK to `courses.PartnerAdmin`, fed by its own narrow serializer and a dedicated
+self-scoped `GET/PATCH /api/v1/admin/reviewer-profile/` endpoint. The two new cards render on the **existing**
+`/admin/profile` page, but the data comes from this new endpoint — **not** by widening the `courses` `AdminProfileView`.
+
+**Alternatives considered:** (1) Add the six fields directly to `courses.PartnerAdmin` and extend the existing
+`AdminProfileView`/`AdminProfile` serializer. (2) A `ReviewerProfile` 1:1 placed in `apps/courses` (next to
+`PartnerAdmin`). (3) `ReviewerProfile` in `apps/scholarship` with a cross-app FK + its own endpoint (chosen).
+
+**Rationale:** Two forces. **Dependency direction** — `apps/scholarship` already depends on `apps/courses` (it
+imports `PartnerAdminMixin`, FKs `StudentProfile`); the reverse (courses importing a scholarship model to widen
+`AdminProfileView`) would invert the layering and risk an import cycle. The reviewer concept is itself a
+B40/scholarship concern (reviewer-scoping, Check-2/3 all live in scholarship), so the model belongs there. **PII
+isolation** — `phone`/`address` are sensitive staff PII; keeping them in their own table with its own RLS and a narrow
+serializer means they are reachable by *no* outward (student/sponsor) serializer by construction, consistent with the
+structural-data-wall pattern. A separate endpoint also keeps the existing org/name `AdminProfileView` untouched.
+
+**Trade-offs:** A second profile endpoint + a second fetch on the `/admin/profile` page (the one Save button fires two
+PATCHes). A cross-app FK and a separate migration history (already the norm for this app). `get_or_create` means a row
+is materialised on first GET.
+
+**Revisit if:** A unified staff-identity model is built (then fold reviewer fields in), or `PartnerAdmin` itself moves
+into a shared identity app — at which point the cross-app FK could become same-app.
+
 ## Separate STPM ranking module — STPM Sprint 3, 2026-03-13
 
 **Decision:** Created `stpm_ranking.py` as a standalone module rather than extending the existing `ranking_engine.py`.
