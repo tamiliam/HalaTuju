@@ -183,7 +183,9 @@ class PartnerStudentListView(PartnerAdminMixin, APIView):
 
         q = (request.GET.get('q') or '').strip()
         if q:
-            students = students.filter(Q(name__icontains=q) | Q(nric__icontains=q))
+            students = students.filter(
+                Q(name__icontains=q) | Q(nric__icontains=q)
+                | Q(contact_phone__icontains=q) | Q(contact_email__icontains=q))
         exam = request.GET.get('exam')
         if exam in ('spm', 'stpm'):
             students = students.filter(exam_type=exam)

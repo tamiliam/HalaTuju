@@ -2853,7 +2853,7 @@
     "studentsTitle": "HalaTuju Students",
     "studentsCount": "{count} students",
     "studentsDesc": "Latest student registrations on the HalaTuju platform.",
-    "searchPlaceholder": "Search by name or NRIC…",
+    "searchPlaceholder": "Search by name, NRIC, phone or email…",
     "allExams": "All exams",
     "allSources": "All sources",
     "downloadCsv": "Download CSV",

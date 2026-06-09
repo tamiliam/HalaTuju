@@ -2853,7 +2853,7 @@
     "studentsTitle": "Pelajar HalaTuju",
     "studentsCount": "{count} pelajar",
     "studentsDesc": "Senarai pendaftaran pelajar terkini di platform HalaTuju.",
-    "searchPlaceholder": "Cari mengikut nama atau NRIC…",
+    "searchPlaceholder": "Cari mengikut nama, NRIC, telefon atau emel…",
     "allExams": "Semua peperiksaan",
     "allSources": "Semua sumber",
     "downloadCsv": "Muat Turun CSV",

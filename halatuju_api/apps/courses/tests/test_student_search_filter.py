@@ -37,13 +37,15 @@ class StudentSearchFilterTest(TestCase):
             name='Super', is_super_admin=True,
         )
 
-        def mk(uid, name, nric, exam, source):
+        def mk(uid, name, nric, exam, source, phone='', email=''):
             StudentProfile.objects.create(
                 supabase_user_id=uid, name=name, nric=nric,
                 exam_type=exam, referral_source=source,
+                contact_phone=phone, contact_email=email,
             )
 
-        mk('u1', 'Aisyah Binti Ali', '050101-01-0001', 'spm', 'whatsapp')
+        mk('u1', 'Aisyah Binti Ali', '050101-01-0001', 'spm', 'whatsapp',
+           phone='+60 11-1077 0412', email='aisyah.smc@mailtest.org')
         mk('u2', 'Bala A/L Raju', '040202-02-0002', 'stpm', 'google')
         mk('u3', 'Chong Wei', '030303-03-0003', 'spm', 'whatsapp')
         mk('u4', 'Aisha Khan', '020404-04-0004', 'stpm', 'cumig')
@@ -66,6 +68,16 @@ class StudentSearchFilterTest(TestCase):
         body = self.client.get('/api/v1/admin/students/?q=030303').json()
         self.assertEqual(body['count'], 1)
         self.assertEqual(body['students'][0]['name'], 'Chong Wei')
+
+    def test_search_by_phone(self):
+        body = self.client.get('/api/v1/admin/students/?q=1077 0412').json()
+        self.assertEqual(body['count'], 1)
+        self.assertEqual(body['students'][0]['name'], 'Aisyah Binti Ali')
+
+    def test_search_by_email(self):
+        body = self.client.get('/api/v1/admin/students/?q=mailtest.org').json()
+        self.assertEqual(body['count'], 1)
+        self.assertEqual(body['students'][0]['name'], 'Aisyah Binti Ali')
 
     def test_filter_by_exam(self):
         body = self.client.get('/api/v1/admin/students/?exam=stpm').json()
