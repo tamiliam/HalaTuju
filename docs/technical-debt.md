@@ -651,6 +651,16 @@
   the `django_migrations` row), then **enable RLS on both** (deny-by-default, service-role-only — `graduation_messages`
   holds free-text that, pre-approval, may contain identifiers in `raw_text`/`scan_result`) and re-run `get_advisors`.
   Must be closed before go-live. (Logged 2026-06-09, B40 Phase E/F Sprint 9.)
+- TD-104: **F9b's results form has no slip-upload control (CGPA-only).** The approved Stitch design showed an optional
+  "Upload results slip (staff-only)" row, but the document upload pipeline (sign-upload → PUT → create doc) is heavy and
+  the CGPA/`graduated` values are what drive the sponsor-facing progress band; the `results_slip` FK on the backend is
+  left unset from this surface. **To resolve (optional):** wire the existing document-upload flow into the Add-result
+  form (or let the student attach via a future in-programme Documents tab) and pass `results_slip` to
+  `addSemesterResult`. Low priority — the band works without it. (Logged 2026-06-09, B40 Phase E/F Sprint 10.)
+- TD-105: **F9b Tamil copy is a first-draft.** The `scholarship.inProgramme.*` + `sponsorPortal.graduationMessages.*`
+  Tamil strings (48 keys) were written to keep en/ms/ta parity but need the owner's review per `tamil-style-guide.md` —
+  especially the graduation-relay wording (it's shown to a real sponsor). Fold into the pre-go-live Tamil refine batch
+  alongside TD-091/094/096/097. (Logged 2026-06-09, B40 Phase E/F Sprint 10.)
 - TD-103: **Semester-result CGPA is student-entered, not OCR-derived.** F9a's `record_semester_result` accepts an
   optional `results_slip` (a myNADI-only `ApplicantDocument`) but does NOT auto-extract the CGPA from it — the student
   types the CGPA + semester. The roadmap envisaged "reuse the OCR path"; deferred because the in-programme university

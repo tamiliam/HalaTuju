@@ -110,7 +110,7 @@ wired). Retro `docs/retrospective-sprint8-sponsor-my-students.md`.
 - **Graduation relay:** new `GraduationMessage(application, raw_text, scrubbed_text, scan_result, status, approved_by, ...)`. Pipeline: submit → `scan_anon_for_identifiers` (`pool.py:87`) **blocks on any leak** → myNADI human-approve → surface **linked to the anonymous `ref`** (owner decision) in the sponsor profile. **Never a direct channel.**
 - **Tests:** relay blocks planted identifiers; promotional consent enforces 18+; results slip never appears in sponsor output.
 
-### Sprint 10 — F9b Student profile + relay (frontend) · FE
+### Sprint 10 — F9b Student profile + relay (frontend) · FE ✅ DONE (2026-06-09; no migration; ships dark; `/scholarship/in-programme` Stitch-approved; +48 i18n; retro `docs/retrospective-sprint10-in-programme-frontend.md`)
 **Deliverable:** the student profile + thank-you compose UI + the sponsor-side surface.
 - Student profile page (details, institution/field, CGPA, results upload, 18+ promotional toggle).
 - Graduation thank-you compose UI (with the same "we'll check for identifying details" UX as the publish gate).

@@ -159,7 +159,12 @@
     },
     "inactiveTitle": "Account not active",
     "inactiveBody": "Your sponsor account isn't active right now. If you think this is a mistake, please contact us.",
-    "backHome": "Back to home"
+    "backHome": "Back to home",
+    "graduationMessages": {
+      "title": "Messages from students you supported",
+      "subtitle": "Anonymous thank-yous, reviewed by our team. Linked only to the student's reference.",
+      "attribution": "A message from a student you supported"
+    }
   },
   "sponsorPool": {
     "browseTitle": "Students who need support",
@@ -1804,6 +1809,65 @@
         },
         "dashboardCta": "Go to my dashboard",
         "thankYouSoon": "Send an anonymous thank-you to your supporter (coming soon)"
+      }
+    },
+    "inProgramme": {
+      "title": "My progress",
+      "back": "Back",
+      "notInProgramme": "This page is for students already in the programme. Once your award is accepted, you'll find your progress here.",
+      "backToApplication": "Back to my application",
+      "results": {
+        "title": "Semester results",
+        "subtitle": "Add your latest results each semester so we can support you.",
+        "add": "Add result",
+        "semester": "Semester",
+        "semesterPh": "e.g. 2026 Sem 1",
+        "cgpa": "CGPA",
+        "cgpaHint": "Enter a value from 0.00 to 4.00.",
+        "graduated": "This is my final / graduating semester",
+        "graduatedTag": "Graduated",
+        "cgpaLabel": "CGPA",
+        "save": "Save result",
+        "saving": "Saving…",
+        "empty": "No results added yet.",
+        "errorCgpa": "Please enter a CGPA between 0.00 and 4.00.",
+        "errorGeneric": "Couldn't save your result. Please try again."
+      },
+      "progress": {
+        "on_track": "On track",
+        "semester_completed": "Semester completed",
+        "needs_attention": "Needs attention",
+        "graduated": "Graduated"
+      },
+      "promo": {
+        "title": "Sharing your story",
+        "subtitle": "Your journey can help other students find their path. We may share your progress in our newsletters and annual reports.",
+        "label": "Allow my story to be used to inspire others (optional)",
+        "help": "You can turn this off any time.",
+        "minor": "Available once you turn 18.",
+        "saving": "Saving…",
+        "error": "Couldn't update your choice. Please try again."
+      },
+      "grad": {
+        "title": "Thank your sponsor",
+        "subtitle": "Send a thank-you to the kind person who supported you. We keep it anonymous — your name is never shown.",
+        "placeholder": "Write your message…",
+        "send": "Send for review",
+        "sending": "Sending…",
+        "blockedIntro": "Please remove details that could identify you:",
+        "blockedTail": "Edit and send again.",
+        "status": {
+          "pending": "Awaiting review",
+          "approved": "Shared with your sponsor"
+        },
+        "identifier": {
+          "name": "your name",
+          "school": "your school",
+          "city": "your town or city",
+          "nric": "your IC number",
+          "phone": "your phone number",
+          "email": "your email"
+        }
       }
     }
   },

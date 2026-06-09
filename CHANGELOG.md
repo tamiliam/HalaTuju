@@ -25,6 +25,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docs/partner-pagination-plan.md`.
 
 ### Added
+- **Student in-programme + graduation relay — frontend (B40 Phase E/F Sprint 10, F9b, held local, ships dark; no
+  migration).** The student/sponsor UI for F9a's backend. **New student page `/scholarship/in-programme`** ("My
+  progress"), Stitch-approved, shown once the award is accepted (`status='sponsored'`), three cards matching the
+  apply/onboarding style: **(1) Semester results** — a live progress pill (on track / semester completed / needs
+  attention / graduated, derived client-side to mirror the server band) + a list of past results + an inline "Add result"
+  form (semester, CGPA 0–4 with `bad_cgpa` handling, "final/graduating" checkbox); **(2) Sharing your story** — the
+  18+-only `promotional_use` toggle (greyed with "Available once you turn 18." for a minor, driven by the server's
+  `is_minor`); **(3) Thank your sponsor** — a compose box that, on a `blocked` submit, shows an amber banner naming the
+  identifying fields the scan caught ("your name, your town or city") so the student edits + resends, then a status chip
+  ("Awaiting review" → "Shared with your sponsor"). **Sponsor `/sponsor`** gains a "Messages from students you
+  supported" section — the staff-approved notes, each shown anonymously against the student's `ref` only (never identity,
+  never a reply channel); 404s while the flag is off so it stays dark. New api-client functions
+  `getSemesterResults`/`addSemesterResult`, `getPromotionalConsent`/`setPromotionalConsent`,
+  `getGraduationMessages`/`submitGraduationMessage`, `getSponsorGraduationMessages` + types. Trilingual
+  `scholarship.inProgramme.*` + `sponsorPortal.graduationMessages.*` (i18n parity 2399 ×en/ms/ta, +48; Tamil first-draft,
+  TD-105). `next build` clean (`/scholarship/in-programme` 2.9 kB); 283 jest (render-only pages). TD-104 (optional
+  results-slip upload control deferred — CGPA is the driver). Retro `docs/retrospective-sprint10-in-programme-frontend.md`.
 - **Student in-programme results + progress + graduation relay — backend (B40 Phase E/F Sprint 9, F9a, held local, ships
   dark; migration `0053`).** The in-programme student lifecycle, backend-only. New module `apps/scholarship/in_programme.py`
   owns the writes (one-way import `in_programme → pool → models`, no cycle). **(1) Semester results → real progress.** New

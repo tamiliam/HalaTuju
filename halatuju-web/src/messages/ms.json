@@ -159,7 +159,12 @@
     },
     "inactiveTitle": "Akaun tidak aktif",
     "inactiveBody": "Akaun penaja anda tidak aktif buat masa ini. Jika anda rasa ini satu kesilapan, sila hubungi kami.",
-    "backHome": "Kembali ke laman utama"
+    "backHome": "Kembali ke laman utama",
+    "graduationMessages": {
+      "title": "Mesej daripada pelajar yang anda sokong",
+      "subtitle": "Ucapan terima kasih tanpa nama, disemak oleh pasukan kami. Dipautkan hanya kepada rujukan pelajar.",
+      "attribution": "Mesej daripada pelajar yang anda sokong"
+    }
   },
   "sponsorPool": {
     "browseTitle": "Pelajar yang memerlukan bantuan",
@@ -1804,6 +1809,65 @@
         },
         "dashboardCta": "Pergi ke papan pemuka saya",
         "thankYouSoon": "Hantar ucapan terima kasih tanpa nama kepada penyokong anda (akan datang)"
+      }
+    },
+    "inProgramme": {
+      "title": "Kemajuan saya",
+      "back": "Kembali",
+      "notInProgramme": "Halaman ini untuk pelajar yang sudah berada dalam program. Setelah tajaan anda diterima, kemajuan anda akan dipaparkan di sini.",
+      "backToApplication": "Kembali ke permohonan saya",
+      "results": {
+        "title": "Keputusan semester",
+        "subtitle": "Tambah keputusan terkini anda setiap semester supaya kami dapat menyokong anda.",
+        "add": "Tambah keputusan",
+        "semester": "Semester",
+        "semesterPh": "cth. 2026 Sem 1",
+        "cgpa": "PNGK",
+        "cgpaHint": "Masukkan nilai dari 0.00 hingga 4.00.",
+        "graduated": "Ini semester akhir / graduasi saya",
+        "graduatedTag": "Bergraduat",
+        "cgpaLabel": "PNGK",
+        "save": "Simpan keputusan",
+        "saving": "Menyimpan…",
+        "empty": "Belum ada keputusan ditambah.",
+        "errorCgpa": "Sila masukkan PNGK antara 0.00 dan 4.00.",
+        "errorGeneric": "Tidak dapat menyimpan keputusan anda. Sila cuba lagi."
+      },
+      "progress": {
+        "on_track": "Di landasan",
+        "semester_completed": "Semester selesai",
+        "needs_attention": "Perlu perhatian",
+        "graduated": "Bergraduat"
+      },
+      "promo": {
+        "title": "Berkongsi kisah anda",
+        "subtitle": "Perjalanan anda boleh membantu pelajar lain mencari hala tuju mereka. Kami mungkin berkongsi kemajuan anda dalam surat berita dan laporan tahunan kami.",
+        "label": "Benarkan kisah saya digunakan untuk memberi inspirasi kepada orang lain (pilihan)",
+        "help": "Anda boleh mematikannya pada bila-bila masa.",
+        "minor": "Tersedia apabila anda berumur 18 tahun.",
+        "saving": "Menyimpan…",
+        "error": "Tidak dapat mengemas kini pilihan anda. Sila cuba lagi."
+      },
+      "grad": {
+        "title": "Ucapkan terima kasih kepada penaja anda",
+        "subtitle": "Hantar ucapan terima kasih kepada individu yang menyokong anda. Kami merahsiakannya — nama anda tidak akan dipaparkan.",
+        "placeholder": "Tulis mesej anda…",
+        "send": "Hantar untuk semakan",
+        "sending": "Menghantar…",
+        "blockedIntro": "Sila buang butiran yang boleh mengenal pasti anda:",
+        "blockedTail": "Sunting dan hantar semula.",
+        "status": {
+          "pending": "Menunggu semakan",
+          "approved": "Dikongsi dengan penaja anda"
+        },
+        "identifier": {
+          "name": "nama anda",
+          "school": "sekolah anda",
+          "city": "bandar anda",
+          "nric": "nombor KP anda",
+          "phone": "nombor telefon anda",
+          "email": "e-mel anda"
+        }
       }
     }
   },

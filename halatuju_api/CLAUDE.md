@@ -511,13 +511,25 @@ deploys batched for go-live).**
   `.../<id>/review/`; sponsor `graduation-messages/`. +26 scholarship pytest (S8 `TestProgressState` extended). **Migration
   `0053`** (2 new models → MCP + contenttypes workaround + RLS at deploy, TD-102); TD-103 (results OCR deferred — CGPA
   student-entered). Retro `docs/retrospective-sprint9-in-programme.md`.
-- **▶ NEXT — Sprint 10 (F9b, student profile + relay — FRONTEND, M):** the student-facing UI for F9a's backend. Student
-  profile page (details / institution / field / CGPA, semester-results upload, 18+ promotional toggle); graduation
-  thank-you compose UI with the same "we'll check for identifying details" UX as the publish gate (consume the
-  `blocked` + `scan_result` response → ask the student to edit); sponsor profile shows the approved note as *"a message
-  from a student you supported"* linked to the anon `ref`. API clients: `getSemesterResults`/`addSemesterResult`,
-  `getPromotionalConsent`/`setPromotionalConsent`, `submitGraduationMessage`, `getSponsorGraduationMessages`. i18n
-  `scholarship.inProgramme.*` + `sponsorPortal.graduationMessages.*` (en/ms/ta). **Stitch-prototype first** (owner gate).
+- **✅ Sprint 10 DONE (F9b, student in-programme + graduation relay — FRONTEND, 2026-06-09, no migration, ships dark):**
+  the UI for F9a. **New page `/scholarship/in-programme`** ("My progress", Stitch-approved, shown when `status='sponsored'`):
+  three cards — semester results (live progress pill + Add-result form, CGPA 0–4 / `bad_cgpa`), 18+ `promotional_use`
+  toggle (greyed for a minor via server `is_minor`), graduation compose (a `blocked` submit shows an amber banner naming
+  the scan-caught identifier fields → edit + resend; status chip pending→approved). **Sponsor `/sponsor`** gains a
+  "Messages from students you supported" section (approved notes, anonymous, against `ref` only; 404-dark). New api
+  clients `getSemesterResults`/`addSemesterResult`, `get/setPromotionalConsent`, `get/submitGraduationMessage`,
+  `getSponsorGraduationMessages`. i18n `scholarship.inProgramme.*` + `sponsorPortal.graduationMessages.*` (parity 2399,
+  +48; Tamil first-draft TD-105). `next build` clean (route 2.9 kB); 283 jest (render-only). TD-104 (slip-upload control
+  deferred). Retro `docs/retrospective-sprint10-in-programme-frontend.md`.
+- **▶ NEXT — Sprint 11 (F4, sponsor referral / invitation, BE + FE, M):** sponsors invite prospective sponsors to the F1
+  landing. Decide the model shape at start (PRD Q-6): a `SponsorReferral` model (`inviter, invitee_email, invitee_name,
+  note, code, status, registered_sponsor`) vs a lightweight `referred_by`. Invite email (sponsor's note + pitch) →
+  `/sponsor?ref=<code>`; attribution on register; **PDPA:** purge unconverted invitee emails after a short window (PRD
+  Q-7). WhatsApp share = later. New BE migration likely → MCP + RLS at deploy. **F4 micro-decision (model shape + email
+  retention window) is an owner gate at sprint start.** Then **Sprint 12 = lawyer-gated go-live** (flip
+  `SPONSOR_POOL_ENABLED`; batch-apply held migrations `0049`–`0053`+ via MCP; enable RLS on all new tables
+  TD-093/095/098/100/102; create the 2 Cloud Scheduler jobs TD-095; Tamil refine TD-091/094/096/097/105; full
+  allowlist/relay/consent audit; interactive Playwright smoke per lesson #96).
 - **Gotchas:** ship dark (flag off) for sponsor-facing; i18n en/ms/ta parity; ≤2 deploys/feature; deploys/pushes
   owner-gated; prod at `0048`, local migrations `0049`–`0053` apply migrate-first when the batch deploys (`0051`/`0052`/`0053`
   are new-model migrations → MCP CREATE TABLE + contenttypes workaround + RLS, TD-098/TD-100/TD-102). **Parallel agents

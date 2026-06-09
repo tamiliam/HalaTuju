@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { sponsorSignOut } from '@/lib/sponsor-supabase'
-import { registerSponsor, getSponsorPool, getSponsorWallet, getStudentsWaitingCount, patchSponsorNotifications, type SponsorPoolCard, type SponsorWallet } from '@/lib/api'
+import { registerSponsor, getSponsorPool, getSponsorWallet, getSponsorGraduationMessages, getStudentsWaitingCount, patchSponsorNotifications, type SponsorPoolCard, type SponsorWallet, type GraduationRelayMessage } from '@/lib/api'
 import { SPONSOR_SOURCES, formatMyMobile, isValidMyMobile } from '@/lib/sponsorAuth'
 import { KEY_SPONSOR_PENDING } from '@/lib/storage'
 import SponsorLanding from '@/components/SponsorLanding'
@@ -52,6 +52,8 @@ export default function SponsorPortalPage() {
   const [poolUnavailable, setPoolUnavailable] = useState(false)
   // F2: the sponsor's own "My students" — balance + their (offered/active) allocations.
   const [wallet, setWallet] = useState<SponsorWallet | null>(null)
+  // F9b: staff-approved graduation thank-yous from the students this sponsor funds.
+  const [gradMessages, setGradMessages] = useState<GraduationRelayMessage[]>([])
 
   useEffect(() => {
     if (account?.status !== 'approved' || !token) return
@@ -62,6 +64,9 @@ export default function SponsorPortalPage() {
     getSponsorWallet({ token })
       .then((w) => { if (!cancelled) setWallet(w) })
       .catch(() => { /* wallet 404s while the pool flag is off — leave it null */ })
+    getSponsorGraduationMessages({ token })
+      .then((r) => { if (!cancelled) setGradMessages(r.messages) })
+      .catch(() => { /* 404s while the pool flag is off — leave it empty */ })
     return () => { cancelled = true }
   }, [account?.status, token])
 
@@ -198,6 +203,24 @@ export default function SponsorPortalPage() {
                     </div>
                   )
                 })}
+              </div>
+            </section>
+          )}
+
+          {/* F9b: messages from students you supported — anonymous, linked to ref only */}
+          {gradMessages.length > 0 && (
+            <section className="mt-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">{t('sponsorPortal.graduationMessages.title')}</h2>
+              <p className="text-sm text-gray-600 mt-1">{t('sponsorPortal.graduationMessages.subtitle')}</p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {gradMessages.map((m, i) => (
+                  <div key={i} className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
+                    <p className="text-sm text-gray-800">💬 “{m.text}”</p>
+                    <p className="text-xs text-gray-500 mt-3">
+                      {t('sponsorPortal.graduationMessages.attribution')} · {m.ref}
+                    </p>
+                  </div>
+                ))}
               </div>
             </section>
           )}
