@@ -1890,6 +1890,10 @@
           "email": "your email"
         }
       }
+    },
+    "subnav": {
+      "apply": "Apply for assistance",
+      "sponsor": "Become a sponsor"
     }
   },
   "authGate": {

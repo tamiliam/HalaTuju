@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **"B40 Aid" nav is now an umbrella dropdown for both audiences (students + sponsors).** The top-nav "B40 Aid" item
+  (`AppHeader`) became a hover/focus dropdown with two paths — **"Apply for assistance"** (`/scholarship`) and **"Become a
+  sponsor"** (`/sponsor`) — active on either side; the mobile menu shows the two as an indented section. The previously
+  orphaned sponsor landing (`/sponsor`, signed-out) now uses the **main `AppHeader`** instead of its own bespoke top bar,
+  so there's one consistent header + the unified Student/Sponsor/Partner "Log in" dropdown everywhere (sponsor auth stays
+  on its own isolated client — presentation only). The `/scholarship` "support a student" CTA's dead
+  `mailto:…Sponsor enquiry` now links straight into the `/sponsor` funnel. New i18n `scholarship.subnav.{apply,sponsor}`
+  (en/ms/ta). `next build` clean; 276 jest; tsc clean. (Built in an isolated git worktree alongside the parallel
+  admin-search work.)
+
 ### Deployed — B40 sponsor programme GO-LIVE (2026-06-09)
 - **The whole B40 Phase E/F sponsor programme went live** (Sprint 12, lawyer-gated go-live, owner-authorised with the
   current draft consent wording — the lawyer-vetted text + a `CONSENT_VERSION` bump land as a follow-up). The 25

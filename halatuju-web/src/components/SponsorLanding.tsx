@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
-import LanguageSelector from '@/components/LanguageSelector'
 import { useT } from '@/lib/i18n'
 
 // Promise-card icons (lock / shield-check / people) — inline SVG to match the app.
@@ -27,27 +27,9 @@ export default function SponsorLanding({ count }: { count: number }) {
 
   return (
     <>
-      {/* Sponsor-specific top bar (the public student AppHeader doesn't fit a sponsor page) */}
-      <header className="bg-white border-b sticky top-0 z-20">
-        <div className="container mx-auto px-6 py-3 flex items-center justify-between gap-3">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo-icon.png" alt="HalaTuju" width={100} height={36} />
-            <span className="hidden sm:inline text-xs font-semibold text-blue-700 bg-blue-50 rounded-full px-2.5 py-1">
-              {t('sponsorLanding.nav.forSponsors')}
-            </span>
-          </Link>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <LanguageSelector />
-            <Link href="/sponsor/login" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-              {t('sponsorLanding.nav.signIn')}
-            </Link>
-            <Link href="/sponsor/register"
-              className="text-sm font-semibold bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-              {t('sponsorLanding.nav.becomeSponsor')}
-            </Link>
-          </div>
-        </div>
-      </header>
+      {/* Unified app header (carries the Student/Sponsor/Partner "Log in" dropdown +
+          the B40 Aid nav). The page's own hero/CTAs handle "Become a sponsor". */}
+      <AppHeader />
 
       <main className="bg-gray-50">
         {/* Hero — text + image, with a live "students waiting" counter under the CTAs */}
