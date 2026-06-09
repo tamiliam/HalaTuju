@@ -5,6 +5,7 @@ three codes deliberately NOT ticketed), idempotency, auto-resolve on gap-clear,
 the no-re-nag rule, student resolve, and officer-raised items.
 """
 import jwt
+from unittest.mock import patch
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -15,6 +16,7 @@ from apps.scholarship.models import (
 )
 from apps.scholarship.resolution import (
     add_officer_item, resolve_item, sync_resolution_items,
+    doc_match_verdict, resolve_doc_items_for_upload,
 )
 
 _TEST_JWT_SECRET = 'test-supabase-jwt-secret'
@@ -300,3 +302,129 @@ class TestCheck2QueriesInStudentQueue(TestCase):
         self.assertNotIn('sibling_level_unknown', codes)
         self.assertFalse(
             self.app.resolution_items.filter(source='check2', kind='clarify').exists())
+
+
+class TestDocMatchVerdict(_Base):
+    """The Action Centre's per-document accept/keep-open verdict (Phase 1). Only a
+    CONFIRMED mismatch or an UNREADABLE scan keeps a task open; uncertain / soft /
+    pending are accepted (D1). Engines are patched — the reduction logic is what's tested."""
+
+    def _doc(self, doc_type, **kw):
+        return ApplicantDocument.objects.create(
+            application=self.app, doc_type=doc_type, storage_path=f'{self.app.id}/{doc_type}/x', **kw)
+
+    def test_results_slip_name_mismatch(self):
+        doc = self._doc('results_slip')
+        with patch('apps.scholarship.academic_engine.student_slip_check',
+                   return_value={'name': 'mismatch'}):
+            self.assertEqual(doc_match_verdict(doc), 'mismatch')
+
+    def test_results_slip_grades_mismatch(self):
+        doc = self._doc('results_slip')
+        with patch('apps.scholarship.academic_engine.student_slip_check',
+                   return_value={'name': 'match', 'subjects': 'match', 'results': 'mismatch'}):
+            self.assertEqual(doc_match_verdict(doc), 'mismatch')
+
+    def test_results_slip_unreadable(self):
+        doc = self._doc('results_slip')
+        with patch('apps.scholarship.academic_engine.student_slip_check',
+                   return_value={'name': 'unreadable'}):
+            self.assertEqual(doc_match_verdict(doc), 'unreadable')
+
+    def test_results_slip_clean_ok(self):
+        doc = self._doc('results_slip')
+        with patch('apps.scholarship.academic_engine.student_slip_check',
+                   return_value={'name': 'match', 'subjects': 'match', 'results': 'match'}):
+            self.assertEqual(doc_match_verdict(doc), 'ok')
+
+    def test_results_slip_uncertain_is_accepted(self):
+        # An uncertain grade goes to the reviewer — we accept the upload (D1).
+        doc = self._doc('results_slip')
+        with patch('apps.scholarship.academic_engine.student_slip_check',
+                   return_value={'name': 'match', 'subjects': 'match', 'results': 'uncertain'}):
+            self.assertEqual(doc_match_verdict(doc), 'ok')
+
+    def test_str_rejected_is_mismatch(self):
+        doc = self._doc('str')
+        with patch('apps.scholarship.income_engine.student_str_check',
+                   return_value={'name_status': 'match', 'nric_status': 'match', 'current_status': 'rejected'}):
+            self.assertEqual(doc_match_verdict(doc), 'mismatch')
+
+    def test_str_current_ok(self):
+        doc = self._doc('str')
+        with patch('apps.scholarship.income_engine.student_str_check',
+                   return_value={'name_status': 'match', 'nric_status': 'match', 'current_status': 'current'}):
+            self.assertEqual(doc_match_verdict(doc), 'ok')
+
+    def test_birth_certificate_mother_mismatch(self):
+        doc = self._doc('birth_certificate')
+        with patch('apps.scholarship.income_engine.student_bc_check',
+                   return_value={'child_status': 'match', 'mother_status': 'mismatch', 'father_status': 'match'}):
+            self.assertEqual(doc_match_verdict(doc), 'mismatch')
+
+    def test_birth_certificate_clean_ok(self):
+        doc = self._doc('birth_certificate')
+        with patch('apps.scholarship.income_engine.student_bc_check',
+                   return_value={'child_status': 'match', 'mother_status': 'match', 'father_status': 'match'}):
+            self.assertEqual(doc_match_verdict(doc), 'ok')
+
+    def test_parent_ic_name_mismatch(self):
+        doc = self._doc('parent_ic', vision_run_at=timezone.now())
+        with patch('apps.scholarship.income_engine.student_income_ic_check',
+                   return_value={'name_status': 'mismatch', 'readable': True}):
+            self.assertEqual(doc_match_verdict(doc), 'mismatch')
+
+    def test_utility_always_ok(self):
+        self.assertEqual(doc_match_verdict(self._doc('water_bill')), 'ok')
+
+    def test_unknown_doc_type_ok(self):
+        self.assertEqual(doc_match_verdict(self._doc('photo')), 'ok')
+
+
+class TestResolveDocItemsForUpload(_Base):
+    """A clean upload resolves the matching OPEN doc task (the officer-doc bug fix);
+    a mismatch leaves it open; it never touches other doc types or non-doc items."""
+
+    def _doc(self, doc_type):
+        return ApplicantDocument.objects.create(
+            application=self.app, doc_type=doc_type, storage_path=f'{self.app.id}/{doc_type}/x')
+
+    def test_clean_upload_resolves_officer_doc_item(self):
+        item = add_officer_item(self.app, kind='doc', prompt='Upload your BC',
+                                admin_email='o@x', doc_type='birth_certificate')
+        doc = self._doc('birth_certificate')
+        with patch('apps.scholarship.resolution.doc_match_verdict', return_value='ok'):
+            self.assertEqual(resolve_doc_items_for_upload(self.app, doc), 'ok')
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'resolved')
+        self.assertEqual(item.resolution_doc_id, doc.id)
+
+    def test_mismatch_keeps_officer_doc_item_open(self):
+        item = add_officer_item(self.app, kind='doc', prompt='Upload your BC',
+                                admin_email='o@x', doc_type='birth_certificate')
+        doc = self._doc('birth_certificate')
+        with patch('apps.scholarship.resolution.doc_match_verdict', return_value='mismatch'):
+            self.assertEqual(resolve_doc_items_for_upload(self.app, doc), 'mismatch')
+        item.refresh_from_db()
+        self.assertEqual(item.status, 'open')
+
+    def test_only_matching_doc_type_resolves(self):
+        bc = add_officer_item(self.app, kind='doc', prompt='BC', admin_email='o@x',
+                              doc_type='birth_certificate')
+        slip = add_officer_item(self.app, kind='doc', prompt='Slip', admin_email='o@x',
+                                doc_type='salary_slip')
+        doc = self._doc('birth_certificate')
+        with patch('apps.scholarship.resolution.doc_match_verdict', return_value='ok'):
+            resolve_doc_items_for_upload(self.app, doc)
+        bc.refresh_from_db(); slip.refresh_from_db()
+        self.assertEqual(bc.status, 'resolved')
+        self.assertEqual(slip.status, 'open')
+
+    def test_does_not_touch_explanation_items(self):
+        q = add_officer_item(self.app, kind='explanation', prompt='How do you travel?',
+                             admin_email='o@x')
+        doc = self._doc('birth_certificate')
+        with patch('apps.scholarship.resolution.doc_match_verdict', return_value='ok'):
+            resolve_doc_items_for_upload(self.app, doc)
+        q.refresh_from_db()
+        self.assertEqual(q.status, 'open')

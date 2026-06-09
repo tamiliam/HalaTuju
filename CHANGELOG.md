@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Action Centre documents are now "smart" — scan-on-upload + contextual Cikgu Gopal (Phase 1).** Uploading a
+  requested document now runs **that document's specific scan** (reusing the Documents-tab engines:
+  `birth_certificate`→relationship, `salary_slip`→income, `results_slip`→academic, `offer_letter`→pathway, `str`,
+  `ic`, …). A clean scan **ticks the task done**; a confirmed **mismatch/unreadable keeps the task open and surfaces
+  Cikgu Gopal inline** with the specific fix (the same `DocumentHelpCoach` as Documents), inviting a clean re-upload.
+  This **also fixes a real bug**: a reviewer/AI-raised *document request* (`officer` resolution item) never cleared on
+  upload — only auto-verdict (`system`) items did — so a student could upload exactly what was asked and the task stayed
+  stubbornly open. New `resolution.doc_match_verdict(doc)` (mirrors the consent-gate per-doc red/unreadable
+  classification, so the Action Centre and the gate never disagree; only a confirmed mismatch / unreadable keeps a task
+  open — uncertain/soft/pending are accepted, D1) + `resolve_doc_items_for_upload(app, doc)`, wired into the upload
+  endpoint (`recordDocument` returns a `match_verdict`). The **static Cikgu Gopal footer is removed** — he's now
+  contextual (appears only when an uploaded document needs a fix). +17 scholarship pytest (`doc_match_verdict` reduction
+  per doc-type + the resolve-on-match/keep-open gate); reuses existing `scholarship.docs.help.*` copy (no new i18n).
+  FE-only contract change + a 2-line backend wire; no migration. 982 scholarship pytest + 276 jest + next build clean +
+  i18n parity 2472. *(Phase 2 — a conservative Gopal nudge on typed answers, only when totally off-topic — is planned
+  next.)*
 - **Action Centre now mounts for submitted students (post-submit query/document surface).** Previously
   `/scholarship/application` only rendered the interactive follow-up (which hosts the Action Centre) for
   `shortlisted`; a `profile_complete` student — exactly when queries/document-requests are raised — fell through to a

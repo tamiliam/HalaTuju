@@ -492,9 +492,15 @@ class DocumentListCreateView(APIView):
             _vision.read_text_document(doc)
         # S3: a new upload may clear a verdict gap → auto-resolve its ticket
         # (and link the doc), or surface a fresh ticket. Idempotent, never blocks.
-        from .resolution import sync_resolution_items
+        from .resolution import sync_resolution_items, resolve_doc_items_for_upload
         sync_resolution_items(app)
-        return Response(ApplicantDocumentSerializer(doc).data, status=status.HTTP_201_CREATED)
+        # Action Centre (post-submit): a clean upload also clears its OFFICER doc task,
+        # and the returned verdict tells the frontend whether to surface Cikgu Gopal's
+        # advice (mismatch/unreadable) or treat the task as done (ok).
+        match_verdict = resolve_doc_items_for_upload(app, doc)
+        data = ApplicantDocumentSerializer(doc).data
+        data['match_verdict'] = match_verdict
+        return Response(data, status=status.HTTP_201_CREATED)
 
     @staticmethod
     def _maybe_extract_fields(app, doc, _vision, ocr, names, postcode, city, check_address, match, _settings):

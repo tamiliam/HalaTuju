@@ -163,3 +163,98 @@ def add_officer_item(application, *, kind, prompt, admin_email, doc_type='', fac
         fact=fact or 'other', kind=kind, doc_type=doc_type, prompt=prompt or '',
         created_by=admin_email or '',
     )
+
+
+def doc_match_verdict(doc):
+    """The Action Centre's per-document verdict for an uploaded file:
+    ``'mismatch'`` (a confirmed red), ``'unreadable'`` (a bad/blurry scan), or
+    ``'ok'`` (accept — resolve the task).
+
+    Mirrors the consent-gate per-document classification
+    (``services.document_red_blockers`` / ``document_unreadable_blockers``) so the
+    Action Centre and the gate never disagree: only a CONFIRMED ``mismatch`` (or an
+    STR rejected/stale) or an UNREADABLE scan keeps a task open. Everything else —
+    'pending' (OCR not done / our outage), 'uncertain', soft signals, utilities —
+    is accepted (D1: don't trap a student on weak signals; the reviewer is the
+    backstop). Reads the SAME stored verification the student sees in Documents; runs
+    no new OCR.
+    """
+    from . import income_engine
+    from .academic_engine import student_slip_check
+    from .pathway_engine import student_offer_check
+    from .services import _is_ic_decode_error
+
+    dt = doc.doc_type
+
+    def red(chk, *keys):
+        return any((chk or {}).get(k) == 'mismatch' for k in keys)
+
+    if dt == 'results_slip':
+        chk = student_slip_check(doc) or {}
+        if red(chk, 'name', 'subjects', 'results'):
+            return 'mismatch'
+        if chk.get('name') == 'unreadable':
+            return 'unreadable'
+    elif dt == 'offer_letter':
+        chk = student_offer_check(doc) or {}
+        if red(chk, 'name', 'ic'):
+            return 'mismatch'
+        if chk.get('name') == 'unreadable':
+            return 'unreadable'
+    elif dt == 'parent_ic':
+        chk = income_engine.student_income_ic_check(doc) or {}
+        if red(chk, 'name_status', 'proof_name_status', 'proof_nric_status'):
+            return 'mismatch'
+        ran = bool(getattr(doc, 'vision_run_at', None))
+        err = getattr(doc, 'vision_error', '') or ''
+        # An OCR-service outage is not the student's fault — don't call it unreadable.
+        if ran and (not err or _is_ic_decode_error(err)) and not chk.get('readable'):
+            return 'unreadable'
+    elif dt in ('salary_slip', 'epf'):
+        if red(income_engine.student_income_proof_check(doc), 'name_status', 'nric_status'):
+            return 'mismatch'
+    elif dt == 'str':
+        chk = income_engine.student_str_check(doc) or {}
+        if red(chk, 'name_status', 'nric_status') or chk.get('current_status') in ('rejected', 'stale'):
+            return 'mismatch'
+    elif dt == 'birth_certificate':
+        if red(income_engine.student_bc_check(doc), 'child_status', 'mother_status', 'father_status'):
+            return 'mismatch'
+    elif dt == 'guardianship_letter':
+        if red(income_engine.student_guardianship_check(doc), 'guardian_status', 'ward_status'):
+            return 'mismatch'
+    elif dt == 'ic':
+        ran = bool(getattr(doc, 'vision_run_at', None))
+        if ran:
+            err = getattr(doc, 'vision_error', '') or ''
+            service_down = bool(err) and not _is_ic_decode_error(err)
+            if not service_down:
+                from .vision import nric_match, name_match
+                prof = getattr(doc.application, 'profile', None)
+                if not doc.vision_nric or not doc.vision_name:
+                    return 'unreadable'
+                if not nric_match(doc.vision_nric, getattr(prof, 'nric', '') or ''):
+                    return 'mismatch'
+                if name_match(doc.vision_name, getattr(prof, 'name', '') or '') == 'mismatch':
+                    return 'mismatch'
+    # water_bill / electricity_bill / statement_of_intent / photo, and every
+    # 'pending'/'uncertain'/soft outcome above → accept.
+    return 'ok'
+
+
+def resolve_doc_items_for_upload(application, doc):
+    """A student uploaded ``doc`` via the Action Centre — clear any OPEN ``doc``-kind
+    task for that ``doc_type`` IF the file scans clean (``doc_match_verdict == 'ok'``).
+
+    This is what finally resolves **officer** document requests on upload (system doc
+    items already clear via ``sync_resolution_items`` when their verdict gap closes;
+    re-resolving them here is idempotent). On a mismatch/unreadable the task stays open
+    so the student re-uploads (the caller surfaces Cikgu Gopal's advice). Returns the
+    verdict so the caller can tell the frontend.
+    """
+    verdict = doc_match_verdict(doc)
+    if verdict == 'ok':
+        for item in application.resolution_items.filter(
+                status='open', kind='doc', doc_type=doc.doc_type):
+            resolve_item(item, doc=doc, by='student')
+    return verdict

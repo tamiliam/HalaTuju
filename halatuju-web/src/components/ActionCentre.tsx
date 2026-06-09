@@ -23,6 +23,7 @@ import {
   uploadFileToSignedUrl,
   recordDocument,
   type ResolutionItem,
+  type ApplicantDocument,
 } from '@/lib/api'
 import {
   computeProgress,
@@ -34,6 +35,7 @@ import {
   type ActionIcon,
   type ConfirmTarget,
 } from '@/lib/actionCentre'
+import DocumentHelpCoach from '@/components/DocumentHelpCoach'
 
 // ── Icons (inline SVG, blue circle bg set by the caller) ──────────────────
 
@@ -46,14 +48,6 @@ function KindIcon({ icon }: { icon: ActionIcon }) {
   return (
     <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24" aria-hidden>
       <path strokeLinecap="round" strokeLinejoin="round" d={paths[icon]} />
-    </svg>
-  )
-}
-
-function GraduationCap() {
-  return (
-    <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
-      <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z" />
     </svg>
   )
 }
@@ -75,7 +69,7 @@ function ActionCard({
    *  send the student back to a form tab. They respond with a typed reply instead. */
   formLocked?: boolean
 }) {
-  const { t } = useT()
+  const { t, locale } = useT()
   const src = titleSourceFor(item)
   const tParams = localiseParams(item.params, t)
   const title = src.kind === 'raw' ? src.text : t(src.titleKey, tParams)
@@ -84,8 +78,14 @@ function ActionCard({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [text, setText] = useState('')
+  // After an upload that DIDN'T clear the task (the scan flagged a mismatch/unreadable),
+  // hold the uploaded doc so Cikgu Gopal can advise inline — the same contextual coach
+  // as the Documents tab. Cleared on a clean upload (the card then unmounts on refresh).
+  const [coachDoc, setCoachDoc] = useState<ApplicantDocument | null>(null)
 
-  // doc: upload the named doc_type, then re-fetch the tickets.
+  // doc: upload the named doc_type, run its scan, then re-fetch the tickets. A clean
+  // scan resolves the task server-side (this card unmounts); a mismatch keeps it open
+  // and surfaces Gopal's advice for a clean re-upload.
   const onFile = async (file: File) => {
     if (!token) return
     setBusy(true)
@@ -93,10 +93,11 @@ function ActionCard({
     try {
       const { upload_url, storage_path } = await signUploadDocument(item.doc_type, { token })
       await uploadFileToSignedUrl(upload_url, file)
-      await recordDocument(
+      const doc = await recordDocument(
         { doc_type: item.doc_type, storage_path, original_filename: file.name, content_type: file.type, size: file.size },
         { token },
       )
+      setCoachDoc(doc.match_verdict && doc.match_verdict !== 'ok' ? doc : null)
       onResolved()
     } catch {
       setError(t('scholarship.actionCentre.uploadError'))
@@ -154,20 +155,27 @@ function ActionCard({
           {/* ── Action ─────────────────────────────────────────────── */}
           <div className="mt-4">
             {item.kind === 'doc' && (
-              <label className={`block w-full cursor-pointer rounded-xl bg-primary-500 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-600 ${busy ? 'opacity-50' : ''}`}>
-                {busy ? t('scholarship.actionCentre.uploading') : t('scholarship.actionCentre.upload')}
-                <input
-                  type="file"
-                  accept="image/*,.pdf"
-                  className="hidden"
-                  disabled={busy}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    if (f) onFile(f)
-                    e.target.value = ''
-                  }}
-                />
-              </label>
+              <>
+                <label className={`block w-full cursor-pointer rounded-xl bg-primary-500 px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-600 ${busy ? 'opacity-50' : ''}`}>
+                  {busy ? t('scholarship.actionCentre.uploading') : t('scholarship.actionCentre.upload')}
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    className="hidden"
+                    disabled={busy}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0]
+                      if (f) onFile(f)
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+                {/* Contextual Cikgu Gopal — appears only when the just-uploaded document
+                    didn't pass its scan; advises the fix, then the student re-uploads. */}
+                {coachDoc && (
+                  <DocumentHelpCoach doc={coachDoc} token={token} t={t} lang={locale} />
+                )}
+              </>
             )}
 
             {/* Typed reply — explanation/clarify always, and (post-submit only) a
@@ -341,16 +349,8 @@ export default function ActionCentre({
           ))}
         </div>
       )}
-
-      {/* Cikgu Gopal coach bubble */}
-      <div className="mt-5 flex items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-500">
-          <GraduationCap />
-        </div>
-        <div className="rounded-2xl bg-primary-50 px-4 py-3">
-          <p className="text-sm text-gray-700">{t('scholarship.actionCentre.coach')}</p>
-        </div>
-      </div>
+      {/* No static Cikgu Gopal footer — he now appears contextually, beneath a document
+          task whose upload didn't pass its scan (see ActionCard). */}
     </section>
   )
 }
