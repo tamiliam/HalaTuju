@@ -177,11 +177,13 @@ class AdminInviteRoleTest(TestCase):
         self.assertEqual(a.role, 'admin')
         self.assertFalse(a.is_super_admin)
 
-    def test_invite_super_sets_legacy_flag(self):
+    def test_invite_super_not_allowed_falls_back_to_reviewer(self):
+        # Super is NOT invitable (there is one super admin — the owner). An attempt
+        # to invite 'super' falls back to the safe workhorse role.
         self._invite('sup2@example.com', 'super')
         a = PartnerAdmin.objects.get(email='sup2@example.com')
-        self.assertEqual(a.role, 'super')
-        self.assertTrue(a.is_super_admin)  # legacy flag kept in lockstep
+        self.assertEqual(a.role, 'reviewer')
+        self.assertFalse(a.is_super_admin)
 
     def test_invite_defaults_to_reviewer(self):
         self._invite('def@example.com')  # no role sent
