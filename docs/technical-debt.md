@@ -594,7 +594,7 @@
   on prod, and a live smoke needs `SPONSOR_POOL_ENABLED=on` locally with both servers). **To resolve:** before the
   Sprint 12 go-live deploy, run the app locally with the flag on and click through `/sponsor` in all three locales +
   confirm the counter renders the real eligible count. (Logged 2026-06-08, B40 Phase E/F Sprint 1.)
-- TD-093: **The new `onboarding_responses` table (migration `0049`) needs RLS enabled on Supabase at deploy.** New
+- ✅ RESOLVED (go-live 2026-06-09) — TD-093: **The new `onboarding_responses` table (migration `0049`) needs RLS enabled on Supabase at deploy.** New
   Django-created tables land without row-level security; per the existing new-model pattern (TD-058 era), enable RLS +
   the appropriate policy when applying `0049` migrate-first via the Supabase MCP, and re-run `get_advisors` to confirm
   no "RLS disabled" finding. Low risk while dark (the api connects with a privileged role), but must be closed before
@@ -605,7 +605,7 @@
   need the owner's refinement (joins the Tamil-refine queue with TD-091). English + Malay are final. Low risk — the
   pages are dark until go-live. **To resolve:** owner Tamil refine before Sprint 12 go-live. (Logged 2026-06-09, B40
   Phase E/F Sprint 3.)
-- TD-095: **Create the two F3 Cloud Scheduler jobs at deploy.** `send_sponsor_realtime` (HOURLY) and
+- ✅ RESOLVED (go-live 2026-06-09) — TD-095: **Create the two F3 Cloud Scheduler jobs at deploy.** `send_sponsor_realtime` (HOURLY) and
   `send_sponsor_digests` (WEEKLY) are registered in `CronRunView.JOBS` (`sponsor-realtime`, `sponsor-digests`) but have
   no scheduler entries yet. **To resolve:** at the Phase E/F batch deploy, create two Cloud Scheduler jobs hitting the
   cron endpoint with `X-Cron-Secret` (mirror `halatuju-application-reminders`): hourly for `sponsor-realtime`, weekly
@@ -619,7 +619,7 @@
   to ship trilingual but need the owner's refinement (joins the Tamil-refine queue with TD-091/094). English + Malay
   are final. Low risk — the page is staff-only and held local until the batch deploy. **To resolve:** owner Tamil
   refine before Sprint 12 go-live. (Logged 2026-06-09, B40 Phase E/F Sprint 5.)
-- TD-098: **Migration `0051_reviewerprofile` (new model) needs the contenttypes workaround + RLS at deploy.** The
+- ✅ RESOLVED (go-live 2026-06-09) — TD-098: **Migration `0051_reviewerprofile` (new model) needs the contenttypes workaround + RLS at deploy.** The
   `reviewer_profiles` table is created by a new-model migration; per the TD-058 pattern, prod has no
   contenttypes/auth tables, so a plain `manage.py migrate` exits non-zero on the `post_migrate` signal even when the
   DDL commits. **To resolve:** at the Phase E/F batch deploy, apply `0051` via the Supabase MCP (CREATE TABLE +
@@ -632,7 +632,7 @@
   (the real money is TD-075); F2 deliberately ships the *profile + list* read-surface only. **To resolve:** wire
   `donate`/`cancel` into the My-students view when the E3 wallet UI is built (or sooner if a dark click-through needs
   them). Low priority while dark. (Logged 2026-06-09, B40 Phase E/F Sprint 8.)
-- TD-100: **Migration `0052` (new `AssignmentEvent` model) needs the contenttypes workaround + RLS at deploy.** Like
+- ✅ RESOLVED (go-live 2026-06-09) — TD-100: **Migration `0052` (new `AssignmentEvent` model) needs the contenttypes workaround + RLS at deploy.** Like
   `0051`, the new `assignment_events` table is a new-model migration; prod has no contenttypes/auth tables, so a plain
   `manage.py migrate` exits non-zero on `post_migrate` even when the DDL commits. **To resolve:** at the Phase E/F batch
   deploy, apply `0052` via the Supabase MCP (ADD COLUMN `assigned_at` + CREATE TABLE `assignment_events` + record the
@@ -644,20 +644,20 @@
   `ReviewerProfile`. **To resolve:** on the admin dashboard (or `/admin/profile`), show a dismissable banner for a
   reviewer/super whose `ReviewerProfile` is still blank, linking to `/admin/profile`. Low priority, non-blocking.
   (Logged 2026-06-09, B40 Phase E/F Sprint 6.)
-- TD-102: **Migration `0053` (new `SemesterResult` + `GraduationMessage` models) needs the contenttypes workaround +
+- ✅ RESOLVED (go-live 2026-06-09) — TD-102: **Migration `0053` (new `SemesterResult` + `GraduationMessage` models) needs the contenttypes workaround +
   RLS at deploy.** Like `0051`/`0052`, `0053` creates two new tables (`semester_results`, `graduation_messages`); prod
   has no contenttypes/auth tables, so a plain `manage.py migrate` exits non-zero on `post_migrate` even when the DDL
   commits. **To resolve:** at the Phase E/F batch deploy, apply `0053` via the Supabase MCP (CREATE both TABLEs + record
   the `django_migrations` row), then **enable RLS on both** (deny-by-default, service-role-only — `graduation_messages`
   holds free-text that, pre-approval, may contain identifiers in `raw_text`/`scan_result`) and re-run `get_advisors`.
   Must be closed before go-live. (Logged 2026-06-09, B40 Phase E/F Sprint 9.)
-- TD-106: **Migration `0054` (new `SponsorReferral` model) needs the contenttypes workaround + RLS at deploy.** Like
+- ✅ RESOLVED (go-live 2026-06-09) — TD-106: **Migration `0054` (new `SponsorReferral` model) needs the contenttypes workaround + RLS at deploy.** Like
   `0051`–`0053`, the new `sponsor_referrals` table is a new-model migration; prod has no contenttypes/auth tables, so a
   plain `manage.py migrate` exits non-zero on `post_migrate` even when the DDL commits. **To resolve:** at the Phase E/F
   batch deploy, apply `0054` via the Supabase MCP (CREATE TABLE + record the `django_migrations` row), then **enable RLS
   on `sponsor_referrals`** (deny-by-default, service-role-only — it holds prospective-sponsor emails, PII until purged)
   and re-run `get_advisors`. Must be closed before go-live. (Logged 2026-06-09, B40 Phase E/F Sprint 11.)
-- TD-107: **Create the F4 `purge-referrals` Cloud Scheduler job at deploy.** The 60-day PDPA purge
+- ✅ RESOLVED (go-live 2026-06-09) — TD-107: **Create the F4 `purge-referrals` Cloud Scheduler job at deploy.** The 60-day PDPA purge
   (`purge_sponsor_referrals`) is whitelisted in `CronRunView.JOBS` but needs a **daily** Cloud Scheduler HTTP job
   (mirroring the F3 `sponsor-realtime`/`sponsor-digests` jobs: region, `X-Cron-Secret` from `CRON_SECRET`,
   `Asia/Kuala_Lumpur`). Without it, unconverted invitee emails are never scrubbed. **To resolve:** at deploy,
