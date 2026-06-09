@@ -132,6 +132,21 @@
     "approvedTitle": "You're approved",
     "approvedBody": "Welcome aboard. You can soon browse students who need support — always anonymously.",
     "comingSoon": "Browsing students is coming soon. We'll email you the moment it's ready.",
+    "myStudents": {
+      "welcome": "Welcome back",
+      "approvedPill": "Approved sponsor",
+      "balance": "Giving balance",
+      "title": "My students",
+      "subtitle": "The students your giving supports. Identities are kept private.",
+      "months": "months",
+      "awaiting": "Awaiting acceptance",
+      "progress": {
+        "on_track": "On track",
+        "semester_completed": "Semester completed",
+        "needs_attention": "Needs attention",
+        "graduated": "Graduated"
+      }
+    },
     "notify": {
       "title": "Email updates",
       "intro": "How often should we email you about new students?",

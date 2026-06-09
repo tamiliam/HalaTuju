@@ -171,6 +171,33 @@ class TestAllowlistNoLeak(TestCase):
             self.assertNotIn(value, blob, f'{label} leaked to a trusted sponsor')
 
 
+class TestProgressState(TestCase):
+    """F2: the coarse, non-identifying progress band on a sponsor's student card."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def test_none_until_sponsored(self):
+        app = _make_eligible_app(self.cohort)  # not yet sponsored
+        self.assertIsNone(pool.derive_progress_state(app))
+        self.assertIsNone(SponsorPoolCardSerializer(app).data['progress_state'])
+
+    def test_on_track_when_sponsored(self):
+        app = _make_eligible_app(self.cohort)
+        app.status = 'sponsored'
+        app.save(update_fields=['status'])
+        self.assertEqual(pool.derive_progress_state(app), 'on_track')
+        self.assertEqual(SponsorPoolCardSerializer(app).data['progress_state'], 'on_track')
+
+    def test_progress_state_not_an_identifier(self):
+        app = _make_eligible_app(self.cohort)
+        app.status = 'sponsored'
+        app.save(update_fields=['status'])
+        blob = json.dumps(SponsorPoolCardSerializer(app).data)
+        for label, value in IDENTIFIERS.items():
+            self.assertNotIn(value, blob, f'{label} leaked alongside progress_state')
+
+
 # ─── the anonymous prompt must not carry name/school ─────────────────────────
 
 class TestAnonPrompt(TestCase):
