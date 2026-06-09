@@ -39,7 +39,7 @@ class TestReviewerProfile(TestCase):
             name='Reviewer Two', email='reviewer2@example.com',
         )
         cls.viewer = PartnerAdmin.objects.create(
-            supabase_user_id='viewer-uid', role='viewer', is_active=True,
+            supabase_user_id='viewer-uid', role='admin', is_active=True,
             name='Viewer', email='viewer@example.com',
         )
         cls.superadmin = PartnerAdmin.objects.create(

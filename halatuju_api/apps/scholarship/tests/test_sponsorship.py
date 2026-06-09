@@ -307,7 +307,7 @@ class TestAdminSponsorship(TestCase):
     def setUpTestData(cls):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
         PartnerAdmin.objects.create(supabase_user_id='rev', role='reviewer', is_active=True, name='Rev', email='r@x.com')
-        PartnerAdmin.objects.create(supabase_user_id='vie', role='viewer', is_active=True, name='Vie', email='v@x.com')
+        PartnerAdmin.objects.create(supabase_user_id='vie', role='admin', is_active=True, name='Vie', email='v@x.com')
 
     def setUp(self):
         self.client = APIClient()

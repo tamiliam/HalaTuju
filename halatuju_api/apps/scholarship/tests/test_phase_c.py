@@ -6,7 +6,7 @@ import jwt
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
-from apps.courses.models import PartnerAdmin, StudentProfile
+from apps.courses.models import PartnerAdmin, PartnerOrganisation, StudentProfile
 from apps.scholarship.models import (
     ApplicantDocument, Consent, FundingNeed, InterviewSession,
     ScholarshipApplication, ScholarshipCohort,
@@ -40,7 +40,7 @@ class PhaseCBase(TestCase):
             name='Reviewer', email='reviewer@example.com',
         )
         cls.viewer = PartnerAdmin.objects.create(
-            supabase_user_id=VIEWER, role='viewer', is_active=True,
+            supabase_user_id=VIEWER, role='admin', is_active=True,
             name='Viewer', email='viewer@example.com',
         )
         # Adult profile (2003-born NRIC) so guardian_docs are trivially satisfied.
@@ -170,11 +170,72 @@ class TestListFilters(PhaseCBase):
         a.assigned_to = self.reviewer
         a.save(update_fields=['assigned_to'])
         self._second_app()  # unassigned
+        # A reviewer is scoped to their assigned applicants only.
         self._auth(REVIEWER)
         r_me = self.client.get('/api/v1/admin/scholarship/applications/?assigned=me')
         self.assertEqual(r_me.json()['total_count'], 1)
         r_none = self.client.get('/api/v1/admin/scholarship/applications/?assigned=none')
-        self.assertEqual(r_none.json()['total_count'], 1)
+        self.assertEqual(r_none.json()['total_count'], 0)   # can't see unassigned ones
+        # A super sees the unassigned one.
+        self._auth(SUPER)
+        r_none_super = self.client.get('/api/v1/admin/scholarship/applications/?assigned=none')
+        self.assertEqual(r_none_super.json()['total_count'], 1)
+
+
+class TestRoleScoping(PhaseCBase):
+    """Role realignment (2026-06-09): reviewer is ASSIGNMENT-scoped, partner has NO
+    B40 access, super/admin see all. Security-critical leak coverage."""
+
+    def test_reviewer_cannot_open_unassigned_application(self):
+        app = self._make_app()  # assigned to nobody
+        self._auth(REVIEWER)
+        r = self.client.get(f'/api/v1/admin/scholarship/applications/{app.id}/')
+        self.assertEqual(r.status_code, 403)   # not theirs → blocked
+
+    def test_reviewer_can_open_assigned_application(self):
+        app = self._make_app()
+        app.assigned_to = self.reviewer
+        app.save(update_fields=['assigned_to'])
+        self._auth(REVIEWER)
+        r = self.client.get(f'/api/v1/admin/scholarship/applications/{app.id}/')
+        self.assertEqual(r.status_code, 200)
+
+    def test_super_opens_any_application(self):
+        app = self._make_app()
+        self._auth(SUPER)
+        self.assertEqual(
+            self.client.get(f'/api/v1/admin/scholarship/applications/{app.id}/').status_code, 200)
+
+    def test_partner_has_no_b40_access(self):
+        org = PartnerOrganisation.objects.create(code='p1', name='Org One')
+        PartnerAdmin.objects.create(supabase_user_id='partner-uid', role='partner',
+                                    org=org, is_active=True, name='Partner', email='p@x.org')
+        self._make_app()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("partner-uid")}')
+        self.assertEqual(
+            self.client.get('/api/v1/admin/scholarship/applications/').status_code, 403)
+
+    def test_partner_sees_only_own_org_students(self):
+        org_a = PartnerOrganisation.objects.create(code='a', name='Org A')
+        org_b = PartnerOrganisation.objects.create(code='b', name='Org B')
+        StudentProfile.objects.create(supabase_user_id='sa', name='Anita',
+                                      referred_by_org=org_a, exam_type='spm')
+        StudentProfile.objects.create(supabase_user_id='sb', name='Bala',
+                                      referred_by_org=org_b, exam_type='spm')
+        PartnerAdmin.objects.create(supabase_user_id='pa-uid', role='partner', org=org_a,
+                                    is_active=True, name='PA', email='pa@x.org')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("pa-uid")}')
+        names = [s['name'] for s in self.client.get('/api/v1/admin/students/').json()['students']]
+        self.assertIn('Anita', names)        # own org
+        self.assertNotIn('Bala', names)      # NEVER another org's student
+
+    def test_reviewer_has_no_students_access(self):
+        # Reviewers are individuals — the Students page is not theirs (even though the
+        # 2 prod reviewers historically carry an org tag).
+        self.reviewer.org = PartnerOrganisation.objects.create(code='r', name='Rev Org')
+        self.reviewer.save(update_fields=['org'])
+        self._auth(REVIEWER)
+        self.assertEqual(self.client.get('/api/v1/admin/students/').status_code, 403)
 
 
 class TestAssignment(PhaseCBase):

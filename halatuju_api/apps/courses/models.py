@@ -402,13 +402,22 @@ class PartnerOrganisation(models.Model):
 
 class PartnerAdmin(models.Model):
     """Admin user for a partner organisation. Separate from StudentProfile."""
-    # Phase C role categories. Kept ALONGSIDE is_super_admin (expand-contract):
-    # is_super_admin is backfilled into role and still read by legacy code; a
-    # later TD drops it once role is the sole source of truth.
+    # Role categories. Kept ALONGSIDE is_super_admin (expand-contract): is_super_admin
+    # is backfilled into role and still read by legacy code; a later TD drops it once
+    # role is the sole source of truth.
+    #   super    — everything + invite/role management (the owner).
+    #   admin    — sees ALL pages but READ-ONLY for now (execute powers + add-super-admin
+    #              + transfer-ownership land later; for now == the old 'viewer').
+    #   partner  — an organisation rep: Dashboard + Students + Profile, scoped to their
+    #              OWN org's students only.
+    #   reviewer — an individual volunteer: B40 Applications + Profile, scoped to the
+    #              applicants ASSIGNED to them only; makes the final accept/reject call.
+    # ('viewer' retired 2026-06-09 → folded into 'admin'; 0 viewers existed on prod.)
     ROLE_CHOICES = [
-        ('super', 'Super admin'),      # everything + invite/role management
-        ('reviewer', 'Reviewer'),      # verify-accept, interview, referee, profile publish
-        ('viewer', 'Viewer'),          # read-only
+        ('super', 'Super admin'),
+        ('admin', 'Admin'),
+        ('partner', 'Partner'),
+        ('reviewer', 'Reviewer'),
     ]
     supabase_user_id = models.CharField(
         max_length=100, unique=True, null=True, blank=True,
@@ -422,7 +431,7 @@ class PartnerAdmin(models.Model):
     is_super_admin = models.BooleanField(default=False)
     role = models.CharField(
         max_length=20, choices=ROLE_CHOICES, default='reviewer',
-        help_text='Phase C: super/reviewer/viewer. Backfilled from is_super_admin.',
+        help_text='super / admin / partner / reviewer. Backfilled from is_super_admin.',
     )
     is_active = models.BooleanField(default=True)
     name = models.CharField(max_length=200)

@@ -38,7 +38,7 @@ class TestReviewerAssignment(TestCase):
             name='Reviewer Two', email='rev2@example.com',
         )
         cls.viewer = PartnerAdmin.objects.create(
-            supabase_user_id='view-uid', role='viewer', is_active=True,
+            supabase_user_id='view-uid', role='admin', is_active=True,
             name='Viewer', email='view@example.com',
         )
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)

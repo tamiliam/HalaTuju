@@ -72,7 +72,7 @@ class TestSuggestGapsEndpoint(TestCase):
         cls.app = ScholarshipApplication.objects.create(cohort=cls.cohort, profile=cls.profile, status='shortlisted')
         PartnerAdmin.objects.create(supabase_user_id=REVIEWER, role='reviewer', is_active=True,
                                     name='Rev', email='r@x.com')
-        PartnerAdmin.objects.create(supabase_user_id=VIEWER, role='viewer', is_active=True,
+        PartnerAdmin.objects.create(supabase_user_id=VIEWER, role='admin', is_active=True,
                                     name='Vie', email='v@x.com')
 
     def setUp(self):
@@ -109,6 +109,8 @@ class TestSuggestGapsEndpoint(TestCase):
 
     @patch('apps.scholarship.gap_engine.generate_interview_gaps')
     def test_get_detail_does_not_call_gemini(self, mock_gen):
+        self.app.assigned_to = PartnerAdmin.objects.get(supabase_user_id=REVIEWER)
+        self.app.save(update_fields=['assigned_to'])
         self._auth(REVIEWER)
         r = self.client.get(f'/api/v1/admin/scholarship/applications/{self.app.id}/')
         self.assertEqual(r.status_code, 200)

@@ -58,14 +58,49 @@ class _AdminBase(PartnerAdminMixin, APIView):
     def _get_application(self, pk):
         return ScholarshipApplication.objects.select_related('profile', 'cohort').filter(pk=pk).first()
 
+    def _b40_scope(self, admin):
+        """B40 Applications access by role:
+          'all'      — super + admin (see every application)
+          'assigned' — reviewer (only the applicants assigned to them)
+          'none'     — partner / anyone else (B40 is not their page)
+        """
+        if admin is None or admin.role == 'partner':
+            return 'none'
+        if self.has_role(admin, 'admin'):   # super + admin
+            return 'all'
+        if admin.role == 'reviewer':
+            return 'assigned'
+        return 'none'
+
+    def _scoped_application(self, request, pk):
+        """The application IFF this admin may access it (reviewer assignment-scoped;
+        partner none). Returns (app, error_response|None)."""
+        admin = self.get_admin(request)
+        if not admin:
+            return None, self._deny()
+        scope = self._b40_scope(admin)
+        if scope == 'none':
+            return None, self._deny_role()
+        app = self._get_application(pk)
+        if app is None:
+            return None, Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        if scope == 'assigned' and app.assigned_to_id != admin.id:
+            return None, self._deny_role()   # reviewer, not assigned to them
+        return app, None
+
 
 class AdminApplicationListView(_AdminBase):
     def get(self, request):
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
+        scope = self._b40_scope(admin)
+        if scope == 'none':
+            return self._deny_role()   # partner has no B40 Applications access
         qs = ScholarshipApplication.objects.select_related(
             'profile', 'cohort', 'assigned_to').order_by('-submitted_at')
+        if scope == 'assigned':
+            qs = qs.filter(assigned_to=admin)   # reviewer sees only their assigned applicants
         status_f = request.GET.get('status')
         bucket_f = request.GET.get('bucket')
         assigned_f = request.GET.get('assigned')
@@ -98,25 +133,24 @@ class AdminApplicationListView(_AdminBase):
 
 class AdminApplicationDetailView(_AdminBase):
     def get(self, request, pk):
-        if not self.get_admin(request):
-            return self._deny()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        # Read is role-scoped: reviewer only their assigned applicant; partner none.
+        app, err = self._scoped_application(request, pk)
+        if err:
+            return err
         return Response(AdminApplicationDetailSerializer(app).data)
 
     def patch(self, request, pk):
         """Admin-editable per-application flags: mentoring-candidate. Writes require
-        reviewer/super (viewer is read-only). Reviewer assignment moved to the
+        reviewer/super (admin is read-only). Reviewer assignment moved to the
         super-only audited endpoint (F7: .../assign/)."""
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
         if not self.has_role(admin, 'reviewer'):
             return self._deny_role()
-        app = self._get_application(pk)
-        if app is None:
-            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        app, err = self._scoped_application(request, pk)
+        if err:
+            return err
         fields = []
         if 'mentoring_candidate' in request.data:
             app.mentoring_candidate = bool(request.data['mentoring_candidate'])
