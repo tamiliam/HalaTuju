@@ -350,6 +350,7 @@ class ReviewerProfileSerializer(serializers.ModelSerializer):
         fields = [
             'highest_qualification', 'university', 'graduation_year',
             'field_of_study', 'phone', 'address',
+            'street_address', 'postcode', 'city', 'state',
         ]
 
     def validate_graduation_year(self, value):

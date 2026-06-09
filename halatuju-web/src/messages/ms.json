@@ -2936,7 +2936,38 @@
       "phone": "Nombor telefon",
       "address": "Alamat",
       "saved": "Kelayakan disimpan.",
-      "saveFailed": "Tidak dapat menyimpan kelayakan anda."
+      "saveFailed": "Tidak dapat menyimpan kelayakan anda.",
+      "qualOpts": {
+        "spm": "SPM",
+        "stpm": "STPM",
+        "matriculation": "Matrikulasi",
+        "diploma": "Diploma",
+        "bachelor": "Ijazah Sarjana Muda",
+        "master": "Ijazah Sarjana",
+        "phd": "PhD (Kedoktoran)",
+        "professional": "Kelayakan Profesional"
+      },
+      "fieldOpts": {
+        "engineering": "Kejuruteraan",
+        "it": "Sains Komputer / IT",
+        "medicine": "Perubatan & Sains Kesihatan",
+        "science": "Sains",
+        "business": "Perniagaan & Ekonomi",
+        "accounting": "Perakaunan & Kewangan",
+        "law": "Undang-undang",
+        "education": "Pendidikan",
+        "arts": "Seni & Kemanusiaan",
+        "social": "Sains Sosial"
+      },
+      "other": "Lain-lain",
+      "selectQualification": "Pilih kelayakan",
+      "selectField": "Pilih bidang pengajian",
+      "universityHint": "Taip untuk cari (cth. UTM)…",
+      "street": "Alamat jalan",
+      "postcode": "Poskod",
+      "city": "Bandar",
+      "state": "Negeri",
+      "selectState": "Pilih negeri"
     },
     "inviteAs": "Jemput sebagai",
     "inviteHeading": {

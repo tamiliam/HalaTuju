@@ -240,6 +240,10 @@ export interface ReviewerProfile {
   field_of_study: string
   phone: string
   address: string
+  street_address: string
+  postcode: string
+  city: string
+  state: string
 }
 
 export async function getReviewerProfile(options?: ApiOptions) {
