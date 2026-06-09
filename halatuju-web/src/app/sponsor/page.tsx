@@ -129,12 +129,17 @@ export default function SponsorPortalPage() {
   // signed-out visitors get the full marketing landing with the live counter.
   const [waitingCount, setWaitingCount] = useState(0)
   const [landingEnabled, setLandingEnabled] = useState(false)
+  // Has the (async) landing check resolved yet? Until it has, a signed-out visitor
+  // must NOT be shown the sign-in card — otherwise it flashes for a moment before
+  // the public marketing landing appears (the count endpoint reports `enabled`).
+  const [landingChecked, setLandingChecked] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     getStudentsWaitingCount()
       .then((d) => { if (!cancelled) { setWaitingCount(d.count); setLandingEnabled(d.enabled) } })
       .catch(() => { /* leave the landing disabled → falls back to the sign-in card */ })
+      .finally(() => { if (!cancelled) setLandingChecked(true) })
     return () => { cancelled = true }
   }, [])
 
@@ -166,8 +171,19 @@ export default function SponsorPortalPage() {
 
   const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 
+  // Hold a neutral loading screen while auth is resolving OR (for a signed-out
+  // visitor) until the landing check has returned — so the sign-in card can never
+  // flash before the public marketing landing renders.
+  if (isLoading || (!isSignedIn && !landingChecked)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-sm text-gray-400">{t('common.loading')}</p>
+      </div>
+    )
+  }
+
   // Signed-out visitors see the public marketing landing once the programme is live.
-  if (!isLoading && !isSignedIn && landingEnabled) {
+  if (!isSignedIn && landingEnabled) {
     return <SponsorLanding count={waitingCount} />
   }
 
