@@ -464,6 +464,7 @@ export interface AdminScholarshipDetail {
   interview_session: AdminInterviewSession | null
   assigned_to_id: number | null
   assigned_to_name: string | null
+  assigned_at: string | null
   info_request_note: string
   info_requested_at: string | null
   // Sprint 5 — Verification verdict cockpit fields
@@ -536,10 +537,12 @@ export async function getScholarshipApplications(
 
 // ── Phase C: assignment, interview capture, request-more-docs ───────────────
 
-/** Assign (or unassign with null) a reviewer to an application. */
+/** Assign (or unassign with null) a reviewer to an application. F7: super-only,
+ *  audited, gated on readiness for the first assignment. Throws with the server's
+ *  `code` (not_ready / not_reviewer / bad_assignee) on a 400. */
 export async function assignApplication(id: number, adminId: number | null, options?: ApiOptions) {
   return adminMutate<AdminScholarshipDetail>(
-    `/api/v1/admin/scholarship/applications/${id}/`, 'PATCH', { assigned_to: adminId }, options)
+    `/api/v1/admin/scholarship/applications/${id}/assign/`, 'POST', { reviewer_id: adminId }, options)
 }
 
 export async function getInterview(id: number, options?: ApiOptions) {

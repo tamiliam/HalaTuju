@@ -31,7 +31,10 @@ from .serializers_admin import (
     ReviewerProfileSerializer,
     SponsorProfileSerializer,
 )
-from .services import admin_reject, application_completeness, submit_interview
+from .services import (
+    AssignmentError, admin_reject, application_completeness, assign_reviewer,
+    submit_interview,
+)
 
 _VALID_VERDICTS = {'resolved', 'still_unclear', 'new_concern'}
 _RATIONALE_MAX = 140
@@ -86,8 +89,9 @@ class AdminApplicationDetailView(_AdminBase):
         return Response(AdminApplicationDetailSerializer(app).data)
 
     def patch(self, request, pk):
-        """Admin-editable per-application flags: mentoring-candidate, and (Phase C)
-        the assigned reviewer. Writes require reviewer/super (viewer is read-only)."""
+        """Admin-editable per-application flags: mentoring-candidate. Writes require
+        reviewer/super (viewer is read-only). Reviewer assignment moved to the
+        super-only audited endpoint (F7: .../assign/)."""
         admin = self.get_admin(request)
         if not admin:
             return self._deny()
@@ -100,17 +104,6 @@ class AdminApplicationDetailView(_AdminBase):
         if 'mentoring_candidate' in request.data:
             app.mentoring_candidate = bool(request.data['mentoring_candidate'])
             fields.append('mentoring_candidate')
-        if 'assigned_to' in request.data:
-            target_id = request.data['assigned_to']
-            if target_id in (None, '', 0):
-                app.assigned_to = None
-            else:
-                target = PartnerAdmin.objects.filter(pk=target_id, is_active=True).first()
-                if target is None:
-                    return Response({'error': 'No such active admin.', 'code': 'bad_assignee'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-                app.assigned_to = target
-            fields.append('assigned_to')
         if fields:
             app.save(update_fields=fields)
         return Response(AdminApplicationDetailSerializer(app).data)
@@ -862,6 +855,37 @@ class AdminVerdictMetricsView(_AdminBase):
             qs = qs.filter(cohort_id=cohort)
         pairs = ((a.ai_verdict_snapshot, a.officer_verdict) for a in qs)
         return Response(override_metrics(pairs))
+
+
+class AdminAssignReviewerView(_AdminBase):
+    """POST .../applications/<pk>/assign/ — (re)assign a reviewer (F7). SUPER-ONLY +
+    audited. Body `{reviewer_id}` (null/''/0 = unassign). The first assignment of an
+    unassigned app is gated on is_ready_for_assignment; reassign/unassign of an
+    already-assigned app is allowed any time. Every change writes an AssignmentEvent.
+    The target must be an active reviewer/super (never a viewer)."""
+
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'super'):
+            return self._deny_role()
+        app = self._get_application(pk)
+        if app is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        reviewer_id = request.data.get('reviewer_id')
+        reviewer = None
+        if reviewer_id not in (None, '', 0):
+            reviewer = PartnerAdmin.objects.filter(pk=reviewer_id, is_active=True).first()
+            if reviewer is None:
+                return Response({'error': 'No such active admin.', 'code': 'bad_assignee'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        try:
+            assign_reviewer(app, reviewer=reviewer, by_admin=admin)
+        except AssignmentError as e:
+            return Response({'error': e.code, 'code': e.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(AdminApplicationDetailSerializer(app).data)
 
 
 class ReviewerProfileView(_AdminBase):

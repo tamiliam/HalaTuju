@@ -178,32 +178,41 @@ class TestListFilters(PhaseCBase):
 
 
 class TestAssignment(PhaseCBase):
-    def test_reviewer_can_assign(self):
+    # Assignment moved to the super-only audited endpoint (F7); see
+    # test_assignment.py for the full coverage. These keep the Phase-C path green.
+    def _ready_app(self):
+        from django.utils import timezone
         app = self._make_app()
+        ScholarshipApplication.objects.filter(pk=app.id).update(
+            profile_completed_at=timezone.now())  # no open queries -> ready
+        return app
+
+    def test_super_can_assign(self):
+        app = self._ready_app()
         self._auth(SUPER)
-        r = self.client.patch(
-            f'/api/v1/admin/scholarship/applications/{app.id}/',
-            {'assigned_to': self.reviewer.id}, format='json',
+        r = self.client.post(
+            f'/api/v1/admin/scholarship/applications/{app.id}/assign/',
+            {'reviewer_id': self.reviewer.id}, format='json',
         )
         self.assertEqual(r.status_code, 200)
         app.refresh_from_db()
         self.assertEqual(app.assigned_to_id, self.reviewer.id)
 
     def test_assign_unknown_admin_400(self):
-        app = self._make_app()
+        app = self._ready_app()
         self._auth(SUPER)
-        r = self.client.patch(
-            f'/api/v1/admin/scholarship/applications/{app.id}/',
-            {'assigned_to': 99999}, format='json',
+        r = self.client.post(
+            f'/api/v1/admin/scholarship/applications/{app.id}/assign/',
+            {'reviewer_id': 99999}, format='json',
         )
         self.assertEqual(r.status_code, 400)
 
-    def test_viewer_cannot_assign(self):
-        app = self._make_app()
-        self._auth(VIEWER)
-        r = self.client.patch(
-            f'/api/v1/admin/scholarship/applications/{app.id}/',
-            {'assigned_to': self.reviewer.id}, format='json',
+    def test_non_super_cannot_assign(self):
+        app = self._ready_app()
+        self._auth(REVIEWER)
+        r = self.client.post(
+            f'/api/v1/admin/scholarship/applications/{app.id}/assign/',
+            {'reviewer_id': self.reviewer.id}, format='json',
         )
         self.assertEqual(r.status_code, 403)
 

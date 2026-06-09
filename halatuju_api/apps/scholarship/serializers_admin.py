@@ -190,7 +190,8 @@ class AdminApplicationDetailSerializer(serializers.ModelSerializer):
             # Phase C handoff + interview funnel
             'profile_completed_at', 'completeness', 'interview_session',
             'interview_gaps', 'interview_gaps_run_at',
-            'assigned_to_id', 'assigned_to_name', 'info_request_note', 'info_requested_at',
+            'assigned_to_id', 'assigned_to_name', 'assigned_at',
+            'info_request_note', 'info_requested_at',
             # S11a verify-&-accept + mentoring
             'mentoring_candidate', 'verified_at', 'verified_by', 'verify_checklist',
             # S10 plans/support intake (surface for the admin review)

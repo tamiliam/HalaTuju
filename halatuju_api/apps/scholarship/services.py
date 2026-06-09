@@ -419,6 +419,57 @@ def is_ready_for_assignment(application, now=None):
     return sla['open_count'] == 0 or sla['lapsed']
 
 
+class AssignmentError(Exception):
+    """Raised by assign_reviewer with a machine-readable .code for the API."""
+    def __init__(self, code):
+        super().__init__(code)
+        self.code = code
+
+
+def _can_review(admin):
+    """A valid assignment target is an active reviewer (a super counts — they can
+    review too). A viewer cannot be assigned work."""
+    if admin is None or not getattr(admin, 'is_active', False):
+        return False
+    return bool(getattr(admin, 'is_super_admin', False)) or admin.role in ('reviewer', 'super')
+
+
+def assign_reviewer(application, *, reviewer, by_admin, now=None):
+    """F7: (re)assign an application to a reviewer, audited. The caller must already
+    have checked the actor is a super-admin. Rules:
+      - a non-null target must be an active reviewer/super (else AssignmentError
+        'not_reviewer');
+      - the FIRST assignment of an unassigned app is gated on is_ready_for_assignment
+        (else 'not_ready'); a reassignment/unassignment of an already-assigned app is
+        allowed any time (a super may redistribute work mid-flight);
+      - every change writes an AssignmentEvent (from -> to, by whom) and stamps
+        assigned_at (null on unassign). A no-op (target unchanged) writes nothing.
+    Returns the application.
+    """
+    from .models import AssignmentEvent
+    now = now or timezone.now()
+
+    if reviewer is not None and not _can_review(reviewer):
+        raise AssignmentError('not_reviewer')
+
+    current = application.assigned_to
+    if (current.id if current else None) == (reviewer.id if reviewer else None):
+        return application  # no-op
+
+    # Ready-gate applies only to the first assignment of an unassigned application.
+    if current is None and reviewer is not None and not is_ready_for_assignment(application, now):
+        raise AssignmentError('not_ready')
+
+    AssignmentEvent.objects.create(
+        application=application, from_admin=current, to_admin=reviewer,
+        by_email=getattr(by_admin, 'email', '') or '',
+    )
+    application.assigned_to = reviewer
+    application.assigned_at = now if reviewer is not None else None
+    application.save(update_fields=['assigned_to', 'assigned_at'])
+    return application
+
+
 # How long after submission to hold the "we have a few questions" email, so it reads as
 # a human review rather than an instant bot reply (the owner's call).
 QUERY_EMAIL_DELAY_HOURS = 2
