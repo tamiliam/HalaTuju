@@ -4,7 +4,7 @@ import { useAdminAuth } from '@/lib/admin-auth-context'
 import {
   getPartnerStudents,
   getExportUrl,
-  DEFAULT_STUDENT_PAGE_SIZE,
+  DEFAULT_ADMIN_PAGE_SIZE,
   type StudentListData,
 } from '@/lib/admin-api'
 import { useEffect, useState } from 'react'
@@ -41,7 +41,7 @@ export default function AdminStudentList() {
   const [data, setData] = useState<StudentListData | null>(null)
   const [error, setError] = useState('')
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(DEFAULT_STUDENT_PAGE_SIZE)
+  const [pageSize, setPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE)
 
   useEffect(() => {
     if (!token) return

@@ -4,7 +4,12 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAdminAuth } from '@/lib/admin-auth-context'
 import { useT } from '@/lib/i18n'
-import { getScholarshipApplications, type AdminScholarshipListItem } from '@/lib/admin-api'
+import {
+  getScholarshipApplications,
+  DEFAULT_ADMIN_PAGE_SIZE,
+  type AdminScholarshipListData,
+} from '@/lib/admin-api'
+import { Pagination } from '@/components/Pagination'
 
 const bucketBadge = (b: string) =>
   b === 'A' ? 'bg-green-100 text-green-700'
@@ -24,28 +29,47 @@ const STATUS_OPTIONS = [
   'submitted', 'shortlisted', 'profile_complete', 'interviewing', 'interviewed', 'accepted', 'rejected',
 ]
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50]
+
 export default function AdminScholarshipList() {
   const { token } = useAdminAuth()
   const { t } = useT()
-  const [apps, setApps] = useState<AdminScholarshipListItem[]>([])
+  const [data, setData] = useState<AdminScholarshipListData | null>(null)
   const [bucket, setBucket] = useState('')
   const [statusF, setStatusF] = useState('')
   const [assignedF, setAssignedF] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE)
 
   useEffect(() => {
     if (!token) return
     setLoading(true)
     getScholarshipApplications(
-      { bucket: bucket || undefined, status: statusF || undefined, assigned: assignedF || undefined },
+      {
+        bucket: bucket || undefined,
+        status: statusF || undefined,
+        assigned: assignedF || undefined,
+        page,
+        pageSize,
+      },
       { token },
     )
-      .then((d) => setApps(d.applications))
+      .then(setData)
       .catch(() => setError(t('admin.scholarship.loadFailed')))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, bucket, statusF, assignedF])
+  }, [token, bucket, statusF, assignedF, page, pageSize])
+
+  const apps = data?.applications ?? []
+
+  // Changing any filter resets to page 1 — otherwise you can land on a page
+  // that no longer exists for the narrowed result set ("page 5 of 2").
+  const changeFilter = (setter: (v: string) => void) => (value: string) => {
+    setter(value)
+    setPage(1)
+  }
 
   return (
     <div>
@@ -53,16 +77,16 @@ export default function AdminScholarshipList() {
       <p className="text-sm text-gray-500 mt-1 mb-4">{t('admin.scholarship.desc')}</p>
 
       <div className="flex flex-wrap gap-3 mb-4">
-        <select value={statusF} onChange={(e) => setStatusF(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+        <select value={statusF} onChange={(e) => changeFilter(setStatusF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
           <option value="">{t('admin.scholarship.allStatuses')}</option>
           {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-        <select value={bucket} onChange={(e) => setBucket(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+        <select value={bucket} onChange={(e) => changeFilter(setBucket)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
           <option value="">{t('admin.scholarship.allBuckets')}</option>
           <option value="A">Bucket A</option>
           <option value="B">Bucket B</option>
         </select>
-        <select value={assignedF} onChange={(e) => setAssignedF(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
+        <select value={assignedF} onChange={(e) => changeFilter(setAssignedF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
           <option value="">{t('admin.scholarship.allAssignees')}</option>
           <option value="me">{t('admin.scholarship.assignedToMe')}</option>
           <option value="none">{t('admin.scholarship.unassigned')}</option>
@@ -70,11 +94,12 @@ export default function AdminScholarshipList() {
       </div>
 
       {error && <div className="text-red-600">{error}</div>}
-      {loading ? (
+      {loading && !data ? (
         <div className="text-center text-gray-500 mt-8">{t('common.loading')}</div>
       ) : apps.length === 0 ? (
         <div className="text-center text-gray-500 mt-8">{t('admin.scholarship.empty')}</div>
       ) : (
+        <>
         <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50/80 border-b">
@@ -109,6 +134,22 @@ export default function AdminScholarshipList() {
             </tbody>
           </table>
         </div>
+        {data && (
+          <Pagination
+            page={data.page}
+            totalPages={data.total_pages}
+            total={data.count}
+            pageSize={data.page_size}
+            onPageChange={setPage}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageSizeChange={(size) => {
+              setPageSize(size)
+              setPage(1)
+            }}
+            rangeKey="admin.scholarship.showingRange"
+          />
+        )}
+        </>
       )}
     </div>
   )

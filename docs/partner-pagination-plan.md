@@ -36,11 +36,24 @@ Applications). This replaces both with one reusable pattern.
 **Verified:** 23 courses pytest pass (incl. 7 new); 7 jest pass; `tsc --noEmit`
 clean on all changed files.
 
-## Stage 2 — B40 Applications table ⏳ DEFERRED
+## Stage 2 — B40 Applications table ✅ DONE (this branch)
 
-Deferred only to avoid colliding with the in-flight reviewer sprint, which is
-actively editing the `scholarship` app. Apply this once that track pauses. The
-component + backend helper already exist, so this is purely wiring.
+Built on the same branch. As-built notes:
+
+- **`total_count` kept as a backward-compatible alias** for the total filtered
+  count — several existing tests assert on it (`test_admin_scholarship`,
+  `test_api`, `test_phase_c`). The view passes
+  `total_count=paginator.page.paginator.count` through `.envelope()`.
+- **`<Pagination rangeKey>` prop added** so the applications table reads
+  "…of {total} applications" (new `admin.scholarship.showingRange`) instead of
+  the students wording. Component default is unchanged.
+- **Filters reset to page 1** via a `changeFilter` wrapper on each `<select>`.
+- New backend test `apps/scholarship/tests/test_application_pagination.py`
+  (5 tests: default page, remainder page, filter+page compose, empty filter,
+  size cap). Verified: 81 scholarship pytest pass (incl. the `total_count`
+  assertions); 283 jest pass; `tsc` clean.
+
+The original plan for reference:
 
 ### Backend — `apps/scholarship/views_admin.py` (`AdminApplicationListView`)
 

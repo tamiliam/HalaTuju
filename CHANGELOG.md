@@ -8,16 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- **Server-side pagination for the partner Students table (MySkills-style).** The `/admin/students` endpoint
-  (`PartnerStudentListView`) now paginates server-side via a new shared `FlexiblePageNumberPagination`
-  (`halatuju_api/halatuju/pagination.py`; `?page` + `?page_size` up to 100, default 25) instead of returning all 672
-  rows for the browser to slice. Its `.envelope()` helper keeps the view's `org_name`/`is_super_admin` fields and adds
+- **Server-side pagination for both partner admin tables — Students + B40 Applications (MySkills-style).** Both
+  `/admin/students` (`PartnerStudentListView`) and `/admin/scholarship/applications` (`AdminApplicationListView`) now
+  paginate server-side via a new shared `FlexiblePageNumberPagination` (`halatuju_api/halatuju/pagination.py`; `?page`
+  + `?page_size` up to 100, default 25) instead of returning every row for the browser to slice (or, for B40, never
+  paginating). Its `.envelope()` helper keeps each view's existing top-level fields (`org_name`/`is_super_admin` for
+  students; `total_count` kept as a backward-compatible alias of the total filtered count for applications) and adds
   `count`/`total_pages`/`page`/`page_size`/`next`/`previous`. Pagination is opted in **per view** — no global
-  `REST_FRAMEWORK` default — so existing full-list endpoints are untouched. Frontend gains a reusable stateless
-  `<Pagination>` control (`components/Pagination.tsx` + pure `lib/pagination.ts` `pageWindow()` helper) with windowed
-  page buttons (no more 67-button row) and a 10/25/50 page-size selector; the Students page fetches one page at a time.
-  One new i18n key `admin.perPage` (en/ms/ta). +7 courses pytest + 7 jest; `tsc` clean. Built on branch
-  `feature/partner-pagination` (held local, no push). The B40 Applications table is the deferred second half — see
+  `REST_FRAMEWORK` default — so existing full-list endpoints are untouched; the CSV export stays unpaginated. On the
+  B40 view, the status/bucket/assigned filters are applied before paging, so they compose. Frontend gains a reusable
+  stateless `<Pagination>` control (`components/Pagination.tsx` + pure `lib/pagination.ts` `pageWindow()` helper) with
+  windowed page buttons (no more 67-button row), a 10/25/50 page-size selector, and an overridable `rangeKey` so each
+  table shows the right noun; changing a filter resets to page 1. Both pages fetch one page at a time. New i18n keys
+  `admin.perPage` + `admin.scholarship.showingRange` (en/ms/ta). +12 pytest (7 courses, 5 scholarship) + 7 jest; `tsc`
+  clean. Built on branch `feature/partner-pagination` (held local, no push). Rollout notes:
   `docs/partner-pagination-plan.md`.
 
 ### Added
