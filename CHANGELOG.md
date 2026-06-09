@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **B40 income gate: gross household income is now the primary test; per-capita is a safety net (deployed 2026-06-09).**
+  Following the DOSM 2024 update (B40 line = RM5,860), a non-STR applicant whose **gross** monthly household income is
+  at or below the cohort `income_ceiling` is shortlisted **regardless of household size**. The per-capita ceiling
+  (RM1,584) no longer gates everyone — it now only **rescues households *above* the gross ceiling** that have many
+  dependents. STR recipients still pass directly. Added `rescore_pending_decisions` (service + `rescore-pending` cron
+  job) which re-applies the engine to **un-released** decisions only; ran once on deploy → one pending applicant
+  (RM5,500 gross, family of 2) flipped rejected→shortlisted before their decision was sent. Migration `0056` (help-text).
+- **Invite an already-registered user instead of failing; search applicants/students by phone + email (deployed 2026-06-09).**
 - **Admin roles realigned to super / admin / partner / reviewer (deployed 2026-06-09).** Replaced the old
   super/reviewer/viewer model. **Super** = owner (everything); **Admin** = sees all pages, read-only for now;
   **Partner** = own-organisation's students only (Dashboard + Students + Profile); **Reviewer** = only the
