@@ -492,18 +492,27 @@ deploys batched for go-live).**
   REMOVED (one audited path). Cockpit assign card super-only, reviewers-only dropdown, disabled-until-ready + reason.
   `admin.scholarship.assign.*`. **Migration `0052`** (new model → MCP + RLS at deploy, TD-100). Retro
   `docs/retrospective-sprint7-reviewer-assignment.md`.
-- **▶ NEXT — Sprint 8 (F2, sponsor profile + sponsored-students list, BE + FE):** a signed-in sponsor's home with their
-  (anonymised) students + progress. Adds a `progress_state` enum (`on_track|semester_completed|needs_attention|graduated`)
-  to the allowlist card (derivation stub here; real derivation lands in F9a/Sprint 9); surfaces the sponsor's sponsorships
-  via `SponsorSponsorshipSerializer` incl. `progress_state`; FE "My students" view extending the `/sponsor` portal (account
-  block + giving balance + anon cards + progress). **Ships dark** behind `SPONSOR_POOL_ENABLED`. Allowlist-serializer test
-  (no identity leak) is mandatory. New sponsor-facing surface → Stitch-prototype the "My students" view + owner approval
-  before coding the template.
+- **✅ Sprint 8 DONE (F2, sponsor profile + "My students", BE + FE, 2026-06-09, no migration, ships dark):** derived
+  `progress_state` on the allowlist card (`pool.derive_progress_state` stub: null until `sponsored`, then `on_track`;
+  real band F9a) — flows through the existing wallet endpoint. FE "My students" on approved `/sponsor`: account+balance
+  header + grid of anon student cards with colour-coded progress badge + an "awaiting acceptance" offered card.
+  `getSponsorWallet` + `SponsorWallet`/`SponsorSponsorship` types; `sponsorPortal.myStudents.*`. Stitch-approved. Leak
+  test green. TD-101 = donate/withdraw not wired (read-only). Retro `docs/retrospective-sprint8-sponsor-my-students.md`.
+- **▶ NEXT — Sprint 9 (F9a, student profile + results + graduation relay, BE, L):** the student-profile data + the
+  anonymity-preserving thank-you relay. Endpoints for basic details / institution / field / CGPA + a **latest-semester
+  results upload** (reuse `ApplicantDocument` `results_slip` + the OCR path; the slip is myNADI-only, the *values* cross
+  per the Boundary decision). **`progress_state` real derivation** from the results upload (feeds F2). New
+  **`promotional_use` consent** (server-side 18+ gate, version bump). **Graduation relay:** new `GraduationMessage`
+  (raw/scrubbed text, scan_result, status, approved_by) → submit → `scan_anon_for_identifiers` blocks on any leak →
+  myNADI human-approve → surfaced linked to the anon `ref` (never a direct channel). Tests: relay blocks planted
+  identifiers; promo consent enforces 18+; results slip never appears in sponsor output. **⚠ F9 micro-decision (owner
+  gate): confirm the `promotional_use` consent type + version, and the `GraduationMessage` model shape — surface these
+  for sign-off at sprint start.** Likely migration `0053` (new model → MCP+RLS).
 - **Gotchas:** ship dark (flag off) for sponsor-facing; i18n en/ms/ta parity; ≤2 deploys/feature; deploys/pushes
-  owner-gated; prod at `0048`, local migrations `0049`+`0050`+`0051`+`0052` apply migrate-first when the batch deploys
-  (`0051`/`0052` are new-model migrations → MCP CREATE TABLE + contenttypes workaround + RLS, TD-098/TD-100). **A parallel
-  agent is on a pagination sprint in this same tree — commit with explicit `git add <paths>`, never `-A`; check
-  `git status` before each commit.**
+  owner-gated; prod at `0048`, local migrations `0049`–`0052` apply migrate-first when the batch deploys (`0051`/`0052`
+  are new-model migrations → MCP CREATE TABLE + contenttypes workaround + RLS, TD-098/TD-100). **A parallel agent has
+  been working a pagination sprint in this same tree (merged 2026-06-09) — keep committing with explicit
+  `git add <paths>`, never `-A`; check `git status` before each commit.**
 
 ---
 

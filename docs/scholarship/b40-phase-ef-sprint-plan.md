@@ -26,7 +26,7 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 | 5 | Reviewer profile ✅ | F6 | M, BE+FE | — |
 | 6 | Reviewer invite role selector ✅ | F5 | S, BE+FE | 5 |
 | 7 | Reviewer assignment / reassignment ✅ | F7 | M, BE+FE | 6, Check-2 |
-| 8 | Sponsor profile + sponsored-students | F2 | M, BE+FE | 0 |
+| 8 | Sponsor profile + sponsored-students ✅ | F2 | M, BE+FE | 0 |
 | 9 | Student profile + results + relay — backend | F9a | L, BE | 0, 8 |
 | 10 | Student profile + relay — frontend | F9b | M, FE | 9 |
 | 11 | Sponsor referral / invitation | F4 | M, BE+FE | 1 |
@@ -96,11 +96,11 @@ gates first-assign on `is_ready_for_assignment`, reassign/unassign any time, wri
 Loose `PATCH assigned_to` removed. Cockpit assign card super-only + reviewers-only + disabled-until-ready. Migration
 `0052` (new model). Retro `docs/retrospective-sprint7-reviewer-assignment.md`.
 
-### Sprint 8 — F2 Sponsor profile + sponsored-students list · BE + FE
-**Deliverable:** a signed-in sponsor's home with their (anonymised) students + progress.
-- **Field:** `progress_state` enum (`on_track | semester_completed | needs_attention | graduated`) — add to the allowlist card (built on Sprint 0). Derivation stub here; real derivation lands in F9a.
-- **BE:** surface the sponsor's sponsorships via `SponsorSponsorshipSerializer` (`serializers.py:90`) incl. `progress_state`.
-- **FE:** "My students" view extending the `/sponsor` portal — account block (`SponsorSerializer`), giving balance (`sponsorship.sponsor_balance`), and the anon cards + progress.
+### Sprint 8 — F2 Sponsor profile + sponsored-students list · BE + FE ✅ DONE (2026-06-09)
+Shipped (held local, ships dark). Derived `progress_state` on the allowlist card (`pool.derive_progress_state` stub;
+real band F9a) + FE "My students" on `/sponsor` (account+balance header + anon student cards with progress badge +
+awaiting-acceptance offered card). `getSponsorWallet` client. No migration. Leak test green. TD-101 (donate/withdraw not
+wired). Retro `docs/retrospective-sprint8-sponsor-my-students.md`.
 
 ### Sprint 9 — F9a Student profile + results + graduation relay (backend) · BE
 **Deliverable:** the student-profile data + the anonymity-preserving thank-you relay.

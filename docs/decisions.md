@@ -1,5 +1,29 @@
 # Architectural Decisions — HalaTuju
 
+## progress_state is a DERIVED card field (stub now), not a stored column — B40 Phase E/F Sprint 8, 2026-06-09
+
+**Decision:** The sponsor-facing `progress_state` (on_track / semester_completed / needs_attention / graduated) is a
+`SerializerMethodField` on the allowlist card, computed by `pool.derive_progress_state(application)` — a **stub** that
+returns `null` until the student is `sponsored` and `on_track` thereafter. No DB column, no migration. The real
+derivation (from the latest-semester results upload) lands in F9a (Sprint 9), at which point only the helper changes.
+
+**Alternatives considered:** (1) Add a `progress_state` column to `ScholarshipApplication` now + a migration. (2) Derive
+it live on the card (chosen).
+
+**Rationale:** F2's job is the sponsor *view*; the data that determines real progress (semester results) doesn't exist
+until F9a. A stored column now would be a second source of truth to keep in sync with the (future) results pipeline and
+would ship a migration for a value we can't yet compute honestly. A derived field keeps the single source of truth in
+the results data (once it exists) and means F2 is a pure read-surface — no schema, no migration, and the leak test
+proves the new field carries nothing identifying. It also keeps the value off the *browse* cards (null unless
+sponsored), so it never shows a misleading "progress" for a student no one funds yet.
+
+**Trade-offs:** `derive_progress_state` is called per card render (cheap — a status check now; F9a will read the latest
+results row, so add `select_related`/prefetch there). Until F9a, every sponsored student reads `on_track` regardless of
+reality.
+
+**Revisit if:** Progress needs to be queryable/filterable at the DB level (e.g. "show all needs_attention students"),
+or the derivation becomes expensive enough that caching/denormalising to a column pays off.
+
 ## One super-only audited assign endpoint (assign + reassign + unassign), not two — B40 Phase E/F Sprint 7, 2026-06-09
 
 **Decision:** Reviewer (re)assignment is a single `POST .../assign/` endpoint backed by one `services.assign_reviewer`
