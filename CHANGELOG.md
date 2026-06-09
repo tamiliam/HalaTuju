@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Deployed — B40 sponsor programme GO-LIVE (2026-06-09)
+- **The whole B40 Phase E/F sponsor programme went live** (Sprint 12, lawyer-gated go-live, owner-authorised with the
+  current draft consent wording — the lawyer-vetted text + a `CONSENT_VERSION` bump land as a follow-up). The 25
+  held-local commits (Sprints 1–11: F1 landing, F8 onboarding, F3 notifications, F6/F5/F7 reviewer cluster, F2 sponsor
+  "My students", F9a/b in-programme + graduation relay, F4 referral) were deployed in one batch. Sequence: (1) migrations
+  `0049`–`0054` applied **migrate-first** to prod via Supabase MCP (additive columns + 6 new tables) with **RLS enabled**
+  on every new table (`onboarding_responses`, `reviewer_profiles`, `assignment_events`, `graduation_messages`,
+  `semester_results`, `sponsor_referrals`) in the same transaction, verified table-by-table; (2) `git push` → both Cloud
+  Build deploys SUCCESS (api `…00325` then `…00326`, web rebuilt); (3) **`SPONSOR_POOL_ENABLED=true`** flipped on
+  `halatuju-api` via `--update-env-vars` (pool count endpoint now `enabled:true`); (4) **3 Cloud Scheduler jobs** created
+  + ENABLED — `halatuju-sponsor-realtime` (hourly), `halatuju-sponsor-digests` (weekly Mon 09:00), `halatuju-purge-referrals`
+  (daily 03:00, F4 PDPA purge), the last smoke-tested green; (5) live smoke — new endpoints return 401 (clean auth gate,
+  not 500), web `/sponsor` 200. Resolved TD-093/095/098/100/102/106/107. **Still open (post-lawyer):** Tamil refine
+  (TD-091/094/096/097/105/108), the lawyer consent-text + `CONSENT_VERSION` bump, real toyyibPay money (TD-075). Retro
+  `docs/retrospective-sprint12-go-live.md`.
+
 ### Changed
 - **Server-side pagination for both partner admin tables — Students + B40 Applications (MySkills-style).** Both
   `/admin/students` (`PartnerStudentListView`) and `/admin/scholarship/applications` (`AdminApplicationListView`) now

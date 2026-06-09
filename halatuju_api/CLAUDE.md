@@ -532,18 +532,25 @@ deploys batched for go-live).**
   → threaded through register. `sponsorPortal.referrals.*` (parity 2416, +17; Tamil first-draft TD-108). +12 scholarship
   pytest; `next build` clean (`/sponsor` 7.21 kB); 283 jest. **Migration `0054`** (new model → MCP + contenttypes
   workaround + RLS @deploy, TD-106). Retro `docs/retrospective-sprint11-sponsor-referral.md`.
-- **▶ NEXT — Sprint 12 (GO-LIVE, lawyer-gated, S):** the final sprint. Flip `SPONSOR_POOL_ENABLED` **on**; batch-apply
-  held migrations `0049`–`0054` migrate-first via Supabase MCP (the new-model ones `0051`–`0054` need CREATE TABLE +
-  contenttypes workaround + RLS); **enable RLS on every new table** (TD-093/095/098/100/102/106); create the Cloud
-  Scheduler jobs (2× F3 TD-095 + 1× F4 purge TD-107); sync the **lawyer-vetted consent text + `CONSENT_VERSION`**; Tamil
-  refine batch (TD-091/094/096/097/105/108); run the **full allowlist + relay + consent audit** (serializer leak tests,
-  `scan_anon_for_identifiers`, 18+ gate) + an **interactive Playwright smoke** on the live test account (lesson #96).
-  **Out of scope (separate TD-075 track):** real toyyibPay money. **Gated on owner + lawyer sign-off + the batched deploy.**
-- **Gotchas:** ship dark (flag off) for sponsor-facing; i18n en/ms/ta parity; ≤2 deploys/feature; deploys/pushes
-  owner-gated; prod at `0048`, local migrations `0049`–`0054` apply migrate-first when the batch deploys (`0051`–`0054`
-  are new-model migrations → MCP CREATE TABLE + contenttypes workaround + RLS, TD-098/100/102/106). **Parallel agents
-  share this tree (pagination merged 2026-06-09; a family-redesign branch is parked) — keep committing with explicit
-  `git add <paths>`, never `-A`; check `git status` before each commit.**
+- **✅ Sprint 12 GO-LIVE DONE (2026-06-09) — the B40 Phase E/F sponsor programme is LIVE on prod.** Owner-authorised to
+  ship with the CURRENT draft consent wording (lawyer-vetted text + `CONSENT_VERSION` bump to follow). The 25 held
+  commits (Sprints 1–11) deployed in one batch: (1) migrations `0049`–`0054` applied **migrate-first** to prod via
+  Supabase MCP (additive cols + 6 new tables) with **RLS enabled in the same transaction** on every new table, verified;
+  (2) `git push` → both Cloud Build deploys SUCCESS (api rev `…00325`); (3) **`SPONSOR_POOL_ENABLED=true`** flipped via
+  `--update-env-vars` (api rev `…00326`; count endpoint `enabled:true`); (4) **3 Cloud Scheduler jobs** ENABLED —
+  `halatuju-sponsor-realtime` (hourly), `halatuju-sponsor-digests` (weekly Mon 09:00), `halatuju-purge-referrals` (daily
+  03:00); (5) live smoke — new endpoints 401-not-500, web `/sponsor` 200. Resolved TD-093/095/098/100/102/106/107. Retro
+  `docs/retrospective-sprint12-go-live.md`.
+- **▶ NEXT — post-go-live follow-ups (no roadmap sprint; do when inputs arrive):** (1) **lawyer consent text** — when the
+  vetted wording lands, sync it + bump `CONSENT_VERSION` (re-attests everyone), and apply any flow tweaks the lawyer
+  prescribes; (2) **Tamil refine batch** (TD-091/094/096/097/105/108) — owner's eye on the trilingual sponsor/in-programme
+  copy + the referral invite email; (3) **real money** (separate TD-075 track) — toyyibPay donation-in / disbursement-out
+  / tranche schedule; (4) minor polish TD-101 (sponsor donate/withdraw wiring) + TD-104 (results-slip upload control).
+- **Gotchas:** the sponsor programme is now **LIVE** (`SPONSOR_POOL_ENABLED=true` on `halatuju-api`; re-dark with one
+  `--update-env-vars … SPONSOR_POOL_ENABLED=false`). **Prod is now at scholarship migration `0054`** (courses `0052`).
+  i18n en/ms/ta parity; ≤2 deploys/feature; **`halatuju_api/CLAUDE.md` edits trigger an api rebuild on push** (root
+  `docs/**` + `CHANGELOG.md` don't). Migrate-first still holds for any new migration (MCP CREATE TABLE + contenttypes
+  workaround + RLS for new models). A family-redesign branch remains parked.
 
 ---
 
