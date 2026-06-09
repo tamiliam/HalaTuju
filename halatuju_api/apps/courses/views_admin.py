@@ -403,9 +403,22 @@ class AdminInviteView(PartnerAdminMixin, APIView):
             },
         )
 
+        # Supabase refuses to invite an email that already has an account (422
+        # email_exists) — e.g. the person already signed in as a student or via
+        # Google. That is NOT a failure: they already have a login, so we skip the
+        # invite email and just grant the role. `get_admin` links the PartnerAdmin
+        # row to their account by email on their next sign-in (no UID needed here).
+        already_registered = False
         if invite_resp.status_code not in (200, 201):
-            logger.error(f"Supabase invite failed: {invite_resp.status_code} {invite_resp.text}")
-            return Response({'error': 'Failed to send invite email'}, status=502)
+            try:
+                err_code = invite_resp.json().get('error_code')
+            except ValueError:
+                err_code = None
+            if invite_resp.status_code == 422 and err_code == 'email_exists':
+                already_registered = True
+            else:
+                logger.error(f"Supabase invite failed: {invite_resp.status_code} {invite_resp.text}")
+                return Response({'error': 'Failed to send invite email'}, status=502)
 
         PartnerAdmin.objects.create(
             email=email,
@@ -417,10 +430,16 @@ class AdminInviteView(PartnerAdminMixin, APIView):
             is_super_admin=(role == 'super'),
         )
 
+        message = (
+            f'{name} already has an account — access granted. They will see it the '
+            f'next time they sign in (no invite email needed).'
+            if already_registered else f'Invite sent to {email}'
+        )
         return Response({
-            'message': f'Invite sent to {email}',
+            'message': message,
             'org': org.name if org else None,
             'role': role,
+            'already_registered': already_registered,
         }, status=201)
 
 

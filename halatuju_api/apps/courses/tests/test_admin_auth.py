@@ -177,6 +177,31 @@ class AdminInviteRoleTest(TestCase):
         self.assertEqual(a.role, 'admin')
         self.assertFalse(a.is_super_admin)
 
+    def test_invite_existing_supabase_user_grants_without_email(self):
+        # Supabase 422 email_exists (person already has an account) is NOT a failure:
+        # create the admin row anyway — it links by email on their next sign-in.
+        payload = {'email': 'existing@example.com', 'name': 'Existing User', 'role': 'admin'}
+        with patch('apps.courses.views_admin.http_requests.post') as mock_post:
+            mock_post.return_value = MagicMock(
+                status_code=422, text='exists',
+                json=lambda: {'code': 422, 'error_code': 'email_exists', 'msg': 'already registered'})
+            r = self.client.post('/api/v1/admin/invite/', payload, format='json')
+        self.assertEqual(r.status_code, 201)
+        self.assertTrue(r.json()['already_registered'])
+        a = PartnerAdmin.objects.get(email='existing@example.com')
+        self.assertEqual(a.role, 'admin')
+        self.assertIsNone(a.supabase_user_id)  # backfilled when they next sign in
+
+    def test_invite_genuine_supabase_failure_502(self):
+        # Any other Supabase error is still a failure — 502, no admin row created.
+        payload = {'email': 'fail@example.com', 'name': 'X', 'role': 'reviewer'}
+        with patch('apps.courses.views_admin.http_requests.post') as mock_post:
+            mock_post.return_value = MagicMock(
+                status_code=500, text='boom', json=lambda: {'error_code': 'unexpected'})
+            r = self.client.post('/api/v1/admin/invite/', payload, format='json')
+        self.assertEqual(r.status_code, 502)
+        self.assertFalse(PartnerAdmin.objects.filter(email='fail@example.com').exists())
+
     def test_invite_super_not_allowed_falls_back_to_reviewer(self):
         # Super is NOT invitable (there is one super admin — the owner). An attempt
         # to invite 'super' falls back to the safe workhorse role.
