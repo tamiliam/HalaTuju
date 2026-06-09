@@ -68,6 +68,8 @@ export interface StudentListData {
   next: string | null
   previous: string | null
   students: StudentListItem[]
+  /** Distinct referral_source values across the admin's visible set, for the Source filter. */
+  source_options: string[]
 }
 
 export interface StudentDetailData {
@@ -110,7 +112,7 @@ export async function getPartnerDashboard(options?: ApiOptions) {
 export const DEFAULT_ADMIN_PAGE_SIZE = 25
 
 export async function getPartnerStudents(
-  params?: { page?: number; pageSize?: number },
+  params?: { page?: number; pageSize?: number; q?: string; exam?: string; source?: string },
   options?: ApiOptions,
 ) {
   const qs = new URLSearchParams()
@@ -118,6 +120,9 @@ export async function getPartnerStudents(
   if (params?.pageSize && params.pageSize !== DEFAULT_ADMIN_PAGE_SIZE) {
     qs.set('page_size', String(params.pageSize))
   }
+  if (params?.q) qs.set('q', params.q)
+  if (params?.exam) qs.set('exam', params.exam)
+  if (params?.source) qs.set('source', params.source)
   const query = qs.toString()
   return adminFetch<StudentListData>(
     `/api/v1/admin/students/${query ? `?${query}` : ''}`,
@@ -557,6 +562,7 @@ export async function getScholarshipApplications(
     status?: string
     bucket?: string
     assigned?: string
+    q?: string
     page?: number
     pageSize?: number
   } = {},
@@ -566,6 +572,7 @@ export async function getScholarshipApplications(
   if (filters.status) q.set('status', filters.status)
   if (filters.bucket) q.set('bucket', filters.bucket)
   if (filters.assigned) q.set('assigned', filters.assigned)
+  if (filters.q) q.set('q', filters.q)
   if (filters.page && filters.page > 1) q.set('page', String(filters.page))
   if (filters.pageSize && filters.pageSize !== DEFAULT_ADMIN_PAGE_SIZE) {
     q.set('page_size', String(filters.pageSize))

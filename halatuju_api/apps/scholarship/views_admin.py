@@ -5,6 +5,7 @@ Reuses the existing PartnerAdmin auth (super admin sees all). Routes live under
 /api/v1/admin/scholarship/ — covered by the NRIC-gate /admin/ whitelist;
 PartnerAdminMixin does the real authorisation.
 """
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -68,6 +69,9 @@ class AdminApplicationListView(_AdminBase):
         status_f = request.GET.get('status')
         bucket_f = request.GET.get('bucket')
         assigned_f = request.GET.get('assigned')
+        q = (request.GET.get('q') or '').strip()
+        if q:
+            qs = qs.filter(Q(profile__name__icontains=q) | Q(profile__nric__icontains=q))
         if status_f:
             qs = qs.filter(status=status_f)
         if bucket_f:

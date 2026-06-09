@@ -42,13 +42,32 @@ export default function AdminStudentList() {
   const [error, setError] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE)
+  const [search, setSearch] = useState('')
+  const [q, setQ] = useState('') // debounced value actually sent to the API
+  const [exam, setExam] = useState('')
+  const [source, setSource] = useState('')
+
+  // Debounce the search box so a request doesn't fire on every keystroke.
+  // Resetting to page 1 here keeps a narrowed result set from landing on a
+  // page that no longer exists.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setQ(search.trim())
+      setPage(1)
+    }, 300)
+    return () => clearTimeout(id)
+  }, [search])
 
   useEffect(() => {
     if (!token) return
-    getPartnerStudents({ page, pageSize }, { token })
+    getPartnerStudents(
+      { page, pageSize, q: q || undefined, exam: exam || undefined, source: source || undefined },
+      { token },
+    )
       .then(setData)
       .catch(() => setError(t('admin.loadStudentsFailed')))
-  }, [token, page, pageSize])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, page, pageSize, q, exam, source])
 
   if (error) {
     return <div className="text-red-600 mt-8">{error}</div>
@@ -81,8 +100,8 @@ export default function AdminStudentList() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">{t('admin.studentsCount', { count: String(data.count) })}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t('admin.studentsDesc')}</p>
+          <h1 className="text-xl sm:text-2xl font-bold">{t('admin.studentsTitle')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('admin.studentsCount', { count: String(data.count) })}</p>
         </div>
         <button
           onClick={handleExport}
@@ -93,6 +112,41 @@ export default function AdminStudentList() {
           </svg>
           {t('admin.downloadCsv')}
         </button>
+      </div>
+
+      {/* Filters: search · exam · source */}
+      <div className="flex flex-col sm:flex-row gap-3 mt-4">
+        <div className="relative flex-1 sm:max-w-xs">
+          <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('admin.searchPlaceholder')}
+            className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          />
+        </div>
+        <select
+          value={exam}
+          onChange={(e) => { setExam(e.target.value); setPage(1) }}
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-600"
+        >
+          <option value="">{t('admin.allExams')}</option>
+          <option value="spm">SPM</option>
+          <option value="stpm">STPM</option>
+        </select>
+        <select
+          value={source}
+          onChange={(e) => { setSource(e.target.value); setPage(1) }}
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-600"
+        >
+          <option value="">{t('admin.allSources')}</option>
+          {data.source_options.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
       </div>
 
       {/* Mobile: card layout */}

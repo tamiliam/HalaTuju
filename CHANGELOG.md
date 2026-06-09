@@ -24,6 +24,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docs/retrospective-sprint12-go-live.md`.
 
 ### Changed
+- **Partner admin tables — MySkills-style header + search/filter row (Students + B40 Applicants).** Both
+  `/admin/students` and `/admin/scholarship` now lead with a title + count subtitle and a filter row that starts with a
+  debounced (300 ms) search box. **Students:** title "HalaTuju Students" + "{count} students" subtitle; filters Search ·
+  Exam (SPM/STPM) · Source. **B40:** title renamed to "B40 Assistance Applicants" + "{count} applicants" subtitle;
+  Search added in front of the existing All statuses · All buckets · Anyone filters. Backend (no migration): the students
+  endpoint (`PartnerStudentListView`) gains `?q` (name/NRIC icontains), `?exam`, `?source` and returns distinct
+  `source_options` for the dropdown (`.order_by()`-cleared DISTINCT so it's Postgres-safe); the applications endpoint
+  (`AdminApplicationListView`) gains `?q` (matched against `profile.name`/`profile.nric`). Search resets to page 1 and
+  composes with the existing filters. The shared `Pagination` footer was also reskinned to the MySkills layout (Show
+  [n] per page · Page X of Y · jump-to-page · First/Previous/Next/Last), replacing the numbered-page window (orphaned
+  `lib/pagination.ts` `pageWindow` helper + test removed). +14 backend pytest (8 students search/filter, 6 B40 search);
+  i18n en/ms/ta parity (ms/ta first-drafts). No migration.
 - **Server-side pagination for both partner admin tables — Students + B40 Applications (MySkills-style).** Both
   `/admin/students` (`PartnerStudentListView`) and `/admin/scholarship/applications` (`AdminApplicationListView`) now
   paginate server-side via a new shared `FlexiblePageNumberPagination` (`halatuju_api/halatuju/pagination.py`; `?page`

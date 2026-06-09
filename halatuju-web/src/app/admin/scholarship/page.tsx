@@ -38,10 +38,21 @@ export default function AdminScholarshipList() {
   const [bucket, setBucket] = useState('')
   const [statusF, setStatusF] = useState('')
   const [assignedF, setAssignedF] = useState('')
+  const [search, setSearch] = useState('')
+  const [q, setQ] = useState('') // debounced value actually sent to the API
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_ADMIN_PAGE_SIZE)
+
+  // Debounce the search box so a request doesn't fire on every keystroke.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setQ(search.trim())
+      setPage(1)
+    }, 300)
+    return () => clearTimeout(id)
+  }, [search])
 
   useEffect(() => {
     if (!token) return
@@ -51,6 +62,7 @@ export default function AdminScholarshipList() {
         bucket: bucket || undefined,
         status: statusF || undefined,
         assigned: assignedF || undefined,
+        q: q || undefined,
         page,
         pageSize,
       },
@@ -60,7 +72,7 @@ export default function AdminScholarshipList() {
       .catch(() => setError(t('admin.scholarship.loadFailed')))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, bucket, statusF, assignedF, page, pageSize])
+  }, [token, bucket, statusF, assignedF, q, page, pageSize])
 
   const apps = data?.applications ?? []
 
@@ -74,9 +86,23 @@ export default function AdminScholarshipList() {
   return (
     <div>
       <h1 className="text-xl sm:text-2xl font-bold">{t('admin.scholarship.title')}</h1>
-      <p className="text-sm text-gray-500 mt-1 mb-4">{t('admin.scholarship.desc')}</p>
+      <p className="text-sm text-gray-500 mt-1 mb-4">
+        {data ? t('admin.scholarship.countSubtitle', { count: String(data.count) }) : ' '}
+      </p>
 
       <div className="flex flex-wrap gap-3 mb-4">
+        <div className="relative flex-1 min-w-[180px] sm:flex-none sm:w-64">
+          <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.35-4.35M17 11a6 6 0 1 1-12 0 6 6 0 0 1 12 0Z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('admin.searchPlaceholder')}
+            className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          />
+        </div>
         <select value={statusF} onChange={(e) => changeFilter(setStatusF)(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
           <option value="">{t('admin.scholarship.allStatuses')}</option>
           {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
