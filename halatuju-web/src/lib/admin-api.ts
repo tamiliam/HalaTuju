@@ -202,6 +202,42 @@ export async function updateAdminProfile(
   return res.json()
 }
 
+// ── Reviewer profile (F6) ───────────────────────────────────────────
+// A reviewer's own credentials + contact details. Self-scoped endpoint
+// (always the calling admin's own row). phone/address are private staff
+// PII — reviewer + super only, never exposed to students/sponsors.
+
+export interface ReviewerProfile {
+  highest_qualification: string
+  university: string
+  graduation_year: number | null
+  field_of_study: string
+  phone: string
+  address: string
+}
+
+export async function getReviewerProfile(options?: ApiOptions) {
+  return adminFetch<ReviewerProfile>('/api/v1/admin/reviewer-profile/', options)
+}
+
+export async function updateReviewerProfile(
+  data: Partial<ReviewerProfile>,
+  options?: ApiOptions
+) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (options?.token) headers['Authorization'] = `Bearer ${options.token}`
+  const res = await fetch(`${API_BASE}/api/v1/admin/reviewer-profile/`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `Update failed: ${res.status}`)
+  }
+  return res.json() as Promise<ReviewerProfile>
+}
+
 // ── Invite / Orgs ───────────────────────────────────────────────────
 
 export interface OrgItem {

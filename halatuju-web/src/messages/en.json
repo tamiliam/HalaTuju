@@ -2779,6 +2779,21 @@
     "orgPhone": "Organisation Phone",
     "saving": "Saving...",
     "profileUpdated": "Profile updated.",
-    "profileUpdateFailed": "Failed to update."
+    "profileUpdateFailed": "Failed to update.",
+    "reviewer": {
+      "title": "Reviewer credentials",
+      "subtitle": "Your background — shown to the team, never to students or sponsors.",
+      "highestQualification": "Highest qualification",
+      "highestQualificationHint": "e.g. PhD, Master's, Bachelor's",
+      "university": "University",
+      "graduationYear": "Year of graduation",
+      "fieldOfStudy": "Field of study",
+      "contactTitle": "Contact details",
+      "contactSubtitle": "Private — visible only to you and super admins.",
+      "phone": "Phone number",
+      "address": "Address",
+      "saved": "Credentials saved.",
+      "saveFailed": "Could not save your credentials."
+    }
   }
 }

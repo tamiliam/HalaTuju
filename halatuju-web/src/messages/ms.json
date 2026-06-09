@@ -2779,6 +2779,21 @@
     "orgPhone": "Telefon Organisasi",
     "saving": "Menyimpan...",
     "profileUpdated": "Profil dikemaskini.",
-    "profileUpdateFailed": "Gagal mengemaskini."
+    "profileUpdateFailed": "Gagal mengemaskini.",
+    "reviewer": {
+      "title": "Kelayakan penilai",
+      "subtitle": "Latar belakang anda — dipaparkan kepada pasukan, tidak sekali-kali kepada pelajar atau penaja.",
+      "highestQualification": "Kelayakan tertinggi",
+      "highestQualificationHint": "cth. PhD, Sarjana, Ijazah Sarjana Muda",
+      "university": "Universiti",
+      "graduationYear": "Tahun graduasi",
+      "fieldOfStudy": "Bidang pengajian",
+      "contactTitle": "Butiran hubungan",
+      "contactSubtitle": "Peribadi — hanya kelihatan kepada anda dan pentadbir utama.",
+      "phone": "Nombor telefon",
+      "address": "Alamat",
+      "saved": "Kelayakan disimpan.",
+      "saveFailed": "Tidak dapat menyimpan kelayakan anda."
+    }
   }
 }

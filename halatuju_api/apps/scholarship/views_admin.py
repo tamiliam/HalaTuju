@@ -17,8 +17,8 @@ from . import pool
 from .anomaly_engine import detect_anomalies
 from .emails import send_request_info_email
 from .models import (
-    ApplicantDocument, InterviewSession, Referee, ScholarshipApplication,
-    Sponsor, SponsorProfile, Sponsorship,
+    ApplicantDocument, InterviewSession, Referee, ReviewerProfile,
+    ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
 )
 from .profile_engine import (
     generate_anonymous_profile, refine_sponsor_profile,
@@ -28,6 +28,7 @@ from .serializers_admin import (
     AdminApplicationDetailSerializer,
     AdminApplicationListSerializer,
     InterviewSessionSerializer,
+    ReviewerProfileSerializer,
     SponsorProfileSerializer,
 )
 from .services import admin_reject, application_completeness, submit_interview
@@ -861,3 +862,33 @@ class AdminVerdictMetricsView(_AdminBase):
             qs = qs.filter(cohort_id=cohort)
         pairs = ((a.ai_verdict_snapshot, a.officer_verdict) for a in qs)
         return Response(override_metrics(pairs))
+
+
+class ReviewerProfileView(_AdminBase):
+    """GET/PATCH /api/v1/admin/reviewer-profile/ — a reviewer's OWN credentials +
+    contact details (F6). Self-scoped: it only ever reads/writes the calling admin's
+    own row (resolved from the JWT via get_admin), so one admin can never see or edit
+    another's. Reviewer + super only — a viewer (read-only staff) gets 403. The
+    sensitive PII (phone/address) lives in its own table and is exposed by no other
+    serializer."""
+
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        profile, _ = ReviewerProfile.objects.get_or_create(partner_admin=admin)
+        return Response(ReviewerProfileSerializer(profile).data)
+
+    def patch(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        profile, _ = ReviewerProfile.objects.get_or_create(partner_admin=admin)
+        serializer = ReviewerProfileSerializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
