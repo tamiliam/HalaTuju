@@ -626,6 +626,12 @@
   record the `django_migrations` row), then **enable RLS on `reviewer_profiles`** (deny-by-default, service-role-only
   — it holds sensitive staff PII: phone/address) and re-run `get_advisors`. Must be closed before go-live. (Logged
   2026-06-09, B40 Phase E/F Sprint 5.)
+- TD-101: **The F2 "My students" view is read-only — donate/withdraw not wired.** The account header shows the giving
+  balance but no functional "Donate more"; an offered (pending) card shows "Awaiting acceptance" but no "Withdraw
+  offer" action, though `SponsorDonateView` (mock) and `SponsorCancelOfferView` both exist. These are E3 wallet actions
+  (the real money is TD-075); F2 deliberately ships the *profile + list* read-surface only. **To resolve:** wire
+  `donate`/`cancel` into the My-students view when the E3 wallet UI is built (or sooner if a dark click-through needs
+  them). Low priority while dark. (Logged 2026-06-09, B40 Phase E/F Sprint 8.)
 - TD-100: **Migration `0052` (new `AssignmentEvent` model) needs the contenttypes workaround + RLS at deploy.** Like
   `0051`, the new `assignment_events` table is a new-model migration; prod has no contenttypes/auth tables, so a plain
   `manage.py migrate` exits non-zero on `post_migrate` even when the DDL commits. **To resolve:** at the Phase E/F batch

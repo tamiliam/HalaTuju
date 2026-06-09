@@ -25,6 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docs/partner-pagination-plan.md`.
 
 ### Added
+- **Sponsor profile + "My students" (B40 Phase E/F Sprint 8, F2, held local, ships dark).** A signed-in, approved
+  sponsor's `/sponsor` home now shows the anonymised students their giving supports + a coarse progress signal. New
+  **`progress_state`** on the allowlist card (`SponsorPoolCardSerializer`) — `pool.derive_progress_state` is a stub
+  (null until the student is `sponsored`, then `on_track`; the real band, from semester results, lands in F9a/Sprint 9)
+  and is non-identifying, so it flows safely through the existing wallet/sponsorship endpoints. FE: a "My students"
+  view extending the approved `/sponsor` portal — an account + giving-balance header, then a grid of anonymised student
+  cards (alias · state · field · academic · award) with a colour-coded progress badge (green on-track / blue
+  semester-completed / amber needs-attention / indigo graduated), plus an "awaiting acceptance" card for an unaccepted
+  offer. `getSponsorWallet` client + `SponsorWallet`/`SponsorSponsorship` types; trilingual `sponsorPortal.myStudents.*`.
+  Stitch-approved (`Sponsor Dashboard — My Students`). **No migration** (`progress_state` is derived). +3 tests incl. the
+  allowlist leak test (1960 backend pytest; 283 jest; `next build` clean; i18n parity 2351). Behind `SPONSOR_POOL_ENABLED`
+  (wallet 404s while off → the section simply doesn't render). Ships in the held Phase E/F batch (no push).
 - **Reviewer assignment / reassignment (B40 Phase E/F Sprint 7, F7, held local).** A super admin assigns a submitted
   application to a reviewer, reassigns it, or unassigns — via a new **super-only, audited** `POST
   /api/v1/admin/scholarship/applications/<id>/assign/` (body `{reviewer_id}`; `null` = unassign). `services.assign_reviewer`
