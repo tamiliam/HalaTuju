@@ -51,6 +51,7 @@ from .views_admin import (
     AdminRecordVerdictView,
     AdminRequestInfoView,
     AdminResolutionItemView,
+    AdminAssignReviewerView,
     AdminResolutionItemActionView,
     AdminRunVisionView,
     AdminVerdictMetricsView,
@@ -109,6 +110,8 @@ urlpatterns = [
     path('admin/scholarship/applications/<int:pk>/', AdminApplicationDetailView.as_view()),
     path('admin/scholarship/applications/<int:pk>/verify-accept/', AdminVerifyAcceptView.as_view()),
     path('admin/scholarship/applications/<int:pk>/reject/', AdminRejectView.as_view()),
+    # F7: super-only audited reviewer (re)assignment.
+    path('admin/scholarship/applications/<int:pk>/assign/', AdminAssignReviewerView.as_view()),
     path('admin/scholarship/applications/<int:pk>/referees/', AdminApplicationRefereeView.as_view()),
     path('admin/scholarship/applications/<int:pk>/referees/<int:ref_id>/', AdminRefereeDetailView.as_view()),
     path('admin/scholarship/applications/<int:pk>/documents/<int:doc_id>/re-run-vision/', AdminRunVisionView.as_view()),

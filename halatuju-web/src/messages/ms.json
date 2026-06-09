@@ -2192,6 +2192,15 @@
       "reviewActions": "Semakan & tindakan",
       "assignTitle": "Tugaskan penyemak",
       "assignError": "Tidak dapat menukar tugasan.",
+      "assign": {
+        "current": "Kini ditugaskan kepada {name}.",
+        "notReadyHint": "Tugasan dibuka apabila pertanyaan pemohon dijawab, atau tempoh 5 hari tamat.",
+        "error": {
+          "not_ready": "Permohonan ini belum bersedia untuk ditugaskan — pertanyaannya masih terbuka dan tempoh SLA belum tamat.",
+          "not_reviewer": "Anda hanya boleh menugaskan kepada seorang penyemak.",
+          "bad_assignee": "Pentadbir itu tidak lagi aktif."
+        }
+      },
       "incompleteTitle": "Belum boleh diterima — pemohon masih perlu:",
       "requestInfoTitle": "Minta lebih banyak dokumen",
       "requestInfoIntro": "E-mel pelajar untuk menambah sesuatu. Ini tidak menukar status mereka — mereka boleh terus memuat naik.",

@@ -107,6 +107,7 @@ export default function AdminScholarshipDetailPage() {
   const { token, role } = useAdminAuth()
   const { t } = useT()
   const canWrite = (role?.role ?? (role?.is_super_admin ? 'super' : 'reviewer')) !== 'viewer'
+  const isSuper = role?.role === 'super' || !!role?.is_super_admin
   const [app, setApp] = useState<AdminScholarshipDetail | null>(null)
   const [profile, setProfile] = useState<AdminSponsorProfile | null>(null)
   const [markdown, setMarkdown] = useState('')
@@ -115,7 +116,7 @@ export default function AdminScholarshipDetailPage() {
   const [refForm, setRefForm] = useState({ ...EMPTY_REFEREE })
   const [genLang, setGenLang] = useState('en')
   // Phase C
-  const [admins, setAdmins] = useState<Array<{ id: number; name: string }>>([])
+  const [admins, setAdmins] = useState<Array<{ id: number; name: string; role: string }>>([])
   const [findings, setFindings] = useState<Record<string, { verdict: string; rationale: string }>>({})
   const [rubric, setRubric] = useState<Record<string, number>>({})
   const [note, setNote] = useState('')
@@ -240,7 +241,13 @@ export default function AdminScholarshipDetailPage() {
     if (!token) return
     setBusy('assign'); setError('')
     try { setApp(await assignApplication(id, adminId, { token })) }
-    catch { setError(t('admin.scholarship.assignError')) } finally { setBusy('') }
+    catch (e) {
+      const code = e instanceof Error ? e.message : ''
+      const known = ['not_ready', 'not_reviewer', 'bad_assignee']
+      setError(known.includes(code)
+        ? t(`admin.scholarship.assign.error.${code}`)
+        : t('admin.scholarship.assignError'))
+    } finally { setBusy('') }
   }
 
   const doSaveInterview = async () => {
@@ -1530,21 +1537,36 @@ export default function AdminScholarshipDetailPage() {
         {error && <p className="text-red-600 text-xs">{error}</p>}
       </div>
 
-      {/* ── Assign a reviewer — below Decision, reviewer/super only (viewer-hidden). ─── */}
-      {canWrite && (
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
-        <h2 className="font-semibold">{t('admin.scholarship.assignTitle')}</h2>
-        <select
-          value={app.assigned_to_id ?? ''}
-          disabled={!!busy}
-          onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
-          className="border rounded-lg px-3 py-2 text-sm w-full"
-        >
-          <option value="">{t('admin.scholarship.unassigned')}</option>
-          {admins.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-        </select>
-      </div>
-      )}
+      {/* ── Assign a reviewer (F7) — SUPER-ONLY + audited. First assignment is gated on
+            readiness (no open queries OR the SLA lapsed); reassign is allowed any time. ─── */}
+      {isSuper && (() => {
+        const ready = app.query_sla?.ready_for_assignment ?? false
+        const firstAssignBlocked = !app.assigned_to_id && !ready
+        return (
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
+          <h2 className="font-semibold">{t('admin.scholarship.assignTitle')}</h2>
+          {app.assigned_to_id && (
+            <p className="text-xs text-gray-500">
+              {t('admin.scholarship.assign.current', { name: app.assigned_to_name || '' })}
+            </p>
+          )}
+          <select
+            value={app.assigned_to_id ?? ''}
+            disabled={!!busy || firstAssignBlocked}
+            title={firstAssignBlocked ? t('admin.scholarship.assign.error.not_ready') : undefined}
+            onChange={(e) => doAssign(e.target.value ? Number(e.target.value) : null)}
+            className="border rounded-lg px-3 py-2 text-sm w-full disabled:bg-gray-100 disabled:text-gray-400"
+          >
+            <option value="">{t('admin.scholarship.unassigned')}</option>
+            {admins.filter((a) => a.role === 'reviewer' || a.role === 'super')
+              .map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </select>
+          {firstAssignBlocked && (
+            <p className="text-xs text-amber-600">{t('admin.scholarship.assign.notReadyHint')}</p>
+          )}
+        </div>
+        )
+      })()}
 
       </div>{/* end RIGHT column */}
 

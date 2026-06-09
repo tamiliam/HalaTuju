@@ -383,6 +383,10 @@ class ScholarshipApplication(models.Model):
         null=True, blank=True, related_name='assigned_applications',
         help_text="Phase C: the reviewer assigned to interview this applicant",
     )
+    assigned_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="F7: when the current reviewer was assigned (null = unassigned)",
+    )
     locale = models.CharField(
         max_length=2, default='en',
         help_text="Applicant's language at apply time (en/ms/ta) for deferred emails",
@@ -1123,3 +1127,36 @@ class ReviewerProfile(models.Model):
 
     def __str__(self):
         return f'ReviewerProfile for {self.partner_admin_id}'
+
+
+class AssignmentEvent(models.Model):
+    """An audit row for each (re)assignment of an application to a reviewer (F7).
+
+    `from_admin`/`to_admin` are nullable FKs (admins are soft-deactivated, never
+    hard-deleted, so the identity survives); `by_email` snapshots who performed it.
+    A `to_admin` of None records an unassignment.
+    """
+    application = models.ForeignKey(
+        'ScholarshipApplication', on_delete=models.CASCADE,
+        related_name='assignment_events',
+    )
+    from_admin = models.ForeignKey(
+        'courses.PartnerAdmin', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='+',
+    )
+    to_admin = models.ForeignKey(
+        'courses.PartnerAdmin', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='+',
+    )
+    by_email = models.CharField(
+        max_length=254, blank=True, default='',
+        help_text="Email of the super-admin who performed the (re)assignment.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'assignment_events'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'AssignmentEvent app={self.application_id} -> {self.to_admin_id} ({self.created_at})'
