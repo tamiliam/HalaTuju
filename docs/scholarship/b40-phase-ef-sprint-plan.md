@@ -22,7 +22,7 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 | 1 | Sponsor landing + live counter ⭐ ✅ **DONE** on `main` 2026-06-08 (no migration) | F1 | M, FE+tiny BE | 0 (counter only) |
 | 2 | Student post-match onboarding — backend ⭐ ✅ **DONE** on `main` 2026-06-08 (migration `0049`) | F8a | M, BE | — |
 | 3 | Student post-match onboarding — frontend ⭐ ✅ **DONE** on `main` 2026-06-09 (no migration) | F8b | M, FE | 2 |
-| 4 | Sponsor notifications (real-time + digest) ⭐ | F3 | M–L, BE+tiny FE | 0 |
+| 4 | Sponsor notifications (real-time + digest) ⭐ ✅ **DONE** on `main` 2026-06-09 (migration `0050`) | F3 | M–L, BE+tiny FE | 0 |
 | 5 | Reviewer profile | F6 | M, BE+FE | — |
 | 6 | Reviewer invite role selector | F5 | S, BE+FE | 5 |
 | 7 | **Reviewer assignment / reassignment** (Check-2 unblocked) | F7 | M, BE+FE | 6, Check-2 |
@@ -71,14 +71,14 @@ panel on `/scholarship/application`. Sponsor identity never shown. Trilingual `s
 orchestrator-reviewed + re-built (next build clean, 276 jest). Naturally dark. Retro
 `docs/retrospective-sprint3-onboarding-frontend.md`.
 
-### Sprint 4 — F3 Sponsor notifications · BE + tiny FE ⭐
-**Deliverable:** real-time (hourly-batched) + weekly-digest sponsor emails, preference-controlled.
-- **Model:** `Sponsor.notify_frequency` (`realtime|weekly|off`, default `weekly`) + `last_digest_sent_at` (migration).
-- **Publish hook:** in `AdminPublishAnonProfileView.post()` (`views_admin.py:390`, after `anon_published=True` at `~:414`) enqueue/mark the student for notification (no synchronous fan-out).
-- **Commands:** `send_sponsor_realtime` (hourly batch of newly-published students → `realtime` sponsors) + `send_sponsor_digests` (weekly → `weekly` sponsors, students since `last_digest_sent_at`). Register both in `CronRunView.JOBS` (`views.py:711`); add two Cloud Scheduler jobs (X-Cron-Secret / `CRON_SECRET`, mirroring `halatuju-application-reminders`).
-- **Emails:** `send_sponsor_new_student_email` + `send_sponsor_digest_email`, trilingual, **rendered through `SponsorPoolDetailSerializer`** so the body is allowlist-safe by construction. Respect Brevo daily-quota.
-- **Preference UI:** `PATCH /api/v1/sponsor/notifications/` (`SponsorMixin`) + a toggle in the `/sponsor` account view.
-- **Tests:** digest body contains no blocked fields; `off` sends nothing; real-time is batched not per-event.
+### Sprint 4 — F3 Sponsor notifications · ✅ DONE on `main` 2026-06-09 (migration `0050`; ships dark) ⭐ — LAST must-have
+Shipped: `Sponsor.notify_frequency` (realtime|weekly|off, default weekly) + `last_digest_sent_at` +
+`SponsorProfile.realtime_notified_at`; `sponsor_notifications` service + `send_sponsor_realtime` (hourly batch) /
+`send_sponsor_digests` (weekly) commands in `CronRunView.JOBS`; publish hook resets `realtime_notified_at`; emails built
+ONLY from `SponsorPoolDetailSerializer` (allowlist-safe by construction) + soft `SPONSOR_NOTIFY_MAX_PER_RUN` cap;
+`PATCH /api/v1/sponsor/notifications/` + a `/sponsor` toggle (trilingual). +9 tests (882 scholarship pytest, 276 jest).
+Retro `docs/retrospective-sprint4-sponsor-notifications.md`. TD-095 (create 2 Cloud Scheduler jobs at deploy), TD-096
+(sponsor email locale). **All four ⭐ must-haves (S1–S4) done.**
 
 ### Sprint 5 — F6 Reviewer profile · BE + FE
 **Deliverable:** a reviewer's own credentials + contact profile.

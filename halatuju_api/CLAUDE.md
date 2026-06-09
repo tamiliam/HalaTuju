@@ -465,15 +465,19 @@ deploys batched for go-live).**
   Naturally dark (no offer exists until a sponsor funds, needs the flag on). Stitch-approved (4 screens); built by a
   delegated subagent, orchestrator-reviewed + re-built (next build clean, 276 jest). Retro
   `docs/retrospective-sprint3-onboarding-frontend.md`. TD-094 (Tamil refine).
-- **▶ NEXT — Sprint 4 (F3, sponsor notifications, ⭐ last must-have):** real-time (hourly-batched) + weekly-digest
-  sponsor emails, preference-controlled. New `Sponsor.notify_frequency` (`realtime|weekly|off`) + `last_digest_sent_at`
-  (migration → `0050`); a publish hook in `AdminPublishAnonProfileView.post()`; two management commands
-  (`send_sponsor_realtime` + `send_sponsor_digests`) registered in `CronRunView.JOBS` + two Cloud Scheduler jobs; emails
-  rendered through `SponsorPoolDetailSerializer` so the body is allowlist-safe by construction; a preference toggle.
-  Tests: digest body leaks no blocked fields; `off` sends nothing; real-time is batched.
-- **Gotchas:** ship dark (flag off); i18n en/ms/ta parity every sprint; ≤2 deploys/feature; deploys/pushes are
-  owner-gated (build minutes); prod migrations at `0049` (local, unpushed) once the batch deploys — Sprint 4 adds
-  `0050` (currently `0048` on prod).
+- **✅ Sprint 4 DONE (F3, sponsor notifications, ⭐ LAST must-have, 2026-06-09, migration `0050`):** `Sponsor.notify_frequency`
+  (`realtime|weekly|off`, default weekly) + `last_digest_sent_at` + `SponsorProfile.realtime_notified_at`. New
+  `sponsor_notifications` service + `send_sponsor_realtime` (hourly batch) / `send_sponsor_digests` (weekly) commands in
+  `CronRunView.JOBS`; publish hook resets `realtime_notified_at`; emails built from `SponsorPoolDetailSerializer` only
+  (allowlist-safe). `PATCH /api/v1/sponsor/notifications/` + a `/sponsor` toggle. **TD-095 = create 2 Cloud Scheduler
+  jobs at deploy.** Retro `docs/retrospective-sprint4-sponsor-notifications.md`. **All four ⭐ must-haves now done.**
+- **▶ NEXT — Sprint 5 (F6, reviewer profile, BE + FE):** a reviewer's own credentials + contact profile. New
+  `ReviewerProfile` 1:1 to `PartnerAdmin` (`highest_qualification, university, graduation_year, field_of_study, phone,
+  address`; NO password field) + a self-edit endpoint (scoped to self) + a profile page under `/admin`. `phone`/`address`
+  are sensitive staff PII — reviewer + super only, never exposed to students/sponsors; add to the PDPA retention note.
+- **Gotchas:** ship dark (flag off) for sponsor-facing; i18n en/ms/ta parity; ≤2 deploys/feature; deploys/pushes
+  owner-gated; prod at `0048`, local migrations `0049`+`0050` apply migrate-first when the batch deploys; Sprint 5 likely
+  adds `0051`.
 
 ---
 

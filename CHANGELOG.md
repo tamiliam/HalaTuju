@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Sponsor notifications — real-time + weekly digest (B40 Phase E/F Sprint 4, F3, ships dark).** A sponsor chooses how
+  often they hear about newly-published anonymised students: `realtime` (an hourly-batched alert), `weekly` (a digest),
+  or `off` — `Sponsor.notify_frequency` (default `weekly`) set via `PATCH /api/v1/sponsor/notifications/` and a
+  preference toggle on `/sponsor` (trilingual). New `sponsor_notifications` service + two management commands
+  (`send_sponsor_realtime` hourly, `send_sponsor_digests` weekly) registered in `CronRunView.JOBS`; the publish view
+  resets `SponsorProfile.realtime_notified_at` so a (re)published student is alerted exactly once, and each sponsor's
+  `last_digest_sent_at` advances so a digest never repeats. **Email bodies are built only from
+  `SponsorPoolDetailSerializer` dicts — allowlist-safe by construction** (no student identity can reach a sponsor); a
+  soft `SPONSOR_NOTIFY_MAX_PER_RUN` cap keeps a run inside the Brevo quota. Migration **`0050`** (3 additive fields).
+  +9 tests (882 scholarship pytest; 276 jest; `next build` clean). Cloud Scheduler jobs to be created at deploy
+  (TD-095). Retro `docs/retrospective-sprint4-sponsor-notifications.md`.
 - **Student award + onboarding — frontend (B40 Phase E/F Sprint 3, F8b, ships dark).** New `/scholarship/award` page
   (accept or decline a funded-studies offer; a guardian modal for minors reusing the consent relationship list +
   `formatNric`) and `/scholarship/onboarding` wizard (welcome acknowledgement cards → a short questionnaire → a
