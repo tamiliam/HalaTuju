@@ -443,12 +443,23 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-08)
+## Next Sprint (as of 2026-06-09)
 
-**▶ ACTIVE TRACK — B40 Phase E/F sponsor build (roadmap `docs/scholarship/b40-phase-ef-sprint-plan.md`, 13 sprints).**
-Building the sponsor/reviewer/student features to a demoable end-state, all **dark behind `SPONSOR_POOL_ENABLED`** until
-the lawyer-gated go-live (Sprint 12). **Sprints 0–5 DONE on `main` (held local, NOT pushed — push=deploy, owner-gated;
-deploys batched for go-live).**
+**▶ ALL SHIPPED & LIVE.** The B40 Phase E/F sponsor programme (13 sprints + go-live, `SPONSOR_POOL_ENABLED=true`),
+the **Admin Roles realignment** (`super/admin/partner/reviewer` + full students/B40 scoping; nav/invite/profile
+redesign), the post-deploy **invite-existing-user** + **phone/email search** fixes, and the **B40 income-gate policy**
+(gross household income ≤ `income_ceiling` RM5,860 is the PRIMARY test; per-capita RM1,584 is a safety net above it)
+are all on `main` and deployed. Prod migrations through `courses 0053` / `scholarship 0056`. Prod admins: 1 super
+(owner) + 2 CUMIG partners. Tests: 2029 backend pytest + 276 jest; i18n parity 2468.
+
+**▶ NEXT — follow-ups only (no roadmap sprint; do when inputs arrive):** (1) **lawyer consent text** + `CONSENT_VERSION`
+bump (re-attests everyone) — see decisions.md "Go live on draft consent text"; (2) **Tamil refine** (TD-105/108 etc.);
+(3) **real money** — toyyibPay donate-in + disbursement-out + tranche (TD-075), a separate gated track; (4) when a
+real **reviewer** is invited, assigned-only scoping activates — assign their applicants via the super-only assign
+control. After any future threshold change: bump the cohort value + trigger the `rescore-pending` cron job.
+
+---
+_Historical sprint log below (archive — current state is the block above):_
 - **✅ Sprint 1 DONE (F1, 2026-06-08, no migration):** public `/sponsor` marketing landing + public
   `GET /api/v1/sponsor/pool/count/` → `{count, enabled}` (count-only, flag-gated). `components/SponsorLanding.tsx`.
   TD-091 (Tamil refine), TD-092 (live click-through at go-live).
