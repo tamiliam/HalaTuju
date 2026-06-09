@@ -1088,6 +1088,8 @@ export interface ScholarshipApplication {
   notify_email?: string   // where decision/comms emails are sent (resolved at submit)
   form_data: Record<string, unknown>
   intake_snapshot?: Record<string, unknown>   // frozen audit copy of what was declared at submit
+  // F8b: set once the student finishes post-award onboarding (null until then).
+  onboarded_at?: string | null
 }
 
 export async function submitScholarshipApplication(
@@ -1500,6 +1502,63 @@ export async function resolveResolutionItem(
   return apiRequest(`/api/v1/scholarship/resolution-items/${id}/resolve/`, {
     method: 'POST',
     body: JSON.stringify({ text }),
+    ...options,
+  })
+}
+
+// ── Phase E/F: student award + onboarding (F8b) ──────────────────────────
+// The student's funded-studies offer. The sponsor's identity is never exposed
+// (allowlist serializer): the student only ever sees the amount + deadline.
+
+export interface StudentAward {
+  id: number
+  amount: string
+  status: string
+  offered_at: string
+  accept_deadline: string
+}
+
+/** GET the student's current award offer (if any) + whether they're a minor
+ *  (so the page knows to require a guardian to accept). */
+export async function getStudentAward(
+  options?: ApiOptions
+): Promise<{ offer: StudentAward | null; is_minor: boolean }> {
+  return apiRequest('/api/v1/scholarship/award/', options)
+}
+
+/** Accept or decline the award. A minor's guardian must accept (name +
+ *  relationship + NRIC), mirroring the share-consent guardian gate. On error
+ *  the API returns { error: code } with status 400/403; the code surfaces via
+ *  err.code (apiRequest carries it). */
+export async function respondToAward(
+  payload: {
+    action: 'accept' | 'decline'
+    locale?: string
+    granted_by?: 'self' | 'guardian'
+    guardian_name?: string
+    guardian_relationship?: string
+    guardian_nric?: string
+  },
+  options?: ApiOptions
+): Promise<StudentAward> {
+  return apiRequest('/api/v1/scholarship/award/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    ...options,
+  })
+}
+
+/** F8a: finish post-award onboarding — store the questionnaire answers and
+ *  stamp onboarded_at. Returns the updated application. On error returns
+ *  { error, code } (e.g. code 'not_awarded' when the award isn't accepted). */
+export async function submitOnboarding(
+  applicationId: number,
+  answers: Record<string, unknown>,
+  options?: ApiOptions
+): Promise<ScholarshipApplication> {
+  return apiRequest(`/api/v1/scholarship/applications/${applicationId}/onboarding-complete/`, {
+    method: 'POST',
+    body: JSON.stringify({ answers }),
     ...options,
   })
 }

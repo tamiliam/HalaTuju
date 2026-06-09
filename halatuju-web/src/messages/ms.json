@@ -1469,7 +1469,14 @@
       "browseCta": "Lihat kursus sementara menunggu",
       "homeCta": "Kembali ke utama",
       "acceptedTitle": "Anda telah diterima",
-      "acceptedBody": "Tahniah — permohonan anda telah disahkan. Pasukan kami akan menghubungi anda tentang langkah seterusnya untuk anugerah anda."
+      "acceptedBody": "Tahniah — permohonan anda telah disahkan. Pasukan kami akan menghubungi anda tentang langkah seterusnya untuk anugerah anda.",
+      "awardPanel": {
+        "title": "Satu langkah lagi",
+        "acceptBody": "Seorang penyokong telah memilih untuk membiayai pengajian anda. Terima anugerah anda untuk meneruskan.",
+        "acceptCta": "Lihat anugerah saya",
+        "onboardingBody": "Anda telah menerima anugerah anda — hanya beberapa soalan ringkas untuk melengkapkan persediaan.",
+        "onboardingCta": "Lengkapkan pendaftaran"
+      }
     },
     "banner": {
       "shortlistedTitle": "Anda telah disenarai pendek",
@@ -1680,6 +1687,99 @@
       },
       "yes": "Ya",
       "no": "Tidak"
+    },
+    "award": {
+      "empty": {
+        "body": "Tiada anugerah menunggu anda buat masa ini. Kami akan memberitahu anda sebaik sahaja seorang penyokong memilih untuk membiayai pengajian anda.",
+        "cta": "Kembali ke permohonan saya"
+      },
+      "confirmed": {
+        "heading": "Berita baik — pengajian anda dibiayai",
+        "body": "Seorang penyokong telah memilih untuk membiayai pengajian anda. Identiti mereka kekal rahsia, sama seperti identiti anda kekal rahsia daripada mereka.",
+        "amountLabel": "Anugerah anda",
+        "acceptBy": "Sila terima sebelum {date}.",
+        "accept": "Terima dan teruskan",
+        "accepting": "Sedang menerima…",
+        "decline": "Bukan sekarang",
+        "heldNote": "Dana dipegang oleh Yayasan myNADI dan dikeluarkan mengikut kemajuan anda."
+      },
+      "declineConfirm": "Adakah anda pasti mahu menolak anugerah ini buat masa ini? Anda boleh kembali sebelum tarikh tutup penerimaan.",
+      "guardian": {
+        "title": "Ibu bapa atau penjaga perlu menerima",
+        "intro": "Kerana anda berumur bawah 18 tahun, ibu bapa atau penjaga mesti menerima anugerah ini bagi pihak anda. Sila minta mereka mengisi maklumat ini.",
+        "name": "Nama penuh ibu bapa atau penjaga",
+        "namePlaceholder": "Seperti tertera pada kad pengenalan",
+        "relationship": "Hubungan dengan anda",
+        "relationshipPlaceholder": "Pilih hubungan",
+        "nric": "Nombor kad pengenalan ibu bapa atau penjaga",
+        "submit": "Terima bagi pihak mereka",
+        "cancel": "Batal"
+      },
+      "error": {
+        "no_offer": "Tiada anugerah untuk dijawab buat masa ini.",
+        "guardian_required": "Sila isi nama, hubungan dan nombor kad pengenalan ibu bapa atau penjaga.",
+        "bad_action": "Sesuatu telah berlaku. Sila cuba lagi.",
+        "generic": "Sesuatu telah berlaku. Sila cuba lagi."
+      }
+    },
+    "onboarding": {
+      "back": "Kembali",
+      "noApp": "Kami tidak dapat menemui permohonan anda. Sila kembali dan cuba lagi.",
+      "progress": {
+        "award": "Anugerah",
+        "welcome": "Selamat datang",
+        "questions": "Soalan",
+        "finish": "Selesai"
+      },
+      "welcome": {
+        "heading": "Selamat datang — beginilah caranya",
+        "stages": {
+          "title": "Pembiayaan anda dikeluarkan secara berperingkat",
+          "line": "apabila anda menyelesaikan setiap bahagian pengajian anda"
+        },
+        "checkin": {
+          "title": "Kami akan menyemak dari semasa ke semasa",
+          "line": "untuk melihat perkembangan anda"
+        },
+        "anonymous": {
+          "title": "Anda kekal tanpa nama",
+          "line": "penyokong anda tidak akan melihat butiran peribadi anda"
+        },
+        "understand": "Saya faham"
+      },
+      "questions": {
+        "heading": "Bantu kami menyokong anda dengan baik",
+        "lookingForward": "Apakah yang paling anda nanti-nantikan dalam pengajian anda?",
+        "living": "Adakah anda akan tinggal di kampus atau di rumah?",
+        "living_campus": "Di kampus",
+        "living_home": "Di rumah",
+        "mentor": "Adakah anda mahukan mentor pelajar?",
+        "mentor_yes": "Ya",
+        "mentor_no": "Tidak",
+        "continue": "Teruskan"
+      },
+      "finish": {
+        "saving": "Sedang menyelesaikan…",
+        "error": "Kami tidak dapat menyimpan jawapan anda. Sila cuba lagi.",
+        "retry": "Cuba lagi",
+        "notAwarded": "Anugerah anda perlu diterima sebelum anda boleh melengkapkan pendaftaran.",
+        "notAwardedCta": "Pergi ke anugerah saya",
+        "title": "Anda sudah bersedia 🎉",
+        "body": "Terima kasih. Pendaftaran anda selesai dan perjalanan pembiayaan anda bermula sekarang.",
+        "whatNext": {
+          "title": "Apa yang berlaku seterusnya",
+          "email": {
+            "title": "E-mel pengesahan",
+            "line": "kami akan menyemak dalam masa 48 jam"
+          },
+          "dashboard": {
+            "title": "Akses papan pemuka anda",
+            "line": "jejaki pengajian anda"
+          }
+        },
+        "dashboardCta": "Pergi ke papan pemuka saya",
+        "thankYouSoon": "Hantar ucapan terima kasih tanpa nama kepada penyokong anda (akan datang)"
+      }
     }
   },
   "authGate": {
