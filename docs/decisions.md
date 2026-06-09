@@ -2339,3 +2339,18 @@ shape that delegates cleanly (lesson #73). It keeps the sprint within budget wit
 **Trade-offs:** an extra review pass; the subagent can't commit (by design — deploy/commit stays with the orchestrator).
 **Revisit if:** a sprint is exploratory or its spec is still moving — then build inline, since a subagent can't make the
 product decisions.
+
+## Real-time sponsor alerts stamp the whole batch regardless of audience — B40 Phase E/F Sprint 4, 2026-06-09
+
+**Decision:** `send_sponsor_realtime` stamps `SponsorProfile.realtime_notified_at` on every newly-published student it
+processes, even when there are zero `realtime` sponsors to email. Each student therefore goes through exactly one
+real-time cycle.
+**Alternatives considered:** stamp only when ≥1 real-time sponsor received the batch (so a future first subscriber gets
+a backlog of every earlier student).
+**Rationale:** "real-time" means a live alert about what's new *now*; a sponsor who subscribes later shouldn't trigger a
+one-off blast of the entire historical pool. Un-alerted students remain fully visible when browsing and are still
+covered by the weekly digest.
+**Trade-offs:** the very first real-time sponsor won't get a real-time alert for students published before they
+subscribed (they see them in the pool / digest instead).
+**Revisit if:** sponsors expect a "catch-up" real-time alert on first subscribing (then track notification per
+(sponsor, student) instead of a single per-student stamp).

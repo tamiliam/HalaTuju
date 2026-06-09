@@ -605,3 +605,13 @@
   need the owner's refinement (joins the Tamil-refine queue with TD-091). English + Malay are final. Low risk — the
   pages are dark until go-live. **To resolve:** owner Tamil refine before Sprint 12 go-live. (Logged 2026-06-09, B40
   Phase E/F Sprint 3.)
+- TD-095: **Create the two F3 Cloud Scheduler jobs at deploy.** `send_sponsor_realtime` (HOURLY) and
+  `send_sponsor_digests` (WEEKLY) are registered in `CronRunView.JOBS` (`sponsor-realtime`, `sponsor-digests`) but have
+  no scheduler entries yet. **To resolve:** at the Phase E/F batch deploy, create two Cloud Scheduler jobs hitting the
+  cron endpoint with `X-Cron-Secret` (mirror `halatuju-application-reminders`): hourly for `sponsor-realtime`, weekly
+  for `sponsor-digests` (Asia/KL). Harmless while dark — no sponsor is `realtime`/`weekly`-eligible until the pool flag
+  is on and sponsors exist. (Logged 2026-06-09, B40 Phase E/F Sprint 4.)
+- TD-096: **Sponsor notification emails default to English.** `Sponsor` has no locale field, so F3 emails send in
+  English (the `send_sponsor_*` templates are trilingual and ready). **To resolve:** add a `locale` to `Sponsor`
+  (captured at registration) and pass it through `sponsor_notifications`. Low priority. (Logged 2026-06-09, B40 Phase
+  E/F Sprint 4.)
