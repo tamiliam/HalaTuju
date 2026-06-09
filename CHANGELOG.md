@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Action Centre now mounts for submitted students (post-submit query/document surface).** Previously
+  `/scholarship/application` only rendered the interactive follow-up (which hosts the Action Centre) for
+  `shortlisted`; a `profile_complete` student — exactly when queries/document-requests are raised — fell through to a
+  dead-end "received" card and had nowhere to respond. Now `profile_complete` / `interviewing` / `interviewed` render
+  the **Action Centre** (`ActionCentre formLocked`) as their whole surface. **The application is locked** — having
+  consented, reviewed the final values and submitted, the student can no longer see or edit the 5-step form; they can
+  only **respond to queries** (AI/human) and **upload requested documents**, all resolved **in place** (`doc` → upload,
+  `explanation`/`clarify`/non-pathway `confirm` → typed reply, `pathway_confirm` → "Yes"). The new `formLocked` prop also
+  swaps a `confirm` ticket's "Review → jump to form tab" for a typed reply (no form to jump to post-submit), and when
+  **nothing is pending** shows a calm *"You're all set — your application is with our team, we'll be in touch"* message
+  instead of rendering nothing. **The email notification + AI clarify-queries stay switched off**
+  (`CHECK2_STUDENT_QUERIES_ENABLED` untouched); flag-off, the Action Centre still surfaces system verdict doc/confirm
+  tickets and officer(human)-raised items — so it works end-to-end without turning Check 2 on. New i18n
+  `scholarship.actionCentre.{lockedTitle,lockedIntro,awaitTitle,awaitBody}` (en/ms/ta; Tamil first-draft). FE-only, no
+  backend/migration. `next build` clean; 276 jest; i18n parity 2436×3.
+
 ### Changed
 - **B40 income gate: gross household income is now the primary test; per-capita is a safety net (deployed 2026-06-09).**
   Following the DOSM 2024 update (B40 line = RM5,860), a non-STR applicant whose **gross** monthly household income is

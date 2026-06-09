@@ -65,11 +65,15 @@ function ActionCard({
   token,
   onResolved,
   onConfirm,
+  formLocked = false,
 }: {
   item: ResolutionItem
   token: string | null
   onResolved: () => void
   onConfirm: (target: ConfirmTarget) => void
+  /** Post-submit: the application form is locked, so a `confirm` ticket can't
+   *  send the student back to a form tab. They respond with a typed reply instead. */
+  formLocked?: boolean
 }) {
   const { t } = useT()
   const src = titleSourceFor(item)
@@ -166,7 +170,11 @@ function ActionCard({
               </label>
             )}
 
-            {(item.kind === 'explanation' || item.kind === 'clarify') && (
+            {/* Typed reply — explanation/clarify always, and (post-submit only) a
+                non-pathway `confirm` ticket too: the form is locked, so the student
+                can't go back and edit it; they respond in writing instead. */}
+            {(item.kind === 'explanation' || item.kind === 'clarify' ||
+              (formLocked && item.kind === 'confirm' && item.code !== 'pathway_confirm')) && (
               <div className="space-y-2">
                 <textarea
                   className="input"
@@ -198,7 +206,9 @@ function ActionCard({
               </button>
             )}
 
-            {item.kind === 'confirm' && item.code !== 'pathway_confirm' && (
+            {/* Pre-submit only: a `confirm` ticket jumps the student to the form tab
+                that resolves it. Post-submit (formLocked) uses the typed reply above. */}
+            {!formLocked && item.kind === 'confirm' && item.code !== 'pathway_confirm' && (
               <button
                 type="button"
                 onClick={() => onConfirm(confirmTargetFor(item.fact))}
@@ -222,11 +232,19 @@ export default function ActionCentre({
   token,
   studentName,
   onConfirm,
+  formLocked = false,
+  email = '',
 }: {
   token: string | null
   studentName?: string
   /** Send the student to the section that resolves a `confirm` ticket. */
   onConfirm?: (target: ConfirmTarget) => void
+  /** Post-submit mount: the application is locked (no form). Confirm tickets become
+   *  typed replies, and the empty state shows a calm "all set, we'll be in touch"
+   *  message instead of rendering nothing. */
+  formLocked?: boolean
+  /** The address updates are sent to — shown in the locked empty-state message. */
+  email?: string
 }) {
   const { t } = useT()
   const [open, setOpen] = useState<ResolutionItem[]>([])
@@ -251,22 +269,46 @@ export default function ActionCentre({
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
-  // Don't flash anything until we've checked, and stay invisible when there is
-  // genuinely nothing to finish AND nothing was ever raised (a clean applicant
-  // shouldn't see an empty "all done" banner with no history).
+  // Don't flash anything until we've checked.
   if (!loaded) return null
-  if (open.length === 0 && resolved.length === 0) return null
+
+  const firstName = (studentName || '').trim().split(/\s+/)[0] || ''
+
+  // Post-submit with nothing pending: the application is complete and with our
+  // team — say so, and that we'll be in touch. (This is the whole surface; the
+  // form is gone.)
+  if (formLocked && open.length === 0) {
+    return (
+      <section className="mb-8">
+        <div className="rounded-2xl border border-green-200 bg-green-50 p-6">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm text-white">✓</span>
+            <h2 className="font-semibold text-gray-900">{t('scholarship.actionCentre.awaitTitle')}</h2>
+          </div>
+          <p className="mt-1 text-sm text-gray-700">
+            {t('scholarship.actionCentre.awaitBody', { email: email || t('scholarship.nextSteps.whatNext.yourEmail') })}
+          </p>
+        </div>
+      </section>
+    )
+  }
+
+  // Pre-submit (shortlisted): stay invisible when there is genuinely nothing to
+  // finish AND nothing was ever raised (a clean applicant shouldn't see an empty
+  // "all done" banner with no history).
+  if (!formLocked && open.length === 0 && resolved.length === 0) return null
 
   const { done, total, pct } = computeProgress(open, resolved)
-  const firstName = (studentName || '').trim().split(/\s+/)[0] || ''
 
   return (
     <section className="mb-8">
       {/* Header */}
       <h2 className="text-xl font-bold text-gray-900">
-        {t('scholarship.actionCentre.title', { name: firstName })}
+        {t(formLocked ? 'scholarship.actionCentre.lockedTitle' : 'scholarship.actionCentre.title', { name: firstName })}
       </h2>
-      <p className="mt-1 text-sm text-gray-600">{t('scholarship.actionCentre.intro')}</p>
+      <p className="mt-1 text-sm text-gray-600">
+        {t(formLocked ? 'scholarship.actionCentre.lockedIntro' : 'scholarship.actionCentre.intro')}
+      </p>
 
       {/* Progress */}
       <div className="mt-3">
@@ -294,6 +336,7 @@ export default function ActionCentre({
               token={token}
               onResolved={fetchItems}
               onConfirm={(target) => onConfirm?.(target)}
+              formLocked={formLocked}
             />
           ))}
         </div>
