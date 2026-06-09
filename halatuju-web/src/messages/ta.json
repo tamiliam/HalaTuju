@@ -2853,7 +2853,7 @@
     "studentsTitle": "ஹாலாதுஜு மாணவர்கள்",
     "studentsCount": "{count} மாணவர்கள்",
     "studentsDesc": "HalaTuju தளத்தில் சமீபத்திய மாணவர் பதிவுகள்.",
-    "searchPlaceholder": "பெயர் அல்லது NRIC மூலம் தேடுக…",
+    "searchPlaceholder": "பெயர், NRIC, தொலைபேசி அல்லது மின்னஞ்சல் மூலம் தேடவும்…",
     "allExams": "அனைத்து தேர்வுகள்",
     "allSources": "அனைத்து மூலங்கள்",
     "downloadCsv": "CSV பதிவிறக்கு",

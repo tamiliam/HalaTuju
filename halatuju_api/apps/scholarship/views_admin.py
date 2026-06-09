@@ -106,7 +106,9 @@ class AdminApplicationListView(_AdminBase):
         assigned_f = request.GET.get('assigned')
         q = (request.GET.get('q') or '').strip()
         if q:
-            qs = qs.filter(Q(profile__name__icontains=q) | Q(profile__nric__icontains=q))
+            qs = qs.filter(
+                Q(profile__name__icontains=q) | Q(profile__nric__icontains=q)
+                | Q(profile__contact_phone__icontains=q) | Q(profile__contact_email__icontains=q))
         if status_f:
             qs = qs.filter(status=status_f)
         if bucket_f:

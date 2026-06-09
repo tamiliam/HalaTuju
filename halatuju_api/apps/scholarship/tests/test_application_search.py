@@ -33,15 +33,17 @@ class ApplicationSearchTest(TestCase):
         )
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
 
-        def mk(uid, name, nric, status='shortlisted', bucket='A'):
+        def mk(uid, name, nric, status='shortlisted', bucket='A', phone='', email=''):
             prof = StudentProfile.objects.create(
                 supabase_user_id=uid, name=name, nric=nric,
+                contact_phone=phone, contact_email=email,
             )
             return ScholarshipApplication.objects.create(
                 cohort=cls.cohort, profile=prof, status=status, bucket=bucket,
             )
 
-        mk('s1', 'Shuhan Raj A/L Loganathen', '080918-08-1813')
+        mk('s1', 'Shuhan Raj A/L Loganathen', '080918-08-1813',
+           phone='+60 12-345 6789', email='shuhan.b40@mailtest.org')
         mk('s2', 'THARUN A/L JAYAKUMAR', '070707-07-0707', status='submitted')
         mk('s3', 'Aisyah Binti Ali', '060606-06-0606')
 
@@ -62,6 +64,16 @@ class ApplicationSearchTest(TestCase):
         body = self.client.get('/api/v1/admin/scholarship/applications/?q=070707').json()
         self.assertEqual(body['count'], 1)
         self.assertEqual(body['applications'][0]['name'], 'THARUN A/L JAYAKUMAR')
+
+    def test_search_by_phone(self):
+        body = self.client.get('/api/v1/admin/scholarship/applications/?q=345 6789').json()
+        self.assertEqual(body['count'], 1)
+        self.assertEqual(body['applications'][0]['name'], 'SHUHAN RAJ A/L LOGANATHEN')
+
+    def test_search_by_email(self):
+        body = self.client.get('/api/v1/admin/scholarship/applications/?q=mailtest.org').json()
+        self.assertEqual(body['count'], 1)
+        self.assertEqual(body['applications'][0]['name'], 'SHUHAN RAJ A/L LOGANATHEN')
 
     def test_search_case_insensitive(self):
         body = self.client.get('/api/v1/admin/scholarship/applications/?q=AISYAH').json()
