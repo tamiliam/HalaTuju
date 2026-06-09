@@ -102,7 +102,7 @@ real band F9a) + FE "My students" on `/sponsor` (account+balance header + anon s
 awaiting-acceptance offered card). `getSponsorWallet` client. No migration. Leak test green. TD-101 (donate/withdraw not
 wired). Retro `docs/retrospective-sprint8-sponsor-my-students.md`.
 
-### Sprint 9 — F9a Student profile + results + graduation relay (backend) · BE
+### Sprint 9 — F9a Student profile + results + graduation relay (backend) · BE ✅ DONE (2026-06-09; migration `0053`; ships dark; `apps/scholarship/in_programme.py`; +26 pytest; retro `docs/retrospective-sprint9-in-programme.md`)
 **Deliverable:** the student-profile data + the anonymity-preserving thank-you relay.
 - Student-profile endpoints: basic details, institution/field, CGPA, **latest-semester results upload** (reuse `ApplicantDocument` `results_slip` + the OCR path). The slip is **myNADI-only**; the **values** cross per the Boundary decision.
 - **`progress_state` derivation** from the results upload (feeds F2).

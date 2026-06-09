@@ -10,18 +10,22 @@ from .views import (
     CronRunView,
     DocumentDetailView,
     DocumentHelpView,
+    GraduationMessageView,
     IncomeClusterHelpView,
     DocumentListCreateView,
     DocumentSignUploadView,
+    PromotionalConsentView,
     RefereeListCreateView,
     ResolutionItemListView,
     ResolutionItemResolveView,
+    SemesterResultView,
     StudentAwardView,
 )
 from .views_sponsor import (
     SponsorCancelOfferView,
     SponsorDonateView,
     SponsorFundView,
+    SponsorGraduationMessagesView,
     SponsorMeView,
     SponsorNotificationsView,
     SponsorPoolCountView,
@@ -34,6 +38,8 @@ from .views_sponsor import (
 from .views_admin import (
     AdminApplicationDetailView,
     AdminApplicationListView,
+    AdminGraduationMessageListView,
+    AdminGraduationMessageReviewView,
     AdminSetAwardAmountView,
     AdminSponsorshipListView,
     AdminApplicationRefereeView,
@@ -67,6 +73,10 @@ urlpatterns = [
     path('scholarship/applications/<int:pk>/', ApplicationDetailView.as_view()),
     path('scholarship/applications/<int:pk>/confirm/', ApplicationConfirmView.as_view()),
     path('scholarship/applications/<int:pk>/onboarding-complete/', ApplicationOnboardingCompleteView.as_view()),  # F8a
+    # F9a — in-programme student lifecycle (results → progress, 18+ promo consent, graduation relay)
+    path('scholarship/applications/<int:pk>/semester-results/', SemesterResultView.as_view()),
+    path('scholarship/applications/<int:pk>/promotional-consent/', PromotionalConsentView.as_view()),
+    path('scholarship/applications/<int:pk>/graduation-message/', GraduationMessageView.as_view()),
     path('scholarship/documents/sign-upload/', DocumentSignUploadView.as_view()),
     path('scholarship/documents/', DocumentListCreateView.as_view()),
     path('scholarship/documents/<int:pk>/', DocumentDetailView.as_view()),
@@ -89,6 +99,7 @@ urlpatterns = [
     path('sponsor/pool/<int:pk>/', SponsorPoolDetailView.as_view()),
     # Phase E3: wallet + funding (flag + approved-sponsor gated)
     path('sponsor/wallet/', SponsorWalletView.as_view()),
+    path('sponsor/graduation-messages/', SponsorGraduationMessagesView.as_view()),  # F9a relay
     path('sponsor/wallet/donate/', SponsorDonateView.as_view()),
     path('sponsor/pool/<int:pk>/fund/', SponsorFundView.as_view()),
     path('sponsor/sponsorships/', SponsorSponsorshipsView.as_view()),
@@ -134,4 +145,7 @@ urlpatterns = [
     path('admin/scholarship/verdict-metrics/', AdminVerdictMetricsView.as_view()),
     # F6: a reviewer's own credentials + contact profile (self-scoped, reviewer/super).
     path('admin/reviewer-profile/', ReviewerProfileView.as_view()),
+    # F9a — graduation thank-you moderation queue
+    path('admin/graduation-messages/', AdminGraduationMessageListView.as_view()),
+    path('admin/graduation-messages/<int:pk>/review/', AdminGraduationMessageReviewView.as_view()),
 ]

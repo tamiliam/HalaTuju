@@ -19,16 +19,18 @@ from . import pool
 from .anomaly_engine import detect_anomalies
 from .emails import send_request_info_email
 from .models import (
-    ApplicantDocument, InterviewSession, Referee, ReviewerProfile,
-    ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
+    ApplicantDocument, GraduationMessage, InterviewSession, Referee,
+    ReviewerProfile, ScholarshipApplication, Sponsor, SponsorProfile, Sponsorship,
 )
 from .profile_engine import (
     generate_anonymous_profile, refine_sponsor_profile,
 )
+from . import in_programme as in_programme_service
 from .serializers import ApplicantDocumentSerializer, RefereeSerializer
 from .serializers_admin import (
     AdminApplicationDetailSerializer,
     AdminApplicationListSerializer,
+    AdminGraduationMessageSerializer,
     InterviewSessionSerializer,
     ReviewerProfileSerializer,
     SponsorProfileSerializer,
@@ -927,3 +929,64 @@ class ReviewerProfileView(_AdminBase):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class AdminGraduationMessageListView(_AdminBase):
+    """GET /api/v1/admin/graduation-messages/ — the moderation queue (F9a). Reviewer +
+    super (viewer is read-only staff and may also read). ``?status=pending`` (default)
+    filters; ``?status=all`` returns everything. Staff see the full text + scan
+    outcome — they are NOT the anonymity boundary."""
+
+    def get(self, request):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        qs = GraduationMessage.objects.select_related('application').all()
+        status_f = request.GET.get('status', 'pending')
+        if status_f != 'all':
+            qs = qs.filter(status=status_f)
+        paginator = FlexiblePageNumberPagination()
+        page = paginator.paginate_queryset(qs, request, view=self)
+        data = AdminGraduationMessageSerializer(page, many=True).data
+        return paginator.envelope(
+            data, results_key='messages', total_count=paginator.page.paginator.count,
+        )
+
+
+class AdminGraduationMessageReviewView(_AdminBase):
+    """POST /api/v1/admin/graduation-messages/<id>/review/ — approve or reject a
+    graduation thank-you (F9a). Reviewer + super only (viewer is read-only). Body:
+    ``{action: 'approve'|'reject', scrubbed_text?, review_note?}``. On approve the
+    ``scrubbed_text`` (defaults to the raw text) is RE-SCANNED so a staff edit can
+    never reintroduce an identifier (400 `scrubbed_leak`). Only a `pending` message
+    can be approved; `pending`/`blocked` can be rejected."""
+
+    def post(self, request, pk):
+        admin = self.get_admin(request)
+        if not admin:
+            return self._deny()
+        if not self.has_role(admin, 'reviewer'):
+            return self._deny_role()
+        message = GraduationMessage.objects.select_related('application__profile').filter(pk=pk).first()
+        if message is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        action = (request.data.get('action') or '').strip()
+        by_email = getattr(admin, 'email', '') or ''
+        try:
+            if action == 'approve':
+                in_programme_service.approve_graduation_message(
+                    message, by_email=by_email,
+                    scrubbed_text=request.data.get('scrubbed_text'),
+                )
+            elif action == 'reject':
+                in_programme_service.reject_graduation_message(
+                    message, by_email=by_email,
+                    review_note=request.data.get('review_note', ''),
+                )
+            else:
+                return Response({'error': 'action must be approve or reject',
+                                 'code': 'bad_action'}, status=status.HTTP_400_BAD_REQUEST)
+        except in_programme_service.InProgrammeError as exc:
+            return Response({'error': exc.code, 'code': exc.code},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response(AdminGraduationMessageSerializer(message).data)

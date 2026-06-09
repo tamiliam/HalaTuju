@@ -197,6 +197,38 @@ class TestProgressState(TestCase):
         for label, value in IDENTIFIERS.items():
             self.assertNotIn(value, blob, f'{label} leaked alongside progress_state')
 
+    # F9a — the real band derived from the latest SemesterResult.
+    def _sponsored(self):
+        app = _make_eligible_app(self.cohort, suffix='ps')
+        app.status = 'sponsored'
+        app.save(update_fields=['status'])
+        return app
+
+    def test_band_semester_completed_with_good_cgpa(self):
+        from apps.scholarship.models import SemesterResult
+        app = self._sponsored()
+        SemesterResult.objects.create(application=app, semester='2026 S1', cgpa='3.50')
+        self.assertEqual(pool.derive_progress_state(app), 'semester_completed')
+
+    def test_band_needs_attention_with_low_cgpa(self):
+        from apps.scholarship.models import SemesterResult
+        app = self._sponsored()
+        SemesterResult.objects.create(application=app, semester='2026 S1', cgpa='1.80')
+        self.assertEqual(pool.derive_progress_state(app), 'needs_attention')
+
+    def test_band_graduated_overrides_cgpa(self):
+        from apps.scholarship.models import SemesterResult
+        app = self._sponsored()
+        SemesterResult.objects.create(application=app, semester='Final', cgpa='1.50', graduated=True)
+        self.assertEqual(pool.derive_progress_state(app), 'graduated')
+
+    def test_latest_result_wins(self):
+        from apps.scholarship.models import SemesterResult
+        app = self._sponsored()
+        SemesterResult.objects.create(application=app, semester='2025 S2', cgpa='1.50')
+        SemesterResult.objects.create(application=app, semester='2026 S1', cgpa='3.20')
+        self.assertEqual(pool.derive_progress_state(app), 'semester_completed')
+
 
 # ─── the anonymous prompt must not carry name/school ─────────────────────────
 

@@ -18,10 +18,12 @@ from rest_framework.views import APIView
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 
 from . import pool
+from . import in_programme as in_programme_service
 from . import sponsorship as sponsorship_service
 from .emails import send_sponsor_interest_admin_email
 from .models import Donation, ScholarshipApplication, Sponsor, Sponsorship
 from .serializers import (
+    GraduationRelaySerializer,
     SponsorPoolCardSerializer, SponsorPoolDetailSerializer,
     SponsorSerializer, SponsorSponsorshipSerializer,
 )
@@ -219,6 +221,20 @@ class SponsorWalletView(_PoolBase):
             'donations': donations,
             'sponsorships': SponsorSponsorshipSerializer(holding, many=True).data,
         })
+
+
+class SponsorGraduationMessagesView(_PoolBase):
+    """GET /api/v1/sponsor/graduation-messages/ — the staff-approved graduation
+    thank-yous from the students this sponsor actively funds (F9a). Each is *"a
+    message from a student you supported"*, linked ONLY to the anonymous ``ref`` —
+    never the student's identity, never a reply channel. Behind SPONSOR_POOL_ENABLED
+    + approved-sponsor (via _gate); allowlist by construction (GraduationRelaySerializer)."""
+    def get(self, request):
+        sponsor, err = self._gate(request)
+        if err:
+            return err
+        messages = in_programme_service.approved_messages_for_sponsor(sponsor)
+        return Response({'messages': GraduationRelaySerializer(messages, many=True).data})
 
 
 class SponsorDonateView(_PoolBase):

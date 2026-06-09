@@ -1200,7 +1200,7 @@ def save_application_details(application, data):
 # NRIC, hard-gates on name+NRIC match against parent_ic OCR, and refines the
 # relationship list (older_sibling → brother+sister; other_relative → relative).
 # 0 existing consents on prod at bump time, so this is purely forward-looking.
-CONSENT_VERSION = '2026-draft-4'  # bumped for the F8a student_onboarding_ack consent
+CONSENT_VERSION = '2026-draft-5'  # bumped for the F9a promotional_use consent (18+ only)
 
 
 # S17/S19 — structured guardian relationship codes. Father/mother only need

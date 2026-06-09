@@ -16,10 +16,13 @@ from .serializers import (
     ConsentCreateSerializer,
     ConsentSerializer,
     DocumentCreateSerializer,
+    GraduationMessageSerializer,
     RefereeSerializer,
+    SemesterResultSerializer,
     SignUploadSerializer,
     StudentAwardSerializer,
 )
+from . import in_programme as in_programme_service
 from . import sponsorship as sponsorship_service
 from .services import (
     CONSENT_VERSION,
@@ -203,6 +206,130 @@ class ApplicationOnboardingCompleteView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(ApplicationReadSerializer(application).data)
+
+
+class _OwnInProgrammeView(APIView):
+    """Shared base for the F9a in-programme student endpoints: resolve the caller's
+    OWN application (by JWT ``user_id``) and translate ``InProgrammeError`` to a 400
+    with a ``code`` the FE can map. The service layer enforces ``status='sponsored'``
+    (a student only has an in-programme lifecycle once their award is accepted)."""
+    permission_classes = [SupabaseIsAuthenticated]
+
+    def _own_application(self, request, pk):
+        return ScholarshipApplication.objects.filter(
+            pk=pk, profile_id=request.user_id,
+        ).select_related('profile').first()
+
+
+class SemesterResultView(_OwnInProgrammeView):
+    """GET/POST /api/v1/scholarship/applications/<id>/semester-results/ — the student's
+    in-programme latest-semester results. GET lists their own (latest first). POST
+    records one (`semester`, `cgpa` 0.00–4.00, `graduated`, optional `results_slip`).
+    The uploaded slip stays myNADI-only; only the derived progress band crosses to a
+    sponsor. 400 `not_in_programme` until the award is accepted; 400 `bad_cgpa`."""
+
+    def get(self, request, pk):
+        application = self._own_application(request, pk)
+        if application is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        results = application.semester_results.all()
+        return Response({'results': SemesterResultSerializer(results, many=True).data})
+
+    def post(self, request, pk):
+        application = self._own_application(request, pk)
+        if application is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        data = request.data if isinstance(request.data, dict) else {}
+        slip = None
+        slip_id = data.get('results_slip')
+        if slip_id not in (None, '', 0):
+            slip = ApplicantDocument.objects.filter(
+                pk=slip_id, application=application, doc_type='results_slip',
+            ).first()
+            if slip is None:
+                return Response({'error': 'No such results slip on this application.',
+                                 'code': 'bad_slip'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            result = in_programme_service.record_semester_result(
+                application,
+                semester=data.get('semester', ''),
+                cgpa=data.get('cgpa'),
+                graduated=bool(data.get('graduated', False)),
+                results_slip=slip,
+                note=data.get('note', ''),
+            )
+        except in_programme_service.InProgrammeError as exc:
+            return Response({'error': exc.code, 'code': exc.code},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response(SemesterResultSerializer(result).data, status=status.HTTP_201_CREATED)
+
+
+class PromotionalConsentView(_OwnInProgrammeView):
+    """GET/POST/DELETE /api/v1/scholarship/applications/<id>/promotional-consent/ —
+    the SEPARATE, 18+-only promotional_use consent (F9a). GET reports whether it is
+    active. POST grants it (hard 400 `minor_not_allowed` if the NRIC says under 18 —
+    there is no guardian path by design). DELETE withdraws it (PDPA: revocable)."""
+
+    def get(self, request, pk):
+        application = self._own_application(request, pk)
+        if application is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({
+            'granted': in_programme_service.has_promotional_consent(application),
+            'is_minor': is_minor(application.profile),
+        })
+
+    def post(self, request, pk):
+        application = self._own_application(request, pk)
+        if application is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            in_programme_service.grant_promotional_consent(
+                application, locale=application.locale,
+                ip=request.META.get('REMOTE_ADDR'),
+            )
+        except in_programme_service.InProgrammeError as exc:
+            return Response({'error': exc.code, 'code': exc.code},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response({'granted': True})
+
+    def delete(self, request, pk):
+        application = self._own_application(request, pk)
+        if application is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        in_programme_service.withdraw_promotional_consent(application)
+        return Response({'granted': False})
+
+
+class GraduationMessageView(_OwnInProgrammeView):
+    """GET/POST /api/v1/scholarship/applications/<id>/graduation-message/ — the
+    student's graduation thank-you (F9a). GET lists their submissions + status. POST
+    submits ``text``: the structural identifier scan runs immediately — a message
+    that leaks the student's own name/school/city/NRIC/phone/email comes back
+    ``blocked`` with the offending ``scan_result`` fields (edit + resubmit); a clean
+    one is ``pending`` myNADI approval. Never a direct channel to the sponsor."""
+
+    def get(self, request, pk):
+        application = self._own_application(request, pk)
+        if application is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        msgs = application.graduation_messages.all()
+        return Response({'messages': GraduationMessageSerializer(msgs, many=True).data})
+
+    def post(self, request, pk):
+        application = self._own_application(request, pk)
+        if application is None:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        data = request.data if isinstance(request.data, dict) else {}
+        try:
+            message = in_programme_service.submit_graduation_message(
+                application, raw_text=data.get('text', ''),
+            )
+        except in_programme_service.InProgrammeError as exc:
+            return Response({'error': exc.code, 'code': exc.code},
+                            status=status.HTTP_400_BAD_REQUEST)
+        return Response(GraduationMessageSerializer(message).data,
+                        status=status.HTTP_201_CREATED)
 
 
 def _current_application(user_id):
