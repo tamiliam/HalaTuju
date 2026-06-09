@@ -10,6 +10,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from halatuju.pagination import FlexiblePageNumberPagination
+
 from apps.courses.models import PartnerAdmin
 from apps.courses.views_admin import PartnerAdminMixin
 
@@ -75,8 +77,17 @@ class AdminApplicationListView(_AdminBase):
             qs = qs.filter(assigned_to__isnull=True)
         elif assigned_f and assigned_f.isdigit():
             qs = qs.filter(assigned_to_id=int(assigned_f))
-        data = AdminApplicationListSerializer(qs, many=True).data
-        return Response({'applications': data, 'total_count': len(data)})
+        # Server-side pagination (?page / ?page_size). Filters above are applied
+        # to the queryset first, so paging reflects the filtered set. total_count
+        # is kept as a backward-compatible alias for the total filtered count.
+        paginator = FlexiblePageNumberPagination()
+        page = paginator.paginate_queryset(qs, request, view=self)
+        data = AdminApplicationListSerializer(page, many=True).data
+        return paginator.envelope(
+            data,
+            results_key='applications',
+            total_count=paginator.page.paginator.count,
+        )
 
 
 class AdminApplicationDetailView(_AdminBase):

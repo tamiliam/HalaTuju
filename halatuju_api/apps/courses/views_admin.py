@@ -25,6 +25,7 @@ from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
+from halatuju.pagination import FlexiblePageNumberPagination
 from .models import StudentProfile, PartnerOrganisation, PartnerAdmin
 from .serializers_admin import PartnerStudentListSerializer, PartnerStudentDetailSerializer
 
@@ -141,7 +142,13 @@ class PartnerDashboardView(PartnerAdminMixin, APIView):
 
 
 class PartnerStudentListView(PartnerAdminMixin, APIView):
-    """GET /api/v1/admin/students/ - List referred students."""
+    """GET /api/v1/admin/students/ - List referred students (paginated).
+
+    Server-side pagination via ``?page`` and ``?page_size`` (see
+    ``FlexiblePageNumberPagination``); only one page of rows is serialised and
+    returned per request. The CSV export (``PartnerStudentExportView``) is
+    intentionally left unpaginated.
+    """
 
     def get(self, request):
         students, org, admin = self.get_partner_students(request)
@@ -149,13 +156,15 @@ class PartnerStudentListView(PartnerAdminMixin, APIView):
             return Response({'error': 'Not a partner admin'}, status=403)
 
         students = students.select_related('referred_by_org')
-        serializer = PartnerStudentListSerializer(students, many=True)
-        return Response({
-            'org_name': org.name if org else 'Semua Organisasi',
-            'is_super_admin': admin.is_super_admin,
-            'count': students.count(),
-            'students': serializer.data,
-        })
+        paginator = FlexiblePageNumberPagination()
+        page = paginator.paginate_queryset(students, request, view=self)
+        serializer = PartnerStudentListSerializer(page, many=True)
+        return paginator.envelope(
+            serializer.data,
+            results_key='students',
+            org_name=org.name if org else 'Semua Organisasi',
+            is_super_admin=admin.is_super_admin,
+        )
 
 
 class PartnerStudentDetailView(PartnerAdminMixin, APIView):
