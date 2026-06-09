@@ -2732,6 +2732,7 @@
     "sourceHeader": "Sumber",
     "dateHeader": "Tarikh",
     "showingRange": "Papar {start}–{end} daripada {total} pelajar",
+    "perPage": "{n} / halaman",
     "deleteFailed": "Gagal memadam",
     "strong": "Kuat",
     "moderate": "Sederhana",

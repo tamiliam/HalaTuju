@@ -60,7 +60,13 @@ export interface StudentListItem {
 
 export interface StudentListData {
   org_name: string
+  is_super_admin: boolean
   count: number
+  total_pages: number
+  page: number
+  page_size: number
+  next: string | null
+  previous: string | null
   students: StudentListItem[]
 }
 
@@ -101,8 +107,22 @@ export async function getPartnerDashboard(options?: ApiOptions) {
   return adminFetch<DashboardData>('/api/v1/admin/dashboard/', options)
 }
 
-export async function getPartnerStudents(options?: ApiOptions) {
-  return adminFetch<StudentListData>('/api/v1/admin/students/', options)
+export const DEFAULT_STUDENT_PAGE_SIZE = 25
+
+export async function getPartnerStudents(
+  params?: { page?: number; pageSize?: number },
+  options?: ApiOptions,
+) {
+  const qs = new URLSearchParams()
+  if (params?.page && params.page > 1) qs.set('page', String(params.page))
+  if (params?.pageSize && params.pageSize !== DEFAULT_STUDENT_PAGE_SIZE) {
+    qs.set('page_size', String(params.pageSize))
+  }
+  const query = qs.toString()
+  return adminFetch<StudentListData>(
+    `/api/v1/admin/students/${query ? `?${query}` : ''}`,
+    options,
+  )
 }
 
 export async function getPartnerStudent(userId: string, options?: ApiOptions) {

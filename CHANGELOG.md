@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Server-side pagination for the partner Students table (MySkills-style).** The `/admin/students` endpoint
+  (`PartnerStudentListView`) now paginates server-side via a new shared `FlexiblePageNumberPagination`
+  (`halatuju_api/halatuju/pagination.py`; `?page` + `?page_size` up to 100, default 25) instead of returning all 672
+  rows for the browser to slice. Its `.envelope()` helper keeps the view's `org_name`/`is_super_admin` fields and adds
+  `count`/`total_pages`/`page`/`page_size`/`next`/`previous`. Pagination is opted in **per view** — no global
+  `REST_FRAMEWORK` default — so existing full-list endpoints are untouched. Frontend gains a reusable stateless
+  `<Pagination>` control (`components/Pagination.tsx` + pure `lib/pagination.ts` `pageWindow()` helper) with windowed
+  page buttons (no more 67-button row) and a 10/25/50 page-size selector; the Students page fetches one page at a time.
+  One new i18n key `admin.perPage` (en/ms/ta). +7 courses pytest + 7 jest; `tsc` clean. Built on branch
+  `feature/partner-pagination` (held local, no push). The B40 Applications table is the deferred second half — see
+  `docs/partner-pagination-plan.md`.
+
 ### Added
 - **Reviewer profile (B40 Phase E/F Sprint 5, F6, held local).** A reviewer can record their own credentials +
   contact details, surfaced as new cards on the existing `/admin/profile` page (rendered only for `reviewer`/`super`;
