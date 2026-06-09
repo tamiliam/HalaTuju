@@ -311,6 +311,28 @@ def release_decision(application):
     return True
 
 
+def rescore_pending_decisions():
+    """Re-score every application whose decision has NOT been released yet, applying
+    the CURRENT shortlisting engine. Use after a threshold/policy change so pending
+    applicants are judged by the new rule before their verdict goes out. Decisions
+    already released (and emailed) are NEVER touched. Returns a summary of any flips."""
+    pending = list(
+        ScholarshipApplication.objects
+        .filter(status='submitted', decision_released_at__isnull=True)
+        .select_related('cohort', 'profile')
+    )
+    changed = []
+    for application in pending:
+        before = application.verdict
+        result = score_application(application)
+        if result.verdict != before:
+            changed.append({
+                'id': application.id, 'from': before or '(unscored)',
+                'to': result.verdict, 'reason': result.reason,
+            })
+    return {'rescored': len(pending), 'changed': changed}
+
+
 # ── Completion reminders + auto-close (the daily reminder job) ────────────────
 # Cadence in DAYS from reminder_anchor_at: R1 +2, R2 +9, R3 +23, R4/final +53.
 # After the final reminder, a 5-day grace then auto-close (status → 'expired').

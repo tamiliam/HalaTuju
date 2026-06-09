@@ -45,12 +45,14 @@ class ScholarshipCohort(models.Model):
     )
     income_ceiling = models.IntegerField(
         null=True, blank=True,
-        help_text="B40 monthly household income ceiling in RM (reference; the income gate uses per_capita_ceiling)",
+        help_text="B40 monthly household GROSS income ceiling in RM (DOSM B40 line, RM5,860 in 2024). "
+                  "PRIMARY income gate: a non-STR applicant at or below this passes regardless of household size.",
     )
     per_capita_ceiling = models.IntegerField(
         default=1584,
-        help_text="Per-capita monthly income ceiling in RM for non-STR applicants (household_income / "
-                  "household_size). RM5,860 B40 ceiling / 3.7 avg household = RM1,584 (DOSM 2024).",
+        help_text="Per-capita monthly income ceiling in RM (household_income / household_size). "
+                  "SAFETY NET only — applies to non-STR applicants whose gross income is ABOVE income_ceiling, "
+                  "rescuing large households. RM5,860 B40 ceiling / 3.7 avg household = RM1,584 (DOSM 2024).",
     )
     bucket_b_margin = models.IntegerField(
         default=1,
