@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from apps.courses.models import StudentProfile
 from apps.scholarship.models import ScholarshipApplication, ScholarshipCohort
-from apps.scholarship.services import score_application
+from apps.scholarship.services import score_application, rescore_pending_decisions
 
 
 class TestReleaseDueDecisions(TestCase):
@@ -80,6 +80,46 @@ class TestReleaseDueDecisions(TestCase):
         app.save(update_fields=['status', 'decision_released_at'])
         call_command('send_pending_decision_emails')
         self.assertEqual(len(mail.outbox), 0)
+
+
+class TestRescorePending(TestCase):
+    """rescore_pending_decisions re-applies the current engine to un-released decisions
+    only — used after the B40 income-ceiling policy change."""
+
+    def _cohort(self):
+        return ScholarshipCohort.objects.create(
+            code='b40-r', name='R', year=2026, income_ceiling=5860, per_capita_ceiling=1584,
+            min_spm_a_count=4, min_spm_bplus_count=5, success_delay_hours=2, decline_delay_hours=48)
+
+    def _passing_grades(self):
+        return {'a': 'A', 'b': 'A', 'c': 'A', 'd': 'A', 'e': 'B+'}
+
+    def test_rescore_flips_b40_gross_small_family_to_shortlisted(self):
+        cohort = self._cohort()
+        # B40 gross (RM5,500) but only 2 people → per-capita RM2,750. OLD rule rejected it.
+        p = StudentProfile.objects.create(
+            supabase_user_id='r1', household_income=5500, household_size=2, receives_str=False,
+            grades=self._passing_grades())
+        app = ScholarshipApplication.objects.create(
+            cohort=cohort, profile=p, consent_to_contact=True, intends_tertiary_2026=True,
+            status='submitted', verdict='rejected', rejection_category='need')  # simulate OLD scoring
+        out = rescore_pending_decisions()
+        app.refresh_from_db()
+        self.assertEqual(app.verdict, 'shortlisted')
+        self.assertEqual(app.rejection_category, '')
+        self.assertEqual((out['rescored'], len(out['changed'])), (1, 1))
+
+    def test_rescore_never_touches_released_decisions(self):
+        cohort = self._cohort()
+        p = StudentProfile.objects.create(
+            supabase_user_id='r2', household_income=5500, household_size=2,
+            grades=self._passing_grades())
+        app = ScholarshipApplication.objects.create(
+            cohort=cohort, profile=p, consent_to_contact=True, intends_tertiary_2026=True,
+            status='rejected', verdict='rejected', decision_released_at=timezone.now())
+        rescore_pending_decisions()
+        app.refresh_from_db()
+        self.assertEqual(app.verdict, 'rejected')  # already communicated → left alone
 
 
 class TestSilentScoring(TestCase):

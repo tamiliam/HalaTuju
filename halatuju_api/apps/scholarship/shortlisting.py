@@ -10,10 +10,14 @@ The rule (settled 2026-05-24 — see docs/scholarship/b40-decision-redesign-plan
   2. Academic    — SPM: >= min_spm_a_count at A- AND >= min_spm_bplus_count at B+;
                    STPM: PNGK >= min_stpm_pngk                            → else REJECT
   3. Income      — STR recipient → PASS (bucket A);
-                   else per-capita (household_income / household_size)
-                   < per_capita_ceiling → PASS (bucket B); else REJECT
-  → SHORTLIST if all pass, else REJECT.  No score, no weights, no hardship flags —
-    per-capita income already accounts for household size/dependents.
+                   else gross household income <= income_ceiling (the DOSM B40 line)
+                   → PASS (bucket B);
+                   else (above the B40 ceiling) the large-family safety net:
+                   per-capita (household_income / household_size) < per_capita_ceiling
+                   → PASS (bucket B); else REJECT
+  → SHORTLIST if all pass, else REJECT.  No score, no weights, no hardship flags.
+  (2026-06: anyone at/under the B40 gross ceiling is in; per-capita now only rescues
+   ABOVE-ceiling households with many dependents — it is no longer the primary gate.)
 """
 from dataclasses import dataclass
 
@@ -69,17 +73,34 @@ def _academic_ok(profile, cohort):
 
 
 def _income_ok(profile, cohort):
-    """STR recipients pass (bucket A); otherwise per-capita income must clear the ceiling (bucket B)."""
+    """Income qualification (2026-06 policy):
+      • STR recipient → PASS (bucket A).
+      • Gross household income <= the B40 ``income_ceiling`` → PASS (bucket B):
+        anyone at or below the DOSM B40 line is in, regardless of household size.
+      • Above the B40 ceiling → the large-family safety net: per-capita
+        (income / size) < ``per_capita_ceiling`` → PASS (bucket B); else REJECT (need).
+    """
     if profile and getattr(profile, 'receives_str', False):
         return True, 'A', 'STR recipient'
     inc = getattr(profile, 'household_income', None) if profile else None
+    if not inc:
+        return False, '', 'no STR and household income not provided'
+    # B40 by gross income — at or below the ceiling is in, whatever the family size.
+    # (A cohort with no income_ceiling set falls straight through to the per-capita gate.)
+    ceiling = cohort.income_ceiling
+    if ceiling and inc <= ceiling:
+        return True, 'B', f'household income RM{inc:.0f} <= RM{ceiling} (B40)'
+    # Above the B40 gross ceiling — qualify only if a large family pulls per-capita down.
     size = getattr(profile, 'household_size', None) if profile else None
-    if not inc or not size or size <= 0:
-        return False, '', 'no STR and household income/size not provided'
+    if not size or size <= 0:
+        return False, '', (f'income RM{inc:.0f} > RM{cohort.income_ceiling} '
+                           f'and household size not provided')
     per_capita = inc / size
     if per_capita < cohort.per_capita_ceiling:
-        return True, 'B', f'per-capita RM{per_capita:.0f} < RM{cohort.per_capita_ceiling}'
-    return False, '', f'per-capita RM{per_capita:.0f} >= RM{cohort.per_capita_ceiling}'
+        return True, 'B', (f'income RM{inc:.0f} above B40 ceiling but per-capita '
+                           f'RM{per_capita:.0f} < RM{cohort.per_capita_ceiling}')
+    return False, '', (f'income RM{inc:.0f} > RM{cohort.income_ceiling} and per-capita '
+                       f'RM{per_capita:.0f} >= RM{cohort.per_capita_ceiling}')
 
 
 def evaluate(application, cohort):

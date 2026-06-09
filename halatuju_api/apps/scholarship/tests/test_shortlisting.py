@@ -7,7 +7,8 @@ from apps.scholarship.shortlisting import evaluate, count_spm_a_grades, count_sp
 
 
 def cohort(**over):
-    base = dict(min_spm_a_count=4, min_spm_bplus_count=5, min_stpm_pngk=2.9, per_capita_ceiling=1584)
+    base = dict(min_spm_a_count=4, min_spm_bplus_count=5, min_stpm_pngk=2.9,
+                income_ceiling=5860, per_capita_ceiling=1584)
     base.update(over)
     return SimpleNamespace(**base)
 
@@ -50,19 +51,32 @@ class TestShortlistingEngine(TestCase):
         r = evaluate(app(receives_str=True, household_income=99999, household_size=1), cohort())
         self.assertEqual((r.verdict, r.bucket), ('shortlisted', 'A'))
 
-    # --- Income: per-capita (bucket B) ---
-    def test_low_per_capita_no_str_is_bucket_b(self):
-        r = evaluate(app(receives_str=False, household_income=3000, household_size=5), cohort())  # 600/head
+    # --- Income: B40 by gross income (bucket B) — 2026-06 policy ---
+    def test_b40_gross_income_passes_bucket_b(self):
+        # At/under the RM5,860 B40 line → in, regardless of household size.
+        r = evaluate(app(receives_str=False, household_income=3000, household_size=5), cohort())
         self.assertEqual((r.verdict, r.bucket), ('shortlisted', 'B'))
 
+    def test_b40_gross_small_family_high_per_capita_still_passes(self):
+        # THE policy change: RM5,500 household with only 2 people (per-capita RM2,750 >
+        # RM1,584) — under the OLD per-capita-first rule this was REJECTED; now the gross
+        # income is B40 (<= RM5,860) so the applicant is shortlisted.
+        r = evaluate(app(household_income=5500, household_size=2), cohort())
+        self.assertEqual((r.verdict, r.bucket), ('shortlisted', 'B'))
+
+    def test_at_the_ceiling_passes(self):
+        self.assertEqual(evaluate(app(household_income=5860, household_size=1), cohort()).verdict, 'shortlisted')
+
+    # --- Income: per-capita is now only a SAFETY NET above the B40 ceiling ---
     def test_large_family_above_household_ceiling_still_passes(self):
-        # RM7,000 household > RM5,860, but 7000/5 = 1400 < 1584 → passes (per-capita fairness)
+        # RM7,000 household > RM5,860, but 7000/5 = 1400 < 1584 → rescued by per-capita.
         self.assertEqual(evaluate(app(household_income=7000, household_size=5), cohort()).verdict, 'shortlisted')
 
-    def test_high_per_capita_no_str_rejected(self):
-        self.assertEqual(evaluate(app(household_income=5000, household_size=2), cohort()).verdict, 'rejected')  # 2500/head
+    def test_above_ceiling_high_per_capita_rejected(self):
+        # RM8,000 household, 2 people → above the B40 line AND per-capita RM4,000 >= RM1,584.
+        self.assertEqual(evaluate(app(household_income=8000, household_size=2), cohort()).verdict, 'rejected')
 
-    def test_t20_rejected_via_per_capita(self):
+    def test_t20_rejected(self):
         self.assertEqual(evaluate(app(household_income=13000, household_size=4), cohort()).verdict, 'rejected')
 
     def test_no_str_no_income_data_rejected(self):
