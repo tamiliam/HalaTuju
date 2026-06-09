@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Student award + onboarding — frontend (B40 Phase E/F Sprint 3, F8b, ships dark).** New `/scholarship/award` page
+  (accept or decline a funded-studies offer; a guardian modal for minors reusing the consent relationship list +
+  `formatNric`) and `/scholarship/onboarding` wizard (welcome acknowledgement cards → a short questionnaire → a
+  confirmation that auto-submits via `submitOnboarding`). The sponsor's identity is never shown — the student sees only
+  the amount + accept-by date. New `getStudentAward`/`respondToAward`/`submitOnboarding` API clients + `onboarded_at` on
+  the application type; an "accept your award / complete onboarding" panel on `/scholarship/application` that appears
+  only when an offer exists and disappears once onboarded. Trilingual `scholarship.award.*`/`scholarship.onboarding.*`
+  (Tamil first-draft, owner to refine). `next build` clean; 276 jest green. Naturally dark — no award offer exists until
+  a sponsor funds a student, which requires `SPONSOR_POOL_ENABLED`. Built by a delegated subagent, orchestrator-reviewed
+  + re-built. Retro `docs/retrospective-sprint3-onboarding-frontend.md`.
 - **Student post-match onboarding — backend (B40 Phase E/F Sprint 2, F8a, ships dark).** When a student/guardian
   accepts an award (`respond_to_award`), they now receive a trilingual **award-confirmed email** that carries **no
   sponsor identity** (B4 two-way anonymity) and points them to onboarding. New `complete_onboarding(...)` service +

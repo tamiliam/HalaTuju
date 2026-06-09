@@ -21,7 +21,7 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 | 0 | Boundary foundation (allowlist widen) ✅ **DONE + MERGED** to `main` 2026-06-07 | (cross-cutting) | S–M, BE | — |
 | 1 | Sponsor landing + live counter ⭐ ✅ **DONE** on `main` 2026-06-08 (no migration) | F1 | M, FE+tiny BE | 0 (counter only) |
 | 2 | Student post-match onboarding — backend ⭐ ✅ **DONE** on `main` 2026-06-08 (migration `0049`) | F8a | M, BE | — |
-| 3 | Student post-match onboarding — frontend ⭐ | F8b | M, FE | 2 |
+| 3 | Student post-match onboarding — frontend ⭐ ✅ **DONE** on `main` 2026-06-09 (no migration) | F8b | M, FE | 2 |
 | 4 | Sponsor notifications (real-time + digest) ⭐ | F3 | M–L, BE+tiny FE | 0 |
 | 5 | Reviewer profile | F6 | M, BE+FE | — |
 | 6 | Reviewer invite role selector | F5 | S, BE+FE | 5 |
@@ -62,13 +62,14 @@ JSON answers + consent FK); `complete_onboarding(...)` service + `POST .../onboa
 `docs/retrospective-sprint2-onboarding-backend.md`; TD-093 (RLS on `onboarding_responses` at deploy). Staged-release
 card copy (lawyer-to-vet) lives in the F8b onboarding content (Sprint 3).
 
-### Sprint 3 — F8b Student post-match onboarding (frontend) · FE ⭐
-**Deliverable:** the student-facing award + onboarding UI.
-- New routes: `app/scholarship/award/page.tsx` (consume `StudentAwardView` `GET/POST /api/v1/scholarship/award/`; guardian modal for minors) and `app/scholarship/onboarding/*` (welcome → acknowledgement cards → questionnaire → confirmation), mirroring the `app/scholarship/apply` wizard.
-- API client: `getStudentAward`, `respondToAward`, `submitOnboarding` in `lib/api.ts`.
-- i18n `scholarship.award.*` + `scholarship.onboarding.*` (en/ms/ta).
-- `app/scholarship/application/page.tsx` gains a "Next: accept your award / complete onboarding" panel.
-- **Stitch-prototype first.**
+### Sprint 3 — F8b Student post-match onboarding (frontend) · ✅ DONE on `main` 2026-06-09 (no migration; ships dark)
+Shipped: `/scholarship/award` (accept/decline; guardian modal for minors reusing the consent relationship list +
+`formatNric`) + `/scholarship/onboarding` (welcome → questions → finish wizard; auto-submits `submitOnboarding`) +
+`getStudentAward`/`respondToAward`/`submitOnboarding` clients + `onboarded_at` on the app type + an "accept your award"
+panel on `/scholarship/application`. Sponsor identity never shown. Trilingual `scholarship.award.*`/`onboarding.*`/
+`application.awardPanel.*` (Tamil first-draft = TD-094). Stitch-approved (4 screens); built by a delegated subagent,
+orchestrator-reviewed + re-built (next build clean, 276 jest). Naturally dark. Retro
+`docs/retrospective-sprint3-onboarding-frontend.md`.
 
 ### Sprint 4 — F3 Sponsor notifications · BE + tiny FE ⭐
 **Deliverable:** real-time (hourly-batched) + weekly-digest sponsor emails, preference-controlled.
