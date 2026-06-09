@@ -2456,3 +2456,10 @@ subscribed (they see them in the pool / digest instead).
 **Rationale:** Owner decision (2026-06-09) — promotional use of a child's identity is the student's own adult choice to make, not a guardian's. Enforcing it structurally (the service refuses) is stronger than a UI checkbox.
 **Trade-offs:** a sponsored minor cannot be featured in promotion until they turn 18 — accepted.
 **Revisit if:** legal advice at go-live prescribes a different consent model for minors' promotional use.
+
+## Sponsor referral = full SponsorReferral guest-book with a 60-day PDPA purge — Sprint 11 (F4), 2026-06-09
+**Decision:** Record each invite as a `SponsorReferral` row (inviter, invitee email/name, note, code, status, registered_sponsor), NOT a lightweight `referred_by` stamp. Unconverted invitee PII (email/name) is scrubbed and the row marked `expired` after 60 days.
+**Alternatives considered:** (a) lightweight `referred_by` — no table, send the invite email and don't store the invitee's email, attribute only once they join (least PII, no purge needed, but no "invites sent / conversion" tracking or reminders); (b) the full guest-book with a 30 / 90-day window.
+**Rationale:** Owner chose the guest-book (2026-06-09) for the "your invitations" list + conversion stats + future reminder capability. 60 days balances giving a slow invitee time to convert against minimising how long we hold a non-consented person's email. The purge keeps the row (so the inviter's count survives) but removes the PII — auditable without indefinitely retaining strangers' data.
+**Trade-offs:** we hold prospective-sponsor emails (PII) until they join or the 60-day purge runs — needs RLS on the table (TD-106) + a daily purge cron (TD-107) that MUST be live before go-live, or unconverted emails linger. The lightweight option would have avoided both but lost the tracking the owner wanted.
+**Revisit if:** the programme decides referral analytics/reminders aren't worth the PII custody — then collapse to `referred_by` and drop the table + purge job.

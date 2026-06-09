@@ -25,6 +25,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docs/partner-pagination-plan.md`.
 
 ### Added
+- **Sponsor referral / invitation (B40 Phase E/F Sprint 11, F4, BE+FE, held local; migration `0054`).** An approved
+  sponsor can invite a prospective sponsor to the F1 landing. **Owner decision (2026-06-09): the full `SponsorReferral`
+  guest-book** (not a lightweight `referred_by`) with a **60-day** PDPA retention window. New `SponsorReferral` model
+  (`inviter, invitee_email, invitee_name, note, code, status, registered_sponsor`); new module
+  `apps/scholarship/referrals.py` — `create_referral` (validates email `bad_email`, generates an opaque code, sends the
+  invite email best-effort; a duplicate still-pending invite to the same email is idempotent), `attribute_referral`
+  (a `/sponsor?ref=<code>` register flips the matching referral to `joined` + links the new account; self-/unknown-code
+  is a safe no-op), `purge_expired_referrals` (scrubs `invitee_email`/`invitee_name` + marks `expired` for still-invited
+  rows older than 60 days). Trilingual invite email (`send_sponsor_referral_invite`, sponsor's note + pitch →
+  `/sponsor?ref=<code>`). Endpoint `GET/POST /api/v1/sponsor/referrals/` (approved sponsors only; `SponsorReferralView`);
+  `SponsorRegisterView` now attributes a `ref` on join. Daily PDPA purge wired as `purge-referrals` in `CronRunView.JOBS`
+  + a `purge_sponsor_referrals` command (TD-107 = the Cloud Scheduler job at deploy). **Frontend** `/sponsor` (approved):
+  an "Invite a friend" form + a "Your invitations" list with Joined/Invited/Expired pills; the invite link's `?ref=` is
+  captured to `sessionStorage` (`KEY_SPONSOR_REF`) on arrival and passed through `register` so attribution survives the
+  sign-in round-trip. New api clients `getSponsorReferrals`/`createSponsorReferral` + `ref` on `registerSponsor`.
+  Trilingual `sponsorPortal.referrals.*` (i18n parity 2416, +17; Tamil first-draft, TD-108). **+12 scholarship pytest**;
+  `next build` clean (`/sponsor` 7.21 kB); 283 jest. **Migration `0054`** (new model → MCP + contenttypes workaround +
+  RLS at deploy, TD-106). Retro `docs/retrospective-sprint11-sponsor-referral.md`.
 - **Student in-programme + graduation relay — frontend (B40 Phase E/F Sprint 10, F9b, held local, ships dark; no
   migration).** The student/sponsor UI for F9a's backend. **New student page `/scholarship/in-programme`** ("My
   progress"), Stitch-approved, shown once the award is accepted (`status='sponsored'`), three cards matching the

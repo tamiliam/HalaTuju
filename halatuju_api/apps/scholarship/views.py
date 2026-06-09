@@ -898,6 +898,7 @@ class CronRunView(APIView):
         'autogenerate-profiles': 'autogenerate_profiles',
         'sponsor-realtime': 'send_sponsor_realtime',   # F3: hourly
         'sponsor-digests': 'send_sponsor_digests',     # F3: weekly
+        'purge-referrals': 'purge_sponsor_referrals',  # F4: daily PDPA purge (60-day)
     }
 
     def post(self, request, job):

@@ -164,6 +164,27 @@
       "title": "Mesej daripada pelajar yang anda sokong",
       "subtitle": "Ucapan terima kasih tanpa nama, disemak oleh pasukan kami. Dipautkan hanya kepada rujukan pelajar.",
       "attribution": "Mesej daripada pelajar yang anda sokong"
+    },
+    "referrals": {
+      "title": "Jemput rakan menjadi penaja",
+      "subtitle": "Kenal seseorang yang ingin mengubah kehidupan seorang anak muda? Hantar jemputan mesra kepada mereka.",
+      "emailPh": "E-mel mereka",
+      "namePh": "Nama mereka (pilihan)",
+      "notePh": "cth. Saya baru menaja seorang pelajar yang hebat — anda pasti menyukainya juga.",
+      "send": "Hantar jemputan",
+      "sending": "Menghantar…",
+      "sent": "Jemputan dihantar.",
+      "privacy": "Kami hanya menggunakan e-mel mereka untuk menghantar jemputan ini sahaja.",
+      "errorEmail": "Sila masukkan alamat e-mel yang sah.",
+      "errorGeneric": "Tidak dapat menghantar jemputan. Sila cuba lagi.",
+      "listTitle": "Jemputan anda",
+      "listSubtitle": "Jejaki siapa yang anda jemput.",
+      "empty": "Anda belum menjemput sesiapa lagi.",
+      "status": {
+        "invited": "Dijemput",
+        "joined": "Menyertai",
+        "expired": "Tamat tempoh"
+      }
     }
   },
   "sponsorPool": {

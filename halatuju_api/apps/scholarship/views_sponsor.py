@@ -19,12 +19,14 @@ from halatuju.middleware.supabase_auth import SupabaseIsAuthenticated
 
 from . import pool
 from . import in_programme as in_programme_service
+from . import referrals as referral_service
 from . import sponsorship as sponsorship_service
 from .emails import send_sponsor_interest_admin_email
 from .models import Donation, ScholarshipApplication, Sponsor, Sponsorship
 from .serializers import (
     GraduationRelaySerializer,
     SponsorPoolCardSerializer, SponsorPoolDetailSerializer,
+    SponsorReferralSerializer,
     SponsorSerializer, SponsorSponsorshipSerializer,
 )
 
@@ -112,6 +114,10 @@ class SponsorRegisterView(SponsorMixin, APIView):
             consent_version=SPONSOR_CONSENT_VERSION,
             status='pending',
         )
+        # F4: attribute a referral if they arrived via a /sponsor?ref=<code> link.
+        ref = (data.get('ref') or '').strip()
+        if ref:
+            referral_service.attribute_referral(ref, sponsor)
         # Best-effort: alert the admin there's a new sponsor to vet.
         send_sponsor_interest_admin_email(
             name=sponsor.name, email=sponsor.email,
@@ -146,6 +152,36 @@ class SponsorNotificationsView(SponsorMixin, APIView):
         sponsor.notify_frequency = freq
         sponsor.save(update_fields=['notify_frequency', 'updated_at'])
         return Response(SponsorSerializer(sponsor).data)
+
+
+class SponsorReferralView(SponsorMixin, APIView):
+    """GET/POST /api/v1/sponsor/referrals/ — a sponsor invites a prospective sponsor
+    (F4). Approved sponsors only (they vouch for the invite). GET lists their own
+    invitations + conversion status. POST {invitee_email, invitee_name?, note?}
+    records the invite + sends the email (400 `bad_email`). A duplicate still-pending
+    invite to the same email is idempotent (no second email)."""
+    def get(self, request):
+        sponsor = self.require_approved_sponsor(request)
+        if not sponsor:
+            return Response({'error': 'not_approved'}, status=status.HTTP_403_FORBIDDEN)
+        return Response({'referrals': SponsorReferralSerializer(
+            referral_service.sponsor_referrals(sponsor), many=True).data})
+
+    def post(self, request):
+        sponsor = self.require_approved_sponsor(request)
+        if not sponsor:
+            return Response({'error': 'not_approved'}, status=status.HTTP_403_FORBIDDEN)
+        data = request.data if isinstance(request.data, dict) else {}
+        try:
+            referral = referral_service.create_referral(
+                sponsor,
+                invitee_email=data.get('invitee_email', ''),
+                invitee_name=data.get('invitee_name', ''),
+                note=data.get('note', ''),
+            )
+        except referral_service.ReferralError as exc:
+            return Response({'error': exc.code, 'code': exc.code}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(SponsorReferralSerializer(referral).data, status=status.HTTP_201_CREATED)
 
 
 class SponsorPoolCountView(APIView):

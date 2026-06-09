@@ -6,6 +6,7 @@ from .family import PROFESSION_CODES
 from .models import (
     ApplicantDocument, Consent, FundingNeed, GraduationMessage, Referee,
     ResolutionItem, ScholarshipApplication, SemesterResult, Sponsor,
+    SponsorReferral,
 )
 
 
@@ -107,6 +108,17 @@ class SponsorPoolDetailSerializer(SponsorPoolCardSerializer):
     def get_anon_profile(self, app):
         sp = getattr(app, 'sponsor_profile', None)
         return (sp.anon_markdown or '') if sp else ''
+
+
+class SponsorReferralSerializer(serializers.ModelSerializer):
+    """F4 — one of the inviter's own invitations (read). The inviter typed the
+    invitee's email, so showing it back to them is fine; once purged (expired) the
+    email/name are blank. ``code`` is the inviter's own share link token."""
+    class Meta:
+        model = SponsorReferral
+        fields = ['id', 'invitee_email', 'invitee_name', 'note', 'code',
+                  'status', 'created_at', 'joined_at']
+        read_only_fields = fields
 
 
 class SponsorSponsorshipSerializer(serializers.Serializer):
