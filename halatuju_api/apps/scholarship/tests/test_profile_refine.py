@@ -89,7 +89,9 @@ class TestFinaliseProfileEndpoint(TestCase):
         cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
         cls.profile = StudentProfile.objects.create(supabase_user_id=STUDENT, nric='030101-14-1234', name='Priya')
         cls.app = ScholarshipApplication.objects.create(cohort=cls.cohort, profile=cls.profile, status='interviewed')
-        PartnerAdmin.objects.create(supabase_user_id=REVIEWER, role='reviewer', is_active=True, name='Rev', email='r@x.com')
+        cls.reviewer = PartnerAdmin.objects.create(supabase_user_id=REVIEWER, role='reviewer', is_active=True, name='Rev', email='r@x.com')
+        cls.app.assigned_to = cls.reviewer
+        cls.app.save(update_fields=['assigned_to'])
         PartnerAdmin.objects.create(supabase_user_id=VIEWER, role='admin', is_active=True, name='Vie', email='v@x.com')
 
     def setUp(self):

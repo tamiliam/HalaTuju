@@ -313,6 +313,8 @@ class TestAdminSponsorship(TestCase):
         self.client = APIClient()
         self.app = _fundable_app(self.cohort, award=None)
         ScholarshipApplication.objects.filter(id=self.app.id).update(award_amount=None)
+        self.app.assigned_to = PartnerAdmin.objects.get(supabase_user_id='rev')
+        self.app.save(update_fields=['assigned_to'])
 
     def _auth(self, uid):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token(uid, "x@x.com")}')
