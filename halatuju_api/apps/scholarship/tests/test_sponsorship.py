@@ -162,7 +162,7 @@ class TestSponsorshipService(TestCase):
         self.assertEqual(resp.answers, {'commitment': 'yes'})
         c = app.consents.filter(consent_type='student_onboarding_ack', is_active=True).first()
         self.assertIsNotNone(c)
-        self.assertEqual(c.version, '2026-draft-4')
+        self.assertEqual(c.version, services.CONSENT_VERSION)
         self.assertEqual(c.granted_by, 'self')
         # re-running updates in place (no duplicate row, latest answers win)
         services.complete_onboarding(app, answers={'commitment': 'absolutely'})

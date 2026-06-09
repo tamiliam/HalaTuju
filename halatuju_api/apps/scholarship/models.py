@@ -1160,3 +1160,84 @@ class AssignmentEvent(models.Model):
 
     def __str__(self):
         return f'AssignmentEvent app={self.application_id} -> {self.to_admin_id} ({self.created_at})'
+
+
+class SemesterResult(models.Model):
+    """B40 Phase E/F (F9a): an in-programme student's latest-semester academic
+    result. This is the IN-PROGRAMME progress signal — distinct from the pre-award
+    ``results_slip`` (the SPM slip captured at application). The uploaded slip is
+    **myNADI-only** (never crosses to a sponsor); only the DERIVED, non-identifying
+    ``cgpa``/``graduated`` band feeds ``pool.derive_progress_state`` (the coarse
+    ``progress_state`` a sponsor sees). The latest row (by ``created_at``) wins."""
+    application = models.ForeignKey(
+        ScholarshipApplication, on_delete=models.CASCADE,
+        related_name='semester_results',
+    )
+    # Free label for the semester, e.g. "2026 Sem 1" / "Year 1 Sem 2". Display-only;
+    # ordering uses created_at, not this string.
+    semester = models.CharField(max_length=50, blank=True, default='')
+    # 0.00–4.00 (Malaysian CGPA). Nullable — a student may record completion before
+    # the official CGPA is published.
+    cgpa = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    graduated = models.BooleanField(
+        default=False,
+        help_text="True when this result marks the student's graduation.",
+    )
+    # The myNADI-only proof slip. SET_NULL + related_name='+' — the slip is internal
+    # evidence; deleting the doc must never cascade-delete the progress record.
+    results_slip = models.ForeignKey(
+        ApplicantDocument, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='+',
+    )
+    note = models.CharField(max_length=500, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'semester_results'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'SemesterResult app={self.application_id} {self.semester} cgpa={self.cgpa}'
+
+
+class GraduationMessage(models.Model):
+    """B40 Phase E/F (F9a): a student's anonymity-preserving graduation thank-you.
+
+    Pipeline (owner decision 2026-06-09): the student submits ``raw_text`` →
+    ``pool.scan_anon_for_identifiers`` runs as a STRUCTURAL gate (any leak of the
+    student's own name/school/city/NRIC/phone/email → ``status='blocked'`` with the
+    leaked ``scan_result`` fields, the student must edit) → a clean message is
+    ``pending`` → myNADI staff approve (``approved``) or reject. An approved message
+    is surfaced to the funding sponsor as *"a message from a student you supported"*
+    linked ONLY to the anonymous ``pool.pool_ref`` — never a direct channel, never
+    the student's identity. ``scrubbed_text`` is what the sponsor sees (defaults to
+    ``raw_text`` on approval; staff may lightly redact)."""
+    STATUS_CHOICES = [
+        ('pending', 'Pending review'),     # clean scan, awaiting staff approval
+        ('blocked', 'Blocked — identifiers'),  # scan found the student's own tokens
+        ('approved', 'Approved'),          # staff-approved, sponsor-visible
+        ('rejected', 'Rejected'),          # staff declined
+    ]
+    application = models.ForeignKey(
+        ScholarshipApplication, on_delete=models.CASCADE,
+        related_name='graduation_messages',
+    )
+    raw_text = models.TextField()
+    scrubbed_text = models.TextField(blank=True, default='')
+    # List of identifying field names the scan flagged (e.g. ['name', 'city']);
+    # empty when the message is clean.
+    scan_result = models.JSONField(default=list, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    # Email of the staff member who approved/rejected (admins are soft-deactivated,
+    # so a snapshot string is kept rather than an FK).
+    approved_by = models.CharField(max_length=254, blank=True, default='')
+    review_note = models.CharField(max_length=500, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'graduation_messages'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'GraduationMessage app={self.application_id} [{self.status}]'

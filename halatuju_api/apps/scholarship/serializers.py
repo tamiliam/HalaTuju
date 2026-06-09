@@ -4,8 +4,8 @@ from rest_framework import serializers
 from . import pool
 from .family import PROFESSION_CODES
 from .models import (
-    ApplicantDocument, Consent, FundingNeed, Referee, ResolutionItem,
-    ScholarshipApplication, Sponsor,
+    ApplicantDocument, Consent, FundingNeed, GraduationMessage, Referee,
+    ResolutionItem, ScholarshipApplication, SemesterResult, Sponsor,
 )
 
 
@@ -132,6 +132,40 @@ class StudentAwardSerializer(serializers.Serializer):
     status = serializers.CharField(read_only=True)
     offered_at = serializers.DateTimeField(read_only=True)
     accept_deadline = serializers.DateTimeField(read_only=True)
+
+
+class SemesterResultSerializer(serializers.ModelSerializer):
+    """F9a — a student's own in-programme semester result (read). This is the
+    student's own data (not the sponsor boundary), so a ModelSerializer is fine.
+    The uploaded ``results_slip`` is myNADI-only; only its id is surfaced here."""
+    class Meta:
+        model = SemesterResult
+        fields = ['id', 'semester', 'cgpa', 'graduated', 'results_slip', 'note', 'created_at']
+        read_only_fields = fields
+
+
+class GraduationMessageSerializer(serializers.ModelSerializer):
+    """F9a — a student's own view of a graduation thank-you they submitted: the
+    review ``status`` + the scan outcome, so the FE can show "blocked — please
+    remove identifying details" vs "awaiting review" vs "approved"."""
+    class Meta:
+        model = GraduationMessage
+        fields = ['id', 'status', 'raw_text', 'scrubbed_text', 'scan_result',
+                  'created_at', 'reviewed_at']
+        read_only_fields = fields
+
+
+class GraduationRelaySerializer(serializers.Serializer):
+    """F9a — the SPONSOR-facing graduation relay. **Allowlist by construction**
+    (plain Serializer, explicit fields, input is a plain dict from
+    ``in_programme.approved_messages_for_sponsor``): only the anonymous ``ref``, the
+    staff-approved ``text``, and the approval time cross. There is NO student
+    identity and NO model passthrough, so nothing identifying can leak. A sponsor
+    sees this as *"a message from a student you supported"* — never a direct
+    channel. (A leak test asserts no name/NRIC/etc. appears in the output.)"""
+    ref = serializers.CharField(read_only=True)
+    text = serializers.CharField(read_only=True)
+    approved_at = serializers.DateTimeField(read_only=True)
 
 
 class ApplicationCreateSerializer(serializers.ModelSerializer):

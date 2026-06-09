@@ -2435,3 +2435,24 @@ subscribed (they see them in the pool / digest instead).
 **Rationale:** MySkills was built that way from day one; HalaTuju has ~30 existing list endpoints that return full lists by contract (dashboards, pickers, exports, the verdict/cockpit serializers). A global default would silently truncate all of them and would have collided with the parallel reviewer track editing the `scholarship` app. Per-view opt-in keeps the blast radius to exactly the two tables converted.
 **Trade-offs:** each new table that wants pagination must opt in (one paginator + `.envelope()` call) instead of getting it for free; the `.envelope()` helper exists to keep that boilerplate to ~4 lines and preserve each view's bespoke top-level fields.
 **Revisit if:** the API is ever rebuilt around uniform `ListAPIView`/ViewSets with a consistent `{count,next,previous,results}` contract — then a global default becomes safe and removes the per-view calls.
+
+## In-programme progress is DERIVED from the latest SemesterResult, never a stored column — Sprint 9 (F9a), 2026-06-09
+**Decision:** The sponsor-facing `progress_state` band is computed live by `pool.derive_progress_state` from the most recent `SemesterResult` row; a new `SemesterResult` model holds the in-programme academic facts, separate from the application-time SPM `results_slip`.
+**Alternatives considered:** (a) a `progress_state` column on `ScholarshipApplication` updated whenever a result lands; (b) overloading the existing `results_slip` ApplicantDocument + academic_engine to carry the in-programme CGPA.
+**Rationale:** A derived band has a single source of truth, so F2's card can't drift from the results pipeline and needs no backfill; only one helper changes when the bands evolve. A dedicated `SemesterResult` keeps one fact per home (the SPM slip is a different fact from a university semester CGPA — lessons #51/#124) and lets the uploaded slip stay myNADI-only while only the coarse band crosses.
+**Trade-offs:** the band is recomputed per read (cheap — one indexed `.first()`); no historical band snapshot is stored (the SemesterResult rows ARE the history). CGPA is student-entered, not OCR-derived (TD-103).
+**Revisit if:** progress needs an audited point-in-time band history, or the derivation grows expensive enough to warrant a cached column synced on result write.
+
+## Graduation thank-you relay = three independent anonymity guards, surfaced only by anon ref — Sprint 9 (F9a), 2026-06-09
+**Decision:** A student's graduation message passes (1) a submit-time `scan_anon_for_identifiers` structural block, (2) a staff-edit re-scan on approval, and (3) a plain allowlist `GraduationRelaySerializer` exposing only `{ref, text, approved_at}`. The sponsor sees it as "a message from a student you supported" linked to `pool.pool_ref`, never a reply channel. (Owner decision 2026-06-09: scan + staff-approve + anonymous.)
+**Alternatives considered:** a direct (DM-style) channel; a single prompt-trust "please don't include your name" instruction; trusting the submit-time scan alone.
+**Rationale:** Defence-in-depth — no single miss leaks identity. The scan is the same structural primitive that gates the anon-blurb publish (reuse, not reinvent). Re-scanning the staff `scrubbed_text` closes the "human edit reintroduces an identifier" hole. A plain Serializer (not ModelSerializer) is allowlist-by-construction (lesson #107), proven by a planted-identifier leak test.
+**Trade-offs:** a blocked message needs a student edit+resubmit round trip (acceptable — err toward blocking, lesson #108); approval is a manual myNADI step (intended — the human is the final judgement).
+**Revisit if:** volume makes per-message human approval impractical (then add an auto-approve path ONLY for messages that pass the scan AND a stronger NER check, never a direct channel).
+
+## promotional_use consent is 18+ only with NO guardian path — Sprint 9 (F9a), 2026-06-09
+**Decision:** The `promotional_use` consent (using a student's story/photo for promotion) is a separate versioned consent a student can only grant for themselves as an adult; `grant_promotional_consent` raises `minor_not_allowed` when the NRIC indicates under-18. There is deliberately no guardian-grants-it path (unlike the sponsorship consent).
+**Alternatives considered:** a guardian path mirroring the minor sponsorship-consent flow; a single combined consent.
+**Rationale:** Owner decision (2026-06-09) — promotional use of a child's identity is the student's own adult choice to make, not a guardian's. Enforcing it structurally (the service refuses) is stronger than a UI checkbox.
+**Trade-offs:** a sponsored minor cannot be featured in promotion until they turn 18 — accepted.
+**Revisit if:** legal advice at go-live prescribes a different consent model for minors' promotional use.

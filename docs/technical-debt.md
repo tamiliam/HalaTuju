@@ -644,3 +644,17 @@
   `ReviewerProfile`. **To resolve:** on the admin dashboard (or `/admin/profile`), show a dismissable banner for a
   reviewer/super whose `ReviewerProfile` is still blank, linking to `/admin/profile`. Low priority, non-blocking.
   (Logged 2026-06-09, B40 Phase E/F Sprint 6.)
+- TD-102: **Migration `0053` (new `SemesterResult` + `GraduationMessage` models) needs the contenttypes workaround +
+  RLS at deploy.** Like `0051`/`0052`, `0053` creates two new tables (`semester_results`, `graduation_messages`); prod
+  has no contenttypes/auth tables, so a plain `manage.py migrate` exits non-zero on `post_migrate` even when the DDL
+  commits. **To resolve:** at the Phase E/F batch deploy, apply `0053` via the Supabase MCP (CREATE both TABLEs + record
+  the `django_migrations` row), then **enable RLS on both** (deny-by-default, service-role-only — `graduation_messages`
+  holds free-text that, pre-approval, may contain identifiers in `raw_text`/`scan_result`) and re-run `get_advisors`.
+  Must be closed before go-live. (Logged 2026-06-09, B40 Phase E/F Sprint 9.)
+- TD-103: **Semester-result CGPA is student-entered, not OCR-derived.** F9a's `record_semester_result` accepts an
+  optional `results_slip` (a myNADI-only `ApplicantDocument`) but does NOT auto-extract the CGPA from it — the student
+  types the CGPA + semester. The roadmap envisaged "reuse the OCR path"; deferred because the in-programme university
+  slip differs from the SPM `results_slip` the academic engine parses, and a manual CGPA is enough to drive the coarse
+  progress band. **To resolve (optional):** when an in-programme slip OCR schema exists, pre-fill the CGPA from the slip
+  and let the student confirm (don't auto-trust). Low priority; the band only needs a coarse value. (Logged 2026-06-09,
+  B40 Phase E/F Sprint 9.)

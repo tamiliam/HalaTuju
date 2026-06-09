@@ -2,9 +2,10 @@
 from rest_framework import serializers
 
 from .models import (
-    FundingNeed, InterviewSession, ReviewerProfile, ScholarshipApplication,
-    SponsorProfile,
+    FundingNeed, GraduationMessage, InterviewSession, ReviewerProfile,
+    ScholarshipApplication, SponsorProfile,
 )
+from . import pool
 from .serializers import (
     ApplicantDocumentSerializer,
     ConsentSerializer,
@@ -357,3 +358,20 @@ class ReviewerProfileSerializer(serializers.ModelSerializer):
         if value is not None and not (1950 <= value <= 2100):
             raise serializers.ValidationError('Enter a valid graduation year.')
         return value
+
+
+class AdminGraduationMessageSerializer(serializers.ModelSerializer):
+    """F9a — staff (myNADI) view of a graduation thank-you awaiting moderation. Staff
+    are NOT the anonymity boundary (they can see the student), so the full text +
+    scan outcome is shown. ``ref`` is included so the reviewer sees the same anon
+    alias the sponsor will, and ``application`` links to the cockpit."""
+    ref = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GraduationMessage
+        fields = ['id', 'application', 'ref', 'status', 'raw_text', 'scrubbed_text',
+                  'scan_result', 'approved_by', 'review_note', 'created_at', 'reviewed_at']
+        read_only_fields = fields
+
+    def get_ref(self, obj):
+        return pool.pool_ref(obj.application_id)

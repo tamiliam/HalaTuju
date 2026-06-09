@@ -47,18 +47,37 @@ def has_active_share_consent(application):
     ).exists()
 
 
-# F2: a coarse, non-identifying progress signal a sponsor sees for a student they
-# fund. The real derivation (from the latest-semester results upload) lands in F9a
-# (Sprint 9); this is the stub: a student isn't "in progress" until they're actually
-# sponsored, and once sponsored they default to on_track until results say otherwise.
+# F2/F9a: a coarse, non-identifying progress signal a sponsor sees for a student
+# they fund. A student isn't "in progress" until they're actually sponsored; once
+# sponsored, the band is DERIVED from their latest SemesterResult (F9a) — the
+# uploaded slip stays myNADI-only, only this coarse band crosses. This is the single
+# source of truth for the band (no stored column to drift). Reading the model
+# directly (not via in_programme) keeps the allowlist serializer free of any
+# in_programme import.
 PROGRESS_STATES = ('on_track', 'semester_completed', 'needs_attention', 'graduated')
+
+# A CGPA at or below this is the coarse "needs attention" threshold (Malaysian 4.0
+# scale; 2.00 is the usual minimum good-standing line).
+_NEEDS_ATTENTION_CGPA = 2.0
 
 
 def derive_progress_state(application):
     """The student's progress band, or None when there's nothing to report yet
-    (not sponsored). STUB until F9a computes it from semester results."""
+    (not sponsored). Bands (from the latest SemesterResult, non-identifying):
+    ``graduated`` (the result marks graduation) > ``needs_attention`` (CGPA at/below
+    2.00) > ``semester_completed`` (a CGPA is recorded) > ``on_track`` (sponsored,
+    no result yet, or a result with no CGPA)."""
     if application is None or application.status != 'sponsored':
         return None
+    latest = application.semester_results.order_by('-created_at').first()
+    if latest is None:
+        return 'on_track'
+    if latest.graduated:
+        return 'graduated'
+    if latest.cgpa is not None and float(latest.cgpa) <= _NEEDS_ATTENTION_CGPA:
+        return 'needs_attention'
+    if latest.cgpa is not None:
+        return 'semester_completed'
     return 'on_track'
 
 

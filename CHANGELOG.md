@@ -25,6 +25,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docs/partner-pagination-plan.md`.
 
 ### Added
+- **Student in-programme results + progress + graduation relay — backend (B40 Phase E/F Sprint 9, F9a, held local, ships
+  dark; migration `0053`).** The in-programme student lifecycle, backend-only. New module `apps/scholarship/in_programme.py`
+  owns the writes (one-way import `in_programme → pool → models`, no cycle). **(1) Semester results → real progress.** New
+  `SemesterResult` model (application, semester, cgpa 0.00–4.00, graduated, optional myNADI-only `results_slip` link);
+  `record_semester_result` gates on `status='sponsored'` (400 `not_in_programme`) + validates CGPA (400 `bad_cgpa`).
+  **`pool.derive_progress_state` is now REAL** — derived from the latest `SemesterResult` (graduated → `graduated`; CGPA
+  ≤ 2.00 → `needs_attention`; a CGPA → `semester_completed`; else `on_track`), the single source of truth (no stored
+  column to drift). The slip stays myNADI-only; only the coarse band crosses. **(2) 18+-only promotional consent.** New
+  `promotional_use` consent via `grant_promotional_consent` — a hard server-side 18+ gate (`is_minor` → 400
+  `minor_not_allowed`), **no guardian path** by design; `CONSENT_VERSION` bumped `2026-draft-4` → `2026-draft-5`.
+  Withdrawable (PDPA). **(3) Graduation thank-you relay (scan → staff-approve → anonymous).** New `GraduationMessage`
+  model; `submit_graduation_message` runs `pool.scan_anon_for_identifiers` as a STRUCTURAL gate — a message leaking the
+  student's own name/school/city/NRIC/phone/email is saved `blocked` with the offending fields (edit + resubmit), a clean
+  one is `pending`; staff approve (re-scanning any `scrubbed_text` edit → 400 `scrubbed_leak`) or reject. An approved
+  message surfaces to the funding sponsor via a plain allowlist `GraduationRelaySerializer` ({ref, text, approved_at}),
+  linked ONLY to the anonymous `pool.pool_ref` — never the student's identity, never a reply channel. Endpoints: student
+  `GET/POST .../semester-results/`, `GET/POST/DELETE .../promotional-consent/`, `GET/POST .../graduation-message/`; admin
+  `GET /admin/graduation-messages/` + `POST .../<id>/review/` (reviewer/super); sponsor `GET /sponsor/graduation-messages/`
+  (behind `SPONSOR_POOL_ENABLED` + approved). **+26 scholarship pytest** (service gates, 18+ enforcement, relay
+  leak-block + endpoint smokes; the S8 `TestProgressState` extended with the real bands). **Migration `0053`** (two new
+  models → apply via MCP + contenttypes workaround + RLS at deploy, TD-102). No FE this sprint (F9b/Sprint 10). TD-103
+  (results-slip OCR auto-fill deferred — CGPA is student-entered). Retro `docs/retrospective-sprint9-in-programme.md`.
 - **Sponsor profile + "My students" (B40 Phase E/F Sprint 8, F2, held local, ships dark).** A signed-in, approved
   sponsor's `/sponsor` home now shows the anonymised students their giving supports + a coarse progress signal. New
   **`progress_state`** on the allowlist card (`SponsorPoolCardSerializer`) — `pool.derive_progress_state` is a stub

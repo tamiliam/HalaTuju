@@ -498,22 +498,30 @@ deploys batched for go-live).**
   header + grid of anon student cards with colour-coded progress badge + an "awaiting acceptance" offered card.
   `getSponsorWallet` + `SponsorWallet`/`SponsorSponsorship` types; `sponsorPortal.myStudents.*`. Stitch-approved. Leak
   test green. TD-101 = donate/withdraw not wired (read-only). Retro `docs/retrospective-sprint8-sponsor-my-students.md`.
-- **▶ NEXT — Sprint 9 (F9a, student profile + results + graduation relay, BE, L):** the student-profile data + the
-  anonymity-preserving thank-you relay. Endpoints for basic details / institution / field / CGPA + a **latest-semester
-  results upload** (reuse `ApplicantDocument` `results_slip` + the OCR path; the slip is myNADI-only, the *values* cross
-  per the Boundary decision). **`progress_state` real derivation** from the results upload (feeds F2). New
-  **`promotional_use` consent** (server-side 18+ gate, version bump). **Graduation relay:** new `GraduationMessage`
-  (raw/scrubbed text, scan_result, status, approved_by) → submit → `scan_anon_for_identifiers` blocks on any leak →
-  myNADI human-approve → surfaced linked to the anon `ref` (never a direct channel). Tests: relay blocks planted
-  identifiers; promo consent enforces 18+; results slip never appears in sponsor output. Likely migration `0053` (new
-  model → MCP+RLS). **✅ F9 micro-decisions MADE (owner, 2026-06-09): (1) relay = SCAN + staff-approve + anonymous
-  (`scan_anon_for_identifiers` blocks on any leak → myNADI approve → shown as "a message from a student you supported"
-  linked to the anon `ref`, never a direct channel); (2) `promotional_use` = a SEPARATE versioned consent, server-side
-  18+ ONLY (a minor can never grant it — NOT a guardian path), bump `CONSENT_VERSION`.**
+- **✅ Sprint 9 DONE (F9a, student in-programme results + progress + graduation relay, BE, 2026-06-09, migration `0053`,
+  ships dark):** new module `apps/scholarship/in_programme.py` (one-way import `in_programme → pool → models`). **(1)** New
+  `SemesterResult` model (semester, cgpa 0–4, graduated, myNADI-only `results_slip` link); `record_semester_result` gates
+  `status='sponsored'`/CGPA. **`pool.derive_progress_state` now REAL** (graduated > CGPA≤2.0 needs_attention > CGPA
+  semester_completed > on_track) — derived, single source of truth, slip stays myNADI-only. **(2)** New `promotional_use`
+  consent (`grant_promotional_consent`, hard 18+ gate `minor_not_allowed`, NO guardian path); `CONSENT_VERSION` →
+  `2026-draft-5`. **(3)** New `GraduationMessage` relay: `submit_graduation_message` → `scan_anon_for_identifiers` blocks
+  leaks (`blocked` + fields) else `pending` → staff approve (re-scans scrubbed → `scrubbed_leak`)/reject → sponsor sees
+  approved via plain allowlist `GraduationRelaySerializer` {ref, text, approved_at} linked to `pool.pool_ref` only.
+  Endpoints: student `semester-results/`·`promotional-consent/`·`graduation-message/`; admin `graduation-messages/` +
+  `.../<id>/review/`; sponsor `graduation-messages/`. +26 scholarship pytest (S8 `TestProgressState` extended). **Migration
+  `0053`** (2 new models → MCP + contenttypes workaround + RLS at deploy, TD-102); TD-103 (results OCR deferred — CGPA
+  student-entered). Retro `docs/retrospective-sprint9-in-programme.md`.
+- **▶ NEXT — Sprint 10 (F9b, student profile + relay — FRONTEND, M):** the student-facing UI for F9a's backend. Student
+  profile page (details / institution / field / CGPA, semester-results upload, 18+ promotional toggle); graduation
+  thank-you compose UI with the same "we'll check for identifying details" UX as the publish gate (consume the
+  `blocked` + `scan_result` response → ask the student to edit); sponsor profile shows the approved note as *"a message
+  from a student you supported"* linked to the anon `ref`. API clients: `getSemesterResults`/`addSemesterResult`,
+  `getPromotionalConsent`/`setPromotionalConsent`, `submitGraduationMessage`, `getSponsorGraduationMessages`. i18n
+  `scholarship.inProgramme.*` + `sponsorPortal.graduationMessages.*` (en/ms/ta). **Stitch-prototype first** (owner gate).
 - **Gotchas:** ship dark (flag off) for sponsor-facing; i18n en/ms/ta parity; ≤2 deploys/feature; deploys/pushes
-  owner-gated; prod at `0048`, local migrations `0049`–`0052` apply migrate-first when the batch deploys (`0051`/`0052`
-  are new-model migrations → MCP CREATE TABLE + contenttypes workaround + RLS, TD-098/TD-100). **A parallel agent has
-  been working a pagination sprint in this same tree (merged 2026-06-09) — keep committing with explicit
+  owner-gated; prod at `0048`, local migrations `0049`–`0053` apply migrate-first when the batch deploys (`0051`/`0052`/`0053`
+  are new-model migrations → MCP CREATE TABLE + contenttypes workaround + RLS, TD-098/TD-100/TD-102). **Parallel agents
+  share this tree (pagination merged 2026-06-09; a family-redesign branch is parked) — keep committing with explicit
   `git add <paths>`, never `-A`; check `git status` before each commit.**
 
 ---
