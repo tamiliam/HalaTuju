@@ -144,6 +144,7 @@ export interface AdminItem {
   name: string
   email: string
   is_super_admin: boolean
+  role: 'super' | 'reviewer' | 'viewer'
   is_active: boolean
   org_name: string | null
   created_at: string
@@ -256,6 +257,7 @@ export async function inviteAdmin(
   data: {
     email: string
     name: string
+    role?: 'super' | 'reviewer' | 'viewer'
     org_id?: number
     new_org_name?: string
     new_org_code?: string

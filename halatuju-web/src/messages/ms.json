@@ -2695,6 +2695,18 @@
     "adminDetails": "Maklumat Pentadbir",
     "adminName": "Nama pentadbir",
     "adminEmail": "Emel pentadbir",
+    "roleLabel": "Peranan",
+    "roleHeader": "Peranan",
+    "role": {
+      "super": "Pentadbir utama",
+      "reviewer": "Penilai",
+      "viewer": "Pemerhati"
+    },
+    "roleHint": {
+      "super": "Akses penuh, termasuk menjemput dan mengurus pentadbir lain.",
+      "reviewer": "Mengesah dan menerima pemohon, menjalankan temu duga, menerbitkan profil.",
+      "viewer": "Akses baca sahaja — tidak boleh membuat perubahan."
+    },
     "sendingInvite": "Menghantar jemputan...",
     "sendInvite": "Hantar Jemputan",
     "adminList": "Senarai Pentadbir",

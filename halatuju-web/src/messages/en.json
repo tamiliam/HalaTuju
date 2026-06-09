@@ -2695,6 +2695,18 @@
     "adminDetails": "Admin Details",
     "adminName": "Admin name",
     "adminEmail": "Admin email",
+    "roleLabel": "Role",
+    "roleHeader": "Role",
+    "role": {
+      "super": "Super admin",
+      "reviewer": "Reviewer",
+      "viewer": "Viewer"
+    },
+    "roleHint": {
+      "super": "Full access, including inviting and managing other admins.",
+      "reviewer": "Verifies and accepts applicants, conducts interviews, publishes profiles.",
+      "viewer": "Read-only access — cannot make changes."
+    },
     "sendingInvite": "Sending invite...",
     "sendInvite": "Send Invite",
     "adminList": "Admin List",
