@@ -1,5 +1,28 @@
 # Architectural Decisions — HalaTuju
 
+## One super-only audited assign endpoint (assign + reassign + unassign), not two — B40 Phase E/F Sprint 7, 2026-06-09
+
+**Decision:** Reviewer (re)assignment is a single `POST .../assign/` endpoint backed by one `services.assign_reviewer`
+service. It handles first-assign, reassign, and unassign; the ready-gate (`is_ready_for_assignment`) applies **only**
+to the first assignment of an unassigned app. The pre-existing loose, reviewer-gated `PATCH assigned_to` branch was
+**removed** so assignment has exactly one (super-only, audited) path.
+
+**Alternatives considered:** (1) Two endpoints `assign/` + `reassign/` as the roadmap sketched. (2) Keep the PATCH
+`assigned_to` path for backward-compat alongside the new endpoint. (3) One `assign/` endpoint + one service (chosen).
+
+**Rationale:** Two endpoints would be near-identical and share all validation/audit logic — a recurring source of
+drift (cf. the FE/BE and verdict dup-path lessons). Collapsing assign/reassign/unassign into one service with the
+gate keyed on "is this the first assignment" expresses the actual rule ("a super may redistribute work any time, but
+can't assign before the app is ready") in one place. Removing the PATCH path closes a real gap: it let *any* reviewer
+silently reassign with no audit and no role check on the target — F7 makes assignment super-only, reviewer-validated,
+and traceable via `AssignmentEvent`.
+
+**Trade-offs:** A tiny divergence from the roadmap's two-endpoint sketch (documented here). Any caller of the old PATCH
+`assigned_to` had to move to the new endpoint (only the cockpit used it — migrated in the same sprint).
+
+**Revisit if:** A non-super role legitimately needs to self-assign, or assignment needs to fire side effects (e.g. an
+email to the reviewer) that warrant distinct assign vs reassign semantics.
+
 ## ReviewerProfile is a separate model in `apps/scholarship`, not fields on `courses.PartnerAdmin` — B40 Phase E/F Sprint 5, 2026-06-09
 
 **Decision:** The reviewer's credentials + contact details (F6) live in a new `ReviewerProfile` model **in

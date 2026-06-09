@@ -25,7 +25,7 @@ The PRD specifies nine features across sponsor/reviewer/student. The money-flow 
 | 4 | Sponsor notifications (real-time + digest) ⭐ ✅ **DONE** on `main` 2026-06-09 (migration `0050`) | F3 | M–L, BE+tiny FE | 0 |
 | 5 | Reviewer profile ✅ | F6 | M, BE+FE | — |
 | 6 | Reviewer invite role selector ✅ | F5 | S, BE+FE | 5 |
-| 7 | **Reviewer assignment / reassignment** (Check-2 unblocked) | F7 | M, BE+FE | 6, Check-2 |
+| 7 | Reviewer assignment / reassignment ✅ | F7 | M, BE+FE | 6, Check-2 |
 | 8 | Sponsor profile + sponsored-students | F2 | M, BE+FE | 0 |
 | 9 | Student profile + results + relay — backend | F9a | L, BE | 0, 8 |
 | 10 | Student profile + relay — frontend | F9b | M, FE | 9 |
@@ -90,15 +90,11 @@ Shipped (held local). `AdminInviteView` accepts `role` (super|reviewer|viewer; d
 lockstep; `AdminListView` returns role; `/admin/invite` role select + admin-list role badge. No migration.
 First-sign-in profile-completion nudge deferred (TD-099). Retro `docs/retrospective-sprint6-reviewer-invite-role.md`.
 
-### Sprint 7 — F7 Reviewer assignment / reassignment · BE + FE
-**Deliverable:** super-admins assign a submitted application to a reviewer; reassign it; reviewers see only what's assigned to them.
-- **Unblocked:** Check-2 is built on `main` — the assignment gate `services.is_ready_for_assignment(application)` (`services.py:397`), the SLA clock `query_response_sla_days` (`models.py:79`, default 5), Check-2 migrations `0045`–`0047`, and reviewer-scoped lists `qs.filter(assigned_to=admin)` + `has_role(admin,'reviewer')` (`views_admin.py:69` ff) already exist. F7 builds the **assign/reassign action** on top.
-- **Field:** `ScholarshipApplication.assigned_to` (FK → `PartnerAdmin`, null) + `assigned_at` if not already present — confirm at sprint start (the reviewer-scoping filter implies `assigned_to` exists; verify before adding a migration). Add an `AssignmentEvent` audit row (or reuse the resolution-ticket audit pattern) so reassignment is traceable.
-- **Gate:** assignment is only permitted once `is_ready_for_assignment` is true (no open queries **or** SLA elapsed). Reassignment allowed any time by a super-admin; logs who/when/from→to.
-- **BE:** `POST /api/v1/scholarship/applications/<id>/assign/` (body: `reviewer_id`) + `POST .../reassign/` — both `has_role(admin,'super')`-gated; validate the target has `role='reviewer'`; never let a reviewer self-assign. Surface `assigned_to` (name only, staff-internal) in `AdminApplicationDetailSerializer`.
-- **FE:** an "Assign reviewer" control in the officer cockpit (`/admin`) — reviewer dropdown (from `AdminInviteView`/reviewer list), shows current assignee + reassign; disabled with a reason tooltip when `is_ready_for_assignment` is false.
-- **Tests:** can't assign before ready; super-only; reassign writes an audit row; a reviewer sees only their assigned applications (extends existing scoping tests).
-- **No new sponsor-facing surface** — staff-internal; no anonymity-allowlist impact.
+### Sprint 7 — F7 Reviewer assignment / reassignment · BE + FE ✅ DONE (2026-06-09)
+Shipped (held local). Super-only audited `POST .../assign/` via `services.assign_reviewer` (validates reviewer target,
+gates first-assign on `is_ready_for_assignment`, reassign/unassign any time, writes `AssignmentEvent` + `assigned_at`).
+Loose `PATCH assigned_to` removed. Cockpit assign card super-only + reviewers-only + disabled-until-ready. Migration
+`0052` (new model). Retro `docs/retrospective-sprint7-reviewer-assignment.md`.
 
 ### Sprint 8 — F2 Sponsor profile + sponsored-students list · BE + FE
 **Deliverable:** a signed-in sponsor's home with their (anonymised) students + progress.

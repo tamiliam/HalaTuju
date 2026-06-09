@@ -485,16 +485,25 @@ deploys batched for go-live).**
   `AdminListView` returns each admin's effective role. `/admin/invite` gains a role select + hint; admin list gains a
   role badge column. Trilingual `admin.role.*`/`admin.roleHint.*`. No migration (role field pre-existed). TD-099 =
   deferred first-sign-in profile-completion nudge. Retro `docs/retrospective-sprint6-reviewer-invite-role.md`.
-- **▶ NEXT — Sprint 7 (F7, reviewer assignment/reassignment, BE + FE):** assign a submitted application to a reviewer +
-  reassign. Check-2 dependency is built on `main` (`services.is_ready_for_assignment`, `query_response_sla_days`,
-  migrations 0045-0047, `views_admin` reviewer-scoping); `ScholarshipApplication.assigned_to` FK + `?assigned=me|none|<id>`
-  filter already exist (Phase C). Likely: an assignment gate ("no open queries OR 5-day SLA elapsed") + a reassign
-  endpoint + the assignment UI on the cockpit/list. Confirm exact scope against the roadmap's Sprint 7 detail at start.
+- **✅ Sprint 7 DONE (F7, reviewer assignment/reassignment, BE + FE, 2026-06-09, migration `0052`):** super-only audited
+  `POST .../applications/<id>/assign/` (body `{reviewer_id}`; null=unassign) via `services.assign_reviewer` — validates
+  target is a reviewer (`not_reviewer`), gates first-assign on `is_ready_for_assignment` (`not_ready`), reassign/unassign
+  any time, writes an `AssignmentEvent` per change + stamps `assigned_at`. Loose reviewer-gated `PATCH assigned_to` branch
+  REMOVED (one audited path). Cockpit assign card super-only, reviewers-only dropdown, disabled-until-ready + reason.
+  `admin.scholarship.assign.*`. **Migration `0052`** (new model → MCP + RLS at deploy, TD-100). Retro
+  `docs/retrospective-sprint7-reviewer-assignment.md`.
+- **▶ NEXT — Sprint 8 (F2, sponsor profile + sponsored-students list, BE + FE):** a signed-in sponsor's home with their
+  (anonymised) students + progress. Adds a `progress_state` enum (`on_track|semester_completed|needs_attention|graduated`)
+  to the allowlist card (derivation stub here; real derivation lands in F9a/Sprint 9); surfaces the sponsor's sponsorships
+  via `SponsorSponsorshipSerializer` incl. `progress_state`; FE "My students" view extending the `/sponsor` portal (account
+  block + giving balance + anon cards + progress). **Ships dark** behind `SPONSOR_POOL_ENABLED`. Allowlist-serializer test
+  (no identity leak) is mandatory. New sponsor-facing surface → Stitch-prototype the "My students" view + owner approval
+  before coding the template.
 - **Gotchas:** ship dark (flag off) for sponsor-facing; i18n en/ms/ta parity; ≤2 deploys/feature; deploys/pushes
-  owner-gated; prod at `0048`, local migrations `0049`+`0050`+`0051` apply migrate-first when the batch deploys
-  (`0051` is a new-model migration → MCP CREATE TABLE + contenttypes workaround + RLS, TD-098). **A parallel agent is
-  on a pagination sprint in this same tree — commit with explicit `git add <paths>`, never `-A`; check `git status`
-  before each commit.**
+  owner-gated; prod at `0048`, local migrations `0049`+`0050`+`0051`+`0052` apply migrate-first when the batch deploys
+  (`0051`/`0052` are new-model migrations → MCP CREATE TABLE + contenttypes workaround + RLS, TD-098/TD-100). **A parallel
+  agent is on a pagination sprint in this same tree — commit with explicit `git add <paths>`, never `-A`; check
+  `git status` before each commit.**
 
 ---
 
