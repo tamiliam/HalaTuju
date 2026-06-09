@@ -119,27 +119,29 @@ A small **`matchVerdictFor(docType, doc)`** helper (pure, FE `lib/`) reads the r
 For `explanation` / `clarify` / (form-locked) `confirm` tasks the student types an answer.
 
 - **Respect the student's answer.** Default: accept and resolve on Send.
-- Only when the answer is **clearly off-topic** (a misunderstanding of the question) does Gopal pop in with **one**
-  concise steer, and the task stays open for a corrected answer.
+- Per **D2**, Gopal nudges **only when the answer is TOTALLY off-topic** (completely unrelated to the question / a clear
+  misunderstanding). Anything with *any* bearing on the question is accepted — no nudge. The bar is deliberately high so
+  we never second-guess a real answer.
 - Mechanism: a small **relevance check** — `help_engine` gains a `judge_answer_relevance(question, answer) →
-  {relevant: bool, nudge?: str}` (one cheap Gemini call, firewalled: it sees only the question text + the answer, never
-  scores/PII — same contract as `generate_document_help`). Behind a flag; **AI-off → always accept** (never block on the
-  model).
-- **Bias to acceptance:** "somewhat relevant" passes. Nudge only on a clear mismatch. This avoids nagging and keeps the
-  student in control.
+  {on_topic: bool, nudge?: str}` (one cheap Gemini call, firewalled: it sees only the question text + the answer, never
+  scores/PII — same contract as `generate_document_help`). The prompt is framed to return `on_topic=false` **only** for
+  a completely unrelated answer (default to `true` when unsure). Behind a flag; **AI-off → always accept** (never block
+  on the model).
+- On a `false`: keep the task open + one concise Gopal steer; the student edits and resends.
 
 *Cost:* one short Gemini call per typed answer (only on Send), gated by a flag; negligible volume, but it is a billable
 call — hence Phase 2 and flag-gated.
 
-## 6. Decisions to confirm before building
+## 6. Decisions (RESOLVED 2026-06-10 by owner)
 
-- **D1 — Mismatch handling (Phase 1):** keep the task **open** and require a matching re-upload (stricter, mirrors
-  Documents) **[recommended]**, vs accept the upload but leave Gopal's note as a reviewer flag (softer). *Recommend
-  strict for documents we can definitively check; utilities stay soft.*
-- **D2 — Phase 2 at all?** Confirm we want the AI relevance nudge on typed answers, or leave answers always-accept
-  (no AI). *Recommend building Phase 1 first, then deciding D2 from how the live queue feels.*
-- **D3 — Pending/outage copy:** confirm the "we're checking this, carry on" wording is acceptable (vs making the
-  student wait).
+- **D1 — Mismatch handling (Phase 1): STRICT.** A mismatched/unreadable document keeps the task **open** and requires a
+  matching re-upload (mirrors the Documents tab). Utilities (`water_bill`/`electricity_bill`) stay **soft** (accept on
+  upload — never a hard fail).
+- **D2 — Phase 2: YES, but maximally conservative.** Build the answer nudge, and **only nudge when the answer is TOTALLY
+  off-topic.** Anything with *any* bearing on the question is accepted as the student's answer (no nudge). The threshold
+  is "completely unrelated / clear misunderstanding", not "could be better". Bias hard toward acceptance.
+- **D3 — Pending/outage copy: OK.** Use the "we're checking this — you can carry on" treatment when the scan is
+  momentarily unavailable; never make the student wait or block on an OCR/Gemini outage.
 
 ## 7. Testing
 - **jest (node):** `matchVerdictFor` pure helper (every doc_type → match/mismatch/unreadable/soft); the ActionCard
