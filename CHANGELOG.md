@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Reviewer invite role selector (B40 Phase E/F Sprint 6, F5, held local).** A super admin now picks the new admin's
+  role at invite time — `AdminInviteView` accepts `role` (`super`/`reviewer`/`viewer`; defaults to `reviewer`, an
+  invalid value falls back to `reviewer`) and keeps the legacy `is_super_admin` flag in lockstep when `role=super`;
+  `AdminListView` returns each admin's effective role. The `/admin/invite` page gains a role `<select>` + a one-line
+  hint per role, and the admin-list table gains a colour-coded role badge column. Trilingual `admin.role.*` /
+  `admin.roleHint.*`. No migration (the `PartnerAdmin.role` field already existed). +7 tests (1936 backend pytest; 276
+  jest; `next build` clean; i18n parity 2333). Ships in the held Phase E/F batch (no push).
 - **Reviewer profile (B40 Phase E/F Sprint 5, F6, held local).** A reviewer can record their own credentials +
   contact details, surfaced as new cards on the existing `/admin/profile` page (rendered only for `reviewer`/`super`;
   a `viewer` never sees them). New `ReviewerProfile` model in `apps/scholarship` — a OneToOne to `courses.PartnerAdmin`
