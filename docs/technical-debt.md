@@ -600,3 +600,8 @@
   no "RLS disabled" finding. Low risk while dark (the api connects with a privileged role), but must be closed before
   go-live. **To resolve:** at the Phase E/F batch deploy, after `0049`, enable RLS on `onboarding_responses`. (Logged
   2026-06-08, B40 Phase E/F Sprint 2.)
+- TD-094: **The F8b award/onboarding Tamil copy is a first-draft.** `scholarship.award.*` /
+  `scholarship.onboarding.*` / `scholarship.application.awardPanel.*` Tamil strings were written to ship trilingual but
+  need the owner's refinement (joins the Tamil-refine queue with TD-091). English + Malay are final. Low risk — the
+  pages are dark until go-live. **To resolve:** owner Tamil refine before Sprint 12 go-live. (Logged 2026-06-09, B40
+  Phase E/F Sprint 3.)

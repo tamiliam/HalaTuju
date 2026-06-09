@@ -2326,3 +2326,16 @@ accreting onboarding-shaped JSON. The answer shape can still evolve without a mi
 **Trade-offs:** one more table + a join to read; a new table needs RLS enabled on Supabase at deploy (TD-093).
 **Revisit if:** onboarding answers become a fixed, small, queried-by-column set (then promote to typed columns), or if
 the OneToOne join proves awkward for the F8b read path.
+
+## Delegate a deep-context FE sprint to a subagent; orchestrator reviews + re-builds — B40 Phase E/F Sprint 3, 2026-06-09
+
+**Decision:** The F8b frontend build (award page + onboarding wizard + i18n + clients) was delegated to a single
+fresh-context subagent that left changes uncommitted; the orchestrator then reviewed the diff, independently re-ran
+`next build` + jest, and committed.
+**Alternatives considered:** building it inline in the main session.
+**Rationale:** the main context was deep after Sprints 1–2, and F8b was well-specced (four owner-approved Stitch
+screens + fixed backend contracts + an established i18n/`AppHeader` pattern) — exactly the contained, low-ambiguity
+shape that delegates cleanly (lesson #73). It keeps the sprint within budget without losing the verify gate.
+**Trade-offs:** an extra review pass; the subagent can't commit (by design — deploy/commit stays with the orchestrator).
+**Revisit if:** a sprint is exploratory or its spec is still moving — then build inline, since a subagent can't make the
+product decisions.

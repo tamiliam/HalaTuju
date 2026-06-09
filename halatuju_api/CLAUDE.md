@@ -459,14 +459,21 @@ deploys batched for go-live).**
   `OnboardingResponse` model, stamps `onboarded_at` (refuses unless status `sponsored`). **Migration `0049`**
   (additive: `onboarded_at` col + `onboarding_responses` table) — apply migrate-first at deploy; **TD-093 = enable RLS
   on the new table at deploy.** Retro `docs/retrospective-sprint2-onboarding-backend.md`.
-- **▶ NEXT — Sprint 3 (F8b, frontend):** the student award + onboarding UI — `app/scholarship/award/page.tsx`
-  (guardian modal for minors) + `app/scholarship/onboarding/*` (welcome → acknowledgement cards → questionnaire →
-  confirmation); `getStudentAward`/`respondToAward`/`submitOnboarding` clients; `scholarship.award.*` +
-  `scholarship.onboarding.*` i18n (en/ms/ta); a "Next: accept your award / complete onboarding" panel on
-  `application/page.tsx`. **Stitch-prototype first** (owner visual approval). Wires to the F8a endpoints above.
-- **Gotchas:** ship dark (flag off); i18n en/ms/ta parity every sprint; Stitch-prototype new pages (F8b, F9b) before
-  TSX; ≤2 deploys/feature; deploys/pushes are owner-gated (build minutes); prod migrations at `0049` once the batch
-  deploys (currently `0048` on prod).
+- **✅ Sprint 3 DONE (F8b, frontend, 2026-06-09, no migration):** `/scholarship/award` (accept/decline; guardian modal
+  for minors) + `/scholarship/onboarding` (welcome → questions → finish wizard) + `getStudentAward`/`respondToAward`/
+  `submitOnboarding` clients + an "accept your award" panel on `/scholarship/application`. Sponsor identity never shown.
+  Naturally dark (no offer exists until a sponsor funds, needs the flag on). Stitch-approved (4 screens); built by a
+  delegated subagent, orchestrator-reviewed + re-built (next build clean, 276 jest). Retro
+  `docs/retrospective-sprint3-onboarding-frontend.md`. TD-094 (Tamil refine).
+- **▶ NEXT — Sprint 4 (F3, sponsor notifications, ⭐ last must-have):** real-time (hourly-batched) + weekly-digest
+  sponsor emails, preference-controlled. New `Sponsor.notify_frequency` (`realtime|weekly|off`) + `last_digest_sent_at`
+  (migration → `0050`); a publish hook in `AdminPublishAnonProfileView.post()`; two management commands
+  (`send_sponsor_realtime` + `send_sponsor_digests`) registered in `CronRunView.JOBS` + two Cloud Scheduler jobs; emails
+  rendered through `SponsorPoolDetailSerializer` so the body is allowlist-safe by construction; a preference toggle.
+  Tests: digest body leaks no blocked fields; `off` sends nothing; real-time is batched.
+- **Gotchas:** ship dark (flag off); i18n en/ms/ta parity every sprint; ≤2 deploys/feature; deploys/pushes are
+  owner-gated (build minutes); prod migrations at `0049` (local, unpushed) once the batch deploys — Sprint 4 adds
+  `0050` (currently `0048` on prod).
 
 ---
 
