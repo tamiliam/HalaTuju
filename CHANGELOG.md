@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Admin roles realigned to super / admin / partner / reviewer (deployed 2026-06-09).** Replaced the old
+  super/reviewer/viewer model. **Super** = owner (everything); **Admin** = sees all pages, read-only for now;
+  **Partner** = own-organisation's students only (Dashboard + Students + Profile); **Reviewer** = only the
+  applicants assigned to them (B40 Applications + Profile), and makes the final accept/reject decision.
+  - **Scoping enforced everywhere:** `get_partner_students` (Students/Dashboard/CSV export) is role-aware;
+    every B40 endpoint — list, detail, and all actions (verify-accept, verdict, interview, reject, award,
+    profile generation, run-vision, …) — routes through `_scoped_application`, so a reviewer can neither see
+    nor act on an unassigned applicant; partners get 403 on B40. Covered by leak tests.
+  - **Nav** is role-driven; **invite page** rebuilt (role-first selector, dynamic title, organisation is
+    Partner-only, super is not invitable); **profile page** redesigned — fixed a bug where a super admin saw
+    reviewer-credential fields, made it responsive, added qualification/field dropdowns (+ Other), a public
+    university autocomplete (20 IPTA, acronym + EN/BM alias matching, free-text fallback), a +60 phone mask,
+    and a structured address split (street / postcode / city / state).
+  - Migrations: courses `0053` (role choices) + scholarship `0055` (ReviewerProfile structured address, additive).
 - **"B40 Aid" nav is now an umbrella dropdown for both audiences (students + sponsors).** The top-nav "B40 Aid" item
   (`AppHeader`) became a hover/focus dropdown with two paths — **"Apply for assistance"** (`/scholarship`) and **"Become a
   sponsor"** (`/sponsor`) — active on either side; the mobile menu shows the two as an indented section. The previously
