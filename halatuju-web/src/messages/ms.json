@@ -1538,6 +1538,10 @@
     "actionCentre": {
       "title": "Hampir siap, {name}",
       "intro": "Beberapa perkara cepat lagi dan permohonan anda lengkap.",
+      "lockedTitle": "Beberapa perkara yang kami perlukan daripada anda, {name}",
+      "lockedIntro": "Kami sedang menyemak permohonan anda dan memerlukan sedikit maklumat tambahan. Sila jawab setiap perkara di bawah — ia hanya mengambil beberapa minit.",
+      "awaitTitle": "Semuanya sudah lengkap",
+      "awaitBody": "Permohonan anda telah lengkap dan sedang disemak oleh pasukan kami. Tiada apa-apa lagi yang perlu anda lakukan buat masa ini — kami akan menghubungi anda melalui e-mel. Sila semak {email} (termasuk folder spam) dari semasa ke semasa.",
       "progressDone": "{done} daripada {total} selesai",
       "percentComplete": "{pct}% Lengkap",
       "toDo": "Untuk dibuat",

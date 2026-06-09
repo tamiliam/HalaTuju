@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context'
 import { useT } from '@/lib/i18n'
 import { getMyScholarshipApplications, getStudentAward, type ScholarshipApplication, type StudentAward } from '@/lib/api'
 import ScholarshipNextSteps from '@/components/ScholarshipNextSteps'
+import ActionCentre from '@/components/ActionCentre'
 import AppHeader from '@/components/AppHeader'
 import AppFooter from '@/components/AppFooter'
 
@@ -138,6 +139,22 @@ export default function ScholarshipApplicationPage() {
 
   if (app.status === 'shortlisted') {
     return wrap(<ScholarshipNextSteps initialApp={app} token={token} studentName={profile?.name} profile={profile} onSubmitted={setApp} />)
+  }
+
+  // Post-submit (profile_complete and beyond): the application is LOCKED — having
+  // consented, reviewed the final values and submitted, the student can no longer
+  // see or edit the 5-step form. Their only surface is the Action Centre, where
+  // they respond to queries and upload requested documents (in place). When nothing
+  // is pending it shows a calm "all set — we'll be in touch" message.
+  if (app.status === 'profile_complete' || app.status === 'interviewing' || app.status === 'interviewed') {
+    return wrap(
+      <ActionCentre
+        token={token}
+        studentName={profile?.name}
+        email={commsEmail || app.notify_email || ''}
+        formLocked
+      />,
+    )
   }
 
   // accepted — the admin has verified & confirmed this applicant.
