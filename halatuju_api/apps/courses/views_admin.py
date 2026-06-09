@@ -21,6 +21,7 @@ from collections import Counter
 import requests as http_requests
 from django.conf import settings
 from django.db import connection
+from django.db.models import Q
 from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -156,6 +157,31 @@ class PartnerStudentListView(PartnerAdminMixin, APIView):
             return Response({'error': 'Not a partner admin'}, status=403)
 
         students = students.select_related('referred_by_org')
+
+        # Distinct source options come from the (org-scoped) base set BEFORE the
+        # search/exam/source narrowing below — so the Source dropdown always
+        # lists every source the admin can see, not just those on this page.
+        # .order_by() clears the inherited -created_at ordering: a trailing
+        # ORDER BY on an unselected column breaks DISTINCT (dupes on SQLite,
+        # a hard error on Postgres).
+        source_options = sorted(
+            students.order_by()
+            .exclude(referral_source__isnull=True)
+            .exclude(referral_source='')
+            .values_list('referral_source', flat=True)
+            .distinct()
+        )
+
+        q = (request.GET.get('q') or '').strip()
+        if q:
+            students = students.filter(Q(name__icontains=q) | Q(nric__icontains=q))
+        exam = request.GET.get('exam')
+        if exam in ('spm', 'stpm'):
+            students = students.filter(exam_type=exam)
+        source = request.GET.get('source')
+        if source:
+            students = students.filter(referral_source=source)
+
         paginator = FlexiblePageNumberPagination()
         page = paginator.paginate_queryset(students, request, view=self)
         serializer = PartnerStudentListSerializer(page, many=True)
@@ -164,6 +190,7 @@ class PartnerStudentListView(PartnerAdminMixin, APIView):
             results_key='students',
             org_name=org.name if org else 'Semua Organisasi',
             is_super_admin=admin.is_super_admin,
+            source_options=source_options,
         )
 
 
