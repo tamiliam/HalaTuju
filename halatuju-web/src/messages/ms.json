@@ -1890,6 +1890,10 @@
           "email": "e-mel anda"
         }
       }
+    },
+    "subnav": {
+      "apply": "Mohon bantuan",
+      "sponsor": "Jadi penaja"
     }
   },
   "authGate": {

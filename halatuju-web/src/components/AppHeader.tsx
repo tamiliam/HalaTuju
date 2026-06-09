@@ -44,10 +44,16 @@ export default function AppHeader() {
   const navLinks = [
     { href: '/dashboard', label: t('common.dashboard') },
     { href: '/search', label: t('search.nav') },
-    { href: '/scholarship', label: t('scholarship.nav') },
+    // B40 Aid is the umbrella for both audiences: students who apply + sponsors who give.
+    { href: '/scholarship', label: t('scholarship.nav'), children: [
+      { href: '/scholarship', label: t('scholarship.subnav.apply') },
+      { href: '/sponsor', label: t('scholarship.subnav.sponsor') },
+    ] },
     { href: '/saved', label: t('common.saved'), authRequired: true as const, authReason: 'save' as const },
     { href: '/profile', label: t('header.myProfile'), authRequired: true as const, authReason: 'profile' as const },
   ]
+  // The B40 Aid dropdown is "active" on either the student or sponsor side.
+  const b40Active = pathname?.startsWith('/scholarship') || pathname === '/sponsor'
 
   // User display info from Supabase session metadata
   const userName =
@@ -75,7 +81,38 @@ export default function AppHeader() {
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-1 ml-8">
           {navLinks.map((link) => (
-            link.authRequired && !isAuthenticated ? (
+            link.children ? (
+              // B40 Aid: a hover/focus dropdown of the two audience paths (CSS-only).
+              <div key={link.href} className="relative group">
+                <button
+                  type="button"
+                  aria-haspopup="true"
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1 ${
+                    b40Active ? 'text-primary-600 bg-primary-50' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  {link.label}
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div className="absolute left-0 top-full pt-1 hidden group-hover:block group-focus-within:block z-20">
+                  <div className="min-w-[210px] rounded-xl border border-gray-100 bg-white py-1 shadow-lg">
+                    {link.children.map((c) => (
+                      <Link
+                        key={c.href}
+                        href={c.href}
+                        className={`block px-4 py-2.5 text-sm ${
+                          pathname === c.href ? 'text-primary-600 bg-primary-50' : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {c.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : link.authRequired && !isAuthenticated ? (
               <button
                 key={link.href}
                 onClick={() => hasGrades() ? showAuthGate(link.authReason || 'profile') : router.push('/onboarding/exam-type')}
@@ -222,7 +259,24 @@ export default function AppHeader() {
         <div className="lg:hidden border-t bg-white">
           <div className="container mx-auto px-6 py-4 space-y-1">
             {navLinks.map((link) => (
-              link.authRequired && !isAuthenticated ? (
+              link.children ? (
+                // B40 Aid: a section label + its two audience sub-links, indented.
+                <div key={link.href}>
+                  <p className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">{link.label}</p>
+                  {link.children.map((c) => (
+                    <Link
+                      key={c.href}
+                      href={c.href}
+                      className={`block px-3 py-2.5 ml-2 rounded-lg text-sm font-medium ${
+                        pathname === c.href ? 'text-primary-600 bg-primary-50' : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      {c.label}
+                    </Link>
+                  ))}
+                </div>
+              ) : link.authRequired && !isAuthenticated ? (
                 <button
                   key={link.href}
                   onClick={() => { setMobileOpen(false); hasGrades() ? showAuthGate(link.authReason || 'profile') : router.push('/onboarding/exam-type') }}

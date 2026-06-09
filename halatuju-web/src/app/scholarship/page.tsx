@@ -162,12 +162,12 @@ export default function ScholarshipLandingPage() {
           <div className="bg-primary-50 border border-primary-100 rounded-2xl p-6 lg:p-8">
             <h2 className="text-2xl font-bold text-gray-900">{t('scholarship.landing.donor.title')}</h2>
             <p className="text-gray-700 mt-3 lg:text-lg">{t('scholarship.landing.donor.body')}</p>
-            <a
-              href="mailto:info@halatuju.xyz?subject=Sponsor enquiry"
+            <Link
+              href="/sponsor"
               className="btn-primary inline-block mt-5 w-full sm:w-auto text-center"
             >
               {t('scholarship.landing.donor.cta')} →
-            </a>
+            </Link>
             <p className="text-sm text-gray-500 mt-4">
               {t('scholarship.landing.donor.fundsPre')}
               <a href="https://www.yayasanmynadi.org/" target="_blank" rel="noopener noreferrer" className="text-primary-600 underline">Yayasan myNADI</a>
