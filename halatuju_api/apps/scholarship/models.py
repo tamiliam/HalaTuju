@@ -1241,3 +1241,40 @@ class GraduationMessage(models.Model):
 
     def __str__(self):
         return f'GraduationMessage app={self.application_id} [{self.status}]'
+
+
+class SponsorReferral(models.Model):
+    """B40 Phase E/F (F4): one sponsor inviting a prospective sponsor to the F1
+    landing. The full guest-book model (owner decision 2026-06-09): each invite is a
+    row, so the inviter sees their invitations + conversion. The invitee's email/name
+    is PII for someone who has NOT consented — a 60-day purge (``purge_expired_referrals``)
+    scrubs ``invitee_email``/``invitee_name`` and flips a still-``invited`` row to
+    ``expired`` (the row stays for the inviter's count, minus the personal data)."""
+    STATUS_CHOICES = [
+        ('invited', 'Invited'),    # email sent, not yet joined
+        ('joined', 'Joined'),      # the invitee registered as a sponsor (attributed)
+        ('expired', 'Expired'),    # 60 days passed without joining; PII purged
+    ]
+    inviter = models.ForeignKey(
+        Sponsor, on_delete=models.CASCADE, related_name='referrals_sent',
+    )
+    invitee_email = models.EmailField(blank=True, default='')   # cleared on purge
+    invitee_name = models.CharField(max_length=200, blank=True, default='')
+    note = models.CharField(max_length=500, blank=True, default='')   # the inviter's personal message
+    # Opaque, non-guessable invite code carried by the /sponsor?ref=<code> link.
+    code = models.CharField(max_length=32, unique=True, db_index=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='invited')
+    # The account the invitee became, once they register (attribution). SET_NULL so
+    # deleting a sponsor never cascades away the referral history.
+    registered_sponsor = models.ForeignKey(
+        Sponsor, on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    joined_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'sponsor_referrals'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'SponsorReferral {self.code} by sponsor={self.inviter_id} [{self.status}]'

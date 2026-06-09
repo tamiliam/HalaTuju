@@ -164,6 +164,27 @@
       "title": "Messages from students you supported",
       "subtitle": "Anonymous thank-yous, reviewed by our team. Linked only to the student's reference.",
       "attribution": "A message from a student you supported"
+    },
+    "referrals": {
+      "title": "Invite a friend to sponsor",
+      "subtitle": "Know someone who'd love to change a young person's life? Send them a warm invitation.",
+      "emailPh": "Their email",
+      "namePh": "Their name (optional)",
+      "notePh": "e.g. I just sponsored a brilliant student — you'd love this too.",
+      "send": "Send invitation",
+      "sending": "Sending…",
+      "sent": "Invitation sent.",
+      "privacy": "We only use their email to send this one invite.",
+      "errorEmail": "Please enter a valid email address.",
+      "errorGeneric": "Couldn't send the invitation. Please try again.",
+      "listTitle": "Your invitations",
+      "listSubtitle": "Track who you've invited.",
+      "empty": "You haven't invited anyone yet.",
+      "status": {
+        "invited": "Invited",
+        "joined": "Joined",
+        "expired": "Expired"
+      }
     }
   },
   "sponsorPool": {

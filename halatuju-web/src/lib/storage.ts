@@ -81,6 +81,10 @@ export const KEY_STPM_QUIZ_BRANCH = 'halatuju_stpm_quiz_branch'
  *  confirms their email (when no session is returned at sign-up time). */
 export const KEY_SPONSOR_PENDING = 'halatuju_sponsor_pending'
 
+/** F4 — the referral code from a /sponsor?ref=<code> invite link. Captured on
+ *  arrival and read at register time so attribution survives the sign-in round-trip. */
+export const KEY_SPONSOR_REF = 'halatuju_sponsor_ref'
+
 // ── Display constants ────────────────────────────────────────────────
 
 /** Number of course cards shown initially (anon and logged-in). Anon users hit auth gate on "Load More". */

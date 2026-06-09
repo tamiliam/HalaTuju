@@ -31,6 +31,7 @@ from .views_sponsor import (
     SponsorPoolCountView,
     SponsorPoolDetailView,
     SponsorPoolListView,
+    SponsorReferralView,
     SponsorRegisterView,
     SponsorSponsorshipsView,
     SponsorWalletView,
@@ -100,6 +101,7 @@ urlpatterns = [
     # Phase E3: wallet + funding (flag + approved-sponsor gated)
     path('sponsor/wallet/', SponsorWalletView.as_view()),
     path('sponsor/graduation-messages/', SponsorGraduationMessagesView.as_view()),  # F9a relay
+    path('sponsor/referrals/', SponsorReferralView.as_view()),  # F4 referral/invite
     path('sponsor/wallet/donate/', SponsorDonateView.as_view()),
     path('sponsor/pool/<int:pk>/fund/', SponsorFundView.as_view()),
     path('sponsor/sponsorships/', SponsorSponsorshipsView.as_view()),

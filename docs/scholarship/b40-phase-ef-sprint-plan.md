@@ -117,7 +117,7 @@ wired). Retro `docs/retrospective-sprint8-sponsor-my-students.md`.
 - Sponsor profile shows the approved note as **"a message from a student you supported"** linked to the anon `ref`.
 - **Stitch-prototype first.**
 
-### Sprint 11 — F4 Sponsor referral / invitation · BE + FE
+### Sprint 11 — F4 Sponsor referral / invitation · BE + FE ✅ DONE (2026-06-09; migration `0054`; full SponsorReferral guest-book + 60-day purge; `apps/scholarship/referrals.py`; +12 pytest; retro `docs/retrospective-sprint11-sponsor-referral.md`)
 **Deliverable:** sponsors invite prospective sponsors to the F1 landing page.
 - `SponsorReferral` model (`inviter, invitee_email, invitee_name, note, code, status, registered_sponsor`) — *or* lightweight `referred_by` (decide at sprint start, PRD Q-6).
 - Invite email (sponsor's note + pitch) → `/sponsor?ref=<code>`; attribution on register; **PDPA:** purge unconverted invitee emails after a short window (PRD Q-7).

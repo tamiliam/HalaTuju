@@ -7,9 +7,9 @@ import { useRouter } from 'next/navigation'
 import { useT } from '@/lib/i18n'
 import { useSponsorAuth } from '@/lib/sponsor-auth-context'
 import { sponsorSignOut } from '@/lib/sponsor-supabase'
-import { registerSponsor, getSponsorPool, getSponsorWallet, getSponsorGraduationMessages, getStudentsWaitingCount, patchSponsorNotifications, type SponsorPoolCard, type SponsorWallet, type GraduationRelayMessage } from '@/lib/api'
+import { registerSponsor, getSponsorPool, getSponsorWallet, getSponsorGraduationMessages, getSponsorReferrals, createSponsorReferral, getStudentsWaitingCount, patchSponsorNotifications, type SponsorPoolCard, type SponsorWallet, type GraduationRelayMessage, type SponsorReferral } from '@/lib/api'
 import { SPONSOR_SOURCES, formatMyMobile, isValidMyMobile } from '@/lib/sponsorAuth'
-import { KEY_SPONSOR_PENDING } from '@/lib/storage'
+import { KEY_SPONSOR_PENDING, KEY_SPONSOR_REF } from '@/lib/storage'
 import SponsorLanding from '@/components/SponsorLanding'
 
 export default function SponsorPortalPage() {
@@ -54,6 +54,23 @@ export default function SponsorPortalPage() {
   const [wallet, setWallet] = useState<SponsorWallet | null>(null)
   // F9b: staff-approved graduation thank-yous from the students this sponsor funds.
   const [gradMessages, setGradMessages] = useState<GraduationRelayMessage[]>([])
+  // F4: the sponsor's own referral invitations + the invite form.
+  const [referrals, setReferrals] = useState<SponsorReferral[]>([])
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteName, setInviteName] = useState('')
+  const [inviteNote, setInviteNote] = useState('')
+  const [inviting, setInviting] = useState(false)
+  const [inviteError, setInviteError] = useState('')
+  const [inviteSent, setInviteSent] = useState(false)
+
+  // F4: capture a /sponsor?ref=<code> invite code on arrival so attribution survives
+  // the sign-in round-trip (read back at register time).
+  useEffect(() => {
+    try {
+      const code = new URLSearchParams(window.location.search).get('ref')
+      if (code) sessionStorage.setItem(KEY_SPONSOR_REF, code)
+    } catch { /* ignore */ }
+  }, [])
 
   useEffect(() => {
     if (account?.status !== 'approved' || !token) return
@@ -67,8 +84,29 @@ export default function SponsorPortalPage() {
     getSponsorGraduationMessages({ token })
       .then((r) => { if (!cancelled) setGradMessages(r.messages) })
       .catch(() => { /* 404s while the pool flag is off — leave it empty */ })
+    getSponsorReferrals({ token })
+      .then((r) => { if (!cancelled) setReferrals(r.referrals) })
+      .catch(() => { /* not approved / unavailable — leave empty */ })
     return () => { cancelled = true }
   }, [account?.status, token])
+
+  const sendInvite = async () => {
+    if (!token || !inviteEmail.trim() || inviting) return
+    setInviting(true); setInviteError(''); setInviteSent(false)
+    try {
+      await createSponsorReferral(
+        { invitee_email: inviteEmail.trim(), invitee_name: inviteName.trim(), note: inviteNote.trim() },
+        { token },
+      )
+      setInviteEmail(''); setInviteName(''); setInviteNote(''); setInviteSent(true)
+      const r = await getSponsorReferrals({ token })
+      setReferrals(r.referrals)
+    } catch (e) {
+      const code = (e as Error & { code?: string }).code
+      setInviteError(code === 'bad_email'
+        ? t('sponsorPortal.referrals.errorEmail') : t('sponsorPortal.referrals.errorGeneric'))
+    } finally { setInviting(false) }
+  }
 
   const showBrowse = account?.status === 'approved' && !poolUnavailable
 
@@ -109,8 +147,10 @@ export default function SponsorPortalPage() {
     setSubmitting(true)
     setError('')
     try {
-      await registerSponsor({ name: name.trim(), phone: `+60 ${phone}`, source, consent: true }, { token })
-      try { sessionStorage.removeItem(KEY_SPONSOR_PENDING) } catch { /* ignore */ }
+      let ref = ''
+      try { ref = sessionStorage.getItem(KEY_SPONSOR_REF) || '' } catch { /* ignore */ }
+      await registerSponsor({ name: name.trim(), phone: `+60 ${phone}`, source, consent: true, ...(ref ? { ref } : {}) }, { token })
+      try { sessionStorage.removeItem(KEY_SPONSOR_PENDING); sessionStorage.removeItem(KEY_SPONSOR_REF) } catch { /* ignore */ }
       await refreshAccount()
     } catch {
       setError(t('sponsorAuth.registerFailed'))
@@ -224,6 +264,49 @@ export default function SponsorPortalPage() {
               </div>
             </section>
           )}
+
+          {/* F4: invite a friend to sponsor + your invitations */}
+          <section className="mt-8 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-xl border bg-white p-5">
+              <h2 className="text-lg font-bold text-gray-900">{t('sponsorPortal.referrals.title')}</h2>
+              <p className="text-sm text-gray-600 mt-1">{t('sponsorPortal.referrals.subtitle')}</p>
+              <div className="mt-3 space-y-3">
+                <input value={inviteEmail} onChange={(e) => { setInviteEmail(e.target.value); setInviteSent(false) }}
+                  type="email" placeholder={t('sponsorPortal.referrals.emailPh')} className={inputCls} />
+                <input value={inviteName} onChange={(e) => setInviteName(e.target.value)}
+                  placeholder={t('sponsorPortal.referrals.namePh')} className={inputCls} />
+                <textarea value={inviteNote} onChange={(e) => setInviteNote(e.target.value)} rows={3} maxLength={500}
+                  placeholder={t('sponsorPortal.referrals.notePh')} className={inputCls} />
+                {inviteError && <p className="text-sm text-red-600">{inviteError}</p>}
+                {inviteSent && <p className="text-sm text-green-600">{t('sponsorPortal.referrals.sent')}</p>}
+                <button onClick={sendInvite} disabled={inviting || !inviteEmail.trim()}
+                  className="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+                  {inviting ? t('sponsorPortal.referrals.sending') : t('sponsorPortal.referrals.send')}
+                </button>
+                <p className="text-xs text-gray-400">{t('sponsorPortal.referrals.privacy')}</p>
+              </div>
+            </div>
+            <div className="rounded-xl border bg-white p-5">
+              <h2 className="text-lg font-bold text-gray-900">{t('sponsorPortal.referrals.listTitle')}</h2>
+              <p className="text-sm text-gray-600 mt-1">{t('sponsorPortal.referrals.listSubtitle')}</p>
+              {referrals.length > 0 ? (
+                <ul className="mt-3 divide-y divide-gray-100">
+                  {referrals.map((r) => (
+                    <li key={r.id} className="flex items-center justify-between py-2 text-sm">
+                      <span className="text-gray-700 truncate pr-2">{r.invitee_name || r.invitee_email || '—'}</span>
+                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        r.status === 'joined' ? 'bg-green-100 text-green-700'
+                          : r.status === 'expired' ? 'bg-amber-50 text-amber-600' : 'bg-gray-100 text-gray-600'}`}>
+                        {t(`sponsorPortal.referrals.status.${r.status}`)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-3 text-sm text-gray-400">{t('sponsorPortal.referrals.empty')}</p>
+              )}
+            </div>
+          </section>
 
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mt-10">{t('sponsorPool.browseTitle')}</h1>
           <p className="text-sm text-gray-600 mt-1">{t('sponsorPool.browseIntro')}</p>

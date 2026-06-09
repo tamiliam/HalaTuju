@@ -521,18 +521,27 @@ deploys batched for go-live).**
   `getSponsorGraduationMessages`. i18n `scholarship.inProgramme.*` + `sponsorPortal.graduationMessages.*` (parity 2399,
   +48; Tamil first-draft TD-105). `next build` clean (route 2.9 kB); 283 jest (render-only). TD-104 (slip-upload control
   deferred). Retro `docs/retrospective-sprint10-in-programme-frontend.md`.
-- **▶ NEXT — Sprint 11 (F4, sponsor referral / invitation, BE + FE, M):** sponsors invite prospective sponsors to the F1
-  landing. Decide the model shape at start (PRD Q-6): a `SponsorReferral` model (`inviter, invitee_email, invitee_name,
-  note, code, status, registered_sponsor`) vs a lightweight `referred_by`. Invite email (sponsor's note + pitch) →
-  `/sponsor?ref=<code>`; attribution on register; **PDPA:** purge unconverted invitee emails after a short window (PRD
-  Q-7). WhatsApp share = later. New BE migration likely → MCP + RLS at deploy. **F4 micro-decision (model shape + email
-  retention window) is an owner gate at sprint start.** Then **Sprint 12 = lawyer-gated go-live** (flip
-  `SPONSOR_POOL_ENABLED`; batch-apply held migrations `0049`–`0053`+ via MCP; enable RLS on all new tables
-  TD-093/095/098/100/102; create the 2 Cloud Scheduler jobs TD-095; Tamil refine TD-091/094/096/097/105; full
-  allowlist/relay/consent audit; interactive Playwright smoke per lesson #96).
+- **✅ Sprint 11 DONE (F4, sponsor referral / invitation, BE + FE, 2026-06-09, migration `0054`):** an approved sponsor
+  invites a prospective sponsor to the F1 landing. Owner decision: **FULL `SponsorReferral` guest-book + 60-day purge**.
+  New `apps/scholarship/referrals.py` — `create_referral` (validates email `bad_email`, opaque code, best-effort invite
+  email; duplicate pending invite idempotent), `attribute_referral` (a `/sponsor?ref=<code>` register flips the row to
+  `joined`; self/unknown = no-op), `purge_expired_referrals` (scrub email/name + `expired` after 60 days). Trilingual
+  `send_sponsor_referral_invite`. `GET/POST /api/v1/sponsor/referrals/` (approved only); `SponsorRegisterView` attributes
+  `ref`; daily `purge-referrals` in `CronRunView.JOBS` + command (TD-107 = Cloud Scheduler job @deploy). FE `/sponsor`:
+  invite form + "your invitations" list (Joined/Invited/Expired); `?ref` captured to `sessionStorage` (`KEY_SPONSOR_REF`)
+  → threaded through register. `sponsorPortal.referrals.*` (parity 2416, +17; Tamil first-draft TD-108). +12 scholarship
+  pytest; `next build` clean (`/sponsor` 7.21 kB); 283 jest. **Migration `0054`** (new model → MCP + contenttypes
+  workaround + RLS @deploy, TD-106). Retro `docs/retrospective-sprint11-sponsor-referral.md`.
+- **▶ NEXT — Sprint 12 (GO-LIVE, lawyer-gated, S):** the final sprint. Flip `SPONSOR_POOL_ENABLED` **on**; batch-apply
+  held migrations `0049`–`0054` migrate-first via Supabase MCP (the new-model ones `0051`–`0054` need CREATE TABLE +
+  contenttypes workaround + RLS); **enable RLS on every new table** (TD-093/095/098/100/102/106); create the Cloud
+  Scheduler jobs (2× F3 TD-095 + 1× F4 purge TD-107); sync the **lawyer-vetted consent text + `CONSENT_VERSION`**; Tamil
+  refine batch (TD-091/094/096/097/105/108); run the **full allowlist + relay + consent audit** (serializer leak tests,
+  `scan_anon_for_identifiers`, 18+ gate) + an **interactive Playwright smoke** on the live test account (lesson #96).
+  **Out of scope (separate TD-075 track):** real toyyibPay money. **Gated on owner + lawyer sign-off + the batched deploy.**
 - **Gotchas:** ship dark (flag off) for sponsor-facing; i18n en/ms/ta parity; ≤2 deploys/feature; deploys/pushes
-  owner-gated; prod at `0048`, local migrations `0049`–`0053` apply migrate-first when the batch deploys (`0051`/`0052`/`0053`
-  are new-model migrations → MCP CREATE TABLE + contenttypes workaround + RLS, TD-098/TD-100/TD-102). **Parallel agents
+  owner-gated; prod at `0048`, local migrations `0049`–`0054` apply migrate-first when the batch deploys (`0051`–`0054`
+  are new-model migrations → MCP CREATE TABLE + contenttypes workaround + RLS, TD-098/100/102/106). **Parallel agents
   share this tree (pagination merged 2026-06-09; a family-redesign branch is parked) — keep committing with explicit
   `git add <paths>`, never `-A`; check `git status` before each commit.**
 

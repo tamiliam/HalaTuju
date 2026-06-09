@@ -601,13 +601,41 @@ export async function patchSponsorNotifications(
 }
 
 export async function registerSponsor(
-  payload: { name: string; phone: string; source: string; consent: boolean; organisation?: string; note?: string },
+  payload: { name: string; phone: string; source: string; consent: boolean; organisation?: string; note?: string; ref?: string },
   options?: ApiOptions
 ): Promise<SponsorAccount> {
   return apiRequest('/api/v1/sponsor/register/', {
     method: 'POST',
     body: JSON.stringify(payload),
     ...options,
+  })
+}
+
+// F4 — sponsor referral / invitation (the inviter's own invites).
+export interface SponsorReferral {
+  id: number
+  invitee_email: string
+  invitee_name: string
+  note: string
+  code: string
+  status: 'invited' | 'joined' | 'expired'
+  created_at: string
+  joined_at: string | null
+}
+
+/** F4 — the sponsor's own invitations (latest first). Approved sponsors only. */
+export async function getSponsorReferrals(options?: ApiOptions): Promise<{ referrals: SponsorReferral[] }> {
+  return apiRequest('/api/v1/sponsor/referrals/', options)
+}
+
+/** Invite a prospective sponsor. 400 `bad_email`; a duplicate pending invite to the
+ *  same email is idempotent (no second email). */
+export async function createSponsorReferral(
+  body: { invitee_email: string; invitee_name?: string; note?: string },
+  options?: ApiOptions,
+): Promise<SponsorReferral> {
+  return apiRequest('/api/v1/sponsor/referrals/', {
+    ...options, method: 'POST', body: JSON.stringify(body),
   })
 }
 

@@ -651,6 +651,22 @@
   the `django_migrations` row), then **enable RLS on both** (deny-by-default, service-role-only — `graduation_messages`
   holds free-text that, pre-approval, may contain identifiers in `raw_text`/`scan_result`) and re-run `get_advisors`.
   Must be closed before go-live. (Logged 2026-06-09, B40 Phase E/F Sprint 9.)
+- TD-106: **Migration `0054` (new `SponsorReferral` model) needs the contenttypes workaround + RLS at deploy.** Like
+  `0051`–`0053`, the new `sponsor_referrals` table is a new-model migration; prod has no contenttypes/auth tables, so a
+  plain `manage.py migrate` exits non-zero on `post_migrate` even when the DDL commits. **To resolve:** at the Phase E/F
+  batch deploy, apply `0054` via the Supabase MCP (CREATE TABLE + record the `django_migrations` row), then **enable RLS
+  on `sponsor_referrals`** (deny-by-default, service-role-only — it holds prospective-sponsor emails, PII until purged)
+  and re-run `get_advisors`. Must be closed before go-live. (Logged 2026-06-09, B40 Phase E/F Sprint 11.)
+- TD-107: **Create the F4 `purge-referrals` Cloud Scheduler job at deploy.** The 60-day PDPA purge
+  (`purge_sponsor_referrals`) is whitelisted in `CronRunView.JOBS` but needs a **daily** Cloud Scheduler HTTP job
+  (mirroring the F3 `sponsor-realtime`/`sponsor-digests` jobs: region, `X-Cron-Secret` from `CRON_SECRET`,
+  `Asia/Kuala_Lumpur`). Without it, unconverted invitee emails are never scrubbed. **To resolve:** at deploy,
+  `gcloud scheduler jobs create http halatuju-purge-referrals … POST …/internal/cron/purge-referrals/`. (Logged
+  2026-06-09, B40 Phase E/F Sprint 11.)
+- TD-108: **F4 Tamil copy is a first-draft.** The `sponsorPortal.referrals.*` UI strings (17 keys) + the
+  `REFERRAL_INVITE_*` Tamil email templates were written to keep parity but need the owner's review per
+  `tamil-style-guide.md` (the invite email is sent to a real prospective sponsor). Fold into the pre-go-live Tamil refine
+  batch (TD-091/094/096/097/105). (Logged 2026-06-09, B40 Phase E/F Sprint 11.)
 - TD-104: **F9b's results form has no slip-upload control (CGPA-only).** The approved Stitch design showed an optional
   "Upload results slip (staff-only)" row, but the document upload pipeline (sign-upload → PUT → create doc) is heavy and
   the CGPA/`graduated` values are what drive the sponsor-facing progress band; the `results_slip` FK on the backend is
