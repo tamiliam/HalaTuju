@@ -696,3 +696,17 @@
   gate must agree on a document). **To resolve:** extract one shared per-doc helper (e.g. `income_engine`/a new
   `doc_verdicts` module) that both call, when either is next touched. Low priority (a paired comment + the cross-check
   is the current mitigation). (Logged 2026-06-10, Action Centre.)
+- TD-111: **Check-2 student-query coverage — the anomaly engine detects more than the clarify generator can ask, so
+  student-answerable issues are silently dropped.** Check-2's student clarify questions come from a FIXED 4-item list
+  (`check2_queries.CLARIFY_SPECS`: course/sibling/device/transport) tied to STEP-1 completeness gaps; the
+  `anomaly_engine` detects more (`funding_other_without_note`, `device_in_funding`, …) but those stay OFFICER-only
+  pre-interview flags and are never bridged into the student clarify stream — and there's NO detector for "utility
+  account-holder ≠ student/parent". Surfaced on Theepicaa (app #4): Check-2 raised the BC (verdict ticket) + sibling
+  level (clarify) but MISSED the funding-"other"-with-no-note and the water-bill-in-a-third-name questions. **To
+  resolve:** (1) route EVERY detected issue (STEP-1 gaps + anomaly flags) through one triage tagging each ask-student /
+  officer-only / auto-answered, so anomaly flags that are one-line + non-sensitive become clarify queries; (2) add the
+  utility-account-holder-mismatch detector; (3) add a **coverage critic** that asserts every detected issue is routed
+  somewhere and logs any "detected-but-routed-nowhere" (the durable safety net vs hand-adding specs); keep MAX_CLARIFY=3
+  + prioritise (BC before funding note). Exclude the empty-`justification` field (owner: not a good question). FE/BE, no
+  migration; student stream still flag-gated (CHECK2_STUDENT_QUERIES_ENABLED) so it surfaces to the officer until on.
+  (Logged 2026-06-10, Action Centre follow-up.)
