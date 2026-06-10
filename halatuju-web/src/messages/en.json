@@ -1554,6 +1554,7 @@
       "send": "Send",
       "sending": "Sending…",
       "sendError": "Sorry, we couldn't send that. Please try again.",
+      "relevanceNudge": "That doesn't seem to answer the question — could you take another look at what's being asked?",
       "explanationPlaceholder": "Type your answer here…",
       "allDone": "All done — your application is complete!",
       "coach": "Hi, I'm Cikgu Gopal. Finish the items above one by one — there's no rush, and every step brings you closer. If anything is unclear, just do your best; we're here to help.",

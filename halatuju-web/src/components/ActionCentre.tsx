@@ -35,7 +35,7 @@ import {
   type ActionIcon,
   type ConfirmTarget,
 } from '@/lib/actionCentre'
-import DocumentHelpCoach from '@/components/DocumentHelpCoach'
+import DocumentHelpCoach, { CoachCard } from '@/components/DocumentHelpCoach'
 
 // ── Icons (inline SVG, blue circle bg set by the caller) ──────────────────
 
@@ -86,6 +86,9 @@ function ActionCard({
   // hold the uploaded doc so Cikgu Gopal can advise inline — the same contextual coach
   // as the Documents tab. Cleared on a clean upload (the card then unmounts on refresh).
   const [coachDoc, setCoachDoc] = useState<ApplicantDocument | null>(null)
+  // Phase 2: when a typed answer comes back judged TOTALLY off-topic, Gopal's gentle
+  // one-line steer; the task stays open. Cleared as soon as the student edits the text.
+  const [nudge, setNudge] = useState<string | null>(null)
 
   // doc: upload the named doc_type, run its scan, then re-fetch the tickets. A clean
   // scan resolves the task server-side (this card unmounts); a mismatch keeps it open
@@ -110,14 +113,17 @@ function ActionCard({
     }
   }
 
-  // explanation: POST the typed reply, then re-fetch.
+  // explanation: POST the typed reply (with the displayed question, for the relevance
+  // check). A totally off-topic answer comes back with a Gopal nudge — keep the task
+  // open and show his steer; otherwise it resolved and the card clears on re-fetch.
   const onSend = async () => {
     if (!token || !text.trim()) return
     setBusy(true)
     setError(null)
     try {
-      await resolveResolutionItem(item.id, text.trim(), { token })
-      onResolved()
+      const r = await resolveResolutionItem(item.id, text.trim(), { token }, title)
+      if (r.nudge) setNudge(r.nudge || t('scholarship.actionCentre.relevanceNudge'))
+      else onResolved()
     } catch {
       setError(t('scholarship.actionCentre.sendError'))
     } finally {
@@ -217,7 +223,7 @@ function ActionCard({
                   rows={3}
                   placeholder={t('scholarship.actionCentre.explanationPlaceholder')}
                   value={text}
-                  onChange={(e) => setText(e.target.value)}
+                  onChange={(e) => { setText(e.target.value); if (nudge) setNudge(null) }}
                   disabled={busy}
                 />
                 <button
@@ -228,6 +234,8 @@ function ActionCard({
                 >
                   {busy ? t('scholarship.actionCentre.sending') : t('scholarship.actionCentre.send')}
                 </button>
+                {/* Phase 2: Gopal's gentle steer when the answer was totally off-topic. */}
+                {nudge && <CoachCard t={t} loading={false} body={nudge} />}
               </div>
             )}
 

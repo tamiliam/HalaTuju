@@ -621,6 +621,18 @@ class ResolutionItemResolveView(APIView):
         text = (request.data.get('text') or '').strip()
         if item.kind in ('explanation', 'clarify') and not text:
             return Response({'error': 'text_required'}, status=status.HTTP_400_BAD_REQUEST)
+        # Phase 2 (D2): on a typed answer, Cikgu Gopal nudges ONLY when it is TOTALLY
+        # off-topic — keep the task open and return his one-sentence steer, don't resolve.
+        # Flag-gated + AI-off-safe (judge defaults to accept). 'pathway_confirm' is a
+        # one-tap Yes (its 'confirmed' text isn't a free answer, so it's never judged).
+        if text and item.code != 'pathway_confirm':
+            from django.conf import settings as _settings
+            if getattr(_settings, 'CHECK2_ANSWER_RELEVANCE_ENABLED', False):
+                from .help_engine import judge_answer_relevance
+                question = (request.data.get('question') or item.prompt or '').strip()
+                verdict = judge_answer_relevance(question, text)
+                if not verdict['on_topic']:
+                    return Response({'resolved': False, 'nudge': verdict['nudge']})
         resolve_item(item, text=text, by='student')
         # The pathway confirmation is the one 'confirm' that also WRITES state: the
         # student saying Yes settles their final chosen pathway (no human officer).

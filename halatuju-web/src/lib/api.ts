@@ -1642,11 +1642,14 @@ export async function getResolutionItems(
 export async function resolveResolutionItem(
   id: number,
   text: string,
-  options?: ApiOptions
-): Promise<ResolutionItem> {
+  options?: ApiOptions,
+  // The displayed question — sent so the backend can judge a typed answer's relevance
+  // (Phase 2). Off-topic → response is `{ resolved: false, nudge }` (task stays open).
+  question?: string,
+): Promise<ResolutionItem & { resolved?: boolean; nudge?: string }> {
   return apiRequest(`/api/v1/scholarship/resolution-items/${id}/resolve/`, {
     method: 'POST',
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, question }),
     ...options,
   })
 }

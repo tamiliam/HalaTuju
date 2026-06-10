@@ -499,3 +499,54 @@ def generate_document_help(doc_type, verdict, *, first_name='', target_language=
     if not message:
         return {'message': '', 'source': 'fallback', 'error': 'empty response'}
     return {'message': message, 'source': 'ai', 'model_used': data.get('model_used', '')}
+
+
+# ── Phase 2 (Action Centre): answer-relevance nudge ──────────────────────────
+# Cikgu Gopal nudges a TYPED answer ONLY when it is TOTALLY off-topic — anything with
+# any bearing on the question is accepted (respect the student's answer; D2). The same
+# structural firewall as the doc coach: this engine sees ONLY the question text + the
+# student's answer text — never a score, the application/profile object, or any PII.
+# Flag-gated at the call site; defaults to ACCEPT on any error so it never traps a student.
+
+_RELEVANCE_SCHEMA = {
+    'type': 'object',
+    'properties': {
+        'on_topic': {'type': 'boolean'},
+        'nudge': {'type': 'string'},
+    },
+    'required': ['on_topic'],
+}
+
+
+def _build_relevance_prompt(question, answer):
+    """Pure prompt builder — unit-tested directly (firewall: question + answer only)."""
+    return (
+        "You are helping review answers in a student financial-aid form.\n"
+        f"QUESTION the student was asked:\n{question}\n\n"
+        f"THE STUDENT'S ANSWER:\n{answer}\n\n"
+        "Decide if the answer is a genuine attempt to address THAT question. Be VERY "
+        "lenient: a short, vague, partial, or imperfect answer still counts as on-topic. "
+        "Return on_topic=false ONLY when the answer is COMPLETELY unrelated to the "
+        "question — a clear misunderstanding, gibberish, or about something entirely "
+        "different. When in any doubt at all, return on_topic=true.\n"
+        "If (and only if) on_topic is false, set 'nudge' to ONE short, warm sentence "
+        "that gently points out what the question is actually asking — never scold. "
+        "Otherwise leave 'nudge' empty."
+    )
+
+
+def judge_answer_relevance(question, answer):
+    """{'on_topic': bool, 'nudge': str}. Firewalled to the question + answer text only.
+    Defaults to ACCEPT (on_topic=True) when the answer is blank or the AI is
+    unavailable/errors — so it never blocks a student. The caller decides whether to
+    invoke it (it is flag-gated, a billable Gemini call)."""
+    q = (question or '').strip()
+    a = (answer or '').strip()
+    if not q or not a:
+        return {'on_topic': True, 'nudge': ''}
+    from .vision import _call_gemini_json  # shared, mockable Gemini JSON seam
+    data = _call_gemini_json(_build_relevance_prompt(q, a), _RELEVANCE_SCHEMA)
+    if not isinstance(data, dict) or data.get('_error') or 'on_topic' not in data:
+        return {'on_topic': True, 'nudge': ''}   # AI off / failed → accept
+    return {'on_topic': bool(data.get('on_topic', True)),
+            'nudge': (data.get('nudge') or '').strip()}

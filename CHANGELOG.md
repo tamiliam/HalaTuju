@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Action Centre Phase 2 — Cikgu Gopal nudges a totally off-topic answer.** When a student types an answer to a
+  query, a flag-gated relevance check (`help_engine.judge_answer_relevance` → one cheap Gemini JSON call, firewalled to
+  the question + answer text only) decides whether to accept it. It is **deliberately very lenient** (owner D2): only a
+  **completely unrelated** answer is nudged — anything with any bearing is accepted as the student's answer. On a nudge,
+  the task **stays open** and Gopal gives one warm, one-line steer (reusing the `CoachCard`); editing the answer clears
+  it. Behind `CHECK2_ANSWER_RELEVANCE_ENABLED` (**default off** — a billable knob); **AI-off/error always accepts**, so
+  it never traps a student. The resolve endpoint takes the displayed `question` and returns `{resolved:false, nudge}`
+  when off-topic. +7 scholarship pytest (engine reduction + the view's nudge/resolve/flag-off paths); new i18n
+  `actionCentre.relevanceNudge` (en/ms/ta). No migration.
+- **Action Centre live-testing polish (from the click-through).** (1) **The student's queue shows ONLY
+  deliberately-raised items** — a reviewer's (officer) request or an AI clarify query — **never the system's own verdict
+  gaps** (those stay on the officer cockpit). This fixes the duplicate where a mismatched/unreadable upload spawned a
+  `system` ticket beside the reviewer task + Gopal's coach (`ResolutionItemListView` excludes `source='system'`).
+  (2) **Completed tasks stay on the page as green "Done" cards** (check + strikethrough + DONE badge) below the open
+  ones, instead of vanishing — the satisfaction of seeing what you've cleared; the progress bar moves with them. New
+  i18n `actionCentre.done`.
 - **Action Centre documents are now "smart" — scan-on-upload + contextual Cikgu Gopal (Phase 1).** Uploading a
   requested document now runs **that document's specific scan** (reusing the Documents-tab engines:
   `birth_certificate`→relationship, `salary_slip`→income, `results_slip`→academic, `offer_letter`→pathway, `str`,

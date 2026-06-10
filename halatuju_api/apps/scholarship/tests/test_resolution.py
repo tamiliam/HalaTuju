@@ -437,3 +437,84 @@ class TestResolveDocItemsForUpload(_Base):
             resolve_doc_items_for_upload(self.app, doc)
         q.refresh_from_db()
         self.assertEqual(q.status, 'open')
+
+
+class TestJudgeAnswerRelevance(TestCase):
+    """Phase 2 engine: nudge only when totally off-topic; default to ACCEPT on any error."""
+
+    def _judge(self, q, a):
+        from apps.scholarship.help_engine import judge_answer_relevance
+        return judge_answer_relevance(q, a)
+
+    @patch('apps.scholarship.vision._call_gemini_json',
+           return_value={'on_topic': False, 'nudge': 'The question is about travel.'})
+    def test_off_topic(self, _m):
+        v = self._judge('How do you travel to college?', 'I like nasi lemak')
+        self.assertFalse(v['on_topic'])
+        self.assertTrue(v['nudge'])
+
+    @patch('apps.scholarship.vision._call_gemini_json', return_value={'on_topic': True})
+    def test_on_topic(self, _m):
+        self.assertTrue(self._judge('q', 'by bus, ~RM50')['on_topic'])
+
+    @patch('apps.scholarship.vision._call_gemini_json', return_value={'_error': 'AI down'})
+    def test_ai_error_defaults_to_accept(self, _m):
+        self.assertTrue(self._judge('q', 'a')['on_topic'])
+
+    @patch('apps.scholarship.vision._call_gemini_json')
+    def test_blank_answer_accepts_without_calling_ai(self, m):
+        self.assertTrue(self._judge('q', '   ')['on_topic'])
+        m.assert_not_called()
+
+
+@override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=_TEST_JWT_SECRET)
+class TestAnswerRelevanceNudgeView(TestCase):
+    """Phase 2 view: a typed answer is nudged (task kept open) ONLY when the relevance
+    judge says off-topic AND the flag is on. Flag off → resolve, no AI call."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.cohort = ScholarshipCohort.objects.create(code='c', name='B40', year=2026)
+
+    def setUp(self):
+        self.client = APIClient()
+        self.profile = StudentProfile.objects.create(
+            supabase_user_id='rel-stu', nric='030101-14-1234', name='Stu')
+        self.app = ScholarshipApplication.objects.create(
+            cohort=self.cohort, profile=self.profile, status='profile_complete',
+            profile_completed_at=timezone.now())
+        self.item = add_officer_item(self.app, kind='explanation',
+                                     prompt='How do you travel to college?', admin_email='o@x')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {_token("rel-stu")}')
+
+    def _post(self, text='whatever'):
+        return self.client.post(
+            f'/api/v1/scholarship/resolution-items/{self.item.id}/resolve/',
+            {'text': text, 'question': 'How do you travel?'}, format='json')
+
+    @override_settings(CHECK2_ANSWER_RELEVANCE_ENABLED=True)
+    @patch('apps.scholarship.help_engine.judge_answer_relevance',
+           return_value={'on_topic': False, 'nudge': 'The question is about your travel.'})
+    def test_off_topic_kept_open_with_nudge(self, _m):
+        r = self._post('I like cats')
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(r.json()['resolved'])
+        self.assertIn('travel', r.json()['nudge'])
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.status, 'open')
+
+    @override_settings(CHECK2_ANSWER_RELEVANCE_ENABLED=True)
+    @patch('apps.scholarship.help_engine.judge_answer_relevance',
+           return_value={'on_topic': True, 'nudge': ''})
+    def test_on_topic_resolves(self, _m):
+        self._post('by bus, about RM50 a month')
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.status, 'resolved')
+
+    @override_settings(CHECK2_ANSWER_RELEVANCE_ENABLED=False)
+    @patch('apps.scholarship.help_engine.judge_answer_relevance')
+    def test_flag_off_resolves_without_ai(self, m):
+        self._post('anything at all')
+        self.item.refresh_from_db()
+        self.assertEqual(self.item.status, 'resolved')
+        m.assert_not_called()

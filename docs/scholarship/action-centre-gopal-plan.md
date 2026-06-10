@@ -121,6 +121,13 @@ A small **`matchVerdictFor(docType, doc)`** helper (pure, FE `lib/`) reads the r
 
 ## 5. Phase 2 — Questions: gentle Gopal relevance nudge (do AFTER Phase 1)
 
+> **✅ BUILT 2026-06-10** (FE + BE, no migration): `help_engine.judge_answer_relevance` (firewalled question+answer →
+> one Gemini JSON call, defaults to accept) behind `CHECK2_ANSWER_RELEVANCE_ENABLED` (default off); the resolve view
+> returns `{resolved:false, nudge}` on a totally-off-topic answer; `ActionCard` shows the nudge via `CoachCard` + keeps
+> the task open. +7 pytest; i18n `actionCentre.relevanceNudge`. Live-verified on app #1 (the relevance bar is correctly
+> lenient — only completely-unrelated answers are nudged). Not pushed (owner-gated). Also shipped this session: hide
+> `source='system'` items from the student queue (no duplicate auto-tickets) + green "Done" cards for resolved items.
+
 For `explanation` / `clarify` / (form-locked) `confirm` tasks the student types an answer.
 
 - **Respect the student's answer.** Default: accept and resolve on Send.
