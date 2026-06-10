@@ -581,9 +581,15 @@ class ResolutionItemListView(APIView):
         queries_live = getattr(_settings, 'CHECK2_STUDENT_QUERIES_ENABLED', False)
         if queries_live:
             sync_check2_queries(app)
-        # 'human' items are the reviewer's; 'clarify' items are hidden until the flag is on.
+        # The student's Action Centre shows ONLY deliberately-raised items: a reviewer's
+        # (officer) query/doc-request and the AI clarify queries (flag-gated). The system's
+        # OWN verdict gaps are NOT surfaced here — they live on the officer cockpit (the four
+        # cards) for the reviewer to triage. (Owner call 2026-06-10: a mismatched/unreadable
+        # upload must not spawn a duplicate 'system' ticket alongside the reviewer task +
+        # Gopal's coach. 'human' = reviewer-only; 'clarify' hidden until the flag is on.)
         items = [i for i in app.resolution_items.all()
-                 if i.kind != 'human' and (queries_live or i.kind != 'clarify')]
+                 if i.source != 'system' and i.kind != 'human'
+                 and (queries_live or i.kind != 'clarify')]
         openq = [i for i in items if i.status == 'open']
         resolved = [i for i in items if i.status == 'resolved'][:10]
         return Response({
