@@ -129,6 +129,11 @@ SPONSOR_POOL_ENABLED = os.environ.get('SPONSOR_POOL_ENABLED', '').lower() in ('1
 # per student before any applicant is asked. Flip to true (env var) to go live.
 CHECK2_STUDENT_QUERIES_ENABLED = os.environ.get('CHECK2_STUDENT_QUERIES_ENABLED', '').lower() in ('1', 'true', 'yes')
 
+# Action Centre Phase 2: a gentle Cikgu Gopal nudge when a student's TYPED answer is
+# TOTALLY off-topic (one cheap, billable Gemini call per answer). Off by default (a
+# billable-AI knob, like the doc-assist flags); AI-off/error always accepts the answer.
+CHECK2_ANSWER_RELEVANCE_ENABLED = os.environ.get('CHECK2_ANSWER_RELEVANCE_ENABLED', '').lower() in ('1', 'true', 'yes')
+
 # Supporting-document upload guardrails (cost + abuse). Env-overridable.
 MAX_DOC_SIZE_BYTES = int(os.environ.get('MAX_DOC_SIZE_BYTES', str(8 * 1024 * 1024)))   # 8 MB/file
 MAX_DOCS_PER_APPLICATION = int(os.environ.get('MAX_DOCS_PER_APPLICATION', '40'))
