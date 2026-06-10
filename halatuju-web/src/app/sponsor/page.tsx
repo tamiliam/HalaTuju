@@ -165,20 +165,21 @@ export default function SponsorPortalPage() {
 
   const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 
-  // Hold a neutral loading screen while auth is resolving OR (for a signed-out
-  // Wait only for the auth check (signed-in vs out); the landing renders regardless.
+  // Signed-out visitors ALWAYS get the public marketing landing — rendered IMMEDIATELY,
+  // even while the auth check is still resolving (isSignedIn is false until then), so the
+  // landing appears instantly with no "checking…" spinner, exactly like /scholarship.
+  // Login lives in the top header + the landing's "Become a sponsor" CTA.
+  if (!isSignedIn) {
+    return <SponsorLanding count={waitingCount} />
+  }
+
+  // Signed in: hold a neutral screen only while the account finishes loading.
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <p className="text-sm text-gray-400">{t('common.loading')}</p>
       </div>
     )
-  }
-
-  // Signed-out visitors ALWAYS get the public marketing landing (login is in the header
-  // + the landing's "Become a sponsor" CTA) — same as /scholarship for B40 assistance.
-  if (!isSignedIn) {
-    return <SponsorLanding count={waitingCount} />
   }
 
   return (
