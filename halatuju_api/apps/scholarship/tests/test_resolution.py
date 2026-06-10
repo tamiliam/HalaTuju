@@ -229,15 +229,24 @@ class TestStudentQueueViewGate(TestCase):
         self.assertEqual(r.json()['open'], [])
         self.assertEqual(r.json()['resolved'], [])
 
-    def test_queries_appear_after_submission(self):
+    def test_system_verdict_items_not_shown_to_student(self):
+        # The student's queue shows ONLY deliberately-raised items (officer/AI) —
+        # never the system's own verdict gaps (those live on the officer cockpit, so a
+        # mismatched upload can't spawn a duplicate system ticket beside the reviewer
+        # task + Gopal's coach).
         self.app.profile_completed_at = timezone.now()
         self.app.status = 'profile_complete'
         self.app.save(update_fields=['profile_completed_at', 'status'])
         r = self.client.get(self.URL)
         self.assertEqual(r.status_code, 200)
-        codes = sorted(i['code'] for i in r.json()['open'])
-        self.assertIn('ic_missing', codes)
-        self.assertIn('results_slip_missing', codes)
+        codes = [i['code'] for i in r.json()['open']]
+        self.assertNotIn('ic_missing', codes)
+        self.assertNotIn('results_slip_missing', codes)
+        # …but an officer-raised request DOES show.
+        add_officer_item(self.app, kind='doc', prompt='Upload your IC',
+                         admin_email='o@x', doc_type='ic')
+        codes2 = [i['code'] for i in self.client.get(self.URL).json()['open']]
+        self.assertIn('officer_1', codes2)
 
 
 @override_settings(ROOT_URLCONF='halatuju.urls', SUPABASE_JWT_SECRET=_TEST_JWT_SECRET,
