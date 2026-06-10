@@ -123,23 +123,17 @@ export default function SponsorPortalPage() {
   }
 
   // ── F1: public sponsor landing ─────────────────────────────────────────────
-  // The live "students waiting" counter is a public, flag-gated endpoint. While
-  // SPONSOR_POOL_ENABLED is off it reports enabled:false → signed-out visitors keep
-  // the plain sign-in card (the programme stays dark until go-live). When it's on,
-  // signed-out visitors get the full marketing landing with the live counter.
+  // /sponsor is ALWAYS public marketing for signed-out visitors (mirrors /scholarship);
+  // sign-in lives in the top header + the landing's "Become a sponsor" CTA. The live
+  // "students waiting" counter is a public endpoint; SPONSOR_POOL_ENABLED governs the
+  // counter value + the backend pool — NOT whether this page is marketing vs a login wall.
   const [waitingCount, setWaitingCount] = useState(0)
-  const [landingEnabled, setLandingEnabled] = useState(false)
-  // Has the (async) landing check resolved yet? Until it has, a signed-out visitor
-  // must NOT be shown the sign-in card — otherwise it flashes for a moment before
-  // the public marketing landing appears (the count endpoint reports `enabled`).
-  const [landingChecked, setLandingChecked] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     getStudentsWaitingCount()
-      .then((d) => { if (!cancelled) { setWaitingCount(d.count); setLandingEnabled(d.enabled) } })
-      .catch(() => { /* leave the landing disabled → falls back to the sign-in card */ })
-      .finally(() => { if (!cancelled) setLandingChecked(true) })
+      .then((d) => { if (!cancelled) setWaitingCount(d.count) })
+      .catch(() => { /* leave the counter at 0; the landing still renders */ })
     return () => { cancelled = true }
   }, [])
 
@@ -172,9 +166,8 @@ export default function SponsorPortalPage() {
   const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
 
   // Hold a neutral loading screen while auth is resolving OR (for a signed-out
-  // visitor) until the landing check has returned — so the sign-in card can never
-  // flash before the public marketing landing renders.
-  if (isLoading || (!isSignedIn && !landingChecked)) {
+  // Wait only for the auth check (signed-in vs out); the landing renders regardless.
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <p className="text-sm text-gray-400">{t('common.loading')}</p>
@@ -182,8 +175,9 @@ export default function SponsorPortalPage() {
     )
   }
 
-  // Signed-out visitors see the public marketing landing once the programme is live.
-  if (!isSignedIn && landingEnabled) {
+  // Signed-out visitors ALWAYS get the public marketing landing (login is in the header
+  // + the landing's "Become a sponsor" CTA) — same as /scholarship for B40 assistance.
+  if (!isSignedIn) {
     return <SponsorLanding count={waitingCount} />
   }
 
@@ -357,22 +351,7 @@ export default function SponsorPortalPage() {
       ) : (
       <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border p-8">
-          {isLoading ? (
-            <p className="text-center text-gray-500">{t('common.loading')}</p>
-          ) : !isSignedIn ? (
-            /* ── Not signed in ── */
-            <div className="text-center">
-              <h1 className="text-xl font-bold text-gray-900">{t('sponsorPortal.signInTitle')}</h1>
-              <p className="text-sm text-gray-600 mt-2">{t('sponsorPortal.signInBody')}</p>
-              <Link href="/sponsor/login" className="mt-6 block w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition-colors">
-                {t('sponsorAuth.signIn')}
-              </Link>
-              <p className="text-sm text-gray-500 mt-4">
-                {t('sponsorAuth.noAccount')}{' '}
-                <Link href="/sponsor/register" className="font-semibold text-blue-600 hover:underline">{t('sponsorAuth.createAccount')}</Link>
-              </p>
-            </div>
-          ) : needsDetails ? (
+          {needsDetails ? (
             /* ── Signed in, details incomplete (e.g. via Google) ── */
             <>
               <h1 className="text-xl font-bold text-gray-900">{t('sponsorPortal.completeTitle')}</h1>
