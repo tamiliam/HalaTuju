@@ -60,6 +60,7 @@ function ActionCard({
   onResolved,
   onConfirm,
   formLocked = false,
+  done = false,
 }: {
   item: ResolutionItem
   token: string | null
@@ -68,6 +69,9 @@ function ActionCard({
   /** Post-submit: the application form is locked, so a `confirm` ticket can't
    *  send the student back to a form tab. They respond with a typed reply instead. */
   formLocked?: boolean
+  /** A resolved item — stays on the page as a green "Done" card (no action), so the
+   *  student sees what they've completed. */
+  done?: boolean
 }) {
   const { t, locale } = useT()
   const src = titleSourceFor(item)
@@ -135,6 +139,30 @@ function ActionCard({
     } finally {
       setBusy(false)
     }
+  }
+
+  // A completed item — stays on the page as a calm green "Done" card (no action),
+  // so the student gets the satisfaction of seeing what they've cleared.
+  if (done) {
+    return (
+      <div className="rounded-2xl border border-green-100 bg-green-50/40 p-5 shadow-sm">
+        <div className="flex items-start gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500">
+            <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="font-semibold text-gray-500 line-through decoration-green-300">{title}</h3>
+              <span className="shrink-0 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-green-800">
+                {t('scholarship.actionCentre.done')}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -282,32 +310,43 @@ export default function ActionCentre({
 
   const firstName = (studentName || '').trim().split(/\s+/)[0] || ''
 
-  // Post-submit with nothing pending: the application is complete and with our
-  // team — say so, and that we'll be in touch. (This is the whole surface; the
-  // form is gone.)
-  if (formLocked && open.length === 0) {
-    return (
-      <section className="mb-8">
-        <div className="rounded-2xl border border-green-200 bg-green-50 p-6">
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm text-white">✓</span>
-            <h2 className="font-semibold text-gray-900">{t('scholarship.actionCentre.awaitTitle')}</h2>
-          </div>
-          <p className="mt-1 text-sm text-gray-700">
-            {t('scholarship.actionCentre.awaitBody', { email: email || t('scholarship.nextSteps.whatNext.yourEmail') })}
-          </p>
-        </div>
-      </section>
-    )
-  }
+  // The calm "all set — we'll be in touch" card (post-submit, nothing left to do).
+  const awaitCard = (
+    <div className="rounded-2xl border border-green-200 bg-green-50 p-6">
+      <div className="flex items-center gap-2">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm text-white">✓</span>
+        <h2 className="font-semibold text-gray-900">{t('scholarship.actionCentre.awaitTitle')}</h2>
+      </div>
+      <p className="mt-1 text-sm text-gray-700">
+        {t('scholarship.actionCentre.awaitBody', { email: email || t('scholarship.nextSteps.whatNext.yourEmail') })}
+      </p>
+    </div>
+  )
 
-  // Pre-submit (shortlisted): stay invisible when there is genuinely nothing to
-  // finish AND nothing was ever raised (a clean applicant shouldn't see an empty
-  // "all done" banner with no history).
-  if (!formLocked && open.length === 0 && resolved.length === 0) return null
+  // Resolved items stay on the page as green "Done" cards (the satisfaction of seeing
+  // what you've cleared), shown beneath the open ones.
+  const doneCards = resolved.length > 0 && (
+    <div className="mt-4 space-y-4">
+      {resolved.map((item) => (
+        <ActionCard key={item.id} item={item} token={token} onResolved={fetchItems}
+          onConfirm={(target) => onConfirm?.(target)} formLocked={formLocked} done />
+      ))}
+    </div>
+  )
+
+  // Nothing at all: post-submit → the await card; shortlisted → invisible.
+  if (open.length === 0 && resolved.length === 0) {
+    return formLocked ? <section className="mb-8">{awaitCard}</section> : null
+  }
 
   const { done, total, pct } = computeProgress(open, resolved)
 
+  // Post-submit, everything cleared: the await card + the completed Done cards.
+  if (formLocked && open.length === 0) {
+    return <section className="mb-8">{awaitCard}{doneCards}</section>
+  }
+
+  // Pending tasks (or a shortlisted student with history).
   return (
     <section className="mb-8">
       {/* Header */}
@@ -329,13 +368,8 @@ export default function ActionCentre({
         </div>
       </div>
 
-      {/* Open tickets — or the all-done banner */}
-      {open.length === 0 ? (
-        <div className="mt-4 flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50 p-5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm text-white">✓</span>
-          <p className="font-medium text-green-900">{t('scholarship.actionCentre.allDone')}</p>
-        </div>
-      ) : (
+      {/* Open tasks first, then the completed ones as green Done cards. */}
+      {open.length > 0 && (
         <div className="mt-4 space-y-4">
           {sortByWeight(open).map((item) => (
             <ActionCard
@@ -349,8 +383,14 @@ export default function ActionCentre({
           ))}
         </div>
       )}
-      {/* No static Cikgu Gopal footer — he now appears contextually, beneath a document
-          task whose upload didn't pass its scan (see ActionCard). */}
+      {doneCards}
+      {/* Shortlisted (pre-submit) all-done banner. */}
+      {!formLocked && open.length === 0 && (
+        <div className="mt-4 flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50 p-5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm text-white">✓</span>
+          <p className="font-medium text-green-900">{t('scholarship.actionCentre.allDone')}</p>
+        </div>
+      )}
     </section>
   )
 }

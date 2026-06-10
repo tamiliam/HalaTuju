@@ -1545,6 +1545,7 @@
       "progressDone": "{done} of {total} done",
       "percentComplete": "{pct}% Complete",
       "toDo": "To do",
+      "done": "Done",
       "upload": "Upload",
       "uploading": "Uploading…",
       "uploadError": "Sorry, that upload didn't work. Please try again.",
