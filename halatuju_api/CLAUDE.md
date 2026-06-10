@@ -443,14 +443,27 @@ preserved** — NRIC gate behaviour unchanged. Migration `scholarship/0024`. **O
   `migrate`** — apply migrations to prod manually before pushing (see the DEPLOY/MIGRATIONS gotcha below).
 - Custom domain: halatuju.xyz (Cloud Run domain mapping)
 
-## Next Sprint (as of 2026-06-09)
+## Next Sprint (as of 2026-06-10)
 
 **▶ ALL SHIPPED & LIVE.** The B40 Phase E/F sponsor programme (13 sprints + go-live, `SPONSOR_POOL_ENABLED=true`),
 the **Admin Roles realignment** (`super/admin/partner/reviewer` + full students/B40 scoping; nav/invite/profile
 redesign), the post-deploy **invite-existing-user** + **phone/email search** fixes, and the **B40 income-gate policy**
 (gross household income ≤ `income_ceiling` RM5,860 is the PRIMARY test; per-capita RM1,584 is a safety net above it)
 are all on `main` and deployed. Prod migrations through `courses 0053` / `scholarship 0056`. Prod admins: 1 super
-(owner) + 2 CUMIG partners. Tests: 2029 backend pytest + 276 jest; i18n parity 2468.
+(owner) + 2 CUMIG partners.
+
+**▶ JUST SHIPPED 2026-06-10 — Action Centre (post-submit student surface), no migration; retro
+`docs/retrospective-action-centre.md`, plan `docs/scholarship/action-centre-gopal-plan.md`.** A submitted student
+(`profile_complete`/`interviewing`/`interviewed`) now lands on the **form-locked Action Centre** (not the dead-end
+"received" card). **Phase 1:** uploading a requested doc runs its specific scan (`resolution.doc_match_verdict`, mirrors
+the consent-gate per-doc red/unreadable classification; `resolve_doc_items_for_upload` wired into `recordDocument`) →
+match ticks **Done**, mismatch/unreadable keeps it open + contextual `DocumentHelpCoach`; **fixed the officer-doc-never-
+resolves bug**. Student queue shows **only officer + AI-clarify items, never `source='system'` verdict gaps**
+(`ResolutionItemListView` excludes system). Resolved tasks stay as green **Done** cards. **Phase 2:**
+`help_engine.judge_answer_relevance` (Gemini JSON, firewalled, defaults to accept) nudges a typed answer **only when
+TOTALLY off-topic**, behind **`CHECK2_ANSWER_RELEVANCE_ENABLED` (default OFF, billable)**. **The email +
+AI-clarify-query switch `CHECK2_STUDENT_QUERIES_ENABLED` stays OFF** (owner's call — both flags are one env var from on).
+Tests: 989 scholarship backend pytest + 276 jest; i18n parity 2474.
 
 **▶ NEXT — follow-ups only (no roadmap sprint; do when inputs arrive):** (1) **lawyer consent text** + `CONSENT_VERSION`
 bump (re-attests everyone) — see decisions.md "Go live on draft consent text"; (2) **Tamil refine** (TD-105/108 etc.);

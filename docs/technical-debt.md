@@ -684,3 +684,15 @@
   progress band. **To resolve (optional):** when an in-programme slip OCR schema exists, pre-fill the CGPA from the slip
   and let the student confirm (don't auto-trust). Low priority; the band only needs a coarse value. (Logged 2026-06-09,
   B40 Phase E/F Sprint 9.)
+- TD-109: **`source='system'` resolution items are created but no longer shown to students.** The Action Centre now
+  excludes `source='system'` from the student queue (`ResolutionItemListView`), and the officer cockpit reads the
+  verdict directly (not `resolution_items`) — so `sync_resolution_items`' system rows are effectively dead (created +
+  auto-resolved, read by nothing student-facing). Harmless but wasteful (a write on every GET — see TD-079). **To
+  resolve (optional):** either stop generating `source='system'` items, or keep them only if a future feature reads
+  them; revisit together with TD-079 (resolution sync writes on GET). Low priority. (Logged 2026-06-10, Action Centre.)
+- TD-110: **`resolution.doc_match_verdict` duplicates the per-doc red/unreadable logic in
+  `services.document_red_blockers` / `document_unreadable_blockers`.** Both classify each doc_type's `*_check` into
+  mismatch/unreadable using the same status sets, so they must be kept in lockstep (the Action Centre and the consent
+  gate must agree on a document). **To resolve:** extract one shared per-doc helper (e.g. `income_engine`/a new
+  `doc_verdicts` module) that both call, when either is next touched. Low priority (a paired comment + the cross-check
+  is the current mitigation). (Logged 2026-06-10, Action Centre.)
