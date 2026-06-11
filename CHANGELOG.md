@@ -79,6 +79,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     masters intact (SPM 5319 / STPM 2026). No migration. Retro `docs/retrospective-verification-accuracy-fixes.md`.
 
 ### Added
+- **Cockpit capture-confidence badge (officer transparency; no migration).** Each document row in the cockpit Documents
+  drawer now shows a small **"Exact read"** (label-anchored / deterministic) vs **"AI read"** (Gemini) badge, from the
+  `vision_fields.capture` tag the capture layer stores — so the officer knows at a glance which fields were read
+  verbatim from fixed labels vs inferred by AI (and worth a closer look). en/ms/ta parity 2500×3; `next build` clean.
 - **Capture layer — water-bill parser (P6, soft signal; no migration).** Malaysian water bills (Air Selangor / SAMB /
   SAJ / PBAPP…) differ by company but share the regulated Malay labels — `Bil Semasa` (current charge → amount),
   `Baki Terdahulu` / `Tunggakan` (arrears → unpaid_balance), under a `BIL AIR` header. `parse_by_labels('water_bill', …)`

@@ -806,6 +806,9 @@ export interface AdminApplicantDocument {
     fields?: Record<string, string | string[] | Array<{ subject?: string; grade?: string }>>
     warnings?: string[]
     student_verdict?: string
+    // How this doc's fields were read: 'deterministic' (label-anchored parser) vs 'ai'
+    // (Gemini fallback) — surfaced to the officer as a capture-confidence badge.
+    capture?: 'deterministic' | 'ai'
     error?: string
   }
   // Per-fact verification checks (the admin detail serializes documents via
