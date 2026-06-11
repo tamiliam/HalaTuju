@@ -423,7 +423,8 @@ import datetime  # noqa: E402
 
 from apps.scholarship.income_engine import (  # noqa: E402
     _parse_billing_month, _utility_currency, utility_reasonable, utility_check,
-    _utility_name_unrelated,
+    _utility_name_unrelated, utility_holder_unknown, utility_address_mismatch,
+    slip_epf_divergence,
 )
 
 
@@ -555,3 +556,76 @@ class TestUtilityCheck(SimpleTestCase):
     def test_non_utility_doc_returns_none(self):
         app = _app([_bill('ic')], household_size=4)
         self.assertIsNone(utility_check(app.documents.filter(doc_type='ic').first(), today=self.TODAY))
+
+
+# ── #8 utility holder / address → query helpers ──────────────────────────────
+
+class TestUtilityHolderUnknown(SimpleTestCase):
+    def test_returns_name_when_stranger(self):
+        docs = [_bill('water_bill', {'amount': '20', 'name': 'RAJESWARI A/P RAMALINGAM'}),
+                _bill('parent_ic', name='MURUGAN A/L KESAVAN')]
+        app = _app(docs, student_name='DIVASHINI A/P MURUGAN')
+        self.assertEqual(utility_holder_unknown(app), 'RAJESWARI A/P RAMALINGAM')
+
+    def test_none_when_holder_is_a_parent(self):
+        docs = [_bill('electricity_bill', {'amount': '20', 'name': 'MURUGAN A/L KESAVAN'}),
+                _bill('parent_ic', name='MURUGAN A/L KESAVAN')]
+        app = _app(docs, student_name='DIVASHINI A/P MURUGAN')
+        self.assertIsNone(utility_holder_unknown(app))
+
+    def test_none_when_no_utility_bill(self):
+        app = _app([_bill('ic')], student_name='DIVASHINI A/P MURUGAN')
+        self.assertIsNone(utility_holder_unknown(app))
+
+
+class TestUtilityAddressMismatch(SimpleTestCase):
+    def test_true_only_on_hard_mismatch(self):
+        app = _app([_bill('water_bill', {'amount': '20'}, address_match='mismatch')])
+        self.assertTrue(utility_address_mismatch(app))
+
+    def test_partial_stays_silent(self):
+        # A missing postcode / shortened street reads as 'partial' — NOT a query.
+        app = _app([_bill('water_bill', {'amount': '20'}, address_match='partial')])
+        self.assertFalse(utility_address_mismatch(app))
+
+    def test_found_is_not_a_mismatch(self):
+        app = _app([_bill('electricity_bill', {'amount': '20'}, address_match='found')])
+        self.assertFalse(utility_address_mismatch(app))
+
+
+# ── #9 payslip vs EPF divergence ─────────────────────────────────────────────
+
+class TestSlipEpfDivergence(SimpleTestCase):
+    def test_agree_within_tolerance_returns_none(self):
+        # gross 3000 vs epf 720/0.24 = 3000 → ratio 1.0 → no flag.
+        app = _app([_bill('salary_slip', {'gross_income': 'RM 3000'}),
+                    _bill('epf', {'monthly_contribution': 'RM 720'})])
+        self.assertIsNone(slip_epf_divergence(app, 'father'))
+
+    def test_diverge_flags_with_both_figures(self):
+        # gross 3000 vs epf 200/0.24 ≈ 833 → ratio ≈ 3.6 → flag.
+        app = _app([_bill('salary_slip', {'gross_income': 'RM 3000'}),
+                    _bill('epf', {'monthly_contribution': 'RM 200'})])
+        out = slip_epf_divergence(app, 'father')
+        self.assertIsNotNone(out)
+        self.assertEqual(out['slip'], 3000.0)
+        self.assertEqual(out['epf_implied'], round(200 / 0.24, 2))
+
+    def test_only_payslip_returns_none(self):
+        app = _app([_bill('salary_slip', {'gross_income': 'RM 3000'})])
+        self.assertIsNone(slip_epf_divergence(app, 'father'))
+
+    def test_only_epf_returns_none(self):
+        app = _app([_bill('epf', {'monthly_contribution': 'RM 200'})])
+        self.assertIsNone(slip_epf_divergence(app, 'father'))
+
+    def test_unreadable_figures_return_none(self):
+        app = _app([_bill('salary_slip', {'gross_income': ''}),
+                    _bill('epf', {'monthly_contribution': ''})])
+        self.assertIsNone(slip_epf_divergence(app, 'father'))
+
+    def test_modest_overtime_within_band_stays_quiet(self):
+        # gross 3300 vs epf 720/0.24 = 3000 → ratio 1.1 → within band, no flag.
+        app = _app([_bill('salary_slip', {'gross_income': 'RM 3300'}),
+                    _bill('epf', {'monthly_contribution': 'RM 720'})])
+        self.assertIsNone(slip_epf_divergence(app, 'father'))
