@@ -424,7 +424,7 @@ import datetime  # noqa: E402
 from apps.scholarship.income_engine import (  # noqa: E402
     _parse_billing_month, _utility_currency, utility_reasonable, utility_check,
     _utility_name_unrelated, utility_holder_unknown, utility_address_mismatch,
-    slip_epf_divergence,
+    slip_epf_divergence, _reconciled_holder_name,
 )
 
 
@@ -497,16 +497,23 @@ class TestUtilityReasonable(SimpleTestCase):
     def test_both_cheap_is_reasonable(self):
         app = _app([_bill('water_bill', {'amount': '40'}), _bill('electricity_bill', {'amount': '40'})], household_size=4)
         r = utility_reasonable(app)
-        self.assertEqual(r['status'], 'reasonable')   # 80 / 4 = 20 < 25
+        self.assertEqual(r['status'], 'reasonable')   # 80 / 4 = 20 → well under RM40/head
         self.assertEqual(r['detail'], 'both')
 
-    def test_both_high_is_high(self):
-        app = _app([_bill('water_bill', {'amount': '100'}), _bill('electricity_bill', {'amount': '120'})], household_size=4)
-        self.assertEqual(utility_reasonable(app)['status'], 'high')   # 220 / 4 = 55 > 40
+    def test_only_genuinely_high_flags(self):
+        # > RM60/head is the only thing worth an officer's eye now.
+        app = _app([_bill('water_bill', {'amount': '150'}), _bill('electricity_bill', {'amount': '150'})], household_size=4)
+        self.assertEqual(utility_reasonable(app)['status'], 'high')   # 300 / 4 = 75 > 60
 
-    def test_both_middle_is_borderline(self):
-        app = _app([_bill('water_bill', {'amount': '60'}), _bill('electricity_bill', {'amount': '70'})], household_size=4)
-        self.assertEqual(utility_reasonable(app)['status'], 'borderline')   # 130 / 4 = 32.5
+    def test_former_borderline_is_now_reasonable(self):
+        # The old amber 'borderline' band is gone — a normal household reads 'reasonable',
+        # so we never raise a spurious "explain your utility spend" query (e.g. #61's RM31/head).
+        app = _app([_bill('water_bill', {'amount': '67'}), _bill('electricity_bill', {'amount': '89'})], household_size=5)
+        self.assertEqual(utility_reasonable(app)['status'], 'reasonable')   # 156 / 5 = 31.25 ≤ 60
+
+    def test_mid_fifties_is_reasonable_not_high(self):
+        app = _app([_bill('water_bill', {'amount': '100'}), _bill('electricity_bill', {'amount': '120'})], household_size=4)
+        self.assertEqual(utility_reasonable(app)['status'], 'reasonable')   # 220 / 4 = 55 ≤ 60
 
     def test_one_bill_only_is_partial(self):
         app = _app([_bill('water_bill', {'amount': '40'})], household_size=4)
@@ -517,6 +524,37 @@ class TestUtilityReasonable(SimpleTestCase):
     def test_no_household_size_is_unknown(self):
         app = _app([_bill('water_bill', {'amount': '40'}), _bill('electricity_bill', {'amount': '40'})], household_size=None)
         self.assertEqual(utility_reasonable(app)['status'], 'unknown')
+
+
+# ── Cross-bill holder-name reconciliation (a wrinkled/cut bill dropped a letter) ──────
+
+class TestHolderNameReconciliation(SimpleTestCase):
+    def test_cut_letter_recovered_from_clean_bill(self):
+        # The water bill was creased so the 'T' was cut → 'HANA BALAN'; the electricity
+        # bill reads it cleanly → 'THANA BALAN'. Both rows should report the clean name.
+        docs = [_bill('water_bill', {'amount': '89', 'name': 'HANA BALAN A/L NARAYANAN'}),
+                _bill('electricity_bill', {'amount': '67', 'name': 'THANA BALAN A/L NARAYANAN'})]
+        app = _app(docs, household_size=5, student_name='SHAARVESHWAAR A/L SARAWANAN')
+        self.assertEqual(utility_check(docs[0])['name'], 'THANA BALAN A/L NARAYANAN')   # water row
+        self.assertEqual(utility_check(docs[1])['name'], 'THANA BALAN A/L NARAYANAN')   # elec row
+
+    def test_holder_unknown_flag_quotes_the_clean_name(self):
+        docs = [_bill('water_bill', {'amount': '89', 'name': 'HANA BALAN A/L NARAYANAN'}),
+                _bill('electricity_bill', {'amount': '67', 'name': 'THANA BALAN A/L NARAYANAN'})]
+        app = _app(docs, household_size=5, student_name='SHAARVESHWAAR A/L SARAWANAN')
+        self.assertEqual(utility_holder_unknown(app), 'THANA BALAN A/L NARAYANAN')
+
+    def test_two_genuinely_different_holders_never_merge(self):
+        # Father's bill vs a stranger's bill — different people, so neither is rewritten.
+        docs = [_bill('water_bill', {'amount': '50', 'name': 'SARAWANAN A/L SUPRAMANIAM'}),
+                _bill('electricity_bill', {'amount': '50', 'name': 'THANA BALAN A/L NARAYANAN'})]
+        app = _app(docs, household_size=5, student_name='SHAARVESHWAAR A/L SARAWANAN')
+        self.assertEqual(utility_check(docs[0])['name'], 'SARAWANAN A/L SUPRAMANIAM')
+        self.assertEqual(utility_check(docs[1])['name'], 'THANA BALAN A/L NARAYANAN')
+
+    def test_single_bill_unchanged(self):
+        app = _app([_bill('water_bill', {'amount': '40', 'name': 'HANA BALAN A/L NARAYANAN'})], household_size=4)
+        self.assertEqual(_reconciled_holder_name(app, 'HANA BALAN A/L NARAYANAN'), 'HANA BALAN A/L NARAYANAN')
 
 
 class TestUtilityCheck(SimpleTestCase):

@@ -194,13 +194,13 @@ function factStatus(s: string | undefined | null): FactStatus {
 const _PATRONYMIC_MEMBER = new Set(['father', 'brother', 'sister'])
 
 /**
- * Tone for the combined-utility "Reasonable" fact. A soft B40 proxy, so it never shows
- * red: green when consumption is low, amber when borderline/high or only one bill was
- * given, grey when we can't judge at all.
+ * Tone for the combined-utility "Reasonable" fact. A soft, noisy B40 proxy, so it never
+ * shows red and only flags amber on genuinely HIGH consumption (> RM60/head — an
+ * officer/interview signal). A normal household is green; one bill / no data is grey.
  */
 function reasonableStatus(s: string): FactStatus {
   if (s === 'reasonable') return 'verified'
-  if (s === 'borderline' || s === 'high') return 'partial'
+  if (s === 'high') return 'partial'
   return 'unknown'                       // 'partial' (one bill) + 'unknown' (no data) → grey
 }
 

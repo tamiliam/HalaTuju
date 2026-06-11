@@ -1424,9 +1424,9 @@ export interface UtilityCheck {
   address_status: string
   // billing period vs the review date: 'current' (≤3 months) | 'stale' | 'unknown' (no date)
   current_status: 'current' | 'stale' | 'unknown'
-  // combined household per-capita B40 proxy (both bills): 'reasonable' | 'borderline' |
-  // 'high' | 'partial' (only one bill, can't judge) | 'unknown' (no amount / no size)
-  reasonable_status: 'reasonable' | 'borderline' | 'high' | 'partial' | 'unknown'
+  // combined household per-capita B40 proxy (both bills): 'reasonable' (the normal case) |
+  // 'high' (> RM60/head, officer signal) | 'partial' (only one bill) | 'unknown' (no data)
+  reasonable_status: 'reasonable' | 'high' | 'partial' | 'unknown'
   // which bills informed the reasonable verdict
   reasonable_detail: 'both' | 'water_only' | 'electricity_only' | ''
   // 'arrears' when unpaid balance exceeds the current charge (hardship signal); '' = hide
