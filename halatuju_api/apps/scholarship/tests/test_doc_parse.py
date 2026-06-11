@@ -84,3 +84,98 @@ class TestDispatcher(SimpleTestCase):
                              {'recipient_name': 'A', 'source_type': 'letter'})
         finally:
             doc_parse._PARSERS.pop('_test_ok', None)
+
+
+# ── STR parser (P1) — synthetic fixtures mirror the REAL OCR structures validated
+# against live uploads (letters #29/#61, semakan #62/#51, SALINAN #23, SARA #63). Fake
+# names/NRICs only — no PII in the repo (lessons.md). ───────────────────────────────────
+
+# A Kementerian Kewangan approval LETTER: approves STR **and** SARA; the "layak STR …
+# dengan jumlah RM<x>" line is the STR-specific entitlement (≠ combined ≠ SARA figure).
+_LETTER = """KEMENTERIAN KEWANGAN MALAYSIA
+No. Rujukan : STR-01(A)(i)
+No Pengenalan : 900101015555
+Tarikh : 09/01/2026
+AHMAD BIN TESTABU
+12 JALAN UJIAN, 50000 KUALA LUMPUR
+SUMBANGAN TUNAI RAHMAH (STR) DAN SUMBANGAN ASAS RAHMAH (SARA) TAHUN 2026
+2. permohonan STR dan SARA 2026 tuan/puan telah diluluskan dengan jumlah keseluruhan
+kelayakan STR dan SARA sebanyak RM2,400. Tuan/Puan layak STR 2026 dengan jumlah RM1,200
+setahun manakala kelayakan SARA 2026 tuan/puan sebanyak RM1,200 setahun.
+Nama Penerima : AHMAD BIN TESTABU
+"""
+
+# MySTR mobile "Semakan Status": labels in one OCR column, values in another; a stray info
+# icon "i" bleeds onto the status label; the keseluruhan total ≥ the amount paid so far.
+_SEMAKAN = """Semakan Status
+Maklumat Pemohon
+Nama
+No. MyKad
+SITI A/P TESTAMMA
+950202025656
+Status Pedalaman
+Status Permohonan Semasa i
+Lulus
+Jumlah Telah Dibayar
+RM 600
+Jumlah Bayaran
+RM 1,200
+Keseluruhan STR
+"""
+
+# A MySTR application-record COPY — STR-marked but stamped SALINAN, no approval status.
+_SALINAN = """KERAJAAN MALAYSIA
+SUMBANGAN TUNAI RAHMAH (STR)
+SALINAN
+MAKLUMAT PEMOHON
+Nama :
+RAJA A/L TESTAN
+No. MyKad
+800808085858
+"""
+
+# A SARA-only Perdana Menteri letter (the #63 shape) — no STR entitlement, no NRIC.
+_SARA_ONLY = """PERDANA MENTERI MALAYSIA
+SELVI A/P TESTAH
+03 Januari 2026
+Saya bersyukur kerana saudara/saudari adalah salah seorang yang terpilih untuk terus
+menerima bantuan SARA.
+ANWAR IBRAHIM
+MALAYSIA MADANI
+"""
+
+
+class TestStrParser(SimpleTestCase):
+    def test_letter_reads_str_specific_amount_not_combined_or_sara(self):
+        r = parse_by_labels('str', _LETTER)
+        self.assertEqual(r['source_type'], 'letter')
+        self.assertEqual(r['recipient_name'], 'AHMAD BIN TESTABU')
+        self.assertEqual(r['recipient_nric'], '900101-01-5555')
+        self.assertEqual(r['status'], 'diluluskan')
+        self.assertEqual(r['year'], '2026')
+        self.assertEqual(r['amount'], 'RM1200')      # the STR line, NOT RM2,400 / the SARA RM1,200
+
+    def test_semakan_layout_independent_name_nric_status_total(self):
+        r = parse_by_labels('str', _SEMAKAN)
+        self.assertEqual(r['source_type'], 'semakan_status')
+        self.assertEqual(r['recipient_name'], 'SITI A/P TESTAMMA')   # read despite labels-then-values
+        self.assertEqual(r['recipient_nric'], '950202-02-5656')
+        self.assertEqual(r['status'], 'Lulus')        # the stray "i" was rejected → body word
+        self.assertEqual(r['year'], '')               # no year on the page → current (#5)
+        self.assertEqual(r['amount'], 'RM1200')       # keseluruhan total, not the RM600 paid
+
+    def test_salinan_is_unknown_not_a_proof(self):
+        r = parse_by_labels('str', _SALINAN)
+        self.assertEqual(r['source_type'], 'unknown')   # application copy → gated to unconfirmed
+
+    def test_sara_only_letter_is_unknown_the_deterministic_gate(self):
+        r = parse_by_labels('str', _SARA_ONLY)
+        self.assertEqual(r['source_type'], 'unknown')   # retires the #63 AI-inference mis-pass
+        self.assertEqual(r['recipient_name'], 'SELVI A/P TESTAH')
+
+    def test_non_str_document_returns_none(self):
+        self.assertIsNone(parse_by_labels('str', 'PENYATA GAJI PEKERJA\nMajikan: ACME\nGaji Pokok 3000'))
+
+    def test_str_marked_but_no_recipient_falls_to_gemini(self):
+        # An STR mention with no name + no NRIC → don't trust a deterministic read.
+        self.assertIsNone(parse_by_labels('str', 'Sumbangan Tunai Rahmah STR 2026 portal'))
