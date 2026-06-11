@@ -134,3 +134,28 @@ def delete_objects(paths):
     except (urllib.error.URLError, ValueError, TimeoutError):
         logger.warning('Supabase Storage DELETE failed for %s', paths, exc_info=True)
         return False
+
+
+def upload_object(path, data, content_type):
+    """Upsert raw bytes to the private bucket (overwrites the object at ``path``). Used to replace
+    a HEIC upload with its JPEG conversion. True on success, False on any failure (logged)."""
+    base, key = _base_url(), _service_key()
+    if not base or not key:
+        logger.warning('Supabase Storage not configured (SUPABASE_URL / service key missing)')
+        return False
+    req = urllib.request.Request(
+        f'{base}/storage/v1/object/{BUCKET}/{path}',
+        data=data, method='POST',
+        headers={
+            'Authorization': f'Bearer {key}',
+            'apikey': key,
+            'Content-Type': content_type or 'application/octet-stream',
+            'x-upsert': 'true',
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as _:
+            return True
+    except (urllib.error.URLError, ValueError, TimeoutError):
+        logger.warning('Supabase Storage upload failed for %s', path, exc_info=True)
+        return False
