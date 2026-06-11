@@ -1143,6 +1143,7 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
     standardised SPM table parses by geometry, immune to row-transposition); only if
     that can't lock onto the table does it fall back to reading the IMAGE with Gemini.
     Every other supporting doc reads the OCR text."""
+    from .doc_parse import parse_by_labels      # deterministic-first for standardised docs
     if doc.doc_type == 'results_slip':
         image = _fetch_image_bytes(doc.storage_path)
         ex, diag = _extract_slip_deterministic(doc, image)   # OCR-first (SPM); None → Gemini
@@ -1152,24 +1153,35 @@ def run_field_extraction_for_document(doc, *, names, postcode='', city='', stree
             else:
                 r = ocr if ocr is not None else ocr_document(doc)
                 ex = extract_document_fields(r.get('text', ''), doc.doc_type)
+            ex['capture'] = 'ai'
             # Record WHY we fell back (+ what Vision read) so the slip can be diagnosed.
             if isinstance(ex.get('fields'), dict):
                 ex['fields']['_slip_ocr_diag'] = diag
+        else:
+            ex['capture'] = 'deterministic'
     else:
         r = ocr if ocr is not None else ocr_document(doc)
         if r['error'] or not (r['text'] or '').strip():
             ex = {'fields': {}, 'warnings': [], 'error': r['error'] or 'no text read'}
         else:
-            ex = extract_document_fields(r['text'], doc.doc_type)
+            # Deterministic label-anchored capture first for the standardised-issuer docs;
+            # None (unrecognised layout) → Gemini reads it. parse_by_labels never raises.
+            parsed = parse_by_labels(doc.doc_type, r['text'])
+            if parsed is not None:
+                ex = {'fields': parsed, 'warnings': [], 'error': '', 'capture': 'deterministic'}
+            else:
+                ex = extract_document_fields(r['text'], doc.doc_type)
+                ex['capture'] = 'ai'
 
     if ex['error']:
-        result = {'fields': {}, 'warnings': [], 'student_verdict': 'unreadable', 'error': ex['error']}
+        result = {'fields': {}, 'warnings': [], 'student_verdict': 'unreadable',
+                  'capture': ex.get('capture', 'ai'), 'error': ex['error']}
     else:
         verdict = doc_student_verdict(doc.doc_type, ex['fields'], names=names,
                                       postcode=postcode, city=city, street=street,
                                       check_address=check_address)
         result = {'fields': ex['fields'], 'warnings': ex['warnings'],
-                  'student_verdict': verdict, 'error': ''}
+                  'student_verdict': verdict, 'capture': ex.get('capture', 'ai'), 'error': ''}
     doc.vision_fields = result
     doc.vision_fields_run_at = timezone.now()
     doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])

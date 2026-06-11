@@ -477,6 +477,12 @@ existing files). Gates: 1015 scholarship + 1063 courses/reports pytest, 290 jest
 **Post-deploy:** re-classify #63's STR (source_type='unknown'); `convert_heic_documents --apply`; watch the pillow-heif
 install on the first build.
 
+**▶ IN PROGRESS (2026-06-11) — deterministic capture layer, Sprint 1 = P0 scaffold + P1 STR.** `apps/scholarship/
+doc_parse.py` `parse_by_labels(doc_type, text)` runs BEFORE Gemini in `run_field_extraction_for_document` (None → Gemini),
+tags `vision_fields['capture']='deterministic'|'ai'`. STR parser first (retires the SARA AI-inference). CONSERVATIVE
+(None unless strong anchors) + **validate on REAL STR OCR before trusting the path (L86)**. No migration. Then P2 TNB →
+P3 KWSP → P4 JPN-BC (also enables #55 mononym BC-father match) → P5 offer-id → water; folds in #61-a (IC leading-break).
+
 **▶ NEXT SPRINT — deterministic label-anchored capture layer** (rationale in `docs/retrospective-cockpit-doc-ux-and-sara.md`
 "Audit finding", grounded in real-file sampling). Most "AI-captured" docs are actually fixed-format standardised-issuer
 docs (TNB elec, KWSP EPF, JPN birth cert, govt offers, MySTR STR) and many are digital PDFs with clean text layers
