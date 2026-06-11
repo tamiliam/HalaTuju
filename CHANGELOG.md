@@ -35,6 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pytest (+23), actionCentre jest 23, `next build` clean, parity 2512×3. See `docs/retrospective-verification-soft-signals.md`.
 
 ### Security
+- **Closed anonymous enumeration of the public `field-images` bucket (security item 5 leftover; storage policy only).**
+  The bucket is public-read (category/pathway illustrations), but its single `storage.objects` SELECT policy granted
+  everyone SELECT — which also let anyone *list* all 55 filenames via the storage list API. The frontend only reads by
+  direct `/object/public/` URL (never lists), and a public bucket serves that path without RLS, so the policy was
+  dropped. Verified live: public object read still 200, anon list now returns `[]`; Supabase advisor shows no new
+  warnings. SQL: `docs/security/field-images-revoke-list.sql`. **This closes the last open hardening-backlog item — A–E
+  plus all seven backlog items are now done.**
 - **Cloudflare Turnstile (captcha) on every auth entry point + the contact form (security item C; no migration).**
   Protects against credential-stuffing, fake-account/email-flood abuse, and contact-form spam. An invisible widget
   (Managed mode, `execution: 'execute'`) fetches a single-use token on demand — real users see nothing; only flagged
