@@ -97,8 +97,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     statements** (matched Gemini's monthly 1370/1380/408, and *improved* on a digital one Gemini left blank). A
     **mis-slotted Borang EC** (a salary statement in the EPF slot) carries none of the KWSP labels → returns `None` →
     Gemini, so the deterministic layer also *detects the mis-slot* for free.
-  - +27 pytest (13 scaffold + 6 STR + 4 TNB + 4 EPF); full scholarship suite green (1042). No migration (the tag lives
-    in `vision_fields`).
+  - **JPN birth-certificate parser (P4)** — Sijil Kelahiran (LM15 / LM05), read from Vision OCR of the scanned form.
+    The section markers (KANAK-KANAK / BAPA / IBU) land unreliably in the OCR stream, so the parser anchors on two
+    stable facts: the child's IC sits under `No. Daftar`/PKSN while only the parents carry `No. Kad Pengenalan` (→ the
+    two such NRICs are father then mother, each with the nearest preceding name); the child name skips the English
+    `Name`/`Full Name` labels and accepts a mononym. **Validated against 8 live certs** — all 6 full BCs read child +
+    both parents + NRICs correctly (incl. JPN-spaced `770909 - 04 - 5229` and a mononym child); a partial BC (one
+    parent) and a mis-slotted MyKad both return `None` → Gemini. Conservative (None unless both parents resolve).
+    Unlocks the #55 mononym father-link (the BAPA name+IC the relationship check needs).
+  - +31 pytest (13 scaffold + 6 STR + 4 TNB + 4 EPF + 4 BC); full scholarship suite green (1046). No migration (the tag
+    lives in `vision_fields`).
 - **Officer cockpit — Documents drawer polish + in-cockpit document viewer (live-testing, no migration).**
   - **Per-type tinted icons + standard labels.** Each document row shows a per-doc-TYPE glyph (🪪🎓💵💧… via
     `officerCockpit.docIconFor`) in a badge tinted by the doc's verdict, instead of a 2-way IC/generic emoji. The row's

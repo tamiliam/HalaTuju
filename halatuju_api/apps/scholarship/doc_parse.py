@@ -297,3 +297,90 @@ def _parse_epf(text: str) -> Optional[dict]:
         return None
     return {'name': name, 'nric': nric, 'employer': employer, 'latest_balance': balance,
             'last_contribution': '', 'monthly_contribution': _last_caruman(text), 'year': year}
+
+
+# ── P4: JPN birth certificate (Sijil Kelahiran) ───────────────────────────────
+# JPN forms (LM15 / LM05) — scanned, so the parser reads VISION OCR of a sectioned table.
+# The section markers (KANAK-KANAK / BAPA / IBU) land UNRELIABLY in the OCR stream, but two
+# anchors hold across forms + states:
+#   * the CHILD's IC sits under "No. Daftar" / PKSN — NOT "No. Kad Pengenalan";
+#   * the two "No. Kad Pengenalan" NRICs are the FATHER then the MOTHER (reading order),
+#     each paired with the nearest preceding name.
+# Unlocks the #55 mononym father-link (read father name+IC off the BAPA section). CONSERVATIVE
+# — None (→ Gemini, which reads BCs well) unless BOTH parents resolve with an NRIC.
+
+# Tolerant NRIC — JPN OCR spaces the groups ("770909 - 04 - 5229", "820507 02-6239").
+_BC_NRIC_RE = re.compile(r'(\d{6})[\s-]{0,3}(\d{2})[\s-]{0,3}(\d{4})')
+
+
+def _bc_nric(s: str) -> str:
+    m = _BC_NRIC_RE.search(s or '')
+    return f'{m.group(1)}-{m.group(2)}-{m.group(3)}' if m else ''
+
+
+def _bc_name(line: str) -> str:
+    """A name off a BC line: 'Nama[Penuh] <NAME>' → NAME, or a bare patronymic name line.
+    '' for label/section/place lines."""
+    m = re.match(r'^nama(?:\s+penuh)?\s+(.+)$', line, re.IGNORECASE)
+    cand = (m.group(1) if m else line).strip()
+    return cand if _NAME_LINE.match(cand) else ''
+
+
+# Form labels/sections that an all-caps child-name scan must skip (the English "Name" /
+# "Full Name" labels, the section headers, "Maklumat…" placeholders).
+_BC_STOP = {'name', 'full name', 'nama', 'nama penuh', 'kanak-kanak', 'bapa', 'ibu',
+            'child', 'father', 'mother', 'kanak-kanak / child', 'bapa/father', 'ibu/mother'}
+
+
+def _is_bc_person(s: str) -> bool:
+    """An all-caps personal name (mononym OK), not a form label/section header."""
+    s = (s or '').strip()
+    if not (3 <= len(s) <= 50) or any(c.isdigit() for c in s):
+        return False
+    if s.lower() in _BC_STOP or not re.match(r'^[A-Z][A-Z .@/]*$', s):
+        return False
+    return sum(c.isalpha() for c in s) >= 3
+
+
+def _bc_child(lines: list) -> str:
+    """Child name: anchor on the first Nama/Nama Penuh, then the first following all-caps
+    person line (skipping the English 'Name'/'Full Name' labels). Accepts a mononym."""
+    for i, ln in enumerate(lines):
+        if not re.match(r'^nama(\s+penuh)?\b', ln.strip(), re.IGNORECASE):
+            continue
+        m = re.match(r'^nama(?:\s+penuh)?\s+(.+)$', ln.strip(), re.IGNORECASE)
+        if m and _is_bc_person(m.group(1)):
+            return m.group(1).strip()
+        nxt = next((x.strip() for x in lines[i + 1:i + 5] if _is_bc_person(x)), '')
+        if nxt:
+            return nxt
+    return ''
+
+
+@register('birth_certificate')
+def _parse_bc(text: str) -> Optional[dict]:
+    if not has(text, r'sijil\s+kelahiran', r'birth\s+certificate'):
+        return None                          # not a BC (e.g. a mis-slotted IC) → Gemini
+    if not has(text, r'kad\s+pengenalan'):
+        return None
+    lines = _lines(text)
+    child = _bc_child(lines)    # mononym-tolerant, skips the 'Name'/'Full Name' labels
+    # parents: each "No. Kad Pengenalan" NRIC + the nearest preceding name (≠ child).
+    parents = []
+    for i, ln in enumerate(lines):
+        if not re.search(r'kad\s+pengenalan', ln, re.IGNORECASE):
+            continue
+        nric = next((_bc_nric(lines[j]) for j in range(i, min(i + 3, len(lines))) if _bc_nric(lines[j])), '')
+        if not nric:
+            continue
+        nm = next((_bc_name(lines[k]) for k in range(i - 1, max(-1, i - 9), -1)
+                   if _bc_name(lines[k]) and _bc_name(lines[k]) != child), '')
+        parents.append((nm, nric))
+    if len(parents) < 2:                     # couldn't isolate both parents → Gemini
+        return None
+    (fn, fr), (mn, mr) = parents[0], parents[1]
+    reg = re.search(r'\b([A-Z]{2}\s?\d{4,6})\b', text or '')   # JPN register no (CA17451, BV 46144)
+    return {'bc_child_name': child or '', 'bc_child_nric': '',
+            'bc_father_name': fn, 'bc_father_nric': fr,
+            'bc_mother_name': mn, 'bc_mother_nric': mr,
+            'bc_number': reg.group(1) if reg else ''}
