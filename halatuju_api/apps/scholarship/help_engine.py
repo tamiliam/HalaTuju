@@ -170,12 +170,16 @@ VERDICT_FIX_HINT = {
         'NOT ask them to edit their profile.'
     ),
     'income_proof_person_mismatch': (
-        'This income document (salary slip / EPF) does not seem to belong to the SAME person '
-        'as the IC uploaded for that household member. Kindly suggest they check that the '
-        'salary slip / EPF and that person\'s IC are for the SAME individual (for example, the '
-        'father\'s payslip together with the father\'s IC), and re-upload the matching one if a '
-        'wrong file slipped in. This is about the EARNER\'s documents — do NOT tell them to '
-        'edit their OWN name or profile. Reassure them nothing is blocked.'
+        'This income document (salary slip / EPF) does not belong to the SAME person as the IC '
+        'uploaded for the household member named in the SPECIFICS — it looks like a different '
+        'person\'s document (for example, the father\'s payslip uploaded for a mother who is the '
+        'income earner). If the SPECIFICS mark this income proof as OPTIONAL, say plainly they do '
+        'NOT need it: the family\'s income is already shown another way (their STR), so they can '
+        'simply REMOVE this file — and if that family member has no salary slip, they should not '
+        'upload one at all. Otherwise (the proof is required on this route), ask them to upload '
+        'THAT family member\'s OWN salary slip together with THAT person\'s OWN IC, and remove the '
+        'wrong file. This is about the EARNER\'s documents — do NOT tell them to edit their OWN '
+        'name or profile. Nothing is blocked.'
     ),
     'income_ic_needed': (
         'They added an income document for this household member but not that person\'s IC yet. '
@@ -456,6 +460,10 @@ def _specifics_block(context):
         lines.append("- IMPORTANT: the earner's MyKad has been CONFIRMED — its name/IC matches their "
                      "income document — so the MyKad is correct; the relationship document is the one "
                      "to re-check. Do NOT ask them to re-check or re-upload the MyKad.")
+    if context.get('income_proof_optional'):
+        lines.append("- This income proof is OPTIONAL on the chosen route: the family's income is "
+                     "already shown another way (their STR), so an income document here is EXTRA and "
+                     "can simply be removed; if this member has no salary slip, none is needed.")
     if not lines:
         return ''
     return ('SPECIFICS (use these EXACT details — do not substitute a different family member or '

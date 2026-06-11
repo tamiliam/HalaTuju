@@ -746,6 +746,9 @@ class IncomeClusterHelpView(APIView):
         # the rel doc there too (not just for the "needed/unreadable" verdicts).
         income_doc = ('salary slip' if verdict == 'income_proof_needed'
                       else _DOC_LABEL.get(proof_kind, ''))
+        # #4: on the STR route the salary slip / EPF is OPTIONAL (the STR is the income proof), so a
+        # wrong-person proof there is an extra file to REMOVE, not a required one to re-upload.
+        _route = (getattr(app, 'income_route', '') or '').strip()
         context = {
             'member': _MEMBER_LABEL.get(member, member),
             'income_doc': income_doc,
@@ -754,6 +757,8 @@ class IncomeClusterHelpView(APIView):
                 'income_relationship_mismatch') else ''),
             'ic_matches_income_doc': (ic_matches_income_doc
                                       and verdict == 'income_relationship_mismatch'),
+            'income_proof_optional': (_route == 'str'
+                                      and verdict == 'income_proof_person_mismatch'),
         }
         result = help_engine.generate_document_help(
             'income_cluster', verdict, first_name=first_name, target_language=language,

@@ -79,6 +79,22 @@ class TestGenerateHelp(TestCase):
                                            help_engine.DEFAULT_LANGUAGE)
         self.assertIn(help_engine.DEFAULT_FIX_HINT, p)
 
+    def test_income_proof_person_mismatch_is_earner_aware_not_hardcoded_father(self):
+        """#4 — the wrong-person income coach must reference the SPECIFICS member + advise
+        removal, not hardcode a 'father's payslip' example that misleads a mother-earner."""
+        hint = help_engine.VERDICT_FIX_HINT['income_proof_person_mismatch'].lower()
+        self.assertIn('specifics', hint)        # uses the named earner, not a fixed example
+        self.assertIn('remove', hint)           # advises removing the wrong file
+
+    def test_income_proof_optional_specifics_says_removable_and_not_needed(self):
+        """#4 — on the STR route the salary slip is optional, so the SPECIFICS must tell the
+        coach the proof is extra/removable and that none is needed if the earner has none."""
+        block = help_engine._specifics_block({'member': 'mother', 'income_proof_optional': True})
+        self.assertIn('OPTIONAL', block)
+        self.assertIn('removed', block)
+        # …and absent by default, so it never leaks into a compulsory-route message.
+        self.assertNotIn('OPTIONAL', help_engine._specifics_block({'member': 'father'}))
+
     def test_slip_grade_mismatch_directs_to_profile(self):
         """Results slip is authoritative — the grade fix is to update the PROFILE."""
         p = help_engine._build_help_prompt('results_slip', 'slip_grade_mismatch', 'Ravi',

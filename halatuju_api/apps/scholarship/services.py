@@ -1073,6 +1073,15 @@ def document_red_blockers(application):
     from .academic_engine import student_slip_check
     from .pathway_engine import student_offer_check
     codes = set()
+    # #4 (2026-06-11): a person-mismatch on an income PROOF only hard-blocks when that proof is
+    # COMPULSORY for the chosen route — i.e. a salary-route salary slip tagged to a SELECTED
+    # working member. An optional/extraneous proof must NOT trap the student at submission: the
+    # STR route (where the STR itself is the income proof), EPF (which never substitutes the
+    # slip), or a non-selected member — e.g. the father's payslip dropped onto a mother-STR
+    # cluster. The cluster coach nudges its removal instead. (Was: ANY mismatched salary_slip /
+    # epf blocked, trapping a student over a document they did not even need.)
+    route = (getattr(application, 'income_route', '') or '').strip()
+    selected_members = set(income_engine.working_members(application)) if route == 'salary' else set()
 
     def has(d, *keys):
         return any(d.get(k) == 'mismatch' for k in keys)
@@ -1094,9 +1103,16 @@ def document_red_blockers(application):
             chk = income_engine.student_income_ic_check(doc)
             if has(chk, 'name_status', 'proof_name_status', 'proof_nric_status'):
                 codes.add('income_document_mismatch')
-        elif dt in ('salary_slip', 'epf'):
-            if has(income_engine.student_income_proof_check(doc), 'name_status', 'nric_status'):
+        elif dt == 'salary_slip':
+            # Only a COMPULSORY salary slip (salary route + a SELECTED working member) blocks on a
+            # person-mismatch — an optional/extraneous slip must not (see the note above).
+            compulsory = route == 'salary' and (doc.household_member or '') in selected_members
+            if compulsory and has(income_engine.student_income_proof_check(doc),
+                                  'name_status', 'nric_status'):
                 codes.add('income_document_mismatch')
+        elif dt == 'epf':
+            pass  # EPF is supplementary on BOTH routes (never substitutes the salary slip), so a
+                  # person-mismatch on it never blocks submission — the cluster coach handles it.
         elif dt == 'str':
             chk = income_engine.student_str_check(doc)
             if has(chk, 'name_status', 'nric_status') or chk.get('current_status') in ('rejected', 'stale'):
