@@ -289,3 +289,78 @@ class TestEpfParser(SimpleTestCase):
 
     def test_non_kwsp_text_returns_none(self):
         self.assertIsNone(parse_by_labels('epf', 'just some random text with no kwsp markers'))
+
+
+# A JPN LM15 BC as Vision reads it — sections interleaved, English "Name" labels present,
+# the child's IC under "No. Daftar" (NOT captured as a parent), parents under "No. Kad
+# Pengenalan" (father then mother), one NRIC spaced as JPN OCR renders it.
+_BC = """JPN. LM15
+KERAJAAN MALAYSIA
+SIJIL KELAHIRAN
+BIRTH CERTIFICATE
+080808-10-1234
+No. Daftar
+Register No
+CA99999
+Nama Penuh TESTCHILD A/P TESTFATHER
+Full Name
+KANAK-KANAK / CHILD
+Tarikh dan Waktu Kelahiran 08 OGOS 2008
+Nama TESTFATHER A/L TESTGRANDF
+Name
+No. Kad Pengenalan 750101-10-1111
+BAPA/FATHER
+IBU / MOTHER
+Nama
+Name
+TESTMOTHER A/P TESTGRANDM
+No. Kad Pengenalan 800202 - 14 - 2222
+"""
+
+# LM05 with a MONONYM child (the #55 / JAYASHREE shape).
+_BC_MONONYM = """JPN. LM05
+SIJIL KELAHIRAN
+Nama
+TESTKID
+KANAK-KANAK
+Nama
+TESTDAD A/L GRANDPA
+No. Kad Pengenalan
+750101-10-1111
+Nama
+TESTMUM A/P GRANDMA
+No. Kad Pengenalan
+800202-14-2222
+"""
+
+
+class TestBcParser(SimpleTestCase):
+    def test_lm15_child_and_both_parents_with_spaced_nric(self):
+        r = parse_by_labels('birth_certificate', _BC)
+        self.assertEqual(r['bc_child_name'], 'TESTCHILD A/P TESTFATHER')   # not the "Name" label
+        self.assertEqual(r['bc_child_nric'], '')                          # No.Daftar IC not a parent
+        self.assertEqual(r['bc_father_name'], 'TESTFATHER A/L TESTGRANDF')
+        self.assertEqual(r['bc_father_nric'], '750101-10-1111')
+        self.assertEqual(r['bc_mother_name'], 'TESTMOTHER A/P TESTGRANDM')
+        self.assertEqual(r['bc_mother_nric'], '800202-14-2222')           # normalised from spaced
+
+    def test_lm05_mononym_child(self):
+        r = parse_by_labels('birth_certificate', _BC_MONONYM)
+        self.assertEqual(r['bc_child_name'], 'TESTKID')                   # mononym, not a parent
+        self.assertEqual(r['bc_father_name'], 'TESTDAD A/L GRANDPA')
+        self.assertEqual(r['bc_father_nric'], '750101-10-1111')
+        self.assertEqual(r['bc_mother_name'], 'TESTMUM A/P GRANDMA')
+
+    def test_misslotted_ic_in_bc_slot_returns_none(self):
+        # A MyKad uploaded into the BC slot (the "mother ic.png" case) → not a BC → Gemini.
+        self.assertIsNone(parse_by_labels('birth_certificate',
+                          'KAD PENGENALAN\nMYKAD\nNAMA SESEORANG BIN ALI\n800101-10-1234'))
+
+    def test_partial_bc_one_parent_falls_to_gemini(self):
+        partial = """SIJIL KELAHIRAN
+BIRTH CERTIFICATE
+Nama Penuh ANAK A/P BAPA
+Nama IBU A/P DATUK
+No. Kad Pengenalan 800202-14-2222
+"""
+        self.assertIsNone(parse_by_labels('birth_certificate', partial))
