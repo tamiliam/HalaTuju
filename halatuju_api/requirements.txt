@@ -26,6 +26,9 @@ google-genai>=1.0,<2.0
 openai>=1.0,<3.0
 # Cloud Vision OCR for the IC upload (S13 — soft signal, never blocks)
 google-cloud-vision>=3.0,<4.0
+# Off-platform backup of the private document bucket → GCS (security item A). Shares the
+# google-auth / google-api-core deps already pulled in by google-cloud-vision (low marginal cost).
+google-cloud-storage>=2.10,<4.0
 # PDF document intake (scan-to-PDF + digital PDFs): read the text layer (pypdf)
 # and rasterise page 1 for Vision (pypdfium2 + Pillow). Permissive licences;
 # optional at runtime (a PDF degrades to "unreadable" if absent).
