@@ -5,6 +5,8 @@ Reuses the existing PartnerAdmin auth (super admin sees all). Routes live under
 /api/v1/admin/scholarship/ — covered by the NRIC-gate /admin/ whitelist;
 PartnerAdminMixin does the real authorisation.
 """
+import logging
+
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
@@ -40,6 +42,8 @@ from .services import (
     AssignmentError, admin_reject, application_completeness, assign_reviewer,
     submit_interview,
 )
+
+logger = logging.getLogger(__name__)
 
 _VALID_VERDICTS = {'resolved', 'still_unclear', 'new_concern'}
 _RATIONALE_MAX = 140
@@ -139,6 +143,15 @@ class AdminApplicationDetailView(_AdminBase):
         app, err = self._scoped_application(request, pk)
         if err:
             return err
+        # Access audit (security item D): one structured line per applicant-record
+        # open. A compromised/abusive admin scraping records produces a burst of
+        # these, which a Cloud Logging alert trips (one admin reading > 30 records
+        # in 10 min → email). app_id is a row pk, not PII — no name/NRIC is logged.
+        admin = self.get_admin(request)
+        logger.info(
+            'AUDIT applicant_detail_read admin_id=%s app_id=%s',
+            getattr(admin, 'id', '?'), pk,
+        )
         return Response(AdminApplicationDetailSerializer(app).data)
 
     def patch(self, request, pk):

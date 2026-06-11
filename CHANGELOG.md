@@ -48,6 +48,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `getTurnstileToken` resolves `undefined` so flows keep working until the Supabase captcha toggle is flipped (the
   enforcing step). Rollout order is safety-critical — see `halatuju_api/docs/security/turnstile-rollout.md`. +4 jest
   (turnstile util: graceful path, token fetch, error-callback, serialised concurrent fetches); full web suite green (301).
+  (Widget later switched to `appearance: 'interaction-only'` so a silent pass shows nothing — no lingering "Success!" badge.)
+- **Access-anomaly detection on applicant-record reads (security item D; no migration).** The admin applicant-detail
+  endpoint (`AdminApplicationDetailView`) now emits one structured audit line per record open
+  (`AUDIT applicant_detail_read admin_id=<id> app_id=<pk>` — a row pk only, never name/NRIC). A Cloud Logging log-based
+  metric counts these per `admin_id`, and an alert policy emails the admin if **one account reads more than 30 applicant
+  records in 10 minutes** — the signal of a compromised admin login or an insider scraping PII. Normal officer review
+  stays well under the threshold; tune after observing real traffic. +3 pytest (emits one line with ids; carries no PII;
+  denied 403 reads emit nothing). The list endpoint is deliberately not instrumented (paginated, high-volume,
+  false-positive-prone); the document read-path is a future add-on.
 
 ### Fixed
 - **TNB myTNB "Express Payment" screenshot now reads (electricity capture; no migration).** Students often submit the
