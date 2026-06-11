@@ -2771,12 +2771,21 @@
           "outstanding": "Tunggakan"
         },
         "type": {
+          "ic": "IC pemohon",
           "parent_ic": "IC pencari nafkah",
-          "str": "Dokumen STR",
+          "results_slip": "Slip keputusan SPM",
+          "offer_letter": "Surat tawaran",
+          "str": "Bukti STR",
           "salary_slip": "Slip gaji",
+          "epf": "Penyata KWSP",
+          "water_bill": "Bil air",
+          "electricity_bill": "Bil elektrik",
           "birth_certificate": "Sijil kelahiran",
-          "guardianship_letter": "Surat penjagaan"
+          "guardianship_letter": "Surat penjagaan",
+          "statement_of_intent": "Penyata hasrat",
+          "photo": "Gambar"
         },
+        "parentIcOf": "IC {member}",
         "utilityNote": {
           "unrelated": "Bil atas nama lain: {name}",
           "water_only": "Bil air sahaja — bil elektrik tiada, penggunaan tidak dapat dinilai",

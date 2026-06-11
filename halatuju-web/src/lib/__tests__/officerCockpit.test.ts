@@ -5,6 +5,8 @@ import {
   documentPill,
   documentFacts,
   incomeDocLayout,
+  docIconFor,
+  earnerMemberFor,
 } from '@/lib/officerCockpit'
 import type { AdminVerdictFact, AdminApplicantDocument } from '@/lib/admin-api'
 
@@ -312,5 +314,28 @@ describe('incomeDocLayout', () => {
       ['birth_certificate', '', null],   // mother needs a BC (untagged), not uploaded
     ])
     expect(layout.optional.map((d) => d.id)).toEqual([9])   // the water bill
+  })
+})
+
+describe('docIconFor — per-doc-type glyph', () => {
+  it('gives a distinct glyph per type, default for unknown', () => {
+    expect(docIconFor('ic')).toBe('🪪')
+    expect(docIconFor('results_slip')).toBe('🎓')
+    expect(docIconFor('str')).toBe('💵')
+    expect(docIconFor('water_bill')).toBe('💧')
+    expect(docIconFor('something_else')).toBe('📄')   // safe default
+  })
+})
+
+describe('earnerMemberFor — earner-IC label member', () => {
+  it('uses the doc household_member tag (salary route)', () => {
+    expect(earnerMemberFor('parent_ic', 'father', 'salary', '')).toBe('father')
+  })
+  it('falls back to the application income_earner for the UNTAGGED STR-route earner IC', () => {
+    expect(earnerMemberFor('parent_ic', '', 'str', 'mother')).toBe('mother')
+  })
+  it('returns empty when it cannot be derived', () => {
+    expect(earnerMemberFor('parent_ic', '', 'salary', '')).toBe('')
+    expect(earnerMemberFor('ic', '', 'str', 'mother')).toBe('')   // not an earner IC
   })
 })

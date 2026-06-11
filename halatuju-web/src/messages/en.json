@@ -2771,12 +2771,21 @@
           "outstanding": "Outstanding"
         },
         "type": {
+          "ic": "Applicant's IC",
           "parent_ic": "Earner's IC",
-          "str": "STR document",
+          "results_slip": "SPM results slip",
+          "offer_letter": "Offer letter",
+          "str": "STR proof",
           "salary_slip": "Salary slip",
+          "epf": "EPF statement",
+          "water_bill": "Water bill",
+          "electricity_bill": "Electricity bill",
           "birth_certificate": "Birth certificate",
-          "guardianship_letter": "Guardianship letter"
+          "guardianship_letter": "Guardianship letter",
+          "statement_of_intent": "Statement of intent",
+          "photo": "Photo"
         },
+        "parentIcOf": "{member}'s IC",
         "utilityNote": {
           "unrelated": "Bill is in another name: {name}",
           "water_only": "Water bill only — electricity not provided, so consumption cannot be judged",
