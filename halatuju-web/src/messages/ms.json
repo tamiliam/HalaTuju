@@ -2809,6 +2809,16 @@
           "unrelated": "Bil atas nama lain: {name}",
           "water_only": "Bil air sahaja — bil elektrik tiada, penggunaan tidak dapat dinilai",
           "electricity_only": "Bil elektrik sahaja — bil air tiada, penggunaan tidak dapat dinilai"
+        },
+        "capture": {
+          "deterministic": {
+            "label": "Bacaan tepat",
+            "hint": "Dibaca terus daripada label tetap dokumen — keyakinan tinggi."
+          },
+          "ai": {
+            "label": "Bacaan AI",
+            "hint": "Dibaca oleh AI (Gemini) — sila sahkan nilai yang ditangkap."
+          }
         }
       }
     },

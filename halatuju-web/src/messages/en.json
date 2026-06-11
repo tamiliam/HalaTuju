@@ -2809,6 +2809,16 @@
           "unrelated": "Bill is in another name: {name}",
           "water_only": "Water bill only — electricity not provided, so consumption cannot be judged",
           "electricity_only": "Electricity bill only — water not provided, so consumption cannot be judged"
+        },
+        "capture": {
+          "deterministic": {
+            "label": "Exact read",
+            "hint": "Read deterministically from the document's fixed labels — high confidence."
+          },
+          "ai": {
+            "label": "AI read",
+            "hint": "Read by AI (Gemini) — please verify the captured values."
+          }
         }
       }
     },
