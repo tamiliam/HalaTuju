@@ -39,7 +39,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     closed-set **`source_type`** (letter / semakan_status / dashboard / unknown) so each layout's fields read from the
     right place + the officer sees the source, and reads the year off Tarikh-Kredit / letter dates when present. Gopal +
     i18n copy stop implying a date/year is needed — a plain screenshot showing "Lulus" is enough.
-  - Gates: **1007 scholarship + 1063 courses/reports pytest, 282 jest, next build clean, i18n parity 2474×3**; golden
+  - **(#5b) SARA is not STR — the `source_type` bucket now GATES the verdict.** A standalone SARA (Sumbangan Asas
+    Rahmah) document — e.g. a Perdana Menteri greeting letter saying the recipient is *"terpilih untuk terus menerima
+    bantuan SARA"* (app #63's letter) — is a different programme from STR and is **not** valid STR proof, but it was
+    auto-passing because `_str_currency` looked only at an AI-inferred status word. Now `_str_currency` takes the
+    `source_type`: a positively-classified **`unknown`** source returns `unconfirmed` whatever status text was read;
+    SARA's **"Layak"** is removed from the STR approval words (STR uses "Lulus"); and the extraction prompt classifies a
+    SARA-only letter as `unknown` and does **not** infer an approval status from SARA-recipient wording. A blank/legacy
+    `source_type` (docs extracted before classification existed) still falls through to the status check so existing
+    approvals aren't retro-broken. Gopal/i18n tell the student we need their **STR (Sumbangan Tunai Rahmah)**, not a SARA
+    letter. (App #63's existing record is corrected post-deploy — its extraction predates classification.)
+  - Gates: **1010 scholarship + 1063 courses/reports pytest, 282 jest, next build clean, i18n parity 2474×3**; golden
     masters intact (SPM 5319 / STPM 2026). No migration. Retro `docs/retrospective-verification-accuracy-fixes.md`.
 
 ### Added

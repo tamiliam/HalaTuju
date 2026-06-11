@@ -29,8 +29,24 @@ class TestStrCurrency(SimpleTestCase):
     def test_portal_lulus_is_current(self):
         self.assertEqual(_str_currency('Lulus', '2026', 2026), 'current')
 
-    def test_sara_layak_is_current(self):
-        self.assertEqual(_str_currency('Layak', '2026', 2026), 'current')
+    def test_sara_layak_is_not_str_approval(self):
+        # #5b: SARA 'Layak' is NOT STR approval — SARA (Sumbangan Asas Rahmah) is a different
+        # programme; the STR status on the MySTR portal is 'Lulus', never 'Layak'.
+        self.assertEqual(_str_currency('Layak', '2026', 2026), 'unconfirmed')
+
+    def test_unknown_source_type_is_unconfirmed_even_if_status_approved(self):
+        # #5b: a SARA-only Perdana Menteri letter is classified source_type='unknown' — not a
+        # recognised STR proof — so it does NOT pass even though the AI read 'approved' + a year
+        # (app #63's SELVI A/P VELLAYAN SARA letter).
+        self.assertEqual(_str_currency('approved', '2026', 2026, 'unknown'), 'unconfirmed')
+
+    def test_recognised_source_with_approval_is_current(self):
+        self.assertEqual(_str_currency('Lulus', '', 2026, 'semakan_status'), 'current')
+        self.assertEqual(_str_currency('diluluskan', '2026', 2026, 'letter'), 'current')
+
+    def test_legacy_blank_source_type_falls_through_to_status(self):
+        # Docs extracted before source_type existed (null/'') must NOT be retro-broken.
+        self.assertEqual(_str_currency('Lulus', '2026', 2026, ''), 'current')
 
     def test_older_year_is_stale(self):
         self.assertEqual(_str_currency('diluluskan', '2024', 2026), 'stale')
@@ -50,7 +66,6 @@ class TestStrCurrency(SimpleTestCase):
         # for 5 of 14 submitted STR students who uploaded a valid Lulus status screenshot.
         self.assertEqual(_str_currency('diluluskan', '', 2026), 'current')
         self.assertEqual(_str_currency('Lulus', '', 2026), 'current')
-        self.assertEqual(_str_currency('Layak', '', 2026), 'current')
 
     def test_approved_prior_year_still_stale(self):
         # A year is still a bonus: a readable PRIOR-year approval is stale (Nitya #53, 2025).

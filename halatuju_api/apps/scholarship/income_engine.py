@@ -322,28 +322,39 @@ def student_income_proof_check(doc):
 
 
 _STR_REJECTED_WORDS = ('tolak', 'tidak layak', 'gagal', 'reject')
-# Positive approval signals. 'lulus' also matches 'diLULUSkan'; 'layak' matches SARA's
-# 'Layak' (the rejecting 'tidak layak' is caught FIRST, above, so a bare 'layak' = approved).
-_STR_APPROVED_WORDS = ('lulus', 'layak', 'approve')
+# Positive STR approval signals. 'lulus' also matches 'diLULUSkan'. NOTE: SARA's 'Layak' is
+# deliberately NOT here — SARA (Sumbangan Asas Rahmah) is a different programme from STR, and the
+# STR status on the MySTR portal is 'Lulus', never 'Layak'. (#5b SARA≠STR, 2026-06-11)
+_STR_APPROVED_WORDS = ('lulus', 'approve')
 _STR_YEAR_RE = re.compile(r'(20\d{2})')
 
 
-def _str_currency(status_raw, year_str, cohort_year):
-    """Whether an STR positively PROVES current B40. It proves B40 when it shows an APPROVED
-    status ('Lulus' / 'Diluluskan' / SARA 'Layak'); the MySTR 'Semakan Status' / Dashboard pages
-    show that status as CURRENT ("Semasa") and print NO cohort year, so an approval is accepted
-    even without a readable year (a year only adds the ability to catch a stale prior-year STR).
+def _str_currency(status_raw, year_str, cohort_year, source_type=''):
+    """Whether an STR positively PROVES current B40. It proves B40 when the document is a
+    RECOGNISED STR proof AND shows an APPROVED status ('Lulus' / 'Diluluskan' / SARA 'Layak');
+    the MySTR 'Semakan Status' / Dashboard pages show that status as CURRENT ("Semasa") and print
+    NO cohort year, so an approval is accepted even without a readable year (a year only adds the
+    ability to catch a stale prior-year STR).
       'rejected'    — a clear negative status (Ditolak / Tidak Layak / Gagal);
       'stale'       — APPROVED but a readable year OLDER than the cohort year (STR is annual);
-      'current'     — an approval word (with the current year, or no year at all);
-      'unconfirmed' — NO approval status: a SALINAN / application printout the applicant fills
-                      in, or a status we couldn't read. NOT proof — the student is asked for the
-                      MySTR page showing 'Lulus' or the official approval letter.
+      'current'     — a recognised STR proof with an approval word (current year, or no year);
+      'unconfirmed' — NO approval status (a SALINAN / application printout, or a status we
+                      couldn't read), OR the document is not a recognised STR proof at all
+                      (``source_type='unknown'`` — e.g. a SARA-only Perdana Menteri letter; SARA
+                      (Sumbangan Asas Rahmah) is a DIFFERENT programme from STR). NOT proof — the
+                      student is asked for the MySTR page showing 'Lulus' or the STR approval letter.
     Earlier this returned 'current' by default (benefit of the doubt), which wrongly accepted
     unapproved application records as B40 proof."""
     s = (status_raw or '').lower()
     if any(w in s for w in _STR_REJECTED_WORDS):
         return 'rejected'
+    # The document must be a RECOGNISED STR proof (official STR letter / MySTR 'Semakan Status' /
+    # Dashboard). A positively-classified 'unknown' source — e.g. a SARA-only Perdana Menteri
+    # letter (SARA ≠ STR) — is NOT STR proof, whatever status text was read off it. A blank/legacy
+    # source_type (extracted before classification existed) falls through to the status check so
+    # existing approvals are not retro-broken. (#5b SARA≠STR, 2026-06-11)
+    if (source_type or '').strip().lower() == 'unknown':
+        return 'unconfirmed'
     if not any(w in s for w in _STR_APPROVED_WORDS):
         return 'unconfirmed'    # no approval status shown (a SALINAN / application printout, or
                                 # a status we couldn't read) → still NOT proof of approval.
@@ -396,7 +407,7 @@ def student_str_check(doc):
     return {
         'name': name, 'nric': nric, 'status': status, 'year': year, 'amount': amount,
         'member': member, 'name_status': name_status, 'nric_status': nric_status,
-        'current_status': _str_currency(status, year, cohort_year),
+        'current_status': _str_currency(status, year, cohort_year, f.get('source_type', '')),
         'ic_present': ic is not None,
     }
 
