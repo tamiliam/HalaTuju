@@ -465,6 +465,23 @@ TOTALLY off-topic**, behind **`CHECK2_ANSWER_RELEVANCE_ENABLED` (default OFF, bi
 AI-clarify-query switch `CHECK2_STUDENT_QUERIES_ENABLED` stays OFF** (owner's call — both flags are one env var from on).
 Tests: 989 scholarship backend pytest + 276 jest; i18n parity 2474.
 
+**▶ JUST SHIPPED 2026-06-11 — Verification-accuracy pass (5 live-testing fixes; NO migration; retro
+`docs/retrospective-verification-accuracy-fixes.md`).** Upstream gaps from real-applicant review:
+**(#4)** an optional wrong-person income doc (father's payslip on a mother-STR cluster; EPF) no longer hard-blocks
+submission — only a compulsory salary-route slip gates (`services.document_red_blockers`); Gopal's
+`income_proof_person_mismatch` copy is earner-aware (names the STR recipient, "optional on STR — none needed", advises
+removal). **(#2)** `vision.relationship_name_match` folds Tamil/Indian romanisation (w↔v, doubles, trailing-h, 1-char
+slip) — fixes *Saravanan/Sarawanan*; aliased into `income_engine` for all SAME-person cross-doc matches; **identity
+keeps exact `name_match`** (strictly more lenient → never weakens identity; 0 false merges across 16 prod earners).
+**(#3)** `vision.address_present` falls back to a strong street-token overlap (+`_address_tokens`) when a bill omits the
+postcode (Swetha). **(#1)** the income wizard's roster→`income_working_members` default is now reactive (a `useEffect`
+re-seeds until the student customises). **(#5)** `_str_currency` accepts an approved STR **without a year** as current
+(MySTR pages print no year — "Semasa" = current; fixed 5/14 false `unconfirmed`); STR extraction gains a closed-set
+`source_type` (letter/semakan_status/dashboard) + Tarikh-Kredit year reading. Gates: 1007 scholarship + 1063
+courses/reports pytest, 282 jest, next build clean, i18n parity 2474×3; golden masters intact. **Deferred:** per-screen
+type-aware Gopal "where to look" help (copy is generic across both screens for now); STR copy Tamil refine (TD-refine
+queue).
+
 **▶ NEXT — follow-ups only (no roadmap sprint; do when inputs arrive):** (1) **lawyer consent text** + `CONSENT_VERSION`
 bump (re-attests everyone) — see decisions.md "Go live on draft consent text"; (2) **Tamil refine** (TD-105/108 etc.);
 (3) **real money** — toyyibPay donate-in + disbursement-out + tranche (TD-075), a separate gated track; (4) when a
