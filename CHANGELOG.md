@@ -116,6 +116,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     against real offers** — government PDFs parse identity + programme cleanly; 3 universities + images correctly defer.
   - +36 pytest (13 scaffold + 6 STR + 4 TNB + 4 EPF + 4 BC + 5 offer); full scholarship suite green (1059). No migration
     (the tag lives in `vision_fields`).
+- **Income-wizard card titles name the earner (UI, no migration).** The salary-slip and EPF cards now read "Father's
+  salary slip" / "Father's EPF statement" (etc.) — matching what the sub-text already says — in both the STR route
+  (single earner) and the salary route (per working member), so there's no confusion about whose document each slot is
+  for. New `salaryTitle.*`/`epfTitle.*` derived from the existing `icTitle` genitive forms (en/ms/ta parity 2496×3;
+  Tamil first-draft). `next build` clean.
 - **#55 — mononym student's father link via the birth certificate (P4b; income_engine + verdict_engine, no migration).**
   A student whose name carries no patronymic (e.g. "DIVIYA") can't prove a father/sibling earner by the shared name, so
   `father_relationship` returned `unknown` (officer review) with no deterministic path. New `father_via_bc` (mirror of

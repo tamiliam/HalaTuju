@@ -1074,8 +1074,15 @@ function IncomeWizard({
     if (dt === 'epf') return iq(`epfHelp.${e}`)
     return undefined
   }
-  const titleFor = (dt: string): string | undefined =>
-    dt === 'parent_ic' && e ? iq(`icTitle.${e}`) : undefined
+  // Card titles name the earner so they match the sub-text ("Father's salary slip",
+  // "Father's EPF statement") — no confusion about whose document each slot is for.
+  const titleFor = (dt: string): string | undefined => {
+    if (!e) return undefined
+    if (dt === 'parent_ic') return iq(`icTitle.${e}`)
+    if (dt === 'salary_slip') return iq(`salaryTitle.${e}`)
+    if (dt === 'epf') return iq(`epfTitle.${e}`)
+    return undefined
+  }
   // Salary route: the same context-aware help/title, but per household-member block.
   const memberHelp = (dt: string, m: string): string | undefined => {
     if (dt === 'parent_ic') return iq(`icHelp.${m}`)
@@ -1083,8 +1090,12 @@ function IncomeWizard({
     if (dt === 'epf') return iq(`epfHelp.${m}`)
     return undefined // birth cert / guardianship letter keep their default help
   }
-  const memberTitle = (dt: string, m: string): string | undefined =>
-    dt === 'parent_ic' ? iq(`icTitle.${m}`) : undefined
+  const memberTitle = (dt: string, m: string): string | undefined => {
+    if (dt === 'parent_ic') return iq(`icTitle.${m}`)
+    if (dt === 'salary_slip') return iq(`salaryTitle.${m}`)
+    if (dt === 'epf') return iq(`epfTitle.${m}`)
+    return undefined
+  }
 
   return (
     <div className="space-y-4">
@@ -1178,6 +1189,7 @@ function IncomeWizard({
                 <div key={docKey(docType, member)}>
                   {renderCard(docType, { required: false, member,
                     helpOverride: memberHelp(docType, block.member),
+                    titleOverride: memberTitle(docType, block.member),
                     suppressCoach: CLUSTER_COACH_DOCS.has(docType) })}
                   {clusterDocKey(docType, member) === salAnchor && coach}
                 </div>

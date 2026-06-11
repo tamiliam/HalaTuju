@@ -1149,6 +1149,20 @@
           "badge": {
             "required": "Required",
             "optional": "Optional"
+          },
+          "salaryTitle": {
+            "father": "Father's salary slip",
+            "mother": "Mother's salary slip",
+            "guardian": "Guardian's salary slip",
+            "brother": "Elder brother's salary slip",
+            "sister": "Elder sister's salary slip"
+          },
+          "epfTitle": {
+            "father": "Father's EPF statement",
+            "mother": "Mother's EPF statement",
+            "guardian": "Guardian's EPF statement",
+            "brother": "Elder brother's EPF statement",
+            "sister": "Elder sister's EPF statement"
           }
         }
       },

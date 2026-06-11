@@ -1149,6 +1149,20 @@
           "badge": {
             "required": "Wajib",
             "optional": "Pilihan"
+          },
+          "salaryTitle": {
+            "father": "Slip Gaji Bapa",
+            "mother": "Slip Gaji Ibu",
+            "guardian": "Slip Gaji Penjaga",
+            "brother": "Slip Gaji Abang",
+            "sister": "Slip Gaji Kakak"
+          },
+          "epfTitle": {
+            "father": "Penyata KWSP Bapa",
+            "mother": "Penyata KWSP Ibu",
+            "guardian": "Penyata KWSP Penjaga",
+            "brother": "Penyata KWSP Abang",
+            "sister": "Penyata KWSP Kakak"
           }
         }
       },
