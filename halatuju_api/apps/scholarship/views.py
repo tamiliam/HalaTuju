@@ -478,12 +478,14 @@ class DocumentListCreateView(APIView):
             names = [n for n in names if n]
             postcode = getattr(profile, 'postal_code', '') or ''
             city = getattr(profile, 'city', '') or ''
+            street = getattr(profile, 'address', '') or ''   # #3: street line for the bill fallback
             check_address = doc.doc_type in BILL_DOC_TYPES
             ocr = _vision.ocr_document(doc)   # OCR once, shared by both checks
             match = _vision.run_vision_match_for_document(
-                doc, names=names, postcode=postcode, city=city, check_address=check_address, ocr=ocr)
+                doc, names=names, postcode=postcode, city=city, street=street,
+                check_address=check_address, ocr=ocr)
             if doc.doc_type in _vision.GEMINI_EXTRACT_DOC_TYPES:
-                self._maybe_extract_fields(app, doc, _vision, ocr, names, postcode, city,
+                self._maybe_extract_fields(app, doc, _vision, ocr, names, postcode, city, street,
                                            check_address, match, _settings)
         # P1 (Check 2): the letter of intent — OCR its plain text so the submission
         # review can read motivation. No matching/extraction, just the text. Soft.
@@ -503,7 +505,7 @@ class DocumentListCreateView(APIView):
         return Response(data, status=status.HTTP_201_CREATED)
 
     @staticmethod
-    def _maybe_extract_fields(app, doc, _vision, ocr, names, postcode, city, check_address, match, _settings):
+    def _maybe_extract_fields(app, doc, _vision, ocr, names, postcode, city, street, check_address, match, _settings):
         """Run Gemini doc-assist if the cost knob + hourly throttle allow; otherwise
         mark 'review_manually'. Never blocks the upload."""
         from datetime import timedelta
@@ -525,7 +527,8 @@ class DocumentListCreateView(APIView):
             doc.save(update_fields=['vision_fields', 'vision_fields_run_at'])
             return
         _vision.run_field_extraction_for_document(
-            doc, names=names, postcode=postcode, city=city, check_address=check_address, ocr=ocr)
+            doc, names=names, postcode=postcode, city=city, street=street,
+            check_address=check_address, ocr=ocr)
 
 
 class DocumentDetailView(APIView):
