@@ -39,3 +39,6 @@ docs/students_batch_1_clean.xlsx
 
 # Microsoft Office lock files (created while a doc is open)
 ~$*
+
+# Git worktrees for parallel-agent isolation (never committed)
+.worktrees/
