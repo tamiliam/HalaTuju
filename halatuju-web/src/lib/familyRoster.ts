@@ -76,6 +76,14 @@ export function earningMembers(roster: RosterEarnerInput): string[] {
   return out
 }
 
+/** Order-independent equality of two member lists — used to decide whether the income
+ *  wizard's roster-derived default actually needs re-seeding (avoids a render loop). */
+export function sameMemberSet(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false
+  const sa = new Set(a)
+  return b.every((m) => sa.has(m))
+}
+
 /** Normalise the member pool to safe shapes (drops malformed, caps length). */
 export function cleanOtherMembers(raw: unknown): OtherMember[] {
   if (!Array.isArray(raw)) return []
