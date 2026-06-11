@@ -103,6 +103,29 @@ def list_objects(prefix='', limit=1000):
         return []
 
 
+def download_object(path):
+    """Fetch the raw bytes of one private object via the service key. None on failure.
+
+    Used by the off-platform backup command (backup_documents). Best-effort; the
+    path is never logged (it can embed application ids).
+    """
+    base, key = _base_url(), _service_key()
+    if not base or not key:
+        logger.warning('Supabase Storage not configured (SUPABASE_URL / service key missing)')
+        return None
+    req = urllib.request.Request(
+        f'{base}/storage/v1/object/authenticated/{BUCKET}/{path}',
+        method='GET',
+        headers={'Authorization': f'Bearer {key}', 'apikey': key},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return resp.read()
+    except (urllib.error.URLError, ValueError, TimeoutError):
+        logger.warning('Supabase Storage download failed', exc_info=True)
+        return None
+
+
 def delete_objects(paths):
     """Best-effort batch DELETE of private objects from the bucket. Returns
     True on success, False on any failure (logged). No-op if paths is empty.

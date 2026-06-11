@@ -129,6 +129,11 @@ ADMIN_NOTIFY_EMAIL = os.environ.get('ADMIN_NOTIFY_EMAIL', '')
 # Shared secret guarding the internal cron endpoint (Cloud Scheduler → the running
 # api service runs scheduled management commands without a separate Cloud Run Job).
 CRON_SECRET = os.environ.get('CRON_SECRET', '')
+
+# Off-platform backup of the private document bucket (security hardening item A).
+# A GCS bucket (same GCP project) that `backup_documents` mirrors b40-documents into.
+# Empty → the backup command is an explicit no-op (logs a warning, never crashes the cron).
+DOCUMENT_BACKUP_BUCKET = os.environ.get('DOCUMENT_BACKUP_BUCKET', '')
 # Phase E2: master switch for the anonymised sponsor discovery pool. OFF until the
 # lawyer signs off on exposing (anonymised) student data to sponsors. While off,
 # every sponsor-pool browse endpoint returns 404. Build + test run on dummy data.

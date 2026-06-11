@@ -938,6 +938,7 @@ class CronRunView(APIView):
         'sponsor-digests': 'send_sponsor_digests',     # F3: weekly
         'purge-referrals': 'purge_sponsor_referrals',  # F4: daily PDPA purge (60-day)
         'rescore-pending': 'rescore_pending_decisions',  # on-demand after a policy change
+        'backup-documents': 'backup_documents',  # weekly: mirror the private doc bucket to GCS
     }
 
     def post(self, request, job):
