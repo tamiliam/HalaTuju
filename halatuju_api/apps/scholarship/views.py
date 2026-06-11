@@ -461,6 +461,10 @@ class DocumentListCreateView(APIView):
                 delete_objects(stale_paths)   # best-effort; leaves orphan blob if it fails (logged)
             stale.delete()
         doc = ApplicantDocument.objects.create(application=app, **serializer.validated_data)
+        # iPhone HEIC → JPEG, in place, BEFORE any Vision/extraction — so OCR can read it and the
+        # cockpit viewer / download URL serve a browser-renderable image (soft; no-op otherwise).
+        from .imaging import convert_heic_to_jpeg
+        convert_heic_to_jpeg(doc)
         # S13 + S17: auto-run Vision OCR on IC uploads (student's IC OR the
         # parent/guardian IC for minor consent). Soft signal — never blocks.
         if doc.doc_type in ('ic', 'parent_ic'):
