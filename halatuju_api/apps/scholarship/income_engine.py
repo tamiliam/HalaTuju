@@ -29,6 +29,7 @@ import re
 # (relationships, earner-IC ↔ income-proof, STR-recipient ↔ IC, BC names) — never the student's
 # own identity — so they all use the transliteration-tolerant matcher (#2, Sarawanan A/L case).
 from .vision import relationship_name_match as name_match
+from .vision import _canonical_name_tokens   # token folding — reused for cross-bill holder reconciliation
 
 
 # ── Father's name from the student's IC patronymic ───────────────────────────
@@ -617,8 +618,12 @@ def student_guardianship_check(doc):
 
 
 # ── Utility bills as a SOFT B40 proxy + hardship signal (imperfect; officer context) ─
-_UTILITY_B40_CEILING = 25   # < RM25/capita/month combined → consistent with B40
-_UTILITY_HIGH_FLOOR = 40    # > RM40/capita/month → likely M40/T20 consumption
+# Utility spend is a WEAK, noisy wealth proxy (especially once STR already verifies B40),
+# so the bands are deliberately generous: a normal household reads 'reasonable', and only
+# a genuinely high per-capita is worth an officer's eye. No amber 'borderline' band — it
+# only produced spurious "explain your utility spend" concerns on ordinary families.
+_UTILITY_B40_CEILING = 40   # < RM40/capita/month combined → comfortably consistent with B40
+_UTILITY_HIGH_FLOOR = 60    # > RM60/capita/month → only then worth an officer's eye (M40/T20)
 
 
 # Reading a utility bill: a month-name → number map (Malay + English, common OCR forms)
@@ -676,8 +681,9 @@ def utility_reasonable(application):
     every bill row. Water alone is a weak signal (cheap, flat across households) — so a
     verdict is only given when BOTH bills are present; one bill → 'partial' (can't judge).
     Returns ``{status, detail, per_capita}``:
-      - status: 'reasonable' (< RM25/head) | 'borderline' (RM25–40) | 'high' (> RM40)
-                | 'partial' (only one bill) | 'unknown' (no amount / no household size).
+      - status: 'reasonable' (≤ RM60/head — the normal case) | 'high' (> RM60/head, an
+                officer/interview signal only, NEVER a student query) | 'partial' (only one
+                bill) | 'unknown' (no amount / no household size). No amber 'borderline'.
       - detail: 'both' | 'water_only' | 'electricity_only' | '' — which bills informed it."""
     amounts = {}
     for dt in ('water_bill', 'electricity_bill'):
@@ -692,8 +698,10 @@ def utility_reasonable(application):
         detail = 'water_only' if 'water_bill' in amounts else 'electricity_only'
         return {'status': 'partial', 'detail': detail, 'per_capita': None}
     pc = sum(amounts.values()) / size
-    status = ('reasonable' if pc < _UTILITY_B40_CEILING
-              else 'high' if pc > _UTILITY_HIGH_FLOOR else 'borderline')
+    # Two outcomes only — no amber middle. A normal household is 'reasonable'; only a
+    # genuinely high per-capita (> RM60/head) flags, and that is an officer/interview
+    # signal (possible undeclared income), never something the student is queried about.
+    status = 'high' if pc > _UTILITY_HIGH_FLOOR else 'reasonable'
     return {'status': status, 'detail': 'both', 'per_capita': round(pc, 2)}
 
 
@@ -718,6 +726,53 @@ def _utility_name_unrelated(application, bill_name):
     return all(name_match(bill, c) == 'mismatch' for c in candidates)
 
 
+def _utility_holder_names(application):
+    """Every non-blank account-holder name read off the household's water + electricity
+    bills (latest first)."""
+    names = []
+    for dt in ('water_bill', 'electricity_bill'):
+        for doc in application.documents.filter(doc_type=dt).order_by('-uploaded_at'):
+            nm = (_doc_fields(doc).get('name', '') or '').strip()
+            if nm:
+                names.append(nm)
+    return names
+
+
+def _same_utility_holder(a, b):
+    """Two utility-bill holder names are the SAME person under an OCR cut/wrinkle: they
+    share every name token but one EXACTLY, and the odd token is one CONTAINED in the other
+    (a dropped letter — 'HANA' ⊂ 'THANA'). Deliberately strict — a pure substitution
+    (Siva vs Sira) or a genuinely different name never merges, so reconciliation only ever
+    swaps in a cleaner read of the SAME holder, never conflates two people. Token order is
+    not significant (the canonical tokens are an unordered set)."""
+    sa, sb = set(_canonical_name_tokens(a)), set(_canonical_name_tokens(b))
+    if not sa or not sb or len(sa) != len(sb) or len(sa) < 2:
+        return False
+    only_a, only_b = sa - sb, sb - sa
+    if not only_a:                       # identical token sets
+        return True
+    if len(only_a) == 1 and len(only_b) == 1:
+        x, y = only_a.pop(), only_b.pop()
+        return (x in y or y in x) and abs(len(x) - len(y)) <= 2
+    return False
+
+
+def _reconciled_holder_name(application, raw_name):
+    """The cleanest read of THIS account holder across the household's utility bills.
+    A wrinkled / cut bill can drop a letter — 'HANA BALAN A/L NARAYANAN' for the clean
+    'THANA BALAN A/L NARAYANAN' — so when another bill carries the SAME person's name,
+    prefer the LONGEST, most complete read. Deterministic + auditable; no AI guess.
+    Returns ``raw_name`` unchanged when nothing reconciles."""
+    raw = (raw_name or '').strip()
+    if not raw:
+        return raw
+    best = raw
+    for nm in _utility_holder_names(application):
+        if nm != best and _same_utility_holder(nm, raw) and len(nm) > len(best):
+            best = nm
+    return best
+
+
 def utility_check(doc, today=None):
     """For a water / electricity bill: the account-holder name (a data point — bills are in
     a parent's name), the home address (matched via the upload-time ``vision_address_match``),
@@ -731,7 +786,10 @@ def utility_check(doc, today=None):
         today = datetime.date.today()
     app = doc.application
     f = _doc_fields(doc)
-    name = (f.get('name', '') or '').strip()
+    # Reconcile OCR variants of the holder across the household's bills — a wrinkled bill
+    # that dropped a letter is reported under its clean form, so the row + the flag quote
+    # the full name (e.g. 'HANA BALAN' read from a creased bill → 'THANA BALAN').
+    name = _reconciled_holder_name(app, (f.get('name', '') or '').strip())
     monthly = _parse_rm(f.get('amount'))
     arrears = _parse_rm(f.get('unpaid_balance'))
     reasonable = utility_reasonable(app)
