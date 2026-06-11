@@ -316,6 +316,20 @@ describe('incomeDocLayout', () => {
     ])
     expect(layout.optional.map((d) => d.id)).toEqual([9])   // the water bill
   })
+
+  it('optional bucket is canonically ordered: salary → EPF → BC → guardian → utilities', () => {
+    // Uploaded in a jumbled order; the layout sorts them to mirror the student wizard.
+    const elec = doc({ id: 1, doc_type: 'electricity_bill' })
+    const epf = doc({ id: 2, doc_type: 'epf' })
+    const bc = doc({ id: 3, doc_type: 'birth_certificate' })   // e.g. a mononym father-link proof
+    const salary = doc({ id: 4, doc_type: 'salary_slip' })
+    const water = doc({ id: 5, doc_type: 'water_bill' })
+    // STR + father → only str/parent_ic are "required"; everything else is optional.
+    const layout = incomeDocLayout({ income_route: 'str', income_earner: 'father' },
+      [elec, epf, bc, salary, water])
+    expect(layout.optional.map((d) => d.doc_type)).toEqual(
+      ['salary_slip', 'epf', 'birth_certificate', 'water_bill', 'electricity_bill'])
+  })
 })
 
 describe('docIconFor — per-doc-type glyph', () => {

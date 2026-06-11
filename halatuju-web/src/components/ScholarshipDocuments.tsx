@@ -21,6 +21,7 @@ import {
 import {
   incomeRequirements,
   wizardComplete,
+  hasPatronymic,
   type IncomeRoute,
   type IncomeEarner,
   type WorkingMember,
@@ -1036,7 +1037,13 @@ function IncomeWizard({
     income_earner: ans.income_earner as IncomeEarner,
     income_working_members: ans.income_working_members,
   }
-  const reqs = incomeRequirements(answers)
+  // The student's name comes off their OWN IC (the same name the patronymic match uses).
+  // A mononym (no A/L·A/P·…) can't prove a father/sibling link by shared name → the wizard
+  // surfaces the birth certificate instead (#55). Unknown until the IC is read → assume a
+  // patronymic exists (don't surface the BC prematurely).
+  const icName = docs.find((d) => d.doc_type === 'ic')?.vision_name || ''
+  const studentHasPatronymic = !icName || hasPatronymic(icName)
+  const reqs = incomeRequirements(answers, { studentHasPatronymic })
   const ready = wizardComplete(answers)
 
   // Salary route — toggle a working household member in/out of the multi-select.
@@ -1196,10 +1203,14 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
   const [docs, setDocs] = useState<ApplicantDocument[]>([])
   const [busyType, setBusyType] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  // S17: minors get an additional Required card (parent_ic) and an Optional
-  // card (guardianship_letter). is_minor is derived backend-side from the
-  // profile's NRIC year and surfaced on the consent status endpoint.
+  // S17: minors get an additional Required card (parent_ic). is_minor is derived
+  // backend-side from the profile's NRIC year and surfaced on the consent status
+  // endpoint. The guardianship letter is now gated on the CONSENT relationship being a
+  // NON-parent guardian (a father/mother consenting needs only their IC) and shown under
+  // Income, not "Other" — see the income section below (#61: a father's family no longer
+  // sees a needless guardian-letter slot).
   const [isMinor, setIsMinor] = useState(false)
+  const [guardianRel, setGuardianRel] = useState('')
 
   const refresh = useCallback(async () => {
     if (!token) return
@@ -1213,7 +1224,10 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
 
   useEffect(() => {
     if (!token) return
-    getConsentStatus({ token }).then((s) => setIsMinor(!!s.is_minor)).catch(() => { /* ignore */ })
+    getConsentStatus({ token }).then((s) => {
+      setIsMinor(!!s.is_minor)
+      setGuardianRel(s.consents?.find((c) => c.is_active)?.guardian_relationship || '')
+    }).catch(() => { /* ignore */ })
   }, [token])
 
   const handleUpload = async (docType: string, file: File, member = '') => {
@@ -1305,6 +1319,17 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
     </div>
   )
 
+  // The guardianship letter belongs to the INCOME cluster (it proves a guardian earner's
+  // link to the student). A minor whose consenting guardian is a NON-parent also needs it
+  // for consent — surfaced here under Income, gated on that relationship, so a father's /
+  // mother's family never sees a needless slot (#61). When the income earner already IS a
+  // guardian, the wizard renders the letter itself — don't double it.
+  const PARENT_RELATIONSHIPS = new Set(['father', 'mother'])
+  const incomeUsesGuardian = app?.income_earner === 'guardian'
+    || !!app?.income_working_members?.includes('guardian')
+  const needsConsentGuardianLetter = isMinor && !!guardianRel
+    && !PARENT_RELATIONSHIPS.has(guardianRel) && !incomeUsesGuardian
+
   // Documents are grouped by the four verification facts (matching the officer's
   // verdict + Documents drawer) + an Other bucket:
   //   Identity (IC) · Academic (results slip) · Pathway (offer letter) ·
@@ -1350,6 +1375,12 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
             {card('electricity_bill')}
           </div>
         )}
+        {/* A minor with a NON-parent consenting guardian: the guardianship letter is an
+            income-cluster relationship doc, shown here (not under "Other") and gated on
+            that relationship. A father's/mother's family doesn't see it (#61). */}
+        {needsConsentGuardianLetter && (
+          <div className="space-y-3 mt-3">{card('guardianship_letter')}</div>
+        )}
       </section>
 
       <section>
@@ -1357,9 +1388,6 @@ export default function ScholarshipDocuments({ token, onChange, app }: { token: 
         <div className="space-y-3">
           {card('statement_of_intent')}
           {card('photo')}
-          {/* S17: a minor with a non-parent guardian uploads the guardianship letter
-              here; the relationship is picked on Consent and the POST blocks if missing. */}
-          {isMinor && card('guardianship_letter')}
         </div>
       </section>
 

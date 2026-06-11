@@ -1486,6 +1486,7 @@ export interface ConsentStatus {
     version: string
     granted_by: string
     guardian_name: string
+    guardian_relationship: string
     guardian_nric: string
     is_active: boolean
     granted_at: string

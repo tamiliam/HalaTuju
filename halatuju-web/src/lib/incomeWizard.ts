@@ -53,6 +53,21 @@ export function relationshipDocFor(member: string | null | undefined): string {
   return RELATIONSHIP_DOC[member || ''] || ''
 }
 
+// Members whose relationship to the student is proved by the SHARED father's-name
+// patronymic on the student's own IC (siblings carry it too) — no extra document,
+// UNLESS the student's name carries no patronymic (a mononym), see hasPatronymic.
+const PATRONYMIC_MEMBERS = new Set<string>(['father', 'brother', 'sister'])
+
+// Malaysian patronymic connectors (A/L, A/P, S/O, D/O, bin, binti, @). A name that
+// carries one names the father, so a father/sibling link can be read off the shared
+// name. A mononym like "DIVIYA" carries none → that link must be proved another way
+// (the birth certificate, which names both parents). Mirrors income_engine's connector.
+const PATRONYMIC_RE = /(^|\s)(a\s*\/\s*[lp]|s\s*\/\s*o|d\s*\/\s*o|bin|binti|@)(\s|$)/i
+
+export function hasPatronymic(name: string | null | undefined): boolean {
+  return PATRONYMIC_RE.test((name || '').trim())
+}
+
 const MEMBER_ORDER: WorkingMember[] = ['father', 'mother', 'guardian', 'brother', 'sister']
 
 /** The ticked salary-route members, de-duped and in display order. Tolerant of a
@@ -85,17 +100,27 @@ export function salaryMemberBlocks(members: WorkingMember[] | null | undefined):
 }
 
 /** The documents the family needs, given the wizard answers. The STR route keeps the
- *  single-earner shape; the salary route is driven by income_working_members. */
-export function incomeRequirements(a: IncomeAnswers): IncomeReqs {
+ *  single-earner shape; the salary route is driven by income_working_members.
+ *  `opts.studentHasPatronymic === false` (a mononym student — known once the IC is read)
+ *  surfaces the birth certificate as an OPTIONAL father-link proof on a patronymic route,
+ *  since the shared-name match can't apply (the #55 / DIVIYA case). */
+export function incomeRequirements(
+  a: IncomeAnswers,
+  opts?: { studentHasPatronymic?: boolean },
+): IncomeReqs {
   const route = a.income_route || ''
+  const noPatronymic = opts?.studentHasPatronymic === false
 
   if (route === 'salary') {
-    return {
-      route: 'salary',
-      members: salaryMemberBlocks(a.income_working_members),
-      compulsory: [],
-      optional: ['water_bill', 'electricity_bill'],
+    const members = salaryMemberBlocks(a.income_working_members)
+    const optional = ['water_bill', 'electricity_bill']
+    // Mononym student + a member proved via the patronymic (father/sibling) + no member
+    // already brings a BC → offer one household-level BC to prove the father link.
+    const patronymicMember = workingMembers(a.income_working_members).some((m) => PATRONYMIC_MEMBERS.has(m))
+    if (noPatronymic && patronymicMember && !members.some((b) => b.relDoc === 'birth_certificate')) {
+      optional.push('birth_certificate')
     }
+    return { route: 'salary', members, compulsory: [], optional }
   }
 
   const earner = a.income_earner || ''
@@ -107,6 +132,8 @@ export function incomeRequirements(a: IncomeAnswers): IncomeReqs {
   if (route === 'str') {
     compulsory.push('str')
     optional = ['water_bill', 'electricity_bill', 'salary_slip', 'epf']
+    // Father earner + mononym student: the patronymic can't prove the link → offer the BC.
+    if (noPatronymic && earner === 'father') optional.push('birth_certificate')
   }
   const seen = new Set(compulsory)
   optional = optional.filter((d) => !seen.has(d)) // a doc is never both
