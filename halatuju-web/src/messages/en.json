@@ -2743,6 +2743,11 @@
         "notUploaded": "not uploaded yet",
         "view": "View",
         "rerun": "Re-run",
+        "viewer": {
+          "newTab": "Open in new tab",
+          "close": "Close",
+          "noPreview": "Preview isn't available for this file format (HEIC). Open the original to view it."
+        },
         "pill": {
           "verified": "Verified",
           "check": "Check",

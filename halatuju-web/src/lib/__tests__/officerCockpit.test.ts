@@ -7,6 +7,7 @@ import {
   incomeDocLayout,
   docIconFor,
   earnerMemberFor,
+  viewerKind,
 } from '@/lib/officerCockpit'
 import type { AdminVerdictFact, AdminApplicantDocument } from '@/lib/admin-api'
 
@@ -337,5 +338,24 @@ describe('earnerMemberFor — earner-IC label member', () => {
   it('returns empty when it cannot be derived', () => {
     expect(earnerMemberFor('parent_ic', '', 'salary', '')).toBe('')
     expect(earnerMemberFor('ic', '', 'str', 'mother')).toBe('')   // not an earner IC
+  })
+})
+
+describe('viewerKind — how the in-cockpit viewer renders a doc', () => {
+  it('pdf by content-type or extension', () => {
+    expect(viewerKind('application/pdf', 'x')).toBe('pdf')
+    expect(viewerKind('', 'STR.PDF')).toBe('pdf')
+  })
+  it('image for jpeg/png/etc', () => {
+    expect(viewerKind('image/jpeg', 'a.jpg')).toBe('image')
+    expect(viewerKind('image/png', 'b')).toBe('image')
+    expect(viewerKind('', 'photo.JPEG')).toBe('image')
+  })
+  it('heic/heif is unsupported (browsers cannot render it)', () => {
+    expect(viewerKind('image/heic', 'IMG.HEIC')).toBe('unsupported')
+    expect(viewerKind('', 'pic.heif')).toBe('unsupported')
+  })
+  it('unknown types are unsupported', () => {
+    expect(viewerKind('application/octet-stream', 'blob')).toBe('unsupported')
   })
 })
