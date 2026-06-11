@@ -364,3 +364,61 @@ Nama IBU A/P DATUK
 No. Kad Pengenalan 800202-14-2222
 """
         self.assertIsNone(parse_by_labels('birth_certificate', partial))
+
+
+# Offer letters — GOVERNMENT templates parse (identity + programme); universities defer.
+_JPPKK = """JABATAN PENDIDIKAN POLITEKNIK DAN KOLEJ KOMUNITI
+No. Rujukan : JPPKK/26/01/001/080810070418
+NESHA A/P TESTKUMAR (080810070418)
+228 LORONG PERMATA 6, 08000 SUNGAI PETANI
+SURAT TAWARAN PENGAJIAN SESI I : 2026/2027
+Program : FTV - ASASI TEKNOLOGI KEJURUTERAAN
+Institusi : POLITEKNIK UNGKU OMAR
+"""
+
+# A Matrikulasi PDF as pypdf mashes it — name+K/P+IC+everything on one line.
+_MATRIK = ("TESTNAME A/P TESTFATHERK/P : 080623102306NO MATRIK : MA2623131620NO.3 JALAN TEST\n"
+           "TAWARAN KEMASUKAN PROGRAM MATRIKULASI KEMENTERIAN PENDIDIKAN SESI 2026/2027\n"
+           "Jurusan: PERAKAUNANTempoh Pengajian: DUA SEMESTERKolej: KOLEJ MATRIKULASI SELANGOR\n")
+
+_FORM6 = """SEKTOR OPERASI SEKOLAH
+KEMENTERIAN PENDIDIKAN
+Nama: TESTKID A/P TESTFATHER No. Kad Pengenalan: 080414040444
+TAWARAN KEMASUKAN KE TINGKATAN ENAM SEMESTER 1 TAHUN 2026
+2.1. Bidang SAINS SOSIAL
+"""
+
+_UNIVERSITY = """No Pendaftaran : 25107122
+Nombor K/P : 080723070954
+DHURVAASHRII PREKASH
+PEMAKLUMAN KEMASUKAN KE UNIVERSITI MALAYA
+PROGRAM PENGAJIAN : ASASI SAINS SOSIAL
+FAKULTI : PUSAT ASASI SAINS
+"""
+
+
+class TestOfferParser(SimpleTestCase):
+    def test_jppkk_identity_and_programme(self):
+        r = parse_by_labels('offer_letter', _JPPKK)
+        self.assertEqual(r['candidate_name'], 'NESHA A/P TESTKUMAR')   # from "NAME (IC)"
+        self.assertEqual(r['candidate_nric'], '080810070418')
+        self.assertEqual(r['programme'], 'FTV - ASASI TEKNOLOGI KEJURUTERAAN')
+        self.assertEqual(r['issuer'], 'Jabatan Pendidikan Politeknik dan Kolej Komuniti')
+
+    def test_matrikulasi_mashed_line_name_ic_and_safe_programme(self):
+        r = parse_by_labels('offer_letter', _MATRIK)
+        self.assertEqual(r['candidate_name'], 'TESTNAME A/P TESTFATHER')   # before the mashed K/P
+        self.assertEqual(r['candidate_nric'], '080623102306')             # IC mashed into "…2306NO"
+        self.assertEqual(r['programme'], 'Program Matrikulasi')           # junk Jurusan guarded out
+
+    def test_form6_nama_label_format(self):
+        r = parse_by_labels('offer_letter', _FORM6)
+        self.assertEqual(r['candidate_name'], 'TESTKID A/P TESTFATHER')
+        self.assertEqual(r['candidate_nric'], '080414040444')
+        self.assertEqual(r['programme'], 'Tingkatan Enam Semester 1 (SAINS SOSIAL)')
+
+    def test_university_defers_to_gemini(self):
+        self.assertIsNone(parse_by_labels('offer_letter', _UNIVERSITY))
+
+    def test_non_offer_text_returns_none(self):
+        self.assertIsNone(parse_by_labels('offer_letter', 'some random document with no offer markers'))

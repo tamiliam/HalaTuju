@@ -105,8 +105,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     both parents + NRICs correctly (incl. JPN-spaced `770909 - 04 - 5229` and a mononym child); a partial BC (one
     parent) and a mis-slotted MyKad both return `None` → Gemini. Conservative (None unless both parents resolve).
     Unlocks the #55 mononym father-link (the BAPA name+IC the relationship check needs).
-  - +31 pytest (13 scaffold + 6 STR + 4 TNB + 4 EPF + 4 BC); full scholarship suite green (1046). No migration (the tag
-    lives in `vision_fields`).
+  - **Offer-letter identity parser (P5) — GOVERNMENT templates only.** Offers span ~10 issuers with divergent
+    programme/institution labels, so this parser is deliberately narrow: it reads only the three standardised government
+    templates — **JPPKK** (Polytechnic), **Matrikulasi** (KPM), **Sektor Operasi Sekolah** (Form 6), plus IPG/PISMP —
+    where the strong **identity** (candidate name + 12-digit IC, the gate matched against the profile NRIC) + a clean
+    programme are label-anchored; **universities and anything unrecognised return `None` → Gemini** (the varied tail it
+    handles well, audit rec 2). Handles the OCR realities the real PDFs threw up: the addressee in three formats
+    (`NAME (IC)` / `Nama: NAME No.Kad` / mashed `NAMEK/P`), the 12-digit IC mashed into the next word (`…2306NO`), and a
+    junk programme value swallowing a mashed single-line PDF (guarded → the clean issuer-type programme). **Validated
+    against real offers** — government PDFs parse identity + programme cleanly; 3 universities + images correctly defer.
+  - +36 pytest (13 scaffold + 6 STR + 4 TNB + 4 EPF + 4 BC + 5 offer); full scholarship suite green (1059). No migration
+    (the tag lives in `vision_fields`).
 - **#55 — mononym student's father link via the birth certificate (P4b; income_engine + verdict_engine, no migration).**
   A student whose name carries no patronymic (e.g. "DIVIYA") can't prove a father/sibling earner by the shared name, so
   `father_relationship` returned `unknown` (officer review) with no deterministic path. New `father_via_bc` (mirror of
