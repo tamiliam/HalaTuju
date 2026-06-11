@@ -477,27 +477,31 @@ existing files). Gates: 1015 scholarship + 1063 courses/reports pytest, 290 jest
 **Post-deploy:** re-classify #63's STR (source_type='unknown'); `convert_heic_documents --apply`; watch the pillow-heif
 install on the first build.
 
-**▶ IN PROGRESS (2026-06-11) — deterministic capture layer, Sprint 1 = P0 scaffold + P1 STR.** `apps/scholarship/
-doc_parse.py` `parse_by_labels(doc_type, text)` runs BEFORE Gemini in `run_field_extraction_for_document` (None → Gemini),
-tags `vision_fields['capture']='deterministic'|'ai'`. STR parser first (retires the SARA AI-inference). CONSERVATIVE
-(None unless strong anchors) + **validate on REAL STR OCR before trusting the path (L86)**. No migration. Then P2 TNB →
-P3 KWSP → P4 JPN-BC (also enables #55 mononym BC-father match) → P5 offer-id → water; folds in #61-a (IC leading-break).
+**▶ SHIPPED 2026-06-11 — deterministic label-anchored capture layer (Sprint 1: P0–P5 + #55 + UI; NO migration; branch
+`sprint/deterministic-capture`; retro `docs/retrospective-deterministic-capture.md`).** `apps/scholarship/doc_parse.py`
+`parse_by_labels(doc_type, text)` runs BEFORE Gemini in `run_field_extraction_for_document` (None → Gemini), tags
+`vision_fields['capture']='deterministic'|'ai'`. CONSERVATIVE (None → Gemini unless it clearly recognises the doc — so
+zero blast radius). Parsers, each VALIDATED ON REAL FILES (L86): **STR** (4 MySTR surfaces; `source_type` now
+deterministic → retires the SARA→STR mis-pass #63 + closes the SALINAN-as-proof gap via `_str_currency`); **TNB elec**
+(Caj Semasa/Baki Terdahulu/ALAMAT POS); **KWSP EPF** (JUMLAH SIMPANAN/CARUMAN; mis-slotted Borang EC → None); **JPN BC**
+(child + both parents via the No.Kad-Pengenalan anchors; mononym-tolerant); **govt offer** (JPPKK/Matrik/Form6/IPG only —
+deterministic identity name+12-digit-IC + clean programme; universities → Gemini). **#55** (`father_via_bc`+`father_link`):
+a mononym student's father link via the BC, wired through `member_relationship_status` + both verdict routes. **UI**:
+income-wizard card titles name the earner ("Father's salary slip"/"EPF statement"). Gates: 1059 scholarship + 1063
+courses/reports pytest, 297 jest, parity 2496×3, next build clean. Deterministic capture IMPROVED on Gemini for several
+digital PDFs it left blank + detects mis-slotted uploads.
 
-**▶ NEXT SPRINT — deterministic label-anchored capture layer** (rationale in `docs/retrospective-cockpit-doc-ux-and-sara.md`
-"Audit finding", grounded in real-file sampling). Most "AI-captured" docs are actually fixed-format standardised-issuer
-docs (TNB elec, KWSP EPF, JPN birth cert, govt offers, MySTR STR) and many are digital PDFs with clean text layers
-(already extracted, then needlessly fed to Gemini). Build a shared `parse_by_labels` (text-layer/OCR → fixed labels)
-running BEFORE Gemini (Gemini = fallback), tagging `capture: deterministic|ai` + flagging mis-slotted uploads. Ranked
-STR → TNB → KWSP → JPN BC → govt-offer-identity → water(soft). Kills the SARA AI-inference deterministically. No
-migration. Phase-by-phase, each validated on REAL files (synthetic fixtures in-repo — no PII).
-**▶ Two live-review findings FOLDED into this sprint (2026-06-11, from reviewing apps #61/#55):**
-(a) **IC name LEADING-break** — `_extract_name`/`_with_trailing_surname` handle a surname spilling AFTER the A/L marker,
-but NOT a given name on the line ABOVE it: app #61's father IC "SARAWANAN\nA/L SUPRAMANIAM" captured only "A/L
-SUPRAMANIAM" (given name dropped). Add the mirror rule: when the chosen name line STARTS with a parentage marker,
-prepend the preceding name line. **`_extract_name` is the SHARED extractor for the applicant `ic` AND every `parent_ic`
-(father/mother/guardian) — one fix covers all; regression-test BOTH break directions across relationships.** A prod scan
-(names whose extracted value STARTS with a marker) found exactly 2 cases — app #61 (father) + app #31 (MOTHER,
-"A/P JAYARAM" → "RUSHAINDRA KUMARI A/P JAYARAM"); **both hand-corrected** in the meantime. Validate on real ICs.
+**▶ NEXT — capture-layer follow-ons + the carried IC fix (no roadmap sprint):**
+- **P6 water bill** (per-company, SOFT signal) + the officer **capture-confidence surface** (show `deterministic|ai` on
+  the cockpit doc row) — both deferred from Sprint 1.
+- **IC name LEADING-break fix (carried, NOT yet built).** `_extract_name`/`_with_trailing_surname` handle a surname
+  spilling AFTER the A/L marker but NOT a given name on the line ABOVE it (app #61 father IC "SARAWANAN\nA/L SUPRAMANIAM"
+  → captured only "A/L SUPRAMANIAM"). Mirror rule: when the chosen name line STARTS with a parentage marker, prepend the
+  preceding name line. `_extract_name` is SHARED across applicant `ic` + every `parent_ic` — one fix covers all;
+  regression-test BOTH directions. Prod scan found exactly 2 cases (#61 father, #31 mother) — **both hand-corrected**;
+  the general code fix is still pending. Validate on real ICs.
+- **Backfill** (optional, robustness only): cockpit "Re-run" the existing income docs to populate the `capture` tag +
+  deterministic `source_type` (current outcomes already correct). Tamil refine on the new `salaryTitle`/`epfTitle` keys.
 (b) **Mononym father-link via BC** — a student whose name carries no patronymic (app #55 "DIVIYA") can't prove a
 father/sibling link by shared name; `father_relationship` correctly returns `unknown` (→ officer review, never blocks).
 The frontend now SURFACES the birth certificate as an optional proof (shipped, see below); the SPRINT adds the
