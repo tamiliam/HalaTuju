@@ -3,7 +3,7 @@
 **Last audited:** 2026-06-11 · **Method:** read-only configuration + code review (Supabase security advisors, live RLS-policy inspection, code audit, infra config). **NOT** a penetration test.
 **Scope:** both products in the one database — the **course-advisory** app (browser ↔ Supabase directly, RLS-guarded) and the **B40 scholarship** app (browser ↔ Django ↔ DB, Django-guarded).
 
-> **Hardening shipped 2026-06-12 — backlog items A–E all LIVE.** Document-vault off-platform backup (A), DRF rate-limiting (B), Cloudflare Turnstile captcha on every auth entry point + the contact form (C), anomaly detection (D — *pending*), and explicit deny policies on the deny-all tables (E). Leaked-password protection (item 1) also enabled. Only **anomaly/breach detection (item 6/D)** remains open. See the backlog table below for per-item status.
+> **Hardening shipped 2026-06-12 — backlog items A–E all LIVE.** Document-vault off-platform backup (A), DRF rate-limiting (B), Cloudflare Turnstile captcha on every auth entry point + the contact form (C), access-anomaly detection on applicant-record reads (D), and explicit deny policies on the deny-all tables (E). Leaked-password protection (item 1) also enabled. **All seven backlog items are now done**, except the minor `field-images` public-listing tightening noted under item 5. See the backlog table below for per-item status.
 
 > Re-run this audit after any migration or auth/storage change. The repo's pre-deploy checklist already requires the Supabase Security Advisor; this doc is the broader companion. Re-run commands are in the appendix.
 
@@ -36,12 +36,12 @@
 | 3 | Confirm tracked `Dockerfile` / env hold only `NEXT_PUBLIC_*` (no service-role key / DB URL) | Med | ✅ **Done** — verified; the only added build var is the **public** Turnstile site key |
 | 4 | Add **request rate-limiting** on sensitive custom DRF endpoints | Med | ✅ **Done (item B)** — proxy-aware DRF throttles (`halatuju/throttling.py`): anon/upload/public-count scopes |
 | 5 | Add **captcha/limit to the anonymous contact form** (+ tighten `field-images` listing) | Low | ✅ **Captcha done (item C)** — contact form now posts to the `contact-submit` Edge Function (Turnstile-verified, service-role insert, anon INSERT revoked). `field-images` listing tightening still open |
-| 6 | Add **breach/anomaly detection** (action-audit data exists; nothing alerts on a mass-read) | Med | 🟡 **Open (item D)** — needs a threshold (e.g. one session reading > N applications in 10 min) → Cloud Logging metric + alert to admin email |
+| 6 | Add **breach/anomaly detection** (action-audit data exists; nothing alerts on a mass-read) | Med | ✅ **Done (item D)** — `AdminApplicationDetailView` emits a per-read audit line; Cloud Logging metric `applicant_record_reads` (per `admin_id`) + alert policy email the admin if one account reads **> 30 records in 10 min**. Config: `docs/security/monitoring/` |
 | 7 | Add explicit **deny policies** on the deny-all tables | Low | ✅ **Done (item E)** — `Backend service role only` policies on 19 tables (`docs/security/deny-all-policies.sql`) |
 
 **Also shipped with C:** Cloudflare Turnstile captcha (invisible, Managed mode) now gates **every** Supabase Auth entry point — student anonymous sign-in, sponsor/admin sign-in, sign-up, password reset — enforced via the project-wide captcha toggle. Rollout/rollback: `halatuju_api/docs/security/turnstile-rollout.md`.
 
-**Remaining:** item 6/D (anomaly detection) and the minor `field-images` public-listing tightening from item 5.
+**Remaining:** only the minor `field-images` public-listing tightening from item 5 (low severity).
 
 ## ⚠️ Caveats (state these to anyone who asks)
 - This is a **static/config audit, not a penetration test.** Before scaling the user base, commission an **independent pen-test** — for government-adjacent PII (B40/NRIC/STR) it's the right assurance layer and it exercises the *running* system in ways a code review can't.

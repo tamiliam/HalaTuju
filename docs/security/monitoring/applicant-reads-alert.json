@@ -1,0 +1,34 @@
+{
+  "displayName": "Applicant-record mass-read (possible scrape / compromised admin)",
+  "documentation": {
+    "content": "One admin account read more than 30 applicant records in 10 minutes (security item D). Normal officer review stays well below this. Investigate: identify the admin_id in the metric labels, confirm the login was expected. If the account is compromised or the access is illegitimate, disable that PartnerAdmin and rotate its credentials. Metric: logging.googleapis.com/user/applicant_record_reads. Source line: AdminApplicationDetailView 'AUDIT applicant_detail_read'.",
+    "mimeType": "text/markdown"
+  },
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "admin reads > 30 applicant records in 10 min",
+      "conditionThreshold": {
+        "filter": "metric.type=\"logging.googleapis.com/user/applicant_record_reads\" AND resource.type=\"cloud_run_revision\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "600s",
+            "perSeriesAligner": "ALIGN_DELTA",
+            "crossSeriesReducer": "REDUCE_SUM",
+            "groupByFields": ["metric.label.admin_id"]
+          }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 30,
+        "duration": "0s",
+        "trigger": { "count": 1 }
+      }
+    }
+  ],
+  "notificationChannels": [
+    "projects/gen-lang-client-0871147736/notificationChannels/1616944763344728765"
+  ],
+  "alertStrategy": {
+    "autoClose": "1800s"
+  }
+}
