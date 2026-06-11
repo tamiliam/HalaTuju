@@ -86,6 +86,39 @@ def mother_relationship(bc_child_name: str, bc_mother_name: str,
     return 'pending'
 
 
+def father_via_bc(bc_child_name: str, bc_father_name: str,
+                  student_name: str, earner_ic_name: str) -> str:
+    """Mononym fallback for the FATHER link: when the student's name carries no patronymic,
+    father_relationship can't read the father off it (#55, DIVIYA) — so the Birth Certificate
+    ties the earner (father) to the student instead: its child must be the student AND its
+    FATHER must be the earner's IC. Mirrors mother_relationship (which uses the BC mother).
+    Either side disjoint → mismatch; both agree → match; not enough read → pending."""
+    if not (bc_child_name or '').strip() and not (bc_father_name or '').strip():
+        return 'pending'
+    child_ok = (name_match(bc_child_name, student_name) != 'mismatch'
+                if bc_child_name and student_name else None)
+    father_ok = (name_match(bc_father_name, earner_ic_name) != 'mismatch'
+                 if bc_father_name and earner_ic_name else None)
+    if child_ok is False or father_ok is False:
+        return 'mismatch'
+    if child_ok and father_ok:
+        return 'match'
+    return 'pending'
+
+
+def father_link(student_name: str, earner_ic_name: str,
+                bc_child_name: str = '', bc_father_name: str = '') -> str:
+    """The father→student link: the shared patronymic, OR — when the student is a mononym so
+    the patronymic can't apply — the Birth Certificate's child+father (#55). The patronymic
+    result wins; only its 'unknown' (no patronymic) defers to the BC, and only if one was
+    uploaded. So a normal applicant is unaffected; a mononym applicant who adds their BC gets
+    a deterministic father verdict instead of a permanent 'officer reviews'."""
+    r = father_relationship(student_name, earner_ic_name)
+    if r == 'unknown' and (bc_child_name or bc_father_name):
+        return father_via_bc(bc_child_name, bc_father_name, student_name, earner_ic_name)
+    return r
+
+
 def guardian_relationship(letter_name: str, earner_ic_name: str) -> str:
     """Soft name check between a guardianship letter and the earner IC. The hard
     requirement is the letter's PRESENCE (handled by income_requirements); a name
@@ -131,11 +164,14 @@ def working_members(application) -> list:
 
 def member_relationship_status(member: str, student_name: str, member_ic_name: str,
                                bc_child_name: str = '', bc_mother_name: str = '',
-                               letter_name: str = '') -> str:
+                               letter_name: str = '', bc_father_name: str = '') -> str:
     """The relationship verdict for one working member — routes to the right check.
-    father/brother/sister → father_relationship (shared patronymic); mother → birth cert;
+    father → patronymic, with a Birth-Certificate fallback for a mononym student (#55);
+    brother/sister → father_relationship (shared patronymic only); mother → birth cert;
     guardian → guardianship letter. 'match' | 'mismatch' | 'unknown' | 'pending'."""
-    if member in _PATRONYMIC_MEMBERS:
+    if member == 'father':
+        return father_link(student_name, member_ic_name, bc_child_name, bc_father_name)
+    if member in _PATRONYMIC_MEMBERS:            # brother / sister — patronymic only
         return father_relationship(student_name, member_ic_name)
     if member == 'mother':
         return mother_relationship(bc_child_name, bc_mother_name, student_name, member_ic_name)
@@ -145,21 +181,24 @@ def member_relationship_status(member: str, student_name: str, member_ic_name: s
 
 
 def _relationship_inputs(application, member, member_ic_name):
-    """Pull the relationship-proof inputs for one member from the application's
-    documents (birth cert for a mother, guardianship letter for a guardian)."""
-    bc_child = bc_mother = letter_name = ''
-    if member == 'mother':
+    """Pull the relationship-proof inputs for one member from the application's documents
+    (birth cert for a mother — also the FATHER fields for the #55 mononym father fallback;
+    guardianship letter for a guardian)."""
+    bc_child = bc_mother = bc_father = letter_name = ''
+    if member in ('mother', 'father', 'brother', 'sister'):
         bc = (application.documents.filter(doc_type='birth_certificate')
               .order_by('-uploaded_at').first())
         vf = (getattr(bc, 'vision_fields', None) if bc else None) or {}
         f = vf.get('fields', {}) if isinstance(vf, dict) else {}
         if isinstance(f, dict):
-            bc_child, bc_mother = f.get('bc_child_name', ''), f.get('bc_mother_name', '')
+            bc_child = f.get('bc_child_name', '')
+            bc_mother = f.get('bc_mother_name', '')
+            bc_father = f.get('bc_father_name', '')
     elif member == 'guardian':
         g = (application.documents.filter(doc_type='guardianship_letter')
              .order_by('-uploaded_at').first())
         letter_name = (getattr(g, 'vision_name', '') or '') if g else ''
-    return bc_child, bc_mother, letter_name
+    return bc_child, bc_mother, bc_father, letter_name
 
 
 def _cluster_proof_identity(application, member):
@@ -209,9 +248,9 @@ def student_income_ic_check(doc):
         name_status = 'unknown' if (readable and not member) else 'pending'
     else:
         student_name = getattr(getattr(app, 'profile', None), 'name', '') or ''
-        bc_child, bc_mother, letter_name = _relationship_inputs(app, member, name)
+        bc_child, bc_mother, bc_father, letter_name = _relationship_inputs(app, member, name)
         name_status = member_relationship_status(member, student_name, name,
-                                                 bc_child, bc_mother, letter_name)
+                                                 bc_child, bc_mother, letter_name, bc_father)
 
     # Cross-check against the cluster's income proof (STR / salary slip) — the reason the
     # earner IC is uploaded. Green when the IC's name + number match the proof's recipient.
