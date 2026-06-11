@@ -491,22 +491,21 @@ income-wizard card titles name the earner ("Father's salary slip"/"EPF statement
 courses/reports pytest, 297 jest, parity 2496×3, next build clean. Deterministic capture IMPROVED on Gemini for several
 digital PDFs it left blank + detects mis-slotted uploads.
 
-**▶ NEXT — capture-layer follow-ons + the carried IC fix (no roadmap sprint):**
-- **P6 water bill** (per-company, SOFT signal) + the officer **capture-confidence surface** (show `deterministic|ai` on
-  the cockpit doc row) — both deferred from Sprint 1.
-- **IC name LEADING-break fix (carried, NOT yet built).** `_extract_name`/`_with_trailing_surname` handle a surname
-  spilling AFTER the A/L marker but NOT a given name on the line ABOVE it (app #61 father IC "SARAWANAN\nA/L SUPRAMANIAM"
-  → captured only "A/L SUPRAMANIAM"). Mirror rule: when the chosen name line STARTS with a parentage marker, prepend the
-  preceding name line. `_extract_name` is SHARED across applicant `ic` + every `parent_ic` — one fix covers all;
-  regression-test BOTH directions. Prod scan found exactly 2 cases (#61 father, #31 mother) — **both hand-corrected**;
-  the general code fix is still pending. Validate on real ICs.
-- **Backfill** (optional, robustness only): cockpit "Re-run" the existing income docs to populate the `capture` tag +
-  deterministic `source_type` (current outcomes already correct). Tamil refine on the new `salaryTitle`/`epfTitle` keys.
-(b) **Mononym father-link via BC** — a student whose name carries no patronymic (app #55 "DIVIYA") can't prove a
-father/sibling link by shared name; `father_relationship` correctly returns `unknown` (→ officer review, never blocks).
-The frontend now SURFACES the birth certificate as an optional proof (shipped, see below); the SPRINT adds the
-deterministic check — read father name+IC from the JPN BC (BAPA section) and match child↔student + father↔earner IC,
-mirroring `mother_relationship`. Needs JPN-BC label capture (already P3 of this sprint).
+**▶ SHIPPED 2026-06-11 — capture-layer follow-ons (Sprint 2; NO migration; retro
+`docs/retrospective-capture-followons.md`).** Three items: **(1) IC leading-name-break fix** — `vision._extract_name`
+gains `_LEADING_PARENTAGE`+`_preceding_givenname`+`_with_broken_name_parts`: when the chosen name line STARTS with a
+parentage marker, the given name spilled onto the PREVIOUS line is prepended ("SARAWANAN"\n"A/L SUPRAMANIAM" →
+"SARAWANAN A/L SUPRAMANIAM"). Shared across `ic`+`parent_ic`; both break directions regression-tested; **validated on the
+2 real prod ICs** (#61/#31, rendered + Vision-OCR'd). **(2) P6 water-bill parser** — shared Malay labels (Bil Semasa /
+Baki Terdahulu / Tunggakan); Air Selangor PDFs parse, other companies + photos defer to Gemini (SOFT signal). **(3)
+Cockpit capture-confidence badge** — "Exact read" (deterministic) vs "AI read" (Gemini) on each doc row from
+`vision_fields.capture`. Gates: 1067 scholarship + 1063 courses/reports pytest, ~297 jest, parity 2500×3, next build
+clean.
+
+**▶ NEXT — no roadmap sprint; do when inputs arrive:** optional backfill re-run of existing income docs (populate the
+`capture` tag + deterministic `source_type` — outcomes already correct, robustness only); Tamil refine on the new
+`salaryTitle`/`epfTitle` + `docsDrawer.capture.*` keys; **lawyer consent text** (+ `CONSENT_VERSION` bump); **real money**
+(toyyibPay donate-in/disbursement/tranche, TD-075); reviewer assignment activation when a real reviewer is invited.
 
 **▶ JUST SHIPPED 2026-06-11 — Verification-accuracy pass (5 live-testing fixes; NO migration; retro
 `docs/retrospective-verification-accuracy-fixes.md`).** Upstream gaps from real-applicant review:
