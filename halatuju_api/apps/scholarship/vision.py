@@ -228,6 +228,46 @@ def _with_trailing_surname(name: str, lines: list[str]) -> str:
     return f'{_replace_trailing_marker(name, canon)} {surname}'.strip()
 
 
+# A parentage marker at the START of the name line means the GIVEN name was line-broken
+# onto the PREVIOUS OCR line (e.g. "SARAWANAN" then "A/L SUPRAMANIAM") — the mirror of the
+# trailing case. Prepend that previous line so the full name is captured.
+_LEADING_PARENTAGE = re.compile(r'^(a\s*/\s*[lp]|s\s*/\s*o|d\s*/\s*o|bin|binti)\b', re.IGNORECASE)
+
+
+def _preceding_givenname(name: str, lines: list[str]) -> str:
+    """The OCR line BEFORE ``name`` if it reads as a given-name fragment (ALL-CAPS letters,
+    no digits, not a card header, and NOT itself a marker line — that would be its own name),
+    else ''. Mirror of _continuation_surname for the leading break."""
+    try:
+        idx = lines.index(name)
+    except ValueError:
+        return ''
+    for ln in reversed(lines[:idx]):
+        if not ln:
+            continue
+        if any(ch.isdigit() for ch in ln) or ln.upper() != ln or _PARENTAGE_MARKER.search(ln):
+            return ''
+        words = [w for w in re.split(r'[^A-Za-z]+', ln) if w]
+        if not words or all(w.upper() in _MYKAD_HEADER_TOKENS for w in words):
+            return ''
+        return ln
+    return ''
+
+
+def _with_broken_name_parts(name: str, lines: list[str]) -> str:
+    """Reassemble a line-broken MyKad name deterministically: append a surname spilled onto
+    the NEXT line (trailing marker, "THERESA ARUL MARY A/P" → "…A/P A.PHILIPS") AND/OR prepend
+    a given name spilled onto the PREVIOUS line (leading marker, "A/L SUPRAMANIAM" with
+    "SARAWANAN" above → "SARAWANAN A/L SUPRAMANIAM" — app #61/#31). Both lookups use the
+    ORIGINAL marked line, so they compose. Shared by the applicant IC + every parent_ic."""
+    full = _with_trailing_surname(name, lines)
+    if _LEADING_PARENTAGE.search(name or ''):
+        given = _preceding_givenname(name, lines)
+        if given:
+            full = f'{given} {full}'.strip()
+    return full
+
+
 def _is_name_line(line: str) -> bool:
     """A plausible MyKad name line: all-caps letters + spaces (no digits), not a
     header/label, reasonable length."""
@@ -264,15 +304,16 @@ def _extract_name(text: str, nric_match_str: str = '') -> str:
     marked = [ln for ln in candidates
               if _PARENTAGE_MARKER.search(ln) or _trailing_marker_canonical(ln)]
     if marked:
-        # A marker MID-line is the full name; a marker at the END means the surname
-        # was line-broken — append the next line (see _with_trailing_surname).
-        return _with_trailing_surname(max(marked, key=len), lines)
+        # A marker MID-line is the full name; a marker at the END means the surname spilled
+        # onto the next line, at the START means the given name spilled onto the previous line
+        # — _with_broken_name_parts reassembles either break.
+        return _with_broken_name_parts(max(marked, key=len), lines)
     nric_idx = next((i for i, ln in enumerate(lines) if _NRIC_REGEX.search(ln)), -1)
     if nric_idx >= 0:
         for ln in lines[nric_idx + 1:]:
             if ln in candidates:
-                return _with_trailing_surname(ln, lines)
-    return _with_trailing_surname(max(candidates, key=len), lines)
+                return _with_broken_name_parts(ln, lines)
+    return _with_broken_name_parts(max(candidates, key=len), lines)
 
 
 _MY_POSTCODE = re.compile(r'\b\d{5}\b')
