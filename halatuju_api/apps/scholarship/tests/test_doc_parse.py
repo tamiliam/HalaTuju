@@ -235,6 +235,21 @@ class TestElectricityParser(SimpleTestCase):
     def test_no_text_layer_falls_to_gemini(self):
         self.assertIsNone(parse_by_labels('electricity_bill', 'CamScanner'))
 
+    def test_mytnb_express_payment_screenshot(self):
+        # Students often submit the myTNB "Express Payment / Verify Your Account" screen
+        # instead of the full bill — account + address + a single AMOUNT DUE, no name/arrears.
+        txt = ("myTNB\nExpress Payment\nPay your electricity bill conveniently here\n"
+               "1. Verify Your Account\n220716208404\n"
+               "2, JLN JASA TIGA 25/27C, TMN SRI MUDA, 40400,\nSHAH ALAM, Selangor.\n"
+               "MY AMOUNT DUE\n212.05\nDue Date 14-May-2026\n"
+               "I AM PAYING (RM)\n0.00\nNote: You may pay up to RM 250.00")
+        r = parse_by_labels('electricity_bill', txt)
+        self.assertEqual(r['amount'], 'RM212.05')         # MY AMOUNT DUE, not the "0.00" paying field
+        self.assertEqual(r['name'], '')                   # not shown on the Express Payment page
+        self.assertEqual(r['unpaid_balance'], '')
+        self.assertEqual(r['address'],
+                         '2, JLN JASA TIGA 25/27C, TMN SRI MUDA, 40400, SHAH ALAM, Selangor.')
+
 
 # A KWSP "Penyata Ahli": name after SULIT…, fixed labels, CARUMAN rows (latest = monthly).
 _KWSP = """SULIT DAN PERSENDIRIAN

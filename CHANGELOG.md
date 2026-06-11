@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **TNB myTNB "Express Payment" screenshot now reads (electricity capture; no migration).** Students often submit the
+  myTNB *Express Payment / Verify Your Account* screen instead of the full "Bil Elektrik Anda" bill — a different layout
+  with only an account number, address, and a single "MY AMOUNT DUE" (no `Caj Semasa` / `Baki Terdahulu` / `TEMPOH BIL`
+  / holder name). The P2 parser keyed on the full-bill labels, so it fell to Gemini, which read it blank → a cascade of
+  "not found" warnings + a wrong "electricity not provided" reasonableness note (app #67). `_parse_electricity` gains a
+  second branch that recognises the Express Payment screen (`Express Payment` + `AMOUNT DUE`) and deterministically reads
+  the amount due + address (name/arrears/period correctly left blank — they aren't on that page). Validated on the real
+  screenshot. +1 pytest; full suite green (1068).
 - **IC name LEADING-break — the given name on the line ABOVE the `A/L` marker is no longer dropped (no migration).**
   `vision._extract_name`/`_with_trailing_surname` reassembled a surname spilled AFTER the marker
   ("THERESA ARUL MARY A/P" → "…A/P A.PHILIPS") but NOT a given name spilled onto the PREVIOUS line — so app #61's father
