@@ -411,6 +411,10 @@ class TestIncomeGateV2(TestCase):
         from apps.scholarship.services import income_doc_blockers
         return income_doc_blockers(app)
 
+    def _red_blockers(self, app):
+        from apps.scholarship.services import document_red_blockers
+        return document_red_blockers(app)
+
     # ── route-aware income requirements ──────────────────────────────────────
     def test_blank_route_is_income_incomplete(self):
         self.assertEqual(self._blockers(self._app(route='')), ['income_incomplete'])
@@ -461,6 +465,53 @@ class TestIncomeGateV2(TestCase):
         self._doc(app, 'salary_slip', member='father')
         self.assertEqual(set(self._blockers(app)),
                          {'parent_ic_missing:mother', 'salary_slip_missing:mother', 'birth_certificate_missing'})
+
+    # ── #4 (2026-06-11): an OPTIONAL wrong-person income proof must not hard-block ─────
+    def test_str_route_optional_salary_slip_mismatch_does_not_block(self):
+        # The father's payslip dropped onto a mother-STR cluster: the STR is the income proof,
+        # so the slip is OPTIONAL. It IS a person-mismatch, but it must NOT trap submission.
+        from apps.scholarship.income_engine import student_income_proof_check
+        app = self._app(route='str', earner='mother')
+        ic = self._doc(app, 'parent_ic')                          # mother's IC (untagged on STR)
+        ic.vision_name, ic.vision_nric = 'Vasagi Sadayel', '801224-01-6280'
+        ic.save()
+        str_doc = self._doc(app, 'str')                           # the actual income proof (matches)
+        str_doc.vision_fields = {'fields': {'recipient_name': 'Vasagi Sadayel',
+                                            'recipient_nric': '801224-01-6280',
+                                            'status': 'diluluskan', 'year': '2026'}}
+        str_doc.save()
+        slip = self._doc(app, 'salary_slip')                      # untagged → the STR earner cluster
+        slip.vision_fields = {'fields': {'name': 'Pilaapparao Appana', 'nric': '601006-05-5058'}}
+        slip.save()
+        self.assertEqual(student_income_proof_check(slip)['name_status'], 'mismatch')  # it IS wrong-person
+        self.assertNotIn('income_document_mismatch', self._red_blockers(app))          # …but does NOT block
+
+    def test_str_route_optional_epf_mismatch_does_not_block(self):
+        app = self._app(route='str', earner='mother')
+        ic = self._doc(app, 'parent_ic')
+        ic.vision_name, ic.vision_nric = 'Vasagi Sadayel', '801224-01-6280'
+        ic.save()
+        str_doc = self._doc(app, 'str')
+        str_doc.vision_fields = {'fields': {'recipient_name': 'Vasagi Sadayel',
+                                            'recipient_nric': '801224-01-6280',
+                                            'status': 'diluluskan', 'year': '2026'}}
+        str_doc.save()
+        epf = self._doc(app, 'epf')
+        epf.vision_fields = {'fields': {'name': 'Pilaapparao Appana', 'nric': '601006-05-5058'}}
+        epf.save()
+        self.assertNotIn('income_document_mismatch', self._red_blockers(app))
+
+    def test_salary_route_compulsory_slip_mismatch_still_blocks(self):
+        # A salary-route slip tagged to a SELECTED member IS the compulsory income proof — a
+        # wrong-person upload there must still block (re-upload the right one).
+        app = self._app(route='salary', members=['father'])
+        ic = self._doc(app, 'parent_ic', member='father')
+        ic.vision_name, ic.vision_nric = 'Ravi Govindasamy', '731006-10-5655'
+        ic.save()
+        slip = self._doc(app, 'salary_slip', member='father')
+        slip.vision_fields = {'fields': {'name': 'Someone Else Entirely', 'nric': '999999-99-9999'}}
+        slip.save()
+        self.assertIn('income_document_mismatch', self._red_blockers(app))
 
     # ── offer letter + documents_done + grandfather ──────────────────────────
     def test_offer_letter_compulsory(self):
