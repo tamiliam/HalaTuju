@@ -381,7 +381,14 @@ export function incomeDocLayout(app: IncomeAnswerSource, incomeDocs: AdminApplic
     }
   }
   const usedIds = new Set(required.map((s) => s.doc?.id).filter((id): id is number => id != null))
+  // Canonical optional order — income corroboration first (salary slip → EPF), then the
+  // relationship proofs (BC / guardianship letter — e.g. a mononym student's father link),
+  // then utility credibility bills. Mirrors the student wizard's order.
+  const OPTIONAL_ORDER = ['salary_slip', 'epf', 'birth_certificate', 'guardianship_letter',
+                          'water_bill', 'electricity_bill']
+  const rank = (dt: string) => { const i = OPTIONAL_ORDER.indexOf(dt); return i < 0 ? 99 : i }
   const optional = incomeDocs.filter((d) => !usedIds.has(d.id))
+    .sort((a, b) => rank(a.doc_type) - rank(b.doc_type))
   return { required, optional }
 }
 

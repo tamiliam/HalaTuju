@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Income-document grouping + guardian-card gating + mononym father-link (frontend, no migration).** From reviewing
+  real applicants #61/#55:
+  - **Guardianship letter moved from "Other" → Income, gated on the consent relationship.** The minor guardianship-letter
+    card was shown to EVERY minor in the catch-all "Other" section (`isMinor && card(...)`), so app #61 — a minor whose
+    **father** gives consent — saw a needless guardian slot and uploaded a letter into it. It now renders under **Income**
+    (it's an income-cluster relationship doc) and only when the consenting guardian is a **non-parent**
+    (`needsConsentGuardianLetter`), de-duped against a guardian income-earner (the wizard already shows it then). A
+    father's/mother's family no longer sees it.
+  - **Mononym students can now prove the father link via the birth certificate (#55).** A student whose name carries no
+    patronymic (e.g. "DIVIYA", no `A/P`) can't prove a father/sibling link by the shared name — the engine correctly
+    returns `unknown` (officer review, never blocks), but there was no deterministic path. The income wizard now
+    **surfaces the birth certificate as an optional father-link proof** when the IC OCR name has no patronymic
+    (`hasPatronymic` mirror of the backend connector), on the STR-father and salary-father/sibling routes, de-duped
+    against a mother's BC. The deterministic BC-father *match* is folded into the capture sprint (needs JPN-BC capture).
+  - **Cockpit income optional bucket canonically ordered** (salary → EPF → BC → guardian → utilities) to mirror the
+    student wizard, so both surfaces read the same. +7 jest (297 web total); `next build` clean.
+  - **(interim) App #61's father-IC name hand-corrected** ("A/L SUPRAMANIAM" → "SARAWANAN A/L SUPRAMANIAM"); the general
+    IC leading-name-break OCR rule is folded into the capture sprint.
 - **Verification-accuracy pass (5 live-testing fixes; no migration).** Upstream gaps the owner surfaced while
   reviewing real applicants:
   - **(#4) An optional wrong-person income doc no longer hard-blocks submission.** A father's payslip dropped onto a

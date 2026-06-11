@@ -484,6 +484,16 @@ docs (TNB elec, KWSP EPF, JPN birth cert, govt offers, MySTR STR) and many are d
 running BEFORE Gemini (Gemini = fallback), tagging `capture: deterministic|ai` + flagging mis-slotted uploads. Ranked
 STR → TNB → KWSP → JPN BC → govt-offer-identity → water(soft). Kills the SARA AI-inference deterministically. No
 migration. Phase-by-phase, each validated on REAL files (synthetic fixtures in-repo — no PII).
+**▶ Two live-review findings FOLDED into this sprint (2026-06-11, from reviewing apps #61/#55):**
+(a) **IC name LEADING-break** — `_extract_name`/`_with_trailing_surname` handle a surname spilling AFTER the A/L marker,
+but NOT a given name on the line ABOVE it: app #61's father IC "SARAWANAN\nA/L SUPRAMANIAM" captured only "A/L
+SUPRAMANIAM" (given name dropped). Add the mirror rule: when the chosen name line STARTS with a parentage marker,
+prepend the preceding name line. (#61 record hand-corrected in the meantime.) Validate on real ICs.
+(b) **Mononym father-link via BC** — a student whose name carries no patronymic (app #55 "DIVIYA") can't prove a
+father/sibling link by shared name; `father_relationship` correctly returns `unknown` (→ officer review, never blocks).
+The frontend now SURFACES the birth certificate as an optional proof (shipped, see below); the SPRINT adds the
+deterministic check — read father name+IC from the JPN BC (BAPA section) and match child↔student + father↔earner IC,
+mirroring `mother_relationship`. Needs JPN-BC label capture (already P3 of this sprint).
 
 **▶ JUST SHIPPED 2026-06-11 — Verification-accuracy pass (5 live-testing fixes; NO migration; retro
 `docs/retrospective-verification-accuracy-fixes.md`).** Upstream gaps from real-applicant review:

@@ -4,6 +4,7 @@ import {
   wizardComplete,
   workingMembers,
   salaryMemberBlocks,
+  hasPatronymic,
 } from '@/lib/incomeWizard'
 
 describe('incomeRequirements — STR route + blank (mirror of income_engine)', () => {
@@ -103,5 +104,54 @@ describe('relationshipDocFor + wizardComplete', () => {
     expect(wizardComplete({ income_route: 'str' })).toBe(false)
     expect(wizardComplete({ income_route: 'salary', income_working_members: [] })).toBe(false)
     expect(wizardComplete({ income_route: 'salary', income_working_members: ['brother'] })).toBe(true)
+  })
+})
+
+describe('hasPatronymic — Malaysian parentage connectors', () => {
+  it('detects A/L · A/P · S/O · D/O · bin · binti · @ (incl. spaced slash)', () => {
+    expect(hasPatronymic('SHAARVESHWAAR A/L SARAWANAN')).toBe(true)
+    expect(hasPatronymic('DIVASHINI A / P MURUGAN')).toBe(true)
+    expect(hasPatronymic('AHMAD BIN ALI')).toBe(true)
+    expect(hasPatronymic('SITI BINTI OSMAN')).toBe(true)
+    expect(hasPatronymic('LEE WEI @ ALI')).toBe(true)
+  })
+  it('is false for a mononym (the #55 / DIVIYA case) and blanks', () => {
+    expect(hasPatronymic('DIVIYA')).toBe(false)
+    expect(hasPatronymic('')).toBe(false)
+    expect(hasPatronymic(null)).toBe(false)
+    expect(hasPatronymic('BINTANG')).toBe(false)   // not a bare "bin" token
+  })
+})
+
+describe('mononym student → BC surfaced as optional father-link proof (#55)', () => {
+  it('STR + father + no patronymic → birth_certificate becomes optional', () => {
+    const withName = incomeRequirements(
+      { income_route: 'str', income_earner: 'father' }, { studentHasPatronymic: false })
+    expect(withName.optional).toContain('birth_certificate')
+    // and it is NOT forced compulsory (never hard-blocks — soft proof)
+    expect(withName.compulsory).not.toContain('birth_certificate')
+  })
+  it('STR + father WITH a patronymic → no BC offered (the normal case)', () => {
+    expect(incomeRequirements(
+      { income_route: 'str', income_earner: 'father' }, { studentHasPatronymic: true })
+      .optional).not.toContain('birth_certificate')
+    // default (unknown) also does not surface it
+    expect(incomeRequirements({ income_route: 'str', income_earner: 'father' })
+      .optional).not.toContain('birth_certificate')
+  })
+  it('mother earner already brings a BC → mononym flag does not double it', () => {
+    const r = incomeRequirements(
+      { income_route: 'str', income_earner: 'mother' }, { studentHasPatronymic: false })
+    expect(r.compulsory).toContain('birth_certificate')
+    expect(r.optional).not.toContain('birth_certificate')
+  })
+  it('salary + sibling + no patronymic → household BC optional; mother block not doubled', () => {
+    expect(incomeRequirements(
+      { income_route: 'salary', income_working_members: ['brother'] }, { studentHasPatronymic: false })
+      .optional).toContain('birth_certificate')
+    const withMother = incomeRequirements(
+      { income_route: 'salary', income_working_members: ['mother', 'father'] }, { studentHasPatronymic: false })
+    // mother's block already carries the BC → not added again household-level
+    expect(withMother.optional).not.toContain('birth_certificate')
   })
 })
