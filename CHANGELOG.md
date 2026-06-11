@@ -71,6 +71,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     masters intact (SPM 5319 / STPM 2026). No migration. Retro `docs/retrospective-verification-accuracy-fixes.md`.
 
 ### Added
+- **Deterministic label-anchored capture layer — scaffold + STR parser (Sprint 1; no migration).** New
+  `apps/scholarship/doc_parse.py` `parse_by_labels(doc_type, text)` runs BEFORE Gemini in
+  `run_field_extraction_for_document` (returns `None` → Gemini reads it), tagging
+  `vision_fields['capture']='deterministic'|'ai'`. The auditable, free path for standardised-issuer docs; Gemini stays
+  the fallback for the unstandardised tail. Mirrors the existing results-slip deterministic-first pattern.
+  - **STR parser (P1)** reads all four MySTR surfaces deterministically — the KEMENTERIAN KEWANGAN **letter** (incl. the
+    STR-specific `layak STR <year> dengan jumlah RM<x>` entitlement, distinct from the combined STR+SARA total and the
+    SARA figure), the **semakan_status** portal page (layout-independent name/NRIC since the mobile OCR lists labels then
+    values), the **dashboard**, and **`unknown`** for a non-proof. `source_type` is now set DETERMINISTICALLY, which
+    **retires the AI inference behind the SARA→STR false-pass (#63)** and **closes the SALINAN-as-proof gap** (a MySTR
+    application copy → `unknown` → `unconfirmed`), both via the existing `_str_currency` gate. Conservative — returns
+    `None` (→ Gemini) unless it clearly recognises an STR surface with a recipient.
+  - **Validated against 9 real uploads** across all four surfaces (L86 — not just synthetic fixtures); the real OCR
+    surfaced + fixed two bugs (SALINAN mis-classed as semakan; a stray info-icon `i` read as the status). +19 pytest
+    (13 scaffold + 6 STR); full scholarship suite green (1034). No migration (the tag lives in `vision_fields`).
 - **Officer cockpit — Documents drawer polish + in-cockpit document viewer (live-testing, no migration).**
   - **Per-type tinted icons + standard labels.** Each document row shows a per-doc-TYPE glyph (🪪🎓💵💧… via
     `officerCockpit.docIconFor`) in a badge tinted by the doc's verdict, instead of a 2-way IC/generic emoji. The row's

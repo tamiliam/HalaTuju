@@ -2519,3 +2519,19 @@ subscribed (they see them in the pool / digest instead).
 **Rationale:** The owner's policy is that the STR route requires STR proof — SARA (Sumbangan Asas Rahmah) is a distinct programme, and a SARA-only document does not evidence STR approval. Trusting the AI's status word alone let app #63's SARA letter auto-pass as "current" (Gemini inferred "approved" from "terpilih menerima SARA"). Making the classification bucket the gate is deterministic and matches how a human reviewer reads the document type. Falling through on a blank source_type avoids breaking existing valid approvals; those get reclassified on re-extraction.
 **Trade-offs:** A genuinely needy SARA family must still produce their STR proof (or be assessed at interview) — the automated path won't accept the SARA letter. Existing docs with a blank source_type are not retro-gated (only re-extracted/new uploads are), so a legacy SARA letter already in the system needs a re-run or a targeted correction (done for #63).
 **Revisit if:** policy changes to accept SARA as an independent B40 signal, or once all STR docs carry a classified source_type (then the blank-fallback can be removed and the bucket required for all).
+
+## Deterministic label-anchored capture runs BEFORE Gemini (2026-06-11, capture sprint P0/P1)
+**Decision:** For standardised-issuer documents, capture fields by anchoring on FIXED LABELS
+(`apps/scholarship/doc_parse.parse_by_labels`) and run it BEFORE Gemini in
+`run_field_extraction_for_document`; Gemini is the FALLBACK (when the parser returns `None`).
+Each doc's result is tagged `vision_fields['capture']='deterministic'|'ai'`. Parsers are
+CONSERVATIVE (return `None` unless the text clearly is that document) so an unrecognised
+layout degrades to exactly today's Gemini read. **Why:** the standardised Malaysian docs
+(STR/MySTR, TNB, KWSP, JPN BC, govt offers) print fields at fixed labels and many are digital
+PDFs with clean text layers we already extract — deterministic capture is more auditable,
+free, and removes a class of AI mis-reads. **STR (P1) consequence:** the `source_type` bucket
+(letter / semakan_status / dashboard / unknown) is now set DETERMINISTICALLY, which retires
+the AI inference behind the SARA→STR false-pass (#63) AND closes the SALINAN-as-proof gap (a
+MySTR application copy → `unknown` → `unconfirmed`), both via the existing `_str_currency`
+gate. **Validation:** every parser MUST be checked against REAL OCR/text-layer samples before
+its path is trusted (L86) — STR was validated against 9 live uploads across all four surfaces.

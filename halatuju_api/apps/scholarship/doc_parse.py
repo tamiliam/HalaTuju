@@ -107,3 +107,109 @@ def parse_by_labels(doc_type: str, text: str) -> Optional[dict]:
         return None
     # A parser must return the full field dict or None — never a partial/garbage value.
     return result if isinstance(result, dict) and result else None
+
+
+# ── P1: STR / MySTR (Sumbangan Tunai Rahmah) ──────────────────────────────────
+# Surfaces (→ source_type), each grounded in REAL uploads (L86):
+#   * 'letter'         — KEMENTERIAN KEWANGAN approval letter. Names BOTH STR + SARA;
+#                        the "layak STR <year> dengan jumlah RM<x>" entitlement line is
+#                        what makes it an STR proof (and gives the STR-specific amount,
+#                        distinct from the combined STR+SARA total and the SARA figure).
+#   * 'semakan_status' — MySTR portal "Semakan Status" page ("Status Permohonan Semasa",
+#                        "Jumlah Bayaran Keseluruhan STR"). Mobile OCR lists labels then
+#                        values in separate columns → name/NRIC read layout-independently.
+#   * 'dashboard'      — MySTR app dashboard ("Papan Pemuka").
+#   * 'unknown'        — recognised but NOT an STR proof: a SARA-only Perdana Menteri
+#                        letter ("bantuan SARA", no STR entitlement), or a SALINAN
+#                        application record with no approval. This GATES income_engine.
+#                        _str_currency to 'unconfirmed' — deterministically retiring the
+#                        AI inference that mis-passed app #63's SARA letter.
+
+_STR_MARKERS = (r'sumbangan\s+tunai\s+rahmah', r'\bMySTR\b', r'jumlah bayaran keseluruhan str',
+                r'status\s+permohonan', r'layak\s+str', r'\bSTR\b')
+_SARA_MARKERS = (r'sumbangan\s+asas\s+rahmah', r'bantuan\s+sara', r'perdana\s+menteri', r'\bSARA\b')
+_STR_APPROVED = (r'diluluskan', r'\blulus\b', r'\bberjaya\b')
+
+# A MyKad-style name line: all-caps with a patronymic/parentage connector. Layout-robust —
+# survives the mobile "labels column then values column" OCR order that breaks label anchors.
+_NAME_LINE = re.compile(r'^[A-Z][A-Z .@/]*\b(?:A\s*/\s*[LP]|BIN|BINTI|S\s*/\s*O|D\s*/\s*O)\b[A-Z .@/]*$')
+_YEAR_RE = re.compile(r'\b(20(?:2[3-9]|3\d))\b')          # a plausible STR year (2023–2039)
+_LAYAK_STR_RE = re.compile(r'layak\s+str.*?RM\s*([\d,]+(?:\.\d{2})?)', re.IGNORECASE | re.DOTALL)
+_ALL_AMOUNTS_RE = re.compile(r'RM\s*\)?\s*([\d,]+(?:\.\d{2})?)', re.IGNORECASE)
+
+
+def _patronymic_name(text: str) -> str:
+    """First all-caps name line carrying a parentage connector (the recipient sits near the
+    top, before any spouse/child names in the body). '' when there's no such line."""
+    for ln in _lines(text):
+        if 6 <= len(ln) <= 60 and _NAME_LINE.match(ln):
+            return ln
+    return ''
+
+
+def _largest_amount(text: str) -> str:
+    """The largest RM amount in the text → the STR keseluruhan total (≥ the amount paid so
+    far) on a semakan-status page, where the label is split across OCR columns. '' if none."""
+    vals = []
+    for m in _ALL_AMOUNTS_RE.finditer(text or ''):
+        try:
+            vals.append(float(m.group(1).replace(',', '')))
+        except ValueError:
+            continue
+    if not vals:
+        return ''
+    top = max(vals)
+    return f'RM{int(top)}' if top.is_integer() else f'RM{top:.2f}'
+
+
+def _str_surface(text: str) -> Optional[str]:
+    """The STR surface → source_type; 'unknown' for a non-proof; None if not STR/SARA."""
+    has_str = has(text, *_STR_MARKERS)
+    if not has_str:
+        return 'unknown' if has(text, *_SARA_MARKERS) else None
+    if has(text, r'\bsalinan\b'):
+        return 'unknown'    # a MySTR application-record COPY — NOT proof of approval
+    if has(text, r'kementerian\s+kewangan', r'nama\s+penerima', r'telah\s+diluluskan'):
+        return 'letter'
+    if has(text, r'semakan\s+status', r'status\s+permohonan'):
+        return 'semakan_status'
+    if has(text, r'papan\s+pemuka', r'\bdashboard\b'):
+        return 'dashboard'
+    return 'semakan_status'    # STR-marked portal screen we can't sub-classify
+
+
+@register('str')
+def _parse_str(text: str) -> Optional[dict]:
+    source_type = _str_surface(text)
+    if source_type is None:
+        return None                          # not an STR/SARA doc → Gemini
+
+    name = _patronymic_name(text) or find_value(text, r'nama\s+penerima') or find_value(text, r'\bnama\b')
+    nric = first_nric(text)
+    # A genuine STR surface must yield at least a name or an NRIC; otherwise we don't trust
+    # the deterministic read and hand off to Gemini (the SARA-only 'unknown' is exempt — it
+    # is a deliberate "not a proof" verdict that needs no recipient fields).
+    if source_type != 'unknown' and not (name or nric):
+        return None
+
+    status = find_value(text, r'status\s+permohonan(?:\s+semasa)?')
+    if not re.search(r'[A-Za-z]{3}', status or ''):   # junk (a stray "i", blank) → use body
+        status = ''
+    if not status:
+        m = next((re.search(p, text, re.IGNORECASE) for p in _STR_APPROVED
+                  if re.search(p, text, re.IGNORECASE)), None)
+        status = m.group(0) if m else ''
+
+    ym = _YEAR_RE.search(text or '')
+    year = ym.group(1) if ym else ''
+
+    if source_type == 'letter':
+        lm = _LAYAK_STR_RE.search(text or '')
+        amount = f'RM{lm.group(1).replace(",", "")}' if lm else ''
+    elif source_type == 'semakan_status':
+        amount = _largest_amount(text)
+    else:
+        amount = ''
+
+    return {'recipient_name': name, 'recipient_nric': nric, 'status': status,
+            'year': year, 'amount': amount, 'source_type': source_type}
