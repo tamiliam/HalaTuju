@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Verification-accuracy pass (5 live-testing fixes; no migration).** Upstream gaps the owner surfaced while
+  reviewing real applicants:
+  - **(#4) An optional wrong-person income doc no longer hard-blocks submission.** A father's payslip dropped onto a
+    mother-STR cluster (where the STR is the income proof and the slip is optional), or a mismatched EPF, previously
+    added `income_document_mismatch` to `document_red_blockers` and trapped the student. Now only a **compulsory**
+    salary-route slip for a selected member gates; the cluster coach nudges removal instead. Gopal's
+    `income_proof_person_mismatch` copy is **earner-aware** — it names the expected earner (the STR recipient) via the
+    firewall-safe `context` seam, says the slip is optional on the STR route ("upload nothing if she has none"), and
+    advises removing the wrong file (replacing the misleading hardcoded "father's payslip" example).
+  - **(#2) Transliteration-tolerant relationship name matching.** New `vision.relationship_name_match` folds
+    Malaysian-Tamil/Indian romanisation (w↔v, doubled letters, trailing silent h) + a single-char OCR slip on longer
+    tokens, fixing the false `mismatch` on *Saravanan* vs *Sarawanan* (the "Sarawanan A/L Supramaniam" call).
+    `income_engine` uses it for every name comparison (relationships, earner-IC↔proof, STR-recipient↔IC, BC names) —
+    all the SAME person across two documents; **identity (student IC vs typed name) still uses the exact matcher**, so
+    it is never weakened. Differential audit on prod earners: 0 false merges across 16 distinct names.
+  - **(#3) Utility-bill address match tolerates a missing postcode.** A real bill often omits the 5-digit postcode
+    (Swetha's water bill), which made `address_present` return `not_found` despite the street + city matching. It now
+    falls back to a strong overlap of distinctive **street** tokens (road name + numbers + taman) + the city, via a new
+    address-aware tokenizer that keeps numbers and drops generic road words (jalan/jln/taman/tmn/no). Soft, never gates.
+  - **(#1) The salary-route "who works" default stays reactive to the family roster.** The income wizard seeded
+    `income_working_members` from `earningMembers(app)` only once (useState), so a roster filled/refetched after the
+    income step mounted never flowed through. A `useEffect` now re-derives the default whenever the roster changes,
+    until the student explicitly customises the selection.
+  - **(#5) An approved STR is current without needing a year.** The MySTR "Semakan Status" / Dashboard pages show
+    "Status Permohonan **Semasa**: Lulus" with NO printed cohort year — *Semasa* (current) is the currency signal.
+    `_str_currency` previously demanded an approval word AND a readable year, falsely marking 5 of 14 submitted STR
+    students as unconfirmed for a valid Lulus screenshot. Now an approval word alone → current; a year only adds the
+    ability to catch a stale prior-year STR; a no-approval-status SALINAN is still unconfirmed. STR extraction gains a
+    closed-set **`source_type`** (letter / semakan_status / dashboard / unknown) so each layout's fields read from the
+    right place + the officer sees the source, and reads the year off Tarikh-Kredit / letter dates when present. Gopal +
+    i18n copy stop implying a date/year is needed — a plain screenshot showing "Lulus" is enough.
+  - Gates: **1007 scholarship + 1063 courses/reports pytest, 282 jest, next build clean, i18n parity 2474×3**; golden
+    masters intact (SPM 5319 / STPM 2026). No migration. Retro `docs/retrospective-verification-accuracy-fixes.md`.
+
 ### Added
 - **Action Centre Phase 2 — Cikgu Gopal nudges a totally off-topic answer.** When a student types an answer to a
   query, a flag-gated relevance check (`help_engine.judge_answer_relevance` → one cheap Gemini JSON call, firewalled to
