@@ -233,26 +233,41 @@ def _money(v: str) -> str:
 
 @register('electricity_bill')
 def _parse_electricity(text: str) -> Optional[dict]:
-    if not has(text, r'bil\s+elektrik') or not has(text, r'tenaga\s+nasional', r'alamat\s+pos', r'no\.?\s*akaun'):
-        return None                          # not a TNB bill → Gemini
-    lines = _lines(text)
-    name, address_lines = '', []
-    # The ALAMAT POS block: first line is the account holder, the rest is the address,
-    # ending at TARIKH BIL.
-    idx = next((k for k, ln in enumerate(lines) if re.search(r'alamat\s+pos', ln, re.IGNORECASE)), -1)
-    if idx >= 0:
-        end = next((k for k in range(idx + 1, len(lines))
-                    if re.search(r'tarikh\s+bil', lines[k], re.IGNORECASE)), len(lines))
-        block = [ln for ln in lines[idx + 1:end] if ln]
-        if block:
-            name, address_lines = block[0], block[1:]
-    period = find_value(text, r'tempoh\s+bil')
-    amount = _money(find_value(text, r'caj\s+semasa\s*\(?\s*rm\s*\)?'))
-    unpaid = _money(find_value(text, r'baki\s+terdahulu\s*\(?\s*rm\s*\)?'))
-    if not (name or amount):                 # didn't lock onto the bill → Gemini
-        return None
-    return {'name': name, 'address': ', '.join(address_lines), 'amount': amount,
-            'unpaid_balance': unpaid, 'billing_period': period}
+    # Format A — the full TNB "Bil Elektrik Anda" bill (name + itemised charges).
+    if has(text, r'bil\s+elektrik') and has(text, r'tenaga\s+nasional', r'alamat\s+pos', r'no\.?\s*akaun'):
+        lines = _lines(text)
+        name, address_lines = '', []
+        # The ALAMAT POS block: first line is the account holder, the rest the address, to TARIKH BIL.
+        idx = next((k for k, ln in enumerate(lines) if re.search(r'alamat\s+pos', ln, re.IGNORECASE)), -1)
+        if idx >= 0:
+            end = next((k for k in range(idx + 1, len(lines))
+                        if re.search(r'tarikh\s+bil', lines[k], re.IGNORECASE)), len(lines))
+            block = [ln for ln in lines[idx + 1:end] if ln]
+            if block:
+                name, address_lines = block[0], block[1:]
+        amount = _money(find_value(text, r'caj\s+semasa\s*\(?\s*rm\s*\)?'))
+        if not (name or amount):             # didn't lock onto the bill → Gemini
+            return None
+        return {'name': name, 'address': ', '.join(address_lines), 'amount': amount,
+                'unpaid_balance': _money(find_value(text, r'baki\s+terdahulu\s*\(?\s*rm\s*\)?')),
+                'billing_period': find_value(text, r'tempoh\s+bil')}
+
+    # Format B — the myTNB "Express Payment / Verify Your Account" screenshot. Students often
+    # submit this instead of the full bill; it has only the account number, address, and a
+    # single "MY AMOUNT DUE" (the total owed — NOT itemised, so no holder name / arrears /
+    # billing period). Capturing the amount + address deterministically beats Gemini's blank
+    # read (which mis-cascaded into "electricity not provided" + a wall of "not found" notes).
+    if has(text, r'express\s+payment') and has(text, r'amount\s+due'):
+        amount = _money(find_value(text, r'amount\s+due'))
+        if not amount:
+            return None
+        lines = _lines(text)
+        acct = next((i for i, l in enumerate(lines) if re.fullmatch(r'\d{10,12}', l)), -1)
+        end = next((i for i, l in enumerate(lines) if re.search(r'amount\s+due', l, re.IGNORECASE)), len(lines))
+        address = ', '.join(l.rstrip(',') for l in lines[acct + 1:end] if l) if acct >= 0 else ''
+        return {'name': '', 'address': address, 'amount': amount,
+                'unpaid_balance': '', 'billing_period': ''}
+    return None
 
 
 # ── P3: KWSP EPF statement ────────────────────────────────────────────────────
