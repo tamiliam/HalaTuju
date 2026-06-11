@@ -810,6 +810,9 @@ GEMINI_EXTRACT_DOC_TYPES = frozenset({
 })
 
 _STR = {'type': 'string'}
+# #5: which of the three real STR artifacts this is (closed set — no open-ended "other"),
+# so the extractor reads each layout's fields from the right place + the officer sees the source.
+_STR_SOURCE = {'type': 'string', 'enum': ['letter', 'semakan_status', 'dashboard', 'unknown']}
 
 
 def _doc_schema(props: dict) -> dict:
@@ -826,7 +829,7 @@ _FIELD_SCHEMAS = {
     # CURRENCY facts — status (Lulus/diluluskan/…) + the STR year — since a stale STR no
     # longer proves B40. Covers both the MOF letter and the MySTR portal screenshot.
     'str': _doc_schema({'recipient_name': _STR, 'recipient_nric': _STR, 'status': _STR,
-                        'year': _STR, 'amount': _STR}),
+                        'year': _STR, 'amount': _STR, 'source_type': _STR_SOURCE}),
     'salary_slip': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
                                 'gross_income': _STR, 'net_income': _STR, 'period': _STR}),
     'epf': _doc_schema({'name': _STR, 'nric': _STR, 'employer': _STR,
@@ -906,16 +909,23 @@ _DOC_HINTS = {
                      'Sekolah"); "offer_date" = the letter\'s print/issue date; "intake" = '
                      'the session/intake (e.g. "Sesi 2026/2027"); "candidate_address" = the '
                      'student\'s mailing address if shown. Leave a field empty if absent.'),
-    'str': (' This is a Malaysian STR (Sumbangan Tunai Rahmah) document — EITHER an official '
-            'Kementerian Kewangan letter OR a screenshot of the MySTR "Semakan Status" portal. '
-            '"recipient_name" = the recipient\'s full name ("Nama Penerima" on the letter, or '
-            '"Nama" on the portal); "recipient_nric" = their IC / MyKad number ("No Pengenalan" '
-            '/ "No. MyKad", keep ALL 12 digits exactly as shown, even without dashes); "status" '
-            '= the approval status ("diluluskan" / "Lulus" = approved; "Ditolak" = rejected; '
-            '"Dalam proses" = pending; "Tidak Layak" = not eligible) — use the portal\'s "Status '
-            'Permohonan Semasa" when present; "year" = the STR cycle year (e.g. "2026" from '
-            '"STR 2026" / "SUMBANGAN TUNAI RAHMAH (STR) 2026", or the letter date year); '
-            '"amount" = the total STR entitlement in RM ("jumlah … STR … RM1,200" / "Jumlah '
+    'str': (' This is a Malaysian STR (Sumbangan Tunai Rahmah) document. It is ONE of three '
+            'kinds — set "source_type" to: "letter" (an official Kementerian Kewangan letter — '
+            'KEMENTERIAN KEWANGAN letterhead, a "No. Rujukan" + date); "semakan_status" (the '
+            'MySTR "Semakan Status" check page — heading "Semakan Status" / "Maklumat Pemohon" + '
+            'a "Fasa Bayaran" table; desktop OR mobile); "dashboard" (the MySTR mobile-app home — '
+            'a profile card with the name + IC in brackets and "Status Permohonan STR" cards); '
+            'else "unknown". "recipient_name" = the recipient\'s full name ("Nama Penerima" on '
+            'the letter, "Nama" on the portal, or the dashboard profile-card name); '
+            '"recipient_nric" = their IC / MyKad ("No Pengenalan" / "No. MyKad" / the number in '
+            'brackets — keep ALL 12 digits even without dashes); "status" = the approval status '
+            '("diluluskan" / "Lulus" / SARA "Layak" = approved; "Ditolak" / "Tidak Layak" = '
+            'rejected; "Dalam proses" = pending) — use "Status Permohonan Semasa" when present '
+            '(Semasa = current). "year" = the STR cycle year: "2026" from "STR 2026" / '
+            '"SUMBANGAN TUNAI RAHMAH (STR) 2026" or the letter date; if NO year is printed (the '
+            'status / dashboard pages usually omit it) but a "Maklumat Pembayaran" / "Tarikh '
+            'Kredit" payment date is shown, use ITS year (e.g. "20/01/2026" → "2026"); otherwise '
+            'leave it EMPTY. "amount" = the total STR in RM ("jumlah … STR … RM1,200" / "Jumlah '
             'Bayaran Keseluruhan STR"). Leave a field empty if it is not present.'),
     'salary_slip': (' This is a Malaysian salary slip / payslip. "name" = the EMPLOYEE\'s '
                     'full name; "nric" = their IC number ("No. K/P" / "No. Kad Pengenalan", '

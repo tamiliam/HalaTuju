@@ -43,9 +43,22 @@ class TestStrCurrency(SimpleTestCase):
         # rejection check runs first, so this must be 'rejected', never 'current'.
         self.assertEqual(_str_currency('Tidak Layak', '2026', 2026), 'rejected')
 
-    def test_approved_but_no_year_is_unconfirmed(self):
-        # Approved status but no readable year → we can't confirm it's the CURRENT cycle.
-        self.assertEqual(_str_currency('diluluskan', '', 2026), 'unconfirmed')
+    def test_approved_but_no_year_is_current(self):
+        # #5 (2026-06-11): the MySTR 'Semakan Status' / Dashboard page shows "Status Permohonan
+        # SEMASA: Lulus" with NO printed year — an approval there is CURRENT even without a year
+        # (the live portal reflects this cycle). Previously this was a false 'unconfirmed' nag
+        # for 5 of 14 submitted STR students who uploaded a valid Lulus status screenshot.
+        self.assertEqual(_str_currency('diluluskan', '', 2026), 'current')
+        self.assertEqual(_str_currency('Lulus', '', 2026), 'current')
+        self.assertEqual(_str_currency('Layak', '', 2026), 'current')
+
+    def test_approved_prior_year_still_stale(self):
+        # A year is still a bonus: a readable PRIOR-year approval is stale (Nitya #53, 2025).
+        self.assertEqual(_str_currency('diluluskan', '2025', 2026), 'stale')
+
+    def test_no_status_with_old_year_is_unconfirmed_not_stale(self):
+        # No approval word → unconfirmed regardless of the year (a record, not a proof).
+        self.assertEqual(_str_currency('', '2024', 2026), 'unconfirmed')
 
 
 class TestFatherNameFromIc(SimpleTestCase):
