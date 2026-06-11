@@ -19,23 +19,23 @@ must carry a valid token or it fails. So the frontend that *sends* tokens must b
 live **before** the toggle is flipped. Likewise, anon INSERT on `contact_submissions`
 must stay open until the form is posting to the Edge Function instead.
 
-## Rollout sequence (do in this order)
+## Rollout sequence (do in this order — no step leaves a broken window)
 
-1. **Deploy the frontend** (`halatuju-web`) with `NEXT_PUBLIC_TURNSTILE_SITE_KEY` set.
-   At this point tokens are fetched but Supabase still ignores them (toggle off) —
-   every flow keeps working. Safe, reversible.
-   - Cloud Run build env var: add `NEXT_PUBLIC_TURNSTILE_SITE_KEY` to the web service.
-
-2. **Deploy the Edge Function** `contact-submit` (`--no-verify-jwt`, it's public) and
-   set its secret:
+1. **Deploy the Edge Function** `contact-submit` first (`--no-verify-jwt`, it's
+   public) and set its secret. The live contact form is still on the old
+   direct-insert path, so the function just sits ready and unused — zero impact.
    - `TURNSTILE_SECRET_KEY` = the Turnstile secret (Supabase auto-injects
      `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`).
-   - The frontend already posts here (step 1), so contact submissions now verify.
+
+2. **Deploy the frontend** (`halatuju-web`) — the site key is baked into the image
+   via the Dockerfile `ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY`. Now the contact form
+   posts to the (already-live) Edge Function, and auth tokens are fetched but
+   Supabase still ignores them (toggle off) — every flow keeps working. Reversible.
 
 3. **Revoke anon INSERT on `contact_submissions`** so the Edge Function (service role)
    is the ONLY write path — a bot can no longer skip the captcha by inserting with
-   the public anon key. (Drop/!replace the anon-insert policy; keep service_role.)
-   Do this only AFTER step 1 is live, or the live form breaks in the gap.
+   the public anon key. (Drop/replace the anon-insert policy; keep service_role.)
+   Safe now because the live form (step 2) no longer direct-inserts.
 
 4. **Flip the Supabase captcha toggle** — Dashboard → Authentication → Attack
    Protection → **Enable Captcha protection** → Provider **Turnstile** → paste the
