@@ -253,3 +253,47 @@ def _parse_electricity(text: str) -> Optional[dict]:
         return None
     return {'name': name, 'address': ', '.join(address_lines), 'amount': amount,
             'unpaid_balance': unpaid, 'billing_period': period}
+
+
+# ── P3: KWSP EPF statement ────────────────────────────────────────────────────
+# The KWSP "Penyata Ahli" — fixed labels: name after SULIT DAN PERSENDIRIAN, PENYATA AHLI
+# TAHUN <year>, No. Kad Pengenalan, No. Majikan, JUMLAH SIMPANAN: RM<x>, and the CARUMAN
+# SEMASA monthly rows (latest month's total = monthly_contribution). A mis-slotted Borang
+# EC / payslip carries NONE of these → None → Gemini (free mis-slot detection).
+
+_CARUMAN_RE = re.compile(
+    r'^(?:jan|feb|mac|apr|mei|jun|jul|ogos|ogo|sep|okt|nov|dis)-\d{2}\b.*?([\d,]+\.\d{2})\s*$',
+    re.IGNORECASE)
+
+
+def _last_caruman(text: str) -> str:
+    """The total of the LAST (most recent) monthly contribution row → ``RM<n>``. ''
+    if the CARUMAN table didn't parse."""
+    last = ''
+    for ln in _lines(text):
+        m = _CARUMAN_RE.match(ln)
+        if m:
+            last = m.group(1)
+    return f'RM{last.replace(",", "")}' if last else ''
+
+
+@register('epf')
+def _parse_epf(text: str) -> Optional[dict]:
+    if not has(text, r'penyata\s+ahli') or not has(text, r'ahli\s+kwsp', r'jumlah\s+simpanan', r'\bKWSP\b'):
+        return None                          # not a KWSP Penyata Ahli (e.g. a Borang EC) → Gemini
+    lines = _lines(text)
+    si = next((k for k, ln in enumerate(lines)
+               if re.search(r'sulit\s+dan\s+persendirian', ln, re.IGNORECASE)), -1)
+    name = next((ln for ln in lines[si + 1:] if ln), '') if si >= 0 else ''
+    nric = first_nric(find_value(text, r'no\.?\s*kad\s+pengenalan')) or first_nric(text)
+    # The KWSP employer number is a digit code — extract the digit-run so a label/value
+    # adjacency broken by image OCR yields '' rather than junk ("RINGKASAN", ":").
+    em = re.search(r'\d{6,}', find_value(text, r'no\.?\s*majikan'))
+    employer = em.group(0) if em else ''
+    balance = _money(find_value(text, r'jumlah\s+simpanan'))
+    ym = re.search(r'penyata\s+ahli\s+tahun\s+(20\d{2})', text, re.IGNORECASE)
+    year = ym.group(1) if ym else ''
+    if not (name or nric or balance):
+        return None
+    return {'name': name, 'nric': nric, 'employer': employer, 'latest_balance': balance,
+            'last_contribution': '', 'monthly_contribution': _last_caruman(text), 'year': year}

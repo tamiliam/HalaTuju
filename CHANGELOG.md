@@ -91,8 +91,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     matching the convention `utility_check` already reads, but normalised + consistent. **Validated against 8 live
     bills**; the deterministic read *improved* on Gemini for two digital bills it had left blank, and falls through to
     Gemini for scanned PDFs / messy photos / non-TNB issuers.
-  - +23 pytest (13 scaffold + 6 STR + 4 TNB); full scholarship suite green (1038). No migration (the tag lives in
-    `vision_fields`).
+  - **KWSP EPF parser (P3)** — the "Penyata Ahli": name (after `SULIT DAN PERSENDIRIAN`), `No. Kad Pengenalan`,
+    `No. Majikan` (digit-run, so broken image OCR blanks rather than capturing junk), `JUMLAH SIMPANAN` → balance,
+    `PENYATA AHLI TAHUN` → year, and the latest `CARUMAN SEMASA` row → monthly contribution. **Validated against 7 live
+    statements** (matched Gemini's monthly 1370/1380/408, and *improved* on a digital one Gemini left blank). A
+    **mis-slotted Borang EC** (a salary statement in the EPF slot) carries none of the KWSP labels → returns `None` →
+    Gemini, so the deterministic layer also *detects the mis-slot* for free.
+  - +27 pytest (13 scaffold + 6 STR + 4 TNB + 4 EPF); full scholarship suite green (1042). No migration (the tag lives
+    in `vision_fields`).
 - **Officer cockpit — Documents drawer polish + in-cockpit document viewer (live-testing, no migration).**
   - **Per-type tinted icons + standard labels.** Each document row shows a per-doc-TYPE glyph (🪪🎓💵💧… via
     `officerCockpit.docIconFor`) in a badge tinted by the doc's verdict, instead of a 2-way IC/generic emoji. The row's

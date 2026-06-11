@@ -234,3 +234,58 @@ class TestElectricityParser(SimpleTestCase):
 
     def test_no_text_layer_falls_to_gemini(self):
         self.assertIsNone(parse_by_labels('electricity_bill', 'CamScanner'))
+
+
+# A KWSP "Penyata Ahli": name after SULIT…, fixed labels, CARUMAN rows (latest = monthly).
+_KWSP = """SULIT DAN PERSENDIRIAN
+
+AHMAD BIN TESTABU
+NO 5 JALAN TEST
+40000 SHAH ALAM
+Selangor
+PENYATA AHLI TAHUN 2026
+RINGKASAN AKAUN
+No. Ahli KWSP : 12345678 Tarikh Penyata : 10/06/2026
+No. Kad Pengenalan : 800101015555
+No. Majikan : 001307002
+JUMLAH SIMPANAN: RM150,000.50
+Akaun Persaraan (Akaun 1) 140,000.00 9,000.00 0.00 0.00 149,000.00
+JUMLAH (RM) 150,000.50
+CARUMAN SEMASA
+Jan-26 Caruman - IWS 16/01/2026 221.00 187.00 408.00
+Feb-26 Caruman - IWS 20/02/2026 250.00 210.00 460.00
+"""
+
+# A Borang EC (income statement) mis-slotted into the EPF slot — none of the KWSP labels.
+_BORANG_EC = """Jab Akauntan Negara Msia
+Penyata Gaji Pekerja AGENSI KERAJAAN EC
+PENYATA SARAAN DARIPADA PENGGAJIAN
+BORANG EC INI PERLU DISEDIAKAN UNTUK DISERAHKAN KEPADA PEKERJA
+A BUTIRAN PEKERJA
+1. Nama Penuh Pekerja/Pesara
+"""
+
+
+class TestEpfParser(SimpleTestCase):
+    def test_kwsp_penyata_full_read(self):
+        r = parse_by_labels('epf', _KWSP)
+        self.assertEqual(r['name'], 'AHMAD BIN TESTABU')
+        self.assertEqual(r['nric'], '800101-01-5555')
+        self.assertEqual(r['employer'], '001307002')
+        self.assertEqual(r['latest_balance'], 'RM150000.50')
+        self.assertEqual(r['monthly_contribution'], 'RM460.00')   # the LAST (most recent) row
+        self.assertEqual(r['year'], '2026')
+
+    def test_borang_ec_in_epf_slot_returns_none_misslot_detection(self):
+        # The deterministic parser refuses a non-KWSP doc → Gemini reads it (and the
+        # mis-slot is visible because no KWSP fields were captured).
+        self.assertIsNone(parse_by_labels('epf', _BORANG_EC))
+
+    def test_employer_blanks_when_label_value_adjacency_breaks(self):
+        # Image OCR can put a non-numeric line after "No. Majikan" → employer must blank,
+        # not capture "RINGKASAN" / ":".
+        broken = _KWSP.replace('No. Majikan : 001307002', 'No. Majikan\nRINGKASAN AKAUN')
+        self.assertEqual(parse_by_labels('epf', broken)['employer'], '')
+
+    def test_non_kwsp_text_returns_none(self):
+        self.assertIsNone(parse_by_labels('epf', 'just some random text with no kwsp markers'))
