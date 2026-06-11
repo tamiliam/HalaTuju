@@ -14,9 +14,11 @@ is via the runtime service account (ADC); Supabase access uses the service key
 
 PII-safe: logs object COUNTS only, never paths or bytes (paths embed app ids).
 
-Scale note: walks + copies sequentially. Fine for the current low-hundreds of
-small files run weekly; if the vault grows into the thousands, batch/parallelise
-or switch to incremental (skip-if-unchanged via size/etag).
+Incremental + resumable: skips objects already backed up at the same size, so a
+run that hits the Cloud Run request timeout still makes progress and the next run
+continues where it left off. The initial backfill of a large vault may therefore
+span a few runs; steady-state copies only new/changed files. (If the vault grows
+into the thousands, move to a Cloud Run Job — no request timeout — or parallelise.)
 """
 import logging
 
@@ -31,10 +33,10 @@ GCS_PREFIX = 'b40-documents'  # namespace inside the destination bucket
 
 
 def _walk_files(prefix=''):
-    """Yield (object_path, content_type) for every file in the private bucket.
+    """Yield (object_path, content_type, size) for every file in the private bucket.
 
     Supabase ``list`` returns one level: files carry a non-null ``id`` (+ a
-    ``metadata.mimetype``); folders have ``id`` = None. Recurse into folders.
+    ``metadata`` with mimetype/size); folders have ``id`` = None. Recurse.
     """
     for item in storage.list_objects(prefix):
         name = item.get('name')
@@ -42,8 +44,8 @@ def _walk_files(prefix=''):
             continue
         full = f'{prefix}/{name}' if prefix else name
         if item.get('id'):
-            ctype = (item.get('metadata') or {}).get('mimetype') or 'application/octet-stream'
-            yield full, ctype
+            meta = item.get('metadata') or {}
+            yield full, (meta.get('mimetype') or 'application/octet-stream'), meta.get('size')
         else:
             yield from _walk_files(full)
 
@@ -57,8 +59,16 @@ def _upload_to_gcs(bucket_name, blob_path, data, content_type):
     blob.upload_from_string(data, content_type=content_type)
 
 
+def _existing_gcs(bucket_name):
+    """{blob_name: size_bytes} already in the backup bucket, so a re-run skips
+    unchanged objects (the incremental/resumable behaviour). Isolated for mocking."""
+    from google.cloud import storage as gcs  # lazy import — prod-only dependency
+    client = gcs.Client()
+    return {b.name: b.size for b in client.list_blobs(bucket_name, prefix=f'{GCS_PREFIX}/')}
+
+
 class Command(BaseCommand):
-    help = "Mirror the private b40-documents Storage bucket to the GCS backup bucket."
+    help = "Mirror the private b40-documents Storage bucket to the GCS backup bucket (incremental)."
 
     def add_arguments(self, parser):
         parser.add_argument('--dry-run', action='store_true',
@@ -76,9 +86,14 @@ class Command(BaseCommand):
                 'Supabase service key not configured — skipping document backup (no-op).'))
             return
 
-        seen = backed = failed = 0
-        for path, ctype in _walk_files():
+        existing = {} if dry else _existing_gcs(dest)
+        seen = backed = skipped = failed = 0
+        for path, ctype, size in _walk_files():
             seen += 1
+            blob_path = f'{GCS_PREFIX}/{path}'
+            if not dry and size is not None and existing.get(blob_path) == size:
+                skipped += 1  # already backed up at the same size
+                continue
             if dry:
                 continue
             data = storage.download_object(path)
@@ -87,7 +102,7 @@ class Command(BaseCommand):
                 logger.warning('Backup: could not download object #%d', seen)
                 continue
             try:
-                _upload_to_gcs(dest, f'{GCS_PREFIX}/{path}', data, ctype)
+                _upload_to_gcs(dest, blob_path, data, ctype)
                 backed += 1
             except Exception:  # noqa: BLE001 — never crash the weekly cron
                 failed += 1
@@ -95,9 +110,9 @@ class Command(BaseCommand):
 
         if dry:
             self.stdout.write(self.style.SUCCESS(
-                f'DRY RUN — {seen} objects would be backed up to gs://{dest}/{GCS_PREFIX}/'))
+                f'DRY RUN — {seen} objects under gs://{dest}/{GCS_PREFIX}/'))
         else:
             style = self.style.SUCCESS if failed == 0 else self.style.WARNING
             self.stdout.write(style(
-                f'Document backup → gs://{dest}/{GCS_PREFIX}/ : {backed}/{seen} copied'
-                + (f', {failed} FAILED' if failed else '')))
+                f'Document backup → gs://{dest}/{GCS_PREFIX}/ : {backed} copied, '
+                f'{skipped} unchanged, {seen} total' + (f', {failed} FAILED' if failed else '')))
