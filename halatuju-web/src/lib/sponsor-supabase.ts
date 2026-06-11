@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { getTurnstileToken } from '@/lib/turnstile'
 
 let _sponsorSupabase: SupabaseClient | null = null
 
@@ -28,7 +29,12 @@ export function getSponsorSupabase(): SupabaseClient {
 }
 
 export async function sponsorSignInWithPassword(email: string, password: string) {
-  const { data, error } = await getSponsorSupabase().auth.signInWithPassword({ email, password })
+  const captchaToken = await getTurnstileToken('sponsor_signin')
+  const { data, error } = await getSponsorSupabase().auth.signInWithPassword({
+    email,
+    password,
+    options: captchaToken ? { captchaToken } : undefined,
+  })
   return { data, error }
 }
 
@@ -37,6 +43,7 @@ export async function sponsorSignUpWithPassword(
   password: string,
   fullName?: string,
 ) {
+  const captchaToken = await getTurnstileToken('sponsor_signup')
   const { data, error } = await getSponsorSupabase().auth.signUp({
     email,
     password,
@@ -44,6 +51,7 @@ export async function sponsorSignUpWithPassword(
       // Stash the name so it survives an email-confirmation gap (no session yet).
       data: fullName ? { full_name: fullName } : undefined,
       emailRedirectTo: `${window.location.origin}/sponsor/login`,
+      ...(captchaToken ? { captchaToken } : {}),
     },
   })
   return { data, error }
@@ -60,8 +68,10 @@ export async function sponsorSignInWithGoogle() {
 }
 
 export async function sponsorResetPassword(email: string) {
+  const captchaToken = await getTurnstileToken('sponsor_reset')
   const { error } = await getSponsorSupabase().auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/sponsor/login`,
+    ...(captchaToken ? { captchaToken } : {}),
   })
   return { error }
 }
