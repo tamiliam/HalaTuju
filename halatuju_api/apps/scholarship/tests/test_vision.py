@@ -174,6 +174,34 @@ NO 12 JALAN MAHKOTA
         ocr = "MYKAD\nMALAYSIA\n900101-10-5555\nSITI AP\n900101-10-5555\nNO 5 JALAN\nKL"
         self.assertEqual(_extract_name(ocr, '900101-10-5555'), 'SITI AP')
 
+    def test_leading_break_prepends_given_name(self):
+        # The #61 case (father IC): OCR line-breaks the GIVEN name BEFORE the A/L marker, so
+        # the name line STARTS with the marker and the given name is on the line above →
+        # prepend it (mirror of the Theresa trailing case).
+        ocr = ("MYKAD\nMALAYSIA\n740913-04-5275\nSARAWANAN\nA/L SUPRAMANIAM\n"
+               "NO 974 JLN BSS 2/5D\n71450 SEREMBAN\nNEGERI SEMBILAN")
+        self.assertEqual(_extract_name(ocr, '740913-04-5275'), 'SARAWANAN A/L SUPRAMANIAM')
+
+    def test_leading_break_prepends_multiword_given_name(self):
+        # The #31 case (mother IC): "RUSHAINDRA KUMARI" above "A/P JAYARAM".
+        ocr = ("MYKAD\nMALAYSIA\n800817-07-5636\nRUSHAINDRA KUMARI\nA/P JAYARAM\n"
+               "1A-23A-3A 1SKY\n11950 BAYAN BARU\nPULAU PINANG")
+        self.assertEqual(_extract_name(ocr, '800817-07-5636'), 'RUSHAINDRA KUMARI A/P JAYARAM')
+
+    def test_leading_marker_no_given_name_left_as_is(self):
+        # A leading marker with no plausible given-name line above (a header / the NRIC) →
+        # no prepend, no crash.
+        ocr = "MYKAD\nMALAYSIA\n900101-10-5555\nA/L SUPRAMANIAM\nNO 5 JALAN\nKUALA LUMPUR"
+        self.assertEqual(_extract_name(ocr, '900101-10-5555'), 'A/L SUPRAMANIAM')
+
+    def test_leading_break_does_not_grab_a_marker_line_above(self):
+        # If the line above is ITSELF a name with a marker (another person), it is NOT a
+        # given-name fragment → don't merge two people's names.
+        ocr = ("MYKAD\nMALAYSIA\n900101-10-5555\nKAMALA A/P RAMAN\nA/L SUPRAMANIAM\n"
+               "NO 5 JALAN\nKUALA LUMPUR")
+        # marked picks the longest marker line (KAMALA A/P RAMAN) → unaffected by the leading rule.
+        self.assertEqual(_extract_name(ocr, '900101-10-5555'), 'KAMALA A/P RAMAN')
+
     def test_no_text_returns_empty(self):
         self.assertEqual(_extract_nric(''), '')
         self.assertEqual(_extract_name(''), '')

@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **IC name LEADING-break — the given name on the line ABOVE the `A/L` marker is no longer dropped (no migration).**
+  `vision._extract_name`/`_with_trailing_surname` reassembled a surname spilled AFTER the marker
+  ("THERESA ARUL MARY A/P" → "…A/P A.PHILIPS") but NOT a given name spilled onto the PREVIOUS line — so app #61's father
+  IC ("SARAWANAN"\n"A/L SUPRAMANIAM") captured only "A/L SUPRAMANIAM". New mirror helpers `_LEADING_PARENTAGE` +
+  `_preceding_givenname` + `_with_broken_name_parts` prepend the given-name line when the chosen name line STARTS with a
+  parentage marker. `_extract_name` is the SHARED extractor for the applicant `ic` AND every `parent_ic`, so one fix
+  covers all relationships; both break directions are regression-tested. **Validated on the two real prod ICs** (#61
+  father, #31 mother — rendered + Vision-OCR'd): both now read the full name. +5 pytest (60 vision); full suite green.
 - **Income-document grouping + guardian-card gating + mononym father-link (frontend, no migration).** From reviewing
   real applicants #61/#55:
   - **Guardianship letter moved from "Other" → Income, gated on the consent relationship.** The minor guardianship-letter
