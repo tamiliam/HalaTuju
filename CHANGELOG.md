@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Guided school capture + officer-cockpit refinements (live-review backlog #1–#7; frontend + i18n, no migration).**
+  Seven UX/clarity fixes from the owner's live review. **#1** the normal course-guide onboarding now offers a *guided,
+  optional* school field (reuses `SchoolSelect` + the 2,480-school MOE list) instead of free text; **#3** the same guided
+  school is editable in the profile, above Angka Giliran (both persist via the existing `StudentProfile.school`). Officer
+  cockpit (`admin/scholarship/[id]`): **#2** the status pill shows the **real** application status (Shortlisted / Rejected /
+  Sponsored …, colour-banded: amber = in-progress, green = accepted/sponsored, red = rejected) instead of a blanket
+  "In review" — new `admin.scholarship.statuses.*` (10 statuses); **#4** the header timeline gains an **"Applied"**
+  milestone (rendered when `profile_completed_at` is set), between Submitted and Assigned; **#5** the "Parent/Guardian"
+  label is now **dynamic** from the active consent's `guardian_relationship` — "Guardian" for a non-parent relationship
+  (legal_guardian/grandparent/sibling/relative), "Parent" otherwise; **#6** the legacy single "Siblings studying" row is
+  hidden (superseded by the school/tertiary split), shown only as a captioned fallback ("legacy total — split unknown,
+  confirm at interview") for the **10/76** old rows that have a positive legacy count and no split; **#7** prev/next
+  applicant navigation that follows the list's current filter/sort order (ids stashed in `sessionStorage`). Gates:
+  `next build` clean, 297 jest, i18n parity 2519×3. See `docs/retrospective-cockpit-school-ux.md`.
+- **Utility-bill holder/address + payslip-vs-EPF verification soft-signals (live-review backlog #8–#9; backend, no
+  migration, never gates submission).** The engine already *detected* these but only displayed them passively — now it
+  escalates. **#8 (utility):** new `income_engine.utility_holder_unknown` (bill in a stranger's name — neither student nor
+  an uploaded parent IC) and `utility_address_mismatch` (a HARD address mismatch only — a missing-postcode / shortened
+  street stays silent). Surfaced two ways: an **officer pre-interview flag** (`anomaly_engine`: `utility_holder_unknown`,
+  `utility_address_mismatch`, active now) **and** a **student Check-2 clarify query** (wired through `check2_queries` +
+  `KNOWN_CODES`, **dark** behind `CHECK2_STUDENT_QUERIES_ENABLED`). **#9 (payslip vs EPF):** new
+  `income_engine.slip_epf_divergence` cross-checks a member's payslip gross against their EPF-implied salary
+  (contribution ÷ 0.24) when both docs exist, flagging `payslip_epf_divergence` only outside a generous 0.6–1.67 ratio
+  band (overtime / late-pay safe). i18n en/ms/ta: anomaly ×3, Check-2 query ×2, admin summary ×2. Gates: 1104 scholarship
+  pytest (+23), actionCentre jest 23, `next build` clean, parity 2512×3. See `docs/retrospective-verification-soft-signals.md`.
+
 ### Security
 - **Cloudflare Turnstile (captcha) on every auth entry point + the contact form (security item C; no migration).**
   Protects against credential-stuffing, fake-account/email-flood abuse, and contact-form spam. An invisible widget
