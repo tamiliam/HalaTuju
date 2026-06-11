@@ -356,3 +356,72 @@ class CockpitAnomalyDedupeTests(TestCase):
         self.assertEqual(codes, ['household_size_one'])
         self.assertNotIn('vision_nric_mismatch', codes)
         self.assertNotIn('vision_name_mismatch', codes)
+
+
+# ─── #8/#9: utility holder/address + payslip-vs-EPF ──────────────────────────
+
+def _add_util_bill(app, doc_type, *, name='', amount='20', address_match=''):
+    return ApplicantDocument.objects.create(
+        application=app, doc_type=doc_type, storage_path=f'{app.id}/{doc_type}/u',
+        vision_fields={'fields': {'amount': amount, 'name': name}},
+        vision_address_match=address_match, vision_fields_run_at=timezone.now(),
+    )
+
+
+def _add_income_doc(app, doc_type, member, fields):
+    return ApplicantDocument.objects.create(
+        application=app, doc_type=doc_type, storage_path=f'{app.id}/{doc_type}/{member}',
+        household_member=member, vision_fields={'fields': fields},
+        vision_fields_run_at=timezone.now(),
+    )
+
+
+class TestUtilityHolderUnknownAnomaly(_Base):
+    def test_flag_when_bill_in_stranger_name(self):
+        _add_util_bill(self.app, 'water_bill', name='STRANGER PERSON')
+        anomalies = {a['code']: a['params'] for a in detect_anomalies(self.app)}
+        self.assertIn('utility_holder_unknown', anomalies)
+        self.assertEqual(anomalies['utility_holder_unknown']['name'], 'STRANGER PERSON')
+
+    def test_no_flag_when_bill_in_student_name(self):
+        _add_util_bill(self.app, 'water_bill', name=self.profile.name)
+        codes = [a['code'] for a in detect_anomalies(self.app)]
+        self.assertNotIn('utility_holder_unknown', codes)
+
+
+class TestUtilityAddressMismatchAnomaly(_Base):
+    def test_flag_on_hard_mismatch(self):
+        _add_util_bill(self.app, 'electricity_bill', address_match='mismatch')
+        codes = [a['code'] for a in detect_anomalies(self.app)]
+        self.assertIn('utility_address_mismatch', codes)
+
+    def test_no_flag_on_partial(self):
+        # A missing-postcode / shortened-street 'partial' read stays silent.
+        _add_util_bill(self.app, 'electricity_bill', address_match='partial')
+        codes = [a['code'] for a in detect_anomalies(self.app)]
+        self.assertNotIn('utility_address_mismatch', codes)
+
+
+class TestPayslipEpfDivergenceAnomaly(_Base):
+    def setUp(self):
+        super().setUp()
+        self.app.income_route = 'salary'
+        self.app.save()
+
+    def test_flag_when_payslip_and_epf_diverge(self):
+        _add_income_doc(self.app, 'salary_slip', 'father', {'gross_income': 'RM 3000'})
+        _add_income_doc(self.app, 'epf', 'father', {'monthly_contribution': 'RM 200'})
+        anomalies = {a['code']: a['params'] for a in detect_anomalies(self.app)}
+        self.assertIn('payslip_epf_divergence', anomalies)
+        self.assertEqual(anomalies['payslip_epf_divergence']['slip'], 3000.0)
+
+    def test_no_flag_when_aligned(self):
+        _add_income_doc(self.app, 'salary_slip', 'father', {'gross_income': 'RM 3000'})
+        _add_income_doc(self.app, 'epf', 'father', {'monthly_contribution': 'RM 720'})
+        codes = [a['code'] for a in detect_anomalies(self.app)]
+        self.assertNotIn('payslip_epf_divergence', codes)
+
+    def test_no_flag_with_only_payslip(self):
+        _add_income_doc(self.app, 'salary_slip', 'father', {'gross_income': 'RM 3000'})
+        codes = [a['code'] for a in detect_anomalies(self.app)]
+        self.assertNotIn('payslip_epf_divergence', codes)

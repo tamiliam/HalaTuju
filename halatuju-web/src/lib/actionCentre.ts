@@ -110,6 +110,9 @@ export const KNOWN_CODES = [
   'sibling_level_unknown',
   'device_status_unknown',
   'transport_cost_unknown',
+  // #8 — utility-bill consistency clarify queries (dark until CHECK2_STUDENT_QUERIES_ENABLED).
+  'utility_holder_unknown',
+  'utility_address_mismatch',
 ] as const
 
 export type KnownCode = (typeof KNOWN_CODES)[number]

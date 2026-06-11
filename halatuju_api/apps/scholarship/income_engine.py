@@ -457,6 +457,14 @@ _AMOUNT_RE = re.compile(r'(\d[\d,]*\.?\d*)')
 # salary estimate when there's no payslip: monthly_salary ≈ contribution / 0.24.
 _EPF_CONTRIB_RATE = 0.24
 
+# #9 payslip-vs-EPF tolerance. The payslip gross and the EPF-implied salary rarely match
+# to the ringgit — overtime, late employer payments, and variable operator-grade pay all
+# move them apart — so the flag stays QUIET unless they diverge a lot. Flag only when the
+# ratio (slip ÷ epf_implied) falls outside this band (the bounds are reciprocals, so it is
+# symmetric: more than ~1.67× apart in either direction).
+_SLIP_EPF_LO = 0.6
+_SLIP_EPF_HI = 1.67
+
 
 def _parse_rm(s):
     """Parse an RM figure ('RM 9,900.04' / '2400.00' / 'RM2,400') → float, or None."""
@@ -492,6 +500,33 @@ def earner_monthly_income(application, member):
         if contrib:
             return round(contrib / _EPF_CONTRIB_RATE, 2), 'epf_estimate'
     return None, 'unknown'
+
+
+def slip_epf_divergence(application, member):
+    """#9: when a member has BOTH a salary slip (gross) AND an EPF statement (monthly
+    contribution), cross-check the payslip salary against the EPF-implied salary
+    (contribution ÷ 0.24). Returns ``{slip, epf_implied, ratio}`` only when they diverge
+    beyond the generous ``_SLIP_EPF_LO``–``_SLIP_EPF_HI`` band, else None (also None when
+    either figure is missing). A SOFT officer signal — overtime / late pay routinely move
+    the two apart, so it is a 'verify at interview' nudge, never a gate."""
+    slip = None
+    for s in _cluster_docs(application, member, 'salary_slip'):
+        amt = _parse_rm(_doc_fields(s).get('gross_income') or _doc_fields(s).get('net_income'))
+        if amt:
+            slip = amt
+            break
+    epf_implied = None
+    for e in _cluster_docs(application, member, 'epf'):
+        contrib = _parse_rm(_doc_fields(e).get('monthly_contribution'))
+        if contrib:
+            epf_implied = round(contrib / _EPF_CONTRIB_RATE, 2)
+            break
+    if not slip or not epf_implied:
+        return None
+    ratio = slip / epf_implied
+    if _SLIP_EPF_LO <= ratio <= _SLIP_EPF_HI:
+        return None
+    return {'slip': round(slip, 2), 'epf_implied': epf_implied, 'ratio': round(ratio, 2)}
 
 
 def income_per_capita(application, members):
@@ -713,6 +748,31 @@ def utility_check(doc, today=None):
         'outstanding_status': 'arrears' if (arrears and monthly and arrears > monthly) else '',
         'name_note': 'unrelated' if _utility_name_unrelated(app, name) else '',
     }
+
+
+def utility_holder_unknown(application):
+    """#8: the account-holder name on a water/electricity bill matches NEITHER the student
+    nor any uploaded parent IC — a 'whose bill is this?' query. Returns the holder name of
+    the first such bill, or None. Bills routinely sit in a parent's name (fine — that
+    matches the IC); this fires only when the holder is a stranger to the documents."""
+    for dt in ('water_bill', 'electricity_bill'):
+        for doc in application.documents.filter(doc_type=dt).order_by('-uploaded_at'):
+            facts = utility_check(doc)
+            if facts and facts.get('name_note') == 'unrelated' and facts.get('name'):
+                return facts['name']
+    return None
+
+
+def utility_address_mismatch(application):
+    """#8: a water/electricity bill's supply address is a HARD mismatch against the
+    student's stated address. Returns True only on ``vision_address_match == 'mismatch'`` —
+    a 'partial' (a missing postcode or a shortened/abbreviated street) deliberately stays
+    silent, so only a genuinely different address raises the query. Soft, never a gate."""
+    for dt in ('water_bill', 'electricity_bill'):
+        for doc in application.documents.filter(doc_type=dt):
+            if (getattr(doc, 'vision_address_match', '') or '') == 'mismatch':
+                return True
+    return False
 
 
 def _latest_doc(application, doc_type):

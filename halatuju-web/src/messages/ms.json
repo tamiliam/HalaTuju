@@ -1694,6 +1694,14 @@
         "transport_cost_unknown": {
           "title": "Bagaimana anda pergi ke tempat pengajian?",
           "desc": "Bagaimana anda pergi ke sekolah atau kolej, dan lebih kurang berapa kosnya sebulan?"
+        },
+        "utility_holder_unknown": {
+          "title": "Nama siapa pada bil utiliti anda?",
+          "desc": "Bil air atau elektrik yang anda muat naik atas nama orang lain. Beritahu kami siapa mereka dan apa hubungan mereka dengan anda."
+        },
+        "utility_address_mismatch": {
+          "title": "Adakah bil utiliti anda untuk rumah semasa anda?",
+          "desc": "Alamat pada bil utiliti anda kelihatan berbeza daripada alamat rumah anda. Beritahu kami yang mana satu rumah semasa anda."
         }
       }
     },
@@ -2532,6 +2540,18 @@
           "fact": "Bil utiliti berjumlah RM {utility}/bulan — kira-kira {percent}% daripada pendapatan isi rumah yang diisytiharkan iaitu RM {income}/bulan.",
           "question": "Bil utiliti anda merupakan sebahagian besar daripada pendapatan dalam rekod — adakah pendapatan yang diisytiharkan itu gambaran penuh isi rumah, atau ada pendapatan lain yang membantu menampung bil?"
         },
+        "utility_holder_unknown": {
+          "fact": "Bil utiliti atas nama orang lain: {name} — bukan pelajar mahupun ibu bapa yang dimuat naik.",
+          "question": "Bil siapa ini — {name}? Apakah hubungan mereka dengan anda, dan siapa yang tinggal di alamat pada bil itu?"
+        },
+        "utility_address_mismatch": {
+          "fact": "Alamat bekalan pada bil utiliti berbeza daripada alamat rumah dalam rekod.",
+          "question": "Alamat pada bil utiliti kelihatan berbeza daripada alamat rumah yang dinyatakan — yang mana rumah semasa anda, dan bil siapa yang satu lagi?"
+        },
+        "payslip_epf_divergence": {
+          "fact": "Slip gaji ahli yang bekerja (RM {slip}) dan gaji anggaran KWSP (RM {epf_implied}) berbeza ketara.",
+          "question": "Angka slip gaji dan KWSP tidak sepadan — adakah kerja lebih masa atau komisen, atau caruman dibayar lewat? Berapakah gaji bulanan tetap?"
+        },
         "first_in_family_with_siblings_studying": {
           "fact": "Pelajar mendakwa pertama ke universiti, tetapi {count} adik-beradik sedang belajar.",
           "question": "Anda akan menjadi yang pertama dalam keluarga ke universiti, tetapi {count} adik-beradik juga sedang belajar — adakah mereka masih bersekolah, atau sudah di universiti?"
@@ -2719,7 +2739,9 @@
           "course_unspecified": "Belum memilih kursus/bidang — pelajar telah ditanya apa yang mereka rancang untuk belajar.",
           "sibling_level_unknown": "Pecahan adik-beradik sekolah lwn pengajian tinggi belum direkod — pelajar telah diminta memecahkan jumlah itu.",
           "device_status_unknown": "Keperluan peranti tidak diketahui — pelajar telah ditanya sama ada mereka mempunyai komputer riba/tablet.",
-          "transport_cost_unknown": "Kos pengangkutan tidak diketahui — pelajar telah ditanya cara mereka pergi dan anggaran kos bulanan."
+          "transport_cost_unknown": "Kos pengangkutan tidak diketahui — pelajar telah ditanya cara mereka pergi dan anggaran kos bulanan.",
+          "utility_holder_unknown": "Bil utiliti atas nama orang lain — pelajar telah ditanya siapa mereka dan hubungannya.",
+          "utility_address_mismatch": "Alamat bil utiliti berbeza daripada alamat rumah — pelajar telah ditanya yang mana rumah semasa mereka."
         }
       },
       "decision": {

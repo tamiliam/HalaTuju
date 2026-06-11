@@ -33,14 +33,20 @@ CLARIFY_SPECS = {
     'sibling_level_unknown':  {'fact': 'income'},
     'device_status_unknown':  {'fact': 'other'},
     'transport_cost_unknown': {'fact': 'other'},
+    # #8 — utility-bill consistency (NOT completeness gaps; sourced from the income engine
+    # in `sync_check2_queries`). One-line, non-sensitive, factual → a fair student query.
+    'utility_holder_unknown':   {'fact': 'income'},
+    'utility_address_mismatch': {'fact': 'income'},
     # 'motivation_missing' is intentionally NOT here — motivation is reviewer texture
     # (§7), not a one-line factual answer.
 }
 
-# Priority order when capping — most material to a fundable profile first.
+# Priority order when capping — most material to a fundable profile first. The utility
+# consistency queries sit LAST (a completeness gap matters more to a fundable profile).
 _CLARIFY_ORDER = [
     'course_unspecified', 'sibling_level_unknown',
     'device_status_unknown', 'transport_cost_unknown',
+    'utility_holder_unknown', 'utility_address_mismatch',
 ]
 
 # The student is not the reviewer: a long list suppresses responses. Cap to the few
@@ -64,6 +70,14 @@ def sync_check2_queries(application):
         return ResolutionItem.objects.none()
 
     gaps = {g['code'] for g in completeness_gaps(application)}
+    # #8 — fold in the utility-bill consistency checks (same income-engine helpers the
+    # officer pre-interview flags use), so a 'whose bill is this?' / 'address differs'
+    # query is raised + auto-resolved on the same reconcile loop as the completeness gaps.
+    from .income_engine import utility_holder_unknown, utility_address_mismatch
+    if utility_holder_unknown(application):
+        gaps.add('utility_holder_unknown')
+    if utility_address_mismatch(application):
+        gaps.add('utility_address_mismatch')
     existing = {r.code: r for r in application.resolution_items.filter(source='check2')}
     now = timezone.now()
 
