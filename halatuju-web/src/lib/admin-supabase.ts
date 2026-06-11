@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { getTurnstileToken } from '@/lib/turnstile'
 
 let _adminSupabase: SupabaseClient | null = null
 
@@ -26,9 +27,11 @@ export function getAdminSupabase(): SupabaseClient {
 }
 
 export async function adminSignInWithPassword(email: string, password: string) {
+  const captchaToken = await getTurnstileToken('admin_signin')
   const { data, error } = await getAdminSupabase().auth.signInWithPassword({
     email,
     password,
+    options: captchaToken ? { captchaToken } : undefined,
   })
   return { data, error }
 }
@@ -44,8 +47,10 @@ export async function adminSignInWithGoogle() {
 }
 
 export async function adminResetPassword(email: string) {
+  const captchaToken = await getTurnstileToken('admin_reset')
   const { error } = await getAdminSupabase().auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/admin/login`,
+    ...(captchaToken ? { captchaToken } : {}),
   })
   return { error }
 }
